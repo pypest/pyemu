@@ -1,3 +1,4 @@
+"""Plotting functions for various PEST(++) and pyemu operations"""
 import os
 import shutil
 import numpy as np
@@ -29,47 +30,36 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
     """ helper function to plot gaussian distrbutions from prior and posterior
     means and standard deviations
 
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        a dataframe and csv file.  Must have columns named:
-        'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
-        from a csv file, column 0 is assumed to tbe the index
-    ax: matplotlib.pyplot.axis
-        If None, and not subplots, then one is created
-        and all distributions are plotted on a single plot
-    label_post: bool
-        flag to add text labels to the peak of the posterior
-    label_prior: bool
-        flag to add text labels to the peak of the prior
-    subplots: (boolean)
-        flag to use subplots.  If True, then 6 axes per page
-        are used and a single prior and posterior is plotted on each
-    figsize: tuple
-        matplotlib figure size
+    Args:
+        df (`pandas.DataFrame`): a dataframe and csv file.  Must have columns named:
+            'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
+            from a csv file, column 0 is assumed to tbe the index
+        ax (`atplotlib.pyplot.axis`): If None, and not subplots, then one is created
+            and all distributions are plotted on a single plot
+        label_post (`bool`): flag to add text labels to the peak of the posterior
+        label_prior (`bool`): flag to add text labels to the peak of the prior
+        subplots (`bool`): flag to use subplots.  If True, then 6 axes per page
+            are used and a single prior and posterior is plotted on each
+        figsize (`tuple`): matplotlib figure size
 
-    Returns
-    -------
-    figs : list
-        list of figures
-    axes : list
-        list of axes
+    Returns:
+        tuple containing:
 
-    Note
-    ----
-    This is useful for demystifying FOSM results
+        - **[`matplotlib.figure`]**: list of figures
+        - **[`matplotlib.axis`]**: list of axes
 
-    if subplots is False, a single axis is returned
+    Note:
+        This is useful for demystifying FOSM results
 
-    Example
-    -------
-    ``>>>import matplotlib.pyplot as plt``
+        if subplots is False, a single axis is returned
 
-    ``>>>import pyemu``
+    Example::
 
-    ``>>>pyemu.helpers.plot_summary_distributions("pest.par.usum.csv")``
+        import matplotlib.pyplot as plt
+        import pyemu
+        pyemu.plot_utils.plot_summary_distributions("pest.par.usum.csv")
+        plt.show()
 
-    ``>>>plt.show()``
     """
     import matplotlib.pyplot as plt
     if isinstance(df,str):
@@ -143,22 +133,17 @@ def gaussian_distribution(mean, stdev, num_pts=50):
     standard deviation range of a gaussian distribution with
     a given mean and standard deviation. useful for plotting
 
-    Parameters
-    ----------
-    mean : float
-        the mean of the distribution
-    stdev : float
-        the standard deviation of the distribution
-    num_pts : int
-        the number of points in the returned ndarrays.
-        Default is 50
+    Args:
+        mean (`float`): the mean of the distribution
+        stdev (`float`): the standard deviation of the distribution
+        num_pts (`int`): the number of points in the returned ndarrays.
+            Default is 50
 
-    Returns
-    -------
-    x : numpy.ndarray
-        the x-values of the distribution
-    y : numpy.ndarray
-        the y-values of the distribution
+    Returns:
+        tuple containing:
+
+        - **numpy.ndarray**: the x-values of the distribution
+        - **numpy.ndarray**: the y-values of the distribution
 
     """
     xstart = mean - (4.0 * stdev)
@@ -168,13 +153,26 @@ def gaussian_distribution(mean, stdev, num_pts=50):
     return x,y
 
 def pst_helper(pst,kind=None,**kwargs):
+    """`pyemu.Pst` plot helper - takes the
+    handoff from `pyemu.Pst.plot()`
+
+    Args:
+        kind (`str`): the kind of plot to make
+        **kargs (`dict`): keyword arguments to pass to the
+            plotting function and ultimately to `matplotlib`
+
+    Returns:
+        varies: usually a combination of `matplotlib.figure` (s) and/or
+        `matplotlib.axis` (s)
+
+    """
 
     echo = kwargs.get("echo",False)
     logger = pyemu.Logger("plot_pst_helper.log",echo=echo)
     logger.statement("plot_utils.pst_helper()")
 
-    kinds = {"prior":pst_prior,"1to1":res_1to1,"obs_v_sim":res_obs_v_sim,
-             "phi_pie":res_phi_pie,"weight_hist":pst_weight_hist,
+    kinds = {"prior":pst_prior,"1to1":res_1to1,
+             "phi_pie":res_phi_pie,
              "phi_progress":phi_progress}
 
     if kind is None:
@@ -196,19 +194,27 @@ def pst_helper(pst,kind=None,**kwargs):
 
 def phi_progress(pst,logger=None,filename=None,**kwargs):
     """ make plot of phi vs number of model runs - requires
-    available pestpp .iobj file
-        Parameters
-        ----------
-        pst : pyemu.Pst
-        logger : Logger
-            if None, a generic one is created.  Default is None
-        filename : str
-            PDF filename to save figures to.  If None, figures are returned.  Default is None
-        kwargs : dict
-            optional keyword args to pass to plotting functions
+    available  ".iobj" file generated by a PESTPP-GLM run.
 
+    Args:
+        pst (`pyemu.Pst`): a control file instance
+        logger (`pyemu.Logger`):  if None, a generic one is created.  Default is None
+        filename (`str`): PDF filename to save figures to.  If None, figures
+            are returned.  Default is None
+        kwargs (`dict`): optional keyword args to pass to plotting function
 
-        """
+    Returns:
+        `matplotlib.axis`: the axis the plot was made on
+
+    Example::
+
+        import matplotlib.pyplot as plt
+        import pyemu
+        pst = pyemu.Pst("my.pst")
+        pyemu.plot_utils.phi_progress(pst)
+        plt.show()
+
+    """
     if logger is None:
         logger = Logger('Default_Loggger.log', echo=False)
     logger.log("plot phi_progress")
@@ -232,26 +238,35 @@ def phi_progress(pst,logger=None,filename=None,**kwargs):
     return ax
 
 
-
-def get_page_axes(count=nr*nc):
+def _get_page_axes(count=nr * nc):
     axes = [plt.subplot(nr,nc,i+1) for i in range(min(count,nr*nc))]
     #[ax.set_yticks([]) for ax in axes]
     return axes
 
 def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,histogram=False,**kwargs):
     """ make 1-to-1 plots and also observed vs residual by observation group
-    Parameters
-    ----------
-    pst : pyemu.Pst
-    logger : Logger
-        if None, a generic one is created.  Default is None
-    filename : str
-        PDF filename to save figures to.  If None, figures are returned.  Default is None
-    kwargs : dict
-        optional keyword args to pass to plotting functions
 
-    TODO: color symbols by weight
+    Args:
+        pst (`pyemu.Pst`): a control file instance
+        logger (`pyemu.Logger`):  if None, a generic one is created.  Default is None
+        filename (`str`): PDF filename to save figures to.  If None, figures
+            are returned.  Default is None
+        hexbin (`bool`): flag to use the hexbinning for large numbers of residuals.
+            Default is False
+        histogram (`bool`): flag to plot residual histograms instead of obs vs residual.
+            Default is False (use `matplotlib.pyplot.scatter` )
+        kwargs (`dict`): optional keyword args to pass to plotting function
 
+    Returns:
+        `matplotlib.axis`: the axis the plot was made on
+
+    Example::
+
+        import matplotlib.pyplot as plt
+        import pyemu
+        pst = pyemu.Pst("my.pst")
+        pyemu.plot_utils.phi_progress(pst)
+        plt.show()
 
     """
     if logger is None:
@@ -259,6 +274,7 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,histogram=False,**k
     logger.log("plot res_1to1")
 
     if "ensemble" in kwargs:
+        res = pst_utils.res_from_en(pst, kwargs['ensemble'])
         try:
             res=pst_utils.res_from_en(pst,kwargs['ensemble'])
         except Exception as e:
@@ -309,7 +325,7 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,histogram=False,**k
             #plt.close(fig)
             figs.append(fig)
             fig = plt.figure(figsize=figsize)
-            axes = get_page_axes()
+            axes = _get_page_axes()
             ax_count = 0
 
         ax = axes[ax_count]
@@ -412,154 +428,29 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,histogram=False,**k
         logger.log("plot res_1to1")
         return figs
 
-def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
-    """
-    timeseries plot helper...in progress
-
-    """
-    if logger is None:
-        logger=Logger('Default_Loggger.log',echo=False)
-    logger.log("plot res_obs_v_sim")
-
-    if "ensemble" in kwargs:
-        try:
-            res=pst_utils.res_from_en(pst,kwargs['ensemble'])
-        except:
-            logger.statement("res_1to1: could not find ensemble file {0}".format(kwargs['ensemble']))
-    else:
-        try:
-            res = pst.res
-        except:
-            logger.lraise("res_phi_pie: pst.res is None, couldn't find residuals file")
-
-    obs = pst.observation_data
-
-    if "grouper" in kwargs:
-        raise NotImplementedError()
-    else:
-        grouper = obs.groupby(obs.obgnme).groups
-
-    fig = plt.figure(figsize=figsize)
-    if "fig_title" in kwargs:
-        plt.figtext(0.5,0.5,kwargs["fig_title"])
-    else:
-        plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='obs_v_sim')\nfrom pest control file '{0}'\n at {1}"
-                    .format(pst.filename, str(datetime.now())), ha="center")
-    figs = []
-    ax_count = 0
-    axes = None
-    for g, names in grouper.items():
-        logger.log("plotting obs_v_sim for {0}".format(g))
-
-        obs_g = obs.loc[names, :]
-        obs_g.loc[:, "sim"] = res.loc[names, "modelled"]
-        if "include_zero" not in kwargs or kwargs["include_zero"] is False:
-            obs_g = obs_g.loc[obs_g.weight > 0, :]
-
-        if obs_g.shape[0] == 0:
-            logger.statement("no non-zero obs for group '{0}'".format(g))
-            logger.log("plotting obs_v_sim for {0}".format(g))
-            continue
-
-        # parse datetimes
-        # suffix in decreasing magnitude (yearmonthday)
-        try:
-            obs_g.loc[:, "datetime_str"] = obs_g.obsnme.apply(lambda x: x.split('_')[-1])
-        except:
-            logger.statement("res_obs_v_sim error forming datetime_str")
-            continue
-        # Default datetime
-        try:
-            obs_g.loc[:, "datetime"] = pd.to_datetime(obs_g.datetime_str,format="%Y%m%d")
-        except:
-            logger.statement("res_obs_v_sim error casting datetime using default {0}".format(g))
-
-        # abbreviated date format ALWAY 2 digit year, mabye followed by 2 digit month, maybe followed by 2 digit day
-        obs_g['datetime']=0
-        try:
-            obs_g.loc[obs_g['datetime_str'].str.len()==2,'datetime']=pd.to_datetime(obs_g['datetime_str']+'1231',format='%y%m%d')
-        except:
-            logger.statement("res_obs_v_sim error casting datetime using %y {0}".format(g))
-        try:
-            obs_g.loc[obs_g['datetime_str'].str.len()==4,'datetime']=pd.to_datetime(obs_g['datetime_str'].astype(str)+'01',format='%y%m%d')+datetime.timedelta(months=1)-datetime.timedelta(days=1)
-        except:
-            logger.statement("res_obs_v_sim error casting datetime using %y%m {0}".format(g))
-        try:
-            obs_g.loc[obs_g['datetime_str'].str.len()==6,'datetime']=pd.to_datetime(obs_g['datetime_str'].astype(str),format='%y%m%d')
-        except:
-            logger.statement("res_obs_v_sim error casting datetime using %y%m%d {0}".format(g))
-
-
-        if ax_count % (nr * nc) == 0:
-            plt.tight_layout()
-            #pdf.savefig()
-            #plt.close(fig)
-            figs.append(fig)
-            fig = plt.figure(figsize=figsize)
-            axes = get_page_axes()
-            ax_count = 0
-
-        ax = axes[ax_count]
-        obs_g.loc[:,"site"] = obs_g.obsnme.apply(lambda x: x.split('_')[0])
-        for site in obs_g.site.unique():
-            obs_s = obs_g.loc[obs_g.site==site,:]
-            obs_s.sort_values(by="datetime")
-            ax.plot(obs_s.datetime, obs_s.obsval, ls='-', marker='.', ms=10, color='b')
-            ax.plot(obs_s.datetime, obs_s.sim, ls='-', marker='.', ms=10, color='0.5')
-        ax.set_xlim(obs_g.datetime.min(),obs_g.datetime.max())
-        ax.grid()
-        ax.set_xlabel("datetime",labelpad=0.1)
-        ax.set_title("{0}) group:{1}, {2} observations".
-                     format(abet[ax_count], g, names.shape[0]), loc="left")
-        ax_count += 1
-        logger.log("plotting obs_v_sim for {0}".format(g))
-
-    if axes is None:
-        return
-
-    for a in range(ax_count,nr*nc):
-        axes[a].set_axis_off()
-        axes[a].set_yticks([])
-        axes[a].set_xticks([])
-
-
-
-    plt.tight_layout()
-    #pdf.savefig()
-    #plt.close(fig)
-    figs.append(fig)
-    if filename is not None:
-        with PdfPages(pst.filename.replace(".pst", ".obs_v_sim.pdf")) as pdf:
-            for fig in figs:
-                pdf.savefig(fig)
-                plt.close(fig)
-                logger.log("plot res_obs_v_sim")
-    else:
-        logger.log("plot res_obs_v_sim")
-        return figs
-
 def plot_id_bar(id_df, nsv=None, logger=None, **kwargs):
-    """
-    Plot a stacked bar chart of identifiability based on a identifiability dataframe
+    """Plot a stacked bar chart of identifiability based on
+    a the `pyemu.ErrVar.get_identifiability()` dataframe
 
-    Parameters
-    ----------
-        id_df : pandas dataframe of identifiability
-        nsv : number of singular values to consider
-        logger : pyemu.Logger
-        kwargs : dict of keyword arguments
+    Args:
+        id_df (`pandas.DataFrame`) : dataframe of identifiability
+        nsv (`int`): number of singular values to consider
+        logger (`pyemu.Logger`, optonal): a logger.  If None, a generic
+            one is created
+        kwargs (`dict`): a dict of keyword arguments to pass to the
+            plotting function
 
-    Returns
-    -------
-    ax : matplotlib.Axis
+    Returns:
+        `matplotlib.Axis`: the axis with the plot
 
-       Example
-    -------
-    ``>>> import pyemu``
-    ``>>> pest_obj = pyemu.Pst(pest_control_file)``
-    ``>>> ev = pyemu.ErrVar(jco='freyberg_jac.jcb'))``
-    ``>>> id_df = ev.get_identifiability_dataframe(singular_value=48)``
-    ``>>> pyemu.plot_id_bar(id_df, nsv=12, figsize=(12,4)``
+    Example::
+
+        import pyemu
+        pest_obj = pyemu.Pst(pest_control_file)
+        ev = pyemu.ErrVar(jco='freyberg_jac.jcb'))
+        id_df = ev.get_identifiability_dataframe(singular_value=48)
+        pyemu.plot_utils.plot_id_bar(id_df, nsv=12, figsize=(12,4)
+
      """
     if logger is None:
         logger=Logger('Default_Loggger.log',echo=False)
@@ -624,18 +515,23 @@ def plot_id_bar(id_df, nsv=None, logger=None, **kwargs):
 def res_phi_pie(pst,logger=None, **kwargs):
     """plot current phi components as a pie chart.
 
-    Parameters
-    ----------
-    pst : pyemu.Pst
-    logger : pyemu.Logger
-    kwargs : dict
-        accepts 'include_zero' as a flag to include phi groups with
-        only zero-weight obs (not sure why anyone would do this, but
-        whatevs).
-    Returns
-    -------
-    ax : matplotlib.Axis
+    Args:
+        pst (`pyemu.Pst`): a control file instance with the residual datafrane
+            instance available.
+        logger (`pyemu.Logger`): a logger.  If None, a generic one is created
+        kwargs (`dict`): a dict of plotting options. Accepts 'include_zero'
+            as a flag to include phi groups with only zero-weight obs (not
+            sure why anyone would do this, but whatevs). Any additional
+            args are passed to `matplotlib`.
 
+    Returns:
+        `matplotlib.Axis`: the axis with the plot.
+
+    Example::
+
+        import pyemu
+        pst = pyemu.Pst("my.pst")
+        pyemu.plot_utils.res_phi_pie(pst,figsize=(12,4))
 
     """
     if logger is None:
@@ -675,36 +571,26 @@ def res_phi_pie(pst,logger=None, **kwargs):
     return ax
 
 
-
-def pst_weight_hist(pst,logger, **kwargs):
-    #raise NotImplementedError()
-    pass
-
-
-
 def pst_prior(pst,logger=None, filename=None, **kwargs):
     """ helper to plot prior parameter histograms implied by
     parameter bounds. Saves a multipage pdf named <case>.prior.pdf
 
-    Parameters
-    ----------
-    pst : pyemu.Pst
-    logger : pyemu.Logger
-    filename : str
-        PDF filename to save plots to. If None, return figs without saving.  Default is None.
-    kwargs : dict
-        accepts 'grouper' as dict to group parameters on to a single axis (use
-        parameter groups if not passed),
-        'unqiue_only' to only show unique mean-stdev combinations within a
-        given group
+    Args:
+        pst (`pyemu.Pst`): control file
+        logger (`pyemu.Logger`): a logger.  If None, a generic one is created.
+        filename (`str`):  PDF filename to save plots to.
+            If None, return figs without saving.  Default is None.
+        kwargs (`dict`): additional plotting options. Accepts 'grouper' as
+            dict to group parameters on to a single axis (use
+            parameter groups if not passed),'unqiue_only' to only show unique
+            mean-stdev combinations within a given group.  Any additional args
+            are passed to `matplotlib`.
 
-    Returns
-    -------
-    None
+    Returns:
+        [`matplotlib.Figure`]: a list of figures created.
 
-    TODO
-    ----
-    external parcov, unique mean-std pairs
+    TODO:
+        external parcov, unique mean-std pairs
 
     """
     if logger is None:
@@ -772,7 +658,7 @@ def pst_prior(pst,logger=None, filename=None, **kwargs):
             #plt.close(fig)
             figs.append(fig)
             fig  = plt.figure(figsize=figsize)
-            axes = get_page_axes()
+            axes = _get_page_axes()
             ax_count = 0
 
         islog = False
@@ -836,40 +722,47 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                     deter_range=False,**kwargs):
     """helper function to plot ensemble histograms
 
-    Parameters
-    ----------
-    ensemble : varies
-        the ensemble argument can be a pandas.DataFrame or derived type or a str, which
-        is treated as a filename.  Optionally, ensemble can be a list of these types or
-        a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
-    facecolor : str
-        the histogram facecolor.  Only applies if ensemble is a single thing
-    plot_cols : enumerable
-        a collection of columns (in form of a list of parameters, or a dict with keys for
-        parsing plot axes and values of parameters) from the ensemble(s) to plot.  If None,
-        (the union of) all cols are plotted. Default is None
-    filename : str
-        the name of the pdf to create.  If None, return figs without saving.  Default is None.
-    func_dict : dict
-        a dictionary of unary functions (e.g., np.log10_ to apply to columns.  Key is
-        column name.  Default is None
-    sync_bins : bool
-        flag to use the same bin edges for all ensembles. Only applies if more than
-        one ensemble is being plotted.  Default is True
-    deter_vals : dict
-        dict of deterministic values to plot as a vertical line. key is ensemble columnn name
-    std_window : float
-        the number of standard deviations around the mean to mark as vertical lines.  If None,
-        nothing happens.  Default is None
-    deter_range : bool
-        flag to set xlims to deterministic value +/- std window.  If True, std_window must not be None.
-        Default is False
+    Args:
+        ensemble : varies
+            the ensemble argument can be a pandas.DataFrame or derived type or a str, which
+            is treated as a filename.  Optionally, ensemble can be a list of these types or
+            a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
+        facecolor : str
+            the histogram facecolor.  Only applies if ensemble is a single thing
+        plot_cols : enumerable
+            a collection of columns (in form of a list of parameters, or a dict with keys for
+            parsing plot axes and values of parameters) from the ensemble(s) to plot.  If None,
+            (the union of) all cols are plotted. Default is None
+        filename : str
+            the name of the pdf to create.  If None, return figs without saving.  Default is None.
+        func_dict : dict
+            a dictionary of unary functions (e.g., `np.log10` to apply to columns.  Key is
+            column name.  Default is None
+        sync_bins : bool
+            flag to use the same bin edges for all ensembles. Only applies if more than
+            one ensemble is being plotted.  Default is True
+        deter_vals : dict
+            dict of deterministic values to plot as a vertical line. key is ensemble columnn name
+        std_window : float
+            the number of standard deviations around the mean to mark as vertical lines.  If None,
+            nothing happens.  Default is None
+        deter_range : bool
+            flag to set xlims to deterministic value +/- std window.  If True, std_window must not be None.
+            Default is False
+
+    Example::
+
+        pst = pyemu.Pst("my.pst")
+        prior = pyemu.ParameterEnsemble.from_binary(pst=pst, filename="prior.jcb")
+        post = pyemu.ParameterEnsemble.from_binary(pst=pst, filename="my.3.par.jcb")
+        pyemu.plot_utils.ensemble_helper(ensemble={"0.5":prior, "b":post},filename="ensemble.pdf")
 
     """
     logger = pyemu.Logger("ensemble_helper.log")
     logger.log("pyemu.plot_utils.ensemble_helper()")
     ensembles = _process_ensemble_arg(ensemble,facecolor,logger)
-
+    if len(ensembles) == 0:
+        raise Exception("plot_uitls.ensemble_helper() error processing `ensemble` arg")
     #apply any functions
     if func_dict is not None:
         logger.log("applying functions")
@@ -932,7 +825,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
             #plt.close(fig)
             figs.append(fig)
             fig = plt.figure(figsize=figsize)
-            axes = get_page_axes()
+            axes = _get_page_axes()
             [ax.set_yticks([]) for ax in axes]
             ax_count = 0
 
@@ -1030,20 +923,19 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
     logger.log("pyemu.plot_utils.ensemble_helper()")
 
 def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',logger=None,filename=None,**kwargs):
-    """helper function to plot first and second moment change histograms
+    """helper function to plot first and second moment change histograms between two
+    ensembles
 
-    Parameters
-    ----------
-    ensemble1 : varies
-        str or pd.DataFrames
-    ensemble2 : varies
-        str or pd.DataFrame
-    pst : pyemu.Pst
-        pst instance
-    facecolor : str
-        the histogram facecolor.
-    filename : str
-        the name of the pdf to create. If None, return figs without saving.  Default is None.
+    Args:
+        ensemble1 (varies): filename or `pandas.DataFrame` or `pyemu.Ensemble`
+        ensemble2 (varies): filename or `pandas.DataFrame` or `pyemu.Ensemble`
+        pst (`pyemu.Pst`): control file
+        facecolor (`str`): the histogram facecolor.
+        filename (`str`): the name of the multi-pdf to create. If None, return figs without saving.  Default is None.
+
+    Returns:
+        [`matplotlib.Figure`]: a list of figures.  Returns None is
+        `filename` is not None
 
     """
     if logger is None:
@@ -1075,15 +967,15 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
         raise NotImplementedError()
     else:
         en_cols = set(ensemble1.columns)
-        if len(en_cols.symmetric_difference(set(pst.par_names))) == 0:
-            par = pst.parameter_data.loc[pst.adj_par_names,:]
+        if len(en_cols.difference(set(pst.par_names))) == 0:
+            par = pst.parameter_data.loc[en_cols,:]
             grouper = par.groupby(par.pargp).groups
             grouper["all"] = pst.adj_par_names
             li = par.loc[par.partrans == "log","parnme"]
             ensemble1.loc[:,li] = ensemble1.loc[:,li].apply(np.log10)
             ensemble2.loc[:, li] = ensemble2.loc[:, li].apply(np.log10)
-        elif len(en_cols.symmetric_difference(set(pst.obs_names))) == 0:
-            obs = pst.observation_data.loc[pst.nnz_obs_names,:]
+        elif len(en_cols.difference(set(pst.obs_names))) == 0:
+            obs = pst.observation_data.loc[en_cols,:]
             grouper = obs.groupby(obs.obgnme).groups
             grouper["all"] = pst.nnz_obs_names
         else:
@@ -1137,7 +1029,7 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
             #plt.close(fig)
             figs.append(fig)
             fig = plt.figure(figsize=figsize)
-            axes = get_page_axes()
+            axes = _get_page_axes()
             ax_count = 0
 
         ax = axes[ax_count]
@@ -1195,11 +1087,10 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
 
 def _process_ensemble_arg(ensemble,facecolor, logger):
     ensembles = {}
-    if isinstance(ensemble, pd.DataFrame):
+    if isinstance(ensemble, pd.DataFrame) or isinstance(ensemble,pyemu.Ensemble):
         if not isinstance(facecolor, str):
             logger.lraise("facecolor must be str")
         ensembles[facecolor] = ensemble
-
     elif isinstance(ensemble, str):
         if not isinstance(facecolor, str):
             logger.lraise("facecolor must be str")
@@ -1226,15 +1117,15 @@ def _process_ensemble_arg(ensemble,facecolor, logger):
                 logger.log("loading ensemble from csv file {0}".format(en_arg))
                 logger.statement("ensemble {0} gets facecolor {1}".format(en_arg, fc))
 
-            elif isinstance(en_arg, pd.DataFrame):
+            elif isinstance(en_arg, pd.DataFrame) or isinstance(en_arg,pyemu.Ensemble):
                 en = en_arg
             else:
-                logger.lraise("unrecognized ensemble list arg:{0}".format(en_file))
+                logger.lraise("unrecognized ensemble list arg:{0}".format(en_arg))
             ensembles[fc] = en
 
     elif isinstance(ensemble, dict):
         for fc, en_arg in ensemble.items():
-            if isinstance(en_arg, pd.DataFrame):
+            if isinstance(en_arg, pd.DataFrame) or isinstance(en_arg,pyemu.Ensemble):
                 ensembles[fc] = en_arg
             elif isinstance(en_arg, str):
                 logger.log("loading ensemble from csv file {0}".format(en_arg))
@@ -1255,21 +1146,16 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
                       skip_groups=[],base_ensemble=None,**kwargs):
     """helper function to plot ensemble 1-to-1 plots sbowing the simulated range
 
-    Parameters
-    ----------
-    ensemble : varies
-        the ensemble argument can be a pandas.DataFrame or derived type or a str, which
-        is treated as a fileanme.  Optionally, ensemble can be a list of these types or
-        a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
-    pst : pyemu.Pst
-        pst instance
-    facecolor : str
-        the histogram facecolor.  Only applies if ensemble is a single thing
-    filename : str
-        the name of the pdf to create. If None, return figs without saving.  Default is None.
-    base_ensemble : varies
-        an optional ensemble argument for the observations + noise ensemble.
-        This will be plotted as a transparent red bar on the 1to1 plot.
+    Args:
+        ensemble (varies):  the ensemble argument can be a pandas.DataFrame or derived type or a str, which
+            is treated as a fileanme.  Optionally, ensemble can be a list of these types or
+            a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
+        pst (`pyemu.Pst`): a control file instance
+        facecolor (`str`): the histogram facecolor.  Only applies if `ensemble` is a single thing
+        filename (`str`): the name of the pdf to create. If None, return figs
+            without saving.  Default is None.
+        base_ensemble (`varies`): an optional ensemble argument for the observations + noise ensemble.
+            This will be plotted as a transparent red bar on the 1to1 plot.
 
     """
     if logger is None:
@@ -1320,7 +1206,7 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
             #plt.close(fig)
             figs.append(fig)
             fig = plt.figure(figsize=figsize)
-            axes = get_page_axes()
+            axes = _get_page_axes()
             ax_count = 0
 
         ax = axes[ax_count]
@@ -1436,114 +1322,37 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
 
 
 
-# def par_cov_helper(cov,pst,logger=None,filename=None,**kwargs):
-#     assert isinstance(cov,pyemu.Cov)
-#     if logger is None:
-#         logger=Logger('Default_Loggger.log',echo=False)
-#     logger.log("plot par cov")
-#
-#     par = pst.parameter_data
-#     if "grouper" in kwargs:
-#         raise NotImplementedError()
-#     else:
-#         grouper = par.groupby(par.pargp).groups
-#
-#     fig = plt.figure(figsize=figsize)
-#     if "fig_title" in kwargs:
-#         plt.figtext(0.5,0.5,kwargs["fig_title"])
-#     else:
-#         plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='1to1')\nfrom pest control file '{0}'\n at {1}"
-#                     .format(pst.filename, str(datetime.now())), ha="center")
-#
-#     figs = []
-#     ax_count = 0
-#     for g, names in grouper.items():
-#         logger.log("plotting par cov for {0}".format(g))
-#         if ax_count % (nr * nc) == 0:
-#             if ax_count > 0:
-#                 plt.tight_layout()
-#             #pdf.savefig()
-#             #plt.close(fig)
-#             figs.append(fig)
-#             fig = plt.figure(figsize=figsize)
-#             axes = get_page_axes()
-#             ax_count = 0
-#
-#         ax = axes[ax_count]
-#         names = list(names)
-#         cov_g = cov.get(row_names=names,col_names=names).x
-#         ax.imshow(np.ma.masked_where(cov_g==0,cov_g))
-#         ax.set_title("{0}) group:{1}, {2} elements".
-#                      format(abet[ax_count], g, cov_g.shape[0]), loc="left")
-#
-#     plt.tight_layout()
-#     # pdf.savefig()
-#     # plt.close(fig)
-#     figs.append(fig)
-#     if filename is not None:
-#         plt.tight_layout()
-#         with PdfPages(filename) as pdf:
-#             for fig in figs:
-#                 pdf.savefig(fig)
-#                 plt.close(fig)
-#         logger.log("plot res_1to1")
-#     else:
-#         logger.log("plot res_1to1")
-#         return figs
 
 def plot_jac_test(csvin, csvout, targetobs=None, filetype=None, maxoutputpages=1, outputdirectory=None):
-    """ helper function to plot results of the Jacobian test performed using the pest++ program sweep.
+    """ helper function to plot results of the Jacobian test performed using the pest++
+    program pestpp-swp.
 
-    Parameters
-    ----------
-    csvin:  string
-            name of csv file used as input to sweep, typically developed with
+    Args:
+        csvin (`str`): name of csv file used as input to sweep, typically developed with
             static method pyemu.helpers.build_jac_test_csv()
-    csvout: string
-            name of csv file with output generated by sweep, both input
+        csvout (`str`): name of csv file with output generated by sweep, both input
             and output files can be specified in the pest++ control file
-            with pyemu using:
-            pest_object.pestpp_options["sweep_parameter_csv_file"] = jactest_in_file.csv
+            with pyemu using: pest_object.pestpp_options["sweep_parameter_csv_file"] = jactest_in_file.csv
             pest_object.pestpp_options["sweep_output_csv_file"] = jactest_out_file.csv
-    targetobs: list of strings
-            list of observation file names to plot, each parameter used for jactest can
+        targetobs ([`str`]): list of observation file names to plot, each parameter used for jactest can
             have up to 32 observations plotted per page, throws a warning if more tha
             10 pages of output are requested per parameter. If none, all observations in
             the output csv file are used.
-    filetype: string
-            file type to store output, if None, plt.show() is called.
-    maxoutputpages: int
-            maximum number of pages of output per parameter.  Each page can
+        filetype (`str`): file type to store output, if None, plt.show() is called.
+        maxoutputpages (`int`): maximum number of pages of output per parameter.  Each page can
             hold up to 32 observation derivatives.  If value > 10, set it to
             10 and throw a warning.  If observations in targetobs > 32*maxoutputpages,
             then a random set is selected from the targetobs list (or all observations
             in the csv file if targetobs=None).
-    outputdirectory: path, string, or None
-            directory to store results, if None, current working directory is used.
+        outputdirectory (`str`):  directory to store results, if None, current working directory is used.
             If string is passed, it is joined to the current working directory and
             created if needed. If os.path is passed, it is used directly.
 
-    Returns
-    -------
-    None
+    Note:
+        Used in conjunction with pyemu.helpers.build_jac_test_csv() and sweep to perform
+        a Jacobian Test and then view the results. Can generate a lot of plots so easiest
+        to put into a separate directory and view the files.
 
-    Note
-    ----
-    Used in conjunction with pyemu.helpers.build_jac_test_csv() and sweep to perform
-    a Jacobian Test and then view the results. Can generate a lot of plots so easiest
-    to put into a separate directory and view the files.
-
-    Example
-    -------
-    ``>>> import pyemu``
-    ``>>> pest_obj = pyemu.Pst(pest_control_file)``
-    ``>>> jactest_df = pyemu.helpers.build_jac_test_csv(pst=pest_obj, num_steps=5)``
-    ``>>> pest_obj.pestpp_options["sweep_parameter_csv_file"] = "jactest_in.csv"``
-    ``>>> pest_obj.pestpp_options["sweep_output_csv_file"] = "jactest_out.csv"``
-    ``>>> jactest_df.to_csv(os.path.join(home, "SWEEP", "jactest_in.csv")) ``
-    ``>>> pest_obj.write("jactest.pst")
-    ``>>> pyemu.helpers.run("{0} {1}".format(sweep_exe, "jactest.pst"), cwd='.', verbose=True)``
-    ``>>> pyemu.plot.plot_jac_test("jactest_in.csv", "jactest_out.csv")
     """
 
     localhome = os.getcwd()

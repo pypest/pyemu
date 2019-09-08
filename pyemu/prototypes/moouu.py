@@ -552,11 +552,11 @@ class EvolAlg(EnsembleMethod):
         obs_ensemble.loc[cd.index,"crowd_distance"] = cd
         dv_ensemble.loc[cd.index,"crowd_distance"] = cd
         if self.obs_ensemble_archive is None:
-            self.obs_ensemble_archive = pd.DataFrame(obs_ensemble.loc[:,:])
-            self.dv_ensemble_archive = pd.DataFrame(dv_ensemble.loc[:,:])
+            self.obs_ensemble_archive = obs_ensemble._df.loc[:,:]
+            self.dv_ensemble_archive = dv_ensemble._df.loc[:,:]
         else:
-            self.obs_ensemble_archive = self.obs_ensemble_archive.append(pd.DataFrame(obs_ensemble.loc[:,:]))
-            self.dv_ensemble_archive = self.dv_ensemble_archive.append(pd.DataFrame(dv_ensemble.loc[:,:]))
+            self.obs_ensemble_archive = self.obs_ensemble_archive.append(obs_ensemble._df.loc[:,:])
+            self.dv_ensemble_archive = self.dv_ensemble_archive.append(dv_ensemble.loc[:,:])
 
     def _calc_obs(self,dv_ensemble):
 
@@ -564,7 +564,7 @@ class EvolAlg(EnsembleMethod):
             failed_runs, oe = super(EvolAlg,self)._calc_obs(dv_ensemble)
         else:
             # make a copy of the org par ensemble but as a df instance
-            df_base = pd.DataFrame(self.par_ensemble.loc[:,:])
+            df_base = self.par_ensemble._df.loc[:,:]
             # stack up the par ensembles for each solution
             dfs = []
             for i in range(dv_ensemble.shape[0]):
@@ -673,7 +673,7 @@ class EliteDiffEvol(EvolAlg):
                 cross_points[np.random.randint(0,num_dv)] = True
 
             #create an offspring
-            offspring = parent.copy()
+            offspring = parent._df.copy()
             offspring.loc[cross_points] = mutant.loc[cross_points]
 
             #enforce bounds
@@ -772,8 +772,8 @@ class EliteDiffEvol(EvolAlg):
 
                 self._drop_by_crowd(dv_dom,obs_dom,min(ndrop,dv_dom.shape[0]))
                 #add any remaining dominated solutions back
-                self.dv_ensemble = self.dv_ensemble.append(dv_dom)
-                self.obs_ensemble = self.obs_ensemble.append(obs_dom)
+                self.dv_ensemble = self.dv_ensemble.append(dv_dom._df)
+                self.obs_ensemble = self.obs_ensemble.append(obs_dom._df)
 
 
         # drop remaining nondom solutions as needed

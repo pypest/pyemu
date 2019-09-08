@@ -463,7 +463,7 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
                             format(','.join(list(too_long))))
     for use_col in use_cols:
         df_tpl.loc[:,use_col] = df_tpl.loc[:,use_col].apply(lambda x: "~  {0}  ~".format(x))
-    pyemu.helpers.write_df_tpl(filename=tpl_filename,df=df_tpl,sep=',',tpl_marker='~')
+    pyemu.helpers._write_df_tpl(filename=tpl_filename, df=df_tpl, sep=',', tpl_marker='~')
 
     if input_filename is not None:
         df_in = df_tpl.copy()

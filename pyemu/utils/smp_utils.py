@@ -1,3 +1,5 @@
+"""PEST-style site sample (smp) file support utilities
+"""
 import os
 import sys
 import platform
@@ -13,34 +15,35 @@ from ..pyemu_warnings import PyemuWarning
 
 def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
                gwutils_compliant=False, datetime_format=None,prefix=''):
-    """ create an instruction file for an smp file
+    """create an instruction file for an smp file
 
-    Parameters
-    ----------
-    smp_filename : str
-        existing smp file
-    ins_filename: str
-        instruction file to create.  If None, create
-        an instruction file using the smp filename
-        with the ".ins" suffix
-    use_generic_names : bool
-        flag to force observations names to use a generic
-        int counter instead of trying to use a datetime str
-    gwutils_compliant : bool
-        flag to use instruction set that is compliant with the
-        pest gw utils (fixed format instructions).  If false,
-        use free format (with whitespace) instruction set
-    datetime_format : str
-        str to pass to datetime.strptime in the smp_to_dataframe() function
-    prefix : str
-         a prefix to add to the front of the obsnmes.  Default is ''
+    Args:
+        smp_filename (`str`):path and name of an existing smp file
+        ins_filename (`str`, optional): the name of the instruction
+            file to create.  If None, `smp_filename` +".ins" is used.
+            Default is None.
+        use_generic_names (`bool`): flag to force observations names
+            to use a generic `int` counter instead of trying to use a
+            datetime string.  Default is False
+        gwutils_compliant (`bool`): flag to use instruction set that
+            is compliant with the PEST gw utils (fixed format instructions).
+            If false, use free format (with whitespace) instruction set.
+            Default is False
+        datetime_format (`str`): string to pass to datetime.strptime in
+            the `smp_utils.smp_to_dataframe()` function.  If None, not
+            used. Default is None.
+        prefix (`str`): a prefix to add to the front of the derived
+            observation names.  Default is ''
 
 
-    Returns
-    -------
-    df : pandas.DataFrame
-        dataframe instance of the smp file with the observation names and
-        instruction lines as additional columns
+    Returns:
+        `pandas.DataFrame`: a dataframe of the smp file
+        information with the observation names and
+        instruction lines as additional columns.
+
+    Example::
+
+        df = pyemu.smp_utils.smp_to_ins("my.smp")
 
     """
     if ins_filename is None:
@@ -83,21 +86,25 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
                      max_name_len=12):
     """ write a dataframe as an smp file
 
-    Parameters
-    ----------
-    dataframe : pandas.DataFrame
-    smp_filename : str
-        smp file to write
-    name_col: str
-        the column in the dataframe the marks the site namne
-    datetime_col: str
-        the column in the dataframe that is a datetime instance
-    value_col: str
-        the column in the dataframe that is the values
-    datetime_format: str
-        either 'dd/mm/yyyy' or 'mm/dd/yyy'
-    value_format: str
-        a python float-compatible format
+    Args:
+        dataframe (`pandas.DataFrame`): the dataframe to write to an SMP
+            file.  This dataframe should be in "long" form - columns for
+            site name, datetime, and value.
+        smp_filename (`str`): smp file to write
+        name_col (`str`,optional): the name of the dataframe column
+            that contains the site name.  Default is "name"
+        datetime_col (`str`): the column in the dataframe that the
+            datetime values.  Default is "datetime".
+        value_col (`str`): the column in the dataframe that is the values
+        datetime_format (`str`, optional): The format to write the datetimes in the
+            smp file.  Can be either 'dd/mm/yyyy' or 'mm/dd/yyy'.  Default
+            is 'dd/mm/yyyy'.
+        value_format (`str`, optional):  a python float-compatible format.
+            Default is "{0:15.6E}".
+
+    Example::
+
+        pyemu.smp_utils.dataframe_to_smp(df,"my.smp")
 
     """
     formatters = {"name":lambda x:"{0:<20s}".format(str(x)[:max_name_len]),
@@ -129,18 +136,8 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
     dataframe.pop("datetime_str")
 
 
-def date_parser(items):
+def _date_parser(items):
     """ datetime parser to help load smp files
-
-    Parameters
-    ----------
-    items : iterable
-        something or somethings to try to parse into datetimes
-
-    Returns
-    -------
-    dt : iterable
-        the cast datetime things
     """
     try:
         dt = datetime.strptime(items,"%d/%m/%Y %H:%M:%S")
@@ -154,27 +151,29 @@ def date_parser(items):
 
 
 def smp_to_dataframe(smp_filename,datetime_format=None):
-    """ load an smp file into a pandas dataframe (stacked in wide format)
+    """ load an smp file into a pandas dataframe
 
-    Parameters
-    ----------
-    smp_filename : str
-        smp filename to load
-    datetime_format : str
-        should be either "%m/%d/%Y %H:%M:%S" or "%d/%m/%Y %H:%M:%S"
-        If None, then we will try to deduce the format for you, which
-        always dangerous
+    Args:
+        smp_filename (`str`): path and nane of existing smp filename to load
+        datetime_format (`str`, optional): The format of the datetime strings
+            in the smp file. Can be either "%m/%d/%Y %H:%M:%S" or "%d/%m/%Y %H:%M:%S"
+            If None, then we will try to deduce the format for you, which
+            always dangerous.
 
-    Returns
-    -------
-    df : pandas.DataFrame
+    Returns:
+        `pandas.DataFrame`: a dataframe with index of datetime and columns of
+        site names.  Missing values are set to NaN.
+
+    Example::
+
+        df = smp_to_dataframe("my.smp")
 
     """
 
     if datetime_format is not None:
         date_func = lambda x: datetime.strptime(x,datetime_format)
     else:
-        date_func = date_parser
+        date_func = _date_parser
     df = pd.read_csv(smp_filename, delim_whitespace=True,
                      parse_dates={"datetime":["date","time"]},
                      header=None,names=["name","date","time","value"],

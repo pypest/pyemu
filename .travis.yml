@@ -17,8 +17,8 @@ matrix:
       env: TEST_SCRIPT="utils_tests.py"
     - name: "mat tests"
       env: TEST_SCRIPT="mat_tests.py"
-    - name: "mc tests"
-      env: TEST_SCRIPT="mc_tests.py"
+    - name: "en tests"
+      env: TEST_SCRIPT="en_tests.py"
     - name: "la tests"
       env: TEST_SCRIPT="la_tests.py"
     - name: "pst from tests"
@@ -27,12 +27,14 @@ matrix:
       env: TEST_SCRIPT="da_tests.py"
     - name: "moouu tests"
       env: TEST_SCRIPT="moouu_tests.py"
-    - name: "smoother tests"
-      env: TEST_SCRIPT="smoother_tests.py"
     - name: "full meal deal tests"
       env: TEST_SCRIPT="full_meal_deal_tests.py"
     - name: "plot tests"
       env: TEST_SCRIPT="plot_tests.py"
+    - name: "pst tests 2"
+      env: TEST_SCRIPT="pst_tests_2.py"
+    - name: "notebook tests"
+      env: TEST_SCRIPT="autotest_notebooks.py"
 
 
 
@@ -77,7 +79,7 @@ before_install:
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas nose matplotlib jupyter notebook cartopy sphinx
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas nose matplotlib jupyter notebook cartopy sphinx nbconvert
   - pip install coveralls
   - pip install pyshp
   - pip install nose-timer
@@ -92,6 +94,7 @@ install:
 script:
   - export PYTHONPATH=$PYTHONPATH:.
   - nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu $TEST_SCRIPT
+
 after_success:
   - cd docs
   - make html

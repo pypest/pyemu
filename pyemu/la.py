@@ -1,5 +1,6 @@
-"""This module contains the LinearAnalysis object, which is the base class for
-all other pyemu analysis objects (Schur, ErrVar, MonteCarlo, and EnsembleSmoother).
+"""LinearAnalysis object, which is the base class for other
+ pyemu analysis objects (Schur, ErrVar, MonteCarlo, and EnsembleSmoother).
+ This class is usually not used directly.
 """
 from __future__ import print_function, division
 import os
@@ -9,66 +10,61 @@ import numpy as np
 import pandas as pd
 from pyemu.mat.mat_handler import Matrix, Jco, Cov
 from pyemu.pst.pst_handler import Pst
-from pyemu.utils.helpers import _istextfile
+from pyemu.utils.os_utils import _istextfile
 from .logger import Logger
 
 class LinearAnalysis(object):
-    """The super class for linear analysis.  Can be used directly, but
-    for prior uncertainty analyses only.  The derived types
-    (pyemu.Schur, pyemu.ErrVar, pyemu.MonteCarlo, pyemu.EnsembleSmoother)
-    are for different forms of posterior uncertainty analyses. This class
-    tries hard to not load items until they are needed; all arguments are
-    optional
+    """The base/parent class for linear analysis.
 
-    Parameters
-    ----------
-    jco : (varies)
-        something that can be cast or loaded into a pyemu.Jco.  Can be a
-        str for a filename or pyemu.Matrix/pyemu.Jco object.
-    pst : (varies)
-        something that can be cast into a pyemu.Pst.  Can be an str for a
-        filename or an existing pyemu.Pst.  If None, a pst filename is sought
-        with the same base name as the jco argument (if passed)
-    parcov : (varies)
-        prior parameter covariance matrix.  If str, a filename is assumed and
-        the prior parameter covariance matrix is loaded from a file using
-        the file extension.  If None, the prior parameter covariance matrix is
-        constructed from the parameter bounds in the control file represented
-        by the pst argument. Can also be a pyemu.Cov instance
-    obscov : (varies)
-        observation noise covariance matrix. If str, a filename is assumed and
-        the observation noise covariance matrix is loaded from a file using
-        the file extension.  If None, the observation noise covariance matrix is
-        constructed from the weights in the control file represented
-        by the pst argument. Can also be a pyemu.Cov instance
-    predictions or forecasts : (varies)
-        prediction (aka forecast) sensitivity vectors.  If str, a filename
-        is assumed and predictions are loaded from a file using the file extension.
-        Can also be a pyemu.Matrix instance, a numpy.ndarray or a collection
-        of pyemu.Matrix or numpy.ndarray.
-        Note: only one of "predictions" or "forecasts" can be used (they are synonymous)
-    ref_var : (float)
-        reference variance
-    verbose : (either bool or string)
-        controls log file / screen output.  If str, a filename is assumed and
-            and log file is written to verbose
-    sigma_range : float
-        defines range of upper bound - lower bound in terms of standard
-        deviation (sigma). For example, if sigma_range = 4, the bounds
-        represent 4 * sigma.  Default is 4.0, representing approximately
-        95% confidence of implied normal distribution.  This arg is only
-        used if constructing parcov from parameter bounds.
+    Args:
+        jco (varies, optional): something that can be cast or loaded into a `pyemu.Jco`.  Can be a
+            str for a filename or `pyemu.Matrix`/`pyemu.Jco` object.
+        pst (varies, optional): something that can be cast into a `pyemu.Pst`.  Can be an `str` for a
+            filename or an existing `pyemu.Pst`.  If `None`, a pst filename is sought
+            with the same base name as the jco argument (if passed)
+        parcov (varies, optional): prior parameter covariance matrix.  If `str`, a filename is assumed and
+            the prior parameter covariance matrix is loaded from a file using
+            the file extension (".jcb"/".jco" for binary, ".cov"/".mat" for PEST-style ASCII matrix,
+            or ".unc" for uncertainty files).  If `None`, the prior parameter covariance matrix is
+            constructed from the parameter bounds in `LinearAnalysis.pst`.  Can also be a `pyemu.Cov` instance
+        obscov (varies, optional): observation noise covariance matrix.  If `str`, a filename is assumed and
+            the noise covariance matrix is loaded from a file using
+            the file extension (".jcb"/".jco" for binary, ".cov"/".mat" for PEST-style ASCII matrix,
+            or ".unc" for uncertainty files).  If `None`, the noise covariance matrix is
+            constructed from the obsevation weights in `LinearAnalysis.pst`.  Can also be a `pyemu.Cov` instance
+        forecasts (varies, optional): forecast sensitivity vectors.  If `str`, first an observation name is assumed (a row
+            in `LinearAnalysis.jco`).  If that is not found, a filename is assumed and predictions are
+            loaded from a file using the file extension.  If [`str`], a list of observation names is assumed.
+            Can also be a `pyemu.Matrix` instance, a `numpy.ndarray` or a collection
+            of `pyemu.Matrix` or `numpy.ndarray`.
+        ref_var (float, optional): reference variance.  Default is 1.0
+        verbose (`bool`): controls screen output.  If `str`, a filename is assumed and
+                and log file is written.
+        sigma_range (`float`, optional): defines range of upper bound - lower bound in terms of standard
+            deviation (sigma). For example, if sigma_range = 4, the bounds represent 4 * sigma.
+            Default is 4.0, representing approximately 95% confidence of implied normal distribution.
+            This arg is only used if constructing parcov from parameter bounds.
+        scale_offset (`bool`, optional): flag to apply parameter scale and offset to parameter bounds
+            when calculating prior parameter covariance matrix from bounds.  This arg is onlyused if
+            constructing parcov from parameter bounds.Default is True.
 
-    scale_offset : True
-        flag to apply parameter scale and offset to parameter bounds
-        when calculating prior parameter covariance matrix from
-        bounds.  This arg is onlyused if constructing parcov
-        from parameter bounds.Default is True.
+    Note:
 
-    Note
-    ----
-    the class makes heavy use of property decorator to encapsulate
-    private attributes
+        Can be used directly, but for prior uncertainty analyses only.
+
+        The derived types (`pyemu.Schur`, `pyemu.ErrVar`) are for different
+        forms of FOMS-based posterior uncertainty analyses.
+
+        This class tries hard to not load items until they are needed; all arguments are optional.
+
+        The class makes heavy use of property decorator to encapsulated private attributes
+
+    Example::
+
+        #assumes "my.pst" exists
+        la = pyemu.LinearAnalysis(jco="my.jco",forecasts=["fore1","fore2"])
+        print(la.prior_forecast)
+
     
     """
     def __init__(self, jco=None, pst=None, parcov=None, obscov=None,
@@ -171,19 +167,6 @@ class LinearAnalysis(object):
         """a private method to deduce and load a filename into a matrix object.
         Uses extension: 'jco' or 'jcb': binary, 'mat','vec' or 'cov': ASCII,
         'unc': pest uncertainty file.
-
-        Parameters
-        ----------
-        filename : str
-            the name of the file
-
-        Returns
-        -------
-        m : pyemu.Matrix
-
-        Raises
-        ------
-        exception for unrecognized extension
         
         """
         assert os.path.exists(filename),"LinearAnalysis.__fromfile(): " +\
@@ -500,10 +483,8 @@ class LinearAnalysis(object):
     def forecast_names(self):
         """ get the forecast (aka prediction) names
 
-        Returns
-        -------
-        forecast_names : list
-            list of forecast names
+        Returns:
+            ([`str`]): list of forecast names
         
         """
         if self.forecasts is None:
@@ -515,17 +496,8 @@ class LinearAnalysis(object):
     def parcov(self):
         """ get the prior parameter covariance matrix attribute
 
-        Return
-        ------
-        parcov : pyemu.Cov
-            a reference to the parcov attribute
-
-        Note
-        ----
-        returns a reference
-        
-        if LinearAnalysis.__parcov is not set, the dynamically load the
-        parcov attribute before returning
+        Returns:
+            `pyemu.Cov`: a reference to the `LinearAnalysis.parcov` attribute
         
         """
         if not self.__parcov:
@@ -537,17 +509,8 @@ class LinearAnalysis(object):
     def obscov(self):
         """ get the observation noise covariance matrix attribute
 
-        Returns
-        -------
-        obscov : pyemu.Cov
-            a reference to the obscov attribute
-
-        Note
-        ----
-        returns a reference
-        
-        if LinearAnalysis.__obscov is not set, the dynamically load the
-        obscov attribute before returning
+        Returns:
+            `pyemu.Cov`: a reference to the `LinearAnalysis.obscov` attribute
 
         """
         if not self.__obscov:
@@ -556,13 +519,13 @@ class LinearAnalysis(object):
 
     @property
     def nnz_obs_names(self):
-        """ wrapper around pyemu.Pst.nnz_obs_names for listing non-zero
-        observation names
+        """non-zero-weighted observation names
 
-        Returns
-        -------
-        nnz_obs_names : list
-            pyemu.Pst.nnz_obs_names
+        Returns:
+            ['str`]: list of non-zero-weighted observation names
+
+        Note:
+            if `LinearAnalysis.pst` is `None`, returns `LinearAnalysis.jco.row_names`
         
         """
         if self.__pst is not None:
@@ -570,14 +533,15 @@ class LinearAnalysis(object):
         else:
             return self.jco.obs_names
 
+    @property
     def adj_par_names(self):
-        """ wrapper around pyemu.Pst.adj_par_names for list adjustable parameter
-        names
+        """ adjustable parameter names
 
-        Returns
-        -------
-        adj_par_names : list
-            pyemu.Pst.adj_par_names
+        Returns:
+            ['str`]: list of adjustable parameter names
+
+        Note:
+            if `LinearAnalysis.pst` is `None`, returns `LinearAnalysis.jco.col_names`
         
         """
         if self.__pst is not None:
@@ -587,20 +551,11 @@ class LinearAnalysis(object):
 
     @property
     def jco(self):
-        """ get the jacobian matrix attribute
+        """ the jacobian matrix attribute
 
-        Returns
-        -------
-        jco : pyemu.Jco
-            the jacobian matrix attribute
+        Returns:
+            `pyemu.Jco`: the jacobian matrix attribute
 
-        Note
-        ----
-        returns a reference
-        
-        if LinearAnalysis.__jco is not set, the dynamically load the
-        jco attribute before returning
-        
         """
         if not self.__jco:
             self.__load_jco()
@@ -609,19 +564,10 @@ class LinearAnalysis(object):
 
     @property
     def predictions(self):
-        """ get the predictions (aka forecasts) attribute
+        """the prediction (aka forecast) sentivity vectors attribute
 
-        Returns
-        -------
-        predictions : pyemu.Matrix
-            a matrix of prediction sensitivity vectors (column wise)
-
-        Note
-        ----
-        returns a reference
-        
-        if LinearAnalysis.__predictions is not set, the dynamically load the
-            predictions attribute before returning
+        Returns:
+            `pyemu.Matrix`: a matrix of prediction sensitivity vectors (column wise)
 
         """
         if not self.__predictions:
@@ -630,43 +576,48 @@ class LinearAnalysis(object):
 
     @property
     def predictions_iter(self):
-        """ property decorated prediction iterator
+        """prediction sensitivity vectors iterator
 
-        Returns
-        -------
-        iterator : iterator
-            iterator on prediction sensitivity vectors (matrix)
+        Returns:
+            `iterator`: iterator on prediction sensitivity vectors (matrix)
 
+        Note:
+            this is used for processing huge numbers of predictions
         """
         for fname in self.forecast_names:
             yield self.predictions.get(col_names=fname)
 
     @property
     def forecasts_iter(self):
-        """synonym for LinearAnalysis.predictions_iter()
+        """forecast (e.g. prediction) sensitivity vectors iterator
+
+        Returns:
+            `iterator`: iterator on forecasts (e.g. predictions) sensitivity vectors (matrix)
+
+        Note:
+            This is used for processing huge numbers of predictions
+
+            This is a synonym for LinearAnalysis.predictions_iter()
         """
         return self.predictions_iter
 
     @property
     def forecasts(self):
-        """synonym for LinearAnalysis.predictions
+        """the forecast sentivity vectors attribute
+
+        Returns:
+            `pyemu.Matrix`: a matrix of forecast (prediction) sensitivity vectors (column wise)
+
         """
         return self.predictions
 
     @property
     def pst(self):
-        """ get the pyemu.Pst attribute
+        """the pst attribute
 
-        Returns
-        -------
-        pst : pyemu.Pst
+        Returns:
+            `pyemu.Pst`: the pst attribute
 
-        Note
-        ----
-        returns a references
-        
-        If LinearAnalysis.__pst is None, then the pst attribute is
-        dynamically loaded before returning
         """
         if self.__pst is None and self.pst_arg is None:
             raise Exception("linear_analysis.pst: can't access self.pst:" +
@@ -680,12 +631,11 @@ class LinearAnalysis(object):
 
     @property
     def fehalf(self):
-        """get the KL parcov scaling matrix attribute.  Create the attribute if
-        it has not yet been created
+        """Karhunen-Loeve scaling matrix attribute.
 
-        Returns
-        -------
-        fehalf : pyemu.Matrix
+        Returns:
+            `pyemu.Matrix`: the Karhunen-Loeve scaling matrix based on the prior
+            parameter covariance matrix
 
         """
         if self.__fehalf != None:
@@ -698,12 +648,11 @@ class LinearAnalysis(object):
 
     @property
     def qhalf(self):
-        """get the square root of the cofactor matrix attribute. Create the attribute if
+        """square root of the cofactor matrix attribute. Create the attribute if
         it has not yet been created
 
-        Returns
-        -------
-        qhalf : pyemu.Matrix
+        Returns:
+            `pyemu.Matrix`: square root of the cofactor matrix
 
         """
         if self.__qhalf != None:
@@ -715,12 +664,10 @@ class LinearAnalysis(object):
 
     @property
     def qhalfx(self):
-        """get the half normal matrix attribute.  Create the attribute if
-        it has not yet been created
+        """half normal matrix attribute.
 
-        Returns
-        -------
-        qhalfx : pyemu.Matrix
+        Returns:
+            `pyemu.Matrix`: half normal matrix attribute
 
         """
         if self.__qhalfx is None:
@@ -731,12 +678,10 @@ class LinearAnalysis(object):
 
     @property
     def xtqx(self):
-        """get the normal matrix attribute. Create the attribute if
-        it has not yet been created
+        """normal matrix attribute.
 
-        Returns
-        -------
-        xtqx : pyemu.Matrix
+        Returns:
+            `pyemu.Matrix`: normal matrix attribute
 
         """
         if self.__xtqx is None:
@@ -747,48 +692,40 @@ class LinearAnalysis(object):
 
     @property
     def mle_covariance(self):
-        """ get the maximum likelihood parameter covariance matrix.
+        """maximum likelihood parameter covariance matrix.
 
-
-        Returns
-        -------
-        pyemu.Matrix : pyemu.Matrix
+        Returns:
+            `pyemu.Matrix`: maximum likelihood parameter covariance matrix
         
         """
         return self.xtqx.inv
 
     @property
     def prior_parameter(self):
-        """the prior parameter covariance matrix.  Just a wrapper around
-        LinearAnalysis.parcov
+        """prior parameter covariance matrix
 
-        Returns
-        -------
-        prior_parameter : pyemu.Cov
+        Returns:
+            `pyemu.Cov`: prior parameter covariance matrix
 
         """
         return self.parcov
 
     @property
     def prior_forecast(self):
-        """thin wrapper for prior_prediction
+        """prior forecast (e.g. prediction) variances
 
-        Returns
-        -------
-        prior_forecast : dict
-            a dictionary of forecast name, prior variance pairs
+        Returns:
+            `dict`: a dictionary of forecast name, prior variance pairs
 
         """
         return self.prior_prediction
 
     @property
     def mle_parameter_estimate(self):
-        """ get the maximum likelihood parameter estimate.
+        """ maximum likelihood parameter estimate.
 
-        Returns
-        -------
-         post_expt : pandas.Series
-            the maximum likelihood parameter estimates
+        Returns:
+            `pandas.Series`: the maximum likelihood parameter estimates
         
         """
         res = self.pst.res
@@ -815,12 +752,10 @@ class LinearAnalysis(object):
 
     @property
     def prior_prediction(self):
-        """get a dict of prior prediction variances
+        """prior prediction (e.g. forecast) variances
 
-        Returns
-        -------
-        prior_prediction : dict
-            dictionary of prediction name, prior variance pairs
+        Returns:
+            `dict`: a dictionary of prediction name, prior variance pairs
 
         """
         if self.__prior_prediction is not None:
@@ -842,13 +777,13 @@ class LinearAnalysis(object):
     def apply_karhunen_loeve_scaling(self):
         """apply karhuene-loeve scaling to the jacobian matrix.
 
-        Note
-        ----
-        This scaling is not necessary for analyses using Schur's
-        complement, but can be very important for error variance
-        analyses.  This operation effectively transfers prior knowledge
-        specified in the parcov to the jacobian and reset parcov to the
-        identity matrix.
+        Note:
+
+            This scaling is not necessary for analyses using Schur's
+            complement, but can be very important for error variance
+            analyses.  This operation effectively transfers prior knowledge
+            specified in the parcov to the jacobian and reset parcov to the
+            identity matrix.
 
         """
         cnames = copy.deepcopy(self.jco.col_names)
@@ -869,10 +804,8 @@ class LinearAnalysis(object):
     def reset_pst(self,arg):
         """ reset the LinearAnalysis.pst attribute
 
-        Parameters
-        ----------
-        arg : (str or matrix)
-            the value to assign to the pst attribute
+        Args:
+            arg (`str` or `pyemu.Pst`): the value to assign to the pst attribute
 
         """
         self.logger.statement("resetting pst")
@@ -882,11 +815,10 @@ class LinearAnalysis(object):
     def reset_parcov(self,arg=None):
         """reset the parcov attribute to None
 
-        Parameters
-        ----------
-        arg : str or pyemu.Matrix
-            the value to assign to the parcov attribute.  If None,
-            the private __parcov attribute is cleared but not reset
+        Args:
+            arg (`str` or `pyemu.Matrix`): the value to assign to the parcov
+                attribute.  If None, the private __parcov attribute is cleared
+                but not reset
         """
         self.logger.statement("resetting parcov")
         self.__parcov = None
@@ -897,11 +829,10 @@ class LinearAnalysis(object):
     def reset_obscov(self,arg=None):
         """reset the obscov attribute to None
 
-        Parameters
-        ----------
-        arg : str or pyemu.Matrix
-            the value to assign to the obscov attribute.  If None,
-            the private __obscov attribute is cleared but not reset
+        Args:
+            arg (`str` or `pyemu.Matrix`): the value to assign to the obscov
+                attribute.  If None, the private __obscov attribute is cleared
+                but not reset
         """
         self.logger.statement("resetting obscov")
         self.__obscov = None
@@ -937,19 +868,15 @@ class LinearAnalysis(object):
         """method to get a new LinearAnalysis class using a
         subset of parameters and/or observations
 
-        Parameters
-        ----------
-        par_names : list
-            par names for new object
-        obs_names : list
-            obs names for new object
-        astype : pyemu.Schur or pyemu.ErrVar
-            type to cast the new object.  If None, return type is
-            same as self
+        Args:
+            par_names ([`'str`]): par names for new object
+            obs_names ([`'str`]): obs names for new object
+            astype (`pyemu.Schur` or `pyemu.ErrVar`): type to
+                cast the new object.  If None, return type is
+                same as self
 
-        Returns
-        -------
-        new : LinearAnalysis
+        Returns:
+            `LinearAnalysis`: new instance
 
         """
         # make sure we aren't fooling with unwanted prior information
@@ -1019,15 +946,12 @@ class LinearAnalysis(object):
         based on the phi components in res_file so that the total phi
         is equal to the number of non-zero weights.
 
-        Parameters
-        ----------
-        resfile : str
-            residual file to use.  If None, residual file with case name is
-            sought. default is None
+        Args:
+            resfile (`str`): residual file to use.  If None, residual
+                file with case name is sought. default is None
 
-        Note
-        ----
-        calls pyemu.Pst.adjust_weights_resfile()
+        Note:
+            calls `pyemu.Pst.adjust_weights_resfile()`
 
         """
         self.pst.adjust_weights_resfile(resfile)
@@ -1038,9 +962,9 @@ class LinearAnalysis(object):
         """ get a dataframe of composite scaled sensitivities.  Includes both
         PEST-style and Hill-style.
 
-        Returns
-        -------
-        css : pandas.DataFrame
+        Returns:
+            `pandas.DataFrame`: a dataframe of parameter names, PEST-style and
+            Hill-style composite scaled sensitivity
 
         """
 
@@ -1062,16 +986,19 @@ class LinearAnalysis(object):
         return css
 
     def get_cso_dataframe(self):
-        """
-        get a dataframe of composite observation sensitivity, as returned by PEST in the
+        """get a dataframe of composite observation sensitivity, as returned by PEST in the
         seo file.
 
-        Note that this formulation deviates slightly from the PEST documentation in that the
-        values are divided by (npar-1) rather than by (npar).
-
-        The equation is cso_j = ((Q^1/2*J*J^T*Q^1/2)^1/2)_jj/(NPAR-1)
         Returns:
-        cso : pandas.DataFrame
+            `pandas.DataFrame`: dataframe of observation names and composite observation
+            sensitivity
+
+        Note:
+             That this formulation deviates slightly from the PEST documentation in that the
+             values are divided by (npar-1) rather than by (npar).
+
+             The equation is cso_j = ((Q^1/2*J*J^T*Q^1/2)^1/2)_jj/(NPAR-1)
+
 
         """
         if self.jco is None:
@@ -1086,6 +1013,14 @@ class LinearAnalysis(object):
         return cso_df
 
     def get_obs_competition_dataframe(self):
+        """get the observation competition stat a la PEST utility
+
+        Returns:
+            `pandas.DataFrame`: a dataframe of observation names by
+            observation names with values equal to the PEST
+            competition statistic
+
+        """
         if self.jco is None:
             raise Exception("jco is None")
         if self.pst is None:
