@@ -481,7 +481,11 @@ class EnsembleSQP(EnsembleMethod):
                 self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
                 self.H = self.H_cp
         else:
-            self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar) #,self.H.as_2d)
+            try:
+                hess_scalar
+                self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar)
+            except NameError:
+                self.hess_progress[self.iter_num] = "updated only"
 
         return self.H, self.hess_progress
 
@@ -601,7 +605,7 @@ class EnsembleSQP(EnsembleMethod):
         return self._filter, acceptance
 
 
-    def _cov_mat_adapt(self,en_cov,rank_mu=True,rank_one=False,learning_rate=0.5,mu_prop=0.25,
+    def _cov_mat_adapt(self,en_cov,rank_mu=True,rank_one=False,learning_rate=0.1,mu_prop=0.25,
                        use_dist_mean_for_delta=True,mu_learning_prop=0.5):
         '''
         covariance matrix adaptation evolutionary strategy for dec var cov matrix
@@ -630,7 +634,7 @@ class EnsembleSQP(EnsembleMethod):
         if learning_rate < 0 or learning_rate > 1:
             self.logger.lraise("cov matrix adaptation learning rate not between 0.0 and 1.0")
 
-        if mu_prop <=0 or mu_prop > 1:
+        if mu_prop <= 0 or mu_prop > 1:
             self.logger.lraise("ruh roh")
 
         if rank_mu:
@@ -662,7 +666,7 @@ class EnsembleSQP(EnsembleMethod):
 
 
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
-               grad_calc_only=False,finite_diff_grad=False,hess_update=True,scale_once_iter=1,
+               grad_calc_only=False,finite_diff_grad=False,hess_update=True,scale_once_iter=False,
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
                cma=False,
                rank_one=False, learning_rate=0.5, mu_prop=0.25,
@@ -807,7 +811,6 @@ class EnsembleSQP(EnsembleMethod):
             self.search_d = (self.inv_hessian * self.phi_grad)
         else:
             self.search_d = -1 * (self.inv_hessian * self.phi_grad)
-        #self.hess_scale_status = False
         self.logger.log("calculate search direction")
 
         self.logger.log("phi gradient- and search direction-related checks")
@@ -958,18 +961,22 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: dec var change related checks here - like PEST's RELPARMAX/FACPARMAX
 
         self.logger.log("scaling and/or updating Hessian via quasi-Newton")
-        if self.iter_num == scale_once_iter:  # no pre-existing grad or par delta info so scale only.. #TODO: direct query
-            self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
-                                    row_names=self.phi_grad.row_names,col_names=self.phi_grad.col_names)
-            if hess_self_scaling:
-                scale_only = True
+        if self.iter_num == 1:  # no pre-existing grad or par delta info..
+            if hess_self_scaling is True:
+                scale_only = True  # never update at first iter
+                self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
+                                        row_names=self.phi_grad.row_names,col_names=self.phi_grad.col_names)
         elif hess_update is False:
             scale_only = True
         else:
-            scale_only = False  # TODO: Test only scale for first iteration? Test. See Oliver et al.
+            scale_only = False
 
-        #if self.hess_scale_status:
-         #   hess_self_scaling = False # TODO: every iteration?
+        if hess_self_scaling:
+            if scale_once_iter is False or self.iter_num == scale_once_iter:
+                pass
+            else:
+                hess_self_scaling = False
+
 
         if alg == "BFGS":
             self.inv_hessian, hess_progress_d = self._BFGS_hess_update(self.inv_hessian, self.curr_grad,

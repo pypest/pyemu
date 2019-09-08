@@ -177,6 +177,8 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,
     [os.remove(x) for x in os.listdir() if x.endswith("obsensemble.0000.csv")]
     [os.remove(x) for x in os.listdir() if x.endswith("parensemble.0000.csv")]
     [os.remove(x) for x in os.listdir() if (x.startswith("filter.") and "csv" in x)]
+    [os.remove(x) for x in os.listdir() if ("_per_" in x) and ("_alpha_" in x)]
+    [os.remove(x) for x in os.listdir() if x == "hess_progress.csv"]
     if constraints:
         ext = version + "_constrained"
     else:
@@ -232,13 +234,16 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
     ax.plot(oes_mean, color="k", linestyle='--', label="mean en")
 
     ylim = ax.get_ylim()
-    hess_df = pd.read_csv("hess_progress.csv",index_col=0).T
-    alpha_df = pd.read_csv("best_alpha_per_it.csv",index_col=0).T
-    hess_df.columns, alpha_df.columns = ["hess"], ["alpha"]
-    hess_and_alpha = pd.concat((hess_df,alpha_df),1,sort=True)
-    for i,v in hess_and_alpha.iterrows():
-        ax.text(x=float(i),y=(ylim[1]+(0.05 * (ylim[1]-ylim[0]))),s="{0};\nalpha: {1}".format(v[0],v[1]),
-                fontsize=5,rotation=45,color='r',ha='center', va='center')
+    try:
+        hess_df = pd.read_csv("hess_progress.csv",index_col=0).T
+        alpha_df = pd.read_csv("best_alpha_per_it.csv", index_col=0).T
+        hess_df.columns, alpha_df.columns = ["hess"], ["alpha"]
+        hess_and_alpha = pd.concat((hess_df, alpha_df), 1, sort=True)
+        for i, v in hess_and_alpha.iterrows():
+            ax.text(x=float(i), y=(ylim[1] + (0.05 * (ylim[1] - ylim[0]))), s="{0};\nalpha: {1}".format(v[0], v[1]),
+                    fontsize=5, rotation=45, color='r', ha='center', va='center')
+    except FileNotFoundError:
+        print("hess progress file missing")
     #plt.legend()
     #plt.show()
     plt.savefig(label)
@@ -246,12 +251,15 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
     os.chdir(os.path.join("..", ".."))
 
 def invest(version):
+    import os
+    import shutil
+
     vars = {"initial_decvars": [[1.5,-1.5]],
             "draw_mult": [3e-3],
             "en_size": [10],
             "hess_self_scaling": [True, False],
             "hess_update": [True, False],
-            "scale_once_iter": [1, 2],
+            "scale_once_iter": [False, 1, 2],
             "damped": [True],
             }
     #"initial_decvars": [0.45,0.9,1.6]
@@ -268,7 +276,7 @@ def invest(version):
     for i, v in enumerate(runs):
         rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'])
         try:
-            rosenbrock_multiple_update(version=version,nit=10,draw_mult=v['draw_mult'],en_size=v['en_size'],
+            rosenbrock_multiple_update(version=version,nit=30,draw_mult=v['draw_mult'],en_size=v['en_size'],
                                        hess_self_scaling=v['hess_self_scaling'],hess_update=v['hess_update'],
                                        scale_once_iter=v['scale_once_iter'],damped=v['damped'])
         except:
@@ -280,8 +288,27 @@ def invest(version):
                                         v['hess_update'],v['scale_once_iter'],v['damped']))
 
         if version == "2par":
-            plot_2par_rosen(label="rosen_surf_scale{0}_update{1}_scale_it{2}_damp{3}.pdf"
-                            .format(v['hess_self_scaling'],v['hess_update'],v['scale_once_iter'],v['damped']))
+            plot_2par_rosen(label="rosen_surf_ne{0}_dm{1}_scale{2}_update{3}_scale_it{4}_damp{5}.pdf"
+                            .format(v['en_size'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
+                                    v['scale_once_iter'],v['damped']))
+
+        if version == "2par":
+            os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
+            try:
+                [shutil.copy(x, x.split(".")[0] + "_ne{0}_dm{1}_scale{2}_update{3}_scale_it{4}_damp{5}.csv"
+                             .format(v['en_size'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
+                                     v['scale_once_iter'],v['damped']))
+                 for x in os.listdir() if ("_per_" in x) and ("_alpha_" in x)]
+            except FileNotFoundError:
+                print("missing")
+            try:
+                [shutil.copy(x, x.split(".")[0] + "_ne{0}_dm{1}_scale{2}_update{3}_scale_it{4}_damp{5}.csv"
+                             .format(v['en_size'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
+                                     v['scale_once_iter'],v['damped']))
+                 for x in os.listdir() if x == "hess_progress.csv"]
+            except FileNotFoundError:
+                print("missing")
+            os.chdir(os.path.join("..",".."))
 
 
 def cma_invest(version):
