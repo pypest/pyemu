@@ -235,13 +235,14 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
     hess_df = pd.read_csv("hess_progress.csv",index_col=0).T
     alpha_df = pd.read_csv("best_alpha_per_it.csv",index_col=0).T
     hess_df.columns, alpha_df.columns = ["hess"], ["alpha"]
-    hess_and_alpha = pd.concat((hess_df,alpha_df),1)
+    hess_and_alpha = pd.concat((hess_df,alpha_df),1,sort=True)
     for i,v in hess_and_alpha.iterrows():
         ax.text(x=float(i),y=(ylim[1]+(0.05 * (ylim[1]-ylim[0]))),s="{0};\nalpha: {1}".format(v[0],v[1]),
                 fontsize=5,rotation=45,color='r',ha='center', va='center')
     #plt.legend()
-    plt.show()
+    #plt.show()
     plt.savefig(label)
+    plt.close()
     os.chdir(os.path.join("..", ".."))
 
 def invest(version):
@@ -267,7 +268,7 @@ def invest(version):
     for i, v in enumerate(runs):
         rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'])
         try:
-            rosenbrock_multiple_update(version=version,draw_mult=v['draw_mult'],en_size=v['en_size'],
+            rosenbrock_multiple_update(version=version,nit=10,draw_mult=v['draw_mult'],en_size=v['en_size'],
                                        hess_self_scaling=v['hess_self_scaling'],hess_update=v['hess_update'],
                                        scale_once_iter=v['scale_once_iter'],damped=v['damped'])
         except:
@@ -279,7 +280,7 @@ def invest(version):
                                         v['hess_update'],v['scale_once_iter'],v['damped']))
 
         if version == "2par":
-            plot_2par_rosen(label="rosen_surf_scale{0}_update{1}_scale_it{2}_damp{3}"
+            plot_2par_rosen(label="rosen_surf_scale{0}_update{1}_scale_it{2}_damp{3}.pdf"
                             .format(v['hess_self_scaling'],v['hess_update'],v['scale_once_iter'],v['damped']))
 
 
@@ -541,7 +542,9 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf"):
         #            c="b",alpha=(it+1)/len(par_ens))
 
     plt.savefig(label)
-    plt.show()
+    #plt.show()
+    plt.close()
+    os.chdir(os.path.join("..",".."))
 
 
 if __name__ == "__main__":
