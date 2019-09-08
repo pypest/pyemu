@@ -405,9 +405,9 @@ class EnsembleSQP(EnsembleMethod):
                 sHs = self.s.T * self.H * self.s  # a scalar
                 dampening_cond = damp_par * float(sHs.x)
                 if float(ys.x) < dampening_cond:
-                    damp_factor = float(((1.0 - damp_par) * sHs).x / (sHs.x - ys.x))
+                    damp_factor = float(((1.0 - damp_par) * sHs).x / (sHs.x - ys.x))  # interpolate between curr and normal update
                 else:
-                    damp_factor = 1.0  #  r = y
+                    damp_factor = 1.0  # r = y
                 r = (damp_factor * self.y.x) + ((1.0 - damp_factor) * (self.H * self.s).x)
                 r = Matrix(x=r,row_names=self.y.row_names,col_names=self.y.col_names)
                 rs = r.T * self.s
@@ -439,7 +439,7 @@ class EnsembleSQP(EnsembleMethod):
                     self.hess_progress[self.iter_num] = "skip scaling"
                     return self.H, self.hess_progress
             self.H *= hess_scalar
-            self.H_cp = self.H.copy()
+            self.H_cp = self.H.copy()  # in case update doesn't work below
             self.logger.log("scaling Hessian...")
             if scale_only:
                 if damped:
@@ -449,32 +449,33 @@ class EnsembleSQP(EnsembleMethod):
                 return self.H, self.hess_progress
 
         # update
-        self.logger.log("updating Hessian...")
+        self.logger.log("trying to update Hessian...")
         yHy = self.y.T * self.H * self.y  # also a scalar
         ssT = self.s * self.s.T  # outer prod
         Hy = self.H * self.y
 
         if damped is True and float(ys.x) <= 0:
             # expanded form of Nocedal and Wright (18.16)
-            self.logger.log("updating Hessian using dampened form...")
+            self.logger.log("...using dampened update form...")
             Hr = self.H * r
             rHr = r.T * Hr
             self.H += (float(rs.x + rHr.x)) * ssT.x / float((rs ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
             self.H -= float((Hr.T * self.s).x + (self.s.T * Hr).x) / float(rs.x)
-            self.logger.log("updating Hessian using dampened form...")
+            self.logger.log("...using dampened update form...")
         else:
             # expanded form of Nocedal and Wright (6.17)
-            self.logger.log("updating Hessian using standard form...")
+            self.logger.log("...using standard update form...")
             self.H += (float(ys.x + yHy.x)) * ssT.x / float((ys ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
             #self.H += (ys + yHy) * ssT / (ys ** 2)
             self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
-            self.logger.log("updating Hessian using standard form...")
-        self.logger.log("updating Hessian...")
+            self.logger.log("...using standard update form...")
+        self.logger.log("trying to update Hessian...")
 
-        #  TODO: Hessian positive-definite-ness check? Unnecessary according to proposition (8.2) in Oliver et al...
         if not np.all(np.linalg.eigvals(self.H.as_2d) > -1 * self.pst.svd_data.eigthresh):  #0): #  TODO: check accounting for noise
             if float(ys.x) <= 0 and damped:
-                self.logger.lraise("Hessian update causes pos-def status to be violated despite using dampening... \n")
+                self.logger.warn("Hessian update causes pos-def status to be violated despite using dampening... \n")
+                self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
+                self.H = self.H_cp
             else:
                 self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
                 self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
@@ -661,7 +662,7 @@ class EnsembleSQP(EnsembleMethod):
 
 
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
-               grad_calc_only=False,finite_diff_grad=False,
+               grad_calc_only=False,finite_diff_grad=False,hess_update=True,scale_once_iter=1,
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
                cma=False,
                rank_one=False, learning_rate=0.5, mu_prop=0.25,
@@ -802,18 +803,6 @@ class EnsembleSQP(EnsembleMethod):
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
         # TODO: for first itn can we make some assumption about step length from bounds? will reduce number of runs
-        # TODO: treat first Hess update differently - given changes in grad and dec vars from 0....
-        #if hess_self_scaling and self.curr_grad is not None:  # TODO: i.e., once have step info - but not changes in step...
-            #self.logger.log("scaling Hessian for search direction calc")
-            #self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,
-             #                                         self.curr_grad, self.phi_grad,
-              #                                        self.curr_parensemble_mean,self.parensemble_mean
-               #                                       self_scale=hess_self_scaling,scale_only=False,
-                #                                      damped=False)
-            #self.hess_scale_status = True
-            #self.logger.log("scaling Hessian for search direction calc")
-            #self.search_d = -1 * (self.inv_hessian * self.phi_grad)
-        #else:
         if self.opt_direction == "max":
             self.search_d = (self.inv_hessian * self.phi_grad)
         else:
@@ -948,6 +937,7 @@ class EnsembleSQP(EnsembleMethod):
                                          self.paren_prefix.format(0))
 
         curv_per_alpha.to_csv("curv_per_alpha_it{0}.csv".format(self.iter_num))
+        mean_en_phi_per_alpha.to_csv("mean_phi_per_alpha_it{0}".format(self.iter_num))
 
         # deal with unsuccessful iteration
         if self.parensemble_mean_next is None:
@@ -968,14 +958,15 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: dec var change related checks here - like PEST's RELPARMAX/FACPARMAX
 
         self.logger.log("scaling and/or updating Hessian via quasi-Newton")
-        if self.iter_num == 1:  # no pre-existing grad or par delta info so scale only.. #TODO: direct query
+        if self.iter_num == scale_once_iter:  # no pre-existing grad or par delta info so scale only.. #TODO: direct query
             self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
                                     row_names=self.phi_grad.row_names,col_names=self.phi_grad.col_names)
             if hess_self_scaling:
                 scale_only = True
+        elif hess_update is False:
+            scale_only = True
         else:
-            scale_only = False  # scale only for first it
-            # TODO: Test only scale for first iteration? Test. See Oliver et al.
+            scale_only = False  # TODO: Test only scale for first iteration? Test. See Oliver et al.
 
         #if self.hess_scale_status:
          #   hess_self_scaling = False # TODO: every iteration?

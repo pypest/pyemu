@@ -156,8 +156,9 @@ def rosenbrock_2par_grad_approx_invest():
     os.chdir(os.path.join("..", ".."))
 
 
-def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
+def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,
                                constraints=False,biobj_weight=1.0,biobj_transf=True,
+                               hess_self_scaling=True,hess_update=True,scale_once_iter=1,damped=True,
                                cma=False,
                                rank_one=False,learning_rate=0.5,
                                mu_prop=0.25,use_dist_mean_for_delta=False,): #filter_thresh=1e-2
@@ -183,8 +184,10 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,13)),constraints=constraints,biobj_weight=biobj_weight,cma=cma,
-                    rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
+        esqp.update(step_mult=list(np.logspace(-6,0,13)),constraints=constraints,biobj_weight=biobj_weight,
+                    hess_self_scaling=hess_self_scaling,hess_update=hess_update,
+                    scale_once_iter=scale_once_iter,damped=damped,
+                    cma=cma,rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
                     use_dist_mean_for_delta=use_dist_mean_for_delta)
     os.chdir(os.path.join("..", ".."))
 
@@ -242,28 +245,43 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
     os.chdir(os.path.join("..", ".."))
 
 def invest(version):
-    vars = {"initial_decvars": [1.6],
-            "draw_mult": [3e-5],
-            "en_size": [20],
+    vars = {"initial_decvars": [[1.5,-1.5]],
+            "draw_mult": [3e-3],
+            "en_size": [10],
+            "hess_self_scaling": [True, False],
+            "hess_update": [True, False],
+            "scale_once_iter": [1, 2],
+            "damped": [True],
             }
     #"initial_decvars": [0.45,0.9,1.6]
     #"alpha_base": [0.1, 0.2],
     #"draw_mult": [3e-2,3e-3, 3e-4, 3e-5, 3e-6]
 
-    runs = [{'initial_decvars': a, 'draw_mult': b, 'en_size': c} for a in vars['initial_decvars']
-            for b in vars['draw_mult'] for c in vars['en_size']]
+    runs = [{'initial_decvars': a, 'draw_mult': b, 'en_size': c, 'hess_self_scaling': d, 'hess_update': e,
+             'scale_once_iter': f, 'damped': g}
+            for a in vars['initial_decvars'] for b in vars['draw_mult'] for c in vars['en_size']
+            for d in vars['hess_self_scaling'] for e in vars['hess_update'] for f in vars['scale_once_iter']
+            for g in vars['damped']]
 
     fails = []
-    for i,v in enumerate(runs):
+    for i, v in enumerate(runs):
         rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'])
         try:
-            rosenbrock_multiple_update(version=version,draw_mult=v['draw_mult'],en_size=v['en_size'])
+            rosenbrock_multiple_update(version=version,draw_mult=v['draw_mult'],en_size=v['en_size'],
+                                       hess_self_scaling=v['hess_self_scaling'],hess_update=v['hess_update'],
+                                       scale_once_iter=v['scale_once_iter'],damped=v['damped'])
         except:
             fails.append(v)
             os.chdir(os.path.join("..", ".."))
-        rosenbrock_phi_progress(version=version,label="phi_progress_ne{0}_initdv{1}_dm{2}.pdf".\
-                                format(v['en_size'],v['initial_decvars'],v['draw_mult']))
-    print("done!")
+        rosenbrock_phi_progress(version=version,
+                                label="phi_progress_ne{0}_initdv{1}_dm{2}_sca{3}_upd{4}_sca_it{5}_d{6}.pdf"
+                                .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
+                                        v['hess_update'],v['scale_once_iter'],v['damped']))
+
+        if version == "2par":
+            plot_2par_rosen(label="rosen_surf_scale{0}_update{1}_scale_it{2}_damp{3}"
+                            .format(v['hess_self_scaling'],v['hess_update'],v['scale_once_iter'],v['damped']))
+
 
 def cma_invest(version):
     vars = {"learning_rate": [0.1,0.5,0.9],
@@ -491,7 +509,7 @@ def plot_mean_dev_var_bar(opt_par_en="supply2_pest.parensemble.0000.csv",three_r
     # plt.show()
     plt.savefig("dec_vars.pdf")
 
-def plot_2par_rosen():
+def plot_2par_rosen(label="rosen_2par_surf.pdf"):
     import numpy as np
     import matplotlib.pyplot as plt
     import pandas as pd
@@ -522,26 +540,26 @@ def plot_2par_rosen():
         #plt.scatter(x=df[pst.parameter_data.parnme[0]].mean(axis=0), y=df[pst.parameter_data.parnme[1]].mean(axis=0),
         #            c="b",alpha=(it+1)/len(par_ens))
 
-    plt.savefig("rosen_surf.pdf")
+    plt.savefig(label)
     plt.show()
 
 
 if __name__ == "__main__":
-    rosenbrock_setup(version="2par",initial_decvars=[1.0,-1.5])
+    #rosenbrock_setup(version="2par",initial_decvars=[1.5,-1.5])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_multiple_update(version="2par",nit=30,en_size=10,draw_mult=1e-2)
-    rosenbrock_phi_progress(version="2par")
+    #rosenbrock_multiple_update(version="2par",nit=30,en_size=20,draw_mult=1e-2)
+    #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
-    plot_2par_rosen()
+    #plot_2par_rosen()
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    #invest(version="2par")
+    invest(version="2par")
     #invest(version="high_dim")
 
 
