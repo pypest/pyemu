@@ -933,7 +933,7 @@ class EnsembleSQP(EnsembleMethod):
                     # curv condition related tests
                     ys = y.T * s  # inner product
                     curv_per_alpha.loc["{}".format(step_size), "curv_cond"] = float(ys.x)
-                    curv_per_alpha.loc["{}".format(step_size), "mean_en_phi"] = self.obsensemble_1.mean()
+                    curv_per_alpha.loc["{}".format(step_size), "mean_en_phi"] = self.obsensemble_1.mean()['obs']
 
             self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
 
