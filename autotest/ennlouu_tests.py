@@ -259,9 +259,9 @@ def invest(version):
     vars = {"initial_decvars": [[1.5,-1.5]],
             "draw_mult": [3e-3],
             "en_size": [10],
-            "hess_self_scaling": [True],
-            "hess_update": [True],
-            "scale_once_iter": [1],
+            "hess_self_scaling": [True, False],
+            "hess_update": [True, False],
+            "scale_once_iter": [False, 1, 2],
             "damped": [True],
             }
     #"initial_decvars": [0.45,0.9,1.6]
