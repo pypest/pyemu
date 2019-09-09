@@ -240,7 +240,9 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
         hess_df.columns, alpha_df.columns = ["hess"], ["alpha"]
         hess_and_alpha = pd.concat((hess_df, alpha_df), 1, sort=True)
         for i, v in hess_and_alpha.iterrows():
-            ax.text(x=float(i), y=(ylim[1] + (0.05 * (ylim[1] - ylim[0]))), s="{0};\nalpha: {1}".format(v[0], v[1]),
+            #ax.text(x=float(i), y=(ylim[1] + (0.05 * (ylim[1] - ylim[0]))), s="{0};\nalpha: {1}".format(v[0], v[1]),
+            #        fontsize=5, rotation=45, color='r', ha='center', va='center')
+            ax.text(x=float(i), y=(ylim[1] + (0.05 * (ylim[1] - ylim[0]))), s="{0}".format(v[0]),
                     fontsize=5, rotation=45, color='r', ha='center', va='center')
     except FileNotFoundError:
         print("hess progress file missing")
@@ -257,9 +259,9 @@ def invest(version):
     vars = {"initial_decvars": [[1.5,-1.5]],
             "draw_mult": [3e-3],
             "en_size": [10],
-            "hess_self_scaling": [True, False],
-            "hess_update": [True, False],
-            "scale_once_iter": [False, 1, 2],
+            "hess_self_scaling": [True],
+            "hess_update": [True],
+            "scale_once_iter": [1],
             "damped": [True],
             }
     #"initial_decvars": [0.45,0.9,1.6]

@@ -401,7 +401,7 @@ class EnsembleSQP(EnsembleMethod):
                              "  Either skipping scaling/updating (not recommended) or dampening...")
             if damped:  # damped (where required only--where curv cond violated)
                 self.logger.log("using damped version of BFGS alg implementation..")
-                damp_par = 0.2  # TODO: allow user to pass??
+                damp_par = 0.2
                 sHs = self.s.T * self.H * self.s  # a scalar
                 dampening_cond = damp_par * float(sHs.x)
                 if float(ys.x) < dampening_cond:
@@ -411,14 +411,14 @@ class EnsembleSQP(EnsembleMethod):
                 r = (damp_factor * self.y.x) + ((1.0 - damp_factor) * (self.H * self.s).x)
                 r = Matrix(x=r,row_names=self.y.row_names,col_names=self.y.col_names)
                 rs = r.T * self.s
-                #hess_scalar = float((self.r.T * self.r.x) / rs.x)  # Dakota (Sandia)  #TODO: compare hess_scalars
+                #hess_scalar = float((r.T * r).x / rs.x)  # Dakota (Sandia)  #TODO: compare hess_scalars
                 hess_scalar = float(rs.x / (r.T * self.H * r).x)  # Nocedal and Wright, Oliver et al.
                 self.logger.log("using damped version of BFGS alg implementation..")
                 if hess_scalar < 0:  # abort
                     self.logger.warn("can't scale despite dampening...")
                     if self.iter_num == 1:
-                        self.logger.warn("...this is expected given absence of grad info at iter_num 0...")  # TODO: skip--do not even attempt for it0
-                    self.hess_progress[self.iter_num] = "skip scaling despite using dampening"#.format(float(rs.x))
+                        self.logger.warn("...this is expected given absence of grad info at iter_num 0...")  # TODO: skip--do not even attempt for it0?
+                    self.hess_progress[self.iter_num] = "skip scaling despite using dampening"
                     return self.H, self.hess_progress
                 else:
                     pass
@@ -439,7 +439,7 @@ class EnsembleSQP(EnsembleMethod):
                     self.hess_progress[self.iter_num] = "skip scaling"
                     return self.H, self.hess_progress
             self.H *= hess_scalar
-            self.H_cp = self.H.copy()  # in case update doesn't work below
+            self.H_cp = self.H.copy()  # in case the update step doesn't work below
             self.logger.log("scaling Hessian...")
             if scale_only:
                 if damped:
@@ -471,15 +471,23 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("...using standard update form...")
         self.logger.log("trying to update Hessian...")
 
-        if not np.all(np.linalg.eigvals(self.H.as_2d) > -1 * self.pst.svd_data.eigthresh):  #0): #  TODO: check accounting for noise
+        if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):  #-1 * self.pst.svd_data.eigthresh):  #0): # can't soften!
             if float(ys.x) <= 0 and damped:
                 self.logger.warn("Hessian update causes pos-def status to be violated despite using dampening... \n")
-                self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
-                self.H = self.H_cp
+                if self_scale:
+                    self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
+                    self.H = self.H_cp
+                else:
+                    self.hess_progress[self.iter_num] = "not scaled or updated"
+                    self.H = curr_inv_hess
             else:
-                self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
-                self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
-                self.H = self.H_cp
+                self.logger.warn("Hessian update causes pos-def status to be violated.. \n")
+                if self_scale:
+                    self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
+                    self.H = self.H_cp
+                else:
+                    self.hess_progress[self.iter_num] = "not scaled or updated"
+                    self.H = curr_inv_hess
         else:
             try:
                 hess_scalar
@@ -648,15 +656,15 @@ class EnsembleSQP(EnsembleMethod):
             par_en = par_en[:mu]
             sub_delta = self._calc_delta_(par_en,
                                           use_dist_mean_for_delta=use_dist_mean_for_delta)
-            if rank_one:  # in addition to rank mu update
-                # pseudo
-                #p = (1.0 - c) * prev mean + (c * (2 - c) * mu)**0.5 * ((sum(mean changes)) / step size)
-                #en_cov = (1.0 - learning_rate) * en_cov +\
-                         #(learning_rate * mu_learning_prop / mu) * (sub_delta.T * sub_delta) +\
-                         #(learning_rate * (1.0 / mu_learning_prop)) * (p * p.T)
-                self.logger.lraise("rank-one update not implemented... yet")
-            else:
-                en_cov = (1.0 - learning_rate) * en_cov + (learning_rate / mu) * (sub_delta.T * sub_delta)
+            if rank_one:  # only ever in addition to rank mu update
+                if self.iter_num > 1: # TODO: just scalar?
+                    en_cov = (1.0 - learning_rate) * en_cov + \
+                             learning_rate * mu_learning_prop * 1.0 / mu * (sub_delta.T * sub_delta) + \
+                             learning_rate * (1.0 - mu_learning_prop) * (p * p.T)
+                    #self.logger.lraise("rank-one update not implemented... yet") #  p = (1.0 - r1_learning_rate) * p + (1.0 - (1.0 - r1_learning_rate) * mu)**0.5 * y check r1_learning_rate << (learning_rate * (1.0 - mu_learning_prop))
+            else:  # TODO: just scalar?
+                en_cov = (1.0 - learning_rate) * en_cov + \
+                         learning_rate * 1.0 / mu * (sub_delta.T * sub_delta)
                 if np.linalg.matrix_rank((sub_delta.T * sub_delta).x) > mu:
                     self.logger.lraise("matrix product should not be of rank greater than mu here")
         else:
@@ -924,7 +932,8 @@ class EnsembleSQP(EnsembleMethod):
                     s = delta_parensemble_mean.T  # start with column vector
                     # curv condition related tests
                     ys = y.T * s  # inner product
-                    curv_per_alpha.loc["{}".format(step_size),"{}".format(self.iter_num)] = float(ys.x)
+                    curv_per_alpha.loc["{}".format(step_size), "curv_cond"] = float(ys.x)
+                    curv_per_alpha.loc["{}".format(step_size), "mean_en_phi"] = self.obsensemble_1.mean()
 
             self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
 
@@ -939,7 +948,7 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble_next.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, best_alpha) +
                                          self.paren_prefix.format(0))
 
-        curv_per_alpha.to_csv("curv_per_alpha_it{0}.csv".format(self.iter_num))
+        curv_per_alpha.to_csv("curv_and_phi_per_alpha_it{0}.csv".format(self.iter_num))
         mean_en_phi_per_alpha.to_csv("mean_phi_per_alpha_it{0}".format(self.iter_num))
 
         # deal with unsuccessful iteration
