@@ -368,7 +368,7 @@ class EnsembleSQP(EnsembleMethod):
 
 
     def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,self_scale=True,scale_only=False,
-                          damped=True):
+                          damped=True,update=True):
         '''
         see, e.g., Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
 
@@ -412,7 +412,8 @@ class EnsembleSQP(EnsembleMethod):
                 r = Matrix(x=r,row_names=self.y.row_names,col_names=self.y.col_names)
                 rs = r.T * self.s
                 #hess_scalar = float((r.T * r).x / rs.x)  # Dakota (Sandia)  #TODO: compare hess_scalars
-                hess_scalar = float(rs.x / (r.T * self.H * r).x)  # Nocedal and Wright, Oliver et al.
+                #hess_scalar = float(rs.x / (r.T * self.H * r).x)  # Nocedal and Wright, Oliver et al.
+                hess_scalar = float(rs.x / (r.T * r).x)  # Nocedal and Wright, Oliver et al.
                 self.logger.log("using damped version of BFGS alg implementation..")
                 if hess_scalar < 0:  # abort
                     self.logger.warn("can't scale despite dampening...")
@@ -433,7 +434,8 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("scaling Hessian...")
             if not (float(ys.x) <= 0):  # not already scaled
                 #hess_scalar = float((self.y.T * self.y.x) / ys.x)  # Dakota (Sandia)  #TODO: compare hess_scalars
-                hess_scalar = float(ys.x / (self.y.T * self.H * self.y).x)  # Nocedal and Wright, Oliver et al.
+                #hess_scalar = float(ys.x / (self.y.T * self.H * self.y).x)  # Nocedal and Wright, Oliver et al.
+                hess_scalar = float(ys.x / (self.y.T * self.y).x)  # Nocedal and Wright, Oliver et al.
                 if hess_scalar < 0:  # abort
                     self.logger.lraise("hessian scalar is not strictly positive!")
                     self.hess_progress[self.iter_num] = "skip scaling"
@@ -449,51 +451,51 @@ class EnsembleSQP(EnsembleMethod):
                 return self.H, self.hess_progress
 
         # update
-        self.logger.log("trying to update Hessian...")
-        yHy = self.y.T * self.H * self.y  # also a scalar
-        ssT = self.s * self.s.T  # outer prod
-        Hy = self.H * self.y
+        if update:
+            self.logger.log("trying to update Hessian...")
+            yHy = self.y.T * self.H * self.y  # also a scalar
+            ssT = self.s * self.s.T  # outer prod
+            Hy = self.H * self.y
 
-        if damped is True and float(ys.x) <= 0:
-            # expanded form of Nocedal and Wright (18.16)
-            self.logger.log("...using dampened update form...")
-            Hr = self.H * r
-            rHr = r.T * Hr
-            self.H += (float(rs.x + rHr.x)) * ssT.x / float((rs ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
-            self.H -= float((Hr.T * self.s).x + (self.s.T * Hr).x) / float(rs.x)
-            self.logger.log("...using dampened update form...")
-        else:
-            # expanded form of Nocedal and Wright (6.17)
-            self.logger.log("...using standard update form...")
-            self.H += (float(ys.x + yHy.x)) * ssT.x / float((ys ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
-            #self.H += (ys + yHy) * ssT / (ys ** 2)
-            self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
-            self.logger.log("...using standard update form...")
-        self.logger.log("trying to update Hessian...")
-
-        if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):  #-1 * self.pst.svd_data.eigthresh):  #0): # can't soften!
-            if float(ys.x) <= 0 and damped:
-                self.logger.warn("Hessian update causes pos-def status to be violated despite using dampening... \n")
-                if self_scale:
-                    self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
-                    self.H = self.H_cp
-                else:
-                    self.hess_progress[self.iter_num] = "not scaled or updated"
-                    self.H = curr_inv_hess
+            if damped is True and float(ys.x) <= 0:
+                # expanded form of Nocedal and Wright (18.16)
+                self.logger.log("...using dampened update form...")
+                Hr = self.H * r
+                rHr = r.T * Hr
+                self.H += (float(rs.x + rHr.x)) * ssT.x / float((rs ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
+                self.H -= float((Hr.T * self.s).x + (self.s.T * Hr).x) / float(rs.x)
+                self.logger.log("...using dampened update form...")
             else:
-                self.logger.warn("Hessian update causes pos-def status to be violated.. \n")
-                if self_scale:
-                    self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
-                    self.H = self.H_cp
+                # expanded form of Nocedal and Wright (6.17)
+                self.logger.log("...using standard update form...")
+                self.H += (float(ys.x + yHy.x)) * ssT.x / float((ys ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
+                self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
+                self.logger.log("...using standard update form...")
+            self.logger.log("trying to update Hessian...")
+
+            if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):  #-1 * self.pst.svd_data.eigthresh):  #0): # can't soften!
+                if float(ys.x) <= 0 and damped:
+                    self.logger.warn("Hessian update causes pos-def status to be violated despite using dampening... \n")
+                    if self_scale:
+                        self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
+                        self.H = self.H_cp
+                    else:
+                        self.hess_progress[self.iter_num] = "not scaled or updated"
+                        self.H = curr_inv_hess
                 else:
-                    self.hess_progress[self.iter_num] = "not scaled or updated"
-                    self.H = curr_inv_hess
-        else:
-            try:
-                hess_scalar
-                self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar)
-            except NameError:
-                self.hess_progress[self.iter_num] = "updated only"
+                    self.logger.warn("Hessian update causes pos-def status to be violated.. \n")
+                    if self_scale:
+                        self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
+                        self.H = self.H_cp
+                    else:
+                        self.hess_progress[self.iter_num] = "not scaled or updated"
+                        self.H = curr_inv_hess
+            else:
+                try:
+                    hess_scalar
+                    self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar)
+                except NameError:
+                    self.hess_progress[self.iter_num] = "updated only"
 
         return self.H, self.hess_progress
 
@@ -949,7 +951,7 @@ class EnsembleSQP(EnsembleMethod):
                                          self.paren_prefix.format(0))
 
         curv_per_alpha.to_csv("curv_and_phi_per_alpha_it{0}.csv".format(self.iter_num))
-        mean_en_phi_per_alpha.to_csv("mean_phi_per_alpha_it{0}".format(self.iter_num))
+        mean_en_phi_per_alpha.to_csv("mean_phi_per_alpha_it{0}.csv".format(self.iter_num))
 
         # deal with unsuccessful iteration
         if self.parensemble_mean_next is None:
@@ -975,6 +977,7 @@ class EnsembleSQP(EnsembleMethod):
                 scale_only = True  # never update at first iter
                 self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
                                         row_names=self.phi_grad.row_names,col_names=self.phi_grad.col_names)
+                hess_update = False
         elif hess_update is False:
             scale_only = True
         else:
@@ -990,7 +993,7 @@ class EnsembleSQP(EnsembleMethod):
         if alg == "BFGS":
             self.inv_hessian, hess_progress_d = self._BFGS_hess_update(self.inv_hessian, self.curr_grad,
                                                                        self.phi_grad, self.delta_parensemble_mean,
-                                                                       self_scale=hess_self_scaling,
+                                                                       self_scale=hess_self_scaling,update=hess_update,
                                                                        scale_only=scale_only, damped=damped)
         else:  # LBFGS
             pass

@@ -278,7 +278,7 @@ def invest(version):
     for i, v in enumerate(runs):
         rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'])
         try:
-            rosenbrock_multiple_update(version=version,nit=30,draw_mult=v['draw_mult'],en_size=v['en_size'],
+            rosenbrock_multiple_update(version=version,nit=20,draw_mult=v['draw_mult'],en_size=v['en_size'],
                                        hess_self_scaling=v['hess_self_scaling'],hess_update=v['hess_update'],
                                        scale_once_iter=v['scale_once_iter'],damped=v['damped'])
         except:
@@ -297,9 +297,9 @@ def invest(version):
         if version == "2par":
             os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
             try:
-                [shutil.copy(x, x.split(".")[0] + "_ne{0}_dm{1}_scale{2}_update{3}_scale_it{4}_damp{5}.csv"
-                             .format(v['en_size'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
-                                     v['scale_once_iter'],v['damped']))
+                [shutil.copy(x, "phi_curv_it{0}_ne{1}_dm{2}_scale{3}_update{4}_scale_it{5}_damp{6}.csv"
+                             .format(int(x.split("it")[1].split(".")[0]),v['en_size'],v['draw_mult'],
+                                     v['hess_self_scaling'],v['hess_update'],v['scale_once_iter'],v['damped']))
                  for x in os.listdir() if ("_per_" in x) and ("_alpha_" in x)]
             except FileNotFoundError:
                 print("missing")
