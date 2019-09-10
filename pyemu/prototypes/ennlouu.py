@@ -356,7 +356,9 @@ class EnsembleSQP(EnsembleMethod):
             see Fonseca et al. 2013. default False (only used for cov mat adaptation components)
         '''
         if use_dist_mean_for_delta:
-            mean = np.array(self.pst.parameter_data.parval1)  # TODO: Eq (10) Hansen 2006 - use mean from all iters?
+            mean = np.array(ensemble.mean(axis=0))
+            # TODO: implement
+            #mean = np.array(self.pst.parameter_data.parval1)  # TODO: Eq (10) Hansen 2006 - use mean from all iters?
         else:
             mean = np.array(ensemble.mean(axis=0))
         delta = ensemble.copy()
@@ -640,6 +642,7 @@ class EnsembleSQP(EnsembleMethod):
             Hansen (2011) suggest mu learning more important with larger ensemble size, and vice versa.
 
         #TODO: try only adapting diag for increased robustness? as per Fonseca
+        #TODO: or even just scalar - e.g., like draw mult variable?
         #TODO: finish implementing rank-one update
         #TODO: check use of ``distribution mean''
 
@@ -654,6 +657,8 @@ class EnsembleSQP(EnsembleMethod):
         if rank_mu:
             par_en = self.parensemble.copy()
             mu = int(par_en.shape[0] * mu_prop)
+            if mu < 2:
+                mu = 2
             if self.opt_direction == "min":
                 sorted_idx = self.obsensemble.sort_values(ascending=True, by=self.obsensemble.columns[0]).index
             else:
@@ -663,12 +668,12 @@ class EnsembleSQP(EnsembleMethod):
             sub_delta = self._calc_delta_(par_en,
                                           use_dist_mean_for_delta=use_dist_mean_for_delta)
             if rank_one:  # only ever in addition to rank mu update
-                if self.iter_num > 1: # TODO: just scalar?
+                if self.iter_num > 1:
                     en_cov = (1.0 - learning_rate) * en_cov + \
                              learning_rate * mu_learning_prop * 1.0 / mu * (sub_delta.T * sub_delta) + \
                              learning_rate * (1.0 - mu_learning_prop) * (p * p.T)
                     #self.logger.lraise("rank-one update not implemented... yet") #  p = (1.0 - r1_learning_rate) * p + (1.0 - (1.0 - r1_learning_rate) * mu)**0.5 * y check r1_learning_rate << (learning_rate * (1.0 - mu_learning_prop))
-            else:  # TODO: just scalar?
+            else:
                 en_cov = (1.0 - learning_rate) * en_cov + \
                          learning_rate * 1.0 / mu * (sub_delta.T * sub_delta)
                 if np.linalg.matrix_rank((sub_delta.T * sub_delta).x) > mu:
@@ -679,7 +684,7 @@ class EnsembleSQP(EnsembleMethod):
         return en_cov
 
 
-    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
+    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=2,damped=True,
                grad_calc_only=False,finite_diff_grad=False,hess_update=True,
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
                cma=False,

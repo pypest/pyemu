@@ -158,7 +158,7 @@ def rosenbrock_2par_grad_approx_invest():
 
 def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,
                                constraints=False,biobj_weight=1.0,biobj_transf=True,
-                               hess_self_scaling=True,hess_update=True,damped=True,
+                               hess_self_scaling=2,hess_update=True,damped=True,
                                cma=False,
                                rank_one=False,learning_rate=0.5,
                                mu_prop=0.25,use_dist_mean_for_delta=False,): #filter_thresh=1e-2
@@ -256,7 +256,7 @@ def invest(version,constraints=False):
     import shutil
 
     vars = {"initial_decvars": [[-1.5,1.5],[1.5,1.0]],
-            "draw_mult": [3e-2,3e-3,3e-3],
+            "draw_mult": [3e-2,3e-3,3e-4],
             "en_size": [20],
             "hess_self_scaling": [2,True],
             "hess_update": [True],
@@ -311,32 +311,53 @@ def invest(version,constraints=False):
             os.chdir(os.path.join("..",".."))
 
 
-def cma_invest(version):
-    vars = {"learning_rate": [0.1,0.5,0.9],
+def cma_invest(version, constraints=False):
+
+    vars = {"initial_decvars": [[-1.5,1.5]],
+            "draw_mult": [3e-3],
+            "en_size": [3],
+            "learning_rate": [0.1,0.5,0.9],
             "mu_prop": [0.1,0.25,0.5],
             "dist_mean": [False],
             "rank_one": [False],
+            "cma": [True, False],
             }
 
-    # TODO: add base run with no cma
-    runs = [{'learning_rate': a, 'mu_prop': b, 'dist_mean': c, 'rank_one': d} for a in vars['learning_rate']
-            for b in vars['mu_prop'] for c in vars['dist_mean'] for d in vars['rank_one']]
+    runs = [{'initial_decvars': a, 'draw_mult': b, 'en_size': c,
+             'learning_rate': d, 'mu_prop': e, 'dist_mean': f, 'rank_one': g, 'cma': h}
+            for a in vars['initial_decvars'] for b in vars['draw_mult'] for c in vars['en_size']
+            for d in vars['learning_rate'] for e in vars['mu_prop'] for f in vars['dist_mean']
+            for g in vars['rank_one'] for h in vars['cma']]
+    # remove all runs with cma == False except one
+    runs = [x for x in runs if x['cma'] == True] + \
+           [x for i, x in enumerate(runs) if x['cma'] == False and i == 1]
 
     fails = []
     for i,v in enumerate(runs):
-        #rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'])
+        rosenbrock_setup(version=version, initial_decvars=v['initial_decvars'], constraints=constraints)
         try:
-            rosenbrock_multiple_update(version=version,cma=True,
-                                       learning_rate=v['learning_rate'],mu_prop=v['mu_prop'],
-                                       dist_mean=v['dist_mean'], rank_one=v['rank_one'])
+            rosenbrock_multiple_update(version=version,nit=30,draw_mult=v['draw_mult'],en_size=v['en_size'],
+                                       hess_self_scaling=2,hess_update=True,
+                                       damped=True,constraints=constraints,
+                                       cma=v['cma'],
+                                       learning_rate=v['learning_rate'], mu_prop=v['mu_prop'],
+                                       use_dist_mean_for_delta=v['dist_mean'], rank_one=v['rank_one'])
         except:
             fails.append(v)
             os.chdir(os.path.join("..", ".."))
-        # TODO: strip plot back
+        # TODO: add constraint support to rosenbrock_phi_progress
         rosenbrock_phi_progress(version=version,
-                                label="phi_progress_learn_rate{0}_mu_prop{1}_dist_mean{2}_rank_one{3}.pdf".
-                                format(v['learning_rate'],v['mu_prop'],v['dist_mean'],v['rank_one']))
+                                label="phi_progress_ne{0}_idv{1}_dm{2}_cma{3}_lr{4}_mu_p{5}_mean{6}_r1{7}.pdf"
+                                .format(v['en_size'],v['initial_decvars'],v['draw_mult'],
+                                        v['cma'],v['learning_rate'],v['mu_prop'],v['dist_mean'],v['rank_one']))
 
+        if version == "2par":
+            plot_2par_rosen(label="rosen_surf_ne{0}_idv{1}_dm{2}_cma{3}_lr{4}_mu_p{5}_mean{6}_r1{7}.pdf"
+                            .format(v['en_size'], v['initial_decvars'], v['draw_mult'],
+                                    v['cma'], v['learning_rate'], v['mu_prop'], v['dist_mean'], v['rank_one']),
+                            constraints=constraints)
+
+            os.chdir(os.path.join("..",".."))
 
 
 # TODO: copy test dirs and make changes in there...
@@ -595,7 +616,7 @@ if __name__ == "__main__":
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    #invest(version="2par")
+    invest(version="2par")
     #invest(version="high_dim")
 
 
