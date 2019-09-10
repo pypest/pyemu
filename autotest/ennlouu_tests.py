@@ -255,10 +255,10 @@ def invest(version,constraints=False):
     import os
     import shutil
 
-    vars = {"initial_decvars": [[1.5,-1.5]],
-            "draw_mult": [3e-3],
-            "en_size": [10],
-            "hess_self_scaling": [False],
+    vars = {"initial_decvars": [[-1.5,1.5],[1.5,1.0]],
+            "draw_mult": [3e-2,3e-3,3e-3],
+            "en_size": [20],
+            "hess_self_scaling": [2,True],
             "hess_update": [True],
             "damped": [True],
             }
@@ -275,7 +275,7 @@ def invest(version,constraints=False):
     for i, v in enumerate(runs):
         rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'],constraints=constraints)
         try:
-            rosenbrock_multiple_update(version=version,nit=25,draw_mult=v['draw_mult'],en_size=v['en_size'],
+            rosenbrock_multiple_update(version=version,nit=30,draw_mult=v['draw_mult'],en_size=v['en_size'],
                                        hess_self_scaling=v['hess_self_scaling'],hess_update=v['hess_update'],
                                        damped=v['damped'],constraints=constraints)
         except:
@@ -314,13 +314,9 @@ def invest(version,constraints=False):
 def cma_invest(version):
     vars = {"learning_rate": [0.1,0.5,0.9],
             "mu_prop": [0.1,0.25,0.5],
-            "dist_mean": [False,True],
+            "dist_mean": [False],
+            "rank_one": [False],
             }
-            #"rank_one": [False, True],
-
-            #"initial_decvars": [1.6],
-            #"en_size": [20],
-    #TODO: add rank-mu prop var
 
     # TODO: add base run with no cma
     runs = [{'learning_rate': a, 'mu_prop': b, 'dist_mean': c, 'rank_one': d} for a in vars['learning_rate']
@@ -599,7 +595,7 @@ if __name__ == "__main__":
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    invest(version="2par")
+    #invest(version="2par")
     #invest(version="high_dim")
 
 
@@ -615,4 +611,5 @@ if __name__ == "__main__":
 
     #rosenbrock_multiple_update(version="2par",cma=True,nit=10)
     #rosenbrock_phi_progress(version="2par",label="phi_progress_cma.pdf")
-    #cma_invest(version="2par")
+
+    cma_invest(version="2par")

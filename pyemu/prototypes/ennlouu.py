@@ -410,7 +410,8 @@ class EnsembleSQP(EnsembleMethod):
                 rs = r.T * self.s
                 #hess_scalar = float((r.T * r).x / rs.x)  # Dakota (Sandia)  #TODO: compare hess_scalars
                 #hess_scalar = float(rs.x / (r.T * self.H * r).x)  # Nocedal and Wright, Oliver et al.
-                hess_scalar = float(rs.x / (r.T * r).x)  # Nocedal and Wright, Oliver et al.
+                #hess_scalar = float(rs.x / (r.T * r).x)  # Nocedal and Wright, Oliver et al.
+                hess_scalar = float((self.s.T * self.s).x / rs.x)  # Zhang
                 self.logger.log("using damped version of BFGS alg implementation..")
                 if hess_scalar < 0:  # abort
                     self.logger.warn("can't scale despite dampening...")
@@ -432,7 +433,8 @@ class EnsembleSQP(EnsembleMethod):
             if not (float(ys.x) <= 0):  # not already scaled
                 #hess_scalar = float((self.y.T * self.y.x) / ys.x)  # Dakota (Sandia)  #TODO: compare hess_scalars
                 #hess_scalar = float(ys.x / (self.y.T * self.H * self.y).x)  # Nocedal and Wright, Oliver et al.
-                hess_scalar = float(ys.x / (self.y.T * self.y).x)  # Nocedal and Wright, Oliver et al.
+                #hess_scalar = float(ys.x / (self.y.T * self.y).x)  # Nocedal and Wright, Oliver et al.
+                hess_scalar = float((self.s.T * self.s).x / ys.x)  # Zhang
                 if hess_scalar < 0:  # abort
                     self.logger.lraise("hessian scalar is not strictly positive!")
                     self.hess_progress[self.iter_num] = "skip scaling"
@@ -440,7 +442,7 @@ class EnsembleSQP(EnsembleMethod):
             self.H *= hess_scalar
             self.H_cp = self.H.copy()  # in case the update step doesn't work below
             self.logger.log("scaling Hessian...")
-            if update:
+            if update is False:
                 if damped:
                     self.hess_progress[self.iter_num] = "scaled (using dampening) only: {0:8.3E}".format(hess_scalar)
                 else:
@@ -1014,4 +1016,7 @@ class EnsembleSQP(EnsembleMethod):
         pd.DataFrame.from_dict([self.hess_progress]).to_csv("hess_progress.csv")
         # TODO: save Hessian vectors (as csv)
         # TODO: phi mean and st dev report
+
+        #self.H.df()
+        self.inv_hessian.to_coo("hess_it{}".format(self.iter_num))
 
