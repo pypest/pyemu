@@ -992,17 +992,16 @@ class EnsembleSQP(EnsembleMethod):
 
         if hess_update is True or self_scale is True:
             if alg == "BFGS":
-                self.inv_hessian, self.hess_progress_d = self._BFGS_hess_update(self.inv_hessian, self.curr_grad,
-                                                                                self.phi_grad,
-                                                                                self.delta_parensemble_mean,
-                                                                                self_scale=self_scale,
-                                                                                update=hess_update,
-                                                                                damped=damped)
+                self.inv_hessian, self.hess_progress = self._BFGS_hess_update(self.inv_hessian, self.curr_grad,
+                                                                              self.phi_grad,self.delta_parensemble_mean,
+                                                                              self_scale=self_scale,
+                                                                              update=hess_update,
+                                                                              damped=damped)
 
             else:  # LBFGS
                 self.logger.warn("LBFGS not implemented...yet...")
         else:
-            self.hess_progress_d[self.iter_num] = "skipping scaling and updating"
+            self.hess_progress[self.iter_num] = "skip scaling and updating"
 
         self.logger.log("scaling and/or updating Hessian via quasi-Newton")
         # copy Hessian, write vectors
@@ -1012,10 +1011,7 @@ class EnsembleSQP(EnsembleMethod):
         self.parensemble_mean = self.parensemble_mean_next.copy()
         self.parensemble = self.parensemble_next.copy()
 
-        hess_progress_df = pd.DataFrame.from_dict([self.hess_progress_d])
-        hess_progress_df.to_csv("hess_progress.csv")
-
-
+        pd.DataFrame.from_dict([self.hess_progress]).to_csv("hess_progress.csv")
         # TODO: save Hessian vectors (as csv)
         # TODO: phi mean and st dev report
 
