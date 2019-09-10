@@ -186,7 +186,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,13)),constraints=constraints,biobj_weight=biobj_weight,
+        esqp.update(step_mult=list(np.logspace(-6,0,7)),constraints=constraints,biobj_weight=biobj_weight,
                     hess_self_scaling=hess_self_scaling,hess_update=hess_update,damped=damped,
                     cma=cma,rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
                     use_dist_mean_for_delta=use_dist_mean_for_delta)
@@ -255,16 +255,16 @@ def invest(version,constraints=False):
     import os
     import shutil
 
-    vars = {"initial_decvars": [[-1.5,1.5],[1.5,1.0]],
-            "draw_mult": [3e-2,3e-3,3e-4],
-            "en_size": [20],
+    vars = {"initial_decvars": [[1.5,-1.5],[1.5,1.0]],
+            "draw_mult": [3e-3],
+            "en_size": [15],
             "hess_self_scaling": [2,True],
             "hess_update": [True],
             "damped": [True],
             }
-    #"initial_decvars": [0.45,0.9,1.6]
+    #"draw_mult": [3e-2,3e-33e-4]
+
     #"alpha_base": [0.1, 0.2],
-    #"draw_mult": [3e-2,3e-3, 3e-4, 3e-5, 3e-6]
 
     runs = [{'initial_decvars': a, 'draw_mult': b, 'en_size': c, 'hess_self_scaling': d, 'hess_update': e,
              'damped': f}
@@ -275,7 +275,7 @@ def invest(version,constraints=False):
     for i, v in enumerate(runs):
         rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'],constraints=constraints)
         try:
-            rosenbrock_multiple_update(version=version,nit=30,draw_mult=v['draw_mult'],en_size=v['en_size'],
+            rosenbrock_multiple_update(version=version,nit=20,draw_mult=v['draw_mult'],en_size=v['en_size'],
                                        hess_self_scaling=v['hess_self_scaling'],hess_update=v['hess_update'],
                                        damped=v['damped'],constraints=constraints)
         except:
@@ -313,9 +313,9 @@ def invest(version,constraints=False):
 
 def cma_invest(version, constraints=False):
 
-    vars = {"initial_decvars": [[-1.5,1.5]],
+    vars = {"initial_decvars": [[1.5,-1.5]],
             "draw_mult": [3e-3],
-            "en_size": [3],
+            "en_size": [15],
             "learning_rate": [0.1,0.5,0.9],
             "mu_prop": [0.1,0.25,0.5],
             "dist_mean": [False],
