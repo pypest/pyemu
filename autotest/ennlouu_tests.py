@@ -158,7 +158,7 @@ def rosenbrock_2par_grad_approx_invest():
 
 def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,
                                constraints=False,biobj_weight=1.0,biobj_transf=True,
-                               hess_self_scaling=True,hess_update=True,scale_once_iter=1,damped=True,
+                               hess_self_scaling=True,hess_update=True,damped=True,
                                cma=False,
                                rank_one=False,learning_rate=0.5,
                                mu_prop=0.25,use_dist_mean_for_delta=False,): #filter_thresh=1e-2
@@ -187,8 +187,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints)
     for it in range(nit):
         esqp.update(step_mult=list(np.logspace(-6,0,13)),constraints=constraints,biobj_weight=biobj_weight,
-                    hess_self_scaling=hess_self_scaling,hess_update=hess_update,
-                    scale_once_iter=scale_once_iter,damped=damped,
+                    hess_self_scaling=hess_self_scaling,hess_update=hess_update,damped=damped,
                     cma=cma,rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
                     use_dist_mean_for_delta=use_dist_mean_for_delta)
     os.chdir(os.path.join("..", ".."))
@@ -252,16 +251,15 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
     plt.close()
     os.chdir(os.path.join("..", ".."))
 
-def invest(version):
+def invest(version,constraints=False):
     import os
     import shutil
 
     vars = {"initial_decvars": [[1.5,-1.5]],
             "draw_mult": [3e-3],
             "en_size": [10],
-            "hess_self_scaling": [False, True],
-            "hess_update": [True, False],
-            "scale_once_iter": [1, 2, False],
+            "hess_self_scaling": [False],
+            "hess_update": [True],
             "damped": [True],
             }
     #"initial_decvars": [0.45,0.9,1.6]
@@ -269,44 +267,44 @@ def invest(version):
     #"draw_mult": [3e-2,3e-3, 3e-4, 3e-5, 3e-6]
 
     runs = [{'initial_decvars': a, 'draw_mult': b, 'en_size': c, 'hess_self_scaling': d, 'hess_update': e,
-             'scale_once_iter': f, 'damped': g}
+             'damped': f}
             for a in vars['initial_decvars'] for b in vars['draw_mult'] for c in vars['en_size']
-            for d in vars['hess_self_scaling'] for e in vars['hess_update'] for f in vars['scale_once_iter']
-            for g in vars['damped']]
+            for d in vars['hess_self_scaling'] for e in vars['hess_update'] for f in vars['damped']]
 
     fails = []
     for i, v in enumerate(runs):
-        rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'])
+        rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'],constraints=constraints)
         try:
             rosenbrock_multiple_update(version=version,nit=25,draw_mult=v['draw_mult'],en_size=v['en_size'],
                                        hess_self_scaling=v['hess_self_scaling'],hess_update=v['hess_update'],
-                                       scale_once_iter=v['scale_once_iter'],damped=v['damped'])
+                                       damped=v['damped'],constraints=constraints)
         except:
             fails.append(v)
             os.chdir(os.path.join("..", ".."))
+        # TODO: add constraint support to rosenbrock_phi_progress
         rosenbrock_phi_progress(version=version,
-                                label="phi_progress_ne{0}_initdv{1}_dm{2}_sca{3}_upd{4}_sca_it{5}_d{6}.pdf"
+                                label="phi_progress_ne{0}_initdv{1}_dm{2}_sca{3}_upd{4}_d{5}.pdf"
                                 .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
-                                        v['hess_update'],v['scale_once_iter'],v['damped']))
+                                        v['hess_update'],v['damped']))
 
         if version == "2par":
-            plot_2par_rosen(label="rosen_surf_ne{0}_dm{1}_scale{2}_update{3}_scale_it{4}_damp{5}.pdf"
+            plot_2par_rosen(label="rosen_surf_ne{0}_dm{1}_scale{2}_update{3}_damp{4}.pdf"
                             .format(v['en_size'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
-                                    v['scale_once_iter'],v['damped']))
+                                    v['damped']), constraints=constraints)
 
         if version == "2par":
             os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
             try:
-                [shutil.copy(x, "phi_curv_it{0}_ne{1}_dm{2}_scale{3}_update{4}_scale_it{5}_damp{6}.csv"
+                [shutil.copy(x, "phi_curv_it{0}_ne{1}_dm{2}_scale{3}_update{4}_damp{5}.csv"
                              .format(int(x.split("it")[1].split(".")[0]),v['en_size'],v['draw_mult'],
-                                     v['hess_self_scaling'],v['hess_update'],v['scale_once_iter'],v['damped']))
+                                     v['hess_self_scaling'],v['hess_update'],v['damped']))
                  for x in os.listdir() if ("_per_" in x) and ("_alpha_" in x)]
             except FileNotFoundError:
                 print("missing")
             try:
-                [shutil.copy(x, x.split(".")[0] + "_ne{0}_dm{1}_scale{2}_update{3}_scale_it{4}_damp{5}.csv"
+                [shutil.copy(x, x.split(".")[0] + "_ne{0}_dm{1}_scale{2}_update{3}_damp{4}.csv"
                              .format(v['en_size'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
-                                     v['scale_once_iter'],v['damped']))
+                                     v['damped']))
                  for x in os.listdir() if x == "hess_progress.csv"]
             except FileNotFoundError:
                 print("missing")
@@ -539,14 +537,18 @@ def plot_mean_dev_var_bar(opt_par_en="supply2_pest.parensemble.0000.csv",three_r
     # plt.show()
     plt.savefig("dec_vars.pdf")
 
-def plot_2par_rosen(label="rosen_2par_surf.pdf"):
+def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False):
     import numpy as np
     import matplotlib.pyplot as plt
     import pandas as pd
     import pyemu
 
-    os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
-    pst = pyemu.Pst("rosenbrock_2par.pst")
+    if constraints:
+        os.chdir(os.path.join("ennlouu", "rosenbrock_2par_constrained"))
+        pst = pyemu.Pst("rosenbrock_2par_constrained.pst")
+    else:
+        os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
+        pst = pyemu.Pst("rosenbrock_2par.pst")
 
     f = lambda x1, x2: 100.0 * (x2 - x1 ** 2.0) ** 2.0 + (1 - x1) ** 2.0  # from rosenbrock_2par.py
 
@@ -557,6 +559,12 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf"):
     Z = f(X, Y)
 
     plt.contour(X, Y, Z, np.logspace(-0.5, 3.5, 20, base=10), cmap='gray')
+
+    theta = np.linspace(0, 2 * np.pi)
+    r = 1.0
+    xx = r * np.cos(theta)
+    yy = r * np.sin(theta)
+    plt.plot(xx, yy, 'r-')
 
     par_ens = [x for x in os.listdir() if x.endswith(".parensemble.0000.csv")]
     for pe in par_ens:
@@ -585,13 +593,13 @@ if __name__ == "__main__":
     #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
-    plot_2par_rosen()
+    #plot_2par_rosen()
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    #invest(version="2par")
+    invest(version="2par")
     #invest(version="high_dim")
 
 
