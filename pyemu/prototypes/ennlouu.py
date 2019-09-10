@@ -475,15 +475,15 @@ class EnsembleSQP(EnsembleMethod):
 
             if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):  #-1 * self.pst.svd_data.eigthresh):  #0): # can't soften!
                 if float(ys.x) <= 0 and damped:
-                    self.logger.warn("Hessian update causes pos-def status to be violated despite using dampening... \n")
+                    self.logger.warn("Hessian update causes pos-def status to be violated despite using dampening...")
                     if self_scale:
-                        self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
+                        self.hess_progress[self.iter_num] = "scaled only (damped): {0:8.3E}".format(hess_scalar)
                         self.H = self.H_cp
                     else:
                         self.hess_progress[self.iter_num] = "not scaled or updated"
                         self.H = curr_inv_hess
                 else:
-                    self.logger.warn("Hessian update causes pos-def status to be violated.. \n")
+                    self.logger.warn("Hessian update causes pos-def status to be violated...")
                     if self_scale:
                         self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
                         self.H = self.H_cp
@@ -493,7 +493,12 @@ class EnsembleSQP(EnsembleMethod):
             else:
                 try:
                     hess_scalar
-                    self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar)
+                    if self_scale and damped and float(ys.x) <= 0:
+                        self.hess_progress[self.iter_num] = "scaled (damped) ({0:8.3E}) and updated".format(hess_scalar)
+                    elif self_scale:
+                        self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar)
+                    else:
+                        self.hess_progress[self.iter_num] = "updated only"
                 except NameError:
                     self.hess_progress[self.iter_num] = "updated only"
 
@@ -905,7 +910,7 @@ class EnsembleSQP(EnsembleMethod):
                     best_alpha = step_size
                     self.best_alpha_per_it[self.iter_num] = best_alpha
                     best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
-                    best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
+                    best_alpha_per_it_df.to_csv("best_alpha.csv")
 
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
                     self.parensemble_next = self.parensemble_1.copy()
@@ -945,7 +950,7 @@ class EnsembleSQP(EnsembleMethod):
             best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
             self.best_alpha_per_it[self.iter_num] = best_alpha
             best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
-            best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
+            best_alpha_per_it_df.to_csv("best_alpha.csv")
             self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
             self.parensemble_next.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, best_alpha) +
                                          self.paren_prefix.format(0))

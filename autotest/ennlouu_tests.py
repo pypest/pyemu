@@ -236,7 +236,7 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
     ylim = ax.get_ylim()
     try:
         hess_df = pd.read_csv("hess_progress.csv",index_col=0).T
-        alpha_df = pd.read_csv("best_alpha_per_it.csv", index_col=0).T
+        alpha_df = pd.read_csv("best_alpha.csv", index_col=0).T
         hess_df.columns, alpha_df.columns = ["hess"], ["alpha"]
         hess_and_alpha = pd.concat((hess_df, alpha_df), 1, sort=True)
         for i, v in hess_and_alpha.iterrows():
@@ -259,9 +259,9 @@ def invest(version):
     vars = {"initial_decvars": [[1.5,-1.5]],
             "draw_mult": [3e-3],
             "en_size": [10],
-            "hess_self_scaling": [True, False],
+            "hess_self_scaling": [False, True],
             "hess_update": [True, False],
-            "scale_once_iter": [False, 1, 2],
+            "scale_once_iter": [1, 2, False],
             "damped": [True],
             }
     #"initial_decvars": [0.45,0.9,1.6]
@@ -278,7 +278,7 @@ def invest(version):
     for i, v in enumerate(runs):
         rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'])
         try:
-            rosenbrock_multiple_update(version=version,nit=20,draw_mult=v['draw_mult'],en_size=v['en_size'],
+            rosenbrock_multiple_update(version=version,nit=25,draw_mult=v['draw_mult'],en_size=v['en_size'],
                                        hess_self_scaling=v['hess_self_scaling'],hess_update=v['hess_update'],
                                        scale_once_iter=v['scale_once_iter'],damped=v['damped'])
         except:
@@ -585,13 +585,13 @@ if __name__ == "__main__":
     #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
-    #plot_2par_rosen()
+    plot_2par_rosen()
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    invest(version="2par")
+    #invest(version="2par")
     #invest(version="high_dim")
 
 
