@@ -15,7 +15,9 @@ def add_base_test():
     pet = pe.copy()
     pet.transform()
     pe.add_base()
+    assert pe.shape[0] == num_reals
     pet.add_base()
+    assert pet.shape[0] == num_reals
     assert "base" in pe.index
     assert "base" in pet.index
     p = pe.loc["base",:]
@@ -32,6 +34,7 @@ def add_base_test():
 
 
     oe.add_base()
+    assert oe.shape[0] == num_reals
     d = (pst.observation_data.loc[oe.columns,"obsval"] - oe.loc["base",:]).apply(np.abs)
     assert d.max() == 0
     try:
@@ -587,12 +590,12 @@ if __name__ == "__main__":
     #par_gauss_draw_consistency_test()
     #obs_gauss_draw_consistency_test()
     #phi_vector_test()
-    # add_base_test()
+    add_base_test()
     #nz_test()
     # deviations_test()
     # as_pyemu_matrix_test()
     # dropna_test()
-    enforce_test()
+    #enforce_test()
     # pnulpar_test()
     # triangular_draw_test()
     # uniform_draw_test()

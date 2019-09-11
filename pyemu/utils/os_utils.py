@@ -182,7 +182,7 @@ def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_r
     """
 
     if not os.path.isdir(worker_dir):
-        raise Exception("worker dir not found")
+        raise Exception("worker dir '{0}' not found".format(worker_dir))
     if not os.path.isdir(worker_root):
         raise Exception("worker root dir not found")
     if num_workers is None:
