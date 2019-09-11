@@ -716,7 +716,7 @@ class ObservationEnsemble(Ensemble):
         """add the control file `obsval` values as a realization
 
         Note:
-            adds the current `ObservationEnsemble.pst.observation_data.obsval` values
+            replaces the last realization with the current `ObservationEnsemble.pst.observation_data.obsval` values
                 as a new realization named "base"
 
         """
@@ -1187,7 +1187,7 @@ class ParameterEnsemble(Ensemble):
         """add the control file `obsval` values as a realization
 
         Note:
-            adds the current `ParameterEnsemble.pst.parameter_data.parval1` values
+            replaces the last realization with the current `ParameterEnsemble.pst.parameter_data.parval1` values
             as a new realization named "base"
 
         """
