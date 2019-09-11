@@ -716,13 +716,14 @@ class ObservationEnsemble(Ensemble):
         """add the control file `obsval` values as a realization
 
         Note:
-            adds the current `ObservationEnsemble.pst.observation_data.obsval` values
+            replaces the last realization with the current `ObservationEnsemble.pst.observation_data.obsval` values
                 as a new realization named "base"
 
         """
         if "base" in self.index:
             raise Exception("'base' already in ensemble")
-        self.loc["base",:] = self.pst.observation_data.loc[self.columns,"obsval"]
+        self._df = self._df.iloc[:-1,:]
+        self._df.loc["base",:] = self.pst.observation_data.loc[self.columns,"obsval"]
 
     @property
     def nonzero(self):
@@ -1186,12 +1187,13 @@ class ParameterEnsemble(Ensemble):
         """add the control file `obsval` values as a realization
 
         Note:
-            adds the current `ParameterEnsemble.pst.parameter_data.parval1` values
+            replaces the last realization with the current `ParameterEnsemble.pst.parameter_data.parval1` values
             as a new realization named "base"
 
         """
         if "base" in self.index:
             raise Exception("'base' realization already in ensemble")
+        self._df = self._df.iloc[:-1, :]
         if self.istransformed:
             self.pst.add_transform_columns()
             self.loc["base", :] = self.pst.parameter_data.loc[self.columns, "parval1_trans"]
