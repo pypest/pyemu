@@ -161,7 +161,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,
                                hess_self_scaling=2,hess_update=True,damped=True,
                                cma=False,
                                rank_one=False,learning_rate=0.5,
-                               mu_prop=0.25,use_dist_mean_for_delta=False,): #filter_thresh=1e-2
+                               mu_prop=0.25,use_dist_mean_for_delta=False,mu_learning_prop=0.5): #filter_thresh=1e-2
     import pyemu
     import numpy as np
     if version == "2par":
@@ -189,7 +189,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,
         esqp.update(step_mult=list(np.logspace(-6,0,7)),constraints=constraints,biobj_weight=biobj_weight,
                     hess_self_scaling=hess_self_scaling,hess_update=hess_update,damped=damped,
                     cma=cma,rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
-                    use_dist_mean_for_delta=use_dist_mean_for_delta)
+                    use_dist_mean_for_delta=use_dist_mean_for_delta,mu_learning_prop=mu_learning_prop)
     os.chdir(os.path.join("..", ".."))
 
    #  TODO: critical that draw_mult is refined as we go?
@@ -288,22 +288,22 @@ def invest(version,constraints=False):
                                         v['hess_update'],v['damped']))
 
         if version == "2par":
-            plot_2par_rosen(label="rosen_surf_ne{0}_dm{1}_scale{2}_update{3}_damp{4}.pdf"
-                            .format(v['en_size'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
+            plot_2par_rosen(label="rosen_surf_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}.pdf"
+                            .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
                                     v['damped']), constraints=constraints)
 
         if version == "2par":
             os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
             try:
-                [shutil.copy(x, "phi_curv_it{0}_ne{1}_dm{2}_scale{3}_update{4}_damp{5}.csv"
-                             .format(int(x.split("it")[1].split(".")[0]),v['en_size'],v['draw_mult'],
+                [shutil.copy(x, "phi_curv_it{0}_ne{1}_idv{2}_dm{3}_scale{4}_update{5}_damp{6}.csv"
+                             .format(int(x.split("it")[1].split(".")[0]),v['en_size'],v['initial_decvars'],v['draw_mult'],
                                      v['hess_self_scaling'],v['hess_update'],v['damped']))
                  for x in os.listdir() if ("_per_" in x) and ("_alpha_" in x)]
             except FileNotFoundError:
                 print("missing")
             try:
-                [shutil.copy(x, x.split(".")[0] + "_ne{0}_dm{1}_scale{2}_update{3}_damp{4}.csv"
-                             .format(v['en_size'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
+                [shutil.copy(x, x.split(".")[0] + "_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}.csv"
+                             .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
                                      v['damped']))
                  for x in os.listdir() if x == "hess_progress.csv"]
             except FileNotFoundError:
@@ -317,20 +317,21 @@ def cma_invest(version, constraints=False):
             "draw_mult": [3e-3],
             "en_size": [15],
             "learning_rate": [0.1,0.5,0.9],
-            "mu_prop": [0.1,0.25,0.5],
+            "mu_prop": [0.25],
             "dist_mean": [False],
             "rank_one": [False],
+            "mu_learning_prop": [0.5],
             "cma": [True, False],
             }
 
     runs = [{'initial_decvars': a, 'draw_mult': b, 'en_size': c,
-             'learning_rate': d, 'mu_prop': e, 'dist_mean': f, 'rank_one': g, 'cma': h}
+             'learning_rate': d, 'mu_prop': e, 'dist_mean': f, 'rank_one': g, 'mu_learning_prop': h, 'cma': i}
             for a in vars['initial_decvars'] for b in vars['draw_mult'] for c in vars['en_size']
             for d in vars['learning_rate'] for e in vars['mu_prop'] for f in vars['dist_mean']
-            for g in vars['rank_one'] for h in vars['cma']]
+            for g in vars['rank_one'] for h in v['mu_learning_prop'] for i in vars['cma']]
     # remove all runs with cma == False except one
-    runs = [x for x in runs if x['cma'] == True] + \
-           [x for i, x in enumerate(runs) if x['cma'] == False and i == 1]
+    runs = [x for x in runs if x['cma'] is True] + \
+           [x for i, x in enumerate(runs) if x['cma'] is False and i == 1]
 
     fails = []
     for i,v in enumerate(runs):
@@ -341,7 +342,8 @@ def cma_invest(version, constraints=False):
                                        damped=True,constraints=constraints,
                                        cma=v['cma'],
                                        learning_rate=v['learning_rate'], mu_prop=v['mu_prop'],
-                                       use_dist_mean_for_delta=v['dist_mean'], rank_one=v['rank_one'])
+                                       use_dist_mean_for_delta=v['dist_mean'], rank_one=v['rank_one'],
+                                       mu_learning_prop=v['mu_learning_prop'])
         except:
             fails.append(v)
             os.chdir(os.path.join("..", ".."))
@@ -357,7 +359,7 @@ def cma_invest(version, constraints=False):
                                     v['cma'], v['learning_rate'], v['mu_prop'], v['dist_mean'], v['rank_one']),
                             constraints=constraints)
 
-            os.chdir(os.path.join("..",".."))
+            #os.chdir(os.path.join("..",".."))
 
 
 # TODO: copy test dirs and make changes in there...
@@ -616,7 +618,7 @@ if __name__ == "__main__":
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    invest(version="2par")
+    #invest(version="2par")
     #invest(version="high_dim")
 
 

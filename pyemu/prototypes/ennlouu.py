@@ -645,6 +645,7 @@ class EnsembleSQP(EnsembleMethod):
         #TODO: or even just scalar - e.g., like draw mult variable?
         #TODO: finish implementing rank-one update
         #TODO: check use of ``distribution mean''
+        #TODO: this needs to be scalable - i.e. when dealing with large en_covs
 
         '''
 
@@ -679,7 +680,7 @@ class EnsembleSQP(EnsembleMethod):
                 if np.linalg.matrix_rank((sub_delta.T * sub_delta).x) > mu:
                     self.logger.lraise("matrix product should not be of rank greater than mu here")
         else:
-            self.logger.lraise("rank_mu not True--skipping cov matrix adaptation")
+            self.logger.lraise("skipping cov matrix adaptation")
 
         return en_cov
 
@@ -689,7 +690,7 @@ class EnsembleSQP(EnsembleMethod):
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
                cma=False,
                rank_one=False, learning_rate=0.5, mu_prop=0.25,
-               use_dist_mean_for_delta=False):#localizer=None,run_subset=None,
+               use_dist_mean_for_delta=False,mu_learning_prop=0.5):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -801,9 +802,12 @@ class EnsembleSQP(EnsembleMethod):
             self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
             self.logger.log("compute dec var-phi en cross-covariance vector")
 
-            if cma:
+            if cma is True:
                 self.logger.log("undertaking dec var cov mat adaptation")
-                self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar)
+                self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar,
+                                                         rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
+                                                         use_dist_mean_for_delta=use_dist_mean_for_delta,
+                                                         mu_learning_prop=mu_learning_prop)
                 self.logger.log("undertaking dec var cov mat adaptation")
 
             # compute gradient vector and undertake gradient-related checks
@@ -1022,6 +1026,8 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: save Hessian vectors (as csv)
         # TODO: phi mean and st dev report
 
-        #self.H.df()
-        self.inv_hessian.to_coo("hess_it{}".format(self.iter_num))
+        if self.pst.npar_adj < 10:
+            #self.H.df()
+            self.inv_hessian.to_ascii("hess_it{}.dat".format(self.iter_num))
+            self.en_cov_decvar.to_ascii("en_decvar_cov_it{}.dat".format(self.iter_num))
 
