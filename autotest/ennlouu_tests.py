@@ -186,7 +186,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,7)),constraints=constraints,biobj_weight=biobj_weight,
+        esqp.update(step_mult=list(np.logspace(-6,0,13)),constraints=constraints,biobj_weight=biobj_weight,
                     hess_self_scaling=hess_self_scaling,hess_update=hess_update,damped=damped,
                     cma=cma,rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
                     use_dist_mean_for_delta=use_dist_mean_for_delta,mu_learning_prop=mu_learning_prop)
@@ -252,12 +252,11 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
     os.chdir(os.path.join("..", ".."))
 
 def invest(version,constraints=False):
-    import os
     import shutil
 
-    vars = {"initial_decvars": [[1.5,-1.5],[1.5,1.0]],
+    vars = {"initial_decvars": [[1.5,-1.5]],
             "draw_mult": [3e-3],
-            "en_size": [15],
+            "en_size": [10],
             "hess_self_scaling": [2,True],
             "hess_update": [True],
             "damped": [True],
@@ -315,20 +314,20 @@ def cma_invest(version, constraints=False):
 
     vars = {"initial_decvars": [[1.5,-1.5]],
             "draw_mult": [3e-3],
-            "en_size": [15],
+            "en_size": [10],
             "learning_rate": [0.1,0.5,0.9],
             "mu_prop": [0.25],
             "dist_mean": [False],
             "rank_one": [False],
             "mu_learning_prop": [0.5],
-            "cma": [True, False],
+            "cma": [False],
             }
 
     runs = [{'initial_decvars': a, 'draw_mult': b, 'en_size': c,
              'learning_rate': d, 'mu_prop': e, 'dist_mean': f, 'rank_one': g, 'mu_learning_prop': h, 'cma': i}
             for a in vars['initial_decvars'] for b in vars['draw_mult'] for c in vars['en_size']
             for d in vars['learning_rate'] for e in vars['mu_prop'] for f in vars['dist_mean']
-            for g in vars['rank_one'] for h in v['mu_learning_prop'] for i in vars['cma']]
+            for g in vars['rank_one'] for h in vars['mu_learning_prop'] for i in vars['cma']]
     # remove all runs with cma == False except one
     runs = [x for x in runs if x['cma'] is True] + \
            [x for i, x in enumerate(runs) if x['cma'] is False and i == 1]

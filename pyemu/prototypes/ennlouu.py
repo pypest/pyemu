@@ -412,8 +412,8 @@ class EnsembleSQP(EnsembleMethod):
                 rs = r.T * self.s
                 #hess_scalar = float((r.T * r).x / rs.x)  # Dakota (Sandia)  #TODO: compare hess_scalars
                 #hess_scalar = float(rs.x / (r.T * self.H * r).x)  # Nocedal and Wright, Oliver et al.
-                #hess_scalar = float(rs.x / (r.T * r).x)  # Nocedal and Wright, Oliver et al.
-                hess_scalar = float((self.s.T * self.s).x / rs.x)  # Zhang
+                hess_scalar = float(rs.x / (r.T * r).x)  # Nocedal and Wright, Oliver et al.
+                #hess_scalar = float((self.s.T * self.s).x / rs.x)  # Zhang
                 self.logger.log("using damped version of BFGS alg implementation..")
                 if hess_scalar < 0:  # abort
                     self.logger.warn("can't scale despite dampening...")
@@ -435,8 +435,8 @@ class EnsembleSQP(EnsembleMethod):
             if not (float(ys.x) <= 0):  # not already scaled
                 #hess_scalar = float((self.y.T * self.y.x) / ys.x)  # Dakota (Sandia)  #TODO: compare hess_scalars
                 #hess_scalar = float(ys.x / (self.y.T * self.H * self.y).x)  # Nocedal and Wright, Oliver et al.
-                #hess_scalar = float(ys.x / (self.y.T * self.y).x)  # Nocedal and Wright, Oliver et al.
-                hess_scalar = float((self.s.T * self.s).x / ys.x)  # Zhang
+                hess_scalar = float(ys.x / (self.y.T * self.y).x)  # Nocedal and Wright, Oliver et al.
+                #hess_scalar = float((self.s.T * self.s).x / ys.x)  # Zhang
                 if hess_scalar < 0:  # abort
                     self.logger.lraise("hessian scalar is not strictly positive!")
                     self.hess_progress[self.iter_num] = "skip scaling"
@@ -989,12 +989,13 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("scaling and/or updating Hessian via quasi-Newton")
         if self.iter_num == 1:  # no pre-existing grad or par delta info..
             hess_update = False  # never update at first iter
-            if hess_self_scaling is True or hess_self_scaling == self.iter_num:
-                self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
-                                        row_names=self.phi_grad.row_names,col_names=self.phi_grad.col_names)
-                self_scale = True
-            else:
-                self_scale = False
+            #if hess_self_scaling is True or hess_self_scaling == self.iter_num:
+             #   self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
+              #                          row_names=self.phi_grad.row_names,col_names=self.phi_grad.col_names)
+               # self_scale = True
+            #else:
+             #   self_scale = False
+            self_scale = False
 
         elif hess_self_scaling is True or hess_self_scaling == self.iter_num:
             self_scale = True
@@ -1029,5 +1030,6 @@ class EnsembleSQP(EnsembleMethod):
         if self.pst.npar_adj < 10:
             #self.H.df()
             self.inv_hessian.to_ascii("hess_it{}.dat".format(self.iter_num))
-            self.en_cov_decvar.to_ascii("en_decvar_cov_it{}.dat".format(self.iter_num))
+            if cma is True:
+                self.en_cov_decvar.to_ascii("en_decvar_cov_it{}.dat".format(self.iter_num))
 
