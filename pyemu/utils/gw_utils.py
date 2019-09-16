@@ -246,25 +246,16 @@ def _write_mtlist_ins(ins_filename,df,prefix):
         dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
     except:
         dt_str = df.index.map(lambda x: "{0:08.1f}".format(x).strip())
-    # if prefix == '':
-    #     name_len = 11
-    # else:
-    #     name_len = 11 - (len(prefix)+1)
     with open(ins_filename,'w') as f:
         f.write('pif ~\nl1\n')
-
         for dt in dt_str:
             f.write("l1 ")
-            for col in df.columns:
-                col = col.replace("(",'').replace(")",'')
-                raw = col.split('_')
-                name = ''.join([r[:2] for r in raw[:-2]])[:6] + raw[-2] + raw[-1][0]
-                #raw[0] = raw[0][:6]
-                #name = ''.join(raw)
+            for col in df.columns.str.translate(
+                    {ord(s): None for s in ['(', ')', '/', '=']}):
                 if prefix == '':
-                    obsnme = "{1}_{2}".format(prefix,name,dt)
+                    obsnme = "{0}_{1}".format(col, dt)
                 else:
-                    obsnme = "{0}_{1}_{2}".format(prefix, name, dt)
+                    obsnme = "{0}_{1}_{2}".format(prefix, col, dt)
                 f.write(" w !{0}!".format(obsnme))
             f.write("\n")
 
