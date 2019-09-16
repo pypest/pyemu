@@ -650,25 +650,24 @@ def mtlist_budget_test():
     except:
         print("no flopy...")
         return
-    # list_filename = os.path.join("utils","mt3d.list")
-    # assert os.path.exists(list_filename)
-    # frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-    #     list_filename,start_datetime='1-1-1970')
-    # assert len(ins_files) == 2
-    #
-    # frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-    #     list_filename,start_datetime='1-1-1970', gw_prefix='')
-    # assert len(ins_files) == 2
-    #
-    # frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-    #     list_filename, start_datetime=None)
-    # assert len(ins_files) == 2
+    list_filename = os.path.join("utils","mt3d.list")
+    assert os.path.exists(list_filename)
+    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+        list_filename,start_datetime='1-1-1970')
+    assert len(ins_files) == 2
+
+    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+        list_filename,start_datetime='1-1-1970', gw_prefix='')
+    assert len(ins_files) == 2
+
+    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+        list_filename, start_datetime=None)
+    assert len(ins_files) == 2
 
     list_filename = os.path.join("utils", "mt3d_imm_sor.lst")
     assert os.path.exists(list_filename)
     frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
         list_filename, start_datetime='1-1-1970')
-    test=None
 
 
 def geostat_prior_builder_test():
@@ -1801,7 +1800,7 @@ if __name__ == "__main__":
     # gw_sft_ins_test()
     #par_knowledge_test()
     # grid_obs_test()
-    hds_timeseries_test()
+    # hds_timeseries_test()
     #postprocess_inactive_conc_test()
     #plot_summary_test()
     # load_sgems_expvar_test()
