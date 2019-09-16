@@ -781,12 +781,17 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: implement and add test for this
             self.pst.control_data.noptmax = -2
             # self.pst.parameter_groups.derinc = 0.05
-            self.pst.write(os.path.join("rosenbrock_2par_fds.pst"))
-            pyemu.os_utils.run("pestpp-glm rosenbrock_2par_fds.pst")
-            jco = pyemu.Jco.from_binary("rosenbrock_2par_fds.jcb").to_dataframe()
+            self.pst.write(os.path.join(self.pst.filename.split(".pst")[0]+"_fds.pst"))
+            pyemu.os_utils.run("pestpp-glm {0}".format(self.pst.filename.split(".pst")[0]+"_fds.pst"))
+            jco = pyemu.Jco.from_binary("{0}".format(self.pst.filename.split(".pst")[0]+"_fds.jcb")).to_dataframe()
             # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
             self.phi_grad = Matrix(x=jco.T.values,row_names=self.pst.adj_par_names,
                                    col_names=['cross-cov'])
+            # and need mean for upgrades
+            if self.parensemble_mean is None:
+                self.parensemble_mean = np.array(self.pst.parameter_data.parval1)
+                self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),
+                                               row_names=['mean'], col_names=self.pst.par_names)
             if grad_calc_only:
                 return self.phi_grad
             self.logger.log("compute phi grad using finite diffs")
@@ -965,7 +970,20 @@ class EnsembleSQP(EnsembleMethod):
             else:  # finite diffs for grads
                 self.logger.log("evaluating model for step size : {0}".format(','.join("{0:8.3E}"
                                                                                        .format(step_size))))
-                #self.obsensemble_1
+                # TODO: these steps into func
+                self.pst.control_data.noptmax = 0
+                self.pst.write(os.path.join(self.pst.filename.split(".pst")[0]+"_fds_1.pst"))
+                pyemu.os_utils.run("pestpp-glm {0}".format(self.pst.filename.split(".pst")[0]+"_fds_1.pst"))
+                rei = pyemu.pst_utils.read_resfile(os.path.join("rosenbrock_2par_fds_1.rei"))
+                self.obsensemble_1 = rei.loc[rei.group == "obj_fn", "residual"]  # not an en
+                # TODO: support finite diffs in _filter_constraint_eval
+                mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1
+                if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
+                    self.parensemble_mean_next = self.parensemble_mean_1.copy()
+                    #self.parensemble_next = self.parensemble_1.copy()
+                    #[os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
+                     #                                       and x.split(".")[2] == str(self.iter_num))]
+                    self.obsensemble_1.to_csv(self.pst.filename + "_phi.{0}.{1}".format(self.iter_num, step_size))
                 self.logger.log("evaluating model for step size : {0}".format(','.join("{0:8.3E}"
                                                                                        .format(step_size))))
 
@@ -977,13 +995,15 @@ class EnsembleSQP(EnsembleMethod):
             best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
             best_alpha_per_it_df.to_csv("best_alpha.csv")
             self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
-            self.parensemble_next.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, best_alpha) +
-                                         self.paren_prefix.format(0))
+            #self.parensemble_next.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, best_alpha) +
+             #                            self.paren_prefix.format(0))
+            self.parensemble_mean_next.df().to_csv(self.pst.filename + ".{0}.{1}.csv"
+                                                   .format(self.iter_num, best_alpha))
 
         curv_per_alpha.to_csv("curv_and_phi_per_alpha_it{0}.csv".format(self.iter_num))
         mean_en_phi_per_alpha.to_csv("mean_phi_per_alpha_it{0}.csv".format(self.iter_num))
 
-        # deal with unsuccessful iteration
+        # deal with unsuccessful iteration  # TODO
         if self.parensemble_mean_next is None:
             self.logger.log("unsuccessful upgrade iteration.. using previous mean par en and increasing draw mult")
             self.parensemble_mean_next = self.parensemble_mean.copy()
@@ -1036,7 +1056,8 @@ class EnsembleSQP(EnsembleMethod):
         # track grad and dec vars for next iteration Hess scaling and updating
         self.curr_grad = self.phi_grad.copy()
         self.parensemble_mean = self.parensemble_mean_next.copy()
-        self.parensemble = self.parensemble_next.copy()
+        if finite_diff_grad is False:
+            self.parensemble = self.parensemble_next.copy()
 
         pd.DataFrame.from_dict([self.hess_progress]).to_csv("hess_progress.csv")
         # TODO: save Hessian vectors (as csv)

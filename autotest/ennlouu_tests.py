@@ -610,7 +610,7 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_multiple_update(version="2par",nit=30,en_size=10,draw_mult=3e-3,finite_diff_grad=True)
+    rosenbrock_multiple_update(version="2par",nit=50,en_size=10,draw_mult=3e-3,finite_diff_grad=True)
     #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
