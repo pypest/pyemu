@@ -1,5 +1,3 @@
-"""Matrix, Jco and Cov classes for easy linear algebra
-"""
 from __future__ import print_function, division
 import os
 import copy
@@ -7,9 +5,8 @@ import struct
 import warnings
 import numpy as np
 import pandas as pd
-import scipy.linalg as la
-from scipy.io import FortranFile
-import scipy.sparse
+#import scipy.linalg as la
+
 
 from pyemu.pst.pst_handler import Pst
 from ..pyemu_warnings import PyemuWarning
@@ -19,20 +16,15 @@ def save_coo(x, row_names, col_names,  filename, chunk=None):
     [int,int,float] for i,j,value.  It is autodetected during
     the read with Matrix.from_binary().
 
-    Parameters
-    ----------
-    x : numpy.sparse
-        coo sparse matrix
-    row_names : list
-        list of row_names
-    col_names : list
-        list of col_names
-    filename : str
-        filename to save binary file
-    droptol : float
-        absolute value tolerance to make values smaller than zero.  Default is None
-    chunk : int
-        number of elements to write in a single pass.  Default is None
+    Args:
+        x (`numpy.sparse`): coo sparse matrix
+        row_names ([`str`]): list of row names
+        col_names (['str]): list of col_names
+        filename (`str`):  filename
+        droptol (`float`): absolute value tolerance to make values
+            smaller than `droptol` zero.  Default is None (no dropping)
+        chunk (`int`): number of elements to write in a single pass.
+            Default is None
 
     """
 
@@ -66,14 +58,11 @@ def save_coo(x, row_names, col_names,  filename, chunk=None):
 def concat(mats):
     """Concatenate Matrix objects.  Tries either axis.
 
-    Parameters
-    ----------
-    mats: list
-        list of Matrix objects
+    Args:
+        mats ([`Matrix`]): list of Matrix objects
 
-    Returns
-    -------
-    Matrix : Matrix
+    Returns:
+        `pyemu.Matrix`: a concatenated `Matrix` instance
     """
     for mat in mats:
         if mat.isdiagonal:
@@ -122,66 +111,46 @@ def get_common_elements(list1, list2):
     """find the common elements in two lists.  used to support auto align
         might be faster with sets
 
-    Parameters
-    ----------
-    list1 : list
-        a list of objects
-    list2 : list
-        a list of objects
+    Args:
+        list1 ([`str`]): a list of strings (could be either row or col
+            names, depending on calling function)
+        list2 ([`str`]): a list of strings (could be either row or col
+            names, depending on calling function)
 
-    Returns
-    -------
-    list : list
-        list of common objects shared by list1 and list2
-        
+    Returns:
+        [`str`]:  list of common strings shared by list1 and list2
+
+    Note:
+        `result` is not ordered WRT `list1` or `list2`
     """
-    #result = []
-    #for item in list1:
-    #    if item in list2:
-    #        result.append(item)
-    #Return list(set(list1).intersection(set(list2)))
     set2 = set(list2)
     result = [item for item in list1 if item in set2]
     return result
 
 
 class Matrix(object):
-    """a class for easy linear algebra
+    """Easy linear algebra in the PEST(++) realm
 
-    Parameters
-    ----------
-    x : numpy.ndarray
-        Matrix entries
-    row_names : list
-        list of row names
-    col_names : list
-        list of column names
-    isdigonal : bool
-        to determine if the Matrix is diagonal
-    autoalign: bool
-        used to control the autoalignment of Matrix objects
-        during linear algebra operations
+    Args:
+        x (`numpy.ndarray`): numeric values
+        row_names ([`str`]): list of row names
+        col_names (['str']): list of column names
+        isdigonal (`bool`): flag if the Matrix is diagonal
+        autoalign (`bool`): flag to control the autoalignment of Matrix
+            during linear algebra operations
 
-    Returns
-    -------
-        Matrix : Matrix
+    Example::
 
-    Attributes
-    ----------
-        binary_header_dt : numpy.dtype
-            the header info in the PEST binary file type
-        binary_rec_dt : numpy.dtype
-            the record info in the PEST binary file type
+        data = np.random.random((10,10))
+        row_names = ["row_{0}".format(i) for i in range(10)]
+        col_names = ["col_{0}".format(j) for j in range(10)]
+        mat = pyemu.Matrix(x=data,row_names=row_names,col_names=col_names)
+        mat.to_binary("mat.jco")
 
-    Methods
-    -------
-    to_ascii : write a PEST-style ASCII matrix format file
-    to_binary : write a PEST-stle compressed binary format file
-    
-    Note
-    ----
-    this class makes heavy use of property decorators to encapsulate
-    private attributes
+
+    Note:
+        this class makes heavy use of property decorators to encapsulate
+        private attributes
 
     """
     integer = np.int32
@@ -204,7 +173,6 @@ class Matrix(object):
     def __init__(self, x=None, row_names=[], col_names=[], isdiagonal=False,
                  autoalign=True):
 
-
         self.col_names, self.row_names = [], []
         _ = [self.col_names.append(str(c).lower()) for c in col_names]
         _ = [self.row_names.append(str(r).lower()) for r in row_names]
@@ -223,6 +191,8 @@ class Matrix(object):
                 if len(row_names) != mx_dim:
                     raise Exception('Matrix.__init__(): diagonal shape[1] != len(row_names) ' +\
                     str(x.shape) + ' ' + str(len(row_names)))
+                if mx_dim != x.shape[0]:
+                    x = x.transpose()
                 #x = x.transpose()
             else:
                 if len(row_names) > 0:
@@ -245,15 +215,9 @@ class Matrix(object):
     def reset_x(self,x,copy=True):
         """reset self.__x private attribute
 
-        Parameters
-        ----------
-        x : numpy.ndarray
-        copy : bool
-            flag to make a copy of 'x'. Defaule is True
-        
-        Note
-        ----
-        makes a copy of 'x' argument
+        Args:
+            x (`numpy.ndarray`): the new numeric data
+            copy (`bool`): flag to make a copy of 'x'. Defaule is True
         
         """
         if x.shape != self.shape:
@@ -266,9 +230,8 @@ class Matrix(object):
     def __str__(self):
         """overload of object.__str__()
 
-        Returns
-        -------
-            str : str 
+        Returns:
+            `str`: string representation
 
         """
         s = "shape:{0}:{1}".format(*self.shape)+" row names: " + str(self.row_names) + \
@@ -278,15 +241,11 @@ class Matrix(object):
     def __getitem__(self, item):
         """a very crude overload of object.__getitem__().
 
-        Parameters
-        ----------
-        item : iterable
-         something that can be used as an index
+        Args:
+            item (`object`): something that can be used as an index
 
-        Returns
-        -------
-        Matrix : Matrix
-            an object that is a sub-Matrix of self
+        Returns:
+            `Matrix`: an object that is a sub-matrix of `Matrix`
 
         """
         if self.isdiagonal and isinstance(item, tuple):
@@ -309,18 +268,14 @@ class Matrix(object):
     def __pow__(self, power):
         """overload of numpy.ndarray.__pow__() operator
 
-        Parameters
-        ----------
-        power: (int or float)
-            interpreted as follows: -1 = inverse of self,
-            -0.5 = sqrt of inverse of self,
-            0.5 = sqrt of self. All other positive
-            ints = elementwise self raised to power
+        Args:
+            power (`float`): interpreted as follows: -1 = inverse of self,
+                -0.5 = sqrt of inverse of self,
+                0.5 = sqrt of self. All other positive
+                ints = elementwise self raised to power
 
-        Returns
-        -------
-        Matrix : Matrix
-            a new Matrix object
+        Returns:
+            `Matrix`: a new Matrix object
 
         """
         if power < 0:
@@ -350,15 +305,17 @@ class Matrix(object):
         """numpy.ndarray.__sub__() overload.  Tries to speedup by
          checking for scalars of diagonal matrices on either side of operator
 
-        Parameters
-        ----------
-        other : scalar,numpy.ndarray,Matrix object
-            the thing to difference
+        Args:
+            other : (`int`,`float`,`numpy.ndarray`,`Matrix`): the thing to subtract
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: the result of subtraction
 
+        Note:
+            if `Matrix` and other (if applicable) have `autoalign` set to `True`,
+            both `Matrix` and `other` are aligned based on row and column names.
+            If names are not common between the two, this may result in a smaller
+            returned `Matrix`
         """
 
         if np.isscalar(other):
@@ -435,14 +392,17 @@ class Matrix(object):
         """Overload of numpy.ndarray.__add__().  Tries to speedup by checking for
             scalars of diagonal matrices on either side of operator
 
-        Parameters
-        ----------
-        other : scalar,numpy.ndarray,Matrix object
-            the thing to add
+        Args:
+            other : (`int`,`float`,`numpy.ndarray`,`Matrix`): the thing to add
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: the result of addition
+
+        Note:
+            if `Matrix` and other (if applicable) have `autoalign` set to `True`,
+            both `Matrix` and `other` are aligned based on row and column names.
+            If names are not common between the two, this may result in a smaller
+            returned `Matrix`
 
         """
         if np.isscalar(other):
@@ -513,14 +473,17 @@ class Matrix(object):
         Tries to speedup by checking for scalars of diagonal matrices on
         either side of operator
 
-        Parameters
-        ----------
-        other : scalar,numpy.ndarray,Matrix object
-            the thing for element-wise multiplication
+        Args:
+            other : (`int`,`float`,`numpy.ndarray`,`Matrix`): the thing to multiply
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: the result of multiplication
+
+        Note:
+            if `Matrix` and other (if applicable) have `autoalign` set to `True`,
+            both `Matrix` and `other` are aligned based on row and column names.
+            If names are not common between the two, this may result in a smaller
+            returned `Matrix`
 
         """
         if np.isscalar(other):
@@ -590,13 +553,17 @@ class Matrix(object):
         """Dot product multiplication overload.  Tries to speedup by
         checking for scalars or diagonal matrices on either side of operator
 
-        Parameters
-        ----------
-        other : scalar,numpy.ndarray,Matrix object
-            the thing the dot product against
+        Args:
+            other : (`int`,`float`,`numpy.ndarray`,`Matrix`): the thing to dot product
 
         Returns:
-            Matrix : Matrix
+            `Matrix`: the result of dot product
+
+        Note:
+            if `Matrix` and other (if applicable) have `autoalign` set to `True`,
+            both `Matrix` and `other` are aligned based on row and column names.
+            If names are not common between the two, this may result in a smaller
+            returned `Matrix`
         """
 
         if isinstance(other, pd.DataFrame):
@@ -676,14 +643,17 @@ class Matrix(object):
     def __rmul__(self, other):
         """Reverse order Dot product multiplication overload.
 
-        Parameters
-        ----------
-        other : scalar,numpy.ndarray,Matrix object
-            the thing the dot product against
+        Args:
+            other : (`int`,`float`,`numpy.ndarray`,`Matrix`): the thing to dot product
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: the result of dot product
+
+        Note:
+            if `Matrix` and other (if applicable) have `autoalign` set to `True`,
+            both `Matrix` and `other` are aligned based on row and column names.
+            If names are not common between the two, this may result in a smaller
+            returned `Matrix`
 
         """
 
@@ -769,12 +739,12 @@ class Matrix(object):
             x = self.x
         try:
 
-            u, s, v = la.svd(x, full_matrices=True)
+            u, s, v = np.linalg.svd(x, full_matrices=True)
             v = v.transpose()
         except Exception as e:
             print("standard SVD failed: {0}".format(str(e)))
             try:
-                v, s, u = la.svd(x.transpose(), full_matrices=True)
+                v, s, u = np.linalg.svd(x.transpose(), full_matrices=True)
                 u = u.transpose()
             except Exception as e:
                 np.savetxt("failed_svd.dat",x,fmt="%15.6E")
@@ -799,14 +769,12 @@ class Matrix(object):
     def mult_isaligned(self, other):
         """check if matrices are aligned for dot product multiplication
 
-        Parameters
-        ----------
-        other : (Matrix)
+        Args:
+            other (`Matrix`): the other matrix to check for alignment with
 
-        Returns
-        -------
-        bool : bool
-            True if aligned, False if not aligned
+        Returns:
+            `bool`: True if aligned, False if not aligned
+
         """
         assert isinstance(other, Matrix), \
             "Matrix.isaligned(): other argumnent must be type Matrix, not: " +\
@@ -820,14 +788,12 @@ class Matrix(object):
     def element_isaligned(self, other):
         """check if matrices are aligned for element-wise operations
 
-        Parameters
-        ----------
-        other : Matrix
+        Args:
+            other (`Matrix`): the other matrix to check for alignment with
 
-        Returns
-        -------
-        bool : bool
-            True if aligned, False if not aligned
+        Returns:
+            `bool`: True if aligned, False if not aligned
+
         """
         if not isinstance(other,Matrix):
             raise Exception("Matrix.isaligned(): other argument must be type Matrix, not: " +\
@@ -841,11 +807,10 @@ class Matrix(object):
 
     @property
     def newx(self):
-        """return a copy of x
+        """return a copy of `Matrix.x` attribute
 
-        Returns
-        -------
-        numpy.ndarray : numpy.ndarray
+        Returns:
+            `numpy.ndarray`: a copy `Matrix.x`
 
         """
         return self.__x.copy()
@@ -853,38 +818,49 @@ class Matrix(object):
 
     @property
     def x(self):
-        """return a reference to x
+        """return a reference to `Matrix.x`
 
-        Returns
-        -------
-        numpy.ndarray : numpy.ndarray
+        Returns:
+            `numpy.ndarray`: reference to `Matrix.x`
 
         """
         return self.__x
 
     @property
     def as_2d(self):
-        """ get a 2D representation of x.  If not self.isdiagonal, simply
-        return reference to self.x, otherwise, constructs and returns
+        """ get a 2D numeric representation of `Matrix.x`.  If not `isdiagonal`, simply
+        return reference to `Matrix.x`, otherwise, constructs and returns
         a 2D, diagonal ndarray
 
-        Returns
-        -------
-        numpy.ndarray : numpy.ndarray
+        Returns:
+            `numpy.ndarray` : numpy.ndarray
 
         """
         if not self.isdiagonal:
             return self.x
         return np.diag(self.x.flatten())
 
+
+    def to_2d(self):
+        """ get a 2D `Matrix` representation of `Matrix`.  If not `Matrix.isdiagonal`, simply
+                return a copy of `Matrix`, otherwise, constructs and returns a new `Matrix`
+                instance that is stored as diagonal
+
+        Returns:
+            `Martrix`: non-diagonal form of `Matrix`
+
+        """
+        if not self.isdiagonal:
+            return self.copy()
+        return type(self)(x=np.diag(self.x.flatten()),row_names=self.row_names,
+                          col_names=self.col_names,isdiagonal=False)
+
     @property
     def shape(self):
-        """get the implied, 2D shape of self
+        """get the implied, 2D shape of `Matrix`
 
-        Returns
-        -------
-        tuple : tuple
-            length 2 tuple of ints
+        Returns:
+            `int`: length of 2 tuple
 
         """
         if self.__x is not None:
@@ -899,29 +875,28 @@ class Matrix(object):
     def ncol(self):
         """ length of second dimension
 
-        Returns
-        -------
-        int : int
-            number of columns
+        Returns:
+            `int`: number of columns
 
         """
         return self.shape[1]
 
     @property
     def nrow(self):
-        """ length of first dimensions
+        """ length of first dimension
 
-        Returns
-        -------
-        int : int
-            number of rows
+        Returns:
+            `int`: number of rows
 
         """
         return self.shape[0]
 
     @property
     def T(self):
-        """wrapper function for Matrix.transpose() method
+        """wrapper function for `Matrix.transpose()` method
+
+        Returns:
+            `Matrix`: transpose of `Matrix`
 
         """
         return self.transpose
@@ -931,10 +906,8 @@ class Matrix(object):
     def transpose(self):
         """transpose operation of self
 
-        Returns
-        -------
-        Matrix : Matrix
-            transpose of self
+        Returns:
+            `Matrix`: transpose of `Matrix`
 
         """
         if not self.isdiagonal:
@@ -950,12 +923,19 @@ class Matrix(object):
 
     @property
     def inv(self):
-        """inversion operation of self
+        """inversion operation of `Matrix`
 
-        Returns
-        -------
-        Matrix : Matrix
-            inverse of self
+        Returns:
+            `Matrix`: inverse of `Matrix`
+
+        Note:
+            uses `numpy.linalg.inv` for the inversion
+
+        Example::
+
+            mat = pyemu.Matrix.from_binary("my.jco")
+            mat_inv = mat.inv
+            mat_inv.to_binary("my_inv.jco")
 
        """
 
@@ -972,60 +952,87 @@ class Matrix(object):
                               col_names=self.col_names,
                               autoalign=self.autoalign)
         else:
-            return type(self)(x=la.inv(self.__x), row_names=self.row_names,
+            return type(self)(x=np.linalg.inv(self.__x), row_names=self.row_names,
                               col_names=self.col_names,
                               autoalign=self.autoalign)
+
+    @staticmethod
+    def get_maxsing_from_s(s,eigthresh=1.0e-5):
+        """static method to work out the maxsing for a
+        given singular spectrum
+
+        Args:
+            s (`numpy.ndarray`): 1-D array of singular values. This
+                array should come from calling either `numpy.linalg.svd`
+                or from the `pyemu.Matrix.s.x` attribute
+            eigthresh (`float`): the ratio of smallest to largest
+                singular value to retain.  Since it is assumed that
+                `s` is sorted from largest to smallest, once a singular value
+                is reached that yields a ratio with the first (largest)
+                singular value, the index of this singular is returned.
+
+        Returns:
+            `int`: the index of the singular value whos ratio with the
+            first singular value is less than or equal to `eigthresh`
+
+        """
+        sthresh = s.flatten() / s[0]
+        ising = 0
+        for st in sthresh:
+            if st > eigthresh:
+                ising += 1
+            else:
+                break
+        return max(1, ising)
 
     def get_maxsing(self,eigthresh=1.0e-5):
         """ Get the number of singular components with a singular
         value ratio greater than or equal to eigthresh
 
-        Parameters
-        ----------
-        eigthresh : float
-            the ratio of the largest to smallest singular value
+         Args:
+            eigthresh (`float`): the ratio of smallest to largest
+                singular value to retain.  Since it is assumed that
+                `s` is sorted from largest to smallest, once a singular value
+                is reached that yields a ratio with the first (largest)
+                singular value, the index of this singular is returned.
 
-        Returns
-        -------
-        int : int
-            number of singular components
+        Returns:
+            `int`: the index of the singular value whos ratio with the
+            first singular value is less than or equal to `eigthresh`
+
+        Note:
+            this method calls the static method `Matrix.get_maxsing_from_s()`
+            with `Matrix.s.x`
 
         """
-        #sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
-        sthresh = self.s.x.flatten()/self.s.x[0]
-        ising = 0
-        for st in sthresh:
-            if st > eigthresh:
-                ising += 1
-                #return max(1,i)
-            else:
-                break
-        #return max(1,np.argmin(sthresh))
-        return max(1,ising)
+
+        return Matrix.get_maxsing_from_s(self.s.x, eigthresh=eigthresh)
 
     def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5,truncate=True):
         """ Get the (optionally) truncated SVD components
 
-        Parameters
-        ----------
-        maxsing : int
-            the number of singular components to use.  If None,
-            maxsing is calculated using Matrix.get_maxsing() and eigthresh
-        eigthresh : float
-            the ratio of largest to smallest singular components to use
-            for truncation.  Ignored if maxsing is not None
-        truncate : bool
-            flag to truncate components. If False, U, s, and V will be zeroed out instead of truncated.
-            Default is True
+        Args:
+            maxsing (`int`, optional): the number of singular components to use.  If None,
+                `maxsing` is calculated using `Matrix.get_maxsing()` and `eigthresh`
+            `eigthresh` : (`float`, optional): the ratio of largest to smallest singular
+                components to use for truncation.  Ignored if maxsing is not None.  Default is
+                1.0e-5
+            truncate (`bool`): flag to truncate components. If False, U, s, and V will be
+                zeroed out at locations greater than `maxsing` instead of truncated. Default is True
 
-        Returns
-        -------
-        u : Matrix
-            (optionally) truncated left singular vectors
-        s : Matrix
-            (optionally) truncated singular value matrix
-        v : Matrix
-            (optionally) truncated right singular vectors
+        Returns:
+            tuple containing
+
+            - **Matrix**: (optionally truncated) left singular vectors
+            - **Matrix**: (optionally truncated) singular value matrix
+            - **Matrix**: (optionally truncated) right singular vectors
+
+        Example::
+
+            mat = pyemu.Matrix.from_binary("my.jco")
+            u,s,v = mat.pseudo_inv_components(maxsing=10)
+            resolution_matrix = v * v.T
+            resolution_matrix.to_ascii("resol.mat")
 
         """
 
@@ -1053,20 +1060,17 @@ class Matrix(object):
 
     def pseudo_inv(self,maxsing=None,eigthresh=1.0e-5):
         """ The pseudo inverse of self.  Formed using truncated singular
-        value decomposition and Matrix.pseudo_inv_components
+        value decomposition and `Matrix.pseudo_inv_components`
 
-        Parameters
-        ----------
-        maxsing : int
-            the number of singular components to use.  If None,
-            maxsing is calculated using Matrix.get_maxsing() and eigthresh
-        eigthresh : float
-            the ratio of largest to smallest singular components to use
-            for truncation.  Ignored if maxsing is not None
+        Args:
+            maxsing (`int`, optional): the number of singular components to use.  If None,
+                `maxsing` is calculated using `Matrix.get_maxsing()` and `eigthresh`
+            `eigthresh` : (`float`, optional): the ratio of largest to smallest singular
+                components to use for truncation.  Ignored if maxsing is not None.  Default is
+                1.0e-5
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+              `Matrix`: the truncated-SVD pseudo inverse of `Matrix` (V_1 * s_1^-1 * U^T)
         """
         if maxsing is None:
             maxsing = self.get_maxsing(eigthresh=eigthresh)
@@ -1080,12 +1084,14 @@ class Matrix(object):
 
     @property
     def sqrt(self):
-        """square root operation
+        """element-wise square root operation
 
-        Returns
-        -------
-        Matrix : Matrix
-            square root of self
+        Returns:
+            `Matrix`: element-wise square root of `Matrix`
+
+        Note:
+            uses `numpy.sqrt`
+
 
         """
         if self.isdiagonal:
@@ -1099,16 +1105,16 @@ class Matrix(object):
                               col_names=self.col_names,
                               autoalign=self.autoalign)
         else:
-            return type(self)(x=la.sqrtm(self.__x), row_names=self.row_names,
+            return type(self)(x=np.sqrt(self.__x), row_names=self.row_names,
                               col_names=self.col_names,
                               autoalign=self.autoalign)
     @property
     def full_s(self):
-        """ Get the full singular value matrix of self
+        """ Get the full singular value matrix
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: full singular value matrix.  Shape is `(max(Matrix.shape),max(Matrix.shape))`
+            with zeros along the diagonal from `min(Matrix.shape)` to `max(Matrix.shape)`
 
         """
         x = np.zeros((self.shape),dtype=np.float32)
@@ -1123,9 +1129,8 @@ class Matrix(object):
     def s(self):
         """the singular value (diagonal) Matrix
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: singular value matrix.  shape is `(min(Matrix.shape),min(Matrix.shape))`
 
         """
         if self.__s is None:
@@ -1137,9 +1142,8 @@ class Matrix(object):
     def u(self):
         """the left singular vector Matrix
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: left singular vectors.  Shape is `(Matrix.shape[0], Matrix.shape[0])`
 
         """
         if self.__u is None:
@@ -1151,9 +1155,8 @@ class Matrix(object):
     def v(self):
         """the right singular vector Matrix
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: right singular vectors.  Shape is `(Matrix.shape[1], Matrix.shape[1])`
 
         """
         if self.__v is None:
@@ -1164,9 +1167,8 @@ class Matrix(object):
     def zero2d(self):
         """ get an 2D instance of self with all zeros
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: `Matrix of zeros`
 
         """
         return type(self)(x=np.atleast_2d(np.zeros((self.shape[0],self.shape[1]))),
@@ -1177,6 +1179,21 @@ class Matrix(object):
 
     @staticmethod
     def find_rowcol_indices(names,row_names,col_names,axis=None):
+        """fast(er) look of row and colum names indices
+
+        Args:
+            names ([`str`]): list of names to look for in `row_names` and/or `col_names` names
+            row_names ([`str`]): list of row names
+            col_names([`str`]): list of column names
+            axis (`int`, optional): axis to search along.  If None, search both.
+                Default is `None`
+
+        Returns:
+            `numpy.ndarray`: array of (integer) index locations.  If `axis` is
+            `None`, a 2 `numpy.ndarrays` of both row and column name indices is returned
+
+        """
+
         self_row_idxs = {row_names[i]: i for i in range(len(row_names))}
         self_col_idxs = {col_names[i]: i for i in range(len(col_names))}
 
@@ -1214,78 +1231,30 @@ class Matrix(object):
         """get the row and col indices of names. If axis is None, two ndarrays
                 are returned, corresponding the indices of names for each axis
 
-        Parameters
-        ----------
-        names : iterable
-            column and/or row names
-        axis : (int) (optional)
-            the axis to search.
+        Args:
+            names ([`str`]): list of names to look for in `row_names` and/or `col_names` names
+            row_names ([`str`]): list of row names
+            col_names([`str`]): list of column names
+            axis (`int`, optional): axis to search along.  If None, search both.
+                Default is `None`
 
-        Returns
-        -------
-        numpy.ndarray : numpy.ndarray
-            indices of names.
+        Returns:
+            `numpy.ndarray`: array of (integer) index locations.  If `axis` is
+            `None`, a 2 `numpy.ndarrays` of both row and column name indices is returned
+
+        Note:
+            thin wrapper around `Matrix.find_rowcol_indices` static method
 
         """
         return Matrix.find_rowcol_indices(names,self.row_names,self.col_names,axis=axis)
 
 
-
-
-    def old_indices(self, names, axis=None):
-        """get the row and col indices of names. If axis is None, two ndarrays
-                are returned, corresponding the indices of names for each axis
-
-        Parameters
-        ----------
-        names : iterable
-            column and/or row names
-        axis : (int) (optional)
-            the axis to search.
-
-        Returns
-        -------
-        numpy.ndarray : numpy.ndarray
-            indices of names.
-
-        """
-        warnings.warn("Matrix.old_indices() is deprecated - only here for testing. Use Matrix.indices()",PyemuWarning)
-        row_idxs, col_idxs = [], []
-        for name in names:
-            if name.lower() not in self.col_names \
-                    and name.lower() not in self.row_names:
-                raise Exception('Matrix.indices(): name not found: ' + name)
-            if name.lower() in self.col_names:
-                col_idxs.append(self.col_names.index(name))
-            if name.lower() in self.row_names:
-                row_idxs.append(self.row_names.index(name))
-        if axis is None:
-            return np.array(row_idxs, dtype=np.int32),\
-                np.array(col_idxs, dtype=np.int32)
-        elif axis == 0:
-            if len(row_idxs) != len(names):
-                raise Exception("Matrix.indices(): " +
-                                "not all names found in row_names")
-            return np.array(row_idxs, dtype=np.int32)
-        elif axis == 1:
-            if len(col_idxs) != len(names):
-                raise Exception("Matrix.indices(): " +
-                                "not all names found in col_names")
-            return np.array(col_idxs, dtype=np.int32)
-        else:
-            raise Exception("Matrix.indices(): " +
-                            "axis argument must 0 or 1, not:" + str(axis))
-
-
     def align(self, names, axis=None):
-        """reorder self by names.  If axis is None, reorder both indices
+        """reorder `Matrix` by names in place.  If axis is None, reorder both indices
 
-        Parameters
-        ----------
-        names : iterable
-            names in rowS and\or columnS
-        axis : (int)
-            the axis to reorder. if None, reorder both axes
+        Args:
+            names (['str']): names in `Matrix.row_names` and\or `Matrix.col_names`
+            axis (`int`, optional): the axis to reorder. if None, reorder both axes
 
         """
         if not isinstance(names, list):
@@ -1331,20 +1300,17 @@ class Matrix(object):
 
 
     def get(self, row_names=None, col_names=None, drop=False):
-        """get a new Matrix instance ordered on row_names or col_names
+        """get a new `Matrix` instance ordered on row_names or col_names
 
-        Parameters
-        ----------
-        row_names : iterable
-            row_names for new Matrix
-        col_names : iterable
-            col_names for new Matrix
-        drop : bool
-            flag to remove row_names and/or col_names
+        Args:
+            row_names (['str'], optional): row_names for new Matrix.  If `None`,
+                all row_names are used.
+            col_names (['str'], optional): col_names for new Matrix. If `None`,
+                all col_names are used.
+            drop (`bool`): flag to remove row_names and/or col_names from this `Matrix`
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: a new `Matrix`
 
         """
         if row_names is None and col_names is None:
@@ -1395,20 +1361,23 @@ class Matrix(object):
 
 
     def copy(self):
+        """get a copy of `Matrix`
+
+        Returns:
+            `Matrix`: copy of this `Matrix`
+
+        """
         return type(self)(x=self.newx,row_names=self.row_names,
                           col_names=self.col_names,
                           isdiagonal=self.isdiagonal,autoalign=self.autoalign)
 
 
     def drop(self, names, axis):
-        """ drop elements from self in place
+        """ drop elements from `Matrix` in place
 
-        Parameters
-        ----------
-        names : iterable
-            names to drop
-        axis : (int)
-            the axis to drop from. must be in [0,1]
+        Args:
+            names (['str']): list of names to drop
+            axis (`int`): the axis to drop from. must be in [0,1]
 
         """
         if axis is None:
@@ -1423,8 +1392,6 @@ class Matrix(object):
                 raise Exception("can't drop all names along axis 0")
 
         idxs = self.indices(names, axis=axis)
-
-
 
         if self.isdiagonal:
             self.__x = np.delete(self.__x, idxs, 0)
@@ -1485,19 +1452,18 @@ class Matrix(object):
 
 
     def extract(self, row_names=None, col_names=None):
-        """wrapper method that Matrix.gets() then Matrix.drops() elements.
+        """wrapper method that `Matrix.gets()` then `Matrix.drops()` elements.
         one of row_names or col_names must be not None.
 
-        Parameters
-        ----------
-        row_names : iterable
-            row names to extract
-        col_names : (enumerate)
-            col_names to extract
+        Args:
+            row_names (['str'], optional): row_names to extract.  If `None`,
+                all row_names are retained.
+            col_names (['str'], optional): col_names to extract. If `None`,
+                all col_names are retained.
 
-        Returns
-        -------
-        Matrix : Matrix
+
+        Returns:
+            `Matrix`: the extract sub-matrix defined by `row_names` and/or `col_names`
 
         """
         if row_names is None and col_names is None:
@@ -1510,12 +1476,11 @@ class Matrix(object):
         """Get a new Matrix instance that is the diagonal of self.  The
         shape of the new matrix is (self.shape[0],1).  Self must be square
 
-        Parameters:
-            col_name : str
-                the name of the column in the new Matrix
+        Args:
+            col_name (`str`): the name of the single column in the new Matrix
 
         Returns:
-            Matrix : Matrix
+            `Matrix`: vector-shaped `Matrix` instance of the diagonal of this `Matrix`
         """
         if self.shape[0] != self.shape[1]:
             raise Exception("not diagonal")
@@ -1529,18 +1494,17 @@ class Matrix(object):
 
 
     def to_coo(self,filename,droptol=None,chunk=None):
-        """write a new format binary file.  The data format is
+        """write an extended PEST-format binary file.  The data format is
         [int,int,float] for i,j,value.  It is autodetected during
-        the read with Matrix.from_binary().
+        the read with `Matrix.from_binary()`.
 
-        Parameters
-        ----------
-        filename : str
-            filename to save binary file
-        droptol : float
-            absolute value tolerance to make values smaller than zero.  Default is None
-        chunk : int
-            number of elements to write in a single pass.  Default is None
+        Args:
+            filename (`str`): filename to save binary file
+            droptol (`float`): absolute value tolerance to make values
+                smaller `droptol` than zero.  Default is None (no dropping)
+            chunk (`int`): number of elements to write in a single pass.
+                Default is `None`, which writes the entire numeric part of the
+                `Matrix` at once. This is faster but requires more memory.
 
         """
         if self.isdiagonal:
@@ -1607,14 +1571,13 @@ class Matrix(object):
         """write a PEST-compatible binary file.  The format is the same
         as the format used to storage a PEST Jacobian matrix
 
-        Parameters
-        ----------
-        filename : str
-            filename to save binary file
-        droptol : float
-            absolute value tolerance to make values smaller than zero.  Default is None
-        chunk : int
-            number of elements to write in a single pass.  Default is None
+        Args:
+            filename (`str`): filename to save binary file
+            droptol (`float`): absolute value tolerance to make values
+                smaller `droptol` than zero.  Default is None (no dropping)
+            chunk (`int`): number of elements to write in a single pass.
+                Default is `None`, which writes the entire numeric part of the
+                `Matrix` at once. This is faster but requires more memory.
 
         """
         #print(self.x)
@@ -1688,14 +1651,16 @@ class Matrix(object):
         """class method load from PEST-compatible binary file into a
         Matrix instance
 
-        Parameters
-        ----------
-        filename : str
-            filename to read
+        Args:
+            filename (`str`): filename to read
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: `Matrix` loaded from binary file
+
+        Example::
+
+            mat = pyemu.Matrix.from_binary("my.jco")
+            cov = pyemi.Cov.from_binary("large_cov.jcb")
 
         """
         x,row_names,col_names = Matrix.read_binary(filename)
@@ -1704,9 +1669,20 @@ class Matrix(object):
         return cls(x=x, row_names=row_names, col_names=col_names)
 
     @staticmethod
-    def read_binary(filename, sparse=False):
+    def read_binary(filename):
+        """static method to read PEST-format binary files
 
+        Args:
+            filename (`str`): filename to read
 
+        Returns:
+            tuple containing
+
+            - **numpy.ndarray**: the numeric values in the file
+            - **['str']**: list of row names
+            - **[`str`]**: list of col_names
+
+        """
         f = open(filename, 'rb')
         # the header datatype
         itemp1, itemp2, icount = np.fromfile(f, Matrix.binary_header_dt, 1)[0]
@@ -1722,15 +1698,13 @@ class Matrix(object):
             # raise TypeError('Matrix.from_binary(): Jco produced by ' +
             #                 'deprecated version of PEST,' +
             #                 'Use JcoTRANS to convert to new format')
-            print("new binary format detected...")
+            #print("new binary format detected...")
 
             data = np.fromfile(f, Matrix.coo_rec_dt, icount)
-            if sparse:
-                data = scipy.sparse.coo_matrix((data["dtemp"],(data["i"],data['j'])),shape=(nrow,ncol))
-            else:
-                x = np.zeros((nrow, ncol))
-                x[data['i'], data['j']] = data["dtemp"]
-                data = x
+
+            x = np.zeros((nrow, ncol))
+            x[data['i'], data['j']] = data["dtemp"]
+            data = x
             # read obs and parameter names
             col_names = []
             row_names = []
@@ -1752,12 +1726,9 @@ class Matrix(object):
             data = np.fromfile(f, Matrix.binary_rec_dt, icount)
             icols = ((data['j'] - 1) // nrow) + 1
             irows = data['j'] - ((icols - 1) * nrow)
-            if sparse:
-                data = scipy.sparse.coo_matrix((data["dtemp"],(irows-1,icols-1)),shape=(nrow,ncol))
-            else:
-                x = np.zeros((nrow, ncol))
-                x[irows - 1, icols - 1] = data["dtemp"]
-                data = x
+            x = np.zeros((nrow, ncol))
+            x[irows - 1, icols - 1] = data["dtemp"]
+            data = x
             # read obs and parameter names
             col_names = []
             row_names = []
@@ -1787,16 +1758,17 @@ class Matrix(object):
         """ a binary load method to accommodate one of the many
             bizarre fortran binary writing formats
 
-        Parameters
-        ----------
-        filename : str
-            name of the binary matrix file
+        Args:
+            filename (`str`): name of the binary matrix file
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`
 
         """
+        try:
+            from scipy.io import FortranFile
+        except Exception as e:
+            raise Exception("Matrix.from_fortranfile requires scipy")
         f = FortranFile(filename,mode='r')
         itemp1, itemp2 = f.read_ints()
         icount = f.read_ints()
@@ -1833,30 +1805,28 @@ class Matrix(object):
           ") != self.shape[1] (" + str(x.shape[1]) + ")")
         return cls(x=x,row_names=row_names,col_names=col_names)
 
-    def to_ascii(self, out_filename, icode=2):
+    def to_ascii(self, filename, icode=2):
         """write a PEST-compatible ASCII Matrix/vector file
 
-        Parameters
-        ----------
-        out_filename : str
-            output filename
-        icode : (int)
-            PEST-style info code for Matrix style
+        Args:
+            filename (`str`): filename to write to
+        icode (`int`, optional): PEST-style info code for matrix style.
+            Default is 2
 
         """
         nrow, ncol = self.shape
-        f_out = open(out_filename, 'w')
+        f_out = open(filename, 'w')
         f_out.write(' {0:7.0f} {1:7.0f} {2:7.0f}\n'.
                     format(nrow, ncol, icode))
         f_out.close()
-        f_out = open(out_filename,'ab')
+        f_out = open(filename,'ab')
         if self.isdiagonal:
             x = np.diag(self.__x[:, 0])
         else:
             x = self.__x
         np.savetxt(f_out, x, fmt='%15.7E', delimiter='')
         f_out.close()
-        f_out = open(out_filename,'a')
+        f_out = open(filename,'a')
         if icode == 1:
             f_out.write('* row and column names\n')
             for r in self.row_names:
@@ -1873,13 +1843,19 @@ class Matrix(object):
 
     @classmethod
     def from_ascii(cls,filename):
-        """load a pest-compatible ASCII Matrix/vector file into a
-        Matrix instance
+        """load a PEST-compatible ASCII matrix/vector file into a
+        `Matrix` instance
 
-        Parameters
-        ----------
-        filename : str
-            name of the file to read
+        Args:
+            filename (`str`): name of the file to read
+
+        Returns:
+            `Matrix`: `Matrix` loaded from ASCII file
+
+        Example::
+
+            mat = pyemu.Matrix.from_ascii("my.mat")
+            cov = pyemi.Cov.from_ascii("my.cov")
 
         """
         x,row_names,col_names,isdiag = Matrix.read_ascii(filename)
@@ -1888,6 +1864,20 @@ class Matrix(object):
 
     @staticmethod
     def read_ascii(filename):
+        """read a PEST-compatible ASCII matrix/vector file
+
+        Args:
+            filename (`str`): file to read from
+
+        Returns:
+            tuple containing
+
+            - **numpy.ndarray**: numeric values
+            - **['str']**: list of row names
+            - **[`str`]**: list of column names
+            - **bool**: diagonal flag
+
+        """
 
         f = open(filename, 'r')
         raw = f.readline().strip().split()
@@ -1972,16 +1962,19 @@ class Matrix(object):
 
     @classmethod
     def from_dataframe(cls, df):
-        """ class method to create a new Matrix instance from a
-         pandas.DataFrame
+        """ class method to create a new `Matrix` instance from a
+         `pandas.DataFrame`
 
-        Parameters
-        ----------
-        df : pandas.DataFrame
+        Args:
+            df (`pandas.DataFrame`): dataframe
 
-        Returns
-        -------
-        Matrix : Matrix
+        Returns:
+            `Matrix`: `Matrix` instance derived from `df`.
+
+        Example::
+
+            df = pd.read_csv("my.csv")
+            mat = pyemu.Matrix.from_dataframe(df)
 
         """
         if not isinstance(df,pd.DataFrame):
@@ -1996,26 +1989,17 @@ class Matrix(object):
         """ class method to create a new Matrix instance from
         row names and column names, filled with trash
 
-        Parameters
-        ----------
-            row_names : iterable
-                row names for the new matrix
-            col_names : iterable
-                col_names for the new matrix
-            isdiagonal : bool
-                flag for diagonal matrix. Default is False
-            autoalign : bool
-                flag for autoaligning new matrix
-                during linear algebra calcs. Default
-                is True
-            random : bool
-                flag for contents of the trash matrix.
+        Args:
+            row_names (['str']): row names for the new `Matrix`
+            col_names (['str']): col_names for the new matrix
+            isdiagonal (`bool`, optional): flag for diagonal matrix. Default is False
+            autoalign (`bool`, optional): flag for autoaligning new matrix
+                during linear algebra calcs. Default is True
+            random (`bool`): flag for contents of the trash matrix.
                 If True, fill with random numbers, if False, fill with zeros
                 Default is False
-        Returns
-        -------
-            mat : Matrix
-                the new Matrix instance
+        Returns:
+            `Matrix`: the new Matrix instance
 
         """
         if random:
@@ -2027,11 +2011,10 @@ class Matrix(object):
 
 
     def to_dataframe(self):
-        """return a pandas.DataFrame representation of the Matrix object
+        """return a pandas.DataFrame representation of `Matrix`
 
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
+        Returns:
+            `pandas.DataFrame`: a dataframe derived from `Matrix`
 
         """
         if self.isdiagonal:
@@ -2041,47 +2024,19 @@ class Matrix(object):
         return pd.DataFrame(data=x,index=self.row_names,columns=self.col_names)
 
 
-    def to_sparse(self, trunc=0.0):
-        """get the COO sparse Matrix representation of the Matrix
+    def extend(self,other):
+        """ extend `Matrix` with the elements of other.
 
-        Returns
-        -------
-        scipy.sparse.Matrix : scipy.sparse.Matrix
+        Args:
+        other (`Matrix`):  the Matrix to extend self by
+        inplace (`bool`): inplace = True not implemented
+
+        Returns:
+            `Matrix`: new, extended `Matrix`
+
 
         """
 
-        iidx, jidx = [], []
-        data = []
-        nrow, ncol = self.shape
-        for i in range(nrow):
-            for j in range(ncol):
-                val = self.x[i,j]
-                if val > trunc:
-                    iidx.append(i)
-                    jidx.append(j)
-                    data.append(val)
-        # csr_Matrix( (data,(row,col)), shape=(3,3)
-        return scipy.sparse.coo_matrix((data, (iidx, jidx)), shape=(self.shape))
-
-
-    def extend(self,other,inplace=False):
-        """ extend self with the elements of other.
-
-        Parameters
-        ----------
-        other : (Matrix)
-            the Matrix to extend self by
-        inplace : bool
-            inplace = True not implemented
-
-        Returns
-        -------
-        Matrix : Matrix
-            if not inplace
-
-        """
-        if inplace == True:
-            raise NotImplementedError()
         if len(set(self.row_names).intersection(set(other.row_names))) != 0:
             raise Exception("shared row names")
         if len(set(self.col_names).intersection(set(other.col_names))) != 0:
@@ -2104,25 +2059,20 @@ class Matrix(object):
         return type(self)(x=new_x,row_names=new_row_names,
                            col_names=new_col_names,isdiagonal=isdiagonal)
 
-
-
-
-
 class Jco(Matrix):
     """a thin wrapper class to get more intuitive attribute names.  Functions
-    exactly like Matrix
+    exactly like `Matrix`
     """
     def __init(self, **kwargs):
         """ Jco constuctor takes the same arguments as Matrix.
 
-        Parameters
-        ----------
-        **kwargs : (dict)
-            constructor arguments for Matrix
+        Args:
+            **kwargs (`dict`): constructor arguments for `Matrix`
 
-        Returns
-        -------
-        Jco : Jco
+        Example:
+
+            jco = pyemu.Jco.from_binary("my.jco")
+
 
         """
 
@@ -2131,12 +2081,10 @@ class Jco(Matrix):
 
     @property
     def par_names(self):
-        """ thin wrapper around Matrix.col_names
+        """ thin wrapper around `Matrix.col_names`
 
-        Returns
-        -------
-        list : list
-            parameter names
+        Returns:
+            [`str`]: a list of parameter names
 
         """
         return self.col_names
@@ -2144,12 +2092,10 @@ class Jco(Matrix):
 
     @property
     def obs_names(self):
-        """ thin wrapper around Matrix.row_names
+        """ thin wrapper around `Matrix.row_names`
 
-        Returns
-        -------
-        list : list
-            observation names
+        Returns:
+            ['str']: a list of observation names
 
         """
         return self.row_names
@@ -2159,10 +2105,8 @@ class Jco(Matrix):
     def npar(self):
         """ number of parameters in the Jco
 
-        Returns
-        -------
-        int : int
-            number of parameters (columns)
+        Returns:
+            `int`: number of parameters (columns)
 
         """
         return self.shape[1]
@@ -2172,72 +2116,27 @@ class Jco(Matrix):
     def nobs(self):
         """ number of observations in the Jco
 
-        Returns
-        -------
-        int : int
-            number of observations (rows)
+        Returns:
+            `int`: number of observations (rows)
 
         """
         return self.shape[0]
 
-    def replace_cols(self, other, parnames=None):
-        """
-        Replaces columns in one Matrix with columns from another.
-        Intended for Jacobian matrices replacing parameters.
-
-        Parameters
-        ----------
-        other: Matrix
-            Matrix to use for replacing columns in self
-
-        parnames: list
-            parameter (column) names to use in other.  If None, all
-            columns in other are used
-
-        """
-        if len(set(self.col_names).intersection(set(other.col_names))) == 0:
-            raise Exception("no common col_names")
-        if not parnames:
-            parnames = other.col_names
-        if len(set(self.col_names).intersection(set(other.col_names))) != len(parnames):
-            raise Exception("not all parnames found")
-        if len(set(self.row_names).intersection(set(other.row_names))) != len(self.row_names):
-            raise Exception("not all row names found")
-        if type(self) != type(other):
-            raise Exception("type mismatch")
-
-        # re-sort other by rows to be sure they line up with self
-        try:
-            other = other.get(row_names=self.row_names)
-        except:
-            raise Exception('could not align rows of the two matrices')
-
-        # replace the columns in self with those from other
-        selfobs = np.array(self.col_names)
-        otherobs = np.array(other.col_names)
-        selfidx = [np.where(np.array(selfobs) == i)[0][0] for i in parnames]
-        otheridx = [np.where(np.array(otherobs) == i)[0][0] for i in parnames]
-        self.x[:,selfidx] = other.x[:,otheridx]
-
 
     @classmethod
-    def from_pst(cls,pst, random=False):
+    def from_pst(cls, pst, random=False):
         """construct a new empty Jco from a control file filled
         with trash
 
-        Parameters
-        ----------
-            pst : Pst
-                a control file instance.  If type is 'str',
-                Pst is loaded from filename
-            random : bool
-                flag for contents of the trash matrix.
+        Args:
+            pst (`pyemu.Pst`): a pest control file instance.  If type is 'str',
+                `pst` is loaded from filename
+            random (`bool`): flag for contents of the trash matrix.
                 If True, fill with random numbers, if False, fill with zeros
                 Default is False
-        Return
-        ------
-            jco : Jco
-                the new Jco instance
+
+        Returns:
+            `Jco`: the new Jco instance
 
         """
 
@@ -2247,37 +2146,37 @@ class Jco(Matrix):
         return Jco.from_names(pst.obs_names, pst.adj_par_names, random=random)
 
 class Cov(Matrix):
-    """a subclass of Matrix for handling diagonal or dense Covariance matrices
-        todo:block diagonal
+    """Diagonal and/or dense Covariance matrices
+
+    Args:
+        x (`numpy.ndarray`): numeric values
+        names ([`str`]): list of row and column names
+        isdigonal (`bool`): flag if the Matrix is diagonal
+        autoalign (`bool`): flag to control the autoalignment of Matrix during
+            linear algebra operations
+
+    Example::
+
+        data = np.random.random((10,10))
+        names = ["par_{0}".format(i) for i in range(10)]
+        mat = pyemu.Cov(x=data,names=names)
+        mat.to_binary("mat.jco")
+
+    Note:
+        `row_names` and `col_names` args are supported in the contructor
+        so support inheritance.  However, users should only pass `names`
+
     """
-    def __init__(self, x=None, names=[], row_names=[], col_names=[],
+    def __init__(self, x=None, names=[],row_names=[],col_names=[],
                  isdiagonal=False, autoalign=True):
-        """ Cov constructor.
 
-
-        Parameters
-        ----------
-        x : numpy.ndarray
-            elements in Cov
-        names : iterable
-            names for both columns and rows
-        row_names : iterable
-            names for rows
-        col_names : iterable
-            names for columns
-        isdiagonal : bool
-            diagonal Matrix flag
-        autoalign : bool
-            autoalignment flag
-
-        Returns
-        -------
-        Cov : Cov
-
-        """
         self.__identity = None
         self.__zero = None
         #if len(row_names) > 0 and len(col_names) > 0:
+        #    assert row_names == col_names
+        self.__identity = None
+        self.__zero = None
+        # if len(row_names) > 0 and len(col_names) > 0:
         #    assert row_names == col_names
         if len(names) != 0 and len(row_names) == 0:
             row_names = names
@@ -2287,15 +2186,18 @@ class Cov(Matrix):
                                   row_names=row_names,
                                   col_names=col_names,
                                   autoalign=autoalign)
+        super(Cov, self).__init__(x=x, isdiagonal=isdiagonal,
+                                  row_names=row_names,
+                                  col_names=col_names,
+                                  autoalign=autoalign)
 
 
     @property
     def identity(self):
-        """get an identity Matrix like self
+        """get an identity `Cov` of the same shape
 
-        Returns
-        -------
-        Cov : Cov
+        Returns:
+            `Cov`: new `Cov` instance with identity matrix
 
         """
         if self.__identity is None:
@@ -2307,11 +2209,10 @@ class Cov(Matrix):
 
     @property
     def zero(self):
-        """ get an instance of self with all zeros
+        """ get an instance of `Cov` with all zeros
 
-        Returns
-        -------
-        Cov : Cov
+        Returns:
+            `Cov`: new `Cov` instance with zeros
 
         """
         if self.__zero is None:
@@ -2323,17 +2224,14 @@ class Cov(Matrix):
 
     def condition_on(self,conditioning_elements):
         """get a new Covariance object that is conditional on knowing some
-            elements.  uses Schur's complement for conditional Covariance
-            propagation
+        elements.  uses Schur's complement for conditional Covariance
+        propagation
 
-        Parameters
-        ----------
-        conditioning_elements : iterable
-            names of elements to condition on
+        Args:
+            conditioning_elements (['str']): list of names of elements to condition on
 
-        Returns
-        -------
-        Cov : Cov
+        Returns:
+            `Cov`: new conditional `Cov` that assumes `conditioning_elements` have become known
         """
         if not isinstance(conditioning_elements,list):
             conditioning_elements = [conditioning_elements]
@@ -2356,43 +2254,14 @@ class Cov(Matrix):
         #print(new_Cov.shape,upper_off_diag.shape,cond_Cov.shape)
         return new_Cov - (upper_off_diag * cond_Cov * upper_off_diag.T)
 
-    def draw(self, mean=1.0):
-        """Obtain a random draw from a covariance matrix either with mean==1
-        or with specified mean vector
-
-        Parameters
-        ----------
-        mean: scalar of enumerable of length self.shape[0]
-            mean values. either a scalar applied to to the entire
-            vector of length N or an N-length vector
-
-        Returns
-        -------
-        numpy.nparray : numpy.ndarray
-            A vector of conditioned values, sampled
-            using the covariance matrix (self) and applied to the mean
-
-        """
-        warnings.warn("Cov.draw is deprecated, use Ensemble class",PyemuWarning)
-        if np.isscalar(mean):
-            mean = np.ones(self.ncol) * mean
-        else:
-            if len(mean) != self.ncol:
-                raise Exception("mean vector must be {0} elements. {1} were provided".\
-                format(self.ncol, len(mean)))
-
-        return(np.random.multivariate_normal(mean, self.as_2d))
-
 
 
     @property
     def names(self):
         """wrapper for getting row_names.  row_names == col_names for Cov
 
-        Returns
-        -------
-        list : list
-            names
+        Returns:
+            [`str`]: list of names
 
         """
         return self.row_names
@@ -2400,15 +2269,12 @@ class Cov(Matrix):
 
     def replace(self,other):
         """replace elements in the covariance matrix with elements from other.
-        if other is not diagonal, then self becomes non diagonal
+        if other is not diagonal, then this `Cov` becomes non diagonal
 
-        Parameters
-        -----------
-        other : Cov
-            the Cov to replace elements in self with
+        Args:
+            `Cov`: the Cov to replace elements in this `Cov` with
 
-        Note
-        ----
+        Note:
             operates in place
 
         """
@@ -2439,19 +2305,21 @@ class Cov(Matrix):
         #self.reset_x(self_x)
         #self.isdiagonal = False
 
-    def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0, include_path=True):
+    def to_uncfile(self, unc_file, covmat_file="cov.mat", var_mult=1.0, include_path=True):
         """write a PEST-compatible uncertainty file
 
-        Parameters
-        ----------
-        unc_file : str
-            filename of the uncertainty file
-        covmat_file : str Covariance Matrix filename. Default is
-        "Cov.mat".  If None, and Cov.isdiaonal, then a standard deviation
-        form of the uncertainty file is written.  Exception raised if None
-        and not Cov.isdiagonal
-        var_mult : float
-            variance multiplier for the covmat_file entry
+        Args:
+            unc_file (`str`): filename of the uncertainty file
+            covmat_file (`str`): covariance matrix filename. Default is
+                "Cov.mat".  If None, and Cov.isdiaonal, then a standard deviation
+                form of the uncertainty file is written.  Exception raised if `covmat_file` is `None`
+                and not `Cov.isdiagonal`
+            var_mult (`float`): variance multiplier for the covmat_file entry
+
+        Example::
+
+            cov = pyemu.Cov.from_parameter_data(pst)
+            cov.to_uncfile("my.unc")
 
         """
         assert len(self.row_names) == self.shape[0], \
@@ -2484,17 +2352,25 @@ class Cov(Matrix):
 
     @classmethod
     def from_obsweights(cls, pst_file):
-        """instantiates a  Cov instance from observation weights in
-        a PEST control file.  Calls Cov.from_observation_data()
+        """instantiates a `Cov` instance from observation weights in
+        a PEST control file.
 
-        Parameters
-        ----------
-        pst_file : str
-            pest control file name
+        Args:
+            pst_file (`str`): pest control file name
 
-        Returns
-        -------
-        Cov : Cov
+        Returns:
+            `Cov`: a diagonal observation noise covariance matrix derived from the
+            weights in the pest control file.  Zero-weighted observations
+            are included with a weight of 1.0e-30
+
+        Note:
+            Calls `Cov.from_observation_data()`
+
+        Example::
+
+            obscov = pyemu.Cov.from_obsweights("my.pst")
+
+
         """
         if not pst_file.endswith(".pst"):
             pst_file += ".pst"
@@ -2502,16 +2378,19 @@ class Cov(Matrix):
 
     @classmethod
     def from_observation_data(cls, pst):
-        """instantiates a  Cov from a pandas dataframe
-                of pyemu.Pst.observation_data
+        """instantiates a `Cov` from pyemu.Pst.observation_data
 
-        Parameters
-        ----------
-        pst : pyemu.Pst
+        Args:
+            pst (`pyemu.Pst`): control file instance
 
-        Returns
-        -------
-        Cov : Cov
+        Returns:
+            `Cov`: a diagonal observation noise covariance matrix derived from the
+            weights in the pest control file.  Zero-weighted observations
+            are included with a weight of 1.0e-30
+
+        Example::
+
+            obscov = pyemu.Cov.from_observation_data(pst)
 
         """
         nobs = pst.observation_data.shape[0]
@@ -2528,25 +2407,25 @@ class Cov(Matrix):
 
     @classmethod
     def from_parbounds(cls, pst_file, sigma_range = 4.0,scale_offset=True):
-        """Instantiates a  Cov from a pest control file parameter data section.
-        Calls Cov.from_parameter_data()
+        """Instantiates a `Cov` from a pest control file parameter data section using
+        parameter bounds as a proxy for uncertainty.
 
-        Parameters
-        ----------
-        pst_file : str
-            pest control file name
-        sigma_range: float
-            defines range of upper bound - lower bound in terms of standard
-            deviation (sigma). For example, if sigma_range = 4, the bounds
-            represent 4 * sigma.  Default is 4.0, representing approximately
-            95% confidence of implied normal distribution
-        scale_offset : bool
-            flag to apply scale and offset to parameter upper and lower
-            bounds before calculating varaince.  Default is True
 
-        Returns
-        -------
-        Cov : Cov
+        Args:
+            pst_file (`str`): pest control file name
+            sigma_range (`float`): defines range of upper bound - lower bound in terms of standard
+                deviation (sigma). For example, if sigma_range = 4, the bounds
+                represent 4 * sigma.  Default is 4.0, representing approximately
+                95% confidence of implied normal distribution
+            scale_offset (`bool`): flag to apply scale and offset to parameter upper and lower
+                bounds before calculating varaince. In some cases, not applying scale and
+                offset can result in undefined (log) variance.  Default is True.
+
+        Returns:
+            `Cov`: diagonal parameter `Cov` matrix created from parameter bounds
+
+        Note:
+            Calls `Cov.from_parameter_data()`
 
         """
         if not pst_file.endswith(".pst"):
@@ -2556,24 +2435,25 @@ class Cov(Matrix):
 
     @classmethod
     def from_parameter_data(cls, pst, sigma_range = 4.0, scale_offset=True):
-        """load Covariances from a pandas dataframe of
-        pyemu.Pst.parameter_data
+        """Instantiates a `Cov` from a pest control file parameter data section using
+        parameter bounds as a proxy for uncertainty.
 
-        Parameters
-        ----------
-        pst : (pyemu.Pst)
-        sigma_range: float
-            defines range of upper bound - lower bound in terms of standard
-            deviation (sigma). For example, if sigma_range = 4, the bounds
-            represent 4 * sigma.  Default is 4.0, representing approximately
-            95% confidence of implied normal distribution
-        scale_offset : bool
-            flag to apply scale and offset to parameter upper and lower
-            bounds before calculating varaince.  Default is True
 
-        Returns
-        -------
-        Cov : Cov
+        Args:
+            pst_file (`str`): pest control file name
+            sigma_range (`float`): defines range of upper bound - lower bound in terms of standard
+                deviation (sigma). For example, if sigma_range = 4, the bounds
+                represent 4 * sigma.  Default is 4.0, representing approximately
+                95% confidence of implied normal distribution
+            scale_offset (`bool`): flag to apply scale and offset to parameter upper and lower
+                bounds before calculating varaince. In some cases, not applying scale and
+                offset can result in undefined (log) variance.  Default is True.
+
+        Returns:
+            `Cov`: diagonal parameter `Cov` matrix created from parameter bounds
+
+        Note:
+            Calls `Cov.from_parameter_data()`
 
         """
         npar = pst.npar_adj
@@ -2613,20 +2493,21 @@ class Cov(Matrix):
 
     @classmethod
     def from_uncfile(cls, filename):
-        """instaniates a Cov from a PEST-compatible uncertainty file
+        """instaniates a `Cov` from a PEST-compatible uncertainty file
 
-        Parameters
-        ----------
-        filename : str
-            uncertainty file name
+        Args:
+            filename (`str`):  uncertainty file name
 
-        Returns
-        -------
-        Cov : Cov
+        Returns:
+            `Cov`: `Cov` instance from uncertainty file
+
+        Example::
+
+            cov = pyemu.Cov.from_uncfile("my.unc")
 
         """
 
-        nentries = Cov.get_uncfile_dimensions(filename)
+        nentries = Cov._get_uncfile_dimensions(filename)
         x = np.zeros((nentries, nentries))
         row_names = []
         col_names = []
@@ -2698,18 +2579,8 @@ class Cov(Matrix):
         return cls(x=x,names=row_names,isdiagonal=isdiagonal)
 
     @staticmethod
-    def get_uncfile_dimensions(filename):
+    def _get_uncfile_dimensions(filename):
         """quickly read an uncertainty file to find the dimensions
-
-        Parameters
-        ----------
-        filename : str
-            uncertainty filename
-
-        Returns
-        -------
-        nentries : int
-            number of elements in file
         """
         f = open(filename, 'r')
         nentries = 0
@@ -2751,16 +2622,13 @@ class Cov(Matrix):
 
     @classmethod
     def identity_like(cls,other):
-        """ Get an identity matrix Cov instance like other
+        """ Get an identity matrix Cov instance like other `Cov`
 
-        Parameters
-        ----------
-        other : Matrix
-            must be square
+        Args:
+            other (`Matrix`):  other matrix - must be square
 
-        Returns
-        -------
-        Cov : Cov
+        Returns:
+            `Cov`: new identity matrix `Cov` with shape of `other`
 
         """
         if other.shape[0] != other.shape[1]:
@@ -2772,11 +2640,9 @@ class Cov(Matrix):
         """ Convert Cov instance to Pearson correlation coefficient
         matrix
 
-        Returns
-        -------
-        Matrix : Matrix
-            this is on purpose so that it is clear the returned
-            instance is not a Cov
+        Returns:
+            `Matrix`: A `Matrix` of correlation coefs.  Return type is `Matrix`
+            on purpose so that it is clear the returned instance is not a Cov
 
         """
         std_dict = self.get_diagonal_vector().to_dataframe()["diag"].\
@@ -2802,151 +2668,6 @@ class Cov(Matrix):
         return Matrix(x=pearson,row_names=self.row_names,
                       col_names=self.col_names)
 
-
-
-class SparseMatrix(object):
-    """Note: less rigid about references since this class is for big matrices and
-    don't want to be making copies"""
-    def __init__(self,x,row_names,col_names):
-        if not isinstance(x,scipy.sparse.coo_matrix):
-            raise Exception("x is not a a coo_matrix")
-        if x.shape[0] != len(row_names):
-            raise Exception("row_names != x.shape[0]")
-        if x.shape[1] != len(col_names):
-            raise Exception("col_names != x.shape[1]")
-        self.x = x
-        self.row_names = list(row_names)
-        self.col_names = list(col_names)
-
-
-    @property
-    def shape(self):
-        return self.x.shape
-
-    @classmethod
-    def from_binary(cls,filename):
-        x,row_names,col_names = Matrix.read_binary(filename,sparse=True)
-        return cls(x=x,row_names=row_names,col_names=col_names)
-
-
-
-    def to_coo(self,filename):
-        save_coo(self.x,row_names=self.row_names,col_names=self.col_names,filename=filename)
-
-
-
-    @classmethod
-    def from_coo(cls,filename):
-        return SparseMatrix.from_binary(filename)
-
-    # @classmethod
-    # def from_csv(cls,filename):
-    #     pass
-    #
-    #
-    # def to_csv(self,filename):
-    #     pass
-
-
-    def to_matrix(self):
-        x = np.zeros(self.shape)
-        for i,j,d in zip(self.x.row,self.x.col,self.x.data):
-            x[i,j] = d
-        return Matrix(x=x,row_names=self.row_names,col_names=self.col_names)
-
-
-    @classmethod
-    def from_matrix(cls, matrix, droptol=None):
-        iidx,jidx = matrix.as_2d.nonzero()
-        coo = scipy.sparse.coo_matrix((matrix.as_2d[iidx,jidx],(iidx,jidx)),shape=matrix.shape)
-        return cls(x=coo,row_names=matrix.row_names,col_names=matrix.col_names)
-
-
-    def block_extend_ip(self,other):
-        """designed for combining dense martrices into a sparse block diagonal matrix.
-        other must not have any rows or columns in common with self """
-        ss = set(self.row_names)
-        os = set(other.row_names)
-        inter = ss.intersection(os)
-        if len(inter) > 0:
-            raise Exception("SparseMatrix.block_extend_ip(): error shares the following rows:{0}".
-                            format(','.join(inter)))
-        ss = set(self.col_names)
-        os = set(other.col_names)
-        inter = ss.intersection(os)
-        if len(inter) > 0:
-            raise Exception("SparseMatrix.block_extend_ip(): error shares the following cols:{0}".
-                            format(','.join(inter)))
-
-        if isinstance(other,Matrix):
-            iidx,jidx = other.as_2d.nonzero()
-            # this looks terrible but trying to do this as close to "in place" as possible
-            self.x = scipy.sparse.coo_matrix((np.append(self.x.data,other.as_2d[iidx,jidx]),
-                                              (np.append(self.x.row,(iidx+self.shape[0])),
-                                               np.append(self.x.col,(jidx+self.shape[1])))),
-                                             shape=(self.shape[0]+other.shape[0],self.shape[1]+other.shape[1]))
-            self.row_names.extend(other.row_names)
-            self.col_names.extend(other.col_names)
-
-        elif isinstance(other,SparseMatrix):
-            self.x = scipy.sparse.coo_matrix((np.append(self.x.data, other.x.data),
-                                              (np.append(self.x.row, (self.shape[0] + other.x.row)),
-                                               np.append(self.x.col, (self.shape[1] + other.x.col)))),
-                                             shape=(self.shape[0] + other.shape[0], self.shape[1] + other.shape[1]))
-            self.row_names.extend(other.row_names)
-            self.col_names.extend(other.col_names)
-
-
-        else:
-            raise NotImplementedError("SparseMatrix.block_extend_ip() 'other' arg only supports Matrix types ")
-
-
-    def get_matrix(self,row_names,col_names):
-        if not isinstance(row_names,list):
-            row_names = [row_names]
-        if not isinstance(col_names,list):
-            col_names = [col_names]
-
-        iidx = Matrix.find_rowcol_indices(row_names,self.row_names,self.col_names,axis=0)
-        jidx = Matrix.find_rowcol_indices(col_names,self.row_names,self.col_names,axis=1)
-
-        imap = {ii:i for i,ii in enumerate(iidx)}
-        jmap = {jj:j for j,jj in enumerate(jidx)}
-
-        iset = set(iidx)
-        jset = set(jidx)
-
-        x = np.zeros((len(row_names),len(col_names)))
-        # for i,idx in enumerate(iidx):
-        #     for j,jdx in enumerate(jidx):
-        #         if jdx in jset and idx in iset:
-        #             x[i,j] = self.x[idx,jdx]
-
-        for i,j,d in zip(self.x.row,self.x.col,self.x.data):
-            if i in iset and j in jset:
-                x[imap[i],jmap[j]] = d
-        return Matrix(x=x,row_names=row_names,col_names=col_names)
-
-    def get_sparse_matrix(self,row_names,col_names):
-        if not isinstance(row_names,list):
-            row_names = [row_names]
-        if not isinstance(col_names,list):
-            col_names = [col_names]
-
-        iidx = Matrix.find_rowcol_indices(row_names,self.row_names,self.col_names,axis=0)
-        jidx = Matrix.find_rowcol_indices(col_names,self.row_names,self.col_names,axis=1)
-
-        iset = set(iidx)
-        jset = set(jidx)
-
-        ii,jj,data = [],[],[]
-        for i,j,d in zip(self.x.row,self.x.col,self.x.data):
-            if i in iset and j in jset:
-                ii.append(i)
-                jj.append(j)
-                data.append(d)
-        coo = scipy.sparse.coo_matrix((data,(ii,jj)),shape=(len(row_names),len(col_names)))
-        return SparseMatrix(x=coo,row_names=row_names,col_names=col_names)
 
 
 

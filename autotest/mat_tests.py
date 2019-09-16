@@ -69,8 +69,6 @@ def mat_test():
     newthird = third.get(row_names=["o1"])
     result = first.T * newthird * first
 
-    result.to_sparse()
-
     # drop testing
     second.drop("p2",axis=0)
     assert second.shape == (2, 2)
@@ -375,18 +373,6 @@ def indices_test():
     else:
         raise Exception()
 
-    cycles = 10
-    s = datetime.now()
-    for _ in range(cycles):
-        idx1 = m.old_indices(cnames,1)
-    t1 = (datetime.now() - s).total_seconds()
-
-    s = datetime.now()
-    for _ in range(cycles):
-        idx2 = m.indices(cnames,1)
-    t2 = (datetime.now() - s).total_seconds()
-    print(t1,t2)
-    assert np.allclose(idx1,idx2)
 
 
 def coo_tests():
@@ -408,11 +394,6 @@ def coo_tests():
     assert m.shape[1] == len(cnames)
 
     mname = os.path.join("temp","temp.jcb")
-
-    pyemu.mat.save_coo(m.to_sparse(), m.row_names, m.col_names, mname)
-    mm = pyemu.Matrix.from_binary(mname)
-    assert np.array_equal(m.x, mm.x)
-    os.remove(mname)
 
     m.to_coo(mname)
     mm = pyemu.Matrix.from_binary(mname)
@@ -455,175 +436,6 @@ def coo_tests():
     mm = pyemu.Matrix.from_binary(mname)
     assert np.array_equal(m.x, mm.x)
     os.remove(mname)
-
-
-def sparse_constructor_test():
-    import os
-    from datetime import datetime
-    import numpy as np
-    import pyemu
-
-    nrow = 100
-    ncol = 100
-
-    rnames = ["row_{0}".format(i) for i in range(nrow)]
-    cnames = ["col_{0}".format(i) for i in range(ncol)]
-
-    x = np.random.random((nrow, ncol))
-
-    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-
-    mname = os.path.join("temp","test.jcb")
-    m.to_binary(mname)
-    sm = pyemu.SparseMatrix.from_binary(mname)
-
-    sm.to_coo(mname)
-    m1 = sm.to_matrix()
-    m = pyemu.Matrix.from_binary(mname)
-    assert np.array_equal(m1.x,m.x)
-
-def sparse_extend_test():
-    import os
-    from datetime import datetime
-    import numpy as np
-    import pyemu
-
-    nrow = 5
-    ncol = 5
-
-    rnames = ["row_{0}".format(i) for i in range(nrow)]
-    cnames = ["col_{0}".format(i) for i in range(ncol)]
-
-    x = np.random.random((nrow, ncol))
-
-    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-
-    try:
-        sm.block_extend_ip(m)
-    except:
-        pass
-    else:
-        raise Exception()
-
-    m = pyemu.Matrix(x,row_names=['t{0}'.format(i) for i in range(nrow)],col_names=m.col_names)
-    try:
-        sm.block_extend_ip(m)
-    except:
-        pass
-    else:
-        raise Exception()
-
-
-    m = pyemu.Matrix(x,row_names=['r{0}'.format(i) for i in range(nrow)],
-                     col_names=['r{0}'.format(i) for i in range(ncol)])
-    sm.block_extend_ip(m)
-    m1 = sm.to_matrix()
-    d = m.x - m1.x[m.shape[0]:,m.shape[1]:]
-    assert d.sum() == 0
-
-    m = pyemu.Cov(x=np.atleast_2d(np.ones(nrow)),names=['p{0}'.format(i) for i in range(nrow)],isdiagonal=True)
-    sm.block_extend_ip(m)
-    d = m.as_2d - sm.to_matrix().x[-nrow:,-nrow:]
-    assert d.sum() == 0
-
-    m1 = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
-
-    sm1 = pyemu.SparseMatrix.from_matrix(m1)
-    sm2 = pyemu.SparseMatrix.from_matrix(m)
-    sm1.block_extend_ip(sm2)
-
-    m2 = sm1.to_matrix()
-    d = m.as_2d - m2.x[m.shape[0]:,m.shape[1]:]
-    assert d.sum() == 0
-
-
-def sparse_get_test():
-    import os
-    from datetime import datetime
-    import numpy as np
-    import pyemu
-
-    nrow = 5
-    ncol = 5
-
-    rnames = ["row_{0}".format(i) for i in range(nrow)]
-    cnames = ["col_{0}".format(i) for i in range(ncol)]
-
-    x = np.random.random((nrow, ncol))
-
-    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-    m1 = sm.get_matrix(rnames[0],cnames)
-    d = m1.x - m.x[0,:]
-    assert d.sum() == 0
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-    m1 = sm.get_matrix(rnames[:2], cnames)
-    d = m1.x - m.x[:2, :]
-    assert d.sum() == 0
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-    m1 = sm.get_matrix(rnames, cnames[0])
-    d = m1.x - m.x[:, 0]
-    assert d.sum() == 0
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-    m1 = sm.get_matrix(rnames, cnames[:2])
-    d = m1.x - m.x[:, :2]
-    assert d.sum() == 0
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-    m1 = sm.get_matrix(rnames, cnames)
-    d = m1.x - m.x
-    assert d.sum() == 0
-
-
-def sparse_get_sparse_test():
-    import os
-    from datetime import datetime
-    import numpy as np
-    import pyemu
-
-    nrow = 5
-    ncol = 5
-
-    rnames = ["row_{0}".format(i) for i in range(nrow)]
-    cnames = ["col_{0}".format(i) for i in range(ncol)]
-
-    x = np.random.random((nrow, ncol))
-
-    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-    m1 = sm.get_matrix(rnames[0],cnames)
-    d = m1.x - m.x[0,:]
-    assert d.sum() == 0
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-    m1 = sm.get_sparse_matrix(rnames[:2], cnames).to_matrix()
-    d = m1.x - m.x[:2, :]
-    assert d.sum() == 0
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-    m1 = sm.get_sparse_matrix(rnames, cnames[0]).to_matrix()
-    d = m1.x - m.x[:, 0]
-    assert d.sum() == 0
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-    m1 = sm.get_sparse_matrix(rnames, cnames[:2]).to_matrix()
-    d = m1.x - m.x[:, :2]
-    assert d.sum() == 0
-
-    sm = pyemu.SparseMatrix.from_matrix(m)
-    m1 = sm.get_sparse_matrix(rnames, cnames).to_matrix()
-    d = m1.x - m.x
-    assert d.sum() == 0
-
 
 def df_tests():
     import os

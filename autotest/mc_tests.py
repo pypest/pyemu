@@ -852,7 +852,7 @@ def ensemble_deviations_test():
 
 if __name__ == "__main__":
     # ensemble_deviations_test()
-    # mixed_par_draw_test()
+    mixed_par_draw_test()
     # triangular_draw_test()
     # sparse_draw_test()
     # binary_ensemble_dev()
@@ -869,7 +869,7 @@ if __name__ == "__main__":
     # mc_test()
     # fixed_par_test()
     # uniform_draw_test()
-    gaussian_draw_test()
+    #gaussian_draw_test()
     # parfile_test()
     # write_regul_test()
     #from_dataframe_test()

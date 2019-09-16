@@ -45,8 +45,6 @@ def schur_test_nonpest():
 
     print(s.get_removed_obs_importance({"group1":["o1","o3"]}))
 
-    print(s.pandas)
-
     forecasts = Matrix(x=np.random.random((1,npar)),row_names=[forecasts],col_names=pnames)
 
     sc = Schur(jco=jco,forecasts=forecasts.T,parcov=parcov,obscov=obscov)
@@ -77,8 +75,6 @@ def schur_test():
     assert "prior" in levels,levels
     assert "post" in levels,levels
 
-    print(sc.get_parameter_summary(include_map=True))
-    print(sc.get_forecast_summary(include_map=True))
     print(sc.get_removed_obs_importance(reset_zero_weight=True))
 
     sc = Schur(jco=os.path.join(w_dir,"pest.jcb"),
@@ -260,18 +256,6 @@ def par_contrib_test():
     parlist_dict = {}
     print(sc.next_most_par_contribution(forecast="travel_time",
                                         parlist_dict=groups))
-
-
-
-def map_test():
-    import os
-    from pyemu import Schur
-    w_dir = os.path.join("..","verification","10par_xsec","master_opt0")
-    forecasts = ["h01_08","h02_08"]
-    sc = Schur(jco=os.path.join(w_dir,"pest.jcb"),
-               forecasts=forecasts)
-    print(sc.map_parameter_estimate)
-    print(sc.map_forecast_estimate)
 
 
 def forecast_pestpp_load_test():

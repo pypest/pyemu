@@ -1,6 +1,3 @@
-"""This module contains most of the pyemu.Pst object definition.  This object
-is the primary mechanism for dealing with PEST control files
-"""
 
 from __future__ import print_function, division
 import os
@@ -18,33 +15,50 @@ from pyemu.plot import plot_utils
 #from pyemu.utils.os_utils import run
 
 class Pst(object):
-    """basic class for handling pest control files to support linear analysis
-    as well as replicate some of the functionality of the pest utilities
+    """All things PEST(++) control file
 
-    Parameters
-    ----------
-    filename : str
-        the name of the control file
-    load : (boolean)
-        flag to load the control file. Default is True
-    resfile : str
-        corresponding residual file.  If None, a residual file
-        with the control file base name is sought.  Default is None
+    Args:
+        filename (`str`):  the name of the control file
+        load (`bool`, optional): flag to load the control file. Default is True
+        resfile (`str`, optional): corresponding residual file.  If `None`, a residual file
+            with the control file base name is sought.  Default is `None`
 
-    Returns
-    -------
-    Pst : Pst
-        a control file object
+    Note:
+        This class is the primary mechanism for dealing with PEST control files.  Support is provided
+        for constructing new control files as well as manipulating existing control files.
+
+    Example::
+
+        pst = pyemu.Pst("my.pst")
+        pst.control_data.noptmax = -1
+        pst.write("my_new.pst")
 
     """
     def __init__(self, filename, load=True, resfile=None):
 
         self.parameter_data = None
-        """pandas.DataFrame:  parameter data loaded from pst control file"""
+        """pandas.DataFrame:  '* parameter data' information.  Columns are 
+        standard PEST variable names
+        
+        Example::
+            
+            pst.parameter_data.loc[:,"partrans"] = "log"
+            pst.parameter_data.loc[:,"parubnd"] = 10.0
+        
+        """
         self.observation_data = None
-        """pandas.DataFrame:  observation data loaded from pst control file"""
+        """pandas.DataFrame:  '* observation data' information.  Columns are standard PEST
+        variable names
+        
+        Example::
+        
+            pst.observation_data.loc[:,"weight"] = 1.0
+            pst.observation_data.loc[:,"obgnme"] = "obs_group"
+        
+        """
         self.prior_information = None
-        """pandas.DataFrame:  prior_information data loaded from pst control file"""
+        """pandas.DataFrame:  '* prior information' data.  Columns are standard PEST
+        variable names"""
 
         self.filename = filename
         self.resfile = resfile
@@ -58,11 +72,36 @@ class Pst(object):
             self.__setattr__(key,copy.copy(value))
         #self.tied = None
         self.control_data = ControlData()
-        """pyemu.pst.pst_controldata.ControlData:  control data object loaded from pst control file"""
+        """pyemu.pst.pst_controldata.ControlData:  '* control data' information.  
+        Access with standard PEST variable names 
+        
+        Example:: 
+            
+            pst.control_data.noptmax = 2
+            pst.control_data.pestmode = "estimation"
+            
+            
+        """
         self.svd_data = SvdData()
-        """pyemu.pst.pst_controldata.SvdData: singular value decomposition (SVD) object loaded from pst control file"""
+        """pyemu.pst.pst_controldata.SvdData: '* singular value decomposition' section information.  
+        Access with standard PEST variable names
+        
+        Example::
+        
+            pst.svd_data.maxsing = 100
+            
+        
+        """
         self.reg_data = RegData()
-        """pyemu.pst.pst_controldata.RegData: regularization data object loaded from pst control file"""
+        """pyemu.pst.pst_controldata.RegData: '* regularization' section information.
+        Access with standard PEST variable names.
+        
+        Example:: 
+        
+            pst.reg_data.phimlim = 1.00 #yeah right!
+
+        
+        """
         self._version = 1
         if load:
             if not os.path.exists(filename):
@@ -79,16 +118,34 @@ class Pst(object):
 
     @classmethod
     def from_par_obs_names(cls,par_names=["par1"],obs_names=["obs1"]):
+        """construct a shell `Pst` instance from parameter and observation names
+
+        Args:
+            par_names ([`str`]): list of parameter names.  Default is [`par1`]
+            obs_names ([`str`]): list of observation names.  Default is [`obs1`]
+
+        Note:
+            While this method works, it does not make template or instruction files.
+            Users are encouraged to use `Pst.from_io_files()` for more usefulness
+
+        Example::
+
+            par_names = ["par1","par2"]
+            obs_names = ["obs1","obs2"]
+            pst = pyemu.Pst.from_par_obs_names(par_names,obs_names)
+
+        """
         return pst_utils.generic_pst(par_names=par_names,obs_names=obs_names)
 
     @property
     def phi(self):
-        """get the weighted total objective function
+        """get the weighted total objective function.
 
-        Returns
-        -------
-        phi : float
-            sum of squared residuals
+        Returns:
+            `float`: sum of squared residuals
+
+        Note:
+            Requires `Pst.res` (the residuals file) to be available
 
         """
         psum = 0.0
@@ -100,15 +157,12 @@ class Pst(object):
     def phi_components(self):
         """ get the individual components of the total objective function
 
-        Returns
-        -------
-        dict : dict
-            dictionary of observation group, contribution to total phi
+        Returns:
+            `dict`: dictionary of observation group, contribution to total phi
 
-        Raises
-        ------
-        Assertion error if Pst.observation_data groups don't match
-        Pst.res groups
+
+        Note:
+            Requires `Pst.res` (the residuals file) to be available
 
         """
 
@@ -123,7 +177,7 @@ class Pst(object):
             #og_res_df = self.res.ix[rgroups[og]]
             og_res_df = self.res.loc[onames,:].dropna(axis=1)
             #og_res_df.index = og_res_df.name
-            og_df = self.observation_data.ix[ogroups[og]]
+            og_df = self.observation_data.loc[ogroups[og],:]
             og_df.index = og_df.obsnme
             #og_res_df = og_res_df.loc[og_df.index,:]
             assert og_df.shape[0] == og_res_df.shape[0],\
@@ -146,9 +200,9 @@ class Pst(object):
                 if og not in rgroups.keys():
                     raise Exception("Pst.adjust_weights_res() obs group " +\
                     "not found: " + str(og))
-                og_res_df = self.res.ix[rgroups[og]]
+                og_res_df = self.res.loc[rgroups[og],:]
                 og_res_df.index = og_res_df.name
-                og_df = self.prior_information.ix[ogroups[og]]
+                og_df = self.prior_information.loc[ogroups[og],:]
                 og_df.index = og_df.pilbl
                 og_res_df = og_res_df.loc[og_df.index,:]
                 if og_df.shape[0] != og_res_df.shape[0]:
@@ -165,15 +219,13 @@ class Pst(object):
         """ get the individual components of the total objective function
             normalized to the total PHI being 1.0
 
-        Returns
-        -------
-        dict : dict
-            dictionary of observation group, normalized contribution to total phi
+        Returns:
+            `dict`:  dictionary of observation group,
+            normalized contribution to total phi
 
-        Raises
-        ------
-        Assertion error if self.observation_data groups don't match
-        self.res groups
+        Note:
+            Requires `Pst.res` (the residuals file) to be available
+
 
         """
         # use a dictionary comprehension to go through and normalize each component of phi to the total
@@ -181,12 +233,12 @@ class Pst(object):
         return phi_components_normalized
 
     def set_res(self,res):
-        """ reset the private Pst.res attribute
+        """ reset the private `Pst.res` attribute.
 
-        Parameters
-        ----------
-        res : (varies)
-            something to use as Pst.res attribute
+        Args:
+            res : (`pandas.DataFrame` or `str`): something to use as Pst.res attribute.
+                If `res` is `str`, a dataframe is read from file `res`
+
 
         """
         if isinstance(res,str):
@@ -197,14 +249,13 @@ class Pst(object):
     def res(self):
         """get the residuals dataframe attribute
 
-        Returns
-        -------
-        res : pandas.DataFrame
+        Returns:
+            `pandas.DataFrame`: a dataframe containing the
+            residuals information.
 
-        Note
-        ----
-        if the Pst.__res attribute has not been loaded,
-        this call loads the res dataframe from a file
+        Note:
+            if the Pst.__res attribute has not been loaded,
+                this call loads the res dataframe from a file
 
         """
         if self.__res is not None:
@@ -247,10 +298,8 @@ class Pst(object):
     def nprior(self):
         """number of prior information equations
 
-        Returns
-        -------
-        nprior : int
-            the number of prior info equations
+        Returns:
+            `int`: the number of prior info equations
 
         """
         self.control_data.nprior = self.prior_information.shape[0]
@@ -260,10 +309,8 @@ class Pst(object):
     def nnz_obs(self):
         """ get the number of non-zero weighted observations
 
-        Returns
-        -------
-        nnz_obs : int
-            the number of non-zeros weighted observations
+        Returns:
+            `int`: the number of non-zeros weighted observations
 
         """
         nnz = 0
@@ -277,10 +324,8 @@ class Pst(object):
     def nobs(self):
         """get the number of observations
 
-        Returns
-        -------
-        nobs : int
-            the number of observations
+        Returns:
+            `int`: the number of observations
 
         """
         self.control_data.nobs = self.observation_data.shape[0]
@@ -291,10 +336,8 @@ class Pst(object):
     def npar_adj(self):
         """get the number of adjustable parameters (not fixed or tied)
 
-        Returns
-        -------
-        npar_adj : int
-            the number of adjustable parameters
+        Returns:
+            `int`: the number of adjustable parameters
 
         """
         pass
@@ -309,38 +352,20 @@ class Pst(object):
     def npar(self):
         """get number of parameters
 
-        Returns
-        -------
-        npar : int
-            the number of parameters
+        Returns:
+            `int`: the number of parameters
 
         """
         self.control_data.npar = self.parameter_data.shape[0]
         return self.control_data.npar
 
     @property
-    def pars_in_groups(self):
-        """
-        return a dictionary of  parameter names in each parameter group.
-
-        Returns:
-            dictionary
-        """
-        pargp = self.par_groups
-        allpars = dict()
-        for cpg in pargp:
-            allpars[cpg] = [i for i in self.parameter_data.loc[self.parameter_data.pargp == cpg, 'parnme']]
-        return allpars
-
-    @property
     def forecast_names(self):
         """get the forecast names from the pestpp options (if any).
         Returns None if no forecasts are named
 
-        Returns
-        -------
-        forecast_names : list
-            a list of forecast names.
+        Returns:
+            [`str`]: a list of forecast names.
 
         """
         if "forecasts" in self.pestpp_options.keys():
@@ -354,14 +379,11 @@ class Pst(object):
     def obs_groups(self):
         """get the observation groups
 
-        Returns
-        -------
-        obs_groups : list
-            a list of unique observation groups
+        Returns:
+            [`str`]: a list of unique observation groups
 
         """
-        og = list(self.observation_data.groupby("obgnme").groups.keys())
-        #og = list(map(pst_utils.SFMT, og))
+        og = self.observation_data.obgnme.unique().tolist()
         return og
 
     @property
@@ -369,183 +391,139 @@ class Pst(object):
         """ get the observation groups that contain at least one non-zero weighted
          observation
 
-        Returns
-        -------
-        nnz_obs_groups : list
-            a list of observation groups that contain at
+        Returns:
+            [`str`]: a list of observation groups that contain at
             least one non-zero weighted observation
 
         """
-        og = []
         obs = self.observation_data
-        for g in self.obs_groups:
-            if obs.loc[obs.obgnme==g,"weight"].sum() > 0.0:
-                og.append(g)
+        og = obs.loc[obs.weight>0.0,"obgnme"].unique().tolist()
         return og
 
     @property
     def adj_par_groups(self):
         """get the parameter groups with atleast one adjustable parameter
 
-        Returns
-        -------
-        adj_par_groups : list
-            a list of parameter groups with  at least one adjustable parameter
+        Returns:
+            [`str`]: a list of parameter groups with
+            at least one adjustable parameter
 
         """
-        adj_pargp = []
-        for pargp in self.par_groups:
-            ptrans = self.parameter_data.loc[self.parameter_data.pargp==pargp,"partrans"].values
-            if "log" in ptrans or "none" in ptrans:
-                adj_pargp.append(pargp)
-        return adj_pargp
+        par = self.parameter_data
+        tf = set(["tied", "fixed"])
+        adj_pargp = par.loc[par.partrans.apply(lambda x: x not in tf), "pargp"].unique()
+        return adj_pargp.tolist()
 
 
     @property
     def par_groups(self):
         """get the parameter groups
 
-        Returns
-        -------
-        par_groups : list
-            a list of parameter groups
+        Returns:
+            [`str`]: a list of parameter groups
 
         """
-        pass
-        return list(self.parameter_data.groupby("pargp").groups.keys())
+        return self.parameter_data.pargp.unique().tolist()
 
 
     @property
     def prior_groups(self):
         """get the prior info groups
 
-        Returns
-        -------
-        prior_groups : list
-            a list of prior information groups
+        Returns:
+            [`str`]: a list of prior information groups
 
         """
-        og = list(self.prior_information.groupby("obgnme").groups.keys())
-        #og = list(map(pst_utils.SFMT, og))
+        og = self.prior_information.obgnme.unique().tolist()
         return og
 
     @property
     def prior_names(self):
         """ get the prior information names
 
-        Returns
-        -------
-        prior_names : list
-            a list of prior information names
+        Returns:
+            [`str`]: a list of prior information names
 
         """
-        return list(self.prior_information.groupby(
-                self.prior_information.index).groups.keys())
+        return self.prior_information.pilbl.tolist()
 
     @property
     def par_names(self):
         """get the parameter names
 
-        Returns
-        -------
-        par_names : list
-            a list of parameter names
+        Returns:
+            [`str`]: a list of parameter names
         """
-        return list(self.parameter_data.parnme.values)
+        return self.parameter_data.parnme.tolist()
 
     @property
     def adj_par_names(self):
         """ get the adjustable (not fixed or tied) parameter names
 
-        Returns
-        -------
-        adj_par_names : list
-            list of adjustable (not fixed or tied) parameter names
+        Returns:
+            [`str`]: list of adjustable (not fixed or tied)
+            parameter names
 
         """
-        adj_names = []
-        for t,n in zip(self.parameter_data.partrans,
-                       self.parameter_data.parnme):
-            if t.lower() not in ["tied","fixed"]:
-                adj_names.append(n)
-        return adj_names
+        par = self.parameter_data
+        tf = set(["tied","fixed"])
+        adj_names = par.loc[par.partrans.apply(lambda x: x not in tf),"parnme"]
+        return adj_names.tolist()
 
     @property
     def obs_names(self):
         """get the observation names
 
-        Returns
-        -------
-        obs_names : list
-            a list of observation names
+        Returns:
+            [`str`]: a list of observation names
 
         """
-        pass
-        return list(self.observation_data.obsnme.values)
+        return self.observation_data.obsnme.tolist()
 
     @property
     def nnz_obs_names(self):
         """get the non-zero weight observation names
 
-        Returns
-        -------
-        nnz_obs_names : list
-            a list of non-zero weighted observation names
+        Returns:
+            [`str`]: a list of non-zero weighted observation names
 
         """
-        # nz_names = []
-        # for w,n in zip(self.observation_data.weight,
-        #                self.observation_data.obsnme):
-        #     if w > 0.0:
-        #         nz_names.append(n)
         obs = self.observation_data
-
-        nz_names = list(obs.loc[obs.weight>0.0,"obsnme"])
-        return nz_names
+        nz_names = obs.loc[obs.weight>0.0,"obsnme"]
+        return nz_names.tolist()
 
     @property
     def zero_weight_obs_names(self):
         """ get the zero-weighted observation names
 
-        Returns
-        -------
-         zero_weight_obs_names : list
-             a list of zero-weighted observation names
+        Returns:
+            [`str`]: a list of zero-weighted observation names
 
         """
-        self.observation_data.index = self.observation_data.obsnme
-        groups = self.observation_data.groupby(
-                self.observation_data.weight.apply(lambda x: x==0.0)).groups
-        if True in groups:
-            return list(self.observation_data.loc[groups[True],"obsnme"])
-        else:
-            return []
+        obs = self.observation_data
+        return obs.loc[obs.weight==0.0,"obsnme"].tolist()
 
-    # @property
-    # def regul_section(self):
-    #     phimlim = float(self.nnz_obs)
-    #     #sect = "* regularisation\n"
-    #     sect = "{0:15.6E} {1:15.6E}\n".format(phimlim, phimlim*1.15)
-    #     sect += "1.0 1.0e-10 1.0e10 linreg continue\n"
-    #     sect += "1.3  1.0e-2  1\n"
-    #     return sect
 
     @property
     def estimation(self):
         """ check if the control_data.pestmode is set to estimation
 
-        Returns
-        -------
-        estimation : bool
-            True if pestmode is estmation, False otherwise
+        Returns:
+            `bool`: True if `control_data.pestmode` is estmation, False otherwise
 
         """
-        if self.control_data.pestmode == "estimation":
-            return True
-        return False
+        return self.control_data.pestmode == "estimation"
 
     @property
     def tied(self):
+        """ list of tied parameter names
+
+        Returns:
+            `pandas.DataFrame`: a dataframe of tied parameter information.
+            Columns of `tied` are `parnme` and `partied`.  Returns `None` if
+            no tied parameters are found.
+
+        """
         par = self.parameter_data
         tied_pars = par.loc[par.partrans=="tied","parnme"]
         if tied_pars.shape[0] == 0:
@@ -559,23 +537,17 @@ class Pst(object):
     def _read_df(f,nrows,names,converters,defaults=None):
         """ a private method to read part of an open file into a pandas.DataFrame.
 
-        Parameters
-        ----------
-        f : file object
-        nrows : int
-            number of rows to read
-        names : list
-            names to set the columns of the dataframe with
-        converters : dict
-            dictionary of lambda functions to convert strings
-            to numerical format
-        defaults : dict
-            dictionary of default values to assign columns.
-            Default is None
+        Args:
+            f (`file`): open file handle
+            nrows (`int`): number of rows to read
+            names ([`str`]): names to set the columns of the dataframe with
+            converters (`dict`): dictionary of lambda functions to convert strings
+                to numerical format
+            defaults (`dict`): dictionary of default values to assign columns.
+                Default is None
 
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
+        Returns:
+            `pandas.DataFrame`: dataframe of control file section info
 
         """
         seek_point = f.tell()
@@ -881,16 +853,14 @@ class Pst(object):
 
 
     def load(self,filename):
-        """ entry point load the pest control file.  sniffs the first non-comment line to detect the version (if present)
+        """ entry point load the pest control file.
 
-        Parameters
-        ----------
-        filename : str
-            pst filename
+        Args:
+            filename (`str`): pst filename
 
-        Raises
-        ------
-            lots of exceptions for incorrect format
+        Note:
+            This method is called from the `Pst` construtor unless the `load` arg is `False`.
+
         """
         if not os.path.exists(filename):
             raise Exception("couldn't find control file {0}".format(filename))
@@ -926,15 +896,6 @@ class Pst(object):
 
     def _load_version1(self, filename):
         """load a version 1 pest control file information
-
-        Parameters
-        ----------
-        filename : str
-            pst filename
-
-        Raises
-        ------
-            lots of exceptions for incorrect format
 
         """
 
@@ -1171,8 +1132,22 @@ class Pst(object):
         self.control_data.numcom = len(self.model_command)
 
     def rectify_pgroups(self):
-        """ private method to synchronize parameter groups section with
-        the parameter data section
+        """ synchronize parameter groups section with the parameter data section
+
+        Note:
+            This method is called during `Pst.write()` to make sure all parameter
+            groups named in `* parameter data` are included.  This is so users
+            don't have to manually keep this section up.  This method can also be
+            called during control file modifications to see what parameter groups
+            are present and prepare for modifying the default values in the `* parameter
+            group` section
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            pst.parameter_data.loc["par1","pargp"] = "new_group"
+            pst.rectify_groups()
+            pst.parameter_groups.loc["new_group","derinc"] = 1.0
 
 
         """
@@ -1199,7 +1174,11 @@ class Pst(object):
                 need_groups.append(gp)
         self.parameter_groups.index = self.parameter_groups.pargpnme
         self.parameter_groups = self.parameter_groups.loc[need_groups,:]
-
+        idx = self.parameter_groups.index.drop_duplicates()
+        if idx.shape[0] != self.parameter_groups.shape[0]:
+            warnings.warn("dropping duplicate parameter groups",PyemuWarning)
+            self.parameter_groups = self.parameter_groups.loc[~self.parameter_groups.\
+                                    index.duplicated(keep='first'),:]
 
     def _parse_pi_par_names(self):
         """ private method to get the parameter names from prior information
@@ -1239,24 +1218,17 @@ class Pst(object):
                         obs_group="pi_obgnme",coef_dict={}):
         """ a helper to construct a new prior information equation.
 
-        Parameters
-        ----------
-        par_names : list
-            parameter names in the equation
-        pilbl : str
-            name to assign the prior information equation.  If None,
-            a generic equation name is formed. Default is None
-        rhs : (float)
-            the right-hand side of the equation
-        weight : (float)
-            the weight of the equation
-        obs_group : str
-            the observation group for the equation. Default is 'pi_obgnme'
-        coef_dict : dict
-            a dictionary of parameter name, coefficient pairs to assign
-            leading coefficients for one or more parameters in the equation.
-            If a parameter is not listed, 1.0 is used for its coefficients.
-            Default is {}
+        Args:
+            par_names ([`str`]): parameter names in the equation
+            pilbl (`str`): name to assign the prior information equation.  If None,
+                a generic equation name is formed. Default is None
+            rhs (`float`): the right-hand side of the pi equation
+            weight (`float`): the weight of the equation
+            obs_group (`str`): the observation group for the equation. Default is 'pi_obgnme'
+            coef_dict (`dict`): a dictionary of parameter name, coefficient pairs to assign
+                leading coefficients for one or more parameters in the equation.
+                If a parameter is not listed, 1.0 is used for its coefficients.
+                Default is {}
 
         """
         if pilbl is None:
@@ -1294,8 +1266,13 @@ class Pst(object):
 
     def rectify_pi(self):
         """ rectify the prior information equation with the current state of the
-        parameter_data dataframe.  Equations that list fixed, tied or missing parameters
-        are removed. This method is called during Pst.write()
+        parameter_data dataframe.
+
+
+        Note:
+            Equations that list fixed, tied or missing parameters
+            are removed completely even if adjustable parameters are also
+            listed in the equation. This method is called during Pst.write()
 
         """
         if self.prior_information.shape[0] == 0:
@@ -1332,14 +1309,22 @@ class Pst(object):
             #formatters["extra"] = lambda x: " # {0}".format(x) if pd.notnull(x) else 'test'
             #formatters["extra"] = lambda x: ext_fmt(x)
 
-
-        f.write(df.to_string(col_space=0,formatters=formatters,
+        # only write out the dataframe if it contains data - could be empty
+        if len(df) > 0:
+            f.write(df.to_string(col_space=0,formatters=formatters,
                                                   columns=columns,
                                                   justify="right",
                                                   header=False,
                                                   index=False) + '\n')
 
     def sanity_checks(self):
+        """some basic check for strangeness
+
+        Note:
+            checks for duplicate names, atleast 1 adjustable parameter
+            and at least 1 non-zero-weighted observation
+
+        """
 
         dups = self.parameter_data.parnme.value_counts()
         dups = dups.loc[dups>1]
@@ -1432,17 +1417,19 @@ class Pst(object):
     def write(self,new_filename,update_regul=True,version=None):
         """main entry point to write a pest control file.
 
-         Parameters
-        ----------
-        new_filename : str
-            name of the new pest control file
-        update_regul : (boolean)
-            flag to update zero-order Tikhonov prior information
-            equations to prefer the current parameter values
-        version : int
-            flag for which version of control file to write (must be 1 or 2).
-            if None, uses Pst._version, which set in the constructor and modified
-            during the load
+        Args:
+            new_filename (`str`): name of the new pest control file
+            update_regul (`bool`): flag to update zero-order Tikhonov prior information
+                equations to prefer the current parameter values
+            version (`int`): flag for which version of control file to write (must be 1 or 2).
+                if None, uses Pst._version, which set in the constructor and modified
+                during the load
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            pst.parrep("my.par")
+            pst.write(my_new.pst", update_regul=True)
 
         """
         if version is None:
@@ -1462,13 +1449,6 @@ class Pst(object):
     def _write_version1(self,new_filename,update_regul=False):
         """write a version 1 pest control file
 
-        Parameters
-        ----------
-        new_filename : str
-            name of the new pest control file
-        update_regul : (boolean)
-            flag to update zero-order Tikhonov prior information
-            equations to prefer the current parameter values
 
 
         """
@@ -1523,7 +1503,6 @@ class Pst(object):
             except Exception as e:
                 pass
             f_out.write(pst_utils.SFMT(str(group))+'\n')
-
         self._write_df("* observation data", f_out, self.observation_data,
                        self.obs_format, self.obs_fieldnames)
 
@@ -1595,21 +1574,20 @@ class Pst(object):
     def get(self, par_names=None, obs_names=None):
         """get a new pst object with subset of parameters and/or observations
 
-        Parameters
-        ----------
-        par_names : list
-            a list of parameter names to have in the new Pst instance.
-            If None, all parameters are in the new Pst instance. Default
-            is None
-        obs_names : list
-            a list of observation names to have in the new Pst instance.
-            If None, all observations are in teh new Pst instance. Default
-            is None
+        Args:
+            par_names ([`str`]): a list of parameter names to have in the new Pst instance.
+                If None, all parameters are in the new Pst instance. Default
+                is None
+            obs_names ([`str`]): a list of observation names to have in the new Pst instance.
+                If None, all observations are in teh new Pst instance. Default
+                is None
 
-        Returns
-        -------
-        Pst : Pst
-            a new Pst instance
+        Returns:
+            `Pst`: a new Pst instance
+
+        Note:
+            passing `par_names` as `None` and `obs_names` as `None` effectively
+            generates a copy of the current `Pst`
 
         """
 
@@ -1635,10 +1613,11 @@ class Pst(object):
                 new_res.index = new_res.name
                 new_res = new_res.loc[obs_names, :]
 
+        self.rectify_pgroups()
         new_pargp = self.parameter_groups.copy()
         new_pargp.index = new_pargp.pargpnme.apply(str.strip)
         new_pargp_names = new_par.pargp.value_counts().index
-        new_pargp = new_pargp.loc[new_pargp_names,:]
+        new_pargp.reindex(new_pargp_names)
 
         new_pst = Pst(self.filename, resfile=self.resfile, load=False)
         new_pst.parameter_data = new_par
@@ -1668,18 +1647,15 @@ class Pst(object):
 
     def parrep(self, parfile=None,enforce_bounds=True):
         """replicates the pest parrep util. replaces the parval1 field in the
-            parameter data section dataframe
+            parameter data section dataframe with values in a PEST parameter file
 
-        Parameters
-        ----------
-        parfile : str
-            parameter file to use.  If None, try to use
-            a parameter file that corresponds to the case name.
-            Default is None
-        enforce_hounds : bool
-            flag to enforce parameter bounds after parameter values are updated.
-            This is useful because PEST and PEST++ round the parameter values in the
-            par file, which may cause slight bound violations
+        Args:
+            parfile (`str`, optional): parameter file to use.  If None, try to find and use
+                a parameter file that corresponds to the case name.
+                Default is None
+            enforce_bounds (`bool`, optional): flag to enforce parameter bounds after parameter values are updated.
+                This is useful because PEST and PEST++ round the parameter values in the
+                par file, which may cause slight bound violations.  Default is `True`
 
         """
         if parfile is None:
@@ -1700,127 +1676,125 @@ class Pst(object):
 
 
 
-
-    def adjust_weights_recfile(self, recfile=None,original_ceiling=True):
-        """adjusts the weights by group of the observations based on the phi components
-        in a pest record file so that total phi is equal to the number of
-        non-zero weighted observations
-
-        Parameters
-        ----------
-        recfile : str
-            record file name.  If None, try to use a record file
-            with the Pst case name.  Default is None
-        original_ceiling : bool
-            flag to keep weights from increasing - this is generally a good idea.
-            Default is True
-
-        """
-        if recfile is None:
-            recfile = self.filename.replace(".pst", ".rec")
-        if not os.path.exists(recfile):
-            raise Exception("Pst.adjust_weights_recfile(): recfile not found: " +\
-                            str(recfile))
-        iter_components = pst_utils.get_phi_comps_from_recfile(recfile)
-        iters = iter_components.keys()
-        iters.sort()
-        obs = self.observation_data
-        ogroups = obs.groupby("obgnme").groups
-        last_complete_iter = None
-        for ogroup in ogroups.keys():
-            for iiter in iters[::-1]:
-                incomplete = False
-                if ogroup not in iter_components[iiter]:
-                    incomplete = True
-                    break
-                if not incomplete:
-                    last_complete_iter = iiter
-                    break
-        if last_complete_iter is None:
-            raise Exception("Pst.pwtadj2(): no complete phi component" +
-                            " records found in recfile")
-        self._adjust_weights_by_phi_components(
-            iter_components[last_complete_iter],original_ceiling)
-
-    def adjust_weights_resfile(self, resfile=None,original_ceiling=True):
-        """adjusts the weights by group of the observations based on the phi components
-        in a pest residual file so that total phi is equal to the number of
-        non-zero weighted observations
-
-        Parameters
-        ----------
-        resfile : str
-            residual file name.  If None, try to use a residual file
-            with the Pst case name.  Default is None
-        original_ceiling : bool
-            flag to keep weights from increasing - this is generally a good idea.
-            Default is True
+    # jwhite - 13 Aug 2019 - gonna remove this because the rec file format is changing a lot
+    # and that makes this method dangerous
+    # def adjust_weights_recfile(self, recfile=None,original_ceiling=True):
+    #     """adjusts the weights by group of the observations based on the phi components
+    #     in a pest record file so that total phi is equal to the number of
+    #     non-zero weighted observations
+    #
+    #     Parameters
+    #     ----------
+    #     recfile : str
+    #         record file name.  If None, try to use a record file
+    #         with the Pst case name.  Default is None
+    #     original_ceiling : bool
+    #         flag to keep weights from increasing - this is generally a good idea.
+    #         Default is True
+    #
+    #     """
+    #     if recfile is None:
+    #         recfile = self.filename.replace(".pst", ".rec")
+    #     if not os.path.exists(recfile):
+    #         raise Exception("Pst.adjust_weights_recfile(): recfile not found: " +\
+    #                         str(recfile))
+    #     iter_components = pst_utils.get_phi_comps_from_recfile(recfile)
+    #     iters = iter_components.keys()
+    #     iters.sort()
+    #     obs = self.observation_data
+    #     ogroups = obs.groupby("obgnme").groups
+    #     last_complete_iter = None
+    #     for ogroup in ogroups.keys():
+    #         for iiter in iters[::-1]:
+    #             incomplete = False
+    #             if ogroup not in iter_components[iiter]:
+    #                 incomplete = True
+    #                 break
+    #             if not incomplete:
+    #                 last_complete_iter = iiter
+    #                 break
+    #     if last_complete_iter is None:
+    #         raise Exception("Pst.pwtadj2(): no complete phi component" +
+    #                         " records found in recfile")
+    #     self._adjust_weights_by_phi_components(
+    #         iter_components[last_complete_iter],original_ceiling)
 
 
-        """
-        if resfile is not None:
-            self.resfile = resfile
-            self.__res = None
-        phi_comps = self.phi_components
-        self._adjust_weights_by_phi_components(phi_comps,original_ceiling)
+    # jwhite - 13 Aug 2019 - removing this one because it has been replaced
+    # by adjust_weights_discrepancy (and there are too many adjust_weights methods)
+    # def adjust_weights_resfile(self, resfile=None,original_ceiling=True):
+    #     """adjusts the weights by group of the observations based on the phi components
+    #     in a pest residual file so that total phi is equal to the number of
+    #     non-zero weighted observations (e.g. Mozorov's discrepancy principal)
+    #
+    #     Args:
+    #         resfile (`str`): residual file name.  If None, try to use a residual file
+    #             with the Pst case name.  Default is None
+    #     original_ceiling (`bool`): flag to keep weights from increasing - this is
+    #         generally a good idea. Default is True
+    #
+    #     Example::
+    #
+    #         pst = pyemu.Pst("my.pst")
+    #         print(pst.phi) #assumes "my.res" is colocated with "my.pst"
+    #         pst.adjust_weights_resfile()
+    #         print(pst.phi) # phi should equal number of non-zero observations
+    #
+    #
+    #     """
+    #     if resfile is not None:
+    #         self.resfile = resfile
+    #         self.__res = None
+    #     phi_comps = self.phi_components
+    #     self._adjust_weights_by_phi_components(phi_comps,original_ceiling)
 
-    def adjust_weights_discrepancy(self, resfile=None,original_ceiling=True):
+    def adjust_weights_discrepancy(self, resfile=None,original_ceiling=True, bygroups=False):
         """adjusts the weights of each non-zero weight observation based
         on the residual in the pest residual file so each observations contribution
-        to phi is 1.0
+        to phi is 1.0 (e.g. Mozorov's discrepancy principal)
 
-        Parameters
-        ----------
-        resfile : str
-            residual file name.  If None, try to use a residual file
-            with the Pst case name.  Default is None
-        original_ceiling : bool
-            flag to keep weights from increasing - this is generally a good idea.
-            Default is True
+        Args:
+            resfile (`str`): residual file name.  If None, try to use a residual file
+                with the Pst case name.  Default is None
+            original_ceiling (`bool`): flag to keep weights from increasing - this is
+                generally a good idea. Default is True
+            bygroups (`bool`): flag to adjust weights by groups. If False, the weight
+                of each non-zero weighted observation is adjusted individually. If True,
+                intergroup weighting is preserved (the contribution to each group is used)
+                but this may result in some strangeness if some observations in a group have
+                a really low phi already.
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            print(pst.phi) #assumes "my.res" is colocated with "my.pst"
+            pst.adjust_weights_discrepancy()
+            print(pst.phi) # phi should equal number of non-zero observations
 
         """
         if resfile is not None:
             self.resfile = resfile
             self.__res = None
-        obs = self.observation_data.loc[self.nnz_obs_names,:]
-        swr = (self.res.loc[self.nnz_obs_names,:].residual * obs.weight)**2
-        factors =  (1.0/swr).apply(np.sqrt)
-        if original_ceiling:
-            factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
-        self.observation_data.loc[self.nnz_obs_names,"weight"] *= factors
+        if bygroups:
+            phi_comps = self.phi_components
+            self._adjust_weights_by_phi_components(phi_comps,original_ceiling)
+        else:
+            obs = self.observation_data.loc[self.nnz_obs_names,:]
+            swr = (self.res.loc[self.nnz_obs_names,:].residual * obs.weight)**2
+            factors =  (1.0/swr).apply(np.sqrt)
+            if original_ceiling:
+                factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
+            self.observation_data.loc[self.nnz_obs_names,"weight"] *= factors
 
 
-        # nz_groups = obs.groupby(obs["weight"].map(lambda x: x == 0)).groups
-        # ogroups = obs.groupby("obgnme").groups
-        # for ogroup, idxs in ogroups.items():
-        #     if self.control_data.pestmode.startswith("regul") \
-        #             and "regul" in ogroup.lower():
-        #         continue
-        #     og_phi = components[ogroup]
-        #     nz_groups = obs.loc[idxs, :].groupby(obs.loc[idxs, "weight"]. \
-        #                                          map(lambda x: x == 0)).groups
-        #     og_nzobs = 0
-        #     if False in nz_groups.keys():
-        #         og_nzobs = len(nz_groups[False])
-        #     if og_nzobs == 0 and og_phi > 0:
-        #         raise Exception("Pst.adjust_weights_by_phi_components():"
-        #                         " no obs with nonzero weight," +
-        #                         " but phi > 0 for group:" + str(ogroup))
-        #     if og_phi > 0:
-        #         factor = np.sqrt(float(og_nzobs) / float(og_phi))
-        #         obs.loc[idxs, "weight"] = obs.weight[idxs] * factor
-        # self.observation_data = obs
 
     def _adjust_weights_by_phi_components(self, components,original_ceiling):
-        """resets the weights of observations by group to account for
+        """private method that resets the weights of observations by group to account for
         residual phi components.
 
-        Parameters
-        ----------
-        components : dict
-            a dictionary of obs group:phi contribution pairs
-        original_ceiling : bool
-            flag to keep weights from increasing
+        Args:
+            components (`dict`): a dictionary of obs group:phi contribution pairs
+            original_ceiling (`bool`): flag to keep weights from increasing.
 
         """
         obs = self.observation_data
@@ -1851,16 +1825,12 @@ class Pst(object):
         """private method to reset weights based on target phi values
         for each group.  This method should not be called directly
 
-        Parameters
-        ----------
-        target_phis : dict
-            target phi contribution for groups to reweight
-        res_idxs : dict
-            the index positions of each group of interest
-            in the res dataframe
-        obs_idxs : dict
-            the index positions of each group of interest
-            in the observation data dataframe
+        Args:
+            target_phis (`dict`): target phi contribution for groups to reweight
+            res_idxs (`dict`): the index positions of each group of interest
+                in the res dataframe
+            obs_idxs (`dict`): the index positions of each group of interest
+                in the observation data dataframe
 
         """
 
@@ -1889,12 +1859,10 @@ class Pst(object):
         """a private method to reset the weight for a list of observation names.  Supports the
         data worth analyses in pyemu.Schur class.  This method only adjusts
         observation weights in the current weight is nonzero.  User beware!
-        Parameters
-        ----------
-        obslist : list
-            list of observation names
-        weight : (float)
-            new weight to assign
+
+        Args:
+            obslist ([`str`]): list of observation names
+            weight (`float`): new weight to assign
         """
 
         obs = self.observation_data
@@ -1909,24 +1877,33 @@ class Pst(object):
         if len(reset_names) > 0:
             obs.loc[reset_names, "weight"] = weight
 
-    def adjust_weights(self,obs_dict=None,
-                              obsgrp_dict=None):
-        """reset the weights of observation groups to contribute a specified
+    def adjust_weights(self,obs_dict=None, obsgrp_dict=None):
+        """reset the weights of observations or observation groups to contribute a specified
         amount to the composite objective function
 
-        Parameters
-        ----------
-        obs_dict : dict
-            dictionary of obs name,new contribution pairs
-        obsgrp_dict : dict
-            dictionary of obs group name,contribution pairs
+        Args:
+            obs_dict (`dict`, optional): dictionary of observation name,new contribution pairs
+            obsgrp_dict (`dict`, optional): dictionary of obs group name,contribution pairs
 
-        Note
-        ----
-        if all observations in a named obs group have zero weight, they will be
-        assigned a non-zero weight so that the request phi contribution
-        can be met.  Similarly, any observations listed in obs_dict with zero
-        weight will also be reset
+        Note:
+            if all observations in a named obs group have zero weight, they will all be
+            assigned a non-zero weight so that the request phi contribution
+            can be met.  Similarly, any observations listed in obs_dict with zero
+            weight will also be reset. User beware!
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+
+            # adjust a single observation
+            pst.adjust_weights(obs_dict={"obs1":10})
+
+            # adjust a single observation group
+            pst.adjust_weights(obsgrp_dict={"group1":100.0})
+
+            # make all non-zero weighted groups have a contribution of 100.0
+            balanced_groups = {grp:100 for grp in pst.nnz_obs_groups}
+            pst.adjust_weights(obsgrp_dict=balanced_groups)
 
         """
 
@@ -1960,16 +1937,14 @@ class Pst(object):
                              leave_zero=True):
         """setup  weights inversely proportional to the observation value
 
-        Parameters
-        ----------
-        fraction_stdev : float
-            the fraction portion of the observation
-            val to treat as the standard deviation.  set to 1.0 for
-            inversely proportional
-        wmax : float
-            maximum weight to allow
-        leave_zero : bool
-            flag to leave existing zero weights
+        Args:
+            fraction_stdev (`float`, optional): the fraction portion of the observation
+                val to treat as the standard deviation.  set to 1.0 for
+                inversely proportional.  Default is 1.0
+            wmax (`float`, optional): maximum weight to allow.  Default is 100.0
+
+            leave_zero (`bool`, optional): flag to leave existing zero weights.
+                Default is True
 
         """
         new_weights = []
@@ -1987,12 +1962,12 @@ class Pst(object):
 
     def calculate_pertubations(self):
         """ experimental method to calculate finite difference parameter
-        pertubations.  The pertubation values are added to the
-        Pst.parameter_data attribute
+        pertubations.
 
-        Note
-        ----
-        user beware!
+        Note:
+
+            The pertubation values are added to the
+            `Pst.parameter_data` attribute - user beware!
 
         """
         self.build_increments()
@@ -2026,9 +2001,8 @@ class Pst(object):
         """ experimental method to calculate parameter increments for use
         in the finite difference pertubation calculations
 
-        Note
-        ----
-        user beware!
+        Note:
+            user beware!
 
         """
         self.enforce_bounds()
@@ -2062,7 +2036,12 @@ class Pst(object):
             self.parameter_data.loc[isfixed,"parval1"]
 
     def add_transform_columns(self):
-        """ add transformed values to the Pst.parameter_data attribute
+        """ add transformed values to the `Pst.parameter_data` attribute
+
+        Note:
+            adds `parval1_trans`, `parlbnd_trans` and `parubnd_trans` to
+            `Pst.parameter_data`
+
 
         """
         for col in ["parval1","parlbnd","parubnd","increment"]:
@@ -2078,8 +2057,10 @@ class Pst(object):
                     apply(lambda x:np.log10(x))
 
     def enforce_bounds(self):
-        """ enforce bounds violation resulting from the
-        parameter pertubation calculations
+        """ enforce bounds violation
+
+        Note:
+            cheap enforcement of simply bringing violators back in bounds
 
         """
         too_big = self.parameter_data.loc[:,"parval1"] > \
@@ -2095,31 +2076,43 @@ class Pst(object):
 
     @classmethod
     def from_io_files(cls,tpl_files,in_files,ins_files,out_files,pst_filename=None):
-        """ create a Pst instance from model interface files. Assigns generic values for
-        parameter info.  Tries to use INSCHEK to set somewhat meaningful observation
-        values
+        """ create a Pst instance from model interface files.
 
-        Parameters
-        ----------
-        tpl_files : list
-            list of template file names
-        in_files : list
-            list of model input file names (pairs with template files)
-        ins_files : list
-            list of instruction file names
-        out_files : list
-            list of model output file names (pairs with instruction files)
-        pst_filename : str
-            name of control file to write.  If None, no file is written.
-            Default is None
+        Args:
+            tpl_files ([`str`]): list of template file names
+            in_files ([`str`]): list of model input file names (pairs with template files)
+            ins_files ([`str`]): list of instruction file names
+            out_files ([`str`]): list of model output file names (pairs with instruction files)
+            pst_filename (`str`): name of control file to write.  If None, no file is written.
+                Default is None
 
-        Returns
-        -------
-        Pst : Pst
+        Returns:
+            `Pst`: new control file instance with parameter and observation names
+            found in `tpl_files` and `ins_files`, repsectively.
 
-        Note
-        ----
-        calls pyemu.helpers.pst_from_io_files()
+        Note:
+            calls `pyemu.helpers.pst_from_io_files()`
+
+            Assigns generic values for parameter info.  Tries to use INSCHEK
+            to set somewhat meaningful observation values
+
+            all file paths are relatively to where python is running.
+
+        TODO:
+            add pst_path option
+            make in_files and out_files optional
+
+        Example::
+
+            tpl_files = ["my.tpl"]
+            in_files = ["my.in"]
+            ins_files = ["my.ins"]
+            out_files = ["my.out"]
+            pst = pyemu.Pst.from_io_files(tpl_files,in_files,ins_files,out_files)
+            pst.control_data.noptmax = 0
+            pst.write("my.pst)
+
+
 
         """
         from pyemu import helpers
@@ -2129,28 +2122,29 @@ class Pst(object):
 
 
     def add_parameters(self,template_file,in_file=None,pst_path=None):
-        """ add new parameters to a control file
+        """ add new parameters to an existing control file
 
-        Parameters
-        ----------
-            template_file : str
-                template file
-            in_file : str(optional)
-                model input file. If None, template_file.replace('.tpl','') is used
-            pst_path : str(optional)
-                the path to append to the template_file and in_file in the control file.  If
+        Args:
+            template_file (`str`): template file with (possibly) some new parameters
+            in_file (`str`): model input file. If None, template_file.replace('.tpl','') is used.
+                Default is None.
+            pst_path (`str`): the path to append to the template_file and in_file in the control file.  If
                 not None, then any existing path in front of the template or in file is split off
-                and pst_path is prepended.  Default is None
+                and pst_path is prepended.  If python is being run in a directory other than where the control
+                file will reside, it is useful to pass `pst_path` as `.`.  Default is None
 
-        Returns
-        -------
-        new_par_data : pandas.DataFrame
-            the data for the new parameters that were added. If no new parameters are in the
-            new template file, returns None
+        Returns:
+            `pandas.DataFrame`: the data for the new parameters that were added.
+            If no new parameters are in the new template file, returns None
 
-        Note
-        ----
-        populates the new parameter information with default values
+        Note:
+            populates the new parameter information with default values
+
+        Example::
+
+            pst = pyemu.Pst(os.path.join("template","my.pst"))
+            pst.add_parameters(os.path.join("template","new_pars.dat.tpl",pst_path=".")
+            pst.write(os.path.join("template","my_new.pst")
 
         """
         if not os.path.exists(template_file):
@@ -2169,9 +2163,9 @@ class Pst(object):
         else:
             # extend pa
             # rameter_data
-            new_par_data = pst_utils.populate_dataframe(new_parnme,pst_utils.pst_config["par_fieldnames"],
-                                                        pst_utils.pst_config["par_defaults"],
-                                                        pst_utils.pst_config["par_dtype"])
+            new_par_data = pst_utils._populate_dataframe(new_parnme, pst_utils.pst_config["par_fieldnames"],
+                                                         pst_utils.pst_config["par_defaults"],
+                                                         pst_utils.pst_config["par_dtype"])
             new_par_data.loc[new_parnme,"parnme"] = new_parnme
             self.parameter_data = self.parameter_data.append(new_par_data)
         if in_file is None:
@@ -2186,29 +2180,30 @@ class Pst(object):
 
 
     def add_observations(self,ins_file,out_file=None,pst_path=None,inschek=True):
-        """ add new parameters to a control file
+        """ add new observations to a control file
 
-        Parameters
-        ----------
-            ins_file : str
-                instruction file
-            out_file : str
-                model output file.  If None, then ins_file.replace(".ins","") is used.  Default is None
-            pst_path : str(optional)
-                the path to append to the instruction file and out file in the control file.  If
+        Args:
+            ins_file (`str`): instruction file with exclusively new observation names
+            out_file (`str`): model output file.  If None, then ins_file.replace(".ins","") is used.
+                Default is None
+            pst_path (`str`): the path to append to the instruction file and out file in the control file.  If
                 not None, then any existing path in front of the template or in file is split off
-                and pst_path is prepended.  Default is None
-            inschek : bool
-                flag to run inschek.  If successful, inscheck outputs are used as obsvals
+                and pst_path is prepended.  If python is being run in a directory other than where the control
+                file will reside, it is useful to pass `pst_path` as `.`. Default is None
+            inschek (`bool`): flag to try to process the existing output file using the `pyemu.InstructionFile`
+                class.  If successful, processed outputs are used as obsvals
 
-        Returns
-        -------
-        new_obs_data : pandas.DataFrame
-            the data for the new observations that were added
+        Returns:
+            `pandas.DataFrame`: the data for the new observations that were added
 
-        Note
-        ----
-        populates the new observation information with default values
+        Note:
+            populates the new observation information with default values
+
+        Example::
+
+            pst = pyemu.Pst(os.path.join("template","my.pst"))
+            pst.add_observations(os.path.join("template","new_obs.dat.tpl",pst_path=".")
+            pst.write(os.path.join("template","my_new.pst")
 
         """
         if not os.path.exists(ins_file):
@@ -2235,9 +2230,9 @@ class Pst(object):
             raise Exception("no new observations found in instruction file {0}".format(ins_file))
 
         # extend observation_data
-        new_obs_data = pst_utils.populate_dataframe(new_obsnme,pst_utils.pst_config["obs_fieldnames"],
-                                                    pst_utils.pst_config["obs_defaults"],
-                                                    pst_utils.pst_config["obs_dtype"])
+        new_obs_data = pst_utils._populate_dataframe(new_obsnme, pst_utils.pst_config["obs_fieldnames"],
+                                                     pst_utils.pst_config["obs_defaults"],
+                                                     pst_utils.pst_config["obs_dtype"])
         new_obs_data.loc[new_obsnme,"obsnme"] = new_obsnme
         new_obs_data.index = new_obsnme
         self.observation_data = self.observation_data.append(new_obs_data)
@@ -2250,7 +2245,10 @@ class Pst(object):
         self.output_files.append(out_file)
         df = None
         if inschek:
-            df = pst_utils._try_run_inschek(ins_file,out_file,cwd=cwd)
+            #df = pst_utils._try_run_inschek(ins_file,out_file,cwd=cwd)
+            ins_file = os.path.join(cwd,ins_file)
+            out_file = os.path.join(cwd,out_file)
+            df = pst_utils.try_process_output_file(ins_file=ins_file,output_file=out_file)
         if df is not None:
             #print(self.observation_data.index,df.index)
             self.observation_data.loc[df.index,"obsval"] = df.obsval
@@ -2258,37 +2256,63 @@ class Pst(object):
         return new_obs_data
 
     def write_input_files(self):
-        """writes model input files using template files and current parvals.
-        just syntatic sugar for pst_utils.write_input_files()
+        """writes model input files using template files and current `parval1` values.
 
-        Note
-        ----
+        Note:
             adds "parval1_trans" column to Pst.parameter_data that includes the
             effect of scale and offset
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+
+            # load final parameter values
+            pst.parrep("my.par")
+
+            # write new model input files with final parameter values
+            pst.write_input_files()
 
         """
         pst_utils.write_input_files(self)
 
-    def get_res_stats(self,nonzero=True):
-        """ get some common residual stats from the current obsvals,
-        weights and grouping in self.observation_data and the modelled values in
-        self.res.  The key here is 'current' because if obsval, weights and/or
-        groupings have changed in self.observation_data since the res file was generated
-        then the current values for obsval, weight and group are used
 
-        Parameters
-        ----------
-            nonzero : bool
-                calculate stats using only nonzero-weighted observations.  This may seem
+    def process_output_files(self,pst_path='.'):
+        """processing the model output files using the instruction files
+        and existing model output files.
+
+        Args:
+            pst_path (`str`): relative path from where python is running to
+                where the control file, instruction files and model output files
+                are located.  Default is "." (current python directory)
+
+        Returns:
+            `pandas.Series`: model output values
+
+        Note:
+            requires a complete set of model input files at relative path
+            from where python is running to `pst_path`
+
+        """
+        return pst_utils.process_output_files(self,pst_path)
+
+
+    def get_res_stats(self,nonzero=True):
+        """ get some common residual stats by observation group.
+
+        Args:
+            nonzero (`bool`): calculate stats using only nonzero-weighted observations.  This may seem
                 obsvious to most users, but you never know....
 
-        Returns
-        -------
-            df : pd.DataFrame
-                a dataframe with columns for groups names and indices of statistic name.
+        Returns:
+            `pd.DataFrame`: a dataframe with columns for groups names and indices of statistic name.
 
-        Note
-        ----
+        Note:
+            Stats are derived from the current obsvals, weights and grouping in
+            `Pst.observation_data` and the `modelled` values in `Pst.res`.  The
+            key here is 'current' because if obsval, weights and/or groupings have
+            changed in `Pst.observation_data` since the residuals file was generated
+            then the current values for `obsval`, `weight` and `group` are used
+
             the normalized RMSE is normalized against the obsval range (max - min)
 
         """
@@ -2329,8 +2353,8 @@ class Pst(object):
             data.append(groups)
 
         og_names.insert(0,"all")
-        df = pd.DataFrame(data,columns=og_names,index=snames)
-        return df
+        stats = pd.DataFrame(data,columns=og_names,index=snames)
+        return stats
 
     @staticmethod
     def _stats_rss(df):
@@ -2354,21 +2378,24 @@ class Pst(object):
 
 
     def plot(self,kind=None,**kwargs):
-        """method to plot various parts of the control. Depending
-        on 'kind' argument, a multipage pdf is written
+        """method to plot various parts of the control.  This is sweet as!
 
-        Parameters
-        ----------
-        kind : str
-            options are 'prior' (prior parameter histograms, '1to1' (line of equality
-            and sim vs res), 'obs_v_sim' (time series using datetime suffix), 'phi_pie'
-            (pie chart of phi components)
-        kwargs : dict
-            optional args for plots
+        Args:
+            kind (`str`): options are 'prior' (prior parameter histograms, '1to1' (line of equality
+                and sim vs res), 'obs_v_sim' (time series using datetime suffix), 'phi_pie'
+                (pie chart of phi components)
+            kwargs (`dict`): optional args for plots that are passed to pyemu plot helpers and ultimately
+                to matplotlib
 
-        Returns
-        -------
-        None
+        Note:
+            Depending on 'kind' argument, a multipage pdf is written
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            pst.plot(kind="1to1") # requires Pst.res
+            pst.plot(kind="prior")
+            pst.plot(kind="phi_pie")
 
 
         """
@@ -2382,20 +2409,22 @@ class Pst(object):
         """write a stand alone parameter summary latex table
 
 
-        Parameters
-        ----------
-        filename : str
-            latex filename. If None, use <case>.par.tex. Default is None
-        group_names: dict
-            par group names : table names for example {"w0":"well stress period 1"}.
-            Default is None
-        sigma_range : float
-            number of standard deviations represented by parameter bounds.  Default
-            is 4.0, implying 95% confidence bounds
+        Args:
+            filename (`str`): latex filename. If None, use <case>.par.tex. If `filename` is "none", no table
+                is writtenDefault is None
+            group_names (`dict`): par group names : table names. For example {"w0":"well stress period 1"}.
+                Default is None
+            sigma_range (`float`): number of standard deviations represented by parameter bounds.  Default
+                is 4.0, implying 95% confidence bounds
 
-        Returns
-        -------
-        None
+        Returns:
+            `pandas.DataFrame`: the summary parameter group dataframe
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            pst.write_par_summary_table(filename="par.tex")
+
         """
 
         ffmt = lambda x: "{0:5G}".format(x)
@@ -2467,18 +2496,20 @@ class Pst(object):
         """write a stand alone observation summary latex table
 
 
-                Parameters
-                ----------
-                filename : str
-                    latex filename. If None, use <case>.par.tex. Default is None
-                group_names: dict
-                    par group names : table names for example {"w0":"well stress period 1"}.
-                    Default is None
+        Args:
+            filename (`str`): latex filename. If `filename` is "none", no table is written.
+                If None, use <case>.par.tex. Default is None
+            group_names (`dict`): obs group names : table names. For example {"hds":"simulated groundwater level"}.
+                Default is None
 
-                Returns
-                -------
-                None
-                """
+        Returns:
+            `pandas.DataFrame`: the summary observation group dataframe
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            pst.write_obs_summary_table(filename="obs.tex")
+        """
 
         ffmt = lambda x: "{0:5G}".format(x)
         obs = self.observation_data.copy()
@@ -2546,31 +2577,33 @@ class Pst(object):
 
         return obsg_df
 
-    def run(self,exe_name="pestpp",cwd=None):
-        """run a command related to the pst instance. If
-        write() has been called, then the filename passed to write
-        is in the command, otherwise the original constructor
-        filename is used
 
-        exe_name : str
-            the name of the executable to call.  Default is "pestpp"
-        cwd : str
-            the directory to execute the command in.  If None,
-            os.path.split(self.filename) is used to find
-            cwd.  Default is None
-
-
-        """
-        filename = self.filename
-        if self.new_filename is not None:
-            filename = self.new_filename
-        cmd_line = "{0} {1}".format(exe_name,os.path.split(filename)[-1])
-        if cwd is None:
-            cwd = os.path.join(*os.path.split(filename)[:-1])
-            if cwd == '':
-                cwd = '.'
-        print("executing {0} in dir {1}".format(cmd_line, cwd))
-        pyemu.utils.os_utils.run(cmd_line,cwd=cwd)
+    # jwhite - 13 Aug 2019 - no one is using this write?
+    # def run(self,exe_name="pestpp",cwd=None):
+    #     """run a command related to the pst instance. If
+    #     write() has been called, then the filename passed to write
+    #     is in the command, otherwise the original constructor
+    #     filename is used
+    #
+    #     exe_name : str
+    #         the name of the executable to call.  Default is "pestpp"
+    #     cwd : str
+    #         the directory to execute the command in.  If None,
+    #         os.path.split(self.filename) is used to find
+    #         cwd.  Default is None
+    #
+    #
+    #     """
+    #     filename = self.filename
+    #     if self.new_filename is not None:
+    #         filename = self.new_filename
+    #     cmd_line = "{0} {1}".format(exe_name,os.path.split(filename)[-1])
+    #     if cwd is None:
+    #         cwd = os.path.join(*os.path.split(filename)[:-1])
+    #         if cwd == '':
+    #             cwd = '.'
+    #     print("executing {0} in dir {1}".format(cmd_line, cwd))
+    #     pyemu.utils.os_utils.run(cmd_line,cwd=cwd)
 
 
     @staticmethod
@@ -2581,13 +2614,14 @@ class Pst(object):
     @property
     def less_than_obs_constraints(self):
         """get the names of the observations that
-        are listed as less than inequality constraints.  Zero-
-        weighted obs are skipped
+        are listed as active less than inequality constraints.
 
-        Returns
-        -------
-        pandas.Series : obsnme of obseravtions that are non-zero weighted
-                        less than constraints
+        Returns:
+            `pandas.Series`: names of obseravtions that are non-zero weighted less
+            than constraints (`obgnme` starts with 'l\_' or "less")
+
+        Note:
+             Zero-weighted obs are skipped
 
         """
 
@@ -2600,13 +2634,14 @@ class Pst(object):
     @property
     def less_than_pi_constraints(self):
         """get the names of the prior information eqs that
-        are listed as less than inequality constraints.  Zero-
-        weighted pi are skipped
+        are listed as active less than inequality constraints.
 
-        Returns
-        -------
-        pandas.Series : pilbl of prior information that are non-zero weighted
-                        less than constraints
+        Returns:
+            `pandas.Series`: names of prior information that are non-zero weighted
+            less than constraints (`obgnme` starts with "l\_" or "less")
+
+        Note:
+            Zero-weighted pi are skipped
 
         """
 
@@ -2623,13 +2658,14 @@ class Pst(object):
     @property
     def greater_than_obs_constraints(self):
         """get the names of the observations that
-        are listed as greater than inequality constraints.  Zero-
-        weighted obs are skipped
+        are listed as active greater than inequality constraints.
 
-        Returns
-        -------
-        pandas.Series : obsnme of obseravtions that are non-zero weighted
-                        greater than constraints
+        Returns:
+            `pandas.Series`: names obseravtions that are non-zero weighted
+            greater than constraints (`obgnme` startsiwth "g\_" or "greater")
+
+        Note:
+            Zero-weighted obs are skipped
 
         """
 
@@ -2643,13 +2679,15 @@ class Pst(object):
     @property
     def greater_than_pi_constraints(self):
         """get the names of the prior information eqs that
-        are listed as greater than inequality constraints.  Zero-
-        weighted pi are skipped
+        are listed as active greater than inequality constraints.
 
-        Returns
-        -------
-        pandas.Series : pilbl of prior information that are non-zero weighted
-                        greater than constraints
+        Returns:
+            `pandas.Series` names of prior information that are non-zero weighted
+            greater than constraints (`obgnme` startsiwth "g\_" or "greater")
+
+
+        Note:
+             Zero-weighted pi are skipped
 
         """
 
@@ -2662,17 +2700,18 @@ class Pst(object):
 
     def get_par_change_limits(self):
         """  calculate the various parameter change limits used in pest.
-        Works in control file values space (not log transformed space).  Also
-        adds columns for effective upper and lower which account for par bounds and the
-        value of parchglim
 
-        Returns
-        -------
-            df : pandas.DataFrame
-                a copy of self.parameter_data with columns for relative and factor change limits
-        Note
-        ----
+
+        Returns:
+            `pandas.DataFrame`: a copy of `Pst.parameter_data`
+            with columns for relative and factor change limits
+        Note:
+
             does not yet support absolute parameter change limits!
+
+            Works in control file values space (not log transformed space).  Also
+            adds columns for effective upper and lower which account for par bounds and the
+            value of parchglim
 
         """
         par = self.parameter_data
