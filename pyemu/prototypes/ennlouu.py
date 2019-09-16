@@ -68,7 +68,7 @@ class EnsembleSQP(EnsembleMethod):
 
         self.logger.warn("pyemu's EnsembleSQP is for prototyping only.")
 
-    def initialize(self,num_reals=1,enforce_bounds="reset",
+    def initialize(self,num_reals=10,enforce_bounds="reset",finite_diff_grad=False,
     			   parensemble=None,restart_obsensemble=None,draw_mult=1.0,
                    hess=None,constraints=False):#obj_fn_group="obj_fn"):
 
@@ -141,105 +141,108 @@ class EnsembleSQP(EnsembleMethod):
          #   raise Exception("number of obs serving as opt obj function " + \
           #                  "must equal 1, not {0} - see docstring".format(len(self.obj_fn_obs)))
 
-        # could use approx here to start with for especially high dim problems
-        self.logger.statement("using full parcov.. forming inverse sqrt parcov matrix")
-        self.parcov_inv_sqrt = self.parcov.inv.sqrt
+        if finite_diff_grad is False:
+            # could use approx here to start with for especially high dim problems
+            self.logger.statement("using full parcov.. forming inverse sqrt parcov matrix")
+            self.parcov_inv_sqrt = self.parcov.inv.sqrt
 
-        # this matrix gets used a lot, so only calc once and store
-        self.obscov_inv_sqrt = self.obscov.get(self.pst.nnz_obs_names).inv.sqrt
+            # this matrix gets used a lot, so only calc once and store
+            self.obscov_inv_sqrt = self.obscov.get(self.pst.nnz_obs_names).inv.sqrt
 
-        # define dec var ensemble
-        #TODO: add parcov load option here too
-        if parensemble is not None:
-            self.logger.log("initializing with existing par ensembles")
-            if isinstance(parensemble,str):
-                self.logger.log("loading parensemble from file")
-                if not os.path.exists(parensemble):
-                    self.logger.lraise("can not find parensemble file: {0}".format(parensemble))
-                df = pd.read_csv(parensemble,index_col=0)
-                #df.index = [str(i) for i in df.index]
-                self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
-                self.logger.log("loading parensemble from file")
+            # define dec var ensemble
+            # TODO: add parcov load option here too
+            if parensemble is not None:
+                self.logger.log("initializing with existing par ensembles")
+                if isinstance(parensemble,str):
+                    self.logger.log("loading parensemble from file")
+                    if not os.path.exists(parensemble):
+                        self.logger.lraise("can not find parensemble file: {0}".format(parensemble))
+                    df = pd.read_csv(parensemble,index_col=0)
+                    #df.index = [str(i) for i in df.index]
+                    self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+                    self.logger.log("loading parensemble from file")
 
-            elif isinstance(parensemble,ParameterEnsemble):
-                self.parensemble_0 = parensemble.copy()
+                elif isinstance(parensemble,ParameterEnsemble):
+                    self.parensemble_0 = parensemble.copy()
 
-            else:
-                raise Exception("unrecognized arg type for parensemble, " +\
+                else:
+                    raise Exception("unrecognized arg type for parensemble, " +\
                                 "should be filename or ParameterEnsemble" +\
                                 ", not {0}".format(type(parensemble)))
 
-            self.parensemble = self.parensemble_0.copy()
-            self.logger.log("initializing with existing par ensemble")
+                self.parensemble = self.parensemble_0.copy()
+                self.logger.log("initializing with existing par ensemble")
 
-        else:
-            self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
-            #self.parensemble_0 = ParameterEnsemble.from_uniform_draw(self.pst,num_reals=num_reals)
-            self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst, cov=self.parcov * self.draw_mult,
+            else:
+                self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
+                #self.parensemble_0 = ParameterEnsemble.from_uniform_draw(self.pst,num_reals=num_reals)
+                self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst, cov=self.parcov * self.draw_mult,
                                                                       num_reals=num_reals,)
-            self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
-            self.parensemble = self.parensemble_0.copy()
-            self.parensemble_0.to_csv(self.pst.filename + self.paren_prefix.format(0))
-            #self.parensemble_0.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))  # for `covert.py` for supply2 problem only...
-            self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
+                self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
+                self.parensemble = self.parensemble_0.copy()
+                self.parensemble_0.to_csv(self.pst.filename + self.paren_prefix.format(0))
+                #self.parensemble_0.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))  # for `covert.py` for supply2 problem only...
+                self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
 
-        self.num_reals = self.parensemble.shape[0]  # defined here if par ensemble passed
-        # self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
-        # self.par0_matrix = self.parensemble_0.as_pyemu_matrix()
+            self.num_reals = self.parensemble.shape[0]  # defined here if par ensemble passed
+            # self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
+            # self.par0_matrix = self.parensemble_0.as_pyemu_matrix()
 
+            # define phi en by loading prev or computing
+            if restart_obsensemble is not None:
+                # load prev obs ensemble
+                self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
+                failed_runs,self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
+                #assert self.obsensemble.shape[0] == self.obsensemble_0.shape[0]
+                #assert list(self.obsensemble.columns) == list(self.obsensemble_0.columns)
+                self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
 
-        # define phi en by loading prev or computing
-        if restart_obsensemble is not None:
-            # load prev obs ensemble
-            self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
-            failed_runs,self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
-            #assert self.obsensemble.shape[0] == self.obsensemble_0.shape[0]
-            #assert list(self.obsensemble.columns) == list(self.obsensemble_0.columns)
-            self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
+            else:
+                # run the initial parameter ensemble
+                self.logger.log("evaluating initial ensembles")
+                failed_runs, self.obsensemble = self._calc_obs(self.parensemble)  # run
+                if "supply2" in self.pst.filename:  #TODO: temp only until pyemu can evaluate pi eqs
+                    self.obsensemble = self._append_pi_to_obs(self.obsensemble,"obj_func_en.csv","obj_func",
+                                                          "prior_info_en.csv")
+                self.obsensemble.to_csv(self.pst.filename + self.obsen_prefix.format(0))
+                # TODO: pyemu method for eval prior information equations
+                if self.raw_sweep_out is not None:
+                    self.raw_sweep_out.to_csv(self.pst.filename + "_sweepraw0.csv")
+                self.logger.log("evaluating initial ensembles")
+
+            if failed_runs is not None:
+                self.logger.warn("dropping failed realizations")
+                #failed_runs_str = [str(f) for f in failed_runs]
+                #self.parensemble = self.parensemble.drop(failed_runs)
+                #self.obsensemble = self.obsensemble.drop(failed_runs)
+                self.parensemble.loc[failed_runs,:] = np.NaN
+                self.parensemble = self.parensemble.dropna()
+                self.obsensemble.loc[failed_runs,:] = np.NaN
+                self.obsensemble = self.obsensemble.dropna()
+
+            # check this
+            if not self.parensemble.istransformed:
+                self.parensemble._transform(inplace=True)
+            if not self.parensemble_0.istransformed:
+                self.parensemble_0._transform(inplace=True)
+
+            # assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
+
+            # nothing really needs to be done here for unconstrained problems..
+            # need to start from feasible point in dec var space...
+            if constraints:  # and constraints.shape[0] > 0:
+                self.logger.log("checking here feasibility and initializing constraint filter")
+                self._filter = pd.DataFrame()
+                self._filter, _accept = self._filter_constraint_eval(self.obsensemble,self._filter)
+                self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
+                self.logger.log("checking here feasibility and initializing constraint filter")
 
         else:
-            # run the initial parameter ensemble
-            self.logger.log("evaluating initial ensembles")
-            failed_runs, self.obsensemble = self._calc_obs(self.parensemble)  # run
-            if "supply2" in self.pst.filename:  #TODO: temp only until pyemu can evaluate pi eqs
-                self.obsensemble = self._append_pi_to_obs(self.obsensemble,"obj_func_en.csv","obj_func",
-                                                          "prior_info_en.csv")
-            self.obsensemble.to_csv(self.pst.filename + self.obsen_prefix.format(0))
-            #TODO: pyemu method for eval prior information equations
-            if self.raw_sweep_out is not None:
-                self.raw_sweep_out.to_csv(self.pst.filename + "_sweepraw0.csv")
-            self.logger.log("evaluating initial ensembles")
-
-        if failed_runs is not None:
-            self.logger.warn("dropping failed realizations")
-            #failed_runs_str = [str(f) for f in failed_runs]
-            #self.parensemble = self.parensemble.drop(failed_runs)
-            #self.obsensemble = self.obsensemble.drop(failed_runs)
-            self.parensemble.loc[failed_runs,:] = np.NaN
-            self.parensemble = self.parensemble.dropna()
-            self.obsensemble.loc[failed_runs,:] = np.NaN
-            self.obsensemble = self.obsensemble.dropna()
-
-        # check this
-        if not self.parensemble.istransformed:
-            self.parensemble._transform(inplace=True)
-        if not self.parensemble_0.istransformed:
-            self.parensemble_0._transform(inplace=True)
-
-        # assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
-
-        # nothing really needs to be done here for unconstrained problems..
-        # need to start from feasible point in dec var space...
-        if constraints:  # and constraints.shape[0] > 0:
-            self.logger.log("checking here feasibility and initializing constraint filter")
-            self._filter = pd.DataFrame()
-            self._filter, _accept = self._filter_constraint_eval(self.obsensemble,self._filter)
-            self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
-            self.logger.log("checking here feasibility and initializing constraint filter")
+            self.logger.warn("using finite diffs as basis for phi grad vector rather than en approx")
 
         # Hessian
         if hess is not None:
-            #TODO: add supporting for loading Hessian or assoc grad col vectors
+            # TODO: add supporting for loading Hessian or assoc grad col vectors
             pass
             if not np.all(np.linalg.eigvals(self.hessian.as_2d) > 0):
                 self.logger.lraise("Hessian matrix is not positive definite")
@@ -748,16 +751,18 @@ class EnsembleSQP(EnsembleMethod):
 
         self.iter_num += 1
         self.logger.log("iteration {0}".format(self.iter_num))
-        self.logger.statement("{0} active realizations".format(self.obsensemble.shape[0]))
+        if finite_diff_grad is False:
+            self.logger.statement("{0} active realizations".format(self.obsensemble.shape[0]))
 
         if self.iter_num == 1:
             self.parensemble_mean = None
 
         # some checks first
-        if self.obsensemble.shape[0] < 2:
-            self.logger.lraise("at least active 2 realizations are needed to update")
-        if not self._initialized:
-            self.logger.lraise("must call initialize() before update()")
+        if finite_diff_grad is False:
+            if self.obsensemble.shape[0] < 2:
+                self.logger.lraise("at least active 2 realizations are needed to update")
+            if not self._initialized:
+                self.logger.lraise("must call initialize() before update()")
 
         # get phi component of obsensemble  # TODO: remove "obj_fn" option from below and instead x.startwith("phi_")..
         #TODO: move to initialization
@@ -777,14 +782,13 @@ class EnsembleSQP(EnsembleMethod):
             self.pst.control_data.noptmax = -2
             # self.pst.parameter_groups.derinc = 0.05
             self.pst.write(os.path.join("rosenbrock_2par_fds.pst"))
-            pyemu.os_utils.run("pestpp rosenbrock_2par_fds.pst")
+            pyemu.os_utils.run("pestpp-glm rosenbrock_2par_fds.pst")
             jco = pyemu.Jco.from_binary("rosenbrock_2par_fds.jcb").to_dataframe()
-            # TODO: get dims from npar_adj and pargp flagged as dec var
-            # TODO: operate on phi vector of jco only
-            #self.phi_grad = Matrix(x=jco.values,
-             #                      row_names=self.pst.adj_par_names,col_names=['cross-cov'])
-            #if grad_calc_only:
-             #   return self.phi_grad
+            # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
+            self.phi_grad = Matrix(x=jco.T.values,row_names=self.pst.adj_par_names,
+                                   col_names=['cross-cov'])
+            if grad_calc_only:
+                return self.phi_grad
             self.logger.log("compute phi grad using finite diffs")
         else:
             self.logger.log("compute phi grad using ensemble approx")
@@ -887,72 +891,83 @@ class EnsembleSQP(EnsembleMethod):
                                 .format(out_of_bounds.shape[0],step_size,list(out_of_bounds.parnme)))
             self.logger.log("computing mean dec var upgrade".format(step_size))
 
-            self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
-            # self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
-            self.parensemble_1 = ParameterEnsemble.from_gaussian_draw(self.pst, cov=self.parcov * self.draw_mult,
+            if finite_diff_grad is False:
+                self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
+                # self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
+                self.parensemble_1 = ParameterEnsemble.from_gaussian_draw(self.pst, cov=self.parcov * self.draw_mult,
                                                                       num_reals=self.num_reals)
-            # TODO: alternatively tighten/widen search region to reflect representativeness of gradient (mechanistic)
-            # TODO: two sets of bounds: one hard on dec var and one (which can adapt during opt)
-            #self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)  # suffic to check mean
-            #self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
-             #                         + self.paren_prefix.format(0))
-            #self.parensemble_1.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))
-            # for `covert.py` for supply2 problem only...
-            self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
+                # TODO: alternatively tighten/widen search region to reflect representativeness of gradient (mechanistic)
+                # TODO: two sets of bounds: one hard on dec var and one (which can adapt during opt)
+                #self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)  # suffic to check mean
+                #self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
+                 #                         + self.paren_prefix.format(0))
+                #self.parensemble_1.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))
+                # for `covert.py` for supply2 problem only...
+                self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
 
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
 
-            self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
-            failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
-            if "supply2" in self.pst.filename:  #TODO: temp only until pyemu can evaluate pi eqs
-                self.obsensemble = self._append_pi_to_obs(self.obsensemble,"obj_func_en.csv","obj_func",
-                                                          "prior_info_en.csv")
+            if finite_diff_grad is False:
+                self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
+                failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
+                if "supply2" in self.pst.filename:  #TODO: temp only until pyemu can evaluate pi eqs
+                    self.obsensemble = self._append_pi_to_obs(self.obsensemble,"obj_func_en.csv","obj_func",
+                                                              "prior_info_en.csv")
 
-            # TODO: constraints = from pst # contain constraint val (pcf) and constraint from obsen
-            if constraints:  # and constraints.shape[0] > 0:
-                # TODO: this is perhaps where Lagrangian should come in
-                self.logger.log("adopting filtering method to handle constraints")
-                self._filter, accept = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size,
+                # TODO: constraints = from pst # contain constraint val (pcf) and constraint from obsen
+                # TODO: support finite diffs in _filter_constraint_eval
+                if constraints:  # and constraints.shape[0] > 0:
+                    # TODO: this is perhaps where Lagrangian should come in
+                    self.logger.log("adopting filtering method to handle constraints")
+                    self._filter, accept = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size,
                                                                     biobj_weight=biobj_weight,biobj_transf=biobj_transf,
                                                                     opt_direction=self.opt_direction)
-                self.logger.log("adopting filtering method to handle constraints")
-                if accept:
-                    best_alpha = step_size
-                    self.best_alpha_per_it[self.iter_num] = best_alpha
-                    best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
-                    best_alpha_per_it_df.to_csv("best_alpha.csv")
+                    self.logger.log("adopting filtering method to handle constraints")
+                    if accept:
+                        best_alpha = step_size
+                        self.best_alpha_per_it[self.iter_num] = best_alpha
+                        best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
+                        best_alpha_per_it_df.to_csv("best_alpha.csv")
 
-                    self.parensemble_mean_next = self.parensemble_mean_1.copy()
-                    self.parensemble_next = self.parensemble_1.copy()
-                    self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size) +
+                        self.parensemble_mean_next = self.parensemble_mean_1.copy()
+                        self.parensemble_next = self.parensemble_1.copy()
+                        self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size) +
                                               self.paren_prefix.format(0))
-                    [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
+                        [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
                                                             and x.split(".")[2] == str(self.iter_num))]
-                    self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
+                        self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
                                               + self.obsen_prefix.format(0))
 
-            else:  # unconstrained opt
-                mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
-                if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
-                    self.parensemble_mean_next = self.parensemble_mean_1.copy()
-                    self.parensemble_next = self.parensemble_1.copy()
-                    [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
+                else:  # unconstrained opt
+                    mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
+                    if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
+                        self.parensemble_mean_next = self.parensemble_mean_1.copy()
+                        self.parensemble_next = self.parensemble_1.copy()
+                        [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
                                                             and x.split(".")[2] == str(self.iter_num))]
-                    self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
+                        self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
                                               + self.obsen_prefix.format(0))
 
-                    # TODO: test curv condition here too?
-                    delta_parensemble_mean = self.parensemble_mean_next - self.parensemble_mean
-                    curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
+                        # TODO: test curv condition here too?
+                        delta_parensemble_mean = self.parensemble_mean_next - self.parensemble_mean
+                        curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
                                        row_names=self.phi_grad.row_names, col_names=self.phi_grad.col_names)
-                    y = self.phi_grad - curr_grad  # start with column vector
-                    s = delta_parensemble_mean.T  # start with column vector
-                    # curv condition related tests
-                    ys = y.T * s  # inner product
-                    curv_per_alpha.loc["{}".format(step_size), "curv_cond"] = float(ys.x)
-                    curv_per_alpha.loc["{}".format(step_size), "mean_en_phi"] = self.obsensemble_1.mean()['obs']
+                        y = self.phi_grad - curr_grad  # start with column vector
+                        s = delta_parensemble_mean.T  # start with column vector
+                        # curv condition related tests
+                        ys = y.T * s  # inner product
+                        curv_per_alpha.loc["{}".format(step_size), "curv_cond"] = float(ys.x)
+                        curv_per_alpha.loc["{}".format(step_size), "mean_en_phi"] = self.obsensemble_1.mean()['obs']
 
-            self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
+                self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}"
+                                                                                           .format(step_size))))
+
+            else:  # finite diffs for grads
+                self.logger.log("evaluating model for step size : {0}".format(','.join("{0:8.3E}"
+                                                                                       .format(step_size))))
+                #self.obsensemble_1
+                self.logger.log("evaluating model for step size : {0}".format(','.join("{0:8.3E}"
+                                                                                       .format(step_size))))
 
         if constraints:
             self._filter.to_csv("filter.{0}.csv".format(self.iter_num))

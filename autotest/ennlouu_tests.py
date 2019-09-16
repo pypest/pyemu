@@ -33,6 +33,7 @@ def rosenbrock_setup(version,initial_decvars=1.6,constraints=False):
     par.loc[:,"parubnd"] = 2.2
     par.loc[:,"parlbnd"] = -2.2
     # TODO: repeat with log transform
+    par.loc[:, "parchglim"] = "relative"
     obs = pst.observation_data
     obs.loc["obs","obsval"] = 0.0
     obs.loc["obs","obgnme"] = "obj_fn"  #pst.pestpp_options["opt_obj_func"] = "obj_fn"
@@ -156,7 +157,7 @@ def rosenbrock_2par_grad_approx_invest():
     os.chdir(os.path.join("..", ".."))
 
 
-def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,
+def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_diff_grad=False,
                                constraints=False,biobj_weight=1.0,biobj_transf=True,
                                hess_self_scaling=2,hess_update=True,damped=True,
                                cma=False,
@@ -184,16 +185,16 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,
     else:
         ext = version
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
-    esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints)
+    esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints,finite_diff_grad=finite_diff_grad)
     for it in range(nit):
         esqp.update(step_mult=list(np.logspace(-6,0,13)),constraints=constraints,biobj_weight=biobj_weight,
                     hess_self_scaling=hess_self_scaling,hess_update=hess_update,damped=damped,
+                    finite_diff_grad=finite_diff_grad,
                     cma=cma,rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
                     use_dist_mean_for_delta=use_dist_mean_for_delta,mu_learning_prop=mu_learning_prop)
     os.chdir(os.path.join("..", ".."))
 
    #  TODO: critical that draw_mult is refined as we go?
-   #  TODO: H becomes very small through updating and scaling--try larger alpha? Add Hess updating to alpha testing step.
    #  TODO: want alpha to increase from it to it; getting nan paren vals when diff starting vals and when step mult
    # is egt 0.01 with H = I -- large alpha/Hess forces all at bounds therefore no cov.
    # feedback something about at bounds so don't waste runs.
@@ -257,7 +258,7 @@ def invest(version,constraints=False):
     vars = {"initial_decvars": [[1.5,-1.5]],
             "draw_mult": [3e-3],
             "en_size": [10],
-            "hess_self_scaling": [2,True],
+            "hess_self_scaling": [2],
             "hess_update": [True],
             "damped": [True],
             }
@@ -312,10 +313,10 @@ def invest(version,constraints=False):
 
 def cma_invest(version, constraints=False):
 
-    vars = {"initial_decvars": [[1.5,-1.5]],
+    vars = {"initial_decvars": [[-1.5,0.5]],
             "draw_mult": [3e-3],
             "en_size": [10],
-            "learning_rate": [0.1,0.5,0.9],
+            "learning_rate": [0.5],
             "mu_prop": [0.25],
             "dist_mean": [False],
             "rank_one": [False],
@@ -329,14 +330,14 @@ def cma_invest(version, constraints=False):
             for d in vars['learning_rate'] for e in vars['mu_prop'] for f in vars['dist_mean']
             for g in vars['rank_one'] for h in vars['mu_learning_prop'] for i in vars['cma']]
     # remove all runs with cma == False except one
-    runs = [x for x in runs if x['cma'] is True] + \
-           [x for i, x in enumerate(runs) if x['cma'] is False and i == 1]
+    #runs = [x for x in runs if x['cma'] is True] + \
+     #      [x for i, x in enumerate(runs) if x['cma'] is False and i == 1]
 
     fails = []
     for i,v in enumerate(runs):
         rosenbrock_setup(version=version, initial_decvars=v['initial_decvars'], constraints=constraints)
         try:
-            rosenbrock_multiple_update(version=version,nit=30,draw_mult=v['draw_mult'],en_size=v['en_size'],
+            rosenbrock_multiple_update(version=version,nit=20,draw_mult=v['draw_mult'],en_size=v['en_size'],
                                        hess_self_scaling=2,hess_update=True,
                                        damped=True,constraints=constraints,
                                        cma=v['cma'],
@@ -584,6 +585,8 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False):
     yy = r * np.sin(theta)
     plt.plot(xx, yy, 'r-')
 
+    plt.scatter(x=[1.0],y=[1.0],marker="*")  # optimum
+
     par_ens = [x for x in os.listdir() if x.endswith(".parensemble.0000.csv")]
     for pe in par_ens:
         if pe.split(".")[2] == "parensemble":
@@ -603,11 +606,11 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False):
 
 
 if __name__ == "__main__":
-    #rosenbrock_setup(version="2par",initial_decvars=[1.5,-1.5])
+    rosenbrock_setup(version="2par",initial_decvars=[1.5,-1.5])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    #rosenbrock_multiple_update(version="2par",nit=30,en_size=20,draw_mult=1e-2)
+    rosenbrock_multiple_update(version="2par",nit=30,en_size=10,draw_mult=3e-3,finite_diff_grad=True)
     #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
@@ -634,4 +637,4 @@ if __name__ == "__main__":
     #rosenbrock_multiple_update(version="2par",cma=True,nit=10)
     #rosenbrock_phi_progress(version="2par",label="phi_progress_cma.pdf")
 
-    cma_invest(version="2par")
+    #cma_invest(version="2par")
