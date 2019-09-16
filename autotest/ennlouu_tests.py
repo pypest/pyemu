@@ -200,7 +200,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
    # feedback something about at bounds so don't waste runs.
 
 
-def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
+def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=False):
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
@@ -208,17 +208,28 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
         os.chdir(os.path.join("ennlouu","rosenbrock_2par"))
     elif version == "high_dim":
         os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
-    obs_ens = ["rosenbrock_{}.pst.obsensemble.0000.csv".format(version)]  #  from initialization sweep
-    obs_ens += [x for x in os.listdir() if (x.endswith(".obsensemble.0000.csv"))
+
+    if finite_diff_grad is False:
+        obs_ens = ["rosenbrock_{}.pst.obsensemble.0000.csv".format(version)]  #  from initialization sweep
+        obs_ens += [x for x in os.listdir() if (x.endswith(".obsensemble.0000.csv"))
                 and not (x.startswith("rosenbrock_{}.pst.obs".format(version)))
                 and not (x.startswith("rosenbrock_{}.pst_1".format(version)))]
+    else:
+        obs_ens = [x for x in os.listdir() if x.startswith("rosenbrock_2par.pst.phi.")]
+
     oes = pd.DataFrame()
     for obs_en in obs_ens:
         if obs_en != "rosenbrock_{}.pst.obsensemble.0000.csv".format(version):
-            it = int(obs_en.split(".")[2])
+            if finite_diff_grad is False:
+                it = int(obs_en.split(".")[2])
+            else:
+                it = int(obs_en.split(".")[3])
         else:
             it = 0
-        oe = pd.read_csv(obs_en,index_col=0)
+        if finite_diff_grad is False:
+            oe = pd.read_csv(obs_en,index_col=0)
+        else:
+            oe = pd.read_csv(obs_en, index_col=0, header=None)
         oe.columns = [it]
         oes = pd.concat((oes, oe),axis=1)
     oes = oes.sort_index()
@@ -229,9 +240,12 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
         ax.plot(v,marker="o",color="grey",linestyle='None')
     ax.set_xlabel("iteration number",fontsize=11)
     ax.set_ylabel("log $\phi$", fontsize=11)
-    oes_mean = oes.mean()
-    oes_mean = oes_mean.sort_index()
-    ax.plot(oes_mean, color="k", linestyle='--', label="mean en")
+    if finite_diff_grad is False:
+        oes_mean = oes.mean()
+        oes_mean = oes_mean.sort_index()
+        ax.plot(oes_mean, color="k", linestyle='--', label="mean en")
+    else:
+        ax.plot(oes_mean, color="k", linestyle='--', label="mean en")
 
     ylim = ax.get_ylim()
     try:
@@ -556,7 +570,7 @@ def plot_mean_dev_var_bar(opt_par_en="supply2_pest.parensemble.0000.csv",three_r
     # plt.show()
     plt.savefig("dec_vars.pdf")
 
-def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False):
+def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_grad=False):
     import numpy as np
     import matplotlib.pyplot as plt
     import pandas as pd
@@ -585,9 +599,14 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False):
     yy = r * np.sin(theta)
     plt.plot(xx, yy, 'r-')
 
-    plt.scatter(x=[1.0],y=[1.0],marker="*")  # optimum
+    #plt.scatter(x=[1.0],y=[1.0],marker="*",s=80)  # optimum
 
-    par_ens = [x for x in os.listdir() if x.endswith(".parensemble.0000.csv")]
+    if finite_diff_grad is False:
+        par_ens = [x for x in os.listdir() if x.endswith(".parensemble.0000.csv")]
+    else:
+        par_ens = [x for x in os.listdir() if (x.startswith("rosenbrock_2par.pst."))
+                   and (x.endswith(".csv"))]
+
     for pe in par_ens:
         if pe.split(".")[2] == "parensemble":
             it = 0
@@ -606,15 +625,15 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False):
 
 
 if __name__ == "__main__":
-    rosenbrock_setup(version="2par",initial_decvars=[1.5,-1.5])
+    rosenbrock_setup(version="2par",initial_decvars=[1.3,1.3])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
     rosenbrock_multiple_update(version="2par",nit=50,en_size=10,draw_mult=3e-3,finite_diff_grad=True)
-    #rosenbrock_phi_progress(version="2par")
+    rosenbrock_phi_progress(version="2par",finite_diff_grad=True)
     #rosenbrock_2par_grad_approx_invest()
 
-    #plot_2par_rosen()
+    plot_2par_rosen(finite_diff_grad=True)
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")

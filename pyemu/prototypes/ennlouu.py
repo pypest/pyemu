@@ -975,15 +975,17 @@ class EnsembleSQP(EnsembleMethod):
                 self.pst.write(os.path.join(self.pst.filename.split(".pst")[0]+"_fds_1.pst"))
                 pyemu.os_utils.run("pestpp-glm {0}".format(self.pst.filename.split(".pst")[0]+"_fds_1.pst"))
                 rei = pyemu.pst_utils.read_resfile(os.path.join("rosenbrock_2par_fds_1.rei"))
-                self.obsensemble_1 = rei.loc[rei.group == "obj_fn", "residual"]  # not an en
+                self.obsensemble_1 = rei.loc[rei.group == "obj_fn", "modelled"] - \
+                                     rei.loc[rei.group == "obj_fn", "measured"]
                 # TODO: support finite diffs in _filter_constraint_eval
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1
                 if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
                     #self.parensemble_next = self.parensemble_1.copy()
-                    #[os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
-                     #                                       and x.split(".")[2] == str(self.iter_num))]
-                    self.obsensemble_1.to_csv(self.pst.filename + "_phi.{0}.{1}".format(self.iter_num, step_size))
+                    [os.remove(x) for x in os.listdir() if (x.startswith("{0}.phi.{1}"
+                                                                         .format(self.pst.filename,self.iter_num)))
+                     and (x.endswith(".csv"))]
+                    self.obsensemble_1.to_csv(self.pst.filename + ".phi.{0}.{1}.csv".format(self.iter_num, step_size))
                 self.logger.log("evaluating model for step size : {0}".format(','.join("{0:8.3E}"
                                                                                        .format(step_size))))
 
