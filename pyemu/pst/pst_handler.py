@@ -1111,7 +1111,7 @@ class Pst(object):
         for key, value in zip(keys, values):
             if key in self.pestpp_options:
                 print("Pst.load() warning: duplicate pest++ option found:" + str(key),PyemuWarning)
-            self.pestpp_options[key] = value
+            self.pestpp_options[key.lower()] = value
 
     def _update_control_section(self):
         """ private method to synchronize the control section counters with the
