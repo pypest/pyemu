@@ -2255,8 +2255,12 @@ class Pst(object):
             new_obs_data.loc[df.index,"obsval"] = df.obsval
         return new_obs_data
 
-    def write_input_files(self):
+    def write_input_files(self,pst_path='.'):
         """writes model input files using template files and current `parval1` values.
+
+        Args:
+            pst_path (`str`): the path to where control file and template files reside.
+                Default is '.'
 
         Note:
             adds "parval1_trans" column to Pst.parameter_data that includes the
@@ -2273,7 +2277,7 @@ class Pst(object):
             pst.write_input_files()
 
         """
-        pst_utils.write_input_files(self)
+        pst_utils.write_input_files(self,pst_path=pst_path)
 
 
     def process_output_files(self,pst_path='.'):

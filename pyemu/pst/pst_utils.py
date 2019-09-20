@@ -300,11 +300,13 @@ def parse_tpl_file(tpl_file):
     return [p.strip() for p in list(par_names)]
 
 
-def write_input_files(pst):
+def write_input_files(pst,pst_path='.'):
     """write parameter values to model input files
 
     Args:
         pst (`pyemu.Pst`): a Pst instance
+        pst_path (`str`): the path to where the control file and template
+            files reside.  Default is '.'.
 
     Note:
 
@@ -318,7 +320,8 @@ def write_input_files(pst):
     par = pst.parameter_data
     par.loc[:,"parval1_trans"] = (par.parval1 * par.scale) + par.offset
     for tpl_file,in_file in zip(pst.template_files,pst.input_files):
-        write_to_template(pst.parameter_data.parval1_trans,tpl_file,in_file)
+        write_to_template(pst.parameter_data.parval1_trans,os.path.join(pst_path,tpl_file),
+                          os.path.join(pst_path,in_file))
 
 def write_to_template(parvals,tpl_file,in_file):
     """ write parameter values to a model input file using
