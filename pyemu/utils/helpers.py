@@ -2944,13 +2944,25 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
     #         print("error removing mult array:{0}".format(fname))
 
     if 'pp_file' in df.columns:
+        print("starting fac2real",datetime.now())
+        pp_args = []
         for pp_file,fac_file,mlt_file in zip(df.pp_file,df.fac_file,df.mlt_file):
             if pd.isnull(pp_file):
                 continue
-            pyemu.geostats.fac2real(pp_file=pp_file,factors_file=fac_file,
-                                    out_file=mlt_file,lower_lim=1.0e-10)
+            pp_args.append({"pp_file":pp_file,"factors_file":fac_file,"out_file":mlt_file,"lower_lim":1.0e-10})
+        #    pyemu.geostats.fac2real(pp_file=pp_file,factors_file=fac_file,
+        #                            out_file=mlt_file,lower_lim=1.0e-10)
+        procs = []
+        for args in pp_args:
+            p = mp.Process(target=pyemu.geostats.fac2real,kwargs=args)
+            p.start()
+            procs.append(p)
+        for p in procs:
+            p.join()
 
-    for model_file in df.model_file.unique():
+        print("finished fac2real",datetime.now())
+    print("starting arr mlt",datetime.now())
+    def _process_model_file(model_file,df):
         # find all mults that need to be applied to this array
         df_mf = df.loc[df.model_file==model_file,:]
         results = []
@@ -2982,6 +2994,15 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
                 org_arr[org_arr < lb] = lb
 
         np.savetxt(model_file,np.atleast_2d(org_arr),fmt="%15.6E",delimiter='')
+
+    procs = []
+    for model_file in df.model_file.unique():
+        p = mp.Process(target=_process_model_file,args=[model_file,df])
+        p.start()
+        procs.append(p)
+    for p in procs:
+        p.join()
+    print("finished arr mlt", datetime.now())
 
 def apply_list_pars():
     """ a function to apply boundary condition multiplier parameters.

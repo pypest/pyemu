@@ -1,9 +1,8 @@
 """Various PEST(++) control file peripheral operations"""
 from __future__ import print_function, division
-import os, sys
-import stat
+import os
 import warnings
-from datetime import datetime
+import multiprocessing as mp
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
@@ -313,15 +312,26 @@ def write_input_files(pst,pst_path='.'):
         This function uses template files with the current parameter \
         values (stored in `pst.parameter_data.parval1`).
 
+        This function uses multiprocessing - one process per template file
+
         This is a simple implementation of what PEST does.  It does not
         handle all the special cases, just a basic function...user beware
 
     """
     par = pst.parameter_data
     par.loc[:,"parval1_trans"] = (par.parval1 * par.scale) + par.offset
+    procs = []
     for tpl_file,in_file in zip(pst.template_files,pst.input_files):
-        write_to_template(pst.parameter_data.parval1_trans,os.path.join(pst_path,tpl_file),
-                          os.path.join(pst_path,in_file))
+        #write_to_template(pst.parameter_data.parval1_trans,os.path.join(pst_path,tpl_file),
+        #                  os.path.join(pst_path,in_file))
+        p = mp.Process(target=write_to_template,args=[pst.parameter_data.parval1_trans,
+                                                      os.path.join(pst_path,tpl_file),
+                                                      os.path.join(pst_path,in_file)])
+        p.start()
+        procs.append(p)
+    for p in procs:
+        p.join()
+
 
 def write_to_template(parvals,tpl_file,in_file):
     """ write parameter values to a model input file using
