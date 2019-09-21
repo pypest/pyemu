@@ -2937,6 +2937,7 @@ def _process_model_file(model_file,df):
         if len(ub_vals) == 0:
             pass
         elif len(ub_vals) > 1:
+            print(ub_vals)
             raise Exception("different upper bound values for {0}".format(org_file))
         else:
             ub = list(ub_vals.keys())[0]
@@ -2968,7 +2969,7 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
         be called on any correctly formatted csv
 
     """
-    df = pd.read_csv(arr_par_file)
+    df = pd.read_csv(arr_par_file,index_col=0)
     # for fname in df.model_file:
     #     try:
     #         os.remove(fname)
