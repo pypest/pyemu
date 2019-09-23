@@ -1,7 +1,5 @@
 """MODFLOW support utilities"""
 import os
-import copy
-import csv
 from datetime import datetime
 import shutil
 import warnings
