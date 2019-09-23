@@ -117,34 +117,36 @@ def from_flopy():
     # try:
     ph.pst.write_input_files()
     csv = os.path.join("arr_pars.csv")
-    df = pd.read_csv(csv)
+    df = pd.read_csv(csv,index_col=0)
     df.loc[:, "upper_bound"] = np.NaN
     df.loc[:, "lower_bound"] = np.NaN
     df.to_csv(csv)
     pyemu.helpers.apply_array_pars()
 
-    df.loc[:, "org_file"] = df.org_file.iloc[0]
-    df.loc[:, "model_file"] = df.org_file
-    df.loc[:, "upper_bound"] = np.arange(df.shape[0])
-    df.loc[:, "lower_bound"] = np.NaN
-    print(df)
-    df.to_csv(csv)
-    try:
-        pyemu.helpers.apply_array_pars()
-    except:
-        pass
-    else:
-        raise Exception()
-    df.loc[:, "lower_bound"] = np.arange(df.shape[0])
-    df.loc[:, "upper_bound"] = np.NaN
-    print(df)
-    df.to_csv(csv)
-    try:
-        pyemu.helpers.apply_array_pars()
-    except:
-        pass
-    else:
-        raise Exception()
+    # jwhite 21 sept 2019 - the except here is no longer being
+    # caught because of multiprocessing...
+    # #df.loc[:, "org_file"] = df.org_file.iloc[0]
+    # #df.loc[:, "model_file"] = df.org_file
+    # df.loc[:, "upper_bound"] = np.arange(df.shape[0])
+    # df.loc[:, "lower_bound"] = np.NaN
+    # print(df)
+    # df.to_csv(csv)
+    # try:
+    #     pyemu.helpers.apply_array_pars()
+    # except:
+    #     pass
+    # else:
+    #     raise Exception()
+    # df.loc[:, "lower_bound"] = np.arange(df.shape[0])
+    # df.loc[:, "upper_bound"] = np.NaN
+    # print(df)
+    # df.to_csv(csv)
+    # try:
+    #     pyemu.helpers.apply_array_pars()
+    # except:
+    #     pass
+    # else:
+    #     raise Exception()
 
     df.loc[:, "lower_bound"] = 0.1
     df.loc[:, "upper_bound"] = 0.9

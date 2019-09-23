@@ -2922,6 +2922,39 @@ class PstFromFlopyModel(object):
             self.logger.statement("forward_run line:{0}".format(line))
             self.frun_post_lines.append(line)
 
+def _process_model_file(model_file,df):
+    # find all mults that need to be applied to this array
+    df_mf = df.loc[df.model_file==model_file,:]
+    results = []
+    org_file = df_mf.org_file.unique()
+    if org_file.shape[0] != 1:
+        raise Exception("wrong number of org_files for {0}".
+                        format(model_file))
+    org_arr = np.loadtxt(org_file[0])
+
+    for mlt in df_mf.mlt_file:
+        org_arr *= np.loadtxt(mlt)
+    if "upper_bound" in df.columns:
+        ub_vals = df_mf.upper_bound.value_counts().dropna().to_dict()
+        if len(ub_vals) == 0:
+            pass
+        elif len(ub_vals) > 1:
+            print(ub_vals)
+            raise Exception("different upper bound values for {0}".format(org_file))
+        else:
+            ub = list(ub_vals.keys())[0]
+            org_arr[org_arr>ub] = ub
+    if "lower_bound" in df.columns:
+        lb_vals = df_mf.lower_bound.value_counts().dropna().to_dict()
+        if len(lb_vals) == 0:
+            pass
+        elif len(lb_vals) > 1:
+            raise Exception("different lower bound values for {0}".format(org_file))
+        else:
+            lb = list(lb_vals.keys())[0]
+            org_arr[org_arr < lb] = lb
+
+    np.savetxt(model_file,np.atleast_2d(org_arr),fmt="%15.6E",delimiter='')
 
 def apply_array_pars(arr_par_file="arr_pars.csv"):
     """ a function to apply array-based multipler parameters.
@@ -2938,7 +2971,7 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
         be called on any correctly formatted csv
 
     """
-    df = pd.read_csv(arr_par_file)
+    df = pd.read_csv(arr_par_file,index_col=0)
     # for fname in df.model_file:
     #     try:
     #         os.remove(fname)
@@ -2946,44 +2979,35 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
     #         print("error removing mult array:{0}".format(fname))
 
     if 'pp_file' in df.columns:
+        print("starting fac2real",datetime.now())
+        pp_args = []
         for pp_file,fac_file,mlt_file in zip(df.pp_file,df.fac_file,df.mlt_file):
             if pd.isnull(pp_file):
                 continue
-            pyemu.geostats.fac2real(pp_file=pp_file,factors_file=fac_file,
-                                    out_file=mlt_file,lower_lim=1.0e-10)
+            pp_args.append({"pp_file":pp_file,"factors_file":fac_file,"out_file":mlt_file,"lower_lim":1.0e-10})
+        #    pyemu.geostats.fac2real(pp_file=pp_file,factors_file=fac_file,
+        #                            out_file=mlt_file,lower_lim=1.0e-10)
+        procs = []
+        for args in pp_args:
+            p = mp.Process(target=pyemu.geostats.fac2real,kwargs=args)
+            p.start()
+            procs.append(p)
+        for p in procs:
+            p.join()
 
+        print("finished fac2real",datetime.now())
+    print("starting arr mlt",datetime.now())
+
+
+    procs = []
     for model_file in df.model_file.unique():
-        # find all mults that need to be applied to this array
-        df_mf = df.loc[df.model_file==model_file,:]
-        results = []
-        org_file = df_mf.org_file.unique()
-        if org_file.shape[0] != 1:
-            raise Exception("wrong number of org_files for {0}".
-                            format(model_file))
-        org_arr = np.loadtxt(org_file[0])
+        p = mp.Process(target=_process_model_file,args=[model_file,df])
+        p.start()
+        procs.append(p)
+    for p in procs:
+        p.join()
+    print("finished arr mlt", datetime.now())
 
-        for mlt in df_mf.mlt_file:
-            org_arr *= np.loadtxt(mlt)
-        if "upper_bound" in df.columns:
-            ub_vals = df_mf.upper_bound.value_counts().dropna().to_dict()
-            if len(ub_vals) == 0:
-                pass
-            elif len(ub_vals) > 1:
-                raise Exception("different upper bound values for {0}".format(org_file))
-            else:
-                ub = list(ub_vals.keys())[0]
-                org_arr[org_arr>ub] = ub
-        if "lower_bound" in df.columns:
-            lb_vals = df_mf.lower_bound.value_counts().dropna().to_dict()
-            if len(lb_vals) == 0:
-                pass
-            elif len(lb_vals) > 1:
-                raise Exception("different lower bound values for {0}".format(org_file))
-            else:
-                lb = list(lb_vals.keys())[0]
-                org_arr[org_arr < lb] = lb
-
-        np.savetxt(model_file,np.atleast_2d(org_arr),fmt="%15.6E",delimiter='')
 
 def apply_list_pars():
     """ a function to apply boundary condition multiplier parameters.
