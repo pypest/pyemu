@@ -2460,7 +2460,8 @@ class PstFromFlopyModel(object):
 
         """
         with open(os.path.join(self.m.model_ws,self.forward_run_file),'w') as f:
-            f.write("import os\nimport numpy as np\nimport pandas as pd\nimport flopy\n")
+            f.write("import os\nimport multiprocessing as mp\nimport numpy as np"+\
+                    "\nimport pandas as pd\nimport flopy\n")
             f.write("import pyemu\n")
             for ex_imp in self.extra_forward_imports:
                 f.write('import {0}\n'.format(ex_imp))
@@ -2475,6 +2476,10 @@ class PstFromFlopyModel(object):
                 f.write(line+'\n')
             for line in self.frun_post_lines:
                 f.write(line+'\n')
+            f.write("\n")
+            f.write("if __name__ == '__main__':\n")
+            f.write("    mp.freeze_support()\n")
+            f.write("\n")
 
     def _parse_k(self, k, vals):
         """ parse the iterable from a property or boundary condition argument
