@@ -1832,7 +1832,8 @@ class PstFromFlopyModel(object):
             if kp_id not in pp_dfs_k.keys():
                 self.log("calculating factors for p={0}, k={1}".format(pg, k))
                 fac_file = os.path.join(self.m.model_ws, "pp_k{0}.fac".format(kattr_id))
-                var_file = fac_file.replace("{0}.fac", ".var.dat")
+                var_file = fac_file.replace("{0}.fac".format(kattr_id),
+                                            ".var.dat")
                 pp_df_k = pp_df.loc[pp_df.pargp == pg]
                 if kattr_id not in pp_processed:
                     self.logger.statement("saving krige variance file:{0}"
@@ -1863,7 +1864,8 @@ class PstFromFlopyModel(object):
 
             out_file = os.path.join(self.arr_mlt,os.path.split(pp_array_file[pp_prefix])[-1])
 
-            pp_files = pp_df.loc[pp_df.pp_filename.apply(lambda x: pp_prefix in x),"pp_filename"]
+            pp_files = pp_df.loc[pp_df.pp_filename.apply(
+                lambda x: "{0}pp".format(pp_prefix) in x), "pp_filename"]
             if pp_files.unique().shape[0] != 1:
                 self.logger.lraise("wrong number of pp_files found:{0}".format(','.join(pp_files)))
             pp_file = os.path.split(pp_files.iloc[0])[-1]
