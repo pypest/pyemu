@@ -2978,6 +2978,12 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
         This function should be added to the forward_run.py script but can
         be called on any correctly formatted csv
 
+        This function using multiprocessing, spawning one process for each
+        model input array (and optionally pp files).  This speeds up
+        execution time considerably but means you need to make sure your
+        forward run script uses the proper multiprocessing idioms for
+        freeze support and main thread handling.
+
     """
     df = pd.read_csv(arr_par_file,index_col=0)
     # for fname in df.model_file:
