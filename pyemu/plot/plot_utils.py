@@ -1,12 +1,13 @@
 """Plotting functions for various PEST(++) and pyemu operations"""
 import os
-import shutil
 import numpy as np
 import pandas as pd
+import warnings
 from datetime import datetime
 import string
 from pyemu.logger import Logger
 from pyemu.pst import pst_utils
+from ..pyemu_warnings import PyemuWarning
 font = {'size'   : 6}
 try:
     import matplotlib
@@ -16,7 +17,8 @@ try:
     from matplotlib.backends.backend_pdf import PdfPages
     from matplotlib.gridspec import GridSpec
 except Exception as e:
-    raise Exception("error importing matplotlib: {0}".format(str(e)))
+    #raise Exception("error importing matplotlib: {0}".format(str(e)))
+    warnings.warn("error importing matplotlib: {0}".format(str(e)),PyemuWarning)
 
 import pyemu
 figsize=(8,10.5)

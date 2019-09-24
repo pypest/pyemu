@@ -1,7 +1,5 @@
 """MODFLOW support utilities"""
 import os
-import copy
-import csv
 from datetime import datetime
 import shutil
 import warnings
@@ -520,7 +518,9 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
         assert j >= 0 and j < ncol, j
         site = site.lower().replace(" ",'')
         if text.upper() != "NONE":
-            df = pd.DataFrame(data=bf.get_ts((k, i, j),text=text), columns=["totim", site])
+            ts = bf.get_ts((k, i, j),text=text)
+            #print(ts)
+            df = pd.DataFrame(data=ts, columns=["totim", site])
         else:
             df = pd.DataFrame(data=bf.get_ts((k,i,j)),columns=["totim",site])
 
