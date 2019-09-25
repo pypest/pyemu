@@ -1,7 +1,7 @@
 pyEMU
 =====
 
-python modules for model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) uncertainty analyses and data-worth analyses, non-linear uncertainty analyses and interfacing with PEST and PEST++.  pyEMU now also has a pure python (pandas and numpy) implementation of ordinary kriging for geostatistical interpolation.   
+python modules for model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) uncertainty analyses and data-worth analyses, non-linear uncertainty analyses and interfacing with PEST and PEST++.  pyEMU also has a pure python (pandas and numpy) implementation of ordinary kriging for geostatistical interpolation and support for generating high-dimensional PEST(++) model interfaces, including support for (very) high-dimensional ensemble generation and handling   
 
 [![Travis Status](https://travis-ci.org/jtwhite79/pyemu.svg?branch=master)](https://travis-ci.org/jtwhite79/pyemu)
 [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/jtwhite79/pyemu?branch=master&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
@@ -12,14 +12,14 @@ Read the docs
 
 [https://jtwhite79.github.io/pyemudoc/](https://jtwhite79.github.io/pyemudoc)
 
-(These are still a work in progress)
+The pyEMU documentation is being treated as a first-class citizen!  Also see the example notebooks in the repo.
 
 What is pyEMU?
 ================
 
 pyEMU is a set of python modules for model-independent, user-friendly, computer model uncertainty analysis.  pyEMU is tightly coupled to the open-source suite PEST (Doherty 2010a and 2010b, and Doherty and other, 2010) and PEST++ (Welter and others, 2015, Welter and other, 2012), which are tools for model-independent parameter estimation.  However, pyEMU can be used with generic array objects, such as numpy ndarrays.
 
-Several equations are implemented, including Schur's complement for conditional uncertainty propagation (a.k.a. Bayes Linear estimation) (the foundation of the PREDUNC suite from PEST) and error variance analysis (the foundation of the PREDVAR suite of PEST).  pyEMU has easy-to-use routines for parmaeter and data worth analyses, which estimate how increased parameter knowledge and/or additional data effect forecast uncertainty in linear, Bayesian framework.  Support is also provided for Monte Carlo analyses via an Ensemble and MonteCarlo class, including the null-space monte carlo approach of Tonkin and Doherty (2009).
+Several equations are implemented, including Schur's complement for conditional uncertainty propagation (a.k.a. Bayes Linear estimation) (the foundation of the PREDUNC suite from PEST) and error variance analysis (the foundation of the PREDVAR suite of PEST).  pyEMU has easy-to-use routines for parmaeter and data worth analyses, which estimate how increased parameter knowledge and/or additional data effect forecast uncertainty in linear, Bayesian framework.  Support is also provided for high-dimensional Monte Carlo analyses via `ObservationEnsemble` and `ParameterEnsemble` class, including the null-space monte carlo approach of Tonkin and Doherty (2009); these ensemble classes also play nicely with PESTPP-IES.
 
 pyEMU also includes lots of functionality for dealing with PEST(++) datasets, such as:
 * manipulation of PEST control files, including the use of pandas for sophisticated editing of the parameter data and observation data sections
@@ -27,37 +27,24 @@ pyEMU also includes lots of functionality for dealing with PEST(++) datasets, su
 * going between site sample files and pandas dataframes - really cool for observation processing
 * easy-to-use observation (re)weigthing via residuals or user-defined functions
 * handling Jacobian and covariance matrices, including functionality to go between binary and ASCII matrices, reading and writing PEST uncertaity files.  Covariance matrices can be instaniated from relevant control file sections, such as parameter bounds or observation weights.  The base Matrix class overloads most common linear algebra operators so that operations are automatically aligned by row and column name.  Builtin SVD is also included in all Matrix instances.
-* geostatistics including geostatistical structure support, reading and writing PEST structure files and creating covariance matrices implied by nested geostatistical structures, and ordinary kriging (in the utils.geostats.OrdrinaryKrige object), which replicates the functionality of pest utility ``ppk2fac``. See test/utils.py for an example of how the OrdinaryKrige class functions.
-* a prototype, model-independent iterative ensemble smoother, based on the Levenburg-Marquardt algorithm of Chen and Oliver (2013).  See autotests/smoother.py for examples of how this prototype works.
+* geostatistics including geostatistical structure support, reading and writing PEST structure files and creating covariance matrices implied by nested geostatistical structures, and ordinary kriging (in the utils.geostats.OrdrinaryKrige object), which replicates the functionality of pest utility ``ppk2fac``. 
 * composite scaled sensitivity calculations
 * calculation of correlation coefficient matrix from a given covariance matrix
-* prototype Karhunen-Loeve-based parameterization as an alternative to pilot points for spatially-distributed parameter fields
-* a helper function to start a group of tcp/ip workers on a local machine for parallel PEST++/BeoPEST runs
+* Karhunen-Loeve-based parameterization as an alternative to pilot points for spatially-distributed parameter fields
+* a helper functions to start a group of tcp/ip workers on a local machine for parallel PEST++/BeoPEST runs
 * full support for prior information equations in control files
 * preferred differencing prior information equations where the weights are based on the Pearson correlation coefficient
 * verification-based tests based on results from several PEST utilities
 
-Version 0.4 of pyemu includes
+Version 0.9 includes
 
-* more enhancements to the iterative ensemble smoother including bad realization handling.  This has now been tested and applied succcessfully upto 30,000 parameters - yeah, that's not a typo.
-* more enhancements to the routines to setup a pest interface any MODFLOW model that can be loaded with flopy (https://github.com/modflowpy/flopy) using combinations of uniform, zone, pilot points, and grid-scale array multiplier parameters, as well as time-varying boundary condition multipliers. This functionality creates the entire set of files needed to implement inversion and uncertainty analysis including writing the forward run script, setups up pilot points (including solving for interpolation factors) and building a geostatistical-based prior covariance matrix.
-
-Version 0.5 of pyemu includes
-
-* support for reading and writing the new pest control file format with comments (!)
-* work on the multivariate Gaussian draws to speed things up
-* Even more work on the PstFromFlopy helper class.  It has lots of kewl stuff now
-* addition of a sparse matrix handler and a new JCO binary format for really large numbers of pars (>100K)
-* more work towards getting pestpp and modflow buidling the Travis YML, moving towards having execution tests.
-* the ensemble smoother in pyemu has been marked with a DeprecationWarning and will be retired in the next release.
+* refactored `Ensemble` classes designed to function more efficiently when sampling from multivariate Gaussian distributions
+* improved documentation!
+* more enhancements to the `PstFromFlopyModel` setup class to support generating PEST(++) interfaces in the 100,000 to 1,000,000 parameter range.
 
 A publication documenting pyEMU and an example application can be found here:
 
 [http://dx.doi.org/10.1016/j.envsoft.2016.08.017](http://dx.doi.org/10.1016/j.envsoft.2016.08.017)
-
-A powerpoint presentation describing the iterative Ensemble Smoother implemented in pyEMU can be downloaded here:
-
-[https://github.com/jtwhite79/pyemu/blob/develop/misc/TheEnsembleSmoother.pptx](https://github.com/jtwhite79/pyemu/blob/develop/misc/TheEnsembleSmoother.pptx)
 
 Examples
 ========
@@ -67,7 +54,7 @@ Several example ipython notebooks are provided to demostrate typical workflows f
 Links
 =====
 
-[https://github.com/jtwhite79/pestpp](https://github.com/jtwhite79/pestpp)
+[https://github.com/jtwhite79/pestpp](https://github.com/usgs/pestpp)
 
 [PEST - http://www.pesthomepage.org/](http://www.pesthomepage.org/)
 
@@ -99,23 +86,10 @@ Welter, D.E., White, J.T., Hunt, R.J., and Doherty, J.E., 2015, Approaches in hi
 How to get started with pyEMU
 =============================
 
-I recommend the Anaconda scientific python distribution (FREE!), which includes the dependencies for pyemu, as well as the jupyter notebook:
-
-[https://store.continuum.io/cshop/anaconda/](https://store.continuum.io/cshop/anaconda/])
-
-Once installed, clone (or download) the pyemu repository and run the setup.py script from the command prompt:
-
-`>>>python setup.py install`
-
-Then start the ipython notebook from the command prompt:
-
-`>>>jupyter notebook`
-
-You should then be able to view the example notebooks.
-
-pyEMU is also available through pyPI:
+pyEMU is available through pyPI:
 
 `>>>pip install pyemu`
 
+pyEMU needs `numpy` and `pandas`.  For plotting, `matplotloib` and `flopy` to take advantage of the auto interface construction
 
 
