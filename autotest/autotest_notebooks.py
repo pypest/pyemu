@@ -1,6 +1,7 @@
 # Remove the temp directory and then create a fresh one
 import os
 import shutil
+import pyemu
 
 nbdir = os.path.join('..', 'examples')
 
@@ -21,30 +22,33 @@ if os.path.isdir(testdir):
 os.mkdir(testdir)
 
 
-def get_Notebooks():
+def get_notebooks():
     return [f for f in os.listdir(nbdir) if f.endswith('.ipynb') and not "notest" in f]
 
 
 def run_notebook(fn):
-    pth = os.path.join(nbdir, fn)
+    #pth = os.path.join(nbdir, fn)
+    pth = fn
     cmd = 'jupyter ' + 'nbconvert ' + \
           '--ExecutePreprocessor.kernel_name=python ' + \
           '--ExecutePreprocessor.timeout=6000 ' + '--to ' + 'notebook ' + \
           '--execute ' + '{} '.format(pth) + \
           '--output-dir ' + '{} '.format(testdir) + \
           '--output ' + '{}'.format(fn)
-    ival = os.system(cmd)
-    assert ival == 0, 'could not run {}'.format(fn)
+    
+    #ival = os.system(cmd)
+    ival = pyemu.os_utils.run(cmd,cwd=nbdir)
+    print(ival,cmd)
+    assert ival == 0 or ival is None, 'could not run {}'.format(fn)
 
 
 def test_notebooks():
-    files = get_Notebooks()
+    files = get_notebooks()
 
     for fn in files:
         yield run_notebook, fn
 
-
 if __name__ == '__main__':
-    files = get_Notebooks()
+    files = get_notebooks()
     for fn in files:
         run_notebook(fn)

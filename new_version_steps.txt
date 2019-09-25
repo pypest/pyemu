@@ -1,4 +1,4 @@
-0) update setup.py to new version
+0) update setup.py docs2/conf.py to new version and 
 1) checkout master and merge
 1.5) make sure version is updated in setup.py
 2) tag new version in master branch

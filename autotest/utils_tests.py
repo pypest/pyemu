@@ -12,7 +12,6 @@ def add_pi_obj_func_test():
     #pst._update_control_section()
     assert pst.control_data.nprior == 1
 
-
 def fac2real_test():
     import os
     import numpy as np
@@ -189,39 +188,6 @@ def ppcov_simple_test():
 
 
 
-def ppcov_simple_sparse_test():
-    import os
-    import numpy as np
-    import pandas as pd
-    import pyemu
-
-    pts_file = os.path.join("utils","points1_test.dat")
-    str_file = os.path.join("utils","struct_test.dat")
-
-    mat1_file = os.path.join("utils","ppcov.struct1.out")
-    mat2_file = os.path.join("utils","ppcov.struct2.out")
-    mat3_file = os.path.join("utils","ppcov.struct3.out")
-
-    ppc_mat1 = pyemu.Cov.from_ascii(mat1_file)
-    ppc_mat2 = pyemu.Cov.from_ascii(mat2_file)
-    ppc_mat3 = pyemu.Cov.from_ascii(mat3_file)
-
-    pts = pd.read_csv(pts_file,header=None,names=["name","x","y"],usecols=[0,1,2],
-                      delim_whitespace=True)
-
-    struct1,struct2,struct3 = pyemu.utils.geostats.read_struct_file(str_file)
-    print(struct1)
-    print(struct2)
-    print(struct3)
-
-    for mat,struct in zip([ppc_mat1,ppc_mat2,ppc_mat3],[struct1,struct2,struct3]):
-
-        str_mat = struct.sparse_covariance_matrix(x=pts.x,y=pts.y,names=pts.name)
-        str_mat1 = str_mat.to_matrix()
-        delt = mat.x - str_mat1.x
-        print(delt)
-        assert np.abs(delt).max() < 1.0e-7
-
 def setup_ppcov_complex():
     import os
     import platform
@@ -279,49 +245,11 @@ def ppcov_complex_test():
         assert np.abs(delt).max() < 1.0e-7
         #break
 
-
-def ppcov_complex_sparse_test():
-    import os
-    import numpy as np
-    import pandas as pd
-    import pyemu
-
-    pts_file = os.path.join("utils","points1_test.dat")
-    str_file = os.path.join("utils","struct_complex.dat")
-
-    mat1_file = os.path.join("utils","ppcov.complex.struct1.out")
-    mat2_file = os.path.join("utils","ppcov.complex.struct2.out")
-
-    ppc_mat1 = pyemu.Cov.from_ascii(mat1_file)
-    ppc_mat2 = pyemu.Cov.from_ascii(mat2_file)
-
-    pts = pd.read_csv(pts_file,header=None,names=["name","x","y"],usecols=[0,1,2],
-                      delim_whitespace=True)
-
-    struct1,struct2 = pyemu.utils.geostats.read_struct_file(str_file)
-    print(struct1)
-    print(struct2)
-
-    for mat,struct in zip([ppc_mat1,ppc_mat2],[struct1,struct2]):
-
-        str_mat = struct.sparse_covariance_matrix(x=pts.x,y=pts.y,names=pts.name)
-        str_mat1 = str_mat.to_matrix()
-        delt = mat.x - str_mat1.x
-        print(mat.x)
-        print(str_mat1.x)
-        print(delt)
-
-
-        print(np.abs(delt).max())
-
-        assert np.abs(delt).max() < 1.0e-7
-        #break
-
 def pp_to_tpl_test():
     import os
     import pyemu
     pp_file = os.path.join("utils","points1.dat")
-    pp_df = pyemu.gw_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
+    pp_df = pyemu.pp_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
     print(pp_df.columns)
 
 
@@ -329,8 +257,8 @@ def tpl_to_dataframe_test():
     import os
     import pyemu
     pp_file = os.path.join("utils","points1.dat")
-    pp_df = pyemu.gw_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
-    df_tpl = pyemu.gw_utils.pp_tpl_to_dataframe(pp_file+".tpl")
+    pp_df = pyemu.pp_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
+    df_tpl = pyemu.pp_utils.pp_tpl_to_dataframe(pp_file+".tpl")
     assert df_tpl.shape[0] == pp_df.shape[0]
 
 # def to_mps_test():
@@ -459,21 +387,21 @@ def smp_to_ins_test():
         raise Exception("should have failed")
     pyemu.smp_utils.smp_to_ins(smp,ins,True)
 
-def master_and_slaves():
+def master_and_workers():
     import shutil
     import pyemu
-    slave_dir = os.path.join("..","verification","10par_xsec","template_mac")
+    worker_dir = os.path.join("..","verification","10par_xsec","template_mac")
     master_dir = os.path.join("temp","master")
     if not os.path.exists(master_dir):
         os.mkdir(master_dir)
-    assert os.path.exists(slave_dir)
-    pyemu.helpers.start_slaves(slave_dir,"pestpp","pest.pst",1,
-                               slave_root="temp",master_dir=master_dir)
+    assert os.path.exists(worker_dir)
+    pyemu.helpers.start_workers(worker_dir,"pestpp","pest.pst",1,
+                               worker_root="temp",master_dir=master_dir)
 
     #now try it from within the master dir
     base_cwd = os.getcwd()
     os.chdir(master_dir)
-    pyemu.helpers.start_slaves(os.path.join("..","..",slave_dir),
+    pyemu.helpers.start_workers(os.path.join("..","..",worker_dir),
                               "pestpp","pest.pst",3,
                               master_dir='.')
     os.chdir(base_cwd)
@@ -715,6 +643,7 @@ def mflist_budget_test():
 
 def mtlist_budget_test():
     import pyemu
+    import pandas as pd
     import os
     try:
         import flopy
@@ -723,16 +652,22 @@ def mtlist_budget_test():
         return
     list_filename = os.path.join("utils","mt3d.list")
     assert os.path.exists(list_filename)
-    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970')
+    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+        list_filename,start_datetime='1-1-1970')
     assert len(ins_files) == 2
 
-    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970',
-                                                                     gw_prefix='')
+    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+        list_filename,start_datetime='1-1-1970', gw_prefix='')
     assert len(ins_files) == 2
 
-    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename, start_datetime=None)
+    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+        list_filename, start_datetime=None)
     assert len(ins_files) == 2
 
+    list_filename = os.path.join("utils", "mt3d_imm_sor.lst")
+    assert os.path.exists(list_filename)
+    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+        list_filename, start_datetime='1-1-1970')
 
 
 def geostat_prior_builder_test():
@@ -750,7 +685,7 @@ def geostat_prior_builder_test():
     d1 = np.diag(cov.x)
 
 
-    df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+    df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
     gs = pyemu.geostats.read_struct_file(str_file)
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
@@ -779,11 +714,6 @@ def geostat_prior_builder_test():
     cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file})
     assert cov.shape[0] == pst.npar_adj
 
-    scov = pyemu.helpers.sparse_geostatistical_prior_builder(pst,{str_file: tpl_file}).to_matrix()
-    d = (cov - scov).x
-    #print(d)
-    print(d.max())
-
 
 def geostat_draws_test():
     import os
@@ -804,7 +734,7 @@ def geostat_draws_test():
     pe = pyemu.helpers.geostatistical_draws(pst, {str_file: tpl_file})
     assert (pe.shape == pe.dropna().shape)
 
-    df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+    df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
     gs = pyemu.geostats.read_struct_file(str_file)
     pe = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
@@ -940,19 +870,19 @@ def plot_summary_test():
                          index_col=0)
     idx = list(par_df.index.map(lambda x: x.startswith("HK")))
     par_df = par_df.loc[idx,:]
-    ax = pyemu.helpers.plot_summary_distributions(par_df,label_post=True)
+    ax = pyemu.plot_utils.plot_summary_distributions(par_df,label_post=True)
     plt.savefig(os.path.join("temp","hk_par.png"))
     plt.close()
 
     df = os.path.join("utils","freyberg_pp.pred.usum.csv")
-    figs,axes = pyemu.helpers.plot_summary_distributions(df,subplots=True)
+    figs,axes = pyemu.plot_utils.plot_summary_distributions(df,subplots=True)
     #plt.show()
     for i,fig in enumerate(figs):
         plt.figure(fig.number)
         plt.savefig(os.path.join("temp","test_pred_{0}.png".format(i)))
         plt.close(fig)
     df = os.path.join("utils","freyberg_pp.par.usum.csv")
-    figs, axes = pyemu.helpers.plot_summary_distributions(df,subplots=True)
+    figs, axes = pyemu.plot_utils.plot_summary_distributions(df,subplots=True)
     for i,fig in enumerate(figs):
         plt.figure(fig.number)
         plt.savefig(os.path.join("temp","test_par_{0}.png".format(i)))
@@ -973,10 +903,49 @@ def hds_timeseries_test():
     model_ws =os.path.join("..","examples","Freyberg_transient")
     org_hds_file = os.path.join(model_ws, "freyberg.hds")
     hds_file = os.path.join("temp", "freyberg.hds")
-    shutil.copy2(org_hds_file, hds_file)
-    kij_dict = {"test1":[0,0,0],"test2":(1,1,1)}
 
-    pyemu.gw_utils.setup_hds_timeseries(hds_file,kij_dict,include_path=True)
+    org_cbc_file = org_hds_file.replace(".hds",".cbc")
+    cbc_file = hds_file.replace(".hds", ".cbc")
+
+    shutil.copy2(org_hds_file, hds_file)
+    shutil.copy2(org_cbc_file, cbc_file)
+
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=model_ws, check=False)
+    kij_dict = {"test1": [0, 0, 0], "test2": (1, 1, 1), "test": (0, 10, 14)}
+
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, include_path=True)
+
+    # m.change_model_ws("temp",reset_external=True)
+    # m.write_input()
+    # pyemu.os_utils.run("mfnwt freyberg.nam",cwd="temp")
+
+    cmd, df1 = pyemu.gw_utils.setup_hds_timeseries(cbc_file, kij_dict, include_path=True, prefix="stor",
+                                                   text="storage", fill=0.0)
+
+    cmd,df2 = pyemu.gw_utils.setup_hds_timeseries(cbc_file, kij_dict, model=m, include_path=True, prefix="stor",
+                                        text="storage",fill=0.0)
+
+    print(df1)
+    d = np.abs(df1.obsval.values - df2.obsval.values)
+    print(d.max())
+    assert d.max() == 0.0,d
+
+    try:
+        pyemu.gw_utils.setup_hds_timeseries(cbc_file, kij_dict, model=m, include_path=True, prefix="consthead",
+                                            text="constant head")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pyemu.gw_utils.setup_hds_timeseries(cbc_file, kij_dict, model=m, include_path=True, prefix="consthead",
+                                            text="JUNK")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+
     pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, include_path=True,prefix="hds")
 
     m = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,load_only=[],check=False)
@@ -1162,38 +1131,6 @@ def postprocess_inactive_conc_test():
     assert np.allclose(df3, df1)
     os.chdir(bd)
 
-def par_knowledge_test():
-    import os
-    import numpy as np
-    import pyemu
-    pst_file = os.path.join("pst","pest.pst")
-    pst = pyemu.Pst(pst_file)
-
-    tpl_file = os.path.join("utils","pp_locs.tpl")
-    str_file = os.path.join("utils","structure.dat")
-    pp_df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
-    pkd = {"kr01c01":0.1}
-    try:
-        cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file},
-                                                         par_knowledge_dict=pkd)
-    except:
-        return
-    else:
-        raise Exception("should have failed")
-    d1 = np.diag(cov.x)
-
-
-    df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
-    df.loc[:,"zone"] = np.arange(df.shape[0])
-    gs = pyemu.geostats.read_struct_file(str_file)
-    cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
-                                               sigma_range=4)
-    nnz = np.count_nonzero(cov.x)
-    assert nnz == pst.npar
-    d2 = np.diag(cov.x)
-    assert np.array_equiv(d1, d2)
-
-
 def gw_sft_ins_test():
     import os
     import pyemu
@@ -1201,8 +1138,10 @@ def gw_sft_ins_test():
     sft_outfile = os.path.join("utils","test_sft.out")
     #pyemu.gw_utils.setup_sft_obs(sft_outfile)
     #pyemu.gw_utils.setup_sft_obs(sft_outfile,start_datetime="1-1-1970")
-    pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[10950.00])
 
+    df = pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[10950.00])
+
+    #print(df)
 
 def sfr_helper_test():
     import os
@@ -1213,7 +1152,7 @@ def sfr_helper_test():
 
     #setup the process
 
-    m = flopy.modflow.Modflow.load("supply2.nam",model_ws="utils",check=False)
+    m = flopy.modflow.Modflow.load("supply2.nam",model_ws="utils",check=False,verbose=True,forgive=False,load_only=["dis","sfr"])
     sd = m.sfr.segment_data[0].copy()
 
     sd["flow"] = 1.0
@@ -1221,7 +1160,8 @@ def sfr_helper_test():
 
     m.sfr.segment_data = {k:sd.copy() for k in range(m.nper)}
 
-    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters(m, include_temporal_pars=True)
+    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters(
+        m, include_temporal_pars=['hcond1', 'flow'])
     print(df_sfr)
     os.chdir("utils")
 
@@ -1487,6 +1427,62 @@ def hfb_test():
     assert df.shape[0] == m.hfb6.hfb_data.shape[0]
 
 
+def hfb_zn_mult_test():
+    import os
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    import pandas as pd
+
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(
+        nam_file, model_ws=org_model_ws, check=False)
+    try:
+        pyemu.gw_utils.write_hfb_template(m)
+    except:
+        pass
+    else:
+        raise Exception()
+
+    hfb_data = []
+    jcol1, jcol2 = 14, 15
+    for i in range(m.nrow)[:11]:
+        hfb_data.append([0, i, jcol1, i, jcol2, 0.001])
+    for i in range(m.nrow)[11:21]:
+        hfb_data.append([0, i, jcol1, i, jcol2, 0.002])
+    for i in range(m.nrow)[21:]:
+        hfb_data.append([0, i, jcol1, i, jcol2, 0.003])
+    flopy.modflow.ModflowHfb(m, 0, 0, len(hfb_data), hfb_data=hfb_data)
+    orig_len = len(m.hfb6.hfb_data)
+    m.change_model_ws("temp")
+    m.write_input()
+    m.exe_name = "mfnwt"
+    try:
+        m.run_model()
+    except:
+        pass
+
+    orig_vals, tpl_file = pyemu.gw_utils.write_hfb_zone_multipliers_template(m)
+    assert os.path.exists(tpl_file)
+    hfb_pars = pd.read_csv(os.path.join(m.model_ws, 'hfb6_pars.csv'))
+    hfb_tpl_contents = open(tpl_file, 'r').readlines()
+    mult_str = ''.join(hfb_tpl_contents[1:]).replace(
+        '~  hbz_0000  ~', '0.1').replace(
+        '~  hbz_0001  ~', '1.0').replace(
+        '~  hbz_0002  ~', '10.0')
+    with open(hfb_pars.mlt_file.values[0], 'w') as mfp:
+        mfp.write(mult_str)
+    pyemu.gw_utils.apply_hfb_pars(os.path.join(m.model_ws, 'hfb6_pars.csv'))
+    with open(hfb_pars.mlt_file.values[0], 'r') as mfp:
+        for i, line in enumerate(mfp):
+            pass
+    mhfb = flopy.modflow.ModflowHfb.load(hfb_pars.model_file.values[0], m)
+    assert i-1 == orig_len == len(mhfb.hfb_data)
+
+
 def read_runstor_test():
     import os
     import numpy as np
@@ -1604,15 +1600,195 @@ def fieldgen_dev():
     plt.show()
 
 
-if __name__ == "__main__":
+def ok_grid_invest():
 
+    try:
+        import flopy
+    except:
+        return
+
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    nrow,ncol = 50,50
+    delr = np.ones((ncol)) * 1.0/float(ncol)
+    delc = np.ones((nrow)) * 1.0/float(nrow)
+
+    num_pts = 100
+    ptx = np.random.random(num_pts)
+    pty = np.random.random(num_pts)
+    ptname = ["p{0}".format(i) for i in range(num_pts)]
+    pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
+    pts_data.index = pts_data.name
+    pts_data = pts_data.loc[:,["x","y","name"]]
+
+
+    sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
+    pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
+    pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
+    str_file = os.path.join("utils","struct_test.dat")
+    gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
+    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
+    kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("temp","test_var.ref"),minpts_interp=1)
+    kf2 = ok.calc_factors_grid(sr, verbose=False, var_filename=os.path.join("temp", "test_var.ref"), minpts_interp=1,num_threads=10)
+    ok.to_grid_factors_file(os.path.join("temp","test.fac"))
+    diff = (kf.err_var - kf2.err_var).apply(np.abs).sum()
+    assert diff < 1.0e-10
+
+
+def specsim_test():
+    try:
+        import flopy
+    except:
+        return
+
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    num_reals = 100
+    nrow,ncol = 40,20
+    a = 2500
+    contrib = 1.0
+    nugget = 0
+    delr = np.ones((ncol)) * 250
+    delc = np.ones((nrow)) * 250
+    variograms = [pyemu.geostats.ExpVario(contribution=contrib,a=a,anisotropy=1,bearing=10)]
+    gs = pyemu.geostats.GeoStruct(variograms=variograms,transform="none",nugget=nugget)
+    broke_delr = delr.copy()
+    broke_delr[0] = 0.0
+    broke_delc = delc.copy()
+    broke_delc[0] = 0.0
+
+    try:
+        ss = pyemu.geostats.SpecSim2d(geostruct=gs,delx=broke_delr,dely=delc)
+    except Exception as e:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=1, bearing=00)]
+    gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=nugget)
+    try:
+        ss = pyemu.geostats.SpecSim2d(geostruct=gs,delx=broke_delr,dely=delc)
+    except Exception as e:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    try:
+        ss = pyemu.geostats.SpecSim2d(geostruct=gs,delx=delr,dely=broke_delc)
+    except Exception as e:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    bd = os.getcwd()
+    try:
+        variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
+        gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="log", nugget=nugget)
+        np.random.seed(1)
+
+        ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
+        mean_value = 15.0
+        reals = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value)
+        assert reals.shape == (num_reals, nrow, ncol),reals.shape
+        reals = np.log10(reals)
+        mean_value = np.log10(mean_value)
+        var = np.var(reals, axis=0).mean()
+
+        mean = reals.mean()
+
+        theo_var = ss.geostruct.sill
+        print(var, theo_var)
+        print(mean, mean_value)
+        assert np.abs(var - theo_var) < 0.1
+        assert np.abs(mean - mean_value) < 0.1
+
+        np.random.seed(1)
+        variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
+        gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=nugget)
+
+        ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
+        mean_value = 25.0
+        reals = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value)
+        assert reals.shape == (num_reals,nrow,ncol)
+        var = np.var(reals,axis=0).mean()
+        mean = reals.mean()
+
+        theo_var = ss.geostruct.sill
+        print(var,theo_var)
+        print(mean,mean_value)
+        assert np.abs(var - theo_var) < 0.1
+        assert np.abs(mean - mean_value) < 0.1
+    except Exception as e:
+        os.chdir(bd)
+        raise(e)
+
+def aniso_invest():
+
+    try:
+        import flopy
+    except:
+        return
+
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    from  datetime import datetime
+    nrow,ncol = 40,20
+    delr = np.ones((ncol)) * 250
+    delc = np.ones((nrow)) * 250
+    variograms = [pyemu.geostats.ExpVario(contribution=2.5,a=2500.0,anisotropy=10,bearing=90)]
+    gs = pyemu.geostats.GeoStruct(variograms=variograms,transform="none",nugget=0.0)
+
+    np.random.seed(1)
+    num_reals = 100
+    start = datetime.now()
+    ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
+    mean_value = 1.0
+    reals1 = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value)
+    print((datetime.now() - start).total_seconds())
+
+    variograms = [pyemu.geostats.ExpVario(contribution=2.5, a=2000.0, anisotropy=10, bearing=0)]
+    gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=0.0)
+    ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
+    reals2 = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value)
+
+    import matplotlib.pyplot as plt
+    fig,axes = plt.subplots(1,2,figsize=(6,3))
+    axes[0].imshow(reals2[0])
+    axes[1].imshow(reals1[0])
+    #axes[0].set_title("bearing: 10")
+    #axes[1].set_title("bearing: 95")
+    plt.show()
+
+def run_test():
+    import os
+    import pyemu
+    import platform
+
+    if "window" in platform.platform().lower():
+        pyemu.os_utils.run("echo test")
+    else:
+        pyemu.os_utils.run("ls")
+    try:
+        pyemu.os_utils.run("junk")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+if __name__ == "__main__":
+    #run_test()
+    #specsim_test()
+    #aniso_invest()
     #fieldgen_dev()
     # smp_test()
     # smp_dateparser_test()
     # smp_to_ins_test()
     #read_runstor_test()
     #long_names()
-    #master_and_slaves()
+    #master_and_workers()
     #plot_id_bar_test()
     #pst_from_parnames_obsnames_test()
     #write_jactest_test()
@@ -1620,38 +1796,39 @@ if __name__ == "__main__":
     #sfr_reach_obs_test()
     #gage_obs_test()
     #setup_pp_test()
-    #sfr_helper_test()
+    # sfr_helper_test()
     # gw_sft_ins_test()
-    # par_knowledge_test()
+    #par_knowledge_test()
     # grid_obs_test()
     # hds_timeseries_test()
-    # postprocess_inactive_conc_test()
-    # plot_summary_test()
+    #postprocess_inactive_conc_test()
+    #plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
-    # make_hydmod_insfile_test()
+    #make_hydmod_insfile_test()
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    # geostat_prior_builder_test()
-    # geostat_draws_test()
+    #geostat_prior_builder_test()
+    #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     # mflist_budget_test()
-    # mtlist_budget_test()
+    mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
     # hfb_test()
+    # hfb_zn_mult_test()
     #more_kl_test()
     #zero_order_regul_test()
     # first_order_pearson_regul_test()
-    # master_and_slaves()
+    # master_and_workers()
     # smp_to_ins_test()
     # read_pestpp_runstorage_file_test()
     # write_tpl_test()
     # pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
-    setup_pp_test()
+    #setup_pp_test()
     # pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()
@@ -1666,6 +1843,7 @@ if __name__ == "__main__":
     # covariance_matrix_test()
     # add_pi_obj_func_test()
     # ok_test()
-    # ok_grid_test()
+    #ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
+    #ok_grid_invest()

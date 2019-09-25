@@ -1,8 +1,11 @@
+"""Operating system utilities in the PEST(++) realm
+"""
 import os
 import sys
 import platform
 import shutil
 import subprocess as sp
+import multiprocessing as mp
 import warnings
 import socket
 import time
@@ -25,8 +28,6 @@ os.environ["PATH"] += os.pathsep + bin_path
 
 
 def _istextfile(filename, blocksize=512):
-
-
     """
         Function found from:
         https://eli.thegreenplace.net/2011/10/19/perls-guess-if-file-is-text-or-binary-implemented-in-python
@@ -64,81 +65,30 @@ def _istextfile(filename, blocksize=512):
     return float(len(nontext)) / len(block) <= 0.30
 
 
-def remove_readonly(func, path, excinfo):
+def _remove_readonly(func, path, excinfo):
     """remove readonly dirs, apparently only a windows issue
     add to all rmtree calls: shutil.rmtree(**,onerror=remove_readonly), wk"""
     os.chmod(path, 128) #stat.S_IWRITE==128==normal
     func(path)
 
-
-def run_sweep(pe,slave_dir,pst_name=None,num_slaves=10,exe_name="pestpp-swp",local=True,
-              binary=False,master_dir="master_runsweep",cleanup=True):
-
-    if pst_name is not  None:
-        assert os.path.exists(os.path.join(slave_dir,pst_name))
-    else:
-        # pst_files = [f for f in os.listdir(template_dir) if f.lower().endswith(".pst")]
-        # if len(pst_files) > 1:
-        #     raise Exception("run_sweep() error: 'pst_name' is None "+
-        #                     "but more than one '.pst' file found in 'template_dir'")
-        # if len(pst_files) == 0:
-        #     raise Exception("run_sweep() error: 'pst_name' is None and"+\
-        #                     " no '.pst' files in 'template_dir'")
-        # pst_file = pst_files[0]
-        pst = pe.pst
-        pst.write(os.path.join(slave_dir,"master_runsweep.pst"))
-        pst_name = "master_runsweep.pst"
-
-
-    # todo: add autodetect to pestpp-swp for sweep_in.jcb
-    if binary:
-        raise NotImplementedError("pestpp-swp doesn't support autodetect for binary yet")
-        pe.to_binary(os.path.join(slave_dir,"sweep_in.jcb"))
-    if not binary:
-        pe.to_csv(os.path.join(slave_dir,"sweep_in.csv"))
-    if not local:
-        raise NotImplementedError("condor not supported yet")
-    else:
-        print(os.getenv("PATH"))
-        start_slaves(slave_dir,exe_name,pst_name,num_slaves=num_slaves,slave_root=".",
-                     master_dir=master_dir)
-
-    out_file = os.path.join(master_dir,"sweep_out.csv")
-    assert os.path.exists(out_file)
-    df = pd.read_csv(out_file,index_col=0)
-    df.columns = df.columns.map(str.lower)
-    if cleanup:
-        shutil.rmtree(master_dir)
-
-    return df
-
-
-
 def run(cmd_str,cwd='.',verbose=False):
     """ an OS agnostic function to execute a command line
 
-    Parameters
-    ----------
-    cmd_str : str
-        the str to execute with os.system()
+    Args:
+        cmd_str (`str`): the str to execute with `os.system()`
 
-    cwd : str
-        the directory to execute the command in
+        cwd (`str`, optional): the directory to execute the command in.
+            Default is ".".
+        verbose (`bool`, optional): flag to echo to stdout the  `cmd_str`.
+            Default is `False`.
 
-    verbose : bool
-        flag to echo to stdout complete cmd str
+    Notes:
+        uses `platform` to detect OS and adds .exe suffix or ./ prefix as appropriate
+        if `os.system` returns non-zero, an exception is raised
 
-    Note
-    ----
-    uses platform to detect OS and adds .exe suffix or ./ prefix as appropriate
+    Example::
 
-    for Windows, if os.system returns non-zero, raises exception
-
-    Example
-    -------
-    ``>>>import pyemu``
-
-    ``>>>pyemu.helpers.run("pestpp pest.pst")``
+        pyemu.os_utils.run("pestpp-ies my.pst",cwd="template")
 
     """
     bwd = os.getcwd()
@@ -159,7 +109,6 @@ def run(cmd_str,cwd='.',verbose=False):
             if os.path.exists(exe_name) and not exe_name.startswith('./'):
                 cmd_str = "./" + cmd_str
 
-
     except Exception as e:
         os.chdir(bwd)
         raise Exception("run() error preprocessing command line :{0}".format(str(e)))
@@ -172,82 +121,91 @@ def run(cmd_str,cwd='.',verbose=False):
         os.chdir(bwd)
         raise Exception("run() raised :{0}".format(str(e)))
     os.chdir(bwd)
+
     if "window" in platform.platform().lower():
         if ret_val != 0:
-            raise Exception("run() returned non-zero")
+            raise Exception("run() returned non-zero: {0}".format(ret_val))
+    else:
+        estat = os.WEXITSTATUS(ret_val)
+        if estat != 0:
+            raise Exception("run() returned non-zero: {0}".format(estat))
 
 
-def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
+def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_root="..",
                  port=4004,rel_path=None,local=True,cleanup=True,master_dir=None,
-                 verbose=False,silent_master=False):
-    """ start a group of pest(++) slaves on the local machine
+                 verbose=False,silent_master=False, reuse_master=False):
+    """ start a group of pest(++) workers on the local machine
 
-    Parameters
-    ----------
-    slave_dir :  str
-        the path to a complete set of input files
-    exe_rel_path : str
-        the relative path to the pest(++) executable from within the slave_dir
-    pst_rel_path : str
-        the relative path to the pst file from within the slave_dir
-    num_slaves : int
-        number of slaves to start. defaults to number of cores
-    slave_root : str
-        the root to make the new slave directories in
-    rel_path: str
-        the relative path to where pest(++) should be run from within the
-        slave_dir, defaults to the uppermost level of the slave dir
-    local: bool
-        flag for using "localhost" instead of hostname on slave command line
-    cleanup: bool
-        flag to remove slave directories once processes exit
-    master_dir: str
-        name of directory for master instance.  If master_dir
-        exists, then it will be removed.  If master_dir is None,
-        no master instance will be started
-    verbose : bool
-        flag to echo useful information to stdout
-    silent_master : bool
-        flag to pipe master output to devnull.  This is only for
-        pestpp Travis testing. Default is False
+    Args:
+        worker_dir (`str`): the path to a complete set of input files need by PEST(++).
+            This directory will be copied to make worker (and optionally the master)
+            directories
+        exe_rel_path (`str`): the relative path to and name of the pest(++) executable from within
+            the `worker_dir`.  For example, if the executable is up one directory from
+            `worker_dir`, the `exe_rel_path` would be `os.path.join("..","pestpp-ies")`
+        pst_rel_path (`str`): the relative path to and name of the pest control file from within
+            `worker_dir`.
+        num_workers (`int`, optional): number of workers to start. defaults to number of cores
+        worker_root (`str`, optional):  the root directory to make the new worker directories in.
+            Default is ".."  (up one directory from where python is running).
+        rel_path (`str`, optional): the relative path to where pest(++) should be run
+            from within the worker_dir, defaults to the uppermost level of the worker dir.
+            This option is usually not needed unless you are one of those crazy people who
+            spreads files across countless subdirectories.
+        local (`bool`, optional): flag for using "localhost" instead of actual hostname/IP address on
+            worker command line. Default is True
+        cleanup (`bool`, optional):  flag to remove worker directories once processes exit. Default is
+            True.  Set to False for debugging issues
+        master_dir (`str`): name of directory for master instance.  If `master_dir`
+            exists, then it will be REMOVED!!!  If `master_dir`, is None,
+            no master instance will be started.  If not None, a copy of `worker_dir` will be
+            made into `master_dir` and the PEST(++) executable will be started in master mode
+            in this directory. Default is None
+        verbose (`bool`, optional): flag to echo useful information to stdout.  Default is False
+        silent_master (`bool`, optional): flag to pipe master output to devnull and instead print
+            a simple message to stdout every few seconds.  This is only for
+            pestpp Travis testing so that log file sizes dont explode. Default is False
+        reuse_master (`bool`): flag to use an existing `master_dir` as is - this is an advanced user
+            option for cases where you want to construct your own `master_dir` then have an async
+            process started in it by this function.
 
-    Note
-    ----
-    if all slaves (and optionally master) exit gracefully, then the slave
-    dirs will be removed unless cleanup is false
+    Notes:
+        if all workers (and optionally master) exit gracefully, then the worker
+            dirs will be removed unless `cleanup` is False
 
-    Example
-    -------
-    ``>>>import pyemu``
+    Example::
 
-    start 10 slaves using the directory "template" as the base case and
-    also start a master instance in a directory "master".
-
-    ``>>>pyemu.helpers.start_slaves("template","pestpp","pest.pst",10,master_dir="master")``
+        # start 10 workers using the directory "template" as the base case and
+        # also start a master instance in a directory "master".
+        pyemu.helpers.start_workers("template","pestpp-ies","pest.pst",10,master_dir="master")
 
     """
 
-    assert os.path.isdir(slave_dir)
-    assert os.path.isdir(slave_root)
-    if num_slaves is None:
-        num_slaves = mp.cpu_count()
+    if not os.path.isdir(worker_dir):
+        raise Exception("worker dir '{0}' not found".format(worker_dir))
+    if not os.path.isdir(worker_root):
+        raise Exception("worker root dir not found")
+    if num_workers is None:
+        num_workers = mp.cpu_count()
     else:
-        num_slaves = int(num_slaves)
-    #assert os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path))
+        num_workers = int(num_workers)
+    #assert os.path.exists(os.path.join(worker_dir,rel_path,exe_rel_path))
     exe_verf = True
 
     if rel_path:
-        if not os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path)):
+        if not os.path.exists(os.path.join(worker_dir,rel_path,exe_rel_path)):
             #print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
             exe_verf = False
     else:
-        if not os.path.exists(os.path.join(slave_dir,exe_rel_path)):
+        if not os.path.exists(os.path.join(worker_dir,exe_rel_path)):
             #print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
             exe_verf = False
     if rel_path is not None:
-        assert os.path.exists(os.path.join(slave_dir,rel_path,pst_rel_path))
+        if not os.path.exists(os.path.join(worker_dir,rel_path,pst_rel_path)):
+            raise Exception("pst_rel_path not found from worker_dir using rel_path")
     else:
-        assert os.path.exists(os.path.join(slave_dir,pst_rel_path))
+        if not os.path.exists(os.path.join(worker_dir,pst_rel_path)):
+            raise Exception("pst_rel_path not found from worker_dir")
     if local:
         hostname = "localhost"
     else:
@@ -256,7 +214,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
     base_dir = os.getcwd()
     port = int(port)
 
-    if os.path.exists(os.path.join(slave_dir,exe_rel_path)):
+    if os.path.exists(os.path.join(worker_dir,exe_rel_path)):
         if "window" in platform.platform().lower():
             if not exe_rel_path.lower().endswith("exe"):
                 exe_rel_path = exe_rel_path + ".exe"
@@ -265,19 +223,19 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                 exe_rel_path = "./" + exe_rel_path
 
     if master_dir is not None:
-        if master_dir != '.' and os.path.exists(master_dir):
+        if master_dir != '.' and os.path.exists(master_dir) and not reuse_master:
             try:
-                shutil.rmtree(master_dir,onerror=remove_readonly)#, onerror=del_rw)
+                shutil.rmtree(master_dir, onerror=_remove_readonly)#, onerror=del_rw)
             except Exception as e:
                 raise Exception("unable to remove existing master dir:" + \
                                 "{0}\n{1}".format(master_dir,str(e)))
-        if master_dir != '.':
+        if master_dir != '.' and not reuse_master:
             try:
-                shutil.copytree(slave_dir,master_dir)
+                shutil.copytree(worker_dir,master_dir)
             except Exception as e:
-                raise Exception("unable to copy files from base slave dir: " + \
+                raise Exception("unable to copy files from base worker dir: " + \
                                 "{0} to master dir: {1}\n{2}".\
-                                format(slave_dir,master_dir,str(e)))
+                                format(worker_dir,master_dir,str(e)))
 
         args = [exe_rel_path, pst_rel_path, "/h", ":{0}".format(port)]
         if rel_path is not None:
@@ -301,20 +259,20 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
 
     tcp_arg = "{0}:{1}".format(hostname,port)
     procs = []
-    slave_dirs = []
-    for i in range(num_slaves):
-        new_slave_dir = os.path.join(slave_root,"slave_{0}".format(i))
-        if os.path.exists(new_slave_dir):
+    worker_dirs = []
+    for i in range(num_workers):
+        new_worker_dir = os.path.join(worker_root,"worker_{0}".format(i))
+        if os.path.exists(new_worker_dir):
             try:
-                shutil.rmtree(new_slave_dir,onerror=remove_readonly)#, onerror=del_rw)
+                shutil.rmtree(new_worker_dir, onerror=_remove_readonly)#, onerror=del_rw)
             except Exception as e:
-                raise Exception("unable to remove existing slave dir:" + \
-                                "{0}\n{1}".format(new_slave_dir,str(e)))
+                raise Exception("unable to remove existing worker dir:" + \
+                                "{0}\n{1}".format(new_worker_dir,str(e)))
         try:
-            shutil.copytree(slave_dir,new_slave_dir)
+            shutil.copytree(worker_dir,new_worker_dir)
         except Exception as e:
-            raise Exception("unable to copy files from slave dir: " + \
-                            "{0} to new slave dir: {1}\n{2}".format(slave_dir,new_slave_dir,str(e)))
+            raise Exception("unable to copy files from worker dir: " + \
+                            "{0} to new worker dir: {1}\n{2}".format(worker_dir,new_worker_dir,str(e)))
         try:
             if exe_verf:
                 # if rel_path is not None:
@@ -324,22 +282,22 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             else:
                 exe_path = exe_rel_path
             args = [exe_path, pst_rel_path, "/h", tcp_arg]
-            #print("starting slave in {0} with args: {1}".format(new_slave_dir,args))
+            #print("starting worker in {0} with args: {1}".format(new_worker_dir,args))
             if rel_path is not None:
-                cwd = os.path.join(new_slave_dir,rel_path)
+                cwd = os.path.join(new_worker_dir,rel_path)
             else:
-                cwd = new_slave_dir
+                cwd = new_worker_dir
 
             os.chdir(cwd)
             if verbose:
-                print("slave:{0} in {1}".format(' '.join(args),cwd))
+                print("worker:{0} in {1}".format(' '.join(args),cwd))
             with open(os.devnull,'w') as f:
                 p = sp.Popen(args,stdout=f,stderr=f)
             procs.append(p)
             os.chdir(base_dir)
         except Exception as e:
-            raise Exception("error starting slave: {0}".format(str(e)))
-        slave_dirs.append(new_slave_dir)
+            raise Exception("error starting worker: {0}".format(str(e)))
+        worker_dirs.append(new_worker_dir)
 
     if master_dir is not None:
         # while True:
@@ -359,8 +317,8 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                 time.sleep(5)
         else:
             master_p.wait()
-            time.sleep(1.5) # a few cycles to let the slaves end gracefully
-        # kill any remaining slaves
+            time.sleep(1.5) # a few cycles to let the workers end gracefully
+        # kill any remaining workers
         for p in procs:
             p.kill()
     # this waits for sweep to finish, but pre/post/model (sub)subprocs may take longer
@@ -368,12 +326,12 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         p.wait()
     if cleanup:
         cleanit=0
-        while len(slave_dirs)>0 and cleanit<100000: # arbitrary 100000 limit
+        while len(worker_dirs)>0 and cleanit<100000: # arbitrary 100000 limit
             cleanit=cleanit+1
-            for d in slave_dirs:
+            for d in worker_dirs:
                 try:
-                    shutil.rmtree(d,onerror=remove_readonly)
-                    slave_dirs.pop(slave_dirs.index(d)) #if successfully removed
+                    shutil.rmtree(d, onerror=_remove_readonly)
+                    worker_dirs.pop(worker_dirs.index(d)) #if successfully removed
                 except Exception as e:
                     warnings.warn("unable to remove slavr dir{0}:{1}".format(d,str(e)),PyemuWarning)
 

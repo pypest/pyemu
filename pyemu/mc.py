@@ -5,10 +5,11 @@ pyemu.LinearAnalysis
 from __future__ import print_function, division
 import os
 import numpy as np
+import warnings
 from pyemu.la import LinearAnalysis
 from pyemu.en import ObservationEnsemble, ParameterEnsemble
 from pyemu.mat import Cov
-from pyemu.utils.os_utils import run_sweep
+from .pyemu_warnings import PyemuWarning
 #from pyemu.utils.helpers import zero_order_tikhonov
 
 class MonteCarlo(LinearAnalysis):
@@ -46,6 +47,8 @@ class MonteCarlo(LinearAnalysis):
 
     """
     def __init__(self,**kwargs):
+        warnings.warn("pyemu.MonteCarlo class is deprecated.  "+\
+                      "Please use the ensemble classes directly",PyemuWarning)
         super(MonteCarlo,self).__init__(**kwargs)
         assert self.pst is not None, \
             "monte carlo requires a pest control file"
@@ -316,5 +319,3 @@ class MonteCarlo(LinearAnalysis):
             self.log("writing realized pest control file " + pst_name)
         self.log("writing realized pest control files")
 
-    def run(self,slave_dir,num_slaves=10):
-        self.obsensemble = self.parensemble.run(slave_dir,num_slaves=num_slaves)

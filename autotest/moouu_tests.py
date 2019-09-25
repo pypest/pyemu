@@ -16,8 +16,9 @@ def tenpar_test():
     import pyemu
 
     bd = os.getcwd()
+    os.chdir(os.path.join("moouu", "10par_xsec"))
     try:
-        os.chdir(os.path.join("moouu","10par_xsec"))
+
         csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
         [os.remove(csv_file) for csv_file in csv_files]
         pst = pyemu.Pst("10par_xsec.pst")
@@ -60,14 +61,10 @@ def tenpar_test():
         # print(df.shape)
         # return
 
-        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
-                                                      num_reals=5,
-                                                      partial=False)
-        ea = EliteDiffEvol(pst, num_slaves=8, port=4005, verbose=True)
+        pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,num_reals=5,fill=False)
+        ea = EliteDiffEvol(pst, num_workers=8, port=4005, verbose=True)
 
-        dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[2:]},
-                                                      num_reals=5,
-                                                      partial=True)
+        dv = pyemu.ParameterEnsemble.from_uniform_draw(pst=pst,num_reals=5,fill=False)
 
         ea.initialize(obj_dict,num_dv_reals=5,num_par_reals=5,risk=0.5)
         ea.initialize(obj_dict, par_ensemble=pe, dv_ensemble=dv, risk=0.5)
@@ -172,7 +169,7 @@ def tenpar_dev():
                                                   partial=True)
 
     dv.index = ["p_{0}".format(i) for i in range(dv.shape[0])]
-    ea = EliteDiffEvol(pst, num_slaves=5, port=4005, verbose=True)
+    ea = EliteDiffEvol(pst, num_workers=5, port=4005, verbose=True)
 
     ea.initialize(obj_dict,par_ensemble=pe,dv_ensemble=dv,risk=0.5)
 

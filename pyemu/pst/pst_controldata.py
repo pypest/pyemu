@@ -1,6 +1,7 @@
-"""This module contains several class definitions for parts of the
-PEST control file: ControlData, RegData and SvdData.  These
-classes are automatically created and appended to a Pst object;
+"""This module contains several class definitions for obseure parts of the
+PEST control file: `ControlData` ('* control data'), `RegData` ('* regularization')
+and `SvdData` ('* singular value decomposition').  These
+classes are automatically created and appended to `Pst` instances;
 users shouldn't need to deal with these classes explicitly
 """
 from __future__ import print_function, division
@@ -15,9 +16,13 @@ pandas.options.display.max_colwidth = 100
 
 #formatters
 SFMT = lambda x: "{0:>20s}".format(str(x))
+"""lambda function for string formatting `str` types into 20-char widths"""
 SFMT_LONG = lambda x: "{0:>50s}".format(str(x))
+"""lambda function for string formatting `str` types into 50-char widths"""
 IFMT = lambda x: "{0:>10d}".format(int(x))
+"""lambda function for string formatting `int` types into 10-char widths"""
 FFMT = lambda x: "{0:>15.6E}".format(float(x))
+"""lambda function for string formatting `float` types into 15-char widths"""
 
 CONTROL_DEFAULT_LINES = """restart estimation
      0     0       0    0      0  0
@@ -50,6 +55,7 @@ REG_DEFAULT_LINES = """   1.0e-10    1.05e-10  0.1  nomemsave
 class RegData(object):
     """ an object that encapsulates the regularization section
     of the PEST control file
+
     """
     def __init__(self):
         self.optional_dict = {}
@@ -69,9 +75,8 @@ class RegData(object):
         """ write the regularization section to an open
         file handle
 
-        Parameters
-        ----------
-        f : file handle
+        Args:
+            f (`file handle`): open file handle for writing
 
         """
         f.write("* regularization\n")
@@ -86,6 +91,13 @@ class RegData(object):
 
 
     def write_keyword(self,f):
+        """write the regularization section to an open
+        file handle using the keyword-style format
+
+        Args:
+            f (`file handle`): open file handle for writing
+
+        """
         for vline in REG_VARIABLE_LINES:
             vraw = vline.strip().split()
             for v in vraw:
@@ -98,8 +110,13 @@ class RegData(object):
 
 
 class SvdData(object):
-    """ an object that encapsulates the singular value decomposition
+    """encapsulates the singular value decomposition
     section of the PEST control file
+
+    Args:
+        kwargs (`dict`): optional keyword arguments
+
+
     """
     def __init__(self,**kwargs):
         self.svdmode = kwargs.pop("svdmode",1)
@@ -109,6 +126,13 @@ class SvdData(object):
 
 
     def write_keyword(self,f):
+        """ write an SVD section to a file handle using
+        keyword-style format
+
+                Args:
+                    f (`file handle`): open file handle for writing
+
+                """
         f.write("{0:30} {1:>10}\n".format("svdmode",self.svdmode))
         f.write("{0:30} {1:>10}\n".format("maxsing",self.maxsing))
         f.write("{0:30} {1:>10}\n".format("eigthresh",self.eigthresh))
@@ -117,9 +141,8 @@ class SvdData(object):
     def write(self,f):
         """ write an SVD section to a file handle
 
-        Parameters
-        ----------
-        f : file handle
+        Args:
+            f (`file handle`): open file handle for writing
 
         """
         f.write("* singular value decomposition\n")
@@ -128,11 +151,12 @@ class SvdData(object):
         f.write('{0}\n'.format(self.eigwrite))
 
     def parse_values_from_lines(self,lines):
-        """ parse values from lines of the SVD section
+        """ parse values from lines of the SVD section of
+        a PEST control file
 
-        Parameters
-        ----------
-        lines : list
+        Args:
+            lines ([`strs`]): the raw ASCII lines from the control file
+
 
         """
         assert len(lines) == 3,"SvdData.parse_values_from_lines: expected " + \
@@ -161,6 +185,12 @@ class SvdData(object):
 class ControlData(object):
     """ an object that encapsulates the control data section
      of the PEST control file
+
+    Notes:
+        This class works hard to protect the variables in the control data section.
+        It type checks attempts to change values to make sure the type being passed
+        matches the expected type of the attribute.
+
     """
     def __init__(self):
 
@@ -203,11 +233,11 @@ class ControlData(object):
 
     @staticmethod
     def get_dataframe():
-        """ get a generic (default) control section dataframe
+        """ get a generic (default) control section as a dataframe
         
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
+        Returns:
+
+            `pandas.DataFrame`: a dataframe of control data information
 
         """
         names = []
@@ -252,10 +282,8 @@ class ControlData(object):
     def parse_values_from_lines(self,lines,iskeyword=False):
         """ cast the string lines for a pest control file into actual inputs
 
-        Parameters
-        ----------
-        lines : list
-            strings from pest control file
+        Args:
+            lines ([`str`]): raw ASCII lines from pest control file
 
         """
 
@@ -356,15 +384,24 @@ class ControlData(object):
     def formatted_values(self):
         """ list the entries and current values in the control data section
 
-        Returns
-        -------
-        formatted_values : pandas.Series
+        Returns:
+            pandas.Series:  formatted_values for the control data entries
 
         """
         return self._df.apply(lambda x: self.formatters[x["type"]](x["value"]),axis=1)
 
 
     def write_keyword(self,f):
+        """ write the control data entries to an open file handle
+        using keyword-style format.
+
+        Args:
+            f (file handle): open file handle to write to
+
+        Notes:
+            only writes values that have been accessed since instantiation
+
+        """
         kw = super(ControlData, self).__getattribute__("keyword_accessed")
         f.write("* control data keyword\n")
         for n,v in zip(self._df.name,self.formatted_values):
@@ -376,9 +413,8 @@ class ControlData(object):
     def write(self,f):
         """ write control data section to a file
         
-        Parameters
-        ----------
-        f: file handle or string filename
+        Args:
+            f (file handle): open file handle to write to
 
         """
         if isinstance(f,str):
