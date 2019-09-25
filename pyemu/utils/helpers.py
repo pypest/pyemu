@@ -2463,23 +2463,25 @@ class PstFromFlopyModel(object):
             f.write("import os\nimport multiprocessing as mp\nimport numpy as np"+\
                     "\nimport pandas as pd\nimport flopy\n")
             f.write("import pyemu\n")
-            f.write("if __name__ == '__main__':\n")
-            f.write("    mp.freeze_support()\n")
+            f.write("def main():\n")
             f.write("\n")
+            s = "    "
             for ex_imp in self.extra_forward_imports:
-                f.write('import {0}\n'.format(ex_imp))
+                f.write(s+'import {0}\n'.format(ex_imp))
             for tmp_file in self.tmp_files:
-                f.write("try:\n")
-                f.write("   os.remove('{0}')\n".format(tmp_file))
-                f.write("except Exception as e:\n")
-                f.write("   print('error removing tmp file:{0}')\n".format(tmp_file))
+                f.write(s+"try:\n")
+                f.write(s+"   os.remove('{0}')\n".format(tmp_file))
+                f.write(s+"except Exception as e:\n")
+                f.write(s+"   print('error removing tmp file:{0}')\n".format(tmp_file))
             for line in self.frun_pre_lines:
-                f.write(line+'\n')
+                f.write(s+line+'\n')
             for line in self.frun_model_lines:
-                f.write(line+'\n')
+                f.write(s+line+'\n')
             for line in self.frun_post_lines:
-                f.write(line+'\n')
+                f.write(s+line+'\n')
             f.write("\n")
+            f.write("if __name__ == '__main__':\n")
+            f.write("    mp.freeze_support()\n    main()\n\n")
 
 
     def _parse_k(self, k, vals):
@@ -2975,6 +2977,12 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
 
         This function should be added to the forward_run.py script but can
         be called on any correctly formatted csv
+
+        This function using multiprocessing, spawning one process for each
+        model input array (and optionally pp files).  This speeds up
+        execution time considerably but means you need to make sure your
+        forward run script uses the proper multiprocessing idioms for
+        freeze support and main thread handling.
 
     """
     df = pd.read_csv(arr_par_file,index_col=0)
