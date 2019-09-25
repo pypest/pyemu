@@ -27,7 +27,7 @@ copyright = '2019, pyEMU development team'
 author = 'pyEMU development team'
 
 # The full version, including alpha/beta/rc tags
-release = '0.4'
+release = '0.9'
 
 
 # -- General configuration ---------------------------------------------------
