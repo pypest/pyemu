@@ -151,7 +151,8 @@ def read_resfile(resfile):
 
 def res_from_en(pst,enfile):
     """load ensemble results from PESTPP-IES into a PEST-style
-    residuals `pandas.DataFrame`
+    residuals `pandas.DataFrame` Use 'base' realization if available
+    otherwise use ensemble mean.
 
     Args:
         enfile (`str`): CSV-format ensemble file name
@@ -179,18 +180,19 @@ def res_from_en(pst,enfile):
         df = df.set_index('real_name').T.rename_axis('name').rename_axis(None, 1)
     else:
         df = enfile.T
+    #probably a more pandastic way to do this
     if 'base' in df.columns:
         modelled = df['base']
         std = df.std(axis=1)
     else:
         modelled = df.mean(axis=1)
         std = df.std(axis=1)
-    #probably a more pandastic way to do this
     res_df = pd.DataFrame({"modelled":modelled,"std":std},index=obs.obsnme.values)
+    res_df['name']=obs['obsnme'].copy()
     res_df['group']=obs['obgnme'].copy()
     res_df['measured']=obs['obsval'].copy()
     res_df['weight']=obs['weight'].copy()
-    res_df['residual']=res_df['measured']-res_df['modelled']
+    res_df['residual']=res_df['modelled'].subtract(res_df['measured'])
     return res_df
 
 def read_parfile(parfile):

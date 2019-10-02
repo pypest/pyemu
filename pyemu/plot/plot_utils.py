@@ -276,7 +276,6 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,histogram=False,**k
     logger.log("plot res_1to1")
 
     if "ensemble" in kwargs:
-        res = pst_utils.res_from_en(pst, kwargs['ensemble'])
         try:
             res=pst_utils.res_from_en(pst,kwargs['ensemble'])
         except Exception as e:
@@ -285,7 +284,7 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,histogram=False,**k
         try:
             res = pst.res
         except:
-            logger.lraise("res_phi_pie: pst.res is None, couldn't find residuals file")
+            logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
 
     obs = pst.observation_data
 
@@ -543,14 +542,9 @@ def res_phi_pie(pst,logger=None, **kwargs):
     if "ensemble" in kwargs:
         try:
             res=pst_utils.res_from_en(pst,kwargs['ensemble'])
-        except:
-            logger.statement("res_1to1: could not find ensemble file {0}".format(kwargs['ensemble']))
-    else:
-        try:
-            res = pst.res
-        except:
-            logger.lraise("res_phi_pie: pst.res is None, couldn't find residuals file")
-
+            pst.set_res(res)
+        except Exception as e:
+            logger.lraise("res_phi_pie: error loading ensemble: {0}".format( str(e)))
     obs = pst.observation_data
     phi = pst.phi
     phi_comps = pst.phi_components

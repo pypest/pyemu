@@ -37,24 +37,24 @@ class Pst(object):
     def __init__(self, filename, load=True, resfile=None):
 
         self.parameter_data = None
-        """pandas.DataFrame:  '* parameter data' information.  Columns are 
+        """pandas.DataFrame:  '* parameter data' information.  Columns are
         standard PEST variable names
-        
+
         Example::
-            
+
             pst.parameter_data.loc[:,"partrans"] = "log"
             pst.parameter_data.loc[:,"parubnd"] = 10.0
-        
+
         """
         self.observation_data = None
         """pandas.DataFrame:  '* observation data' information.  Columns are standard PEST
         variable names
-        
+
         Example::
-        
+
             pst.observation_data.loc[:,"weight"] = 1.0
             pst.observation_data.loc[:,"obgnme"] = "obs_group"
-        
+
         """
         self.prior_information = None
         """pandas.DataFrame:  '* prior information' data.  Columns are standard PEST
@@ -72,35 +72,35 @@ class Pst(object):
             self.__setattr__(key,copy.copy(value))
         #self.tied = None
         self.control_data = ControlData()
-        """pyemu.pst.pst_controldata.ControlData:  '* control data' information.  
-        Access with standard PEST variable names 
-        
-        Example:: 
-            
+        """pyemu.pst.pst_controldata.ControlData:  '* control data' information.
+        Access with standard PEST variable names
+
+        Example::
+
             pst.control_data.noptmax = 2
             pst.control_data.pestmode = "estimation"
-            
-            
+
+
         """
         self.svd_data = SvdData()
-        """pyemu.pst.pst_controldata.SvdData: '* singular value decomposition' section information.  
+        """pyemu.pst.pst_controldata.SvdData: '* singular value decomposition' section information.
         Access with standard PEST variable names
-        
+
         Example::
-        
+
             pst.svd_data.maxsing = 100
-            
-        
+
+
         """
         self.reg_data = RegData()
         """pyemu.pst.pst_controldata.RegData: '* regularization' section information.
         Access with standard PEST variable names.
-        
-        Example:: 
-        
+
+        Example::
+
             pst.reg_data.phimlim = 1.00 #yeah right!
 
-        
+
         """
         self._version = 1
         if load:
@@ -193,6 +193,10 @@ class Pst(object):
             #                          og_df["weight"]) ** 2)
             components[og] = np.sum(((og_df.loc[:,"obsval"] - og_res_df.loc[og_df.obsnme,"modelled"]) *
                                      og_df.loc[:,"weight"]) ** 2)
+            if og.startswith('less_'):
+                components[og]=0
+            if og.startswith('greater_'):
+                components[og]=0
         if not self.control_data.pestmode.startswith("reg") and \
             self.prior_information.shape[0] > 0:
             ogroups = self.prior_information.groupby("obgnme").groups
