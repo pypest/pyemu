@@ -1002,6 +1002,9 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None,
 
     new_pst = pyemu.pst_utils.generic_pst(list(par_names),list(obs_names))
 
+    if "window" in platform.platform().lower() and pst_path == ".":
+        pst_path = ''
+
     new_pst.template_files = [os.path.join(pst_path,os.path.split(tpl_file)[-1]) for tpl_file in tpl_files]
     new_pst.input_files = [os.path.join(pst_path,os.path.split(in_file)[-1]) for in_file in in_files]
     new_pst.instruction_files = ins_files
