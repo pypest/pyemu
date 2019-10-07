@@ -2075,7 +2075,7 @@ class Pst(object):
 
 
     @classmethod
-    def from_io_files(cls,tpl_files,in_files,ins_files,out_files,pst_filename=None):
+    def from_io_files(cls,tpl_files,in_files,ins_files,out_files,pst_filename=None,pst_path='.'):
         """ create a Pst instance from model interface files.
 
         Args:
@@ -2085,6 +2085,10 @@ class Pst(object):
             out_files ([`str`]): list of model output file names (pairs with instruction files)
             pst_filename (`str`): name of control file to write.  If None, no file is written.
                 Default is None
+            pst_path ('str'): the path from the control file to the IO files.  For example, if the
+                control will be in the same directory as the IO files, then `pst_path` should be '.'.
+                Default is '.'
+
 
         Returns:
             `Pst`: new control file instance with parameter and observation names
@@ -2118,7 +2122,7 @@ class Pst(object):
         from pyemu import helpers
         return helpers.pst_from_io_files(tpl_files=tpl_files,in_files=in_files,
                                            ins_files=ins_files,out_files=out_files,
-                                         pst_filename=pst_filename)
+                                         pst_filename=pst_filename, pst_path=pst_path)
 
 
     def add_parameters(self,template_file,in_file=None,pst_path=None):

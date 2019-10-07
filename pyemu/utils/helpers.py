@@ -928,7 +928,8 @@ def parse_dir_for_io_files(d):
     return tpl_files,in_files,ins_files,out_files
 
 
-def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
+def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None,
+                      pst_path='.'):
     """ create a Pst instance from model interface files.
 
     Args:
@@ -938,6 +939,11 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
         out_files ([`str`]): list of model output file names (pairs with instruction files)
         pst_filename (`str`): name of control file to write.  If None, no file is written.
             Default is None
+        pst_path (`str`): the path to append to the template_file and in_file in the control file.  If
+                not None, then any existing path in front of the template or in file is split off
+                and pst_path is prepended.  If python is being run in a directory other than where the control
+                file will reside, it is useful to pass `pst_path` as `.`.  Default is None
+
 
     Returns:
         `Pst`: new control file instance with parameter and observation names
@@ -996,13 +1002,17 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
     new_pst = pyemu.pst_utils.generic_pst(list(par_names),list(obs_names))
 
-    new_pst.template_files = tpl_files
-    new_pst.input_files = in_files
+    new_pst.template_files = [os.path.join(pst_path,os.path.split(tpl_file)[-1]) for tpl_file in tpl_files]
+    new_pst.input_files = [os.path.join(pst_path,os.path.split(in_file)[-1]) for in_file in in_files]
     new_pst.instruction_files = ins_files
     new_pst.output_files = out_files
 
     #try to run inschek to find the observtion values
     pyemu.pst_utils.try_process_output_pst(new_pst)
+
+    # now set the true path location to instruction files and output files
+    new_pst.instruction_files = [os.path.join(pst_path, os.path.split(ins_file)[-1]) for ins_file in ins_files]
+    new_pst.output_files = [os.path.join(pst_path, os.path.split(out_file)[-1]) for out_file in out_files]
 
     if pst_filename:
         new_pst.write(pst_filename,update_regul=True)

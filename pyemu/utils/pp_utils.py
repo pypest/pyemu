@@ -27,9 +27,9 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
         ibound (`numpy.ndarray`, optional): the modflow ibound integer array.  THis is used to
             set pilot points only in active areas. If None and ml is None, then pilot points
             are set in all rows and columns according to `every_n_cell`.  Default is None.
-        prefix_dict (`dict`): a dictionary of pilot point parameter prefix, layer pairs.
-            For example : `{"hk":[0,1,2,3]}` would setup pilot points with the prefix "hk" for
-            model layers 1 - 4 (zero based). If None, a generic set of pilot points with
+        prefix_dict (`dict`): a dictionary of layer index, pilot point parameter prefix(es) pairs.
+            For example : `{0:["hk,"vk"]}` would setup pilot points with the prefix "hk" and "vk" for
+            model layer 1. If None, a generic set of pilot points with
             the "pp" prefix are setup for a generic nrow by ncol grid. Default is None
         use_ibound_zones (`bool`): a flag to use the greater-than-zero values in the
             ibound as pilot point zones.  If False ,ibound values greater than zero are
