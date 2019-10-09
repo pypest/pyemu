@@ -2770,3 +2770,25 @@ class Pst(object):
         change_df.loc[:,"eff_lower"] = change_df.loc[:, ["parlbnd", "chg_lower"]].max(axis=1)
 
         return change_df
+
+    def get_adj_pars_at_bounds(self, frac_tol=0.01):
+        """get list of adjustable parameter at/near bounds
+
+        Args:
+            frac_tol ('float`): fractional tolerance of distance to bound.  For upper bound,
+                the value `parubnd * (1-frac_tol)` is used, lower bound uses `parlbnd * (1.0 + frac_tol)`
+
+        Returns:
+            tuple containing:
+
+            - **[`str`]**: list of parameters at/near lower bound
+            - **[`str`]**: list of parameters at/near upper bound
+
+        """
+
+        par = self.parameter_data.loc[self.adj_par_names,:].copy()
+        over_ub = par.loc[par.apply(lambda x: x.parval1 >= (1.-frac_tol) * x.parubnd, axis=1),"parnme"].tolist()
+        under_lb = par.loc[par.apply(lambda x: x.parval1 <= (1.+frac_tol) * x.parlbnd, axis=1),"parnme"].tolist()
+
+        return under_lb,over_ub
+

@@ -646,9 +646,21 @@ def pst_from_flopy_specsim_draw_test():
     #print(diff_sd)
     assert diff_sd.apply(np.abs).max() < 0.1,diff_sd.apply(np.abs).sort_values()
 
+def at_bounds_test():
+    import pyemu
 
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    par = pst.parameter_data
+    par.loc[pst.par_names[0],"parval1"] = par.parubnd[pst.par_names[0]] + 1.0
+    par.loc[pst.par_names[1], "parval1"] = par.parlbnd[pst.par_names[1]]
+
+    lb,ub = pst.get_adj_pars_at_bounds()
+    assert len(lb) == 1
+    assert len(ub) == 1
 
 if __name__ == "__main__":
+
+    at_bounds_test()
     #process_output_files_test()
     #change_limit_test()
     #new_format_test()
@@ -666,7 +678,7 @@ if __name__ == "__main__":
     # run_array_pars()
     #from_flopy_zone_pars()
     #from_flopy_pp_test()
-    from_flopy()
+    #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()
