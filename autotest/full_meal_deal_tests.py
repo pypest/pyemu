@@ -99,7 +99,7 @@ def freyberg_test():
         assert os.path.exists(os.path.join(new_model_ws,"test.{0}".format(ext))),ext
     df = pd.read_csv(os.path.join(new_model_ws,"test.iobj"))
     assert df.total_phi.iloc[0] < 1.0e-10
-    pe = ph.draw(30)
+    pe = ph.draw(10)
     pe.to_csv(os.path.join(new_model_ws,"par_en.csv"))
     ph.pst.pestpp_options["ies_par_en"] = "par_en.csv"
     ph.pst.control_data.noptmax = 1
