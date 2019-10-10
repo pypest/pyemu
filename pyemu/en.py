@@ -102,6 +102,12 @@ class Ensemble(object):
         except:
             return self._df * other._df
 
+    def __truediv__(self, other):
+        try:
+            return self._df / other
+        except:
+            return self._df / other._df
+
     def __add__(self,other):
         try:
             return self._df + other
