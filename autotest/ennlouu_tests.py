@@ -596,19 +596,14 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
 
     plt.contour(X, Y, Z, np.logspace(-0.5, 3.5, 20, base=10), cmap='gray')
 
-    theta = np.linspace(0, 2 * np.pi)
-    r = 1.0
-    xx = r * np.cos(theta)
-    yy = r * np.sin(theta)
-    plt.plot(xx, yy, 'r-')
+    if constraints:
+        theta = np.linspace(0, 2 * np.pi)
+        r = 1.0
+        xx = r * np.cos(theta)
+        yy = r * np.sin(theta)
+        plt.plot(xx, yy, 'r-')
 
     #plt.scatter(x=[1.0],y=[1.0],marker="*",s=80)  # optimum
-
-    if finite_diff_grad:
-        plot_init_decvars = True
-    if plot_init_decvars:
-        plt.scatter(x=[pst.parameter_data.parval1[0]],y=pst.parameter_data.parval1[1],
-                    marker="s",s=80,c="b",alpha=0.1)  # plot initial when using fds
 
     if finite_diff_grad is False:
         par_ens = [x for x in os.listdir() if x.endswith(".parensemble.0000.csv")]
@@ -623,9 +618,15 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
             it = int(pe.split(".")[2])
         df = pd.read_csv(pe,index_col=0)
         plt.scatter(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],
-                    c="b",alpha=(it+1)/(len(par_ens)+1))
+                    c="b",alpha=(np.log10(it+1)/np.log10(len(par_ens)+1)))
         #plt.scatter(x=df[pst.parameter_data.parnme[0]].mean(axis=0), y=df[pst.parameter_data.parnme[1]].mean(axis=0),
         #            c="b",alpha=(it+1)/len(par_ens))
+
+    if finite_diff_grad:
+        plot_init_decvars = True
+    if plot_init_decvars:
+        plt.scatter(x=[pst.parameter_data.parval1[0]],y=pst.parameter_data.parval1[1],
+                    marker="s",c="b",alpha=(np.log10(it+1)/np.log10(len(par_ens)+1))/2)  # plot initial when using fds
 
     plt.savefig(label)
     #plt.show()
@@ -638,8 +639,8 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_multiple_update(version="2par",nit=2,en_size=10,draw_mult=3e-3,finite_diff_grad=True,
-                               hess_update=True,hess_self_scaling=False)
+    rosenbrock_multiple_update(version="2par",nit=10,en_size=10,draw_mult=3e-3,finite_diff_grad=True,
+                              hess_update=True,hess_self_scaling=False)
     rosenbrock_phi_progress(version="2par",finite_diff_grad=True)
     #rosenbrock_2par_grad_approx_invest()
 

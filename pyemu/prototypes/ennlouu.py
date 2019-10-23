@@ -1088,3 +1088,4 @@ class EnsembleSQP(EnsembleMethod):
             if cma is True:
                 self.en_cov_decvar.to_ascii("en_decvar_cov_it{}.dat".format(self.iter_num))
 
+        # TODO: implement termination criteria here based on both dec var and phi (abs and rel) convergence
