@@ -389,9 +389,9 @@ class EnsembleSQP(EnsembleMethod):
         phi = rei.loc[rei.group == "obj_fn", "modelled"] - rei.loc[rei.group == "obj_fn", "measured"]
         return phi
 
-    def _calc_jco(self):
+    def _calc_jco(self, derinc):
         self.pst.control_data.noptmax = -2
-        # self.pst.parameter_groups.derinc = 0.05
+        self.pst.parameter_groups.derinc = derinc
         pst_fname = self.pst.filename.split(".pst")[0] + "_fds.pst"
         self.pst.write(os.path.join(pst_fname))
         pyemu.os_utils.run("pestpp-glm {0}".format(pst_fname))
@@ -718,7 +718,7 @@ class EnsembleSQP(EnsembleMethod):
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=2,damped=True,
                grad_calc_only=False,finite_diff_grad=False,hess_update=True,
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
-               cma=False,
+               cma=False,derinc=0.01,
                rank_one=False, learning_rate=0.5, mu_prop=0.25,
                use_dist_mean_for_delta=False,mu_learning_prop=0.5):#localizer=None,run_subset=None,
         """
@@ -805,7 +805,7 @@ class EnsembleSQP(EnsembleMethod):
 
         if finite_diff_grad:
             self.logger.log("compute phi grad using finite diffs")
-            jco = self._calc_jco()
+            jco = self._calc_jco(derinc=derinc)
             # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
             self.phi_grad = Matrix(x=jco.T.values,row_names=self.pst.adj_par_names,
                                    col_names=['cross-cov'])
