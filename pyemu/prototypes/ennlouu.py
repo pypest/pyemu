@@ -240,6 +240,12 @@ class EnsembleSQP(EnsembleMethod):
         else:
             self.logger.warn("using finite diffs as basis for phi grad vector rather than en approx")
 
+            self.logger.log("running model forward with noptmax = 0")
+            self.phi_0 = self._calc_obs_fd()
+            # TODO: WRITE TO FILE FOR PHI_PROG PLOTTER TO GRAB
+            self.phi_0.to_csv(self.pst.filename + ".phi.{0}.initial.csv".format(self.iter_num))
+            self.logger.log("running model forward with noptmax = 0")
+
         # Hessian
         if hess is not None:
             # TODO: add supporting for loading Hessian or assoc grad col vectors
@@ -370,6 +376,27 @@ class EnsembleSQP(EnsembleMethod):
             delta.x[i, :] -= mean
 
         return delta
+
+    def _calc_obs_fd(self):
+        self.pst.control_data.noptmax = 0
+        if self._initialized:  # testing alphas
+            pst_fname = self.pst.filename.split(".pst")[0] + "_fds_1.pst"
+        else:  # just running forward
+            pst_fname = self.pst.filename
+        self.pst.write(os.path.join(pst_fname))
+        pyemu.os_utils.run("pestpp-glm {0}".format(pst_fname))
+        rei = pyemu.pst_utils.read_resfile(os.path.join(pst_fname.replace(".pst", ".rei")))
+        phi = rei.loc[rei.group == "obj_fn", "modelled"] - rei.loc[rei.group == "obj_fn", "measured"]
+        return phi
+
+    def _calc_jco(self):
+        self.pst.control_data.noptmax = -2
+        # self.pst.parameter_groups.derinc = 0.05
+        pst_fname = self.pst.filename.split(".pst")[0] + "_fds.pst"
+        self.pst.write(os.path.join(pst_fname))
+        pyemu.os_utils.run("pestpp-glm {0}".format(pst_fname))
+        jco = pyemu.Jco.from_binary("{0}".format(pst_fname.replace(".pst",".jcb"))).to_dataframe()
+        return jco
 
 
     def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,self_scale=True,damped=True,update=True):
@@ -778,12 +805,7 @@ class EnsembleSQP(EnsembleMethod):
 
         if finite_diff_grad:
             self.logger.log("compute phi grad using finite diffs")
-            # TODO: implement and add test for this
-            self.pst.control_data.noptmax = -2
-            # self.pst.parameter_groups.derinc = 0.05
-            self.pst.write(os.path.join(self.pst.filename.split(".pst")[0]+"_fds.pst"))
-            pyemu.os_utils.run("pestpp-glm {0}".format(self.pst.filename.split(".pst")[0]+"_fds.pst"))
-            jco = pyemu.Jco.from_binary("{0}".format(self.pst.filename.split(".pst")[0]+"_fds.jcb")).to_dataframe()
+            jco = self._calc_jco()
             # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
             self.phi_grad = Matrix(x=jco.T.values,row_names=self.pst.adj_par_names,
                                    col_names=['cross-cov'])
@@ -970,14 +992,9 @@ class EnsembleSQP(EnsembleMethod):
             else:  # finite diffs for grads
                 self.logger.log("evaluating model for step size : {0}".format(','.join("{0:8.3E}"
                                                                                        .format(step_size))))
-                # TODO: these steps into func
-                self.pst.control_data.noptmax = 0
-                self.pst.write(os.path.join(self.pst.filename.split(".pst")[0]+"_fds_1.pst"))
-                pyemu.os_utils.run("pestpp-glm {0}".format(self.pst.filename.split(".pst")[0]+"_fds_1.pst"))
-                rei = pyemu.pst_utils.read_resfile(os.path.join("rosenbrock_2par_fds_1.rei"))
-                self.obsensemble_1 = rei.loc[rei.group == "obj_fn", "modelled"] - \
-                                     rei.loc[rei.group == "obj_fn", "measured"]
-                # TODO: support finite diffs in _filter_constraint_eval
+                self.obsensemble_1 = self._calc_obs_fd()
+                # TODO: support finite diffs in _filter_constraint_eval.
+                #  BUT do we want finite diffs to only be used for grad?
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1
                 if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
