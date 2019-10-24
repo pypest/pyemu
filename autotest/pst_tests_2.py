@@ -660,7 +660,7 @@ def at_bounds_test():
 
 if __name__ == "__main__":
 
-    at_bounds_test()
+    # at_bounds_test()
     #process_output_files_test()
     #change_limit_test()
     #new_format_test()
@@ -675,7 +675,7 @@ if __name__ == "__main__":
     # add_obs_test()
     # add_pars_test()
     # setattr_test()
-    # run_array_pars()
+    run_array_pars()
     #from_flopy_zone_pars()
     #from_flopy_pp_test()
     #from_flopy()
