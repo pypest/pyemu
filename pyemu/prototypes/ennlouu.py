@@ -1014,8 +1014,9 @@ class EnsembleSQP(EnsembleMethod):
             best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
             best_alpha_per_it_df.to_csv("best_alpha.csv")
             self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
-            #self.parensemble_next.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, best_alpha) +
-             #                            self.paren_prefix.format(0))
+            if finite_diff_grad is False:
+                self.parensemble_next.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, best_alpha) +
+                                         self.paren_prefix.format(0))
             self.parensemble_mean_next.df().to_csv(self.pst.filename + ".{0}.{1}.csv"
                                                    .format(self.iter_num, best_alpha))
 

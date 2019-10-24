@@ -271,15 +271,15 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=Fa
 def invest(version,constraints=False):
     import shutil
 
-    vars = {"initial_decvars": [[1.5,-1.5]],
+    vars = {"initial_decvars": [[1.7,-1.1]],
             "draw_mult": [3e-3],
             "en_size": [10],
             "hess_self_scaling": [2],
             "hess_update": [True],
             "damped": [True],
-            "finite_diff_grad": [False],
+            "finite_diff_grad": [True],
             "derinc": [0.01],
-            "nit": [1]
+            "nit": [4]
             }
     #"draw_mult": [3e-2,3e-33e-4]
     #"alpha_base": [0.1, 0.2],
@@ -302,32 +302,36 @@ def invest(version,constraints=False):
             fails.append(v)
             os.chdir(os.path.join("..", ".."))
         # TODO: add constraint support to rosenbrock_phi_progress
-        rosenbrock_phi_progress(version=version,
+        rosenbrock_phi_progress(version=version,finite_diff_grad=v['finite_diff_grad'],
                                 label="phi_progress_ne{0}_initdv{1}_dm{2}_sca{3}_upd{4}_d{5}.pdf"
                                 .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
-                                        v['hess_update'],v['damped']))
+                                        v['hess_update'],v['damped'],v['finite_diff_grad'], v['derinc'], v['nit']))
 
         if version == "2par":
             plot_2par_rosen(label="rosen_surf_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}.pdf"
-                            .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
-                                    v['damped']), constraints=constraints)
+                            .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
+                                    v['hess_update'],v['damped'],v['finite_diff_grad'], v['derinc'], v['nit']),
+                            constraints=constraints,finite_diff_grad=v['finite_diff_grad'])
 
         if version == "2par":
             os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
+            #try:
+             #   [shutil.copy(x,
+              #               "phi_curv_it{0}_ne{1}_idv{2}_dm{3}_scale{4}_update{5}_damp{6}_fd{7}_derinc{8}_nit{9}.csv"
+               #              .format(int(x.split("it")[1].split(".")[0]),v['en_size'],v['initial_decvars'],
+                #                     v['draw_mult'],v['hess_self_scaling'],v['hess_update'],v['damped'],
+                 #                    v['finite_diff_grad'], v['derinc'], v['nit']))
+                 #for x in os.listdir() if ("_per_" in x) and ("_alpha_" in x)]
+            #except FileNotFoundError:
+             #   print("missing!")
             try:
-                [shutil.copy(x, "phi_curv_it{0}_ne{1}_idv{2}_dm{3}_scale{4}_update{5}_damp{6}.csv"
-                             .format(int(x.split("it")[1].split(".")[0]),v['en_size'],v['initial_decvars'],v['draw_mult'],
-                                     v['hess_self_scaling'],v['hess_update'],v['damped']))
-                 for x in os.listdir() if ("_per_" in x) and ("_alpha_" in x)]
-            except FileNotFoundError:
-                print("missing")
-            try:
-                [shutil.copy(x, x.split(".")[0] + "_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}.csv"
-                             .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],v['hess_update'],
-                                     v['damped']))
+                [shutil.copy(x, x.split(".")[0] +
+                             "_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}_fd{6}_derinc{7}_nit{8}.csv"
+                             .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
+                                     v['hess_update'],v['damped'],v['finite_diff_grad'], v['derinc'], v['nit']))
                  for x in os.listdir() if x == "hess_progress.csv"]
             except FileNotFoundError:
-                print("missing")
+                print("missing!")
             os.chdir(os.path.join("..",".."))
 
 
@@ -621,16 +625,22 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         else:
             it = int(pe.split(".")[2])
         df = pd.read_csv(pe,index_col=0)
+        if len(par_ens) > 30:
+            al = (np.log10(it + 1) / np.log10(len(par_ens) + 1))
+        else:
+            al = (it + 1) / (len(par_ens) + 1)
         plt.scatter(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],
-                    c="b",alpha=(np.log10(it+1)/np.log10(len(par_ens)+1)))
-        #plt.scatter(x=df[pst.parameter_data.parnme[0]].mean(axis=0), y=df[pst.parameter_data.parnme[1]].mean(axis=0),
-        #            c="b",alpha=(it+1)/len(par_ens))
+                    c="b",alpha=al)
 
     if finite_diff_grad:
         plot_init_decvars = True
     if plot_init_decvars:
+        if len(par_ens) > 30:
+            al = (np.log10(1 + 1) / np.log10(len(par_ens) + 1)) / 2
+        else:
+            al = ((1 + 1) / (len(par_ens) + 1)) / 2
         plt.scatter(x=[pst.parameter_data.parval1[0]],y=pst.parameter_data.parval1[1],
-                    marker="s",c="b",alpha=(np.log10(it+1)/np.log10(len(par_ens)+1))/2)  # plot initial when using fds
+                    marker="s",c="b",alpha=al)  # plot initial when using fds
 
     plt.savefig(label)
     #plt.show()
@@ -648,7 +658,7 @@ if __name__ == "__main__":
     #rosenbrock_phi_progress(version="2par",finite_diff_grad=True)
     #rosenbrock_2par_grad_approx_invest()
 
-    #plot_2par_rosen(finite_diff_grad=True)
+    #plot_2par_rosen(finite_diff_grad=False)
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")
