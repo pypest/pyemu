@@ -274,10 +274,10 @@ def invest(version,constraints=False):
     vars = {"initial_decvars": [[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]],
             "draw_mult": [3e-3],
             "en_size": [10],
-            "hess_self_scaling": [False],
-            "hess_update": [True],
+            "hess_self_scaling": [False],#,2],
+            "hess_update": [False,True],
             "damped": [True],
-            "finite_diff_grad": [True],
+            "finite_diff_grad": [True],#,False],
             "derinc": [0.01],
             "nit": [30]
             }
@@ -303,12 +303,12 @@ def invest(version,constraints=False):
             os.chdir(os.path.join("..", ".."))
         # TODO: add constraint support to rosenbrock_phi_progress
         rosenbrock_phi_progress(version=version,finite_diff_grad=v['finite_diff_grad'],
-                                label="phi_progress_ne{0}_initdv{1}_dm{2}_sca{3}_upd{4}_d{5}.pdf"
+                                label="phi_progress_ne{0}_initdv{1}_dm{2}_sca{3}_upd{4}_d{5}_fd{6}_der{7}_nit{8}.pdf"
                                 .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
                                         v['hess_update'],v['damped'],v['finite_diff_grad'], v['derinc'], v['nit']))
 
         if version == "2par":
-            plot_2par_rosen(label="rosen_surf_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}.pdf"
+            plot_2par_rosen(label="rosen_surf_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}_fd{6}_der{7}_nit{8}.pdf"
                             .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
                                     v['hess_update'],v['damped'],v['finite_diff_grad'], v['derinc'], v['nit']),
                             constraints=constraints,finite_diff_grad=v['finite_diff_grad'])
@@ -639,8 +639,10 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
             al = (np.log10(1 + 1) / np.log10(len(par_ens) + 1)) / 2
         else:
             al = ((1 + 1) / (len(par_ens) + 1)) / 2
+        #plt.scatter(x=[pst.parameter_data.parval1[0]],y=pst.parameter_data.parval1[1],
+         #           marker="s",c="b",alpha=al)  # plot initial when using fds
         plt.scatter(x=[pst.parameter_data.parval1[0]],y=pst.parameter_data.parval1[1],
-                    marker="s",c="b",alpha=al)  # plot initial when using fds
+                    marker="x",c="b",alpha=0.5)  # plot initial when using fds
 
     plt.savefig(label)
     #plt.show()
