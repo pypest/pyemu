@@ -2943,6 +2943,12 @@ class PstFromFlopyModel(object):
             self.logger.statement("forward_run line:{0}".format(line))
             self.frun_post_lines.append(line)
 
+
+def _process_chunk_model_files(chunk, df):
+    for model_file in chunk:
+        _process_model_file(model_file, df)
+
+
 def _process_model_file(model_file,df):
     # find all mults that need to be applied to this array
     df_mf = df.loc[df.model_file==model_file,:]
@@ -3025,10 +3031,16 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
         print("finished fac2real",datetime.now())
     print("starting arr mlt",datetime.now())
 
-
+    uniq = df.model_file.unique()
+    num_uniq = len(uniq)
+    chunk_len = 20
+    min_num_chunk = np.floor_divide(num_uniq, chunk_len)
+    main_chunks = uniq[:min_num_chunk * chunk_len].reshape([-1, chunk_len]).tolist()
+    remainder = uniq[min_num_chunk * chunk_len:].tolist()
+    chunks = main_chunks + [remainder]
     procs = []
-    for model_file in df.model_file.unique():
-        p = mp.Process(target=_process_model_file,args=[model_file,df])
+    for chunk in chunks:
+        p = mp.Process(target=_process_chunk_model_files, args=[chunk, df])
         p.start()
         procs.append(p)
     for p in procs:
