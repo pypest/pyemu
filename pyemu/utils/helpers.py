@@ -2943,6 +2943,12 @@ class PstFromFlopyModel(object):
             self.logger.statement("forward_run line:{0}".format(line))
             self.frun_post_lines.append(line)
 
+
+def _process_chunk_model_files(chunk, df):
+    for model_file in chunk:
+        _process_model_file(model_file, df)
+
+
 def _process_model_file(model_file,df):
     # find all mults that need to be applied to this array
     df_mf = df.loc[df.model_file==model_file,:]
@@ -3023,12 +3029,22 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
             p.join()
 
         print("finished fac2real",datetime.now())
+
     print("starting arr mlt",datetime.now())
-
-
+    uniq = df.model_file.unique()  # unique model input files to be produced
+    num_uniq = len(uniq)  # number of input files to be produced
+    # number of files to send to each processor
+    chunk_len = 50  # - this may not be the optimum number,
+    # sure there is some cleverway of working it out
+    # lazy plitting the files to be processed into even chunks
+    num_chunk_floor = num_uniq // chunk_len  # number of whole chunks
+    main_chunks = uniq[:num_chunk_floor * chunk_len].reshape(
+        [-1, chunk_len]).tolist()  # the list of files broken down into chunks
+    remainder = uniq[num_chunk_floor * chunk_len:].tolist()  # remaining files
+    chunks = main_chunks + [remainder]
     procs = []
-    for model_file in df.model_file.unique():
-        p = mp.Process(target=_process_model_file,args=[model_file,df])
+    for chunk in chunks:  # now only spawn processor for each chunk
+        p = mp.Process(target=_process_chunk_model_files, args=[chunk, df])
         p.start()
         procs.append(p)
     for p in procs:
