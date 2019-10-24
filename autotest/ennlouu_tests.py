@@ -271,15 +271,15 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=Fa
 def invest(version,constraints=False):
     import shutil
 
-    vars = {"initial_decvars": [[1.7,-1.1]],
+    vars = {"initial_decvars": [[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]],
             "draw_mult": [3e-3],
             "en_size": [10],
-            "hess_self_scaling": [2],
+            "hess_self_scaling": [False],
             "hess_update": [True],
             "damped": [True],
             "finite_diff_grad": [True],
             "derinc": [0.01],
-            "nit": [4]
+            "nit": [30]
             }
     #"draw_mult": [3e-2,3e-33e-4]
     #"alpha_base": [0.1, 0.2],
