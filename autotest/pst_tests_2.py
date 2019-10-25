@@ -85,7 +85,11 @@ def from_flopy():
                                          remove_existing=True,
                                          model_exe_name="mfnwt", temporal_list_props=temp_list_props,
                                          spatial_list_props=spat_list_props, hfb_pars=True)
-
+    csv = os.path.join(new_model_ws, "arr_pars.csv")
+    df = pd.read_csv(csv, index_col=0)
+    mults_not_linked_to_pst = [f for f in df.mlt_file.unique() 
+                               if f not in ph.pst.input_files]
+    assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
     par = ph.pst.parameter_data
     pe = ph.draw(100)
 
@@ -675,10 +679,10 @@ if __name__ == "__main__":
     # add_obs_test()
     # add_pars_test()
     # setattr_test()
-    run_array_pars()
+    # run_array_pars()
     #from_flopy_zone_pars()
     #from_flopy_pp_test()
-    #from_flopy()
+    from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()
