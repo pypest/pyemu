@@ -229,7 +229,7 @@ def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filenam
         if df_sw is None:
             raise Exception("error processing surface water instruction file")
         df_gw = df_gw.append(df_sw)
-        df_gw.obsnme = df_gw.index.values
+        df_gw.loc[:, "obsnme"] = df_gw.index.values
     if save_setup_file:
         df_gw.to_csv("_setup_" + os.path.split(list_filename)[-1] + '.csv', index=False)
 
@@ -325,7 +325,7 @@ def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
 
         It is recommended to use the default values for flux_file and vol_file.
 
-        This is the companion function of `gw_utils.setup_mflist_budget_obs()`.
+        This is the companion function of `gw_utils.apply_mflist_budget_obs()`.
 
 
     """

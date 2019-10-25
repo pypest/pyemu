@@ -928,8 +928,8 @@ def parse_dir_for_io_files(d):
     return tpl_files,in_files,ins_files,out_files
 
 
-def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None,
-                      pst_path='.'):
+def pst_from_io_files(tpl_files, in_files, ins_files, out_files,
+                      pst_filename=None, pst_path=None):
     """ create a Pst instance from model interface files.
 
     Args:
@@ -1005,17 +1005,24 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None,
     if "window" in platform.platform().lower() and pst_path == ".":
         pst_path = ''
 
-    new_pst.template_files = [os.path.join(pst_path,os.path.split(tpl_file)[-1]) for tpl_file in tpl_files]
-    new_pst.input_files = [os.path.join(pst_path,os.path.split(in_file)[-1]) for in_file in in_files]
     new_pst.instruction_files = ins_files
     new_pst.output_files = out_files
 
     #try to run inschek to find the observtion values
     pyemu.pst_utils.try_process_output_pst(new_pst)
-
-    # now set the true path location to instruction files and output files
-    new_pst.instruction_files = [os.path.join(pst_path, os.path.split(ins_file)[-1]) for ins_file in ins_files]
-    new_pst.output_files = [os.path.join(pst_path, os.path.split(out_file)[-1]) for out_file in out_files]
+    if pst_path is None:
+        new_pst.template_files = tpl_files
+        new_pst.input_files = in_files
+    else:
+        new_pst.template_files = [os.path.join(
+            pst_path, os.path.split(tpl_file)[-1]) for tpl_file in tpl_files]
+        new_pst.input_files = [os.path.join(
+            pst_path, os.path.split(in_file)[-1]) for in_file in in_files]
+        # now set the true path location to instruction files and output files
+        new_pst.instruction_files = [os.path.join(
+            pst_path, os.path.split(ins_file)[-1]) for ins_file in ins_files]
+        new_pst.output_files = [os.path.join(
+            pst_path, os.path.split(out_file)[-1]) for out_file in out_files]
 
     if pst_filename:
         new_pst.write(pst_filename,update_regul=True)

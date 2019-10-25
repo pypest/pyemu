@@ -2075,7 +2075,8 @@ class Pst(object):
 
 
     @classmethod
-    def from_io_files(cls,tpl_files,in_files,ins_files,out_files,pst_filename=None,pst_path='.'):
+    def from_io_files(cls, tpl_files, in_files, ins_files, out_files,
+                      pst_filename=None, pst_path=None):
         """ create a Pst instance from model interface files.
 
         Args:
