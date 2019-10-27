@@ -635,27 +635,25 @@ class Pst(object):
         return line,lines,section_comments
 
     @staticmethod
-    def _cast_df_from_lines(name,lines, fieldnames, converters, defaults):
-        raw = lines[0].strip().split()
-        if raw[0].lower() == "external":
-            filename = raw[1]
-            #check for other items
-            if len(raw) > 2:
-                for arg in raw[2:]:
-                    if "header" in arg.lower():
-                        rraw = arg.split('=')
-                        if len(rraw) != 2:
-                            raise Exception("rraw != 2")
-                        if rraw[1].lower() != "true":
-                            raise NotImplementedError("non-header external files not support")
-                    else:
-                        PyemuWarning("unsupported external file option found: '{0}', ignoring".format(arg))
+    def _cast_df_from_lines(section,lines, fieldnames, converters, defaults):
+        #raw = lines[0].strip().split()
+        #if raw[0].lower() == "external":
+        if section.lower().strip().split()[-1] == "external":
+            dfs = []
+            for line in lines:
+                filename,options = Pst._parse_external_line(line)
+                if not os.path.exists(filename):
+                    raise Exception("Pst._cast_df_from_lines() error: external file '{0}' not found".format(filename))
+                sep = options.get("sep",',')
+                if sep.lower() == 'w':
+                    delim_whitespace = True
+                    sep = None
+                missing_vals = options.get("missing_values",None)
+                df = pd.read_csv(filename,sep=sep,delime_whitespace=delim_whitespace,missing_vals=missing_vals)
+                df.columns = df.columns.str.lower()
+                dfs.append(df)
 
-
-            if not os.path.exists(filename):
-                raise Exception("Pst._cast_df_from_lines() error: external file '{0}' not found".format(filename))
-            df = pd.read_csv(filename)
-            df.columns = df.columns.str.lower()
+            df = pd.concat(dfs)
 
         else:
             extra = []
@@ -685,8 +683,10 @@ class Pst(object):
         return df
 
 
-    def _cast_prior_df_from_lines(self,lines):
-        if lines[0].strip().split()[0].lower() == "external":
+    def _cast_prior_df_from_lines(self,section, lines):
+
+        #if lines[0].strip().split()[0].lower() == "external":
+        if section.strip().split()[-1].lower() == "external":
             filename = lines[0].strip().split()[1]
             if not os.path.exists(filename):
                 raise Exception("Pst._cast_prior_df_from_lines() error: external file" +\
@@ -728,9 +728,6 @@ class Pst(object):
 
     def _load_version2(self,filename):
         """load a version 2 control file
-
-
-
         """
         self.lcount  = 0
         self.comments = {}
@@ -763,19 +760,19 @@ class Pst(object):
 
             elif "* parameter groups" in last_section.lower():
                 req_sections[last_section] = True
-                self.parameter_groups = self._cast_df_from_lines(next_section, section_lines, self.pargp_fieldnames,
+                self.parameter_groups = self._cast_df_from_lines(last_section, section_lines, self.pargp_fieldnames,
                                                                 self.pargp_converters, self.pargp_defaults)
                 self.parameter_groups.index = self.parameter_groups.pargpnme
 
             elif "* parameter data" in last_section.lower():
                 req_sections[last_section] = True
-                self.parameter_data = self._cast_df_from_lines(next_section, section_lines, self.par_fieldnames,
+                self.parameter_data = self._cast_df_from_lines(last_section, section_lines, self.par_fieldnames,
                                                                self.par_converters, self.par_defaults)
                 self.parameter_data.index = self.parameter_data.parnme
 
             elif "* observation data" in last_section.lower():
                 req_sections[last_section] = True
-                self.observation_data = self._cast_df_from_lines(next_section, section_lines, self.obs_fieldnames,
+                self.observation_data = self._cast_df_from_lines(last_section, section_lines, self.obs_fieldnames,
                                                                 self.obs_converters, self.obs_defaults)
                 self.observation_data.index = self.observation_data.obsnme
 
@@ -849,6 +846,18 @@ class Pst(object):
             raise Exception("Pst._load_version2() error: the following required sections were"+\
                     "not found:{0}".format(",".join(not_found)))
 
+    @staticmethod
+    def _parse_external_line(line):
+        raw = line.strip().split()
+        filename = raw[0]
+        if len(raw) % 2 == 0:
+            s = "wrong number of entries on 'external' line:'{0}\n".format(line)
+            s += "Should include 'filename', then pairs of key-value options"
+            raise Exception(s)
+        options = {k.lower():v.lower() for k,v in zip(raw[1:-1],raw[2:])}
+        return filename, options
+
+
 
 
 
@@ -873,25 +882,18 @@ class Pst(object):
             if line.strip().split()[0].lower() == "pcf":
                 break
         if not line.startswith("pcf"):
-            raise Exception("Pst.load() error: first noncomment line must start with 'pcf', not '{0}'".format(line))
-        raw = line.strip().split()
+            raise Exception("Pst.load() error: first nonc-omment line must start with 'pcf', not '{0}'".format(line))
 
-        if len(raw) > 1 and "version" in raw[1].lower():
-            raw = raw[1].split('=')
-            if len(raw) > 1:
-                try:
-                    self._version = int(raw[1])
-                except:
-                    pass
-        if self._version == 1:
+        try:
             self._load_version1(filename)
-        elif self._version == 2:
-            self._load_version2(filename)
-        else:
-            raise Exception("Pst.load() error: version must be 1 or 2, not '{0}'".format(version))
+        except Exception as e1:
+            try:
+                self._load_version2(filename)
+            except Exception as e2:
 
-
-
+                print(e1)
+                print(e2)
+                raise Exception("Pst.load() - couldn't load as v1 or v2 control file")
 
 
     def _load_version1(self, filename):
@@ -2088,7 +2090,7 @@ class Pst(object):
                 Default is None
             pst_path ('str'): the path from the control file to the IO files.  For example, if the
                 control will be in the same directory as the IO files, then `pst_path` should be '.'.
-                Default is '.'
+                Default is None, which doesnt do any path manipulation on the I/O file names
 
 
         Returns:
