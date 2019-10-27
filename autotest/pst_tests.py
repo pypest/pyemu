@@ -623,7 +623,10 @@ def new_format_test():
         assert npar == npar1
         assert nobs == nobs1
         assert npr == npr1,"{0}: {1},{2}".format(pst_file,npr,npr1)
-
+        assert len(pst.template_files) == len(pst_new.template_files)
+        assert len(pst.input_files) == len(pst_new.input_files)
+        assert len(pst.instruction_files) == len(pst_new.instruction_files)
+        assert len(pst.output_files) == len(pst_new.output_files)
 
         pst_new.write("test.pst",version=1)
         pst_new = pyemu.Pst("test.pst")
@@ -633,6 +636,10 @@ def new_format_test():
         assert npar == npar1
         assert nobs == nobs1
         assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)
+        assert len(pst.template_files) == len(pst_new.template_files)
+        assert len(pst.input_files) == len(pst_new.input_files)
+        assert len(pst.instruction_files) == len(pst_new.instruction_files)
+        assert len(pst.output_files) == len(pst_new.output_files)
         pst_new.write("test.pst",version=2)
         pst_new = pyemu.Pst("test.pst")
         npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
@@ -641,6 +648,10 @@ def new_format_test():
         assert npar == npar1
         assert nobs == nobs1
         assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)
+        assert len(pst.template_files) == len(pst_new.template_files)
+        assert len(pst.input_files) == len(pst_new.input_files)
+        assert len(pst.instruction_files) == len(pst_new.instruction_files)
+        assert len(pst.output_files) == len(pst_new.output_files)
 
 
     pst_new.parameter_groups.loc[:,:] = np.NaN
@@ -751,9 +762,9 @@ def process_output_files_test():
 
 
 if __name__ == "__main__":
-    process_output_files_test()
+    #process_output_files_test()
     #change_limit_test()
-    #new_format_test()
+    new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()

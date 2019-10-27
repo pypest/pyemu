@@ -645,11 +645,12 @@ class Pst(object):
                 if not os.path.exists(filename):
                     raise Exception("Pst._cast_df_from_lines() error: external file '{0}' not found".format(filename))
                 sep = options.get("sep",',')
+                delim_whitespace = False
                 if sep.lower() == 'w':
                     delim_whitespace = True
                     sep = None
                 missing_vals = options.get("missing_values",None)
-                df = pd.read_csv(filename,sep=sep,delime_whitespace=delim_whitespace,missing_vals=missing_vals)
+                df = pd.read_csv(filename,sep=sep,delim_whitespace=delim_whitespace,na_values=missing_vals)
                 df.columns = df.columns.str.lower()
                 dfs.append(df)
 
@@ -674,7 +675,7 @@ class Pst(object):
         for col in fieldnames:
             if col not in df.columns:
                 df.loc[:,col] = np.NaN
-            if col in fieldnames:
+            if col in defaults:
                 df.loc[:, col] = df.loc[:, col].fillna(defaults[col])
             if col in converters:
 
@@ -735,15 +736,14 @@ class Pst(object):
         assert os.path.exists(filename), "couldn't find control file {0}".format(filename)
         f = open(filename, 'r')
         last_section = ""
-        req_sections = {"* parameter data":False, "* observation data":False,
-                        "* model command line":False,"* model input":False, "* model output":False}
+        req_sections = {"* parameter data", "* observation data","* model command line","* control data"}
+        sections_found = set()
         while True:
 
             next_section, section_lines, comments = self._read_section_comments(f, True)
 
 
             if "* control data" in last_section.lower():
-                req_sections[last_section] = True
                 iskeyword = False
                 if "keyword" in last_section.lower():
                     iskeyword = True
@@ -759,44 +759,30 @@ class Pst(object):
                             self.reg_data.__setattr__(reg_opt, ppo.pop(reg_opt))
 
             elif "* parameter groups" in last_section.lower():
-                req_sections[last_section] = True
                 self.parameter_groups = self._cast_df_from_lines(last_section, section_lines, self.pargp_fieldnames,
                                                                 self.pargp_converters, self.pargp_defaults)
                 self.parameter_groups.index = self.parameter_groups.pargpnme
 
             elif "* parameter data" in last_section.lower():
-                req_sections[last_section] = True
                 self.parameter_data = self._cast_df_from_lines(last_section, section_lines, self.par_fieldnames,
                                                                self.par_converters, self.par_defaults)
                 self.parameter_data.index = self.parameter_data.parnme
 
             elif "* observation data" in last_section.lower():
-                req_sections[last_section] = True
                 self.observation_data = self._cast_df_from_lines(last_section, section_lines, self.obs_fieldnames,
                                                                 self.obs_converters, self.obs_defaults)
                 self.observation_data.index = self.observation_data.obsnme
 
             elif "* model command line" in last_section.lower():
-                req_sections[last_section] = True
                 for line in section_lines:
                     self.model_command.append(line.strip())
 
             elif "* model input" in last_section.lower():
-                req_sections[last_section] = True
-                if section_lines[0].strip().split()[0].lower() == "external":
-                    filename = section_lines[0].strip().split()[1]
-                    if not os.path.exists(filename):
-                        raise Exception("Pst.flex_load() external template data file '{0}' not found".format(filename))
-
-                    df = pd.read_csv(filename)
-                    df.columns = df.columns.str.lower()
-                    if "pest_file" not in df.columns:
-                        raise Exception("Pst.flex_load() external template data file must have 'pest_file' in columns")
-                    if  "model_file" not in df.columns:
-                        raise Exception("Pst.flex_load() external template data file must have 'model_file' in columns")
-                    for pfile,mfile in zip(df.pest_file,df.model_file):
-                        self.template_files.append(pfile)
-                        self.input_files.append(mfile)
+                if last_section.strip().split()[-1].lower() == "external":
+                    io_df = self._cast_df_from_lines(last_section, section_lines, ["pest_file","model_file"],
+                                                                     [], [])
+                    self.template_files.extend(io_df.pest_file.tolist())
+                    self.input_files.extend(io_df.model_file.tolist())
 
                 else:
                     for line in section_lines:
@@ -805,21 +791,12 @@ class Pst(object):
                         self.input_files.append(raw[1])
 
             elif "* model output" in last_section.lower():
-                req_sections[last_section] = True
-                if section_lines[0].strip().split()[0].lower() == "external":
-                    filename = section_lines[0].strip().split()[1]
-                    if not os.path.exists(filename):
-                        raise Exception("Pst.flex_load() external instruction data file '{0}' not found".format(
-                                        filename))
-                    df = pd.read_csv(filename)
-                    df.columns = df.columns.str.lower()
-                    if "pest_file" not in df.columns:
-                        raise Exception("Pst.flex_load() external instruction data file must have 'pest_file' in columns")
-                    if "model_file" not in df.columns:
-                        raise Exception("Pst.flex_load() external instruction data file must have 'model_file' in columns")
-                    for pfile, mfile in zip(df.pest_file, df.model_file):
-                        self.instruction_files.append(pfile)
-                        self.output_files.append(mfile)
+                if last_section.strip().split()[-1].lower() == "external":
+                    io_df = self._cast_df_from_lines(last_section, section_lines, ["pest_file", "model_file"],
+                                                     [], [])
+                    self.instruction_files.extend(io_df.pest_file.tolist())
+                    self.output_files.extend(io_df.model_file.tolist())
+
                 else:
                     for iline, line in enumerate(section_lines):
                         raw = line.split()
@@ -827,34 +804,43 @@ class Pst(object):
                         self.output_files.append(raw[1])
 
             elif "* prior information" in last_section.lower():
-                req_sections[last_section] = True
-                self._cast_prior_df_from_lines(section_lines)
+                self._cast_prior_df_from_lines(last_section, section_lines)
 
             elif len(last_section) > 0:
                 print("Pst._load_version2() warning: unrecognized section: ", last_section)
                 self.comments[last_section] = section_lines
 
-            last_section = next_section
-            if next_section == None or len(section_lines) == 0:
+            if next_section is None or len(section_lines) == 0:
                 break
+            next_section_generic = next_section.replace("external","").replace("keyword","").strip().lower()
+            if next_section_generic in sections_found:
+                raise Exception("duplicate control file sections for '{0}'".format(next_section_generic))
+            sections_found.add(next_section_generic)
+
+            last_section = next_section
 
         not_found = []
-        for section,found in req_sections.items():
-            if not found:
+        for section in req_sections:
+            if section not in sections_found:
                 not_found.append(section)
         if len(not_found) > 0:
             raise Exception("Pst._load_version2() error: the following required sections were"+\
                     "not found:{0}".format(",".join(not_found)))
+        if "* model input/output" in sections_found and \
+            ("* model input" in sections_found or "* model output" in sections_found):
+            raise Exception("'* model input/output cant be used with '* model input' or '* model output'")
 
     @staticmethod
     def _parse_external_line(line):
         raw = line.strip().split()
         filename = raw[0]
-        if len(raw) % 2 == 0:
-            s = "wrong number of entries on 'external' line:'{0}\n".format(line)
-            s += "Should include 'filename', then pairs of key-value options"
-            raise Exception(s)
-        options = {k.lower():v.lower() for k,v in zip(raw[1:-1],raw[2:])}
+        options = {}
+        if len(raw) > 1:
+            if len(raw) % 2 == 0:
+                s = "wrong number of entries on 'external' line:'{0}\n".format(line)
+                s += "Should include 'filename', then pairs of key-value options"
+                raise Exception(s)
+            options = {k.lower():v.lower() for k,v in zip(raw[1:-1],raw[2:])}
         return filename, options
 
 
@@ -1372,26 +1358,26 @@ class Pst(object):
         for k,v in self.pestpp_options.items():
             f_out.write("{0:30} {1:>10}\n".format(k,v))
 
-        f_out.write("* parameter groups\n")
+        f_out.write("* parameter groups external\n")
         pargp_filename = new_filename.lower().replace(".pst",".pargrp_data.csv")
         self.parameter_groups.to_csv(pargp_filename,index=False)
-        f_out.write("external {0}\n".format(pargp_filename))
+        f_out.write("{0}\n".format(pargp_filename))
 
-        f_out.write("* parameter data\n")
+        f_out.write("* parameter data external\n")
         par_filename = new_filename.lower().replace(".pst", ".par_data.csv")
         self.parameter_data.to_csv(par_filename,index=False)
-        f_out.write("external {0}\n".format(par_filename))
+        f_out.write("{0}\n".format(par_filename))
 
-        f_out.write("* observation data\n")
+        f_out.write("* observation data external\n")
         obs_filename = new_filename.lower().replace(".pst", ".obs_data.csv")
         self.observation_data.to_csv(obs_filename,index=False)
-        f_out.write("external {0}\n".format(obs_filename))
+        f_out.write("{0}\n".format(obs_filename))
 
         f_out.write("* model command line\n")
         for mc in self.model_command:
             f_out.write("{0}\n".format(mc))
 
-        f_out.write("* model input\n")
+        f_out.write("* model input external\n")
         io_filename = new_filename.lower().replace(".pst",".tplfile_data.csv")
         pfiles = self.template_files
         #pfiles.extend(self.instruction_files)
@@ -1399,18 +1385,18 @@ class Pst(object):
         #mfiles.extend(self.output_files)
         io_df = pd.DataFrame({"pest_file":pfiles,"model_file":mfiles})
         io_df.to_csv(io_filename,index=False)
-        f_out.write("external {0}\n".format(io_filename))
+        f_out.write("{0}\n".format(io_filename))
 
-        f_out.write("* model output\n")
+        f_out.write("* model output external\n")
         io_filename = new_filename.lower().replace(".pst", ".insfile_data.csv")
         pfiles = self.instruction_files
         mfiles = self.output_files
         io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
         io_df.to_csv(io_filename,index=False)
-        f_out.write("external {0}\n".format(io_filename))
+        f_out.write("{0}\n".format(io_filename))
 
         if self.prior_information.shape[0] > 0:
-            f_out.write("* prior information\n")
+            f_out.write("* prior information external\n")
             pi_filename = new_filename.lower().replace(".pst", ".pi_data.csv")
             self.prior_information.to_csv(pi_filename,index=False)
             f_out.write("external {0}\n".format(pi_filename))
