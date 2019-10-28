@@ -1357,9 +1357,10 @@ class Pst(object):
 
 
 
-    def _write_version2(self,new_filename,pst_path):
-        if pst_path == ".":
-            pst_path = ""
+    def _write_version2(self,new_filename,use_pst_path=True):
+        pst_path = "."
+        if use_pst_path:
+            pst_path, _ = Pst._parse_path_agnostic(new_filename)
 
         self.new_filename = new_filename
         self.rectify_pgroups()
@@ -1441,7 +1442,7 @@ class Pst(object):
             f_out.write("{0}\n".format(pi_filename))
 
 
-    def write(self,new_filename,version=None,pst_path="."):
+    def write(self,new_filename,version=None):
         """main entry point to write a pest control file.
 
         Args:
@@ -1450,12 +1451,6 @@ class Pst(object):
             version (`int`): flag for which version of control file to write (must be 1 or 2).
                 if None, uses Pst._version, which set in the constructor and modified
                 during the load
-            pst_path (`str`): path from control file location to external file location(s).  For example,
-                if the control file is being written in the directory "template", you probably want the external
-                files to also be written in "template" but the control file entries for the external files should
-                not have the "template" prepended to their filenames in the control file.  In this case,
-                `pst_path = "."` is for you.  Users are free to make `pst_path` whatevs string they want, but beware
-                bad times!.  Default is ".".  Only applies to control file version 2.
 
         Example::
 
@@ -1474,7 +1469,7 @@ class Pst(object):
         if version == 1:
             return self._write_version1(new_filename=new_filename)
         elif version == 2:
-            return self._write_version2(new_filename=new_filename,pst_path=pst_path)
+            return self._write_version2(new_filename=new_filename)
         else:
             raise Exception("Pst.write() error: version must be 1 or 2, not '{0}'".format(version))
 
