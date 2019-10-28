@@ -604,14 +604,17 @@ def new_format_test_2():
     pst_dir = "newpst"
     pst_files = [f for f in os.listdir(pst_dir) if f.endswith(".pst")]
     b_d = os.getcwd()
-    os.chdir(pst_dir)
-    for pst_file in pst_files:
-        if "whitespace" not in pst_file:
-            continue
-        pst = pyemu.Pst(os.path.join(pst_file))
+    try:
+        os.chdir(pst_dir)
+        for pst_file in pst_files:
+            if "whitespace" not in pst_file:
+                continue
+            pst = pyemu.Pst(os.path.join(pst_file))
+    except Exception as e:
 
+        os.chdir(b_d)
+        raise Exception(e)
     os.chdir(b_d)
-
 
 def new_format_test():
     import numpy as np
