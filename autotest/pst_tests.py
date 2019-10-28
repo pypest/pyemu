@@ -599,6 +599,20 @@ def lt_gt_constraint_names_test():
     assert pst.greater_than_pi_constraints.shape[0] == 0
 
 
+def new_format_test_2():
+    import pyemu
+    pst_dir = "newpst"
+    pst_files = [f for f in os.listdir(pst_dir) if f.endswith(".pst")]
+    b_d = os.getcwd()
+    os.chdir(pst_dir)
+    for pst_file in pst_files:
+        if "whitespace" not in pst_file:
+            continue
+        pst = pyemu.Pst(os.path.join(pst_file))
+
+    os.chdir(b_d)
+
+
 def new_format_test():
     import numpy as np
     import pyemu
@@ -764,7 +778,8 @@ def process_output_files_test():
 if __name__ == "__main__":
     #process_output_files_test()
     #change_limit_test()
-    new_format_test()
+    #new_format_test()
+    new_format_test_2()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()

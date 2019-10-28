@@ -606,12 +606,13 @@ class Pst(object):
     def _read_line_comments(self,f,forgive):
         comments = []
         while True:
-            line = f.readline().lower().strip()
+            org_line = f.readline()
+            line = org_line.lower().strip()
+
             self.lcount += 1
-            if line == '':
+            if org_line == '':
                 if forgive:
-                    line = None
-                    break
+                    return None,comments
                 else:
                     raise Exception("unexpected EOF")
             if line.startswith("++"):
@@ -620,7 +621,7 @@ class Pst(object):
                 comments.append(line.strip())
             else:
                 break
-        return line, comments
+        return org_line.strip(), comments
 
 
     def _read_section_comments(self,f,forgive):
@@ -631,6 +632,9 @@ class Pst(object):
             section_comments.extend(comments)
             if line is None or line.startswith("*"):
                 break
+            if len(line.strip()) == 0:
+                continue
+
             lines.append(line)
         return line,lines,section_comments
 
@@ -646,12 +650,13 @@ class Pst(object):
                     raise Exception("Pst._cast_df_from_lines() error: external file '{0}' not found".format(filename))
                 sep = options.get("sep",',')
                 delim_whitespace = False
+                missing_vals = options.get("missing_values", None)
                 if sep.lower() == 'w':
-                    delim_whitespace = True
-                    sep = None
-                missing_vals = options.get("missing_values",None)
-                df = pd.read_csv(filename,sep=sep,delim_whitespace=delim_whitespace,na_values=missing_vals)
+                    df = pd.read_csv(filename,delim_whitespace=delim_whitespace,na_values=missing_vals)
+                else:
+                    df = pd.read_csv(filename, sep=sep, na_values=missing_vals)
                 df.columns = df.columns.str.lower()
+
                 dfs.append(df)
 
             df = pd.concat(dfs)
@@ -660,7 +665,7 @@ class Pst(object):
             extra = []
             raw = []
             for line in lines:
-
+                line = line.lower()
                 if '#' in line:
                     er = line.strip().split('#')
                     extra.append('#'.join(er[1:]))
@@ -688,16 +693,20 @@ class Pst(object):
 
         #if lines[0].strip().split()[0].lower() == "external":
         if section.strip().split()[-1].lower() == "external":
-            filename = lines[0].strip().split()[1]
-            if not os.path.exists(filename):
-                raise Exception("Pst._cast_prior_df_from_lines() error: external file" +\
-                                            "'{0}' not found".format(filename))
-            df = pd.read_csv(filename)
-            df.columns = df.columns.str.lower()
-            for field in pst_utils.pst_config["prior_fieldnames"]:
-                if field not in df.columns:
+            dfs = []
+            for line in lines:
+                filename = line.strip().split()[0]
+                if not os.path.exists(filename):
                     raise Exception("Pst._cast_prior_df_from_lines() error: external file" +\
-                                            "'{0}' missing required field '{1}'".format(filename,field))
+                                                "'{0}' not found".format(filename))
+                df = pd.read_csv(filename)
+                df.columns = df.columns.str.lower()
+                for field in pst_utils.pst_config["prior_fieldnames"]:
+                    if field not in df.columns:
+                        raise Exception("Pst._cast_prior_df_from_lines() error: external file" +\
+                                                "'{0}' missing required field '{1}'".format(filename,field))
+                dfs.append(df)
+            df = pd.concat(dfs)
             self.prior_information = df
             self.prior_information.index = self.prior_information.pilbl
 
@@ -824,7 +833,7 @@ class Pst(object):
             if section not in sections_found:
                 not_found.append(section)
         if len(not_found) > 0:
-            raise Exception("Pst._load_version2() error: the following required sections were"+\
+            raise Exception("Pst._load_version2() error: the following required sections were "+\
                     "not found:{0}".format(",".join(not_found)))
         if "* model input/output" in sections_found and \
             ("* model input" in sections_found or "* model output" in sections_found):
@@ -834,6 +843,7 @@ class Pst(object):
     def _parse_external_line(line):
         raw = line.strip().split()
         filename = raw[0]
+        raw = line.lower().strip().split()
         options = {}
         if len(raw) > 1:
             if len(raw) % 2 == 0:
@@ -842,10 +852,6 @@ class Pst(object):
                 raise Exception(s)
             options = {k.lower():v.lower() for k,v in zip(raw[1:-1],raw[2:])}
         return filename, options
-
-
-
-
 
     def load(self,filename):
         """ entry point load the pest control file.
