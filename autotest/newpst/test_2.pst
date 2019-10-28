@@ -14,7 +14,7 @@ debug_parse_only  True
 * parameter data external
 
 test.par_data.dat sep w missing_value missing
-test.pr_data.csv 
+test.par_data.csv 
 
 * observation data external
 test.obs_data.dat sep w missing_value missing

@@ -49,6 +49,9 @@ pst_config["par_format"] = {"parnme": SFMT, "partrans": SFMT,
                            "parlbnd": FFMT, "parubnd": FFMT,
                            "pargp": SFMT, "scale": FFMT,
                            "offset": FFMT, "dercom": IFMT}
+pst_config["par_alias_map"] = {"name":"parnme","transform":"partrans","value":"parval1",
+                                "upper_bound":"parubnd","lower_bound":"parlbnd",
+                               "group":"pargp"}
 pst_config["par_converters"] = {"parnme": str_con, "pargp": str_con,
                                 "parval1":np.float,"parubnd":np.float,
                                 "parlbnd":np.float,"scale":np.float,
@@ -92,7 +95,7 @@ pst_config["obs_converters"] = {"obsnme": str_con, "obgnme": str_con,
                                 "weight":np.float,"obsval":np.float}
 pst_config["obs_defaults"] = {"obsnme":"dum","obsval":1.0e+10,
                      "weight":1.0,"obgnme":"obgnme"}
-
+pst_config["obs_alias_map"] = {"name":"obsnme","value":"obsval","group":"obgnme"}
 
 # prior info stuff
 pst_config["null_prior"] = pd.DataFrame({"pilbl": None,
