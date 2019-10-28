@@ -638,6 +638,36 @@ class Pst(object):
             lines.append(line)
         return line,lines,section_comments
 
+
+    @staticmethod
+    def _parse_external_line(line,pst_path="."):
+        raw = line.strip().split()
+        existing_path,filename = Pst._parse_path_agnostic(raw[0])
+        if pst_path is not None:
+            if pst_path != ".":
+                filename = os.path.join(pst_path,filename)
+        else:
+            filename = os.path.join(existing_path,filename)
+
+        raw = line.lower().strip().split()
+        options = {}
+        if len(raw) > 1:
+            if len(raw) % 2 == 0:
+                s = "wrong number of entries on 'external' line:'{0}\n".format(line)
+                s += "Should include 'filename', then pairs of key-value options"
+                raise Exception(s)
+            options = {k.lower(): v.lower() for k, v in zip(raw[1:-1], raw[2:])}
+        return filename, options
+
+
+    @staticmethod
+    def _parse_path_agnostic(filename):
+        filename = filename.replace("\\",os.sep).replace("/",os.sep)
+        return os.path.split(filename)
+
+
+
+
     @staticmethod
     def _cast_df_from_lines(section,lines, fieldnames, converters, defaults):
         #raw = lines[0].strip().split()
@@ -839,19 +869,7 @@ class Pst(object):
             ("* model input" in sections_found or "* model output" in sections_found):
             raise Exception("'* model input/output cant be used with '* model input' or '* model output'")
 
-    @staticmethod
-    def _parse_external_line(line):
-        raw = line.strip().split()
-        filename = raw[0]
-        raw = line.lower().strip().split()
-        options = {}
-        if len(raw) > 1:
-            if len(raw) % 2 == 0:
-                s = "wrong number of entries on 'external' line:'{0}\n".format(line)
-                s += "Should include 'filename', then pairs of key-value options"
-                raise Exception(s)
-            options = {k.lower():v.lower() for k,v in zip(raw[1:-1],raw[2:])}
-        return filename, options
+
 
     def load(self,filename):
         """ entry point load the pest control file.
@@ -1339,7 +1357,10 @@ class Pst(object):
 
 
 
-    def _write_version2(self,new_filename,update_regul=True,external=True):
+    def _write_version2(self,new_filename,pst_path):
+        if pst_path == ".":
+            pst_path = ""
+
         self.new_filename = new_filename
         self.rectify_pgroups()
         self.rectify_pi()
@@ -1366,16 +1387,22 @@ class Pst(object):
 
         f_out.write("* parameter groups external\n")
         pargp_filename = new_filename.lower().replace(".pst",".pargrp_data.csv")
+        if pst_path is not None:
+            pargp_filename = os.path.join(pst_path,os.path.split(pargp_filename)[-1])
         self.parameter_groups.to_csv(pargp_filename,index=False)
         f_out.write("{0}\n".format(pargp_filename))
 
         f_out.write("* parameter data external\n")
         par_filename = new_filename.lower().replace(".pst", ".par_data.csv")
+        if pst_path is not None:
+            par_filename = os.path.join(pst_path,os.path.split(par_filename)[-1])
         self.parameter_data.to_csv(par_filename,index=False)
         f_out.write("{0}\n".format(par_filename))
 
         f_out.write("* observation data external\n")
         obs_filename = new_filename.lower().replace(".pst", ".obs_data.csv")
+        if pst_path is not None:
+            obs_filename = os.path.join(pst_path,os.path.split(obs_filename)[-1])
         self.observation_data.to_csv(obs_filename,index=False)
         f_out.write("{0}\n".format(obs_filename))
 
@@ -1385,6 +1412,8 @@ class Pst(object):
 
         f_out.write("* model input external\n")
         io_filename = new_filename.lower().replace(".pst",".tplfile_data.csv")
+        if pst_path is not None:
+            io_filename = os.path.join(pst_path,os.path.split(io_filename)[-1])
         pfiles = self.template_files
         #pfiles.extend(self.instruction_files)
         mfiles = self.input_files
@@ -1395,6 +1424,8 @@ class Pst(object):
 
         f_out.write("* model output external\n")
         io_filename = new_filename.lower().replace(".pst", ".insfile_data.csv")
+        if pst_path is not None:
+            io_filename = os.path.join(pst_path,os.path.split(io_filename)[-1])
         pfiles = self.instruction_files
         mfiles = self.output_files
         io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
@@ -1404,26 +1435,33 @@ class Pst(object):
         if self.prior_information.shape[0] > 0:
             f_out.write("* prior information external\n")
             pi_filename = new_filename.lower().replace(".pst", ".pi_data.csv")
+            if pst_path is not None:
+                pi_filename = os.path.join(pst_path, os.path.split(pi_filename)[-1])
             self.prior_information.to_csv(pi_filename,index=False)
             f_out.write("external {0}\n".format(pi_filename))
 
 
-    def write(self,new_filename,update_regul=True,version=None):
+    def write(self,new_filename,version=None,pst_path="."):
         """main entry point to write a pest control file.
 
         Args:
             new_filename (`str`): name of the new pest control file
-            update_regul (`bool`): flag to update zero-order Tikhonov prior information
-                equations to prefer the current parameter values
+
             version (`int`): flag for which version of control file to write (must be 1 or 2).
                 if None, uses Pst._version, which set in the constructor and modified
                 during the load
+            pst_path (`str`): path from control file location to external file location(s).  For example,
+                if the control file is being written in the directory "template", you probably want the external
+                files to also be written in "template" but the control file entries for the external files should
+                not have the "template" prepended to their filenames in the control file.  In this case,
+                `pst_path = "."` is for you.  Users are free to make `pst_path` whatevs string they want, but beware
+                bad times!.  Default is ".".  Only applies to control file version 2.
 
         Example::
 
             pst = pyemu.Pst("my.pst")
             pst.parrep("my.par")
-            pst.write(my_new.pst", update_regul=True)
+            pst.write(my_new.pst")
 
         """
         if version is None:
@@ -1434,13 +1472,13 @@ class Pst(object):
         print(vstring)
 
         if version == 1:
-            return self._write_version1(new_filename=new_filename,update_regul=update_regul)
+            return self._write_version1(new_filename=new_filename)
         elif version == 2:
-            return self._write_version2(new_filename=new_filename, update_regul=update_regul)
+            return self._write_version2(new_filename=new_filename,pst_path=pst_path)
         else:
             raise Exception("Pst.write() error: version must be 1 or 2, not '{0}'".format(version))
 
-    def _write_version1(self,new_filename,update_regul=False):
+    def _write_version1(self,new_filename):
         """write a version 1 pest control file
 
 

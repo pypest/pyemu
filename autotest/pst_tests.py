@@ -777,12 +777,49 @@ def process_output_files_test():
     s2 = i2.read_output_file(out_files[1])
     assert s2.loc["h01_02","obsval"] == 1.024
 
+def new_format_path_mechanics_test():
+    import pyemu
+
+    l_path = "d1/d2/d3/d4/test.pst"
+    w_path = "d1\\d2\\d3\\d4\\test.pst"
+    true_path = os.path.join("d1","d2","d3","d4")
+    test_path = pyemu.Pst._parse_path_agnostic(w_path)
+    assert test_path[0] == true_path
+    assert test_path[1] == "test.pst"
+    test_path = pyemu.Pst._parse_path_agnostic(l_path)
+    assert test_path[0] == true_path
+    assert test_path[1] == "test.pst"
+
+    l_eline = "d1/d2/d3/d4/Test.dat sep W"
+    filename, options = pyemu.Pst._parse_external_line(l_eline,pst_path=".")
+    assert filename == "Test.dat"
+    assert "sep" in options,options
+    assert options["sep"] == "w",options
+    l_eline = "d1/d2/d3/d4/Test.dat sep W"
+    filename, options = pyemu.Pst._parse_external_line(l_eline, pst_path="template")
+    assert filename == os.path.join("template","Test.dat")
+    assert "sep" in options, options
+    assert options["sep"] == "w", options
+
+    w_eline = "d1\\d2\\d3\\d4\\Test.dat sep W"
+    filename, options = pyemu.Pst._parse_external_line(w_eline, pst_path=".")
+    assert filename == "Test.dat"
+    assert "sep" in options, options
+    assert options["sep"] == "w", options
+
+    w_eline = "d1\\d2\\d3\\d4\\Test.dat sep W"
+    filename, options = pyemu.Pst._parse_external_line(w_eline, pst_path="template")
+    assert filename == os.path.join("template","Test.dat")
+    assert "sep" in options, options
+    assert options["sep"] == "w", options
+
 
 if __name__ == "__main__":
     #process_output_files_test()
     #change_limit_test()
     #new_format_test()
-    new_format_test_2()
+    #new_format_test_2()
+    new_format_path_mechanics_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()
