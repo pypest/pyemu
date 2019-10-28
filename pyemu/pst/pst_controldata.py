@@ -69,7 +69,7 @@ class RegData(object):
                 v = v.replace('[','').replace(']','')
                 super(RegData,self).__setattr__(v,d)
                 self.optional_dict[v] = o
-        self.should_write = ["phimlim","phimaccept","fracphim"]
+        self.should_write = ["phimlim","phimaccept","fracphim","wfinit"]
 
     def write(self,f):
         """ write the regularization section to an open

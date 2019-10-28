@@ -614,8 +614,10 @@ class Pst(object):
                     return None,comments
                 else:
                     raise Exception("unexpected EOF")
-            if line.startswith("++"):
+            if line.startswith("++") and line.split('++')[1].strip()[0] != "#":
                 self._parse_pestpp_line(line)
+            elif "++" in line:
+                comments.append(line.strip())
             elif line.startswith('#'):
                 comments.append(line.strip())
             else:
@@ -698,8 +700,7 @@ class Pst(object):
         else:
             extra = []
             raw = []
-            extra_lines = []
-            ntied = 0
+
             for iline,line in enumerate(lines):
                 line = line.lower()
                 if '#' in line:
@@ -709,23 +710,14 @@ class Pst(object):
                 else:
                     r = line.strip().split()
                     extra.append(np.NaN)
-                if "tied" in line:
-                    ntied += 1
+
                 raw.append(r)
 
             found_fieldnames = fieldnames[:len(raw[0])]
 
-            df = pd.DataFrame(raw[:-ntied],columns=found_fieldnames)
-            # special handling for tied pars
-            if ntied > 0:
-                tied_names = [r[0] for r in raw[-ntied:]]
-                partied = [r[1] for r in raw[-ntied:] ]
-                # swap to name index for just a sec...
-                idx = df.index
-                df.index = df.parnme
-                df.loc[tied_names,"partied"] = partied
-                df.index = idx
-            df.loc[:, "extra"] = extra[:-ntied]
+            df = pd.DataFrame(raw,columns=found_fieldnames)
+
+            df.loc[:, "extra"] = extra
 
 
         for col in fieldnames:
@@ -740,53 +732,59 @@ class Pst(object):
         return df
 
 
-    # def _cast_prior_df_from_lines(self,section, lines,pst_path="."):
-    #
-    #     if pst_path == ".":
-    #         pst_path = ""
-    #     if section.strip().split()[-1].lower() == "external":
-    #         dfs = []
-    #         for line in lines:
-    #             filename = line.strip().split()[0]
-    #             filename = os.path.join(pst_path,filename)
-    #             if not os.path.exists(filename):
-    #                 raise Exception("Pst._cast_prior_df_from_lines() error: external file" +\
-    #                                             "'{0}' not found".format(filename))
-    #             df = pd.read_csv(filename)
-    #             df.columns = df.columns.str.lower()
-    #             for field in pst_utils.pst_config["prior_fieldnames"]:
-    #                 if field not in df.columns:
-    #                     raise Exception("Pst._cast_prior_df_from_lines() error: external file" +\
-    #                                             "'{0}' missing required field '{1}'".format(filename,field))
-    #             dfs.append(df)
-    #         df = pd.concat(dfs)
-    #         self.prior_information = df
-    #         self.prior_information.index = self.prior_information.pilbl
-    #
-    #
-    #     else:
-    #         pilbl, obgnme, weight, equation = [], [], [], []
-    #         extra = []
-    #         for line in lines:
-    #             if '#' in line:
-    #                 er = line.split('#')
-    #                 raw = er[0].split()
-    #                 extra.append('#'.join(er[1:]))
-    #             else:
-    #                 extra.append(np.NaN)
-    #                 raw = line.split()
-    #             pilbl.append(raw[0].lower())
-    #             obgnme.append(raw[-1].lower())
-    #             weight.append(float(raw[-2]))
-    #             eq = ' '.join(raw[1:-2])
-    #             equation.append(eq)
-    #
-    #         self.prior_information = pd.DataFrame({"pilbl": pilbl,
-    #                                                "equation": equation,
-    #                                                "weight": weight,
-    #                                                "obgnme": obgnme})
-    #         self.prior_information.index = self.prior_information.pilbl
-    #         self.prior_information.loc[:,"extra"] = extra
+    def _cast_prior_df_from_lines(self,section, lines,pst_path="."):
+
+        if pst_path == ".":
+            pst_path = ""
+        if section.strip().split()[-1].lower() == "external":
+            dfs = []
+            for line in lines:
+                filename, options = Pst._parse_external_line(line, pst_path)
+                if not os.path.exists(filename):
+                    raise Exception("Pst._cast_prior_df_from_lines() error: external file '{0}' not found".format(filename))
+                sep = options.get("sep", ',')
+
+                missing_vals = options.get("missing_values", None)
+                if sep.lower() == 'w':
+                    df = pd.read_csv(filename, delim_whitespace=True, na_values=missing_vals)
+                else:
+                    df = pd.read_csv(filename, sep=sep, na_values=missing_vals)
+                df.columns = df.columns.str.lower()
+
+                for field in pst_utils.pst_config["prior_fieldnames"]:
+                    if field not in df.columns:
+                        raise Exception("Pst._cast_prior_df_from_lines() error: external file" +\
+                                                "'{0}' missing required field '{1}'".format(filename,field))
+                dfs.append(df)
+            df = pd.concat(dfs,axis=0,ignore_index=True)
+            self.prior_information = df
+            self.prior_information.index = self.prior_information.pilbl
+
+
+
+        else:
+            pilbl, obgnme, weight, equation = [], [], [], []
+            extra = []
+            for line in lines:
+                if '#' in line:
+                    er = line.split('#')
+                    raw = er[0].split()
+                    extra.append('#'.join(er[1:]))
+                else:
+                    extra.append(np.NaN)
+                    raw = line.split()
+                pilbl.append(raw[0].lower())
+                obgnme.append(raw[-1].lower())
+                weight.append(float(raw[-2]))
+                eq = ' '.join(raw[1:-2])
+                equation.append(eq)
+
+            self.prior_information = pd.DataFrame({"pilbl": pilbl,
+                                                   "equation": equation,
+                                                   "weight": weight,
+                                                   "obgnme": obgnme})
+            self.prior_information.index = self.prior_information.pilbl
+            self.prior_information.loc[:,"extra"] = extra
 
 
     def _load_version2(self,filename):
@@ -833,11 +831,28 @@ class Pst(object):
                 self.parameter_groups.index = self.parameter_groups.pargpnme
 
             elif "* parameter data" in last_section.lower():
-                self.parameter_data = self._cast_df_from_lines(last_section, section_lines, self.par_fieldnames,
+                # check for tied pars
+                ntied = 0
+                for line in section_lines:
+                    if "tied" in line:
+                        ntied += 1
+                if ntied > 0:
+                    slines = section_lines[:-ntied]
+                else:
+                    slines = section_lines
+                self.parameter_data = self._cast_df_from_lines(last_section, slines, self.par_fieldnames,
                                                                self.par_converters, self.par_defaults,
                                                                self.par_alias_map,pst_path=pst_path)
 
                 self.parameter_data.index = self.parameter_data.parnme
+                if ntied > 0:
+                    tied_pars,partied = [],[]
+                    for line in section_lines[-ntied:]:
+                        raw = line.strip().split()
+                        tied_pars.append(raw[0].strip().lower())
+                        partied.append(raw[1].strip().lower())
+                    self.parameter_data.loc[:,"partied"] = np.NaN
+                    self.parameter_data.loc[tied_pars,"partied"] = partied
 
             elif "* observation data" in last_section.lower():
                 self.observation_data = self._cast_df_from_lines(last_section, section_lines, self.obs_fieldnames,
@@ -863,7 +878,7 @@ class Pst(object):
                     self.template_files.append(raw[0])
                     self.input_files.append(raw[1])
                 for j in range(self.control_data.ninsfle):
-                    raw = section_lines[i+j]
+                    raw = section_lines[i+j+1].strip().split()
                     self.instruction_files.append(raw[0])
                     self.output_files.append(raw[1])
 
@@ -894,9 +909,16 @@ class Pst(object):
                         self.output_files.append(raw[1])
 
             elif "* prior information" in last_section.lower():
-                # self._cast_prior_df_from_lines(last_section, section_lines,pst_path=pst_path)
-                self.prior_information = Pst._cast_df_from_lines(last_section,section_lines,self.prior_fieldnames,
-                                                                 self.prior_format,{},pst_path=pst_path)
+                self._cast_prior_df_from_lines(last_section, section_lines,pst_path=pst_path)
+                #self.prior_information = Pst._cast_df_from_lines(last_section,section_lines,self.prior_fieldnames,
+                #                                                 self.prior_format,{},pst_path=pst_path)
+
+            elif last_section.lower() == "* regularization" or last_section.lower() == "* regularisation":
+                raw = section_lines[0].strip().split()
+                self.reg_data.phimlim = float(raw[0])
+                self.reg_data.phimaccept = float(raw[1])
+                raw = section_lines[1].strip().split()
+                self.reg_data.wfinit = float(raw[0])
 
             elif len(last_section) > 0:
                 print("Pst._load_version2() warning: unrecognized section: ", last_section)
