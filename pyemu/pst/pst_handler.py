@@ -1438,7 +1438,7 @@ class Pst(object):
             if pst_path is not None:
                 pi_filename = os.path.join(pst_path, os.path.split(pi_filename)[-1])
             self.prior_information.to_csv(pi_filename,index=False)
-            f_out.write("external {0}\n".format(pi_filename))
+            f_out.write("{0}\n".format(pi_filename))
 
 
     def write(self,new_filename,version=None,pst_path="."):

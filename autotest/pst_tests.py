@@ -93,7 +93,7 @@ def pst_manip_test():
     pst.write(new_path)
     pst = Pst(new_path)
     pst.svd_data.maxsing = 1
-    pst.write(new_path, update_regul=True)
+    pst.write(new_path)
 
 
 def load_test():
@@ -119,9 +119,9 @@ def load_test():
                 continue
             out_name = os.path.join(temp_dir, pst_file)
             print(out_name)
-            # p.write(out_name,update_regul=True)
+            # p.write(out_name)
             try:
-                p.write(out_name, update_regul=True)
+                p.write(out_name)
             except Exception as e:
                 exceptions.append(pst_file + " write fail: " + str(e))
                 continue
@@ -817,9 +817,9 @@ def new_format_path_mechanics_test():
 if __name__ == "__main__":
     #process_output_files_test()
     #change_limit_test()
-    #new_format_test()
+    new_format_test()
     #new_format_test_2()
-    new_format_path_mechanics_test()
+    #new_format_path_mechanics_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()
