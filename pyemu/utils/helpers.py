@@ -1025,7 +1025,7 @@ def pst_from_io_files(tpl_files, in_files, ins_files, out_files,
             pst_path, os.path.split(out_file)[-1]) for out_file in out_files]
 
     if pst_filename:
-        new_pst.write(pst_filename,update_regul=True)
+        new_pst.write(pst_filename)
     return new_pst
 
 
