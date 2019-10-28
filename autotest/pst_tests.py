@@ -653,13 +653,6 @@ def new_format_test_2():
             assert pst.npar_adj == new_pst.npar_adj
 
 
-
-    # except Exception as e:
-    #
-    #     os.chdir(b_d)
-    #     raise Exception(str(e))
-    # os.chdir(b_d)
-
 def new_format_test():
     import numpy as np
     import pyemu

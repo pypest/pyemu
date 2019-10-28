@@ -3102,7 +3102,7 @@ def apply_list_pars():
             #     df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
             #                                                                      x.irow2, x.icol2), axis = 1)
             if pak in sp_mlts.keys():
-                raise Exception("duplicate multplier csv for pak {0}".format(pak))
+                raise Exception("duplicate multiplier csv for pak {0}".format(pak))
             if df.shape[0] == 0:
                 raise Exception("empty dataframe for spatial list file: {0}".format(f))
             sp_mlts[pak] = df

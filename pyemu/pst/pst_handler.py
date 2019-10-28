@@ -1581,8 +1581,7 @@ class Pst(object):
 
         f_out.write("* model input/output\n")
         for tplfle,infle in zip(self.template_files,self.input_files):
-
-            f_out.write('{0} {1}]\n'.format(tplfle,infle))
+            f_out.write('{0} {1}\n'.format(tplfle,infle))
         for insfle,outfle in zip(self.instruction_files,self.output_files):
             f_out.write("{0} {1}\n".format(insfle,outfle))
 
