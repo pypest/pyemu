@@ -692,12 +692,15 @@ class Pst(object):
                         df.loc[:, hard] = df.pop(easy)
                 dfs.append(df)
 
+
             df = pd.concat(dfs,axis=0,ignore_index=True)
 
         else:
             extra = []
             raw = []
-            for line in lines:
+            extra_lines = []
+            ntied = 0
+            for iline,line in enumerate(lines):
                 line = line.lower()
                 if '#' in line:
                     er = line.strip().split('#')
@@ -706,10 +709,23 @@ class Pst(object):
                 else:
                     r = line.strip().split()
                     extra.append(np.NaN)
+                if "tied" in line:
+                    ntied += 1
                 raw.append(r)
+
             found_fieldnames = fieldnames[:len(raw[0])]
-            df = pd.DataFrame(raw,columns=found_fieldnames)
-            df.loc[:, "extra"] = extra
+
+            df = pd.DataFrame(raw[:-ntied],columns=found_fieldnames)
+            # special handling for tied pars
+            if ntied > 0:
+                tied_names = [r[0] for r in raw[-ntied:]]
+                partied = [r[1] for r in raw[-ntied:] ]
+                # swap to name index for just a sec...
+                idx = df.index
+                df.index = df.parnme
+                df.loc[tied_names,"partied"] = partied
+                df.index = idx
+            df.loc[:, "extra"] = extra[:-ntied]
 
 
         for col in fieldnames:
@@ -820,6 +836,7 @@ class Pst(object):
                 self.parameter_data = self._cast_df_from_lines(last_section, section_lines, self.par_fieldnames,
                                                                self.par_converters, self.par_defaults,
                                                                self.par_alias_map,pst_path=pst_path)
+
                 self.parameter_data.index = self.parameter_data.parnme
 
             elif "* observation data" in last_section.lower():
