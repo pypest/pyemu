@@ -188,10 +188,14 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
     [os.remove(x) for x in os.listdir() if ("_per_" in x) and ("_alpha_" in x)]
     [os.remove(x) for x in os.listdir() if x == "hess_progress.csv"]
 
+    step_mults = list(np.logspace(-5, 0, 12))
+    #step_mults = [0.1]  # small step to check updating etc.
+    #step_mults = np.linspace(0.1,1.0,10)
+
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints,finite_diff_grad=finite_diff_grad)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,13)),constraints=constraints,biobj_weight=biobj_weight,
+        esqp.update(step_mult=step_mults,constraints=constraints,biobj_weight=biobj_weight,
                     hess_self_scaling=hess_self_scaling,hess_update=hess_update,damped=damped,
                     finite_diff_grad=finite_diff_grad,derinc=derinc,
                     cma=cma,rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
@@ -275,14 +279,14 @@ def invest(version,constraints=False):
             "draw_mult": [3e-3],
             "en_size": [10],
             "hess_self_scaling": [False],#[2],#[False],
-            "hess_update": [False],
-            "damped": [False],#,True],
+            "hess_update": [True],
+            "damped": [False],
             "finite_diff_grad": [True],
-            "derinc": [0.0001,0.01],
+            "derinc": [0.01],
             "nit": [50]
             }
     #"draw_mult": [3e-2,3e-33e-4]
-    #"alpha_base": [0.1, 0.2],
+    #"alpha_base": [0.1, 0.2]
 
     runs = [{'initial_decvars': a, 'draw_mult': b, 'en_size': c, 'hess_self_scaling': d, 'hess_update': e,
              'damped': f, 'finite_diff_grad': g, 'derinc': h, 'nit': i}
@@ -660,7 +664,7 @@ if __name__ == "__main__":
     #rosenbrock_phi_progress(version="2par",finite_diff_grad=True)
     #rosenbrock_2par_grad_approx_invest()
 
-    #plot_2par_rosen(finite_diff_grad=False)
+    #plot_2par_rosen(finite_diff_grad=True)
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")

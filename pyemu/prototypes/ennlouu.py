@@ -487,6 +487,7 @@ class EnsembleSQP(EnsembleMethod):
             yHy = self.y.T * self.H * self.y  # also a scalar
             ssT = self.s * self.s.T  # outer prod
             Hy = self.H * self.y
+            Hy.col_names = self.s.col_names  # TODO: hack - rectify early on
 
             if damped is True and float(ys.x) <= 0:
                 # expanded form of Nocedal and Wright (18.16)
@@ -500,11 +501,12 @@ class EnsembleSQP(EnsembleMethod):
                 # expanded form of Nocedal and Wright (6.17)
                 self.logger.log("...using standard update form...")
                 self.H += (float(ys.x + yHy.x)) * ssT.x / float((ys ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
-                self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
+                self.H -= (((Hy * self.s.T).x + (self.s * Hy.T).x) / float(ys.x))
+                #self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)  # always be 2 (if H = I)?!?!?!
                 self.logger.log("...using standard update form...")
             self.logger.log("trying to update Hessian...")
 
-            if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):  #-1 * self.pst.svd_data.eigthresh):  #0): # can't soften!
+            if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):  #-1 * self.pst.svd_data.eigthresh):  #0): # can't soften otherwise point uphill!
                 if float(ys.x) <= 0 and damped:
                     self.logger.warn("Hessian update causes pos-def status to be violated despite using dampening...")
                     if self_scale:
@@ -527,9 +529,9 @@ class EnsembleSQP(EnsembleMethod):
                     if self_scale and damped and float(ys.x) <= 0:
                         self.hess_progress[self.iter_num] = "scaled (damped) ({0:8.3E}) and updated".format(hess_scalar)
                     elif self_scale:
-                        self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar)
+                        self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated (damped)".format(hess_scalar)
                     else:
-                        self.hess_progress[self.iter_num] = "updated only"
+                        self.hess_progress[self.iter_num] = "updated (damped) only"
                 except NameError:
                     self.hess_progress[self.iter_num] = "updated only"
 
@@ -715,7 +717,7 @@ class EnsembleSQP(EnsembleMethod):
         return en_cov
 
 
-    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=2,damped=True,
+    def update(self,step_mult=[0.8,1.0,1.2],alg="BFGS",hess_self_scaling=2,damped=True,
                grad_calc_only=False,finite_diff_grad=False,hess_update=True,
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
                cma=False,derinc=0.01,
@@ -885,7 +887,7 @@ class EnsembleSQP(EnsembleMethod):
         #base_step = 1.0  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
         # TODO: check notion of adjusting alpha wrt Hessian?  similar to line searching...
         base_step = ((self.pst.parameter_data.parubnd.mean()-self.pst.parameter_data.parlbnd.mean()) * 0.1) \
-                    / abs(self.search_d.x.mean())
+                    / abs(self.search_d.x.mean())  # TODO: check w JTW
         # TODO: handle log transforms here
         for istep, step in enumerate(step_mult):
             step_size = base_step * step
@@ -976,6 +978,7 @@ class EnsembleSQP(EnsembleMethod):
                                               + self.obsen_prefix.format(0))
 
                         # TODO: test curv condition here too?
+                        # TODO: calc_curv func (which BFGS func uses)
                         delta_parensemble_mean = self.parensemble_mean_next - self.parensemble_mean
                         curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
                                        row_names=self.phi_grad.row_names, col_names=self.phi_grad.col_names)
@@ -985,6 +988,7 @@ class EnsembleSQP(EnsembleMethod):
                         ys = y.T * s  # inner product
                         curv_per_alpha.loc["{}".format(step_size), "curv_cond"] = float(ys.x)
                         curv_per_alpha.loc["{}".format(step_size), "mean_en_phi"] = self.obsensemble_1.mean()['obs']
+                    #TODO: phi-curv trade-off here, not only for best alpha according to phi
 
                 self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}"
                                                                                            .format(step_size))))
@@ -996,9 +1000,19 @@ class EnsembleSQP(EnsembleMethod):
                 # TODO: support finite diffs in _filter_constraint_eval.
                 #  BUT do we want finite diffs to only be used for grad?
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1
+
+                # phi-curv trade-off per alpha
+                # TODO: eval_phi_curv_tradeoff()
+                if self.iter_num > 1:  # Hess never updated in first step so just take max phi red (no trade off)
+                    delta_parensemble_mean = self.parensemble_mean_1 - self.parensemble_mean
+                    y = self.phi_grad - self.curr_grad  # start with column vector
+                    s = delta_parensemble_mean.T  # start with column vector
+                    ys = y.T * s  # inner product
+                    curv_per_alpha.loc["{}".format(step_size), "curv_cond"] = float(ys.x)
+                    curv_per_alpha.loc["{}".format(step_size), "mean_en_phi"] = self.obsensemble_1['obs']
+
                 if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
-                    #self.parensemble_next = self.parensemble_1.copy()
                     [os.remove(x) for x in os.listdir() if (x.startswith("{0}.phi.{1}"
                                                                          .format(self.pst.filename,self.iter_num)))
                      and (x.endswith(".csv"))]
