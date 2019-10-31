@@ -279,7 +279,7 @@ def invest(version,constraints=False):
             "draw_mult": [3e-3],
             "en_size": [10],
             "hess_self_scaling": [False],#[2],#[False],
-            "hess_update": [True],
+            "hess_update": [False],
             "damped": [False],
             "finite_diff_grad": [True],
             "derinc": [0.01],
@@ -392,6 +392,23 @@ def cma_invest(version, constraints=False):
 
 # TODO: copy test dirs and make changes in there...
 # TODO: test for switching between en and finite diffs
+
+def phi_curv_tradeoff_invest():
+    import pandas as pd
+    import numpy as np
+    import matplotlib.pyplot as plt
+    d = os.path.join("ennlouu","rosenbrock_2par")
+    fig, ax = plt.subplots()
+    nit = 5
+    for it in range(4,nit):
+        df = pd.read_csv(os.path.join(d, "curv_and_phi_per_alpha_it{}.csv".format(it)), index_col=0)
+        ax.scatter(df['curv_cond'], np.log10(df['mean_en_phi']), c='purple', alpha=it/nit)
+    ax.set_xlabel("$y^{T}s$", fontsize=14)
+    ax.set_ylabel(r"log $\phi$", fontsize=14)
+    ax.axvline(0, color="r", linestyle="--")
+    plt.show()
+    plt.savefig(os.path.join(d,"tmp.pdf"))
+    plt.close()
 
 def natural_sort_key(s):
     import re
@@ -670,8 +687,10 @@ if __name__ == "__main__":
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    invest(version="2par")
+    #invest(version="2par")
     #invest(version="high_dim")
+
+    phi_curv_tradeoff_invest()
 
 
     #rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)

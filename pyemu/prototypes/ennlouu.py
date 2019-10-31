@@ -493,16 +493,16 @@ class EnsembleSQP(EnsembleMethod):
                 # expanded form of Nocedal and Wright (18.16)
                 self.logger.log("...using dampened update form...")
                 Hr = self.H * r
+                Hr.col_names = self.s.col_names
                 rHr = r.T * Hr
                 self.H += (float(rs.x + rHr.x)) * ssT.x / float((rs ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
-                self.H -= float((Hr.T * self.s).x + (self.s.T * Hr).x) / float(rs.x)
+                self.H -= (((Hr * self.s.T).x + (self.s * Hr.T).x) / float(rs.x))
                 self.logger.log("...using dampened update form...")
             else:
                 # expanded form of Nocedal and Wright (6.17)
                 self.logger.log("...using standard update form...")
                 self.H += (float(ys.x + yHy.x)) * ssT.x / float((ys ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
                 self.H -= (((Hy * self.s.T).x + (self.s * Hy.T).x) / float(ys.x))
-                #self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)  # always be 2 (if H = I)?!?!?!
                 self.logger.log("...using standard update form...")
             self.logger.log("trying to update Hessian...")
 
@@ -534,7 +534,7 @@ class EnsembleSQP(EnsembleMethod):
                         self.hess_progress[self.iter_num] = "updated (damped) only"
                 except NameError:
                     self.hess_progress[self.iter_num] = "updated only"
-
+        # TODO: consider here some interpolation between prev and new H for update... espec approp for en approxs?
         return self.H, self.hess_progress
 
     def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,idx,trunc_thresh=5):
