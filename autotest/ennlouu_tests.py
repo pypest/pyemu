@@ -275,15 +275,15 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=Fa
 def invest(version,constraints=False):
     import shutil
 
-    vars = {"initial_decvars": [[-1.1,-1.0]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]],
+    vars = {"initial_decvars": [[-1.1,-1.0]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
             "draw_mult": [3e-3],
             "en_size": [10],
-            "hess_self_scaling": [False],#[2],#[False],
-            "hess_update": [False],
+            "hess_self_scaling": [2,False],#[2],#[False],
+            "hess_update": [True],
             "damped": [False],
             "finite_diff_grad": [True],
             "derinc": [0.01],
-            "nit": [50]
+            "nit": [30]
             }
     #"draw_mult": [3e-2,3e-33e-4]
     #"alpha_base": [0.1, 0.2]
@@ -399,8 +399,8 @@ def phi_curv_tradeoff_invest():
     import matplotlib.pyplot as plt
     d = os.path.join("ennlouu","rosenbrock_2par")
     fig, ax = plt.subplots()
-    nit = 5
-    for it in range(4,nit):
+    nit = 13
+    for it in range(12,nit):
         df = pd.read_csv(os.path.join(d, "curv_and_phi_per_alpha_it{}.csv".format(it)), index_col=0)
         ax.scatter(df['curv_cond'], np.log10(df['mean_en_phi']), c='purple', alpha=it/nit)
     ax.set_xlabel("$y^{T}s$", fontsize=14)
@@ -409,6 +409,28 @@ def phi_curv_tradeoff_invest():
     plt.show()
     plt.savefig(os.path.join(d,"tmp.pdf"))
     plt.close()
+
+def test_pestpp_on_rosen():
+    import pyemu
+    import pandas as pd
+    d = os.path.join("ennlouu", "rosenbrock_2par")
+    prefix = "rosenbrock_2par"
+    pst = pyemu.Pst(os.path.join(d, prefix + ".pst"))
+    # glm
+    #[os.remove() for x in os.listdir(os.path.join(d)) if x.startswith("{}".format(prefix + "_glm.par") and ] # clean old
+    pst.control_data.noptmax = 50
+    pst.write(os.path.join(d, prefix + "_glm.pst"))
+    pyemu.os_utils.run("pestpp-glm {}_glm.pst".format(prefix), cwd=d)
+    # process results
+    #parfile_dict = {}
+    #for num_iter in range(1, pst.control_data.noptmax + 1):
+        #df = pyemu.pst_utils.read_parfile(os.path.join(d, prefix + "_glm.par{}".format(num_iter)))  # need bpa
+        #parfile_dict[num_iter] = df
+    #plot_2par_rosen(parfile_dict=parfile_dict)
+    df = pd.read_csv(os.path.join(d, prefix + "_glm.ipar"))
+    plot_2par_rosen(ipar=df, label="rosen_2par_surf_glm_{0}its_[{1},{2}].pdf"
+                    .format(pst.control_data.noptmax, pst.parameter_data.loc[pst.par_names[0],"parval1"],
+                            pst.parameter_data.loc[pst.par_names[1],"parval1"]))
 
 def natural_sort_key(s):
     import re
@@ -602,7 +624,7 @@ def plot_mean_dev_var_bar(opt_par_en="supply2_pest.parensemble.0000.csv",three_r
     plt.savefig("dec_vars.pdf")
 
 def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_grad=False,
-                    plot_init_decvars=False):
+                    plot_init_decvars=False,ipar=None):
     import numpy as np
     import matplotlib.pyplot as plt
     import pandas as pd
@@ -640,26 +662,30 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         par_ens = [x for x in os.listdir() if (x.startswith("rosenbrock_2par.pst."))
                    and (x.endswith(".csv")) and ("phi" not in x)]
 
-    for pe in par_ens:
-        if pe.split(".")[2] == "parensemble":
-            it = 0
-        else:
-            it = int(pe.split(".")[2])
-        df = pd.read_csv(pe,index_col=0)
-        if len(par_ens) > 30:
-            al = (np.log10(it + 1) / np.log10(len(par_ens) + 1))
-        else:
-            al = (it + 1) / (len(par_ens) + 1)
-        plt.scatter(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],
-                    c="b",alpha=al)
+    if ipar is not None:  # testing existing pestpp utils
+        #for k,df in parfile_dict.items():
+         #   plt.scatter(x=df.loc[pst.par_names[0],"parval1"], y=df.loc[pst.par_names[0],"parval1"], c="b", alpha=1.0)
+        plt.scatter(x=ipar.loc[:, pst.par_names[0]], y=ipar.loc[:, pst.par_names[1]], c="b", alpha=1.0)
+    else:
+        for pe in par_ens:
+            if pe.split(".")[2] == "parensemble":
+                it = 0
+            else:
+                it = int(pe.split(".")[2])
+            df = pd.read_csv(pe,index_col=0)
+            if len(par_ens) > 30:
+                al = (np.log10(it + 1) / np.log10(len(par_ens) + 1))
+            else:
+                al = (it + 1) / (len(par_ens) + 1)
+            plt.scatter(x=df[pst.parameter_data.parnme[0]], y=df[pst.parameter_data.parnme[1]], c="b",alpha=al)
 
-    if finite_diff_grad:
+    if finite_diff_grad or ipar is not None:
         plot_init_decvars = True
     if plot_init_decvars:
-        if len(par_ens) > 30:
-            al = (np.log10(1 + 1) / np.log10(len(par_ens) + 1)) / 2
-        else:
-            al = ((1 + 1) / (len(par_ens) + 1)) / 2
+        #if len(par_ens) > 30:
+         #   al = (np.log10(1 + 1) / np.log10(len(par_ens) + 1)) / 2
+        #else:
+         #   al = ((1 + 1) / (len(par_ens) + 1)) / 2
         #plt.scatter(x=[pst.parameter_data.parval1[0]],y=pst.parameter_data.parval1[1],
          #           marker="s",c="b",alpha=al)  # plot initial when using fds
         plt.scatter(x=[pst.parameter_data.parval1[0]],y=pst.parameter_data.parval1[1],
@@ -672,7 +698,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
 
 
 if __name__ == "__main__":
-    #rosenbrock_setup(version="2par",initial_decvars=[1.5,-1.5])
+    rosenbrock_setup(version="2par",initial_decvars=[-1.5,1.5])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
@@ -690,7 +716,8 @@ if __name__ == "__main__":
     #invest(version="2par")
     #invest(version="high_dim")
 
-    phi_curv_tradeoff_invest()
+    #phi_curv_tradeoff_invest()
+    test_pestpp_on_rosen()
 
 
     #rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)

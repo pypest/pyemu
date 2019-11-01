@@ -529,7 +529,7 @@ class EnsembleSQP(EnsembleMethod):
                     if self_scale and damped and float(ys.x) <= 0:
                         self.hess_progress[self.iter_num] = "scaled (damped) ({0:8.3E}) and updated".format(hess_scalar)
                     elif self_scale:
-                        self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated (damped)".format(hess_scalar)
+                        self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar)
                     else:
                         self.hess_progress[self.iter_num] = "updated (damped) only"
                 except NameError:
