@@ -1451,7 +1451,7 @@ class Pst(object):
         self.control_data.write_keyword(f_out)
 
         if self.with_comments:
-            for line in self.comments.get("* singular value decompisition",[]):
+            for line in self.comments.get("* singular value decomposition",[]):
                 f_out.write(line)
         self.svd_data.write_keyword(f_out)
 
@@ -1459,7 +1459,9 @@ class Pst(object):
             self.reg_data.write_keyword(f_out)
 
         for k,v in self.pestpp_options.items():
-            f_out.write("{0:30} {1:>10}\n".format(k,v))
+            if isinstance(v,list):
+                v = ','.join([str(vv) for vv in v])
+            f_out.write("{0:30} {1}\n".format(k,v))
 
         f_out.write("* parameter groups external\n")
         pargp_filename = new_filename.lower().replace(".pst",".pargrp_data.csv")
