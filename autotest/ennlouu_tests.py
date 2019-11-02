@@ -275,10 +275,10 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=Fa
 def invest(version,constraints=False):
     import shutil
 
-    vars = {"initial_decvars": [[-1.1,-1.0]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
+    vars = {"initial_decvars": [[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
             "draw_mult": [3e-3],
             "en_size": [10],
-            "hess_self_scaling": [2,False],#[2],#[False],
+            "hess_self_scaling": [False,2],#[2],#[False],
             "hess_update": [True],
             "damped": [False],
             "finite_diff_grad": [True],
@@ -418,7 +418,7 @@ def test_pestpp_on_rosen():
     pst = pyemu.Pst(os.path.join(d, prefix + ".pst"))
     # glm
     #[os.remove() for x in os.listdir(os.path.join(d)) if x.startswith("{}".format(prefix + "_glm.par") and ] # clean old
-    pst.control_data.noptmax = 50
+    pst.control_data.noptmax = 30
     pst.write(os.path.join(d, prefix + "_glm.pst"))
     pyemu.os_utils.run("pestpp-glm {}_glm.pst".format(prefix), cwd=d)
     # process results
@@ -666,6 +666,8 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         #for k,df in parfile_dict.items():
          #   plt.scatter(x=df.loc[pst.par_names[0],"parval1"], y=df.loc[pst.par_names[0],"parval1"], c="b", alpha=1.0)
         plt.scatter(x=ipar.loc[:, pst.par_names[0]], y=ipar.loc[:, pst.par_names[1]], c="b", alpha=1.0)
+        for i,k in ipar.iterrows():
+            plt.text(x=k[pst.par_names[0]],y=k[pst.par_names[1]],s=k["iteration"])
     else:
         for pe in par_ens:
             if pe.split(".")[2] == "parensemble":
@@ -673,11 +675,12 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
             else:
                 it = int(pe.split(".")[2])
             df = pd.read_csv(pe,index_col=0)
-            if len(par_ens) > 30:
-                al = (np.log10(it + 1) / np.log10(len(par_ens) + 1))
-            else:
-                al = (it + 1) / (len(par_ens) + 1)
-            plt.scatter(x=df[pst.parameter_data.parnme[0]], y=df[pst.parameter_data.parnme[1]], c="b",alpha=al)
+            #if len(par_ens) > 30:
+             #   al = (np.log10(it + 1) / np.log10(len(par_ens) + 1))
+            #else:
+             #   al = (it + 1) / (len(par_ens) + 1)
+            plt.scatter(x=df[pst.parameter_data.parnme[0]], y=df[pst.parameter_data.parnme[1]], c="b",alpha=1.0)
+            plt.text(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],s="{}".format(it))
 
     if finite_diff_grad or ipar is not None:
         plot_init_decvars = True
@@ -698,7 +701,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
 
 
 if __name__ == "__main__":
-    rosenbrock_setup(version="2par",initial_decvars=[-1.5,1.5])
+    #rosenbrock_setup(version="2par",initial_decvars=[-1.5,1.5])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
@@ -717,7 +720,10 @@ if __name__ == "__main__":
     #invest(version="high_dim")
 
     #phi_curv_tradeoff_invest()
-    test_pestpp_on_rosen()
+
+    for idv in [[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]]:
+        rosenbrock_setup(version="2par", initial_decvars=idv)
+        test_pestpp_on_rosen()
 
 
     #rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)
