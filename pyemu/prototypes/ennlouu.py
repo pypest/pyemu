@@ -538,10 +538,9 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: consider here some interpolation between prev and new H for update... espec approp for en approxs?
         return self.H, self.hess_progress
 
-    def _LBFGS_hess_update(self,new_grad,trunc_thresh=5):
+    def _LBFGS_hess_update(self,trunc_thresh=5,self_scale=True):
         '''
         Use this for large problems.
-        #curr_grad,delta_par,
 
         This involves calling _BFGS_hess_update() only with truncation of old gradient information vectors.
 
@@ -550,17 +549,23 @@ class EnsembleSQP(EnsembleMethod):
         See pg. 178 of Nocedal and Wright and pg. 192 of Oliver et al.
         '''
 
-        # storing necessary vectors etc
-        #self.X_d = {}
-
         if self.iter_num == 1:
             self.hess_progress[self.iter_num] = "skip scaling and updating"
+            self.s_d, self.y_d = {}, {}
             if self.opt_direction == "max":
-                return self.inv_hessian_0 * new_grad
+                return self.inv_hessian_0 * self.phi_grad
             else:
-                return -1 * self.inv_hessian_0 * new_grad
+                return -1 * self.inv_hessian_0 * self.phi_grad
 
-        q_ibd = new_grad
+        # storing necessary vectors etc
+        #self.u_d = {}
+        # TODO: check self.iter_num - 1 as keys
+        self.s_d[self.iter_num - 1] = self.delta_parensemble_mean.T
+        self.y_d[self.iter_num - 1] = self.phi_grad - self.curr_grad
+
+        # TODO: what about curv condition-based skipping and stability checks?
+
+        q_ibd = self.phi_grad
 
         if self.iter_num <= trunc_thresh:
             inc = 0
@@ -569,18 +574,30 @@ class EnsembleSQP(EnsembleMethod):
             inc = self.iter_num - trunc_thresh
             ibd = trunc_thresh
 
-        al_d, q_d = {}, {}
-        for i in reversed(range(ibd - 1)):
+        for i in reversed(range(1, ibd - 1 + 1)):
             j = i + inc
-            al_j = 5
-            #al_d[i] = al_j
-            q = 5
+            al_i = float(((1 / float((self.y_d[j].T * self.s_d[j]).x)) * self.s_d[j].T * q_ibd).x)
+            # TODO: store these? al_d[i] = al_i? Don't think so.
+            q_i = q_ibd - (al_i * self.y_d[j])
 
         # TODO: note that don't have to use initial Hess here
         if self_scale:
-            KKKKKKKKK
+            r = self.inv_hessian_0 * q_i  # TODO: scale form
         else:
-            KKKKKKKKK
+            r = self.inv_hessian_0 * q_i
+        # TODO: r subscript here
+        r.col_names = self.s_d[j].col_names  # TODO: hack
+
+        for i in range(1, ibd - 1 + 1):
+            j = i + inc
+            be_j = float(((1 / float((self.y_d[j].T * self.s_d[j]).x)) * self.y_d[j].T * r).x)
+            r = r + (self.s_d[j] * (al_i - be_j))  # TODO: check al_i here is at oldest iteration
+
+        self.hess_progress[self.iter_num] = "updating"  # TODO
+        if self.opt_direction == "max":
+            return r
+        else:
+            return -1 * r
 
 
     def _filter_constraint_eval(self,obsensemble,filter,alpha=None,biobj_weight=1.0,biobj_transf=True,
@@ -906,7 +923,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: for first itn can we make some assumption about step length from bounds? will reduce number of runs
         if alg == "LBFGS":
             self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
-            self.search_d = self._LBFGS_hess_update(self.phi_grad)
+            self.search_d = self._LBFGS_hess_update()
             self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
         elif alg == "BFGS":
             if self.opt_direction == "max":

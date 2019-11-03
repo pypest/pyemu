@@ -702,7 +702,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
 
 
 if __name__ == "__main__":
-    rosenbrock_setup(version="2par",initial_decvars=[-1.5,1.5])
+    rosenbrock_setup(version="2par",initial_decvars=[-2.0,-2.0])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
