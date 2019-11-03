@@ -538,7 +538,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: consider here some interpolation between prev and new H for update... espec approp for en approxs?
         return self.H, self.hess_progress
 
-    def _LBFGS_hess_update(self,trunc_thresh=5,self_scale=True):
+    def _LBFGS_hess_update(self,trunc_thresh=5,self_scale=True,damped=False):
         '''
         Use this for large problems.
 
@@ -564,6 +564,19 @@ class EnsembleSQP(EnsembleMethod):
         self.y_d[self.iter_num - 1] = self.phi_grad - self.curr_grad
 
         # TODO: what about curv condition-based skipping and stability checks?
+        # curv condition related tests
+        ys = self.y_d[self.iter_num - 1].T * self.s_d[self.iter_num - 1]
+        if float(ys.x) <= 0:  #TODO: https://arxiv.org/pdf/1802.05374.pdf
+            self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0\n"
+                             .format(float(ys.x)) +
+                             "  If we update (or scale) Hessian matrix now it will not be positive definite !!\n" +
+                             "  Either skipping scaling/updating (not recommended) or dampening...")
+            if damped:
+                self.logger.warn("TODO dampened form for limited memory BFGS")  # TODO? Maybes not - just strong Wolfe.
+            else:  # abort
+                self.hess_progress[self.iter_num] = "yTs = {0:8.3E}".format(float(ys.x))
+                # effectively want search_d to be (unconstructed) H from prev it and new grad
+                # so go through following (again)
 
         q_ibd = self.phi_grad
 
@@ -581,6 +594,7 @@ class EnsembleSQP(EnsembleMethod):
             q_i = q_ibd - (al_i * self.y_d[j])
 
         # TODO: note that don't have to use initial Hess here
+        # TODO: scale every iteration only an option in LBFGS?
         if self_scale:
             r = self.inv_hessian_0 * q_i  # TODO: scale form
         else:
@@ -593,11 +607,20 @@ class EnsembleSQP(EnsembleMethod):
             be_j = float(((1 / float((self.y_d[j].T * self.s_d[j]).x)) * self.y_d[j].T * r).x)
             r = r + (self.s_d[j] * (al_i - be_j))  # TODO: check al_i here is at oldest iteration
 
-        self.hess_progress[self.iter_num] = "updating"  # TODO
-        if self.opt_direction == "max":
-            return r
+        # TODO: discard vector pair from storage in k > M
+
+        if float(ys.x) <= 0:
+            self.hess_progress[self.iter_num] = "updating"  # TODO
+            if self.opt_direction == "max":
+                return r
+            else:
+                return -1 * r
         else:
-            return -1 * r
+            self.hess_progress[self.iter_num] = "updating"  # TODO
+            if self.opt_direction == "max":
+                return r
+            else:
+                return -1 * r
 
 
     def _filter_constraint_eval(self,obsensemble,filter,alpha=None,biobj_weight=1.0,biobj_transf=True,
@@ -1144,7 +1167,7 @@ class EnsembleSQP(EnsembleMethod):
                                                                               damped=damped)
 
             elif alg == "LBFGS":
-                self.logger.warn("LBFGS not implemented...yet...")
+                self.logger.log("LBFGS implemented above")
             else:
                 self.logger.lraise("alg not recognized/supported")
         else:

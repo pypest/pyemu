@@ -283,7 +283,7 @@ def invest(version,constraints=False):
             "damped": [False],
             "finite_diff_grad": [False],#[True],
             "derinc": [0.01],
-            "nit": [30]
+            "nit": [30],
             }
     #"draw_mult": [3e-2,3e-33e-4]
     #"alpha_base": [0.1, 0.2]
