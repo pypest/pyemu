@@ -717,7 +717,7 @@ class EnsembleSQP(EnsembleMethod):
         return en_cov
 
 
-    def update(self,step_mult=[0.8,1.0,1.2],alg="BFGS",hess_self_scaling=2,damped=True,
+    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=2,damped=True,
                grad_calc_only=False,finite_diff_grad=False,hess_update=True,
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
                cma=False,derinc=0.01,
@@ -809,6 +809,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("compute phi grad using finite diffs")
             jco = self._calc_jco(derinc=derinc)
             # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
+            # TODO: constraint grad here too? Relate to Lagrangian.
             self.phi_grad = Matrix(x=jco.T.values,row_names=self.pst.adj_par_names,
                                    col_names=['cross-cov'])
             # and need mean for upgrades
