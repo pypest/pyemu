@@ -160,7 +160,7 @@ def rosenbrock_2par_grad_approx_invest():
 def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_diff_grad=False,
                                constraints=False,biobj_weight=1.0,biobj_transf=True,
                                hess_self_scaling=2,hess_update=True,damped=True,
-                               cma=False,derinc=0.01,
+                               cma=False,derinc=0.01,alg="BFGS",
                                rank_one=False,learning_rate=0.5,
                                mu_prop=0.25,use_dist_mean_for_delta=False,mu_learning_prop=0.5): #filter_thresh=1e-2
     import pyemu
@@ -197,7 +197,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
     for it in range(nit):
         esqp.update(step_mult=step_mults,constraints=constraints,biobj_weight=biobj_weight,
                     hess_self_scaling=hess_self_scaling,hess_update=hess_update,damped=damped,
-                    finite_diff_grad=finite_diff_grad,derinc=derinc,
+                    finite_diff_grad=finite_diff_grad,derinc=derinc,alg=alg,
                     cma=cma,rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
                     use_dist_mean_for_delta=use_dist_mean_for_delta,mu_learning_prop=mu_learning_prop)
     os.chdir(os.path.join("..", ".."))
@@ -275,13 +275,13 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=Fa
 def invest(version,constraints=False):
     import shutil
 
-    vars = {"initial_decvars": [[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
+    vars = {"initial_decvars": [[-2.0,-2.0]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
             "draw_mult": [3e-3],
-            "en_size": [10],
-            "hess_self_scaling": [False,2],#[2],#[False],
+            "en_size": [10,30,50],#[10],
+            "hess_self_scaling": [2],#[2],#[False],
             "hess_update": [True],
             "damped": [False],
-            "finite_diff_grad": [True],
+            "finite_diff_grad": [False],#[True],
             "derinc": [0.01],
             "nit": [30]
             }
@@ -662,12 +662,13 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         par_ens = [x for x in os.listdir() if (x.startswith("rosenbrock_2par.pst."))
                    and (x.endswith(".csv")) and ("phi" not in x)]
 
-    if ipar is not None:  # testing existing pestpp utils
+    if ipar is not None:  # testing PESTPP-GLM
         #for k,df in parfile_dict.items():
          #   plt.scatter(x=df.loc[pst.par_names[0],"parval1"], y=df.loc[pst.par_names[0],"parval1"], c="b", alpha=1.0)
         plt.scatter(x=ipar.loc[:, pst.par_names[0]], y=ipar.loc[:, pst.par_names[1]], c="b", alpha=1.0)
         for i,k in ipar.iterrows():
-            plt.text(x=k[pst.par_names[0]],y=k[pst.par_names[1]],s=k["iteration"])
+            plt.text(x=k[pst.par_names[0]],y=k[pst.par_names[1]],s=int(k["iteration"]))
+        # TODO: Note that GLM requires sum of squares objective function - therefore need to re-contour by squares above if ipar is True
     else:
         for pe in par_ens:
             if pe.split(".")[2] == "parensemble":
@@ -701,7 +702,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
 
 
 if __name__ == "__main__":
-    #rosenbrock_setup(version="2par",initial_decvars=[-1.5,1.5])
+    rosenbrock_setup(version="2par",initial_decvars=[-1.5,1.5])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
@@ -712,21 +713,24 @@ if __name__ == "__main__":
 
     #plot_2par_rosen(finite_diff_grad=True)
 
+    rosenbrock_multiple_update(version="2par", nit=30, finite_diff_grad=True, alg="LBFGS")
+
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
     #invest(version="2par")
+    #invest(version="2par", constraints=True)
     #invest(version="high_dim")
 
     #phi_curv_tradeoff_invest()
 
-    for idv in [[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]]:
-        rosenbrock_setup(version="2par", initial_decvars=idv)
-        test_pestpp_on_rosen()
+    #for idv in [[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]]:
+     #   rosenbrock_setup(version="2par", initial_decvars=idv)
+      #  test_pestpp_on_rosen()
+    #test_pestpp_on_rosen()
 
-
-    #rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)
+    #rosenbrock_setup(version="2par",constraints=True,initial_decvars=0.5)
     #rosenbrock_multiple_update(version="2par",constraints=True,en_size=20,biobj_weight=5.0)
     #rosenbrock_phi_progress(version="2par", label="phi_progress_constrained.pdf")
     #filter_plot(version="2par", constraints=True, log_phi=True)

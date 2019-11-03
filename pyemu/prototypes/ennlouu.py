@@ -404,7 +404,8 @@ class EnsembleSQP(EnsembleMethod):
         see, e.g., Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
 
         Used to perform classic (rank-two quasi-Newton) Hessian update as well (or optionally only) Hessian scaling.
-        This func does not implement Nocedal's ``efficient'' BFGS implementation - use L_BFGS for that implementation.
+
+        #This func does not implement Nocedal's ``efficient'' BFGS implementation - use L_BFGS for that implementation.
 
         Parameters
         -------
@@ -537,13 +538,50 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: consider here some interpolation between prev and new H for update... espec approp for en approxs?
         return self.H, self.hess_progress
 
-    def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,idx,trunc_thresh=5):
+    def _LBFGS_hess_update(self,new_grad,trunc_thresh=5):
         '''
         Use this for large problems.
+        #curr_grad,delta_par,
 
         This involves calling _BFGS_hess_update() only with truncation of old gradient information vectors.
+
+        3 < M < 20 (Nocedal). H_0 can vary between iterations too...
+
+        See pg. 178 of Nocedal and Wright and pg. 192 of Oliver et al.
         '''
-        # TODO
+
+        # storing necessary vectors etc
+        #self.X_d = {}
+
+        if self.iter_num == 1:
+            self.hess_progress[self.iter_num] = "skip scaling and updating"
+            if self.opt_direction == "max":
+                return self.inv_hessian_0 * new_grad
+            else:
+                return -1 * self.inv_hessian_0 * new_grad
+
+        q_ibd = new_grad
+
+        if self.iter_num <= trunc_thresh:
+            inc = 0
+            ibd = self.iter_num
+        else:
+            inc = self.iter_num - trunc_thresh
+            ibd = trunc_thresh
+
+        al_d, q_d = {}, {}
+        for i in reversed(range(ibd - 1)):
+            j = i + inc
+            al_j = 5
+            #al_d[i] = al_j
+            q = 5
+
+        # TODO: note that don't have to use initial Hess here
+        if self_scale:
+            KKKKKKKKK
+        else:
+            KKKKKKKKK
+
 
     def _filter_constraint_eval(self,obsensemble,filter,alpha=None,biobj_weight=1.0,biobj_transf=True,
                                 opt_direction="min"):
@@ -863,13 +901,20 @@ class EnsembleSQP(EnsembleMethod):
                 return self.phi_grad
             self.logger.log("compute phi grad using ensemble approx")
 
-        # compute (quasi-)Newton search direction
+        # compute quasi-Newton search direction
         self.logger.log("calculate search direction")
         # TODO: for first itn can we make some assumption about step length from bounds? will reduce number of runs
-        if self.opt_direction == "max":
-            self.search_d = (self.inv_hessian * self.phi_grad)
+        if alg == "LBFGS":
+            self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
+            self.search_d = self._LBFGS_hess_update(self.phi_grad)
+            self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
+        elif alg == "BFGS":
+            if self.opt_direction == "max":
+                self.search_d = (self.inv_hessian * self.phi_grad)
+            else:
+                self.search_d = -1 * (self.inv_hessian * self.phi_grad)
         else:
-            self.search_d = -1 * (self.inv_hessian * self.phi_grad)
+            self.logger.lraise("algorithm not recognized/supported")
         self.logger.log("calculate search direction")
 
         self.logger.log("phi gradient- and search direction-related checks")
@@ -1075,13 +1120,16 @@ class EnsembleSQP(EnsembleMethod):
         if hess_update is True or self_scale is True:
             if alg == "BFGS":
                 self.inv_hessian, self.hess_progress = self._BFGS_hess_update(self.inv_hessian, self.curr_grad,
-                                                                              self.phi_grad,self.delta_parensemble_mean,
+                                                                              self.phi_grad,
+                                                                              self.delta_parensemble_mean,
                                                                               self_scale=self_scale,
                                                                               update=hess_update,
                                                                               damped=damped)
 
-            else:  # LBFGS
+            elif alg == "LBFGS":
                 self.logger.warn("LBFGS not implemented...yet...")
+            else:
+                self.logger.lraise("alg not recognized/supported")
         else:
             self.hess_progress[self.iter_num] = "skip scaling and updating"
 
