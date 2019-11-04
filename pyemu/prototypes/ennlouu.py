@@ -390,10 +390,10 @@ class EnsembleSQP(EnsembleMethod):
         phi = rei.loc[rei.group == "obj_fn", "modelled"] - rei.loc[rei.group == "obj_fn", "measured"]
         return phi
 
-    def _calc_jco(self, derinc):
+    def _calc_jco(self, derinc, suffix="_fds"):
         self.pst.control_data.noptmax = -2
         self.pst.parameter_groups.derinc = derinc
-        pst_fname = self.pst.filename.split(".pst")[0] + "_fds.pst"
+        pst_fname = self.pst.filename.split(".pst")[0] + suffix + ".pst"
         self.pst.write(os.path.join(pst_fname))
         pyemu.os_utils.run("pestpp-glm {0}".format(pst_fname))
         jco = pyemu.Jco.from_binary("{0}".format(pst_fname.replace(".pst",".jcb"))).to_dataframe()
@@ -626,7 +626,8 @@ class EnsembleSQP(EnsembleMethod):
             else:
                 return -1 * r
 
-    def _impose_Wolfe_conds(self, alpha, strong=False, c1=10**-4, c2=0.9):
+    def _impose_Wolfe_conds(self, alpha, strong=False, c1=10**-4, c2=0.9, first_cond_only=False,
+                            skip_first_cond=False):
         '''
         see pg. 172 of Oliver et al.
 
@@ -638,28 +639,34 @@ class EnsembleSQP(EnsembleMethod):
 
         Require gradients for candidate alphas! Dayum!
 
+        Parameters
+        -------
+        first_cond_only : bool
+            To allow testing of first condition before committing to evaluating the gradient at proposed step
         '''
 
-        if self.iter_num == 1:
-            self.logger.log("skip Wolfe condition testing for first iteration as do not have curv information yet")
-            return True
+        # TODO: add opt_direction dependency below!
 
         # first condition (testing for sufficient decrease)
-        phi_red = self.obsensemble_1 - (self.obsensemble_next +
-                                        float((c1 * alpha * (self.phi_grad.T * self.search_d)).x))
-        if phi_red > 0:
-            self.logger.log("first Wolfe condition violated (with c1 = {0}): {1} !<= 0".format(c1, phi_red))
-            return None
+        if skip_first_cond is False:
+            phi_red = self.obsensemble_1 - (self.obsensemble_next +
+                                            float((c1 * alpha * (self.phi_grad.T * self.search_d)).x))
+            if float(phi_red) > 0:
+                self.logger.log("first Wolfe condition violated (with c1 = {0}): {1} !<= 0".format(c1, phi_red))
+                return None
+            if first_cond_only:
+                self.logger.log("skip second Wolfe condition test until have curv information based on candidate alpha")
+                return True
 
         # second condition
         if strong:  # i.e. second condition is absolute
-            phi_red_fac = X - YYYY
+            phi_red_fac = 5 - 4
             if phi_red_fac > 0:
                 self.logger.log("second (strong) Wolfe condition violated (with c2 = {0}): {1} !<= 0"
                                 .format(c2, phi_red_fac))
                 return None
         else:  # i.e. second condition is relative
-            phi_red_fac = (self.phi_grad_1 * self.search_d) - (c2 * (self.phi_grad.T * self.search_d))
+            phi_red_fac = float((self.phi_grad_1.T * self.search_d).x - (c2 * (self.phi_grad.T * self.search_d)).x)
             if phi_red_fac > 0:
                 self.logger.log("second Wolfe condition violated (with c2 = {0}): {1} !<= 0".format(c2, phi_red_fac))
                 return None
@@ -1132,10 +1139,32 @@ class EnsembleSQP(EnsembleMethod):
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1
 
                 # Wolfe/strong Wolfe condition testing
-                try:
-                    self._impose_Wolfe_conds(step_size)
-                except NameError:
-                    continue  # back to new alpha
+                if alg == "LBFGS":
+                    try:
+                        self._impose_Wolfe_conds(step_size, first_cond_only=True)
+                    except NameError:
+                        continue  # abort - go back to new alpha
+
+                # eval of grad at candidate alpha
+                self.logger.log("compute phi grad using finite diffs for candidate alpha")
+                jco = self._calc_jco(derinc=derinc, suffix="_fds_1_jco")
+                # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
+                # TODO: constraint grad here too? Relate to Lagrangian.
+                self.phi_grad_1 = Matrix(x=jco.T.values, row_names=self.pst.adj_par_names, col_names=['cross-cov'])
+                # and need mean for upgrades
+                #if self.parensemble_mean is None:
+                 #   self.parensemble_mean = np.array(self.pst.parameter_data.parval1)
+                  #  self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),
+                   #                                row_names=['mean'], col_names=self.pst.par_names)
+                self.logger.log("compute phi grad using finite diffs for candidate alpha")
+
+                # and again with Wolfe tests
+                if alg == "LBFGS":
+                    try:
+                        self._impose_Wolfe_conds(step_size, skip_first_cond=True)
+                    except NameError:
+                        continue  # back to new alpha
+
 
                 # phi-curv trade-off per alpha
                 # TODO: eval_phi_curv_tradeoff()
