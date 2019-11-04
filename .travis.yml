@@ -94,7 +94,6 @@ install:
 script:
   - export PYTHONPATH=$PYTHONPATH:.
   - nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu $TEST_SCRIPT
-  - coverage run -p
 
 after_success:
   - cd docs
