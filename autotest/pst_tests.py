@@ -751,7 +751,7 @@ def process_output_files_test():
 
 
 if __name__ == "__main__":
-    process_output_files_test()
+    # process_output_files_test()
     #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
@@ -761,7 +761,7 @@ if __name__ == "__main__":
     #try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
-    #test_write_input_files()
+    test_write_input_files()
     # add_obs_test()
     # add_pars_test()
     # setattr_test()

@@ -319,18 +319,33 @@ def write_input_files(pst,pst_path='.'):
 
     """
     par = pst.parameter_data
-    par.loc[:,"parval1_trans"] = (par.parval1 * par.scale) + par.offset
+    par.loc[:, "parval1_trans"] = (par.parval1 * par.scale) + par.offset
+    pairs = np.array(list(zip(pst.template_files, pst.input_files)))
+    num_tpl = len(pairs)
+    chunk_len = 50
+    num_chunk_floor = num_tpl // chunk_len
+    main_chunks = pairs[:num_chunk_floor * chunk_len].reshape(
+        [-1, chunk_len, 2]).tolist()  # the list of files broken down into chunks
+    remainder = pairs[num_chunk_floor * chunk_len:].tolist()  # remaining files
+    chunks = main_chunks + [remainder]
     procs = []
-    for tpl_file,in_file in zip(pst.template_files,pst.input_files):
+    for chunk in chunks:
         #write_to_template(pst.parameter_data.parval1_trans,os.path.join(pst_path,tpl_file),
         #                  os.path.join(pst_path,in_file))
-        p = mp.Process(target=write_to_template,args=[pst.parameter_data.parval1_trans,
-                                                      os.path.join(pst_path,tpl_file),
-                                                      os.path.join(pst_path,in_file)])
+        p = mp.Process(target=_write_chunk_to_template,
+                       args=[chunk, pst.parameter_data.parval1_trans, 
+                             pst_path])
         p.start()
         procs.append(p)
     for p in procs:
         p.join()
+
+
+def _write_chunk_to_template(chunk, parvals, pst_path):
+    for tpl_file, in_file in chunk:
+        tpl_file = os.path.join(pst_path, tpl_file)
+        in_file = os.path.join(pst_path, in_file)
+        write_to_template(parvals, tpl_file, in_file)
 
 
 def write_to_template(parvals,tpl_file,in_file):
