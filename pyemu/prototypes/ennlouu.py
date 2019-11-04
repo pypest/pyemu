@@ -539,7 +539,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: consider here some interpolation between prev and new H for update... espec approp for en approxs?
         return self.H, self.hess_progress
 
-    def _LBFGS_hess_update(self,trunc_thresh=5,self_scale=True,damped=False):
+    def _LBFGS_hess_update(self,memory=5,self_scale=True,damped=False):
         '''
         Use this for large problems.
 
@@ -584,12 +584,12 @@ class EnsembleSQP(EnsembleMethod):
 
         q_ibd = self.phi_grad
 
-        if self.iter_num <= trunc_thresh:
+        if self.iter_num <= memory:
             inc = 0
             ibd = self.iter_num
         else:
-            inc = self.iter_num - trunc_thresh
-            ibd = trunc_thresh
+            inc = self.iter_num - memory
+            ibd = memory
 
         for i in reversed(range(1, ibd - 1 + 1)):
             j = i + inc
@@ -840,7 +840,7 @@ class EnsembleSQP(EnsembleMethod):
         return en_cov
 
 
-    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=2,damped=True,
+    def update(self,step_mult=[1.0],alg="BFGS",memory=5,hess_self_scaling=2,damped=True,
                grad_calc_only=False,finite_diff_grad=False,hess_update=True,
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
                cma=False,derinc=0.01,
@@ -991,7 +991,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: for first itn can we make some assumption about step length from bounds? will reduce number of runs
         if alg == "LBFGS":
             self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
-            self.search_d = self._LBFGS_hess_update()
+            self.search_d = self._LBFGS_hess_update(memory=memory)
             self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
         elif alg == "BFGS":
             if self.opt_direction == "max":
@@ -1134,11 +1134,12 @@ class EnsembleSQP(EnsembleMethod):
 
                 # Wolfe/strong Wolfe condition testing
                 if alg == "LBFGS":
-                    if self._impose_Wolfe_conds(step_size, first_cond_only=True) is True:
-                        self.logger.log("first (sufficiency) Wolfe condition passed...")
-                    else:
-                        self.logger.log("first (sufficiency) Wolfe condition violated... abort alpha candidate...")
-                        continue  # next alpha # TODO: could potentially skip or go sparser with search from here on?
+                    if self.iter_num > 1:
+                        if self._impose_Wolfe_conds(step_size, first_cond_only=True) is True:
+                            self.logger.log("first (sufficiency) Wolfe condition passed...")
+                        else:
+                            self.logger.log("first (sufficiency) Wolfe condition violated... abort alpha candidate...")
+                            continue  # next alpha # TODO: could potentially skip or go sparser with search from here on?
 
                 # eval of grad at candidate alpha
                 self.logger.log("compute phi grad using finite diffs for candidate alpha")
@@ -1152,11 +1153,12 @@ class EnsembleSQP(EnsembleMethod):
 
                 # and again with Wolfe tests
                 if alg == "LBFGS":
-                    if self._impose_Wolfe_conds(step_size, skip_first_cond=True) is True:
-                        self.logger.log("second (curvature) Wolfe condition passed...")
-                    else:
-                        self.logger.log("second (curvature) Wolfe condition violated... abort alpha candidate...")
-                        continue  # next alpha  # TODO: could potentially skip or go sparser with search from here on?
+                    if self.iter_num > 1:
+                        if self._impose_Wolfe_conds(step_size, skip_first_cond=True) is True:
+                            self.logger.log("second (curvature) Wolfe condition passed...")
+                        else:
+                            self.logger.log("second (curvature) Wolfe condition violated... abort alpha candidate...")
+                            continue  # next alpha  # TODO: could potentially skip or go sparser with search from here on?
 
 
                 # phi-curv trade-off per alpha
