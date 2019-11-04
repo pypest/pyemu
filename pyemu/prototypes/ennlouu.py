@@ -613,18 +613,11 @@ class EnsembleSQP(EnsembleMethod):
 
         # TODO: discard vector pair from storage in k > M. Do when actually becomes memory intesive. Handy to have now.
 
-        if float(ys.x) <= 0:
-            self.hess_progress[self.iter_num] = "updating"  # TODO
-            if self.opt_direction == "max":
-                return r
-            else:
-                return -1 * r
+        self.hess_progress[self.iter_num] = "updating"  # TODO
+        if self.opt_direction == "max":
+            return r
         else:
-            self.hess_progress[self.iter_num] = "updating"  # TODO
-            if self.opt_direction == "max":
-                return r
-            else:
-                return -1 * r
+            return -1 * r
 
     def _impose_Wolfe_conds(self, alpha, strong=False, c1=10**-4, c2=0.9, first_cond_only=False,
                             skip_first_cond=False):
@@ -654,7 +647,7 @@ class EnsembleSQP(EnsembleMethod):
                                             float((c1 * alpha * (self.phi_grad.T * self.search_d)).x))
             if float(phi_red) > 0:
                 self.logger.log("first Wolfe condition violated (with c1 = {0}): {1} !<= 0".format(c1, phi_red))
-                return None
+                return False
             if first_cond_only:
                 self.logger.log("skip second Wolfe condition test until have curv information based on candidate alpha")
                 return True
@@ -665,12 +658,12 @@ class EnsembleSQP(EnsembleMethod):
             if phi_red_fac > 0:
                 self.logger.log("second (strong) Wolfe condition violated (with c2 = {0}): {1} !<= 0"
                                 .format(c2, phi_red_fac))
-                return None
+                return False
         else:  # i.e. second condition is relative
             phi_red_fac = float((self.phi_grad_1.T * self.search_d).x - (c2 * (self.phi_grad.T * self.search_d)).x)
             if phi_red_fac > 0:
                 self.logger.log("second Wolfe condition violated (with c2 = {0}): {1} !<= 0".format(c2, phi_red_fac))
-                return None
+                return False
 
         return True
 
@@ -1141,30 +1134,29 @@ class EnsembleSQP(EnsembleMethod):
 
                 # Wolfe/strong Wolfe condition testing
                 if alg == "LBFGS":
-                    try:
-                        self._impose_Wolfe_conds(step_size, first_cond_only=True)
-                    except NameError:
-                        continue  # abort - go back to new alpha    # TODO: could potentially skip or go sparser with search from here on?
+                    if self._impose_Wolfe_conds(step_size, first_cond_only=True) is True:
+                        self.logger.log("first (sufficiency) Wolfe condition passed...")
+                    else:
+                        self.logger.log("first (sufficiency) Wolfe condition violated... abort alpha candidate...")
+                        continue  # next alpha # TODO: could potentially skip or go sparser with search from here on?
 
                 # eval of grad at candidate alpha
                 self.logger.log("compute phi grad using finite diffs for candidate alpha")
+                # TODO: use rei so can save base run.
+                #  Also, copy and re-use gradients
                 jco = self._calc_jco(derinc=derinc, suffix="_fds_1_jco")
                 # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
                 # TODO: constraint grad here too? Relate to Lagrangian.
                 self.phi_grad_1 = Matrix(x=jco.T.values, row_names=self.pst.adj_par_names, col_names=['cross-cov'])
-                # and need mean for upgrades
-                #if self.parensemble_mean is None:
-                 #   self.parensemble_mean = np.array(self.pst.parameter_data.parval1)
-                  #  self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),
-                   #                                row_names=['mean'], col_names=self.pst.par_names)
                 self.logger.log("compute phi grad using finite diffs for candidate alpha")
 
                 # and again with Wolfe tests
                 if alg == "LBFGS":
-                    try:
-                        self._impose_Wolfe_conds(step_size, skip_first_cond=True)
-                    except NameError:
-                        continue  # back to new alpha   # TODO: could potentially skip or go sparser with search from here on?
+                    if self._impose_Wolfe_conds(step_size, skip_first_cond=True) is True:
+                        self.logger.log("second (curvature) Wolfe condition passed...")
+                    else:
+                        self.logger.log("second (curvature) Wolfe condition violated... abort alpha candidate...")
+                        continue  # next alpha  # TODO: could potentially skip or go sparser with search from here on?
 
 
                 # phi-curv trade-off per alpha
