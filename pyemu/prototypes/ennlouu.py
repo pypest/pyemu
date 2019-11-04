@@ -559,7 +559,6 @@ class EnsembleSQP(EnsembleMethod):
                 return -1 * self.inv_hessian_0 * self.phi_grad
 
         # storing necessary vectors etc
-        #self.u_d = {}
         # TODO: check self.iter_num - 1 as keys
         self.s_d[self.iter_num - 1] = self.delta_parensemble_mean.T
         self.y_d[self.iter_num - 1] = self.phi_grad - self.curr_grad
@@ -570,7 +569,7 @@ class EnsembleSQP(EnsembleMethod):
         #  Also, implement lim-mem form of standard BFGS (inefficient form) -- not for use but for testing
         # curv condition related tests
         ys = self.y_d[self.iter_num - 1].T * self.s_d[self.iter_num - 1]
-        if float(ys.x) <= 0:  #TODO: https://arxiv.org/pdf/1802.05374.pdf
+        if float(ys.x) <= 0:  # TODO: https://arxiv.org/pdf/1802.05374.pdf
             self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0\n"
                              .format(float(ys.x)) +
                              "  If we update (or scale) Hessian matrix now it will not be positive definite !!\n" +
@@ -619,7 +618,7 @@ class EnsembleSQP(EnsembleMethod):
         else:
             return -1 * r
 
-    def _impose_Wolfe_conds(self, alpha, strong=False, c1=10**-4, c2=0.9, first_cond_only=False,
+    def _impose_Wolfe_conds(self, alpha, strong=True, c1=10**-4, c2=0.9, first_cond_only=False,
                             skip_first_cond=False):
         '''
         see pg. 172 of Oliver et al.
@@ -654,7 +653,8 @@ class EnsembleSQP(EnsembleMethod):
 
         # second condition
         if strong:  # i.e. second condition is absolute
-            phi_red_fac = float((self.phi_grad_1.T * self.search_d).x - (c2 * (self.phi_grad.T * self.search_d)).x)  # TODO!
+            phi_red_fac = (np.abs(float((self.phi_grad_1.T * self.search_d).x))) - \
+                          (c2 * np.abs(float((self.phi_grad.T * self.search_d).x)))
             if phi_red_fac > 0:
                 self.logger.log("second (strong) Wolfe condition violated (with c2 = {0}): {1} !<= 0"
                                 .format(c2, phi_red_fac))
@@ -1141,19 +1141,17 @@ class EnsembleSQP(EnsembleMethod):
                             self.logger.log("first (sufficiency) Wolfe condition violated... abort alpha candidate...")
                             continue  # next alpha # TODO: could potentially skip or go sparser with search from here on?
 
-                # eval of grad at candidate alpha
-                self.logger.log("compute phi grad using finite diffs for candidate alpha")
-                # TODO: use rei so can save base run.
-                #  Also, copy and re-use gradients
-                jco = self._calc_jco(derinc=derinc, suffix="_fds_1_jco")
-                # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
-                # TODO: constraint grad here too? Relate to Lagrangian.
-                self.phi_grad_1 = Matrix(x=jco.T.values, row_names=self.pst.adj_par_names, col_names=['cross-cov'])
-                self.logger.log("compute phi grad using finite diffs for candidate alpha")
+                        # eval of grad at candidate alpha
+                        self.logger.log("compute phi grad using finite diffs for candidate alpha")
+                        # TODO: use rei so can save base run.
+                        #  Also, copy and re-use gradients
+                        jco = self._calc_jco(derinc=derinc, suffix="_fds_1_jco")
+                        # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
+                        # TODO: constraint grad here too? Relate to Lagrangian.
+                        self.phi_grad_1 = Matrix(x=jco.T.values, row_names=self.pst.adj_par_names, col_names=['cross-cov'])
+                        self.logger.log("compute phi grad using finite diffs for candidate alpha")
 
-                # and again with Wolfe tests
-                if alg == "LBFGS":
-                    if self.iter_num > 1:
+                        # and again with Wolfe tests
                         if self._impose_Wolfe_conds(step_size, skip_first_cond=True) is True:
                             self.logger.log("second (curvature) Wolfe condition passed...")
                         else:

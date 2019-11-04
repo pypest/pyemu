@@ -275,16 +275,16 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=Fa
 def invest(version,constraints=False):
     import shutil
 
-    vars = {"initial_decvars": [[-2.0,-2.0]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
+    vars = {"initial_decvars": [[-1.0,-1.0]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
             "draw_mult": [3e-3],
-            "en_size": [10,30,50],#[10],
-            "hess_self_scaling": [2],#[2],#[False],
+            "en_size": [10],#[10],
+            "hess_self_scaling": [False],#[2],#[False],
             "hess_update": [True],
             "damped": [False],
-            "finite_diff_grad": [False],#[True],
+            "finite_diff_grad": [True],#[True],
             "derinc": [0.01],
             "nit": [30],
-            "alg": ["LBFGS"],
+            "alg": ["LBFGS","BFGS"],
             "memory": [3],
             }  # TODO: add Wolfe constant variables and strong or not...
     #"draw_mult": [3e-2,3e-33e-4]
@@ -311,15 +311,13 @@ def invest(version,constraints=False):
             os.chdir(os.path.join("..", ".."))
         # TODO: add constraint support to rosenbrock_phi_progress
         rosenbrock_phi_progress(version=version,finite_diff_grad=v['finite_diff_grad'],
-                                label="phi_progress_ne{0}_initdv{1}_dm{2}_sca{3}_upd{4}_d{5}_fd{6}_der{7}_nit{8}\
-                                _alg{9}_mem{10}.pdf"
+                                label="phi_progress_ne{0}_initdv{1}_dm{2}_sca{3}_upd{4}_d{5}_fd{6}_der{7}_nit{8}_alg{9}_mem{10}.pdf"
                                 .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
                                         v['hess_update'],v['damped'],v['finite_diff_grad'], v['derinc'], v['nit'],
                                         v['alg'],v['memory']))
 
         if version == "2par":
-            plot_2par_rosen(label="rosen_surf_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}_fd{6}_der{7}_nit{8}\
-            _alg{9}_mem{10}.pdf"
+            plot_2par_rosen(label="rosen_surf_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}_fd{6}_der{7}_nit{8}_alg{9}_mem{10}.pdf"
                             .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
                                     v['hess_update'],v['damped'],v['finite_diff_grad'], v['derinc'], v['nit'],
                                     v['alg'], v['memory']),
@@ -338,8 +336,7 @@ def invest(version,constraints=False):
              #   print("missing!")
             try:
                 [shutil.copy(x, x.split(".")[0] +
-                             "_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}_fd{6}_derinc{7}_nit{8}\
-                             _alg{9}_mem{10}.csv"
+                             "_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}_fd{6}_derinc{7}_nit{8}_alg{9}_mem{10}.csv"
                              .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
                                      v['hess_update'],v['damped'],v['finite_diff_grad'], v['derinc'], v['nit'],
                                      v['alg'], v['memory']))
@@ -712,7 +709,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
 
 
 if __name__ == "__main__":
-    rosenbrock_setup(version="2par",initial_decvars=[-1.0,-1.0])
+    #rosenbrock_setup(version="2par",initial_decvars=[-1.0,-1.0])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
@@ -721,15 +718,15 @@ if __name__ == "__main__":
     #rosenbrock_phi_progress(version="2par",finite_diff_grad=True)
     #rosenbrock_2par_grad_approx_invest()
 
-    rosenbrock_multiple_update(version="2par", nit=30, finite_diff_grad=True, alg="LBFGS")
+    #rosenbrock_multiple_update(version="2par", nit=30, finite_diff_grad=True, alg="LBFGS")
 
-    plot_2par_rosen(finite_diff_grad=True)
+    #plot_2par_rosen(finite_diff_grad=True)
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    #invest(version="2par")
+    invest(version="2par")
     #invest(version="2par", constraints=True)
     #invest(version="high_dim")
 
