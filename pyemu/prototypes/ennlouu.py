@@ -660,7 +660,8 @@ class EnsembleSQP(EnsembleMethod):
                                 .format(c2, phi_red_fac))
                 return False
         else:  # i.e. second condition is relative
-            phi_red_fac = float((self.phi_grad_1.T * self.search_d).x - (c2 * (self.phi_grad.T * self.search_d)).x)
+            phi_red_fac = (float((self.phi_grad_1.T * self.search_d).x)) - \
+                          (c2 * float((self.phi_grad.T * self.search_d).x))
             if phi_red_fac > 0:
                 self.logger.log("second Wolfe condition violated (with c2 = {0}): {1} !<= 0".format(c2, phi_red_fac))
                 return False
@@ -841,7 +842,7 @@ class EnsembleSQP(EnsembleMethod):
 
 
     def update(self,step_mult=[1.0],alg="BFGS",memory=5,hess_self_scaling=2,damped=True,
-               grad_calc_only=False,finite_diff_grad=False,hess_update=True,
+               grad_calc_only=False,finite_diff_grad=False,hess_update=True,strong_Wolfe=True,
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
                cma=False,derinc=0.01,
                rank_one=False, learning_rate=0.5, mu_prop=0.25,
@@ -1135,7 +1136,7 @@ class EnsembleSQP(EnsembleMethod):
                 # Wolfe/strong Wolfe condition testing
                 if alg == "LBFGS":
                     if self.iter_num > 1:
-                        if self._impose_Wolfe_conds(step_size, first_cond_only=True) is True:
+                        if self._impose_Wolfe_conds(step_size, first_cond_only=True, strong=strong_Wolfe) is True:
                             self.logger.log("first (sufficiency) Wolfe condition passed...")
                         else:
                             self.logger.log("first (sufficiency) Wolfe condition violated... abort alpha candidate...")
@@ -1152,7 +1153,7 @@ class EnsembleSQP(EnsembleMethod):
                         self.logger.log("compute phi grad using finite diffs for candidate alpha")
 
                         # and again with Wolfe tests
-                        if self._impose_Wolfe_conds(step_size, skip_first_cond=True) is True:
+                        if self._impose_Wolfe_conds(step_size, skip_first_cond=True, strong=strong_Wolfe) is True:
                             self.logger.log("second (curvature) Wolfe condition passed...")
                         else:
                             self.logger.log("second (curvature) Wolfe condition violated... abort alpha candidate...")

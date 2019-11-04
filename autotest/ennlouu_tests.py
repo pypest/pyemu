@@ -160,7 +160,7 @@ def rosenbrock_2par_grad_approx_invest():
 def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_diff_grad=False,
                                constraints=False,biobj_weight=1.0,biobj_transf=True,
                                hess_self_scaling=2,hess_update=True,damped=True,
-                               cma=False,derinc=0.01,alg="BFGS",memory=5,
+                               cma=False,derinc=0.01,alg="BFGS",memory=5,strong_Wolfe=True,
                                rank_one=False,learning_rate=0.5,
                                mu_prop=0.25,use_dist_mean_for_delta=False,mu_learning_prop=0.5): #filter_thresh=1e-2
     import pyemu
@@ -197,7 +197,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
     for it in range(nit):
         esqp.update(step_mult=step_mults,constraints=constraints,biobj_weight=biobj_weight,
                     hess_self_scaling=hess_self_scaling,hess_update=hess_update,damped=damped,
-                    finite_diff_grad=finite_diff_grad,derinc=derinc,alg=alg,memory=memory,
+                    finite_diff_grad=finite_diff_grad,derinc=derinc,alg=alg,memory=memory,strong_Wolfe=strong_Wolfe,
                     cma=cma,rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
                     use_dist_mean_for_delta=use_dist_mean_for_delta,mu_learning_prop=mu_learning_prop)
     os.chdir(os.path.join("..", ".."))
@@ -284,18 +284,19 @@ def invest(version,constraints=False):
             "finite_diff_grad": [True],#[True],
             "derinc": [0.01],
             "nit": [30],
-            "alg": ["LBFGS","BFGS"],
+            "alg": ["LBFGS"],
             "memory": [3],
+            "strong_Wolfe": [True,False]
             }  # TODO: add Wolfe constant variables and strong or not...
     #"draw_mult": [3e-2,3e-33e-4]
     #"alpha_base": [0.1, 0.2]
 
     runs = [{'initial_decvars': a, 'draw_mult': b, 'en_size': c, 'hess_self_scaling': d, 'hess_update': e,
-             'damped': f, 'finite_diff_grad': g, 'derinc': h, 'nit': i, 'alg': j, 'memory': k}
+             'damped': f, 'finite_diff_grad': g, 'derinc': h, 'nit': i, 'alg': j, 'memory': k, 'strong_Wolfe': l}
             for a in vars['initial_decvars'] for b in vars['draw_mult'] for c in vars['en_size']
             for d in vars['hess_self_scaling'] for e in vars['hess_update'] for f in vars['damped']
             for g in vars['finite_diff_grad'] for h in vars['derinc'] for i in vars['nit']
-            for j in vars['alg'] for k in vars['memory']]
+            for j in vars['alg'] for k in vars['memory'] for l in vars['strong_Wolfe']]
 
     fails = []
     for i, v in enumerate(runs):
@@ -305,22 +306,22 @@ def invest(version,constraints=False):
                                        hess_self_scaling=v['hess_self_scaling'],hess_update=v['hess_update'],
                                        damped=v['damped'],constraints=constraints,
                                        finite_diff_grad=v['finite_diff_grad'],derinc=v['derinc'],
-                                       alg=v['alg'],memory=v['memory'])
+                                       alg=v['alg'],memory=v['memory'],strong_Wolfe=v['strong_Wolfe'])
         except:
             fails.append(v)
             os.chdir(os.path.join("..", ".."))
         # TODO: add constraint support to rosenbrock_phi_progress
         rosenbrock_phi_progress(version=version,finite_diff_grad=v['finite_diff_grad'],
-                                label="phi_progress_ne{0}_initdv{1}_dm{2}_sca{3}_upd{4}_d{5}_fd{6}_der{7}_nit{8}_alg{9}_mem{10}.pdf"
+                                label="phi_progress_ne{0}_initdv{1}_dm{2}_sca{3}_upd{4}_d{5}_fd{6}_der{7}_nit{8}_alg{9}_mem{10}_strw{11}.pdf"
                                 .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
                                         v['hess_update'],v['damped'],v['finite_diff_grad'], v['derinc'], v['nit'],
-                                        v['alg'],v['memory']))
+                                        v['alg'],v['memory'],v['strong_Wolfe']))
 
         if version == "2par":
-            plot_2par_rosen(label="rosen_surf_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}_fd{6}_der{7}_nit{8}_alg{9}_mem{10}.pdf"
+            plot_2par_rosen(label="rosen_surf_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}_fd{6}_der{7}_nit{8}_alg{9}_mem{10}_strw{11}.pdf"
                             .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
                                     v['hess_update'],v['damped'],v['finite_diff_grad'], v['derinc'], v['nit'],
-                                    v['alg'], v['memory']),
+                                    v['alg'], v['memory'], v['strong_Wolfe']),
                             constraints=constraints,finite_diff_grad=v['finite_diff_grad'])
 
         if version == "2par":
@@ -336,10 +337,10 @@ def invest(version,constraints=False):
              #   print("missing!")
             try:
                 [shutil.copy(x, x.split(".")[0] +
-                             "_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}_fd{6}_derinc{7}_nit{8}_alg{9}_mem{10}.csv"
+                             "_ne{0}_idv{1}_dm{2}_scale{3}_update{4}_damp{5}_fd{6}_derinc{7}_nit{8}_alg{9}_mem{10}_strw{11}.csv"
                              .format(v['en_size'],v['initial_decvars'],v['draw_mult'],v['hess_self_scaling'],
                                      v['hess_update'],v['damped'],v['finite_diff_grad'], v['derinc'], v['nit'],
-                                     v['alg'], v['memory']))
+                                     v['alg'], v['memory'], v['strong_Wolfe']))
                  for x in os.listdir() if x == "hess_progress.csv"]
             except FileNotFoundError:
                 print("missing!")
