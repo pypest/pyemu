@@ -244,6 +244,7 @@ class EnsembleSQP(EnsembleMethod):
             self.phi_0 = self._calc_obs_fd()
             # TODO: WRITE TO FILE FOR PHI_PROG PLOTTER TO GRAB
             self.phi_0.to_csv(self.pst.filename + ".phi.{0}.initial.csv".format(self.iter_num))
+            self.obsensemble_next = self.phi_0.copy()  # for Wolfe tests only
             self.logger.log("running model forward with noptmax = 0")
 
         # Hessian
@@ -564,6 +565,9 @@ class EnsembleSQP(EnsembleMethod):
         self.y_d[self.iter_num - 1] = self.phi_grad - self.curr_grad
 
         # TODO: what about curv condition-based skipping and stability checks?
+        #  Unsure how to skip update if curv cond violated when using efficient L-BFGS recursion. Cannot find soln.
+        #  Instead, impose Wolfe (or strong Wolfe) conditions to avoid curv cond viol?
+        #  Also, implement lim-mem form of standard BFGS (inefficient form) -- not for use but for testing
         # curv condition related tests
         ys = self.y_d[self.iter_num - 1].T * self.s_d[self.iter_num - 1]
         if float(ys.x) <= 0:  #TODO: https://arxiv.org/pdf/1802.05374.pdf
@@ -607,7 +611,7 @@ class EnsembleSQP(EnsembleMethod):
             be_j = float(((1 / float((self.y_d[j].T * self.s_d[j]).x)) * self.y_d[j].T * r).x)
             r = r + (self.s_d[j] * (al_i - be_j))  # TODO: check al_i here is at oldest iteration
 
-        # TODO: discard vector pair from storage in k > M
+        # TODO: discard vector pair from storage in k > M. Do when actually becomes memory intesive. Handy to have now.
 
         if float(ys.x) <= 0:
             self.hess_progress[self.iter_num] = "updating"  # TODO
@@ -621,6 +625,46 @@ class EnsembleSQP(EnsembleMethod):
                 return r
             else:
                 return -1 * r
+
+    def _impose_Wolfe_conds(self, alpha, strong=False, c1=10**-4, c2=0.9):
+        '''
+        see pg. 172 of Oliver et al.
+
+        First condition dictates sufficient phi decrease. Related to Armijo condition.
+
+        Second condition is related to curvature and it ensures steps aren't too small.
+        Strong Wolfe conditions involves a more stringent second condition.
+        Therefore, don't impose this test in first iteration, as meaningless, when don't have grad change info.
+
+        Require gradients for candidate alphas! Dayum!
+
+        '''
+
+        if self.iter_num == 1:
+            self.logger.log("skip Wolfe condition testing for first iteration as do not have curv information yet")
+            return True
+
+        # first condition (testing for sufficient decrease)
+        phi_red = self.obsensemble_1 - (self.obsensemble_next +
+                                        float((c1 * alpha * (self.phi_grad.T * self.search_d)).x))
+        if phi_red > 0:
+            self.logger.log("first Wolfe condition violated (with c1 = {0}): {1} !<= 0".format(c1, phi_red))
+            return None
+
+        # second condition
+        if strong:  # i.e. second condition is absolute
+            phi_red_fac = X - YYYY
+            if phi_red_fac > 0:
+                self.logger.log("second (strong) Wolfe condition violated (with c2 = {0}): {1} !<= 0"
+                                .format(c2, phi_red_fac))
+                return None
+        else:  # i.e. second condition is relative
+            phi_red_fac = (self.phi_grad_1 * self.search_d) - (c2 * (self.phi_grad.T * self.search_d))
+            if phi_red_fac > 0:
+                self.logger.log("second Wolfe condition violated (with c2 = {0}): {1} !<= 0".format(c2, phi_red_fac))
+                return None
+
+        return True
 
 
     def _filter_constraint_eval(self,obsensemble,filter,alpha=None,biobj_weight=1.0,biobj_transf=True,
@@ -1087,6 +1131,12 @@ class EnsembleSQP(EnsembleMethod):
                 #  BUT do we want finite diffs to only be used for grad?
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1
 
+                # Wolfe/strong Wolfe condition testing
+                try:
+                    self._impose_Wolfe_conds(step_size)
+                except NameError:
+                    continue  # back to new alpha
+
                 # phi-curv trade-off per alpha
                 # TODO: eval_phi_curv_tradeoff()
                 if self.iter_num > 1:  # Hess never updated in first step so just take max phi red (no trade off)
@@ -1099,6 +1149,7 @@ class EnsembleSQP(EnsembleMethod):
 
                 if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
+                    self.obsensemble_next = self.obsensemble_1.copy()
                     [os.remove(x) for x in os.listdir() if (x.startswith("{0}.phi.{1}"
                                                                          .format(self.pst.filename,self.iter_num)))
                      and (x.endswith(".csv"))]
