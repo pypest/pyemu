@@ -333,7 +333,7 @@ def write_input_files(pst,pst_path='.'):
         #write_to_template(pst.parameter_data.parval1_trans,os.path.join(pst_path,tpl_file),
         #                  os.path.join(pst_path,in_file))
         p = mp.Process(target=_write_chunk_to_template,
-                       args=[chunk, pst.parameter_data.parval1_trans, 
+                       args=[chunk, pst.parameter_data.parval1_trans,
                              pst_path])
         p.start()
         procs.append(p)
