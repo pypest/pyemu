@@ -192,7 +192,8 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
         The covariance of parameters associated with geostatistical structures is defined
         as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
         pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
-        sigma_range. Sounds complicated...
+        sigma_range. Most users will want to sill of the geostruct to sum to 1.0 so that the resulting
+        covariance matrices have variance proportional to the parameter bounds. Sounds complicated...
 
     Example::
 
@@ -223,6 +224,8 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
                 gs = gss[0]
             else:
                 gs = gss
+        if gs.sill != 1.0:
+            warnings.warn("geostatistical_prior_builder() warning: geostruct sill != 1.0, user beware!")
         if not isinstance(items,list):
             items = [items]
         for item in items:
