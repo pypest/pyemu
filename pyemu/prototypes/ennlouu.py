@@ -646,6 +646,7 @@ class EnsembleSQP(EnsembleMethod):
         '''
 
         # TODO: add opt_direction dependency below!
+        # TODO: check not too small a step on first it - as no Hessian limiting here either
 
         # first condition (testing for sufficient decrease)
         if skip_first_cond is False:
@@ -660,7 +661,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # second condition
         if strong:  # i.e. second condition is absolute
-            phi_red_fac = 5 - 4
+            phi_red_fac = float((self.phi_grad_1.T * self.search_d).x - (c2 * (self.phi_grad.T * self.search_d)).x)  # TODO!
             if phi_red_fac > 0:
                 self.logger.log("second (strong) Wolfe condition violated (with c2 = {0}): {1} !<= 0"
                                 .format(c2, phi_red_fac))
@@ -1143,7 +1144,7 @@ class EnsembleSQP(EnsembleMethod):
                     try:
                         self._impose_Wolfe_conds(step_size, first_cond_only=True)
                     except NameError:
-                        continue  # abort - go back to new alpha
+                        continue  # abort - go back to new alpha    # TODO: could potentially skip or go sparser with search from here on?
 
                 # eval of grad at candidate alpha
                 self.logger.log("compute phi grad using finite diffs for candidate alpha")
@@ -1163,7 +1164,7 @@ class EnsembleSQP(EnsembleMethod):
                     try:
                         self._impose_Wolfe_conds(step_size, skip_first_cond=True)
                     except NameError:
-                        continue  # back to new alpha
+                        continue  # back to new alpha   # TODO: could potentially skip or go sparser with search from here on?
 
 
                 # phi-curv trade-off per alpha
