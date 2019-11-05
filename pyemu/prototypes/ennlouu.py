@@ -581,7 +581,8 @@ class EnsembleSQP(EnsembleMethod):
                 # effectively want search_d to be (unconstructed) H from prev it and new grad
                 # so go through following (again)
 
-        q_ibd = self.phi_grad
+        #q_ibd = self.phi_grad
+        q = self.phi_grad
 
         if self.iter_num <= memory:
             inc = 0
@@ -592,16 +593,17 @@ class EnsembleSQP(EnsembleMethod):
 
         for i in reversed(range(1, ibd - 1 + 1)):
             j = i + inc
-            al_i = float(((1 / float((self.y_d[j].T * self.s_d[j]).x)) * self.s_d[j].T * q_ibd).x)
+            al_i = float(((1 / float((self.y_d[j].T * self.s_d[j]).x)) * self.s_d[j].T * q).x)  #q_ibd).x)
             # TODO: store these? al_d[i] = al_i? Don't think so.
-            q_i = q_ibd - (al_i * self.y_d[j])
+            #q_i = q_ibd - (al_i * self.y_d[j])
+            q -= (al_i * self.y_d[j])
 
         # TODO: note that don't have to use initial Hess here
         # TODO: scale every iteration only an option in LBFGS?
         if self_scale:
-            r = self.inv_hessian_0 * q_i  # TODO: scale form
+            r = self.inv_hessian_0 * q  #q_i  # TODO: scale form
         else:
-            r = self.inv_hessian_0 * q_i
+            r = self.inv_hessian_0 * q  # q_i
         # TODO: r subscript here
         r.col_names = self.s_d[j].col_names  # TODO: hack
 

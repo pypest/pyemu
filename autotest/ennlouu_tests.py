@@ -258,7 +258,7 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=Fa
         hess_df = pd.read_csv("hess_progress.csv",index_col=0).T
         alpha_df = pd.read_csv("best_alpha.csv", index_col=0).T
         hess_df.columns, alpha_df.columns = ["hess"], ["alpha"]
-        hess_and_alpha = pd.concat((hess_df, alpha_df), axis=1)
+        hess_and_alpha = pd.concat((hess_df, alpha_df), axis=1, sort=True)
         for i, v in hess_and_alpha.iterrows():
             #ax.text(x=float(i), y=(ylim[1] + (0.05 * (ylim[1] - ylim[0]))), s="{0};\nalpha: {1}".format(v[0], v[1]),
             #        fontsize=5, rotation=45, color='r', ha='center', va='center')
@@ -286,7 +286,7 @@ def invest(version,constraints=False):
             "nit": [30],
             "alg": ["LBFGS"],
             "memory": [30],
-            "strong_Wolfe": [True]
+            "strong_Wolfe": [False]
             }  # TODO: add Wolfe constant variables and strong or not...
     #"draw_mult": [3e-2,3e-33e-4]
     #"alpha_base": [0.1, 0.2]
