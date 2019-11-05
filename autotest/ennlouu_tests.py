@@ -275,18 +275,18 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=Fa
 def invest(version,constraints=False):
     import shutil
 
-    vars = {"initial_decvars": [[-1.0,-1.0]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
+    vars = {"initial_decvars": [[-2.0,-2.0],[1.5,-1.5]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
             "draw_mult": [3e-3],
             "en_size": [10],#[10],
-            "hess_self_scaling": [True],#[2],#[False],
+            "hess_self_scaling": [True],#[2],#[False],  #TODO: Tru for BFGS means once, for LBFGS means every one...
             "hess_update": [True],
             "damped": [False],
             "finite_diff_grad": [True],#[True],
             "derinc": [0.01],
             "nit": [30],
             "alg": ["LBFGS"],
-            "memory": [30],
-            "strong_Wolfe": [True]
+            "memory": [3],
+            "strong_Wolfe": [True,False]
             }  # TODO: add Wolfe constant variables and strong or not...
     #"draw_mult": [3e-2,3e-33e-4]
     #"alpha_base": [0.1, 0.2]
