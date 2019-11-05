@@ -552,7 +552,7 @@ class EnsembleSQP(EnsembleMethod):
 
         if self.iter_num == 1:
             self.hess_progress[self.iter_num] = "skip scaling and updating"
-            self.s_d, self.y_d, self.al_d = {}, {}, {}
+            self.s_d, self.y_d = {}, {}
             if self.opt_direction == "max":
                 return self.inv_hessian_0 * self.phi_grad
             else:
@@ -590,10 +590,11 @@ class EnsembleSQP(EnsembleMethod):
             inc = self.iter_num - memory
             ibd = memory
 
+        al_d = {}
         for i in reversed(range(1, ibd - 1 + 1)):
             j = i + inc
             al_j = float(((1 / float((self.y_d[j].T * self.s_d[j]).x)) * self.s_d[j].T * q).x)
-            self.al_d[j] = al_j  # TODO: i or j iterate?
+            al_d[j] = al_j  # TODO: check iterate?
             q -= (al_j * self.y_d[j])
 
         # TODO: note that don't have to use initial Hess here
@@ -607,7 +608,7 @@ class EnsembleSQP(EnsembleMethod):
         for i in range(1, ibd - 1 + 1):
             j = i + inc
             be = float(((1 / float((self.y_d[j].T * self.s_d[j]).x)) * self.y_d[j].T * r).x)
-            r += (self.s_d[j] * (self.al_d[j] - be))
+            r += (self.s_d[j] * (al_d[j] - be))
 
         # TODO: discard vector pair from storage in k > M. Do when actually becomes memory intesive. Handy to have now.
 
