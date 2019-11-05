@@ -850,7 +850,7 @@ class EnsembleSQP(EnsembleMethod):
         return en_cov
 
 
-    def update(self,step_mult=[1.0],alg="BFGS",memory=5,hess_self_scaling=2,damped=True,
+    def update(self,step_mult=[1.0],alg="BFGS",memory=5,hess_self_scaling=True,damped=True,
                grad_calc_only=False,finite_diff_grad=False,hess_update=True,strong_Wolfe=True,
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
                cma=False,derinc=0.01,
@@ -870,12 +870,13 @@ class EnsembleSQP(EnsembleMethod):
             flag indicating which Hessian updating method to use. Options include "BFGS"
             (classic Broyden–Fletcher–Goldfarb–Shanno) (suited to small problems) or "LBFGS"
             (a limited-memory version of BFGS) (suited to large problems).
-        hess_self_scaling : bool or int
+        hess_self_scaling : bool # or int
             indicate whether/how current Hessian is to be scaled - i.e., multiplied by a scalar reflecting
             gradient and step information.  Highly recommended - particularly at early iterations.
-            See Nocedal and Wright.
-            False means do not scale at any iter; True means scale at all iters (at iter 1, grad is 0.0);
-            int values mean scale at only that iter.
+            See Nocedal and Wright and Oliver et al. for full treatment.
+            False means do not scale at any iter;
+            For BFGS, True means scale curr H at single iteration (at iter 2, i.e. once we have grad change info);
+            For L-BFGS, True means scale H_0 by most recent grad info
         damped : bool
             pg. 537 of Nocedal and Wright  # TODO: document
             # TODO: pass float (damp_param) and activated if not None..
@@ -1235,7 +1236,7 @@ class EnsembleSQP(EnsembleMethod):
              #   self_scale = False
             self_scale = False
 
-        elif hess_self_scaling is True or hess_self_scaling == self.iter_num:
+        elif hess_self_scaling is True and self.iter_num == 2:  # or hess_self_scaling == self.iter_num:
             self_scale = True
         else:
             self_scale = False

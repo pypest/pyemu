@@ -159,7 +159,7 @@ def rosenbrock_2par_grad_approx_invest():
 
 def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_diff_grad=False,
                                constraints=False,biobj_weight=1.0,biobj_transf=True,
-                               hess_self_scaling=2,hess_update=True,damped=True,
+                               hess_self_scaling=True,hess_update=True,damped=True,
                                cma=False,derinc=0.01,alg="BFGS",memory=5,strong_Wolfe=True,
                                rank_one=False,learning_rate=0.5,
                                mu_prop=0.25,use_dist_mean_for_delta=False,mu_learning_prop=0.5): #filter_thresh=1e-2
@@ -275,17 +275,17 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=Fa
 def invest(version,constraints=False):
     import shutil
 
-    vars = {"initial_decvars": [[-2.0,-2.0],[1.5,-1.5]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
+    vars = {"initial_decvars": [[-2.0,-2.0],[1.5,-1.5],[-1,-1.5]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
             "draw_mult": [3e-3],
-            "en_size": [10],#[10],
-            "hess_self_scaling": [True],#[2],#[False],  #TODO: Tru for BFGS means once, for LBFGS means every one...
+            "en_size": [10],
+            "hess_self_scaling": [True],  #TODO: True for BFGS means once (it 2), for LBFGS means every one...
             "hess_update": [True],
             "damped": [False],
             "finite_diff_grad": [True],#[True],
-            "derinc": [0.01],
+            "derinc": [0.001],
             "nit": [30],
             "alg": ["LBFGS"],
-            "memory": [3],
+            "memory": [10],
             "strong_Wolfe": [True,False]
             }  # TODO: add Wolfe constant variables and strong or not...
     #"draw_mult": [3e-2,3e-33e-4]
