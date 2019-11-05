@@ -567,8 +567,9 @@ class EnsembleSQP(EnsembleMethod):
         #  Unsure how to skip update if curv cond violated when using efficient L-BFGS recursion. Cannot find soln.
         #  Instead, impose Wolfe (or strong Wolfe) conditions to avoid curv cond viol?
         #  Also, implement lim-mem form of standard BFGS (inefficient form) -- not for use but for testing
-        # curv condition related tests
+        # curv condition related tests (and for scaling Hessian below)
         ys = self.y_d[self.iter_num - 1].T * self.s_d[self.iter_num - 1]
+        yy = self.y_d[self.iter_num - 1].T * self.y_d[self.iter_num - 1]
         if float(ys.x) <= 0:  # TODO: https://arxiv.org/pdf/1802.05374.pdf
             self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0\n"
                              .format(float(ys.x)) +
@@ -597,12 +598,11 @@ class EnsembleSQP(EnsembleMethod):
             al_d[j] = al_j  # TODO: check iterate?
             q -= (al_j * self.y_d[j])
 
-        # TODO: note that don't have to use initial Hess here
-        # TODO: scale every iteration only an option in LBFGS?
-        if self_scale:
-            r = self.inv_hessian_0 * q  # TODO: scale form
-        else:
+        if self_scale is False:  # not recommended
             r = self.inv_hessian_0 * q
+        else:  # scale at all iterations using most recent curv info - default
+            hess_scalar = float((ys).x) / float((yy).x)  # Nocedal and Wright, Oliver et al.
+            r = hess_scalar * self.inv_hessian_0 * q
         r.col_names = self.s_d[j].col_names  # TODO: hack
 
         for i in range(1, ibd - 1 + 1):
@@ -1001,7 +1001,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: for first itn can we make some assumption about step length from bounds? will reduce number of runs
         if alg == "LBFGS":
             self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
-            self.search_d = self._LBFGS_hess_update(memory=memory)
+            self.search_d = self._LBFGS_hess_update(memory=memory,self_scale=hess_self_scaling)
             self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
         elif alg == "BFGS":
             if self.opt_direction == "max":

@@ -278,7 +278,7 @@ def invest(version,constraints=False):
     vars = {"initial_decvars": [[-1.0,-1.0]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
             "draw_mult": [3e-3],
             "en_size": [10],#[10],
-            "hess_self_scaling": [False],#[2],#[False],
+            "hess_self_scaling": [True],#[2],#[False],
             "hess_update": [True],
             "damped": [False],
             "finite_diff_grad": [True],#[True],
