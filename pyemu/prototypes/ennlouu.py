@@ -655,24 +655,24 @@ class EnsembleSQP(EnsembleMethod):
 
         # second condition
         if strong:
-            phi_red_fac = (np.abs(float((self.phi_grad_1.T * self.search_d).x))) - \
-                          (c2 * np.abs(float((self.phi_grad.T * self.search_d).x)))
+            curv_fac = (np.abs(float((self.phi_grad_1.T * self.search_d).x))) - \
+                       (c2 * np.abs(float((self.phi_grad.T * self.search_d).x)))
             if self.opt_direction == "max":
                 self.logger.lraise("TODO")
             else:
-                if phi_red_fac < 0:
+                if curv_fac < 0:
                     self.logger.log("second (strong) Wolfe condition violated (with c2 = {0}): {1} !<= 0"
-                                    .format(c2, phi_red_fac))
+                                    .format(c2, curv_fac))
                     return False
         else:
-            phi_red_fac = (float((self.phi_grad_1.T * self.search_d).x)) - \
+            curv_fac = (float((self.phi_grad_1.T * self.search_d).x)) - \
                           (c2 * float((self.phi_grad.T * self.search_d).x))
             if self.opt_direction == "max":
                 self.logger.lraise("TODO")
             else:
-                if phi_red_fac < 0:
+                if curv_fac < 0:
                     self.logger.log("second Wolfe condition violated (with c2 = {0}): {1} !<= 0"
-                                    .format(c2, phi_red_fac))
+                                    .format(c2, curv_fac))
                     return False
 
         return True
