@@ -637,34 +637,43 @@ class EnsembleSQP(EnsembleMethod):
             To allow testing of first condition before committing to evaluating the gradient at proposed step
         '''
 
-        # TODO: add opt_direction dependency below!
         # TODO: check not too small a step on first it - as no Hessian limiting here either
 
         # first condition (testing for sufficient decrease)
         if skip_first_cond is False:
-            phi_red = self.obsensemble_1 - (self.obsensemble_next +
-                                            float((c1 * alpha * (self.phi_grad.T * self.search_d)).x))
-            if float(phi_red) > 0:
-                self.logger.log("first Wolfe condition violated (with c1 = {0}): {1} !<= 0".format(c1, phi_red))
-                return False
+            if self.opt_direction == "max":
+                self.logger.lraise("TODO")
+            else:
+                phi_red = self.obsensemble_1 - (self.obsensemble_next +
+                                                float((c1 * alpha * (self.phi_grad.T * self.search_d)).x))
+                if float(phi_red) > 0:
+                    self.logger.log("first Wolfe condition violated (with c1 = {0}): {1} !<= 0".format(c1, phi_red))
+                    return False
             if first_cond_only:
                 self.logger.log("skip second Wolfe condition test until have curv information based on candidate alpha")
                 return True
 
         # second condition
-        if strong:  # i.e. second condition is absolute
+        if strong:
             phi_red_fac = (np.abs(float((self.phi_grad_1.T * self.search_d).x))) - \
                           (c2 * np.abs(float((self.phi_grad.T * self.search_d).x)))
-            if phi_red_fac > 0:
-                self.logger.log("second (strong) Wolfe condition violated (with c2 = {0}): {1} !<= 0"
-                                .format(c2, phi_red_fac))
-                return False
-        else:  # i.e. second condition is relative
+            if self.opt_direction == "max":
+                self.logger.lraise("TODO")
+            else:
+                if phi_red_fac > 0:
+                    self.logger.log("second (strong) Wolfe condition violated (with c2 = {0}): {1} !<= 0"
+                                    .format(c2, phi_red_fac))
+                    return False
+        else:
             phi_red_fac = (float((self.phi_grad_1.T * self.search_d).x)) - \
                           (c2 * float((self.phi_grad.T * self.search_d).x))
-            if phi_red_fac > 0:
-                self.logger.log("second Wolfe condition violated (with c2 = {0}): {1} !<= 0".format(c2, phi_red_fac))
-                return False
+            if self.opt_direction == "max":
+                self.logger.lraise("TODO")
+            else:
+                if phi_red_fac > 0:
+                    self.logger.log("second Wolfe condition violated (with c2 = {0}): {1} !<= 0"
+                                    .format(c2, phi_red_fac))
+                    return False
 
         return True
 

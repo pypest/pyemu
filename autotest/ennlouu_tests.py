@@ -285,8 +285,8 @@ def invest(version,constraints=False):
             "derinc": [0.01],
             "nit": [30],
             "alg": ["LBFGS"],
-            "memory": [3],
-            "strong_Wolfe": [True,False]
+            "memory": [30],
+            "strong_Wolfe": [True]
             }  # TODO: add Wolfe constant variables and strong or not...
     #"draw_mult": [3e-2,3e-33e-4]
     #"alpha_base": [0.1, 0.2]
