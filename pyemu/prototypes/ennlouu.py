@@ -660,7 +660,7 @@ class EnsembleSQP(EnsembleMethod):
             if self.opt_direction == "max":
                 self.logger.lraise("TODO")
             else:
-                if phi_red_fac > 0:
+                if phi_red_fac < 0:
                     self.logger.log("second (strong) Wolfe condition violated (with c2 = {0}): {1} !<= 0"
                                     .format(c2, phi_red_fac))
                     return False
@@ -670,7 +670,7 @@ class EnsembleSQP(EnsembleMethod):
             if self.opt_direction == "max":
                 self.logger.lraise("TODO")
             else:
-                if phi_red_fac > 0:
+                if phi_red_fac < 0:
                     self.logger.log("second Wolfe condition violated (with c2 = {0}): {1} !<= 0"
                                     .format(c2, phi_red_fac))
                     return False
