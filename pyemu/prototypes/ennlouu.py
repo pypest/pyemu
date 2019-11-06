@@ -962,6 +962,12 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("compute phi grad using finite diffs")
         else:
             self.logger.log("compute phi grad using ensemble approx")
+
+            #if alg == "LBFGS" and self.iter_num > 2:
+             #   self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
+              #  self.phi_grad = self.phi_grad_next.copy()
+               # self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
+
             self.logger.log("compute dec var en covariance vector")
             # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds). Or draw around mean on bound?
             self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
@@ -1117,6 +1123,66 @@ class EnsembleSQP(EnsembleMethod):
 
                 else:  # unconstrained opt
                     mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
+
+                    # Wolfe/strong Wolfe condition testing
+                    if alg == "LBFGS":
+                        if self.iter_num > 1:
+                            if self._impose_Wolfe_conds(step_size, first_cond_only=True, strong=strong_Wolfe) is True:
+                                self.logger.log("first (sufficiency) Wolfe condition passed...")
+                            else:
+                                self.logger.log(
+                                    "first (sufficiency) Wolfe condition violated... abort alpha candidate...")
+                                continue  # next alpha # TODO: could potentially skip or go sparser with search from here on?
+
+                            # eval of grad at candidate alpha
+                            self.logger.log("compute phi grad using ensemble approx for candidate alpha")
+                            # TODO: use rei so can save base run.
+                            #  Also, copy and re-use gradients
+
+                            # TODO: bundle below into func
+
+                            self.logger.log("compute dec var en covariance vector")
+                            # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds). Or draw around mean on bound?
+                            self.en_cov_decvar_1 = self._calc_en_cov_decvar(self.parensemble_1)
+                            # and need mean for upgrades
+                            #if self.parensemble_mean is None:
+                             #   self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
+                              #  self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),
+                               #                                row_names=['mean'], col_names=self.pst.par_names)
+                            self.logger.log("compute dec var en covariance vector")
+
+                            self.logger.log("compute dec var-phi en cross-covariance vector")
+                            self.en_crosscov_decvar_phi_1 = self._calc_en_crosscov_decvar_phi(self.parensemble_1,
+                                                                                              self.obsensemble_1)
+                            self.logger.log("compute dec var-phi en cross-covariance vector")
+
+                            # compute gradient vector and undertake gradient-related checks
+                            # see e.g. eq (9) in Liu and Reynolds (2019 SPE)
+                            self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
+                            self.inv_en_cov_decvar_1 = self.en_cov_decvar_1.pseudo_inv(
+                                eigthresh=self.pst.svd_data.eigthresh)
+                            self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
+
+                            # TODO: SVD on sparse form of dec var en cov matrix (do SVD on A where Cuu = AA^T - see Dehdari and Oliver)
+                            # self.logger.log("calculate pseudo inv comps")
+                            # u,s,v = self.en_cov_decvar.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
+                            # self.logger.log("calculate pseudo inv comps")
+
+                            self.logger.log("calculate phi gradient vector")
+                            # self.phi_grad = self.inv_en_cov_decvar.T * self.en_crosscov_decvar_phi
+                            self.phi_grad_1 = self.inv_en_cov_decvar_1 * self.en_crosscov_decvar_phi_1.T
+                            self.logger.log("calculate phi gradient vector")
+
+                            self.logger.log("compute phi grad using ensemble approx for candidate alpha")
+
+                            # and again with Wolfe tests
+                            if self._impose_Wolfe_conds(step_size, skip_first_cond=True, strong=strong_Wolfe) is True:
+                                self.logger.log("second (curvature) Wolfe condition passed...")
+                            else:
+                                self.logger.log(
+                                    "second (curvature) Wolfe condition violated... abort alpha candidate...")
+                                continue  # next alpha  # TODO: could potentially skip or go sparser with search from here on?
+
                     if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                         self.parensemble_mean_next = self.parensemble_mean_1.copy()
                         self.parensemble_next = self.parensemble_1.copy()
@@ -1161,7 +1227,6 @@ class EnsembleSQP(EnsembleMethod):
                         # eval of grad at candidate alpha
                         self.logger.log("compute phi grad using finite diffs for candidate alpha")
                         # TODO: use rei so can save base run.
-                        #  Also, copy and re-use gradients
                         jco = self._calc_jco(derinc=derinc, suffix="_fds_1_jco")
                         # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
                         # TODO: constraint grad here too? Relate to Lagrangian.
