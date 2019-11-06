@@ -1184,7 +1184,8 @@ class EnsembleSQP(EnsembleMethod):
 
                 if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
-                    self.phi_grad_next = self.phi_grad_1.copy()
+                    if alg == "LBFGS" and self.iter_num > 1:
+                        self.phi_grad_next = self.phi_grad_1.copy()
                     self.obsensemble_next = self.obsensemble_1.copy()
                     [os.remove(x) for x in os.listdir() if (x.startswith("{0}.phi.{1}"
                                                                          .format(self.pst.filename,self.iter_num)))
