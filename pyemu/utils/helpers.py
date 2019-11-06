@@ -2950,6 +2950,10 @@ class PstFromFlopyModel(object):
             self.logger.statement("forward_run line:{0}".format(line))
             self.frun_post_lines.append(line)
 
+def _process_chunk_fac2real(chunk):
+    for args in chunk:
+        pyemu.geostats.fac2real(**args)
+
 
 def _process_chunk_model_files(chunk, df):
     for model_file in chunk:
@@ -3020,16 +3024,22 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
 
     if 'pp_file' in df.columns:
         print("starting fac2real",datetime.now())
-        pp_args = []
-        for pp_file,fac_file,mlt_file in zip(df.pp_file,df.fac_file,df.mlt_file):
-            if pd.isnull(pp_file):
-                continue
-            pp_args.append({"pp_file":pp_file,"factors_file":fac_file,"out_file":mlt_file,"lower_lim":1.0e-10})
-        #    pyemu.geostats.fac2real(pp_file=pp_file,factors_file=fac_file,
-        #                            out_file=mlt_file,lower_lim=1.0e-10)
+        pp_df = df.loc[df.pp_file.notna(),
+                       ['pp_file', 'fac_file', 'mlt_file']].rename(
+            columns={'fac_file': 'factors_file', 'mlt_file': 'out_file'})
+        pp_df.loc[:, 'lower_lim'] = 1.0e-10
+        # don't need to process all (e.g. if const. mults apply across kper...)
+        pp_args = pp_df.drop_duplicates().to_dict('records')
+        num_ppargs = len(pp_args)
+        chunk_len = 50
+        num_chunk_floor = num_ppargs // chunk_len
+        main_chunks = np.array(pp_args)[:num_chunk_floor * chunk_len].reshape(
+            [-1, chunk_len]).tolist()
+        remainder = np.array(pp_args)[num_chunk_floor * chunk_len:].tolist()
+        chunks = main_chunks + [remainder]
         procs = []
-        for args in pp_args:
-            p = mp.Process(target=pyemu.geostats.fac2real,kwargs=args)
+        for chunk in chunks:
+            p = mp.Process(target=_process_chunk_fac2real, args=[chunk])
             p.start()
             procs.append(p)
         for p in procs:
