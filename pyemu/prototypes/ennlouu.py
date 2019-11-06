@@ -657,7 +657,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # second condition
         if strong:
-            curv_fac = (np.abs(float((self.phi_grad_next.T * self.search_d).x))) - \
+            curv_fac = (np.abs(float((self.phi_grad_1.T * self.search_d).x))) - \
                        (c2 * np.abs(float((self.phi_grad.T * self.search_d).x)))
             if self.opt_direction == "max":
                 self.logger.lraise("TODO")
@@ -667,7 +667,7 @@ class EnsembleSQP(EnsembleMethod):
                                     .format(c2, curv_fac))
                     return False
         else:
-            curv_fac = (float((self.phi_grad_next.T * self.search_d).x)) - \
+            curv_fac = (float((self.phi_grad_1.T * self.search_d).x)) - \
                           (c2 * float((self.phi_grad.T * self.search_d).x))
             if self.opt_direction == "max":
                 self.logger.lraise("TODO")
@@ -943,18 +943,22 @@ class EnsembleSQP(EnsembleMethod):
 
         if finite_diff_grad:
             self.logger.log("compute phi grad using finite diffs")
-            jco = self._calc_jco(derinc=derinc)
-            # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
-            # TODO: constraint grad here too? Relate to Lagrangian.
-            self.phi_grad = Matrix(x=jco.T.values,row_names=self.pst.adj_par_names,
-                                   col_names=['cross-cov'])
+            if alg == "LBFGS" and self.iter_num > 2:
+                self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
+                self.phi_grad = self.phi_grad_next.copy()
+                self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
+            else:
+                jco = self._calc_jco(derinc=derinc)
+                # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
+                # TODO: constraint grad here too? Relate to Lagrangian.
+                self.phi_grad = Matrix(x=jco.T.values,row_names=self.pst.adj_par_names, col_names=['cross-cov'])
+            if grad_calc_only:
+                return self.phi_grad
             # and need mean for upgrades
             if self.parensemble_mean is None:
                 self.parensemble_mean = np.array(self.pst.parameter_data.parval1)
                 self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),
                                                row_names=['mean'], col_names=self.pst.par_names)
-            if grad_calc_only:
-                return self.phi_grad
             self.logger.log("compute phi grad using finite diffs")
         else:
             self.logger.log("compute phi grad using ensemble approx")
