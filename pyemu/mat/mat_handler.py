@@ -1701,7 +1701,10 @@ class Matrix(object):
             #print("new binary format detected...")
 
             data = np.fromfile(f, Matrix.coo_rec_dt, icount)
-
+            if data['i'].min() < 0:
+                raise Exception("Matrix.from_binary(): 'i' index values less than 0")
+            if data['j'].min() < 0:
+                raise Exception("Matrix.from_binary(): 'j' index values less than 0")
             x = np.zeros((nrow, ncol))
             x[data['i'], data['j']] = data["dtemp"]
             data = x
