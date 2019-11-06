@@ -571,10 +571,10 @@ class EnsembleSQP(EnsembleMethod):
         ys = self.y_d[self.iter_num - 1].T * self.s_d[self.iter_num - 1]
         yy = self.y_d[self.iter_num - 1].T * self.y_d[self.iter_num - 1]
         if float(ys.x) <= 0:  # TODO: https://arxiv.org/pdf/1802.05374.pdf
-            self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0\n"
-                             .format(float(ys.x)) +
-                             "  If we update (or scale) Hessian matrix now it will not be positive definite !!\n" +
-                             "  Either skipping scaling/updating (not recommended) or dampening...")
+            self.logger.lraise("!! curvature condition violated: yTs = {}; should be > 0\n"
+                               .format(float(ys.x)) +
+                               "  If we update (or scale) Hessian matrix now it will not be positive definite !!\n" +
+                               "  Either skipping scaling/updating (not recommended) or dampening...")
             if damped:
                 self.logger.warn("TODO dampened form for limited memory BFGS")  # TODO? Maybes not - just strong Wolfe.
             else:  # abort
@@ -584,12 +584,12 @@ class EnsembleSQP(EnsembleMethod):
 
         q = self.phi_grad
 
-        if self.iter_num <= memory:
+        if (self.iter_num - 1) <= memory:
             inc = 0
             ibd = self.iter_num
         else:
-            inc = self.iter_num - memory
-            ibd = memory
+            inc = self.iter_num - memory - 1
+            ibd = memory + 1
 
         al_d = {}
         for i in reversed(range(1, ibd - 1 + 1)):
@@ -627,7 +627,9 @@ class EnsembleSQP(EnsembleMethod):
 
         Second condition is related to curvature and it ensures steps aren't too small.
         Strong Wolfe conditions involves a more stringent second condition.
-        Therefore, don't impose this test in first iteration, as meaningless, when don't have grad change info.
+        Therefore, don't impose this test in first iteration, as meaningless, when don't have grad change info.  #TODO: come back to this.
+
+        Note non-Strong Wolfe conditions are sufficient for maintaining pos-def H.
 
         Require gradients for candidate alphas! Dayum!
 
