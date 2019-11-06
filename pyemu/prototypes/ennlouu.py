@@ -657,7 +657,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # second condition
         if strong:
-            curv_fac = (np.abs(float((self.phi_grad_1.T * self.search_d).x))) - \
+            curv_fac = (np.abs(float((self.phi_grad_next.T * self.search_d).x))) - \
                        (c2 * np.abs(float((self.phi_grad.T * self.search_d).x)))
             if self.opt_direction == "max":
                 self.logger.lraise("TODO")
@@ -667,7 +667,7 @@ class EnsembleSQP(EnsembleMethod):
                                     .format(c2, curv_fac))
                     return False
         else:
-            curv_fac = (float((self.phi_grad_1.T * self.search_d).x)) - \
+            curv_fac = (float((self.phi_grad_next.T * self.search_d).x)) - \
                           (c2 * float((self.phi_grad.T * self.search_d).x))
             if self.opt_direction == "max":
                 self.logger.lraise("TODO")
@@ -1184,6 +1184,7 @@ class EnsembleSQP(EnsembleMethod):
 
                 if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
+                    self.phi_grad_next = self.phi_grad_1.copy()
                     self.obsensemble_next = self.obsensemble_1.copy()
                     [os.remove(x) for x in os.listdir() if (x.startswith("{0}.phi.{1}"
                                                                          .format(self.pst.filename,self.iter_num)))
