@@ -660,9 +660,9 @@ def _setup_postprocess_hds_timeseries(hds_file, df, config_file, prefix=None, mo
         "Setting up post processing of hds or ucn timeseries obs. "
         "Prepending 'pp' to obs name may cause length to exceed 20 chars", PyemuWarning)
     if model is not None:
-        t_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+        t_str = df.columns.map(lambda x: x.strftime("%Y%m%d"))
     else:
-        t_str = df.index.map(lambda x: "{0:08.2f}".format(x))
+        t_str = df.columns.map(lambda x: "{0:08.2f}".format(x))
     if prefix is not None:
         prefix = "pp{0}".format(prefix)
     else:
@@ -672,9 +672,10 @@ def _setup_postprocess_hds_timeseries(hds_file, df, config_file, prefix=None, mo
     with open(ins_file,'w') as f:
         f.write('pif ~\n')
         f.write("l1 \n")
-        for t in t_str:
+        for site in df.index:
             f.write("l1 w ")
-            for site in df.columns:
+            #for site in df.columns:
+            for t in t_str:
                 obsnme = "{0}{1}_{2}".format(prefix, site, t)
                 f.write(" !{0}!".format(obsnme))
             f.write('\n')
@@ -730,7 +731,7 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
             print("{0} observation(s) post-processed for site {1} at kij ({2},{3},{4})".
                   format(inact_obs.sum(), site, k, i, j))
         dfs.append(df)
-    df = pd.concat(dfs, axis=1)
+    df = pd.concat(dfs, axis=1).T
     #print(df)
     df.to_csv(hds_file+"_timeseries.post_processed", sep=' ')
     return df

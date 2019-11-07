@@ -1120,11 +1120,11 @@ def postprocess_inactive_conc_test():
     frun_line, df = pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True, prefix="hds",
                                                         postprocess_inact=1E30)
     os.chdir("temp")
-    df0 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
-    df1 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    df0 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
+    df1 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
     eval(frun_line)
-    df2 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
-    df3 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    df2 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
+    df3 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
     assert np.allclose(df0, df2)
     assert np.allclose(df2.test1, df3.test1)
     assert np.allclose(df2.test2, df3.test2)
@@ -1800,8 +1800,8 @@ if __name__ == "__main__":
     # gw_sft_ins_test()
     #par_knowledge_test()
     # grid_obs_test()
-    hds_timeseries_test()
-    #postprocess_inactive_conc_test()
+    #hds_timeseries_test()
+    postprocess_inactive_conc_test()
     #plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
