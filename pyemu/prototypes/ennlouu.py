@@ -142,6 +142,7 @@ class EnsembleSQP(EnsembleMethod):
           #                  "must equal 1, not {0} - see docstring".format(len(self.obj_fn_obs)))
 
         if finite_diff_grad is False:
+            self.finite_diff_grad = False
             # could use approx here to start with for especially high dim problems
             self.logger.statement("using full parcov.. forming inverse sqrt parcov matrix")
             self.parcov_inv_sqrt = self.parcov.inv.sqrt
@@ -238,6 +239,7 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.log("checking here feasibility and initializing constraint filter")
 
         else:
+            self.finite_diff_grad = True
             self.logger.warn("using finite diffs as basis for phi grad vector rather than en approx")
 
             self.logger.log("running model forward with noptmax = 0")
@@ -619,7 +621,7 @@ class EnsembleSQP(EnsembleMethod):
             return -1 * r
 
     def _impose_Wolfe_conds(self, alpha, strong=True, c1=10**-4, c2=0.9, first_cond_only=False,
-                            skip_first_cond=False):
+                            skip_first_cond=False, finite_diff_grad=False):
         '''
         see pg. 172 of Oliver et al.
 
@@ -646,8 +648,12 @@ class EnsembleSQP(EnsembleMethod):
             if self.opt_direction == "max":
                 self.logger.lraise("TODO")
             else:
-                phi_red = self.obsensemble_1 - (self.obsensemble_next +
-                                                float((c1 * alpha * (self.phi_grad.T * self.search_d)).x))
+                if self.finite_diff_grad is False:
+                    phi_red = self.obsensemble_1.mean() - (self.obsensemble_next.mean() +
+                                                           float((c1 * alpha * (self.phi_grad.T * self.search_d)).x))
+                else:
+                    phi_red = self.obsensemble_1 - (self.obsensemble_next +
+                                                    float((c1 * alpha * (self.phi_grad.T * self.search_d)).x))
                 if float(phi_red) > 0:
                     self.logger.log("first Wolfe condition violated (with c1 = {0}): {1} !<= 0".format(c1, phi_red))
                     return False
@@ -1186,6 +1192,9 @@ class EnsembleSQP(EnsembleMethod):
                     if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                         self.parensemble_mean_next = self.parensemble_mean_1.copy()
                         self.parensemble_next = self.parensemble_1.copy()
+                        if alg == "LBFGS" and self.iter_num > 1:
+                            self.phi_grad_next = self.phi_grad_1.copy()
+                        self.obsensemble_next = self.obsensemble_1.copy()
                         [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
                                                             and x.split(".")[2] == str(self.iter_num))]
                         self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
