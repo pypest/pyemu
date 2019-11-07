@@ -238,7 +238,7 @@ class EnsembleSQP(EnsembleMethod):
                 self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
                 self.logger.log("checking here feasibility and initializing constraint filter")
 
-        else:
+        else:  # finite diffs for grads
             self.finite_diff_grad = True
             self.logger.warn("using finite diffs as basis for phi grad vector rather than en approx")
 
@@ -392,9 +392,11 @@ class EnsembleSQP(EnsembleMethod):
         phi = rei.loc[rei.group == "obj_fn", "modelled"] - rei.loc[rei.group == "obj_fn", "measured"]
         return phi
 
-    def _calc_jco(self, derinc, suffix="_fds"):
+    def _calc_jco(self, derinc, suffix="_fds", hotstart_res=False):
         self.pst.control_data.noptmax = -2
         self.pst.parameter_groups.derinc = derinc
+        if hotstart_res:
+            self.pst.pestpp_options["hotstart_resfile"] = self.pst.filename.split(".pst")[0] + suffix + ".rei"
         pst_fname = self.pst.filename.split(".pst")[0] + suffix + ".pst"
         self.pst.write(os.path.join(pst_fname))
         pyemu.os_utils.run("pestpp-glm {0}".format(pst_fname))
@@ -724,7 +726,7 @@ class EnsembleSQP(EnsembleMethod):
 
 
         # mean phi
-        phi_obs = [x for x in self.pst.obs_names if "obj_f" in x or "phi" in x]
+        phi_obs = [x for x in self.pst.obs_names if "obj_f" in x or "phi" in x or "obs" in x]
         if len(phi_obs) != 1:
             self.logger.lraise("number of objective function (phi) obs not equal to one")
         mean_en_phi = obsensemble[phi_obs[0]].mean()
@@ -1146,7 +1148,7 @@ class EnsembleSQP(EnsembleMethod):
                             # TODO: use rei so can save base run.
                             #  Also, copy and re-use gradients
 
-                            # TODO: bundle below into func
+                            # TODO: bundle below into func (as mostly same as grad eval and search direction calc above)
 
                             self.logger.log("compute dec var en covariance vector")
                             # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds). Or draw around mean on bound?
@@ -1237,7 +1239,7 @@ class EnsembleSQP(EnsembleMethod):
                         # eval of grad at candidate alpha
                         self.logger.log("compute phi grad using finite diffs for candidate alpha")
                         # TODO: use rei so can save base run.
-                        jco = self._calc_jco(derinc=derinc, suffix="_fds_1_jco")
+                        jco = self._calc_jco(derinc=derinc, suffix="_fds_1_jco", hotstart_res=True)
                         # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
                         # TODO: constraint grad here too? Relate to Lagrangian.
                         self.phi_grad_1 = Matrix(x=jco.T.values, row_names=self.pst.adj_par_names, col_names=['cross-cov'])

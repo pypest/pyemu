@@ -39,7 +39,7 @@ def rosenbrock_setup(version,initial_decvars=1.6,constraints=False):
     obs.loc["obs","obgnme"] = "obj_fn"  #pst.pestpp_options["opt_obj_func"] = "obj_fn"
     if constraints:
         obs.loc["constraint", "obgnme"] = "g_constraint"  # inherit from pestpp_options
-        obs.loc["constraint", "obsval"] = 7.5  # inherit from pestpp_options
+        obs.loc["constraint", "obsval"] = 5.0  # inherit from pestpp_options
     obs.loc[:, "weight"] = 1.0
     pst.control_data.noptmax = 0
     if version == "2par":
@@ -275,13 +275,13 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=Fa
 def invest(version,constraints=False):
     import shutil
 
-    vars = {"initial_decvars": [[-1.0,-0.5]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
+    vars = {"initial_decvars": [[-0.1,-0.5]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]],#[1.5,1.5],[1.1,-1.0],[-1.1,-1.0],[-1.5,1.5],[0.5,0.5],[0.8,0.8]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
             "draw_mult": [3e-4],
             "en_size": [10],
             "hess_self_scaling": [True],  #TODO: True for BFGS means once (it 2), for LBFGS means every one...
             "hess_update": [True],
             "damped": [False],
-            "finite_diff_grad": [False],#[True],
+            "finite_diff_grad": [False],
             "derinc": [0.001],
             "nit": [50],
             "alg": ["LBFGS"],
@@ -689,7 +689,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
             #else:
              #   al = (it + 1) / (len(par_ens) + 1)
             plt.scatter(x=df[pst.parameter_data.parnme[0]], y=df[pst.parameter_data.parnme[1]], c="b",alpha=1.0)
-            plt.text(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],s="{}".format(it))
+            #plt.text(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],s="{}".format(it))
 
     if finite_diff_grad or ipar is not None:
         plot_init_decvars = True
@@ -710,7 +710,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
 
 
 if __name__ == "__main__":
-    #rosenbrock_setup(version="2par",initial_decvars=[-1.0,-1.0])
+    rosenbrock_setup(version="2par",initial_decvars=[-1.0,-1.0])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
@@ -721,15 +721,17 @@ if __name__ == "__main__":
 
     #rosenbrock_multiple_update(version="2par", nit=30, finite_diff_grad=True, alg="LBFGS")
 
-    #plot_2par_rosen(finite_diff_grad=True)
+    #plot_2par_rosen(finite_diff_grad=False)
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    invest(version="2par")
-    #invest(version="2par", constraints=True)
+    #invest(version="2par")
     #invest(version="high_dim")
+
+    #rosenbrock_setup(version="2par", constraints=True)
+    #invest(version="2par", constraints=True)
 
     #phi_curv_tradeoff_invest()
 
@@ -738,10 +740,10 @@ if __name__ == "__main__":
       #  test_pestpp_on_rosen()
     #test_pestpp_on_rosen()
 
-    #rosenbrock_setup(version="2par",constraints=True,initial_decvars=0.5)
-    #rosenbrock_multiple_update(version="2par",constraints=True,en_size=20,biobj_weight=5.0)
-    #rosenbrock_phi_progress(version="2par", label="phi_progress_constrained.pdf")
-    #filter_plot(version="2par", constraints=True, log_phi=True)
+    rosenbrock_setup(version="2par",constraints=True,initial_decvars=[1.6,-2.0])
+    rosenbrock_multiple_update(version="2par",constraints=True,en_size=10,biobj_weight=5.0,alg="LBFGS")
+    rosenbrock_phi_progress(version="2par", label="phi_progress_constrained.pdf")
+    filter_plot(version="2par", constraints=True, log_phi=True)
 
     #supply2_setup()
     #supply2_update(en_size=20,draw_mult=1e-6)
