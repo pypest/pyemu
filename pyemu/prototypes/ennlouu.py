@@ -969,51 +969,52 @@ class EnsembleSQP(EnsembleMethod):
         else:
             self.logger.log("compute phi grad using ensemble approx")
 
-            #if alg == "LBFGS" and self.iter_num > 2:
-             #   self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
-              #  self.phi_grad = self.phi_grad_next.copy()
-               # self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
+            if alg == "LBFGS" and self.iter_num > 2:
+                self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
+                self.phi_grad = self.phi_grad_next.copy()
+                self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
+            else:
+                self.logger.log("compute dec var en covariance vector")
+                # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds). Or draw around mean on bound?
+                self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
+                # and need mean for upgrades
+                if self.parensemble_mean is None:
+                    self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
+                    self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),
+                                                   row_names=['mean'], col_names=self.pst.par_names)
+                self.logger.log("compute dec var en covariance vector")
 
-            self.logger.log("compute dec var en covariance vector")
-            # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds). Or draw around mean on bound?
-            self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
-            # and need mean for upgrades
-            if self.parensemble_mean is None:
-                self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
-                self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),
-                                           row_names=['mean'], col_names=self.pst.par_names)
-            self.logger.log("compute dec var en covariance vector")
+                self.logger.log("compute dec var-phi en cross-covariance vector")
+                self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
+                self.logger.log("compute dec var-phi en cross-covariance vector")
 
-            self.logger.log("compute dec var-phi en cross-covariance vector")
-            self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
-            self.logger.log("compute dec var-phi en cross-covariance vector")
-
-            if cma is True:
-                self.logger.log("undertaking dec var cov mat adaptation")
-                self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar,
+                if cma is True:
+                    self.logger.log("undertaking dec var cov mat adaptation")
+                    self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar,
                                                          rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
                                                          use_dist_mean_for_delta=use_dist_mean_for_delta,
                                                          mu_learning_prop=mu_learning_prop)
-                self.logger.log("undertaking dec var cov mat adaptation")
+                    self.logger.log("undertaking dec var cov mat adaptation")
 
-            # compute gradient vector and undertake gradient-related checks
-            # see e.g. eq (9) in Liu and Reynolds (2019 SPE)
-            self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
-            self.inv_en_cov_decvar = self.en_cov_decvar.pseudo_inv(eigthresh=self.pst.svd_data.eigthresh)
-            self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
+                # compute gradient vector and undertake gradient-related checks
+                # see e.g. eq (9) in Liu and Reynolds (2019 SPE)
+                self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
+                self.inv_en_cov_decvar = self.en_cov_decvar.pseudo_inv(eigthresh=self.pst.svd_data.eigthresh)
+                self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
 
-            # TODO: SVD on sparse form of dec var en cov matrix (do SVD on A where Cuu = AA^T - see Dehdari and Oliver)
-            #self.logger.log("calculate pseudo inv comps")
-            #u,s,v = self.en_cov_decvar.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
-            #self.logger.log("calculate pseudo inv comps")
+                # TODO: SVD on sparse form of dec var en cov matrix (do SVD on A where Cuu = AA^T - see Dehdari and Oliver)
+                #self.logger.log("calculate pseudo inv comps")
+                #u,s,v = self.en_cov_decvar.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
+                #self.logger.log("calculate pseudo inv comps")
 
-            self.logger.log("calculate phi gradient vector")
-            #self.phi_grad = self.inv_en_cov_decvar.T * self.en_crosscov_decvar_phi
-            self.phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi.T
-            self.logger.log("calculate phi gradient vector")
-            if grad_calc_only:
-                return self.phi_grad
-            self.logger.log("compute phi grad using ensemble approx")
+                self.logger.log("calculate phi gradient vector")
+                #self.phi_grad = self.inv_en_cov_decvar.T * self.en_crosscov_decvar_phi
+                self.phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi.T
+                self.logger.log("calculate phi gradient vector")
+
+                if grad_calc_only:
+                    return self.phi_grad
+                self.logger.log("compute phi grad using ensemble approx")
 
         # compute quasi-Newton search direction
         self.logger.log("calculate search direction")
