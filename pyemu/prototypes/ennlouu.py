@@ -574,7 +574,7 @@ class EnsembleSQP(EnsembleMethod):
         # curv condition related tests (and for scaling Hessian below)
         ys = self.y_d[self.iter_num - 1].T * self.s_d[self.iter_num - 1]
         yy = self.y_d[self.iter_num - 1].T * self.y_d[self.iter_num - 1]
-        if float(ys.x) <= 0:  # TODO: https://arxiv.org/pdf/1802.05374.pdf
+        if float(ys.x) <= 0:  # TODO: see alternative at https://arxiv.org/pdf/1802.05374.pdf
             self.logger.lraise("!! curvature condition violated: yTs = {}; should be > 0\n"
                                .format(float(ys.x)) +
                                "  If we update (or scale) Hessian matrix now it will not be positive definite !!\n" +
@@ -622,7 +622,7 @@ class EnsembleSQP(EnsembleMethod):
         else:
             return -1 * r
 
-    def _impose_Wolfe_conds(self, alpha, strong=True, c1=10**-4, c2=0.9, first_cond_only=False,
+    def _impose_Wolfe_conds(self, alpha, strong=False, c1=10**-4, c2=0.9, first_cond_only=False,
                             skip_first_cond=False, finite_diff_grad=False):
         '''
         see pg. 172 of Oliver et al.
@@ -971,7 +971,7 @@ class EnsembleSQP(EnsembleMethod):
         else:
             self.logger.log("compute phi grad using ensemble approx")
 
-            if alg == "LBFGS" and self.iter_num > 2:
+            if alg == "LBFGS" and self.iter_num > 2 and constraints is False:  # constraints as need phi_grad for Lagrangian
                 self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
                 self.phi_grad = self.phi_grad_next.copy()
                 self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
