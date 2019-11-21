@@ -1,0 +1,26 @@
+pcf
+* parameter data external
+Test.par_data_short.dat sep w missing_value missing
+
+
+* parameter groups external
+test.pargrp_data.dat sep w missing_value missing
+
+* observation data external
+test.obs_data.dat sep w missing_value missing
+
+* model command line
+model_nz_64.bat > slave_log.txt
+
+* model input external
+test.tplfile_data.dat sep w missing_value missing
+
+* model output external
+test.insfile_data.dat sep w missing_value missing
+
+* prior information external
+test.pi_data.csv
+
+* control data keyword
+debug_parse_only true
+

@@ -533,21 +533,23 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
         dfs.append(df)
 
     f_config.close()
-    df = pd.concat(dfs,axis=1)
+    df = pd.concat(dfs,axis=1).T
     df.to_csv(bin_file + "_timeseries.processed", sep=' ')
     if model is not None:
-        t_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+        t_str = df.columns.map(lambda x: x.strftime("%Y%m%d"))
     else:
-        t_str = df.index.map(lambda x: "{0:08.2f}".format(x))
+        t_str = df.columns.map(lambda x: "{0:08.2f}".format(x))
 
     ins_file = bin_file + "_timeseries.processed.ins"
     print("writing instruction file to {0}".format(ins_file))
     with open(ins_file,'w') as f:
         f.write('pif ~\n')
         f.write("l1 \n")
-        for t in t_str:
+        for site in df.index:
+        #for t in t_str:
             f.write("l1 w ")
-            for site in df.columns:
+            #for site in df.columns:
+            for t in t_str:
                 if prefix is not None:
                     obsnme = "{0}_{1}_{2}".format(prefix,site,t)
                 else:
@@ -562,7 +564,6 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
         pth = os.path.join(*[p for p in os.path.split(bin_file)[:-1]])
         os.chdir(pth)
     config_file = os.path.split(config_file)[-1]
-    df = apply_hds_timeseries(config_file, postprocess_inact=postprocess_inact)
     try:
         df = apply_hds_timeseries(config_file, postprocess_inact=postprocess_inact)
     except Exception as e:
@@ -641,7 +642,7 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
             df = pd.DataFrame(data=bf.get_ts((k,i,j)),columns=["totim",site])
         df.index = df.pop("totim")
         dfs.append(df)
-    df = pd.concat(dfs,axis=1)
+    df = pd.concat(dfs,axis=1).T
     if df.shape != df.dropna().shape:
         warnings.warn("NANs in processed timeseries file",PyemuWarning)
         if fill.upper() != "NONE":
@@ -659,9 +660,9 @@ def _setup_postprocess_hds_timeseries(hds_file, df, config_file, prefix=None, mo
         "Setting up post processing of hds or ucn timeseries obs. "
         "Prepending 'pp' to obs name may cause length to exceed 20 chars", PyemuWarning)
     if model is not None:
-        t_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+        t_str = df.columns.map(lambda x: x.strftime("%Y%m%d"))
     else:
-        t_str = df.index.map(lambda x: "{0:08.2f}".format(x))
+        t_str = df.columns.map(lambda x: "{0:08.2f}".format(x))
     if prefix is not None:
         prefix = "pp{0}".format(prefix)
     else:
@@ -671,9 +672,10 @@ def _setup_postprocess_hds_timeseries(hds_file, df, config_file, prefix=None, mo
     with open(ins_file,'w') as f:
         f.write('pif ~\n')
         f.write("l1 \n")
-        for t in t_str:
+        for site in df.index:
             f.write("l1 w ")
-            for site in df.columns:
+            #for site in df.columns:
+            for t in t_str:
                 obsnme = "{0}{1}_{2}".format(prefix, site, t)
                 f.write(" !{0}!".format(obsnme))
             f.write('\n')
@@ -729,7 +731,7 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
             print("{0} observation(s) post-processed for site {1} at kij ({2},{3},{4})".
                   format(inact_obs.sum(), site, k, i, j))
         dfs.append(df)
-    df = pd.concat(dfs, axis=1)
+    df = pd.concat(dfs, axis=1).T
     #print(df)
     df.to_csv(hds_file+"_timeseries.post_processed", sep=' ')
     return df

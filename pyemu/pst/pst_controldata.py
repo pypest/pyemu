@@ -69,7 +69,7 @@ class RegData(object):
                 v = v.replace('[','').replace(']','')
                 super(RegData,self).__setattr__(v,d)
                 self.optional_dict[v] = o
-        self.should_write = ["phimlim","phimaccept","fracphim"]
+        self.should_write = ["phimlim","phimaccept","fracphim","wfinit"]
 
     def write(self,f):
         """ write the regularization section to an open
@@ -330,9 +330,6 @@ class ControlData(object):
                         self._df.loc[name, "value"] = v
             return extra
 
-
-
-
         assert len(lines) == len(CONTROL_VARIABLE_LINES),\
         "ControlData error: len of lines not equal to " +\
         str(len(CONTROL_VARIABLE_LINES))
@@ -372,7 +369,7 @@ class ControlData(object):
 
                 else:
                     self._df.loc[name,"value"] = v
-
+        return {}
 
     def copy(self):
         cd = ControlData()

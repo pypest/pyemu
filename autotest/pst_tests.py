@@ -1,5 +1,6 @@
 import os
 import platform
+import shutil
 
 if not os.path.exists("temp"):
     os.mkdir("temp")
@@ -93,7 +94,7 @@ def pst_manip_test():
     pst.write(new_path)
     pst = Pst(new_path)
     pst.svd_data.maxsing = 1
-    pst.write(new_path, update_regul=True)
+    pst.write(new_path)
 
 
 def load_test():
@@ -119,9 +120,9 @@ def load_test():
                 continue
             out_name = os.path.join(temp_dir, pst_file)
             print(out_name)
-            # p.write(out_name,update_regul=True)
+            # p.write(out_name)
             try:
-                p.write(out_name, update_regul=True)
+                p.write(out_name)
             except Exception as e:
                 exceptions.append(pst_file + " write fail: " + str(e))
                 continue
@@ -599,6 +600,59 @@ def lt_gt_constraint_names_test():
     assert pst.greater_than_pi_constraints.shape[0] == 0
 
 
+def new_format_test_2():
+    import pyemu
+    pst_dir = "newpst"
+    pst_files = [f for f in os.listdir(pst_dir) if f.endswith(".pst")]
+    b_d = os.getcwd()
+    os.chdir(pst_dir)
+    #try:
+    for pst_file in pst_files:
+        print(pst_file)
+
+        if os.path.exists("temp_pst"):
+            shutil.rmtree("temp_pst")
+        os.makedirs("temp_pst")
+        if "fail" in pst_file:
+            try:
+                pst = pyemu.Pst(os.path.join(pst_file))
+
+            except:
+                pass
+            else:
+                raise Exception("should have failed on {0}".format(pst_file))
+        else:
+            pst = pyemu.Pst(os.path.join(pst_file))
+            pst.write(os.path.join("temp_pst","pst_test.pst"))
+            new_pst = pyemu.Pst(os.path.join("temp_pst","pst_test.pst"))
+            d = set(pst.par_names).symmetric_difference(new_pst.par_names)
+            assert len(d) == 0,d
+            d = set(pst.obs_names).symmetric_difference(new_pst.obs_names)
+            assert len(d) == 0,d
+            d = set(pst.template_files).symmetric_difference(new_pst.template_files)
+            assert len(d) == 0, d
+            assert pst.nnz_obs == new_pst.nnz_obs
+            assert pst.npar_adj == new_pst.npar_adj
+
+            new_pst.write(os.path.join("temp_pst","pst_test.pst"),version=2)
+
+            assert os.path.exists(os.path.join("temp_pst","pst_test.par_data.csv"))
+            assert os.path.exists(os.path.join("temp_pst", "pst_test.obs_data.csv"))
+            assert os.path.exists(os.path.join("temp_pst", "pst_test.tplfile_data.csv"))
+            assert os.path.exists(os.path.join("temp_pst", "pst_test.insfile_data.csv"))
+
+            new_pst = pyemu.Pst(os.path.join("temp_pst","pst_test.pst"))
+            d = set(pst.par_names).symmetric_difference(new_pst.par_names)
+            assert len(d) == 0, d
+            d = set(pst.obs_names).symmetric_difference(new_pst.obs_names)
+            assert len(d) == 0, d
+            d = set(pst.template_files).symmetric_difference(new_pst.template_files)
+            assert len(d) == 0, d
+            assert pst.nnz_obs == new_pst.nnz_obs
+            print(pst.npar_adj,new_pst.npar_adj)
+            assert pst.npar_adj == new_pst.npar_adj
+    os.chdir(b_d)
+
 def new_format_test():
     import numpy as np
     import pyemu
@@ -619,11 +673,15 @@ def new_format_test():
         pst_new = pyemu.Pst("test.pst")
         npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
         ppo1 = pst_new.pestpp_options
-        assert len(ppo) == len(ppo1)
+
+        assert len(ppo) == len(ppo1),"{0},{1}".format(ppo,ppo1)
         assert npar == npar1
         assert nobs == nobs1
         assert npr == npr1,"{0}: {1},{2}".format(pst_file,npr,npr1)
-
+        assert len(pst.template_files) == len(pst_new.template_files)
+        assert len(pst.input_files) == len(pst_new.input_files)
+        assert len(pst.instruction_files) == len(pst_new.instruction_files)
+        assert len(pst.output_files) == len(pst_new.output_files)
 
         pst_new.write("test.pst",version=1)
         pst_new = pyemu.Pst("test.pst")
@@ -633,6 +691,10 @@ def new_format_test():
         assert npar == npar1
         assert nobs == nobs1
         assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)
+        assert len(pst.template_files) == len(pst_new.template_files)
+        assert len(pst.input_files) == len(pst_new.input_files)
+        assert len(pst.instruction_files) == len(pst_new.instruction_files)
+        assert len(pst.output_files) == len(pst_new.output_files)
         pst_new.write("test.pst",version=2)
         pst_new = pyemu.Pst("test.pst")
         npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
@@ -641,6 +703,10 @@ def new_format_test():
         assert npar == npar1
         assert nobs == nobs1
         assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)
+        assert len(pst.template_files) == len(pst_new.template_files)
+        assert len(pst.input_files) == len(pst_new.input_files)
+        assert len(pst.instruction_files) == len(pst_new.instruction_files)
+        assert len(pst.output_files) == len(pst_new.output_files)
 
 
     pst_new.parameter_groups.loc[:,:] = np.NaN
@@ -748,6 +814,42 @@ def process_output_files_test():
     i2 = pst_utils.InstructionFile(ins_files[1])
     s2 = i2.read_output_file(out_files[1])
     assert s2.loc["h01_02","obsval"] == 1.024
+
+def new_format_path_mechanics_test():
+    import pyemu
+
+    l_path = "d1/d2/d3/d4/test.pst"
+    w_path = "d1\\d2\\d3\\d4\\test.pst"
+    true_path = os.path.join("d1","d2","d3","d4")
+    test_path = pyemu.Pst._parse_path_agnostic(w_path)
+    assert test_path[0] == true_path
+    assert test_path[1] == "test.pst"
+    test_path = pyemu.Pst._parse_path_agnostic(l_path)
+    assert test_path[0] == true_path
+    assert test_path[1] == "test.pst"
+
+    l_eline = "d1/d2/d3/d4/Test.dat sep W"
+    filename, options = pyemu.Pst._parse_external_line(l_eline,pst_path=".")
+    assert filename == "Test.dat"
+    assert "sep" in options,options
+    assert options["sep"] == "w",options
+    l_eline = "d1/d2/d3/d4/Test.dat sep W"
+    filename, options = pyemu.Pst._parse_external_line(l_eline, pst_path="template")
+    assert filename == os.path.join("template","Test.dat")
+    assert "sep" in options, options
+    assert options["sep"] == "w", options
+
+    w_eline = "d1\\d2\\d3\\d4\\Test.dat sep W"
+    filename, options = pyemu.Pst._parse_external_line(w_eline, pst_path=".")
+    assert filename == "Test.dat"
+    assert "sep" in options, options
+    assert options["sep"] == "w", options
+
+    w_eline = "d1\\d2\\d3\\d4\\Test.dat sep W"
+    filename, options = pyemu.Pst._parse_external_line(w_eline, pst_path="template")
+    assert filename == os.path.join("template","Test.dat")
+    assert "sep" in options, options
+    assert options["sep"] == "w", options
 
 
 if __name__ == "__main__":

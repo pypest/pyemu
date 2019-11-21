@@ -192,7 +192,8 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
         The covariance of parameters associated with geostatistical structures is defined
         as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
         pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
-        sigma_range. Sounds complicated...
+        sigma_range. Most users will want to sill of the geostruct to sum to 1.0 so that the resulting
+        covariance matrices have variance proportional to the parameter bounds. Sounds complicated...
 
     Example::
 
@@ -223,6 +224,8 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
                 gs = gss[0]
             else:
                 gs = gss
+        if gs.sill != 1.0:
+            warnings.warn("geostatistical_prior_builder() warning: geostruct sill != 1.0, user beware!")
         if not isinstance(items,list):
             items = [items]
         for item in items:
@@ -1025,7 +1028,7 @@ def pst_from_io_files(tpl_files, in_files, ins_files, out_files,
             pst_path, os.path.split(out_file)[-1]) for out_file in out_files]
 
     if pst_filename:
-        new_pst.write(pst_filename,update_regul=True)
+        new_pst.write(pst_filename)
     return new_pst
 
 
@@ -3112,7 +3115,7 @@ def apply_list_pars():
             #     df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
             #                                                                      x.irow2, x.icol2), axis = 1)
             if pak in sp_mlts.keys():
-                raise Exception("duplicate multplier csv for pak {0}".format(pak))
+                raise Exception("duplicate multiplier csv for pak {0}".format(pak))
             if df.shape[0] == 0:
                 raise Exception("empty dataframe for spatial list file: {0}".format(f))
             sp_mlts[pak] = df

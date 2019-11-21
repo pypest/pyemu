@@ -1,0 +1,33 @@
+pcf
+* control data keyword
+pestmode                                 estimation
+ies_num_reals  100
+ies_par_en "prior.jcb"
+noptmax                                -1
+svdmode                                 1
+maxsing                          10000000
+eigthresh                           1e-06
+eigwrite                                1
+lambdas             1, 2, 10, 999
+debug_parse_only  True
+
+* parameter data external
+
+test.par_data.dat sep w missing_value missing
+test.par_data.csv 
+
+* observation data external
+test.obs_data.dat sep w missing_value missing
+
+* model command line
+model_nz_64.bat > slave_log.txt
+
+* model input external
+test.tplfile_data.dat sep w missing_value missing
+
+* model output external
+test.insfile_data.dat sep w missing_value missing
+
+* prior information external
+test.pi_data.csv
+
