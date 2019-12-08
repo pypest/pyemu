@@ -269,7 +269,6 @@ class PstFrom(object):
 
         return self._prefix_count[prefix]
 
-
     def add_parameters(self,filenames,par_type,zone_array=None,dist_type="gaussian",sigma_range=4.0,
                           upper_bound=1.0e10,lower_bound=1.0e-10,transform="log",
                           par_name_base="p",index_cols=None,use_cols=None,
@@ -277,7 +276,6 @@ class PstFrom(object):
         
         self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
         index_cols, use_cols, file_dict = self._par_prep(filenames,index_cols,use_cols)
-
 
         if isinstance(par_name_base,str):
             par_name_base = [par_name_base]
@@ -287,11 +285,9 @@ class PstFrom(object):
         elif use_cols is not None and len(par_name_base) == len(use_cols):
             pass
         else:
-            self.logger.lraise("par_name_base should be a string,single-element " + \
-                               "container, or container of len use_cols " + \
+            self.logger.lraise("par_name_base should be a string,single-element "
+                               "container, or container of len use_cols "
                                "not '{0}'".format(str(par_name_base)))
-
-
 
         if self.longnames:
             fmt = "_inst:{0}"
@@ -300,12 +296,13 @@ class PstFrom(object):
         for i in range(len(par_name_base)):
             par_name_base[i] += fmt.format(self._next_count(par_name_base[i]))
 
-
         if index_cols is not None:
-            mlt_filename = "{0}_{1}.csv".format(par_name_base[0],par_type)
+            mlt_filename = "{0}_{1}.csv".format(
+                par_name_base[0].replace(':', ''), par_type)
             tpl_filename = mlt_filename + ".tpl"
 
-            self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
+            self.logger.log(
+                "writing list-based template file '{0}'".format(tpl_filename))
             df = write_list_tpl(file_dict.values(),par_name_base,os.path.join(self.new_d,tpl_filename),
                                 par_type=par_type,suffix='',index_cols=index_cols,use_cols=use_cols,
                                 zone_array=zone_array, longnames=self.longnames,
@@ -314,7 +311,8 @@ class PstFrom(object):
 
             self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
         else:
-            mlt_filename = "{0}_{1}.csv".format(par_name_base[0], par_type)
+            mlt_filename = "{0}_{1}.csv".format(
+                par_name_base[0].replace(':', ''), par_type)
             tpl_filename = mlt_filename + ".tpl"
             self.logger.log("writing array-based template file '{0}'".format(tpl_filename))
             shape = file_dict[list(file_dict.keys())[0]].shape
@@ -364,7 +362,7 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
         didx = set(df.loc[:,index_cols].apply(lambda x: tuple(x),axis=1))
         sidx.update(didx)
 
-    df_tpl = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
+    df_tpl = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])  # TODO using sets means that the rows of df and df_tpl are not necessaril aligned
 
 
     # get some index strings for naming
@@ -379,20 +377,17 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
         fmt = "{1:03d}"
         j = ''
 
-
     if not zero_based:
         df_tpl.loc[:,"sidx"] = df_tpl.sidx.apply(lambda x: tuple(xx-1 for xx in x))
-        df_tpl.loc[:, "idx_strs"] = [j.join([fmt.format(iname, df.loc[i, idx]-1)
-                    for iname,idx in zip(inames,index_cols)]) for i in range(df_tpl.shape[0])]
-    else:
-        df_tpl.loc[:, "idx_strs"] = [j.join([fmt.format(iname, df.loc[i, idx])
-                    for iname, idx in zip(inames, index_cols)]) for i in range(df_tpl.shape[0])]
+    df_tpl.loc[:, "idx_strs"] = df_tpl.sidx.apply(
+        lambda x: j.join([fmt.format(iname, xx)
+                          for xx, iname in zip(x, inames)]))
 
 
     # if zone type, find the zones for each index position
     if zone_array is not None and par_type in ["zone","grid"]:
         if zone_array.ndim != len(index_cols):
-            raise Exception("write_list_tpl() error: zone_array.ndim "+\
+            raise Exception("write_list_tpl() error: zone_array.ndim "
                             "({0}) != len(index_cols)({1})".format(zone_array.ndim,len(index_cols)))
         df_tpl.loc[:,"zval"] = df_tpl.sidx.apply(lambda x: zone_array[x])
 
@@ -402,7 +397,7 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
         use_cols = [c for c in df_tpl.columns if c not in index_cols]
 
 
-    if get_xy is not None:
+    if get_xy is not None:  # todo - get_xy is function so may never be None? - may just be in debug
         df_tpl.loc[:,'xy'] = df_tpl.sidx.apply(lambda x: get_xy(*x))
         df_tpl.loc[:,'x'] = df_tpl.xy.apply(lambda x : x[0])
         df_tpl.loc[:, 'y'] = df_tpl.xy.apply(lambda x: x[1])
