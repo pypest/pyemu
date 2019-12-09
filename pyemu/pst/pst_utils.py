@@ -1061,7 +1061,7 @@ class InstructionFile(object):
                         self.throw_out_error("EOF when trying to read {0} lines for line advance instruction '{1}', from instruction file line number {2}". \
                                              format(nlines, ins, ins_lcount))
             elif ins == 'w':
-                raw = line[cursor_pos:].split()
+                raw = line[cursor_pos:].replace(","," ").split()
                 if line[cursor_pos] == ' ':
                     raw.insert(0,'')
                 if len(raw) == 1:
@@ -1076,9 +1076,9 @@ class InstructionFile(object):
                     m = ins_line[ii+1].replace(self._marker,'')
                     if m not in line[cursor_pos:]:
                         self.throw_out_error("secondary marker '{0}' not found from cursor_pos {2}".format(m,cursor_pos))
-                    val_str = line[cursor_pos:].split(m)[0]
+                    val_str = line[cursor_pos:].split(m)[0].replace(","," ")
                 else:
-                    val_str = line[cursor_pos:].split()[0]
+                    val_str = line[cursor_pos:].split()[0].replace(","," ")
                 try:
                     val = float(val_str)
                 except Exception as e:
