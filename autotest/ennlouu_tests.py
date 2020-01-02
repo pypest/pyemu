@@ -39,7 +39,7 @@ def rosenbrock_setup(version,initial_decvars=1.6,constraints=False):
     obs.loc["obs","obgnme"] = "obj_fn"  #pst.pestpp_options["opt_obj_func"] = "obj_fn"
     if constraints:
         obs.loc["constraint", "obgnme"] = "g_constraint"  # inherit from pestpp_options
-        obs.loc["constraint", "obsval"] = 5.0  # inherit from pestpp_options
+        obs.loc["constraint", "obsval"] = 10.0  # inherit from pestpp_options
     obs.loc[:, "weight"] = 1.0
     pst.control_data.noptmax = 0
     if version == "2par":
@@ -104,15 +104,15 @@ def rosenbrock_2par_grad_approx_invest():
 
     # finite diffs
     pst.control_data.noptmax = -2
-    # pst.parameter_groups.derinc = 0.05
+    pst.parameter_groups.derinc = 0.001
     pst.write(os.path.join("rosenbrock_2par_fds.pst"))
-    pyemu.os_utils.run("pestpp rosenbrock_2par_fds.pst")
+    pyemu.os_utils.run("pestpp-glm rosenbrock_2par_fds.pst")
     jco = pyemu.Jco.from_binary("rosenbrock_2par_fds.jcb").to_dataframe()
 
     # en approx
     esqp = pyemu.EnsembleSQP(pst=pst)
-    df = pd.DataFrame([(en_size, draw_m) for en_size in [10,20,30, 40, 50, 70, 100]
-                       for draw_m in [0.0003,0.003,0.03]],columns=["en_size", "draw_m"])
+    df = pd.DataFrame([(en_size, draw_m) for en_size in [5,10,30]
+                       for draw_m in [3e-5,3e-4,3e-3]],columns=["en_size", "draw_mult"])
     # middle draw_m stdev approx corresp with derinc
 
     en_grad_par1, grad_diff_par1, en_grad_par2, grad_diff_par2 = [],[],[],[]
@@ -134,17 +134,17 @@ def rosenbrock_2par_grad_approx_invest():
 
     df_par1 = pd.concat((df, pd.DataFrame(data=grad_diff_par1, columns=["grad_diff_par1"])), axis=1)
     df_par2 = pd.concat((df, pd.DataFrame(data=grad_diff_par2, columns=["grad_diff_par2"])), axis=1)
-    dfs = [df_par1,df_par2]
+    dfs = [df_par1, df_par2]
 
     # some plots
     fontsize = 12
-    fig,axs = plt.subplots(1,2,sharey=True)
-    for i,ax in enumerate(axs):
-        for dm in df_par1.draw_m.unique():
+    fig, axs = plt.subplots(1, 2, sharey=True)
+    for i, ax in enumerate(axs):
+        for dm in df_par1.draw_mult.unique():
             df_, col = dfs[i], dfs[i].columns[-1]
-            ax.plot(df_.loc[df_.draw_m == dm, "en_size"], df_.loc[df_.draw_m == dm, col],
+            ax.plot(df_.loc[df_.draw_mult == dm, "en_size"], df_.loc[df_.draw_mult == dm, col],
                  label="draw mult = {}".format(dm),marker='o')
-        ax.axhline(y=1,xmin=0,xmax=100,linestyle='--',color='k')
+        ax.axhline(y=1, xmin=0, xmax=100, linestyle='--', color='k')
         if i == 0:
             ax.set_ylabel(
                 "$\\frac{(\\frac{\Delta \Phi}{\Delta \\mathtt{dec\ var}})_{en\ approx}}"
@@ -154,6 +154,7 @@ def rosenbrock_2par_grad_approx_invest():
         ax.set_xlabel("ensemble size $N_e$",fontsize=fontsize)
         ax.legend()
     #plt.show()
+    plt.savefig("fd_v_en.pdf")
     os.chdir(os.path.join("..", ".."))
 
 
@@ -275,16 +276,16 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf",finite_diff_grad=Fa
 def invest(version,constraints=False):
     import shutil
 
-    vars = {"initial_decvars": [[-2.0,-2.0]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
-            "draw_mult": [3e-4],
+    vars = {"initial_decvars": [[2.0,-1.0]], #[[1.0,-1.0],[-1.0,-1.0],[-2,-2],[-1.5,-0.5],[-2,1],[1.5,-1.5],[1.5,1.5],[0.5,2]], #[(x1, x2) for x1 in np.arange(-2.0,2.1,1.0) for x2 in np.arange(-2.0,2.1,1.0)]
+            "draw_mult": [3e-5],
             "en_size": [10],
-            "hess_self_scaling": [True,False],  #TODO: True for BFGS means once (it 2), for LBFGS means every one...
+            "hess_self_scaling": [True],  #TODO: True for BFGS means once (it 2), for LBFGS means every one...
             "hess_update": [True],
             "damped": [False],
             "finite_diff_grad": [True],
             "derinc": [0.001],
-            "nit": [50],
-            "alg": ["BFGS","LBFGS"],
+            "nit": [30],
+            "alg": ["BFGS"],
             "memory": [10],
             "strong_Wolfe": [False]
             }
@@ -709,8 +710,10 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
     os.chdir(os.path.join("..",".."))
 
 
+
+
 if __name__ == "__main__":
-    #rosenbrock_setup(version="2par",initial_decvars=[-1.0,-1.0])
+    #rosenbrock_setup(version="2par",initial_decvars=[-1.5,-1.5])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
@@ -727,7 +730,7 @@ if __name__ == "__main__":
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    invest(version="2par")
+    #invest(version="2par")
     #invest(version="high_dim")
 
     #rosenbrock_setup(version="2par", constraints=True)
@@ -740,8 +743,8 @@ if __name__ == "__main__":
       #  test_pestpp_on_rosen()
     #test_pestpp_on_rosen()
 
-    ##rosenbrock_setup(version="2par",constraints=True,initial_decvars=[1.6,-2.0])
-    #rosenbrock_multiple_update(version="2par",constraints=True,en_size=10,biobj_weight=5.0) #alg="LBFGS",damped=False)
+    rosenbrock_setup(version="2par",constraints=True,initial_decvars=[2,-2])
+    rosenbrock_multiple_update(version="2par",constraints=True, finite_diff_grad=True) #biobj_weight=5.0,alg="LBFGS",damped=False)
     #rosenbrock_phi_progress(version="2par", label="phi_progress_constrained.pdf")
     #filter_plot(version="2par", constraints=True, log_phi=True)
 

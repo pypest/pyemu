@@ -579,7 +579,7 @@ class EnsembleSQP(EnsembleMethod):
                                .format(float(ys.x)) +
                                "  If we update (or scale) Hessian matrix now it will not be positive definite !!\n" +
                                "  Either skipping scaling/updating (not recommended) or dampening...")
-            if damped:
+            if damped:  # from Powell
                 self.logger.warn("TODO dampened form for limited memory BFGS")  # TODO? Maybes not - just strong Wolfe.
             else:  # abort
                 self.hess_progress[self.iter_num] = "yTs = {0:8.3E}".format(float(ys.x))
@@ -859,6 +859,33 @@ class EnsembleSQP(EnsembleMethod):
 
         return en_cov
 
+    #def _active_set_procedure(self):
+        # TODO return self.working_set
+
+    def _solve_eqp(self,):
+        '''
+        Direct QP (KKT system) solve method herein---assuming convexity (pos-def-ness) and that A has full-row-rank.
+        Direct method here is just for demonstrative purposes---will require the other methods offered here given that
+        the KKT system will be indefinite.
+        TODO
+        '''
+        g = self.hessian
+        a = self.constraint_jco
+        c = self.phi_grad
+        h = np.zeros((a.shape[1],a.shape[1]))
+        # TODO: revisit h - needs to be zero
+        #h = self.pst.observation_data.loc[cs,"obsval"].as_pyemu_matrix() - self.pst.observation_data.loc[cs,"obsval"].as_pyemu_matrix()
+        # (16.5, 18.9) Nocedal and Wright (2006)
+        coeff = np.concatenate((np.concatenate((2 * g.x, -1 * a.x), axis=1),
+                                np.concatenate((a.T.x, np.zeros((a.shape[1], a.shape[1]))), axis=1)))
+        b = np.concatenate((c.x, h))
+        # TODO: check A transposing
+        x = np.linalg.solve(coeff, b)
+        # TODO: go to diff methods here, e.g., null-space, Schur, iterative. Only direct here.
+        search_d = x[:self.pst.npar_adj]
+        lagrang_mults = x[self.pst.npar_adj:]
+        return search_d, lagrang_mults
+
 
     def update(self,step_mult=[1.0],alg="BFGS",memory=5,hess_self_scaling=True,damped=True,
                grad_calc_only=False,finite_diff_grad=False,hess_update=True,strong_Wolfe=True,
@@ -949,6 +976,17 @@ class EnsembleSQP(EnsembleMethod):
         if len(self.phi_obs) != 1:
             self.logger.lraise("number of objective function (phi) obs found != 1")
 
+        if constraints:  # prelims
+            constraint_gps = [x for x in self.pst.obs_groups if x.startswith("g_") or x.startswith("greater_")
+                              or x.startswith("l_") or x.startswith("less_")]
+            if len(constraint_gps) == 0:
+                self.logger.lraise("no constraint groups found")
+
+            for cg in constraint_gps:
+                cs = list(self.pst.observation_data.loc[(self.pst.observation_data["obgnme"] == cg) & \
+                                                        (self.pst.observation_data["weight"] > 0), "obsnme"])
+                # note cs is a list of all potentially active constraints
+
         if finite_diff_grad:
             self.logger.log("compute phi grad using finite diffs")
             if alg == "LBFGS" and self.iter_num > 2:
@@ -958,8 +996,12 @@ class EnsembleSQP(EnsembleMethod):
             else:
                 jco = self._calc_jco(derinc=derinc)
                 # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
-                # TODO: constraint grad here too? Relate to Lagrangian.
-                self.phi_grad = Matrix(x=jco.T.values,row_names=self.pst.adj_par_names, col_names=['cross-cov'])
+                self.phi_grad = Matrix(x=jco.loc[self.phi_obs,:].T.values,
+                                       row_names=self.pst.adj_par_names, col_names=['cross-cov'])
+                if constraints is True:  # and len(self.working_set) > 0:  # A matrix
+                    # TODO: for working set only
+                    self.constraint_jco  = Matrix(x=jco.loc[cs,:].T.values,
+                                                  row_names=self.pst.adj_par_names, col_names=cs)
             if grad_calc_only:
                 return self.phi_grad
             # and need mean for upgrades
@@ -970,7 +1012,6 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("compute phi grad using finite diffs")
         else:
             self.logger.log("compute phi grad using ensemble approx")
-
             if alg == "LBFGS" and self.iter_num > 2 and constraints is False:  # constraints as need phi_grad for Lagrangian
                 self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
                 self.phi_grad = self.phi_grad_next.copy()
@@ -1014,36 +1055,46 @@ class EnsembleSQP(EnsembleMethod):
                 self.phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi.T
                 self.logger.log("calculate phi gradient vector")
 
+                self.logger.log("compute ensemble approx constraint jacobian")
+                # TODO!
+                self.logger.log("compute ensemble approx constraint jacobian")
+
                 if grad_calc_only:
                     return self.phi_grad
                 self.logger.log("compute phi grad using ensemble approx")
 
         # compute quasi-Newton search direction
-        self.logger.log("calculate search direction")
-        # TODO: for first itn can we make some assumption about step length from bounds? will reduce number of runs
-        if alg == "LBFGS":
-            self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
-            self.search_d = self._LBFGS_hess_update(memory=memory,self_scale=hess_self_scaling)
-            self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
-        elif alg == "BFGS":
-            if self.opt_direction == "max":
-                self.search_d = (self.inv_hessian * self.phi_grad)
+        self.logger.log("calculate search direction and perform tests")
+        if constraints is False:# or if len(self.working_set) == 0:
+            if alg == "LBFGS":
+                self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
+                self.search_d = self._LBFGS_hess_update(memory=memory,self_scale=hess_self_scaling)
+                self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
+            elif alg == "BFGS":
+                if self.opt_direction == "max":
+                    self.search_d = (self.inv_hessian * self.phi_grad)
+                else:
+                    self.search_d = -1 * (self.inv_hessian * self.phi_grad)
             else:
-                self.search_d = -1 * (self.inv_hessian * self.phi_grad)
-        else:
-            self.logger.lraise("algorithm not recognized/supported")
-        self.logger.log("calculate search direction")
+                self.logger.lraise("algorithm not recognized/supported")
 
-        self.logger.log("phi gradient- and search direction-related checks")
-        if (opt_direction == "min" and (self.search_d.T * self.phi_grad).x > 0) or \
-                (opt_direction == "max" and (self.search_d.T * self.phi_grad).x < 0):
-            self.logger.lraise("search direction does not point down-hill! :facepalm:")
-            # TODO: rectify here rather than terminate
-        if (self.search_d.T * self.phi_grad).x == 0:
-            self.logger.warn("phi gradient is zero!")
-        self.logger.log("phi gradient- and search direction-related checks")
-        # TODO: using grad info only (with some expected step length), update Hessian from initial
-        # TODO: handling of fixed, transformed etc. dec vars here
+            self.logger.log("phi gradient- and search direction-related checks")
+            if (opt_direction == "min" and (self.search_d.T * self.phi_grad).x > 0) or \
+                    (opt_direction == "max" and (self.search_d.T * self.phi_grad).x < 0):
+                self.logger.lraise("search direction does not point down-hill! :facepalm:")
+                # TODO: rectify here rather than terminate
+            if (self.search_d.T * self.phi_grad).x == 0:
+                self.logger.warn("phi gradient is zero!")
+            self.logger.log("phi gradient- and search direction-related checks")
+            # TODO: using grad info only (with some expected step length), update Hessian from initial
+            # TODO: handling of fixed, transformed etc. dec vars here
+            self.logger.log("calculate search direction and perform tests")
+        else:  # active constraints present
+            self.logger.log("calculate search direction and perform tests")
+            self.logger.log("solve QP sub-problem (active set method)")
+            self.search_d, self.lagrang_mults = self._solve_eqp()
+            self.logger.log("solve QP sub-problem (active set method)")
+            self.logger.log("calculate search direction and perform tests")
 
         self.parensemble_mean_next = None
         step_lengths, mean_en_phi_per_alpha, curv_per_alpha = [], pd.DataFrame(), pd.DataFrame()
