@@ -891,7 +891,7 @@ class EnsembleSQP(EnsembleMethod):
         h = (-1.0 * a.T * x_.T) - b  # TODO: check -1 * constraint grad
         assert np.isclose(h.x, 0.0)
 
-        grad_vect = self.phi_grad
+        grad_vect = self.phi_grad.copy()
         grad_vect.col_names = ['mean']  # hack
         c = grad_vect + np.dot(0.5 * g, x_.T)  # small g
 
@@ -906,7 +906,7 @@ class EnsembleSQP(EnsembleMethod):
         else:
             self.logger.lraise("not implemented... yet")
 
-        search_d = Matrix(x=x[:self.pst.npar_adj], row_names=x_.T.row_names, col_names=x_.T.col_names)
+        search_d = Matrix(x=x[:self.pst.npar_adj], row_names=x_.T.row_names, col_names=self.phi_grad.col_names)
         lagrang_mults = Matrix(x=x[self.pst.npar_adj:], row_names=a.T.row_names, col_names=x_.T.col_names)
         return search_d, lagrang_mults
 
