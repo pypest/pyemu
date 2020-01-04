@@ -862,28 +862,52 @@ class EnsembleSQP(EnsembleMethod):
     #def _active_set_procedure(self):
         # TODO return self.working_set
 
-    def _solve_eqp(self,):
+    def _solve_eqp(self,working_set=[],method="direct"):
         '''
         Direct QP (KKT system) solve method herein---assuming convexity (pos-def-ness) and that A has full-row-rank.
         Direct method here is just for demonstrative purposes---will require the other methods offered here given that
-        the KKT system will be indefinite.
-        TODO
+        the KKT system will be indefinite (Nocedal and Wright, Ch 16)
+
+        Refer to (16.5, 18.9) of Nocedal and Wright (2006)
+
+        working_set : list
+            current estimate of active constraints. the concept of the working set (and indeed the ``active set'')
+            is specific to the active set method for QP with inequality constraints.
+        method : string
+            indicates the method employed to solve the KKT system. default is direct (for demo purposes only).
+            options include: null_space (pg. 457), Schur (pg. 455) and the iterative (TODO) method.
         '''
-        g = self.hessian
-        a = self.constraint_jco
-        c = self.phi_grad
-        h = np.zeros((a.shape[1],a.shape[1]))
-        # TODO: revisit h - needs to be zero
-        #h = self.pst.observation_data.loc[cs,"obsval"].as_pyemu_matrix() - self.pst.observation_data.loc[cs,"obsval"].as_pyemu_matrix()
-        # (16.5, 18.9) Nocedal and Wright (2006)
-        coeff = np.concatenate((np.concatenate((2 * g.x, -1 * a.x), axis=1),
-                                np.concatenate((a.T.x, np.zeros((a.shape[1], a.shape[1]))), axis=1)))
-        b = np.concatenate((c.x, h))
-        # TODO: check A transposing
-        x = np.linalg.solve(coeff, b)
-        # TODO: go to diff methods here, e.g., null-space, Schur, iterative. Only direct here.
-        search_d = x[:self.pst.npar_adj]
-        lagrang_mults = x[self.pst.npar_adj:]
+        assert isinstance(working_set, list)
+
+        g = self.hessian * Matrix(2.0 * np.eye((self.hessian.shape[0])),
+                                  row_names=self.hessian.row_names, col_names=self.hessian.col_names)
+        a = self.constraint_jco  # pertains to active constraints only
+
+        x_ = self.parensemble_mean
+        #x_.col_names = ['cross-cov']  # hack
+
+        b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[working_set,"obsval"].values, axis=0),
+                   row_names=[self.pst.observation_data.loc[working_set,"obsnme"][0]], col_names=["mean"])
+        h = (-1.0 * a.T * x_.T) - b  # TODO: check -1 * constraint grad
+        assert np.isclose(h.x, 0.0)
+
+        grad_vect = self.phi_grad
+        grad_vect.col_names = ['mean']  # hack
+        c = grad_vect + np.dot(0.5 * g, x_.T)  # small g
+
+        #coeff = np.concatenate((np.concatenate((g.x, - 1 * a.x), axis=1),
+         #                       np.concatenate((a.T.x, np.zeros((a.shape[1], a.shape[1]))), axis=1)))
+        if method == "direct":
+            coeff = np.concatenate((np.concatenate((0.5 * g.x, a.x), axis=1),
+                                    np.concatenate((a.T.x, np.zeros((a.shape[1], a.shape[1]))), axis=1)))
+
+            rhs = np.concatenate((-1 * c.x, h.x))
+            x = np.linalg.solve(coeff, rhs)
+        else:
+            self.logger.lraise("not implemented... yet")
+
+        search_d = Matrix(x=x[:self.pst.npar_adj], row_names=x_.T.row_names, col_names=x_.T.col_names)
+        lagrang_mults = Matrix(x=x[self.pst.npar_adj:], row_names=a.T.row_names, col_names=x_.T.col_names)
         return search_d, lagrang_mults
 
 
@@ -1000,8 +1024,8 @@ class EnsembleSQP(EnsembleMethod):
                                        row_names=self.pst.adj_par_names, col_names=['cross-cov'])
                 if constraints is True:  # and len(self.working_set) > 0:  # A matrix
                     # TODO: for working set only
-                    self.constraint_jco  = Matrix(x=jco.loc[cs,:].T.values,
-                                                  row_names=self.pst.adj_par_names, col_names=cs)
+                    self.constraint_jco = Matrix(x=jco.loc[cs,:].T.values,
+                                                 row_names=self.pst.adj_par_names, col_names=cs)
             if grad_calc_only:
                 return self.phi_grad
             # and need mean for upgrades
@@ -1092,7 +1116,7 @@ class EnsembleSQP(EnsembleMethod):
         else:  # active constraints present
             self.logger.log("calculate search direction and perform tests")
             self.logger.log("solve QP sub-problem (active set method)")
-            self.search_d, self.lagrang_mults = self._solve_eqp()
+            self.search_d, self.lagrang_mults = self._solve_eqp(working_set=cs)
             self.logger.log("solve QP sub-problem (active set method)")
             self.logger.log("calculate search direction and perform tests")
 
