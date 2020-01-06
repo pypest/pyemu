@@ -231,12 +231,6 @@ class EnsembleSQP(EnsembleMethod):
 
             # nothing really needs to be done here for unconstrained problems..
             # need to start from feasible point in dec var space...
-            if constraints:  # and constraints.shape[0] > 0:
-                self.logger.log("checking here feasibility and initializing constraint filter")
-                self._filter = pd.DataFrame()
-                self._filter, _accept = self._filter_constraint_eval(self.obsensemble,self._filter)
-                self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
-                self.logger.log("checking here feasibility and initializing constraint filter")
 
         else:  # finite diffs for grads
             self.finite_diff_grad = True
@@ -248,6 +242,13 @@ class EnsembleSQP(EnsembleMethod):
             self.phi_0.to_csv(self.pst.filename + ".phi.{0}.initial.csv".format(self.iter_num))
             self.obsensemble_next = self.phi_0.copy()  # for Wolfe tests only
             self.logger.log("running model forward with noptmax = 0")
+
+        if constraints:  # and constraints.shape[0] > 0:
+            self.logger.log("checking here feasibility and initializing constraint filter")
+            self._filter = pd.DataFrame()
+            self._filter, _accept = self._filter_constraint_eval(self.obsensemble,self._filter)
+            self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
+            self.logger.log("checking here feasibility and initializing constraint filter")
 
         # Hessian
         if hess is not None:
@@ -1195,9 +1196,7 @@ class EnsembleSQP(EnsembleMethod):
                                                               "prior_info_en.csv")
 
                 # TODO: constraints = from pst # contain constraint val (pcf) and constraint from obsen
-                # TODO: support finite diffs in _filter_constraint_eval
                 if constraints:  # and constraints.shape[0] > 0:
-                    # TODO: this is perhaps where Lagrangian should come in
                     self.logger.log("adopting filtering method to handle constraints")
                     self._filter, accept = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size,
                                                                     biobj_weight=biobj_weight,biobj_transf=biobj_transf,
@@ -1216,7 +1215,7 @@ class EnsembleSQP(EnsembleMethod):
                         [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
                                                             and x.split(".")[2] == str(self.iter_num))]
                         self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
-                                              + self.obsen_prefix.format(0))
+                                                  + self.obsen_prefix.format(0))
 
                 else:  # unconstrained opt
                     mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
@@ -1311,55 +1310,78 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.log("evaluating model for step size : {0}".format(','.join("{0:8.3E}"
                                                                                        .format(step_size))))
                 self.obsensemble_1 = self._calc_obs_fd()
-                # TODO: support finite diffs in _filter_constraint_eval.
-                #  BUT do we want finite diffs to only be used for grad?
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1
 
-                # Wolfe/strong Wolfe condition testing
-                if alg == "LBFGS":  # note BFGS is implemented later
-                    if self.iter_num > 1:
-                        if self._impose_Wolfe_conds(step_size, first_cond_only=True, strong=strong_Wolfe) is True:
-                            self.logger.log("first (sufficiency) Wolfe condition passed...")
-                        else:
-                            self.logger.log("first (sufficiency) Wolfe condition violated... abort alpha candidate...")
-                            continue  # next alpha # TODO: could potentially skip or go sparser with search from here on?
+                if constraints:  # and constraints.shape[0] > 0:
+                    self.logger.log("adopting filtering method to handle constraints")
+                    self._filter, accept = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size,
+                                                                        biobj_weight=biobj_weight,
+                                                                        biobj_transf=biobj_transf,
+                                                                        opt_direction=self.opt_direction)
+                    self.logger.log("adopting filtering method to handle constraints")
+                    if accept:
+                        best_alpha = step_size
+                        self.best_alpha_per_it[self.iter_num] = best_alpha
+                        best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
+                        best_alpha_per_it_df.to_csv("best_alpha.csv")
 
-                        # eval of grad at candidate alpha
-                        self.logger.log("compute phi grad using finite diffs for candidate alpha")
-                        # TODO: use rei so can save base run.
-                        jco = self._calc_jco(derinc=derinc, suffix="_fds_1_jco", hotstart_res=True)
-                        # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
-                        # TODO: constraint grad here too? Relate to Lagrangian.
-                        self.phi_grad_1 = Matrix(x=jco.T.values, row_names=self.pst.adj_par_names, col_names=['cross-cov'])
-                        self.logger.log("compute phi grad using finite diffs for candidate alpha")
+                        self.parensemble_mean_next = self.parensemble_mean_1.copy()
+                        self.parensemble_next = self.parensemble_1.copy()
+                        self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size) +
+                                              self.paren_prefix.format(0))
+                        [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
+                                                            and x.split(".")[2] == str(self.iter_num))]
+                        self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
+                                                  + self.obsen_prefix.format(0))
 
-                        # and again with Wolfe tests
-                        if self._impose_Wolfe_conds(step_size, skip_first_cond=True, strong=strong_Wolfe) is True:
-                            self.logger.log("second (curvature) Wolfe condition passed...")
-                        else:
-                            self.logger.log("second (curvature) Wolfe condition violated... abort alpha candidate...")
-                            continue  # next alpha  # TODO: could potentially skip or go sparser with search from here on?
+                else:  # unconstrained opt
+                    # Wolfe/strong Wolfe condition testing
+                    if alg == "LBFGS":  # note BFGS is implemented later
+                        if self.iter_num > 1:
+                            if self._impose_Wolfe_conds(step_size, first_cond_only=True, strong=strong_Wolfe) is True:
+                                self.logger.log("first (sufficiency) Wolfe condition passed...")
+                            else:
+                                self.logger.log("first (sufficiency) Wolfe condition violated... /"
+                                                "abort alpha candidate...")
+                                continue  # next alpha # TODO: could potentially skip or go sparser with search from here on?
+
+                            # eval of grad at candidate alpha
+                            self.logger.log("compute phi grad using finite diffs for candidate alpha")
+                            # TODO: use rei so can save base run.
+                            jco = self._calc_jco(derinc=derinc, suffix="_fds_1_jco", hotstart_res=True)
+                            # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
+                            # TODO: constraint grad here too? Relate to Lagrangian.
+                            self.phi_grad_1 = Matrix(x=jco.T.values, row_names=self.pst.adj_par_names, col_names=['cross-cov'])
+                            self.logger.log("compute phi grad using finite diffs for candidate alpha")
+
+                            # and again with Wolfe tests
+                            if self._impose_Wolfe_conds(step_size, skip_first_cond=True, strong=strong_Wolfe) is True:
+                                self.logger.log("second (curvature) Wolfe condition passed...")
+                            else:
+                                self.logger.log("second (curvature) Wolfe condition violated... abort alpha candidate...")
+                                continue  # next alpha  # TODO: could potentially skip or go sparser with search from here on?
 
 
-                # phi-curv trade-off per alpha
-                # TODO: eval_phi_curv_tradeoff()
-                if self.iter_num > 1:  # Hess never updated in first step so just take max phi red (no trade off)
-                    delta_parensemble_mean = self.parensemble_mean_1 - self.parensemble_mean
-                    y = self.phi_grad - self.curr_grad  # start with column vector
-                    s = delta_parensemble_mean.T  # start with column vector
-                    ys = y.T * s  # inner product
-                    curv_per_alpha.loc["{}".format(step_size), "curv_cond"] = float(ys.x)
-                    curv_per_alpha.loc["{}".format(step_size), "mean_en_phi"] = self.obsensemble_1['obs']
+                    # phi-curv trade-off per alpha
+                    # TODO: eval_phi_curv_tradeoff()
+                    if self.iter_num > 1:  # Hess never updated in first step so just take max phi red (no trade off)
+                        delta_parensemble_mean = self.parensemble_mean_1 - self.parensemble_mean
+                        y = self.phi_grad - self.curr_grad  # start with column vector
+                        s = delta_parensemble_mean.T  # start with column vector
+                        ys = y.T * s  # inner product
+                        curv_per_alpha.loc["{}".format(step_size), "curv_cond"] = float(ys.x)
+                        curv_per_alpha.loc["{}".format(step_size), "mean_en_phi"] = self.obsensemble_1['obs']
 
-                if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
-                    self.parensemble_mean_next = self.parensemble_mean_1.copy()
-                    if alg == "LBFGS" and self.iter_num > 1:
-                        self.phi_grad_next = self.phi_grad_1.copy()
-                    self.obsensemble_next = self.obsensemble_1.copy()
-                    [os.remove(x) for x in os.listdir() if (x.startswith("{0}.phi.{1}"
-                                                                         .format(self.pst.filename,self.iter_num)))
-                     and (x.endswith(".csv"))]
-                    self.obsensemble_1.to_csv(self.pst.filename + ".phi.{0}.{1}.csv".format(self.iter_num, step_size))
+                    if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
+                        self.parensemble_mean_next = self.parensemble_mean_1.copy()
+                        if alg == "LBFGS" and self.iter_num > 1:
+                            self.phi_grad_next = self.phi_grad_1.copy()
+                        self.obsensemble_next = self.obsensemble_1.copy()
+                        [os.remove(x) for x in os.listdir() if (x.startswith("{0}.phi.{1}"
+                                                                             .format(self.pst.filename,self.iter_num)))
+                         and (x.endswith(".csv"))]
+                        self.obsensemble_1.to_csv(self.pst.filename + ".phi.{0}.{1}.csv".format(self.iter_num, step_size))
+
                 self.logger.log("evaluating model for step size : {0}".format(','.join("{0:8.3E}"
                                                                                        .format(step_size))))
 
