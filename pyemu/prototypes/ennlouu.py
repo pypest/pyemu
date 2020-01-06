@@ -740,7 +740,7 @@ class EnsembleSQP(EnsembleMethod):
         #TODO: invest biobj params - this should also be related to transforms on dec vars and constraints
         if self.iter_num == 0:
             if viol > 0:
-                self.logger.lraise("initial dec var violates constraints! we're toast!")
+                self.logger.lraise("initial dec var violates constraints! no bueno! perhaps solve SLP then return.. ")
             else:  # just add to filter
                 self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, 0, viol, mean_en_phi]],
                                                                      columns=['iter_num', 'alpha', 'beta', 'phi'])))
@@ -901,7 +901,7 @@ class EnsembleSQP(EnsembleMethod):
 
         b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[working_set,"obsval"].values, axis=0),
                    row_names=[self.pst.observation_data.loc[working_set,"obsnme"][0]], col_names=["mean"])
-        h = (-1.0 * a.T * x_.T) - b  # TODO: check -1 * constraint grad
+        h = (a.T * x_.T) - b  #(-1.0 * a.T * x_.T) - b  # TODO: check -1 * constraint grad
         assert np.isclose(h.x, 0.0)
 
         grad_vect = self.phi_grad.copy()
@@ -1313,7 +1313,7 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.log("evaluating model for step size : {0}".format(','.join("{0:8.3E}"
                                                                                        .format(step_size))))
                 self.obsensemble_1 = self._calc_obs_fd()
-                mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1
+                mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1[self.phi_obs]
 
                 if constraints:  # and constraints.shape[0] > 0:
                     self.logger.log("adopting filtering method to handle constraints")
