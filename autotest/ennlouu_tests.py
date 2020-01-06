@@ -713,7 +713,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
 
 
 if __name__ == "__main__":
-    #rosenbrock_setup(version="2par",initial_decvars=[-1.5,-1.5])
+    #rosenbrock_setup(version="2par",initial_decvars=[2.0,-2.0])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
@@ -722,9 +722,9 @@ if __name__ == "__main__":
     #rosenbrock_phi_progress(version="2par",finite_diff_grad=True)
     #rosenbrock_2par_grad_approx_invest()
 
-    #rosenbrock_multiple_update(version="2par", nit=30, finite_diff_grad=True, alg="LBFGS")
+    #rosenbrock_multiple_update(version="2par", nit=2, finite_diff_grad=True,)#alg="LBFGS")
 
-    #plot_2par_rosen(finite_diff_grad=False)
+    #plot_2par_rosen(finite_diff_grad=True)
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")
@@ -744,9 +744,9 @@ if __name__ == "__main__":
     #test_pestpp_on_rosen()
 
     rosenbrock_setup(version="2par",constraints=True,initial_decvars=[2,-2])
-    rosenbrock_multiple_update(version="2par",constraints=True, finite_diff_grad=True) #biobj_weight=5.0,alg="LBFGS",damped=False)
-    #rosenbrock_phi_progress(version="2par", label="phi_progress_constrained.pdf")
-    #filter_plot(version="2par", constraints=True, log_phi=True)
+    rosenbrock_multiple_update(version="2par",constraints=True,finite_diff_grad=True,nit=2) #biobj_weight=5.0,alg="LBFGS",damped=False)
+    rosenbrock_phi_progress(version="2par", label="phi_progress_constrained.pdf")
+    filter_plot(version="2par", constraints=True, log_phi=True)
 
     #supply2_setup()
     #supply2_update(en_size=20,draw_mult=1e-6)

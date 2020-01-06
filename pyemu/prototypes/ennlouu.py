@@ -862,6 +862,15 @@ class EnsembleSQP(EnsembleMethod):
     #def _active_set_procedure(self):
         # TODO return self.working_set
 
+    def _kkt_null_space(self,):
+        self.logger.lraise("not implemented... yet")
+
+    def _kkt_schur(self,):
+        self.logger.lraise("not implemented... yet")
+
+    def _kkt_iterative_cg(self,):
+        self.logger.lraise("not implemented... yet")
+
     def _solve_eqp(self,working_set=[],method="direct"):
         '''
         Direct QP (KKT system) solve method herein---assuming convexity (pos-def-ness) and that A has full-row-rank.
@@ -875,7 +884,7 @@ class EnsembleSQP(EnsembleMethod):
             is specific to the active set method for QP with inequality constraints.
         method : string
             indicates the method employed to solve the KKT system. default is direct (for demo purposes only).
-            options include: null_space (pg. 457), Schur (pg. 455) and the iterative (TODO) method.
+            options include: null_space (pg. 457), schur (pg. 455) and the iterative (TODO) method.
         '''
         assert isinstance(working_set, list)
 
@@ -897,14 +906,18 @@ class EnsembleSQP(EnsembleMethod):
 
         #coeff = np.concatenate((np.concatenate((g.x, - 1 * a.x), axis=1),
          #                       np.concatenate((a.T.x, np.zeros((a.shape[1], a.shape[1]))), axis=1)))
-        if method == "direct":
+        if method == "null_space":
+            self._kkt_null_space()
+        elif method == "schur":
+            self._kkt_schur()
+        elif method == "iterative_cg":
+            self._kkt_iterative_cg()
+        else:  #method == "direct":
             coeff = np.concatenate((np.concatenate((0.5 * g.x, a.x), axis=1),
                                     np.concatenate((a.T.x, np.zeros((a.shape[1], a.shape[1]))), axis=1)))
 
             rhs = np.concatenate((-1 * c.x, h.x))
             x = np.linalg.solve(coeff, rhs)
-        else:
-            self.logger.lraise("not implemented... yet")
 
         search_d = Matrix(x=x[:self.pst.npar_adj], row_names=x_.T.row_names, col_names=self.phi_grad.col_names)
         lagrang_mults = Matrix(x=x[self.pst.npar_adj:], row_names=a.T.row_names, col_names=x_.T.col_names)
@@ -1303,7 +1316,7 @@ class EnsembleSQP(EnsembleMethod):
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1
 
                 # Wolfe/strong Wolfe condition testing
-                if alg == "LBFGS":
+                if alg == "LBFGS":  # note BFGS is implemented later
                     if self.iter_num > 1:
                         if self._impose_Wolfe_conds(step_size, first_cond_only=True, strong=strong_Wolfe) is True:
                             self.logger.log("first (sufficiency) Wolfe condition passed...")
