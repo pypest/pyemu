@@ -127,6 +127,10 @@ class EnsembleSQP(EnsembleMethod):
         self.total_runs = 0
         self.draw_mult = draw_mult
 
+        self.phi_obs = [x for x in self.pst.obs_names if "obj_f" in x or "phi" in x or "obs" in x]
+        if len(self.phi_obs) != 1:
+            self.logger.lraise("number of objective function (phi) obs not equal to one")
+
         #TODO: self-identify phi obs
         # new pestpp ++ arg?
         # #if self.pst.pestpp_options[""] is None:
@@ -237,16 +241,16 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.warn("using finite diffs as basis for phi grad vector rather than en approx")
 
             self.logger.log("running model forward with noptmax = 0")
-            self.phi_0 = self._calc_obs_fd()
+            self.obsensemble = self._calc_obs_fd()
             # TODO: WRITE TO FILE FOR PHI_PROG PLOTTER TO GRAB
-            self.phi_0.to_csv(self.pst.filename + ".phi.{0}.initial.csv".format(self.iter_num))
-            self.obsensemble_next = self.phi_0.copy()  # for Wolfe tests only
+            self.obsensemble[self.phi_obs].to_csv(self.pst.filename + ".phi.{0}.initial.csv".format(self.iter_num))
+            self.obsensemble_next = self.obsensemble.copy()  # for Wolfe tests only
             self.logger.log("running model forward with noptmax = 0")
 
         if constraints:  # and constraints.shape[0] > 0:
             self.logger.log("checking here feasibility and initializing constraint filter")
             self._filter = pd.DataFrame()
-            self._filter, _accept = self._filter_constraint_eval(self.obsensemble,self._filter)
+            self._filter, _accept = self._filter_constraint_eval(self.obsensemble, self._filter)
             self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
             self.logger.log("checking here feasibility and initializing constraint filter")
 
@@ -390,8 +394,10 @@ class EnsembleSQP(EnsembleMethod):
         self.pst.write(os.path.join(pst_fname))
         pyemu.os_utils.run("pestpp-glm {0}".format(pst_fname))
         rei = pyemu.pst_utils.read_resfile(os.path.join(pst_fname.replace(".pst", ".rei")))
-        phi = rei.loc[rei.group == "obj_fn", "modelled"] - rei.loc[rei.group == "obj_fn", "measured"]
-        return phi
+        #phi = rei.loc[rei.group == "obj_fn", "modelled"]# - rei.loc[rei.group == "obj_fn", "measured"]
+        #return phi
+        obs = rei.loc[:, "modelled"]
+        return obs
 
     def _calc_jco(self, derinc, suffix="_fds", hotstart_res=False):
         self.pst.control_data.noptmax = -2
@@ -727,10 +733,7 @@ class EnsembleSQP(EnsembleMethod):
 
 
         # mean phi
-        phi_obs = [x for x in self.pst.obs_names if "obj_f" in x or "phi" in x or "obs" in x]
-        if len(phi_obs) != 1:
-            self.logger.lraise("number of objective function (phi) obs not equal to one")
-        mean_en_phi = obsensemble[phi_obs[0]].mean()
+        mean_en_phi = obsensemble[self.phi_obs[0]].mean()
 
         # constraint filtering
         filter_thresh = 1e-4  #TODO: invest influence of filter_thresh

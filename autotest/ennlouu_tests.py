@@ -743,7 +743,7 @@ if __name__ == "__main__":
       #  test_pestpp_on_rosen()
     #test_pestpp_on_rosen()
 
-    rosenbrock_setup(version="2par",constraints=True,initial_decvars=[2,-2])
+    rosenbrock_setup(version="2par",constraints=True,initial_decvars=[2.0,-2.0])
     rosenbrock_multiple_update(version="2par",constraints=True,finite_diff_grad=True,nit=2) #biobj_weight=5.0,alg="LBFGS",damped=False)
     rosenbrock_phi_progress(version="2par", label="phi_progress_constrained.pdf")
     filter_plot(version="2par", constraints=True, log_phi=True)
