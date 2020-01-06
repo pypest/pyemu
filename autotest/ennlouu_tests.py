@@ -657,19 +657,23 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
     plt.contour(X, Y, Z, np.logspace(-0.5, 3.5, 20, base=10), cmap='gray')
 
     if constraints:
-        theta = np.linspace(0, 2 * np.pi)
-        r = 1.0
-        xx = r * np.cos(theta)
-        yy = r * np.sin(theta)
+        #theta = np.linspace(0, 2 * np.pi)
+        #r = 1.0
+        #xx = r * np.cos(theta)
+        #yy = r * np.sin(theta)
+        # TODO: read from *.py
+        xx = np.linspace(-2.2, 2.2, 100)
+        yy = -6 * xx + 10
         plt.plot(xx, yy, 'r-')
+        plt.ylim(-2.2, 2.2)
 
     #plt.scatter(x=[1.0],y=[1.0],marker="*",s=80)  # optimum
 
     if finite_diff_grad is False:
         par_ens = [x for x in os.listdir() if x.endswith(".parensemble.0000.csv")]
     else:
-        par_ens = [x for x in os.listdir() if (x.startswith("rosenbrock_2par.pst."))
-                   and (x.endswith(".csv")) and ("phi" not in x)]
+        par_ens = [x for x in os.listdir() if (x.startswith(pst.filename + "."))
+                   and (x.endswith(".csv")) and ("phi" not in x) and ("obs" not in x)]
 
     if ipar is not None:  # testing PESTPP-GLM
         #for k,df in parfile_dict.items():
@@ -680,7 +684,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         # TODO: Note that GLM requires sum of squares objective function - therefore need to re-contour by squares above if ipar is True
     else:
         for pe in par_ens:
-            if pe.split(".")[2] == "parensemble":
+            if pe.split(".")[2] == "parensemble" or "sweep" in pe.split(".")[1]:
                 it = 0
             else:
                 it = int(pe.split(".")[2])
@@ -689,7 +693,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
              #   al = (np.log10(it + 1) / np.log10(len(par_ens) + 1))
             #else:
              #   al = (it + 1) / (len(par_ens) + 1)
-            plt.scatter(x=df[pst.parameter_data.parnme[0]], y=df[pst.parameter_data.parnme[1]], c="b",alpha=1.0)
+            plt.scatter(x=df[pst.parameter_data.parnme[0]], y=df[pst.parameter_data.parnme[1]], c="b", alpha=1.0)
             #plt.text(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],s="{}".format(it))
 
     if finite_diff_grad or ipar is not None:
@@ -743,10 +747,10 @@ if __name__ == "__main__":
       #  test_pestpp_on_rosen()
     #test_pestpp_on_rosen()
 
-    rosenbrock_setup(version="2par",constraints=True,initial_decvars=[2.0,-2.0])
-    rosenbrock_multiple_update(version="2par",constraints=True,finite_diff_grad=True,nit=2) #biobj_weight=5.0,alg="LBFGS",damped=False)
-    rosenbrock_phi_progress(version="2par", label="phi_progress_constrained.pdf")
-    filter_plot(version="2par", constraints=True, log_phi=True)
+    #rosenbrock_setup(version="2par",constraints=True,initial_decvars=[2.0,-2.0])
+    rosenbrock_multiple_update(version="2par",constraints=True,finite_diff_grad=True,nit=30) #biobj_weight=5.0,alg="LBFGS",damped=False)
+    #filter_plot(problem="2par", constraints=True, log_phi=True)
+    plot_2par_rosen(finite_diff_grad=True,constraints=True)
 
     #supply2_setup()
     #supply2_update(en_size=20,draw_mult=1e-6)

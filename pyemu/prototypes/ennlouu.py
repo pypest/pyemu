@@ -1329,9 +1329,10 @@ class EnsembleSQP(EnsembleMethod):
                         best_alpha_per_it_df.to_csv("best_alpha.csv")
 
                         self.parensemble_mean_next = self.parensemble_mean_1.copy()
-                        self.parensemble_next = self.parensemble_1.copy()
-                        self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size) +
-                                              self.paren_prefix.format(0))
+                        if finite_diff_grad is False:  #TODO: when merging FD and en into one for constraint
+                            self.parensemble_next = self.parensemble_1.copy()
+                            self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size) +
+                                                      self.paren_prefix.format(0))
                         [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
                                                             and x.split(".")[2] == str(self.iter_num))]
                         self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
@@ -1390,6 +1391,8 @@ class EnsembleSQP(EnsembleMethod):
 
         if constraints:
             self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
+            self.parensemble_mean_next.df().to_csv(self.pst.filename + ".{0}.{1}.csv"
+                                                   .format(self.iter_num, best_alpha))
         else:
             best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
             self.best_alpha_per_it[self.iter_num] = best_alpha
