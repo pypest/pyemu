@@ -70,7 +70,7 @@ class EnsembleSQP(EnsembleMethod):
 
     def initialize(self,num_reals=10,enforce_bounds="reset",finite_diff_grad=False,
     			   parensemble=None,restart_obsensemble=None,draw_mult=1.0,
-                   hess=None,constraints=False):#obj_fn_group="obj_fn"):
+                   hess=None,constraints=False,working_set=None):#obj_fn_group="obj_fn"):
 
         """
     	Description
@@ -107,6 +107,9 @@ class EnsembleSQP(EnsembleMethod):
                 a matrix or filename to use as initial Hessian (for restarting)
             constraints :
                 TODO: something derived from pestpp_options rather than bool
+            working_set : list
+                list of observations in pst that are taken as initial bounding or ``active'' constraints.
+                Suggest using simplex algorithm to get this working_set.
 
         
         TODO: rename some of above vars in accordance with opt parlance
@@ -253,6 +256,9 @@ class EnsembleSQP(EnsembleMethod):
             self._filter, _accept = self._filter_constraint_eval(self.obsensemble, self._filter)
             self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
             self.logger.log("checking here feasibility and initializing constraint filter")
+
+            # assuming use of active-set method
+            self.working_set = working_set
 
         # Hessian
         if hess is not None:
@@ -411,7 +417,8 @@ class EnsembleSQP(EnsembleMethod):
         return jco
 
 
-    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,self_scale=True,damped=True,update=True):
+    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,curr_constr_grad,new_constr_grad,
+                          self_scale=True,damped=True,update=True):
         '''
         see, e.g., Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
 
@@ -430,8 +437,12 @@ class EnsembleSQP(EnsembleMethod):
 
         '''
         self.H = curr_inv_hess
-        self.y = new_grad - curr_grad  # start with column vector
         self.s = delta_par.T  # start with column vector
+        if len(self.working_set) > 0:  # constrained opt
+            self.logger.lraise("number of current lagrangian mults != number of current active constraints")  # should already have been caught
+            self.y = (new_grad - curr_grad) - (new_constr_grad - curr_constr_grad) * self.lagrang_mults #  see eq (36) of Liu and Reynolds (2019)
+        else:  # unconstrained
+            self.y = new_grad - curr_grad  # start with column vector
 
         # curv condition related tests
         ys = self.y.T * self.s  # inner product
@@ -1444,12 +1455,15 @@ class EnsembleSQP(EnsembleMethod):
 
         if hess_update is True or self_scale is True:
             if alg == "BFGS":
-                self.inv_hessian, self.hess_progress = self._BFGS_hess_update(self.inv_hessian, self.curr_grad,
-                                                                              self.phi_grad,
-                                                                              self.delta_parensemble_mean,
+                self.inv_hessian, self.hess_progress = self._BFGS_hess_update(curr_inv_hess=self.inv_hessian,
+                                                                              curr_grad=self.curr_grad,
+                                                                              new_grad=self.phi_grad,
+                                                                              delta_par=self.delta_parensemble_mean,
                                                                               self_scale=self_scale,
                                                                               update=hess_update,
-                                                                              damped=damped)
+                                                                              damped=damped,
+                                                                              curr_constr_grad=self.constraint_jco,
+                                                                              new_constr_grad=self.constraint_jco)
 
             elif alg == "LBFGS":
                 self.logger.log("LBFGS implemented above")
@@ -1466,6 +1480,9 @@ class EnsembleSQP(EnsembleMethod):
         self.parensemble_mean = self.parensemble_mean_next.copy()
         if finite_diff_grad is False:
             self.parensemble = self.parensemble_next.copy()
+
+        if constraints:
+            self.curr_constr_grad = self.constraint_jco.copy()
 
         pd.DataFrame.from_dict([self.hess_progress]).to_csv("hess_progress.csv")
         # TODO: save Hessian vectors (as csv)

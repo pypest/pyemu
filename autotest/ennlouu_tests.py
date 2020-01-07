@@ -163,7 +163,8 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
                                hess_self_scaling=True,hess_update=True,damped=True,
                                cma=False,derinc=0.01,alg="BFGS",memory=5,strong_Wolfe=False,
                                rank_one=False,learning_rate=0.5,
-                               mu_prop=0.25,use_dist_mean_for_delta=False,mu_learning_prop=0.5): #filter_thresh=1e-2
+                               mu_prop=0.25,use_dist_mean_for_delta=False,mu_learning_prop=0.5,
+                               working_set=None): #filter_thresh=1e-2
     import pyemu
     import numpy as np
     if version == "2par":
@@ -194,7 +195,8 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
     #step_mults = np.linspace(0.1,1.0,10)
 
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
-    esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints,finite_diff_grad=finite_diff_grad)
+    esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints,finite_diff_grad=finite_diff_grad,
+                    working_set=working_set)
     for it in range(nit):
         esqp.update(step_mult=step_mults,constraints=constraints,biobj_weight=biobj_weight,
                     hess_self_scaling=hess_self_scaling,hess_update=hess_update,damped=damped,
@@ -748,9 +750,10 @@ if __name__ == "__main__":
     #test_pestpp_on_rosen()
 
     #rosenbrock_setup(version="2par",constraints=True,initial_decvars=[2.0,-2.0])
-    rosenbrock_multiple_update(version="2par",constraints=True,finite_diff_grad=True,nit=30) #biobj_weight=5.0,alg="LBFGS",damped=False)
+    rosenbrock_multiple_update(version="2par",constraints=True,finite_diff_grad=True,nit=30,
+                               working_set=['constraint']) #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    plot_2par_rosen(finite_diff_grad=True,constraints=True)
+    #plot_2par_rosen(finite_diff_grad=True,constraints=True)
 
     #supply2_setup()
     #supply2_update(en_size=20,draw_mult=1e-6)
