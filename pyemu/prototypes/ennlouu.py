@@ -439,8 +439,8 @@ class EnsembleSQP(EnsembleMethod):
         self.H = curr_inv_hess
         self.s = delta_par.T  # start with column vector
         if len(self.working_set) > 0:  # constrained opt
-            self.logger.lraise("number of current lagrangian mults != number of current active constraints")  # should already have been caught
-            self.y = (new_grad - curr_grad) - (new_constr_grad - prev_constr_grad) * self.lagrang_mults #  see eq (36) of Liu and Reynolds (2019)
+            new_grad.col_names, curr_grad.col_names = self.s.col_names, self.s.col_names
+            self.y = (new_grad - curr_grad) - (new_constr_grad - prev_constr_grad) * self.lagrang_mults  # see eq (36) of Liu and Reynolds (2019)
         else:  # unconstrained
             self.y = new_grad - curr_grad  # start with column vector
 
