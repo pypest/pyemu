@@ -417,7 +417,7 @@ class EnsembleSQP(EnsembleMethod):
         return jco
 
 
-    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,curr_constr_grad,new_constr_grad,
+    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,prev_constr_grad,new_constr_grad,
                           self_scale=True,damped=True,update=True):
         '''
         see, e.g., Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
@@ -440,7 +440,7 @@ class EnsembleSQP(EnsembleMethod):
         self.s = delta_par.T  # start with column vector
         if len(self.working_set) > 0:  # constrained opt
             self.logger.lraise("number of current lagrangian mults != number of current active constraints")  # should already have been caught
-            self.y = (new_grad - curr_grad) - (new_constr_grad - curr_constr_grad) * self.lagrang_mults #  see eq (36) of Liu and Reynolds (2019)
+            self.y = (new_grad - curr_grad) - (new_constr_grad - prev_constr_grad) * self.lagrang_mults #  see eq (36) of Liu and Reynolds (2019)
         else:  # unconstrained
             self.y = new_grad - curr_grad  # start with column vector
 
@@ -874,8 +874,20 @@ class EnsembleSQP(EnsembleMethod):
 
         return en_cov
 
-    #def _active_set_procedure(self):
-        # TODO return self.working_set
+    def _update_active_set(self,proposed_direction,working_set):
+        '''
+        essentially constitutes active set method - see alg (16.3) in Nocedal and Wright (2006)
+        '''
+        # remove constraint phase
+        #if p == 0:
+         #   lagrang_mults = self.lagrang_mults  #TODO: compute at new proposed pos with new A? (16.42)?
+          #  if lagrang_mults > 0 for all in working_set and of inequality type:
+
+        # add constraint phase
+        #else:  # p != 0
+
+
+        #return working_set
 
     def _kkt_null_space(self,):
         self.logger.lraise("not implemented... yet")
@@ -1462,7 +1474,7 @@ class EnsembleSQP(EnsembleMethod):
                                                                               self_scale=self_scale,
                                                                               update=hess_update,
                                                                               damped=damped,
-                                                                              curr_constr_grad=self.constraint_jco,
+                                                                              prev_constr_grad=self.prev_constr_grad,
                                                                               new_constr_grad=self.constraint_jco)
 
             elif alg == "LBFGS":
@@ -1482,7 +1494,7 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble = self.parensemble_next.copy()
 
         if constraints:
-            self.curr_constr_grad = self.constraint_jco.copy()
+            self.prev_constr_grad = self.constraint_jco.copy()
 
         pd.DataFrame.from_dict([self.hess_progress]).to_csv("hess_progress.csv")
         # TODO: save Hessian vectors (as csv)
