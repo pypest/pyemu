@@ -259,6 +259,7 @@ class EnsembleSQP(EnsembleMethod):
 
             # assuming use of active-set method
             self.working_set = working_set
+            #TODO: add test here to ensure full-row-rank. Linear independence is a requirement.
 
         # Hessian
         if hess is not None:
@@ -915,8 +916,9 @@ class EnsembleSQP(EnsembleMethod):
         '''
         assert isinstance(working_set, list)
 
-        g = self.hessian * Matrix(2.0 * np.eye((self.hessian.shape[0])),
-                                  row_names=self.hessian.row_names, col_names=self.hessian.col_names)
+        g = self.inv_hessian * Matrix(2.0 * np.eye((self.hessian.shape[0])),
+                                      row_names=self.hessian.row_names, col_names=self.hessian.col_names)
+        # TODO: check self.hessian or self.inv_hessian?
         a = self.constraint_jco  # pertains to active constraints only
 
         x_ = self.parensemble_mean
@@ -925,7 +927,8 @@ class EnsembleSQP(EnsembleMethod):
         b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[working_set,"obsval"].values, axis=0),
                    row_names=[self.pst.observation_data.loc[working_set,"obsnme"][0]], col_names=["mean"])
         h = (a.T * x_.T) - b  #(-1.0 * a.T * x_.T) - b  # TODO: check -1 * constraint grad
-        assert np.isclose(h.x, 0.0)
+        if not np.isclose(h.x, 0.0, rtol=1e-2, atol=1e-3):
+            self.logger.lraise("constraint violated! {0}".format(h.x))  # will have been encountered before this point
 
         grad_vect = self.phi_grad.copy()
         grad_vect.col_names = ['mean']  # hack
@@ -1058,6 +1061,13 @@ class EnsembleSQP(EnsembleMethod):
                 self.phi_grad = self.phi_grad_next.copy()
                 self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
             else:
+                par = self.pst.parameter_data
+                #if "supply2" in self.pst.filename:  # TODO: temp hack: -1 here to account for par.scale. And revisit for logs.
+                 #   par.loc[par['partrans'] == "none", "parval1"] = self.parensemble_mean_1.T.x * -1
+                #else:
+                if self.iter_num > 1:
+                    if self.parensemble_mean_next is not None:
+                        par.loc[par['partrans'] == "none", "parval1"] = self.parensemble_mean_next.T.x
                 jco = self._calc_jco(derinc=derinc)
                 # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
                 self.phi_grad = Matrix(x=jco.loc[self.phi_obs,:].T.values,
@@ -1092,7 +1102,7 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.log("compute dec var en covariance vector")
 
                 self.logger.log("compute dec var-phi en cross-covariance vector")
-                self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
+                self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)  #TODO: check self.obsenemble here is ``current''
                 self.logger.log("compute dec var-phi en cross-covariance vector")
 
                 if cma is True:
@@ -1375,9 +1385,9 @@ class EnsembleSQP(EnsembleMethod):
                             # eval of grad at candidate alpha
                             self.logger.log("compute phi grad using finite diffs for candidate alpha")
                             # TODO: use rei so can save base run.
+                            # TODO: MAKE SURE PAR SUBSTITUTED BEFORE THIS
                             jco = self._calc_jco(derinc=derinc, suffix="_fds_1_jco", hotstart_res=True)
                             # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
-                            # TODO: constraint grad here too? Relate to Lagrangian.
                             self.phi_grad_1 = Matrix(x=jco.T.values, row_names=self.pst.adj_par_names, col_names=['cross-cov'])
                             self.logger.log("compute phi grad using finite diffs for candidate alpha")
 
@@ -1415,7 +1425,7 @@ class EnsembleSQP(EnsembleMethod):
         if constraints:
             self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
             self.parensemble_mean_next.df().to_csv(self.pst.filename + ".{0}.{1}.csv"
-                                                   .format(self.iter_num, best_alpha))
+                                                   .format(self.iter_num, best_alpha))  #TODO: or forgive here for unsuccessful iter
         else:
             best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
             self.best_alpha_per_it[self.iter_num] = best_alpha

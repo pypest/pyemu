@@ -161,7 +161,7 @@ def rosenbrock_2par_grad_approx_invest():
 def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_diff_grad=False,
                                constraints=False,biobj_weight=1.0,biobj_transf=True,
                                hess_self_scaling=True,hess_update=True,damped=True,
-                               cma=False,derinc=0.01,alg="BFGS",memory=5,strong_Wolfe=False,
+                               cma=False,derinc=0.001,alg="BFGS",memory=5,strong_Wolfe=False,
                                rank_one=False,learning_rate=0.5,
                                mu_prop=0.25,use_dist_mean_for_delta=False,mu_learning_prop=0.5,
                                working_set=None): #filter_thresh=1e-2
@@ -696,7 +696,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
             #else:
              #   al = (it + 1) / (len(par_ens) + 1)
             plt.scatter(x=df[pst.parameter_data.parnme[0]], y=df[pst.parameter_data.parnme[1]], c="b", alpha=1.0)
-            #plt.text(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],s="{}".format(it))
+            plt.text(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],s="{}".format(it))
 
     if finite_diff_grad or ipar is not None:
         plot_init_decvars = True
@@ -710,8 +710,8 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         plt.scatter(x=[pst.parameter_data.parval1[0]],y=pst.parameter_data.parval1[1],
                     marker="x",c="b",alpha=0.5)  # plot initial when using fds
 
-    plt.savefig(label)
     #plt.show()
+    plt.savefig(label)
     plt.close()
     os.chdir(os.path.join("..",".."))
 
@@ -719,7 +719,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
 
 
 if __name__ == "__main__":
-    #rosenbrock_setup(version="2par",initial_decvars=[2.0,-2.0])
+    #rosenbrock_setup(version="2par",initial_decvars=[1.1,0.88])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
@@ -729,6 +729,7 @@ if __name__ == "__main__":
     #rosenbrock_2par_grad_approx_invest()
 
     #rosenbrock_multiple_update(version="2par", nit=2, finite_diff_grad=True,)#alg="LBFGS")
+    #rosenbrock_multiple_update(version="2par", nit=20, finite_diff_grad=True, alg="LBFGS")
 
     #plot_2par_rosen(finite_diff_grad=True)
 
@@ -749,11 +750,12 @@ if __name__ == "__main__":
       #  test_pestpp_on_rosen()
     #test_pestpp_on_rosen()
 
-    #rosenbrock_setup(version="2par",constraints=True,initial_decvars=[2.0,-2.0])
+    yy = -2.0
+    rosenbrock_setup(version="2par",constraints=True,initial_decvars=[(10-yy)/6,yy]) #[1.3456981,1.92581138]),1.41020303,1.53878185
     rosenbrock_multiple_update(version="2par",constraints=True,finite_diff_grad=True,nit=30,
-                               working_set=['constraint']) #biobj_weight=5.0,alg="LBFGS",damped=False)
+                               working_set=['constraint'], hess_update=False, hess_self_scaling=False) #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    #plot_2par_rosen(finite_diff_grad=True,constraints=True)
+    plot_2par_rosen(finite_diff_grad=True,constraints=True)
 
     #supply2_setup()
     #supply2_update(en_size=20,draw_mult=1e-6)
