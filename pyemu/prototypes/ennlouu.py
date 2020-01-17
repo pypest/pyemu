@@ -250,7 +250,22 @@ class EnsembleSQP(EnsembleMethod):
             self.obsensemble_next = self.obsensemble.copy()  # for Wolfe tests only
             self.logger.log("running model forward with noptmax = 0")
 
-        if constraints:  # and constraints.shape[0] > 0:
+        if constraints:
+            constraint_gps = [x for x in self.pst.obs_groups if x.startswith("g_") or x.startswith("greater_")
+                              or x.startswith("l_") or x.startswith("less_")]
+            if len(constraint_gps) == 0:
+                self.logger.lraise("no constraint groups found")
+
+            all_constraints = []
+            for cg in constraint_gps:
+                cs = self.pst.observation_data.loc[(self.pst.observation_data["obgnme"] == cg) & \
+                                                   (self.pst.observation_data["weight"] > 0), :]
+                all_constraints.append(cs.obsnme.to_list())
+            all_constraints = [i for subl in all_constraints for i in subl]
+            if len(all_constraints) == 0:
+                self.logger.lraise("no constraint obs found")
+            self.constraint_set = self.pst.observation_data.loc[all_constraints, :]  # all constraints (that could become active)
+
             self.logger.log("checking here feasibility and initializing constraint filter")
             self._filter = pd.DataFrame()
             self._filter, _accept = self._filter_constraint_eval(self.obsensemble, self._filter)
@@ -258,8 +273,9 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("checking here feasibility and initializing constraint filter")
 
             # assuming use of active-set method
-            self.working_set = self.pst.observation_data.loc[[x for x in working_set], :]
+            self.working_set = self.constraint_set.loc[[x for x in working_set], :]
             self.working_set_ineq = self.working_set.loc[self.working_set.obgnme.str.startswith("eq_") == False, :]
+            self.not_in_working_set = self.constraint_set.drop(self.working_set.obsnme, axis=0)
             #TODO: add test here to ensure full-row-rank. Linear independence is a requirement. See active set func.
 
         # Hessian
@@ -876,34 +892,45 @@ class EnsembleSQP(EnsembleMethod):
 
         return en_cov
 
-    def _update_active_set(self):
+    def _active_set_method(self,first_pass=True):
         '''
-        active set method - see alg (16.3) in Nocedal and Wright (2006)
+        see alg (16.3) in Nocedal and Wright (2006)
+
+        this func involves the first phase of (16.3) - testing for optimality, dropping constraint from working set,
+        and calculating alpha
 
         working_set is defined as current estimate of active constraints. the concept of the working set
         (and indeed the ``active set'') is specific to the active set method for QP with inequality constraints.
         '''
 
-        # stop-or-drop phase
-        if np.isclose(self.search_d, 0.0):  # TODO: or == ? or practically when filter stops updating?
-            lagrang_mults = self.lagrang_mults  # TODO: compute mults at new proposed pos with new A? (16.42)?
-            lagrang_mults_ineq = lagrang_mults.loc[:,:]
-            #if lagrang_mults > 0 for all in working_set and of inequality type:
-             #   self.logger.lraise("reached optimal soln!")
-            #else:
-             #   drop_idx = lagrang_mults.idxmin(axis=1)
-              #   drop_label = lagrang_mult.index(drop_idx)
-              #  self.working_set = self.working_set.drop([drop_label], axis=0)
-               # self.working_set_ineq = self.working_set_ineq.drop([drop_label], axis=0)
-                #goto_next_it = True  # this skips alpha-trial loop but sets x_k+1 for next it, etc.
+        if first_pass is True:  # stop-or-drop phase
+            if np.all(np.isclose(self.search_d.x, 0.0)) is True:  # TODO: or == ? occurs practically when filter stops updating?
+                lagrang_mults = self.lagrang_mults  # TODO: compute mults at new proposed pos with new A? (16.42)?
+                lagrang_mults_ineq = lagrang_mults.loc[:,:]
+                #if lagrang_mults > 0 for all in working_set and of inequality type:
+                 #   self.logger.lraise("reached optimal soln!")
+                #else:
+                 #   drop_idx = lagrang_mults.idxmin(axis=1)
+                  #   drop_label = lagrang_mult.index(drop_idx)
+                   #  self.working_set = self.working_set.drop([drop_label], axis=0)
+                    # self.working_set_ineq = self.working_set_ineq.drop([drop_label], axis=0)
+                     #goto_next_it = True  # this skips alpha-trial loop but sets x_k+1 for next it, etc.
 
 
-        # block-and-add phase
-        else:  # p != 0
-            alpha = min(1.0, 1.0)
-            #check a_i in Wk are linearly indep  # TODO!
+            # block-and-add phase
+            else:  # p != 0
+                a, p = self.constraint_jco, self.search_d
+                min_X = 1.0
+                alpha = min(1.0, min_X)
+                #check a_i in Wk are linearly indep  # TODO!
 
-        #return goto_next_it, working_set
+        #else:  # second pass
+            # add constraint to working set where blocking constraints present
+            #self.working_set
+            #self.woring_set_ineq
+
+
+        #return goto_next_it, working_set, alpha
 
     def _kkt_null_space(self,):
         self.logger.lraise("not implemented... yet")
@@ -930,13 +957,14 @@ class EnsembleSQP(EnsembleMethod):
         g = self.inv_hessian * Matrix(2.0 * np.eye((self.hessian.shape[0])),
                                       row_names=self.hessian.row_names, col_names=self.hessian.col_names)
         # TODO: check self.hessian or self.inv_hessian?
-        a = self.constraint_jco  # pertains to active constraints only
+        a = self.constraint_jco.drop(self.not_in_working_set.obsnme, axis=1)  # pertains to active constraints only
+        assert a.shape[1] == len(self.working_set)
 
         x_ = self.parensemble_mean
         #x_.col_names = ['cross-cov']  # hack
 
-        b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[working_set,"obsval"].values, axis=0),
-                   row_names=[self.pst.observation_data.loc[working_set,"obsnme"][0]], col_names=["mean"])
+        b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[self.working_set.obsnme, "obsval"].values, axis=0),
+                   row_names=[self.pst.observation_data.loc[self.working_set.obsnme, "obsnme"][0]], col_names=["mean"])
         h = (a.T * x_.T) - b  #(-1.0 * a.T * x_.T) - b  # TODO: check -1 * constraint grad
         if not np.isclose(h.x, 0.0, rtol=1e-2, atol=1e-3):
             self.logger.lraise("constraint violated! {0}".format(h.x))  # will have been encountered before this point
@@ -1054,18 +1082,7 @@ class EnsembleSQP(EnsembleMethod):
         if len(self.phi_obs) != 1:
             self.logger.lraise("number of objective function (phi) obs found != 1")
 
-        if constraints:  # prelims
-            constraint_gps = [x for x in self.pst.obs_groups if x.startswith("g_") or x.startswith("greater_")
-                              or x.startswith("l_") or x.startswith("less_")]
-            if len(constraint_gps) == 0:
-                self.logger.lraise("no constraint groups found")
-
-            for cg in constraint_gps:
-                cs = list(self.pst.observation_data.loc[(self.pst.observation_data["obgnme"] == cg) & \
-                                                        (self.pst.observation_data["weight"] > 0), "obsnme"])
-                # note cs is a list of all potentially active constraints
-
-        if finite_diff_grad:
+        if finite_diff_grad is True:
             self.logger.log("compute phi grad using finite diffs")
             if alg == "LBFGS" and self.iter_num > 2:
                 self.logger.log("using jco from wolfe testing during previous upgrade evaluations")
@@ -1158,6 +1175,9 @@ class EnsembleSQP(EnsembleMethod):
                 self.search_d, self.lagrang_mults = self._solve_eqp()
                 self.logger.log("solve QP sub-problem (active set method)")
                 self.logger.log("calculate search direction and perform tests")
+
+                self._active_set_method(first_pass=True)
+
         else:  # unconstrained or no active constraints
             if alg == "LBFGS":
                 self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
