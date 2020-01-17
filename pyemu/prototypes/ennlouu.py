@@ -258,8 +258,9 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("checking here feasibility and initializing constraint filter")
 
             # assuming use of active-set method
-            self.working_set = working_set
-            #TODO: add test here to ensure full-row-rank. Linear independence is a requirement.
+            self.working_set = self.pst.observation_data.loc[[x for x in working_set], :]
+            self.working_set_ineq = self.working_set.loc[self.working_set.obgnme.str.startswith("eq_") == False, :]
+            #TODO: add test here to ensure full-row-rank. Linear independence is a requirement. See active set func.
 
         # Hessian
         if hess is not None:
@@ -439,7 +440,7 @@ class EnsembleSQP(EnsembleMethod):
         '''
         self.H = curr_inv_hess
         self.s = delta_par.T  # start with column vector
-        if len(self.working_set) > 0:  # constrained opt
+        if len(self.working_set.obsnme) > 0:  # constrained opt
             new_grad.col_names, curr_grad.col_names = self.s.col_names, self.s.col_names
             self.y = (new_grad - curr_grad) - (new_constr_grad - prev_constr_grad) * self.lagrang_mults  # see eq (36) of Liu and Reynolds (2019)
         else:  # unconstrained
@@ -875,20 +876,34 @@ class EnsembleSQP(EnsembleMethod):
 
         return en_cov
 
-    def _update_active_set(self,proposed_direction,working_set):
+    def _update_active_set(self):
         '''
-        essentially constitutes active set method - see alg (16.3) in Nocedal and Wright (2006)
+        active set method - see alg (16.3) in Nocedal and Wright (2006)
+
+        working_set is defined as current estimate of active constraints. the concept of the working set
+        (and indeed the ``active set'') is specific to the active set method for QP with inequality constraints.
         '''
-        # remove constraint phase
-        #if p == 0:
-         #   lagrang_mults = self.lagrang_mults  #TODO: compute at new proposed pos with new A? (16.42)?
-          #  if lagrang_mults > 0 for all in working_set and of inequality type:
 
-        # add constraint phase
-        #else:  # p != 0
+        # stop-or-drop phase
+        if np.isclose(self.search_d, 0.0):  # TODO: or == ? or practically when filter stops updating?
+            lagrang_mults = self.lagrang_mults  # TODO: compute mults at new proposed pos with new A? (16.42)?
+            lagrang_mults_ineq = lagrang_mults.loc[:,:]
+            #if lagrang_mults > 0 for all in working_set and of inequality type:
+             #   self.logger.lraise("reached optimal soln!")
+            #else:
+             #   drop_idx = lagrang_mults.idxmin(axis=1)
+              #   drop_label = lagrang_mult.index(drop_idx)
+              #  self.working_set = self.working_set.drop([drop_label], axis=0)
+               # self.working_set_ineq = self.working_set_ineq.drop([drop_label], axis=0)
+                #goto_next_it = True  # this skips alpha-trial loop but sets x_k+1 for next it, etc.
 
 
-        #return working_set
+        # block-and-add phase
+        else:  # p != 0
+            alpha = min(1.0, 1.0)
+            #check a_i in Wk are linearly indep  # TODO!
+
+        #return goto_next_it, working_set
 
     def _kkt_null_space(self,):
         self.logger.lraise("not implemented... yet")
@@ -899,7 +914,7 @@ class EnsembleSQP(EnsembleMethod):
     def _kkt_iterative_cg(self,):
         self.logger.lraise("not implemented... yet")
 
-    def _solve_eqp(self,working_set=[],method="direct"):
+    def _solve_eqp(self,method="direct"):
         '''
         Direct QP (KKT system) solve method herein---assuming convexity (pos-def-ness) and that A has full-row-rank.
         Direct method here is just for demonstrative purposes---will require the other methods offered here given that
@@ -907,14 +922,10 @@ class EnsembleSQP(EnsembleMethod):
 
         Refer to (16.5, 18.9) of Nocedal and Wright (2006)
 
-        working_set : list
-            current estimate of active constraints. the concept of the working set (and indeed the ``active set'')
-            is specific to the active set method for QP with inequality constraints.
         method : string
             indicates the method employed to solve the KKT system. default is direct (for demo purposes only).
             options include: null_space (pg. 457), schur (pg. 455) and the iterative (TODO) method.
         '''
-        assert isinstance(working_set, list)
 
         g = self.inv_hessian * Matrix(2.0 * np.eye((self.hessian.shape[0])),
                                       row_names=self.hessian.row_names, col_names=self.hessian.col_names)
@@ -1072,10 +1083,11 @@ class EnsembleSQP(EnsembleMethod):
                 # TODO: get dims from npar_adj and pargp flagged as dec var, operate on phi vector of jco only
                 self.phi_grad = Matrix(x=jco.loc[self.phi_obs,:].T.values,
                                        row_names=self.pst.adj_par_names, col_names=['cross-cov'])
-                if constraints is True:  # and len(self.working_set) > 0:  # A matrix
-                    # TODO: for working set only
-                    self.constraint_jco = Matrix(x=jco.loc[cs,:].T.values,
-                                                 row_names=self.pst.adj_par_names, col_names=cs)
+                if constraints is True:
+                    if len(self.working_set.obsnme) > 0:  # also fill A matrix
+                        self.constraint_jco = Matrix(x=jco.loc[self.working_set.obsnme, :].T.values,
+                                                     row_names=self.pst.adj_par_names,
+                                                     col_names=self.working_set.obsnme)
             if grad_calc_only:
                 return self.phi_grad
             # and need mean for upgrades
@@ -1139,7 +1151,14 @@ class EnsembleSQP(EnsembleMethod):
 
         # compute quasi-Newton search direction
         self.logger.log("calculate search direction and perform tests")
-        if constraints is False:# or if len(self.working_set) == 0:
+        if constraints is True:
+            if len(self.working_set.obsnme) > 0:  # active constraints present
+                self.logger.log("calculate search direction and perform tests")
+                self.logger.log("solve QP sub-problem (active set method)")
+                self.search_d, self.lagrang_mults = self._solve_eqp()
+                self.logger.log("solve QP sub-problem (active set method)")
+                self.logger.log("calculate search direction and perform tests")
+        else:  # unconstrained or no active constraints
             if alg == "LBFGS":
                 self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
                 self.search_d = self._LBFGS_hess_update(memory=memory,self_scale=hess_self_scaling)
@@ -1162,12 +1181,6 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("phi gradient- and search direction-related checks")
             # TODO: using grad info only (with some expected step length), update Hessian from initial
             # TODO: handling of fixed, transformed etc. dec vars here
-            self.logger.log("calculate search direction and perform tests")
-        else:  # active constraints present
-            self.logger.log("calculate search direction and perform tests")
-            self.logger.log("solve QP sub-problem (active set method)")
-            self.search_d, self.lagrang_mults = self._solve_eqp(working_set=cs)
-            self.logger.log("solve QP sub-problem (active set method)")
             self.logger.log("calculate search direction and perform tests")
 
         self.parensemble_mean_next = None
