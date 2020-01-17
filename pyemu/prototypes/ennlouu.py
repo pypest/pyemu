@@ -957,7 +957,9 @@ class EnsembleSQP(EnsembleMethod):
         g = self.inv_hessian * Matrix(2.0 * np.eye((self.hessian.shape[0])),
                                       row_names=self.hessian.row_names, col_names=self.hessian.col_names)
         # TODO: check self.hessian or self.inv_hessian?
-        a = self.constraint_jco.drop(self.not_in_working_set.obsnme, axis=1)  # pertains to active constraints only
+
+        a = self.constraint_jco.df().drop(self.not_in_working_set.obsnme, axis=1)  # pertains to active constraints only
+        a = Matrix(x=a, row_names=a.index, col_names=a.columns)
         assert a.shape[1] == len(self.working_set)
 
         x_ = self.parensemble_mean
