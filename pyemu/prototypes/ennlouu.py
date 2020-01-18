@@ -933,7 +933,8 @@ class EnsembleSQP(EnsembleMethod):
                                                 .values, axis=0),
                                row_names=[self.pst.observation_data.loc[self.not_in_working_set.obsnme, "obsnme"][0]],
                                col_names=["mean"])
-                    bax = b - np.dot(a_.T, self.parensemble_mean.T)
+                    # TODO: add lt or gt constraint conditional here
+                    bax = b - (a_.T * self.parensemble_mean.T)
                     ap_bax = np.concatenate((ap, bax), axis=1)
                     ap_bax_lt0 = ap_bax[ap_bax.x < 0.0]
                     ap_bax_q = ap_bax_lt0[ap] / ap_bax_lt0[bax]
