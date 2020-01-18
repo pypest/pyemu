@@ -978,8 +978,8 @@ class EnsembleSQP(EnsembleMethod):
                                       row_names=self.hessian.row_names, col_names=self.hessian.col_names)
         # TODO: check self.hessian or self.inv_hessian?
 
-        a = self.constraint_jco.copy()  #.df().drop(self.not_in_working_set.obsnme, axis=1)  # already pertains to active constraints only
-        #a = Matrix(x=a, row_names=a.index, col_names=a.columns)
+        a = self.constraint_jco.df().drop(self.not_in_working_set.obsnme, axis=1)  # pertains to active constraints only
+        a = Matrix(x=a, row_names=a.index, col_names=a.columns)
         assert a.shape[1] == len(self.working_set)
 
         x_ = self.parensemble_mean
@@ -1127,9 +1127,9 @@ class EnsembleSQP(EnsembleMethod):
                                        row_names=self.pst.adj_par_names, col_names=['cross-cov'])
                 if constraints is True:
                     if len(self.working_set.obsnme) > 0:  # also fill A matrix (wrt working set only)
-                        self.constraint_jco = Matrix(x=jco.loc[self.working_set.obsnme, :].T.values,
+                        self.constraint_jco = Matrix(x=jco.loc[self.constraint_set.obsnme, :].T.values,
                                                      row_names=self.pst.adj_par_names,
-                                                     col_names=self.working_set.obsnme)
+                                                     col_names=self.constraint_set.obsnme)
             if grad_calc_only:
                 return self.phi_grad
             # and need mean for upgrades
