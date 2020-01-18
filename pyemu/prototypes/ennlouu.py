@@ -919,10 +919,31 @@ class EnsembleSQP(EnsembleMethod):
 
             # block-and-add phase
             else:  # p != 0
-                a, p = self.constraint_jco, self.search_d
-                min_X = 1.0
-                alpha = min(1.0, min_X)
-                #check a_i in Wk are linearly indep  # TODO!
+                if len(self.not_in_working_set) == 0:
+                    self.logger.warn("all constraints are in active set")
+                else:
+                    p = self.search_d
+                    a_ = self.constraint_jco.df().drop(self.working_set.obsnme, axis=1)  # pertains to inactive constraints only
+                    a_ = Matrix(x=a_, row_names=a_.index, col_names=a_.columns)
+                    assert a_.shape[1] == len(self.constraint_set) - len(self.working_set)
+                    assert a_.shape[1] == len(self.not_in_working_set)
+
+                    ap = np.dot(a_.T, p.x)  # transpose here is to do A-col-wise dot prod with p (i.e., np.dot(a.x.T, p.x)
+                    b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[self.not_in_working_set.obsnme, "obsval"]
+                                                .values, axis=0),
+                               row_names=[self.pst.observation_data.loc[self.not_in_working_set.obsnme, "obsnme"][0]],
+                               col_names=["mean"])
+                    bax = b - np.dot(a_.T, self.parensemble_mean.T)
+                    ap_bax = np.concatenate((ap, bax), axis=1)
+                    ap_bax_lt0 = ap_bax[ap_bax.x < 0.0]
+                    ap_bax_q = ap_bax_lt0[ap] / ap_bax_lt0[bax]
+
+                    min_q, min_idx = min(ap_bax_lt0), ap_bax_lt0.df().idxmin()
+                    alpha = min(1.0, min_q)
+                    if alpha < 1.0:
+                        self.logger.log("the blocking constraint is... {}".format(min_idx))
+
+                    #check a_i in Wk are linearly indep  # TODO!
 
         #else:  # second pass
             # add constraint to working set where blocking constraints present
@@ -967,6 +988,7 @@ class EnsembleSQP(EnsembleMethod):
 
         b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[self.working_set.obsnme, "obsval"].values, axis=0),
                    row_names=[self.pst.observation_data.loc[self.working_set.obsnme, "obsnme"][0]], col_names=["mean"])
+        # all vectors here corresponding to constraints in working set
         h = (a.T * x_.T) - b  #(-1.0 * a.T * x_.T) - b  # TODO: check -1 * constraint grad
         if not np.isclose(h.x, 0.0, rtol=1e-2, atol=1e-3):
             self.logger.lraise("constraint violated! {0}".format(h.x))  # will have been encountered before this point
