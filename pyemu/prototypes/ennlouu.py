@@ -928,7 +928,7 @@ class EnsembleSQP(EnsembleMethod):
                     assert a_.shape[1] == len(self.constraint_set) - len(self.working_set)
                     assert a_.shape[1] == len(self.not_in_working_set)
 
-                    ap = np.dot(a_.T, p.x)  # transpose here is to do A-col-wise dot prod with p (i.e., np.dot(a.x.T, p.x)
+                    ap = a_.T * p  # transpose here is to do A-col-wise dot prod with p (i.e., np.dot(a.x.T, p.x)
                     b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[self.not_in_working_set.obsnme, "obsval"]
                                                 .values, axis=0),
                                row_names=[self.pst.observation_data.loc[self.not_in_working_set.obsnme, "obsnme"][0]],
@@ -943,12 +943,11 @@ class EnsembleSQP(EnsembleMethod):
                     if alpha < 1.0:
                         self.logger.log("the blocking constraint is... {}".format(min_idx))
 
-                    #check a_i in Wk are linearly indep  # TODO!
-
         #else:  # second pass
             # add constraint to working set where blocking constraints present
             #self.working_set
             #self.woring_set_ineq
+        # check a_i in Wk are linearly indep  # TODO!
 
 
         #return goto_next_it, working_set, alpha
@@ -979,7 +978,7 @@ class EnsembleSQP(EnsembleMethod):
                                       row_names=self.hessian.row_names, col_names=self.hessian.col_names)
         # TODO: check self.hessian or self.inv_hessian?
 
-        a = self.constraint_jco.df().drop(self.not_in_working_set.obsnme, axis=1)  # pertains to active constraints only
+        a = self.constraint_jco  #.df().drop(self.not_in_working_set.obsnme, axis=1)  # already pertains to active constraints only
         a = Matrix(x=a, row_names=a.index, col_names=a.columns)
         assert a.shape[1] == len(self.working_set)
 
@@ -1014,6 +1013,8 @@ class EnsembleSQP(EnsembleMethod):
 
         search_d = Matrix(x=x[:self.pst.npar_adj], row_names=x_.T.row_names, col_names=self.phi_grad.col_names)
         lagrang_mults = Matrix(x=x[self.pst.npar_adj:], row_names=a.T.row_names, col_names=x_.T.col_names)
+        search_d.to_ascii("search_d.{}.dat".format(self.iter_num))
+        lagrang_mults.to_ascii("lagrang_mults.{}.dat".format(self.iter_num))
         return search_d, lagrang_mults
 
 
@@ -1125,7 +1126,7 @@ class EnsembleSQP(EnsembleMethod):
                 self.phi_grad = Matrix(x=jco.loc[self.phi_obs,:].T.values,
                                        row_names=self.pst.adj_par_names, col_names=['cross-cov'])
                 if constraints is True:
-                    if len(self.working_set.obsnme) > 0:  # also fill A matrix
+                    if len(self.working_set.obsnme) > 0:  # also fill A matrix (wrt working set only)
                         self.constraint_jco = Matrix(x=jco.loc[self.working_set.obsnme, :].T.values,
                                                      row_names=self.pst.adj_par_names,
                                                      col_names=self.working_set.obsnme)
@@ -1193,7 +1194,7 @@ class EnsembleSQP(EnsembleMethod):
         # compute quasi-Newton search direction
         self.logger.log("calculate search direction and perform tests")
         if constraints is True:
-            if len(self.working_set.obsnme) > 0:  # active constraints present
+            if len(self.working_set) > 0:  # active constraints present
                 self.logger.log("calculate search direction and perform tests")
                 self.logger.log("solve QP sub-problem (active set method)")
                 self.search_d, self.lagrang_mults = self._solve_eqp()
@@ -1231,7 +1232,11 @@ class EnsembleSQP(EnsembleMethod):
         step_lengths, mean_en_phi_per_alpha, curv_per_alpha = [], pd.DataFrame(), pd.DataFrame()
         #base_step = 1.0  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
         # TODO: check notion of adjusting alpha wrt Hessian?  similar to line searching...
-        base_step = ((self.pst.parameter_data.parubnd.mean()-self.pst.parameter_data.parlbnd.mean()) * 0.1) \
+        if constraints is True:
+            if len(self.working_set.obsnme) > 0:
+                base_step = 1.0
+        else:
+            base_step = ((self.pst.parameter_data.parubnd.mean()-self.pst.parameter_data.parlbnd.mean()) * 0.1) \
                     / abs(self.search_d.x.mean())  # TODO: check w JTW
         # TODO: handle log transforms here
         for istep, step in enumerate(step_mult):

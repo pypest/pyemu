@@ -3,15 +3,18 @@ if not os.path.exists("temp"):
     os.mkdir("temp")
 
 
-def rosenbrock_setup(version,initial_decvars=1.6,constraints=False):
+def rosenbrock_setup(version,initial_decvars=1.6,constraints=None):
     import pyemu
     if version == "2par":
-        if constraints:
-            os.chdir(os.path.join("ennlouu", "rosenbrock_2par_constrained"))
+        if constraints is not None:
+            if "two_linear" in constraints:
+                os.chdir(os.path.join("ennlouu", "rosenbrock_2par_two_linear_constraints"))
+            else:
+                os.chdir(os.path.join("ennlouu","rosenbrock_2par_constrained"))
         else:
             os.chdir(os.path.join("ennlouu","rosenbrock_2par"))
     elif version == "high_dim":
-        if constraints:
+        if constraints is not None:
             raise Exception
         else:
             os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
@@ -19,7 +22,7 @@ def rosenbrock_setup(version,initial_decvars=1.6,constraints=False):
     tpl_file = in_file+".tpl"
     out_file = [os.path.join("obs.dat")]
     ins_file = [out_file[0]+".ins"]
-    if constraints:
+    if constraints is not None:
         out_file.append(os.path.join("constraint.dat"))
         ins_file.append(out_file[1]+".ins")
     pst = pyemu.helpers.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
@@ -37,15 +40,25 @@ def rosenbrock_setup(version,initial_decvars=1.6,constraints=False):
     obs = pst.observation_data
     obs.loc["obs","obsval"] = 0.0
     obs.loc["obs","obgnme"] = "obj_fn"  #pst.pestpp_options["opt_obj_func"] = "obj_fn"
-    if constraints:
-        obs.loc["constraint", "obgnme"] = "g_constraint"  # inherit from pestpp_options
-        obs.loc["constraint", "obsval"] = 10.0  # inherit from pestpp_options
+    if constraints is not None:
+        if "two_linear" in constraints:
+            obs.loc["constraint_0", "obgnme"] = "g_constraint"  # inherit from pestpp_options
+            obs.loc["constraint_0", "obsval"] = 10.0  # inherit from pestpp_options
+            obs.loc["constraint_1", "obgnme"] = "l_constraint"  # inherit from pestpp_options
+            obs.loc["constraint_1", "obsval"] = 4.0  # inherit from pestpp_options
+        else:
+            obs.loc["constraint", "obgnme"] = "g_constraint"  # inherit from pestpp_options
+            obs.loc["constraint", "obsval"] = 10.0  # inherit from pestpp_options
     obs.loc[:, "weight"] = 1.0
     pst.control_data.noptmax = 0
     if version == "2par":
-        if constraints:
-            pst.model_command = ["python rosenbrock_2par_constrained.py"]
-            pst.write(os.path.join("rosenbrock_2par_constrained.pst"))
+        if constraints is not None:
+            if "two_linear" in constraints:
+                pst.model_command = ["python rosenbrock_2par_two_linear_constraints.py"]
+                pst.write(os.path.join("rosenbrock_2par_two_linear_constraints.pst"))
+            else:
+                pst.model_command = ["python rosenbrock_2par_constrained.py"]
+                pst.write(os.path.join("rosenbrock_2par_constrained.pst"))
         else:
             pst.model_command = ["python rosenbrock_2par.py"]
             pst.write(os.path.join("rosenbrock_2par.pst"))
@@ -159,7 +172,7 @@ def rosenbrock_2par_grad_approx_invest():
 
 
 def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_diff_grad=False,
-                               constraints=False,biobj_weight=1.0,biobj_transf=True,
+                               constraints=None,biobj_weight=1.0,biobj_transf=True,
                                hess_self_scaling=True,hess_update=True,damped=True,
                                cma=False,derinc=0.001,alg="BFGS",memory=5,strong_Wolfe=False,
                                rank_one=False,learning_rate=0.5,
@@ -168,7 +181,9 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
     import pyemu
     import numpy as np
     if version == "2par":
-        if constraints:
+        if "two_linear" in constraints:
+            os.chdir(os.path.join("ennlouu","rosenbrock_2par_two_linear_constraints"))
+        elif constraints is True:
             os.chdir(os.path.join("ennlouu","rosenbrock_2par_constrained"))
         else:
             os.chdir(os.path.join("ennlouu","rosenbrock_2par"))
@@ -178,7 +193,10 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
         else:
             os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
 
-    if constraints:
+    if "two_linear" in constraints:
+        ext = version + "_two_linear_constraints"
+        constraints = True
+    elif constraints is True:
         ext = version + "_constrained"
     else:
         ext = version
@@ -191,8 +209,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
     [os.remove(x) for x in os.listdir() if x == "hess_progress.csv"]
 
     step_mults = list(np.logspace(-5, 0, 12))
-    #step_mults = [0.1]  # small step to check updating etc.
-    #step_mults = np.linspace(0.1,1.0,10)
+    #step_mults = list(np.linspace(0.1,1.0,10))
 
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints,finite_diff_grad=finite_diff_grad,
@@ -750,10 +767,17 @@ if __name__ == "__main__":
       #  test_pestpp_on_rosen()
     #test_pestpp_on_rosen()
 
-    yy = -2.0
-    rosenbrock_setup(version="2par",constraints=True,initial_decvars=[(10-yy)/6,yy]) #[1.3456981,1.92581138]),1.41020303,1.53878185
-    rosenbrock_multiple_update(version="2par",constraints=True,finite_diff_grad=True,nit=30,
-                               working_set=['constraint'], hess_update=False, hess_self_scaling=False) #biobj_weight=5.0,alg="LBFGS",damped=False)
+    constraints = "two_linear"  #True  #None
+    yy = 1.0
+    if "two_linear" in constraints:
+        idv = [(4 - yy) / 1.5, yy]
+        working_set = ['constraint_1']
+    else:
+        idv = [(10 - yy) / 6, yy]
+        working_set = ['constraint']
+    rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv)
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=30,
+                               working_set=working_set, hess_update=False, hess_self_scaling=False) #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
     plot_2par_rosen(finite_diff_grad=True,constraints=True)
 
