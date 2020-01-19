@@ -250,7 +250,9 @@ class EnsembleSQP(EnsembleMethod):
             self.obsensemble_next = self.obsensemble.copy()  # for Wolfe tests only
             self.logger.log("running model forward with noptmax = 0")
 
-        if constraints:
+            self.working_set = []
+
+        if constraints is True:
             constraint_gps = [x for x in self.pst.obs_groups if x.startswith("g_") or x.startswith("greater_")
                               or x.startswith("l_") or x.startswith("less_")]
             if len(constraint_gps) == 0:
@@ -764,6 +766,12 @@ class EnsembleSQP(EnsembleMethod):
         # mean phi
         mean_en_phi = obsensemble[self.phi_obs[0]].mean()
 
+        # add blocking constraints
+        # TODO: revisit and search for min viol: constraints_viol['viol'].idxmin(axis=1)
+        if NEW_VIOL:
+            add_to_working_set = "constraint"
+            self.working_set = self._active_set_method(first_pass=False,add_to_working_set=add_to_working_set)
+
         # constraint filtering
         filter_thresh = 1e-4  #TODO: invest influence of filter_thresh
         #TODO: invest biobj params - this should also be related to transforms on dec vars and constraints
@@ -932,7 +940,10 @@ class EnsembleSQP(EnsembleMethod):
         # check a_i in Wk are linearly indep  # TODO!
 
 
-        #return goto_next_it, working_set, alpha
+        if first_pass is True:
+            return alpha
+        else:
+            return working_set
 
     def _kkt_null_space(self,):
         self.logger.lraise("not implemented... yet")
@@ -1133,10 +1144,9 @@ class EnsembleSQP(EnsembleMethod):
                 self.phi_grad = Matrix(x=jco.loc[self.phi_obs,:].T.values,
                                        row_names=self.pst.adj_par_names, col_names=['cross-cov'])
                 if constraints is True:
-                    if len(self.working_set.obsnme) > 0:  # also fill A matrix (wrt working set only)
-                        self.constraint_jco = Matrix(x=jco.loc[self.constraint_set.obsnme, :].T.values,
-                                                     row_names=self.pst.adj_par_names,
-                                                     col_names=self.constraint_set.obsnme)
+                    #if len(self.working_set.obsnme) > 0:
+                    self.constraint_jco = Matrix(x=jco.loc[self.constraint_set.obsnme, :].T.values,
+                                                 row_names=self.pst.adj_par_names, col_names=self.constraint_set.obsnme)
             if grad_calc_only:
                 return self.phi_grad
             # and need mean for upgrades
@@ -1200,15 +1210,14 @@ class EnsembleSQP(EnsembleMethod):
 
         # compute quasi-Newton search direction
         self.logger.log("calculate search direction and perform tests")
-        if constraints is True:
-            if len(self.working_set) > 0:  # active constraints present
+        if constraints is True and len(self.working_set) > 0:  # active constraints present
                 self.logger.log("calculate search direction and perform tests")
                 self.logger.log("solve QP sub-problem (active set method)")
                 self.search_d, self.lagrang_mults = self._solve_eqp()
                 self.logger.log("solve QP sub-problem (active set method)")
                 self.logger.log("calculate search direction and perform tests")
 
-                self._active_set_method(first_pass=True)
+                alpha = self._active_set_method(first_pass=True)
 
         elif constraints is False or (constraints is True and len(self.working_set) == 0):  # unconstrained or no active constraints
             if alg == "LBFGS":
@@ -1222,6 +1231,9 @@ class EnsembleSQP(EnsembleMethod):
                     self.search_d = -1 * (self.inv_hessian * self.phi_grad)
             else:
                 self.logger.lraise("algorithm not recognized/supported")
+
+            if constraints is True:
+                alpha = self._active_set_method(first_pass=True)
 
             self.logger.log("phi gradient- and search direction-related checks")
             if (opt_direction == "min" and (self.search_d.T * self.phi_grad).x > 0) or \
@@ -1242,7 +1254,7 @@ class EnsembleSQP(EnsembleMethod):
         if constraints is True:
             #if len(self.working_set.obsnme) > 0:
              #   base_step = 1.0
-            base_step = 1.0
+            base_step = alpha
         else:
             base_step = ((self.pst.parameter_data.parubnd.mean()-self.pst.parameter_data.parlbnd.mean()) * 0.1) \
                     / abs(self.search_d.x.mean())  # TODO: check w JTW
