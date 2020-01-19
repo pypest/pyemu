@@ -270,7 +270,7 @@ class EnsembleSQP(EnsembleMethod):
 
             self.logger.log("checking here feasibility and initializing constraint filter")
             self._filter = pd.DataFrame()
-            self._filter, _accept = self._filter_constraint_eval(self.obsensemble, self._filter)
+            self._filter, _accept, c_viol = self._filter_constraint_eval(self.obsensemble, self._filter)
             self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
             self.logger.log("checking here feasibility and initializing constraint filter")
 
@@ -766,12 +766,6 @@ class EnsembleSQP(EnsembleMethod):
         # mean phi
         mean_en_phi = obsensemble[self.phi_obs[0]].mean()
 
-        # add blocking constraints
-        # TODO: revisit and search for min viol: constraints_viol['viol'].idxmin(axis=1)
-        if NEW_VIOL:
-            add_to_working_set = "constraint"
-            self.working_set = self._active_set_method(first_pass=False,add_to_working_set=add_to_working_set)
-
         # constraint filtering
         filter_thresh = 1e-4  #TODO: invest influence of filter_thresh
         #TODO: invest biobj params - this should also be related to transforms on dec vars and constraints
@@ -834,7 +828,7 @@ class EnsembleSQP(EnsembleMethod):
                         acceptance = True
 
 
-        return self._filter, acceptance
+        return self._filter, acceptance, constraints_violated
 
 
     def _cov_mat_adapt(self,en_cov,rank_mu=True,rank_one=False,learning_rate=0.1,mu_prop=0.25,
@@ -900,7 +894,7 @@ class EnsembleSQP(EnsembleMethod):
 
         return en_cov
 
-    def _active_set_method(self,first_pass=True):
+    def _active_set_method(self,first_pass=True,add_to_working_set=None):
         '''
         see alg (16.3) in Nocedal and Wright (2006)
 
@@ -930,20 +924,27 @@ class EnsembleSQP(EnsembleMethod):
                 # compute alpha
                 if len(self.not_in_working_set) == 0:
                     self.logger.warn("all constraints are in active set")
+                    alpha = 1.0
                 else:
                     alpha = 1.0  #self._compute_alpha_constrained()  # TODO!
 
-        #else:  # second pass
+        else:  # second pass
             # add constraint to working set where blocking constraints present
-            #self.working_set
-            #self.woring_set_ineq
-        # check a_i in Wk are linearly indep  # TODO!
+            self.working_set = pd.concat((self.working_set,
+                                          self.constraint_set.loc[self.constraint_set.obsnme == add_to_working_set, :]))
+            self.working_set_ineq = pd.concat((self.working_set_ineq,
+                                              self.constraint_set.loc[self.constraint_set.obsnme == add_to_working_set,
+                                              :]))
+            self.not_in_working_set = self.constraint_set.drop(self.working_set.obsnme, axis=0)
 
+            # TODO!
+            # check a_i in Wk are linearly indep
+            #lambdas, V = np.linalg.eig(matrix.T)
+            #print(matrix[lambdas == 0, :]) # linearly dependent row vectors
 
         if first_pass is True:
             return alpha
-        else:
-            return working_set
+
 
     def _kkt_null_space(self,):
         self.logger.lraise("not implemented... yet")
@@ -979,11 +980,13 @@ class EnsembleSQP(EnsembleMethod):
         #x_.col_names = ['cross-cov']  # hack
 
         b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[self.working_set.obsnme, "obsval"].values, axis=0),
-                   row_names=[self.pst.observation_data.loc[self.working_set.obsnme, "obsnme"][0]], col_names=["mean"])
+                   row_names=self.pst.observation_data.loc[self.working_set.obsnme, "obsnme"].to_list(),
+                   col_names=["mean"])
         # all vectors here corresponding to constraints in working set
         h = (a.T * x_.T) - b  #(-1.0 * a.T * x_.T) - b  # TODO: check -1 * constraint grad
         if not np.isclose(h.x, 0.0, rtol=1e-2, atol=1e-3):
-            self.logger.lraise("constraint violated! {0}".format(h.x))  # will have been encountered before this point
+            self.logger.warn("constraint violated! h = {0}".format(h.x))  # TODO: enforce at filter rather than here
+            #self.logger.lraise("constraint violated! {0}".format(h.x))  # will have been encountered before this point
 
         grad_vect = self.phi_grad.copy()
         grad_vect.col_names = ['mean']  # hack
@@ -1316,9 +1319,10 @@ class EnsembleSQP(EnsembleMethod):
                 # TODO: constraints = from pst # contain constraint val (pcf) and constraint from obsen
                 if constraints:  # and constraints.shape[0] > 0:
                     self.logger.log("adopting filtering method to handle constraints")
-                    self._filter, accept = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size,
-                                                                    biobj_weight=biobj_weight,biobj_transf=biobj_transf,
-                                                                    opt_direction=self.opt_direction)
+                    self._filter, accept, c_viol = \
+                        self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size,
+                                                     biobj_weight=biobj_weight,biobj_transf=biobj_transf,
+                                                     opt_direction=self.opt_direction)
                     self.logger.log("adopting filtering method to handle constraints")
                     if accept:
                         best_alpha = step_size
@@ -1430,12 +1434,12 @@ class EnsembleSQP(EnsembleMethod):
                 self.obsensemble_1 = self._calc_obs_fd()
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1[self.phi_obs]
 
-                if constraints:  # and constraints.shape[0] > 0:
+                if constraints is True:
                     self.logger.log("adopting filtering method to handle constraints")
-                    self._filter, accept = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size,
-                                                                        biobj_weight=biobj_weight,
-                                                                        biobj_transf=biobj_transf,
-                                                                        opt_direction=self.opt_direction)
+                    self._filter, accept, c_viol = \
+                        self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size,
+                                                     biobj_weight=biobj_weight, biobj_transf=biobj_transf,
+                                                     opt_direction=self.opt_direction)
                     self.logger.log("adopting filtering method to handle constraints")
                     if accept:
                         best_alpha = step_size
@@ -1452,6 +1456,14 @@ class EnsembleSQP(EnsembleMethod):
                                                             and x.split(".")[2] == str(self.iter_num))]
                         self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
                                                   + self.obsen_prefix.format(0))
+
+                        # add blocking constraints
+                        if len(c_viol) > 0:
+                            # TODO: check search for min viol: constraints_viol['viol'].idxmin(axis=1)
+                            add_to_working_set = c_viol[0][0]  # TODO: revisit
+                            if add_to_working_set not in self.working_set.obsnme:
+                                self._active_set_method(first_pass=False, add_to_working_set=add_to_working_set)
+                                break  # only allowed to add one per it; therefore break out of loop (could alteratively track changes to WS per it)
 
                 else:  # unconstrained opt
                     # Wolfe/strong Wolfe condition testing

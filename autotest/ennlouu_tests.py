@@ -763,7 +763,7 @@ if __name__ == "__main__":
       #  test_pestpp_on_rosen()
     #test_pestpp_on_rosen()
 
-    constraints, constraint_exp = True, "one_linear"  #"one_linear"  #None
+    constraints, constraint_exp = True, "two_linear"  #"one_linear"  #None
     if "one_linear" in constraint_exp:
         yy = 0.5 #-2.0
         idv = [1.8, yy]  #[(10 - yy) / 6, yy]
@@ -777,7 +777,7 @@ if __name__ == "__main__":
                                working_set=working_set, hess_update=False, hess_self_scaling=False,
                                constraint_exp=constraint_exp) #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    plot_2par_rosen(finite_diff_grad=True,constraints=True)
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints)
 
     #supply2_setup()
     #supply2_update(en_size=20,draw_mult=1e-6)
