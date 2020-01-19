@@ -919,30 +919,11 @@ class EnsembleSQP(EnsembleMethod):
 
             # block-and-add phase
             else:  # p != 0
+                # compute alpha
                 if len(self.not_in_working_set) == 0:
                     self.logger.warn("all constraints are in active set")
                 else:
-                    p = self.search_d
-                    a_ = self.constraint_jco.df().drop(self.working_set.obsnme, axis=1)  # pertains to inactive constraints only
-                    a_ = Matrix(x=a_, row_names=a_.index, col_names=a_.columns)
-                    assert a_.shape[1] == len(self.constraint_set) - len(self.working_set)
-                    assert a_.shape[1] == len(self.not_in_working_set)
-
-                    ap = a_.T * p  # transpose here is to do A-col-wise dot prod with p (i.e., np.dot(a.x.T, p.x)
-                    b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[self.not_in_working_set.obsnme, "obsval"]
-                                                .values, axis=0),
-                               row_names=[self.pst.observation_data.loc[self.not_in_working_set.obsnme, "obsnme"][0]],
-                               col_names=["mean"])
-                    # TODO: add lt or gt constraint conditional here
-                    bax = b - (a_.T * self.parensemble_mean.T)
-                    ap_bax = np.concatenate((ap, bax), axis=1)
-                    ap_bax_lt0 = ap_bax[ap_bax.x < 0.0]
-                    ap_bax_q = ap_bax_lt0[ap] / ap_bax_lt0[bax]
-
-                    min_q, min_idx = min(ap_bax_lt0), ap_bax_lt0.df().idxmin()
-                    alpha = min(1.0, min_q)
-                    if alpha < 1.0:
-                        self.logger.log("the blocking constraint is... {}".format(min_idx))
+                    alpha = 1.0  #self._compute_alpha_constrained()  # TODO!
 
         #else:  # second pass
             # add constraint to working set where blocking constraints present
@@ -1017,6 +998,31 @@ class EnsembleSQP(EnsembleMethod):
         search_d.to_ascii("search_d.{}.dat".format(self.iter_num))
         lagrang_mults.to_ascii("lagrang_mults.{}.dat".format(self.iter_num))
         return search_d, lagrang_mults
+
+    def _compute_alpha_constrained(self,):
+        p = self.search_d
+        a_ = self.constraint_jco.df().drop(self.working_set.obsnme, axis=1)  # pertains to inactive constraints only
+        a_ = Matrix(x=a_, row_names=a_.index, col_names=a_.columns)
+        assert a_.shape[1] == len(self.constraint_set) - len(self.working_set)
+        assert a_.shape[1] == len(self.not_in_working_set)
+
+        ap = a_.T * p  # transpose here is to do A-col-wise dot prod with p (i.e., np.dot(a.x.T, p.x)
+        b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[self.not_in_working_set.obsnme, "obsval"]
+                                    .values, axis=0),
+                   row_names=[self.pst.observation_data.loc[self.not_in_working_set.obsnme, "obsnme"][0]],
+                   col_names=["mean"])
+        # TODO: add lt or gt constraint conditional here or -1 * A
+        bax = b - (a_.T * self.parensemble_mean.T)
+        ap_bax = np.concatenate((ap, bax), axis=1)
+        ap_bax_lt0 = ap_bax[ap_bax.x < 0.0]
+        ap_bax_q = ap_bax_lt0[ap] / ap_bax_lt0[bax]
+
+        min_q, min_idx = min(ap_bax_lt0), ap_bax_lt0.df().idxmin()
+        alpha = min(1.0, min_q)
+        if alpha < 1.0:
+            self.logger.log("the blocking constraint is... {}".format(min_idx))
+
+        return alpha
 
 
     def update(self,step_mult=[1.0],alg="BFGS",memory=5,hess_self_scaling=True,damped=True,
@@ -1204,7 +1210,7 @@ class EnsembleSQP(EnsembleMethod):
 
                 self._active_set_method(first_pass=True)
 
-        else:  # unconstrained or no active constraints
+        elif constraints is False or (constraints is True and len(self.working_set) == 0):  # unconstrained or no active constraints
             if alg == "LBFGS":
                 self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
                 self.search_d = self._LBFGS_hess_update(memory=memory,self_scale=hess_self_scaling)
@@ -1234,8 +1240,9 @@ class EnsembleSQP(EnsembleMethod):
         #base_step = 1.0  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
         # TODO: check notion of adjusting alpha wrt Hessian?  similar to line searching...
         if constraints is True:
-            if len(self.working_set.obsnme) > 0:
-                base_step = 1.0
+            #if len(self.working_set.obsnme) > 0:
+             #   base_step = 1.0
+            base_step = 1.0
         else:
             base_step = ((self.pst.parameter_data.parubnd.mean()-self.pst.parameter_data.parlbnd.mean()) * 0.1) \
                     / abs(self.search_d.x.mean())  # TODO: check w JTW
