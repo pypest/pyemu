@@ -906,17 +906,17 @@ class EnsembleSQP(EnsembleMethod):
         '''
 
         if first_pass is True:  # stop-or-drop phase
-            if np.all(np.isclose(self.search_d.x, 0.0)) is True:  # TODO: or == ? occurs practically when filter stops updating?
-                lagrang_mults = self.lagrang_mults  # TODO: compute mults at new proposed pos with new A? (16.42)?
-                lagrang_mults_ineq = lagrang_mults.loc[:,:]
-                #if lagrang_mults > 0 for all in working_set and of inequality type:
-                 #   self.logger.lraise("reached optimal soln!")
-                #else:
-                 #   drop_idx = lagrang_mults.idxmin(axis=1)
-                  #   drop_label = lagrang_mult.index(drop_idx)
-                   #  self.working_set = self.working_set.drop([drop_label], axis=0)
-                    # self.working_set_ineq = self.working_set_ineq.drop([drop_label], axis=0)
-                     #goto_next_it = True  # this skips alpha-trial loop but sets x_k+1 for next it, etc.
+            if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-1, atol=1e-1)):  # TODO: or == ? occurs practically when filter stops updating?
+                # TODO: compute mults at new proposed pos with new A? (16.42)?
+                lagrang_mults_ineq = self.lagrang_mults.df().loc[self.working_set_ineq.obsnme, :]  # multiplier sign only iterpret-able for ineq constraints (in working set)
+                if np.all(lagrang_mults_ineq.values > 0):
+                    self.logger.lraise("reached optimal soln!")
+                else:
+                    to_drop = lagrang_mults_ineq['mean'].idxmin()
+                    self.working_set = self.working_set.drop(self.working_set.obsnme == to_drop, axis=0)
+                    self.working_set_ineq = self.working_set_ineq.drop(self.working_set_ineq.obsnme == to_drop, axis=0)
+                    self.not_in_working_set = self.constraint_set.drop(self.working_set.obsnme, axis=0)
+                    goto_next_it = True  # to skips alpha-trial loop but sets x_k+1 for next it, etc.
 
 
             # block-and-add phase
@@ -984,7 +984,7 @@ class EnsembleSQP(EnsembleMethod):
                    col_names=["mean"])
         # all vectors here corresponding to constraints in working set
         h = (a.T * x_.T) - b  #(-1.0 * a.T * x_.T) - b  # TODO: check -1 * constraint grad
-        if not np.isclose(h.x, 0.0, rtol=1e-2, atol=1e-3):
+        if not np.all(np.isclose(h.x, 0.0, rtol=1e-2, atol=1e-3)):
             self.logger.warn("constraint violated! h = {0}".format(h.x))  # TODO: enforce at filter rather than here
             #self.logger.lraise("constraint violated! {0}".format(h.x))  # will have been encountered before this point
 
