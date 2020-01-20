@@ -673,7 +673,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
                        np.linspace(pst.parameter_data.parlbnd[1], pst.parameter_data.parubnd[1], n))
     Z = f(X, Y)
 
-    plt.contour(X, Y, Z, np.logspace(-0.5, 3.5, 20, base=10), cmap='gray')
+    plt.contour(X, Y, Z, np.logspace(-0.5, 3.5, 20, base=10), cmap='gray', zorder=-2, alpha=0.7)
 
     if constraints:
         #theta = np.linspace(0, 2 * np.pi)
@@ -683,11 +683,12 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         # TODO: read from *.py
         xx = np.linspace(-2.2, 2.2, 100)
         yy = -6 * xx + 10
-        plt.plot(xx, yy, 'r-')
+        plt.plot(xx, yy, 'r-', zorder=-1)
         plt.ylim(-2.2, 2.2)
         if "two_linear" in constraint_exp:
             yy = -1.5 * xx + 4
-            plt.plot(xx, yy, 'g-')
+            plt.plot(xx, yy, 'g-', zorder=-1)
+            #plt.text(s="-1.5*x_1 + x_2 >= 4")
             plt.ylim(-2.2, 2.2)
 
     #plt.scatter(x=[1.0],y=[1.0],marker="*",s=80)  # optimum
@@ -701,7 +702,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
     if ipar is not None:  # testing PESTPP-GLM
         #for k,df in parfile_dict.items():
          #   plt.scatter(x=df.loc[pst.par_names[0],"parval1"], y=df.loc[pst.par_names[0],"parval1"], c="b", alpha=1.0)
-        plt.scatter(x=ipar.loc[:, pst.par_names[0]], y=ipar.loc[:, pst.par_names[1]], c="b", alpha=1.0)
+        plt.scatter(x=ipar.loc[:, pst.par_names[0]], y=ipar.loc[:, pst.par_names[1]], c="b", alpha=1.0, zorder=1)
         for i,k in ipar.iterrows():
             plt.text(x=k[pst.par_names[0]],y=k[pst.par_names[1]],s=int(k["iteration"]))
         # TODO: Note that GLM requires sum of squares objective function - therefore need to re-contour by squares above if ipar is True
@@ -716,8 +717,10 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
              #   al = (np.log10(it + 1) / np.log10(len(par_ens) + 1))
             #else:
              #   al = (it + 1) / (len(par_ens) + 1)
-            plt.scatter(x=df[pst.parameter_data.parnme[0]], y=df[pst.parameter_data.parnme[1]], c="b", alpha=1.0)
-            plt.text(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],s="{}".format(it))
+            plt.scatter(x=df[pst.parameter_data.parnme[0]], y=df[pst.parameter_data.parnme[1]], c="b", alpha=1.0,
+                        zorder=1)
+            plt.text(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],s="{}".format(it),
+                     fontsize=10,zorder=1)
 
     if finite_diff_grad or ipar is not None:
         plot_init_decvars = True
@@ -729,9 +732,10 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         #plt.scatter(x=[pst.parameter_data.parval1[0]],y=pst.parameter_data.parval1[1],
          #           marker="s",c="b",alpha=al)  # plot initial when using fds
         plt.scatter(x=[pst.parameter_data.parval1[0]],y=pst.parameter_data.parval1[1],
-                    marker="x",c="b",alpha=0.5)  # plot initial when using fds
+                    marker="x",c="b",alpha=0.5,zorder=1)  # plot initial when using fds
 
-    #plt.show()
+    plt.show()
+    plt.xlabel("x_1"); plt.ylabel("x_2")
     plt.savefig(label)
     plt.close()
     os.chdir(os.path.join("..",".."))
