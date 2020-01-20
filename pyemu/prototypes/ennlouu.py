@@ -979,7 +979,7 @@ class EnsembleSQP(EnsembleMethod):
         x_ = self.parensemble_mean
         #x_.col_names = ['cross-cov']  # hack
 
-        b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[self.working_set.obsnme, "obsval"].values, axis=0),
+        b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[self.working_set.obsnme, "obsval"].values, axis=1),
                    row_names=self.pst.observation_data.loc[self.working_set.obsnme, "obsnme"].to_list(),
                    col_names=["mean"])
         # all vectors here corresponding to constraints in working set
