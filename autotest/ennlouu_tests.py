@@ -648,15 +648,19 @@ def plot_mean_dev_var_bar(opt_par_en="supply2_pest.parensemble.0000.csv",three_r
     plt.savefig("dec_vars.pdf")
 
 def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_grad=False,
-                    plot_init_decvars=False,ipar=None):
+                    plot_init_decvars=False,ipar=None,constraint_exp="one_linear"):
     import numpy as np
     import matplotlib.pyplot as plt
     import pandas as pd
     import pyemu
 
     if constraints:
-        os.chdir(os.path.join("ennlouu", "rosenbrock_2par_constrained"))
-        pst = pyemu.Pst("rosenbrock_2par_constrained.pst")
+        if "two_linear" in constraint_exp:
+            os.chdir(os.path.join("ennlouu", "rosenbrock_2par_two_linear_constraints"))
+            pst = pyemu.Pst("rosenbrock_2par_two_linear_constraints.pst")
+        else:
+            os.chdir(os.path.join("ennlouu", "rosenbrock_2par_constrained"))
+            pst = pyemu.Pst("rosenbrock_2par_constrained.pst")
     else:
         os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
         pst = pyemu.Pst("rosenbrock_2par.pst")
@@ -681,6 +685,10 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         yy = -6 * xx + 10
         plt.plot(xx, yy, 'r-')
         plt.ylim(-2.2, 2.2)
+        if "two_linear" in constraint_exp:
+            yy = -1.5 * xx + 4
+            plt.plot(xx, yy, 'g-')
+            plt.ylim(-2.2, 2.2)
 
     #plt.scatter(x=[1.0],y=[1.0],marker="*",s=80)  # optimum
 
@@ -772,12 +780,12 @@ if __name__ == "__main__":
         yy = 1.0
         idv = [(4 - yy) / 1.5, yy]
         working_set = ['constraint_1']
-    rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
-    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=30,
-                               working_set=working_set, hess_update=False, hess_self_scaling=False,
-                               constraint_exp=constraint_exp) #biobj_weight=5.0,alg="LBFGS",damped=False)
+    #rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
+    #rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=30,
+     #                          working_set=working_set, hess_update=False, hess_self_scaling=False,
+      #                         constraint_exp=constraint_exp) #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    plot_2par_rosen(finite_diff_grad=True,constraints=constraints)
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp)
 
     #supply2_setup()
     #supply2_update(en_size=20,draw_mult=1e-6)

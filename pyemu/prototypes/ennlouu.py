@@ -905,7 +905,8 @@ class EnsembleSQP(EnsembleMethod):
         (and indeed the ``active set'') is specific to the active set method for QP with inequality constraints.
         '''
 
-        goto_next_it = False
+        alpha, goto_next_it = 1.0, False
+
         if first_pass is True:  # stop-or-drop phase
             if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-1, atol=1e-1)):  # TODO: or == ? occurs practically when filter stops updating?
                 # TODO: compute mults at new proposed pos with new A? (16.42)?
@@ -1463,7 +1464,7 @@ class EnsembleSQP(EnsembleMethod):
                             # add blocking constraints
                             if len(c_viol) > 0:
                                 # TODO: check search for min viol: constraints_viol['viol'].idxmin(axis=1)
-                                add_to_working_set = c_viol[0][0]  # TODO: revisit
+                                add_to_working_set = c_viol[0][0]  # TODO: revisit - use df
                                 if add_to_working_set not in self.working_set.obsnme:
                                     self._active_set_method(first_pass=False, add_to_working_set=add_to_working_set)
                                     break  # only allowed to add one per it; therefore break out of loop (could alteratively track changes to WS per it)
