@@ -50,21 +50,20 @@ class PstFrom(object):
         self._setup_dirs()
 
 
-    def _generic_get_xy(self,*args):
-        if len(args) == 3: #kij
-            return float(args[1]),float(args[2])
-        elif len(args) == 2: #ij
-            return float(args[0]),float(args[1])
+    def _generic_get_xy(self, *args):
+        if len(args) == 3:  # kij
+            return float(args[1]), float(args[2])
+        elif len(args) == 2:  # ij
+            return float(args[0]), float(args[1])
         else:
-            return 0.0,0.0
+            return 0.0, 0.0
 
-    def _flopy_structured_get_xy(self,*args):
-
-        if len(args) == 3: #kij
-            i,j = args[1],args[2]
+    def _flopy_structured_get_xy(self, *args):
+        if len(args) == 3:  # kij
+            i, j = args[1], args[2]
 
         elif len(args) == 2: #ij
-            i,j = args[0],args[1]
+            i, j = args[0], args[1]
         else:
             self.logger.lraise("_flopy_structured_get_xy() error: wrong number of args, should be 3 (kij) or 2 (ij)"+\
                                ", not '{0}'".format(str(args)))
@@ -362,7 +361,10 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
         didx = set(df.loc[:,index_cols].apply(lambda x: tuple(x),axis=1))
         sidx.update(didx)
 
-    df_tpl = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])  # TODO using sets means that the rows of df and df_tpl are not necessaril aligned
+    df_tpl = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
+    # TODO using sets means that the rows of df and df_tpl are not necessaril aligned
+    # - not a problem as this is just for the mult files the mapping to model input files can be done
+    # by apply methods with the mapping information provided by meta data within par names.
 
 
     # get some index strings for naming
@@ -397,7 +399,7 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
         use_cols = [c for c in df_tpl.columns if c not in index_cols]
 
 
-    if get_xy is not None:  # todo - get_xy is function so may never be None? - may just be in debug
+    if get_xy is not None:
         df_tpl.loc[:,'xy'] = df_tpl.sidx.apply(lambda x: get_xy(*x))
         df_tpl.loc[:,'x'] = df_tpl.xy.apply(lambda x : x[0])
         df_tpl.loc[:, 'y'] = df_tpl.xy.apply(lambda x: x[1])

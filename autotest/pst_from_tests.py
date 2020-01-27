@@ -48,7 +48,7 @@ def freyberg_test():
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False, forgive=False,
                                    exe_name=mf_exe_name)
-    flopy.modflow.ModflowRiv(m,stress_period_data={0:[0,0,0,1.0,1.0,1.0]})
+    flopy.modflow.ModflowRiv(m,stress_period_data={0: [0,0,0,1.0,1.0,1.0]})
     org_model_ws = "temp2"
     m.external_path="."
     m.change_model_ws(org_model_ws)
@@ -56,9 +56,11 @@ def freyberg_test():
     print("{0} {1}".format(mf_exe_name, m.name + ".nam"), org_model_ws)
     os_utils.run("{0} {1}".format(mf_exe_name, m.name + ".nam"), cwd=org_model_ws)
 
-    pf = PstFrom(original_d=org_model_ws,new_d="new_temp",remove_existing=True,
-                 longnames=True,spatial_reference=m.sr,zero_based=False)
-    pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
+    # set up pest control file with PstFrom() method
+    pf = PstFrom(original_d=org_model_ws, new_d="new_temp", remove_existing=True,
+                 longnames=True, spatial_reference=m.sr, zero_based=False)
+
+    pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",  # TODO: type grid for RIV?
                       index_cols=[0, 1, 2], use_cols=[3,4], par_name_base=["rivbot_grid","rivstage_grid"])
     pf.add_parameters(filenames=["WEL_0000.dat","WEL_0001.dat"], par_type="grid",
                       index_cols=[0, 1, 2], use_cols=3,par_name_base="welflux_grid",zone_array=m.bas6.ibound.array)
@@ -69,6 +71,9 @@ def freyberg_test():
 
     print(pf.mult_files)
     print(pf.org_files)
+
+
+# TODO different spatial reference tests
 
 if __name__ == "__main__":
     freyberg_test()
