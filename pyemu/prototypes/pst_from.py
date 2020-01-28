@@ -10,10 +10,13 @@ import numpy as np
 import pandas as pd
 import pyemu
 from ..pyemu_warnings import PyemuWarning
+
+
 class PstFrom(object):
 
-    def __init__(self,original_d,new_d,longnames=True,remove_existing=False,
-                 spatial_reference=None,zero_based=True):
+    def __init__(self, original_d, new_d, longnames=True, remove_existing=False,
+                 spatial_reference=None, zero_based=True):
+
         self.original_d = original_d
         self.new_d = new_d
         self.original_file_d = None
@@ -48,6 +51,7 @@ class PstFrom(object):
         self.initialize_spatial_reference()
 
         self._setup_dirs()
+        self.pst = None
 
 
     def _generic_get_xy(self, *args):
@@ -58,27 +62,43 @@ class PstFrom(object):
         else:
             return 0.0, 0.0
 
-    def _flopy_structured_get_xy(self, *args):
+    def _flopy_sr_get_xy(self, *args):
+        i, j = self.parse_kij_args(*args)
+        return (self._spatial_reference.xcentergrid[i, j],
+                self._spatial_reference.ycentergrid[i, j])
+
+    def _flopy_mg_get_xy(self, *args):
+        i, j = self.parse_kij_args(*args)
+        return (self._spatial_reference.xcellcenters[i, j],
+                self._spatial_reference.ycellcenters[i, j])
+
+    def parse_kij_args(self, *args):
         if len(args) == 3:  # kij
             i, j = args[1], args[2]
 
         elif len(args) == 2: #ij
             i, j = args[0], args[1]
         else:
-            self.logger.lraise("_flopy_structured_get_xy() error: wrong number of args, should be 3 (kij) or 2 (ij)"+\
-                               ", not '{0}'".format(str(args)))
-        if not self.zero_based:
-            i -= 1
-            j -= 1
-        return self._spatial_reference.xcentergrid[i,j], \
-               self._spatial_reference.ycentergrid[i,j]
+            self.logger.lraise(("get_xy() error: wrong number of args, should be 3 (kij) or 2 (ij)"
+                                ", not '{0}'").format(str(args)))
+        # if not self.zero_based:
+        #     # TODO: check this,
+        #     # I think index is already being adjusted in write_list_tpl()
+        #     # and write_array_tpl() should always be zero_based (I think)
+        #     i -= 1
+        #     j -= 1
+        return i, j
 
     def initialize_spatial_reference(self):
         if self._spatial_reference is None:
             self.get_xy = self._generic_get_xy
-        elif hasattr(self._spatial_reference,"xcentergrid") and\
-            hasattr(self._spatial_reference,"ycentergrid"):
-            self.get_xy = self._flopy_structured_get_xy
+        elif (hasattr(self._spatial_reference,"xcentergrid") and
+              hasattr(self._spatial_reference,"ycentergrid")):
+            self.get_xy = self._flopy_sr_get_xy
+        elif (hasattr(self._spatial_reference, "xcellcenters") and
+              hasattr(self._spatial_reference, "ycellcenters")):
+            # support modelgrid style cell locs
+            self.get_xy = self._flopy_mg_get_xy
         else:
             self.logger.lraise("initialize_spatial_reference() error: unsupported spatial_reference")
 
@@ -94,6 +114,45 @@ class PstFrom(object):
     def draw(self):
         pass
 
+    def build_pst(self, filename=None):
+        """
+
+        Args:
+            filename (`str`): the filename to save the control file to.
+            If None, the name is formed from the `PstFrom.original_d`
+            --- the orginal directory name from which the forward model
+            was extracted.  Default is None.
+            The control file is saved in the `PstFrom.new_d` directory.
+
+        Note:
+
+            calls pyemu.Pst.from_io_files
+
+        """
+        # borrowing from PstFromFlopyModel() method:
+        self.logger.statement("changing dir in to {0}".format(self.new_d))
+        os.chdir(self.new_d)
+        try:
+            self.logger.log("instantiating control file from i/o files")
+            self.logger.statement(
+                "tpl files: {0}".format(",".join(self.tpl_filenames)))
+            self.logger.statement(
+                "ins files: {0}".format(",".join(self.input_filenames)))
+            pst = pyemu.Pst.from_io_files(tpl_files=self.tpl_filenames,
+                                          in_files=self.input_filenames,
+                                          ins_files=self.ins_filenames,
+                                          out_files=self.output_filenames)
+        except Exception as e:
+            os.chdir("..")
+            self.logger.lraise("error build Pst:{0}".format(str(e)))
+        os.chdir('..')
+
+        if filename is None:
+            filename = os.path.join(self.new_d, self.original_d)
+        self.logger.statement("writing pst {0}".format(filename))
+
+        pst.write(filename)
+        self.pst = pst
 
     def _setup_dirs(self):
         self.logger.log("setting up dirs")
@@ -255,10 +314,8 @@ class PstFrom(object):
 
         return index_cols, use_cols, file_dict
 
-
     def add_pars_from_template(self,tpl_filename, in_filename):
         pass
-
 
     def _next_count(self,prefix):
         if prefix not in self._prefix_count:
@@ -302,11 +359,14 @@ class PstFrom(object):
 
             self.logger.log(
                 "writing list-based template file '{0}'".format(tpl_filename))
-            df = write_list_tpl(file_dict.values(),par_name_base,os.path.join(self.new_d,tpl_filename),
-                                par_type=par_type,suffix='',index_cols=index_cols,use_cols=use_cols,
-                                zone_array=zone_array, longnames=self.longnames,
-                                get_xy=self.get_xy,zero_based=self.zero_based,
-                                input_filename=os.path.join(self.mult_file_d,mlt_filename))
+            df = write_list_tpl(
+                file_dict.values(), par_name_base,
+                tpl_filename=os.path.join(self.new_d, tpl_filename),
+                par_type=par_type, suffix='', index_cols=index_cols,
+                use_cols=use_cols, zone_array=zone_array,
+                longnames=self.longnames, get_xy=self.get_xy,
+                zero_based=self.zero_based,
+                input_filename=os.path.join(self.mult_file_d, mlt_filename))
 
             self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
         else:
@@ -316,15 +376,20 @@ class PstFrom(object):
             self.logger.log("writing array-based template file '{0}'".format(tpl_filename))
             shape = file_dict[list(file_dict.keys())[0]].shape
 
-            if par_type in ["constant","zone","grid"]:
-                self.logger.log("writing template file {0} for {1}".\
-                                format(tpl_filename,par_name_base))
-                df = write_array_tpl(name=par_name_base[0],tpl_filename=os.path.join(self.new_d,tpl_filename),
-                                     suffix='',par_type=par_type,zone_array=zone_array,shape=shape,
-                                     longnames=self.longnames,get_xy=self.get_xy,fill_value=1.0,
-                                     input_filename=os.path.join(self.mult_file_d,mlt_filename))
-                self.logger.log("writing template file {0} for {1}". \
-                                format(tpl_filename, par_name_base))
+            if par_type in ["constant", "zone", "grid"]:
+                self.logger.log(
+                    "writing template file "
+                    "{0} for {1}".format(tpl_filename, par_name_base))
+                df = write_array_tpl(
+                    name=par_name_base[0],
+                    tpl_filename=os.path.join(self.new_d,tpl_filename),
+                    suffix='', par_type=par_type, zone_array=zone_array,
+                    shape=shape, longnames=self.longnames, get_xy=self.get_xy,
+                    fill_value=1.0,
+                    input_filename=os.path.join(self.mult_file_d, mlt_filename))
+                self.logger.log(
+                    "writing template file"
+                    " {0} for {1}".format(tpl_filename, par_name_base))
 
             elif par_type == "pilotpoints" or par_type == "pilot_points":
                 self.logger.lraise("array type 'pilotpoints' not implemented")
@@ -348,7 +413,6 @@ class PstFrom(object):
         self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
 
 
-
 def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_cols=None,
                    zone_array=None,longnames=False,get_xy=None,zero_based=True,
                    input_filename=None):
@@ -366,7 +430,6 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
     # - not a problem as this is just for the mult files the mapping to model input files can be done
     # by apply methods with the mapping information provided by meta data within par names.
 
-
     # get some index strings for naming
     if longnames:
         j = '_'
@@ -379,7 +442,10 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
         fmt = "{1:03d}"
         j = ''
 
-    if not zero_based:
+    if not zero_based:  # TODO: need to be careful here potential to have two conflicting/compounding `zero_based` actions
+        # by default we pass PestFrom zero_based object to this method
+        # so if not zero_based will subtract 1 from idx here...
+        # TODO but the get_xy method also -= 1 (checkout changes to get_xy()
         df_tpl.loc[:,"sidx"] = df_tpl.sidx.apply(lambda x: tuple(xx-1 for xx in x))
     df_tpl.loc[:, "idx_strs"] = df_tpl.sidx.apply(
         lambda x: j.join([fmt.format(iname, xx)
@@ -398,12 +464,10 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
     if use_cols is None:
         use_cols = [c for c in df_tpl.columns if c not in index_cols]
 
-
     if get_xy is not None:
-        df_tpl.loc[:,'xy'] = df_tpl.sidx.apply(lambda x: get_xy(*x))
-        df_tpl.loc[:,'x'] = df_tpl.xy.apply(lambda x : x[0])
+        df_tpl.loc[:, 'xy'] = df_tpl.sidx.apply(lambda x: get_xy(*x))
+        df_tpl.loc[:, 'x'] = df_tpl.xy.apply(lambda x: x[0])
         df_tpl.loc[:, 'y'] = df_tpl.xy.apply(lambda x: x[1])
-
 
     for iuc,use_col in enumerate(use_cols):
         nname = name
@@ -471,8 +535,9 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
     return df_par
 
 
-def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None, shape=None,
-                    longnames=False, fill_value=1.0,get_xy=None,input_filename=None):
+def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
+                    shape=None, longnames=False, fill_value=1.0, get_xy=None,
+                    input_filename=None):
     """ write a template file for a 2D array.
 
         Parameters
@@ -504,7 +569,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None, shape
     if len(shape) != 2:
         raise Exception("write_array_tpl() error: shape '{0}' not 2D".format(str(shape)))
 
-    def constant_namer(i,j):
+    def constant_namer(i, j):
         if longnames:
             pname =  "const_{0}".format(name)
             if suffix != '':
@@ -516,7 +581,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None, shape
                        format(pname))
         return pname
 
-    def zone_namer(i,j):
+    def zone_namer(i, j):
         zval = 1
         if zone_array is not None:
             zval = zone_array[i, j]
@@ -528,24 +593,22 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None, shape
 
             pname = "{0}_zn{1}".format(name, zval)
             if len(pname) > 12:
-                raise ("zone par name too long:{0}". \
-                       format(pname))
+                raise ("zone par name too long:{0}".format(pname))
         return pname
 
-    def grid_namer(i,j):
+    def grid_namer(i, j):
         if longnames:
             pname = "{0}_i:{1}_j:{2}".format(name, i, j)
             if get_xy is not None:
-                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy(i,j))
+                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy(i, j))
             if zone_array is not None:
-                pname += "_zone:{0}".format(zone_array[i,j])
+                pname += "_zone:{0}".format(zone_array[i, j])
             if suffix != '':
                 pname += "_{0}".format(suffix)
         else:
             pname = "{0}{1:03d}{2:03d}".format(name, i, j)
             if len(pname) > 12:
-                raise ("grid pname too long:{0}". \
-                       format(pname))
+                raise ("grid pname too long:{0}".format(pname))
         return pname
 
     if par_type == "constant":
@@ -555,8 +618,8 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None, shape
     elif par_type == "grid":
         namer = grid_namer
     else:
-        raise Exception("write_array_tpl() error: unsupported par_type"+
-                        ", options are 'constant', 'zone', or 'grid', not"+\
+        raise Exception("write_array_tpl() error: unsupported par_type"
+                        ", options are 'constant', 'zone', or 'grid', not"
                         "'{0}'".format(par_type))
 
     parnme = []

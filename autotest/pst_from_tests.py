@@ -58,7 +58,7 @@ def freyberg_test():
 
     # set up pest control file with PstFrom() method
     pf = PstFrom(original_d=org_model_ws, new_d="new_temp", remove_existing=True,
-                 longnames=True, spatial_reference=m.sr, zero_based=False)
+                 longnames=True, spatial_reference=m.modelgrid, zero_based=False)
 
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",  # TODO: type grid for RIV?
                       index_cols=[0, 1, 2], use_cols=[3,4], par_name_base=["rivbot_grid","rivstage_grid"])
@@ -69,6 +69,7 @@ def freyberg_test():
     pf.add_parameters(filenames="rech_1.ref",par_type="grid",zone_array=m.bas6.ibound[0].array,par_name_base="rch_datetime:1-1-1970")
     pf.add_parameters(filenames=["rech_1.ref","rech_2.ref"],par_type="zone",zone_array=m.bas6.ibound[0].array)
 
+    pf.build_pst()
     print(pf.mult_files)
     print(pf.org_files)
 
