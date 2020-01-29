@@ -939,8 +939,7 @@ class EnsembleSQP(EnsembleMethod):
                                               :]))
             self.not_in_working_set = self.constraint_set.drop(self.working_set.obsnme, axis=0)
 
-            # TODO!
-            # check a_i in Wk are linearly indep
+            self.logger.log("check a_i in Wk are linearly indep")  # TODO!
             #lambdas, V = np.linalg.eig(matrix.T)
             #print(matrix[lambdas == 0, :]) # linearly dependent row vectors
 
@@ -948,7 +947,16 @@ class EnsembleSQP(EnsembleMethod):
             return alpha, goto_next_it
 
 
-    def _kkt_null_space(self,):
+    def _kkt_null_space(self,hessian=g, constraint_grad=a, constraint_diff=h, grad=c):
+        '''
+        see pg. 457 of Nocedal and Wright (2006)
+
+        hessian is G matrix in (16.5);
+        constraint_grad is A matrix in (16.5)
+        constraint_diff is h in (16.5) (h = Ax - b)
+        grad is g in (16.5) (g = c + Gx)
+        '''
+
         self.logger.lraise("not implemented... yet")
 
     def _kkt_schur(self,):
@@ -997,7 +1005,7 @@ class EnsembleSQP(EnsembleMethod):
         #coeff = np.concatenate((np.concatenate((g.x, - 1 * a.x), axis=1),
          #                       np.concatenate((a.T.x, np.zeros((a.shape[1], a.shape[1]))), axis=1)))
         if method == "null_space":
-            self._kkt_null_space()
+            x = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c)
         elif method == "schur":
             self._kkt_schur()
         elif method == "iterative_cg":
