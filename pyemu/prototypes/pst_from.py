@@ -54,6 +54,7 @@ class PstFrom(object):
         # TODO: build an essentially empty pest control file object here?
         # something that the add_parameters() methods can hook into later?
         self.par_info = []
+        self.arr_pars = []
         self.par_dfs = {'list_pars': [], 'array_pars': []}
         self.pst = None
 
@@ -231,8 +232,10 @@ class PstFrom(object):
             if not isinstance(index_cols,list):
                 index_cols = [index_cols]
             if isinstance(index_cols[0],str):
+                # index_cols can be from header str
                 header=0
             elif isinstance(index_cols[0],int):
+                # index_cols are column numbers in input file
                 header=None
             else:
                 self.logger.lraise("unrecognized type for index_cols, should be str or int, not {0}".
@@ -262,6 +265,7 @@ class PstFrom(object):
                     self.logger.lraise("use_cols also listed in index_cols: {0}".format(str(i)))
 
             for filename in filenames:
+                # looping over model input filenames
                 delim_whitespace = True
                 sep = ' '
                 if filename.lower().endswith(".csv"):
@@ -271,62 +275,81 @@ class PstFrom(object):
                 self.logger.log("loading list {0}".format(file_path))
                 if not os.path.exists(file_path):
                     self.logger.lraise("par filename '{0}' not found ".format(file_path))
+                # read each input file
                 df = pd.read_csv(file_path,header=header,delim_whitespace=delim_whitespace)
+                # ensure that column ids from index_col is in input file
                 missing = []
                 for index_col in index_cols:
                     if index_col not in df.columns:
                         missing.append(index_col)
                     df.loc[:,index_col] = df.loc[:,index_col].astype(np.int)
-
                 if len(missing) > 0:
-                    self.logger.lraise("the following index_cols were not found in file '{0}':{1}".
+                    self.logger.lraise("the following index_cols were not found"
+                                       " in file '{0}':{1}".
                                        format(file_path,str(missing)))
-
+                # ensure requested use_cols are in input file
                 for use_col in use_cols:
                     if use_col not in df.columns:
                         missing.append(use_col)
                 if len(missing) > 0:
-                    self.logger.lraise("the following use_cols were not found in file '{0}':{1}".
+                    self.logger.lraise("the following use_cols were not found "
+                                       "in file '{0}':{1}".
                                        format(file_path,str(missing)))
                 hheader = header
                 if hheader is None:
                     hheader = False
-                self.logger.statement("loaded list '{0}' of shape {1}".format(file_path,df.shape))
-                df.to_csv(os.path.join(self.original_file_d,filename),index=False,sep=sep,header=hheader)
+                self.logger.statement("loaded list '{0}' of shape {1}"
+                                      "".format(file_path, df.shape))
+                # TODO: do we need to be careful of the format of the model
+                #  files? -- probs not necessary for the version in
+                #  original_file_d - but for the eventual product model file,
+                #  it might be format sensitive - yuck
+                # write copy of input file to `org` (e.g.) dir
+                df.to_csv(os.path.join(self.original_file_d, filename),
+                          index=False, sep=sep, header=hheader)
                 file_dict[filename] = df
                 self.logger.log("loading list {0}".format(file_path))
 
             # check for compatibility
             fnames = list(file_dict.keys())
             for i in range(len(fnames)):
-                for j in range(i+1,len(fnames)):
-                    if file_dict[fnames[i]].shape[1] != file_dict[fnames[j]].shape[1]:
-                        self.logger.lraise("shape mismatch for array types, '{0}' shape {1} != '{2}' shape {3}".
-                                           format(fnames[i],file_dict[fnames[i]].shape[1],
-                                                  fnames[j],file_dict[fnames[j]].shape[1]))
-
+                for j in range(i+1, len(fnames)):
+                    if (file_dict[fnames[i]].shape[1] !=
+                            file_dict[fnames[j]].shape[1]):
+                        self.logger.lraise(
+                            "shape mismatch for array types, '{0}' "
+                            "shape {1} != '{2}' shape {3}".
+                            format(fnames[i], file_dict[fnames[i]].shape[1],
+                                   fnames[j], file_dict[fnames[j]].shape[1]))
 
         # load array type files
         else:
+            # loop over model input files
             for filename in filenames:
                 file_path = os.path.join(self.new_d, filename)
                 self.logger.log("loading array {0}".format(file_path))
                 if not os.path.exists(file_path):
-                    self.logger.lraise("par filename '{0}' not found ".format(file_path))
-                arr = np.loadtxt(os.path.join(self.new_d,filename))
+                    self.logger.lraise("par filename '{0}' not found ".
+                                       format(file_path))
+                # read array type input file # TODO: check this handles both whitespace and comma delim
+                arr = np.loadtxt(os.path.join(self.new_d, filename))
                 self.logger.log("loading array {0}".format(file_path))
-                self.logger.statement("loaded array '{0}' of shape {1}".format(filename,arr.shape))
-                np.savetxt(os.path.join(self.original_file_d,filename),arr)
+                self.logger.statement("loaded array '{0}' of shape {1}".
+                                      format(filename, arr.shape))
+                # save copy of input file to `org` dir
+                np.savetxt(os.path.join(self.original_file_d, filename), arr)
                 file_dict[filename] = arr
 
             #check for compatibility
             fnames = list(file_dict.keys())
             for i in range(len(fnames)):
-                for j in range(i+1,len(fnames)):
+                for j in range(i+1, len(fnames)):
                     if file_dict[fnames[i]].shape != file_dict[fnames[j]].shape:
-                        self.logger.lraise("shape mismatch for array types, '{0}' shape {1} != '{2}' shape {3}".
-                                           format(fnames[i],file_dict[fnames[i]].shape,
-                                                  fnames[j],file_dict[fnames[j]].shape))
+                        self.logger.lraise(
+                            "shape mismatch for array types, '{0}' "
+                            "shape {1} != '{2}' shape {3}".
+                                format(fnames[i],file_dict[fnames[i]].shape,
+                                       fnames[j],file_dict[fnames[j]].shape))
 
         # if tpl_filename is None:
         #     tpl_filename = os.path.split(filenames[0])[-1] + "{0}.tpl".\
@@ -516,6 +539,11 @@ class PstFrom(object):
                                    "should be in "
                                    "['constant','zone','grid','pilotpoints',"
                                    "'kl'")
+            # for mod_file in file_dict.keys():
+            #     self.arr_pars.append(pd.DataFrame({"org_file": org,
+            #                                        "mlt_file": mlt,
+            #                                        "model_file": mod,
+            #                                        "layer": layer})
             self.logger.log("writing array-based template file "
                             "'{0}'".format(tpl_filename))
         df.loc[:, "partype"] = par_type
