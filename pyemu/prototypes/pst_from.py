@@ -51,6 +51,10 @@ class PstFrom(object):
         self.initialize_spatial_reference()
 
         self._setup_dirs()
+        # TODO: build an essentially empty pest control file object here?
+        # something that the add_parameters() methods can hook into later?
+        self.par_info = []
+        self.par_dfs = {'list_pars': [], 'array_pars': []}
         self.pst = None
 
 
@@ -114,8 +118,48 @@ class PstFrom(object):
     def draw(self):
         pass
 
-    def build_pst(self, filename=None):
+    def _init_pst(self, tpl_files=None, in_files=None,
+                  ins_files=None, out_files=None):
+        """Initialise a pest control file object through i/o files
+
+        Args:
+            tpl_files:
+            in_files:
+            ins_files:
+            out_files:
+
+        Returns:
+
         """
+        #  TODO: amend so that pst can be built from PstFrom components
+        tpl_files, in_files, ins_files, out_files = (
+            [] if arg is None else arg for arg in
+            [tpl_files, in_files, ins_files, out_files])
+        # borrowing from PstFromFlopyModel() method:
+        self.logger.statement("changing dir in to {0}".format(self.new_d))
+        os.chdir(self.new_d)
+        try:
+            self.logger.log("instantiating control file from i/o files")
+            self.logger.statement(
+                "tpl files: {0}".format(",".join(tpl_files)))
+            self.logger.statement(
+                "ins files: {0}".format(",".join(ins_files)))
+            pst = pyemu.Pst.from_io_files(tpl_files=tpl_files,
+                                          in_files=in_files,
+                                          ins_files=ins_files,
+                                          out_files=out_files)
+            self.logger.log("instantiating control file from i/o files")
+        except Exception as e:
+            os.chdir("..")
+            self.logger.lraise("error build Pst:{0}".format(str(e)))
+        os.chdir('..')
+        self.pst = pst
+
+    def build_pst(self, filename=None):
+        """Build control file from i/o files in PstFrom object.
+        Warning: This builds a pest control file from scratch
+            - overwriting anything already in self.pst object and
+            anything already writen to `filename`
 
         Args:
             filename (`str`): the filename to save the control file to.
@@ -125,34 +169,20 @@ class PstFrom(object):
             The control file is saved in the `PstFrom.new_d` directory.
 
         Note:
-
-            calls pyemu.Pst.from_io_files
-
+            This builds a pest control file from scratch
+            - overwriting anything already in self.pst object and
+            anything already writen to `filename`
         """
-        # borrowing from PstFromFlopyModel() method:
-        self.logger.statement("changing dir in to {0}".format(self.new_d))
-        os.chdir(self.new_d)
-        try:
-            self.logger.log("instantiating control file from i/o files")
-            self.logger.statement(
-                "tpl files: {0}".format(",".join(self.tpl_filenames)))
-            self.logger.statement(
-                "ins files: {0}".format(",".join(self.input_filenames)))
-            pst = pyemu.Pst.from_io_files(tpl_files=self.tpl_filenames,
-                                          in_files=self.input_filenames,
-                                          ins_files=self.ins_filenames,
-                                          out_files=self.output_filenames)
-        except Exception as e:
-            os.chdir("..")
-            self.logger.lraise("error build Pst:{0}".format(str(e)))
-        os.chdir('..')
+        # TODO: amend so that pst can be built from PstFrom components
+        self._init_pst(
+            tpl_files=self.tpl_filenames, in_files=self.input_filenames,
+            ins_files=self.ins_filenames, out_files=self.output_filenames)
 
         if filename is None:
             filename = os.path.join(self.new_d, self.original_d)
         self.logger.statement("writing pst {0}".format(filename))
 
-        pst.write(filename)
-        self.pst = pst
+        self.pst.write(filename)
 
     def _setup_dirs(self):
         self.logger.log("setting up dirs")
@@ -314,8 +344,54 @@ class PstFrom(object):
 
         return index_cols, use_cols, file_dict
 
-    def add_pars_from_template(self,tpl_filename, in_filename):
-        pass
+    def add_pars_from_template(self, tpl_filename, in_filename):
+        """Method for adding parameters to Pest control file from pre-existing
+        template, input file pairs
+
+        Args:
+            tpl_filename (`str` or `list`): filename(s) of template files
+                with pars to add
+            in_filename (`str` or `list`): filename(s) of (what pest views as)
+                model input files
+
+        Returns:
+
+        Note:
+            if arguments are lists they need to be in equivlent orders, so
+            `tpl_filename[n]` relates to `in_filename[n]`
+
+            if self.pst is None this method will initialise a pst object by
+            calling pyemu.helpers.pst_from_io_files()
+        """
+        # quick argument checks
+        if type(tpl_filename) != type(in_filename):
+            raise TypeError("Both arguments need to be of the same type, "
+                            "`tpl_filename` is type {0}, "
+                            "`in_filename` is type {1}"
+                            "".format(type(tpl_filename), type(in_filename)))
+        if isinstance(tpl_filename, list):
+            assert len(tpl_filename) == len(in_filename), \
+                ("Lists provided for template and input filenames "
+                 "are not the same length.")
+        else:
+            tpl_filename = [tpl_filename]
+            in_filename = [in_filename]
+
+        for tpl, infnme in zip(tpl_filename, in_filename):
+            # need to set up a pst object container if it doesn't already exist
+            if self.pst is None:
+                self._init_pst(tpl_files=[tpl], in_files=[infnme])
+            else:
+                # add new pars to exisiting control file
+                os.chdir(self.new_d)
+                try:
+                    self.pst.add_parameters(tpl, infnme)
+                except Exception as e:
+                    os.chdir("..")
+                    self.logger.lraise(
+                        "error adding parameters for tpl {0}:{1}"
+                        "".format(tpl, str(e)))
+                os.chdir("..")
 
     def _next_count(self,prefix):
         if prefix not in self._prefix_count:
@@ -325,15 +401,47 @@ class PstFrom(object):
 
         return self._prefix_count[prefix]
 
-    def add_parameters(self,filenames,par_type,zone_array=None,dist_type="gaussian",sigma_range=4.0,
-                          upper_bound=1.0e10,lower_bound=1.0e-10,transform="log",
-                          par_name_base="p",index_cols=None,use_cols=None,
-                          pp_space=10,num_eig_kl=100,spatial_reference=None):
-        
-        self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
-        index_cols, use_cols, file_dict = self._par_prep(filenames,index_cols,use_cols)
+    def add_parameters(self, filenames, par_type, zone_array=None,
+                       dist_type="gaussian", sigma_range=4.0,
+                       upper_bound=1.0e10, lower_bound=1.0e-10, transform="log",
+                       par_name_base="p", index_cols=None, use_cols=None,
+                       pp_space=10, num_eig_kl=100, spatial_reference=None):
+        """Add list or array style model input files to PstFrom object.
+        This method
 
-        if isinstance(par_name_base,str):
+        Args:
+            filenames:
+            par_type:
+            zone_array:
+            dist_type:
+            sigma_range:
+            upper_bound:
+            lower_bound:
+            transform:
+            par_name_base:
+            index_cols:
+            use_cols:
+            pp_space:
+            num_eig_kl:
+            spatial_reference:
+
+        Returns:
+
+        """
+        # TODO either setup an (essentially empty) pest object in __init__
+        #  to add pars to here, or consider renaming as currently this method
+        #  is just setting up tpl/input file pairs
+        #  - or call add_pars_from_template() to either add to existing pcf or
+        #  setup fresh from `pyemu.Pst.from_io_files()`
+        
+        self.logger.log("adding parameters for file(s) "
+                        "{0}".format(str(filenames)))
+        index_cols, use_cols, file_dict = self._par_prep(filenames, index_cols,
+                                                         use_cols)
+        # TODO need to make sure we can collate par_df to relate mults to model files...
+        par_info_cols = ["parnme", "pargp", "tpl_filename", "input_filename",
+                         "partrans", "parubnd", "parlbnd", "partype"]
+        if isinstance(par_name_base, str):
             par_name_base = [par_name_base]
 
         if len(par_name_base) == 1:
@@ -341,9 +449,10 @@ class PstFrom(object):
         elif use_cols is not None and len(par_name_base) == len(use_cols):
             pass
         else:
-            self.logger.lraise("par_name_base should be a string,single-element "
-                               "container, or container of len use_cols "
-                               "not '{0}'".format(str(par_name_base)))
+            self.logger.lraise("par_name_base should be a string, "
+                               "single-element container, or container of "
+                               "len use_cols, not '{0}'"
+                               "".format(str(par_name_base)))
 
         if self.longnames:
             fmt = "_inst:{0}"
@@ -353,13 +462,18 @@ class PstFrom(object):
             par_name_base[i] += fmt.format(self._next_count(par_name_base[i]))
 
         if index_cols is not None:
+            # mult file name will take name from first par group in
+            # passed par_name_base
             mlt_filename = "{0}_{1}.csv".format(
                 par_name_base[0].replace(':', ''), par_type)
             tpl_filename = mlt_filename + ".tpl"
+            # TODO: NEED TO MAKE SURE WE LOG THE MODEL FILE TOO?!
 
             self.logger.log(
                 "writing list-based template file '{0}'".format(tpl_filename))
             df = write_list_tpl(
+                # TODO passing in the dictionary values worries me a little.
+                #  can the order get screwed up? does it matter?
                 file_dict.values(), par_name_base,
                 tpl_filename=os.path.join(self.new_d, tpl_filename),
                 par_type=par_type, suffix='', index_cols=index_cols,
@@ -368,12 +482,14 @@ class PstFrom(object):
                 zero_based=self.zero_based,
                 input_filename=os.path.join(self.mult_file_d, mlt_filename))
 
-            self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
+            self.logger.log("writing list-based template file "
+                            "'{0}'".format(tpl_filename))
         else:
             mlt_filename = "{0}_{1}.csv".format(
                 par_name_base[0].replace(':', ''), par_type)
             tpl_filename = mlt_filename + ".tpl"
-            self.logger.log("writing array-based template file '{0}'".format(tpl_filename))
+            self.logger.log("writing array-based template file "
+                            "'{0}'".format(tpl_filename))
             shape = file_dict[list(file_dict.keys())[0]].shape
 
             if par_type in ["constant", "zone", "grid"]:
@@ -382,7 +498,7 @@ class PstFrom(object):
                     "{0} for {1}".format(tpl_filename, par_name_base))
                 df = write_array_tpl(
                     name=par_name_base[0],
-                    tpl_filename=os.path.join(self.new_d,tpl_filename),
+                    tpl_filename=os.path.join(self.new_d, tpl_filename),
                     suffix='', par_type=par_type, zone_array=zone_array,
                     shape=shape, longnames=self.longnames, get_xy=self.get_xy,
                     fill_value=1.0,
@@ -396,12 +512,16 @@ class PstFrom(object):
             elif par_type == "kl":
                 self.logger.lraise("array type 'kl' not implemented")
             else:
-                self.logger.lraise("unrecognized 'par_type': '{0}', should be in "+\
-                                   "['constant','zone','grid','pilotpoints','kl'")
-            self.logger.log("writing array-based template file '{0}'".format(tpl_filename))
-        df.loc[:,"partrans"] = transform
-        df.loc[:,"parubnd"] = upper_bound
-        df.loc[:,"parlbnd"] = lower_bound
+                self.logger.lraise("unrecognized 'par_type': '{0}', "
+                                   "should be in "
+                                   "['constant','zone','grid','pilotpoints',"
+                                   "'kl'")
+            self.logger.log("writing array-based template file "
+                            "'{0}'".format(tpl_filename))
+        df.loc[:, "partype"] = par_type
+        df.loc[:, "partrans"] = transform
+        df.loc[:, "parubnd"] = upper_bound
+        df.loc[:, "parlbnd"] = lower_bound
         #df.loc[:,"tpl_filename"] = tpl_filename
 
         self.tpl_filenames.append(tpl_filename)
@@ -410,19 +530,46 @@ class PstFrom(object):
             self.org_files.append(file_name)
             self.mult_files.append(mlt_filename)
 
-        self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
+        # add pars to par_info list BH: is this what we want?
+        # - BH: think we can get away with dropping duplicates?
+        df = df.loc[:, par_info_cols]
+        self.par_info.append(df.drop_duplicates())
+        # TODO workout where and how to store the mult -> model file info.
+        # TODO workout how to get the mult to apply to the model files and
+        #  mimic the model file formats!
+        self.logger.log("adding parameters for file(s) "
+                        "{0}".format(str(filenames)))
 
 
-def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_cols=None,
-                   zone_array=None,longnames=False,get_xy=None,zero_based=True,
-                   input_filename=None):
+def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type,
+                   use_cols=None, zone_array=None, longnames=False, get_xy=None,
+                   zero_based=True, input_filename=None):
+    """ Write template files for a list style input.
 
-    if not isinstance(dfs,list):
+    Args:
+        dfs:
+        name:
+        tpl_filename:
+        suffix:
+        index_cols:
+        par_type:
+        use_cols:
+        zone_array:
+        longnames:
+        get_xy:
+        zero_based:
+        input_filename:
+
+    Returns:
+
+    """
+
+    if not isinstance(dfs, list):
         dfs = list(dfs)
-    #work out the union of indices across all dfs
+    # work out the union of indices across all dfs
     sidx = set()
     for df in dfs:
-        didx = set(df.loc[:,index_cols].apply(lambda x: tuple(x),axis=1))
+        didx = set(df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1))
         sidx.update(didx)
 
     df_tpl = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
@@ -442,22 +589,25 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
         fmt = "{1:03d}"
         j = ''
 
-    if not zero_based:  # TODO: need to be careful here potential to have two conflicting/compounding `zero_based` actions
-        # by default we pass PestFrom zero_based object to this method
-        # so if not zero_based will subtract 1 from idx here...
-        # TODO but the get_xy method also -= 1 (checkout changes to get_xy()
-        df_tpl.loc[:,"sidx"] = df_tpl.sidx.apply(lambda x: tuple(xx-1 for xx in x))
+    if not zero_based:
+        # TODO: need to be careful here potential to have two
+        #  conflicting/compounding `zero_based` actions
+        #  by default we pass PestFrom zero_based object to this method
+        #  so if not zero_based will subtract 1 from idx here...
+        #  ----the get_xy method also -= 1 (checkout changes to get_xy())
+        df_tpl.loc[:, "sidx"] = df_tpl.sidx.apply(
+            lambda x: tuple(xx-1 for xx in x))
     df_tpl.loc[:, "idx_strs"] = df_tpl.sidx.apply(
         lambda x: j.join([fmt.format(iname, xx)
                           for xx, iname in zip(x, inames)]))
 
-
     # if zone type, find the zones for each index position
-    if zone_array is not None and par_type in ["zone","grid"]:
+    if zone_array is not None and par_type in ["zone", "grid"]:
         if zone_array.ndim != len(index_cols):
             raise Exception("write_list_tpl() error: zone_array.ndim "
-                            "({0}) != len(index_cols)({1})".format(zone_array.ndim,len(index_cols)))
-        df_tpl.loc[:,"zval"] = df_tpl.sidx.apply(lambda x: zone_array[x])
+                            "({0}) != len(index_cols)({1})"
+                            "".format(zone_array.ndim, len(index_cols)))
+        df_tpl.loc[:, "zval"] = df_tpl.sidx.apply(lambda x: zone_array[x])
 
 
     # use all non-index columns if use_cols not passed
@@ -471,8 +621,9 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
 
     for iuc,use_col in enumerate(use_cols):
         nname = name
-        if not isinstance(name,str):
+        if not isinstance(name, str):
            nname = name[iuc]
+        df_tpl.loc[:, "pargp{}".format(use_col)] = nname
         if par_type == "constant":
             if longnames:
                 df_tpl.loc[:,use_col] = "{0}_use_col:{1}".format(nname,use_col)
@@ -488,7 +639,8 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
             if longnames:
                 df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname, use_col)
                 if zone_array is not None:
-                    df_tpl.loc[:, use_col] += df_tpl.zval.apply(lambda x: "_zone:{0}".format(x))
+                    df_tpl.loc[:, use_col] += df_tpl.zval.apply(
+                        lambda x: "_zone:{0}".format(x))
                 if suffix != '':
                     df_tpl.loc[:, use_col] += "_{0}".format(suffix)
             else:
@@ -500,7 +652,8 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
             if longnames:
                 df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname, use_col)
                 if zone_array is not None:
-                    df_tpl.loc[:, use_col] += df_tpl.zval.apply(lambda x: "_zone:{0}".format(x))
+                    df_tpl.loc[:, use_col] += df_tpl.zval.apply(
+                        lambda x: "_zone:{0}".format(x))
                 if suffix != '':
                     df_tpl.loc[:, use_col] += "_{0}".format(suffix)
                 df_tpl.loc[:,use_col] += '_' + df_tpl.idx_strs
@@ -515,23 +668,27 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_co
             raise Exception("write_list_tpl() error: unrecognized 'par_type' should be 'constant','zone',"+\
                             "or 'grid', not '{0}'".format(par_type))
 
-    parnme = list(df_tpl.loc[:,use_cols].values.flatten())
-    df_par = pd.DataFrame({"parnme":parnme},index=parnme)
+    parnme = list(df_tpl.loc[:, use_cols].values.flatten())
+    pargp = list(df_tpl.loc[:,
+                 ["pargp{0}".format(col) for col in use_cols]].values.flatten())
+    df_par = pd.DataFrame({"parnme": parnme, "pargp": pargp}, index=parnme)
     if not longnames:
         too_long = df_par.loc[df_par.parnme.apply(lambda x: len(x) > 12),"parnme"]
         if too_long.shape[0] > 0:
             raise Exception("write_list_tpl() error: the following parameter names are too long:{0}".
                             format(','.join(list(too_long))))
     for use_col in use_cols:
-        df_tpl.loc[:,use_col] = df_tpl.loc[:,use_col].apply(lambda x: "~  {0}  ~".format(x))
-    pyemu.helpers._write_df_tpl(filename=tpl_filename, df=df_tpl, sep=',', tpl_marker='~')
+        df_tpl.loc[:, use_col] = df_tpl.loc[:, use_col].apply(
+            lambda x: "~  {0}  ~".format(x))
+    pyemu.helpers._write_df_tpl(filename=tpl_filename, df=df_tpl, sep=',',
+                                tpl_marker='~')
 
     if input_filename is not None:
         df_in = df_tpl.copy()
-        df_in.loc[:,use_cols] = 1.0
+        df_in.loc[:, use_cols] = 1.0
         df_in.to_csv(input_filename)
-    df_par.loc[:,"tpl_filename"] = tpl_filename
-    df_par.loc[:,"input_filename"] = input_filename
+    df_par.loc[:, "tpl_filename"] = tpl_filename
+    df_par.loc[:, "input_filename"] = input_filename
     return df_par
 
 
@@ -544,14 +701,20 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         ----------
         name : str
             the base parameter name
-        tpl_file : str
+        tpl_filename : str
             the template file to write - include path
+        suffix:
+        par_type:
         zone_array : numpy.ndarray
             an array used to skip inactive cells.  Values less than 1 are
             not parameterized and are assigned a value of fill_value.
             Default is None.
+        shape:
+        longnames:
         fill_value : float
             value to fill in values that are skipped.  Default is 1.0.
+        get_xy:
+        input_filename:
 
         Returns
         -------
@@ -571,14 +734,14 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
 
     def constant_namer(i, j):
         if longnames:
-            pname =  "const_{0}".format(name)
+            pname = "const_{0}".format(name)
             if suffix != '':
                 pname += "_{0}".format(suffix)
         else:
             pname = "{0}{1}".format(name, suffix)
             if len(pname) > 12:
-                raise ("constant par name too long:{0}". \
-                       format(pname))
+                raise ("constant par name too long:"
+                       "{0}".format(pname))
         return pname
 
     def zone_namer(i, j):
@@ -623,7 +786,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
                         "'{0}'".format(par_type))
 
     parnme = []
-    xx,yy,ii,jj = [],[],[],[]
+    xx, yy, ii, jj = [], [], [], []
     with open(tpl_filename, 'w') as f:
         f.write("ptf ~\n")
         for i in range(shape[0]):
@@ -632,29 +795,29 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
                     pname = " {0} ".format(fill_value)
                 else:
                     if get_xy is not None:
-                        x,y = get_xy(i,j)
+                        x, y = get_xy(i, j)
                         xx.append(x)
                         yy.append(y)
                     ii.append(i)
                     jj.append(j)
 
-                    pname = namer(i,j)
+                    pname = namer(i, j)
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
-    df.loc[:,'i'] = ii
-    df.loc[:,'j'] = jj
+    df.loc[:, 'i'] = ii
+    df.loc[:, 'j'] = jj
     if get_xy is not None:
-        df.loc[:,'x'] = xx
-        df.loc[:,'y'] = yy
+        df.loc[:, 'x'] = xx
+        df.loc[:, 'y'] = yy
     df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix.replace('_', ''))
     df.loc[:, "tpl_filename"] = tpl_filename
-    df.loc[:,"input_filename"] = input_filename
+    df.loc[:, "input_filename"] = input_filename
     if input_filename is not None:
         arr = np.ones(shape)
-        np.savetxt(input_filename,arr,fmt="%2.1f")
+        np.savetxt(input_filename, arr, fmt="%2.1f")
 
     return df
 
