@@ -175,23 +175,23 @@ class PstFrom(object):
             - overwriting anything already in self.pst object and
             anything already writen to `filename`
         """
-        
+
         # parameter data from object
         par_data = pd.concat(self.par_data)
         # info relating parameter multiplier files to model input files
         parfile_relations = pd.concat(self.parfile_relations,
                                       ignore_index=True)
-        parfile_relations.to_csv(os.path.join(self.new_d, 
+        parfile_relations.to_csv(os.path.join(self.new_d,
                                               'mult2model_info.csv'))
         if filename is None:
             filename = os.path.join(self.new_d, self.original_d)
         elif os.path.dirname(filename) in ['', '.']:
             filename = os.path.join(self.new_d, filename)
-                
+
         pst = pyemu.Pst(filename, load=False)
         pst.parameter_data = par_data
 
-        
+
         # TODO: temporalily borowed from pst_utils.generic_pst()
         #  ----------------------------------------------------------------->
         obs_data = pyemu.pst_utils._populate_dataframe(
@@ -498,7 +498,7 @@ class PstFrom(object):
         #  is just setting up tpl/input file pairs
         #  - or call add_pars_from_template() to either add to existing pcf or
         #  setup fresh from `pyemu.Pst.from_io_files()`
-        
+
         self.logger.log("adding parameters for file(s) "
                         "{0}".format(str(filenames)))
         index_cols, use_cols, file_dict = self._par_prep(filenames, index_cols,
@@ -589,10 +589,12 @@ class PstFrom(object):
         relate_parfiles = []
         for mod_file in file_dict.keys():
             relate_parfiles.append(
-                {"org_file":
-                     os.path.join(self.original_file_d, mod_file),
-                 "mlt_file":
-                     os.path.join(self.mult_file_d, mlt_filename),
+                {"org_file": os.path.join(
+                    *os.path.split(self.original_file_d)[1:],
+                    mod_file),
+                 "mlt_file": os.path.join(
+                    *os.path.split(self.mult_file_d)[1:],
+                    mlt_filename),
                  "model_file": mod_file,
                  "use_cols": use_cols,
                  "index_cols": index_cols})
