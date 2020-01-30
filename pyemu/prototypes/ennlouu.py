@@ -939,7 +939,8 @@ class EnsembleSQP(EnsembleMethod):
                                               :]))
             self.not_in_working_set = self.constraint_set.drop(self.working_set.obsnme, axis=0)
 
-            self.logger.log("check a_i in Wk are linearly indep")  # TODO!
+            self.logger.log("check a_i in Wk are linearly indep; A has full rank")  # TODO!
+            self.logger.log("check m <= n in A. If not, redundant information, use reduction strategy, SVD or QR")  # TODO!
             #lambdas, V = np.linalg.eig(matrix.T)
             #print(matrix[lambdas == 0, :]) # linearly dependent row vectors
 
@@ -947,9 +948,11 @@ class EnsembleSQP(EnsembleMethod):
             return alpha, goto_next_it
 
 
-    def _kkt_null_space(self,hessian=g, constraint_grad=a, constraint_diff=h, grad=c):
+    def _kkt_null_space(self,hessian, constraint_grad, constraint_diff, grad):
         '''
         see pg. 457 of Nocedal and Wright (2006)
+
+        This approach ensures unique soln to kkt system (given that G may be indefinite)
 
         hessian is G matrix in (16.5);
         constraint_grad is A matrix in (16.5)
@@ -957,13 +960,44 @@ class EnsembleSQP(EnsembleMethod):
         grad is g in (16.5) (g = c + Gx)
         '''
 
-        self.logger.lraise("not implemented... yet")
+        # Requires two conditions be satisfied
+        # 0. A has full rank - this should have been caught before
+        self.logger.log("check a_i in Wk are linearly indep; A has full rank")
+
+        # 1. Z^TGZ is pos def
+        # first, must compute ``null-space basis matrix'' Z (i.e., cols of which are null-space of A); see pgs. 430-432 and 457
+        y, z = self._compute_orthog_basis_matrices()
+        if not np.all(np.linalg.eigvals(self.z.as_2d) > 0):
+            self.logger.log("Z^TGZ not pos-def!")
+
+        # first, solve for p_y (16.18)
+        p_y = -1.0 * np.linalg.inv(self.constraint_jco[:, self.working_set.obsnme] * y) * constraint_diff
+
+        # now to solve linear system for p_z - via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
+        zTgz = z.T * hessian * z
+        l = np.linalg.cholesky(zTgz)
+        zTgy = z.T * hessian * y
+        rhs = (-1.0 * zTgy * p_y) - (z.T * constraint_diff)
+        yy = np.linalg.solve(l, rhs)  # TODO: should solve by forward substitution (triangular) for more speed-ups
+
+
+
+
+        return x
+
+    def _compute_orthog_basis_matrices(self,):
+        # TODO: if A is sparse and large, QR will take a while..
+        # TODO: therefore implement rref option here too
+        # use generalized form (of 15.15) via QR decomp (see pg. 432)
+        q, r = np.linalg.qr(self.constraint_jco[:, self.working_set.obsnme].T)
+        y, z = q, q[:, len(self.working_set.obsnme) + 1:]
+        return y, z
 
     def _kkt_schur(self,):
-        self.logger.lraise("not implemented... yet")
+        self.logger.lraise("not implemented...")
 
     def _kkt_iterative_cg(self,):
-        self.logger.lraise("not implemented... yet")
+        self.logger.lraise("not implemented...")
 
     def _solve_eqp(self,method="direct"):
         '''
