@@ -784,12 +784,12 @@ if __name__ == "__main__":
         yy = 1.0
         idv = [(4 - yy) / 1.5, yy]
         working_set = ['constraint_1']
-    #rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
-    #rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=30,
-     #                          working_set=working_set, hess_update=False, hess_self_scaling=False,
-      #                         constraint_exp=constraint_exp) #biobj_weight=5.0,alg="LBFGS",damped=False)
+    rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=30,
+                               working_set=working_set, hess_update=False, hess_self_scaling=False,
+                               constraint_exp=constraint_exp) #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp)
+    #plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp)
 
     #supply2_setup()
     #supply2_update(en_size=20,draw_mult=1e-6)

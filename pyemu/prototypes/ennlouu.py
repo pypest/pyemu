@@ -966,8 +966,8 @@ class EnsembleSQP(EnsembleMethod):
 
         # 1. Z^TGZ is pos def
         # first, must compute ``null-space basis matrix'' Z (i.e., cols of which are null-space of A); see pgs. 430-432 and 457
-        y, z = self._compute_orthog_basis_matrices()
-        if not np.all(np.linalg.eigvals(self.z.as_2d) > 0):
+        y, z = self._compute_orthog_basis_matrices(a=constraint_grad)
+        if not np.all(np.linalg.eigvals(z.as_2d) > 0):
             self.logger.log("Z^TGZ not pos-def!")
 
         # first, solve for p_y (16.18)
@@ -993,11 +993,13 @@ class EnsembleSQP(EnsembleMethod):
 
         return p, lm
 
-    def _compute_orthog_basis_matrices(self,):
+    def _compute_orthog_basis_matrices(self, a):
+        if a.shape[0] > a.shape[1]:
+            self.logger.lraise("n > m - A cannot be this shape")  # catch before here
         # TODO: if A is sparse and large, QR will take a while..
         # TODO: therefore implement rref option here too
         # use generalized form (of 15.15) via QR decomp (see pg. 432)
-        q, r = np.linalg.qr(self.constraint_jco[:, self.working_set.obsnme].T)
+        q, r = np.linalg.qr(self.constraint_jco.df().loc[:, self.working_set.obsnme].values.T)
         y, z = q, q[:, len(self.working_set.obsnme) + 1:]
         return y, z
 
@@ -1007,7 +1009,7 @@ class EnsembleSQP(EnsembleMethod):
     def _kkt_iterative_cg(self,):
         self.logger.lraise("not implemented...")
 
-    def _solve_eqp(self,method="direct"):
+    def _solve_eqp(self,method="direct"):#null_space"):
         '''
         Direct QP (KKT system) solve method herein---assuming convexity (pos-def-ness) and that A has full-row-rank.
         Direct method here is just for demonstrative purposes---will require the other methods offered here given that
@@ -1025,8 +1027,9 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: check self.hessian or self.inv_hessian?
 
         a = self.constraint_jco.df().drop(self.not_in_working_set.obsnme, axis=1)  # pertains to active constraints only
-        a = Matrix(x=a, row_names=a.index, col_names=a.columns)
-        assert a.shape[1] == len(self.working_set)
+        a = Matrix(x=a, row_names=a.index, col_names=a.columns).T  # note transpose
+        assert a.shape[0] == len(self.working_set)
+        # TODO: check A shape and row rank here
 
         x_ = self.parensemble_mean
         #x_.col_names = ['cross-cov']  # hack
@@ -1034,8 +1037,8 @@ class EnsembleSQP(EnsembleMethod):
         b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[self.working_set.obsnme, "obsval"].values, axis=1),
                    row_names=self.pst.observation_data.loc[self.working_set.obsnme, "obsnme"].to_list(),
                    col_names=["mean"])
-        # all vectors here corresponding to constraints in working set
-        h = (a.T * x_.T) - b  #(-1.0 * a.T * x_.T) - b  # TODO: check -1 * constraint grad
+
+        h = (a * x_.T) - b  # TODO: check -1 * constraint grad
         if not np.all(np.isclose(h.x, 0.0, rtol=1e-2, atol=1e-3)):
             self.logger.warn("constraint violated! h = {0}".format(h.x))  # TODO: enforce at filter rather than here
             #self.logger.lraise("constraint violated! {0}".format(h.x))  # will have been encountered before this point
@@ -1044,8 +1047,6 @@ class EnsembleSQP(EnsembleMethod):
         grad_vect.col_names = ['mean']  # hack
         c = grad_vect + np.dot(0.5 * g, x_.T)  # small g
 
-        #coeff = np.concatenate((np.concatenate((g.x, - 1 * a.x), axis=1),
-         #                       np.concatenate((a.T.x, np.zeros((a.shape[1], a.shape[1]))), axis=1)))
         if method == "null_space":
             p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c)
         elif method == "schur":
@@ -1053,15 +1054,15 @@ class EnsembleSQP(EnsembleMethod):
         elif method == "iterative_cg":
             self._kkt_iterative_cg()
         else:  #method == "direct":
-            coeff = np.concatenate((np.concatenate((0.5 * g.x, a.x), axis=1),
-                                    np.concatenate((a.T.x, np.zeros((a.shape[1], a.shape[1]))), axis=1)))
+            coeff = np.concatenate((np.concatenate((0.5 * g.x, a.T.x), axis=1),
+                                    np.concatenate((a.x, np.zeros((a.shape[0], a.shape[0]))), axis=1)))
 
             rhs = np.concatenate((-1 * c.x, h.x))
             x = np.linalg.solve(coeff, rhs)
             x, lm = x[:self.pst.npar_adj], x[self.pst.npar_adj:]  # TODO: do by parnme
 
         search_d = Matrix(x=x, row_names=x_.T.row_names, col_names=self.phi_grad.col_names)
-        lagrang_mults = Matrix(x=lm, row_names=a.T.row_names, col_names=x_.T.col_names)
+        lagrang_mults = Matrix(x=lm, row_names=a.row_names, col_names=x_.T.col_names)
         search_d.to_ascii("search_d.{}.dat".format(self.iter_num))
         lagrang_mults.to_ascii("lagrang_mults.{}.dat".format(self.iter_num))
         return search_d, lagrang_mults
