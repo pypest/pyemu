@@ -973,17 +973,25 @@ class EnsembleSQP(EnsembleMethod):
         # first, solve for p_y (16.18)
         p_y = -1.0 * np.linalg.inv(self.constraint_jco[:, self.working_set.obsnme] * y) * constraint_diff
 
-        # now to solve linear system for p_z - via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
+        # now to solve linear system for p_z
+        # do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
         zTgz = z.T * hessian * z
         l = np.linalg.cholesky(zTgz)
         zTgy = z.T * hessian * y
         rhs = (-1.0 * zTgy * p_y) - (z.T * constraint_diff)
         yy = np.linalg.solve(l, rhs)  # TODO: should solve by forward substitution (triangular) for more speed-ups
+        l_ = l.H
+        p_z = np.linalg.solve(l_, yy)
 
+        # total step
+        p = (y * p_y) + (z * p_z)
 
+        # now to compute lagrangian multipliers
+        ayT = self.constraint_jco[:, self.working_set.obsnme] * y.T
+        rhs = y.T * (grad + (hessian * p))
+        lm = np.linalg.solve(ayT, rhs)
 
-
-        return x
+        return p, lm
 
     def _compute_orthog_basis_matrices(self,):
         # TODO: if A is sparse and large, QR will take a while..
@@ -1039,7 +1047,7 @@ class EnsembleSQP(EnsembleMethod):
         #coeff = np.concatenate((np.concatenate((g.x, - 1 * a.x), axis=1),
          #                       np.concatenate((a.T.x, np.zeros((a.shape[1], a.shape[1]))), axis=1)))
         if method == "null_space":
-            x = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c)
+            p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c)
         elif method == "schur":
             self._kkt_schur()
         elif method == "iterative_cg":
@@ -1050,9 +1058,10 @@ class EnsembleSQP(EnsembleMethod):
 
             rhs = np.concatenate((-1 * c.x, h.x))
             x = np.linalg.solve(coeff, rhs)
+            x, lm = x[:self.pst.npar_adj], x[self.pst.npar_adj:]  # TODO: do by parnme
 
-        search_d = Matrix(x=x[:self.pst.npar_adj], row_names=x_.T.row_names, col_names=self.phi_grad.col_names)
-        lagrang_mults = Matrix(x=x[self.pst.npar_adj:], row_names=a.T.row_names, col_names=x_.T.col_names)
+        search_d = Matrix(x=x, row_names=x_.T.row_names, col_names=self.phi_grad.col_names)
+        lagrang_mults = Matrix(x=lm, row_names=a.T.row_names, col_names=x_.T.col_names)
         search_d.to_ascii("search_d.{}.dat".format(self.iter_num))
         lagrang_mults.to_ascii("lagrang_mults.{}.dat".format(self.iter_num))
         return search_d, lagrang_mults
