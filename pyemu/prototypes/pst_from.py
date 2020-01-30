@@ -30,6 +30,7 @@ class PstFrom(object):
 
         self.par_dfs = []
         self.obs_dfs = []
+        self.mod_command = 'forward_run.py'
         self.pre_py_cmds = []
         self.pre_sys_cmds = []
         self.mod_sys_cmds = []
@@ -53,8 +54,8 @@ class PstFrom(object):
         self._setup_dirs()
         # TODO: build an essentially empty pest control file object here?
         # something that the add_parameters() methods can hook into later?
-        self.par_info = []
-        self.arr_pars = []
+        self.par_data = []
+        self.parfile_relations = []
         self.par_dfs = {'list_pars': [], 'array_pars': []}
         self.pst = None
 
@@ -174,16 +175,54 @@ class PstFrom(object):
             - overwriting anything already in self.pst object and
             anything already writen to `filename`
         """
-        # TODO: amend so that pst can be built from PstFrom components
-        self._init_pst(
-            tpl_files=self.tpl_filenames, in_files=self.input_filenames,
-            ins_files=self.ins_filenames, out_files=self.output_filenames)
-
+        
+        # parameter data from object
+        par_data = pd.concat(self.par_data)
+        # info relating parameter multiplier files to model input files
+        parfile_relations = pd.concat(self.parfile_relations,
+                                      ignore_index=True)
+        parfile_relations.to_csv(os.path.join(self.new_d, 
+                                              'mult2model_info.csv'))
         if filename is None:
             filename = os.path.join(self.new_d, self.original_d)
-        self.logger.statement("writing pst {0}".format(filename))
+        elif os.path.dirname(filename) in ['', '.']:
+            filename = os.path.join(self.new_d, filename)
+                
+        pst = pyemu.Pst(filename, load=False)
+        pst.parameter_data = par_data
 
+        
+        # TODO: temporalily borowed from pst_utils.generic_pst()
+        #  ----------------------------------------------------------------->
+        obs_data = pyemu.pst_utils._populate_dataframe(
+            [], pst.obs_fieldnames, pst.obs_defaults, pst.obs_dtype)
+        obs_data.loc[:, "obsnme"] = []
+        obs_data.index = []
+        obs_data.sort_index(inplace=True)
+        pst.observation_data = obs_data
+
+        pst.template_files = self.tpl_filenames
+        pst.input_files = [os.path.join(self.mult_file_d, f)
+                           for f in self.ins_filenames]
+        pst.instruction_files = self.ins_filenames
+        pst.output_files = self.output_filenames
+        pst.model_command = self.mod_command
+
+        pst.prior_information = pst.null_prior
+        self.pst = pst
+        # TODO <--------------------------------------------------------------
         self.pst.write(filename)
+        test = None
+        # TODO: amend so that pst can be built from PstFrom components
+        # self._init_pst(
+        #     tpl_files=self.tpl_filenames, in_files=self.input_filenames,
+        #     ins_files=self.ins_filenames, out_files=self.output_filenames)
+        # 
+        # if filename is None:
+        #     filename = os.path.join(self.new_d, self.original_d)
+        # self.logger.statement("writing pst {0}".format(filename))
+        # 
+        # self.pst.write(filename)
 
     def _setup_dirs(self):
         self.logger.log("setting up dirs")
@@ -368,6 +407,8 @@ class PstFrom(object):
         return index_cols, use_cols, file_dict
 
     def add_pars_from_template(self, tpl_filename, in_filename):
+        # TODO: modify so that method adds to PstFrom object parameter data?
+        #  Not pst
         """Method for adding parameters to Pest control file from pre-existing
         template, input file pairs
 
@@ -426,9 +467,10 @@ class PstFrom(object):
 
     def add_parameters(self, filenames, par_type, zone_array=None,
                        dist_type="gaussian", sigma_range=4.0,
-                       upper_bound=1.0e10, lower_bound=1.0e-10, transform="log",
-                       par_name_base="p", index_cols=None, use_cols=None,
-                       pp_space=10, num_eig_kl=100, spatial_reference=None):
+                       upper_bound=1.0e10, lower_bound=1.0e-10,
+                       transform="log", par_name_base="p", index_cols=None,
+                       use_cols=None, pp_space=10, num_eig_kl=100,
+                       spatial_reference=None):
         """Add list or array style model input files to PstFrom object.
         This method
 
@@ -462,8 +504,7 @@ class PstFrom(object):
         index_cols, use_cols, file_dict = self._par_prep(filenames, index_cols,
                                                          use_cols)
         # TODO need to make sure we can collate par_df to relate mults to model files...
-        par_info_cols = ["parnme", "pargp", "tpl_filename", "input_filename",
-                         "partrans", "parubnd", "parlbnd", "partype"]
+        par_info_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         if isinstance(par_name_base, str):
             par_name_base = [par_name_base]
 
@@ -539,13 +580,25 @@ class PstFrom(object):
                                    "should be in "
                                    "['constant','zone','grid','pilotpoints',"
                                    "'kl'")
-            # for mod_file in file_dict.keys():
-            #     self.arr_pars.append(pd.DataFrame({"org_file": org,
-            #                                        "mlt_file": mlt,
-            #                                        "model_file": mod,
-            #                                        "layer": layer})
             self.logger.log("writing array-based template file "
                             "'{0}'".format(tpl_filename))
+
+        # accumulate information that relates mult_files (set-up here and
+        # eventually filled by PEST) to actual model files so that actual
+        # model input file can be generated
+        relate_parfiles = []
+        for mod_file in file_dict.keys():
+            relate_parfiles.append(
+                {"org_file":
+                     os.path.join(self.original_file_d, mod_file),
+                 "mlt_file":
+                     os.path.join(self.mult_file_d, mlt_filename),
+                 "model_file": mod_file,
+                 "use_cols": use_cols,
+                 "index_cols": index_cols})
+        relate_pars_df = pd.DataFrame(relate_parfiles)
+        self.parfile_relations.append(relate_pars_df)
+
         df.loc[:, "partype"] = par_type
         df.loc[:, "partrans"] = transform
         df.loc[:, "parubnd"] = upper_bound
@@ -560,8 +613,11 @@ class PstFrom(object):
 
         # add pars to par_info list BH: is this what we want?
         # - BH: think we can get away with dropping duplicates?
+        missing = set(par_info_cols) - set(df.columns)
+        for field in missing:
+            df[field] = pyemu.pst_utils.pst_config['par_defaults'][field]
         df = df.loc[:, par_info_cols]
-        self.par_info.append(df.drop_duplicates())
+        self.par_data.append(df.drop_duplicates())
         # TODO workout where and how to store the mult -> model file info.
         # TODO workout how to get the mult to apply to the model files and
         #  mimic the model file formats!

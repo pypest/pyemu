@@ -71,6 +71,7 @@ def freyberg_test():
 
     print(pf.mult_files)
     print(pf.org_files)
+    pf.build_pst('freyberg.pst')
 
 
 # TODO different spatial reference tests
