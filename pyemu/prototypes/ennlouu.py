@@ -967,11 +967,13 @@ class EnsembleSQP(EnsembleMethod):
         # 1. Z^TGZ is pos def
         # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
         y, z = self._compute_orthog_basis_matrices(a=constraint_grad)
-        if not np.all(np.linalg.eigvals(z.as_2d) > 0):
-            self.logger.log("Z^TGZ not pos-def!")
+        zTgz = np.dot(z.T, (hessian * z).x)
+        if not np.all(np.linalg.eigvals(zTgz) > 0):
+                self.logger.log("Z^TGZ not pos-def!")
 
         # first, solve for p_y (16.18)
-        p_y = -1.0 * np.linalg.inv(self.constraint_jco[:, self.working_set.obsnme] * y) * constraint_diff
+        ay = constraint_grad * y
+        p_y = np.linalg.solve(ay.as_2d, -1.0 * constraint_diff.as_2d)
 
         # now to solve linear system for p_z
         # do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
@@ -1002,9 +1004,11 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.lraise("m > n - A cannot be this shape")  # catch before here
         if qr_mode is True:  # generalized form of (15.15) via QR decomp (see pg. 432)
             q, r = np.linalg.qr(a.T.x)
-            y, z = q, q[:, -(a.shape[1] - a.shape[0])]  # based on X, use full constraint grad matrix (not just active set).... which I don't understand...
+            y, z = q, q[:, -(a.shape[1] - a.shape[0]):] # based on X, use full constraint grad matrix (not just active set).... which I don't understand... #TODO: revisit step here. for small case, same vector spanning Y and Z..
         else:
-            self.logger.log("todo")  #TODO
+            self.logger.log("rref approach here")  #TODO
+
+        self.logger.log("check here that AZ = 0")  # TODO
 
         return y, z
 
