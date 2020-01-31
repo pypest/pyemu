@@ -5,7 +5,7 @@ from datetime import datetime
 import shutil
 import inspect
 import warnings
-
+import platform
 import numpy as np
 import pandas as pd
 import pyemu
@@ -255,16 +255,28 @@ class PstFrom(object):
 
         self.logger.log("setting up dirs")
 
-
-    def _par_prep(self,filenames,index_cols,use_cols):
+    def _par_prep(self, filenames, index_cols, use_cols, fmts=None, seps=None,
+                  skip_rows=None):
 
         # todo: cast str column names, index_cols and use_cols to lower if str?
         # todo: check that all index_cols and use_cols are the same type
         file_dict = {}
+        fmt_dict = {}
+        sep_dict = {}
+        skip_dict = {}
         if not isinstance(filenames,list):
             filenames = [filenames]
+        if fmts is None:
+            fmts = ['free' for f in filenames]
+        fmts = ['free' if fmt is None else fmt for fmt in fmts]
+        if seps is None:
+            seps = [None for f in filenames]
+        if skip_rows is None:
+            skip_rows = [None for f in filenames]
+        skip_rows = [0 if s is None else s for s in skip_rows]
         if index_cols is None and use_cols is not None:
-            self.logger.lraise("index_cols is None, but use_cols is not ({0})".format(str(use_cols)))
+            self.logger.lraise("index_cols is None, but use_cols is not ({0})"
+                               "".format(str(use_cols)))
 
         # load list type files
         if index_cols is not None:
@@ -277,7 +289,8 @@ class PstFrom(object):
                 # index_cols are column numbers in input file
                 header=None
             else:
-                self.logger.lraise("unrecognized type for index_cols, should be str or int, not {0}".
+                self.logger.lraise("unrecognized type for index_cols, "
+                                   "should be str or int, not {0}".
                                    format(str(type(index_cols[0]))))
             if use_cols is not None:
                 if not isinstance(use_cols,list):
@@ -287,13 +300,15 @@ class PstFrom(object):
                 elif isinstance(use_cols[0], int):
                     header = None
                 else:
-                    self.logger.lraise("unrecognized type for use_cols, should be str or int, not {0}".
+                    self.logger.lraise("unrecognized type for use_cols, "
+                                       "should be str or int, not {0}".
                                        format(str(type(use_cols[0]))))
 
                 itype = type(index_cols[0])
                 utype = type(use_cols[0])
                 if itype != utype:
-                    self.logger.lraise("index_cols type '{0} != use_cols type '{1}'".
+                    self.logger.lraise("index_cols type '{0} != use_cols "
+                                       "type '{1}'".
                                        format(str(itype),str(utype)))
 
                 si = set(index_cols)
@@ -301,21 +316,39 @@ class PstFrom(object):
 
                 i = si.intersection(su)
                 if len(i) > 0:
-                    self.logger.lraise("use_cols also listed in index_cols: {0}".format(str(i)))
+                    self.logger.lraise("use_cols also listed in "
+                                       "index_cols: {0}".format(str(i)))
 
-            for filename in filenames:
+            for filename, sep, fmt, skip in zip(filenames, seps, fmts,
+                                                skip_rows):
                 # looping over model input filenames
-                delim_whitespace = True
-                sep = ' '
-                if filename.lower().endswith(".csv"):
-                    delim_whitespace = False
-                    sep = ','
-                file_path = os.path.join(self.new_d, filename)
-                self.logger.log("loading list {0}".format(file_path))
-                if not os.path.exists(file_path):
-                    self.logger.lraise("par filename '{0}' not found ".format(file_path))
-                # read each input file
-                df = pd.read_csv(file_path,header=header,delim_whitespace=delim_whitespace)
+                # TODO: fmt and sep checksout against previous calls with filename
+                if fmt.lower() == 'free':
+                    if sep is None:
+                        delim_whitespace = True
+                        sep = ' '
+                        if filename.lower().endswith(".csv"):
+                            delim_whitespace = False
+                            sep = ','
+                    else:
+                        delim_whitespace = False
+                    file_path = os.path.join(self.new_d, filename)
+                    self.logger.log("loading list {0}".format(file_path))
+                    if not os.path.exists(file_path):
+                        self.logger.lraise("par filename '{0}' not found "
+                                           "".format(file_path))
+                    # read each input file
+                    if skip > 0:
+                        with open(file_path, 'r') as fp:
+                            storehead = [next(fp) for _ in range(skip)]
+                    else:
+                        storehead=[]
+                    df = pd.read_csv(file_path, header=header, skip_rows=skip,
+                                     delim_whitespace=delim_whitespace)
+                else:
+                    raise NotImplementedError("Only free format list "
+                                              "par files currently supported")
+
                 # ensure that column ids from index_col is in input file
                 missing = []
                 for index_col in index_cols:
@@ -343,10 +376,28 @@ class PstFrom(object):
                 #  files? -- probs not necessary for the version in
                 #  original_file_d - but for the eventual product model file,
                 #  it might be format sensitive - yuck
-                # write copy of input file to `org` (e.g.) dir
-                df.to_csv(os.path.join(self.original_file_d, filename),
-                          index=False, sep=sep, header=hheader)
+                # Update: I think the `original files` saved can always
+                # be comma delim --they are never directly used 
+                # as model inputs-- as long as we pass the required model 
+                # input file format (and sep), right?  
+                # write orig version of input file to `org` (e.g.) dir
+
+                if len(storehead) > 0:
+                    if "win" in platform.platform().lower():
+                        kwargs = {"line_terminator": "\n"}
+                    with open(os.path.join(
+                            self.original_file_d, filename, 'w')) as fp:
+                        fp.write('\n'.join(storehead))
+                        fp.flush()
+                        df.to_csv(fp, sep=sep, mode='a', header=hheader,
+                                  **kwargs)
+                else:
+                    df.to_csv(os.path.join(self.original_file_d, filename),
+                              index=False, sep=',', header=hheader)
                 file_dict[filename] = df
+                fmt_dict[filename] = fmt
+                sep_dict[filename] = sep
+                skip_dict[filename] = skip
                 self.logger.log("loading list {0}".format(file_path))
 
             # check for compatibility
@@ -364,21 +415,33 @@ class PstFrom(object):
         # load array type files
         else:
             # loop over model input files
-            for filename in filenames:
+            for filename, sep, fmt, skip in zip(filenames, seps, fmts, 
+                                                skip_rows):
+                if fmt.lower() == 'free':
+                    if filename.lower().endswith(".csv"):
+                        if sep is None:
+                            sep = ','
+                else:
+                    # TODO
+                    raise NotImplementedError("Only free format list "
+                                              "par files currently supported")
                 file_path = os.path.join(self.new_d, filename)
                 self.logger.log("loading array {0}".format(file_path))
                 if not os.path.exists(file_path):
                     self.logger.lraise("par filename '{0}' not found ".
                                        format(file_path))
                 # read array type input file # TODO: check this handles both whitespace and comma delim
-                arr = np.loadtxt(os.path.join(self.new_d, filename))
+                arr = np.loadtxt(os.path.join(self.new_d, filename), 
+                                 delimiter=sep)
                 self.logger.log("loading array {0}".format(file_path))
                 self.logger.statement("loaded array '{0}' of shape {1}".
                                       format(filename, arr.shape))
                 # save copy of input file to `org` dir
                 np.savetxt(os.path.join(self.original_file_d, filename), arr)
                 file_dict[filename] = arr
-
+                fmt_dict[filename] = fmt
+                sep_dict[filename] = sep
+                skip_dict[filename] = skip
             #check for compatibility
             fnames = list(file_dict.keys())
             for i in range(len(fnames)):
@@ -404,7 +467,7 @@ class PstFrom(object):
         #     self.mult_files.append(mult_file)
         #     self.org_files.append(os.path.join("org",filename))
 
-        return index_cols, use_cols, file_dict
+        return index_cols, use_cols, file_dict, fmt_dict, sep_dict, skip_dict
 
     def add_pars_from_template(self, tpl_filename, in_filename):
         # TODO: modify so that method adds to PstFrom object parameter data?
@@ -501,10 +564,11 @@ class PstFrom(object):
 
         self.logger.log("adding parameters for file(s) "
                         "{0}".format(str(filenames)))
-        index_cols, use_cols, file_dict = self._par_prep(filenames, index_cols,
+        (index_cols, use_cols, file_dict, 
+         fmt_dict, sep_dict, skip_dict) = self._par_prep(filenames, index_cols,
                                                          use_cols)
         # TODO need to make sure we can collate par_df to relate mults to model files...
-        par_info_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
+        par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         if isinstance(par_name_base, str):
             par_name_base = [par_name_base]
 
@@ -597,7 +661,10 @@ class PstFrom(object):
                     mlt_filename),
                  "model_file": mod_file,
                  "use_cols": use_cols,
-                 "index_cols": index_cols})
+                 "index_cols": index_cols,
+                 "fmt": fmt_dict[mod_file],
+                 "sep": sep_dict[mod_file],
+                 "head_rows": skip_dict[mod_file]})
         relate_pars_df = pd.DataFrame(relate_parfiles)
         self.parfile_relations.append(relate_pars_df)
 
@@ -613,12 +680,12 @@ class PstFrom(object):
             self.org_files.append(file_name)
             self.mult_files.append(mlt_filename)
 
-        # add pars to par_info list BH: is this what we want?
+        # add pars to par_data list BH: is this what we want?
         # - BH: think we can get away with dropping duplicates?
-        missing = set(par_info_cols) - set(df.columns)
+        missing = set(par_data_cols) - set(df.columns)
         for field in missing:
             df[field] = pyemu.pst_utils.pst_config['par_defaults'][field]
-        df = df.loc[:, par_info_cols]
+        df = df.loc[:, par_data_cols]
         self.par_data.append(df.drop_duplicates())
         # TODO workout where and how to store the mult -> model file info.
         # TODO workout how to get the mult to apply to the model files and
@@ -898,7 +965,8 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
     if get_xy is not None:
         df.loc[:, 'x'] = xx
         df.loc[:, 'y'] = yy
-    df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix.replace('_', ''))
+    df.loc[:, "pargp"] = "{0}_{1}".format(
+        name, suffix.replace('_', '')).rstrip('_')
     df.loc[:, "tpl_filename"] = tpl_filename
     df.loc[:, "input_filename"] = input_filename
     if input_filename is not None:

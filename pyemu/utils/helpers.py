@@ -14,6 +14,7 @@ import copy
 import numpy as np
 import pandas as pd
 import time
+from ast import literal_eval
 pd.options.display.max_colwidth = 100
 from ..pyemu_warnings import PyemuWarning
 try:
@@ -2953,6 +2954,20 @@ class PstFromFlopyModel(object):
             self.logger.statement("forward_run line:{0}".format(line))
             self.frun_post_lines.append(line)
 
+
+def apply_list_and_array_pars(arr_par_file="mult2model_info.csv"):
+    """
+
+    Returns:
+
+    """
+    df = pd.read_csv(arr_par_file, index_col=0)
+    arr_par_sel = df.index_cols.isna()
+    list_par_sel = df.index_cols.notna()
+    apply_genericlist_pars(df.loc[list_par_sel])
+    apply_array_pars(df.loc[arr_par_sel])
+    
+    
 def _process_chunk_fac2real(chunk):
     for args in chunk:
         pyemu.geostats.fac2real(**args)
@@ -2997,12 +3012,17 @@ def _process_model_file(model_file,df):
 
     np.savetxt(model_file,np.atleast_2d(org_arr),fmt="%15.6E",delimiter='')
 
-def apply_array_pars(arr_par_file="arr_pars.csv"):
+
+def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
     """ a function to apply array-based multipler parameters.
 
     Args:
-        arr_par_file (`str`): path to csv file detailing parameter array multipliers.
-            This file is written by PstFromFlopy.
+        arr_par (`str` or `pandas.DataFrame`): if type `str`, 
+        path to csv file detailing parameter array multipliers.
+            This file can be written by PstFromFlopy.
+        if type `pandas.DataFrame` is Dataframe with columns of 
+        ['mlt_file', 'model_file', 'org_file'] and optionally 
+        ['pp_file', 'fac_file'].
 
     Note:
         Used to implement the parameterization constructed by
@@ -3018,7 +3038,19 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
         freeze support and main thread handling.
 
     """
-    df = pd.read_csv(arr_par_file,index_col=0)
+    if arr_par_file is not None:
+        warnings.warn("`arr_par_file` is deprecated and replaced by arr_par. "
+                      "Method now support passing df as arr_par arg.", 
+                      PyemuWarning)
+        arr_par = arr_par_file
+    if isinstance(arr_par, str):
+        df = pd.read_csv(arr_par, index_col=0)
+    elif isinstance(arr_par, pd.DataFrame):
+        df = arr_par
+    else:
+        raise TypeError("`arr_par` argument must be filename string or "
+                        "Pandas DataFrame, "
+                        "type {0} passed".format(type(arr_par)))
     # for fname in df.model_file:
     #     try:
     #         os.remove(fname)
@@ -3174,6 +3206,139 @@ def apply_list_pars():
                     fmts += " %9G"
         np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts)
 
+
+def apply_genericlist_pars(df):
+    """ a function to apply list style mult parameters
+
+    Note:
+        Used to implement the parameterization constructed by
+        PstFrom during a forward run
+
+        Should be added to the forward_run.py script
+
+
+    """
+    uniq = df.model_file.unique()
+    for model_file in uniq:
+        df_mf = df.loc[df.model_file == model_file, :]
+        # read data stored in org (mults act on this)
+        org_file = df_mf.org_file.unique()
+        if org_file.shape[0] != 1:
+            raise Exception("wrong number of org_files for {0}".
+                            format(model_file))
+        org_file = org_file[0]
+        fmt = df_mf.fmt.values[0]
+        sep = df_mf.sep.values[0]
+        datastrtrow = df_mf.head_rows.values[0]  # TODO write header to orig
+        if fmt.lower() == 'free' and sep == ' ':
+            delim_whitespace = True
+        if datastrtrow > 0:
+            with open(org_file, 'r') as fp:
+                storehead = [next(fp) for _ in range(datastrtrow)]
+        else:
+            storehead = []
+        # work out if headers are used for index_cols
+        index_cols = literal_eval(df_mf.index_cols.values[0])
+        if isinstance(index_cols, str):
+            # index_cols can be from header str
+            header = 0
+        elif isinstance(index_cols[0], int):
+            # index_cols are column numbers in input file
+            header = None
+        # if writen by PstFrom this should always be comma delim - tidy
+        org_data = pd.read_csv(org_file[0], skiprows=datastrtrow, 
+                               header=header)
+        np.savetxt(os.path.join(model_ext_path, fname),
+                   df_list.loc[:, names].values, fmt=fmts)
+
+    temp_file = "temporal_list_pars.dat"
+    spat_file = "spatial_list_pars.dat"
+
+    temp_df,spat_df = None,None
+    if os.path.exists(temp_file):
+        temp_df = pd.read_csv(temp_file, delim_whitespace=True)
+        temp_df.loc[:,"split_filename"] = temp_df.filename.apply(lambda x: os.path.split(x)[-1])
+        org_dir = temp_df.list_org.iloc[0]
+        model_ext_path = temp_df.model_ext_path.iloc[0]
+    if os.path.exists(spat_file):
+        spat_df = pd.read_csv(spat_file, delim_whitespace=True)
+        spat_df.loc[:,"split_filename"] = spat_df.filename.apply(lambda x: os.path.split(x)[-1])
+        mlt_dir = spat_df.list_mlt.iloc[0]
+        org_dir = spat_df.list_org.iloc[0]
+        model_ext_path = spat_df.model_ext_path.iloc[0]
+    if temp_df is None and spat_df is None:
+        raise Exception("apply_list_pars() - no key dfs found, nothing to do...")
+    # load the spatial mult dfs
+    sp_mlts = {}
+    if spat_df is not None:
+
+        for f in os.listdir(mlt_dir):
+            pak = f.split(".")[0].lower()
+            df = pd.read_csv(os.path.join(mlt_dir,f),index_col=0, delim_whitespace=True)
+            #if pak != 'hfb6':
+            df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
+            # else:
+            #     df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
+            #                                                                      x.irow2, x.icol2), axis = 1)
+            if pak in sp_mlts.keys():
+                raise Exception("duplicate multiplier csv for pak {0}".format(pak))
+            if df.shape[0] == 0:
+                raise Exception("empty dataframe for spatial list file: {0}".format(f))
+            sp_mlts[pak] = df
+
+    org_files = os.listdir(org_dir)
+    #for fname in df.filename.unique():
+    for fname in org_files:
+        # need to get the PAK name to handle stupid horrible expceptions for HFB...
+        # try:
+        #     pakspat = sum([True if fname in i else False for i in spat_df.filename])
+        #     if pakspat:
+        #         pak = spat_df.loc[spat_df.filename.str.contains(fname)].pak.values[0]
+        #     else:
+        #         pak = 'notHFB'
+        # except:
+        #     pak = "notHFB"
+
+        names = None
+        if temp_df is not None and fname in temp_df.split_filename.values:
+            temp_df_fname = temp_df.loc[temp_df.split_filename==fname,:]
+            if temp_df_fname.shape[0] > 0:
+                names = temp_df_fname.dtype_names.iloc[0].split(',')
+        if spat_df is not None and fname in spat_df.split_filename.values:
+            spat_df_fname = spat_df.loc[spat_df.split_filename == fname, :]
+            if spat_df_fname.shape[0] > 0:
+                names = spat_df_fname.dtype_names.iloc[0].split(',')
+        if names is not None:
+
+            df_list = pd.read_csv(os.path.join(org_dir, fname),
+                                  delim_whitespace=True, header=None, names=names)
+            df_list.loc[:, "idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k-1, x.i-1, x.j-1), axis=1)
+
+
+            df_list.index = df_list.idx
+            pak_name = fname.split('_')[0].lower()
+            if pak_name in sp_mlts:
+                mlt_df = sp_mlts[pak_name]
+                mlt_df_ri = mlt_df.reindex(df_list.index)
+                for col in df_list.columns:
+                    if col in ["k","i","j","inode",'irow1','icol1','irow2','icol2','idx']:
+                        continue
+                    if col in mlt_df.columns:
+                       # print(mlt_df.loc[mlt_df.index.duplicated(),:])
+                       # print(df_list.loc[df_list.index.duplicated(),:])
+                        df_list.loc[:,col] *= mlt_df_ri.loc[:,col].values
+
+            if temp_df is not None and fname in temp_df.split_filename.values:
+                temp_df_fname = temp_df.loc[temp_df.split_filename == fname, :]
+                for col,val in zip(temp_df_fname.col,temp_df_fname.val):
+                     df_list.loc[:,col] *= val
+            fmts = ''
+            for name in names:
+                if name in ["i","j","k","inode",'irow1','icol1','irow2','icol2']:
+                    fmts += " %9d"
+                else:
+                    fmts += " %9G"
+        np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts)
 
 
 def write_const_tpl(name, tpl_file, suffix, zn_array=None,
