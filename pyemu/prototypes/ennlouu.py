@@ -980,7 +980,7 @@ class EnsembleSQP(EnsembleMethod):
         try:
             l = np.linalg.cholesky(zTgz)
             zTgy = np.dot(z.T, (hessian * y).x)
-            rhs = (-1.0 * zTgy * p_y) - np.dot(z.T, grad.x)
+            rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(z.T, grad.x)
             yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
             l_ = l.conj()  # TODO: check math here
             p_z = np.linalg.solve(l_, yy)
