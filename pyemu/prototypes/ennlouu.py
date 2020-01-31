@@ -1078,9 +1078,9 @@ class EnsembleSQP(EnsembleMethod):
 
             rhs = np.concatenate((-1 * c.x, h.x))
             x = np.linalg.solve(coeff, rhs)
-            x, lm = x[:self.pst.npar_adj], x[self.pst.npar_adj:]  # TODO: do by parnme
+            p, lm = x[:self.pst.npar_adj], x[self.pst.npar_adj:]  # TODO: do by parnme
 
-        search_d = Matrix(x=x, row_names=x_.T.row_names, col_names=self.phi_grad.col_names)
+        search_d = Matrix(x=p, row_names=x_.T.row_names, col_names=self.phi_grad.col_names)
         lagrang_mults = Matrix(x=lm, row_names=a.row_names, col_names=x_.T.col_names)
         search_d.to_ascii("search_d.{}.dat".format(self.iter_num))
         lagrang_mults.to_ascii("lagrang_mults.{}.dat".format(self.iter_num))
