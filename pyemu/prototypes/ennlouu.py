@@ -996,7 +996,7 @@ class EnsembleSQP(EnsembleMethod):
 
         return p, lm
 
-    def _compute_orthog_basis_matrices(self, a, qr_mode=True):
+    def _compute_orthog_basis_matrices(self, a, qr_mode=False):
         '''
         if A is sparse and large, QR will take a while..
         '''
@@ -1005,17 +1005,22 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.lraise("m > n - A cannot be this shape")  # catch before here
         if qr_mode is True:  # generalized form of (15.15) via QR decomp (see pg. 432)
             q, r = np.linalg.qr(a.T.x)
-            y, z = q, q[:, -(a.shape[1] - a.shape[0]):] # based on X, use full constraint grad matrix (not just active set).... which I don't understand...
-            # TODO: revisit step here. for small case, same vector spanning Y and Z..
+            y, z = q, q[:, -(a.shape[1] - a.shape[0]):]
+            # TODO: revisit the partitioning here. for small case, same vector spanning Y and Z.. also, based on https://www.mathworks.com/help/optim/ug/constrained-nonlinear-optimization-algorithms.html#brnox01, use full constraint grad matrix (not just active set).... which I don't understand...
         else:
-            self.logger.log("rref approach here")  #TODO
+            z = self._null_space(self, a)
+            # TODO: y via RREF - via solve
 
+
+        # check in line with definitions
         if np.isclose((a * z).x, 0.0, rtol=1e-2, atol=1e-3):
-            self.logger.lraise("null-space basis violates definition AZ = 0")
+            self.logger.lraise("null-space basis violates definition AZ = 0.. spewin..")
+        # TODO: also check here that [Y|Z] is non-sing
+        yz = np.append(y, z, axis=1)
 
         return y, z
 
-    def _svd(self, a):
+    def _null_space(self, a):
         u, s, v = np.linalg.svd(a, full_matrices=True)
         rcond = np.finfo(s.dtype).eps * max(u.shape[0], v.shape[1])
         tol = np.amax(s) * rcond
