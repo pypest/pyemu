@@ -977,21 +977,22 @@ class EnsembleSQP(EnsembleMethod):
 
         # now to solve linear system for p_z
         # do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
-        zTgz = z.T * hessian * z
-        l = np.linalg.cholesky(zTgz)
-        zTgy = z.T * hessian * y
-        rhs = (-1.0 * zTgy * p_y) - (z.T * constraint_diff)
-        yy = np.linalg.solve(l, rhs)  # TODO: should solve by forward substitution (triangular) for more speed-ups
-        l_ = l.H
-        p_z = np.linalg.solve(l_, yy)
+        try:
+            l = np.linalg.cholesky(zTgz)
+            zTgy = np.dot(z.T, (hessian * y).x)
+            rhs = (-1.0 * zTgy * p_y) - np.dot(z.T, grad.x)
+            yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
+            l_ = l.conj()  # TODO: check math here
+            p_z = np.linalg.solve(l_, yy)
+        except LinAlgError:
+            self.logger.lraise("Z^TGZ is not pos-def..")  # should have been caught above
 
         # total step
         p = (y * p_y) + (z * p_z)
 
         # now to compute lagrangian multipliers
-        ayT = self.constraint_jco[:, self.working_set.obsnme] * y.T
-        rhs = y.T * (grad + (hessian * p))
-        lm = np.linalg.solve(ayT, rhs)
+        rhs = np.dot(y.T, (grad.x + (hessian * p).x))
+        lm = np.linalg.solve(ay.T.x, rhs)
 
         return p, lm
 
@@ -1004,7 +1005,8 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.lraise("m > n - A cannot be this shape")  # catch before here
         if qr_mode is True:  # generalized form of (15.15) via QR decomp (see pg. 432)
             q, r = np.linalg.qr(a.T.x)
-            y, z = q, q[:, -(a.shape[1] - a.shape[0]):] # based on X, use full constraint grad matrix (not just active set).... which I don't understand... #TODO: revisit step here. for small case, same vector spanning Y and Z..
+            y, z = q, q[:, -(a.shape[1] - a.shape[0]):] # based on X, use full constraint grad matrix (not just active set).... which I don't understand...
+            # TODO: revisit step here. for small case, same vector spanning Y and Z..
         else:
             self.logger.log("rref approach here")  #TODO
 
