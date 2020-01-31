@@ -988,7 +988,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.lraise("Z^TGZ is not pos-def..")  # should have been caught above
 
         # total step
-        p = (y * p_y) + (z * p_z)
+        p = np.dot(y, p_y) + np.dot(z, p_z)
 
         # now to compute lagrangian multipliers
         rhs = np.dot(y.T, (grad.x + (hessian * p).x))
@@ -1010,7 +1010,8 @@ class EnsembleSQP(EnsembleMethod):
         else:
             self.logger.log("rref approach here")  #TODO
 
-        self.logger.log("check here that AZ = 0")  # TODO
+        if np.isclose((a * z).x, 0.0, rtol=1e-2, atol=1e-3):
+            self.logger.lraise("null-space basis violates definition AZ = 0")
 
         return y, z
 
