@@ -965,7 +965,7 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("check a_i in Wk are linearly indep; A has full rank")
 
         # 1. Z^TGZ is pos def
-        # first, must compute ``null-space basis matrix'' Z (i.e., cols of which are null-space of A); see pgs. 430-432 and 457
+        # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
         y, z = self._compute_orthog_basis_matrices(a=constraint_grad)
         if not np.all(np.linalg.eigvals(z.as_2d) > 0):
             self.logger.log("Z^TGZ not pos-def!")
@@ -993,15 +993,29 @@ class EnsembleSQP(EnsembleMethod):
 
         return p, lm
 
-    def _compute_orthog_basis_matrices(self, a):
-        if a.shape[0] > a.shape[1]:
-            self.logger.lraise("n > m - A cannot be this shape")  # catch before here
-        # TODO: if A is sparse and large, QR will take a while..
-        # TODO: therefore implement rref option here too
-        # use generalized form (of 15.15) via QR decomp (see pg. 432)
-        q, r = np.linalg.qr(self.constraint_jco.df().loc[:, self.working_set.obsnme].values.T)
-        y, z = q, q[:, len(self.working_set.obsnme) + 1:]
+    def _compute_orthog_basis_matrices(self, a, qr_mode=True):
+        '''
+        if A is sparse and large, QR will take a while..
+        '''
+        M, N = a.shape[0], a.shape[1]
+        if M > N:
+            self.logger.lraise("m > n - A cannot be this shape")  # catch before here
+        if qr_mode is True:  # generalized form of (15.15) via QR decomp (see pg. 432)
+            q, r = np.linalg.qr(a.T.x)
+            y, z = q, q[:, -(a.shape[1] - a.shape[0])]  # based on X, use full constraint grad matrix (not just active set).... which I don't understand...
+        else:
+            self.logger.log("todo")  #TODO
+
         return y, z
+
+    def _svd(self, a):
+        u, s, v = np.linalg.svd(a, full_matrices=True)
+        rcond = np.finfo(s.dtype).eps * max(u.shape[0], v.shape[1])
+        tol = np.amax(s) * rcond
+        num = np.sum(s > tol, dtype=int)
+        z = v[num:, :].T.conj()
+
+        return z
 
     def _kkt_schur(self,):
         self.logger.lraise("not implemented...")
@@ -1009,7 +1023,7 @@ class EnsembleSQP(EnsembleMethod):
     def _kkt_iterative_cg(self,):
         self.logger.lraise("not implemented...")
 
-    def _solve_eqp(self,method="direct"):#null_space"):
+    def _solve_eqp(self,method="null_space"):
         '''
         Direct QP (KKT system) solve method herein---assuming convexity (pos-def-ness) and that A has full-row-rank.
         Direct method here is just for demonstrative purposes---will require the other methods offered here given that
@@ -1029,7 +1043,6 @@ class EnsembleSQP(EnsembleMethod):
         a = self.constraint_jco.df().drop(self.not_in_working_set.obsnme, axis=1)  # pertains to active constraints only
         a = Matrix(x=a, row_names=a.index, col_names=a.columns).T  # note transpose
         assert a.shape[0] == len(self.working_set)
-        # TODO: check A shape and row rank here
 
         x_ = self.parensemble_mean
         #x_.col_names = ['cross-cov']  # hack
@@ -1068,6 +1081,7 @@ class EnsembleSQP(EnsembleMethod):
         return search_d, lagrang_mults
 
     def _compute_alpha_constrained(self,):
+        # TODO: re-do A dim - for consistency with above only
         p = self.search_d
         a_ = self.constraint_jco.df().drop(self.working_set.obsnme, axis=1)  # pertains to inactive constraints only
         a_ = Matrix(x=a_, row_names=a_.index, col_names=a_.columns)
