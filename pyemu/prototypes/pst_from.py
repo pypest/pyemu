@@ -181,6 +181,17 @@ class PstFrom(object):
         # info relating parameter multiplier files to model input files
         parfile_relations = pd.concat(self.parfile_relations,
                                       ignore_index=True)
+        # quick checker
+        for name, g in parfile_relations.groupby('model_file'):
+            if g.sep.nunique() > 0:
+                self.logger.warn(
+                    "seperator mismatch for {0}, seps passed {1}"
+                    "".format(name, [s for s in g.sep.unique()]))
+            if g.fmt.nunique() > 0:
+                self.logger.warn(
+                    "format mismatch for {0}, fmt passed {1}"
+                    "".format(name, [f for f in g.fmt.unique()]))
+        parfile_relations['zero_based'] = self.zero_based
         parfile_relations.to_csv(os.path.join(self.new_d,
                                               'mult2model_info.csv'))
         if filename is None:
@@ -264,8 +275,14 @@ class PstFrom(object):
         fmt_dict = {}
         sep_dict = {}
         skip_dict = {}
-        if not isinstance(filenames,list):
+        if not isinstance(filenames, list):
             filenames = [filenames]
+        if not isinstance(fmts, list):
+            fmts = [fmts]
+        if not isinstance(seps, list):
+            seps = [seps]
+        if not isinstance(skip_rows, list):
+            skip_rows = [skip_rows]
         if fmts is None:
             fmts = ['free' for f in filenames]
         fmts = ['free' if fmt is None else fmt for fmt in fmts]
@@ -343,7 +360,7 @@ class PstFrom(object):
                             storehead = [next(fp) for _ in range(skip)]
                     else:
                         storehead=[]
-                    df = pd.read_csv(file_path, header=header, skip_rows=skip,
+                    df = pd.read_csv(file_path, header=header, skiprows=skip,
                                      delim_whitespace=delim_whitespace)
                 else:
                     raise NotImplementedError("Only free format list "
@@ -382,14 +399,14 @@ class PstFrom(object):
                 # input file format (and sep), right?  
                 # write orig version of input file to `org` (e.g.) dir
 
-                if len(storehead) > 0:
+                if len(storehead) != 0:
                     if "win" in platform.platform().lower():
                         kwargs = {"line_terminator": "\n"}
                     with open(os.path.join(
                             self.original_file_d, filename, 'w')) as fp:
                         fp.write('\n'.join(storehead))
                         fp.flush()
-                        df.to_csv(fp, sep=sep, mode='a', header=hheader,
+                        df.to_csv(fp, sep=',', mode='a', header=hheader,
                                   **kwargs)
                 else:
                     df.to_csv(os.path.join(self.original_file_d, filename),
@@ -423,7 +440,7 @@ class PstFrom(object):
                             sep = ','
                 else:
                     # TODO
-                    raise NotImplementedError("Only free format list "
+                    raise NotImplementedError("Only free format array "
                                               "par files currently supported")
                 file_path = os.path.join(self.new_d, filename)
                 self.logger.log("loading array {0}".format(file_path))
@@ -449,9 +466,9 @@ class PstFrom(object):
                     if file_dict[fnames[i]].shape != file_dict[fnames[j]].shape:
                         self.logger.lraise(
                             "shape mismatch for array types, '{0}' "
-                            "shape {1} != '{2}' shape {3}".
-                                format(fnames[i],file_dict[fnames[i]].shape,
-                                       fnames[j],file_dict[fnames[j]].shape))
+                            "shape {1} != '{2}' shape {3}"
+                            "".format(fnames[i],file_dict[fnames[i]].shape,
+                                      fnames[j],file_dict[fnames[j]].shape))
 
         # if tpl_filename is None:
         #     tpl_filename = os.path.split(filenames[0])[-1] + "{0}.tpl".\
@@ -533,7 +550,7 @@ class PstFrom(object):
                        upper_bound=1.0e10, lower_bound=1.0e-10,
                        transform="log", par_name_base="p", index_cols=None,
                        use_cols=None, pp_space=10, num_eig_kl=100,
-                       spatial_reference=None):
+                       spatial_reference=None, mfile_fmt='free'):
         """Add list or array style model input files to PstFrom object.
         This method
 
@@ -566,7 +583,8 @@ class PstFrom(object):
                         "{0}".format(str(filenames)))
         (index_cols, use_cols, file_dict, 
          fmt_dict, sep_dict, skip_dict) = self._par_prep(filenames, index_cols,
-                                                         use_cols)
+                                                         use_cols,
+                                                         fmts=mfile_fmt)
         # TODO need to make sure we can collate par_df to relate mults to model files...
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         if isinstance(par_name_base, str):

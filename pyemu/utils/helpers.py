@@ -2962,10 +2962,14 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv"):
 
     """
     df = pd.read_csv(arr_par_file, index_col=0)
-    arr_par_sel = df.index_cols.isna()
-    list_par_sel = df.index_cols.notna()
-    apply_genericlist_pars(df.loc[list_par_sel])
-    apply_array_pars(df.loc[arr_par_sel])
+    arr_pars = df.loc[df.index_cols.isna()].copy()
+    list_pars = df.loc[df.index_cols.notna()].copy()
+    list_pars['index_cols'] = list_pars.index_cols.apply(
+        lambda x: literal_eval(x))
+    list_pars['use_cols'] = list_pars.use_cols.apply(
+        lambda x: literal_eval(x))  # TODO check use_cols is always present
+    apply_genericlist_pars(list_pars)
+    apply_array_pars(arr_pars)
     
     
 def _process_chunk_fac2real(chunk):
@@ -3220,16 +3224,16 @@ def apply_genericlist_pars(df):
     """
     uniq = df.model_file.unique()
     for model_file in uniq:
-        df_mf = df.loc[df.model_file == model_file, :]
+        df_mf = df.loc[df.model_file == model_file, :].copy()
         # read data stored in org (mults act on this)
         org_file = df_mf.org_file.unique()
         if org_file.shape[0] != 1:
             raise Exception("wrong number of org_files for {0}".
                             format(model_file))
         org_file = org_file[0]
-        fmt = df_mf.fmt.values[0]
-        sep = df_mf.sep.values[0]
-        datastrtrow = df_mf.head_rows.values[0]  # TODO write header to orig
+        fmt = df_mf.fmt.values[-1]
+        sep = df_mf.sep.values[-1]
+        datastrtrow = df_mf.head_rows.values[-1]  # TODO write header to orig
         if fmt.lower() == 'free' and sep == ' ':
             delim_whitespace = True
         if datastrtrow > 0:
@@ -3238,107 +3242,53 @@ def apply_genericlist_pars(df):
         else:
             storehead = []
         # work out if headers are used for index_cols
-        index_cols = literal_eval(df_mf.index_cols.values[0])
-        if isinstance(index_cols, str):
+        index_col_eg = df_mf.index_cols.iloc[-1][0]
+        if isinstance(index_col_eg, str):
+            # TODO: add test for model file with headers
             # index_cols can be from header str
             header = 0
-        elif isinstance(index_cols[0], int):
+            hheader=True
+        elif isinstance(index_col_eg, int):
             # index_cols are column numbers in input file
             header = None
+            hheader = None
+            # actually do need index cols to be list of strings
+            # to be compatible when the saved original file is read in.
+            df_mf.loc[:, 'index_cols'] = df_mf.index_cols.apply(
+                lambda x: [str(i) for i in x])
         # if writen by PstFrom this should always be comma delim - tidy
-        org_data = pd.read_csv(org_file[0], skiprows=datastrtrow, 
+        org_data = pd.read_csv(org_file, skiprows=datastrtrow,
                                header=header)
-        np.savetxt(os.path.join(model_ext_path, fname),
-                   df_list.loc[:, names].values, fmt=fmts)
-
-    temp_file = "temporal_list_pars.dat"
-    spat_file = "spatial_list_pars.dat"
-
-    temp_df,spat_df = None,None
-    if os.path.exists(temp_file):
-        temp_df = pd.read_csv(temp_file, delim_whitespace=True)
-        temp_df.loc[:,"split_filename"] = temp_df.filename.apply(lambda x: os.path.split(x)[-1])
-        org_dir = temp_df.list_org.iloc[0]
-        model_ext_path = temp_df.model_ext_path.iloc[0]
-    if os.path.exists(spat_file):
-        spat_df = pd.read_csv(spat_file, delim_whitespace=True)
-        spat_df.loc[:,"split_filename"] = spat_df.filename.apply(lambda x: os.path.split(x)[-1])
-        mlt_dir = spat_df.list_mlt.iloc[0]
-        org_dir = spat_df.list_org.iloc[0]
-        model_ext_path = spat_df.model_ext_path.iloc[0]
-    if temp_df is None and spat_df is None:
-        raise Exception("apply_list_pars() - no key dfs found, nothing to do...")
-    # load the spatial mult dfs
-    sp_mlts = {}
-    if spat_df is not None:
-
-        for f in os.listdir(mlt_dir):
-            pak = f.split(".")[0].lower()
-            df = pd.read_csv(os.path.join(mlt_dir,f),index_col=0, delim_whitespace=True)
-            #if pak != 'hfb6':
-            df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
-            # else:
-            #     df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
-            #                                                                      x.irow2, x.icol2), axis = 1)
-            if pak in sp_mlts.keys():
-                raise Exception("duplicate multiplier csv for pak {0}".format(pak))
-            if df.shape[0] == 0:
-                raise Exception("empty dataframe for spatial list file: {0}".format(f))
-            sp_mlts[pak] = df
-
-    org_files = os.listdir(org_dir)
-    #for fname in df.filename.unique():
-    for fname in org_files:
-        # need to get the PAK name to handle stupid horrible expceptions for HFB...
-        # try:
-        #     pakspat = sum([True if fname in i else False for i in spat_df.filename])
-        #     if pakspat:
-        #         pak = spat_df.loc[spat_df.filename.str.contains(fname)].pak.values[0]
-        #     else:
-        #         pak = 'notHFB'
-        # except:
-        #     pak = "notHFB"
-
-        names = None
-        if temp_df is not None and fname in temp_df.split_filename.values:
-            temp_df_fname = temp_df.loc[temp_df.split_filename==fname,:]
-            if temp_df_fname.shape[0] > 0:
-                names = temp_df_fname.dtype_names.iloc[0].split(',')
-        if spat_df is not None and fname in spat_df.split_filename.values:
-            spat_df_fname = spat_df.loc[spat_df.split_filename == fname, :]
-            if spat_df_fname.shape[0] > 0:
-                names = spat_df_fname.dtype_names.iloc[0].split(',')
-        if names is not None:
-
-            df_list = pd.read_csv(os.path.join(org_dir, fname),
-                                  delim_whitespace=True, header=None, names=names)
-            df_list.loc[:, "idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k-1, x.i-1, x.j-1), axis=1)
-
-
-            df_list.index = df_list.idx
-            pak_name = fname.split('_')[0].lower()
-            if pak_name in sp_mlts:
-                mlt_df = sp_mlts[pak_name]
-                mlt_df_ri = mlt_df.reindex(df_list.index)
-                for col in df_list.columns:
-                    if col in ["k","i","j","inode",'irow1','icol1','irow2','icol2','idx']:
-                        continue
-                    if col in mlt_df.columns:
-                       # print(mlt_df.loc[mlt_df.index.duplicated(),:])
-                       # print(df_list.loc[df_list.index.duplicated(),:])
-                        df_list.loc[:,col] *= mlt_df_ri.loc[:,col].values
-
-            if temp_df is not None and fname in temp_df.split_filename.values:
-                temp_df_fname = temp_df.loc[temp_df.split_filename == fname, :]
-                for col,val in zip(temp_df_fname.col,temp_df_fname.val):
-                     df_list.loc[:,col] *= val
-            fmts = ''
-            for name in names:
-                if name in ["i","j","k","inode",'irow1','icol1','irow2','icol2']:
-                    fmts += " %9d"
-                else:
-                    fmts += " %9G"
-        np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts)
+        # mult columns will be string type, so to make sure they align
+        org_data.columns = org_data.columns.astype(str)
+        new_df = org_data.copy()
+        for mlt in df_mf.itertuples():
+            new_df = new_df.set_index(mlt.index_cols)
+            mlts = pd.read_csv(mlt.mlt_file)
+            # get mult index to align with org_data,
+            # mult idxs will always be written zero based
+            # if original model files is not zero based need to add 1
+            add1 = int(mlt.zero_based == False)
+            mlts.index = pd.MultiIndex.from_tuples(mlts.sidx.apply(
+                lambda x: tuple(add1+np.array(literal_eval(x)))),
+                names=mlt.index_cols)
+            mlt_cols = [str(col) for col in mlt.use_cols]
+            new_df.loc[:, mlt_cols] = (new_df.loc[:, mlt_cols] *
+                                       mlts.loc[:, mlt_cols])
+            new_df = new_df.reset_index()
+        with open(model_file, 'w') as fo:
+            if "win" in platform.platform().lower():
+                kwargs = {"line_terminator": "\n"}
+            if len(storehead) != 0:
+                fo.write('\n'.join(storehead))
+                fo.flush()
+            if fmt.lower() == 'free':
+                new_df.to_csv(fo, index=False, mode='a',
+                              sep=sep, header=hheader,
+                              **kwargs)
+            else:
+                # TODO add test for formatter file type
+                np.savetxt(fo, new_df.values, fmt=fmt)
 
 
 def write_const_tpl(name, tpl_file, suffix, zn_array=None,

@@ -77,6 +77,9 @@ def freyberg_test():
     os.chdir("..")
 
 # TODO different spatial reference tests
+# TODO: add test for model file with headers
+# TODO add test for formatted file type
+
 
 if __name__ == "__main__":
     freyberg_test()
