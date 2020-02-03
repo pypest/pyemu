@@ -948,7 +948,7 @@ class EnsembleSQP(EnsembleMethod):
             return alpha, goto_next_it
 
 
-    def _kkt_null_space(self,hessian, constraint_grad, constraint_diff, grad):
+    def _kkt_null_space(self,hessian, constraint_grad, constraint_diff, grad, cholesky=False):
         '''
         see pg. 457 of Nocedal and Wright (2006)
 
@@ -978,12 +978,15 @@ class EnsembleSQP(EnsembleMethod):
         # now to solve linear system for p_z
         # do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
         try:
-            l = np.linalg.cholesky(zTgz)
             zTgy = np.dot(z.T, (hessian * y).x)
             rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(z.T, grad.x)
-            yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
-            l_ = l.conj()  # TODO: check math here
-            p_z = np.linalg.solve(l_, yy)
+            if cholesky:
+                l = np.linalg.cholesky(zTgz)
+                yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
+                l_ = l.conj()  # TODO: check math here
+                p_z = np.linalg.solve(l_, yy)
+            else:
+                p_z = np.linalg.solve(zTgz, rhs)
         except LinAlgError:
             self.logger.lraise("Z^TGZ is not pos-def..")  # should have been caught above
 
