@@ -2967,7 +2967,12 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv"):
     list_pars['index_cols'] = list_pars.index_cols.apply(
         lambda x: literal_eval(x))
     list_pars['use_cols'] = list_pars.use_cols.apply(
-        lambda x: literal_eval(x))  # TODO check use_cols is always present
+        lambda x: literal_eval(x))
+    list_pars['lower_bound'] = list_pars.lower_bound.apply(
+        lambda x: literal_eval(x))
+    list_pars['upper_bound'] = list_pars.upper_bound.apply(
+        lambda x: literal_eval(x))
+    # TODO check use_cols is always present
     apply_genericlist_pars(list_pars)
     apply_array_pars(arr_pars)
     
@@ -3043,8 +3048,9 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
 
     """
     if arr_par_file is not None:
-        warnings.warn("`arr_par_file` is deprecated and replaced by arr_par. "
-                      "Method now support passing df as arr_par arg.", 
+        warnings.warn("`arr_par_file` argument is deprecated and replaced "
+                      "by arr_par. Method now support passing DataFrame as "
+                      "arr_par arg.",
                       PyemuWarning)
         arr_par = arr_par_file
     if isinstance(arr_par, str):
@@ -3268,7 +3274,7 @@ def apply_genericlist_pars(df):
             # get mult index to align with org_data,
             # mult idxs will always be written zero based
             # if original model files is not zero based need to add 1
-            add1 = int(mlt.zero_based == False)
+            add1 = int(mlt.zero_based==False)
             mlts.index = pd.MultiIndex.from_tuples(mlts.sidx.apply(
                 lambda x: tuple(add1+np.array(literal_eval(x)))),
                 names=mlt.index_cols)
@@ -3276,6 +3282,22 @@ def apply_genericlist_pars(df):
             new_df.loc[:, mlt_cols] = (new_df.loc[:, mlt_cols] *
                                        mlts.loc[:, mlt_cols])
             new_df = new_df.reset_index()
+        if "upper_bound" in df.columns:
+            ub = df_mf.apply(
+                lambda x: pd.Series(
+                    {str(c): b for c, b in
+                     zip(x.use_cols, x.upper_bound)}), axis=1).max()
+            if ub.notnull().any():
+                for col, val in ub.items():
+                    new_df.loc[new_df.loc[:, col] > val, col] = val
+        if "lower_bound" in df.columns:
+            lb = df_mf.apply(
+                lambda x: pd.Series(
+                    {str(c): b for c, b in
+                     zip(x.use_cols, x.lower_bound)}), axis=1).min()
+            if lb.notnull().any():
+                for col, val in lb.items():
+                    new_df.loc[new_df.loc[:, col] < val, col] = val
         with open(model_file, 'w') as fo:
             if "win" in platform.platform().lower():
                 kwargs = {"line_terminator": "\n"}

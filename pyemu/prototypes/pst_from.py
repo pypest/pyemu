@@ -55,9 +55,30 @@ class PstFrom(object):
         # TODO: build an essentially empty pest control file object here?
         # something that the add_parameters() methods can hook into later?
         self.par_data = []
-        self.parfile_relations = []
+        self._parfile_relations = []
         self.par_dfs = {'list_pars': [], 'array_pars': []}
         self.pst = None
+
+    @property
+    def parfile_relations(self):
+        if isinstance(self._parfile_relations, list):
+            pr = pd.concat(self._parfile_relations,
+                           ignore_index=True)
+        else:
+            pr = self._parfile_relations
+        # quick checker
+        for name, g in pr.groupby('model_file'):
+            if g.sep.nunique() > 1:
+                self.logger.warn(
+                    "seperator mismatch for {0}, seps passed {1}"
+                    "".format(name, [s for s in g.sep.unique()]))
+            if g.fmt.nunique() > 1:
+                self.logger.warn(
+                    "format mismatch for {0}, fmt passed {1}"
+                    "".format(name, [f for f in g.fmt.unique()]))
+        pr['zero_based'] = self.zero_based
+        return pr
+
 
 
     def _generic_get_xy(self, *args):
@@ -179,19 +200,7 @@ class PstFrom(object):
         # parameter data from object
         par_data = pd.concat(self.par_data)
         # info relating parameter multiplier files to model input files
-        parfile_relations = pd.concat(self.parfile_relations,
-                                      ignore_index=True)
-        # quick checker
-        for name, g in parfile_relations.groupby('model_file'):
-            if g.sep.nunique() > 0:
-                self.logger.warn(
-                    "seperator mismatch for {0}, seps passed {1}"
-                    "".format(name, [s for s in g.sep.unique()]))
-            if g.fmt.nunique() > 0:
-                self.logger.warn(
-                    "format mismatch for {0}, fmt passed {1}"
-                    "".format(name, [f for f in g.fmt.unique()]))
-        parfile_relations['zero_based'] = self.zero_based
+        parfile_relations = self.parfile_relations
         parfile_relations.to_csv(os.path.join(self.new_d,
                                               'mult2model_info.csv'))
         if filename is None:
@@ -439,7 +448,7 @@ class PstFrom(object):
                         if sep is None:
                             sep = ','
                 else:
-                    # TODO
+                    # TODO - or not?
                     raise NotImplementedError("Only free format array "
                                               "par files currently supported")
                 file_path = os.path.join(self.new_d, filename)
@@ -550,7 +559,8 @@ class PstFrom(object):
                        upper_bound=1.0e10, lower_bound=1.0e-10,
                        transform="log", par_name_base="p", index_cols=None,
                        use_cols=None, pp_space=10, num_eig_kl=100,
-                       spatial_reference=None, mfile_fmt='free'):
+                       spatial_reference=None, mfile_fmt='free',
+                       ult_ubound=None, ult_lbound=None):
         """Add list or array style model input files to PstFrom object.
         This method
 
@@ -573,19 +583,12 @@ class PstFrom(object):
         Returns:
 
         """
-        # TODO either setup an (essentially empty) pest object in __init__
-        #  to add pars to here, or consider renaming as currently this method
-        #  is just setting up tpl/input file pairs
-        #  - or call add_pars_from_template() to either add to existing pcf or
-        #  setup fresh from `pyemu.Pst.from_io_files()`
-
         self.logger.log("adding parameters for file(s) "
                         "{0}".format(str(filenames)))
         (index_cols, use_cols, file_dict, 
          fmt_dict, sep_dict, skip_dict) = self._par_prep(filenames, index_cols,
                                                          use_cols,
                                                          fmts=mfile_fmt)
-        # TODO need to make sure we can collate par_df to relate mults to model files...
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         if isinstance(par_name_base, str):
             par_name_base = [par_name_base]
@@ -613,7 +616,22 @@ class PstFrom(object):
             mlt_filename = "{0}_{1}.csv".format(
                 par_name_base[0].replace(':', ''), par_type)
             tpl_filename = mlt_filename + ".tpl"
-            # TODO: NEED TO MAKE SURE WE LOG THE MODEL FILE TOO?!
+
+            if ult_lbound is None:
+                ult_lbound = [None for _ in use_cols]
+            if ult_ubound is None:
+                ult_ubound = [None for _ in use_cols]
+            if len(use_cols) == 1:
+                if not isinstance(ult_lbound, list):
+                    ult_lbound = [ult_lbound]
+                if not isinstance(ult_ubound, list):
+                    ult_ubound = [ult_ubound]
+            if len(use_cols) != len(ult_lbound) != len(ult_ubound):
+                self.logger.lraise("mismatch in number of columns to use {0} "
+                                   "and number of ultimate lower {0} or upper "
+                                   "{1} par bounds defined"
+                                   "".format(len(use_cols), len(ult_lbound),
+                                             len(ult_ubound)))
 
             self.logger.log(
                 "writing list-based template file '{0}'".format(tpl_filename))
@@ -653,7 +671,9 @@ class PstFrom(object):
                     "writing template file"
                     " {0} for {1}".format(tpl_filename, par_name_base))
 
-            elif par_type == "pilotpoints" or par_type == "pilot_points":
+            elif par_type in {"pilotpoints", "pilot_points",
+                              "pilotpoint", "pilot_point"}:
+                # TODO
                 self.logger.lraise("array type 'pilotpoints' not implemented")
             elif par_type == "kl":
                 self.logger.lraise("array type 'kl' not implemented")
@@ -682,9 +702,11 @@ class PstFrom(object):
                  "index_cols": index_cols,
                  "fmt": fmt_dict[mod_file],
                  "sep": sep_dict[mod_file],
-                 "head_rows": skip_dict[mod_file]})
+                 "head_rows": skip_dict[mod_file],
+                 "upper_bound": ult_ubound,
+                 "lower_bound": ult_lbound})
         relate_pars_df = pd.DataFrame(relate_parfiles)
-        self.parfile_relations.append(relate_pars_df)
+        self._parfile_relations.append(relate_pars_df)
 
         df.loc[:, "partype"] = par_type
         df.loc[:, "partrans"] = transform
