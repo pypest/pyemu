@@ -981,9 +981,9 @@ class EnsembleSQP(EnsembleMethod):
 
         # 1. Z^TGZ is pos def
         # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
-        y, z = self._compute_orthog_basis_matrices(a=constraint_grad)
+        y, self.z = self._compute_orthog_basis_matrices(a=constraint_grad)
         if self.alg is not "LBFGS":
-            zTgz = np.dot(z.T, (hessian * z).x)
+            zTgz = np.dot(self.z.T, (hessian * self.z).x)
             if not np.all(np.linalg.eigvals(zTgz) > 0):
                 self.logger.log("Z^TGZ not pos-def!")
 
@@ -995,20 +995,20 @@ class EnsembleSQP(EnsembleMethod):
         # do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
         try:
             if self.alg is not "LBFGS":  # we have a hessian (potentially the reduced form, e.g., pg. 540)
-                zTgy = np.dot(z.T, (hessian * y).x)
+                zTgy = np.dot(self.z.T, (hessian * y).x)
                 if self.reduced_hessian is False:  # full hessian
-                    rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(z.T, grad.x)
+                    rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, grad.x)
                     if cholesky:
                         l = np.linalg.cholesky(zTgz)
                         yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
                         l_ = l.conj()  # TODO: check math here
-                        p_z = np.linalg.solve(l_, yy)
+                        self.p_z = np.linalg.solve(l_, yy)
                     else:
-                        p_z = np.linalg.solve(zTgz, rhs)
+                        self.p_z = np.linalg.solve(zTgz, rhs)
                 else:  # reduced hessian
                     # simplify by removing cross term (or ``partial hessian'') matrix (zTgy), which is approp when approximating hessian (zTgz) (as p_y goes to zero faster than p_z)
-                    rhs = -1.0 * np.dot(z.T, grad)
-                    p_z = np.linalg.solve(zTgz, rhs)  # the reduced hess (zTgz) is much more likely to be pos-def
+                    rhs = -1.0 * np.dot(self.z.T, grad)
+                    self.p_z = np.linalg.solve(zTgz, rhs)  # the reduced hess (zTgz) is much more likely to be pos-def
 
             else:  # we don't have the hessian (LBFGS)
                 self.logger.lraise("not sure if this can be done...")
@@ -1017,7 +1017,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.lraise("Z^TGZ is not pos-def..")  # should have been caught above
 
         # total step
-        p = np.dot(y, p_y) + np.dot(z, p_z)
+        p = np.dot(y, p_y) + np.dot(self.z, self.p_z)
 
         # now to compute lagrangian multipliers
         if self.alg == "LBFGS":  # we don't have the hessian
@@ -1043,17 +1043,17 @@ class EnsembleSQP(EnsembleMethod):
             y, z = q, q[:, -(a.shape[1] - a.shape[0]):]
             # TODO: revisit the partitioning here. for small case, same vector spanning Y and Z.. also, based on https://www.mathworks.com/help/optim/ug/constrained-nonlinear-optimization-algorithms.html#brnox01, use full constraint grad matrix (not just active set).... which I don't understand...
         else:
-            z = self._null_space(self, a)
+            self.z = self._null_space(self, a)
             y = a.T  # "A^T is a valid choice for Y when A has full row rank" (pg. 539) of Nocedal and Wright (2006)
             # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank..
 
         # check in line with definitions
-        if np.isclose((a * z).x, 0.0, rtol=1e-2, atol=1e-3):
+        if np.isclose((a * self.z).x, 0.0, rtol=1e-2, atol=1e-3):
             self.logger.lraise("null-space basis violates definition AZ = 0.. spewin..")
         # TODO: also check here that [Y|Z] is non-sing
-        yz = np.append(y, z, axis=1)
+        yz = np.append(y, self.z, axis=1)
 
-        return y, z
+        return y, self.z
 
     def _null_space(self, a):
         u, s, v = np.linalg.svd(a, full_matrices=True)
