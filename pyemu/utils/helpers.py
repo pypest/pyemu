@@ -2956,14 +2956,23 @@ class PstFromFlopyModel(object):
 
 
 def apply_list_and_array_pars(arr_par_file="mult2model_info.csv"):
-    """
+    """ Apply multiplier parameters to list and array style model files
+    
+    Args:
+        arr_par_file (str): 
 
     Returns:
+        
+    Note:
+        Used to implement the parameterization constructed by
+        PstFrom during a forward run
 
+        Should be added to the forward_run.py script
     """
     df = pd.read_csv(arr_par_file, index_col=0)
     arr_pars = df.loc[df.index_cols.isna()].copy()
     list_pars = df.loc[df.index_cols.notna()].copy()
+    # extract lists from string in input df
     list_pars['index_cols'] = list_pars.index_cols.apply(
         lambda x: literal_eval(x))
     list_pars['use_cols'] = list_pars.use_cols.apply(
@@ -3219,13 +3228,25 @@ def apply_list_pars():
 
 def apply_genericlist_pars(df):
     """ a function to apply list style mult parameters
-
-    Note:
-        Used to implement the parameterization constructed by
-        PstFrom during a forward run
-
-        Should be added to the forward_run.py script
-
+    
+    Args:
+        df (pandas.DataFrame): DataFrame that relates files containing 
+            multipliers to model input file names. Required columns include:
+            {"model_file": file name of resulatant model input file, 
+             "org_file": file name of original file that multipliers act on, 
+             "fmt": format specifier for model input file 
+                    (currently on 'free' supported),
+             "sep": separator for model input file if 'free' formatted,
+             "head_rows": Number of header rows to transfer from orig file 
+                          to model file,
+             "index_cols": list of columns (either indexes or strings) to be 
+                            used to align mults, orig and model files,
+             "use_cols": columns to mults act on,
+             "upper_bound": ultimate upper bound for model input file 
+                            parameter,
+            "lower_bound": ultimate lower bound for model input file 
+                            parameter}
+        
 
     """
     uniq = df.model_file.unique()
@@ -3237,9 +3258,23 @@ def apply_genericlist_pars(df):
             raise Exception("wrong number of org_files for {0}".
                             format(model_file))
         org_file = org_file[0]
-        fmt = df_mf.fmt.values[-1]
-        sep = df_mf.sep.values[-1]
-        datastrtrow = df_mf.head_rows.values[-1]  # TODO write header to orig
+        notfree = df_mf.fmt[df_mf.fmt != 'free']
+        if len(notfree) > 1:
+            raise Exception("too many different format specifiers for "
+                            "model file: {0}".format(model_file))
+        elif len(notfree) == 1:
+            fmt = notfree.values[0]
+        else:
+            fmt = df_mf.fmt.values[-1]
+        if fmt == 'free':
+            if df_mf.sep.dropna().nunique() > 1:
+                raise Exception("too many different sep specifiers for "
+                                "model file: {0}".format(model_file))
+            else:
+                sep = df_mf.sep.dropna().values[-1]
+        else:
+            sep = None
+        datastrtrow = df_mf.head_rows.values[-1]
         if fmt.lower() == 'free' and sep == ' ':
             delim_whitespace = True
         if datastrtrow > 0:
@@ -3309,8 +3344,7 @@ def apply_genericlist_pars(df):
                               sep=sep, header=hheader,
                               **kwargs)
             else:
-                # TODO add test for formatter file type
-                np.savetxt(fo, new_df.values, fmt=fmt)
+                np.savetxt(fo, np.atleast_2d(new_df.values), fmt=fmt)
 
 
 def write_const_tpl(name, tpl_file, suffix, zn_array=None,

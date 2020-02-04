@@ -52,8 +52,6 @@ class PstFrom(object):
         self.initialize_spatial_reference()
 
         self._setup_dirs()
-        # TODO: build an essentially empty pest control file object here?
-        # something that the add_parameters() methods can hook into later?
         self.par_data = []
         self._parfile_relations = []
         self.par_dfs = {'list_pars': [], 'array_pars': []}
@@ -70,7 +68,7 @@ class PstFrom(object):
         for name, g in pr.groupby('model_file'):
             if g.sep.nunique() > 1:
                 self.logger.warn(
-                    "seperator mismatch for {0}, seps passed {1}"
+                    "separator mismatch for {0}, seps passed {1}"
                     "".format(name, [s for s in g.sep.unique()]))
             if g.fmt.nunique() > 1:
                 self.logger.warn(
@@ -141,42 +139,42 @@ class PstFrom(object):
     def draw(self):
         pass
 
-    def _init_pst(self, tpl_files=None, in_files=None,
-                  ins_files=None, out_files=None):
-        """Initialise a pest control file object through i/o files
-
-        Args:
-            tpl_files:
-            in_files:
-            ins_files:
-            out_files:
-
-        Returns:
-
-        """
-        #  TODO: amend so that pst can be built from PstFrom components
-        tpl_files, in_files, ins_files, out_files = (
-            [] if arg is None else arg for arg in
-            [tpl_files, in_files, ins_files, out_files])
-        # borrowing from PstFromFlopyModel() method:
-        self.logger.statement("changing dir in to {0}".format(self.new_d))
-        os.chdir(self.new_d)
-        try:
-            self.logger.log("instantiating control file from i/o files")
-            self.logger.statement(
-                "tpl files: {0}".format(",".join(tpl_files)))
-            self.logger.statement(
-                "ins files: {0}".format(",".join(ins_files)))
-            pst = pyemu.Pst.from_io_files(tpl_files=tpl_files,
-                                          in_files=in_files,
-                                          ins_files=ins_files,
-                                          out_files=out_files)
-            self.logger.log("instantiating control file from i/o files")
-        except Exception as e:
-            os.chdir("..")
-            self.logger.lraise("error build Pst:{0}".format(str(e)))
-        os.chdir('..')
-        self.pst = pst
+    # def _init_pst(self, tpl_files=None, in_files=None,
+    #               ins_files=None, out_files=None):
+    #     """Initialise a pest control file object through i/o files
+    # 
+    #     Args:
+    #         tpl_files:
+    #         in_files:
+    #         ins_files:
+    #         out_files:
+    # 
+    #     Returns:
+    # 
+    #     """
+    #     #  TODO: amend so that pst can be built from PstFrom components
+    #     tpl_files, in_files, ins_files, out_files = (
+    #         [] if arg is None else arg for arg in
+    #         [tpl_files, in_files, ins_files, out_files])
+    #     # borrowing from PstFromFlopyModel() method:
+    #     self.logger.statement("changing dir in to {0}".format(self.new_d))
+    #     os.chdir(self.new_d)
+    #     try:
+    #         self.logger.log("instantiating control file from i/o files")
+    #         self.logger.statement(
+    #             "tpl files: {0}".format(",".join(tpl_files)))
+    #         self.logger.statement(
+    #             "ins files: {0}".format(",".join(ins_files)))
+    #         pst = pyemu.Pst.from_io_files(tpl_files=tpl_files,
+    #                                       in_files=in_files,
+    #                                       ins_files=ins_files,
+    #                                       out_files=out_files)
+    #         self.logger.log("instantiating control file from i/o files")
+    #     except Exception as e:
+    #         os.chdir("..")
+    #         self.logger.lraise("error build Pst:{0}".format(str(e)))
+    #     os.chdir('..')
+    #     self.pst = pst
 
     def build_pst(self, filename=None):
         """Build control file from i/o files in PstFrom object.
@@ -210,7 +208,6 @@ class PstFrom(object):
 
         pst = pyemu.Pst(filename, load=False)
         pst.parameter_data = par_data
-
 
         # TODO: temporalily borowed from pst_utils.generic_pst()
         #  ----------------------------------------------------------------->
@@ -286,40 +283,59 @@ class PstFrom(object):
         skip_dict = {}
         if not isinstance(filenames, list):
             filenames = [filenames]
-        if not isinstance(fmts, list):
-            fmts = [fmts]
-        if not isinstance(seps, list):
-            seps = [seps]
-        if not isinstance(skip_rows, list):
-            skip_rows = [skip_rows]
         if fmts is None:
             fmts = ['free' for f in filenames]
+        if not isinstance(fmts, list):
+            fmts = [fmts]
+        if len(fmts) != len(filenames):
+            self.logger.warn("Discrepancy between number of filenames ({0}) "
+                             "and number of formatter strings ({1}). "
+                             "Will repeat first ({2})"
+                             "".format(len(filenames), len(fmts), fmts[0]))
+            fmts = [fmts[0] for _ in filenames]
         fmts = ['free' if fmt is None else fmt for fmt in fmts]
         if seps is None:
             seps = [None for f in filenames]
+        if not isinstance(seps, list):
+            seps = [seps]
+        if len(seps) != len(filenames):
+            self.logger.warn("Discrepancy between number of filenames ({0}) "
+                             "and number of seps defined ({1}). "
+                             "Will repeat first ({2})"
+                             "".format(len(filenames), len(seps), seps[0]))
+            seps = [seps[0] for _ in filenames]
         if skip_rows is None:
             skip_rows = [None for f in filenames]
+        if not isinstance(skip_rows, list):
+            skip_rows = [skip_rows]
+        if len(skip_rows) != len(filenames):
+            self.logger.warn("Discrepancy between number of filenames ({0}) "
+                             "and number of skip_rows defined ({1}). "
+                             "Will repeat first ({2})"
+                             "".format(len(filenames), len(skip_rows),
+                                       skip_rows[0]))
+            skip_rows = [skip_rows[0] for _ in filenames]
         skip_rows = [0 if s is None else s for s in skip_rows]
+        
         if index_cols is None and use_cols is not None:
             self.logger.lraise("index_cols is None, but use_cols is not ({0})"
                                "".format(str(use_cols)))
-
         # load list type files
         if index_cols is not None:
-            if not isinstance(index_cols,list):
+            if not isinstance(index_cols, list):
                 index_cols = [index_cols]
-            if isinstance(index_cols[0],str):
+            if isinstance(index_cols[0], str):
                 # index_cols can be from header str
-                header=0
-            elif isinstance(index_cols[0],int):
+                header = 0
+            elif isinstance(index_cols[0], int):
                 # index_cols are column numbers in input file
-                header=None
+                header = None
             else:
                 self.logger.lraise("unrecognized type for index_cols, "
                                    "should be str or int, not {0}".
                                    format(str(type(index_cols[0]))))
             if use_cols is not None:
-                if not isinstance(use_cols,list):
+                if not isinstance(use_cols, list):
                     use_cols = [use_cols]
                 if isinstance(use_cols[0], str):
                     header = 0
@@ -347,8 +363,8 @@ class PstFrom(object):
 
             for filename, sep, fmt, skip in zip(filenames, seps, fmts,
                                                 skip_rows):
+                file_path = os.path.join(self.new_d, filename)
                 # looping over model input filenames
-                # TODO: fmt and sep checksout against previous calls with filename
                 if fmt.lower() == 'free':
                     if sep is None:
                         delim_whitespace = True
@@ -358,7 +374,6 @@ class PstFrom(object):
                             sep = ','
                     else:
                         delim_whitespace = False
-                    file_path = os.path.join(self.new_d, filename)
                     self.logger.log("loading list {0}".format(file_path))
                     if not os.path.exists(file_path):
                         self.logger.lraise("par filename '{0}' not found "
@@ -371,9 +386,25 @@ class PstFrom(object):
                         storehead=[]
                     df = pd.read_csv(file_path, header=header, skiprows=skip,
                                      delim_whitespace=delim_whitespace)
-                else:
-                    raise NotImplementedError("Only free format list "
-                                              "par files currently supported")
+                else: 
+                    # TODO support reading fixed-format 
+                    #  (based on value of fmt passed)
+                    #  ... or not?
+                    self.logger.warn("0) Only reading free format list par files "
+                                     "currently supported.")
+                    self.logger.warn("1) Assuming safe to read as whitespace "
+                                     "delim.")
+                    self.logger.warn("2) Desired format string will still "
+                                     "be passed through")
+                    delim_whitespace = True
+                    # read each input file
+                    if skip > 0:
+                        with open(file_path, 'r') as fp:
+                            storehead = [next(fp) for _ in range(skip)]
+                    else:
+                        storehead=[]
+                    df = pd.read_csv(file_path, header=header, skiprows=skip,
+                                     delim_whitespace=delim_whitespace)
 
                 # ensure that column ids from index_col is in input file
                 missing = []
@@ -398,11 +429,11 @@ class PstFrom(object):
                     hheader = False
                 self.logger.statement("loaded list '{0}' of shape {1}"
                                       "".format(file_path, df.shape))
-                # TODO: do we need to be careful of the format of the model
+                # TODO BH: do we need to be careful of the format of the model
                 #  files? -- probs not necessary for the version in
                 #  original_file_d - but for the eventual product model file,
                 #  it might be format sensitive - yuck
-                # Update: I think the `original files` saved can always
+                # Update, BH: I think the `original files` saved can always
                 # be comma delim --they are never directly used 
                 # as model inputs-- as long as we pass the required model 
                 # input file format (and sep), right?  
@@ -437,9 +468,7 @@ class PstFrom(object):
                             "shape {1} != '{2}' shape {3}".
                             format(fnames[i], file_dict[fnames[i]].shape[1],
                                    fnames[j], file_dict[fnames[j]].shape[1]))
-
-        # load array type files
-        else:
+        else:  # load array type files
             # loop over model input files
             for filename, sep, fmt, skip in zip(filenames, seps, fmts, 
                                                 skip_rows):
@@ -456,7 +485,7 @@ class PstFrom(object):
                 if not os.path.exists(file_path):
                     self.logger.lraise("par filename '{0}' not found ".
                                        format(file_path))
-                # read array type input file # TODO: check this handles both whitespace and comma delim
+                # read array type input file 
                 arr = np.loadtxt(os.path.join(self.new_d, filename), 
                                  delimiter=sep)
                 self.logger.log("loading array {0}".format(file_path))
@@ -495,56 +524,56 @@ class PstFrom(object):
 
         return index_cols, use_cols, file_dict, fmt_dict, sep_dict, skip_dict
 
-    def add_pars_from_template(self, tpl_filename, in_filename):
-        # TODO: modify so that method adds to PstFrom object parameter data?
-        #  Not pst
-        """Method for adding parameters to Pest control file from pre-existing
-        template, input file pairs
-
-        Args:
-            tpl_filename (`str` or `list`): filename(s) of template files
-                with pars to add
-            in_filename (`str` or `list`): filename(s) of (what pest views as)
-                model input files
-
-        Returns:
-
-        Note:
-            if arguments are lists they need to be in equivlent orders, so
-            `tpl_filename[n]` relates to `in_filename[n]`
-
-            if self.pst is None this method will initialise a pst object by
-            calling pyemu.helpers.pst_from_io_files()
-        """
-        # quick argument checks
-        if type(tpl_filename) != type(in_filename):
-            raise TypeError("Both arguments need to be of the same type, "
-                            "`tpl_filename` is type {0}, "
-                            "`in_filename` is type {1}"
-                            "".format(type(tpl_filename), type(in_filename)))
-        if isinstance(tpl_filename, list):
-            assert len(tpl_filename) == len(in_filename), \
-                ("Lists provided for template and input filenames "
-                 "are not the same length.")
-        else:
-            tpl_filename = [tpl_filename]
-            in_filename = [in_filename]
-
-        for tpl, infnme in zip(tpl_filename, in_filename):
-            # need to set up a pst object container if it doesn't already exist
-            if self.pst is None:
-                self._init_pst(tpl_files=[tpl], in_files=[infnme])
-            else:
-                # add new pars to exisiting control file
-                os.chdir(self.new_d)
-                try:
-                    self.pst.add_parameters(tpl, infnme)
-                except Exception as e:
-                    os.chdir("..")
-                    self.logger.lraise(
-                        "error adding parameters for tpl {0}:{1}"
-                        "".format(tpl, str(e)))
-                os.chdir("..")
+    # def add_pars_from_template(self, tpl_filename, in_filename):
+    #     # TODO: modify so that method adds to PstFrom object parameter data?
+    #     #  Not pst
+    #     """Method for adding parameters to Pest control file from pre-existing
+    #     template, input file pairs
+    # 
+    #     Args:
+    #         tpl_filename (`str` or `list`): filename(s) of template files
+    #             with pars to add
+    #         in_filename (`str` or `list`): filename(s) of (what pest views as)
+    #             model input files
+    # 
+    #     Returns:
+    # 
+    #     Note:
+    #         if arguments are lists they need to be in equivlent orders, so
+    #         `tpl_filename[n]` relates to `in_filename[n]`
+    # 
+    #         if self.pst is None this method will initialise a pst object by
+    #         calling pyemu.helpers.pst_from_io_files()
+    #     """
+    #     # quick argument checks
+    #     if type(tpl_filename) != type(in_filename):
+    #         raise TypeError("Both arguments need to be of the same type, "
+    #                         "`tpl_filename` is type {0}, "
+    #                         "`in_filename` is type {1}"
+    #                         "".format(type(tpl_filename), type(in_filename)))
+    #     if isinstance(tpl_filename, list):
+    #         assert len(tpl_filename) == len(in_filename), \
+    #             ("Lists provided for template and input filenames "
+    #              "are not the same length.")
+    #     else:
+    #         tpl_filename = [tpl_filename]
+    #         in_filename = [in_filename]
+    # 
+    #     for tpl, infnme in zip(tpl_filename, in_filename):
+    #         # need to set up a pst object container if it doesn't already exist
+    #         if self.pst is None:
+    #             self._init_pst(tpl_files=[tpl], in_files=[infnme])
+    #         else:
+    #             # add new pars to exisiting control file
+    #             os.chdir(self.new_d)
+    #             try:
+    #                 self.pst.add_parameters(tpl, infnme)
+    #             except Exception as e:
+    #                 os.chdir("..")
+    #                 self.logger.lraise(
+    #                     "error adding parameters for tpl {0}:{1}"
+    #                     "".format(tpl, str(e)))
+    #             os.chdir("..")
 
     def _next_count(self,prefix):
         if prefix not in self._prefix_count:
@@ -564,7 +593,7 @@ class PstFrom(object):
         """Add list or array style model input files to PstFrom object.
         This method
 
-        Args:
+        Args: TODO - obvs doc string once this settles down.
             filenames:
             par_type:
             zone_array:
@@ -636,8 +665,6 @@ class PstFrom(object):
             self.logger.log(
                 "writing list-based template file '{0}'".format(tpl_filename))
             df = write_list_tpl(
-                # TODO passing in the dictionary values worries me a little.
-                #  can the order get screwed up? does it matter?
                 file_dict.values(), par_name_base,
                 tpl_filename=os.path.join(self.new_d, tpl_filename),
                 par_type=par_type, suffix='', index_cols=index_cols,
@@ -727,9 +754,6 @@ class PstFrom(object):
             df[field] = pyemu.pst_utils.pst_config['par_defaults'][field]
         df = df.loc[:, par_data_cols]
         self.par_data.append(df.drop_duplicates())
-        # TODO workout where and how to store the mult -> model file info.
-        # TODO workout how to get the mult to apply to the model files and
-        #  mimic the model file formats!
         self.logger.log("adding parameters for file(s) "
                         "{0}".format(str(filenames)))
 
@@ -766,9 +790,12 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type,
         sidx.update(didx)
 
     df_tpl = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
-    # TODO using sets means that the rows of df and df_tpl are not necessaril aligned
-    # - not a problem as this is just for the mult files the mapping to model input files can be done
-    # by apply methods with the mapping information provided by meta data within par names.
+    # TO#DO using sets means that the rows of df and df_tpl are not necessarily
+    #  aligned
+    # - not a problem as this is just for the mult files the mapping to
+    # model input files can be done by apply methods with the mapping
+    # information provided by meta data within par names 
+    # (or in the par_relations file).
 
     # get some index strings for naming
     if longnames:
