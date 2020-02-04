@@ -1020,14 +1020,17 @@ class EnsembleSQP(EnsembleMethod):
         p = np.dot(y, p_y) + np.dot(self.z, self.p_z)
 
         # now to compute lagrangian multipliers
-        if self.alg == "LBFGS":  # we don't have the hessian
-            # pg. 539 of Nocedal and Wright (2006)
-            # simplify by dropping dependency of lm on hess (considered appropr given p converges to zero whereas grad does not..
-            lm = (constraint_grad * constraint_grad.T) * (constraint_grad * grad)
+        if self.alg is not "LBFGS":
+            if self.reduced_hessian is False:
+                # pg. 457 and 538
+                rhs = np.dot(y.T, (grad.x + (hessian * p).x))
+                lm = np.linalg.solve(ay.T.x, rhs)
+            else:
+                # pg. 539 of Nocedal and Wright (2006)
+                # simplify by dropping dependency of lm on hess (considered appropr given p converges to zero whereas grad does not..
+                lm = (constraint_grad * constraint_grad.T) * (constraint_grad * grad)
         else:
-            # pg. 457 and 538
-            rhs = np.dot(y.T, (grad.x + (hessian * p).x))
-            lm = np.linalg.solve(ay.T.x, rhs)
+            self.logger.lraise("not sure if this can be done...")
 
         return p, lm
 
