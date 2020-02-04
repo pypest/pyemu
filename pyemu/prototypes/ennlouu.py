@@ -967,26 +967,37 @@ class EnsembleSQP(EnsembleMethod):
         # 1. Z^TGZ is pos def
         # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
         y, z = self._compute_orthog_basis_matrices(a=constraint_grad)
-        zTgz = np.dot(z.T, (hessian * z).x)
-        if not np.all(np.linalg.eigvals(zTgz) > 0):
+        if self.alg is not "LBFGS":
+            zTgz = np.dot(z.T, (hessian * z).x)
+            if not np.all(np.linalg.eigvals(zTgz) > 0):
                 self.logger.log("Z^TGZ not pos-def!")
 
-        # first, solve for p_y (16.18)
+        # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
         ay = constraint_grad * y
         p_y = np.linalg.solve(ay.as_2d, -1.0 * constraint_diff.as_2d)
 
         # now to solve linear system for p_z
         # do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
         try:
-            zTgy = np.dot(z.T, (hessian * y).x)
-            rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(z.T, grad.x)
-            if cholesky:
-                l = np.linalg.cholesky(zTgz)
-                yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
-                l_ = l.conj()  # TODO: check math here
-                p_z = np.linalg.solve(l_, yy)
-            else:
-                p_z = np.linalg.solve(zTgz, rhs)
+            if self.alg is not "LBFGS":  # we have a hessian (potentially the reduced form, e.g., pg. 540)
+                zTgy = np.dot(z.T, (hessian * y).x)
+                if self.reduced_hessian is False:  # full hessian
+                    rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(z.T, grad.x)
+                    if cholesky:
+                        l = np.linalg.cholesky(zTgz)
+                        yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
+                        l_ = l.conj()  # TODO: check math here
+                        p_z = np.linalg.solve(l_, yy)
+                    else:
+                        p_z = np.linalg.solve(zTgz, rhs)
+                else:  # reduced hessian
+                    # simplify by removing cross term (or ``partial hessian'') matrix (zTgy), which is approp when approximating hessian (zTgz) (as p_y goes to zero faster than p_z)
+                    rhs = -1.0 * np.dot(z.T, grad)
+                    p_z = np.linalg.solve(zTgz, rhs)  # the reduced hess (zTgz) is much more likely to be pos-def
+
+            else:  # we don't have the hessian (LBFGS)
+                self.logger.lraise("not sure if this can be done...")
+
         except LinAlgError:
             self.logger.lraise("Z^TGZ is not pos-def..")  # should have been caught above
 
@@ -1019,7 +1030,7 @@ class EnsembleSQP(EnsembleMethod):
         else:
             z = self._null_space(self, a)
             y = a.T  # "A^T is a valid choice for Y when A has full row rank" (pg. 539) of Nocedal and Wright (2006)
-            # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank
+            # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank..
 
         # check in line with definitions
         if np.isclose((a * z).x, 0.0, rtol=1e-2, atol=1e-3):
@@ -1133,7 +1144,8 @@ class EnsembleSQP(EnsembleMethod):
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
                cma=False,derinc=0.01,
                rank_one=False, learning_rate=0.5, mu_prop=0.25,
-               use_dist_mean_for_delta=False,mu_learning_prop=0.5):#localizer=None,run_subset=None,
+               use_dist_mean_for_delta=False,mu_learning_prop=0.5,
+               reduced_hessian=False):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -1184,6 +1196,9 @@ class EnsembleSQP(EnsembleMethod):
     	# TODO: sub-setting
     	# TODO: Langrangian formulation (and localization on constraint relationships)
         """
+
+        self.alg = alg
+        self.reduced_hessian = reduced_hessian
 
         if opt_direction is "min" or "max":
             self.opt_direction = opt_direction
