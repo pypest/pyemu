@@ -2316,9 +2316,9 @@ class Pst(object):
 
         Example::
 
-            pst = pyemu.Pst(os.path.join("template","my.pst"))
-            pst.add_observations(os.path.join("template","new_obs.dat.tpl",pst_path=".")
-            pst.write(os.path.join("template","my_new.pst")
+            pst = pyemu.Pst(os.path.join("template", "my.pst"))
+            pst.add_observations(os.path.join("template","new_obs.dat.ins"), pst_path=".")
+            pst.write(os.path.join("template", "my_new.pst")
 
         """
         if not os.path.exists(ins_file):

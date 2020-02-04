@@ -14,8 +14,9 @@ from ..pyemu_warnings import PyemuWarning
 
 class PstFrom(object):
 
-    def __init__(self, original_d, new_d, longnames=True, remove_existing=False,
-                 spatial_reference=None, zero_based=True):
+    def __init__(self, original_d, new_d, longnames=True,
+                 remove_existing=False, spatial_reference=None,
+                 zero_based=True):
 
         self.original_d = original_d
         self.new_d = new_d
@@ -77,8 +78,6 @@ class PstFrom(object):
         pr['zero_based'] = self.zero_based
         return pr
 
-
-
     def _generic_get_xy(self, *args):
         if len(args) == 3:  # kij
             return float(args[1]), float(args[2])
@@ -104,7 +103,8 @@ class PstFrom(object):
         elif len(args) == 2: #ij
             i, j = args[0], args[1]
         else:
-            self.logger.lraise(("get_xy() error: wrong number of args, should be 3 (kij) or 2 (ij)"
+            self.logger.lraise(("get_xy() error: wrong number of args, "
+                                "should be 3 (kij) or 2 (ij)"
                                 ", not '{0}'").format(str(args)))
         # if not self.zero_based:
         #     # TODO: check this,
@@ -117,24 +117,22 @@ class PstFrom(object):
     def initialize_spatial_reference(self):
         if self._spatial_reference is None:
             self.get_xy = self._generic_get_xy
-        elif (hasattr(self._spatial_reference,"xcentergrid") and
-              hasattr(self._spatial_reference,"ycentergrid")):
+        elif (hasattr(self._spatial_reference, "xcentergrid") and
+              hasattr(self._spatial_reference, "ycentergrid")):
             self.get_xy = self._flopy_sr_get_xy
         elif (hasattr(self._spatial_reference, "xcellcenters") and
               hasattr(self._spatial_reference, "ycellcenters")):
             # support modelgrid style cell locs
             self.get_xy = self._flopy_mg_get_xy
         else:
-            self.logger.lraise("initialize_spatial_reference() error: unsupported spatial_reference")
-
+            self.logger.lraise("initialize_spatial_reference() error: "
+                               "unsupported spatial_reference")
 
     def write_forward_run(self):
         pass
 
-
     def build_prior(self):
         pass
-
 
     def draw(self):
         pass
@@ -244,30 +242,39 @@ class PstFrom(object):
     def _setup_dirs(self):
         self.logger.log("setting up dirs")
         if not os.path.exists(self.original_d):
-            self.logger.lraise("original_d '{0}' not found".format(self.original_d))
+            self.logger.lraise("original_d '{0}' not found"
+                               "".format(self.original_d))
         if not os.path.isdir(self.original_d):
-            self.logger.lraise("original_d '{0}' is not a directory".format(self.original_d))
+            self.logger.lraise("original_d '{0}' is not a directory"
+                               "".format(self.original_d))
         if os.path.exists(self.new_d):
             if self.remove_existing:
-                self.logger.log("removing existing new_d '{0}'".format(self.new_d))
+                self.logger.log("removing existing new_d '{0}'"
+                                "".format(self.new_d))
                 shutil.rmtree(self.new_d)
-                self.logger.log("removing existing new_d '{0}'".format(self.new_d))
+                self.logger.log("removing existing new_d '{0}'"
+                                "".format(self.new_d))
             else:
-                self.logger.lraise("new_d '{0}' already exists - use remove_existing=True".format(self.new_d))
+                self.logger.lraise("new_d '{0}' already exists "
+                                   "- use remove_existing=True"
+                                   "".format(self.new_d))
 
-        self.logger.log("copying original_d '{0}' to new_d '{1}'".format(self.original_d,self.new_d))
-        shutil.copytree(self.original_d,self.new_d)
-        self.logger.log("copying original_d '{0}' to new_d '{1}'".format(self.original_d, self.new_d))
-
+        self.logger.log("copying original_d '{0}' to new_d '{1}'"
+                        "".format(self.original_d, self.new_d))
+        shutil.copytree(self.original_d, self.new_d)
+        self.logger.log("copying original_d '{0}' to new_d '{1}'"
+                        "".format(self.original_d, self.new_d))
 
         self.original_file_d = os.path.join(self.new_d, "org")
         if os.path.exists(self.original_file_d):
-            self.logger.lraise("'org' subdir already exists in new_d '{0}'".format(self.new_d))
+            self.logger.lraise("'org' subdir already exists in new_d '{0}'"
+                               "".format(self.new_d))
         os.makedirs(self.original_file_d)
 
         self.mult_file_d = os.path.join(self.new_d, "mult")
         if os.path.exists(self.mult_file_d):
-            self.logger.lraise("'mult' subdir already exists in new_d '{0}'".format(self.new_d))
+            self.logger.lraise("'mult' subdir already exists in new_d '{0}'"
+                               "".format(self.new_d))
         os.makedirs(self.mult_file_d)
 
         self.logger.log("setting up dirs")
@@ -284,7 +291,7 @@ class PstFrom(object):
         if not isinstance(filenames, list):
             filenames = [filenames]
         if fmts is None:
-            fmts = ['free' for f in filenames]
+            fmts = ['free' for _ in filenames]
         if not isinstance(fmts, list):
             fmts = [fmts]
         if len(fmts) != len(filenames):
@@ -295,7 +302,7 @@ class PstFrom(object):
             fmts = [fmts[0] for _ in filenames]
         fmts = ['free' if fmt is None else fmt for fmt in fmts]
         if seps is None:
-            seps = [None for f in filenames]
+            seps = [None for _ in filenames]
         if not isinstance(seps, list):
             seps = [seps]
         if len(seps) != len(filenames):
@@ -305,7 +312,7 @@ class PstFrom(object):
                              "".format(len(filenames), len(seps), seps[0]))
             seps = [seps[0] for _ in filenames]
         if skip_rows is None:
-            skip_rows = [None for f in filenames]
+            skip_rows = [None for _ in filenames]
         if not isinstance(skip_rows, list):
             skip_rows = [skip_rows]
         if len(skip_rows) != len(filenames):
@@ -351,7 +358,7 @@ class PstFrom(object):
                 if itype != utype:
                     self.logger.lraise("index_cols type '{0} != use_cols "
                                        "type '{1}'".
-                                       format(str(itype),str(utype)))
+                                       format(str(itype), str(utype)))
 
                 si = set(index_cols)
                 su = set(use_cols)
@@ -383,15 +390,15 @@ class PstFrom(object):
                         with open(file_path, 'r') as fp:
                             storehead = [next(fp) for _ in range(skip)]
                     else:
-                        storehead=[]
+                        storehead = []
                     df = pd.read_csv(file_path, header=header, skiprows=skip,
                                      delim_whitespace=delim_whitespace)
                 else: 
                     # TODO support reading fixed-format 
                     #  (based on value of fmt passed)
                     #  ... or not?
-                    self.logger.warn("0) Only reading free format list par files "
-                                     "currently supported.")
+                    self.logger.warn("0) Only reading free format list par "
+                                     "files currently supported.")
                     self.logger.warn("1) Assuming safe to read as whitespace "
                                      "delim.")
                     self.logger.warn("2) Desired format string will still "
@@ -402,7 +409,7 @@ class PstFrom(object):
                         with open(file_path, 'r') as fp:
                             storehead = [next(fp) for _ in range(skip)]
                     else:
-                        storehead=[]
+                        storehead = []
                     df = pd.read_csv(file_path, header=header, skiprows=skip,
                                      delim_whitespace=delim_whitespace)
 
@@ -411,19 +418,19 @@ class PstFrom(object):
                 for index_col in index_cols:
                     if index_col not in df.columns:
                         missing.append(index_col)
-                    df.loc[:,index_col] = df.loc[:,index_col].astype(np.int)
+                    df.loc[:, index_col] = df.loc[:, index_col].astype(np.int)
                 if len(missing) > 0:
-                    self.logger.lraise("the following index_cols were not found"
-                                       " in file '{0}':{1}".
-                                       format(file_path,str(missing)))
+                    self.logger.lraise("the following index_cols were not "
+                                       "found in file '{0}':{1}"
+                                       "".format(file_path, str(missing)))
                 # ensure requested use_cols are in input file
                 for use_col in use_cols:
                     if use_col not in df.columns:
                         missing.append(use_col)
                 if len(missing) > 0:
                     self.logger.lraise("the following use_cols were not found "
-                                       "in file '{0}':{1}".
-                                       format(file_path,str(missing)))
+                                       "in file '{0}':{1}"
+                                       "".format(file_path, str(missing)))
                 hheader = header
                 if hheader is None:
                     hheader = False
@@ -497,16 +504,17 @@ class PstFrom(object):
                 fmt_dict[filename] = fmt
                 sep_dict[filename] = sep
                 skip_dict[filename] = skip
-            #check for compatibility
+            # check for compatibility
             fnames = list(file_dict.keys())
             for i in range(len(fnames)):
                 for j in range(i+1, len(fnames)):
-                    if file_dict[fnames[i]].shape != file_dict[fnames[j]].shape:
+                    if (file_dict[fnames[i]].shape !=
+                            file_dict[fnames[j]].shape):
                         self.logger.lraise(
                             "shape mismatch for array types, '{0}' "
                             "shape {1} != '{2}' shape {3}"
-                            "".format(fnames[i],file_dict[fnames[i]].shape,
-                                      fnames[j],file_dict[fnames[j]].shape))
+                            "".format(fnames[i], file_dict[fnames[i]].shape,
+                                      fnames[j], file_dict[fnames[j]].shape))
 
         # if tpl_filename is None:
         #     tpl_filename = os.path.split(filenames[0])[-1] + "{0}.tpl".\
@@ -759,8 +767,8 @@ class PstFrom(object):
 
 
 def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type,
-                   use_cols=None, zone_array=None, longnames=False, get_xy=None,
-                   zero_based=True, input_filename=None):
+                   use_cols=None, zone_array=None, longnames=False,
+                   get_xy=None, zero_based=True, input_filename=None):
     """ Write template files for a list style input.
 
     Args:
@@ -829,7 +837,6 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type,
                             "".format(zone_array.ndim, len(index_cols)))
         df_tpl.loc[:, "zval"] = df_tpl.sidx.apply(lambda x: zone_array[x])
 
-
     # use all non-index columns if use_cols not passed
     if use_cols is None:
         use_cols = [c for c in df_tpl.columns if c not in index_cols]
@@ -839,16 +846,17 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type,
         df_tpl.loc[:, 'x'] = df_tpl.xy.apply(lambda x: x[0])
         df_tpl.loc[:, 'y'] = df_tpl.xy.apply(lambda x: x[1])
 
-    for iuc,use_col in enumerate(use_cols):
+    for iuc, use_col in enumerate(use_cols):
         nname = name
         if not isinstance(name, str):
-           nname = name[iuc]
+            nname = name[iuc]
         df_tpl.loc[:, "pargp{}".format(use_col)] = nname
         if par_type == "constant":
             if longnames:
-                df_tpl.loc[:,use_col] = "{0}_use_col:{1}".format(nname,use_col)
+                df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(
+                    nname, use_col)
                 if suffix != '':
-                    df_tpl.loc[:,use_col] += "_{0}".format(suffix)
+                    df_tpl.loc[:, use_col] += "_{0}".format(suffix)
             else:
                 df_tpl.loc[:, use_col] = "{0}{1}".format(nname, use_col)
                 if suffix != '':
@@ -857,7 +865,8 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type,
         elif par_type == "zone":
 
             if longnames:
-                df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname, use_col)
+                df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname,
+                                                                  use_col)
                 if zone_array is not None:
                     df_tpl.loc[:, use_col] += df_tpl.zval.apply(
                         lambda x: "_zone:{0}".format(x))
@@ -870,22 +879,24 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type,
 
         elif par_type == "grid":
             if longnames:
-                df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname, use_col)
+                df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname,
+                                                                  use_col)
                 if zone_array is not None:
                     df_tpl.loc[:, use_col] += df_tpl.zval.apply(
                         lambda x: "_zone:{0}".format(x))
                 if suffix != '':
                     df_tpl.loc[:, use_col] += "_{0}".format(suffix)
-                df_tpl.loc[:,use_col] += '_' + df_tpl.idx_strs
+                df_tpl.loc[:, use_col] += '_' + df_tpl.idx_strs
 
             else:
                 df_tpl.loc[:, use_col] = "{0}{1}".format(nname, use_col)
                 if suffix != '':
                     df_tpl.loc[:, use_col] += suffix
-                df_tpl.loc[:,use_col] += df_tpl.idx_strs
+                df_tpl.loc[:, use_col] += df_tpl.idx_strs
 
         else:
-            raise Exception("write_list_tpl() error: unrecognized 'par_type' should be 'constant','zone',"+\
+            raise Exception("write_list_tpl() error: unrecognized 'par_type' "
+                            "should be 'constant','zone', "
                             "or 'grid', not '{0}'".format(par_type))
 
     parnme = list(df_tpl.loc[:, use_cols].values.flatten())
@@ -893,10 +904,12 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type,
                  ["pargp{0}".format(col) for col in use_cols]].values.flatten())
     df_par = pd.DataFrame({"parnme": parnme, "pargp": pargp}, index=parnme)
     if not longnames:
-        too_long = df_par.loc[df_par.parnme.apply(lambda x: len(x) > 12),"parnme"]
+        too_long = df_par.loc[df_par.parnme.apply(lambda x: len(x) > 12),
+                              "parnme"]
         if too_long.shape[0] > 0:
-            raise Exception("write_list_tpl() error: the following parameter names are too long:{0}".
-                            format(','.join(list(too_long))))
+            raise Exception("write_list_tpl() error: the following parameter "
+                            "names are too long:{0}"
+                            "".format(','.join(list(too_long))))
     for use_col in use_cols:
         df_tpl.loc[:, use_col] = df_tpl.loc[:, use_col].apply(
             lambda x: "~  {0}  ~".format(x))
@@ -943,14 +956,17 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
 
         """
     if shape is None and zone_array is None:
-        raise Exception("write_array_tpl() error: must pass either zone_array or shape")
+        raise Exception("write_array_tpl() error: must pass either zone_array "
+                        "or shape")
     elif shape is not None and zone_array is not None:
         if shape != zone_array.shape:
-            raise Exception("write_array_tpl() error: passed shape != zone_array.shape")
+            raise Exception("write_array_tpl() error: passed "
+                            "shape != zone_array.shape")
     elif shape is None:
         shape = zone_array.shape
     if len(shape) != 2:
-        raise Exception("write_array_tpl() error: shape '{0}' not 2D".format(str(shape)))
+        raise Exception("write_array_tpl() error: shape '{0}' not 2D"
+                        "".format(str(shape)))
 
     def constant_namer(i, j):
         if longnames:
