@@ -1046,7 +1046,7 @@ class EnsembleSQP(EnsembleMethod):
             y, z = q, q[:, -(a.shape[1] - a.shape[0]):]
             # TODO: revisit the partitioning here. for small case, same vector spanning Y and Z.. also, based on https://www.mathworks.com/help/optim/ug/constrained-nonlinear-optimization-algorithms.html#brnox01, use full constraint grad matrix (not just active set).... which I don't understand...
         else:
-            self.z = self._null_space(self, a)
+            self.z = self._null_space(a)
             y = a.T  # "A^T is a valid choice for Y when A has full row rank" (pg. 539) of Nocedal and Wright (2006)
             # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank..
 
