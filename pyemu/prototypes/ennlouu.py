@@ -994,8 +994,14 @@ class EnsembleSQP(EnsembleMethod):
         p = np.dot(y, p_y) + np.dot(z, p_z)
 
         # now to compute lagrangian multipliers
-        rhs = np.dot(y.T, (grad.x + (hessian * p).x))
-        lm = np.linalg.solve(ay.T.x, rhs)
+        if self.alg == "LBFGS":  # we don't have the hessian
+            # pg. 539 of Nocedal and Wright (2006)
+            # simplify by dropping dependency of lm on hess (considered appropr given p converges to zero whereas grad does not..
+            lm = (constraint_grad * constraint_grad.T) * (constraint_grad * grad)
+        else:
+            # pg. 457 and 538
+            rhs = np.dot(y.T, (grad.x + (hessian * p).x))
+            lm = np.linalg.solve(ay.T.x, rhs)
 
         return p, lm
 
@@ -1012,8 +1018,8 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: revisit the partitioning here. for small case, same vector spanning Y and Z.. also, based on https://www.mathworks.com/help/optim/ug/constrained-nonlinear-optimization-algorithms.html#brnox01, use full constraint grad matrix (not just active set).... which I don't understand...
         else:
             z = self._null_space(self, a)
-            # TODO: y via RREF - via solve
-
+            y = a.T  # "A^T is a valid choice for Y when A has full row rank" (pg. 539) of Nocedal and Wright (2006)
+            # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank
 
         # check in line with definitions
         if np.isclose((a * z).x, 0.0, rtol=1e-2, atol=1e-3):
