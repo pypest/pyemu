@@ -438,7 +438,8 @@ class EnsembleSQP(EnsembleMethod):
 
 
     def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,prev_constr_grad,new_constr_grad,
-                          self_scale=True,damped=True,update=True):
+                          delta_par_nullspace,constr_grad_nullspace,
+                          self_scale=True,damped=True,update=True,reduced=False):
         '''
         see, e.g., Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
 
@@ -454,15 +455,29 @@ class EnsembleSQP(EnsembleMethod):
             see EnsembleSQP.update args docstring
         damped : bool
             see EnsembleSQP.update args docstring
+        reduced : bool
+            see EnsembleSQP.update args docstring
 
         '''
+
+        # ingredients: h, s, y
         self.H = curr_inv_hess
-        self.s = delta_par.T  # start with column vector
-        if len(self.working_set.obsnme) > 0:  # constrained opt
+
+        # s
+        if len(self.working_set.obsnme) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
+            # TODO: offer reduced hessian also where solving unconstrained step?
+            self.s = delta_par_nullspace.T  # part of step in null space of constraint jco (pg. 538)
+        else:
+            self.s = delta_par.T  # whole step
+
+        # y
+        if len(self.working_set.obsnme) > 0:  # active set and A is non-empty
             new_grad.col_names, curr_grad.col_names = self.s.col_names, self.s.col_names
             self.y = (new_grad - curr_grad) - (new_constr_grad - prev_constr_grad) * self.lagrang_mults  # see eq (36) of Liu and Reynolds (2019)
+            if reduced is True:
+                self.y = constr_grad_nullspace.T * self.y
         else:  # unconstrained
-            self.y = new_grad - curr_grad  # start with column vector
+            self.y = new_grad - curr_grad
 
         # curv condition related tests
         ys = self.y.T * self.s  # inner product
@@ -1689,7 +1704,10 @@ class EnsembleSQP(EnsembleMethod):
                                                                               update=hess_update,
                                                                               damped=damped,
                                                                               prev_constr_grad=self.prev_constr_grad,
-                                                                              new_constr_grad=self.constraint_jco)
+                                                                              new_constr_grad=self.constraint_jco,
+                                                                              reduced=self.reduced_hessian,
+                                                                              delta_par_nullspace=X,
+                                                                              constr_grad_nullspace=X)
 
             elif alg == "LBFGS":
                 self.logger.log("LBFGS implemented above")
