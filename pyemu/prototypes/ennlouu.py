@@ -1017,13 +1017,13 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.lraise("Z^TGZ is not pos-def..")  # should have been caught above
 
         # total step
-        p = np.dot(y, p_y) + np.dot(self.z, self.p_z)
+        p = np.dot(y.as_2d, p_y) + np.dot(self.z, self.p_z)
 
         # now to compute lagrangian multipliers
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False:
                 # pg. 457 and 538
-                rhs = np.dot(y.T, (grad.x + (hessian * p).x))
+                rhs = np.dot(y.T.x, (grad.x + (hessian * p).x))
                 lm = np.linalg.solve(ay.T.x, rhs)
             else:
                 # pg. 539 of Nocedal and Wright (2006)
@@ -1051,27 +1051,28 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank..
 
         # check in line with definitions
-        if np.isclose((a * self.z).x, 0.0, rtol=1e-2, atol=1e-3):
+        if not np.isclose((a * self.z).x, 0.0, rtol=1e-2, atol=1e-3):
             self.logger.lraise("null-space basis violates definition AZ = 0.. spewin..")
+
         # TODO: also check here that [Y|Z] is non-sing
-        yz = np.append(y, self.z, axis=1)
+        yz = np.append(y.as_2d, self.z, axis=1)
 
         return y, self.z
-
-    def _null_space(self, a):
-        u, s, v = np.linalg.svd(a, full_matrices=True)
-        rcond = np.finfo(s.dtype).eps * max(u.shape[0], v.shape[1])
-        tol = np.amax(s) * rcond
-        num = np.sum(s > tol, dtype=int)
-        z = v[num:, :].T.conj()
-
-        return z
 
     def _kkt_schur(self,):
         self.logger.lraise("not implemented...")
 
     def _kkt_iterative_cg(self,):
         self.logger.lraise("not implemented...")
+
+    def _null_space(self, a):
+        u, s, v = np.linalg.svd(a.as_2d, full_matrices=True)
+        rcond = np.finfo(s.dtype).eps * max(u.shape[0], v.shape[1])
+        tol = np.amax(s) * rcond
+        num = np.sum(s > tol, dtype=int)
+        z = v[num:, :].T.conj()
+
+        return z
 
     def _solve_eqp(self,method="null_space"):
         '''
