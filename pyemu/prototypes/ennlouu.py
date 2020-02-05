@@ -1066,9 +1066,10 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.lraise("not implemented...")
 
     def _null_space(self, a):
-        u, s, v = np.linalg.svd(a.as_2d, full_matrices=True)
-        rcond = np.finfo(s.dtype).eps * max(u.shape[0], v.shape[1])
-        tol = np.amax(s) * rcond
+        u, s, v = np.linalg.svd(a.x, full_matrices=True)
+        #rcond = np.finfo(s.dtype).eps * max(u.shape[0], v.shape[1])
+        #tol = np.amax(s) * rcond
+        tol = self.pst.svd_data.eigthresh
         num = np.sum(s > tol, dtype=int)
         z = v[num:, :].T.conj()
 
