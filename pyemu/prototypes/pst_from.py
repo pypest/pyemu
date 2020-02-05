@@ -13,7 +13,11 @@ from ..pyemu_warnings import PyemuWarning
 
 
 class PstFrom(object):
-
+    # TODO auto ins setup from list style output (or array) and use_cols etc
+    # TODO pilotoint style par set-up etc
+    # TODO prior builder + reals draw
+    # TODO poss move/test some of the flopy/modflow specific setup apply
+    #  methods to/in gw_utils. - save reinventing the setup/apply methods
     def __init__(self, original_d, new_d, longnames=True,
                  remove_existing=False, spatial_reference=None,
                  zero_based=True):
@@ -289,8 +293,6 @@ class PstFrom(object):
             pst.input_files = [os.path.join(self.mult_file_d, f)
                                for f in self.input_filenames]
 
-        # TODO: temporarily borrowed from pst_utils.generic_pst()
-        #  ----------------------------------------------------------------->
         if 'obs' in update.keys() or not uupdate:
             if len(self.obs_dfs) > 0:
                 obs_data = pd.concat(self.obs_dfs)
@@ -307,7 +309,6 @@ class PstFrom(object):
             pst.model_command = self.mod_command
 
         pst.prior_information = pst.null_prior
-        # TODO <--------------------------------------------------------------
         self.pst = pst
         self.pst.write(filename)
         self.write_forward_run()
@@ -606,57 +607,6 @@ class PstFrom(object):
 
         return index_cols, use_cols, file_dict, fmt_dict, sep_dict, skip_dict
 
-    # def add_pars_from_template(self, tpl_filename, in_filename):
-    #     # TODO: modify so that method adds to PstFrom object parameter data?
-    #     #  Not pst
-    #     """Method for adding parameters to Pest control file from pre-existing
-    #     template, input file pairs
-    # 
-    #     Args:
-    #         tpl_filename (`str` or `list`): filename(s) of template files
-    #             with pars to add
-    #         in_filename (`str` or `list`): filename(s) of (what pest views as)
-    #             model input files
-    # 
-    #     Returns:
-    # 
-    #     Note:
-    #         if arguments are lists they need to be in equivlent orders, so
-    #         `tpl_filename[n]` relates to `in_filename[n]`
-    # 
-    #         if self.pst is None this method will initialise a pst object by
-    #         calling pyemu.helpers.pst_from_io_files()
-    #     """
-    #     # quick argument checks
-    #     if type(tpl_filename) != type(in_filename):
-    #         raise TypeError("Both arguments need to be of the same type, "
-    #                         "`tpl_filename` is type {0}, "
-    #                         "`in_filename` is type {1}"
-    #                         "".format(type(tpl_filename), type(in_filename)))
-    #     if isinstance(tpl_filename, list):
-    #         assert len(tpl_filename) == len(in_filename), \
-    #             ("Lists provided for template and input filenames "
-    #              "are not the same length.")
-    #     else:
-    #         tpl_filename = [tpl_filename]
-    #         in_filename = [in_filename]
-    # 
-    #     for tpl, infnme in zip(tpl_filename, in_filename):
-    #         # need to set up a pst object container if it doesn't already exist
-    #         if self.pst is None:
-    #             self._init_pst(tpl_files=[tpl], in_files=[infnme])
-    #         else:
-    #             # add new pars to exisiting control file
-    #             os.chdir(self.new_d)
-    #             try:
-    #                 self.pst.add_parameters(tpl, infnme)
-    #             except Exception as e:
-    #                 os.chdir("..")
-    #                 self.logger.lraise(
-    #                     "error adding parameters for tpl {0}:{1}"
-    #                     "".format(tpl, str(e)))
-    #             os.chdir("..")
-
     def _next_count(self,prefix):
         if prefix not in self._prefix_count:
             self._prefix_count[prefix] = 0
@@ -894,7 +844,7 @@ class PstFrom(object):
 
             elif par_type in {"pilotpoints", "pilot_points",
                               "pilotpoint", "pilot_point"}:
-                # TODO
+                # TODO - other par types
                 self.logger.lraise("array type 'pilotpoints' not implemented")
             elif par_type == "kl":
                 self.logger.lraise("array type 'kl' not implemented")
@@ -1096,8 +1046,9 @@ def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type,
                             "or 'grid', not '{0}'".format(par_type))
 
     parnme = list(df_tpl.loc[:, use_cols].values.flatten())
-    pargp = list(df_tpl.loc[:,
-                 ["pargp{0}".format(col) for col in use_cols]].values.flatten())
+    pargp = list(
+        df_tpl.loc[:,
+        ["pargp{0}".format(col) for col in use_cols]].values.flatten())
     df_par = pd.DataFrame({"parnme": parnme, "pargp": pargp}, index=parnme)
     if not longnames:
         too_long = df_par.loc[df_par.parnme.apply(lambda x: len(x) > 12),

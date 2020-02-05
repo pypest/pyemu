@@ -72,7 +72,7 @@ def freyberg_test():
         for kper in range(m.nper):
             hds_kperk.append([kper, k])
     hds_runline, df = pyemu.gw_utils.setup_hds_obs(
-        os.path.join(m.model_ws,f"{m.name}.hds"), kperk_pairs=None, skip=None, 
+        os.path.join(m.model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
         prefix="hds")
     template_ws = "new_temp"
     # set up PstFrom object
