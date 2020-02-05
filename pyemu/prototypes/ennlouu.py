@@ -983,21 +983,30 @@ class EnsembleSQP(EnsembleMethod):
         # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
         y, self.z = self._compute_orthog_basis_matrices(a=constraint_grad)
         if self.alg is not "LBFGS":
-            zTgz = np.dot(self.z.T, (hessian * self.z).x)
+            if self.z is not None:
+                zTgz = np.dot(self.z.T, (hessian * self.z).x)
+            else:
+                zTgz = hessian
             if not np.all(np.linalg.eigvals(zTgz) > 0):
                 self.logger.log("Z^TGZ not pos-def!")
 
         # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
         ay = constraint_grad * y
-        p_y = np.linalg.solve(ay.as_2d, -1.0 * constraint_diff.as_2d)
+        p_y = np.linalg.solve(ay.x, -1.0 * constraint_diff.x)
 
         # now to solve linear system for p_z
         # do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
         try:
             if self.alg is not "LBFGS":  # we have a hessian (potentially the reduced form, e.g., pg. 540)
-                zTgy = np.dot(self.z.T, (hessian * y).x)
+                if self.z is not None:
+                    zTgy = np.dot(self.z.T, (hessian * y).x)
+                else:
+                    zTgy = (hessian * y).x  # TODO: check math here!!
                 if self.reduced_hessian is False:  # full hessian
-                    rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, grad.x)
+                    if self.z is not None:
+                        rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, grad.x)
+                    else:
+                        rhs = (-1.0 * np.dot(zTgy, p_y)) - (grad.x)  # TODO: check math here!!
                     if cholesky:
                         l = np.linalg.cholesky(zTgz)
                         yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
@@ -1007,7 +1016,10 @@ class EnsembleSQP(EnsembleMethod):
                         self.p_z = np.linalg.solve(zTgz, rhs)
                 else:  # reduced hessian
                     # simplify by removing cross term (or ``partial hessian'') matrix (zTgy), which is approp when approximating hessian (zTgz) (as p_y goes to zero faster than p_z)
-                    rhs = -1.0 * np.dot(self.z.T, grad)
+                    if self.z is not None:
+                        rhs = -1.0 * np.dot(self.z.T, grad)
+                    else:
+                        rhs = -1.0 * grad  # TODO: check math here!!
                     self.p_z = np.linalg.solve(zTgz, rhs)  # the reduced hess (zTgz) is much more likely to be pos-def
 
             else:  # we don't have the hessian (LBFGS)
@@ -1017,7 +1029,10 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.lraise("Z^TGZ is not pos-def..")  # should have been caught above
 
         # total step
-        p = np.dot(y.as_2d, p_y) + np.dot(self.z, self.p_z)
+        if self.z is not None:
+            p = np.dot(y.x, p_y) + np.dot(self.z, self.p_z)
+        else:
+            p = np.dot(y.x, p_y)  # TODO: check math here!!
 
         # now to compute lagrangian multipliers
         if self.alg is not "LBFGS":
@@ -1051,11 +1066,13 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank..
 
         # check in line with definitions
-        if not np.all(np.isclose((a * self.z).x, 0.0, rtol=1e-2, atol=1e-3)):
-            self.logger.lraise("null-space basis violates definition AZ = 0.. spewin..")
+        if self.z is not None:
+            if not np.all(np.isclose((a * self.z).x, 0.0, rtol=1e-2, atol=1e-3)):
+                self.logger.lraise("null-space basis violates definition AZ = 0.. spewin..")
 
-        # TODO: also check here that [Y|Z] is non-sing
-        yz = np.append(y.as_2d, self.z, axis=1)
+        if self.z is not None:
+            # TODO: also check here that [Y|Z] is non-sing
+            yz = np.append(y.as_2d, self.z, axis=1)
 
         return y, self.z
 
@@ -1068,7 +1085,7 @@ class EnsembleSQP(EnsembleMethod):
     def _null_space(self, a):
         tol = self.pst.svd_data.eigthresh
         if np.linalg.matrix_rank(a.x, tol=tol) == a.shape[1]:
-            z = np.zeros((a.shape[1], 1))
+            z = None  #np.zeros((a.shape[1], 1))
         else:
             u, s, v = np.linalg.svd(a.x, full_matrices=True)
             # rcond = np.finfo(s.dtype).eps * max(u.shape[0], v.shape[1])
