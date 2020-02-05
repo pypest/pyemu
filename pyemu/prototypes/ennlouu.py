@@ -1051,7 +1051,7 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank..
 
         # check in line with definitions
-        if not np.isclose((a * self.z).x, 0.0, rtol=1e-2, atol=1e-3):
+        if not np.all(np.isclose((a * self.z).x, 0.0, rtol=1e-2, atol=1e-3)):
             self.logger.lraise("null-space basis violates definition AZ = 0.. spewin..")
 
         # TODO: also check here that [Y|Z] is non-sing
@@ -1066,12 +1066,15 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.lraise("not implemented...")
 
     def _null_space(self, a):
-        u, s, v = np.linalg.svd(a.x, full_matrices=True)
-        #rcond = np.finfo(s.dtype).eps * max(u.shape[0], v.shape[1])
-        #tol = np.amax(s) * rcond
         tol = self.pst.svd_data.eigthresh
-        num = np.sum(s > tol, dtype=int)
-        z = v[num:, :].T.conj()
+        if np.linalg.matrix_rank(a.x, tol=tol) == a.shape[1]:
+            z = np.zeros((a.shape[1], 1))
+        else:
+            u, s, v = np.linalg.svd(a.x, full_matrices=True)
+            # rcond = np.finfo(s.dtype).eps * max(u.shape[0], v.shape[1])
+            # tol = np.amax(s) * rcond
+            num = np.sum(s > tol, dtype=int)
+            z = v[num:, :].T.conj()
 
         return z
 
@@ -1406,7 +1409,7 @@ class EnsembleSQP(EnsembleMethod):
                 out_of_bounds = par.loc[(par.parubnd < par.parval1) | (par.parlbnd > par.parval1), :]
                 if out_of_bounds.shape[0] > 0:
                     self.logger.log("{0} mean dec vars for step {1} out-of-bounds: {2}..."
-                                    .format(out_of_bounds.shape[0],step_size,list(out_of_bounds.parnme)))
+                                    .format(out_of_bounds.shape[0], step_size, list(out_of_bounds.parnme)))
                     # TODO: or some scaling/truncation strategy?
                     # TODO: could try new alpha (between smaller and the bound violating one)?
                     #continue
@@ -1414,7 +1417,7 @@ class EnsembleSQP(EnsembleMethod):
                     par.loc[(par.parlbnd > par.parval1), "parval1"] = par.parlbnd
                     # TODO: stop alpha testing from here...
                     self.logger.log("{0} mean dec vars for step {1} out-of-bounds: {2}..."
-                                    .format(out_of_bounds.shape[0],step_size,list(out_of_bounds.parnme)))
+                                    .format(out_of_bounds.shape[0], step_size, list(out_of_bounds.parnme)))
                 self.logger.log("computing mean dec var upgrade".format(step_size))
 
                 if finite_diff_grad is False:
