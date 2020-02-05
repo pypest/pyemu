@@ -986,7 +986,7 @@ class EnsembleSQP(EnsembleMethod):
             if self.z is not None:
                 zTgz = np.dot(self.z.T, (hessian * self.z).x)
             else:
-                zTgz = hessian
+                zTgz = hessian.x
             if not np.all(np.linalg.eigvals(zTgz) > 0):
                 self.logger.log("Z^TGZ not pos-def!")
 
