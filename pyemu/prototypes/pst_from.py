@@ -31,18 +31,26 @@ class PstFrom(object):
 
         self.par_dfs = []
         self.obs_dfs = []
-        self.mod_command = 'forward_run.py'
-        self.pre_py_cmds = []
-        self.pre_sys_cmds = []
+        self.py_run_file = "forward_run.py"
+        self.mod_command = "python {0}".format(self.py_run_file)
+        self.pre_py_cmds = []  
+        self.pre_sys_cmds = []  # a list of preprocessing commands to add to 
+        # the forward_run.py script commands are executed with os.system() 
+        # within forward_run.py.
+        self.mod_py_cmds = []
         self.mod_sys_cmds = []
         self.post_py_cmds = []
-        self.post_sys_cmds = []
+        self.post_sys_cmds = []  # a list of post-processing commands to add to 
+        # the forward_run.py script. Commands are executed with os.system() 
+        # within forward_run.py.
+        self.extra_py_imports = []
+        self.tmp_files = []
 
-        self.tpl_filenames, self.input_filenames = [],[]
-        self.ins_filenames, self.output_filenames = [],[]
+        self.tpl_filenames, self.input_filenames = [], []
+        self.ins_filenames, self.output_filenames = [], []
 
-        self.longnames=bool(longnames)
-        self.logger = pyemu.Logger("PstFrom.log",echo=True)
+        self.longnames = bool(longnames)
+        self.logger = pyemu.Logger("PstFrom.log", echo=True)
 
         self.logger.statement("starting PstFrom process")
 
@@ -53,9 +61,7 @@ class PstFrom(object):
         self.initialize_spatial_reference()
 
         self._setup_dirs()
-        self.par_data = []
         self._parfile_relations = []
-        self.par_dfs = {'list_pars': [], 'array_pars': []}
         self.pst = None
 
     @property
@@ -100,7 +106,7 @@ class PstFrom(object):
         if len(args) == 3:  # kij
             i, j = args[1], args[2]
 
-        elif len(args) == 2: #ij
+        elif len(args) == 2:  # ij
             i, j = args[0], args[1]
         else:
             self.logger.lraise(("get_xy() error: wrong number of args, "
@@ -129,7 +135,45 @@ class PstFrom(object):
                                "unsupported spatial_reference")
 
     def write_forward_run(self):
-        pass
+        # update python commands with system style commands
+        for alist, ilist in zip(
+                [self.pre_py_cmds, self.mod_py_cmds, self.post_py_cmds],
+                [self.pre_sys_cmds, self.mod_sys_cmds, self.post_sys_cmds]):
+            if ilist is None:
+                continue
+
+            if not isinstance(ilist,list):
+                ilist = [ilist]
+            for cmd in ilist:
+                self.logger.statement("forward_run line:{0}".format(cmd))
+                alist.append("pyemu.os_utils.run('{0}')\n".format(cmd))
+
+        with open(os.path.join(self.new_d, self.py_run_file),
+                  'w') as f:
+            f.write(
+                "import os\nimport multiprocessing as mp\nimport numpy as np" + \
+                "\nimport pandas as pd\n")
+            f.write("import pyemu\n")
+            f.write("def main():\n")
+            f.write("\n")
+            s = "    "
+            for ex_imp in self.extra_py_imports:
+                f.write(s + 'import {0}\n'.format(ex_imp))
+            for tmp_file in self.tmp_files:
+                f.write(s + "try:\n")
+                f.write(s + "   os.remove('{0}')\n".format(tmp_file))
+                f.write(s + "except Exception as e:\n")
+                f.write(s + "   print('error removing tmp file:{0}')\n".format(
+                    tmp_file))
+            for line in self.pre_py_cmds:
+                f.write(s + line + '\n')
+            for line in self.mod_py_cmds:
+                f.write(s + line + '\n')
+            for line in self.post_py_cmds:
+                f.write(s + line + '\n')
+            f.write("\n")
+            f.write("if __name__ == '__main__':\n")
+            f.write("    mp.freeze_support()\n    main()\n\n")
 
     def build_prior(self):
         pass
@@ -174,7 +218,7 @@ class PstFrom(object):
     #     os.chdir('..')
     #     self.pst = pst
 
-    def build_pst(self, filename=None):
+    def build_pst(self, filename=None, update=False):
         """Build control file from i/o files in PstFrom object.
         Warning: This builds a pest control file from scratch
             - overwriting anything already in self.pst object and
@@ -182,62 +226,92 @@ class PstFrom(object):
 
         Args:
             filename (`str`): the filename to save the control file to.
-            If None, the name is formed from the `PstFrom.original_d`
-            --- the orginal directory name from which the forward model
-            was extracted.  Default is None.
-            The control file is saved in the `PstFrom.new_d` directory.
-
+                If None, the name is formed from the `PstFrom.original_d`
+                --- the orginal directory name from which the forward model
+                was extracted.  Default is None.
+                The control file is saved in the `PstFrom.new_d` directory.
+            update (bool) or (str): flag to add to existing Pst object and
+                rewrite. If string {'pars', 'obs'} just update respective
+                components of Pst. Default is False - build from PstFrom
+                components.
         Note:
             This builds a pest control file from scratch
             - overwriting anything already in self.pst object and
             anything already writen to `filename`
         """
-
-        # parameter data from object
-        par_data = pd.concat(self.par_data)
-        # info relating parameter multiplier files to model input files
-        parfile_relations = self.parfile_relations
-        parfile_relations.to_csv(os.path.join(self.new_d,
-                                              'mult2model_info.csv'))
-        if filename is None:
-            filename = os.path.join(self.new_d, self.original_d)
-        elif os.path.dirname(filename) in ['', '.']:
+        
+        if update:
+            if self.pst is None:
+                self.logger.warn("Can't update Pst object not initialised. "
+                                 "Setting update to False")
+                update = False
+            else:
+                if filename is None:
+                    filename = os.path.join(self.new_d, self.pst.filename)
+        else:
+            if filename is None:
+                filename = os.path.join(self.new_d, self.original_d)
+        if os.path.dirname(filename) in ['', '.']:
             filename = os.path.join(self.new_d, filename)
 
-        pst = pyemu.Pst(filename, load=False)
-        pst.parameter_data = par_data
+        if update:
+            pst = self.pst
+            if update is True:
+                update = {'pars': False, 'obs': False}
+            elif isinstance(update, str):
+                update = {str: True}
+            elif isinstance(update, (set, list)):
+                update = {s: True for s in update}
+            uupdate = True
+        else:
+            update = {'pars': False, 'obs': False}
+            uupdate = False
+            pst = pyemu.Pst(filename, load=False)
 
-        # TODO: temporalily borowed from pst_utils.generic_pst()
+        if 'pars' in update.keys() or not uupdate:
+            if len(self.par_dfs) > 0:
+                # parameter data from object
+                par_data = pd.concat(self.par_dfs)
+                # info relating parameter multiplier files to model input files
+                parfile_relations = self.parfile_relations
+                parfile_relations.to_csv(os.path.join(self.new_d,
+                                                      'mult2model_info.csv'))
+                if not any(["apply_list_and_array_pars" in s 
+                            for s in self.pre_py_cmds]):
+                    self.pre_py_cmds.append(
+                        "pyemu.helpers.apply_list_and_array_pars("
+                        "arr_par_file='mult2model_info.csv')")
+            else:
+                par_data = pyemu.pst_utils._populate_dataframe(
+                    [], pst.par_fieldnames, pst.par_defaults, pst.par_dtype)
+            pst.parameter_data = par_data
+            pst.template_files = self.tpl_filenames
+            pst.input_files = [os.path.join(self.mult_file_d, f)
+                               for f in self.input_filenames]
+
+        # TODO: temporarily borrowed from pst_utils.generic_pst()
         #  ----------------------------------------------------------------->
-        obs_data = pyemu.pst_utils._populate_dataframe(
-            [], pst.obs_fieldnames, pst.obs_defaults, pst.obs_dtype)
-        obs_data.loc[:, "obsnme"] = []
-        obs_data.index = []
-        obs_data.sort_index(inplace=True)
-        pst.observation_data = obs_data
-
-        pst.template_files = self.tpl_filenames
-        pst.input_files = [os.path.join(self.mult_file_d, f)
-                           for f in self.ins_filenames]
-        pst.instruction_files = self.ins_filenames
-        pst.output_files = self.output_filenames
-        pst.model_command = self.mod_command
+        if 'obs' in update.keys() or not uupdate:
+            if len(self.obs_dfs) > 0:
+                obs_data = pd.concat(self.obs_dfs)
+            else:
+                obs_data = pyemu.pst_utils._populate_dataframe(
+                    [], pst.obs_fieldnames, pst.obs_defaults, pst.obs_dtype)
+                obs_data.loc[:, "obsnme"] = []
+                obs_data.index = []
+            obs_data.sort_index(inplace=True)
+            pst.observation_data = obs_data
+            pst.instruction_files = self.ins_filenames
+            pst.output_files = self.output_filenames
+        if not uupdate:
+            pst.model_command = self.mod_command
 
         pst.prior_information = pst.null_prior
-        self.pst = pst
         # TODO <--------------------------------------------------------------
+        self.pst = pst
         self.pst.write(filename)
-        test = None
-        # TODO: amend so that pst can be built from PstFrom components
-        # self._init_pst(
-        #     tpl_files=self.tpl_filenames, in_files=self.input_filenames,
-        #     ins_files=self.ins_filenames, out_files=self.output_filenames)
-        # 
-        # if filename is None:
-        #     filename = os.path.join(self.new_d, self.original_d)
-        # self.logger.statement("writing pst {0}".format(filename))
-        # 
-        # self.pst.write(filename)
+        self.write_forward_run()
+        return pst
 
     def _setup_dirs(self):
         self.logger.log("setting up dirs")
@@ -590,14 +664,126 @@ class PstFrom(object):
             self._prefix_count[prefix] += 1
 
         return self._prefix_count[prefix]
+    
+    def add_observations(self, ins_file, out_file=None, pst_path=None,
+                         inschek=True, rebuild_pst=False):
+        """ add new observations to a control file
 
+         Args:
+             ins_file (`str`): instruction file with exclusively new 
+                observation names
+             out_file (`str`): model output file.  If None, then 
+                ins_file.replace(".ins","") is used. Default is None
+             pst_path (`str`): the path to append to the instruction file and 
+                out file in the control file.  If not None, then any existing 
+                path in front of the template or in file is split off and 
+                pst_path is prepended.  If python is being run in a directory 
+                other than where the control file will reside, it is useful 
+                to pass `pst_path` as `.`. Default is None
+             inschek (`bool`): flag to try to process the existing output file 
+                using the `pyemu.InstructionFile` class.  If successful, 
+                processed outputs are used as obsvals
+
+         Returns:
+             `pandas.DataFrame`: the data for the new observations that were 
+                added
+
+         Note:
+             populates the new observation information with default values
+
+         Example::
+
+             pst = pyemu.Pst(os.path.join("template", "my.pst"))
+             pst.add_observations(os.path.join("template","new_obs.dat.ins"), 
+                                  pst_path=".")
+             pst.write(os.path.join("template", "my_new.pst")
+
+         """
+        # lifted almost completely from `Pst().add_observation()`
+        if os.path.dirname(ins_file) in ['', '.']:
+            ins_file = os.path.join(self.new_d, ins_file)
+            pst_path = '.'
+        if not os.path.exists(ins_file):
+            self.logger.lraise("ins file not found: {0}, {1}"
+                               "".format(os.getcwd(), ins_file))
+        if out_file is None:
+            out_file = ins_file.replace(".ins", "")
+        if ins_file == out_file:
+            self.logger.lraise("ins_file == out_file, doh!")
+
+        # get the parameter names in the template file
+        self.logger.log(
+            "adding observation from instruction file '{0}'".format(ins_file))
+        obsnme = pyemu.pst_utils.parse_ins_file(ins_file)
+
+        sobsnme = set(obsnme)
+        if len(self.obs_dfs) > 0:
+            sexist = pd.concat(self.obs_dfs).obsnme
+        else: 
+            sexist = []
+        sexist = set(sexist)  # todo need to check this here?
+        sint = sobsnme.intersection(sexist)
+        if len(sint) > 0:
+            self.logger.lraise(
+                "the following obs instruction file {0} are already in the "
+                "control file:{1}".
+                format(ins_file, ','.join(sint)))
+
+        # find "new" obs that are not already in the control file
+        new_obsnme = sobsnme - sexist
+        if len(new_obsnme) == 0:
+            self.logger.lraise(
+                "no new observations found in instruction file {0}".format(
+                    ins_file))
+
+        # extend observation_data
+        new_obsnme = np.sort(list(new_obsnme))
+        new_obs_data = pyemu.pst_utils._populate_dataframe(
+            new_obsnme, pyemu.pst_utils.pst_config["obs_fieldnames"],
+            pyemu.pst_utils.pst_config["obs_defaults"], 
+            pyemu.pst_utils.pst_config["obs_dtype"])
+        new_obs_data.loc[new_obsnme, "obsnme"] = new_obsnme
+        new_obs_data.index = new_obsnme
+        cwd = '.'
+        if pst_path is not None:
+            cwd = os.path.join(*os.path.split(ins_file)[:-1])
+            ins_file = os.path.join(pst_path, os.path.split(ins_file)[-1])
+            out_file = os.path.join(pst_path, os.path.split(out_file)[-1])
+        self.ins_filenames.append(ins_file)
+        self.output_filenames.append(out_file)
+        # add to temporary files to be removed at start of forward run
+        self.tmp_files.append(out_file)
+        df = None
+        if inschek:
+            # df = pst_utils._try_run_inschek(ins_file,out_file,cwd=cwd)
+            ins_file = os.path.join(cwd, ins_file)
+            out_file = os.path.join(cwd, out_file)
+            df = pyemu.pst_utils.try_process_output_file(ins_file=ins_file,
+                                                         output_file=out_file)
+        if df is not None:
+            # print(self.observation_data.index,df.index)
+            new_obs_data.loc[df.index, "obsval"] = df.obsval
+        self.obs_dfs.append(new_obs_data)
+        self.logger.log(
+            "adding observation from instruction file '{0}'".format(ins_file))
+        if rebuild_pst:
+            if self.pst is not None:
+                self.logger.log("Adding pars to control file "
+                                "and rewriting pst")
+                self.build_pst(filename=self.pst.filename, update='obs')
+            else:
+                self.build_pst(filename=self.pst.filename, update=False)
+                self.logger.warn("pst object not available, "
+                                 "new control file will be written")
+        return new_obs_data
+    
     def add_parameters(self, filenames, par_type, zone_array=None,
                        dist_type="gaussian", sigma_range=4.0,
                        upper_bound=1.0e10, lower_bound=1.0e-10,
                        transform="log", par_name_base="p", index_cols=None,
                        use_cols=None, pp_space=10, num_eig_kl=100,
                        spatial_reference=None, mfile_fmt='free',
-                       ult_ubound=None, ult_lbound=None):
+                       ult_ubound=None, ult_lbound=None, rebuild_pst=False):
         """Add list or array style model input files to PstFrom object.
         This method
 
@@ -761,9 +947,19 @@ class PstFrom(object):
         for field in missing:
             df[field] = pyemu.pst_utils.pst_config['par_defaults'][field]
         df = df.loc[:, par_data_cols]
-        self.par_data.append(df.drop_duplicates())
+        self.par_dfs.append(df.drop_duplicates())
         self.logger.log("adding parameters for file(s) "
                         "{0}".format(str(filenames)))
+
+        if rebuild_pst:
+            if self.pst is not None:
+                self.logger.log("Adding pars to control file "
+                                "and rewriting pst")
+                self.build_pst(filename=self.pst.filename, update='pars')
+            else:
+                self.build_pst(filename=self.pst.filename, update=False)
+                self.logger.warn("pst object not available, "
+                                 "new control file will be written")
 
 
 def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type,

@@ -53,9 +53,12 @@ def freyberg_test():
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, 
                                    check=False, forgive=False,
                                    exe_name=mf_exe_name)
-    flopy.modflow.ModflowRiv(m,
-                             stress_period_data={0: [0, 0, 0, 1.0, 1.0, 1.0]})
-    org_model_ws = "temp2"
+    flopy.modflow.ModflowRiv(m, stress_period_data={
+        0: [[0, 0, 0, m.dis.top.array[0, 0], 1.0, m.dis.botm.array[0, 0, 0]],
+            [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
+            [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]]]})
+
+    org_model_ws = "temp_pst_from"
     if os.path.exists(org_model_ws):
         shutil.rmtree(org_model_ws)
     m.external_path = "."
@@ -64,13 +67,22 @@ def freyberg_test():
     print("{0} {1}".format(mf_exe_name, m.name + ".nam"), org_model_ws)
     os_utils.run("{0} {1}".format(mf_exe_name, m.name + ".nam"), 
                  cwd=org_model_ws)
-
-    # set up pest control file with PstFrom() method
-    pf = PstFrom(original_d=org_model_ws, new_d="new_temp", 
+    hds_kperk = []
+    for k in range(m.nlay):
+        for kper in range(m.nper):
+            hds_kperk.append([kper, k])
+    hds_runline, df = pyemu.gw_utils.setup_hds_obs(
+        os.path.join(m.model_ws,f"{m.name}.hds"), kperk_pairs=None, skip=None, 
+        prefix="hds")
+    template_ws = "new_temp"
+    # set up PstFrom object
+    pf = PstFrom(original_d=org_model_ws, new_d=template_ws, 
                  remove_existing=True,
                  longnames=True, spatial_reference=m.modelgrid, 
                  zero_based=False)
-
+    pf.add_observations(ins_file='freyberg.hds.dat.ins')
+    pf.post_py_cmds.append(hds_runline)
+    pf.tmp_files.append(f"{m.name}.hds")
     # pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
     #                   zone_array=m.bas6.ibound[0].array,
     #                   par_name_base="pprch_datetime:1-1-1970")
@@ -92,10 +104,12 @@ def freyberg_test():
                       par_name_base="rch_datetime:1-1-1970")
     pf.add_parameters(filenames=["rech_1.ref", "rech_2.ref"],
                       par_type="zone", zone_array=m.bas6.ibound[0].array)
-
+    
+    pf.mod_sys_cmds.append("{0} {1}".format(
+        os.path.basename(mf_exe_name), m.name + ".nam"))
     print(pf.mult_files)
     print(pf.org_files)
-    pf.build_pst('freyberg.pst')
+    pst = pf.build_pst('freyberg.pst')
     os.chdir(pf.new_d)
     pyemu.helpers.apply_list_and_array_pars(arr_par_file="mult2model_info.csv")
     os.chdir("..")
