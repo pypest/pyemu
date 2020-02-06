@@ -929,7 +929,7 @@ class EnsembleSQP(EnsembleMethod):
                 if np.all(lagrang_mults_ineq.values > 0):
                     self.logger.lraise("reached optimal soln!")
                 else:
-                    to_drop = lagrang_mults_ineq['mean'].idxmin()
+                    to_drop = lagrang_mults_ineq.idxmin()[0]
                     self.working_set = self.working_set.drop(to_drop, axis=0)
                     self.working_set_ineq = self.working_set_ineq.drop(to_drop, axis=0)
                     self.not_in_working_set = self.constraint_set.drop(self.working_set.obsnme, axis=0)
@@ -1063,7 +1063,7 @@ class EnsembleSQP(EnsembleMethod):
         else:
             self.z = self._null_space(a)
             y = a.T  # "A^T is a valid choice for Y when A has full row rank" (pg. 539) of Nocedal and Wright (2006)
-            # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank..
+            # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank?
 
         # check in line with definitions
         if self.z is not None:
@@ -1071,8 +1071,9 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.lraise("null-space basis violates definition AZ = 0.. spewin..")
 
         if self.z is not None:
-            # TODO: also check here that [Y|Z] is non-sing
             yz = np.append(y.x, self.z, axis=1)
+            if np.linalg.det(yz) == 0:
+                self.logger.lraise("Y|Z not invertible.. spewin..")
 
         return y, self.z
 
@@ -1108,8 +1109,8 @@ class EnsembleSQP(EnsembleMethod):
             options include: null_space (pg. 457), schur (pg. 455) and the iterative (TODO) method.
         '''
 
-        g = self.inv_hessian * Matrix(2.0 * np.eye((self.hessian.shape[0])),
-                                      row_names=self.hessian.row_names, col_names=self.hessian.col_names)
+        g = self.hessian * Matrix(2.0 * np.eye((self.hessian.shape[0])),
+                                  row_names=self.hessian.row_names, col_names=self.hessian.col_names)
         # TODO: check self.hessian or self.inv_hessian?
 
         a = self.constraint_jco.df().drop(self.not_in_working_set.obsnme, axis=1)  # pertains to active constraints only
