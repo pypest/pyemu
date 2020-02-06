@@ -985,10 +985,10 @@ class EnsembleSQP(EnsembleMethod):
         if self.alg is not "LBFGS":
             if self.z is not None:
                 zTgz = np.dot(self.z.T, (hessian * self.z).x)
+                if not np.all(np.linalg.eigvals(zTgz) > 0):
+                    self.logger.log("Z^TGZ not pos-def!")
             else:
-                zTgz = hessian.x  # TODO: check math here!!
-            if not np.all(np.linalg.eigvals(zTgz) > 0):
-                self.logger.log("Z^TGZ not pos-def!")
+                zTgz = None  #hessian.x  # TODO: check math here!!
 
         # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
         ay = constraint_grad * y
@@ -1000,27 +1000,21 @@ class EnsembleSQP(EnsembleMethod):
             if self.alg is not "LBFGS":  # we have a hessian (potentially the reduced form, e.g., pg. 540)
                 if self.z is not None:
                     zTgy = np.dot(self.z.T, (hessian * y).x)
-                else:
-                    zTgy = (hessian * y).x  # TODO: check math here!!
-                if self.reduced_hessian is False:  # full hessian
-                    if self.z is not None:
+                    if self.reduced_hessian is False:  # full hessian
                         rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, grad.x)
-                    else:
-                        rhs = (-1.0 * np.dot(zTgy, p_y)) - (grad.x)  # TODO: check math here!!
-                    if cholesky:
-                        l = np.linalg.cholesky(zTgz)
-                        yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
-                        l_ = l.conj()  # TODO: check math here
-                        self.p_z = np.linalg.solve(l_, yy)
-                    else:
-                        self.p_z = np.linalg.solve(zTgz, rhs)
-                else:  # reduced hessian
-                    # simplify by removing cross term (or ``partial hessian'') matrix (zTgy), which is approp when approximating hessian (zTgz) (as p_y goes to zero faster than p_z)
-                    if self.z is not None:
+                        if cholesky:
+                            l = np.linalg.cholesky(zTgz)
+                            yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
+                            l_ = l.conj()  # TODO: check math here
+                            self.p_z = np.linalg.solve(l_, yy)
+                        else:
+                            self.p_z = np.linalg.solve(zTgz, rhs)
+                    else:  # reduced hessian
+                        # simplify by removing cross term (or ``partial hessian'') matrix (zTgy), which is approp when approximating hessian (zTgz) (as p_y goes to zero faster than p_z)
                         rhs = -1.0 * np.dot(self.z.T, grad)
-                    else:
-                        rhs = -1.0 * grad  # TODO: check math here!!
-                    self.p_z = np.linalg.solve(zTgz, rhs)  # the reduced hess (zTgz) is much more likely to be pos-def
+                        self.p_z = np.linalg.solve(zTgz, rhs)  # the reduced hess (zTgz) is much more likely to be pos-def
+                else:
+                    self.logger.log("null-space dim (wrt active constraints) is zero.. therefore no p_z component")
 
             else:  # we don't have the hessian (LBFGS)
                 self.logger.lraise("not sure if this can be done...")
@@ -1032,7 +1026,7 @@ class EnsembleSQP(EnsembleMethod):
         if self.z is not None:
             p = np.dot(y.x, p_y) + np.dot(self.z, self.p_z)
         else:
-            p = np.dot(y.x, p_y)  # TODO: check math here!!
+            p = np.dot(y.x, p_y)
 
         # now to compute lagrangian multipliers
         if self.alg is not "LBFGS":
@@ -1072,8 +1066,10 @@ class EnsembleSQP(EnsembleMethod):
 
         if self.z is not None:
             yz = np.append(y.x, self.z, axis=1)
-            if np.linalg.det(yz) == 0:
-                self.logger.lraise("Y|Z not invertible.. spewin..")
+            if yz.shape != (a.shape[1], a.shape[1]):
+                self.logger.lraise("Y|Z matrix is the wrong shape")
+            if np.isclose(np.linalg.det(yz), 0.0, rtol=1e-5, atol=1e-6):
+                self.logger.lraise("Y|Z not invertible.. spewin.. revisit Y computation for generality")
 
         return y, self.z
 
