@@ -986,7 +986,7 @@ class EnsembleSQP(EnsembleMethod):
             if self.z is not None:
                 zTgz = np.dot(self.z.T, (hessian * self.z).x)
             else:
-                zTgz = hessian.x
+                zTgz = hessian.x  # TODO: check math here!!
             if not np.all(np.linalg.eigvals(zTgz) > 0):
                 self.logger.log("Z^TGZ not pos-def!")
 
@@ -1072,7 +1072,7 @@ class EnsembleSQP(EnsembleMethod):
 
         if self.z is not None:
             # TODO: also check here that [Y|Z] is non-sing
-            yz = np.append(y.as_2d, self.z, axis=1)
+            yz = np.append(y.x, self.z, axis=1)
 
         return y, self.z
 
@@ -1095,7 +1095,7 @@ class EnsembleSQP(EnsembleMethod):
 
         return z
 
-    def _solve_eqp(self,method="null_space"):
+    def _solve_eqp(self,qp_solve_method="null_space"):
         '''
         Direct QP (KKT system) solve method herein---assuming convexity (pos-def-ness) and that A has full-row-rank.
         Direct method here is just for demonstrative purposes---will require the other methods offered here given that
@@ -1132,11 +1132,11 @@ class EnsembleSQP(EnsembleMethod):
         grad_vect.col_names = ['mean']  # hack
         c = grad_vect + np.dot(0.5 * g, x_.T)  # small g
 
-        if method == "null_space":
+        if qp_solve_method == "null_space":
             p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c)
-        elif method == "schur":
+        elif qp_solve_method == "schur":
             self._kkt_schur()
-        elif method == "iterative_cg":
+        elif qp_solve_method == "iterative_cg":
             self._kkt_iterative_cg()
         else:  #method == "direct":
             coeff = np.concatenate((np.concatenate((0.5 * g.x, a.T.x), axis=1),
@@ -1185,7 +1185,7 @@ class EnsembleSQP(EnsembleMethod):
                cma=False,derinc=0.01,
                rank_one=False, learning_rate=0.5, mu_prop=0.25,
                use_dist_mean_for_delta=False,mu_learning_prop=0.5,
-               reduced_hessian=False):#localizer=None,run_subset=None,
+               reduced_hessian=False,qp_solve_method="null_space"):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -1360,7 +1360,7 @@ class EnsembleSQP(EnsembleMethod):
         if constraints is True and len(self.working_set) > 0:  # active constraints present
                 self.logger.log("calculate search direction and perform tests")
                 self.logger.log("solve QP sub-problem (active set method)")
-                self.search_d, self.lagrang_mults = self._solve_eqp()
+                self.search_d, self.lagrang_mults = self._solve_eqp(qp_solve_method=qp_solve_method)
                 self.logger.log("solve QP sub-problem (active set method)")
                 self.logger.log("calculate search direction and perform tests")
 
@@ -1670,8 +1670,9 @@ class EnsembleSQP(EnsembleMethod):
         if next_it is False:
             if constraints:
                 self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
-                self.parensemble_mean_next.df().to_csv(self.pst.filename + ".{0}.{1}.csv"
-                                                   .format(self.iter_num, best_alpha))  #TODO: or forgive here for unsuccessful iter
+                if self.parensemble_mean_next is not None:
+                    self.parensemble_mean_next.df().to_csv(self.pst.filename + ".{0}.{1}.csv"
+                                                           .format(self.iter_num, best_alpha))  #TODO: or forgive here for unsuccessful iter
             else:
                 best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
                 self.best_alpha_per_it[self.iter_num] = best_alpha
@@ -1691,7 +1692,8 @@ class EnsembleSQP(EnsembleMethod):
         if self.parensemble_mean_next is None:
             self.logger.log("unsuccessful upgrade iteration.. using previous mean par en and increasing draw mult")
             self.parensemble_mean_next = self.parensemble_mean.copy()
-            self.parensemble_next = self.parensemble.copy()
+            if finite_diff_grad is False:
+                self.parensemble_next = self.parensemble.copy()
             # TODO: change draw mult if here
 
         # TODO: failed run handling
