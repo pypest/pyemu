@@ -1032,7 +1032,7 @@ class EnsembleSQP(EnsembleMethod):
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False:
                 # pg. 457 and 538
-                rhs = np.dot(y.T.x, (grad.x + (hessian * p).x))
+                rhs = np.dot(y.T.x, -1.0 * (grad.x + (hessian * p).x))
                 lm = np.linalg.solve(ay.T.x, rhs)
             else:
                 # pg. 539 of Nocedal and Wright (2006)
