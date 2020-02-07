@@ -815,15 +815,15 @@ class EnsembleSQP(EnsembleMethod):
 
             # now we assess filter pairs following new (acceptable) pair for curr iter to choose best....
             curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
-            if curr_filter.shape[0] > 0 and curr_filter.loc[curr_filter['alpha'] == alpha,:].shape[0] > 0:
+            if curr_filter.shape[0] > 0 and curr_filter.loc[curr_filter['alpha'] == alpha, :].shape[0] > 0:
                 # TODO: but.. what is the price of violating constraints? We don't want to at all...
                 # TODO: either just pick min phi with constraint = 0, or weight constraint viol * 10, and transf?, e.g.
                 if biobj_transf:
-                    min_beta = curr_filter['beta'].min()
+                    min_beta = 0.0  #curr_filter['beta'].min()
                     if opt_direction == "max":
-                        minmax_phi = np.log10(curr_filter['phi'].max())
+                        minmax_phi = np.log10(curr_filter['phi'].max())  #TODO: generalize - drop log
                     else:
-                        minmax_phi = np.log10(curr_filter['phi'].min())
+                        minmax_phi = np.log10(curr_filter['phi'].min())  #TODO: generalize - drop log
                     curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) \
                                                                   ** 2 + (np.log10(curr_filter['phi']) - minmax_phi) \
                                                                   ** 2) ** 0.5
@@ -923,7 +923,8 @@ class EnsembleSQP(EnsembleMethod):
         alpha, goto_next_it = 1.0, False
 
         if first_pass is True:  # stop-or-drop phase
-            if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-1, atol=1e-1)):  # TODO: or == ? occurs practically when filter stops updating?
+            #approx_converged = self._approx_converge_test()
+            if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-3, atol=1e-3)):# or approx_converged is True:  # this just catches when two non-parallel equality constraints are present. TODO: occurs practically when filter stops updating? or search_d?
                 # TODO: compute mults at new proposed pos with new A? (16.42)?
                 lagrang_mults_ineq = self.lagrang_mults.df().loc[self.working_set_ineq.obsnme, :]  # multiplier sign only iterpret-able for ineq constraints (in working set)
                 if np.all(lagrang_mults_ineq.values > 0):
@@ -1175,6 +1176,18 @@ class EnsembleSQP(EnsembleMethod):
 
         return alpha
 
+    def _approx_converge_test(self,):
+        # TODO: do on basis of filter (self.iter_num, distance_from_origin), or on basis of search_d?
+        is_converged = False
+        if self.iter_num > 1:
+            if working_set same:
+                d_0 = self.search_d_per_k[self.iter_num] / self.search_d_per_k[1]
+                d_1 = self.search_d_per_k[self.iter_num] / self.search_d_per_k[self.iter_num - 1]
+                if np.all(np.isclose(d_0, 1.0, rtol= , atol=)) and np.all(np.isclose(d_0, 1.0, rtol= , atol=)):
+                    DROP
+
+        return is_converged
+
 
     def update(self,step_mult=[1.0],alg="BFGS",memory=5,hess_self_scaling=True,damped=True,
                grad_calc_only=False,finite_diff_grad=False,hess_update=True,strong_Wolfe=True,
@@ -1236,6 +1249,7 @@ class EnsembleSQP(EnsembleMethod):
 
         self.alg = alg
         self.reduced_hessian = reduced_hessian
+        self.search_d_per_k = {}
 
         if opt_direction is "min" or "max":
             self.opt_direction = opt_direction
@@ -1352,15 +1366,17 @@ class EnsembleSQP(EnsembleMethod):
                     return self.phi_grad
                 self.logger.log("compute phi grad using ensemble approx")
 
-        # compute quasi-Newton search direction
+        # compute search direction
         self.logger.log("calculate search direction and perform tests")
         if constraints is True and len(self.working_set) > 0:  # active constraints present
                 self.logger.log("calculate search direction and perform tests")
                 self.logger.log("solve QP sub-problem (active set method)")
                 self.search_d, self.lagrang_mults = self._solve_eqp(qp_solve_method=qp_solve_method)
+                self.search_d_per_k[self.iter_num] = self.search_d.df()  # for detecting convergence in _active_set_method()
                 self.logger.log("solve QP sub-problem (active set method)")
                 self.logger.log("calculate search direction and perform tests")
 
+                # implement active set method
                 alpha, next_it = self._active_set_method(first_pass=True)
 
         elif constraints is False or (constraints is True and len(self.working_set) == 0):  # unconstrained or no active constraints
