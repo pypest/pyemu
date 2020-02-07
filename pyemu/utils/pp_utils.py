@@ -50,15 +50,19 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
     """
 
-    import flopy
-
     if ml is not None:
+        try:
+            import flopy
+        except Exception as e:
+            raise ImportError(
+                "error importing flopy: {0}".format(
+                    str(e)))
         assert isinstance(ml,flopy.modflow.Modflow)
         sr = ml.sr
         if ibound is None:
             ibound = ml.bas6.ibound.array
     else:
-        assert sr is not None,"if 'ml' is not passed, 'sr' must be passed"
+        assert sr is not None, "if 'ml' is not passed, 'sr' must be passed"
         if ibound is None:
             print("ibound not passed, using array of ones")
             ibound = {k:np.ones((sr.nrow,sr.ncol)) for k in prefix_dict.keys()}
@@ -66,15 +70,14 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
     if isinstance(ibound, np.ndarray):
         assert np.ndim(ibound) == 2 or np.ndim(ibound) == 3, \
-            "ibound needs to be either 3d np.ndarry or k_dict of 2d arrays. " \
+            "ibound needs to be either 3d np.ndarray or k_dict of 2d arrays. " \
             "Array of {0} dimensions passed".format(np.ndim(ibound))
         if np.ndim(ibound) == 2:
             ibound = {0: ibound}
         else:
             ibound = {k: arr for k, arr in enumerate(ibound)}
 
-
-    try:
+    try:  # TODO - flopy independence
         xcentergrid = sr.xcentergrid
         ycentergrid = sr.ycentergrid
     except Exception as e:
