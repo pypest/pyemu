@@ -268,7 +268,7 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.lraise("no constraint obs found")
             self.constraint_set = self.pst.observation_data.loc[all_constraints, :]  # all constraints (that could become active)
 
-            self.biobj_dist_from_origin_per_k, self.working_set_per_k = {}, {}
+            #self.biobj_per_k, self.working_set_per_k = {}, {}
 
             # assuming use of active-set method
             self.working_set = self.constraint_set.loc[[x for x in working_set], :]
@@ -821,31 +821,31 @@ class EnsembleSQP(EnsembleMethod):
                 # TODO: but.. what is the price of violating constraints? We don't want to at all...
                 # TODO: either just pick min phi with constraint = 0, or weight constraint viol * 10, and transf?, e.g.
                 if biobj_transf:
-                    min_beta = 0.0  #curr_filter['beta'].min()
+                    min_beta = curr_filter['beta'].min()  # should be 0.0
                     if opt_direction == "max":
-                        minmax_phi = 30  #np.log10(curr_filter['phi'].max())
+                        minmax_phi = np.log10(curr_filter['phi'].max())
                     else:
-                        minmax_phi = -10  #np.log10(curr_filter['phi'].min())
+                        minmax_phi = np.log10(curr_filter['phi'].min())
                     curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) \
                                                                   ** 2 + (np.log10(curr_filter['phi']) - minmax_phi) \
                                                                   ** 2) ** 0.5
                     if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == curr_filter[
                         'dist_from_min_origin'].min():
-                        self.biobj_dist_from_origin_per_k[self.iter_num] = \
-                            curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0]
+                        #self.biobj_per_k[self.iter_num] = \
+                         #   curr_filter.loc[:, [x for x in curr_filter.columns if "phi" in x or "beta" in x]]
                         acceptance = True
                 else:
-                    min_beta = 0.0  #curr_filter['beta'].min()
+                    min_beta = curr_filter['beta'].min()  # should be 0.0
                     if opt_direction == "max":
-                        minmax_phi = 1e30  #curr_filter['phi'].max()
+                        minmax_phi = curr_filter['phi'].max()
                     else:
-                        minmax_phi = 0.0  #curr_filter['phi'].min()
+                        minmax_phi = curr_filter['phi'].min()
                     curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) \
                                                                   ** 2 + (curr_filter['phi'] - minmax_phi) ** 2) ** 0.5
                     if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == \
                             curr_filter['dist_from_min_origin'].min():
-                        self.biobj_dist_from_origin_per_k[self.iter_num] = \
-                            curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0]
+                        #self.biobj_per_k[self.iter_num] = \
+                         #   curr_filter.loc[:, [x for x in curr_filter.columns if "phi" in x or "beta" in x]]
                         acceptance = True
 
 
@@ -915,7 +915,7 @@ class EnsembleSQP(EnsembleMethod):
 
         return en_cov
 
-    def _active_set_method(self,first_pass=True,add_to_working_set=None):
+    def _active_set_method(self,first_pass=True,add_to_working_set=None,drop_due_to_stall=False):
         '''
         see alg (16.3) in Nocedal and Wright (2006)
 
@@ -924,13 +924,15 @@ class EnsembleSQP(EnsembleMethod):
 
         working_set is defined as current estimate of active constraints. the concept of the working set
         (and indeed the ``active set'') is specific to the active set method for QP with inequality constraints.
+
+        ``drop due to stall'' arg relates relative stalling only - i.e., wrt the current estimated working set
         '''
 
         alpha, goto_next_it = 1.0, False
 
         if first_pass is True:  # stop-or-drop phase
-            approx_converged = self._approx_converge_test()
-            if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-3, atol=1e-3)) or approx_converged:  # the former catches when two non-parallel equality constraints are present. TODO: occurs practically when filter stops updating? or search_d?
+            #approx_converged = self._approx_converge_test()
+            if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-3, atol=1e-3)) or drop_due_to_stall:# or approx_converged:  # the former catches when two non-parallel equality constraints are present. TODO: occurs practically when filter stops updating? or search_d?
                 # TODO: compute mults at new proposed pos with new A? (16.42)?
                 lagrang_mults_ineq = self.lagrang_mults.df().loc[self.working_set_ineq.obsnme, :]  # multiplier sign only iterpret-able for ineq constraints (in working set)
                 if np.all(lagrang_mults_ineq.values > 0):
@@ -950,7 +952,7 @@ class EnsembleSQP(EnsembleMethod):
                     self.logger.warn("all constraints are in active set")
                     alpha = 1.0
                 else:
-                    alpha = 1.0  #self._compute_alpha_constrained()  # TODO!
+                    alpha = 1.0  #self._compute_alpha_constrained()  # TODO: test this func
 
         else:  # second pass
             # add constraint to working set where blocking constraints present
@@ -966,7 +968,7 @@ class EnsembleSQP(EnsembleMethod):
             #lambdas, V = np.linalg.eig(matrix.T)
             #print(matrix[lambdas == 0, :]) # linearly dependent row vectors
 
-        if first_pass is True:
+        if first_pass is True and drop_due_to_stall is False:
             return alpha, goto_next_it
 
 
@@ -1189,7 +1191,7 @@ class EnsembleSQP(EnsembleMethod):
         is_converged = False
         if self.iter_num > 1:
             is_converged = False
-         #   if working_set same:  # this is important assumption here - and for efficiency. only need to consider of one variable it is only length of p vector that changes.
+         #   if working_set same - subset:  # this is important assumption here - and for efficiency. only need to consider of one variable it is only length of p vector that changes.
           #      d_0 = self.search_d_per_k[self.iter_num] / self.search_d_per_k[1]  #self.search_d_per_k[self.iter_num].iloc[0,:]
            #     d_1 = self.search_d_per_k[self.iter_num] / self.search_d_per_k[self.iter_num - 1]  #self.search_d_per_k[self.iter_num].iloc[0,:]
             #    if np.all(np.isclose(d_0, 1.0, rtol= , atol=)) and np.all(np.isclose(d_0, 1.0, rtol= , atol=)):
@@ -1379,7 +1381,7 @@ class EnsembleSQP(EnsembleMethod):
         if constraints is True and len(self.working_set) > 0:  # active constraints present
                 self.logger.log("calculate search direction and perform tests")
                 self.logger.log("solve QP sub-problem (active set method)")
-                self.working_set_per_k[self.iter_num] = self.working_set.obsnme
+                #self.working_set_per_k[self.iter_num] = self.working_set.obsnme
                 self.search_d, self.lagrang_mults = self._solve_eqp(qp_solve_method=qp_solve_method)
                 # self.search_d_per_k[self.iter_num] = self.search_d.df()  # for detecting convergence in _active_set_method()
                 self.logger.log("solve QP sub-problem (active set method)")
@@ -1710,13 +1712,14 @@ class EnsembleSQP(EnsembleMethod):
             curv_per_alpha.to_csv("curv_and_phi_per_alpha_it{0}.csv".format(self.iter_num))
             mean_en_phi_per_alpha.to_csv("mean_phi_per_alpha_it{0}.csv".format(self.iter_num))
 
-        # deal with unsuccessful iteration  # TODO
+        # deal with unsuccessful iteration
         if self.parensemble_mean_next is None:
-            self.logger.log("unsuccessful upgrade iteration.. using previous mean par en and increasing draw mult")
+            self.logger.warn("unsuccessful upgrade iteration.. using previous mean par en")
             self.parensemble_mean_next = self.parensemble_mean.copy()
             if finite_diff_grad is False:
                 self.parensemble_next = self.parensemble.copy()
-            # TODO: change draw mult if here
+                # TODO: change draw mult if here
+            self._active_set_method(first_pass=True,drop_due_to_stall=True)
 
         # TODO: failed run handling
         # TODO: check for convergence in terms of dec var and phi changes
