@@ -268,17 +268,19 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.lraise("no constraint obs found")
             self.constraint_set = self.pst.observation_data.loc[all_constraints, :]  # all constraints (that could become active)
 
-            self.logger.log("checking here feasibility and initializing constraint filter")
-            self._filter = pd.DataFrame()
-            self._filter, _accept, c_viol = self._filter_constraint_eval(self.obsensemble, self._filter)
-            self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
-            self.logger.log("checking here feasibility and initializing constraint filter")
+            self.search_d_per_k, self.working_set_per_k = {}, {}
 
             # assuming use of active-set method
             self.working_set = self.constraint_set.loc[[x for x in working_set], :]
             self.working_set_ineq = self.working_set.loc[self.working_set.obgnme.str.startswith("eq_") == False, :]
             self.not_in_working_set = self.constraint_set.drop(self.working_set.obsnme, axis=0)
             #TODO: add test here to ensure full-row-rank. Linear independence is a requirement. See active set func.
+
+            self.logger.log("checking here feasibility and initializing constraint filter")
+            self._filter = pd.DataFrame()
+            self._filter, _accept, c_viol = self._filter_constraint_eval(self.obsensemble, self._filter)
+            self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
+            self.logger.log("checking here feasibility and initializing constraint filter")
 
         # Hessian
         if hess is not None:
@@ -748,7 +750,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: description
 
         constraint_gps = [x for x in self.pst.obs_groups if x.startswith("g_") or x.startswith("greater_")
-                           or x.startswith("l_") or x.startswith("less_")]
+                          or x.startswith("l_") or x.startswith("less_")]
         if len(constraint_gps) == 0:
             self.logger.lraise("no constraint groups found")
 
@@ -762,7 +764,7 @@ class EnsembleSQP(EnsembleMethod):
                 if len(cs) > 0:  # TODO: improve effic here
                     for c in cs:
                         model_mean = obsensemble[c].mean()
-                        constraint = self.pst.observation_data.loc[c,"obsval"]
+                        constraint = self.pst.observation_data.loc[c, "obsval"]
                         viol_ = np.abs(min(model_mean - constraint, 0.0))
                         if viol_ > 0:
                             constraints_violated.append((c, viol_))
@@ -771,7 +773,7 @@ class EnsembleSQP(EnsembleMethod):
                 if len(cs) > 0:
                     for c in cs:
                         model_mean = obsensemble[c].mean()
-                        constraint = self.pst.observation_data.loc[c,"obsval"]
+                        constraint = self.pst.observation_data.loc[c, "obsval"]
                         viol_ = np.abs(min(constraint - model_mean, 0.0))
                         if viol_ > 0:
                             constraints_violated.append((c, viol_))
@@ -923,8 +925,8 @@ class EnsembleSQP(EnsembleMethod):
         alpha, goto_next_it = 1.0, False
 
         if first_pass is True:  # stop-or-drop phase
-            #approx_converged = self._approx_converge_test()
-            if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-3, atol=1e-3)):# or approx_converged is True:  # this just catches when two non-parallel equality constraints are present. TODO: occurs practically when filter stops updating? or search_d?
+            approx_converged = self._approx_converge_test()
+            if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-3, atol=1e-3)) or approx_converged:  # the former catches when two non-parallel equality constraints are present. TODO: occurs practically when filter stops updating? or search_d?
                 # TODO: compute mults at new proposed pos with new A? (16.42)?
                 lagrang_mults_ineq = self.lagrang_mults.df().loc[self.working_set_ineq.obsnme, :]  # multiplier sign only iterpret-able for ineq constraints (in working set)
                 if np.all(lagrang_mults_ineq.values > 0):
@@ -1177,14 +1179,16 @@ class EnsembleSQP(EnsembleMethod):
         return alpha
 
     def _approx_converge_test(self,):
-        # TODO: do on basis of filter (self.iter_num, distance_from_origin), or on basis of search_d?
+        ''' done on basis of filter (self.iter_num, self.working_set, distance_from_origin). Not done on basis of
+        search_d because gradient direction, not only length, changes when you have a unique working set'''
         is_converged = False
         if self.iter_num > 1:
-            if working_set same:
-                d_0 = self.search_d_per_k[self.iter_num] / self.search_d_per_k[1]
-                d_1 = self.search_d_per_k[self.iter_num] / self.search_d_per_k[self.iter_num - 1]
-                if np.all(np.isclose(d_0, 1.0, rtol= , atol=)) and np.all(np.isclose(d_0, 1.0, rtol= , atol=)):
-                    DROP
+            is_converged = False
+         #   if working_set same:  # this is important assumption here - and for efficiency. only need to consider of one variable it is only length of p vector that changes.
+          #      d_0 = self.search_d_per_k[self.iter_num] / self.search_d_per_k[1]  #self.search_d_per_k[self.iter_num].iloc[0,:]
+           #     d_1 = self.search_d_per_k[self.iter_num] / self.search_d_per_k[self.iter_num - 1]  #self.search_d_per_k[self.iter_num].iloc[0,:]
+            #    if np.all(np.isclose(d_0, 1.0, rtol= , atol=)) and np.all(np.isclose(d_0, 1.0, rtol= , atol=)):
+             #       DROP
 
         return is_converged
 
@@ -1249,7 +1253,6 @@ class EnsembleSQP(EnsembleMethod):
 
         self.alg = alg
         self.reduced_hessian = reduced_hessian
-        self.search_d_per_k = {}
 
         if opt_direction is "min" or "max":
             self.opt_direction = opt_direction
@@ -1371,8 +1374,9 @@ class EnsembleSQP(EnsembleMethod):
         if constraints is True and len(self.working_set) > 0:  # active constraints present
                 self.logger.log("calculate search direction and perform tests")
                 self.logger.log("solve QP sub-problem (active set method)")
+                self.working_set_per_k[self.iter_num] = self.working_set.obsnme
                 self.search_d, self.lagrang_mults = self._solve_eqp(qp_solve_method=qp_solve_method)
-                self.search_d_per_k[self.iter_num] = self.search_d.df()  # for detecting convergence in _active_set_method()
+                # self.search_d_per_k[self.iter_num] = self.search_d.df()  # for detecting convergence in _active_set_method()
                 self.logger.log("solve QP sub-problem (active set method)")
                 self.logger.log("calculate search direction and perform tests")
 
