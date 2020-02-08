@@ -963,7 +963,6 @@ class EnsembleSQP(EnsembleMethod):
                                               :]))
             self.not_in_working_set = self.constraint_set.drop(self.working_set.obsnme, axis=0)
 
-            self.logger.log("check a_i in Wk are linearly indep; A has full rank")  # TODO!
             self.logger.log("check m <= n in A. If not, redundant information, use reduction strategy, SVD or QR")  # TODO!
             #lambdas, V = np.linalg.eig(matrix.T)
             #print(matrix[lambdas == 0, :]) # linearly dependent row vectors
@@ -985,8 +984,9 @@ class EnsembleSQP(EnsembleMethod):
         '''
 
         # Requires two conditions be satisfied
-        # 0. A has full rank - this should have been caught before
-        self.logger.log("check a_i in Wk are linearly indep; A has full rank")
+        # 0. A has full row rank (i.e., a_i vectors are linearly indep_ - this should have been caught before
+        if np.linalg.matrix_rank(constraint_grad.x) != constraint_grad.shape[0]:
+            self.logger.lraise("A does not have full row rank")
 
         # 1. Z^TGZ is pos def
         # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
@@ -1121,6 +1121,10 @@ class EnsembleSQP(EnsembleMethod):
         a = self.constraint_jco.df().drop(self.not_in_working_set.obsnme, axis=1)  # pertains to active constraints only
         a = Matrix(x=a, row_names=a.index, col_names=a.columns).T  # note transpose
         assert a.shape[0] == len(self.working_set)
+
+        # require A to have full row rank - i.e., a_i vectors are linearly indep
+        if np.linalg.matrix_rank(a.x) != a.shape[0]:
+            self.logger.lraise("A does not have full row rank")
 
         x_ = self.parensemble_mean
         #x_.col_names = ['cross-cov']  # hack
