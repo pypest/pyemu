@@ -268,7 +268,7 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.lraise("no constraint obs found")
             self.constraint_set = self.pst.observation_data.loc[all_constraints, :]  # all constraints (that could become active)
 
-            self.search_d_per_k, self.working_set_per_k = {}, {}
+            self.biobj_dist_from_origin_per_k, self.working_set_per_k = {}, {}
 
             # assuming use of active-set method
             self.working_set = self.constraint_set.loc[[x for x in working_set], :]
@@ -823,25 +823,29 @@ class EnsembleSQP(EnsembleMethod):
                 if biobj_transf:
                     min_beta = 0.0  #curr_filter['beta'].min()
                     if opt_direction == "max":
-                        minmax_phi = np.log10(curr_filter['phi'].max())  #TODO: generalize - drop log
+                        minmax_phi = 30  #np.log10(curr_filter['phi'].max())
                     else:
-                        minmax_phi = np.log10(curr_filter['phi'].min())  #TODO: generalize - drop log
+                        minmax_phi = -10  #np.log10(curr_filter['phi'].min())
                     curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) \
                                                                   ** 2 + (np.log10(curr_filter['phi']) - minmax_phi) \
                                                                   ** 2) ** 0.5
                     if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == curr_filter[
                         'dist_from_min_origin'].min():
+                        self.biobj_dist_from_origin_per_k[self.iter_num] = \
+                            curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0]
                         acceptance = True
                 else:
-                    min_beta = curr_filter['beta'].min()
+                    min_beta = 0.0  #curr_filter['beta'].min()
                     if opt_direction == "max":
-                        minmax_phi = curr_filter['phi'].max()
+                        minmax_phi = 1e30  #curr_filter['phi'].max()
                     else:
-                        minmax_phi = curr_filter['phi'].min()
+                        minmax_phi = 0.0  #curr_filter['phi'].min()
                     curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) \
                                                                   ** 2 + (curr_filter['phi'] - minmax_phi) ** 2) ** 0.5
                     if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == \
                             curr_filter['dist_from_min_origin'].min():
+                        self.biobj_dist_from_origin_per_k[self.iter_num] = \
+                            curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0]
                         acceptance = True
 
 
@@ -1180,7 +1184,8 @@ class EnsembleSQP(EnsembleMethod):
 
     def _approx_converge_test(self,):
         ''' done on basis of filter (self.iter_num, self.working_set, distance_from_origin). Not done on basis of
-        search_d because gradient direction, not only length, changes when you have a unique working set'''
+        search_d because gradient direction, not only length, changes when you have a unique working set. Using
+        distance from origin in phi, viol plot only general way to do this?'''
         is_converged = False
         if self.iter_num > 1:
             is_converged = False
