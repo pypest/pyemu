@@ -48,7 +48,7 @@ def rosenbrock_setup(version,initial_decvars=1.6,constraints=False,constraint_ex
             obs.loc["constraint_1", "obsval"] = 4.0  # inherit from pestpp_options
         elif "one_linear" in constraint_exp:
             obs.loc["constraint", "obgnme"] = "g_constraint"  # inherit from pestpp_options
-            obs.loc["constraint", "obsval"] = 10.0  # inherit from pestpp_options
+            obs.loc["constraint", "obsval"] = 2.0  #10.0  # inherit from pestpp_options
     obs.loc[:, "weight"] = 1.0
     pst.control_data.noptmax = 0
     if version == "2par":
@@ -177,7 +177,9 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
                                cma=False,derinc=0.001,alg="BFGS",memory=5,strong_Wolfe=False,
                                rank_one=False,learning_rate=0.5,
                                mu_prop=0.25,use_dist_mean_for_delta=False,mu_learning_prop=0.5,
-                               working_set=None,constraint_exp="one_linear"): #filter_thresh=1e-2
+                               working_set=None,constraint_exp="one_linear",
+                               qp_solve_method="null_space"): #filter_thresh=1e-2
+
     import pyemu
     import numpy as np
     if version == "2par":
@@ -204,7 +206,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
     [os.remove(x) for x in os.listdir() if ("_per_" in x) and ("_alpha_" in x)]
     [os.remove(x) for x in os.listdir() if x == "hess_progress.csv"]
 
-    step_mults = list(np.logspace(-5, 0, 12))
+    step_mults = list(np.logspace(-5, 0, 24))
     #step_mults = list(np.linspace(0.1,1.0,10))
 
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
@@ -215,7 +217,8 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
                     hess_self_scaling=hess_self_scaling,hess_update=hess_update,damped=damped,
                     finite_diff_grad=finite_diff_grad,derinc=derinc,alg=alg,memory=memory,strong_Wolfe=strong_Wolfe,
                     cma=cma,rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
-                    use_dist_mean_for_delta=use_dist_mean_for_delta,mu_learning_prop=mu_learning_prop)
+                    use_dist_mean_for_delta=use_dist_mean_for_delta,mu_learning_prop=mu_learning_prop,
+                    qp_solve_method=qp_solve_method)
     os.chdir(os.path.join("..", ".."))
 
    #  TODO: critical that draw_mult is refined as we go?
@@ -467,9 +470,11 @@ def filter_plot(problem,constraints,log_phi=False):
     import pandas as pd
     import matplotlib.pyplot as plt
 
+    # TODO: improve function such that plot shows iter_num and working_set
+
     if problem == "2par":
         if constraints:
-            os.chdir(os.path.join("ennlouu", "rosenbrock_2par_constrained"))
+            os.chdir(os.path.join("ennlouu", "rosenbrock_2par_two_linear_constraints"))#"rosenbrock_2par_constrained"))
         else:
             os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     elif problem == "high_dim":
@@ -682,7 +687,7 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         #yy = r * np.sin(theta)
         # TODO: read from *.py
         xx = np.linspace(-2.2, 2.2, 100)
-        yy = -6 * xx + 10
+        yy = 2.25 * xx + 2  #-6 * xx + 10
         plt.plot(xx, yy, 'r-', zorder=-1)
         plt.ylim(-2.2, 2.2)
         if "two_linear" in constraint_exp:
@@ -734,8 +739,8 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         plt.scatter(x=[pst.parameter_data.parval1[0]],y=pst.parameter_data.parval1[1],
                     marker="x",c="b",alpha=0.5,zorder=1)  # plot initial when using fds
 
-    plt.show()
-    plt.xlabel("x_1"); plt.ylabel("x_2")
+    #plt.show()
+    #plt.xlabel("x_1"); plt.ylabel("x_2")
     plt.savefig(label)
     plt.close()
     os.chdir(os.path.join("..",".."))
@@ -775,21 +780,21 @@ if __name__ == "__main__":
       #  test_pestpp_on_rosen()
     #test_pestpp_on_rosen()
 
-    constraints, constraint_exp = True, "two_linear"  #"one_linear"  #None
+    constraints, constraint_exp = True, "one_linear"  #"two_linear"  #None
     if "one_linear" in constraint_exp:
-        yy = 0.5 #-2.0
-        idv = [1.8, yy]  #[(10 - yy) / 6, yy]
-        working_set = []  #['constraint']
+        yy = -1.0  #-2.0  #0.5
+        idv = [(2 - yy) / -2.25, yy]  #[(10 - yy) / 6, yy]  #[1.8, yy]
+        working_set = ['constraint']  #[]
     elif "two_linear" in constraint_exp:  # "two_linear"
         yy = 1.0
-        idv = [(4 - yy) / 1.5, yy]
-        working_set = ['constraint_1']
+        idv = [(4 - yy) / 1.5, yy]  #[1.75, 1.10]
+        working_set = ['constraint_1']  #[]
     rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
     rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=30,
                                working_set=working_set, hess_update=False, hess_self_scaling=False,
-                               constraint_exp=constraint_exp) #biobj_weight=5.0,alg="LBFGS",damped=False)
+                               constraint_exp=constraint_exp,qp_solve_method="null_space") #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    #plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp)
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp)
 
     #supply2_setup()
     #supply2_update(en_size=20,draw_mult=1e-6)

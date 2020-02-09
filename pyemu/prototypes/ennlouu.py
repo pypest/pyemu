@@ -949,7 +949,7 @@ class EnsembleSQP(EnsembleMethod):
             else:  # p != 0
                 # compute alpha
                 if len(self.not_in_working_set) == 0:
-                    self.logger.warn("all constraints are in active set")
+                    #self.logger.warn("all constraints are in active set")
                     alpha = 1.0
                 else:
                     alpha = 1.0  #self._compute_alpha_constrained()  # TODO: test this func
@@ -1264,6 +1264,7 @@ class EnsembleSQP(EnsembleMethod):
 
         self.alg = alg
         self.reduced_hessian = reduced_hessian
+        self.working_set.to_csv("working_set_it{}.csv".format(self.iter_num))
 
         if opt_direction is "min" or "max":
             self.opt_direction = opt_direction
@@ -1723,7 +1724,7 @@ class EnsembleSQP(EnsembleMethod):
             if finite_diff_grad is False:
                 self.parensemble_next = self.parensemble.copy()
                 # TODO: change draw mult if here
-            self._active_set_method(first_pass=True,drop_due_to_stall=True)
+            self._active_set_method(first_pass=True, drop_due_to_stall=True)
 
         # TODO: failed run handling
         # TODO: check for convergence in terms of dec var and phi changes
