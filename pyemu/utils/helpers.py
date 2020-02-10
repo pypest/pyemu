@@ -168,7 +168,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
 
 
 def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
-                                 verbose=False):
+                                 verbose=False,scale_offset=False):
     """construct a full prior covariance matrix using geostastical structures
     and parameter bounds information.
 
@@ -183,6 +183,9 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
             implied by parameter bounds. Default is 4.0, which implies 95% confidence parameter bounds.
         verbose (`bool`, optional): flag to control output to stdout.  Default is True.
             flag for stdout.
+        scale_offset (`bool`): a flag to apply scale and offset to parameter upper and lower bounds
+            before applying log transform.  Passed to pyemu.Cov.from_parameter_data().  Default
+            is False
 
     Returns:
         `pyemu.Cov`: a covariance matrix that includes all adjustable parameters in the control
@@ -209,7 +212,8 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
     assert isinstance(pst,pyemu.Pst),"pst arg must be a Pst instance, not {0}".\
         format(type(pst))
     if verbose: print("building diagonal cov")
-    full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
+    full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range,
+                                             scale_offset=scale_offset)
 
     full_cov_dict = {n:float(v) for n,v in zip(full_cov.col_names,full_cov.x)}
     #full_cov = None
