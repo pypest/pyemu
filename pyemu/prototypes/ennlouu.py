@@ -1724,7 +1724,8 @@ class EnsembleSQP(EnsembleMethod):
             if finite_diff_grad is False:
                 self.parensemble_next = self.parensemble.copy()
                 # TODO: change draw mult if here
-            self._active_set_method(first_pass=True, drop_due_to_stall=True)
+            if constraints and len(self.working_set) > 0:
+                self._active_set_method(first_pass=True, drop_due_to_stall=True)  #TODO: stall status could be less naive - e.g., filter stalling over successive iterations...
 
         # TODO: failed run handling
         # TODO: check for convergence in terms of dec var and phi changes
