@@ -47,7 +47,7 @@ def rosenbrock_setup(version,initial_decvars=1.6,constraints=False,constraint_ex
             obs.loc["constraint_1", "obgnme"] = "l_constraint"  # inherit from pestpp_options
             obs.loc["constraint_1", "obsval"] = 4.0  # inherit from pestpp_options
         elif "one_linear" in constraint_exp:
-            obs.loc["constraint", "obgnme"] = "g_constraint"  # inherit from pestpp_options
+            obs.loc["constraint", "obgnme"] = "l_constraint"  # inherit from pestpp_options
             obs.loc["constraint", "obsval"] = 2.0  #10.0  # inherit from pestpp_options
     obs.loc[:, "weight"] = 1.0
     pst.control_data.noptmax = 0
