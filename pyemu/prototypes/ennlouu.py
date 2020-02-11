@@ -986,7 +986,7 @@ class EnsembleSQP(EnsembleMethod):
         # Requires two conditions be satisfied
         # 0. A has full row rank (i.e., a_i vectors are linearly indep_ - this should have been caught before
         if np.linalg.matrix_rank(constraint_grad.x) != constraint_grad.shape[0]:
-            self.logger.lraise("A does not have full row rank")
+            self.logger.lraise("A does not have full row rank... This should have been caught previously... need to use SVD or QR factorization...")
 
         # 1. Z^TGZ is pos def
         # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
@@ -1124,7 +1124,9 @@ class EnsembleSQP(EnsembleMethod):
 
         # require A to have full row rank - i.e., a_i vectors are linearly indep
         if np.linalg.matrix_rank(a.x) != a.shape[0]:
-            self.logger.lraise("A does not have full row rank")
+            self.logger.warn("A does not have full row rank...")
+            self.logger.warn("...linearly dependent constraints will be removed via SVD or QR factorization...")
+            # TODO: remove linearly dependent constraints here
 
         x_ = self.parensemble_mean
         #x_.col_names = ['cross-cov']  # hack
