@@ -1216,8 +1216,11 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
             mx = obs_g.obsval.max()
             mn =  obs_g.obsval.min()
         else:
-            mn = base_ensemble["r"].loc[:,names].min().min()
-            mx = base_ensemble["r"].loc[:, names].max().max()
+            ben = base_ensemble["r"]
+            ben = ben.loc[:,ben.columns.intersection(names)]
+
+            mn = ben.min().min()
+            mx = ben.max().max()
         #if obs_g.shape[0] == 1:
         mx *= 1.1
         mn *= 0.9
