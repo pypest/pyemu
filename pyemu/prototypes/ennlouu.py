@@ -475,10 +475,20 @@ class EnsembleSQP(EnsembleMethod):
         # y
         if len(self.working_set.obsnme) > 0:  # active set and A is non-empty
             new_grad.col_names, curr_grad.col_names = self.s.col_names, self.s.col_names
-            self.y = (new_grad - curr_grad) - ((new_constr_grad - prev_constr_grad) * self.lagrang_mults)  # see eq (36) of Liu and Reynolds (2019) and Gill Ch. 3
+
+            # difference in A between k and k+1 - wrt working set at current iter_num (i.e., A^k (prev constraint grads) may contain elements that were not active at iteration k)
+            # TODO: double-check math here - but I think this is the only way this can be done
+            a_kp1 = new_constr_grad.df().drop(self.not_in_working_set.obsnme, axis=1)
+            a_k = prev_constr_grad.df().drop(self.not_in_working_set.obsnme, axis=1)
+            a_kp1 = Matrix(x=a_kp1, row_names=a_kp1.index, col_names=a_kp1.columns)  # note: A here is transposed compared to elsewhere
+            a_k = Matrix(x=a_k, row_names=a_k.index, col_names=a_k.columns)  # note: A here is transposed compared to elsewhere
+            assert a_kp1.shape[1] == len(self.working_set) == a_k.shape[1]
+            del_a = a_kp1 - a_k
+
+            self.y = (new_grad - curr_grad) - (del_a * self.lagrang_mults)  # see eq (36) of Liu and Reynolds (2019) and Gill Ch. 3
             if reduced is True:
                 self.y = constr_grad_nullspace.T * self.y
-        else:  # unconstrained
+        else:
             self.y = new_grad - curr_grad
 
         # curv condition related tests
@@ -1729,11 +1739,15 @@ class EnsembleSQP(EnsembleMethod):
         if self.parensemble_mean_next is None:
             self.logger.warn("unsuccessful upgrade iteration.. using previous mean par en")
             self.parensemble_mean_next = self.parensemble_mean.copy()
+
             if finite_diff_grad is False:
                 self.parensemble_next = self.parensemble.copy()
                 # TODO: change draw mult if here
+
             if constraints and len(self.working_set) > 0:
                 self._active_set_method(first_pass=True, drop_due_to_stall=True)  #TODO: stall status could be less naive - e.g., filter stalling over successive iterations...
+
+            hess_update, self_scale = False, False
 
         # TODO: failed run handling
         # TODO: check for convergence in terms of dec var and phi changes
@@ -1754,7 +1768,6 @@ class EnsembleSQP(EnsembleMethod):
             #else:
              #   self_scale = False
             self_scale = False
-
         elif hess_self_scaling is True and self.iter_num == 2:  # or hess_self_scaling == self.iter_num:
             self_scale = True
         else:
