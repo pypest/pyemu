@@ -13,10 +13,10 @@ PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
 PP_NAMES = ["name","x","y","zone","parval1"]
 
 
-def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
-                           every_n_cell=4,
+def setup_pilotpoints_grid(ml=None, sr=None, ibound=None, prefix_dict=None,
+                           every_n_cell=4, ninst=1,
                            use_ibound_zones=False,
-                           pp_dir='.',tpl_dir='.',
+                           pp_dir='.', tpl_dir='.',
                            shapename="pp.shp"):
     """ setup a regularly-spaced (gridded) pilot point parameterization
 
@@ -31,6 +31,9 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
             For example : `{0:["hk,"vk"]}` would setup pilot points with the prefix "hk" and "vk" for
             model layer 1. If None, a generic set of pilot points with
             the "pp" prefix are setup for a generic nrow by ncol grid. Default is None
+        ninst (`int`): Number of instances of pilot_points to set up. 
+            e.g. number of layers. If ml is None and prefix_dict is None, 
+            this is used to set up default prefix_dict.
         use_ibound_zones (`bool`): a flag to use the greater-than-zero values in the
             ibound as pilot point zones.  If False ,ibound values greater than zero are
             treated as a single zone.  Default is False.
@@ -61,11 +64,19 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
         sr = ml.sr
         if ibound is None:
             ibound = ml.bas6.ibound.array
+            # build a generic prefix_dict
+        if prefix_dict is None:
+            prefix_dict = {k: ["pp_{0:02d}_".format(k)] for k in
+                           range(ml.nlay)}
     else:
         assert sr is not None, "if 'ml' is not passed, 'sr' must be passed"
+        if prefix_dict is None:
+            prefix_dict = {k: ["pp_{0:02d}_".format(k)] for k in
+                           range(ninst)}
         if ibound is None:
             print("ibound not passed, using array of ones")
-            ibound = {k:np.ones((sr.nrow,sr.ncol)) for k in prefix_dict.keys()}
+            ibound = {k: np.ones((sr.nrow, sr.ncol)) 
+                      for k in prefix_dict.keys()}
         #assert ibound is not None,"if 'ml' is not pass, 'ibound' must be passed"
 
     if isinstance(ibound, np.ndarray):
@@ -83,14 +94,11 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
     except Exception as e:
         raise Exception("error getting xcentergrid and/or ycentergrid from 'sr':{0}".format(str(e)))
     start = int(float(every_n_cell) / 2.0)
-
-    #build a generic prefix_dict
-    if prefix_dict is None:
-        prefix_dict = {k:["pp_{0:02d}_".format(k)] for k in range(ml.nlay)}
-
-    #check prefix_dict
+    
+    # check prefix_dict
     keys = list(prefix_dict.keys())
     keys.sort()
+    
     #for k, prefix in prefix_dict.items():
     for k in keys:
         prefix = prefix_dict[k]
