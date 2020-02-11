@@ -3701,7 +3701,8 @@ srefhttp = 'https://spatialreference.org'
 class SpatialReference(object):
     """
     a class to locate a structured model grid in x-y space.
-    Lifted wholesale from Flopy, and preserved here...
+    Lifted wholesale from Flopy, and preserved here... 
+    ...maybe slighlty over-engineered for here
 
     Parameters
     ----------
@@ -3808,7 +3809,7 @@ class SpatialReference(object):
     def __init__(self, delr=np.array([]), delc=np.array([]), lenuni=2,
                  xul=None, yul=None, xll=None, yll=None, rotation=0.0,
                  proj4_str=None, epsg=None, prj=None, units=None,
-                 length_multiplier=None):
+                 length_multiplier=None, source=None):
 
         for delrc in [delr, delc]:
             if isinstance(delrc, float) or isinstance(delrc, int):
@@ -3823,23 +3824,23 @@ class SpatialReference(object):
 
         if self.delr.sum() == 0 or self.delc.sum() == 0:
             if xll is None or yll is None:
-                msg = ('Warning: no grid spacing or lower-left corner '
-                       'supplied. Setting the offset with xul, yul requires '
+                msg = ('Warning: no grid spacing. '
+                       'Lower-left corner offset calculation methods requires '
                        'arguments for delr and delc. Origin will be set to '
-                       'zero.')
-                print(msg)
-                xll, yll = 0, 0
-                xul, yul = None, None
+                       'upper-left')
+                warnings.warn(msg, PyemuWarning)
+                xll, yll = None, None
+                # xul, yul = None, None
 
         self._lenuni = lenuni
         self._proj4_str = proj4_str
-
+        # 
         self._epsg = epsg
-        if epsg is not None:
-            self._proj4_str = getproj4(self._epsg)
-        self.prj = prj
-        self._wkt = None
-        self.crs = crs(prj=prj, epsg=epsg)
+        # if epsg is not None:
+        #     self._proj4_str = getproj4(self._epsg)
+        # self.prj = prj
+        # self._wkt = None
+        # self.crs = CRS(prj=prj, epsg=epsg)
 
         self.supported_units = ["feet", "meters"]
         self._units = units
@@ -3913,24 +3914,24 @@ class SpatialReference(object):
     def epsg(self):
         # don't reset the proj4 string here
         # because proj4 attribute may already be populated
-        # (with more details than getproj4 would return)
+        # (with more details than getprj would return)
         # instead reset proj4 when epsg is set
         # (on init or setattr)
         return self._epsg
 
-    @property
-    def wkt(self):
-        if self._wkt is None:
-            if self.prj is not None:
-                with open(self.prj) as src:
-                    wkt = src.read()
-            elif self.epsg is not None:
-                wkt = getprj(self.epsg)
-            else:
-                return None
-            return wkt
-        else:
-            return self._wkt
+    # @property
+    # def wkt(self):
+    #     if self._wkt is None:
+    #         if self.prj is not None:
+    #             with open(self.prj) as src:
+    #                 wkt = src.read()
+    #         elif self.epsg is not None:
+    #             wkt = getprj(self.epsg)
+    #         else:
+    #             return None
+    #         return wkt
+    #     else:
+    #         return self._wkt
 
     @property
     def lenuni(self):
@@ -3943,15 +3944,16 @@ class SpatialReference(object):
             # working for complex proj4 strings.  So if an
             # epsg code was passed, we have no choice, but if a
             # proj4 string was passed, we can just parse it
-            if "EPSG" in self.proj4_str.upper():
-                import pyproj
-
-                crs = pyproj.Proj(self.proj4_str,
-                                  preserve_units=True,
-                                  errcheck=True)
-                proj_str = crs.srs
-            else:
-                proj_str = self.proj4_str
+            proj_str = self.proj4_str
+            # if "EPSG" in self.proj4_str.upper():
+            #     import pyproj
+            #
+            #     crs = pyproj.Proj(self.proj4_str,
+            #                       preserve_units=True,
+            #                       errcheck=True)
+            #     proj_str = crs.srs
+            # else:
+            #     proj_str = self.proj4_str
             # http://proj4.org/parameters.html#units
             # from proj4 source code
             # "us-ft", "0.304800609601219", "U.S. Surveyor's Foot",
@@ -4052,7 +4054,8 @@ class SpatialReference(object):
             for line in f:
                 if not line.startswith('#'):
                     break
-                header.extend(line.strip().replace('#', '').split(';'))
+                header.extend(line.strip().replace(
+                    '#', '').replace(',', ';').split(';'))
 
         for item in header:
             if "xul" in item.lower():
@@ -4186,18 +4189,12 @@ class SpatialReference(object):
         elif key == "length_multiplier":
             super(SpatialReference, self). \
                 __setattr__("_length_multiplier", float(value))
-            # self.set_origin(xul=self.xul, yul=self.yul, xll=self.xll,
-            #                yll=self.yll)
         elif key == "rotation":
             super(SpatialReference, self). \
                 __setattr__("rotation", float(value))
-            # self.set_origin(xul=self.xul, yul=self.yul, xll=self.xll,
-            #                yll=self.yll)
         elif key == "lenuni":
             super(SpatialReference, self). \
                 __setattr__("_lenuni", int(value))
-            # self.set_origin(xul=self.xul, yul=self.yul, xll=self.xll,
-            #                yll=self.yll)
         elif key == "units":
             value = value.lower()
             assert value in self.supported_units
@@ -4215,15 +4212,15 @@ class SpatialReference(object):
             super(SpatialReference, self). \
                 __setattr__("_epsg", value)
             # reset the units and proj4
-            self._units = None
-            self._proj4_str = getproj4(self._epsg)
-            self.crs = crs(epsg=value)
+            # self._units = None
+            # self._proj4_str = getproj4(self._epsg)
+            # self.crs = crs(epsg=value)
         elif key == "prj":
             super(SpatialReference, self). \
                 __setattr__("prj", value)
             # translation to proj4 strings in crs class not robust yet
             # leave units and proj4 alone for now.
-            self.crs = crs(prj=value, epsg=self.epsg)
+            # self.crs = CRS(prj=value, epsg=self.epsg)
         else:
             super(SpatialReference, self).__setattr__(key, value)
             reset = False
@@ -4265,13 +4262,19 @@ class SpatialReference(object):
         return True
 
     @classmethod
-    def from_namfile(cls, namefile):
+    def from_namfile(cls, namefile, delr=np.array([]), delc=np.array([])):
+        if delr is None or delc is None:
+            warnings.warn("One or both of grid spacing information "
+                          "missing,\n    required for most pyemu methods "
+                          "that use sr,\n    can be passed later if desired "
+                          "(e.g. sr.delr = row spacing)", PyemuWarning)
         attribs = SpatialReference.attribs_from_namfile_header(namefile)
+        attribs['delr'] = delr
+        attribs['delc'] = delc
         try:
             attribs.pop("start_datetime")
         except:
             print('   could not remove start_datetime')
-
         return SpatialReference(**attribs)
 
     @classmethod
@@ -4348,7 +4351,6 @@ class SpatialReference(object):
         self._yll = yll if yll is not None else 0.
         self._xul = xul if xul is not None else 0.
         self._yul = yul if yul is not None else 0.
-        # self.set_origin(xul, yul, xll, yll)
         return
 
     def __repr__(self):
@@ -4359,27 +4361,6 @@ class SpatialReference(object):
         s += "lenuni:{0}; ".format(self.lenuni)
         s += "length_multiplier:{}".format(self.length_multiplier)
         return s
-
-    def set_origin(self, xul=None, yul=None, xll=None, yll=None):
-        if self.origin_loc == 'll':
-            # calculate coords for upper left corner
-            self._xll = xll if xll is not None else 0.
-            self.yll = yll if yll is not None else 0.
-            self.xul = self._xll + (np.sin(self.theta) * self.yedge[0] *
-                                    self.length_multiplier)
-            self.yul = self.yll + (np.cos(self.theta) * self.yedge[0] *
-                                   self.length_multiplier)
-
-        if self.origin_loc == 'ul':
-            # calculate coords for lower left corner
-            self.xul = xul if xul is not None else 0.
-            self.yul = yul if yul is not None else 0.
-            self._xll = self.xul - (np.sin(self.theta) * self.yedge[0] *
-                                    self.length_multiplier)
-            self.yll = self.yul - (np.cos(self.theta) * self.yedge[0] *
-                                   self.length_multiplier)
-        self._reset()
-        return
 
     @property
     def theta(self):
@@ -4543,16 +4524,16 @@ class SpatialReference(object):
             lines.append([(x0r, y0r), (x1r, y1r)])
         return lines
 
-    def get_grid_line_collection(self, **kwargs):
-        """
-        Get a LineCollection of the grid
-
-        """
-        from flopy.plot import ModelMap
-
-        map = ModelMap(sr=self)
-        lc = map.plot_grid(**kwargs)
-        return lc
+    # def get_grid_line_collection(self, **kwargs):
+    #     """
+    #     Get a LineCollection of the grid
+    #
+    #     """
+    #     from flopy.plot import ModelMap
+    #
+    #     map = ModelMap(sr=self)
+    #     lc = map.plot_grid(**kwargs)
+    #     return lc
 
     def get_xcenter_array(self):
         """
@@ -4560,6 +4541,9 @@ class SpatialReference(object):
         coordinate for every column in the grid in model space - not offset or rotated.
 
         """
+        assert (self.delr is not None 
+                and len(self.delr) > 0), ("delr not passed to "
+                                          "spatial reference object")
         x = np.add.accumulate(self.delr) - 0.5 * self.delr
         return x
 
@@ -4569,6 +4553,9 @@ class SpatialReference(object):
         coordinate for every row in the grid in model space - not offset of rotated.
 
         """
+        assert (self.delc is not None 
+                and len(self.delc) > 0), ("delc not passed to "
+                                          "spatial reference object")
         Ly = np.add.reduce(self.delc)
         y = Ly - (np.add.accumulate(self.delc) - 0.5 *
                   self.delc)
@@ -4581,6 +4568,9 @@ class SpatialReference(object):
         or rotated.  Array is of size (ncol + 1)
 
         """
+        assert (self.delr is not None 
+                and len(self.delr) > 0), ("delr not passed to "
+                                          "spatial reference object")
         xedge = np.concatenate(([0.], np.add.accumulate(self.delr)))
         return xedge
 
@@ -4591,12 +4581,15 @@ class SpatialReference(object):
         rotated. Array is of size (nrow + 1)
 
         """
+        assert (self.delc is not None 
+                and len(self.delc) > 0), ("delc not passed to "
+                                          "spatial reference object")
         length_y = np.add.reduce(self.delc)
         yedge = np.concatenate(([length_y], length_y -
                                 np.add.accumulate(self.delc)))
         return yedge
 
-    def write_gridSpec(self, filename):
+    def write_gridspec(self, filename):
         """ write a PEST-style grid specification file
         """
         f = open(filename, 'w')
@@ -4657,295 +4650,295 @@ class SpatialReference(object):
             r = (np.abs(ycp.transpose() - y)).argmin(axis=0)
         return r, c
 
-    def get_grid_map_plotter(self, **kwargs):
-        """
-        Create a QuadMesh plotting object for this grid
+    # def get_grid_map_plotter(self, **kwargs):
+    #     """
+    #     Create a QuadMesh plotting object for this grid
+    #
+    #     Returns
+    #     -------
+    #     quadmesh : matplotlib.collections.QuadMesh
+    #
+    #     """
+    #     from matplotlib.collections import QuadMesh
+    #     verts = np.vstack((self.xgrid.flatten(), self.ygrid.flatten())).T
+    #     qm = QuadMesh(self.ncol, self.nrow, verts)
+    #     return qm
+    #
+    # def plot_array(self, a, ax=None, **kwargs):
+    #     """
+    #     Create a QuadMesh plot of the specified array using pcolormesh
+    #
+    #     Parameters
+    #     ----------
+    #     a : np.ndarray
+    #
+    #     Returns
+    #     -------
+    #     quadmesh : matplotlib.collections.QuadMesh
+    #
+    #     """
+    #     import matplotlib.pyplot as plt
+    #     if ax is None:
+    #         ax = plt.gca()
+    #     qm = ax.pcolormesh(self.xgrid, self.ygrid, a, **kwargs)
+    #     return qm
 
-        Returns
-        -------
-        quadmesh : matplotlib.collections.QuadMesh
+    # def export_array(self, filename, a, nodata=-9999,
+    #                  fieldname='value',
+    #                  **kwargs):
+    #     """
+    #     Write a numpy array to Arc Ascii grid or shapefile with the
+    #     model reference.
+    # 
+    #     Parameters
+    #     ----------
+    #     filename : str
+    #         Path of output file. Export format is determined by
+    #         file extension.
+    #         '.asc'  Arc Ascii grid
+    #         '.tif'  GeoTIFF (requires rasterio package)
+    #         '.shp'  Shapefile
+    #     a : 2D numpy.ndarray
+    #         Array to export
+    #     nodata : scalar
+    #         Value to assign to np.nan entries (default -9999)
+    #     fieldname : str
+    #         Attribute field name for array values (shapefile export only).
+    #         (default 'values')
+    #     kwargs:
+    #         keyword arguments to np.savetxt (ascii)
+    #         rasterio.open (GeoTIFF)
+    #         or flopy.export.shapefile_utils.write_grid_shapefile2
+    # 
+    #     Notes
+    #     -----
+    #     Rotated grids will be either be unrotated prior to export,
+    #     using scipy.ndimage.rotate (Arc Ascii format) or rotation will be
+    #     included in their transform property (GeoTiff format). In either case
+    #     the pixels will be displayed in the (unrotated) projected geographic coordinate system,
+    #     so the pixels will no longer align exactly with the model grid
+    #     (as displayed from a shapefile, for example). A key difference between
+    #     Arc Ascii and GeoTiff (besides disk usage) is that the
+    #     unrotated Arc Ascii will have a different grid size, whereas the GeoTiff
+    #     will have the same number of rows and pixels as the original.
+    # 
+    #     """
+    # 
+    #     if filename.lower().endswith(".asc"):
+    #         if len(np.unique(self.delr)) != len(np.unique(self.delc)) != 1 \
+    #                 or self.delr[0] != self.delc[0]:
+    #             raise ValueError('Arc ascii arrays require a uniform grid.')
+    # 
+    #         xll, yll = self.xll, self.yll
+    #         cellsize = self.delr[0] * self.length_multiplier
+    #         fmt = kwargs.get('fmt', '%.18e')
+    #         a = a.copy()
+    #         a[np.isnan(a)] = nodata
+    #         if self.rotation != 0:
+    #             try:
+    #                 from scipy.ndimage import rotate
+    #                 a = rotate(a, self.rotation, cval=nodata)
+    #                 height_rot, width_rot = a.shape
+    #                 xmin, ymin, xmax, ymax = self.bounds
+    #                 dx = (xmax - xmin) / width_rot
+    #                 dy = (ymax - ymin) / height_rot
+    #                 cellsize = np.max((dx, dy))
+    #                 # cellsize = np.cos(np.radians(self.rotation)) * cellsize
+    #                 xll, yll = xmin, ymin
+    #             except ImportError:
+    #                 print('scipy package required to export rotated grid.')
+    # 
+    #         filename = '.'.join(
+    #             filename.split('.')[:-1]) + '.asc'  # enforce .asc ending
+    #         nrow, ncol = a.shape
+    #         a[np.isnan(a)] = nodata
+    #         txt = 'ncols  {:d}\n'.format(ncol)
+    #         txt += 'nrows  {:d}\n'.format(nrow)
+    #         txt += 'xllcorner  {:f}\n'.format(xll)
+    #         txt += 'yllcorner  {:f}\n'.format(yll)
+    #         txt += 'cellsize  {}\n'.format(cellsize)
+    #         # ensure that nodata fmt consistent w values
+    #         txt += 'NODATA_value  {}\n'.format(fmt) % (nodata)
+    #         with open(filename, 'w') as output:
+    #             output.write(txt)
+    #         with open(filename, 'ab') as output:
+    #             np.savetxt(output, a, **kwargs)
+    #         print('wrote {}'.format(filename))
+    # 
+    #     elif filename.lower().endswith(".tif"):
+    #         if len(np.unique(self.delr)) != len(np.unique(self.delc)) != 1 \
+    #                 or self.delr[0] != self.delc[0]:
+    #             raise ValueError('GeoTIFF export require a uniform grid.')
+    #         try:
+    #             import rasterio
+    #             from rasterio import Affine
+    #         except:
+    #             print('GeoTIFF export requires the rasterio package.')
+    #             return
+    #         dxdy = self.delc[0] * self.length_multiplier
+    #         trans = Affine.translation(self.xul, self.yul) * \
+    #                 Affine.rotation(self.rotation) * \
+    #                 Affine.scale(dxdy, -dxdy)
+    # 
+    #         # third dimension is the number of bands
+    #         a = a.copy()
+    #         if len(a.shape) == 2:
+    #             a = np.reshape(a, (1, a.shape[0], a.shape[1]))
+    #         if a.dtype.name == 'int64':
+    #             a = a.astype('int32')
+    #             dtype = rasterio.int32
+    #         elif a.dtype.name == 'int32':
+    #             dtype = rasterio.int32
+    #         elif a.dtype.name == 'float64':
+    #             dtype = rasterio.float64
+    #         elif a.dtype.name == 'float32':
+    #             dtype = rasterio.float32
+    #         else:
+    #             msg = 'ERROR: invalid dtype "{}"'.format(a.dtype.name)
+    #             raise TypeError(msg)
+    # 
+    #         meta = {'count': a.shape[0],
+    #                 'width': a.shape[2],
+    #                 'height': a.shape[1],
+    #                 'nodata': nodata,
+    #                 'dtype': dtype,
+    #                 'driver': 'GTiff',
+    #                 'crs': self.proj4_str,
+    #                 'transform': trans
+    #                 }
+    #         meta.update(kwargs)
+    #         with rasterio.open(filename, 'w', **meta) as dst:
+    #             dst.write(a)
+    #         print('wrote {}'.format(filename))
+    # 
+    #     elif filename.lower().endswith(".shp"):
+    #         from ..export.shapefile_utils import write_grid_shapefile2
+    #         epsg = kwargs.get('epsg', None)
+    #         prj = kwargs.get('prj', None)
+    #         if epsg is None and prj is None:
+    #             epsg = self.epsg
+    #         write_grid_shapefile2(filename, self, array_dict={fieldname: a},
+    #                               nan_val=nodata,
+    #                               epsg=epsg, prj=prj)
 
-        """
-        from matplotlib.collections import QuadMesh
-        verts = np.vstack((self.xgrid.flatten(), self.ygrid.flatten())).T
-        qm = QuadMesh(self.ncol, self.nrow, verts)
-        return qm
-
-    def plot_array(self, a, ax=None, **kwargs):
-        """
-        Create a QuadMesh plot of the specified array using pcolormesh
-
-        Parameters
-        ----------
-        a : np.ndarray
-
-        Returns
-        -------
-        quadmesh : matplotlib.collections.QuadMesh
-
-        """
-        import matplotlib.pyplot as plt
-        if ax is None:
-            ax = plt.gca()
-        qm = ax.pcolormesh(self.xgrid, self.ygrid, a, **kwargs)
-        return qm
-
-    def export_array(self, filename, a, nodata=-9999,
-                     fieldname='value',
-                     **kwargs):
-        """
-        Write a numpy array to Arc Ascii grid or shapefile with the
-        model reference.
-
-        Parameters
-        ----------
-        filename : str
-            Path of output file. Export format is determined by
-            file extension.
-            '.asc'  Arc Ascii grid
-            '.tif'  GeoTIFF (requires rasterio package)
-            '.shp'  Shapefile
-        a : 2D numpy.ndarray
-            Array to export
-        nodata : scalar
-            Value to assign to np.nan entries (default -9999)
-        fieldname : str
-            Attribute field name for array values (shapefile export only).
-            (default 'values')
-        kwargs:
-            keyword arguments to np.savetxt (ascii)
-            rasterio.open (GeoTIFF)
-            or flopy.export.shapefile_utils.write_grid_shapefile2
-
-        Notes
-        -----
-        Rotated grids will be either be unrotated prior to export,
-        using scipy.ndimage.rotate (Arc Ascii format) or rotation will be
-        included in their transform property (GeoTiff format). In either case
-        the pixels will be displayed in the (unrotated) projected geographic coordinate system,
-        so the pixels will no longer align exactly with the model grid
-        (as displayed from a shapefile, for example). A key difference between
-        Arc Ascii and GeoTiff (besides disk usage) is that the
-        unrotated Arc Ascii will have a different grid size, whereas the GeoTiff
-        will have the same number of rows and pixels as the original.
-
-        """
-
-        if filename.lower().endswith(".asc"):
-            if len(np.unique(self.delr)) != len(np.unique(self.delc)) != 1 \
-                    or self.delr[0] != self.delc[0]:
-                raise ValueError('Arc ascii arrays require a uniform grid.')
-
-            xll, yll = self.xll, self.yll
-            cellsize = self.delr[0] * self.length_multiplier
-            fmt = kwargs.get('fmt', '%.18e')
-            a = a.copy()
-            a[np.isnan(a)] = nodata
-            if self.rotation != 0:
-                try:
-                    from scipy.ndimage import rotate
-                    a = rotate(a, self.rotation, cval=nodata)
-                    height_rot, width_rot = a.shape
-                    xmin, ymin, xmax, ymax = self.bounds
-                    dx = (xmax - xmin) / width_rot
-                    dy = (ymax - ymin) / height_rot
-                    cellsize = np.max((dx, dy))
-                    # cellsize = np.cos(np.radians(self.rotation)) * cellsize
-                    xll, yll = xmin, ymin
-                except ImportError:
-                    print('scipy package required to export rotated grid.')
-
-            filename = '.'.join(
-                filename.split('.')[:-1]) + '.asc'  # enforce .asc ending
-            nrow, ncol = a.shape
-            a[np.isnan(a)] = nodata
-            txt = 'ncols  {:d}\n'.format(ncol)
-            txt += 'nrows  {:d}\n'.format(nrow)
-            txt += 'xllcorner  {:f}\n'.format(xll)
-            txt += 'yllcorner  {:f}\n'.format(yll)
-            txt += 'cellsize  {}\n'.format(cellsize)
-            # ensure that nodata fmt consistent w values
-            txt += 'NODATA_value  {}\n'.format(fmt) % (nodata)
-            with open(filename, 'w') as output:
-                output.write(txt)
-            with open(filename, 'ab') as output:
-                np.savetxt(output, a, **kwargs)
-            print('wrote {}'.format(filename))
-
-        elif filename.lower().endswith(".tif"):
-            if len(np.unique(self.delr)) != len(np.unique(self.delc)) != 1 \
-                    or self.delr[0] != self.delc[0]:
-                raise ValueError('GeoTIFF export require a uniform grid.')
-            try:
-                import rasterio
-                from rasterio import Affine
-            except:
-                print('GeoTIFF export requires the rasterio package.')
-                return
-            dxdy = self.delc[0] * self.length_multiplier
-            trans = Affine.translation(self.xul, self.yul) * \
-                    Affine.rotation(self.rotation) * \
-                    Affine.scale(dxdy, -dxdy)
-
-            # third dimension is the number of bands
-            a = a.copy()
-            if len(a.shape) == 2:
-                a = np.reshape(a, (1, a.shape[0], a.shape[1]))
-            if a.dtype.name == 'int64':
-                a = a.astype('int32')
-                dtype = rasterio.int32
-            elif a.dtype.name == 'int32':
-                dtype = rasterio.int32
-            elif a.dtype.name == 'float64':
-                dtype = rasterio.float64
-            elif a.dtype.name == 'float32':
-                dtype = rasterio.float32
-            else:
-                msg = 'ERROR: invalid dtype "{}"'.format(a.dtype.name)
-                raise TypeError(msg)
-
-            meta = {'count': a.shape[0],
-                    'width': a.shape[2],
-                    'height': a.shape[1],
-                    'nodata': nodata,
-                    'dtype': dtype,
-                    'driver': 'GTiff',
-                    'crs': self.proj4_str,
-                    'transform': trans
-                    }
-            meta.update(kwargs)
-            with rasterio.open(filename, 'w', **meta) as dst:
-                dst.write(a)
-            print('wrote {}'.format(filename))
-
-        elif filename.lower().endswith(".shp"):
-            from ..export.shapefile_utils import write_grid_shapefile2
-            epsg = kwargs.get('epsg', None)
-            prj = kwargs.get('prj', None)
-            if epsg is None and prj is None:
-                epsg = self.epsg
-            write_grid_shapefile2(filename, self, array_dict={fieldname: a},
-                                  nan_val=nodata,
-                                  epsg=epsg, prj=prj)
-
-    def export_contours(self, filename, contours,
-                        fieldname='level', epsg=None, prj=None,
-                        **kwargs):
-        """
-        Convert matplotlib contour plot object to shapefile.
-
-        Parameters
-        ----------
-        filename : str
-            path of output shapefile
-        contours : matplotlib.contour.QuadContourSet or list of them
-            (object returned by matplotlib.pyplot.contour)
-        epsg : int
-            EPSG code. See https://www.epsg-registry.org/ or spatialreference.org
-        prj : str
-            Existing projection file to be used with new shapefile.
-        **kwargs : key-word arguments to flopy.export.shapefile_utils.recarray2shp
-
-        Returns
-        -------
-        df : dataframe of shapefile contents
-
-        """
-        from flopy.utils.geometry import LineString
-        from flopy.export.shapefile_utils import recarray2shp
-
-        if not isinstance(contours, list):
-            contours = [contours]
-
-        if epsg is None:
-            epsg = self._epsg
-        if prj is None:
-            prj = self.proj4_str
-
-        geoms = []
-        level = []
-        for ctr in contours:
-            levels = ctr.levels
-            for i, c in enumerate(ctr.collections):
-                paths = c.get_paths()
-                geoms += [LineString(p.vertices) for p in paths]
-                level += list(np.ones(len(paths)) * levels[i])
-
-        # convert the dictionary to a recarray
-        ra = np.array(level,
-                      dtype=[(fieldname, float)]).view(np.recarray)
-
-        recarray2shp(ra, geoms, filename, epsg=epsg, prj=prj, **kwargs)
-
-    def export_array_contours(self, filename, a,
-                              fieldname='level',
-                              interval=None,
-                              levels=None,
-                              maxlevels=1000,
-                              epsg=None,
-                              prj=None,
-                              **kwargs):
-        """
-        Contour an array using matplotlib; write shapefile of contours.
-
-        Parameters
-        ----------
-        filename : str
-            Path of output file with '.shp' extension.
-        a : 2D numpy array
-            Array to contour
-        epsg : int
-            EPSG code. See https://www.epsg-registry.org/ or spatialreference.org
-        prj : str
-            Existing projection file to be used with new shapefile.
-        **kwargs : key-word arguments to flopy.export.shapefile_utils.recarray2shp
-
-        """
-        import matplotlib.pyplot as plt
-
-        if epsg is None:
-            epsg = self._epsg
-        if prj is None:
-            prj = self.proj4_str
-
-        if interval is not None:
-            vmin = np.nanmin(a)
-            vmax = np.nanmax(a)
-            nlevels = np.round(np.abs(vmax - vmin) / interval, 2)
-            msg = '{:.0f} levels '.format(nlevels) + \
-                  'at interval of {} > '.format(interval) + \
-                  'maxlevels = {}'.format(maxlevels)
-            assert nlevels < maxlevels, msg
-            levels = np.arange(vmin, vmax, interval)
-        fig, ax = plt.subplots()
-        ctr = self.contour_array(ax, a, levels=levels)
-        self.export_contours(filename, ctr, fieldname, epsg, prj, **kwargs)
-        plt.close()
-
-    def contour_array(self, ax, a, **kwargs):
-        """
-        Create a QuadMesh plot of the specified array using pcolormesh
-
-        Parameters
-        ----------
-        ax : matplotlib.axes.Axes
-            ax to add the contours
-
-        a : np.ndarray
-            array to contour
-
-        Returns
-        -------
-        contour_set : ContourSet
-
-        """
-        from flopy.plot import ModelMap
-
-        kwargs['ax'] = ax
-        mm = ModelMap(sr=self)
-        contour_set = mm.contour_array(a=a, **kwargs)
-
-        return contour_set
+    # def export_contours(self, filename, contours,
+    #                     fieldname='level', epsg=None, prj=None,
+    #                     **kwargs):
+    #     """
+    #     Convert matplotlib contour plot object to shapefile.
+    # 
+    #     Parameters
+    #     ----------
+    #     filename : str
+    #         path of output shapefile
+    #     contours : matplotlib.contour.QuadContourSet or list of them
+    #         (object returned by matplotlib.pyplot.contour)
+    #     epsg : int
+    #         EPSG code. See https://www.epsg-registry.org/ or spatialreference.org
+    #     prj : str
+    #         Existing projection file to be used with new shapefile.
+    #     **kwargs : key-word arguments to flopy.export.shapefile_utils.recarray2shp
+    # 
+    #     Returns
+    #     -------
+    #     df : dataframe of shapefile contents
+    # 
+    #     """
+    #     from flopy.utils.geometry import LineString
+    #     from flopy.export.shapefile_utils import recarray2shp
+    # 
+    #     if not isinstance(contours, list):
+    #         contours = [contours]
+    # 
+    #     if epsg is None:
+    #         epsg = self._epsg
+    #     if prj is None:
+    #         prj = self.proj4_str
+    # 
+    #     geoms = []
+    #     level = []
+    #     for ctr in contours:
+    #         levels = ctr.levels
+    #         for i, c in enumerate(ctr.collections):
+    #             paths = c.get_paths()
+    #             geoms += [LineString(p.vertices) for p in paths]
+    #             level += list(np.ones(len(paths)) * levels[i])
+    # 
+    #     # convert the dictionary to a recarray
+    #     ra = np.array(level,
+    #                   dtype=[(fieldname, float)]).view(np.recarray)
+    # 
+    #     recarray2shp(ra, geoms, filename, epsg=epsg, prj=prj, **kwargs)
+    # 
+    # def export_array_contours(self, filename, a,
+    #                           fieldname='level',
+    #                           interval=None,
+    #                           levels=None,
+    #                           maxlevels=1000,
+    #                           epsg=None,
+    #                           prj=None,
+    #                           **kwargs):
+    #     """
+    #     Contour an array using matplotlib; write shapefile of contours.
+    # 
+    #     Parameters
+    #     ----------
+    #     filename : str
+    #         Path of output file with '.shp' extension.
+    #     a : 2D numpy array
+    #         Array to contour
+    #     epsg : int
+    #         EPSG code. See https://www.epsg-registry.org/ or spatialreference.org
+    #     prj : str
+    #         Existing projection file to be used with new shapefile.
+    #     **kwargs : key-word arguments to flopy.export.shapefile_utils.recarray2shp
+    # 
+    #     """
+    #     import matplotlib.pyplot as plt
+    # 
+    #     if epsg is None:
+    #         epsg = self._epsg
+    #     if prj is None:
+    #         prj = self.proj4_str
+    # 
+    #     if interval is not None:
+    #         vmin = np.nanmin(a)
+    #         vmax = np.nanmax(a)
+    #         nlevels = np.round(np.abs(vmax - vmin) / interval, 2)
+    #         msg = '{:.0f} levels '.format(nlevels) + \
+    #               'at interval of {} > '.format(interval) + \
+    #               'maxlevels = {}'.format(maxlevels)
+    #         assert nlevels < maxlevels, msg
+    #         levels = np.arange(vmin, vmax, interval)
+    #     fig, ax = plt.subplots()
+    #     ctr = self.contour_array(ax, a, levels=levels)
+    #     self.export_contours(filename, ctr, fieldname, epsg, prj, **kwargs)
+    #     plt.close()
+    # 
+    # def contour_array(self, ax, a, **kwargs):
+    #     """
+    #     Create a QuadMesh plot of the specified array using pcolormesh
+    # 
+    #     Parameters
+    #     ----------
+    #     ax : matplotlib.axes.Axes
+    #         ax to add the contours
+    # 
+    #     a : np.ndarray
+    #         array to contour
+    # 
+    #     Returns
+    #     -------
+    #     contour_set : ContourSet
+    # 
+    #     """
+    #     from flopy.plot import ModelMap
+    # 
+    #     kwargs['ax'] = ax
+    #     mm = ModelMap(sr=self)
+    #     contour_set = mm.contour_array(a=a, **kwargs)
+    # 
+    #     return contour_set
 
     @property
     def vertices(self):
@@ -4964,605 +4957,604 @@ class SpatialReference(object):
         jj, ii = jj.ravel(), ii.ravel()
         self._vertices = self.get_vertices(ii, jj)
 
-    def interpolate(self, a, xi, method='nearest'):
-        """
-        Use the griddata method to interpolate values from an array onto the
-        points defined in xi.  For any values outside of the grid, use
-        'nearest' to find a value for them.
-
-        Parameters
-        ----------
-        a : numpy.ndarray
-            array to interpolate from.  It must be of size nrow, ncol
-        xi : numpy.ndarray
-            array containing x and y point coordinates of size (npts, 2). xi
-            also works with broadcasting so that if a is a 2d array, then
-            xi can be passed in as (xgrid, ygrid).
-        method : {'linear', 'nearest', 'cubic'}
-            method to use for interpolation (default is 'nearest')
-
-        Returns
-        -------
-        b : numpy.ndarray
-            array of size (npts)
-
-        """
-        try:
-            from scipy.interpolate import griddata
-        except:
-            print('scipy not installed\ntry pip install scipy')
-            return None
-
-        # Create a 2d array of points for the grid centers
-        points = np.empty((self.ncol * self.nrow, 2))
-        points[:, 0] = self.xcentergrid.flatten()
-        points[:, 1] = self.ycentergrid.flatten()
-
-        # Use the griddata function to interpolate to the xi points
-        b = griddata(points, a.flatten(), xi, method=method, fill_value=np.nan)
-
-        # if method is linear or cubic, then replace nan's with a value
-        # interpolated using nearest
-        if method != 'nearest':
-            bn = griddata(points, a.flatten(), xi, method='nearest')
-            idx = np.isnan(b)
-            b[idx] = bn[idx]
-
-        return b
-
-    def get_2d_vertex_connectivity(self):
-        """
-        Create the cell 2d vertices array and the iverts index array.  These
-        are the same form as the ones used to instantiate an unstructured
-        spatial reference.
-
-        Returns
-        -------
-
-        verts : ndarray
-            array of x and y coordinates for the grid vertices
-
-        iverts : list
-            a list with a list of vertex indices for each cell in clockwise
-            order starting with the upper left corner
-
-        """
-        x = self.xgrid.flatten()
-        y = self.ygrid.flatten()
-        nrowvert = self.nrow + 1
-        ncolvert = self.ncol + 1
-        npoints = nrowvert * ncolvert
-        verts = np.empty((npoints, 2), dtype=np.float)
-        verts[:, 0] = x
-        verts[:, 1] = y
-        iverts = []
-        for i in range(self.nrow):
-            for j in range(self.ncol):
-                iv1 = i * ncolvert + j  # upper left point number
-                iv2 = iv1 + 1
-                iv4 = (i + 1) * ncolvert + j
-                iv3 = iv4 + 1
-                iverts.append([iv1, iv2, iv3, iv4])
-        return verts, iverts
-
-    def get_3d_shared_vertex_connectivity(self, nlay, botm, ibound=None):
-
-        # get the x and y points for the grid
-        x = self.xgrid.flatten()
-        y = self.ygrid.flatten()
-
-        # set the size of the vertex grid
-        nrowvert = self.nrow + 1
-        ncolvert = self.ncol + 1
-        nlayvert = nlay + 1
-        nrvncv = nrowvert * ncolvert
-        npoints = nrvncv * nlayvert
-
-        # create and fill a 3d points array for the grid
-        verts = np.empty((npoints, 3), dtype=np.float)
-        verts[:, 0] = np.tile(x, nlayvert)
-        verts[:, 1] = np.tile(y, nlayvert)
-        istart = 0
-        istop = nrvncv
-        for k in range(nlay + 1):
-            verts[istart:istop, 2] = self.interpolate(botm[k],
-                                                      verts[istart:istop, :2],
-                                                      method='linear')
-            istart = istop
-            istop = istart + nrvncv
-
-        # create the list of points comprising each cell. points must be
-        # listed a specific way according to vtk requirements.
-        iverts = []
-        for k in range(nlay):
-            koffset = k * nrvncv
-            for i in range(self.nrow):
-                for j in range(self.ncol):
-                    if ibound is not None:
-                        if ibound[k, i, j] == 0:
-                            continue
-                    iv1 = i * ncolvert + j + koffset
-                    iv2 = iv1 + 1
-                    iv4 = (i + 1) * ncolvert + j + koffset
-                    iv3 = iv4 + 1
-                    iverts.append([iv4 + nrvncv, iv3 + nrvncv,
-                                   iv1 + nrvncv, iv2 + nrvncv,
-                                   iv4, iv3, iv1, iv2])
-
-        # renumber and reduce the vertices if ibound_filter
-        if ibound is not None:
-
-            # go through the vertex list and mark vertices that are used
-            ivertrenum = np.zeros(npoints, dtype=np.int)
-            for vlist in iverts:
-                for iv in vlist:
-                    # mark vertices that are actually used
-                    ivertrenum[iv] = 1
-
-            # renumber vertices that are used, skip those that are not
-            inum = 0
-            for i in range(npoints):
-                if ivertrenum[i] > 0:
-                    inum += 1
-                    ivertrenum[i] = inum
-            ivertrenum -= 1
-
-            # reassign the vertex list using the new vertex numbers
-            iverts2 = []
-            for vlist in iverts:
-                vlist2 = []
-                for iv in vlist:
-                    vlist2.append(ivertrenum[iv])
-                iverts2.append(vlist2)
-            iverts = iverts2
-            idx = np.where(ivertrenum >= 0)
-            verts = verts[idx]
-
-        return verts, iverts
-
-    def get_3d_vertex_connectivity(self, nlay, top, bot, ibound=None):
-        if ibound is None:
-            ncells = nlay * self.nrow * self.ncol
-            ibound = np.ones((nlay, self.nrow, self.ncol), dtype=np.int)
-        else:
-            ncells = (ibound != 0).sum()
-        npoints = ncells * 8
-        verts = np.empty((npoints, 3), dtype=np.float)
-        iverts = []
-        ipoint = 0
-        for k in range(nlay):
-            for i in range(self.nrow):
-                for j in range(self.ncol):
-                    if ibound[k, i, j] == 0:
-                        continue
-
-                    ivert = []
-                    pts = self.get_vertices(i, j)
-                    pt0, pt1, pt2, pt3, pt0 = pts
-
-                    z = bot[k, i, j]
-
-                    verts[ipoint, 0:2] = np.array(pt1)
-                    verts[ipoint, 2] = z
-                    ivert.append(ipoint)
-                    ipoint += 1
-
-                    verts[ipoint, 0:2] = np.array(pt2)
-                    verts[ipoint, 2] = z
-                    ivert.append(ipoint)
-                    ipoint += 1
-
-                    verts[ipoint, 0:2] = np.array(pt0)
-                    verts[ipoint, 2] = z
-                    ivert.append(ipoint)
-                    ipoint += 1
-
-                    verts[ipoint, 0:2] = np.array(pt3)
-                    verts[ipoint, 2] = z
-                    ivert.append(ipoint)
-                    ipoint += 1
-
-                    z = top[k, i, j]
-
-                    verts[ipoint, 0:2] = np.array(pt1)
-                    verts[ipoint, 2] = z
-                    ivert.append(ipoint)
-                    ipoint += 1
-
-                    verts[ipoint, 0:2] = np.array(pt2)
-                    verts[ipoint, 2] = z
-                    ivert.append(ipoint)
-                    ipoint += 1
-
-                    verts[ipoint, 0:2] = np.array(pt0)
-                    verts[ipoint, 2] = z
-                    ivert.append(ipoint)
-                    ipoint += 1
-
-                    verts[ipoint, 0:2] = np.array(pt3)
-                    verts[ipoint, 2] = z
-                    ivert.append(ipoint)
-                    ipoint += 1
-
-                    iverts.append(ivert)
-
-        return verts, iverts
-
-class epsgRef:
-    """
-    Sets up a local database of text representations of coordinate reference
-    systems, keyed by EPSG code.
-
-    The database is epsgref.json, located in the user's data directory. If
-    optional 'appdirs' package is available, this is in the platform-dependent
-    user directory, otherwise in the user's 'HOME/.flopy' directory.
-    """
-
-    def __init__(self):
-        warnings.warn(
-            "epsgRef has been deprecated.", category=DeprecationWarning)
-        try:
-            from appdirs import user_data_dir
-        except ImportError:
-            user_data_dir = None
-        if user_data_dir:
-            datadir = user_data_dir('flopy')
-        else:
-            # if appdirs is not installed, use user's home directory
-            datadir = os.path.join(os.path.expanduser('~'), '.flopy')
-        if not os.path.isdir(datadir):
-            os.makedirs(datadir)
-        dbname = 'epsgref.json'
-        self.location = os.path.join(datadir, dbname)
-
-    def to_dict(self):
-        """
-        Returns dict with EPSG code integer key, and WKT CRS text
-        """
-        data = OrderedDict()
-        if os.path.exists(self.location):
-            with open(self.location, 'r') as f:
-                loaded_data = json.load(f, object_pairs_hook=OrderedDict)
-            # convert JSON key from str to EPSG integer
-            for key, value in loaded_data.items():
-                try:
-                    data[int(key)] = value
-                except ValueError:
-                    data[key] = value
-        return data
-
-    def _write(self, data):
-        with open(self.location, 'w') as f:
-            json.dump(data, f, indent=0)
-            f.write('\n')
-
-    def reset(self, verbose=True):
-        if os.path.exists(self.location):
-            os.remove(self.location)
-        if verbose:
-            print('Resetting {}'.format(self.location))
-
-    def add(self, epsg, prj):
-        """
-        add an epsg code to epsgref.json
-        """
-        data = self.to_dict()
-        data[epsg] = prj
-        self._write(data)
-
-    def get(self, epsg):
-        """
-        returns prj from a epsg code, otherwise None if not found
-        """
-        data = self.to_dict()
-        return data.get(epsg)
-
-    def remove(self, epsg):
-        """
-        removes an epsg entry from epsgref.json
-        """
-        data = self.to_dict()
-        if epsg in data:
-            del data[epsg]
-            self._write(data)
-
-    @staticmethod
-    def show():
-        ep = epsgRef()
-        prj = ep.to_dict()
-        for k, v in prj.items():
-            print('{}:\n{}\n'.format(k, v))
-
-
-class crs(object):
-    """
-    Container to parse and store coordinate reference system parameters,
-    and translate between different formats.
-    """
-
-    def __init__(self, prj=None, esri_wkt=None, epsg=None):
-        warnings.warn(
-            "crs has been deprecated. Use CRS in shapefile_utils instead.",
-            category=DeprecationWarning)
-        self.wktstr = None
-        if prj is not None:
-            with open(prj) as fprj:
-                self.wktstr = fprj.read()
-        elif esri_wkt is not None:
-            self.wktstr = esri_wkt
-        elif epsg is not None:
-            wktstr = getprj(epsg)
-            if wktstr is not None:
-                self.wktstr = wktstr
-        if self.wktstr is not None:
-            self.parse_wkt()
-
-    @property
-    def crs(self):
-        """
-        Dict mapping crs attributes to proj4 parameters
-        """
-        proj = None
-        if self.projcs is not None:
-            # projection
-            if 'mercator' in self.projcs.lower():
-                if 'transverse' in self.projcs.lower() or \
-                        'tm' in self.projcs.lower():
-                    proj = 'tmerc'
-                else:
-                    proj = 'merc'
-            elif 'utm' in self.projcs.lower() and \
-                    'zone' in self.projcs.lower():
-                proj = 'utm'
-            elif 'stateplane' in self.projcs.lower():
-                proj = 'lcc'
-            elif 'lambert' and 'conformal' and 'conic' in self.projcs.lower():
-                proj = 'lcc'
-            elif 'albers' in self.projcs.lower():
-                proj = 'aea'
-        elif self.projcs is None and self.geogcs is not None:
-            proj = 'longlat'
-
-        # datum
-        datum = None
-        if 'NAD' in self.datum.lower() or \
-                'north' in self.datum.lower() and \
-                'america' in self.datum.lower():
-            datum = 'nad'
-            if '83' in self.datum.lower():
-                datum += '83'
-            elif '27' in self.datum.lower():
-                datum += '27'
-        elif '84' in self.datum.lower():
-            datum = 'wgs84'
-
-        # ellipse
-        ellps = None
-        if '1866' in self.spheroid_name:
-            ellps = 'clrk66'
-        elif 'grs' in self.spheroid_name.lower():
-            ellps = 'grs80'
-        elif 'wgs' in self.spheroid_name.lower():
-            ellps = 'wgs84'
-
-        # prime meridian
-        pm = self.primem[0].lower()
-
-        return {'proj': proj,
-                'datum': datum,
-                'ellps': ellps,
-                'a': self.semi_major_axis,
-                'rf': self.inverse_flattening,
-                'lat_0': self.latitude_of_origin,
-                'lat_1': self.standard_parallel_1,
-                'lat_2': self.standard_parallel_2,
-                'lon_0': self.central_meridian,
-                'k_0': self.scale_factor,
-                'x_0': self.false_easting,
-                'y_0': self.false_northing,
-                'units': self.projcs_unit,
-                'zone': self.utm_zone}
-
-    @property
-    def grid_mapping_attribs(self):
-        """
-        Map parameters for CF Grid Mappings
-        http://http://cfconventions.org/cf-conventions/cf-conventions.html,
-        Appendix F: Grid Mappings
-        """
-        if self.wktstr is not None:
-            sp = [p for p in [self.standard_parallel_1,
-                              self.standard_parallel_2]
-                  if p is not None]
-            sp = sp if len(sp) > 0 else None
-            proj = self.crs['proj']
-            names = {'aea': 'albers_conical_equal_area',
-                     'aeqd': 'azimuthal_equidistant',
-                     'laea': 'lambert_azimuthal_equal_area',
-                     'longlat': 'latitude_longitude',
-                     'lcc': 'lambert_conformal_conic',
-                     'merc': 'mercator',
-                     'tmerc': 'transverse_mercator',
-                     'utm': 'transverse_mercator'}
-            attribs = {'grid_mapping_name': names[proj],
-                       'semi_major_axis': self.crs['a'],
-                       'inverse_flattening': self.crs['rf'],
-                       'standard_parallel': sp,
-                       'longitude_of_central_meridian': self.crs['lon_0'],
-                       'latitude_of_projection_origin': self.crs['lat_0'],
-                       'scale_factor_at_projection_origin': self.crs['k_0'],
-                       'false_easting': self.crs['x_0'],
-                       'false_northing': self.crs['y_0']}
-            return {k: v for k, v in attribs.items() if v is not None}
-
-    @property
-    def proj4(self):
-        """
-        Not implemented yet
-        """
-        return None
-
-    def parse_wkt(self):
-
-        self.projcs = self._gettxt('PROJCS["', '"')
-        self.utm_zone = None
-        if self.projcs is not None and 'utm' in self.projcs.lower():
-            self.utm_zone = self.projcs[-3:].lower().strip('n').strip('s')
-        self.geogcs = self._gettxt('GEOGCS["', '"')
-        self.datum = self._gettxt('DATUM["', '"')
-        tmp = self._getgcsparam('SPHEROID')
-        self.spheroid_name = tmp.pop(0)
-        self.semi_major_axis = tmp.pop(0)
-        self.inverse_flattening = tmp.pop(0)
-        self.primem = self._getgcsparam('PRIMEM')
-        self.gcs_unit = self._getgcsparam('UNIT')
-        self.projection = self._gettxt('PROJECTION["', '"')
-        self.latitude_of_origin = self._getvalue('latitude_of_origin')
-        self.central_meridian = self._getvalue('central_meridian')
-        self.standard_parallel_1 = self._getvalue('standard_parallel_1')
-        self.standard_parallel_2 = self._getvalue('standard_parallel_2')
-        self.scale_factor = self._getvalue('scale_factor')
-        self.false_easting = self._getvalue('false_easting')
-        self.false_northing = self._getvalue('false_northing')
-        self.projcs_unit = self._getprojcs_unit()
-
-    def _gettxt(self, s1, s2):
-        s = self.wktstr.lower()
-        strt = s.find(s1.lower())
-        if strt >= 0:  # -1 indicates not found
-            strt += len(s1)
-            end = s[strt:].find(s2.lower()) + strt
-            return self.wktstr[strt:end]
-
-    def _getvalue(self, k):
-        s = self.wktstr.lower()
-        strt = s.find(k.lower())
-        if strt >= 0:
-            strt += len(k)
-            end = s[strt:].find(']') + strt
-            try:
-                return float(self.wktstr[strt:end].split(',')[1])
-            except:
-                print('   could not typecast wktstr to a float')
-
-    def _getgcsparam(self, txt):
-        nvalues = 3 if txt.lower() == 'spheroid' else 2
-        tmp = self._gettxt('{}["'.format(txt), ']')
-        if tmp is not None:
-            tmp = tmp.replace('"', '').split(',')
-            name = tmp[0:1]
-            values = list(map(float, tmp[1:nvalues]))
-            return name + values
-        else:
-            return [None] * nvalues
-
-    def _getprojcs_unit(self):
-        if self.projcs is not None:
-            tmp = self.wktstr.lower().split('unit["')[-1]
-            uname, ufactor = tmp.strip().strip(']').split('",')[0:2]
-            ufactor = float(ufactor.split(']')[0].split()[0].split(',')[0])
-            return uname, ufactor
-        return None, None
-
-
-def getprj(epsg, addlocalreference=True, text='esriwkt'):
-    """
-    Gets projection file (.prj) text for given epsg code from
-    spatialreference.org
-
-    Parameters
-    ----------
-    epsg : int
-        epsg code for coordinate system
-    addlocalreference : boolean
-        adds the projection file text associated with epsg to a local
-        database, epsgref.json, located in the user's data directory.
-
-    References
-    ----------
-    https://www.epsg-registry.org/
-
-    Returns
-    -------
-    prj : str
-        text for a projection (*.prj) file.
-
-    """
-    warnings.warn("SpatialReference has been deprecated. Use StructuredGrid "
-                  "instead.", category=DeprecationWarning)
-    epsgfile = epsgRef()
-    wktstr = epsgfile.get(epsg)
-    if wktstr is None:
-        wktstr = get_spatialreference(epsg, text=text)
-    if addlocalreference and wktstr is not None:
-        epsgfile.add(epsg, wktstr)
-    return wktstr
-
-
-def get_spatialreference(epsg, text='esriwkt'):
-    """
-    Gets text for given epsg code and text format from spatialreference.org
-
-    Fetches the reference text using the url:
-        https://spatialreference.org/ref/epsg/<epsg code>/<text>/
-
-    See: https://www.epsg-registry.org/
-
-    Parameters
-    ----------
-    epsg : int
-        epsg code for coordinate system
-    text : str
-        string added to url
-
-    Returns
-    -------
-    url : str
-
-    """
-    from flopy.utils.flopy_io import get_url_text
-
-    warnings.warn("SpatialReference has been deprecated. Use StructuredGrid "
-                  "instead.", category=DeprecationWarning)
-
-    epsg_categories = ['epsg', 'esri']
-    for cat in epsg_categories:
-        url = "{}/ref/{}/{}/{}/".format(srefhttp, cat, epsg, text)
-        result = get_url_text(url)
-        if result is not None:
-            break
-    if result is not None:
-        return result.replace("\n", "")
-    elif result is None and text != 'epsg':
-        for cat in epsg_categories:
-            error_msg = 'No internet connection or ' + \
-                        'epsg code {} '.format(epsg) +  \
-                        'not found at {}/ref/'.format(srefhttp) + \
-                        '{}/{}/{}'.format(cat, cat, epsg)
-            print(error_msg)
-    # epsg code not listed on spatialreference.org
-    # may still work with pyproj
-    elif text == 'epsg':
-        return '+init=epsg:{}'.format(epsg)
-
-
-def getproj4(epsg):
-    """
-    Get projection file (.prj) text for given epsg code from
-    spatialreference.org. See: https://www.epsg-registry.org/
-
-    Parameters
-    ----------
-    epsg : int
-        epsg code for coordinate system
-
-    Returns
-    -------
-    prj : str
-        text for a projection (*.prj) file.
-
-    """
-    warnings.warn("SpatialReference has been deprecated. Use StructuredGrid "
-                  "instead.", category=DeprecationWarning)
-
-    return get_spatialreference(epsg, text='proj4')
+    # def interpolate(self, a, xi, method='nearest'):
+    #     """
+    #     Use the griddata method to interpolate values from an array onto the
+    #     points defined in xi.  For any values outside of the grid, use
+    #     'nearest' to find a value for them.
+    #
+    #     Parameters
+    #     ----------
+    #     a : numpy.ndarray
+    #         array to interpolate from.  It must be of size nrow, ncol
+    #     xi : numpy.ndarray
+    #         array containing x and y point coordinates of size (npts, 2). xi
+    #         also works with broadcasting so that if a is a 2d array, then
+    #         xi can be passed in as (xgrid, ygrid).
+    #     method : {'linear', 'nearest', 'cubic'}
+    #         method to use for interpolation (default is 'nearest')
+    #
+    #     Returns
+    #     -------
+    #     b : numpy.ndarray
+    #         array of size (npts)
+    #
+    #     """
+    #     try:
+    #         from scipy.interpolate import griddata
+    #     except:
+    #         print('scipy not installed\ntry pip install scipy')
+    #         return None
+    #
+    #     # Create a 2d array of points for the grid centers
+    #     points = np.empty((self.ncol * self.nrow, 2))
+    #     points[:, 0] = self.xcentergrid.flatten()
+    #     points[:, 1] = self.ycentergrid.flatten()
+    #
+    #     # Use the griddata function to interpolate to the xi points
+    #     b = griddata(points, a.flatten(), xi, method=method, fill_value=np.nan)
+    #
+    #     # if method is linear or cubic, then replace nan's with a value
+    #     # interpolated using nearest
+    #     if method != 'nearest':
+    #         bn = griddata(points, a.flatten(), xi, method='nearest')
+    #         idx = np.isnan(b)
+    #         b[idx] = bn[idx]
+    #
+    #     return b
+
+    # def get_2d_vertex_connectivity(self):
+    #     """
+    #     Create the cell 2d vertices array and the iverts index array.  These
+    #     are the same form as the ones used to instantiate an unstructured
+    #     spatial reference.
+    #
+    #     Returns
+    #     -------
+    #
+    #     verts : ndarray
+    #         array of x and y coordinates for the grid vertices
+    #
+    #     iverts : list
+    #         a list with a list of vertex indices for each cell in clockwise
+    #         order starting with the upper left corner
+    #
+    #     """
+    #     x = self.xgrid.flatten()
+    #     y = self.ygrid.flatten()
+    #     nrowvert = self.nrow + 1
+    #     ncolvert = self.ncol + 1
+    #     npoints = nrowvert * ncolvert
+    #     verts = np.empty((npoints, 2), dtype=np.float)
+    #     verts[:, 0] = x
+    #     verts[:, 1] = y
+    #     iverts = []
+    #     for i in range(self.nrow):
+    #         for j in range(self.ncol):
+    #             iv1 = i * ncolvert + j  # upper left point number
+    #             iv2 = iv1 + 1
+    #             iv4 = (i + 1) * ncolvert + j
+    #             iv3 = iv4 + 1
+    #             iverts.append([iv1, iv2, iv3, iv4])
+    #     return verts, iverts
+
+    # def get_3d_shared_vertex_connectivity(self, nlay, botm, ibound=None):
+    #
+    #     # get the x and y points for the grid
+    #     x = self.xgrid.flatten()
+    #     y = self.ygrid.flatten()
+    #
+    #     # set the size of the vertex grid
+    #     nrowvert = self.nrow + 1
+    #     ncolvert = self.ncol + 1
+    #     nlayvert = nlay + 1
+    #     nrvncv = nrowvert * ncolvert
+    #     npoints = nrvncv * nlayvert
+    #
+    #     # create and fill a 3d points array for the grid
+    #     verts = np.empty((npoints, 3), dtype=np.float)
+    #     verts[:, 0] = np.tile(x, nlayvert)
+    #     verts[:, 1] = np.tile(y, nlayvert)
+    #     istart = 0
+    #     istop = nrvncv
+    #     for k in range(nlay + 1):
+    #         verts[istart:istop, 2] = self.interpolate(botm[k],
+    #                                                   verts[istart:istop, :2],
+    #                                                   method='linear')
+    #         istart = istop
+    #         istop = istart + nrvncv
+    #
+    #     # create the list of points comprising each cell. points must be
+    #     # listed a specific way according to vtk requirements.
+    #     iverts = []
+    #     for k in range(nlay):
+    #         koffset = k * nrvncv
+    #         for i in range(self.nrow):
+    #             for j in range(self.ncol):
+    #                 if ibound is not None:
+    #                     if ibound[k, i, j] == 0:
+    #                         continue
+    #                 iv1 = i * ncolvert + j + koffset
+    #                 iv2 = iv1 + 1
+    #                 iv4 = (i + 1) * ncolvert + j + koffset
+    #                 iv3 = iv4 + 1
+    #                 iverts.append([iv4 + nrvncv, iv3 + nrvncv,
+    #                                iv1 + nrvncv, iv2 + nrvncv,
+    #                                iv4, iv3, iv1, iv2])
+    #
+    #     # renumber and reduce the vertices if ibound_filter
+    #     if ibound is not None:
+    #
+    #         # go through the vertex list and mark vertices that are used
+    #         ivertrenum = np.zeros(npoints, dtype=np.int)
+    #         for vlist in iverts:
+    #             for iv in vlist:
+    #                 # mark vertices that are actually used
+    #                 ivertrenum[iv] = 1
+    #
+    #         # renumber vertices that are used, skip those that are not
+    #         inum = 0
+    #         for i in range(npoints):
+    #             if ivertrenum[i] > 0:
+    #                 inum += 1
+    #                 ivertrenum[i] = inum
+    #         ivertrenum -= 1
+    #
+    #         # reassign the vertex list using the new vertex numbers
+    #         iverts2 = []
+    #         for vlist in iverts:
+    #             vlist2 = []
+    #             for iv in vlist:
+    #                 vlist2.append(ivertrenum[iv])
+    #             iverts2.append(vlist2)
+    #         iverts = iverts2
+    #         idx = np.where(ivertrenum >= 0)
+    #         verts = verts[idx]
+    #
+    #     return verts, iverts
+
+    # def get_3d_vertex_connectivity(self, nlay, top, bot, ibound=None):
+    #     if ibound is None:
+    #         ncells = nlay * self.nrow * self.ncol
+    #         ibound = np.ones((nlay, self.nrow, self.ncol), dtype=np.int)
+    #     else:
+    #         ncells = (ibound != 0).sum()
+    #     npoints = ncells * 8
+    #     verts = np.empty((npoints, 3), dtype=np.float)
+    #     iverts = []
+    #     ipoint = 0
+    #     for k in range(nlay):
+    #         for i in range(self.nrow):
+    #             for j in range(self.ncol):
+    #                 if ibound[k, i, j] == 0:
+    #                     continue
+    #
+    #                 ivert = []
+    #                 pts = self.get_vertices(i, j)
+    #                 pt0, pt1, pt2, pt3, pt0 = pts
+    #
+    #                 z = bot[k, i, j]
+    #
+    #                 verts[ipoint, 0:2] = np.array(pt1)
+    #                 verts[ipoint, 2] = z
+    #                 ivert.append(ipoint)
+    #                 ipoint += 1
+    #
+    #                 verts[ipoint, 0:2] = np.array(pt2)
+    #                 verts[ipoint, 2] = z
+    #                 ivert.append(ipoint)
+    #                 ipoint += 1
+    #
+    #                 verts[ipoint, 0:2] = np.array(pt0)
+    #                 verts[ipoint, 2] = z
+    #                 ivert.append(ipoint)
+    #                 ipoint += 1
+    #
+    #                 verts[ipoint, 0:2] = np.array(pt3)
+    #                 verts[ipoint, 2] = z
+    #                 ivert.append(ipoint)
+    #                 ipoint += 1
+    #
+    #                 z = top[k, i, j]
+    #
+    #                 verts[ipoint, 0:2] = np.array(pt1)
+    #                 verts[ipoint, 2] = z
+    #                 ivert.append(ipoint)
+    #                 ipoint += 1
+    #
+    #                 verts[ipoint, 0:2] = np.array(pt2)
+    #                 verts[ipoint, 2] = z
+    #                 ivert.append(ipoint)
+    #                 ipoint += 1
+    #
+    #                 verts[ipoint, 0:2] = np.array(pt0)
+    #                 verts[ipoint, 2] = z
+    #                 ivert.append(ipoint)
+    #                 ipoint += 1
+    #
+    #                 verts[ipoint, 0:2] = np.array(pt3)
+    #                 verts[ipoint, 2] = z
+    #                 ivert.append(ipoint)
+    #                 ipoint += 1
+    #
+    #                 iverts.append(ivert)
+    #
+    #     return verts, iverts
+
+
+# class EpsgRef:
+#     """
+#     Sets up a local database of text representations of coordinate reference
+#     systems, keyed by EPSG code.
+# 
+#     The database is epsgref.json, located in the user's data directory. If
+#     optional 'appdirs' package is available, this is in the platform-dependent
+#     user directory, otherwise in the user's 'HOME/.flopy' directory.
+#     """
+# 
+#     def __init__(self):
+#         try:
+#             from appdirs import user_data_dir
+#         except ImportError:
+#             user_data_dir = None
+#         if user_data_dir:
+#             datadir = user_data_dir('flopy')
+#         else:
+#             # if appdirs is not installed, use user's home directory
+#             datadir = os.path.join(os.path.expanduser('~'), '.flopy')
+#         if not os.path.isdir(datadir):
+#             os.makedirs(datadir)
+#         dbname = 'epsgref.json'
+#         self.location = os.path.join(datadir, dbname)
+# 
+#     def to_dict(self):
+#         """
+#         Returns dict with EPSG code integer key, and WKT CRS text
+#         """
+#         data = OrderedDict()
+#         if os.path.exists(self.location):
+#             with open(self.location, 'r') as f:
+#                 loaded_data = json.load(f, object_pairs_hook=OrderedDict)
+#             # convert JSON key from str to EPSG integer
+#             for key, value in loaded_data.items():
+#                 try:
+#                     data[int(key)] = value
+#                 except ValueError:
+#                     data[key] = value
+#         return data
+# 
+#     def _write(self, data):
+#         with open(self.location, 'w') as f:
+#             json.dump(data, f, indent=0)
+#             f.write('\n')
+# 
+#     def reset(self, verbose=True):
+#         if os.path.exists(self.location):
+#             os.remove(self.location)
+#         if verbose:
+#             print('Resetting {}'.format(self.location))
+# 
+#     def add(self, epsg, prj):
+#         """
+#         add an epsg code to epsgref.json
+#         """
+#         data = self.to_dict()
+#         data[epsg] = prj
+#         self._write(data)
+# 
+#     def get(self, epsg):
+#         """
+#         returns prj from a epsg code, otherwise None if not found
+#         """
+#         data = self.to_dict()
+#         return data.get(epsg)
+# 
+#     def remove(self, epsg):
+#         """
+#         removes an epsg entry from epsgref.json
+#         """
+#         data = self.to_dict()
+#         if epsg in data:
+#             del data[epsg]
+#             self._write(data)
+# 
+#     @staticmethod
+#     def show():
+#         ep = EpsgRef()
+#         prj = ep.to_dict()
+#         for k, v in prj.items():
+#             print('{}:\n{}\n'.format(k, v))
+
+
+# class CRS(object):
+#     """
+#     Container to parse and store coordinate reference system parameters,
+#     and translate between different formats.
+#     """
+# 
+#     def __init__(self, prj=None, esri_wkt=None, epsg=None):
+#         warnings.warn(
+#             "crs has been deprecated. Use CRS in shapefile_utils instead.",
+#             category=DeprecationWarning)
+#         self.wktstr = None
+#         if prj is not None:
+#             with open(prj) as fprj:
+#                 self.wktstr = fprj.read()
+#         elif esri_wkt is not None:
+#             self.wktstr = esri_wkt
+#         elif epsg is not None:
+#             wktstr = getprj(epsg)
+#             if wktstr is not None:
+#                 self.wktstr = wktstr
+#         if self.wktstr is not None:
+#             self.parse_wkt()
+# 
+#     @property
+#     def crs(self):
+#         """
+#         Dict mapping crs attributes to proj4 parameters
+#         """
+#         proj = None
+#         if self.projcs is not None:
+#             # projection
+#             if 'mercator' in self.projcs.lower():
+#                 if 'transverse' in self.projcs.lower() or \
+#                         'tm' in self.projcs.lower():
+#                     proj = 'tmerc'
+#                 else:
+#                     proj = 'merc'
+#             elif 'utm' in self.projcs.lower() and \
+#                     'zone' in self.projcs.lower():
+#                 proj = 'utm'
+#             elif 'stateplane' in self.projcs.lower():
+#                 proj = 'lcc'
+#             elif 'lambert' and 'conformal' and 'conic' in self.projcs.lower():
+#                 proj = 'lcc'
+#             elif 'albers' in self.projcs.lower():
+#                 proj = 'aea'
+#         elif self.projcs is None and self.geogcs is not None:
+#             proj = 'longlat'
+# 
+#         # datum
+#         datum = None
+#         if 'NAD' in self.datum.lower() or \
+#                 'north' in self.datum.lower() and \
+#                 'america' in self.datum.lower():
+#             datum = 'nad'
+#             if '83' in self.datum.lower():
+#                 datum += '83'
+#             elif '27' in self.datum.lower():
+#                 datum += '27'
+#         elif '84' in self.datum.lower():
+#             datum = 'wgs84'
+# 
+#         # ellipse
+#         ellps = None
+#         if '1866' in self.spheroid_name:
+#             ellps = 'clrk66'
+#         elif 'grs' in self.spheroid_name.lower():
+#             ellps = 'grs80'
+#         elif 'wgs' in self.spheroid_name.lower():
+#             ellps = 'wgs84'
+# 
+#         # prime meridian
+#         pm = self.primem[0].lower()
+# 
+#         return {'proj': proj,
+#                 'datum': datum,
+#                 'ellps': ellps,
+#                 'a': self.semi_major_axis,
+#                 'rf': self.inverse_flattening,
+#                 'lat_0': self.latitude_of_origin,
+#                 'lat_1': self.standard_parallel_1,
+#                 'lat_2': self.standard_parallel_2,
+#                 'lon_0': self.central_meridian,
+#                 'k_0': self.scale_factor,
+#                 'x_0': self.false_easting,
+#                 'y_0': self.false_northing,
+#                 'units': self.projcs_unit,
+#                 'zone': self.utm_zone}
+# 
+#     @property
+#     def grid_mapping_attribs(self):
+#         """
+#         Map parameters for CF Grid Mappings
+#         http://http://cfconventions.org/cf-conventions/cf-conventions.html,
+#         Appendix F: Grid Mappings
+#         """
+#         if self.wktstr is not None:
+#             sp = [p for p in [self.standard_parallel_1,
+#                               self.standard_parallel_2]
+#                   if p is not None]
+#             sp = sp if len(sp) > 0 else None
+#             proj = self.crs['proj']
+#             names = {'aea': 'albers_conical_equal_area',
+#                      'aeqd': 'azimuthal_equidistant',
+#                      'laea': 'lambert_azimuthal_equal_area',
+#                      'longlat': 'latitude_longitude',
+#                      'lcc': 'lambert_conformal_conic',
+#                      'merc': 'mercator',
+#                      'tmerc': 'transverse_mercator',
+#                      'utm': 'transverse_mercator'}
+#             attribs = {'grid_mapping_name': names[proj],
+#                        'semi_major_axis': self.crs['a'],
+#                        'inverse_flattening': self.crs['rf'],
+#                        'standard_parallel': sp,
+#                        'longitude_of_central_meridian': self.crs['lon_0'],
+#                        'latitude_of_projection_origin': self.crs['lat_0'],
+#                        'scale_factor_at_projection_origin': self.crs['k_0'],
+#                        'false_easting': self.crs['x_0'],
+#                        'false_northing': self.crs['y_0']}
+#             return {k: v for k, v in attribs.items() if v is not None}
+# 
+#     @property
+#     def proj4(self):
+#         """
+#         Not implemented yet
+#         """
+#         return None
+# 
+#     def parse_wkt(self):
+# 
+#         self.projcs = self._gettxt('PROJCS["', '"')
+#         self.utm_zone = None
+#         if self.projcs is not None and 'utm' in self.projcs.lower():
+#             self.utm_zone = self.projcs[-3:].lower().strip('n').strip('s')
+#         self.geogcs = self._gettxt('GEOGCS["', '"')
+#         self.datum = self._gettxt('DATUM["', '"')
+#         tmp = self._getgcsparam('SPHEROID')
+#         self.spheroid_name = tmp.pop(0)
+#         self.semi_major_axis = tmp.pop(0)
+#         self.inverse_flattening = tmp.pop(0)
+#         self.primem = self._getgcsparam('PRIMEM')
+#         self.gcs_unit = self._getgcsparam('UNIT')
+#         self.projection = self._gettxt('PROJECTION["', '"')
+#         self.latitude_of_origin = self._getvalue('latitude_of_origin')
+#         self.central_meridian = self._getvalue('central_meridian')
+#         self.standard_parallel_1 = self._getvalue('standard_parallel_1')
+#         self.standard_parallel_2 = self._getvalue('standard_parallel_2')
+#         self.scale_factor = self._getvalue('scale_factor')
+#         self.false_easting = self._getvalue('false_easting')
+#         self.false_northing = self._getvalue('false_northing')
+#         self.projcs_unit = self._getprojcs_unit()
+# 
+#     def _gettxt(self, s1, s2):
+#         s = self.wktstr.lower()
+#         strt = s.find(s1.lower())
+#         if strt >= 0:  # -1 indicates not found
+#             strt += len(s1)
+#             end = s[strt:].find(s2.lower()) + strt
+#             return self.wktstr[strt:end]
+# 
+#     def _getvalue(self, k):
+#         s = self.wktstr.lower()
+#         strt = s.find(k.lower())
+#         if strt >= 0:
+#             strt += len(k)
+#             end = s[strt:].find(']') + strt
+#             try:
+#                 return float(self.wktstr[strt:end].split(',')[1])
+#             except:
+#                 print('   could not typecast wktstr to a float')
+# 
+#     def _getgcsparam(self, txt):
+#         nvalues = 3 if txt.lower() == 'spheroid' else 2
+#         tmp = self._gettxt('{}["'.format(txt), ']')
+#         if tmp is not None:
+#             tmp = tmp.replace('"', '').split(',')
+#             name = tmp[0:1]
+#             values = list(map(float, tmp[1:nvalues]))
+#             return name + values
+#         else:
+#             return [None] * nvalues
+# 
+#     def _getprojcs_unit(self):
+#         if self.projcs is not None:
+#             tmp = self.wktstr.lower().split('unit["')[-1]
+#             uname, ufactor = tmp.strip().strip(']').split('",')[0:2]
+#             ufactor = float(ufactor.split(']')[0].split()[0].split(',')[0])
+#             return uname, ufactor
+#         return None, None
+
+
+# def getprj(epsg, addlocalreference=True, text='esriwkt'):
+#     """
+#     Gets projection file (.prj) text for given epsg code from
+#     spatialreference.org
+# 
+#     Parameters
+#     ----------
+#     epsg : int
+#         epsg code for coordinate system
+#     addlocalreference : boolean
+#         adds the projection file text associated with epsg to a local
+#         database, epsgref.json, located in the user's data directory.
+# 
+#     References
+#     ----------
+#     https://www.epsg-registry.org/
+# 
+#     Returns
+#     -------
+#     prj : str
+#         text for a projection (*.prj) file.
+# 
+#     """
+#     warnings.warn("SpatialReference has been deprecated. Use StructuredGrid "
+#                   "instead.", category=DeprecationWarning)
+#     epsgfile = EpsgRef()
+#     wktstr = epsgfile.get(epsg)
+#     if wktstr is None:
+#         wktstr = get_spatialreference(epsg, text=text)
+#     if addlocalreference and wktstr is not None:
+#         epsgfile.add(epsg, wktstr)
+#     return wktstr
+
+# 
+# def get_spatialreference(epsg, text='esriwkt'):
+#     """
+#     Gets text for given epsg code and text format from spatialreference.org
+# 
+#     Fetches the reference text using the url:
+#         https://spatialreference.org/ref/epsg/<epsg code>/<text>/
+# 
+#     See: https://www.epsg-registry.org/
+# 
+#     Parameters
+#     ----------
+#     epsg : int
+#         epsg code for coordinate system
+#     text : str
+#         string added to url
+# 
+#     Returns
+#     -------
+#     url : str
+# 
+#     """
+#     from flopy.utils.flopy_io import get_url_text
+# 
+#     warnings.warn("SpatialReference has been deprecated. Use StructuredGrid "
+#                   "instead.", category=DeprecationWarning)
+# 
+#     epsg_categories = ['epsg', 'esri']
+#     for cat in epsg_categories:
+#         url = "{}/ref/{}/{}/{}/".format(srefhttp, cat, epsg, text)
+#         result = get_url_text(url)
+#         if result is not None:
+#             break
+#     if result is not None:
+#         return result.replace("\n", "")
+#     elif result is None and text != 'epsg':
+#         for cat in epsg_categories:
+#             error_msg = 'No internet connection or ' + \
+#                         'epsg code {} '.format(epsg) +  \
+#                         'not found at {}/ref/'.format(srefhttp) + \
+#                         '{}/{}/{}'.format(cat, cat, epsg)
+#             print(error_msg)
+#     # epsg code not listed on spatialreference.org
+#     # may still work with pyproj
+#     elif text == 'epsg':
+#         return '+init=epsg:{}'.format(epsg)
+# 
+# 
+# def getproj4(epsg):
+#     """
+#     Get projection file (.prj) text for given epsg code from
+#     spatialreference.org. See: https://www.epsg-registry.org/
+# 
+#     Parameters
+#     ----------
+#     epsg : int
+#         epsg code for coordinate system
+# 
+#     Returns
+#     -------
+#     prj : str
+#         text for a projection (*.prj) file.
+# 
+#     """
+#     warnings.warn("SpatialReference has been deprecated. Use StructuredGrid "
+#                   "instead.", category=DeprecationWarning)
+# 
+#     return get_spatialreference(epsg, text='proj4')
