@@ -1770,8 +1770,8 @@ class EnsembleSQP(EnsembleMethod):
                                                                               prev_constr_grad=self.prev_constr_grad,
                                                                               new_constr_grad=self.constraint_jco,
                                                                               reduced=self.reduced_hessian,
-                                                                              delta_par_nullspace=X,
-                                                                              constr_grad_nullspace=X)
+                                                                              delta_par_nullspace=self.p_z,
+                                                                              constr_grad_nullspace=self.z)
 
             elif alg == "LBFGS":
                 self.logger.log("LBFGS implemented above")
