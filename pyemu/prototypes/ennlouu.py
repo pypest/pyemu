@@ -1020,7 +1020,7 @@ class EnsembleSQP(EnsembleMethod):
                             self.p_z = np.linalg.solve(zTgz, rhs)
                     else:  # reduced hessian
                         # simplify by removing cross term (or ``partial hessian'') matrix (zTgy), which is approp when approximating hessian (zTgz) (as p_y goes to zero faster than p_z)
-                        rhs = -1.0 * np.dot(self.z.T, grad)
+                        rhs = -1.0 * np.dot(self.z.T, grad.x)
                         self.p_z = np.linalg.solve(zTgz, rhs)  # the reduced hess (zTgz) is much more likely to be pos-def
                 else:
                     self.logger.log("null-space dim (wrt active constraints) is zero.. therefore no p_z component")
@@ -1046,7 +1046,7 @@ class EnsembleSQP(EnsembleMethod):
             else:
                 # pg. 539 of Nocedal and Wright (2006)
                 # simplify by dropping dependency of lm on hess (considered appropr given p converges to zero whereas grad does not..
-                lm = (constraint_grad * constraint_grad.T) * (constraint_grad * grad)
+                lm = ((constraint_grad * constraint_grad.T) * (constraint_grad * grad)).x
         else:
             self.logger.lraise("not sure if this can be done...")
 
@@ -1059,12 +1059,16 @@ class EnsembleSQP(EnsembleMethod):
         M, N = a.shape[0], a.shape[1]
         if M > N:
             self.logger.lraise("m > n - A cannot be this shape")  # catch before here
+
         if qr_mode is True:  # generalized form of (15.15) via QR decomp (see pg. 432)
             q, r = np.linalg.qr(a.T.x)
             y, z = q, q[:, -(a.shape[1] - a.shape[0]):]
             # TODO: revisit the partitioning here. for small case, same vector spanning Y and Z.. also, based on https://www.mathworks.com/help/optim/ug/constrained-nonlinear-optimization-algorithms.html#brnox01, use full constraint grad matrix (not just active set).... which I don't understand...
         else:
+            # null space basis
             self.z = self._null_space(a)
+
+            # range space basis
             y = a.T  # "A^T is a valid choice for Y when A has full row rank" (pg. 539) of Nocedal and Wright (2006)
             # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank?
 
