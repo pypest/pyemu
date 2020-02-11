@@ -468,7 +468,9 @@ class EnsembleSQP(EnsembleMethod):
         # s
         if len(self.working_set.obsnme) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
             # TODO: offer reduced hessian also where solving unconstrained step?
-            self.s = delta_par_nullspace.T  # part of step in null space of constraint jco (pg. 538)
+            # part of step in null space of constraint jco (pg. 538)
+            self.s = delta_par_nullspace.T  # TODO: check p_z or Zp_z! if correct, there is a mistake in Nocedal (18.28)
+            self.s = Matrix(x=self.s, row_names=self.H.row_names, col_names=self.s.columns)
         else:
             self.s = delta_par.T  # whole step
 
@@ -1785,7 +1787,7 @@ class EnsembleSQP(EnsembleMethod):
                                                                               prev_constr_grad=self.prev_constr_grad,
                                                                               new_constr_grad=self.constraint_jco,
                                                                               reduced=self.reduced_hessian,
-                                                                              delta_par_nullspace=self.p_z,
+                                                                              delta_par_nullspace=np.dot(self.z, self.p_z),
                                                                               constr_grad_nullspace=self.z)
 
             elif alg == "LBFGS":
