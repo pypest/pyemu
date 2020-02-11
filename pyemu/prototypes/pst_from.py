@@ -20,7 +20,7 @@ class PstFrom(object):
     #  methods to/in gw_utils. - save reinventing the setup/apply methods
     def __init__(self, original_d, new_d, longnames=True,
                  remove_existing=False, spatial_reference=None,
-                 zero_based=True):
+                 zero_based=True):  # TODO geostruct?
 
         self.original_d = original_d
         self.new_d = new_d
@@ -827,7 +827,7 @@ class PstFrom(object):
                             "'{0}'".format(tpl_filename))
             shape = file_dict[list(file_dict.keys())[0]].shape
 
-            if par_type in ["constant", "zone", "grid"]:
+            if par_type in {"constant", "zone", "grid"}:
                 self.logger.log(
                     "writing template file "
                     "{0} for {1}".format(tpl_filename, par_name_base))
@@ -844,6 +844,230 @@ class PstFrom(object):
 
             elif par_type in {"pilotpoints", "pilot_points",
                               "pilotpoint", "pilot_point"}:
+                # Stolen from helpers.PstFromFlopyModel()._pp_prep()
+                if pp_space is None:
+                    self.logger.warn("pp_space is None, using 10...\n")
+                    pp_space = 10
+                # TODO support independent geostructs for individual calls?
+                if self.pp_geostruct is None:                      
+                    self.logger.warn("pp_geostruct is None, using ExpVario "
+                                     "with contribution=1 and "
+                                     "a=(pp_space*max(delr,delc))")
+                    pp_dist = pp_space * float(
+                        max(self.m.dis.delr.array.max(),
+                            self.m.dis.delc.array.max()))  # TODO set up new default? 
+                    v = pyemu.geostats.ExpVario(contribution=1.0, a=pp_dist)
+                    self.pp_geostruct = pyemu.geostats.GeoStruct(
+                        variograms=v, name="pp_geostruct", transform="log")
+
+                pp_df = mlt_df.loc[mlt_df.suffix == self.pp_suffix, :]
+                layers = pp_df.layer.unique()
+                layers.sort()
+                pp_dict = {
+                    l: list(pp_df.loc[pp_df.layer == l, "prefix"].unique()) for
+                    l in layers}
+                # big assumption here - if prefix is listed more than once, use the lowest layer index
+                pp_dict_sort = {}
+                for i, l in enumerate(layers):
+                    p = set(pp_dict[l])
+                    pl = list(p)
+                    pl.sort()
+                    pp_dict_sort[l] = pl
+                    for ll in layers[i + 1:]:
+                        pp = set(pp_dict[ll])
+                        d = list(pp - p)
+                        d.sort()
+                        pp_dict_sort[ll] = d
+                pp_dict = pp_dict_sort
+
+                pp_array_file = {p: m for p, m in
+                                 zip(pp_df.prefix, pp_df.mlt_file)}
+                self.logger.statement("pp_dict: {0}".format(str(pp_dict)))
+
+                self.log("calling setup_pilot_point_grid()")
+                if self.use_pp_zones:
+                    # check if k_zone_dict is a dictionary of dictionaries
+                    if np.all([isinstance(v, dict) for v in
+                               self.k_zone_dict.values()]):
+                        ib = {p.split('.')[-1]: k_dict for p, k_dict in
+                              self.k_zone_dict.items()}
+                        for attr in pp_df.attr_name.unique():
+                            if attr not in [p.split('.')[-1] for p in
+                                            ib.keys()]:
+                                if 'general_zn' not in ib.keys():
+                                    warnings.warn(
+                                        "Dictionary of dictionaries passed as zones, {0} not in keys: {1}. "
+                                        "Will use ibound for zones".format(
+                                            attr, ib.keys()), PyemuWarning)
+                                else:
+                                    self.logger.statement(
+                                        "Dictionary of dictionaries passed as pp zones, "
+                                        "using 'general_zn' for {0}".format(
+                                            attr))
+                            if 'general_zn' not in ib.keys():
+                                ib['general_zn'] = {
+                                    k: self.m.bas6.ibound[k].array for k in
+                                    range(self.m.nlay)}
+                    else:
+                        ib = {'general_zn': self.k_zone_dict}
+                else:
+                    ib = {}
+                    for k in range(self.m.nlay):
+                        a = self.m.bas6.ibound[k].array.copy()
+                        a[a > 0] = 1
+                        ib[k] = a
+                    for k, i in ib.items():
+                        if np.any(i < 0):
+                            u, c = np.unique(i[i > 0], return_counts=True)
+                            counts = dict(zip(u, c))
+                            mx = -1.0e+10
+                            imx = None
+                            for u, c in counts.items():
+                                if c > mx:
+                                    mx = c
+                                    imx = u
+                            self.logger.warn(
+                                "resetting negative ibound values for PP zone" + \
+                                "array in layer {0} : {1}".format(k + 1, u))
+                            i[i < 0] = u
+                    ib = {'general_zn': ib}
+                pp_df = pyemu.pp_utils.setup_pilotpoints_grid(
+                    self.m, ibound=ib, use_ibound_zones=self.use_pp_zones,
+                    prefix_dict=pp_dict, every_n_cell=self.pp_space,
+                    pp_dir=self.m.model_ws, tpl_dir=self.m.model_ws,
+                    shapename=os.path.join(self.m.model_ws, "pp.shp"))
+                self.logger.statement("{0} pilot point parameters created".
+                                      format(pp_df.shape[0]))
+                self.logger.statement("pilot point 'pargp':{0}".
+                                      format(','.join(pp_df.pargp.unique())))
+                self.log("calling setup_pilot_point_grid()")
+
+                # calc factors for each layer
+                pargp = pp_df.pargp.unique()
+                pp_dfs_k = {}
+                fac_files = {}
+                pp_processed = set()
+                pp_df.loc[:, "fac_file"] = np.NaN
+                for pg in pargp:
+                    ks = pp_df.loc[pp_df.pargp == pg, "k"].unique()
+                    if len(ks) == 0:
+                        self.logger.lraise(
+                            "something is wrong in fac calcs for par group {0}".format(
+                                pg))
+                    if len(ks) == 1:
+                        if np.all([isinstance(v, dict) for v in
+                                   ib.values()]):  # check is dict of dicts
+                            if np.any([pg.startswith(p) for p in ib.keys()]):
+                                p = next(
+                                    p for p in ib.keys() if pg.startswith(p))
+                                # get dict relating to parameter prefix
+                                ib_k = ib[p][ks[0]]
+                            else:
+                                p = 'general_zn'
+                                ib_k = ib[p][ks[0]]
+                        else:
+                            ib_k = ib[ks[0]]
+                    if len(ks) != 1:  # TODO
+                        # self.logger.lraise("something is wrong in fac calcs for par group {0}".format(pg))
+                        self.logger.warn(
+                            "multiple k values for {0},forming composite zone array...".format(
+                                pg))
+                        ib_k = np.zeros((self.m.nrow, self.m.ncol))
+                        for k in ks:
+                            t = ib["general_zn"][k].copy()
+                            t[t < 1] = 0
+                            ib_k[t > 0] = t[t > 0]
+                    k = int(ks[0])
+                    kattr_id = "{}_{}".format(k, p)
+                    kp_id = "{}_{}".format(k, pg)
+                    if kp_id not in pp_dfs_k.keys():
+                        self.log(
+                            "calculating factors for p={0}, k={1}".format(pg,
+                                                                          k))
+                        fac_file = os.path.join(self.m.model_ws,
+                                                "pp_k{0}.fac".format(kattr_id))
+                        var_file = fac_file.replace("{0}.fac".format(kattr_id),
+                                                    ".var.dat")
+                        pp_df_k = pp_df.loc[pp_df.pargp == pg]
+                        if kattr_id not in pp_processed:
+                            self.logger.statement(
+                                "saving krige variance file:{0}"
+                                .format(var_file))
+                            self.logger.statement(
+                                "saving krige factors file:{0}"
+                                .format(fac_file))
+                            ok_pp = pyemu.geostats.OrdinaryKrige(
+                                self.pp_geostruct, pp_df_k)
+                            ok_pp.calc_factors_grid(self.m.sr,
+                                                    var_filename=var_file,
+                                                    zone_array=ib_k,
+                                                    num_threads=10)
+                            ok_pp.to_grid_factors_file(fac_file)
+                            pp_processed.add(kattr_id)
+                        fac_files[kp_id] = fac_file
+                        self.log(
+                            "calculating factors for p={0}, k={1}".format(pg,
+                                                                          k))
+                        pp_dfs_k[kp_id] = pp_df_k
+
+                for kp_id, fac_file in fac_files.items():
+                    k = int(kp_id.split('_')[0])
+                    pp_prefix = kp_id.split('_', 1)[-1]
+                    # pp_files = pp_df.pp_filename.unique()
+                    fac_file = os.path.split(fac_file)[-1]
+                    # pp_prefixes = pp_dict[k]
+                    # for pp_prefix in pp_prefixes:
+                    self.log("processing pp_prefix:{0}".format(pp_prefix))
+                    if pp_prefix not in pp_array_file.keys():
+                        self.logger.lraise(
+                            "{0} not in self.pp_array_file.keys()".
+                            format(pp_prefix, ','.
+                                   join(pp_array_file.keys())))
+
+                    out_file = os.path.join(self.arr_mlt, os.path.split(
+                        pp_array_file[pp_prefix])[-1])
+
+                    pp_files = pp_df.loc[pp_df.pp_filename.apply(
+                        lambda x: "{0}pp".format(
+                            pp_prefix) in x), "pp_filename"]
+                    if pp_files.unique().shape[0] != 1:
+                        self.logger.lraise(
+                            "wrong number of pp_files found:{0}".format(
+                                ','.join(pp_files)))
+                    pp_file = os.path.split(pp_files.iloc[0])[-1]
+                    pp_df.loc[pp_df.pargp == pp_prefix, "fac_file"] = fac_file
+                    pp_df.loc[pp_df.pargp == pp_prefix, "pp_file"] = pp_file
+                    pp_df.loc[pp_df.pargp == pp_prefix, "out_file"] = out_file
+
+                pp_df.loc[:, "pargp"] = pp_df.pargp.apply(
+                    lambda x: "pp_{0}".format(x))
+                out_files = mlt_df.loc[mlt_df.mlt_file.
+                                           apply(
+                    lambda x: x.endswith(self.pp_suffix)), "mlt_file"]
+                # mlt_df.loc[:,"fac_file"] = np.NaN
+                # mlt_df.loc[:,"pp_file"] = np.NaN
+                for out_file in out_files:
+                    pp_df_pf = pp_df.loc[pp_df.out_file == out_file, :]
+                    fac_files = pp_df_pf.fac_file
+                    if fac_files.unique().shape[0] != 1:
+                        self.logger.lraise(
+                            "wrong number of fac files:{0}".format(
+                                str(fac_files.unique())))
+                    fac_file = fac_files.iloc[0]
+                    pp_files = pp_df_pf.pp_file
+                    if pp_files.unique().shape[0] != 1:
+                        self.logger.lraise(
+                            "wrong number of pp files:{0}".format(
+                                str(pp_files.unique())))
+                    pp_file = pp_files.iloc[0]
+                    mlt_df.loc[
+                        mlt_df.mlt_file == out_file, "fac_file"] = fac_file
+                    mlt_df.loc[
+                        mlt_df.mlt_file == out_file, "pp_file"] = pp_file
+                self.par_dfs[self.pp_suffix] = pp_df
+
+                mlt_df.loc[
+                    mlt_df.suffix == self.pp_suffix, "tpl_file"] = np.NaN
                 # TODO - other par types
                 self.logger.lraise("array type 'pilotpoints' not implemented")
             elif par_type == "kl":

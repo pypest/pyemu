@@ -75,10 +75,14 @@ def freyberg_test():
         os.path.join(m.model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
         prefix="hds")
     template_ws = "new_temp"
+    sr0 = m.sr
+    sr = pyemu.helpers.SpatialReference.from_namfile(
+        os.path.join(m.model_ws, m.namefile),
+        delr=m.dis.delr, delc=m.dis.delc)
     # set up PstFrom object
     pf = PstFrom(original_d=org_model_ws, new_d=template_ws, 
                  remove_existing=True,
-                 longnames=True, spatial_reference=m.modelgrid, 
+                 longnames=True, spatial_reference=sr,
                  zero_based=False)
     pf.add_observations(ins_file='freyberg.hds.dat.ins')
     pf.post_py_cmds.append(hds_runline)
