@@ -475,7 +475,7 @@ class EnsembleSQP(EnsembleMethod):
         # y
         if len(self.working_set.obsnme) > 0:  # active set and A is non-empty
             new_grad.col_names, curr_grad.col_names = self.s.col_names, self.s.col_names
-            self.y = (new_grad - curr_grad) - (new_constr_grad - prev_constr_grad) * self.lagrang_mults  # see eq (36) of Liu and Reynolds (2019)
+            self.y = (new_grad - curr_grad) - ((new_constr_grad - prev_constr_grad) * self.lagrang_mults)  # see eq (36) of Liu and Reynolds (2019) and Gill Ch. 3
             if reduced is True:
                 self.y = constr_grad_nullspace.T * self.y
         else:  # unconstrained
@@ -595,7 +595,9 @@ class EnsembleSQP(EnsembleMethod):
                         self.hess_progress[self.iter_num] = "updated (damped) only"
                 except NameError:
                     self.hess_progress[self.iter_num] = "updated only"
+
         # TODO: consider here some interpolation between prev and new H for update... espec approp for en approxs?
+
         return self.H, self.hess_progress
 
     def _LBFGS_hess_update(self,memory=5,self_scale=True,damped=False):
@@ -1118,9 +1120,9 @@ class EnsembleSQP(EnsembleMethod):
             options include: null_space (pg. 457), schur (pg. 455) and the iterative (TODO) method.
         '''
 
-        g = self.hessian * Matrix(2.0 * np.eye((self.hessian.shape[0])),
-                                  row_names=self.hessian.row_names, col_names=self.hessian.col_names)
-        # TODO: check self.hessian or self.inv_hessian?
+        g = self.inv_hessian * Matrix(2.0 * np.eye((self.inv_hessian.shape[0])),
+                                      row_names=self.inv_hessian.row_names, col_names=self.inv_hessian.col_names)
+        # TODO: check hessian or inv_hessian
 
         a = self.constraint_jco.df().drop(self.not_in_working_set.obsnme, axis=1)  # pertains to active constraints only
         a = Matrix(x=a, row_names=a.index, col_names=a.columns).T  # note transpose
