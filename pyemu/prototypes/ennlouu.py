@@ -440,7 +440,6 @@ class EnsembleSQP(EnsembleMethod):
 
 
     def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,prev_constr_grad,new_constr_grad,
-                          delta_par_nullspace,constr_grad_nullspace,
                           self_scale=True,damped=True,update=True,reduced=False):
         '''
         see, e.g., Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
@@ -467,10 +466,10 @@ class EnsembleSQP(EnsembleMethod):
 
         # s
         if len(self.working_set.obsnme) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
-            # TODO: offer reduced hessian also where solving unconstrained step?
             # part of step in null space of constraint jco (pg. 538)
-            self.s = delta_par_nullspace.T  # TODO: check p_z or Zp_z! if correct, there is a mistake in Nocedal (18.28)
-            self.s = Matrix(x=self.s, row_names=self.H.row_names, col_names=self.s.columns)
+            self.s = Matrix(x=np.dot(self.z, self.p_z), row_names=self.delta_parensemble_mean.col_names,
+                            col_names=self.delta_parensemble_mean.row_names)  # TODO: check p_z or Zp_z! if correct, there is a mistake in Nocedal (18.28)!!!
+            self.s = self.s * self.best_alpha_per_it[self.iter_num]
         else:
             self.s = delta_par.T  # whole step
 
@@ -1786,9 +1785,7 @@ class EnsembleSQP(EnsembleMethod):
                                                                               damped=damped,
                                                                               prev_constr_grad=self.prev_constr_grad,
                                                                               new_constr_grad=self.constraint_jco,
-                                                                              reduced=self.reduced_hessian,
-                                                                              delta_par_nullspace=np.dot(self.z, self.p_z),
-                                                                              constr_grad_nullspace=self.z)
+                                                                              reduced=self.reduced_hessian)
 
             elif alg == "LBFGS":
                 self.logger.log("LBFGS implemented above")
