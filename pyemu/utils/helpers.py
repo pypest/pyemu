@@ -1805,6 +1805,7 @@ class PstFromFlopyModel(object):
                     self.logger.warn("resetting negative ibound values for PP zone"+ \
                                      "array in layer {0} : {1}".format(k+1,u))
                     i[i<0] = u
+                ib[k] = i
             ib = {'general_zn': ib}
         pp_df = pyemu.pp_utils.setup_pilotpoints_grid(self.m,
                                          ibound=ib,

@@ -87,9 +87,6 @@ def freyberg_test():
     pf.add_observations(ins_file='freyberg.hds.dat.ins')
     pf.post_py_cmds.append(hds_runline)
     pf.tmp_files.append(f"{m.name}.hds")
-    # pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
-    #                   zone_array=m.bas6.ibound[0].array,
-    #                   par_name_base="pprch_datetime:1-1-1970")
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
                       index_cols=[0, 1, 2], use_cols=[3, 4],
                       par_name_base=["rivbot_grid", "rivstage_grid"],
@@ -108,6 +105,9 @@ def freyberg_test():
                       par_name_base="rch_datetime:1-1-1970")
     pf.add_parameters(filenames=["rech_1.ref", "rech_2.ref"],
                       par_type="zone", zone_array=m.bas6.ibound[0].array)
+    pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
+                      zone_array=m.bas6.ibound[0].array,
+                      par_name_base="rch_datetime:1-1-1970", pp_space=4)
     
     pf.mod_sys_cmds.append("{0} {1}".format(
         os.path.basename(mf_exe_name), m.name + ".nam"))

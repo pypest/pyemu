@@ -4,9 +4,10 @@ import os
 import copy
 import numpy as np
 import pandas as pd
+import warnings
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config
-from pyemu.utils.helpers import run
+from pyemu.utils.helpers import run, _write_df_tpl
 from ..pyemu_warnings import PyemuWarning
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
@@ -17,7 +18,7 @@ def setup_pilotpoints_grid(ml=None, sr=None, ibound=None, prefix_dict=None,
                            every_n_cell=4, ninst=1,
                            use_ibound_zones=False,
                            pp_dir='.', tpl_dir='.',
-                           shapename="pp.shp"):
+                           shapename="pp.shp", longnames=False):
     """ setup a regularly-spaced (gridded) pilot point parameterization
 
     Args:
@@ -88,11 +89,18 @@ def setup_pilotpoints_grid(ml=None, sr=None, ibound=None, prefix_dict=None,
         else:
             ibound = {k: arr for k, arr in enumerate(ibound)}
 
-    try:  # TODO - flopy independence
+    try: 
         xcentergrid = sr.xcentergrid
         ycentergrid = sr.ycentergrid
-    except Exception as e:
-        raise Exception("error getting xcentergrid and/or ycentergrid from 'sr':{0}".format(str(e)))
+    except AttributeError as e0:
+        warnings.warn("xcentergrid and/or ycentergrid not in 'sr':{0}",
+                      PyemuWarning)
+        try:
+            xcentergrid = sr.xcellcenters
+            ycentergrid = sr.ycellcenters
+        except AttributeError as e1:
+            raise Exception("error getting xcentergrid and/or ycentergrid "
+                            "from 'sr':{0}:{1}".format(str(e0), str(e1)))
     start = int(float(every_n_cell) / 2.0)
     
     # check prefix_dict
@@ -171,7 +179,8 @@ def setup_pilotpoints_grid(ml=None, sr=None, ibound=None, prefix_dict=None,
                     # if parameter prefix relates to current zone definition
                     if prefix.startswith(par) or (
                             ~np.any([prefix.startswith(p) for p in ibound.keys()]) and par == "general_zn"):
-                        base_filename = prefix+"pp.dat"
+                        base_filename = "{0}pp.dat".format(
+                            prefix.replace(':', ''))
                         pp_filename = os.path.join(pp_dir, base_filename)
                         # write the base pilot point file
                         write_pp_file(pp_filename, pp_df)
@@ -179,7 +188,8 @@ def setup_pilotpoints_grid(ml=None, sr=None, ibound=None, prefix_dict=None,
                         tpl_filename = os.path.join(tpl_dir, base_filename + ".tpl")
                         #write the tpl file
                         pilot_points_to_tpl(pp_df, tpl_filename,
-                                            name_prefix=prefix)
+                                            name_prefix=prefix,
+                                            longnames=longnames)
                         pp_df.loc[:,"tpl_filename"] = tpl_filename
                         pp_df.loc[:,"pp_filename"] = pp_filename
                         pp_df.loc[:,"pargp"] = prefix
@@ -364,7 +374,8 @@ def write_pp_file(filename,pp_df):
                                 index=False) + '\n')
 
 
-def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
+def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None,
+                        longnames=False):
     """write a template file for a pilot points file
 
     Args:
@@ -394,33 +405,49 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
     if tpl_file is None:
         tpl_file = pp_file + ".tpl"
 
-    if name_prefix is not None:
-        digits = str(len(str(pp_df.shape[0])))
-        fmt = "{0:0"+digits+"d}"
-        names = [name_prefix+fmt.format(i) for i in range(pp_df.shape[0])]
+    if longnames:
+        if name_prefix is not None:
+            pp_df.loc[:, "parnme"] = pp_df.apply(
+                lambda x: "{0}_i:{1}_j:{2}".format(
+                    name_prefix, int(x.i), int(x.j)), axis=1)
+            pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
+                lambda x: "~    {0}    ~".format(x))
+        else:
+            names = pp_df.name.copy()
+            pp_df.loc[:, "parnme"] = pp_df.name
+            pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
+                lambda x: "~    {0}    ~".format(x))
+        _write_df_tpl(tpl_file,
+                      pp_df.loc[:, ["name", "x", "y", "zone", "tpl"]],
+                      sep=' ', index_label="index")
     else:
-        names = pp_df.name.copy()
-
-    too_long = []
-    for name in names:
-        if len(name) > 12:
-            too_long.append(name)
-    if len(too_long) > 0:
-        raise Exception("the following parameter names are too long:" +\
-                        ",".join(too_long))
-
-    tpl_entries = ["~    {0}    ~".format(name) for name in names]
-    pp_df.loc[:,"tpl"] = tpl_entries
-    pp_df.loc[:,"parnme"] = names
-
-
-    f_tpl = open(tpl_file,'w')
-    f_tpl.write("ptf ~\n")
-    f_tpl.write(pp_df.to_string(col_space=0,
-                              columns=["name","x","y","zone","tpl"],
-                              formatters=PP_FMT,
-                              justify="left",
-                              header=False,
-                              index=False) + '\n')
+        if name_prefix is not None:
+            digits = str(len(str(pp_df.shape[0])))
+            fmt = "{0:0"+digits+"d}"
+            if len(name_prefix) + 1 + int(digits) > 12:
+                warnings.warn("name_prefix too long for parameter names", 
+                              PyemuWarning)
+            names = ["{0}_{1}".format(name_prefix, fmt.format(i)) 
+                     for i in range(pp_df.shape[0])]
+        else:
+            names = pp_df.name.copy()
+        too_long = []
+        for name in names:
+            if len(name) > 12:
+                too_long.append(name)
+        if len(too_long) > 0:
+            raise Exception("the following parameter names are too long:"
+                            ",".join(too_long))
+        tpl_entries = ["~    {0}    ~".format(name) for name in names]
+        pp_df.loc[:, "tpl"] = tpl_entries
+        pp_df.loc[:, "parnme"] = names
+        f_tpl = open(tpl_file,'w')
+        f_tpl.write("ptf ~\n")
+        f_tpl.write(pp_df.to_string(col_space=0,
+                                  columns=["name","x","y","zone","tpl"],
+                                  formatters=PP_FMT,
+                                  justify="left",
+                                  header=False,
+                                  index=False) + '\n')
 
     return pp_df
