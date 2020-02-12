@@ -863,7 +863,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
             #        try:
             #            en.loc[:,pc].hist(bins=plot_bins,facecolor=fc,
             #                                    edgecolor="none",alpha=0.5,
-            #                                    normed=True,ax=ax)
+            #                                    density=True,ax=ax)
             #        except Exception as e:
             #            logger.warn("error plotting histogram for {0}:{1}".
             #                        format(pc,str(e)))
@@ -871,7 +871,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
             #print(plot_bins)
             #print(vals)
 
-            ax.hist(vals,bins=plot_bins,edgecolor="none",alpha=0.5,normed=True,facecolor=fc)
+            ax.hist(vals,bins=plot_bins,edgecolor="none",alpha=0.5,density=True,facecolor=fc)
             v = None
             if deter_vals is not None:
                 for pc in plot_col:
