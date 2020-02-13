@@ -2789,7 +2789,7 @@ class PstFromFlopyModel(object):
                 #df.to_csv(f)
             #    f.write("index ")
             #    f.write(df.to_string(index_names=False)+'\n')
-            _write_df_tpl(os.path.join(self.m.model_ws, tpl_file), df, sep=' ', index_label="index")
+            _write_df_tpl(os.path.join(self.m.model_ws, tpl_file), df, sep=' ', quotechar=" ", index_label="index")
             self.tpl_files.append(tpl_file)
             self.in_files.append(in_file)
 
