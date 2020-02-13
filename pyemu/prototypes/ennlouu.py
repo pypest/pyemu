@@ -629,6 +629,9 @@ class EnsembleSQP(EnsembleMethod):
         See pg. 178 of Nocedal and Wright and pg. 192 of Oliver et al.
         '''
 
+        if self.reduced_hessian is True:
+            self.logger.lraise("not implemented... yet")
+
         if self.iter_num == 1:
             self.hess_progress[self.iter_num] = "skip scaling and updating"
             self.s_d, self.y_d = {}, {}
