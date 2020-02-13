@@ -75,7 +75,7 @@ def freyberg_test():
         os.path.join(m.model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
         prefix="hds")
     template_ws = "new_temp"
-    sr0 = m.sr
+    # sr0 = m.sr
     sr = pyemu.helpers.SpatialReference.from_namfile(
         os.path.join(m.model_ws, m.namefile),
         delr=m.dis.delr, delc=m.dis.delc)

@@ -31,6 +31,7 @@ class PstFrom(object):
         self.zero_based = bool(zero_based)
         self._spatial_reference = spatial_reference
         self.spatial_reference = None
+        self.geostruct = None
 
         self.mult_files = []
         self.org_files = []
@@ -68,6 +69,7 @@ class PstFrom(object):
 
         self._setup_dirs()
         self._parfile_relations = []
+        self._pp_facs = {}
         self.pst = None
 
     @property
@@ -135,6 +137,8 @@ class PstFrom(object):
         elif (hasattr(self._spatial_reference, "xcellcenters") and
               hasattr(self._spatial_reference, "ycellcenters")):
             # support modelgrid style cell locs
+            self._spatial_reference.xcentergrid = self._spatial_reference.xcellcenters
+            self._spatial_reference.xcentergrid = self._spatial_reference.xcellcenters
             self.get_xy = self._flopy_mg_get_xy
         else:
             self.logger.lraise("initialize_spatial_reference() error: "
@@ -736,7 +740,7 @@ class PstFrom(object):
                        upper_bound=1.0e10, lower_bound=1.0e-10,
                        transform="log", par_name_base="p", index_cols=None,
                        use_cols=None, pp_space=10, use_pp_zones=False,
-                       num_eig_kl=100, spatial_reference=None, 
+                       num_eig_kl=100, spatial_reference=None, geostruct=None,
                        mfile_fmt='free', ult_ubound=None, ult_lbound=None, 
                        rebuild_pst=False):
         """Add list or array style model input files to PstFrom object.
@@ -849,7 +853,7 @@ class PstFrom(object):
                 # TODO logger events
                 if spatial_reference is None:
                     self.logger.statement("No spatial reference "
-                                          "(containg cell spacing) passed.")
+                                          "(containing cell spacing) passed.")
                                           
                     if self.spatial_reference is not None:
                         self.logger.statement("OK - using spatial reference "
@@ -865,28 +869,17 @@ class PstFrom(object):
                 if pp_space is None:
                     self.logger.warn("pp_space is None, using 10...\n")
                     pp_space = 10
-                if self.pp_geostruct is None:
-                    self.logger.warn("pp_geostruct is None," \
-                                     " using ExpVario with contribution=1 and a=(pp_space*max(delr,delc))")
-                    pp_dist = pp_space * float(
-                        max(spatial_reference.delr.max(),
-                            spatial_reference.delc.max()))
-                    v = pyemu.geostats.ExpVario(contribution=1.0, a=pp_dist)
-                    self.pp_geostruct = pyemu.geostats.GeoStruct(
-                        variograms=v, name="pp_geostruct", transform="log")
-
-                # TODO support independent geostructs for individual calls?
-                # if self.pp_geostruct is None:                      
-                #     self.logger.warn("pp_geostruct is None, using ExpVario "
-                #                      "with contribution=1 and "
-                #                      "a=(pp_space*max(delr,delc))")
-                #     pp_dist = pp_space * float(
-                #         max(self.m.dis.delr.array.max(),
-                #             self.m.dis.delc.array.max()))  # TODO set up new default? 
-                #     v = pyemu.geostats.ExpVario(contribution=1.0, a=pp_dist)
-                #     self.pp_geostruct = pyemu.geostats.GeoStruct(
-                #         variograms=v, name="pp_geostruct", transform="log")
-
+                if geostruct is None:
+                    if self.geostruct is None:
+                        self.logger.warn("pp_geostruct is None,"
+                                         "using ExpVario with contribution=1 "
+                                         "and a=(pp_space*max(delr,delc))")
+                        pp_dist = pp_space * float(
+                            max(spatial_reference.delr.max(),
+                                spatial_reference.delc.max()))
+                        v = pyemu.geostats.ExpVario(contribution=1.0, a=pp_dist)
+                        pp_geostruct = pyemu.geostats.GeoStruct(
+                            variograms=v, name="pp_geostruct", transform="log")
                 # pp_df = mlt_df.loc[mlt_df.suffix == self.pp_suffix, :]
                 # layers = pp_df.layer.unique()
                 # layers.sort()
@@ -979,7 +972,7 @@ class PstFrom(object):
                 fac_files = {}
                 # pp_processed = set()
                 pp_df.loc[:, "fac_file"] = np.NaN
-                for pg in pargp:
+                pg = pargp[0]
                 #     ks = pp_df.loc[pp_df.pargp == pg, "k"].unique()
                 #     if len(ks) == 0:
                 #         self.logger.lraise(
@@ -1012,91 +1005,112 @@ class PstFrom(object):
                 #     kattr_id = "{}_{}".format(k, p)
                 #     kp_id = "{}_{}".format(k, pg)
                 #     if kp_id not in pp_dfs_k.keys():
+                # this reletvively quick
+                ok_pp = pyemu.geostats.OrdinaryKrige(pp_geostruct, pp_df)
+                # build krige reference information on the fly
+                pp_info_dict = {
+                    'pp_data': ok_pp.point_data.loc[:, ['x', 'y', 'zone']],
+                    'cov': ok_pp.point_cov_df,
+                    'zn_ar': zone_array}
+                fac_processed = False
+                for facfile, info in self._pp_facs.items():
+                    if (info['pp_data'].equals(pp_info_dict['pp_data']) and
+                            info['cov'].equals(pp_info_dict['cov']) and
+                            np.array_equal(info['zn_ar'],
+                                           pp_info_dict['zn_ar'])):
+                        fac_processed = True
+                        fac_file = facfile
+                        break
+                if not fac_processed:
+                    # TODO need to have good way of naming squential fac_files
                     self.logger.log("calculating factors for pargp={0}"
                                     "".format(pg))
                     fac_file = os.path.join(
                         self.new_d, "{0}_{1}.fac".format(
                             par_name_store, par_type))
                     var_file = fac_file.replace(".fac", ".var.dat")
-                    # pp_df_k = pp_df.loc[pp_df.pargp == pg]
-                    #         if kattr_id not in pp_processed:
                     self.logger.statement(
                         "saving krige variance file:{0}"
-                        .format(var_file))
+                        "".format(var_file))
                     self.logger.statement(
                         "saving krige factors file:{0}"
-                        .format(fac_file))
-                    ok_pp = pyemu.geostats.OrdinaryKrige(
-                        self.pp_geostruct, pp_df)
+                        "".format(fac_file))
+                    # pp_df_k = pp_df.loc[pp_df.pargp == pg]
+                    #         if kattr_id not in pp_processed:
+                    self._pp_facs[fac_file] = pp_info_dict
+                    # this is slow (esp on windows) so only want to do this
+                    # when required
                     ok_pp.calc_factors_grid(spatial_reference,
                                             var_filename=var_file,
                                             zone_array=zone_array,
                                             num_threads=10)
                     ok_pp.to_grid_factors_file(fac_file)
                     # pp_processed.add(kattr_id)
-                    fac_files[pg] = fac_file
+                    # fac_files[pg] = fac_file
                     self.logger.log("calculating factors for pargp={0}"
                                     "".format(pg))
-                    pp_dfs[pg] = pp_df
-
-                for kp_id, fac_file in fac_files.items():
-                    k = int(kp_id.split('_')[0])
-                    pp_prefix = kp_id.split('_', 1)[-1]
-                    # pp_files = pp_df.pp_filename.unique()
-                    fac_file = os.path.split(fac_file)[-1]
-                    # pp_prefixes = pp_dict[k]
-                    # for pp_prefix in pp_prefixes:
-                    self.log("processing pp_prefix:{0}".format(pp_prefix))
-                    if pp_prefix not in pp_array_file.keys():
-                        self.logger.lraise(
-                            "{0} not in self.pp_array_file.keys()".
-                            format(pp_prefix, ','.
-                                   join(pp_array_file.keys())))
-
-                    out_file = os.path.join(self.arr_mlt, os.path.split(
-                        pp_array_file[pp_prefix])[-1])
-
-                    pp_files = pp_df.loc[pp_df.pp_filename.apply(
-                        lambda x: "{0}pp".format(
-                            pp_prefix) in x), "pp_filename"]
-                    if pp_files.unique().shape[0] != 1:
-                        self.logger.lraise(
-                            "wrong number of pp_files found:{0}".format(
-                                ','.join(pp_files)))
-                    pp_file = os.path.split(pp_files.iloc[0])[-1]
-                    pp_df.loc[pp_df.pargp == pp_prefix, "fac_file"] = fac_file
-                    pp_df.loc[pp_df.pargp == pp_prefix, "pp_file"] = pp_file
-                    pp_df.loc[pp_df.pargp == pp_prefix, "out_file"] = out_file
-
-                pp_df.loc[:, "pargp"] = pp_df.pargp.apply(
-                    lambda x: "pp_{0}".format(x))
-                out_files = mlt_df.loc[mlt_df.mlt_file.
-                                           apply(
-                    lambda x: x.endswith(self.pp_suffix)), "mlt_file"]
-                # mlt_df.loc[:,"fac_file"] = np.NaN
-                # mlt_df.loc[:,"pp_file"] = np.NaN
-                for out_file in out_files:
-                    pp_df_pf = pp_df.loc[pp_df.out_file == out_file, :]
-                    fac_files = pp_df_pf.fac_file
-                    if fac_files.unique().shape[0] != 1:
-                        self.logger.lraise(
-                            "wrong number of fac files:{0}".format(
-                                str(fac_files.unique())))
-                    fac_file = fac_files.iloc[0]
-                    pp_files = pp_df_pf.pp_file
-                    if pp_files.unique().shape[0] != 1:
-                        self.logger.lraise(
-                            "wrong number of pp files:{0}".format(
-                                str(pp_files.unique())))
-                    pp_file = pp_files.iloc[0]
-                    mlt_df.loc[
-                        mlt_df.mlt_file == out_file, "fac_file"] = fac_file
-                    mlt_df.loc[
-                        mlt_df.mlt_file == out_file, "pp_file"] = pp_file
-                self.par_dfs[self.pp_suffix] = pp_df
-
-                mlt_df.loc[
-                    mlt_df.suffix == self.pp_suffix, "tpl_file"] = np.NaN
+                    # pp_dfs[pg] = pp_df
+                # TODO need to bring info into par_dfs (e.g. pest par data columns)
+                # TODO need to bring file info together so that it can be passed to fac2real etc.
+                pp_df.loc[pp_df.pargp == pp_prefix, "fac_file"] = fac_file
+                pp_df.loc[pp_df.pargp == pp_prefix, "pp_file"] = pp_file
+                pp_df.loc[pp_df.pargp == pp_prefix, "out_file"] = out_file
+                # for kp_id, fac_file in fac_files.items():
+                #     k = int(kp_id.split('_')[0])
+                #     pp_prefix = kp_id.split('_', 1)[-1]
+                #     # pp_files = pp_df.pp_filename.unique()
+                #     fac_file = os.path.split(fac_file)[-1]
+                #     # pp_prefixes = pp_dict[k]
+                #     # for pp_prefix in pp_prefixes:
+                #     self.log("processing pp_prefix:{0}".format(pp_prefix))
+                #     if pp_prefix not in pp_array_file.keys():
+                #         self.logger.lraise(
+                #             "{0} not in self.pp_array_file.keys()".
+                #             format(pp_prefix, ','.
+                #                    join(pp_array_file.keys())))
+                #
+                #     out_file = os.path.join(self.arr_mlt, os.path.split(
+                #         pp_array_file[pp_prefix])[-1])
+                #
+                #     pp_files = pp_df.loc[pp_df.pp_filename.apply(
+                #         lambda x: "{0}pp".format(
+                #             pp_prefix) in x), "pp_filename"]
+                #     if pp_files.unique().shape[0] != 1:
+                #         self.logger.lraise(
+                #             "wrong number of pp_files found:{0}".format(
+                #                 ','.join(pp_files)))
+                #     pp_file = os.path.split(pp_files.iloc[0])[-1]
+                #
+                #
+                # pp_df.loc[:, "pargp"] = pp_df.pargp.apply(
+                #     lambda x: "pp_{0}".format(x))
+                # out_files = mlt_df.loc[mlt_df.mlt_file.
+                #                            apply(
+                #     lambda x: x.endswith(self.pp_suffix)), "mlt_file"]
+                # # mlt_df.loc[:,"fac_file"] = np.NaN
+                # # mlt_df.loc[:,"pp_file"] = np.NaN
+                # for out_file in out_files:
+                #     pp_df_pf = pp_df.loc[pp_df.out_file == out_file, :]
+                #     fac_files = pp_df_pf.fac_file
+                #     if fac_files.unique().shape[0] != 1:
+                #         self.logger.lraise(
+                #             "wrong number of fac files:{0}".format(
+                #                 str(fac_files.unique())))
+                #     fac_file = fac_files.iloc[0]
+                #     pp_files = pp_df_pf.pp_file
+                #     if pp_files.unique().shape[0] != 1:
+                #         self.logger.lraise(
+                #             "wrong number of pp files:{0}".format(
+                #                 str(pp_files.unique())))
+                #     pp_file = pp_files.iloc[0]
+                #     mlt_df.loc[
+                #         mlt_df.mlt_file == out_file, "fac_file"] = fac_file
+                #     mlt_df.loc[
+                #         mlt_df.mlt_file == out_file, "pp_file"] = pp_file
+                # self.par_dfs[self.pp_suffix] = pp_df
+                #
+                # mlt_df.loc[
+                #     mlt_df.suffix == self.pp_suffix, "tpl_file"] = np.NaN
                 # TODO - other par types
                 self.logger.lraise("array type 'pilotpoints' not implemented")
             elif par_type == "kl":

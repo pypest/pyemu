@@ -1857,8 +1857,7 @@ class PstFromFlopyModel(object):
             if kp_id not in pp_dfs_k.keys():
                 self.log("calculating factors for p={0}, k={1}".format(pg, k))
                 fac_file = os.path.join(self.m.model_ws, "pp_k{0}.fac".format(kattr_id))
-                var_file = fac_file.replace("{0}.fac".format(kattr_id),
-                                            ".var.dat")
+                var_file = fac_file.replace(".fac", ".var.dat")
                 pp_df_k = pp_df.loc[pp_df.pargp == pg]
                 if kattr_id not in pp_processed:
                     self.logger.statement("saving krige variance file:{0}"
