@@ -1016,7 +1016,7 @@ class EnsembleSQP(EnsembleMethod):
         # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
         y, self.z = self._compute_orthog_basis_matrices(a=constraint_grad)
         if self.alg is not "LBFGS":
-            if self.reduced_hessian is False:
+            if self.reduced_hessian is False or self.iter_num < 3:  # TODO: TIDY
                 if self.z is not None:
                     zTgz = np.dot(self.z.T, (hessian * self.z).x)
                     if not np.all(np.linalg.eigvals(zTgz) > 0):
@@ -1024,7 +1024,7 @@ class EnsembleSQP(EnsembleMethod):
                 else:
                     zTgz = None  #hessian.x  # TODO: check math here!!
             else:  # reduced hessian
-                zTgz = hessian
+                zTgz = hessian.x
 
         # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
         ay = constraint_grad * y
@@ -1056,7 +1056,7 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.lraise("not sure if this can be done...")  # TODO: see doi:10.3934/dcdss.2018071
 
         except LinAlgError:
-            self.logger.lraise("Z^TGZ is prob not pos-def..")  # should have been caught above
+            self.logger.lraise("Z^TGZ is not pos-def..")  # should have been caught above
 
         # total step
         if self.z is not None:
