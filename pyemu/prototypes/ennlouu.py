@@ -462,20 +462,26 @@ class EnsembleSQP(EnsembleMethod):
         '''
 
         # ingredients: h, s, y
-        self.H = curr_inv_hess
+        if len(self.working_set.obsnme) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
+            self.z = Matrix(x=self.z, row_names=curr_inv_hess.row_names, col_names=[x for x in curr_inv_hess.row_names[:self.z.shape[1]]])
+            self.H = self.z.T * curr_inv_hess * self.z
+        else:
+            self.H = curr_inv_hess
 
         # s
         if len(self.working_set.obsnme) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
             # part of step in null space of constraint jco (pg. 538)
-            self.s = Matrix(x=np.dot(self.z, self.p_z), row_names=self.delta_parensemble_mean.col_names,
-                            col_names=self.delta_parensemble_mean.row_names)  # TODO: check p_z or Zp_z! if correct, there is a mistake in Nocedal (18.28)!!!
-            self.s = self.s * self.best_alpha_per_it[self.iter_num]
+            #self.s = Matrix(x=np.dot(self.z, self.p_z), row_names=self.delta_parensemble_mean.col_names,
+             #               col_names=self.delta_parensemble_mean.row_names)  # TODO: check p_z or Zp_z! if correct, there is a mistake in Nocedal (18.28)!!!
+            #self.s = self.s * self.best_alpha_per_it[self.iter_num]
+            self.s = self.best_alpha_per_it[self.iter_num] * \
+                     Matrix(x=self.p_z, col_names=["mean"], row_names=self.H.row_names)  #["n{}".format(x + 1) for x in range(self.p_z.shape[1])])
         else:
             self.s = delta_par.T  # whole step
 
         # y
         if len(self.working_set.obsnme) > 0:  # active set and A is non-empty
-            new_grad.col_names, curr_grad.col_names = self.s.col_names, self.s.col_names
+            new_grad.col_names, curr_grad.col_names = self.lagrang_mults.col_names, self.lagrang_mults.col_names
 
             # difference in A between k and k+1 - wrt working set at current iter_num (i.e., A^k (prev constraint grads) may contain elements that were not active at iteration k)
             # TODO: double-check math here - but I think this is the only way this can be done
@@ -484,11 +490,12 @@ class EnsembleSQP(EnsembleMethod):
             a_kp1 = Matrix(x=a_kp1, row_names=a_kp1.index, col_names=a_kp1.columns)  # note: A here is transposed compared to elsewhere
             a_k = Matrix(x=a_k, row_names=a_k.index, col_names=a_k.columns)  # note: A here is transposed compared to elsewhere
             assert a_kp1.shape[1] == len(self.working_set) == a_k.shape[1]
-            del_a = a_kp1 - a_k
 
-            self.y = (new_grad - curr_grad) - (del_a * self.lagrang_mults)  # see eq (36) of Liu and Reynolds (2019) and Gill Ch. 3
+            self.y = (new_grad - curr_grad) - ((a_kp1 - a_k) * self.lagrang_mults)  # see eq (36) of Liu and Reynolds (2019) and Gill Ch. 3
             if reduced is True:
-                self.y = constr_grad_nullspace.T * self.y
+                #self.y = Matrix(x=np.dot(np.dot(self.z, self.p_z).T, self.y.x), row_names=self.delta_parensemble_mean.col_names,
+                 #               col_names=self.delta_parensemble_mean.row_names)  #TODO: see comment above - think there is error in (18.28).... maybe check with Nocedal....
+                self.y = self.z.T * self.y  #Matrix(x=self.z.T * self.y, col_names=["mean"], row_names=self.H.row_names)  #["n{}".format(x + 1) for x in range(self.p_z.shape[1])])
         else:
             self.y = new_grad - curr_grad
 
@@ -1039,7 +1046,7 @@ class EnsembleSQP(EnsembleMethod):
                     self.logger.log("null-space dim (wrt active constraints) is zero.. therefore no p_z component")
 
             else:  # we don't have the hessian (LBFGS)
-                self.logger.lraise("not sure if this can be done...")
+                self.logger.lraise("not sure if this can be done...")  # TODO: see doi:10.3934/dcdss.2018071
 
         except LinAlgError:
             self.logger.lraise("Z^TGZ is not pos-def..")  # should have been caught above
