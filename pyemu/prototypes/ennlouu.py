@@ -1016,12 +1016,15 @@ class EnsembleSQP(EnsembleMethod):
         # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
         y, self.z = self._compute_orthog_basis_matrices(a=constraint_grad)
         if self.alg is not "LBFGS":
-            if self.z is not None:
-                zTgz = np.dot(self.z.T, (hessian * self.z).x)
-                if not np.all(np.linalg.eigvals(zTgz) > 0):
-                    self.logger.log("Z^TGZ not pos-def!")
-            else:
-                zTgz = None  #hessian.x  # TODO: check math here!!
+            if self.reduced_hessian is False:
+                if self.z is not None:
+                    zTgz = np.dot(self.z.T, (hessian * self.z).x)
+                    if not np.all(np.linalg.eigvals(zTgz) > 0):
+                        self.logger.log("Z^TGZ not pos-def!")
+                else:
+                    zTgz = None  #hessian.x  # TODO: check math here!!
+            else:  # reduced hessian
+                zTgz = hessian
 
         # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
         ay = constraint_grad * y
@@ -1032,8 +1035,8 @@ class EnsembleSQP(EnsembleMethod):
         try:
             if self.alg is not "LBFGS":  # we have a hessian (potentially the reduced form, e.g., pg. 540)
                 if self.z is not None:
-                    zTgy = np.dot(self.z.T, (hessian * y).x)
                     if self.reduced_hessian is False:  # full hessian
+                        zTgy = np.dot(self.z.T, (hessian * y).x)
                         rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, grad.x)
                         if cholesky:
                             l = np.linalg.cholesky(zTgz)
@@ -1053,7 +1056,7 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.lraise("not sure if this can be done...")  # TODO: see doi:10.3934/dcdss.2018071
 
         except LinAlgError:
-            self.logger.lraise("Z^TGZ is not pos-def..")  # should have been caught above
+            self.logger.lraise("Z^TGZ is prob not pos-def..")  # should have been caught above
 
         # total step
         if self.z is not None:
