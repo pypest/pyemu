@@ -47,7 +47,7 @@ def rosenbrock_setup(version,initial_decvars=1.6,constraints=False,constraint_ex
             obs.loc["constraint_1", "obgnme"] = "l_constraint"  # inherit from pestpp_options
             obs.loc["constraint_1", "obsval"] = 4.0  # inherit from pestpp_options
         elif "one_linear" in constraint_exp:
-            obs.loc["constraint", "obgnme"] = "g_constraint"  #"g_constraint"  # inherit from pestpp_options
+            obs.loc["constraint", "obgnme"] = "l_constraint"  #"g_constraint"  # inherit from pestpp_options
             obs.loc["constraint", "obsval"] = 2.0  #10.0  # inherit from pestpp_options
     obs.loc[:, "weight"] = 1.0
     pst.control_data.noptmax = 0
@@ -178,7 +178,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
                                rank_one=False,learning_rate=0.5,
                                mu_prop=0.25,use_dist_mean_for_delta=False,mu_learning_prop=0.5,
                                working_set=None,constraint_exp="one_linear",
-                               qp_solve_method="null_space"): #filter_thresh=1e-2
+                               qp_solve_method="null_space",reduced_hessian=False): #filter_thresh=1e-2
 
     import pyemu
     import numpy as np
@@ -206,7 +206,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
     [os.remove(x) for x in os.listdir() if ("_per_" in x) and ("_alpha_" in x)]
     [os.remove(x) for x in os.listdir() if x == "hess_progress.csv"]
 
-    step_mults = list(np.logspace(-5, 0, 24))
+    step_mults = list(np.logspace(-5, 0, 12))  #24))
     #step_mults = list(np.linspace(0.1,1.0,10))
 
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
@@ -218,7 +218,7 @@ def rosenbrock_multiple_update(version,nit=10,draw_mult=3e-5,en_size=20,finite_d
                     finite_diff_grad=finite_diff_grad,derinc=derinc,alg=alg,memory=memory,strong_Wolfe=strong_Wolfe,
                     cma=cma,rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
                     use_dist_mean_for_delta=use_dist_mean_for_delta,mu_learning_prop=mu_learning_prop,
-                    qp_solve_method=qp_solve_method)
+                    qp_solve_method=qp_solve_method,reduced_hessian=reduced_hessian)
     os.chdir(os.path.join("..", ".."))
 
    #  TODO: critical that draw_mult is refined as we go?
@@ -790,9 +790,10 @@ if __name__ == "__main__":
         idv = [(4 - yy) / 1.5, yy]  #[1.75, 1.10]
         working_set = ['constraint_1']  #[]
     rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
-    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=30,
-                               working_set=working_set, hess_update=False, hess_self_scaling=False,
-                               constraint_exp=constraint_exp,qp_solve_method="null_space") #biobj_weight=5.0,alg="LBFGS",damped=False)
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=10,
+                               working_set=working_set, hess_update=True, hess_self_scaling=False,
+                               constraint_exp=constraint_exp,qp_solve_method="null_space",
+                               reduced_hessian=True) #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
     plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp)
 

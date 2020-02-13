@@ -463,6 +463,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # ingredients: h, s, y
         if len(self.working_set.obsnme) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
+            self.logger.log("implementing reduced-Hessian BFGS update")
             self.z = Matrix(x=self.z, row_names=curr_inv_hess.row_names, col_names=[x for x in curr_inv_hess.row_names[:self.z.shape[1]]])
             self.H = self.z.T * curr_inv_hess * self.z
         else:
@@ -616,7 +617,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # TODO: consider here some interpolation between prev and new H for update... espec approp for en approxs?
 
-        return self.H, self.hess_progress
+        return self.H, self.hess_progress  # TODO: add reduced hessian comments to hess_progress above
 
     def _LBFGS_hess_update(self,memory=5,self_scale=True,damped=False):
         '''
