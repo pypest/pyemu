@@ -478,9 +478,6 @@ class EnsembleSQP(EnsembleMethod):
         # s
         if len(self.working_set.obsnme) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
             # part of step in null space of constraint jco (pg. 538)
-            #self.s = Matrix(x=np.dot(self.z, self.p_z), row_names=self.delta_parensemble_mean.col_names,
-             #               col_names=self.delta_parensemble_mean.row_names)  # TODO: check p_z or Zp_z! if correct, there is a mistake in Nocedal (18.28)!!!
-            #self.s = self.s * self.best_alpha_per_it[self.iter_num]
             self.s = self.best_alpha_per_it[self.iter_num] * \
                      Matrix(x=self.p_z, col_names=["mean"], row_names=self.H.row_names)  #["n{}".format(x + 1) for x in range(self.p_z.shape[1])])
         else:
@@ -500,8 +497,6 @@ class EnsembleSQP(EnsembleMethod):
 
             self.y = (new_grad - curr_grad) - ((a_kp1 - a_k) * self.lagrang_mults)  # see eq (36) of Liu and Reynolds (2019) and Gill Ch. 3
             if reduced is True:
-                #self.y = Matrix(x=np.dot(np.dot(self.z, self.p_z).T, self.y.x), row_names=self.delta_parensemble_mean.col_names,
-                 #               col_names=self.delta_parensemble_mean.row_names)  #TODO: see comment above - think there is error in (18.28).... maybe check with Nocedal....
                 self.y = self.z.T * self.y  #Matrix(x=self.z.T * self.y, col_names=["mean"], row_names=self.H.row_names)  #["n{}".format(x + 1) for x in range(self.p_z.shape[1])])
         else:
             self.y = new_grad - curr_grad
@@ -1001,7 +996,7 @@ class EnsembleSQP(EnsembleMethod):
             return alpha, goto_next_it
 
 
-    def _kkt_null_space(self,hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=False):
+    def _kkt_null_space(self, hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=False):
         '''
         see pg. 457 of Nocedal and Wright (2006)
 
@@ -1030,14 +1025,14 @@ class EnsembleSQP(EnsembleMethod):
                     if not np.all(np.linalg.eigvals(self.zTgz) > 0):
                         self.logger.log("Z^TGZ not pos-def!")
                 else:
-                    self.zTgz = None  #hessian.x  # TODO: check math here!!
+                    self.zTgz = None  # TODO: check math here!!
             else:  # reduced hessian
                 self.zTgz = hessian.x
 
         # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
         ay = constraint_grad * y
         if self.reduced_hessian is False:
-            p_y = np.linalg.solve(ay.x, -1.0 * constraint_diff.x)
+            p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)  # constraint_diff.x)  # TODO: *****************
         else:
             p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)
 
@@ -1048,7 +1043,7 @@ class EnsembleSQP(EnsembleMethod):
                 if self.z is not None:
                     if self.reduced_hessian is False:  # full hessian
                         zTgy = np.dot(self.z.T, (hessian * y).x)
-                        rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, grad.x)
+                        rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, self.phi_grad.x)  # grad.x)  # TODO: **********
                         if cholesky:
                             l = np.linalg.cholesky(self.zTgz)
                             yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
@@ -1082,12 +1077,12 @@ class EnsembleSQP(EnsembleMethod):
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False:
                 # pg. 457 and 538
-                rhs = np.dot(y.T.x, -1.0 * (grad.x + (hessian * p).x))
+                rhs = np.dot(y.T.x, self.phi_grad.x + (hessian * p).x)  #  grad.x + (hessian * p).x)  #  TODO: **********
                 lm = np.linalg.solve(ay.T.x, rhs)
             else:
                 # pg. 539 of Nocedal and Wright (2006)
                 # simplify by dropping dependency of lm on hess (considered appropr given p converges to zero whereas grad does not..
-                lm = ((constraint_grad * constraint_grad.T) * (constraint_grad * self.phi_grad)).x  # note: grad vector here not multiplied by the product (hessian * x)!  # TODO: check
+                lm = np.linalg.solve((constraint_grad * constraint_grad.T).x, (constraint_grad * grad).x)  #((constraint_grad * constraint_grad.T) * (constraint_grad * self.phi_grad)).x  # note: grad vector here not multiplied by the product (hessian * x)!  # TODO: try * -1.0 here
         else:
             self.logger.lraise("not sure if this can be done...")
 
@@ -1308,6 +1303,8 @@ class EnsembleSQP(EnsembleMethod):
     	# TODO: sub-setting
     	# TODO: Langrangian formulation (and localization on constraint relationships)
         """
+
+        hess_update = False
 
         self.alg = alg
         self.reduced_hessian = reduced_hessian
