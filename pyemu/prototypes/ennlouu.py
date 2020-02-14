@@ -463,9 +463,15 @@ class EnsembleSQP(EnsembleMethod):
 
         # ingredients: h, s, y
         if len(self.working_set.obsnme) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
-            self.logger.log("implementing reduced-Hessian BFGS update")
-            self.z = Matrix(x=self.z, row_names=curr_inv_hess.row_names, col_names=[x for x in curr_inv_hess.row_names[:self.z.shape[1]]])
-            self.H = self.z.T * curr_inv_hess * self.z
+            if self.z is not None:
+                self.logger.log("implementing reduced-Hessian BFGS update")
+                self.H = Matrix(x=self.zTgz, row_names=[x for x in curr_inv_hess.row_names[:self.z.shape[1]]],
+                                col_names=[x for x in curr_inv_hess.row_names[:self.z.shape[1]]])
+                #self.z = Matrix(x=self.z, row_names=curr_inv_hess.row_names,
+                 #               col_names=[x for x in curr_inv_hess.row_names[:self.z.shape[1]]])
+                #self.H = self.z.T * curr_inv_hess * self.z
+            else:
+                self.logger.lraise("ZTGZ is None as null space has no dim")  # TODO
         else:
             self.H = curr_inv_hess
 
@@ -995,16 +1001,18 @@ class EnsembleSQP(EnsembleMethod):
             return alpha, goto_next_it
 
 
-    def _kkt_null_space(self,hessian, constraint_grad, constraint_diff, grad, cholesky=False):
+    def _kkt_null_space(self,hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=False):
         '''
         see pg. 457 of Nocedal and Wright (2006)
 
-        This approach ensures unique soln to kkt system (given that G may be indefinite)
+        This approach ensures unique soln to kkt system (given that G may be indefinite).
+
+        This approach is ``very effective'' when degrees of freedom (n - m) is small.
 
         hessian is G matrix in (16.5);
         constraint_grad is A matrix in (16.5)
-        constraint_diff is h in (16.5) (h = Ax - b)
-        grad is g in (16.5) (g = c + Gx)
+        constraint_diff is h in (16.5) (h = Ax - b)  #TODO: check this - Ax - b in Ch. 16, but -b in Ch 18
+        grad is g in (16.5) (g = c + Gx)  #TODO: check this - c + Gx in Ch. 16, but -c in Ch 18
         '''
 
         # Requires two conditions be satisfied
@@ -1018,17 +1026,20 @@ class EnsembleSQP(EnsembleMethod):
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False or self.iter_num < 3:  # TODO: TIDY
                 if self.z is not None:
-                    zTgz = np.dot(self.z.T, (hessian * self.z).x)
-                    if not np.all(np.linalg.eigvals(zTgz) > 0):
+                    self.zTgz = np.dot(self.z.T, (hessian * self.z).x)
+                    if not np.all(np.linalg.eigvals(self.zTgz) > 0):
                         self.logger.log("Z^TGZ not pos-def!")
                 else:
-                    zTgz = None  #hessian.x  # TODO: check math here!!
+                    self.zTgz = None  #hessian.x  # TODO: check math here!!
             else:  # reduced hessian
-                zTgz = hessian.x
+                self.zTgz = hessian.x
 
         # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
         ay = constraint_grad * y
-        p_y = np.linalg.solve(ay.x, -1.0 * constraint_diff.x)
+        if self.reduced_hessian is False:
+            p_y = np.linalg.solve(ay.x, -1.0 * constraint_diff.x)
+        else:
+            p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)
 
         # now to solve linear system for p_z
         # do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
@@ -1039,16 +1050,19 @@ class EnsembleSQP(EnsembleMethod):
                         zTgy = np.dot(self.z.T, (hessian * y).x)
                         rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, grad.x)
                         if cholesky:
-                            l = np.linalg.cholesky(zTgz)
+                            l = np.linalg.cholesky(self.zTgz)
                             yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
                             l_ = l.conj()  # TODO: check math here
                             self.p_z = np.linalg.solve(l_, yy)
                         else:
-                            self.p_z = np.linalg.solve(zTgz, rhs)
+                            self.p_z = np.linalg.solve(self.zTgz, rhs)
                     else:  # reduced hessian
                         # simplify by removing cross term (or ``partial hessian'') matrix (zTgy), which is approp when approximating hessian (zTgz) (as p_y goes to zero faster than p_z)
-                        rhs = -1.0 * np.dot(self.z.T, grad.x)
-                        self.p_z = np.linalg.solve(zTgz, rhs)  # the reduced hess (zTgz) is much more likely to be pos-def
+                        rhs = -1.0 * np.dot(self.z.T, self.phi_grad.x)  # note: grad vector here not multiplied by the product (hessian * x)!  # TODO: check
+                        if cholesky:
+                            self.logger.lraise("to do")  #TODO
+                        else:
+                            self.p_z = np.linalg.solve(self.zTgz, rhs)  # the reduced hess (zTgz) is much more likely to be pos-def
                 else:
                     self.logger.log("null-space dim (wrt active constraints) is zero.. therefore no p_z component")
 
@@ -1073,7 +1087,7 @@ class EnsembleSQP(EnsembleMethod):
             else:
                 # pg. 539 of Nocedal and Wright (2006)
                 # simplify by dropping dependency of lm on hess (considered appropr given p converges to zero whereas grad does not..
-                lm = ((constraint_grad * constraint_grad.T) * (constraint_grad * grad)).x
+                lm = ((constraint_grad * constraint_grad.T) * (constraint_grad * self.phi_grad)).x  # note: grad vector here not multiplied by the product (hessian * x)!  # TODO: check
         else:
             self.logger.lraise("not sure if this can be done...")
 
@@ -1176,7 +1190,7 @@ class EnsembleSQP(EnsembleMethod):
         c = grad_vect + np.dot(0.5 * g, x_.T)  # small g
 
         if qp_solve_method == "null_space":
-            p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c)
+            p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c, constraints=b)
         elif qp_solve_method == "schur":
             self._kkt_schur()
         elif qp_solve_method == "iterative_cg":
@@ -1303,6 +1317,10 @@ class EnsembleSQP(EnsembleMethod):
             self.opt_direction = opt_direction
         else:
             self.logger.lraise("need proper opt_direction entry")
+
+        if self.reduced_hessian is True:
+            self.logger.warn("null-space QP soln scheme required for reduced hessian implementation.. switching...")
+            qp_solve_method = "null_space"
 
         self.iter_num += 1
         self.logger.log("iteration {0}".format(self.iter_num))
@@ -1760,7 +1778,7 @@ class EnsembleSQP(EnsembleMethod):
                 # TODO: change draw mult if here
 
             if constraints and len(self.working_set) > 0:
-                self._active_set_method(first_pass=True, drop_due_to_stall=True)  #TODO: stall status could be less naive - e.g., filter stalling over successive iterations...
+                self._active_set_method(first_pass=True, drop_due_to_stall=True)  # TODO: stall status could be less naive - e.g., filter stalling over successive iterations...
 
             hess_update, self_scale = False, False
 
