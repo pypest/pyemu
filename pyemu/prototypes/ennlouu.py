@@ -485,7 +485,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # y
         if len(self.working_set.obsnme) > 0:  # active set and A is non-empty
-            new_grad.col_names, curr_grad.col_names = self.lagrang_mults.col_names, self.lagrang_mults.col_names
+            new_grad.col_names, curr_grad.col_names = self.parensemble_mean.row_names, self.parensemble_mean.row_names
 
             # difference in A between k and k+1 - wrt working set at current iter_num (i.e., A^k (prev constraint grads) may contain elements that were not active at iteration k)
             # TODO: double-check math here - but I think this is the only way this can be done
@@ -1043,7 +1043,7 @@ class EnsembleSQP(EnsembleMethod):
                 if self.z is not None:
                     if self.reduced_hessian is False:  # full hessian
                         zTgy = np.dot(self.z.T, (hessian * y).x)
-                        rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, self.phi_grad.x)  # grad.x)  # TODO: **********
+                        rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, self.phi_grad.x) # grad.x) TODO: **********
                         if cholesky:
                             l = np.linalg.cholesky(self.zTgz)
                             yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
@@ -1077,7 +1077,7 @@ class EnsembleSQP(EnsembleMethod):
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False:
                 # pg. 457 and 538
-                rhs = np.dot(y.T.x, self.phi_grad.x + (hessian * p).x)  #  grad.x + (hessian * p).x)  #  TODO: **********
+                rhs = np.dot(y.T.x, self.phi_grad.x + (hessian * p).x)  #-1.0 * grad.x + (hessian * p).x)  TODO: **********
                 lm = np.linalg.solve(ay.T.x, rhs)
             else:
                 # pg. 539 of Nocedal and Wright (2006)
@@ -1177,7 +1177,7 @@ class EnsembleSQP(EnsembleMethod):
 
         h = (a * x_.T) - b  # TODO: check -1 * constraint grad
         if not np.all(np.isclose(h.x, 0.0, rtol=1e-2, atol=1e-3)):
-            self.logger.warn("constraint violated! h = {0}".format(h.x))  # TODO: enforce at filter rather than here
+            self.logger.warn("not sitting on constraint! Ax - b = {0}".format(h.x))  # TODO: enforce at filter rather than here as don't have direction info here.
             #self.logger.lraise("constraint violated! {0}".format(h.x))  # will have been encountered before this point
 
         grad_vect = self.phi_grad.copy()
@@ -1304,7 +1304,7 @@ class EnsembleSQP(EnsembleMethod):
     	# TODO: Langrangian formulation (and localization on constraint relationships)
         """
 
-        hess_update = False
+        #hess_update = False
 
         self.alg = alg
         self.reduced_hessian = reduced_hessian
