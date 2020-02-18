@@ -2777,8 +2777,8 @@ class PstFromFlopyModel(object):
                     self.logger.lraise("no parameters found for spatial list k,pak,attr {0}, {1}, {2}".
                                        format(k_vals,pak,col))
 
-                #par_df.loc[:,"pargp"] = df.k.apply(lambda x : "{0}{1}_k{2:02.0f}".format(pak,col,int(x))).values
-                par_df.loc[:,"pargp"] = "{0}{1}".format(pak,col)
+                par_df.loc[:,"pargp"] = df.k.apply(lambda x : "{0}{1}_k{2:02.0f}".format(pak,col,int(x))).values
+
 
                 par_df.loc[:,"tpl_file"] = tpl_file
                 par_df.loc[:,"in_file"] = in_file
