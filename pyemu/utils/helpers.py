@@ -2778,8 +2778,7 @@ class PstFromFlopyModel(object):
                                        format(k_vals,pak,col))
 
                 #par_df.loc[:,"pargp"] = df.k.apply(lambda x : "{0}{1}_k{2:02.0f}".format(pak,col,int(x))).values
-                par_df.loc[:, "pargp"] = df.loc[df.k.apply(lambda x: x in k_parse), "k"].apply(
-                    lambda x: "{0}{1}_k{2:02.0f}".format(pak, col, int(x))).values
+                par_df.loc[:,"pargp"] = "{0}{1}".format(pak,col)
 
                 par_df.loc[:,"tpl_file"] = tpl_file
                 par_df.loc[:,"in_file"] = in_file
