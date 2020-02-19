@@ -250,7 +250,7 @@ class EnsembleSQP(EnsembleMethod):
             self.obsensemble_next = self.obsensemble.copy()  # for Wolfe tests only
             self.logger.log("running model forward with noptmax = 0")
 
-            self.working_set = []
+            self.working_set, self.working_set_per_k = [], {}  #TODO: should do just w dict
 
         if constraints is True:
             constraint_gps = [x for x in self.pst.obs_groups if x.startswith("g_") or x.startswith("greater_")
@@ -462,7 +462,7 @@ class EnsembleSQP(EnsembleMethod):
         '''
 
         # ingredients: h, s, y
-        if len(self.working_set.obsnme) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
+        if len(self.working_set_per_k[self.iter_num]) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
             if self.z is not None:
                 self.logger.log("implementing reduced-Hessian BFGS update")
                 self.H = Matrix(x=self.zTgz, row_names=[x for x in curr_inv_hess.row_names[:self.z.shape[1]]],
@@ -476,7 +476,7 @@ class EnsembleSQP(EnsembleMethod):
             self.H = curr_inv_hess
 
         # s
-        if len(self.working_set.obsnme) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
+        if len(self.working_set_per_k[self.iter_num]) > 0 and reduced is True:  # A is non-empty and only reduced-hess update
             # part of step in null space of constraint jco (pg. 538)
             self.s = self.best_alpha_per_it[self.iter_num] * \
                      Matrix(x=self.p_z, col_names=["mean"], row_names=self.H.row_names)  #["n{}".format(x + 1) for x in range(self.p_z.shape[1])])
@@ -484,7 +484,7 @@ class EnsembleSQP(EnsembleMethod):
             self.s = delta_par.T  # whole step
 
         # y
-        if len(self.working_set.obsnme) > 0:  # active set and A is non-empty
+        if len(self.working_set_per_k[self.iter_num]) > 0:  # active set and A is non-empty
             new_grad.col_names, curr_grad.col_names = self.parensemble_mean.row_names, self.parensemble_mean.row_names
 
             # difference in A between k and k+1 - wrt working set at current iter_num (i.e., A^k (prev constraint grads) may contain elements that were not active at iteration k)
@@ -957,7 +957,9 @@ class EnsembleSQP(EnsembleMethod):
 
         if first_pass is True:  # stop-or-drop phase
             #approx_converged = self._approx_converge_test()
-            if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-3, atol=1e-3)) or drop_due_to_stall:# or approx_converged:  # the former catches when two non-parallel equality constraints are present. TODO: occurs practically when filter stops updating? or search_d?
+            if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-3, atol=1e-3)) or \
+                    (drop_due_to_stall is True and (len(self.working_set) > 0) and
+                     self.working_set_per_k[self.iter_num] == self.working_set_per_k[self.iter_num - 1]):  #drop_due_to_stall and np.all(np.isclose(self.search_d.x, 0.0, rtol=1, atol=1))):# or approx_converged:  # the former catches when two non-parallel equality constraints are present. TODO: occurs practically when filter stops updating? or search_d?
                 # TODO: compute mults at new proposed pos with new A? (16.42)?
                 lagrang_mults_ineq = self.lagrang_mults.df().loc[self.working_set_ineq.obsnme, :]  # multiplier sign only iterpret-able for ineq constraints (in working set)
                 if np.all(lagrang_mults_ineq.values > 0):
@@ -1017,7 +1019,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # 1. Z^TGZ is pos def
         # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
-        y, self.z = self._compute_orthog_basis_matrices(a=constraint_grad)
+        y, self.z = self._compute_orthog_basis_matrices(a=constraint_grad)  # TODO: just re-use Z, Y if Wk same as prev it
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False or self.iter_num < 3:  # TODO: TIDY
                 if self.z is not None:
@@ -1043,7 +1045,7 @@ class EnsembleSQP(EnsembleMethod):
                 if self.z is not None:
                     if self.reduced_hessian is False:  # full hessian
                         zTgy = np.dot(self.z.T, (hessian * y).x)
-                        rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, self.phi_grad.x) # grad.x) TODO: **********
+                        rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, self.phi_grad.x)  # grad.x) TODO: **********
                         if cholesky:
                             l = np.linalg.cholesky(self.zTgz)
                             yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
@@ -1077,7 +1079,7 @@ class EnsembleSQP(EnsembleMethod):
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False:
                 # pg. 457 and 538
-                rhs = np.dot(y.T.x, self.phi_grad.x + (hessian * p).x)  #-1.0 * grad.x + (hessian * p).x)  TODO: **********
+                rhs = np.dot(y.T.x, self.phi_grad.x + (hessian * p).x)  # -1.0 * grad.x + (hessian * p).x)  # self.phi_grad.x)  #  TODO: **********
                 lm = np.linalg.solve(ay.T.x, rhs)
             else:
                 # pg. 539 of Nocedal and Wright (2006)
@@ -1327,6 +1329,8 @@ class EnsembleSQP(EnsembleMethod):
         if self.iter_num == 1:
             self.parensemble_mean = None
 
+        self.working_set_per_k[self.iter_num] = self.working_set.obsnme
+
         # some checks first
         if finite_diff_grad is False:
             if self.obsensemble.shape[0] < 2:
@@ -1444,6 +1448,7 @@ class EnsembleSQP(EnsembleMethod):
                 alpha, next_it = self._active_set_method(first_pass=True)
 
         elif constraints is False or (constraints is True and len(self.working_set) == 0):  # unconstrained or no active constraints
+            self.working_set_per_k[self.iter_num] = self.working_set.obsnme
             if alg == "LBFGS":
                 self.logger.log("employing limited-memory BFGS quasi-Newton algorithm")
                 self.search_d = self._LBFGS_hess_update(memory=memory,self_scale=hess_self_scaling)
