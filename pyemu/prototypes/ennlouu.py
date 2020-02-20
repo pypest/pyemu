@@ -295,6 +295,8 @@ class EnsembleSQP(EnsembleMethod):
         self.inv_hessian = self.hessian.inv
         self.inv_hessian_0 = self.inv_hessian.copy()
 
+        self.search_d_per_k = {}
+
         self.curr_grad = None
         self.hess_progress, self.best_alpha_per_it = {},{}
 
@@ -955,11 +957,17 @@ class EnsembleSQP(EnsembleMethod):
 
         alpha, goto_next_it = 1.0, False
 
-        if first_pass is True:  # stop-or-drop phase
-            #approx_converged = self._approx_converge_test()
-            if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-3, atol=1e-3)) or \
-                    (drop_due_to_stall is True and (len(self.working_set) > 0) and
-                     self.working_set_per_k[self.iter_num] == self.working_set_per_k[self.iter_num - 1]):  #drop_due_to_stall and np.all(np.isclose(self.search_d.x, 0.0, rtol=1, atol=1))):# or approx_converged:  # the former catches when two non-parallel equality constraints are present. TODO: occurs practically when filter stops updating? or search_d?
+        if first_pass:  # stop-or-drop phase
+            approx_converged = self._approx_converge_test()
+            if approx_converged and (len(self.working_set) > 0) and \
+                    self.working_set_per_k[self.iter_num].values == self.working_set_per_k[self.iter_num - 1].values:
+                approx_converged = True
+            else:
+                approx_converged = False
+            if drop_due_to_stall and (len(self.working_set) > 0) and \
+                    self.working_set_per_k[self.iter_num].values == self.working_set_per_k[self.iter_num - 1].values:
+                drop_due_to_stall = True
+            if np.all(np.isclose(self.search_d.x, 0.0, rtol=1e-3, atol=1e-3)) or drop_due_to_stall or approx_converged:  #drop_due_to_stall and np.all(np.isclose(self.search_d.x, 0.0, rtol=1, atol=1))):# or approx_converged:  # the former catches when two non-parallel equality constraints are present. TODO: occurs practically when filter stops updating? or search_d?
                 # TODO: compute mults at new proposed pos with new A? (16.42)?
                 lagrang_mults_ineq = self.lagrang_mults.df().loc[self.working_set_ineq.obsnme, :]  # multiplier sign only iterpret-able for ineq constraints (in working set)
                 if np.all(lagrang_mults_ineq.values > 0):
@@ -1233,17 +1241,15 @@ class EnsembleSQP(EnsembleMethod):
         return alpha
 
     def _approx_converge_test(self,):
-        ''' done on basis of filter (self.iter_num, self.working_set, distance_from_origin). Not done on basis of
+        '''done on basis of filter (self.iter_num, self.working_set, distance_from_origin). Not done on basis of
         search_d because gradient direction, not only length, changes when you have a unique working set. Using
         distance from origin in phi, viol plot only general way to do this?'''
+
         is_converged = False
         if self.iter_num > 1:
-            is_converged = False
-         #   if working_set same - subset:  # this is important assumption here - and for efficiency. only need to consider of one variable it is only length of p vector that changes.
-          #      d_0 = self.search_d_per_k[self.iter_num] / self.search_d_per_k[1]  #self.search_d_per_k[self.iter_num].iloc[0,:]
-           #     d_1 = self.search_d_per_k[self.iter_num] / self.search_d_per_k[self.iter_num - 1]  #self.search_d_per_k[self.iter_num].iloc[0,:]
-            #    if np.all(np.isclose(d_0, 1.0, rtol= , atol=)) and np.all(np.isclose(d_0, 1.0, rtol= , atol=)):
-             #       DROP
+            red_fac = np.sum(np.abs(self.search_d.x)) / np.sum(np.abs(self.search_d_per_k[self.iter_num - 1].values))
+            if red_fac > 0.8 and (len(self.working_set) > 0) and self.working_set_per_k[self.iter_num].values == self.working_set_per_k[self.iter_num - 1].values:
+                is_converged = True
 
         return is_converged
 
@@ -1440,12 +1446,8 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.log("solve QP sub-problem (active set method)")
                 #self.working_set_per_k[self.iter_num] = self.working_set.obsnme
                 self.search_d, self.lagrang_mults = self._solve_eqp(qp_solve_method=qp_solve_method)
-                # self.search_d_per_k[self.iter_num] = self.search_d.df()  # for detecting convergence in _active_set_method()
                 self.logger.log("solve QP sub-problem (active set method)")
                 self.logger.log("calculate search direction and perform tests")
-
-                # implement active set method
-                alpha, next_it = self._active_set_method(first_pass=True)
 
         elif constraints is False or (constraints is True and len(self.working_set) == 0):  # unconstrained or no active constraints
             self.working_set_per_k[self.iter_num] = self.working_set.obsnme
@@ -1475,6 +1477,11 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: using grad info only (with some expected step length), update Hessian from initial
             # TODO: handling of fixed, transformed etc. dec vars here
             self.logger.log("calculate search direction and perform tests")
+
+        self.search_d_per_k[self.iter_num] = self.search_d.df()  # for detecting convergence in _active_set_method()
+        # implement active set method
+        if constraints is True and len(self.working_set) > 0:  # active constraints present
+            alpha, next_it = self._active_set_method(first_pass=True)
 
         if next_it is False:
             self.parensemble_mean_next = None
