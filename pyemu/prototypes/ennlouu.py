@@ -964,6 +964,9 @@ class EnsembleSQP(EnsembleMethod):
                 approx_converged = True
             else:
                 approx_converged = False
+            if self.qp_solve_method == "null_space":
+                if self._detect_proj_off():
+                    approx_converged = True
             if drop_due_to_stall and (len(self.working_set) > 0) and \
                     self.working_set_per_k[self.iter_num].values == self.working_set_per_k[self.iter_num - 1].values:
                 drop_due_to_stall = True
@@ -985,7 +988,7 @@ class EnsembleSQP(EnsembleMethod):
                 # compute alpha
                 if len(self.not_in_working_set) == 0:
                     #self.logger.warn("all constraints are in active set")
-                    alpha = 1.0
+                    alpha = 1.0    #self._compute_alpha_constrained()  # TODO: test this func
                 else:
                     alpha = 1.0  #self._compute_alpha_constrained()  # TODO: test this func
 
@@ -1042,9 +1045,9 @@ class EnsembleSQP(EnsembleMethod):
         # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
         ay = constraint_grad * y
         if self.reduced_hessian is False:
-            p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)  # constraint_diff.x)  # TODO: *****************
+            self.p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)  # constraint_diff.x)  # TODO: *****************
         else:
-            p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)
+            self.p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)
 
         # now to solve linear system for p_z
         # do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
@@ -1053,7 +1056,7 @@ class EnsembleSQP(EnsembleMethod):
                 if self.z is not None:
                     if self.reduced_hessian is False:  # full hessian
                         zTgy = np.dot(self.z.T, (hessian * y).x)
-                        rhs = (-1.0 * np.dot(zTgy, p_y)) - np.dot(self.z.T, self.phi_grad.x)  # grad.x) TODO: **********
+                        rhs = (-1.0 * np.dot(zTgy, self.p_y)) - np.dot(self.z.T, self.phi_grad.x)  # grad.x) TODO: **********
                         if cholesky:
                             l = np.linalg.cholesky(self.zTgz)
                             yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
@@ -1079,9 +1082,9 @@ class EnsembleSQP(EnsembleMethod):
 
         # total step
         if self.z is not None:
-            p = np.dot(y.x, p_y) + np.dot(self.z, self.p_z)
+            p = np.dot(y.x, self.p_y) + np.dot(self.z, self.p_z)
         else:
-            p = np.dot(y.x, p_y)
+            p = np.dot(y.x, self.p_y)
 
         # now to compute lagrangian multipliers
         if self.alg is not "LBFGS":
@@ -1194,11 +1197,11 @@ class EnsembleSQP(EnsembleMethod):
         grad_vect.col_names = ['mean']  # hack
         c = grad_vect + np.dot(0.5 * g, x_.T)  # small g
 
-        if qp_solve_method == "null_space":
+        if self.qp_solve_method == "null_space":
             p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c, constraints=b)
-        elif qp_solve_method == "schur":
+        elif self.qp_solve_method == "schur":
             self._kkt_schur()
-        elif qp_solve_method == "iterative_cg":
+        elif self.qp_solve_method == "iterative_cg":
             self._kkt_iterative_cg()
         else:  #method == "direct":
             coeff = np.concatenate((np.concatenate((0.5 * g.x, a.T.x), axis=1),
@@ -1239,6 +1242,15 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("the blocking constraint is... {}".format(min_idx))
 
         return alpha
+
+    def _detect_proj_off(self,):
+        '''
+        detects orthogonality of p wrt active constraint
+        '''
+        proj_off = False
+        if self.p_y / self.p_z > 1.0:
+            proj_off = True
+        return proj_off
 
     def _approx_converge_test(self,):
         '''done on basis of filter (self.iter_num, self.working_set, distance_from_origin). Not done on basis of
@@ -1326,6 +1338,7 @@ class EnsembleSQP(EnsembleMethod):
         if self.reduced_hessian is True:
             self.logger.warn("null-space QP soln scheme required for reduced hessian implementation.. switching...")
             qp_solve_method = "null_space"
+        self.qp_solve_method = qp_solve_method
 
         self.iter_num += 1
         self.logger.log("iteration {0}".format(self.iter_num))
@@ -1445,7 +1458,7 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.log("calculate search direction and perform tests")
                 self.logger.log("solve QP sub-problem (active set method)")
                 #self.working_set_per_k[self.iter_num] = self.working_set.obsnme
-                self.search_d, self.lagrang_mults = self._solve_eqp(qp_solve_method=qp_solve_method)
+                self.search_d, self.lagrang_mults = self._solve_eqp(qp_solve_method=self.qp_solve_method)
                 self.logger.log("solve QP sub-problem (active set method)")
                 self.logger.log("calculate search direction and perform tests")
 
@@ -1555,7 +1568,7 @@ class EnsembleSQP(EnsembleMethod):
                         self.logger.log("adopting filtering method to handle constraints")
                         self._filter, accept, c_viol = \
                             self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size,
-                                                         biobj_weight=biobj_weight,biobj_transf=biobj_transf,
+                                                         biobj_weight=biobj_weight, biobj_transf=biobj_transf,
                                                          opt_direction=self.opt_direction)
                         self.logger.log("adopting filtering method to handle constraints")
                         if accept:
