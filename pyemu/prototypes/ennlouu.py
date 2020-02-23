@@ -1008,6 +1008,15 @@ class EnsembleSQP(EnsembleMethod):
         if first_pass is True and drop_due_to_stall is False:
             return alpha, goto_next_it
 
+    def _kkt_direct(g, a, c, h, pyemu_matrix=True):
+        if pyemu_matrix is True:
+            g, a, c, h = g.x, a.x, c.x, h.x
+        coeff = np.concatenate((np.concatenate((g, -1 * a.T), axis=1),
+                                np.concatenate((a, np.zeros((a.shape[0], a.shape[0]))), axis=1)))
+        rhs = np.concatenate((-1 * c, h))
+        x = np.linalg.solve(coeff, rhs)
+
+        return x
 
     def _kkt_null_space(self, hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=False):
         '''
@@ -1204,11 +1213,7 @@ class EnsembleSQP(EnsembleMethod):
         elif self.qp_solve_method == "iterative_cg":
             self._kkt_iterative_cg()
         else:  #method == "direct":
-            coeff = np.concatenate((np.concatenate((0.5 * g.x, a.T.x), axis=1),
-                                    np.concatenate((a.x, np.zeros((a.shape[0], a.shape[0]))), axis=1)))
-
-            rhs = np.concatenate((-1 * c.x, h.x))
-            x = np.linalg.solve(coeff, rhs)
+            x = self._kkt_direct(g=g, a=a, c=c, h=h)
             p, lm = x[:self.pst.npar_adj], x[self.pst.npar_adj:]  # TODO: do by parnme
 
         search_d = Matrix(x=p, row_names=x_.T.row_names, col_names=self.phi_grad.col_names)
@@ -1791,13 +1796,12 @@ class EnsembleSQP(EnsembleMethod):
             mean_en_phi_per_alpha.to_csv("mean_phi_per_alpha_it{0}.csv".format(self.iter_num))
 
         # deal with unsuccessful iteration
-        if self.parensemble_mean_next is None:
+        if self.parensemble_mean_next is None:  # TODO: change to using best from curr k
             self.logger.warn("unsuccessful upgrade iteration.. using previous mean par en")
             self.parensemble_mean_next = self.parensemble_mean.copy()
 
-            if finite_diff_grad is False:
+            if finite_diff_grad is False:  # TODO: change draw mult?
                 self.parensemble_next = self.parensemble.copy()
-                # TODO: change draw mult if here
 
             if constraints and len(self.working_set) > 0:
                 self._active_set_method(first_pass=True, drop_due_to_stall=True)  # TODO: stall status could be less naive - e.g., filter stalling over successive iterations...
