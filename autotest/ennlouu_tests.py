@@ -757,17 +757,43 @@ def test_qp_solve_nocedal(method="direct"):
     b = np.array([[3], [0]])
     c = np.array([[-8], [-3], [-3]])
 
+    p_soln, lm_soln = np.array([[2.], [-1.], [1.]]), np.array([[3.], [-2.]])
+
     if method == "direct":
         x = pyemu.EnsembleSQP._kkt_direct(g=g, a=a, c=c, h=b, pyemu_matrix=False)  # h = b as x = (0, 0, 0)
         p, lm = x[:3], x[-2:]
+        if not (np.allclose(p, p_soln)) and (np.allclose(lm, lm_soln)):
+            Exception("wrong soln from direct solve for nocedal (16.2) example problem")
     elif method == "null_space":
-        x = pyemu.EnsembleSQP._kkt_null_space(g=g, a=a, c=c, h=b, pyemu_matrix=False)  # h = b as x = (0, 0, 0)
+        x = pyemu.EnsembleSQP._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=b,
+                                              grad=c, pyemu_matrix=False)  # h = b as x = (0, 0, 0); grad = c as Gx = 0
         #p, lm = x[:3], x[-2:]
+        if not (np.allclose(p, p_soln)) and (np.allclose(lm, lm_soln)):
+            Exception("wrong soln from null-space solve for nocedal (16.2) example problem")
 
-    p_soln, lm_soln = np.array([[2.], [-1.], [1.]]), np.array([[3.], [-2.]])
-    if not (np.allclose(p, p_soln)) and (np.allclose(lm, lm_soln)):
-        Exception("wrong soln for nocedal (16.2) example problem")
+def test_qp_solve_youtube(method="direct"):
+    '''
+    see https://www.youtube.com/watch?v=HLq151AhMMY (20:52.00)
+    '''
+    import numpy as np
+    import pyemu
 
+    # first iteration
+    g = np.array([[1, 0], [0, 2]])
+    a = np.array([[-2, 1], [0, -1]])
+    b = np.array([[0], [0]])
+    c = np.array([[-3], [-4]])
+
+    p_soln, lm_soln = np.array([[0.], [0.]]), np.array([[-3./2.], [-11./2.]])
+
+    if method == "direct":
+        x = pyemu.EnsembleSQP._kkt_direct(g=g, a=a, c=c, h=b, pyemu_matrix=False)  # h = b and c = grad as x = (0, 0, 0)
+        p, lm = x[:2], x[-2:]
+        if not (np.allclose(p, p_soln)) and (np.allclose(lm, lm_soln)):
+            Exception("wrong soln from direct solve for nocedal (16.2) example problem")
+
+    # second iteration
+    # .....
 
 if __name__ == "__main__":
     #rosenbrock_setup(version="2par",initial_decvars=[1.1,0.88])
@@ -800,9 +826,12 @@ if __name__ == "__main__":
      #   rosenbrock_setup(version="2par", initial_decvars=idv)
       #  test_pestpp_on_rosen()
     #test_pestpp_on_rosen()
-    test_qp_solve_nocedal(method="direct")
 
-'''
+    #test_qp_solve_nocedal(method="direct")
+    #test_qp_solve_nocedal(method="null_space")
+    #test_qp_solve_youtube(method="direct")
+
+    '''
     constraints, constraint_exp = True, "two_linear"  #"two_linear"  #None
     if "one_linear" in constraint_exp:
         yy = -1.0  #-2.0  #0.5
@@ -813,12 +842,12 @@ if __name__ == "__main__":
         idv = [(2 - yy) / -0.1, yy]    #[(4 - yy) / 1.5, yy]  #[1.75, 1.10]
         working_set = ["constraint_1"]    #['constraint_1']  #[] #
     rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
-    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=50,
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
                                working_set=working_set, hess_update=False, hess_self_scaling=False,
                                constraint_exp=constraint_exp,qp_solve_method="direct",
                                reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_50_no_H_new_direct.pdf")
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_20_no_H_new_direct_.pdf")
     
     constraints, constraint_exp = True, "two_linear"  #"two_linear"  #None
     if "one_linear" in constraint_exp:
@@ -830,13 +859,13 @@ if __name__ == "__main__":
         idv = [1.75, 1.10]  #[(4 - yy) / 1.5, yy]
         working_set = [] #['constraint_1']  #
     rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
-    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=50,
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
                                working_set=working_set, hess_update=False, hess_self_scaling=False,
                                constraint_exp=constraint_exp,qp_solve_method="direct",
                                reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_50_no_H_new_direct_off.pdf")
-
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_20_no_H_new_direct_off_.pdf")
+    
     constraints, constraint_exp = True, "one_linear"  #"two_linear"  #None
     if "one_linear" in constraint_exp:
         yy = -1.0  #-2.0  #0.5
@@ -847,14 +876,15 @@ if __name__ == "__main__":
         idv = [(4 - yy) / 1.5, yy]  #[1.75, 1.10]
         working_set = ['constraint_1']  #[] #
     rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
-    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=50,
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
                                working_set=working_set, hess_update=False, hess_self_scaling=False,
                                constraint_exp=constraint_exp,qp_solve_method="direct",
                                reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_50_no_H_new_direct.pdf")
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_20_no_H_new_direct__.pdf")
 
-    constraints, constraint_exp = True, "two_linear"  #"two_linear"  #None
+    
+    constraints, constraint_exp = True, "one_linear"  #"two_linear"  #None
     if "one_linear" in constraint_exp:
         yy = -1.0  #-2.0  #0.5
         idv = [(2 - yy) / -2.25, yy]  #[(10 - yy) / 6, yy]  #[1.8, yy]
@@ -863,14 +893,33 @@ if __name__ == "__main__":
         yy = 1.0
         idv = [(4 - yy) / 1.5, yy]  #[1.75, 1.10]
         working_set = ['constraint_1']  #[] #
-    #rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
-    #rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=50,
-     #                          working_set=working_set, hess_update=False, hess_self_scaling=False,
-      #                         constraint_exp=constraint_exp,qp_solve_method="null_space",
-       #                        reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
+    rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
+                               working_set=working_set, hess_update=False, hess_self_scaling=False,
+                               constraint_exp=constraint_exp,qp_solve_method="direct",
+                               reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_30_no_H_new.pdf")
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_20_H_up_new_direct.pdf")
 
+    '''
+    constraints, constraint_exp = True, "one_linear"  #"two_linear"  #None
+    if "one_linear" in constraint_exp:
+        yy = -1.0  #-2.0  #0.5
+        idv = [(2 - yy) / -2.25, yy]  #[(10 - yy) / 6, yy]  #[1.8, yy]
+        working_set = ['constraint']  #[]
+    elif "two_linear" in constraint_exp:  # "two_linear"
+        yy = 1.0
+        idv = [(4 - yy) / 1.5, yy]  #[1.75, 1.10]
+        working_set = ['constraint_1']  #[] #
+    rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
+                               working_set=working_set, hess_update=False, hess_self_scaling=False,
+                               constraint_exp=constraint_exp,qp_solve_method="null_space",
+                               reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
+    #filter_plot(problem="2par", constraints=True, log_phi=True)
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_30_no_H_new___.pdf")
+
+    '''
     constraints, constraint_exp = True, "two_linear"  #"two_linear"  #None
     if "one_linear" in constraint_exp:
         yy = -1.0  #-2.0  #0.5
@@ -881,7 +930,7 @@ if __name__ == "__main__":
         idv = [1.75, 1.10]  #[(4 - yy) / 1.5, yy]
         working_set = [] #['constraint_1']  #
     rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
-    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=50,
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
                                working_set=working_set, hess_update=False, hess_self_scaling=False,
                                constraint_exp=constraint_exp,qp_solve_method="null_space",
                                reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
