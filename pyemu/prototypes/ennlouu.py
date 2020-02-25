@@ -1057,13 +1057,13 @@ class EnsembleSQP(EnsembleMethod):
 
         # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
         ay = constraint_grad * y
-        if self.reduced_hessian is False:
-            self.p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)  # constraint_diff.x)  # TODO: constraints or constraint_diff
-        else:
-            self.p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)
+        #if self.reduced_hessian is False:
+         #   self.p_y = np.linalg.solve(ay.x, -1.0 * constraint_diff.x)  # rhs should be [0]... if on constraint # TODO: check -1.0 * or not
+        #else:
+        self.p_y = np.linalg.solve(ay.x, -1.0 * constraint_diff.x)  # rhs should be [0]... if on constraint
 
         # now to solve linear system for p_z
-        # do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
+        # best to do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
         try:
             if self.alg is not "LBFGS":  # we have a hessian (potentially the reduced form, e.g., pg. 540)
                 if self.z is not None:
@@ -1072,9 +1072,9 @@ class EnsembleSQP(EnsembleMethod):
                         rhs = (-1.0 * np.dot(zTgy, self.p_y)) - np.dot(self.z.T, self.phi_grad.x)  # grad.x) TODO: **********
                         if cholesky:
                             l = np.linalg.cholesky(self.zTgz)
-                            yy = np.linalg.solve(l, rhs)  # TODO: could solve by forward substitution (triangular) for more speed-ups
-                            l_ = l.conj()  # TODO: check math here
-                            self.p_z = np.linalg.solve(l_, yy)
+                            rhs2 = np.linalg.solve(l, rhs)  # TODO: solve by forward substitution (triangular) for more speed-ups
+                            #l_ = l.conj()  # TODO: check math here
+                            self.p_z = np.linalg.solve(l.T, rhs2)
                         else:
                             self.p_z = np.linalg.solve(self.zTgz, rhs)
                     else:  # reduced hessian
@@ -1108,7 +1108,7 @@ class EnsembleSQP(EnsembleMethod):
             else:
                 # pg. 539 of Nocedal and Wright (2006)
                 # simplify by dropping dependency of lm on hess (considered appropr given p converges to zero whereas grad does not..
-                lm = np.linalg.solve((constraint_grad * constraint_grad.T).x, (constraint_grad * grad).x)  #((constraint_grad * constraint_grad.T) * (constraint_grad * self.phi_grad)).x  # note: grad vector here not multiplied by the product (hessian * x)!  # TODO: try * -1.0 here
+                lm = np.linalg.solve((constraint_grad * constraint_grad.T).x, (constraint_grad * grad).x)  #TODO: check this line  #((constraint_grad * constraint_grad.T) * (constraint_grad * self.phi_grad)).x  # note: grad vector here not multiplied by the product (hessian * x)!  # TODO: try * -1.0 here
         else:
             self.logger.lraise("not sure if this can be done...")
 
@@ -1124,7 +1124,7 @@ class EnsembleSQP(EnsembleMethod):
 
         if qr_mode is True:  # generalized form of (15.15) via QR decomp (see pg. 432)
             q, r = np.linalg.qr(a.T.x, 'complete')
-            y, self.z, ayT = q[:, a.shape[0]], q[:, -(a.shape[1] - a.shape[0]):], r[:a.shape[0], :]  # q, q[:, -(a.shape[1] - a.shape[0]):]  # y cannot be full q... #TODO: break up here and add Y, Z shape tests below
+            y, self.z, ay = q[:, a.shape[0]], q[:, -(a.shape[1] - a.shape[0]):], r[:a.shape[0], :]  # q, q[:, -(a.shape[1] - a.shape[0]):]  # y cannot be full q... #TODO: break up here and add Y, Z shape tests below
             # TODO: revisit the partitioning here. for small case, same vector spanning Y and Z.. also, based on https://www.mathworks.com/help/optim/ug/constrained-nonlinear-optimization-algorithms.html#brnox01, use full constraint grad matrix (not just active set).... which I don't understand...
         else:
             # null space basis
@@ -1209,7 +1209,7 @@ class EnsembleSQP(EnsembleMethod):
 
         grad_vect = self.phi_grad.copy()
         grad_vect.col_names = ['mean']  # hack
-        c = grad_vect - np.dot(g, x_.T)  # small g
+        c = grad_vect + np.dot(g, x_.T)  # small g  # TODO: determine whether should be c + Gx or c - Gx
 
         if self.qp_solve_method == "null_space":
             p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c, constraints=cs)
