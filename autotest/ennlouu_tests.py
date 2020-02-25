@@ -913,11 +913,11 @@ if __name__ == "__main__":
         working_set = ['constraint_1']  #[] #
     rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
     rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
-                               working_set=working_set, hess_update=False, hess_self_scaling=False,
-                               constraint_exp=constraint_exp,qp_solve_method="null_space",
+                               working_set=working_set, hess_update=True, hess_self_scaling=False,
+                               constraint_exp=constraint_exp,qp_solve_method="direct",
                                reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_30_no_H_new___.pdf")
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_20_H_up_new_direct_3.pdf")
 
     '''
     constraints, constraint_exp = True, "two_linear"  #"two_linear"  #None
