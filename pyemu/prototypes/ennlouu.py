@@ -974,7 +974,7 @@ class EnsembleSQP(EnsembleMethod):
                 # TODO: compute mults at new proposed pos with new A? (16.42)?
                 lagrang_mults_ineq = self.lagrang_mults.df().loc[self.working_set_ineq.obsnme, :]  # multiplier sign only iterpret-able for ineq constraints (in working set)
                 if np.all(lagrang_mults_ineq.values > 0):
-                    self.logger.lraise("reached optimal soln!")
+                    self.logger.warn("reached optimal soln!")
                 else:
                     to_drop = lagrang_mults_ineq.idxmin()[0]
                     self.working_set = self.working_set.drop(to_drop, axis=0)
@@ -997,8 +997,8 @@ class EnsembleSQP(EnsembleMethod):
             self.working_set = pd.concat((self.working_set,
                                           self.constraint_set.loc[self.constraint_set.obsnme == add_to_working_set, :]))
             self.working_set_ineq = pd.concat((self.working_set_ineq,
-                                              self.constraint_set.loc[self.constraint_set.obsnme == add_to_working_set,
-                                              :]))
+                                               self.constraint_set.loc[self.constraint_set.obsnme == add_to_working_set,
+                                               :]))
             self.not_in_working_set = self.constraint_set.drop(self.working_set.obsnme, axis=0)
 
             self.logger.log("check m <= n in A. If not, redundant information, use reduction strategy, SVD or QR")  # TODO!
@@ -1008,17 +1008,21 @@ class EnsembleSQP(EnsembleMethod):
         if first_pass is True and drop_due_to_stall is False:
             return alpha, goto_next_it
 
-    def _kkt_direct(g, a, c, h, pyemu_matrix=True):
+    def _kkt_direct(self, g, a, c, h, pyemu_matrix=True):
+
         if pyemu_matrix is True:
             g, a, c, h = g.x, a.x, c.x, h.x
-        coeff = np.concatenate((np.concatenate((g, -1 * a.T), axis=1),
+
+        # TODO: check should not be -A^T
+        coeff = np.concatenate((np.concatenate((g, a.T), axis=1),
                                 np.concatenate((a, np.zeros((a.shape[0], a.shape[0]))), axis=1)))
-        rhs = np.concatenate((-1 * c, h))
+        rhs = np.concatenate((-1.0 * c, h))
         x = np.linalg.solve(coeff, rhs)
 
         return x
 
-    def _kkt_null_space(self, hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=False):
+    def _kkt_null_space(self, hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=False,
+                        pyemu_matrix=True):
         '''
         see pg. 457 of Nocedal and Wright (2006)
 
@@ -1039,7 +1043,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # 1. Z^TGZ is pos def
         # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
-        y, self.z = self._compute_orthog_basis_matrices(a=constraint_grad)  # TODO: just re-use Z, Y if Wk same as prev it
+        y, self.z = self._compute_orthog_basis_matrices(a=constraint_grad)  # TODO: re-use Z, Y if Wk same as prev it. Also QR factorization for efficiency here as Z will only change slightly from it to it...
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False or self.iter_num < 3:  # TODO: TIDY
                 if self.z is not None:
@@ -1054,7 +1058,7 @@ class EnsembleSQP(EnsembleMethod):
         # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
         ay = constraint_grad * y
         if self.reduced_hessian is False:
-            self.p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)  # constraint_diff.x)  # TODO: *****************
+            self.p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)  # constraint_diff.x)  # TODO: constraints or constraint_diff
         else:
             self.p_y = np.linalg.solve(ay.x, -1.0 * constraints.x)
 
@@ -1099,7 +1103,7 @@ class EnsembleSQP(EnsembleMethod):
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False:
                 # pg. 457 and 538
-                rhs = np.dot(y.T.x, self.phi_grad.x + (hessian * p).x)  # -1.0 * grad.x + (hessian * p).x)  # self.phi_grad.x)  #  TODO: **********
+                rhs = np.dot(y.T.x, self.phi_grad.x + (hessian * p).x)  # grad.x + (hessian * p).x)  # self.phi_grad.x)  #  TODO: **********
                 lm = np.linalg.solve(ay.T.x, rhs)
             else:
                 # pg. 539 of Nocedal and Wright (2006)
@@ -1112,15 +1116,15 @@ class EnsembleSQP(EnsembleMethod):
 
     def _compute_orthog_basis_matrices(self, a, qr_mode=False):
         '''
-        if A is sparse and large, QR will take a while..
+        if A is sparse and large, QR may take a while, but robust..
         '''
         M, N = a.shape[0], a.shape[1]
         if M > N:
-            self.logger.lraise("m > n - A cannot be this shape")  # catch before here
+            self.logger.lraise("m > n! A cannot be this shape!")  # should have been caught before here
 
         if qr_mode is True:  # generalized form of (15.15) via QR decomp (see pg. 432)
-            q, r = np.linalg.qr(a.T.x)
-            y, z = q, q[:, -(a.shape[1] - a.shape[0]):]
+            q, r = np.linalg.qr(a.T.x, 'complete')
+            y, self.z, ayT = q[:, a.shape[0]], q[:, -(a.shape[1] - a.shape[0]):], r[:a.shape[0], :]  # q, q[:, -(a.shape[1] - a.shape[0]):]  # y cannot be full q... #TODO: break up here and add Y, Z shape tests below
             # TODO: revisit the partitioning here. for small case, same vector spanning Y and Z.. also, based on https://www.mathworks.com/help/optim/ug/constrained-nonlinear-optimization-algorithms.html#brnox01, use full constraint grad matrix (not just active set).... which I don't understand...
         else:
             # null space basis
@@ -1176,8 +1180,7 @@ class EnsembleSQP(EnsembleMethod):
             options include: null_space (pg. 457), schur (pg. 455) and the iterative (TODO) method.
         '''
 
-        g = self.inv_hessian * Matrix(2.0 * np.eye((self.inv_hessian.shape[0])),
-                                      row_names=self.inv_hessian.row_names, col_names=self.inv_hessian.col_names)
+        g = self.inv_hessian * 2.0  #Matrix(2.0 * np.eye((self.inv_hessian.shape[0])), row_names=self.inv_hessian.row_names, col_names=self.inv_hessian.col_names)
         # TODO: check hessian or inv_hessian
 
         a = self.constraint_jco.df().drop(self.not_in_working_set.obsnme, axis=1)  # pertains to active constraints only
@@ -1196,6 +1199,8 @@ class EnsembleSQP(EnsembleMethod):
         b = Matrix(x=np.expand_dims(self.pst.observation_data.loc[self.working_set.obsnme, "obsval"].values, axis=1),
                    row_names=self.pst.observation_data.loc[self.working_set.obsnme, "obsnme"].to_list(),
                    col_names=["mean"])
+        cs = Matrix(x=np.expand_dims(self.obsensemble[[x for x in self.working_set.obsnme]].values, axis=1),
+                    row_names=self.working_set.obsnme.to_list(), col_names=["mean"])
 
         h = (a * x_.T) - b  # TODO: check -1 * constraint grad
         if not np.all(np.isclose(h.x, 0.0, rtol=1e-2, atol=1e-3)):
@@ -1204,10 +1209,10 @@ class EnsembleSQP(EnsembleMethod):
 
         grad_vect = self.phi_grad.copy()
         grad_vect.col_names = ['mean']  # hack
-        c = grad_vect + np.dot(0.5 * g, x_.T)  # small g
+        c = grad_vect - np.dot(g, x_.T)  # small g
 
         if self.qp_solve_method == "null_space":
-            p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c, constraints=b)
+            p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c, constraints=cs)
         elif self.qp_solve_method == "schur":
             self._kkt_schur()
         elif self.qp_solve_method == "iterative_cg":
@@ -1254,7 +1259,7 @@ class EnsembleSQP(EnsembleMethod):
         '''
         proj_off = False
         if self.p_y / self.p_z > 1.0:
-            proj_off = True
+            proj_off = False
         return proj_off
 
     def _approx_converge_test(self,):
@@ -1265,7 +1270,7 @@ class EnsembleSQP(EnsembleMethod):
         is_converged = False
         if self.iter_num > 1:
             red_fac = np.sum(np.abs(self.search_d.x)) / np.sum(np.abs(self.search_d_per_k[self.iter_num - 1].values))
-            if red_fac > 0.8 and (len(self.working_set) > 0) and self.working_set_per_k[self.iter_num].values == self.working_set_per_k[self.iter_num - 1].values:
+            if red_fac > 0.95 and (len(self.working_set) > 0) and self.working_set_per_k[self.iter_num].values == self.working_set_per_k[self.iter_num - 1].values:
                 is_converged = True
 
         return is_converged
