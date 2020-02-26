@@ -1021,7 +1021,7 @@ class EnsembleSQP(EnsembleMethod):
 
         return x
 
-    def _kkt_null_space(self, hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=False,
+    def _kkt_null_space(self, hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=False, qr=False,
                         pyemu_matrix=True):
         '''
         see pg. 457 of Nocedal and Wright (2006)
@@ -1043,7 +1043,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # 1. Z^TGZ is pos def
         # first, must compute ``null-space basis matrix'' Z (i.e., cols are null-space of A); see pgs. 430-432 and 457
-        y, self.z = self._compute_orthog_basis_matrices(a=constraint_grad)  # TODO: re-use Z, Y if Wk same as prev it. Also QR factorization for efficiency here as Z will only change slightly from it to it...
+        y, self.z, ay = self._compute_orthog_basis_matrices(a=constraint_grad, qr_mode=qr)  # TODO: re-use Z, Y if Wk same as prev it. Also QR factorization for efficiency here as Z will only change slightly from it to it...
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False or self.iter_num < 3:  # TODO: TIDY
                 if self.z is not None:
@@ -1056,11 +1056,12 @@ class EnsembleSQP(EnsembleMethod):
                 self.zTgz = hessian.x
 
         # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
-        ay = constraint_grad * y
+        if qr is False:
+            ay = constraint_grad * y
         #if self.reduced_hessian is False:
          #   self.p_y = np.linalg.solve(ay.x, -1.0 * constraint_diff.x)  # rhs should be [0]... if on constraint # TODO: check -1.0 * or not
         #else:
-        self.p_y = np.linalg.solve(ay.x, -1.0 * constraint_diff.x)  # rhs should be [0]... if on constraint
+        self.p_y = np.linalg.solve(ay.x, -1.0 * constraint_diff.x)  # rhs should be [0]... if on constraint # TODO: check -1.0 * or not
 
         # now to solve linear system for p_z
         # best to do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
@@ -1069,7 +1070,7 @@ class EnsembleSQP(EnsembleMethod):
                 if self.z is not None:
                     if self.reduced_hessian is False:  # full hessian
                         zTgy = np.dot(self.z.T, (hessian * y).x)
-                        rhs = (-1.0 * np.dot(zTgy, self.p_y)) - np.dot(self.z.T, self.phi_grad.x)  # grad.x) TODO: **********
+                        rhs = (-1.0 * np.dot(zTgy, self.p_y)) - np.dot(self.z.T, grad.x)  # np.dot(self.z.T, self.phi_grad.x)  # TODO: +/- and drop second order?
                         if cholesky:
                             l = np.linalg.cholesky(self.zTgz)
                             rhs2 = np.linalg.solve(l, rhs)  # TODO: solve by forward substitution (triangular) for more speed-ups
@@ -1103,7 +1104,7 @@ class EnsembleSQP(EnsembleMethod):
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False:
                 # pg. 457 and 538
-                rhs = np.dot(y.T.x, self.phi_grad.x + (hessian * p).x)  # grad.x + (hessian * p).x)  # self.phi_grad.x)  #  TODO: **********
+                rhs = np.dot(y.T.x, grad.x + (hessian * p).x)  # self.phi_grad.x + (hessian * p).x  #  TODO: drop second order?
                 lm = np.linalg.solve(ay.T.x, rhs)
             else:
                 # pg. 539 of Nocedal and Wright (2006)
@@ -1146,7 +1147,10 @@ class EnsembleSQP(EnsembleMethod):
             if np.isclose(np.linalg.det(yz), 0.0, rtol=1e-5, atol=1e-6):
                 self.logger.lraise("Y|Z not invertible.. spewin.. revisit Y computation for generality")
 
-        return y, self.z
+        if qr_mode is True:
+            return y, self.z, ay
+        else:
+            return y, self.z, []
 
     def _kkt_schur(self,):
         self.logger.lraise("not implemented...")
@@ -1667,7 +1671,7 @@ class EnsembleSQP(EnsembleMethod):
                             [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
                                                                 and x.split(".")[2] == str(self.iter_num))]
                             self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
-                                                  + self.obsen_prefix.format(0))
+                                                      + self.obsen_prefix.format(0))
 
                             # TODO: test curv condition here too?
                             # TODO: calc_curv func (which BFGS func uses)
@@ -1689,7 +1693,6 @@ class EnsembleSQP(EnsembleMethod):
                     self.logger.log("evaluating model for step size : {0}".format(','.join("{0:8.3E}"
                                                                                            .format(step_size))))
                     self.obsensemble_1 = self._calc_obs_fd()
-                    mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1[self.phi_obs]
 
                     if constraints is True:
                         self.logger.log("adopting filtering method to handle constraints")
@@ -1724,6 +1727,8 @@ class EnsembleSQP(EnsembleMethod):
                                     break  # only allowed to add one per it; therefore break out of loop (could alteratively track changes to WS per it)
 
                     else:  # unconstrained opt
+                        mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1[self.phi_obs]
+
                         # Wolfe/strong Wolfe condition testing
                         if alg == "LBFGS":  # note BFGS is implemented later
                             if self.iter_num > 1:
