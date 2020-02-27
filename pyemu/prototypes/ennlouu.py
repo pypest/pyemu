@@ -1021,7 +1021,7 @@ class EnsembleSQP(EnsembleMethod):
 
         return x
 
-    def _kkt_null_space(self, hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=False, qr=False,
+    def _kkt_null_space(self, hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=False, qr=True,
                         pyemu_matrix=True):
         '''
         see pg. 457 of Nocedal and Wright (2006)
@@ -1057,11 +1057,11 @@ class EnsembleSQP(EnsembleMethod):
 
         # first, solve for p_y (16.18) - regardless of quasi-Newton approach used
         if qr is False:
-            ay = constraint_grad * y
+            ay = (constraint_grad * y).x
         #if self.reduced_hessian is False:
          #   self.p_y = np.linalg.solve(ay.x, -1.0 * constraint_diff.x)  # rhs should be [0]... if on constraint # TODO: check -1.0 * or not
         #else:
-        self.p_y = np.linalg.solve(ay.x, -1.0 * constraint_diff.x)  # rhs should be [0]... if on constraint # TODO: check -1.0 * or not
+        self.p_y = np.linalg.solve(ay, -1.0 * constraint_diff.x)  # rhs should be [0]... if on constraint # TODO: check -1.0 * or not
 
         # now to solve linear system for p_z
         # best to do this via Cholesky factorization of reduced Hessian in (16.19) for speed-ups
@@ -1096,16 +1096,16 @@ class EnsembleSQP(EnsembleMethod):
 
         # total step
         if self.z is not None:
-            p = np.dot(y.x, self.p_y) + np.dot(self.z, self.p_z)
+            p = np.dot(y, self.p_y) + np.dot(self.z, self.p_z)
         else:
-            p = np.dot(y.x, self.p_y)
+            p = np.dot(y, self.p_y)
 
         # now to compute lagrangian multipliers
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False:
                 # pg. 457 and 538
-                rhs = np.dot(y.T.x, grad.x + (hessian * p).x)  # self.phi_grad.x + (hessian * p).x  #  TODO: drop second order?
-                lm = np.linalg.solve(ay.T.x, rhs)
+                rhs = np.dot(y.T, grad.x + (hessian * p).x)  # self.phi_grad.x + (hessian * p).x  #  TODO: drop second order?
+                lm = np.linalg.solve(ay.T, rhs)
             else:
                 # pg. 539 of Nocedal and Wright (2006)
                 # simplify by dropping dependency of lm on hess (considered appropr given p converges to zero whereas grad does not..
@@ -1115,7 +1115,7 @@ class EnsembleSQP(EnsembleMethod):
 
         return p, lm
 
-    def _compute_orthog_basis_matrices(self, a, qr_mode=False):
+    def _compute_orthog_basis_matrices(self, a, qr_mode=True):
         '''
         if A is sparse and large, QR may take a while, but robust..
         '''
@@ -1125,14 +1125,14 @@ class EnsembleSQP(EnsembleMethod):
 
         if qr_mode is True:  # generalized form of (15.15) via QR decomp (see pg. 432)
             q, r = np.linalg.qr(a.T.x, 'complete')
-            y, self.z, ay = q[:, a.shape[0]], q[:, -(a.shape[1] - a.shape[0]):], r[:a.shape[0], :]  # q, q[:, -(a.shape[1] - a.shape[0]):]  # y cannot be full q... #TODO: break up here and add Y, Z shape tests below
+            y, self.z, ay = q[:, :a.shape[0]], q[:, -(a.shape[1] - a.shape[0]):], r[:a.shape[0], :]  # q, q[:, -(a.shape[1] - a.shape[0]):]  # y cannot be full q... #TODO: break up here and add Y, Z shape tests below
             # TODO: revisit the partitioning here. for small case, same vector spanning Y and Z.. also, based on https://www.mathworks.com/help/optim/ug/constrained-nonlinear-optimization-algorithms.html#brnox01, use full constraint grad matrix (not just active set).... which I don't understand...
         else:
             # null space basis
             self.z = self._null_space(a)
 
             # range space basis
-            y = a.T  # "A^T is a valid choice for Y when A has full row rank" (pg. 539) of Nocedal and Wright (2006)
+            y = a.T.x  # "A^T is a valid choice for Y when A has full row rank" (pg. 539) of Nocedal and Wright (2006)
             # TODO: y via RREF or solve here alternatively? Only if we need to relax need for A to be full rank?
 
         # check in line with definitions
@@ -1141,11 +1141,11 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.lraise("null-space basis violates definition AZ = 0.. spewin..")
 
         if self.z is not None:
-            yz = np.append(y.x, self.z, axis=1)
+            yz = np.append(y, self.z, axis=1)
             if yz.shape != (a.shape[1], a.shape[1]):
                 self.logger.lraise("Y|Z matrix is the wrong shape")
             if np.isclose(np.linalg.det(yz), 0.0, rtol=1e-5, atol=1e-6):
-                self.logger.lraise("Y|Z not invertible.. spewin.. revisit Y computation for generality")
+                self.logger.lraise("Y|Z not invertible.. spewin.. revisit orthogonal basis computation")
 
         if qr_mode is True:
             return y, self.z, ay
