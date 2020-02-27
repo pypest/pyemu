@@ -1106,7 +1106,7 @@ class EnsembleSQP(EnsembleMethod):
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False:
                 # pg. 457 and 538
-                rhs = np.dot(y.T, grad.x + (hessian * p).x)  # self.phi_grad.x + (hessian * p).x  #  TODO: drop second order?
+                rhs = np.dot(y.T, grad.x + (-1.0 * hessian * p).x)  # self.phi_grad.x + (hessian * p).x  #  TODO: drop second order?
                 lm = np.linalg.solve(ay.T, rhs)
             else:
                 # pg. 539 of Nocedal and Wright (2006)
@@ -1215,7 +1215,7 @@ class EnsembleSQP(EnsembleMethod):
 
         grad_vect = self.phi_grad.copy()
         grad_vect.col_names = ['mean']  # hack
-        c = grad_vect + np.dot(g, x_.T)  # small g  # TODO: determine whether should be c + Gx or c - Gx
+        c = grad_vect - np.dot(g, x_.T)  # small g  # TODO: determine whether should be c + Gx or c - Gx
 
         if self.qp_solve_method == "null_space":
             p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c, constraints=cs)
@@ -1343,6 +1343,7 @@ class EnsembleSQP(EnsembleMethod):
         #hess_update = False
 
         self.alg = alg
+        next_it = False
         self.reduced_hessian = reduced_hessian
         self.working_set.to_csv("working_set_it{}.csv".format(self.iter_num))
         self._curr_filter = pd.DataFrame()
@@ -1809,7 +1810,7 @@ class EnsembleSQP(EnsembleMethod):
             mean_en_phi_per_alpha.to_csv("mean_phi_per_alpha_it{0}.csv".format(self.iter_num))
 
         # deal with unsuccessful iteration
-        if self.parensemble_mean_next is None:  # TODO: change to using best from curr k
+        if next_it is False and self.parensemble_mean_next is None:  # TODO: change to using best from curr k
             self.logger.warn("unsuccessful upgrade iteration.. using previous mean par en")
             self.parensemble_mean_next = self.parensemble_mean.copy()
 
@@ -1821,17 +1822,13 @@ class EnsembleSQP(EnsembleMethod):
 
             hess_update, self_scale = False, False
 
-        # TODO: failed run handling
-        # TODO: check for convergence in terms of dec var and phi changes
-
         # calc dec var changes (after picking best alpha etc)
         # this is needed for Hessian updating via BFGS but also needed for checks
         self.delta_parensemble_mean = self.parensemble_mean_next - self.parensemble_mean
         # TODO: dec var change related checks here - like PEST's RELPARMAX/FACPARMAX
 
-        # TODO: skip if next_it = True here????
         self.logger.log("scaling and/or updating Hessian via quasi-Newton")
-        if self.iter_num == 1:  # no pre-existing grad or par delta info..
+        if self.iter_num == 1 or next_it is True:  # no pre-existing grad or par delta info..
             hess_update = False  # never update at first iter
             #if hess_self_scaling is True or hess_self_scaling == self.iter_num:
              #   self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
