@@ -1021,7 +1021,7 @@ class EnsembleSQP(EnsembleMethod):
 
         return x
 
-    def _kkt_null_space(self, hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=False, qr=True,
+    def _kkt_null_space(self, hessian, constraint_grad, constraint_diff, grad, constraints, cholesky=True, qr=True,
                         pyemu_matrix=True):
         '''
         see pg. 457 of Nocedal and Wright (2006)
@@ -1104,7 +1104,7 @@ class EnsembleSQP(EnsembleMethod):
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False:
                 # pg. 457 and 538
-                rhs = np.dot(y.T, grad.x + (hessian * p).x)  # self.phi_grad.x + (hessian * p).x  #  TODO: drop second order?
+                rhs = np.dot(y.T, grad.x + (-1.0 * hessian * p).x)  # self.phi_grad.x + (hessian * p).x  #  TODO: drop second order?
                 lm = np.linalg.solve(ay.T, rhs)
             else:
                 # pg. 539 of Nocedal and Wright (2006)
@@ -1213,7 +1213,7 @@ class EnsembleSQP(EnsembleMethod):
 
         grad_vect = self.phi_grad.copy()
         grad_vect.col_names = ['mean']  # hack
-        c = grad_vect + np.dot(g, x_.T)  # small g  # TODO: determine whether should be c + Gx or c - Gx
+        c = grad_vect - np.dot(g, x_.T)  # small g  # TODO: determine whether should be c + Gx or c - Gx
 
         if self.qp_solve_method == "null_space":
             p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c, constraints=cs)
@@ -1585,7 +1585,7 @@ class EnsembleSQP(EnsembleMethod):
                                                          biobj_weight=biobj_weight, biobj_transf=biobj_transf,
                                                          opt_direction=self.opt_direction)
                         self.logger.log("adopting filtering method to handle constraints")
-                        if accept:
+                        if accept:  # TODO: revise this as per the FD implementation---actually merge---this should be general and independent of nature of gradient computation
                             best_alpha = step_size
                             self.best_alpha_per_it[self.iter_num] = best_alpha
                             best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
@@ -1705,7 +1705,7 @@ class EnsembleSQP(EnsembleMethod):
                             best_alpha = step_size
                             self.best_alpha_per_it[self.iter_num] = best_alpha
                             best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
-                            best_alpha_per_it_df.to_csv("best_alpha.csv")
+                            #best_alpha_per_it_df.to_csv("best_alpha.csv")
 
                             self.parensemble_mean_next = self.parensemble_mean_1.copy()
                             if finite_diff_grad is False:  #TODO: when merging FD and en into one for constraint
