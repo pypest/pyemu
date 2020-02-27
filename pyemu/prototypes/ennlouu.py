@@ -811,8 +811,7 @@ class EnsembleSQP(EnsembleMethod):
         mean_en_phi = obsensemble[self.phi_obs[0]].mean()
 
         # constraint filtering
-        filter_thresh = 1e-4  #TODO: invest influence of filter_thresh
-        #TODO: invest biobj params - this should also be related to transforms on dec vars and constraints
+        filter_thresh = 1e-4
         if self.iter_num == 0:
             if viol > 0:
                 self.logger.lraise("initial dec var violates constraints! no bueno! perhaps solve SLP then return.. ")
@@ -838,42 +837,46 @@ class EnsembleSQP(EnsembleMethod):
             if all(filter_accept_bool.values):
                 # see slightly adjusted version in Liu and Reynolds (2019) SPE and accept if <=?
                 self.logger.log("passes filter")
-                self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi]],
-                                                                     columns=['iter_num', 'alpha', 'beta', 'phi'])),
+                self._filter = pd.concat((self._filter,
+                                          pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi]],
+                                                       columns=['iter_num', 'alpha', 'beta', 'phi'])),
                                          ignore_index=True)
 
             # now we assess filter pairs following new (acceptable) pair for curr iter to choose best....
-            curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
-            if curr_filter.shape[0] > 0 and curr_filter.loc[curr_filter['alpha'] == alpha, :].shape[0] > 0:
-                # TODO: but.. what is the price of violating constraints? We don't want to at all...
-                # TODO: either just pick min phi with constraint = 0, or weight constraint viol * 10, and transf?, e.g.
-                if biobj_transf:
-                    min_beta = curr_filter['beta'].min()  # should be 0.0
-                    if opt_direction == "max":
-                        minmax_phi = np.log10(curr_filter['phi'].max())
-                    else:
-                        minmax_phi = np.log10(curr_filter['phi'].min())
-                    curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) \
-                                                                  ** 2 + (np.log10(curr_filter['phi']) - minmax_phi) \
-                                                                  ** 2) ** 0.5
-                    if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == curr_filter[
-                        'dist_from_min_origin'].min():
-                        #self.biobj_per_k[self.iter_num] = \
-                         #   curr_filter.loc[:, [x for x in curr_filter.columns if "phi" in x or "beta" in x]]
-                        acceptance = True
+            #curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
+            #if curr_filter.shape[0] > 0 and curr_filter.loc[curr_filter['alpha'] == alpha, :].shape[0] > 0:
+            self._curr_filter = pd.concat((self._curr_filter,
+                                           pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi]],
+                                                        columns=['iter_num', 'alpha', 'beta', 'phi'])),
+                                          ignore_index=True)  # dont need to drop dominated here as just getting min dist from origin
+            curr_filter = self._curr_filter
+            if biobj_transf:
+                min_beta = curr_filter['beta'].min()  # should be 0.0
+                if opt_direction == "max":
+                    minmax_phi = np.log10(curr_filter['phi'].max())
                 else:
-                    min_beta = curr_filter['beta'].min()  # should be 0.0
-                    if opt_direction == "max":
-                        minmax_phi = curr_filter['phi'].max()
-                    else:
-                        minmax_phi = curr_filter['phi'].min()
-                    curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) \
-                                                                  ** 2 + (curr_filter['phi'] - minmax_phi) ** 2) ** 0.5
-                    if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == \
-                            curr_filter['dist_from_min_origin'].min():
-                        #self.biobj_per_k[self.iter_num] = \
-                         #   curr_filter.loc[:, [x for x in curr_filter.columns if "phi" in x or "beta" in x]]
-                        acceptance = True
+                    minmax_phi = np.log10(curr_filter['phi'].min())
+                curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) \
+                                                              ** 2 + (np.log10(curr_filter['phi']) - minmax_phi) \
+                                                              ** 2) ** 0.5
+                if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == curr_filter[
+                    'dist_from_min_origin'].min():
+                    #self.biobj_per_k[self.iter_num] = \
+                     #   curr_filter.loc[:, [x for x in curr_filter.columns if "phi" in x or "beta" in x]]
+                    acceptance = True
+            else:
+                min_beta = curr_filter['beta'].min()  # should be 0.0
+                if opt_direction == "max":
+                    minmax_phi = curr_filter['phi'].max()
+                else:
+                    minmax_phi = curr_filter['phi'].min()
+                curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) \
+                                                              ** 2 + (curr_filter['phi'] - minmax_phi) ** 2) ** 0.5
+                if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == \
+                        curr_filter['dist_from_min_origin'].min():
+                    #self.biobj_per_k[self.iter_num] = \
+                     #   curr_filter.loc[:, [x for x in curr_filter.columns if "phi" in x or "beta" in x]]
+                    acceptance = True
 
 
         return self._filter, acceptance, constraints_violated
@@ -1074,7 +1077,6 @@ class EnsembleSQP(EnsembleMethod):
                         if cholesky:
                             l = np.linalg.cholesky(self.zTgz)
                             rhs2 = np.linalg.solve(l, rhs)  # TODO: solve by forward substitution (triangular) for more speed-ups
-                            #l_ = l.conj()  # TODO: check math here
                             self.p_z = np.linalg.solve(l.T, rhs2)
                         else:
                             self.p_z = np.linalg.solve(self.zTgz, rhs)
@@ -1104,7 +1106,7 @@ class EnsembleSQP(EnsembleMethod):
         if self.alg is not "LBFGS":
             if self.reduced_hessian is False:
                 # pg. 457 and 538
-                rhs = np.dot(y.T, grad.x + (-1.0 * hessian * p).x)  # self.phi_grad.x + (hessian * p).x  #  TODO: drop second order?
+                rhs = np.dot(y.T, grad.x + (hessian * p).x)  # self.phi_grad.x + (hessian * p).x  #  TODO: drop second order?
                 lm = np.linalg.solve(ay.T, rhs)
             else:
                 # pg. 539 of Nocedal and Wright (2006)
@@ -1213,7 +1215,7 @@ class EnsembleSQP(EnsembleMethod):
 
         grad_vect = self.phi_grad.copy()
         grad_vect.col_names = ['mean']  # hack
-        c = grad_vect - np.dot(g, x_.T)  # small g  # TODO: determine whether should be c + Gx or c - Gx
+        c = grad_vect + np.dot(g, x_.T)  # small g  # TODO: determine whether should be c + Gx or c - Gx
 
         if self.qp_solve_method == "null_space":
             p, lm = self._kkt_null_space(hessian=g, constraint_grad=a, constraint_diff=h, grad=c, constraints=cs)
@@ -1343,6 +1345,7 @@ class EnsembleSQP(EnsembleMethod):
         self.alg = alg
         self.reduced_hessian = reduced_hessian
         self.working_set.to_csv("working_set_it{}.csv".format(self.iter_num))
+        self._curr_filter = pd.DataFrame()
 
         if opt_direction is "min" or "max":
             self.opt_direction = opt_direction
