@@ -1893,8 +1893,9 @@ class PstFromFlopyModel(object):
             out_file = os.path.join(self.arr_mlt,os.path.split(pp_array_file[pp_prefix])[-1])
 
             pp_files = pp_df.loc[pp_df.pp_filename.apply(
-                lambda x: x.split('/')[-1].split('.')[0] ==
-                          "{0}pp".format(pp_prefix)), 'pp_filename']
+                lambda x:
+                os.path.split(x)[-1
+                ].split('.')[0] == "{0}pp".format(pp_prefix)), 'pp_filename']
             if pp_files.unique().shape[0] != 1:
                 self.logger.lraise("wrong number of pp_files found:{0}".format(','.join(pp_files)))
             pp_file = os.path.split(pp_files.iloc[0])[-1]
