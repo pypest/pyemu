@@ -25,7 +25,8 @@ import pyemu
 from pyemu.utils.os_utils import run, start_workers
 
 
-def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=True):
+def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=True,
+                         scale_offset=True):
     """construct a parameter ensemble from a prior covariance matrix
     implied by geostatistical structure(s) and parameter bounds.
 
@@ -43,6 +44,9 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
             implied by parameter bounds. Default is 4.0, which implies 95% confidence parameter bounds.
         verbose (`bool`, optional): flag to control output to stdout.  Default is True.
             flag for stdout.
+        scale_offset (`bool`,optional): flag to apply scale and offset to parameter bounds
+            when calculating variances - this is passed through to `pyemu.Cov.from_parameter_data()`.
+            Default is True.
 
     Returns
         `pyemu.ParameterEnsemble`: the realized parameter ensemble.
@@ -70,7 +74,8 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
         format(type(pst))
     if verbose: print("building diagonal cov")
 
-    full_cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range)
+    full_cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range,
+                                             scale_offset=scale_offset)
     full_cov_dict = {n: float(v) for n, v in zip(full_cov.col_names, full_cov.x)}
 
     # par_org = pst.parameter_data.copy  # not sure about the need or function of this line? (BH)
@@ -2140,7 +2145,7 @@ class PstFromFlopyModel(object):
 
 
 
-    def draw(self, num_reals=100, sigma_range=6,use_specsim=False):
+    def draw(self, num_reals=100, sigma_range=6,use_specsim=False, scale_offset=True):
         """ draw from the geostatistically-implied parameter covariance matrix
 
         Args:
@@ -2149,6 +2154,9 @@ class PstFromFlopyModel(object):
                 the parameter bounds.  Default is 6.
             use_specsim (`bool`): flag to use spectral simulation for grid-based
                 parameters.  Requires a regular grid but is wicked fast.  Default is False
+            scale_offset (`bool`, optional): flag to apply scale and offset to parameter
+                bounds when calculating variances - this is passed through to
+                `pyemu.Cov.from_parameter_data`.  Default is True.
 
         Note:
             operates on parameters by groups to avoid having to construct a very large
@@ -2221,7 +2229,7 @@ class PstFromFlopyModel(object):
                 bc_dfs.append(gp_df)
             struct_dict[self.spatial_list_geostruct] = bc_dfs
         pe = geostatistical_draws(self.pst,struct_dict=struct_dict,num_reals=num_reals,
-                             sigma_range=sigma_range)
+                             sigma_range=sigma_range,scale_offset=scale_offset)
         if gr_par_pe is not None:
             pe.loc[:,gr_par_pe.columns] = gr_par_pe.values
         self.log("drawing realizations")
