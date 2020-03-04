@@ -711,10 +711,9 @@ class Pst(object):
                     r = line.strip().split()
                     extra.append(np.NaN)
 
-                raw.append(r)
+                raw.append(r[:len(defaults)])
 
             found_fieldnames = fieldnames[:len(raw[0])]
-
             df = pd.DataFrame(raw,columns=found_fieldnames)
 
             df.loc[:, "extra"] = extra

@@ -403,6 +403,7 @@ class Ensemble(object):
             if grouper is not None:
 
                 for grp_name,names in grouper.items():
+                    print("drawing from group",grp_name)
                     idxs = [mv_map[name] for name in names]
                     snv = np.random.randn(num_reals, len(names))
                     cov_grp = cov.get(names)

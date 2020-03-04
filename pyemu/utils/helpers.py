@@ -169,7 +169,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
 
 
 def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
-                                 verbose=False):
+                                 verbose=False,scale_offset=False):
     """construct a full prior covariance matrix using geostastical structures
     and parameter bounds information.
 
@@ -184,6 +184,9 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
             implied by parameter bounds. Default is 4.0, which implies 95% confidence parameter bounds.
         verbose (`bool`, optional): flag to control output to stdout.  Default is True.
             flag for stdout.
+        scale_offset (`bool`): a flag to apply scale and offset to parameter upper and lower bounds
+            before applying log transform.  Passed to pyemu.Cov.from_parameter_data().  Default
+            is False
 
     Returns:
         `pyemu.Cov`: a covariance matrix that includes all adjustable parameters in the control
@@ -210,7 +213,8 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
     assert isinstance(pst,pyemu.Pst),"pst arg must be a Pst instance, not {0}".\
         format(type(pst))
     if verbose: print("building diagonal cov")
-    full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
+    full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range,
+                                             scale_offset=scale_offset)
 
     full_cov_dict = {n:float(v) for n,v in zip(full_cov.col_names,full_cov.x)}
     #full_cov = None
@@ -1889,7 +1893,8 @@ class PstFromFlopyModel(object):
             out_file = os.path.join(self.arr_mlt,os.path.split(pp_array_file[pp_prefix])[-1])
 
             pp_files = pp_df.loc[pp_df.pp_filename.apply(
-                lambda x: "{0}pp".format(pp_prefix) in x), "pp_filename"]
+                lambda x: x.split('/')[-1].split('.')[0] ==
+                          "{0}pp".format(pp_prefix)), 'pp_filename']
             if pp_files.unique().shape[0] != 1:
                 self.logger.lraise("wrong number of pp_files found:{0}".format(','.join(pp_files)))
             pp_file = os.path.split(pp_files.iloc[0])[-1]
@@ -2775,6 +2780,8 @@ class PstFromFlopyModel(object):
                                        format(k_vals,pak,col))
 
                 par_df.loc[:,"pargp"] = df.k.apply(lambda x : "{0}{1}_k{2:02.0f}".format(pak,col,int(x))).values
+
+
                 par_df.loc[:,"tpl_file"] = tpl_file
                 par_df.loc[:,"in_file"] = in_file
                 par_dfs.append(par_df)
@@ -2786,7 +2793,7 @@ class PstFromFlopyModel(object):
                 #df.to_csv(f)
             #    f.write("index ")
             #    f.write(df.to_string(index_names=False)+'\n')
-            _write_df_tpl(os.path.join(self.m.model_ws, tpl_file), df, sep=' ', index_label="index")
+            _write_df_tpl(os.path.join(self.m.model_ws, tpl_file), df, sep=' ', quotechar=" ", index_label="index")
             self.tpl_files.append(tpl_file)
             self.in_files.append(in_file)
 

@@ -735,13 +735,13 @@ class EliteDiffEvol(EvolAlg):
                     # hey dad, what do you think about your son now!
                     self.logger.statement("child {0} dominates parent {1}".format(child_idx,parent_idx))
                     self.dv_ensemble.loc[parent_idx,dv_offspring.columns] = dv_offspring.loc[child_idx,:]
-                    self.obs_ensemble.loc[parent_idx,obs_offspring.columns] = obs_offspring.loc[child_idx,:]
+                    self.obs_ensemble._df.loc[parent_idx,obs_offspring.columns] = obs_offspring._df.loc[child_idx,:]
                     child2parent[idx] = None
                 else:
                     self.logger.statement("child {0} and parent {1} kept".format(child_idx,parent_idx))
                     sol_name = next_name()
                     self.dv_ensemble.loc[sol_name,dv_offspring.columns] = dv_offspring.loc[child_idx,:]
-                    self.obs_ensemble.loc[sol_name,obs_offspring.columns] = obs_offspring.loc[child_idx,:]
+                    self.obs_ensemble._df.loc[sol_name,obs_offspring.columns] = obs_offspring._df.loc[child_idx,:]
 
 
         #if there are too many individuals in self.dv_ensemble,
