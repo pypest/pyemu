@@ -1881,7 +1881,7 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
     else:
         raise Exception("unrecognized pp_file arg: must be str or pandas.DataFrame, not {0}"\
                         .format(type(pp_file)))
-    assert os.path.exists(factors_file)
+    assert os.path.exists(factors_file), "factors file not found"
     f_fac = open(factors_file,'r')
     fpp_file = f_fac.readline()
     if pp_file is None and pp_data is None:

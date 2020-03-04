@@ -115,6 +115,8 @@ def freyberg_test():
     print(pf.org_files)
     pst = pf.build_pst('freyberg.pst')
     os.chdir(pf.new_d)
+    pst.write_input_files()
+    # test par mults are working
     pyemu.helpers.apply_list_and_array_pars(arr_par_file="mult2model_info.csv")
     os.chdir("..")
 

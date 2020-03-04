@@ -419,7 +419,7 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None,
                 lambda x: "~    {0}    ~".format(x))
         _write_df_tpl(tpl_file,
                       pp_df.loc[:, ["name", "x", "y", "zone", "tpl"]],
-                      sep=' ', index_label="index")
+                      sep=' ', index_label="index", header=False, index=False)
     else:
         if name_prefix is not None:
             digits = str(len(str(pp_df.shape[0])))
