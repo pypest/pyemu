@@ -899,6 +899,11 @@ class InstructionFile(object):
 
         self.read_ins_file()
 
+    @property
+    def obs_name_set(self):
+        return self._found_oname_set
+
+
     def read_ins_file(self):
         """read the instruction and do some minimal error checking.
 
