@@ -3531,7 +3531,7 @@ def setup_fake_forward_run(pst,new_pst_name,org_cwd='.',bak_suffix="._bak",new_c
     with open(os.path.join(new_cwd,"fake_forward_run.py"),'w') as f:
         f.write("import os\nimport shutil\n")
         for org,bak in pairs.items():
-            f.write("shutil.copy2('{0}','{1}')\n".format(bak,org))
+            f.write("shutil.copy2(r'{0}',r'{1}')\n".format(bak,org))
     pst.model_command = "python fake_forward_run.py"
     pst.write(os.path.join(new_cwd,new_pst_name))
 
