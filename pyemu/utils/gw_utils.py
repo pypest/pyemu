@@ -416,7 +416,7 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
         kij_dict (`dict`): dictionary of site_name: [k,i,j] pairs. For example: `{"wel1":[0,1,1]}`.
         prefix (`str`, optional): string to prepend to site_name when forming observation names.  Default is None
         include_path (`bool`, optional): flag to setup the binary file processing in directory where the hds_file
-        is located (if different from where python is running).  This is useful for setting up
+            is located (if different from where python is running).  This is useful for setting up
             the process in separate directory for where python is running.
         model (`flopy.mbase`, optional): a `flopy.basemodel` instance.  If passed, the observation names will
             have the datetime of the observation appended to them (using the flopy `start_datetime` attribute.
@@ -736,7 +736,8 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
     df.to_csv(hds_file+"_timeseries.post_processed", sep=' ')
     return df
 
-def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
+def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds",
+                  include_path=True):
     """a function to setup using all values from a layer-stress period
     pair for observations.
 
@@ -747,14 +748,17 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
             (zero-based stress period index) and k (zero-based layer index) to
             setup observations for.  If None, then all layers and stress period records
             found in the file will be used.  Caution: a shit-ton of observations may be produced!
-        skip (variable): a value or function used to determine which values
+        skip (variable, optional): a value or function used to determine which values
             to skip when setting up observations.  If np.scalar(skip)
             is True, then values equal to skip will not be used.
             If skip can also be a np.ndarry with dimensions equal to the model.
             Observations are set up only for cells with Non-zero values in the array.
             If not np.ndarray or np.scalar(skip), then skip will be treated as a lambda function that
             returns np.NaN if the value should be skipped.
-        prefix (`str`): the prefix to use for the observation names. default is "hds".
+        prefix (`str`, optional): the prefix to use for the observation names. default is "hds".
+        include_path (`bool`, optional): flag to setup the binary file processing in directory where the hds_file
+            is located (if different from where python is running).  This is useful for setting up
+            the process in separate directory for where python is running.
 
     Returns:
         tuple containing
@@ -884,6 +888,8 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
     hds_path = os.path.dirname(hds_file)
     setup_file = os.path.join(hds_path,"_setup_{0}.csv".format(os.path.split(hds_file)[-1]))
     df.to_csv(setup_file)
+    if not include_path:
+        hds_file = os.path.split(hds_file)[-1]
     fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}')\n".format(hds_file)
     df.index = df.obsnme
     return fwd_run_line, df
