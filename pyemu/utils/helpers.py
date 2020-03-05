@@ -1894,8 +1894,8 @@ class PstFromFlopyModel(object):
 
             pp_files = pp_df.loc[pp_df.pp_filename.apply(
                 lambda x:
-                os.path.split(x)[-1
-                ].split('.')[0] == "{0}pp".format(pp_prefix)), 'pp_filename']
+                os.path.split(x)[-1].split(
+                    '.')[0] == "{0}pp".format(pp_prefix)), 'pp_filename']
             if pp_files.unique().shape[0] != 1:
                 self.logger.lraise("wrong number of pp_files found:{0}".format(','.join(pp_files)))
             pp_file = os.path.split(pp_files.iloc[0])[-1]
@@ -3342,6 +3342,7 @@ def apply_genericlist_pars(df):
                 for col, val in lb.items():
                     new_df.loc[new_df.loc[:, col] < val, col] = val
         with open(model_file, 'w') as fo:
+            kwargs = {}
             if "win" in platform.platform().lower():
                 kwargs = {"line_terminator": "\n"}
             if len(storehead) != 0:
