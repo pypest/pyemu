@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import os
 import warnings
 import multiprocessing as mp
+import re
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
@@ -1039,7 +1040,13 @@ class InstructionFile(object):
         """
         cursor_pos = 0
         val_dict = {}
-        for ii,ins in enumerate(ins_line):
+        #for ii,ins in enumerate(ins_line):
+        ii = 0
+        all_markers = True
+        while True:
+            if ii >= len(ins_line):
+                break
+            ins = ins_line[ii]
 
             #primary marker
             if ii == 0 and ins.startswith(self._marker):
@@ -1091,24 +1098,25 @@ class InstructionFile(object):
 
                 if oname != "dum":
                     val_dict[oname] = val
-                #ipos = line[cursor_pos:].index(val_str)
+                ipos = line[cursor_pos:].index(val_str.strip())
                 #val_len = len(val_str)
-                cursor_pos = cursor_pos + line[cursor_pos:].index(val_str) + len(val_str)
-
-                #print(val,cursor_pos)
-
-                #print(line[cursor_pos:])
-                #print('')
+                cursor_pos = cursor_pos + line[cursor_pos:].index(val_str.strip()) + len(val_str)
+                all_markers = False
 
             elif ins.startswith(self._marker):
                 m = ins.replace(self._marker,'')
                 if m not in line[cursor_pos:]:
-                    self.throw_out_error("secondary marker '{0}' not found from cursor_pos {2}".format(m,cursor_pos))
+                    if all_markers:
+                        ii = 0
+                        continue
+                    else:
+                        self.throw_out_error("secondary marker '{0}' not found from cursor_pos {2}".\
+                                             format(m,cursor_pos))
                 cursor_pos = cursor_pos + line[cursor_pos:].index(m) + len(m)
 
             else:
                 self.throw_out_error("unrecognized instruction '{0}' on ins file line {1}".format(ins,ins_lcount))
-
+            ii += 1
         return val_dict
 
     def _readline_ins(self):
@@ -1124,7 +1132,30 @@ class InstructionFile(object):
         if line == '':
             return None
         self._last_line = line
-        return line.lower().strip().split()
+        # check for spaces in between the markers - this gets ugly
+        line = line.lower()
+        if self._marker is not None and self._marker in line:
+            def find_all(a_str, sub):
+                start = 0
+                while True:
+                    start = a_str.find(sub, start)
+                    if start == -1: return
+                    yield start
+                    start += len(sub)
+            midx = list(find_all(line,self._marker))
+            midx.append(len(line)-1)
+            first =line[:midx[0]].strip()
+            tokens = []
+            if len(first) > 0:
+                tokens.append(first)
+            for idx in range(1,len(midx)-1,2):
+                mstr = line[midx[idx-1]:midx[idx]+1]
+                ostr = line[midx[idx]+1:midx[idx+1]]
+                tokens.append(mstr)
+                tokens.extend(ostr.split())
+        else:
+            tokens = line.strip().split()
+        return tokens
 
 
     def _readline_output(self):
