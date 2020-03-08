@@ -15,7 +15,6 @@ from ..pyemu_warnings import PyemuWarning
 
 class PstFrom(object):
     # TODO auto ins setup from list style output (or array) and use_cols etc
-    # TODO pilotoint style par set-up etc
     # TODO prior builder + reals draw
     # TODO poss move/test some of the flopy/modflow specific setup apply
     #  methods to/in gw_utils. - save reinventing the setup/apply methods
@@ -370,152 +369,158 @@ class PstFrom(object):
         fmt_dict = {}
         sep_dict = {}
         skip_dict = {}
-        if not isinstance(filenames, list):
-            filenames = [filenames]
-        if fmts is None:
-            fmts = ['free' for _ in filenames]
-        if not isinstance(fmts, list):
-            fmts = [fmts]
-        if len(fmts) != len(filenames):
-            self.logger.warn("Discrepancy between number of filenames ({0}) "
-                             "and number of formatter strings ({1}). "
-                             "Will repeat first ({2})"
-                             "".format(len(filenames), len(fmts), fmts[0]))
-            fmts = [fmts[0] for _ in filenames]
-        fmts = ['free' if fmt is None else fmt for fmt in fmts]
-        if seps is None:
-            seps = [None for _ in filenames]
-        if not isinstance(seps, list):
-            seps = [seps]
-        if len(seps) != len(filenames):
-            self.logger.warn("Discrepancy between number of filenames ({0}) "
-                             "and number of seps defined ({1}). "
-                             "Will repeat first ({2})"
-                             "".format(len(filenames), len(seps), seps[0]))
-            seps = [seps[0] for _ in filenames]
-        if skip_rows is None:
-            skip_rows = [None for _ in filenames]
-        if not isinstance(skip_rows, list):
-            skip_rows = [skip_rows]
-        if len(skip_rows) != len(filenames):
-            self.logger.warn("Discrepancy between number of filenames ({0}) "
-                             "and number of skip_rows defined ({1}). "
-                             "Will repeat first ({2})"
-                             "".format(len(filenames), len(skip_rows),
-                                       skip_rows[0]))
-            skip_rows = [skip_rows[0] for _ in filenames]
-        skip_rows = [0 if s is None else s for s in skip_rows]
+        (filenames, fmts, seps, skip_rows,
+         index_cols, use_cols) = self._prep_arg_list_lengths(
+            filenames, fmts, seps, skip_rows, index_cols, use_cols)
+        # if not isinstance(filenames, list):
+        #     filenames = [filenames]
+        # if fmts is None:
+        #     fmts = ['free' for _ in filenames]
+        # if not isinstance(fmts, list):
+        #     fmts = [fmts]
+        # if len(fmts) != len(filenames):
+        #     self.logger.warn("Discrepancy between number of filenames ({0}) "
+        #                      "and number of formatter strings ({1}). "
+        #                      "Will repeat first ({2})"
+        #                      "".format(len(filenames), len(fmts), fmts[0]))
+        #     fmts = [fmts[0] for _ in filenames]
+        # fmts = ['free' if fmt is None else fmt for fmt in fmts]
+        # if seps is None:
+        #     seps = [None for _ in filenames]
+        # if not isinstance(seps, list):
+        #     seps = [seps]
+        # if len(seps) != len(filenames):
+        #     self.logger.warn("Discrepancy between number of filenames ({0}) "
+        #                      "and number of seps defined ({1}). "
+        #                      "Will repeat first ({2})"
+        #                      "".format(len(filenames), len(seps), seps[0]))
+        #     seps = [seps[0] for _ in filenames]
+        # if skip_rows is None:
+        #     skip_rows = [None for _ in filenames]
+        # if not isinstance(skip_rows, list):
+        #     skip_rows = [skip_rows]
+        # if len(skip_rows) != len(filenames):
+        #     self.logger.warn("Discrepancy between number of filenames ({0}) "
+        #                      "and number of skip_rows defined ({1}). "
+        #                      "Will repeat first ({2})"
+        #                      "".format(len(filenames), len(skip_rows),
+        #                                skip_rows[0]))
+        #     skip_rows = [skip_rows[0] for _ in filenames]
+        # skip_rows = [0 if s is None else s for s in skip_rows]
         
-        if index_cols is None and use_cols is not None:
-            self.logger.lraise("index_cols is None, but use_cols is not ({0})"
-                               "".format(str(use_cols)))
+        # if index_cols is None and use_cols is not None:
+        #     self.logger.lraise("index_cols is None, but use_cols is not ({0})"
+        #                        "".format(str(use_cols)))
         # load list type files
         if index_cols is not None:
-            if not isinstance(index_cols, list):
-                index_cols = [index_cols]
-            if isinstance(index_cols[0], str):
-                # index_cols can be from header str
-                header = 0
-            elif isinstance(index_cols[0], int):
-                # index_cols are column numbers in input file
-                header = None
-            else:
-                self.logger.lraise("unrecognized type for index_cols, "
-                                   "should be str or int, not {0}".
-                                   format(str(type(index_cols[0]))))
-            if use_cols is not None:
-                if not isinstance(use_cols, list):
-                    use_cols = [use_cols]
-                if isinstance(use_cols[0], str):
-                    header = 0
-                elif isinstance(use_cols[0], int):
-                    header = None
-                else:
-                    self.logger.lraise("unrecognized type for use_cols, "
-                                       "should be str or int, not {0}".
-                                       format(str(type(use_cols[0]))))
-
-                itype = type(index_cols[0])
-                utype = type(use_cols[0])
-                if itype != utype:
-                    self.logger.lraise("index_cols type '{0} != use_cols "
-                                       "type '{1}'".
-                                       format(str(itype), str(utype)))
-
-                si = set(index_cols)
-                su = set(use_cols)
-
-                i = si.intersection(su)
-                if len(i) > 0:
-                    self.logger.lraise("use_cols also listed in "
-                                       "index_cols: {0}".format(str(i)))
+        #     if not isinstance(index_cols, list):
+        #         index_cols = [index_cols]
+        #     if isinstance(index_cols[0], str):
+        #         # index_cols can be from header str
+        #         header = 0
+        #     elif isinstance(index_cols[0], int):
+        #         # index_cols are column numbers in input file
+        #         header = None
+        #     else:
+        #         self.logger.lraise("unrecognized type for index_cols, "
+        #                            "should be str or int, not {0}".
+        #                            format(str(type(index_cols[0]))))
+        #     if use_cols is not None:
+        #         if not isinstance(use_cols, list):
+        #             use_cols = [use_cols]
+        #         if isinstance(use_cols[0], str):
+        #             header = 0
+        #         elif isinstance(use_cols[0], int):
+        #             header = None
+        #         else:
+        #             self.logger.lraise("unrecognized type for use_cols, "
+        #                                "should be str or int, not {0}".
+        #                                format(str(type(use_cols[0]))))
+        #
+        #         itype = type(index_cols[0])
+        #         utype = type(use_cols[0])
+        #         if itype != utype:
+        #             self.logger.lraise("index_cols type '{0} != use_cols "
+        #                                "type '{1}'".
+        #                                format(str(itype), str(utype)))
+        #
+        #         si = set(index_cols)
+        #         su = set(use_cols)
+        #
+        #         i = si.intersection(su)
+        #         if len(i) > 0:
+        #             self.logger.lraise("use_cols also listed in "
+        #                                "index_cols: {0}".format(str(i)))
 
             for filename, sep, fmt, skip in zip(filenames, seps, fmts,
                                                 skip_rows):
+                df, storehead = self._load_listtype_file(
+                    filename, index_cols, use_cols, fmt, sep, skip)
                 file_path = os.path.join(self.new_d, filename)
-                # looping over model input filenames
+                # # looping over model input filenames
                 if fmt.lower() == 'free':
                     if sep is None:
-                        delim_whitespace = True
+                        # delim_whitespace = True
                         sep = ' '
                         if filename.lower().endswith(".csv"):
-                            delim_whitespace = False
+                            # delim_whitespace = False
                             sep = ','
-                    else:
-                        delim_whitespace = False
-                    self.logger.log("loading list {0}".format(file_path))
-                    if not os.path.exists(file_path):
-                        self.logger.lraise("par filename '{0}' not found "
-                                           "".format(file_path))
-                    # read each input file
-                    if skip > 0:
-                        with open(file_path, 'r') as fp:
-                            storehead = [next(fp) for _ in range(skip)]
-                    else:
-                        storehead = []
-                    df = pd.read_csv(file_path, header=header, skiprows=skip,
-                                     delim_whitespace=delim_whitespace)
-                else: 
-                    # TODO support reading fixed-format 
-                    #  (based on value of fmt passed)
-                    #  ... or not?
-                    self.logger.warn("0) Only reading free format list par "
-                                     "files currently supported.")
-                    self.logger.warn("1) Assuming safe to read as whitespace "
-                                     "delim.")
-                    self.logger.warn("2) Desired format string will still "
-                                     "be passed through")
-                    delim_whitespace = True
-                    # read each input file
-                    if skip > 0:
-                        with open(file_path, 'r') as fp:
-                            storehead = [next(fp) for _ in range(skip)]
-                    else:
-                        storehead = []
-                    df = pd.read_csv(file_path, header=header, skiprows=skip,
-                                     delim_whitespace=delim_whitespace)
-
-                # ensure that column ids from index_col is in input file
-                missing = []
-                for index_col in index_cols:
-                    if index_col not in df.columns:
-                        missing.append(index_col)
-                    df.loc[:, index_col] = df.loc[:, index_col].astype(np.int)
-                if len(missing) > 0:
-                    self.logger.lraise("the following index_cols were not "
-                                       "found in file '{0}':{1}"
-                                       "".format(file_path, str(missing)))
-                # ensure requested use_cols are in input file
-                for use_col in use_cols:
-                    if use_col not in df.columns:
-                        missing.append(use_col)
-                if len(missing) > 0:
-                    self.logger.lraise("the following use_cols were not found "
-                                       "in file '{0}':{1}"
-                                       "".format(file_path, str(missing)))
-                hheader = header
-                if hheader is None:
+                        # delim_whitespace = False
+                #     self.logger.log("loading list {0}".format(file_path))
+                #     if not os.path.exists(file_path):
+                #         self.logger.lraise("par filename '{0}' not found "
+                #                            "".format(file_path))
+                #     # read each input file
+                #     if skip > 0:
+                #         with open(file_path, 'r') as fp:
+                #             storehead = [next(fp) for _ in range(skip)]
+                #     else:
+                #         storehead = []
+                #     df = pd.read_csv(file_path, header=header, skiprows=skip,
+                #                      delim_whitespace=delim_whitespace)
+                # else:
+                #     # TODO support reading fixed-format
+                #     #  (based on value of fmt passed)
+                #     #  ... or not?
+                #     self.logger.warn("0) Only reading free format list par "
+                #                      "files currently supported.")
+                #     self.logger.warn("1) Assuming safe to read as whitespace "
+                #                      "delim.")
+                #     self.logger.warn("2) Desired format string will still "
+                #                      "be passed through")
+                #     delim_whitespace = True
+                #     # read each input file
+                #     if skip > 0:
+                #         with open(file_path, 'r') as fp:
+                #             storehead = [next(fp) for _ in range(skip)]
+                #     else:
+                #         storehead = []
+                #     df = pd.read_csv(file_path, header=header, skiprows=skip,
+                #                      delim_whitespace=delim_whitespace)
+                #
+                # # ensure that column ids from index_col is in input file
+                # missing = []
+                # for index_col in index_cols:
+                #     if index_col not in df.columns:
+                #         missing.append(index_col)
+                #     df.loc[:, index_col] = df.loc[:, index_col].astype(np.int)
+                # if len(missing) > 0:
+                #     self.logger.lraise("the following index_cols were not "
+                #                        "found in file '{0}':{1}"
+                #                        "".format(file_path, str(missing)))
+                # # ensure requested use_cols are in input file
+                # for use_col in use_cols:
+                #     if use_col not in df.columns:
+                #         missing.append(use_col)
+                # if len(missing) > 0:
+                #     self.logger.lraise("the following use_cols were not found "
+                #                        "in file '{0}':{1}"
+                #                        "".format(file_path, str(missing)))
+                if df.columns.is_integer():
                     hheader = False
+                else:
+                    hheader = 0
+
                 self.logger.statement("loaded list '{0}' of shape {1}"
                                       "".format(file_path, df.shape))
                 # TODO BH: do we need to be careful of the format of the model
@@ -529,6 +534,7 @@ class PstFrom(object):
                 # write orig version of input file to `org` (e.g.) dir
 
                 if len(storehead) != 0:
+                    kwargs = {}
                     if "win" in platform.platform().lower():
                         kwargs = {"line_terminator": "\n"}
                     with open(os.path.join(
@@ -622,8 +628,24 @@ class PstFrom(object):
 
         return self._prefix_count[prefix]
     
-    def add_observations(self, ins_file, out_file=None, pst_path=None,
-                         inschek=True, rebuild_pst=False):
+    def add_observations(self, filename, index_cols=None, use_cols=None):
+        """
+        Add list style outputs as observation files to PstFrom object
+        Returns:
+
+        """
+        self.logger.log("adding observations from tabular output file")
+        self.logger.log("adding observations from tabular output file")
+        (filenames, fmts, seps, skip_rows,
+         index_cols, use_cols) = self._prep_arg_list_lengths(
+            filename, index_cols=index_cols, use_cols=use_cols,
+            fmts=None, seps=None, skip_rows=None)
+        df, storehead = self._load_listtype_file(
+            filenames, index_cols, use_cols, fmts, seps, skip_rows)
+        file_path = os.path.join(self.new_d, filename)
+
+    def add_observations_from_ins(self, ins_file, out_file=None, pst_path=None,
+                                  inschek=True, rebuild_pst=False):
         """ add new observations to a control file
 
          Args:
@@ -760,6 +782,11 @@ class PstFrom(object):
             pp_space:
             num_eig_kl:
             spatial_reference:
+            geostruct:
+            mfile_fmt:
+            ult_ubound:
+            ult_lbound:
+            rebuild_pst:
 
         Returns:
 
@@ -1027,6 +1054,148 @@ class PstFrom(object):
                 self.logger.warn("pst object not available, "
                                  "new control file will be written")
 
+    def _load_listtype_file(self, filename, index_cols, use_cols,
+                            fmt=None, sep=None, skip=None):
+        if isinstance(index_cols[0], str) and isinstance(use_cols[0], str):
+            # index_cols can be from header str
+            header = 0  # will need to read a header
+        elif isinstance(index_cols[0], int) and isinstance(use_cols[0], int):
+            # index_cols are column numbers in input file
+            header = None
+        else:
+            self.logger.lraise("unrecognized type for index_cols or use_cols "
+                               "should be str or int and both should be of the "
+                               "same type, not {0} or {1}".
+                               format(str(type(index_cols)),
+                                      str(type(use_cols))))
+        itype = type(index_cols)
+        utype = type(use_cols)
+        if itype != utype:
+            self.logger.lraise("index_cols type '{0} != use_cols "
+                               "type '{1}'".
+                               format(str(itype), str(utype)))
+
+        si = set(index_cols)
+        su = set(use_cols)
+
+        i = si.intersection(su)
+        if len(i) > 0:
+            self.logger.lraise("use_cols also listed in "
+                               "index_cols: {0}".format(str(i)))
+
+        file_path = os.path.join(self.new_d, filename)
+        # looping over model input filenames
+        if fmt.lower() == 'free':
+            if sep is None:
+                delim_whitespace = True
+                sep = ' '
+                if filename.lower().endswith(".csv"):
+                    delim_whitespace = False
+                    sep = ','
+            else:
+                delim_whitespace = False
+            self.logger.log("loading list {0}".format(file_path))
+            if not os.path.exists(file_path):
+                self.logger.lraise("par filename '{0}' not found "
+                                   "".format(file_path))
+            # read each input file
+            if skip > 0:
+                with open(file_path, 'r') as fp:
+                    storehead = [next(fp) for _ in range(skip)]
+            else:
+                storehead = []
+            df = pd.read_csv(file_path, header=header, skiprows=skip,
+                             delim_whitespace=delim_whitespace)
+        else:
+            # TODO support reading fixed-format
+            #  (based on value of fmt passed)
+            #  ... or not?
+            self.logger.warn("0) Only reading free format list par "
+                             "files currently supported.")
+            self.logger.warn("1) Assuming safe to read as whitespace "
+                             "delim.")
+            self.logger.warn("2) Desired format string will still "
+                             "be passed through")
+            delim_whitespace = True
+            # read each input file
+            if skip > 0:
+                with open(file_path, 'r') as fp:
+                    storehead = [next(fp) for _ in range(skip)]
+            else:
+                storehead = []
+            df = pd.read_csv(file_path, header=header, skiprows=skip,
+                             delim_whitespace=delim_whitespace)
+
+        # ensure that column ids from index_col is in input file
+        missing = []
+        for index_cols in index_cols:
+            if index_cols not in df.columns:
+                missing.append(index_cols)
+            df.loc[:, index_cols] = df.loc[:, index_cols].astype(np.int)
+        if len(missing) > 0:
+            self.logger.lraise("the following index_cols were not "
+                               "found in file '{0}':{1}"
+                               "".format(file_path, str(missing)))
+        # ensure requested use_cols are in input file
+        for use_cols in use_cols:
+            if use_cols not in df.columns:
+                missing.append(use_cols)
+        if len(missing) > 0:
+            self.logger.lraise("the following use_cols were not found "
+                               "in file '{0}':{1}"
+                               "".format(file_path, str(missing)))
+
+        return df, storehead
+
+    def _prep_arg_list_lengths(self, filenames, fmts=None, seps=None,
+                               skip_rows=None, index_cols=None, use_cols=None):
+        if not isinstance(filenames, list):
+            filenames = [filenames]
+        if fmts is None:
+            fmts = ['free' for _ in filenames]
+        if not isinstance(fmts, list):
+            fmts = [fmts]
+        if len(fmts) != len(filenames):
+            self.logger.warn("Discrepancy between number of filenames ({0}) "
+                             "and number of formatter strings ({1}). "
+                             "Will repeat first ({2})"
+                             "".format(len(filenames), len(fmts), fmts[0]))
+            fmts = [fmts[0] for _ in filenames]
+        fmts = ['free' if fmt is None else fmt for fmt in fmts]
+        if seps is None:
+            seps = [None for _ in filenames]
+        if not isinstance(seps, list):
+            seps = [seps]
+        if len(seps) != len(filenames):
+            self.logger.warn("Discrepancy between number of filenames ({0}) "
+                             "and number of seps defined ({1}). "
+                             "Will repeat first ({2})"
+                             "".format(len(filenames), len(seps), seps[0]))
+            seps = [seps[0] for _ in filenames]
+        if skip_rows is None:
+            skip_rows = [None for _ in filenames]
+        if not isinstance(skip_rows, list):
+            skip_rows = [skip_rows]
+        if len(skip_rows) != len(filenames):
+            self.logger.warn("Discrepancy between number of filenames ({0}) "
+                             "and number of skip_rows defined ({1}). "
+                             "Will repeat first ({2})"
+                             "".format(len(filenames), len(skip_rows),
+                                       skip_rows[0]))
+            skip_rows = [skip_rows[0] for _ in filenames]
+        skip_rows = [0 if s is None else s for s in skip_rows]
+
+        if index_cols is None and use_cols is not None:
+            self.logger.lraise("index_cols is None, but use_cols is not ({0})"
+                               "".format(str(use_cols)))
+
+        if index_cols is not None:
+            if not isinstance(index_cols, list):
+                index_cols = [index_cols]
+            if not isinstance(use_cols, list):
+                use_cols = [use_cols]
+        return filenames, fmts, seps, skip_rows, index_cols, use_cols
+
 
 def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
                    use_cols=None, suffix='', zone_array=None, longnames=False,
@@ -1053,7 +1222,8 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
             If None, pars are set up for all columns apart from index cols.
         suffix (`str`): Optional par name suffix
         zone_array (`np.ndarray`): Array defining zone divisions.
-            If not None and `par_type` is `grid` or `zone` it is expected that `index_cols` provide the indicies for
+            If not None and `par_type` is `grid` or `zone` it is expected that
+            `index_cols` provide the indicies for
             querying `zone_array`. Therefore, array dimension should equal
             `len(index_cols)`.
         longnames (`boolean`): Specify is pars will be specified without the

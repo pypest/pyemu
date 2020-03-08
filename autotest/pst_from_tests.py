@@ -73,7 +73,7 @@ def freyberg_test():
             hds_kperk.append([kper, k])
     hds_runline, df = pyemu.gw_utils.setup_hds_obs(
         os.path.join(m.model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
-        prefix="hds",include_path=False)
+        prefix="hds", include_path=False)
     template_ws = "new_temp"
     # sr0 = m.sr
     sr = pyemu.helpers.SpatialReference.from_namfile(
@@ -84,7 +84,7 @@ def freyberg_test():
                  remove_existing=True,
                  longnames=True, spatial_reference=sr,
                  zero_based=False)
-    pf.add_observations(ins_file='freyberg.hds.dat.ins')
+    pf.add_observations_from_ins(ins_file='freyberg.hds.dat.ins')
     pf.post_py_cmds.append(hds_runline)
     pf.tmp_files.append(f"{m.name}.hds")
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
@@ -110,10 +110,9 @@ def freyberg_test():
                       par_name_base="rch_datetime:1-1-1970", pp_space=4)
     pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
                       zone_array=m.bas6.ibound[0].array,
-                      par_name_base="rch_datetime:1-1-1970", pp_space=1,ult_ubound=100,
-                      ult_lbound=0.0)
-    pf.mod_sys_cmds.append("{0} {1}".format(
-        os.path.basename(mf_exe_name), m.name + ".nam"))
+                      par_name_base="rch_datetime:1-1-1970", pp_space=1,
+                      ult_ubound=100, ult_lbound=0.0)
+    pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
     print(pf.mult_files)
     print(pf.org_files)
     pst = pf.build_pst('freyberg.pst')
@@ -123,23 +122,25 @@ def freyberg_test():
     b_d = os.getcwd()
     os.chdir(pf.new_d)
     try:
-        pyemu.helpers.apply_list_and_array_pars(arr_par_file="mult2model_info.csv")
+        pyemu.helpers.apply_list_and_array_pars(
+            arr_par_file="mult2model_info.csv")
     except Exception as e:
         os.chdir(b_d)
         raise Exception(str(e))
-    os.chdir("..")
+    os.chdir(b_d)
 
     pst.control_data.noptmax = 0
-    pst.write(os.path.join(pf.new_d,"freyberg.pst"))
-    pyemu.os_utils.run("{0} freyberg.pst".format(os.path.join(bin_path,"pestpp-ies")),cwd=pf.new_d)
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(
+        os.path.join(bin_path, "pestpp-ies")), cwd=pf.new_d)
 
-    res_file = os.path.join(pf.new_d,"freyberg.base.rei")
-    assert os.path.exists(res_file),res_file
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
     pst.set_res(res_file)
     print(pst.phi)
-    assert pst.phi < 1.0e-5,pst.phi
+    assert pst.phi < 1.0e-5, pst.phi
 # TO#DO: add test for model file with headers
-# TODO add test for formatted file type
+# TO#DO add test for formatted file type
 
 
 if __name__ == "__main__":
