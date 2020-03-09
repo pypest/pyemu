@@ -304,7 +304,7 @@ class SpecSim2d(object):
         self.initialize()
 
     @staticmethod
-    def grid_is_regular(delx, dely, tol=1.0e-6):
+    def grid_is_regular(delx, dely, tol=1.0e-4):
         """check that a grid is regular using delx and dely vectors
 
         Args:
@@ -315,17 +315,17 @@ class SpecSim2d(object):
                 a 1-D array of y-dimension cell centers (or leading/trailing edges).  Only the
                 distance between points is important
             tol : `float` (optional)
-                tolerance to determine grid regularity.  Default is 1.0e-6
+                tolerance to determine grid regularity.  Default is 1.0e-4
 
         Returns:
             `bool`: flag indicating if the grid defined by `delx` and `dely` is regular
 
         """
-        if np.abs(delx.mean() - delx.min()) > tol:
+        if np.abs((delx.mean() - delx.min())/delx.mean()) > tol:
             return False
-        if np.abs(dely.mean() - dely.min()) > tol:
+        if (np.abs(dely.mean() - dely.min())/dely.mean()) > tol:
             return False
-        if np.abs(delx.mean() - dely.mean()) > tol:
+        if (np.abs(delx.mean() - dely.mean())/delx.mean()) > tol:
             return False
         return True
 

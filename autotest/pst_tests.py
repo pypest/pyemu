@@ -795,6 +795,13 @@ def process_output_files_test():
     out_files = [f.replace(".ins","") for f in ins_files]
     print(ins_files)
 
+    i5 = pst_utils.InstructionFile(ins_files[4])
+    s5 = i5.read_output_file(out_files[4])
+    print(s5)
+    assert s5.loc["obs3_1","obsval"] == 1962323.838381853
+    assert s5.loc["obs3_2","obsval"] == 1012443.579448909
+
+
     i4 = pst_utils.InstructionFile(ins_files[3])
     s4 = i4.read_output_file(out_files[3])
     print(s4)
@@ -853,7 +860,8 @@ def new_format_path_mechanics_test():
 
 
 if __name__ == "__main__":
-    # process_output_files_test()
+
+    process_output_files_test()
     #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
@@ -863,7 +871,7 @@ if __name__ == "__main__":
     #try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
-    test_write_input_files()
+    #test_write_input_files()
     # add_obs_test()
     # add_pars_test()
     # setattr_test()
