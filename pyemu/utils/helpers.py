@@ -914,12 +914,14 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
     return jco_cols
 
 
-def parse_dir_for_io_files(d):
+def parse_dir_for_io_files(d,prepend_path=False):
     """ find template/input file pairs and instruction file/output file
     pairs by extension.
 
     Args:
         d (`str`): directory to search for interface files
+        prepend_path (`bool, optional): flag to prepend `d` to each file name.
+            Default is False
 
     Note:
         the return values from this function can be passed straight to
@@ -942,6 +944,12 @@ def parse_dir_for_io_files(d):
     in_files = [f.replace(".tpl", "") for f in tpl_files]
     ins_files = [f for f in files if f.endswith(".ins")]
     out_files = [f.replace(".ins", "") for f in ins_files]
+    if prepend_path:
+        tpl_files = [os.path.join(d,item) for item in tpl_files]
+        in_files = [os.path.join(d, item) for item in in_files]
+        ins_files = [os.path.join(d, item) for item in ins_files]
+        out_files = [os.path.join(d, item) for item in out_files]
+
     return tpl_files, in_files, ins_files, out_files
 
 
