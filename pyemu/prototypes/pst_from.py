@@ -156,7 +156,7 @@ class PstFrom(object):
                 ilist = [ilist]
             for cmd in ilist:
                 self.logger.statement("forward_run line:{0}".format(cmd))
-                alist.append("pyemu.os_utils.run('{0}')\n".format(cmd))
+                alist.append("pyemu.os_utils.run(r'{0}')\n".format(cmd))
 
         with open(os.path.join(self.new_d, self.py_run_file),
                   'w') as f:
