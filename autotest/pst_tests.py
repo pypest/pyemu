@@ -795,6 +795,12 @@ def process_output_files_test():
     out_files = [f.replace(".ins","") for f in ins_files]
     print(ins_files)
 
+    i4 = pst_utils.InstructionFile(ins_files[3])
+    s4 = i4.read_output_file(out_files[3])
+    print(s4)
+    assert s4.loc["h01_02", "obsval"] == 1.024
+    assert s4.loc["h01_10", "obsval"] == 4.498
+
     i5 = pst_utils.InstructionFile(ins_files[4])
     s5 = i5.read_output_file(out_files[4])
     print(s5)
@@ -802,11 +808,7 @@ def process_output_files_test():
     assert s5.loc["obs3_2","obsval"] == 1012443.579448909
 
 
-    i4 = pst_utils.InstructionFile(ins_files[3])
-    s4 = i4.read_output_file(out_files[3])
-    print(s4)
-    assert s4.loc["h01_02","obsval"] == 1.024
-    assert s4.loc["h01_10","obsval"] == 4.498
+
     i3 = pst_utils.InstructionFile(ins_files[2])
     s3 = i3.read_output_file(out_files[2])
     #print(s3)
