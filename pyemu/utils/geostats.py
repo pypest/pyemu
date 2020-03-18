@@ -500,6 +500,7 @@ class SpecSim2d(object):
             # update the geostruct
             self.geostruct.variograms[0].contribution = var * new_var
             self.geostruct.nugget = var * new_nug
+            #print(gr_grp, var,new_var,mx_ubnd,mn_lbnd)
             # reinitialize and draw
             if logger is not None:
                 logger.log("SpecSim: drawing {0} realization for group {1} with {4} pars, (log) variance {2} (sill {3})".\

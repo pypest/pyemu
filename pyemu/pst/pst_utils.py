@@ -1074,11 +1074,11 @@ class InstructionFile(object):
                                              format(nlines, ins, ins_lcount))
             elif ins == 'w':
                 raw = line[cursor_pos:].replace(","," ").split()
-                if line[cursor_pos] == ' ':
+                if line[cursor_pos] in [","," ","\t"]:
                     raw.insert(0,'')
                 if len(raw) == 1:
                     self.throw_out_error("no whitespaces found on output line {0} past {1}".format(line,cursor_pos))
-                cursor_pos = cursor_pos + line[cursor_pos:].index(" "+raw[1]) + 1
+                cursor_pos = cursor_pos + line[cursor_pos:].index(raw[1])
 
 
             elif ins.startswith('!'):
@@ -1088,9 +1088,9 @@ class InstructionFile(object):
                     m = ins_line[ii+1].replace(self._marker,'')
                     if m not in line[cursor_pos:]:
                         self.throw_out_error("secondary marker '{0}' not found from cursor_pos {2}".format(m,cursor_pos))
-                    val_str = line[cursor_pos:].split(m)[0].replace(","," ")
+                    val_str = line[cursor_pos:].split(m)[0]
                 else:
-                    val_str = line[cursor_pos:].split()[0].replace(","," ")
+                    val_str = line[cursor_pos:].replace(","," ").split()[0]
                 try:
                     val = float(val_str)
                 except Exception as e:
