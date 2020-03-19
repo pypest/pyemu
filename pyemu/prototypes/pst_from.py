@@ -39,7 +39,7 @@ class PstFrom(object):
         self.obs_dfs = []
         self.py_run_file = "forward_run.py"
         self.mod_command = "python {0}".format(self.py_run_file)
-        self.pre_py_cmds = []  
+        self.pre_py_cmds = []
         self.pre_sys_cmds = []  # a list of preprocessing commands to add to 
         # the forward_run.py script commands are executed with os.system() 
         # within forward_run.py.
@@ -249,7 +249,7 @@ class PstFrom(object):
             - overwriting anything already in self.pst object and
             anything already writen to `filename`
         """
-        
+
         if update:
             if self.pst is None:
                 self.logger.warn("Can't update Pst object not initialised. "
@@ -286,7 +286,7 @@ class PstFrom(object):
                 parfile_relations = self.parfile_relations
                 parfile_relations.to_csv(os.path.join(self.new_d,
                                                       'mult2model_info.csv'))
-                if not any(["apply_list_and_array_pars" in s 
+                if not any(["apply_list_and_array_pars" in s
                             for s in self.pre_py_cmds]):
                     self.pre_py_cmds.append(
                         "pyemu.helpers.apply_list_and_array_pars("
@@ -372,86 +372,7 @@ class PstFrom(object):
         (filenames, fmts, seps, skip_rows,
          index_cols, use_cols) = self._prep_arg_list_lengths(
             filenames, fmts, seps, skip_rows, index_cols, use_cols)
-        # if not isinstance(filenames, list):
-        #     filenames = [filenames]
-        # if fmts is None:
-        #     fmts = ['free' for _ in filenames]
-        # if not isinstance(fmts, list):
-        #     fmts = [fmts]
-        # if len(fmts) != len(filenames):
-        #     self.logger.warn("Discrepancy between number of filenames ({0}) "
-        #                      "and number of formatter strings ({1}). "
-        #                      "Will repeat first ({2})"
-        #                      "".format(len(filenames), len(fmts), fmts[0]))
-        #     fmts = [fmts[0] for _ in filenames]
-        # fmts = ['free' if fmt is None else fmt for fmt in fmts]
-        # if seps is None:
-        #     seps = [None for _ in filenames]
-        # if not isinstance(seps, list):
-        #     seps = [seps]
-        # if len(seps) != len(filenames):
-        #     self.logger.warn("Discrepancy between number of filenames ({0}) "
-        #                      "and number of seps defined ({1}). "
-        #                      "Will repeat first ({2})"
-        #                      "".format(len(filenames), len(seps), seps[0]))
-        #     seps = [seps[0] for _ in filenames]
-        # if skip_rows is None:
-        #     skip_rows = [None for _ in filenames]
-        # if not isinstance(skip_rows, list):
-        #     skip_rows = [skip_rows]
-        # if len(skip_rows) != len(filenames):
-        #     self.logger.warn("Discrepancy between number of filenames ({0}) "
-        #                      "and number of skip_rows defined ({1}). "
-        #                      "Will repeat first ({2})"
-        #                      "".format(len(filenames), len(skip_rows),
-        #                                skip_rows[0]))
-        #     skip_rows = [skip_rows[0] for _ in filenames]
-        # skip_rows = [0 if s is None else s for s in skip_rows]
-        
-        # if index_cols is None and use_cols is not None:
-        #     self.logger.lraise("index_cols is None, but use_cols is not ({0})"
-        #                        "".format(str(use_cols)))
-        # load list type files
         if index_cols is not None:
-        #     if not isinstance(index_cols, list):
-        #         index_cols = [index_cols]
-        #     if isinstance(index_cols[0], str):
-        #         # index_cols can be from header str
-        #         header = 0
-        #     elif isinstance(index_cols[0], int):
-        #         # index_cols are column numbers in input file
-        #         header = None
-        #     else:
-        #         self.logger.lraise("unrecognized type for index_cols, "
-        #                            "should be str or int, not {0}".
-        #                            format(str(type(index_cols[0]))))
-        #     if use_cols is not None:
-        #         if not isinstance(use_cols, list):
-        #             use_cols = [use_cols]
-        #         if isinstance(use_cols[0], str):
-        #             header = 0
-        #         elif isinstance(use_cols[0], int):
-        #             header = None
-        #         else:
-        #             self.logger.lraise("unrecognized type for use_cols, "
-        #                                "should be str or int, not {0}".
-        #                                format(str(type(use_cols[0]))))
-        #
-        #         itype = type(index_cols[0])
-        #         utype = type(use_cols[0])
-        #         if itype != utype:
-        #             self.logger.lraise("index_cols type '{0} != use_cols "
-        #                                "type '{1}'".
-        #                                format(str(itype), str(utype)))
-        #
-        #         si = set(index_cols)
-        #         su = set(use_cols)
-        #
-        #         i = si.intersection(su)
-        #         if len(i) > 0:
-        #             self.logger.lraise("use_cols also listed in "
-        #                                "index_cols: {0}".format(str(i)))
-
             for filename, sep, fmt, skip in zip(filenames, seps, fmts,
                                                 skip_rows):
                 df, storehead = self._load_listtype_file(
@@ -460,62 +381,9 @@ class PstFrom(object):
                 # # looping over model input filenames
                 if fmt.lower() == 'free':
                     if sep is None:
-                        # delim_whitespace = True
                         sep = ' '
                         if filename.lower().endswith(".csv"):
-                            # delim_whitespace = False
                             sep = ','
-                        # delim_whitespace = False
-                #     self.logger.log("loading list {0}".format(file_path))
-                #     if not os.path.exists(file_path):
-                #         self.logger.lraise("par filename '{0}' not found "
-                #                            "".format(file_path))
-                #     # read each input file
-                #     if skip > 0:
-                #         with open(file_path, 'r') as fp:
-                #             storehead = [next(fp) for _ in range(skip)]
-                #     else:
-                #         storehead = []
-                #     df = pd.read_csv(file_path, header=header, skiprows=skip,
-                #                      delim_whitespace=delim_whitespace)
-                # else:
-                #     # TODO support reading fixed-format
-                #     #  (based on value of fmt passed)
-                #     #  ... or not?
-                #     self.logger.warn("0) Only reading free format list par "
-                #                      "files currently supported.")
-                #     self.logger.warn("1) Assuming safe to read as whitespace "
-                #                      "delim.")
-                #     self.logger.warn("2) Desired format string will still "
-                #                      "be passed through")
-                #     delim_whitespace = True
-                #     # read each input file
-                #     if skip > 0:
-                #         with open(file_path, 'r') as fp:
-                #             storehead = [next(fp) for _ in range(skip)]
-                #     else:
-                #         storehead = []
-                #     df = pd.read_csv(file_path, header=header, skiprows=skip,
-                #                      delim_whitespace=delim_whitespace)
-                #
-                # # ensure that column ids from index_col is in input file
-                # missing = []
-                # for index_col in index_cols:
-                #     if index_col not in df.columns:
-                #         missing.append(index_col)
-                #     df.loc[:, index_col] = df.loc[:, index_col].astype(np.int)
-                # if len(missing) > 0:
-                #     self.logger.lraise("the following index_cols were not "
-                #                        "found in file '{0}':{1}"
-                #                        "".format(file_path, str(missing)))
-                # # ensure requested use_cols are in input file
-                # for use_col in use_cols:
-                #     if use_col not in df.columns:
-                #         missing.append(use_col)
-                # if len(missing) > 0:
-                #     self.logger.lraise("the following use_cols were not found "
-                #                        "in file '{0}':{1}"
-                #                        "".format(file_path, str(missing)))
                 if df.columns.is_integer():
                     hheader = False
                 else:
@@ -565,7 +433,7 @@ class PstFrom(object):
                                    fnames[j], file_dict[fnames[j]].shape[1]))
         else:  # load array type files
             # loop over model input files
-            for filename, sep, fmt, skip in zip(filenames, seps, fmts, 
+            for filename, sep, fmt, skip in zip(filenames, seps, fmts,
                                                 skip_rows):
                 if fmt.lower() == 'free':
                     if filename.lower().endswith(".csv"):
@@ -581,7 +449,7 @@ class PstFrom(object):
                     self.logger.lraise("par filename '{0}' not found ".
                                        format(file_path))
                 # read array type input file 
-                arr = np.loadtxt(os.path.join(self.new_d, filename), 
+                arr = np.loadtxt(os.path.join(self.new_d, filename),
                                  delimiter=sep)
                 self.logger.log("loading array {0}".format(file_path))
                 self.logger.statement("loaded array '{0}' of shape {1}".
@@ -627,14 +495,17 @@ class PstFrom(object):
             self._prefix_count[prefix] += 1
 
         return self._prefix_count[prefix]
-    
-    def add_observations(self, filename, index_cols=None, use_cols=None):
+
+    def add_observations(self, filename, insfile=None,
+                         index_cols=None, use_cols=None,
+                         use_rows=None, prefix=''):
         """
         Add list style outputs as observation files to PstFrom object
         Returns:
 
         """
-        self.logger.log("adding observations from tabular output file")
+        if insfile is None:
+            insfile = "{0}.ins".format(filename)
         self.logger.log("adding observations from tabular output file")
         (filenames, fmts, seps, skip_rows,
          index_cols, use_cols) = self._prep_arg_list_lengths(
@@ -642,7 +513,30 @@ class PstFrom(object):
             fmts=None, seps=None, skip_rows=None)
         df, storehead = self._load_listtype_file(
             filenames, index_cols, use_cols, fmts, seps, skip_rows)
-        file_path = os.path.join(self.new_d, filename)
+        # TODO use_rows from row numbers in obs file
+        new_obs_l = []
+        for filename in filenames:  # should only ever be one but hey...
+            self.logger.log("building insfile for tabular output file {0}"
+                            "".format(filename))
+            df_temp = _get_tpl_or_ins_df(df, prefix, typ='obs',
+                                         index_cols=index_cols,
+                                         use_cols=use_cols,
+                                         longnames=self.longnames)
+            df.loc[:, 'idx_str'] = df_temp.idx_strs
+            df_ins = pyemu.pst_utils.csv_to_ins_file(
+                df.set_index('idx_str'),
+                ins_filename=os.path.join(
+                    self.new_d, insfile),
+                only_cols=use_cols, only_rows=use_rows, marker='~',
+                includes_header=True, includes_index=False, prefix=prefix,
+                longnames=True, head_lines_len=len(storehead), sep='\t')
+            self.logger.log("building insfile for tabular output file {0}"
+                            "".format(filename))
+            new_obs = self.add_observations_from_ins(
+                ins_file=insfile, out_file=os.path.join(self.new_d, filename))
+            new_obs_l.append(new_obs)
+        new_obs = pd.concat(new_obs_l)
+        return new_obs
 
     def add_observations_from_ins(self, ins_file, out_file=None, pst_path=None,
                                   inschek=True, rebuild_pst=False):
@@ -698,7 +592,7 @@ class PstFrom(object):
         sobsnme = set(obsnme)
         if len(self.obs_dfs) > 0:
             sexist = pd.concat(self.obs_dfs).obsnme
-        else: 
+        else:
             sexist = []
         sexist = set(sexist)  # todo need to check this here?
         sint = sobsnme.intersection(sexist)
@@ -719,24 +613,26 @@ class PstFrom(object):
         new_obsnme = np.sort(list(new_obsnme))
         new_obs_data = pyemu.pst_utils._populate_dataframe(
             new_obsnme, pyemu.pst_utils.pst_config["obs_fieldnames"],
-            pyemu.pst_utils.pst_config["obs_defaults"], 
+            pyemu.pst_utils.pst_config["obs_defaults"],
             pyemu.pst_utils.pst_config["obs_dtype"])
         new_obs_data.loc[new_obsnme, "obsnme"] = new_obsnme
         new_obs_data.index = new_obsnme
-        cwd = '.'
+        # cwd = '.'
         if pst_path is not None:
-            cwd = os.path.join(*os.path.split(ins_file)[:-1])
-            ins_file = os.path.join(pst_path, os.path.split(ins_file)[-1])
-            out_file = os.path.join(pst_path, os.path.split(out_file)[-1])
-        self.ins_filenames.append(ins_file)
-        self.output_filenames.append(out_file)
+            # cwd = os.path.join(*os.path.split(ins_file)[:-1])
+            ins_file_pstrel = os.path.join(pst_path,
+                                           os.path.split(ins_file)[-1])
+            out_file_pstrel = os.path.join(pst_path,
+                                           os.path.split(out_file)[-1])
+        self.ins_filenames.append(ins_file_pstrel)
+        self.output_filenames.append(out_file_pstrel)
         # add to temporary files to be removed at start of forward run
-        self.tmp_files.append(out_file)
+        self.tmp_files.append(out_file_pstrel)
         df = None
         if inschek:
             # df = pst_utils._try_run_inschek(ins_file,out_file,cwd=cwd)
-            ins_file = os.path.join(cwd, ins_file)
-            out_file = os.path.join(cwd, out_file)
+            # ins_file = os.path.join(cwd, ins_file)
+            # out_file = os.path.join(cwd, out_file)
             df = pyemu.pst_utils.try_process_output_file(ins_file=ins_file,
                                                          output_file=out_file)
         if df is not None:
@@ -755,14 +651,14 @@ class PstFrom(object):
                 self.logger.warn("pst object not available, "
                                  "new control file will be written")
         return new_obs_data
-    
+
     def add_parameters(self, filenames, par_type, zone_array=None,
                        dist_type="gaussian", sigma_range=4.0,
                        upper_bound=1.0e10, lower_bound=1.0e-10,
                        transform="log", par_name_base="p", index_cols=None,
                        use_cols=None, pp_space=10, use_pp_zones=False,
                        num_eig_kl=100, spatial_reference=None, geostruct=None,
-                       mfile_fmt='free', ult_ubound=None, ult_lbound=None, 
+                       mfile_fmt='free', ult_ubound=None, ult_lbound=None,
                        rebuild_pst=False):
         """Add list or array style model input files to PstFrom object.
         This method
@@ -793,7 +689,7 @@ class PstFrom(object):
         """
         self.logger.log("adding parameters for file(s) "
                         "{0}".format(str(filenames)))
-        (index_cols, use_cols, file_dict, 
+        (index_cols, use_cols, file_dict,
          fmt_dict, sep_dict, skip_dict) = self._par_prep(filenames, index_cols,
                                                          use_cols,
                                                          fmts=mfile_fmt)
@@ -875,7 +771,7 @@ class PstFrom(object):
                     suffix='', par_type=par_type, zone_array=zone_array,
                     shape=shape, longnames=self.longnames, get_xy=self.get_xy,
                     fill_value=1.0,
-                    input_filename=os.path.join(self.mult_file_d, 
+                    input_filename=os.path.join(self.mult_file_d,
                                                 mlt_filename))
                 self.logger.log(
                     "writing template file"
@@ -887,7 +783,7 @@ class PstFrom(object):
                 if spatial_reference is None:
                     self.logger.statement("No spatial reference "
                                           "(containing cell spacing) passed.")
-                                          
+
                     if self.spatial_reference is not None:
                         self.logger.statement("OK - using spatial reference "
                                               "in parent object.")
@@ -1056,6 +952,18 @@ class PstFrom(object):
 
     def _load_listtype_file(self, filename, index_cols, use_cols,
                             fmt=None, sep=None, skip=None):
+        if isinstance(filename, list):
+            assert len(filename) == 1
+            filename = filename[0]
+        if isinstance(fmt, list):
+            assert len(fmt) == 1
+            fmt = fmt[0]
+        if isinstance(sep, list):
+            assert len(sep) == 1
+            sep = sep[0]
+        if isinstance(skip, list):
+            assert len(skip) == 1
+            skip = skip[0]
         if isinstance(index_cols[0], str) and isinstance(use_cols[0], str):
             # index_cols can be from header str
             header = 0  # will need to read a header
@@ -1084,28 +992,15 @@ class PstFrom(object):
                                "index_cols: {0}".format(str(i)))
 
         file_path = os.path.join(self.new_d, filename)
-        # looping over model input filenames
+        if not os.path.exists(file_path):
+            self.logger.lraise("par filename '{0}' not found "
+                               "".format(file_path))
+        self.logger.log("reading list {0}".format(file_path))
         if fmt.lower() == 'free':
             if sep is None:
-                delim_whitespace = True
-                sep = ' '
+                sep = "\s+"
                 if filename.lower().endswith(".csv"):
-                    delim_whitespace = False
                     sep = ','
-            else:
-                delim_whitespace = False
-            self.logger.log("loading list {0}".format(file_path))
-            if not os.path.exists(file_path):
-                self.logger.lraise("par filename '{0}' not found "
-                                   "".format(file_path))
-            # read each input file
-            if skip > 0:
-                with open(file_path, 'r') as fp:
-                    storehead = [next(fp) for _ in range(skip)]
-            else:
-                storehead = []
-            df = pd.read_csv(file_path, header=header, skiprows=skip,
-                             delim_whitespace=delim_whitespace)
         else:
             # TODO support reading fixed-format
             #  (based on value of fmt passed)
@@ -1116,29 +1011,28 @@ class PstFrom(object):
                              "delim.")
             self.logger.warn("2) Desired format string will still "
                              "be passed through")
-            delim_whitespace = True
-            # read each input file
-            if skip > 0:
-                with open(file_path, 'r') as fp:
-                    storehead = [next(fp) for _ in range(skip)]
-            else:
-                storehead = []
-            df = pd.read_csv(file_path, header=header, skiprows=skip,
-                             delim_whitespace=delim_whitespace)
-
+            sep = '\s+'
+        # read each input file
+        if skip > 0:
+            with open(file_path, 'r') as fp:
+                storehead = [next(fp) for _ in range(skip)]
+        else:
+            storehead = []
+        df = pd.read_csv(file_path, header=header, skiprows=skip, sep=sep)
+        self.logger.log("reading list {0}".format(file_path))
         # ensure that column ids from index_col is in input file
         missing = []
-        for index_cols in index_cols:
-            if index_cols not in df.columns:
-                missing.append(index_cols)
-            df.loc[:, index_cols] = df.loc[:, index_cols].astype(np.int)
+        for index_col in index_cols:
+            if index_col not in df.columns:
+                missing.append(index_col)
+            # df.loc[:, index_col] = df.loc[:, index_col].astype(np.int) # TODO int? why?
         if len(missing) > 0:
             self.logger.lraise("the following index_cols were not "
                                "found in file '{0}':{1}"
                                "".format(file_path, str(missing)))
         # ensure requested use_cols are in input file
-        for use_cols in use_cols:
-            if use_cols not in df.columns:
+        for use_col in use_cols:
+            if use_col not in df.columns:
                 missing.append(use_cols)
         if len(missing) > 0:
             self.logger.lraise("the following use_cols were not found "
@@ -1149,6 +1043,28 @@ class PstFrom(object):
 
     def _prep_arg_list_lengths(self, filenames, fmts=None, seps=None,
                                skip_rows=None, index_cols=None, use_cols=None):
+        """
+        Private wrapper function to align filenames, formats, delimiters,
+        reading options and setup columns for passing sequentially to
+        load_listtype
+        Args:
+            filenames (`str`) or (`list`): names for files ot eventually read
+            fmts (`str`) or (`list`): of column formaters for input file.
+                If `None`, free-formatting is assumed
+            seps (`str`) or (`list`): column separator free formatter files.
+                If `None`, a list of `None`s is returned and the delimiter
+                is eventually governed by the file extension (`,` for .csv)
+            skip_rows (`str`) or (`list`): Number of rows in file header to not
+                form part of the dataframe
+            index_cols (`int`) or (`list`): Columns in tabular file to use as indicies
+            use_cols (`int`) or (`list`): Columns in tabular file to
+                use as par or obs cols
+        Returns:
+            algined lists of:
+            filenames, fmts, seps, skip_rows, index_cols, use_cols
+            for squentially passing to `_load_listtype_file()`
+
+        """
         if not isinstance(filenames, list):
             filenames = [filenames]
         if fmts is None:
@@ -1205,7 +1121,7 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
     Args:
         dfs (`pandas.DataFrame` or `container` of pandas.DataFrames): pandas
             representations of input file.
-        name (`str` or container of str): paramter name prefixs.
+        name (`str` or container of str): parameter name prefixes.
             If more that one column to be parameterised, must be a container
             of strings providing the prefix for the parameters in the
             different columns.
@@ -1238,108 +1154,113 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
     Returns:
 
     """
-
-    if not isinstance(dfs, list):
-        dfs = list(dfs)
-    # work out the union of indices across all dfs
-    sidx = set()
-    for df in dfs:
-        didx = set(df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1))
-        sidx.update(didx)
-
-    df_tpl = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
-    # get some index strings for naming
-    if longnames:
-        j = '_'
-        fmt = "{0}:{1}"
-        if isinstance(index_cols[0], str):
-            inames = index_cols
-        else:
-            inames = ["idx{0}".format(i) for i in range(len(index_cols))]
-    else:
-        fmt = "{1:03d}"
-        j = ''
-
-    if not zero_based:
-        # TODO: need to be careful here potential to have two
-        #  conflicting/compounding `zero_based` actions
-        #  by default we pass PestFrom zero_based object to this method
-        #  so if not zero_based will subtract 1 from idx here...
-        #  ----the get_xy method also -= 1 (checkout changes to get_xy())
-        df_tpl.loc[:, "sidx"] = df_tpl.sidx.apply(
-            lambda x: tuple(xx-1 for xx in x))
-    df_tpl.loc[:, "idx_strs"] = df_tpl.sidx.apply(
-        lambda x: j.join([fmt.format(iname, xx)
-                          for xx, iname in zip(x, inames)]))
-
-    # if zone type, find the zones for each index position
-    if zone_array is not None and par_type in ["zone", "grid"]:
-        if zone_array.ndim != len(index_cols):
-            raise Exception("write_list_tpl() error: zone_array.ndim "
-                            "({0}) != len(index_cols)({1})"
-                            "".format(zone_array.ndim, len(index_cols)))
-        df_tpl.loc[:, "zval"] = df_tpl.sidx.apply(lambda x: zone_array[x])
-
-    # use all non-index columns if use_cols not passed
-    if use_cols is None:
-        use_cols = [c for c in df_tpl.columns if c not in index_cols]
-
-    if get_xy is not None:
-        df_tpl.loc[:, 'xy'] = df_tpl.sidx.apply(lambda x: get_xy(*x))
-        df_tpl.loc[:, 'x'] = df_tpl.xy.apply(lambda x: x[0])
-        df_tpl.loc[:, 'y'] = df_tpl.xy.apply(lambda x: x[1])
-
-    for iuc, use_col in enumerate(use_cols):
-        nname = name
-        if not isinstance(name, str):
-            nname = name[iuc]
-        df_tpl.loc[:, "pargp{}".format(use_col)] = nname
-        if par_type == "constant":
-            if longnames:
-                df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(
-                    nname, use_col)
-                if suffix != '':
-                    df_tpl.loc[:, use_col] += "_{0}".format(suffix)
-            else:
-                df_tpl.loc[:, use_col] = "{0}{1}".format(nname, use_col)
-                if suffix != '':
-                    df_tpl.loc[:, use_col] += suffix
-
-        elif par_type == "zone":
-            if longnames:
-                df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname,
-                                                                  use_col)
-                if zone_array is not None:
-                    df_tpl.loc[:, use_col] += df_tpl.zval.apply(
-                        lambda x: "_zone:{0}".format(x))
-                if suffix != '':
-                    df_tpl.loc[:, use_col] += "_{0}".format(suffix)
-            else:
-                df_tpl.loc[:, use_col] = "{0}{1}".format(nname, use_col)
-                if suffix != '':
-                    df_tpl.loc[:, use_col] += suffix
-
-        elif par_type == "grid":
-            if longnames:
-                df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname,
-                                                                  use_col)
-                if zone_array is not None:
-                    df_tpl.loc[:, use_col] += df_tpl.zval.apply(
-                        lambda x: "_zone:{0}".format(x))
-                df_tpl.loc[:, use_col] += '_' + df_tpl.idx_strs
-                if suffix != '':
-                    df_tpl.loc[:, use_col] += "_{0}".format(suffix)
-
-            else:
-                df_tpl.loc[:, use_col] = "{0}{1}".format(nname, use_col)
-                df_tpl.loc[:, use_col] += df_tpl.idx_strs
-                if suffix != '':
-                    df_tpl.loc[:, use_col] += suffix
-
-        else:
-            raise Exception("write_list_tpl() error: unrecognized 'par_type' "
-                            "should be 'constant','zone', "
-                            "or 'grid', not '{0}'".format(par_type))
+    df_tpl = _get_tpl_or_ins_df(dfs, name, index_cols, par_type,
+                                use_cols=use_cols, suffix=suffix,
+                                zone_array=zone_array, longnames=longnames,
+                                get_xy=get_xy, zero_based=zero_based)
+    # if isinstance(dfs, pd.DataFrame):
+    #     dfs = [dfs]
+    # if not isinstance(dfs, list):
+    #     dfs = list(dfs)
+    # # work out the union of indices across all dfs
+    # sidx = set()
+    # for df in dfs:
+    #     didx = set(df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1))
+    #     sidx.update(didx)
+    #
+    # df_tpl = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
+    # # get some index strings for naming
+    # if longnames:
+    #     j = '_'
+    #     fmt = "{0}:{1}"
+    #     if isinstance(index_cols[0], str):
+    #         inames = index_cols
+    #     else:
+    #         inames = ["idx{0}".format(i) for i in range(len(index_cols))]
+    # else:
+    #     fmt = "{1:03d}"
+    #     j = ''
+    #
+    # if not zero_based:
+    #     # TODO: need to be careful here potential to have two
+    #     #  conflicting/compounding `zero_based` actions
+    #     #  by default we pass PestFrom zero_based object to this method
+    #     #  so if not zero_based will subtract 1 from idx here...
+    #     #  ----the get_xy method also -= 1 (checkout changes to get_xy())
+    #     df_tpl.loc[:, "sidx"] = df_tpl.sidx.apply(
+    #         lambda x: tuple(xx-1 for xx in x))
+    # df_tpl.loc[:, "idx_strs"] = df_tpl.sidx.apply(
+    #     lambda x: j.join([fmt.format(iname, xx)
+    #                       for xx, iname in zip(x, inames)]))
+    #
+    # # if zone type, find the zones for each index position
+    # if zone_array is not None and par_type in ["zone", "grid"]:
+    #     if zone_array.ndim != len(index_cols):
+    #         raise Exception("write_list_tpl() error: zone_array.ndim "
+    #                         "({0}) != len(index_cols)({1})"
+    #                         "".format(zone_array.ndim, len(index_cols)))
+    #     df_tpl.loc[:, "zval"] = df_tpl.sidx.apply(lambda x: zone_array[x])
+    #
+    # # use all non-index columns if use_cols not passed
+    # if use_cols is None:
+    #     use_cols = [c for c in df_tpl.columns if c not in index_cols]
+    #
+    # if get_xy is not None:
+    #     df_tpl.loc[:, 'xy'] = df_tpl.sidx.apply(lambda x: get_xy(*x))
+    #     df_tpl.loc[:, 'x'] = df_tpl.xy.apply(lambda x: x[0])
+    #     df_tpl.loc[:, 'y'] = df_tpl.xy.apply(lambda x: x[1])
+    #
+    # for iuc, use_col in enumerate(use_cols):
+    #     nname = name
+    #     if not isinstance(name, str):
+    #         nname = name[iuc]
+    #     df_tpl.loc[:, "pargp{}".format(use_col)] = nname
+    #     if par_type == "constant":
+    #         if longnames:
+    #             df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(
+    #                 nname, use_col)
+    #             if suffix != '':
+    #                 df_tpl.loc[:, use_col] += "_{0}".format(suffix)
+    #         else:
+    #             df_tpl.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+    #             if suffix != '':
+    #                 df_tpl.loc[:, use_col] += suffix
+    #
+    #     elif par_type == "zone":
+    #         if longnames:
+    #             df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname,
+    #                                                               use_col)
+    #             if zone_array is not None:
+    #                 df_tpl.loc[:, use_col] += df_tpl.zval.apply(
+    #                     lambda x: "_zone:{0}".format(x))
+    #             if suffix != '':
+    #                 df_tpl.loc[:, use_col] += "_{0}".format(suffix)
+    #         else:
+    #             df_tpl.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+    #             if suffix != '':
+    #                 df_tpl.loc[:, use_col] += suffix
+    #
+    #     elif par_type == "grid":
+    #         if longnames:
+    #             df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname,
+    #                                                               use_col)
+    #             if zone_array is not None:
+    #                 df_tpl.loc[:, use_col] += df_tpl.zval.apply(
+    #                     lambda x: "_zone:{0}".format(x))
+    #             df_tpl.loc[:, use_col] += '_' + df_tpl.idx_strs
+    #             if suffix != '':
+    #                 df_tpl.loc[:, use_col] += "_{0}".format(suffix)
+    #
+    #         else:
+    #             df_tpl.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+    #             df_tpl.loc[:, use_col] += df_tpl.idx_strs
+    #             if suffix != '':
+    #                 df_tpl.loc[:, use_col] += suffix
+    #
+    #     else:
+    #         raise Exception("write_list_tpl() error: unrecognized 'par_type' "
+    #                         "should be 'constant','zone', "
+    #                         "or 'grid', not '{0}'".format(par_type))
 
     parnme = list(df_tpl.loc[:, use_cols].values.flatten())
     pargp = list(
@@ -1366,6 +1287,143 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
     df_par.loc[:, "tpl_filename"] = tpl_filename
     df_par.loc[:, "input_filename"] = input_filename
     return df_par
+
+
+def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
+                       suffix='', zone_array=None, longnames=False, get_xy=None,
+                       zero_based=True):
+    if isinstance(dfs, pd.DataFrame):
+        dfs = [dfs]
+    if not isinstance(dfs, list):
+        dfs = list(dfs)
+
+    # work out the union of indices across all dfs
+    if typ != 'obs':
+        sidx = set()
+        for df in dfs:
+            didx = set(df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1))
+            sidx.update(didx)
+    else:
+        # order matters for obs
+        sidx = []
+        for df in dfs:
+            didx = df.loc[:, index_cols].apply(
+                lambda x: tuple(x), axis=1).values
+            aidx = [i for i in didx if i not in sidx]
+            sidx.extend(aidx)
+
+    df_ti = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
+    # get some index strings for naming
+    if longnames:
+        j = '_'
+        fmt = "{0}:{1}"
+        if isinstance(index_cols[0], str):
+            inames = index_cols
+        else:
+            inames = ["idx{0}".format(i) for i in range(len(index_cols))]
+    else:
+        fmt = "{1:03d}"
+        j = ''
+
+    if not zero_based:
+        # TODO: need to be careful here potential to have two
+        #  conflicting/compounding `zero_based` actions
+        #  by default we pass PestFrom zero_based object to this method
+        #  so if not zero_based will subtract 1 from idx here...
+        #  ----the get_xy method also -= 1 (checkout changes to get_xy())
+        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
+            lambda x: tuple(xx - 1 for xx in x))
+    df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
+        lambda x: j.join([fmt.format(iname, xx)
+                          for xx, iname in zip(x, inames)]))
+
+    # use all non-index columns if use_cols not passed
+    if use_cols is None:
+        use_cols = [c for c in df_ti.columns if c not in index_cols]
+
+    if get_xy is not None:
+        df_ti.loc[:, 'xy'] = df_ti.sidx.apply(lambda x: get_xy(*x))
+        df_ti.loc[:, 'x'] = df_ti.xy.apply(lambda x: x[0])
+        df_ti.loc[:, 'y'] = df_ti.xy.apply(lambda x: x[1])
+
+    if typ == 'obs':
+        return df_ti
+    # else
+    for iuc, use_col in enumerate(use_cols):
+        nname = name
+        if not isinstance(name, str):
+            nname = name[iuc]
+            # if zone type, find the zones for each index position
+            if zone_array is not None and typ in ["zone", "grid"]:
+                if zone_array.ndim != len(index_cols):
+                    raise Exception("get_tpl_or_ins_df() error: "
+                                    "zone_array.ndim "
+                                    "({0}) != len(index_cols)({1})"
+                                    "".format(zone_array.ndim,
+                                              len(index_cols)))
+                df_ti.loc[:, "zval"] = df_ti.sidx.apply(
+                    lambda x: zone_array[x])
+            df_ti.loc[:, "pargp{}".format(use_col)] = nname
+            if typ == "constant":
+                if longnames:
+                    df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                        nname, use_col)
+                    if suffix != '':
+                        df_ti.loc[:, use_col] += "_{0}".format(suffix)
+                else:
+                    df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                    if suffix != '':
+                        df_ti.loc[:, use_col] += suffix
+
+            elif typ == "zone":
+                if longnames:
+                    df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                        nname, use_col)
+                    if zone_array is not None:
+                        df_ti.loc[:, use_col] += df_ti.zval.apply(
+                            lambda x: "_zone:{0}".format(x))
+                    if suffix != '':
+                        df_ti.loc[:, use_col] += "_{0}".format(suffix)
+                else:
+                    df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                    if suffix != '':
+                        df_ti.loc[:, use_col] += suffix
+
+            elif typ == "grid":
+                if longnames:
+                    df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                        nname, use_col)
+                    if zone_array is not None:
+                        df_ti.loc[:, use_col] += df_ti.zval.apply(
+                            lambda x: "_zone:{0}".format(x))
+                    df_ti.loc[:, use_col] += '_' + df_ti.idx_strs
+                    if suffix != '':
+                        df_ti.loc[:, use_col] += "_{0}".format(suffix)
+
+                else:
+                    df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                    df_ti.loc[:, use_col] += df_ti.idx_strs
+                    if suffix != '':
+                        df_ti.loc[:, use_col] += suffix
+
+            else:
+                raise Exception("get_tpl_or_ins_df() error: "
+                                "unrecognized 'typ', if not 'obs', "
+                                "should be 'constant','zone', "
+                                "or 'grid', not '{0}'".format(typ))
+        # else:
+        #     if longnames:
+        #         df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+        #             nname, use_col)
+        #         df_ti.loc[:, use_col] += '_' + df_ti.idx_strs
+        #         if suffix != '':
+        #             df_ti.loc[:, use_col] += "_{0}".format(suffix)
+        #     else:
+        #         df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+        #         df_ti.loc[:, use_col] += df_ti.idx_strs
+        #         if suffix != '':
+        #             df_ti.loc[:, use_col] += suffix
+    return df_ti
 
 
 def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,

@@ -744,8 +744,10 @@ def clean_missing_exponent(pst_filename,clean_filename="clean.pst"):
         for line in lines:
             f.write(line+'\n')
 
+
 def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None,
-                    marker='~',includes_header=True,includes_index=True,prefix=''):
+                    marker='~',includes_header=True,includes_index=True,prefix='',
+                    longnames=False, head_lines_len=0, sep=','):
     """write a PEST-style instruction file from an existing CSV file
 
     Args:
@@ -785,14 +787,20 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
 
     # process only_cols
     if only_cols is None:
-        only_cols = set(df.columns.map(str.lower))
+        if not df.columns.is_numeric():
+            only_cols = set(df.columns.map(str.lower))
+        else:
+            only_cols = set(df.columns)
     else:
         if isinstance(only_cols,str): # incase it is a single name
             only_cols = [only_cols]
         only_cols = set(only_cols)
 
     if only_rows is None:
-        only_rows = set(df.index.map(str.lower))
+        if not df.index.is_numeric():
+            only_rows = set(df.index.map(str.lower))
+        else:
+            only_rows = set(df.index)
     else:
         if isinstance(only_rows,str): # incase it is a single name
             only_rows = [only_rows]
@@ -842,23 +850,34 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     onames = []
     ovals = []
     with open(ins_filename,'w') as f:
-        f.write("pif ~\nl1\n")
+        f.write("pif ~\n")
+        [f.write("l1\n") for _ in range(head_lines_len)]
+        if includes_header:
+            f.write("l1\n")  # skip the row (index) label
         for i,rlabel in enumerate(rlabels):
-            if includes_header:
-                f.write("l1 ") #skip the row (index) label
+            f.write("l1")
             for j,clabel in enumerate(clabels):
                 if rlabel in only_rlabels and clabel in only_clabels:
-                    oname = prefix+rlabel+"_"+clabel
+                    if longnames:
+                        oname = "{0}_use_col:{1}_{2}".format(prefix, clabel,
+                                                             rlabel)
+                    else:
+                        oname = prefix+rlabel+"_"+clabel
                     onames.append(oname)
                     ovals.append(df.iloc[i,j])
+                    oname = " !{0}!".format(oname)
                 else:
-                    oname = "dum"
-                if j == 0:
-                    if includes_index:
-                        f.write(" {0},{0} ".format(marker))
-                else:
-                    f.write(" {0},{0} ".format(marker))
-                f.write(" !{0}! ".format(oname))
+                    if sep == ',':
+                        oname = " !dum!"
+                    else:
+                        oname = " w"
+                if sep == ',':
+                    if j == 0:
+                        if includes_index:
+                            f.write(" {0},{0}".format(marker))
+                    else:
+                        f.write(" {0},{0}".format(marker))
+                f.write(oname)
             f.write('\n')
     odf = pd.DataFrame({"obsnme":onames,"obsval":ovals},index=onames)
     return odf

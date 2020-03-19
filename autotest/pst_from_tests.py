@@ -84,6 +84,8 @@ def freyberg_test():
                  remove_existing=True,
                  longnames=True, spatial_reference=sr,
                  zero_based=False)
+    pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
+                        index_cols='obsnme', use_cols='obsval', prefix='hds')
     pf.add_observations_from_ins(ins_file='freyberg.hds.dat.ins')
     pf.post_py_cmds.append(hds_runline)
     pf.tmp_files.append(f"{m.name}.hds")
