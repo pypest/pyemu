@@ -1786,8 +1786,10 @@ def run_test():
     else:
         raise Exception("should have failed")
 
+
 if __name__ == "__main__":
-    #run_test()
+
+    run_test()
     #specsim_test()
     #aniso_invest()
     #fieldgen_dev()
