@@ -86,6 +86,8 @@ def freyberg_test():
                       "sfo = flopy.utils.SfrFile('freyberg.sfr.out')\n",
                       "sfo.get_dataframe().to_csv('freyberg.sfo.dat')\n"])
         sfodf.to_csv(fp, sep=' ', index_label='idx')
+    sfodf.to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
+                 index_label='idx')
     template_ws = "new_temp"
     # sr0 = m.sr
     sr = pyemu.helpers.SpatialReference.from_namfile(
@@ -109,7 +111,7 @@ def freyberg_test():
     pf.add_observations('freyberg.sfo.dat', insfile=None,
                         index_cols=['segment', 'reach', 'kstp', 'kper'],
                         use_cols=["Qaquifer", "Qout"], prefix='sfr',
-                        ofile_skip=4)
+                        ofile_skip=4, ofile_sep=' ')
     pf.tmp_files.append(f"{m.name}.sfr.out")
     pf.extra_py_imports.append('flopy')
     pf.post_py_cmds.extend(
@@ -124,6 +126,14 @@ def freyberg_test():
          "'sfo = flopy.utils.SfrFile(`freyberg.sfr.out`)\\n', "
          "'sfo.get_dataframe().to_csv(`freyberg.sfo.dat`)\\n'])",
          "    sfodf.to_csv(fp, sep=' ', index_label='idx')"])
+    # csv version of sfr obs
+    # sfr outputs to obs
+    pf.add_observations('freyberg.sfo.csv', insfile=None,
+                        index_cols=['segment', 'reach', 'kstp', 'kper'],
+                        use_cols=["Qaquifer", "Qout"], prefix='sfr2',
+                        ofile_sep=',')
+    pf.post_py_cmds.append(
+        "sfodf.to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
 
     # pars
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",

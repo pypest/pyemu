@@ -866,22 +866,25 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
                         onames.append(oname)
                         ovals.append(df.iloc[i,j])
                         oname = " !{0}!".format(oname)
+                        if sep == ',':
+                            oname = "{0} {1},{1}".format(oname, marker)
                     else:
-                        oname = " w"
+                        if sep == ',':
+                            oname = " {0},{0}".format(marker)
+                        else:
+                            oname = " w"
                     if j == 0:
                         if includes_index:
-                            if sep == ' ,':
+                            if sep == ',':
                                 f.write(" {0},{0}".format(marker))
                             else:
                                 f.write(" w")
-                    else:
-                        if sep == ' ,':
-                            f.write(" {0},{0}".format(marker))
-                        else:
-                            f.write("")
+                    # else:
+                    #     if sep == ',':
+                    #         oname = "{0} {1},{1}".format(oname, marker)
                     f.write(oname)
             f.write('\n')
-    odf = pd.DataFrame({"obsnme":onames,"obsval":ovals},index=onames)
+    odf = pd.DataFrame({"obsnme": onames, "obsval": ovals}, index=onames)
     return odf
 
 
