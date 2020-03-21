@@ -1078,8 +1078,13 @@ class InstructionFile(object):
                     raw.insert(0,'')
                 if len(raw) == 1:
                     self.throw_out_error("no whitespaces found on output line {0} past {1}".format(line,cursor_pos))
-                cursor_pos = cursor_pos + line[cursor_pos:].index(raw[1])
-
+                # step over current value
+                cursor_pos = (cursor_pos +
+                              line[cursor_pos:].replace(',', ' ').index(' '))
+                # now find position of next entry
+                cursor_pos = (cursor_pos +
+                              line[cursor_pos:].replace(',', ' ').
+                              index(raw[1]))
 
             elif ins.startswith('!'):
                 oname = ins.replace('!','')
