@@ -788,24 +788,20 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
 
     # process only_cols
     if only_cols is None:
-        if not df.columns.is_numeric():
-            only_cols = set(df.columns.map(str.lower))
-        else:
-            only_cols = set(df.columns)
+        only_cols = set(df.columns)
     else:
-        if isinstance(only_cols,str): # incase it is a single name
+        if isinstance(only_cols, str): # incase it is a single name
             only_cols = [only_cols]
         only_cols = set(only_cols)
+    only_cols = {c.lower() if isinstance(c, str) else c for c in only_cols}
 
     if only_rows is None:
-        if not df.index.is_numeric():
-            only_rows = set(df.index.map(str.lower))
-        else:
-            only_rows = set(df.index)
+        only_rows = set(df.index)
     else:
-        if isinstance(only_rows,str): # incase it is a single name
+        if isinstance(only_rows, str): # incase it is a single name
             only_rows = [only_rows]
         only_rows = set(only_rows)
+    only_cols = {c.lower() if isinstance(c, str) else c for c in only_cols}
 
     # process the row labels, handling duplicates
     rlabels = []
@@ -851,34 +847,39 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     onames = []
     ovals = []
     with open(ins_filename,'w') as f:
-        f.write("pif ~\n")
+        f.write("pif {0}\n".format(marker))
         [f.write("l1\n") for _ in range(head_lines_len)]
         if includes_header:
             f.write("l1\n")  # skip the row (index) label
         for i,rlabel in enumerate(rlabels):
             f.write("l1")
+            c_count = 0
             for j,clabel in enumerate(clabels):
-                if rlabel in only_rlabels and clabel in only_clabels:
-                    if longnames:
-                        oname = "{0}_use_col:{1}_{2}".format(prefix, clabel,
-                                                             rlabel)
-                    else:
-                        oname = prefix+rlabel+"_"+clabel
-                    onames.append(oname)
-                    ovals.append(df.iloc[i,j])
-                    oname = " !{0}!".format(oname)
-                else:
-                    if sep == ',':
-                        oname = " !dum!"
+                if c_count < len(only_clabels):
+                    if rlabel in only_rlabels and clabel in only_clabels:
+                        c_count += 1
+                        if longnames:
+                            oname = "{0}_use_col:{1}_{2}".format(prefix, clabel,
+                                                                 rlabel)
+                        else:
+                            oname = prefix+rlabel+"_"+clabel
+                        onames.append(oname)
+                        ovals.append(df.iloc[i,j])
+                        oname = " !{0}!".format(oname)
                     else:
                         oname = " w"
-                if sep == ',':
                     if j == 0:
                         if includes_index:
-                            f.write(" {0},{0}".format(marker))
+                            if sep == ' ,':
+                                f.write(" {0},{0}".format(marker))
+                            else:
+                                f.write(" w")
                     else:
-                        f.write(" {0},{0}".format(marker))
-                f.write(oname)
+                        if sep == ' ,':
+                            f.write(" {0},{0}".format(marker))
+                        else:
+                            f.write("")
+                    f.write(oname)
             f.write('\n')
     odf = pd.DataFrame({"obsnme":onames,"obsval":ovals},index=onames)
     return odf
@@ -1097,8 +1098,13 @@ class InstructionFile(object):
                     raw.insert(0,'')
                 if len(raw) == 1:
                     self.throw_out_error("no whitespaces found on output line {0} past {1}".format(line,cursor_pos))
-                cursor_pos = cursor_pos + line[cursor_pos:].index(raw[1])
-
+                # step over current value
+                cursor_pos = (cursor_pos +
+                              line[cursor_pos:].replace(',', ' ').index(' '))
+                # now find position of next entry
+                cursor_pos = (cursor_pos +
+                              line[cursor_pos:].replace(',', ' ').
+                              index(raw[1]))
 
             elif ins.startswith('!'):
                 oname = ins.replace('!','')
