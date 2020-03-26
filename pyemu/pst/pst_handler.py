@@ -368,9 +368,15 @@ class Pst(object):
 
         """
         if "forecasts" in self.pestpp_options.keys():
-            return self.pestpp_options["forecasts"].lower().split(',')
+            if isinstance(self.pestpp_options["forecasts"],str):
+                return self.pestpp_options["forecasts"].lower().split(',')
+            else:
+                return [f.lower() for f in self.pestpp_options["forecasts"]]
         elif "predictions" in self.pestpp_options.keys():
-            return self.pestpp_options["predictions"].lower().split(',')
+            if isinstance(self.pestpp_options["predictions"], str):
+                return self.pestpp_options["predictions"].lower().split(',')
+            else:
+                return [f.lower() for f in self.pestpp_options["predictions"]]
         else:
             return None
 
