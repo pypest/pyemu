@@ -46,6 +46,11 @@ A publication documenting pyEMU and an example application can be found here:
 
 [http://dx.doi.org/10.1016/j.envsoft.2016.08.017](http://dx.doi.org/10.1016/j.envsoft.2016.08.017)
 
+Funding
+=======
+
+pyEMU was originally developed with support from the U.S Geological Survey. The New Zealand Strategic Science Investment Fund as part of GNS Science’s (https://www.gns.cri.nz/) Groundwater Research Programme has also funded contributions 2018-present.
+
 Examples
 ========
 
