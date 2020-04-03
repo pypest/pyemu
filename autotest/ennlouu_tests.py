@@ -42,10 +42,10 @@ def rosenbrock_setup(version,initial_decvars=1.6,constraints=False,constraint_ex
     obs.loc["obs","obgnme"] = "obj_fn"  #pst.pestpp_options["opt_obj_func"] = "obj_fn"
     if constraints is True:
         if "two_linear" in constraint_exp:
-            obs.loc["constraint_0", "obgnme"] = "g_constraint"  # inherit from pestpp_options
-            obs.loc["constraint_0", "obsval"] = 10.0  # inherit from pestpp_options
+            obs.loc["constraint_0", "obgnme"] = "l_constraint"  #"g_constraint"  # inherit from pestpp_options
+            obs.loc["constraint_0", "obsval"] = -1.5  #10.0  # inherit from pestpp_options
             obs.loc["constraint_1", "obgnme"] = "l_constraint"  # inherit from pestpp_options
-            obs.loc["constraint_1", "obsval"] = 2.0  # inherit from pestpp_options
+            obs.loc["constraint_1", "obsval"] = -0.2  #2.0  # inherit from pestpp_options
         elif "one_linear" in constraint_exp:
             obs.loc["constraint", "obgnme"] = "l_constraint"  #"g_constraint"  # inherit from pestpp_options
             obs.loc["constraint", "obsval"] = 2.0  #10.0  # inherit from pestpp_options
@@ -687,11 +687,11 @@ def plot_2par_rosen(label="rosen_2par_surf.pdf",constraints=False,finite_diff_gr
         #yy = r * np.sin(theta)
         # TODO: read from *.py
         xx = np.linspace(-2.2, 2.2, 100)
-        yy = -6 * xx + 10  #2.25 * xx + 2
+        yy = 0.8 * xx - 2  #-6 * xx + 10  #2.25 * xx + 2
         plt.plot(xx, yy, 'r-', zorder=-1)
         plt.ylim(-2.2, 2.2)
         if "two_linear" in constraint_exp:
-            yy = -1.5 * xx + 4
+            yy = -0.12 * xx - 0.2  #-1.5 * xx + 4
             plt.plot(xx, yy, 'g-', zorder=-1)
             #plt.text(s="-1.5*x_1 + x_2 >= 4")
             plt.ylim(-2.2, 2.2)
@@ -901,7 +901,7 @@ if __name__ == "__main__":
     #filter_plot(problem="2par", constraints=True, log_phi=True)
     plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_20_H_up_new_direct.pdf")
 
-    '''
+    
     constraints, constraint_exp = True, "one_linear"  #"two_linear"  #None
     if "one_linear" in constraint_exp:
         yy = -1.0  #-2.0  #0.5
@@ -917,8 +917,25 @@ if __name__ == "__main__":
                                constraint_exp=constraint_exp,qp_solve_method="direct",
                                reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_20_H_up_new_direct_3.pdf")
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_20_H_up_new_direct_1.pdf")
 
+    
+    constraints, constraint_exp = True, "two_linear"  #"two_linear"  #None
+    if "one_linear" in constraint_exp:
+        yy = -1.0  #-2.0  #0.5
+        idv = [(2 - yy) / -2.25, yy]  #[(10 - yy) / 6, yy]  #[1.8, yy]
+        working_set = ['constraint']  #[]
+    elif "two_linear" in constraint_exp:  # "two_linear"
+        yy = -1.0
+        idv = [(-1.5 - yy) / -0.3, yy]
+        working_set = ['constraint_0']  #
+    rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
+                               working_set=working_set, hess_update=False, hess_self_scaling=False,
+                               constraint_exp=constraint_exp,qp_solve_method="null_space",
+                               reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
+    #filter_plot(problem="2par", constraints=True, log_phi=True)
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_30_wo_H2-_-h_orthog_new.pdf")
     '''
     constraints, constraint_exp = True, "two_linear"  #"two_linear"  #None
     if "one_linear" in constraint_exp:
@@ -926,16 +943,69 @@ if __name__ == "__main__":
         idv = [(2 - yy) / -2.25, yy]  #[(10 - yy) / 6, yy]  #[1.8, yy]
         working_set = ['constraint']  #[]
     elif "two_linear" in constraint_exp:  # "two_linear"
-        yy = 1.0
-        idv = [1.75, 1.10]  #[(4 - yy) / 1.5, yy]
-        working_set = [] #['constraint_1']  #
+        yy = -1.0
+        idv = [(-1.5 - yy) / -0.3, yy]
+        working_set = ['constraint_0']  #
+    rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
+                               working_set=working_set, hess_update=False, hess_self_scaling=False,
+                               constraint_exp=constraint_exp,qp_solve_method="direct",
+                               reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
+    #filter_plot(problem="2par", constraints=True, log_phi=True)
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_30_wo_H2+_+h_orthog_new_direct.pdf")
+
+    constraints, constraint_exp = True, "two_linear"  #"two_linear"  #None
+    if "one_linear" in constraint_exp:
+        yy = -1.0  #-2.0  #0.5
+        idv = [(2 - yy) / -2.25, yy]  #[(10 - yy) / 6, yy]  #[1.8, yy]
+        working_set = ['constraint']  #[]
+    elif "two_linear" in constraint_exp:  # "two_linear"
+        yy = -1.0
+        idv = [(-1.5 - yy) / -0.3, yy]
+        working_set = ['constraint_0']  #
+    rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
+                               working_set=working_set, hess_update=True, hess_self_scaling=False,
+                               constraint_exp=constraint_exp,qp_solve_method="direct",
+                               reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
+    #filter_plot(problem="2par", constraints=True, log_phi=True)
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_30_w_H2+_+h_orthog_new_direct.pdf")
+
+
+    constraints, constraint_exp = True, "two_linear"  #"two_linear"  #None
+    if "one_linear" in constraint_exp:
+        yy = -1.0  #-2.0  #0.5
+        idv = [(2 - yy) / -2.25, yy]  #[(10 - yy) / 6, yy]  #[1.8, yy]
+        working_set = ['constraint']  #[]
+    elif "two_linear" in constraint_exp:  # "two_linear"
+        yy = -1.0
+        idv = [(-1.5 - yy) / -0.3, yy]
+        working_set = ['constraint_0']  #
+    rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
+    rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
+                               working_set=working_set, hess_update=True, hess_self_scaling=False,
+                               constraint_exp=constraint_exp,qp_solve_method="null_space",
+                               reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
+    #filter_plot(problem="2par", constraints=True, log_phi=True)
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_30_w_H2+_+h_orthog_new.pdf")
+
+    constraints, constraint_exp = True, "two_linear"  #"two_linear"  #None
+    if "one_linear" in constraint_exp:
+        yy = -1.0  #-2.0  #0.5
+        idv = [(2 - yy) / -2.25, yy]  #[(10 - yy) / 6, yy]  #[1.8, yy]
+        working_set = ['constraint']  #[]
+    elif "two_linear" in constraint_exp:  # "two_linear"
+        yy = -1.0
+        idv = [(-1.5 - yy) / -0.3, yy]
+        working_set = ['constraint_0']  #
     rosenbrock_setup(version="2par",constraints=constraints,initial_decvars=idv,constraint_exp=constraint_exp)
     rosenbrock_multiple_update(version="2par",constraints=constraints,finite_diff_grad=True,nit=20,
                                working_set=working_set, hess_update=False, hess_self_scaling=False,
                                constraint_exp=constraint_exp,qp_solve_method="null_space",
                                reduced_hessian=False, damped=False)  #biobj_weight=5.0,alg="LBFGS",damped=False)
     #filter_plot(problem="2par", constraints=True, log_phi=True)
-    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_50_no_H_new_off.pdf")
+    plot_2par_rosen(finite_diff_grad=True,constraints=constraints,constraint_exp=constraint_exp,label="surf_30_wo_H2+_+h_orthog_new.pdf")
+
 
     constraints, constraint_exp = True, "one_linear"  #"two_linear"  #None
     if "one_linear" in constraint_exp:
@@ -963,4 +1033,4 @@ if __name__ == "__main__":
     #rosenbrock_phi_progress(version="2par",label="phi_progress_cma.pdf")
 
     #cma_invest(version="2par")
-    '''
+

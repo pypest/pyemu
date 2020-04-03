@@ -112,6 +112,9 @@ class EnsembleMethod(object):
         return delta
 
     def _calc_obs(self,parensemble):
+        '''
+        propagate the ensemble forward using sweep and error catcher.
+        '''
         self.logger.log("removing existing sweep in/out files")
         try:
             os.remove(self.sweep_in_csv)
@@ -151,16 +154,14 @@ class EnsembleMethod(object):
         obs = pd.read_csv(filename)
         obs.columns = [item.lower() for item in obs.columns]
         self.raw_sweep_out = obs.copy() # save this for later to support restart
-        assert "input_run_id" in obs.columns,\
-            "'input_run_id' col missing...need newer version of sweep"
+        assert "input_run_id" in obs.columns, "'input_run_id' col missing...need newer version of sweep"
         obs.index = obs.input_run_id
         failed_runs = None
         if 1 in obs.failed_flag.values:
             failed_runs = obs.loc[obs.failed_flag == 1].index.values
             self.logger.warn("{0} runs failed (indices: {1})".\
                              format(len(failed_runs),','.join([str(f) for f in failed_runs])))
-        obs = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
-                                                               pst=self.pst)
+        obs = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],pst=self.pst)
         if obs.isnull().values.any():
             self.logger.lraise("_calc_obs() error: NaNs in obsensemble")
         return failed_runs, obs

@@ -272,6 +272,7 @@ def pp_tpl_to_dataframe(tpl_filename):
                      header=None, names=PP_NAMES[:-1],usecols=usecols)
     df.loc[:,"name"] = df.name.apply(str).apply(str.lower)
     df["parnme"] = [i.split(marker)[1].strip() for i in inlines]
+    df.loc[:, "parnme"] = df.parnme.apply(str).apply(str.lower)
 
 
     return df

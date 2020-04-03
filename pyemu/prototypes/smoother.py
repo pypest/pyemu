@@ -358,7 +358,7 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.log("initializing with existing ensembles")
             if isinstance(parensemble,str):
                 self.logger.log("loading parensemble from file")
-                if not os.path.exists(obsensemble):
+                if not os.path.exists(parensemble):
                     self.logger.lraise("can not find parensemble file: {0}".\
                                        format(parensemble))
                 df = pd.read_csv(parensemble,index_col=0)
