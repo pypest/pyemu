@@ -839,7 +839,7 @@ class Pst(object):
                 # check for tied pars
                 ntied = 0
                 for line in section_lines:
-                    if "tied" in line:
+                    if "tied" in line.lower():
                         ntied += 1
                 if ntied > 0:
                     slines = section_lines[:-ntied]
