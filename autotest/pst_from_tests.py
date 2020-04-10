@@ -290,11 +290,14 @@ def freyberg_prior_build():
                       mfile_fmt='free')
     well_mfiles = ["WEL_0000.dat", "WEL_0001.dat", "WEL_0002.dat"]
     date = m.dis.start_datetime
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=180.0)  # 180 correlation length
+    t_geostruct = pyemu.geostats.GeoStruct(variograms=v)
     for t, well_file in enumerate(well_mfiles):  # constant par for each well file
         pf.add_parameters(filenames=well_file, par_type="constant",
                           index_cols=[0, 1, 2], use_cols=3,
                           par_name_base="flux", alt_inst_str='kper',
-                          datetime=date)
+                          datetime=date, geostruct=t_geostruct,
+                          pargp='wellflux_t')
         date = (pd.to_datetime(date) +
                 pd.DateOffset(m.dis.perlen.array[t], 'day'))
     # par for each well (same par through time)
@@ -308,24 +311,29 @@ def freyberg_prior_build():
                       par_type="constant",
                       index_cols=[0, 1, 2], use_cols=3,
                       par_name_base=["flux_global"])
+    date = m.dis.start_datetime
     rch_mfiles = ["rech_0.ref", "rech_1.ref", "rech_2.ref"]
-    for rch_file in rch_mfiles:
+    for t, rch_file in enumerate(rch_mfiles):
         # constant par for each kper
         pf.add_parameters(filenames=rch_file, par_type="constant",
                           zone_array=m.bas6.ibound[0].array,
-                          par_name_base="rch", alt_inst_str='kper')
+                          par_name_base="rch", alt_inst_str='kper',
+                          datetime=date, geostruct=t_geostruct,
+                          pargp='rch_t')
+        date = (pd.to_datetime(date) +
+                pd.DateOffset(m.dis.perlen.array[t], 'day'))
     # spatial recharge pars
     pf.add_parameters(filenames=rch_mfiles, par_type="grid",
                       zone_array=m.bas6.ibound[0].array,
                       par_name_base="rch",
                       geostruct=geostruct)
-    # spatial hk pars
-    hk_files = ["hk_Layer_{0:d}.ref".format(i) for i in range(1, 4)]
-    for hk in hk_files:
-        pf.add_parameters(filenames=hk, par_type="grid",
-                          zone_array=m.bas6.ibound[0].array,
-                          par_name_base="hk", alt_inst_str='lay',
-                          geostruct=geostruct)
+    # # spatial hk pars
+    # hk_files = ["hk_Layer_{0:d}.ref".format(i) for i in range(1, 4)]
+    # for hk in hk_files:
+    #     pf.add_parameters(filenames=hk, par_type="grid",
+    #                       zone_array=m.bas6.ibound[0].array,
+    #                       par_name_base="hk", alt_inst_str='lay',
+    #                       geostruct=geostruct)
     # global constant recharge par
     pf.add_parameters(filenames=rch_mfiles, par_type="constant",
                       zone_array=m.bas6.ibound[0].array,

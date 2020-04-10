@@ -44,7 +44,8 @@ class PstFrom(object):
             start_datetime = _get_datetime_from_str(start_datetime)
         self.start_datetime = start_datetime
         self.geostruct = None
-        self.par_struct_dict = {}
+        self.par_struct_dict_d = {}
+        self.par_struct_dict_l = {}
 
         self.mult_files = []
         self.org_files = []
@@ -201,7 +202,16 @@ class PstFrom(object):
 
     def build_prior(self, fmt="ascii", filename=None, droptol=None, chunk=None,
                     sigma_range=6):
-        struct_dict = self.par_struct_dict
+        struct_dict = {}
+        for gs, gps in self.par_struct_dict_d.items():
+            par_dfs = []
+            for _, l in gps.items():
+                df = pd.concat(l)
+                if 'timedelta' in df.columns:
+                    df.loc[:, "y"] = 0  #
+                    df.loc[:, "x"] = df.timedelta.apply(lambda x: x.days)
+                par_dfs.append(df)
+            struct_dict[gs] = par_dfs
         # TODO: sort out how to combine correlated temporal pars /
         #  / setup with multiple calls to add_parameters()
         # if "temporal_list" in self.par_dfs.keys():
@@ -748,7 +758,6 @@ class PstFrom(object):
         tpl_filename = mlt_filename + ".tpl"
         pp_filename = None
         fac_filename = None
-        pp_geostruct = None  # will be used only is pp pars are passed
 
         # Process model parameter files to produce appropriate pest pars
         if index_cols is not None:  # Assume list/tabular type input files
@@ -762,8 +771,6 @@ class PstFrom(object):
                     ult_lbound = [ult_lbound]
                 if not isinstance(ult_ubound, list):
                     ult_ubound = [ult_ubound]
-                if not isinstance(pargp, list):
-                    pargp = [pargp]
             if len(use_cols) != len(ult_lbound) != len(ult_ubound):
                 self.logger.lraise("mismatch in number of columns to use {0} "
                                    "and number of ultimate lower {0} or upper "
@@ -778,7 +785,7 @@ class PstFrom(object):
                 file_dict.values(), par_name_base,
                 tpl_filename=os.path.join(self.new_d, tpl_filename),
                 par_type=par_type, suffix='', index_cols=index_cols,
-                use_cols=use_cols, zone_array=zone_array,
+                use_cols=use_cols, zone_array=zone_array, gpname=pargp,
                 longnames=self.longnames, get_xy=self.get_xy,
                 zero_based=self.zero_based,
                 input_filename=os.path.join(self.mult_file_d, mlt_filename))
@@ -799,7 +806,7 @@ class PstFrom(object):
                     tpl_filename=os.path.join(self.new_d, tpl_filename),
                     suffix='', par_type=par_type, zone_array=zone_array,
                     shape=shape, longnames=self.longnames, get_xy=self.get_xy,
-                    fill_value=1.0,
+                    fill_value=1.0, gpname=pargp,
                     input_filename=os.path.join(self.mult_file_d,
                                                 mlt_filename))
                 self.logger.log(
@@ -979,16 +986,24 @@ class PstFrom(object):
         # - need to store more for cov builder (e.g. x,y)
         self.par_dfs.append(df)  # TODO - check when this gets used if constructing struct_dict here....
         # pivot df for be list of df per group
-        df_list = [g for _, g in df.groupby('pargp')]
+        gp_dict = {g: [d] for g, d in df.groupby('pargp')}
+        # df_list = [d for g, d in df.groupby('pargp')]
         if geostruct is not None:
             if 'x' in df.columns:
                 pass
                 #  TODO warn that it looks like spatial pars but no geostruct
             # relating pars to geostruct....
-            if geostruct in self.par_struct_dict.keys():
-                self.par_struct_dict[geostruct].extend(df_list)
+            if geostruct not in self.par_struct_dict_d.keys():
+                self.par_struct_dict_d[geostruct] = gp_dict
+                self.par_struct_dict_l[geostruct] = list(gp_dict.values())
             else:
-                self.par_struct_dict[geostruct] = df_list
+                for gp, gppars in gp_dict.items():
+                    if gp not in self.par_struct_dict_d[geostruct].keys():
+                        self.par_struct_dict_d[geostruct].update({gp: gppars})
+                    else:
+                        self.par_struct_dict_d[geostruct][gp].extend(gppars)
+                self.par_struct_dict_l[geostruct].extend(list(gp_dict.values()))
+
         # else:
             # if self.geostruct is not None:
             #     geostruct = self.geostruct
@@ -1012,7 +1027,6 @@ class PstFrom(object):
 
         self.logger.log("adding parameters for file(s) "
                         "{0}".format(str(filenames)))
-
 
         if rebuild_pst:
             if self.pst is not None:
@@ -1188,8 +1202,9 @@ class PstFrom(object):
 
 
 def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
-                   use_cols=None, suffix='', zone_array=None, longnames=False,
-                   get_xy=None, zero_based=True, input_filename=None):
+                   use_cols=None, suffix='', zone_array=None, gpname=None,
+                   longnames=False, get_xy=None, zero_based=True,
+                   input_filename=None):
     """ Write template files for a list style input.
 
     Args:
@@ -1231,7 +1246,7 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
     # get dataframe with autogenerated parnames based on `name`, `indx_cols`,
     # `use_cols`, `suffix` and `par_type`
     df_tpl = _get_tpl_or_ins_df(dfs, name, index_cols, par_type,
-                                use_cols=use_cols, suffix=suffix,
+                                use_cols=use_cols, suffix=suffix, gpname=gpname,
                                 zone_array=zone_array, longnames=longnames,
                                 get_xy=get_xy, zero_based=zero_based)
     parnme = list(df_tpl.loc[:, use_cols].values.flatten())
@@ -1267,7 +1282,7 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
 
 def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
                        suffix='', zone_array=None, longnames=False, get_xy=None,
-                       zero_based=True):
+                       zero_based=True, gpname=None):
     """
     Private method to auto-generate parameter or obs names from tabular
     model files (input or output) read into pandas dataframes
@@ -1364,76 +1379,84 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
     if use_cols is None:
         use_cols = [c for c in df_ti.columns if c not in index_cols]
     for iuc, use_col in enumerate(use_cols):
-        nname = name
         if not isinstance(name, str):
             nname = name[iuc]
             # if zone type, find the zones for each index position
-            if zone_array is not None and typ in ["zone", "grid"]:
-                if zone_array.ndim != len(index_cols):
-                    raise Exception("get_tpl_or_ins_df() error: "
-                                    "zone_array.ndim "
-                                    "({0}) != len(index_cols)({1})"
-                                    "".format(zone_array.ndim,
-                                              len(index_cols)))
-                df_ti.loc[:, "zval"] = df_ti.sidx.apply(
-                    lambda x: zone_array[x])
-            df_ti.loc[:, "pargp{}".format(use_col)] = nname
-            if typ == "constant":
-                # one par for entire use_col column
-                if longnames:
-                    df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
-                        nname, use_col)
-                    if suffix != '':
-                        df_ti.loc[:, use_col] += "_{0}".format(suffix)
-                else:
-                    df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
-                    if suffix != '':
-                        df_ti.loc[:, use_col] += suffix
+        else:
+            nname = name
+        if zone_array is not None and typ in ["zone", "grid"]:
+            if zone_array.ndim != len(index_cols):
+                raise Exception("get_tpl_or_ins_df() error: "
+                                "zone_array.ndim "
+                                "({0}) != len(index_cols)({1})"
+                                "".format(zone_array.ndim,
+                                          len(index_cols)))
+            df_ti.loc[:, "zval"] = df_ti.sidx.apply(
+                lambda x: zone_array[x])
+        if gpname is None or gpname[iuc] is None:
+            ngpname = nname
+        else:
+            if not isinstance(gpname, str):
+                ngpname = gpname[iuc]
+            else:
+                ngpname = gpname
+        df_ti.loc[:, "pargp{}".format(use_col)] = ngpname
+        if typ == "constant":
+            # one par for entire use_col column
+            if longnames:
+                df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                    nname, use_col)
+                if suffix != '':
+                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
+            else:
+                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                if suffix != '':
+                    df_ti.loc[:, use_col] += suffix
 
-            elif typ == "zone":
-                # one par for each zone
-                if longnames:
-                    df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
-                        nname, use_col)
-                    if zone_array is not None:
-                        df_ti.loc[:, use_col] += df_ti.zval.apply(
-                            lambda x: "_zone:{0}".format(x))
-                    if suffix != '':
-                        df_ti.loc[:, use_col] += "_{0}".format(suffix)
-                else:
-                    df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
-                    if suffix != '':
-                        df_ti.loc[:, use_col] += suffix
+        elif typ == "zone":
+            # one par for each zone
+            if longnames:
+                df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                    nname, use_col)
+                if zone_array is not None:
+                    df_ti.loc[:, use_col] += df_ti.zval.apply(
+                        lambda x: "_zone:{0}".format(x))
+                if suffix != '':
+                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
+            else:
+                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                if suffix != '':
+                    df_ti.loc[:, use_col] += suffix
 
-            elif typ == "grid":
-                # one par for each index
-                if longnames:
-                    df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
-                        nname, use_col)
-                    if zone_array is not None:
-                        df_ti.loc[:, use_col] += df_ti.zval.apply(
-                            lambda x: "_zone:{0}".format(x))
-                    df_ti.loc[:, use_col] += '_' + df_ti.idx_strs
-                    if suffix != '':
-                        df_ti.loc[:, use_col] += "_{0}".format(suffix)
-
-                else:
-                    df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
-                    df_ti.loc[:, use_col] += df_ti.idx_strs
-                    if suffix != '':
-                        df_ti.loc[:, use_col] += suffix
+        elif typ == "grid":
+            # one par for each index
+            if longnames:
+                df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                    nname, use_col)
+                if zone_array is not None:
+                    df_ti.loc[:, use_col] += df_ti.zval.apply(
+                        lambda x: "_zone:{0}".format(x))
+                df_ti.loc[:, use_col] += '_' + df_ti.idx_strs
+                if suffix != '':
+                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
 
             else:
-                raise Exception("get_tpl_or_ins_df() error: "
-                                "unrecognized 'typ', if not 'obs', "
-                                "should be 'constant','zone', "
-                                "or 'grid', not '{0}'".format(typ))
+                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                df_ti.loc[:, use_col] += df_ti.idx_strs
+                if suffix != '':
+                    df_ti.loc[:, use_col] += suffix
+
+        else:
+            raise Exception("get_tpl_or_ins_df() error: "
+                            "unrecognized 'typ', if not 'obs', "
+                            "should be 'constant','zone', "
+                            "or 'grid', not '{0}'".format(typ))
     return df_ti
 
 
 def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
-                    shape=None, longnames=False, fill_value=1.0, get_xy=None,
-                    input_filename=None):
+                    gpname=None, shape=None, longnames=False, fill_value=1.0,
+                    get_xy=None, input_filename=None):
     """ write a template file for a 2D array.
 
         Parameters
@@ -1555,8 +1578,10 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         if get_xy is not None:
             df.loc[:, 'x'] = xx
             df.loc[:, 'y'] = yy
+    if gpname is None:
+        gpname = name
     df.loc[:, "pargp"] = "{0}_{1}".format(
-        name, suffix.replace('_', '')).rstrip('_')
+        gpname, suffix.replace('_', '')).rstrip('_')
     df.loc[:, "tpl_filename"] = tpl_filename
     df.loc[:, "input_filename"] = input_filename
     if input_filename is not None:
