@@ -736,7 +736,8 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
     df.to_csv(hds_file+"_timeseries.post_processed", sep=' ')
     return df
 
-def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
+def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds",text="head", precision="single",
+                  include_path=False):
     """a function to setup using all values from a layer-stress period
     pair for observations.
 
@@ -755,6 +756,11 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
             If not np.ndarray or np.scalar(skip), then skip will be treated as a lambda function that
             returns np.NaN if the value should be skipped.
         prefix (`str`): the prefix to use for the observation names. default is "hds".
+        text (`str`): the text tag the flopy HeadFile instance.  Default is "head"
+        precison (`str`): the precision string for the flopy HeadFile instance.  Default is "single"
+        include_path (`bool`, optional): flag to setup the binary file processing in directory where the hds_file
+        is located (if different from where python is running).  This is useful for setting up
+            the process in separate directory for where python is running.
 
     Returns:
         tuple containing
@@ -784,7 +790,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            hds = flopy.utils.HeadFile(hds_file)
+            hds = flopy.utils.HeadFile(hds_file,text=text,precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
@@ -884,7 +890,9 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
     hds_path = os.path.dirname(hds_file)
     setup_file = os.path.join(hds_path,"_setup_{0}.csv".format(os.path.split(hds_file)[-1]))
     df.to_csv(setup_file)
-    fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}')\n".format(hds_file)
+    if not include_path:
+        hds_file = os.path.split(hds_file)[-1]
+    fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}',precision='{1}',text='{2}')\n".format(hds_file,precision,text)
     df.index = df.obsnme
     return fwd_run_line, df
 
@@ -914,9 +922,9 @@ def last_kstp_from_kper(hds,kper):
     return kstp
 
 
-def apply_hds_obs(hds_file, inact_abs_val=1.0e+20):
+def apply_hds_obs(hds_file, inact_abs_val=1.0e+20, precision="single",text="head"):
     """ process a modflow head save file.  A companion function to
-    `gw_utils.setup_hds_obsI()` that is called during the forward run process
+    `gw_utils.setup_hds_obs()` that is called during the forward run process
 
     Args:
         hds_file (`str`): a modflow head save filename. if hds_file ends with 'ucn',
@@ -952,7 +960,7 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e+20):
     if hds_file.lower().endswith('ucn'):
         hds = flopy.utils.UcnFile(hds_file)
     else:
-        hds = flopy.utils.HeadFile(hds_file)
+        hds = flopy.utils.HeadFile(hds_file, precision=precision,text=text)
     kpers = df.kper.unique()
     df.loc[:,"obsval"] = np.NaN
     for kper in kpers:
