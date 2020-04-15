@@ -11,6 +11,7 @@ import pandas as pd
 from pyemu.mat.mat_handler import Cov
 from pyemu.utils.pp_utils import pp_file_to_dataframe
 from ..pyemu_warnings import PyemuWarning
+from flopy.discretization import StructuredGrid
 
 EPSILON = 1.0e-7
 
@@ -527,6 +528,130 @@ class SpecSim2d(object):
         self.initialize()
 
         return pe
+
+    def draw_conditional(self, seed, obs_points, sg, base_values_file, local=True, factors_file=None,
+                         num_reals=1, mean_value=1.0, R_factor=1.0):
+
+        """ Generate a conditional, correlated random field using the Spec2dSim
+            object, a set of observation points, and a factors file.
+
+            The conditional field is made by generating an unconditional correlated random
+            field that captures the covariance in the variogram and conditioning it by kriging
+            a second surface using the value of the random field as observations.
+            This second conditioning surface provides an estimate of uncertainty (kriging error)
+            away from the observation points. At the observation points, the kriged surface is
+            equal to (less nugget effects) the observation. The conditioned correlated field
+            is then generated using:
+                        T(x) = Z(x) + [S(x) − S∗(x)]
+            where T(x) is the conditioned simulation, Z(x) is a kriging estimator of the
+            unknown field, S(x) is an unconditioned random field with the same covariance
+            structure as the desired field, and S∗(x) is a kriging estimate of the unconditioned
+            random field using its values at the observation points (pilot points).
+            [S(x) − S∗(x)] is an estimate of the kriging error.
+
+            This approach makes T(x) match the observed values at the observation points
+            (x_a, y_z), T(a) = Z(a), and have a structure away from the observation points that
+            follows the variogram used to generate Z, S, and S∗.
+
+            Chiles, J-P, and Delfiner, P., Geostatistics- Modeling Spatial Uncertainty: Wiley,
+                London, 695 p.
+
+        Args:
+            seed (`int`): integer used for random seed.  If seed is used as a PEST parameter,
+                          then passing the same value for seed will yield the same
+                          conditioned random fields. This allows runs to be recreated
+                          given an ensemble of seeds.
+            obs_points (`str` or `dataframe`): locations for observation points.  Either filename in pyemu
+                           pilot point file format: ["name","x","y","zone","parval1"] or
+                           a dataframe with these columns. Note that parval1 is not used.
+            base_values_file (`str`): filename containing 2d array with the base parameter values
+                              from which the random field will depart (Z(x)) above.
+                              Values of Z(x) are used for conditioning, not parval1 in the
+                              observation point file.
+            factors_file (`str`): name of the factors file generated using the locations of the
+                             observation points and the target grid.   If None this file will
+                             be generated and called conditional_factors.dat; but this is a slow
+                             step and should not generally be called for every simulation.
+            sg: flopy StructuredGrid object
+            local (`boolean`): whether coordinates in obs_points are in local (model) or map coordinates
+            num_reals (`int`): number of realizations to generate
+            mean_value (`float`): the mean value of the realizations
+            R_factor (`float`): a factor to scale the field, sometimes the variation from the
+                                geostruct parameters is larger or smaller than desired.
+
+        Returns:
+            `numpy.ndarray`: a 3-D array of realizations.  Shape
+                             is (num_reals, self.dely.shape[0], self.delx.shape[0])
+        Note:
+            log transformation is respected and the returned `reals` array is
+            in arithmetic space
+        """
+
+        # get a dataframe for the observation points, from file unless passed
+        if isinstance(obs_points, str):
+            obs_points = pp_file_to_dataframe(obs_points)
+        assert isinstance(obs_points, pd.DataFrame),"need a DataFrame, not {0}".\
+            format(type(obs_points))
+
+        # if factors_file is not passed, generate one from the geostruct associated
+        # with the calling object and the observation points dataframe
+        if factors_file is None:
+            ok = OrdinaryKrige(self.geostruct, obs_points)
+            ok.calc_factors_grid(sg, zone_array=None, var_filename=None)
+            ok.to_grid_factors_file('conditional_factors.dat')
+            factors_file = 'conditional_factors.dat'
+
+        # read in the base values, Z(x), assume these are not log-transformed
+        values_krige =  np.loadtxt(base_values_file)
+
+        np.random.seed(int(seed))
+
+        # draw random fields for num_reals
+        unconditioned = self.draw_arrays(num_reals=num_reals, mean_value=mean_value)
+
+        # If geostruct is log transformed, then work with log10 of field
+        if self.geostruct.transform == 'log':
+            unconditioned = np.log10(unconditioned)
+
+        # now do the conditioning by making another kriged surface with the
+        # values of the unconditioned random fields at the pilot points
+        conditioning_df = obs_points.copy()
+        # need to row and column for the x and y values in the observation
+        # dataframe, regular grid is tested when object is instantiated
+        # so grid spacing can be used.
+        conditioning_df['row'] = conditioning_df.apply(lambda row: sg.intersect(row['x'],
+                                                                               row['y'],
+                                                                               local=local)[0], axis=1)
+        conditioning_df['col'] = conditioning_df.apply(lambda row: sg.intersect(row['x'],
+                                                                               row['y'],
+                                                                               local=local)[1], axis=1)
+        reals = []
+        for layer in range(0, num_reals):
+            unconditioned[layer] = unconditioned[layer] * R_factor  # scale the unconditioned values
+            conditioning_df['unconditioned'] = conditioning_df.apply(
+                lambda row: unconditioned[layer][row['row'], row['col']], axis=1)
+            conditioning_df.to_csv('unconditioned.dat',
+                                   columns=['name', 'x', 'y', 'zone', 'unconditioned'],
+                                   sep=' ',
+                                   header=False,
+                                   index=False)
+            # krige a surface using unconditioned observations to make the conditioning surface
+            fac2real(pp_file='unconditioned.dat',
+                     factors_file=factors_file,
+                     out_file='conditioning.dat')
+            conditioning = np.loadtxt('conditioning.dat')
+
+            if self.geostruct.transform == "log":
+                conditioned = np.log10(values_krige) + (unconditioned[layer] - conditioning)
+                conditioned = np.power(10, conditioned)
+            else:
+                conditioned = values_krige + (unconditioned[layer] - conditioning)
+
+            reals.append(conditioned)
+
+        reals = np.array(reals)
+        return reals
+
 
 
 class OrdinaryKrige(object):
