@@ -641,7 +641,10 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            bf = flopy.utils.HeadFile(bf_file,text=text,precision=precision)
+            if text != "NONE":
+                bf = flopy.utils.HeadFile(bf_file,text=text, precision=precision)
+            else:
+                bf = flopy.utils.HeadFile(bf_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
