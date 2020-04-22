@@ -739,7 +739,7 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
         assert i >= 0 and i < nrow
         assert j >= 0 and j < ncol
         if text.upper() != "NONE":
-            df = pd.DataFrame(data=hds.get_ts((k, i, j),text=text), columns=["totim", site])
+            df = pd.DataFrame(data=hds.get_ts((k, i, j)), columns=["totim", site])
         else:
             df = pd.DataFrame(data=hds.get_ts((k, i, j)), columns=["totim", site])
         df.index = df.pop("totim")
