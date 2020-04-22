@@ -719,7 +719,7 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
     assert os.path.exists(hds_file), "head save file not found"
     if hds_file.lower().endswith(".ucn"):
         try:
-            hds = flopy.utils.UcnFile(hds_file,precsion=precision)
+            hds = flopy.utils.UcnFile(hds_file,precision=precision)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
