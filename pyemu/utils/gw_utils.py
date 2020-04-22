@@ -725,9 +725,9 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
     else:
         try:
             if text != "NONE":
-                hds = flopy.utils.HeadFile(hds_file,precision=precision)
-            else:
                 hds = flopy.utils.HeadFile(hds_file,text=text,precision=precision)
+            else:
+                hds = flopy.utils.HeadFile(hds_file,precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
