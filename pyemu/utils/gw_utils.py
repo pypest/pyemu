@@ -621,7 +621,6 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
         bf_file,start_datetime,time_units, text, fill, precision,_iscbc = line.strip().split(',')
         site_df = pd.read_csv(f)
     text = text.upper()
-    #print(site_df)
     if _iscbc.lower().strip() == "false":
         iscbc = False
     elif _iscbc.lower().strip() == "true":
@@ -712,20 +711,23 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
     assert os.path.exists(config_file), config_file
     with open(config_file,'r') as f:
         line = f.readline()
-        hds_file,start_datetime,time_units,text,fill,precision = line.strip().split(',')
+        hds_file,start_datetime,time_units,text,fill,precision,_iscbc = line.strip().split(',')
         site_df = pd.read_csv(f)
 
     #print(site_df)
-
+    text = text.upper()
     assert os.path.exists(hds_file), "head save file not found"
     if hds_file.lower().endswith(".ucn"):
         try:
-            hds = flopy.utils.UcnFile(hds_file)
+            hds = flopy.utils.UcnFile(hds_file,precsion=precision)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            hds = flopy.utils.HeadFile(hds_file)
+            if text != "NONE":
+                hds = flopy.utils.HeadFile(hds_file,precision=precision)
+            else:
+                hds = flopy.utils.HeadFile(hds_file,text=text,precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
