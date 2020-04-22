@@ -1781,7 +1781,7 @@ def run_test():
 
 if __name__ == "__main__":
 
-    run_test()
+    #run_test()
     #specsim_test()
     #aniso_invest()
     #fieldgen_dev()
@@ -1803,7 +1803,7 @@ if __name__ == "__main__":
     #par_knowledge_test()
     # grid_obs_test()
     #hds_timeseries_test()
-    #postprocess_inactive_conc_test()
+    postprocess_inactive_conc_test()
     #plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
