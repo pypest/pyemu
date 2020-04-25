@@ -464,7 +464,13 @@ class LinearAnalysis(object):
                 self.__obscov.drop(drop_names, axis=0)
         self.__predictions = mat
         try:
-            fnames = [fname for fname in self.forecast_names if fname in self.pst.nnz_obs_names]
+            nz_names = set(self.pst.nnz_obs_names)
+            fnames = [fname for fname in self.forecast_names if fname in nz_names]
+            if len(row_names) > 0:
+                srow_names = set(row_names)
+                fnames = [fname for fname in self.forecast_names if fname in srow_names]
+            else:
+                fnames = []
         except:
             fnames = []
         if len(fnames) > 0:
