@@ -368,9 +368,15 @@ class Pst(object):
 
         """
         if "forecasts" in self.pestpp_options.keys():
-            return self.pestpp_options["forecasts"].lower().split(',')
+            if isinstance(self.pestpp_options["forecasts"],str):
+                return self.pestpp_options["forecasts"].lower().split(',')
+            else:
+                return [f.lower() for f in self.pestpp_options["forecasts"]]
         elif "predictions" in self.pestpp_options.keys():
-            return self.pestpp_options["predictions"].lower().split(',')
+            if isinstance(self.pestpp_options["predictions"], str):
+                return self.pestpp_options["predictions"].lower().split(',')
+            else:
+                return [f.lower() for f in self.pestpp_options["predictions"]]
         else:
             return None
 
@@ -833,7 +839,7 @@ class Pst(object):
                 # check for tied pars
                 ntied = 0
                 for line in section_lines:
-                    if "tied" in line:
+                    if "tied" in line.lower():
                         ntied += 1
                 if ntied > 0:
                     slines = section_lines[:-ntied]

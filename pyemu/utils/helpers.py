@@ -3468,19 +3468,22 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
     return df
 
 
-def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
-                   longnames=False):
+def write_zone_tpl(name, tpl_file, suffix="", zn_array=None, shape=None,
+                   longnames=False,fill_value="1.0"):
     """ write a zone-based template file for a 2-D array
 
     Args:
         name (`str`): the base parameter name
         tpl_file (`str`): the template file to write
+        suffix (`str`): suffix to add to parameter names.  Only used if `longnames=True`
         zn_array (`numpy.ndarray`, optional): an array used to skip inactive cells,
-            and optionally get shape info.
+            and optionally get shape info.  zn_array values less than 1 are given `fill_value`
         shape (`tuple`): tuple nrow and ncol.  Either `zn_array` or `shape`
             must be passed
         longnames (`bool`): flag to use longer names that exceed 12 chars in length.
             Default is False.
+        fill_value (`str`): value to fill locations where `zn_array` is less than 1.0.
+            Default is "1.0".
 
     Returns:
         `pandas.DataFrame`: a dataframe with parameter information
@@ -3493,12 +3496,13 @@ def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
         shape = zn_array.shape
 
     parnme = []
+    zone = []
     with open(tpl_file, 'w') as f:
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
                 if zn_array is not None and zn_array[i, j] < 1:
-                    pname = " 1.0  "
+                    pname = " {0}  ".format(fill_value)
                 else:
                     zval = 1
                     if zn_array is not None:
@@ -3512,10 +3516,11 @@ def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
                             warnings.warn("zone pname too long for pest:{0}". \
                                           format(pname))
                     parnme.append(pname)
+                    zone.append(zval)
                     pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
             f.write("\n")
-    df = pd.DataFrame({"parnme": parnme}, index=parnme)
+    df = pd.DataFrame({"parnme": parnme,"zone":zone}, index=parnme)
     df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace("_", ''), name)
     return df
 
@@ -3673,14 +3678,14 @@ def setup_fake_forward_run(pst, new_pst_name, org_cwd='.', bak_suffix="._bak", n
         for key, f in pst.pestpp_options.items():
             if not isinstance(f, str):
                 continue
-                raw = os.path.split(f)
-                if len(raw[0]) == 0:
-                    raw = raw[1:]
-                if len(raw) > 1:
-                    pth = os.path.join(*raw[:-1])
-                    pth = os.path.join(new_cwd, pth)
-                    if not os.path.exists(pth):
-                        os.makedirs(pth)
+            raw = os.path.split(f)
+            if len(raw[0]) == 0:
+                raw = raw[1:]
+            if len(raw) > 1:
+                pth = os.path.join(*raw[:-1])
+                pth = os.path.join(new_cwd, pth)
+                if not os.path.exists(pth):
+                    os.makedirs(pth)
             org_pth = os.path.join(org_cwd, f)
             new_pth = os.path.join(new_cwd, f)
 
@@ -3690,7 +3695,7 @@ def setup_fake_forward_run(pst, new_pst_name, org_cwd='.', bak_suffix="._bak", n
     with open(os.path.join(new_cwd, "fake_forward_run.py"), 'w') as f:
         f.write("import os\nimport shutil\n")
         for org, bak in pairs.items():
-            f.write("shutil.copy2('{0}','{1}')\n".format(bak, org))
+            f.write("shutil.copy2(r'{0}',r'{1}')\n".format(bak, org))
     pst.model_command = "python fake_forward_run.py"
     pst.write(os.path.join(new_cwd, new_pst_name))
 
