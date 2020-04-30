@@ -136,12 +136,11 @@ def freyberg_test():
         "sfodf.to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
 
     # pars
-    # TODO geostruct for builder can be passed at this point
-    #   - correlated pars from different calls can be associated by pargpnm and geostruct? 
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
                       index_cols=[0, 1, 2], use_cols=[3, 4],
                       par_name_base=["rivbot_grid", "rivstage_grid"],
-                      mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F')
+                      mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F',
+                      pargp='rivbot')
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
                       index_cols=[0, 1, 2], use_cols=5)
     pf.add_parameters(filenames=["WEL_0000.dat", "WEL_0001.dat"],
@@ -205,11 +204,7 @@ def freyberg_test():
     assert pst.phi < 1.0e-5, pst.phi
 
 
-# TO#DO: add test for model file with headers
-# TO#DO add test for formatted file type
-
-
-def freyberg_prior_build():
+def freyberg_prior_build_test():
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -279,20 +274,31 @@ def freyberg_prior_build():
     v = pyemu.geostats.ExpVario(contribution=1.0, a=2500)
     geostruct = pyemu.geostats.GeoStruct(
         variograms=v, transform='log')
+    # Pars for river list style model file, every entry in columns 3 and 4
+    # specifying formatted model file and passing a geostruct
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
                       index_cols=[0, 1, 2], use_cols=[3, 4],
                       par_name_base=["rivbot_grid", "rivstage_grid"],
                       mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F',
                       geostruct=geostruct)
+    # 2 constant pars applied to columns 2 and 3
+    # this time specifying free formatted model file
     pf.add_parameters(filenames="RIV_0000.dat", par_type="constant",
                       index_cols=[0, 1, 2], use_cols=[3, 4],
                       par_name_base=["rivbot_grid", "rivstage_grid"],
                       mfile_fmt='free')
-    well_mfiles = ["WEL_0000.dat", "WEL_0001.dat", "WEL_0002.dat"]
+    # setting up temporal variogram for correlating temporal pars
     date = m.dis.start_datetime
     v = pyemu.geostats.ExpVario(contribution=1.0, a=180.0)  # 180 correlation length
     t_geostruct = pyemu.geostats.GeoStruct(variograms=v)
-    for t, well_file in enumerate(well_mfiles):  # constant par for each well file
+    # looping over temporal list style input files
+    # setting up constant parameters for col 3 for each temporal file
+    # making sure all are set up with same pargp and geostruct (to ensure correlation)
+    # Parameters for wel list style
+    well_mfiles = ["WEL_0000.dat", "WEL_0001.dat", "WEL_0002.dat"]
+    for t, well_file in enumerate(well_mfiles):
+        # passing same temporal geostruct and pargp,
+        # date is incremented and will be used for correlation with
         pf.add_parameters(filenames=well_file, par_type="constant",
                           index_cols=[0, 1, 2], use_cols=3,
                           par_name_base="flux", alt_inst_str='kper',
@@ -306,15 +312,25 @@ def freyberg_prior_build():
                       par_name_base="welflux_grid",
                       zone_array=m.bas6.ibound.array,
                       geostruct=None)
-    # global constant well par
+    # global constant across all files
     pf.add_parameters(filenames=well_mfiles,
                       par_type="constant",
                       index_cols=[0, 1, 2], use_cols=3,
                       par_name_base=["flux_global"])
-    date = m.dis.start_datetime
+
+    # Spatial array style pars - cell-by-cell
+    hk_files = ["hk_Layer_{0:d}.ref".format(i) for i in range(1, 4)]
+    for hk in hk_files:
+        pf.add_parameters(filenames=hk, par_type="grid",
+                          zone_array=m.bas6.ibound[0].array,
+                          par_name_base="hk", alt_inst_str='lay',
+                          geostruct=geostruct)
+
+    # Pars for temporal array style model files
+    date = m.dis.start_datetime  # reset date
     rch_mfiles = ["rech_0.ref", "rech_1.ref", "rech_2.ref"]
     for t, rch_file in enumerate(rch_mfiles):
-        # constant par for each kper
+        # constant par for each file but linked by geostruct and pargp
         pf.add_parameters(filenames=rch_file, par_type="constant",
                           zone_array=m.bas6.ibound[0].array,
                           par_name_base="rch", alt_inst_str='kper',
@@ -322,18 +338,16 @@ def freyberg_prior_build():
                           pargp='rch_t')
         date = (pd.to_datetime(date) +
                 pd.DateOffset(m.dis.perlen.array[t], 'day'))
-    # spatial recharge pars
-    pf.add_parameters(filenames=rch_mfiles, par_type="grid",
+    # spatially distributed array style pars - cell-by-cell
+    # pf.add_parameters(filenames=rch_mfiles, par_type="grid",
+    #                   zone_array=m.bas6.ibound[0].array,
+    #                   par_name_base="rch",
+    #                   geostruct=geostruct)
+    pf.add_parameters(filenames=rch_mfiles, par_type="pilot_point",
                       zone_array=m.bas6.ibound[0].array,
-                      par_name_base="rch",
+                      par_name_base="rch", pp_space=1,
+                      ult_ubound=100, ult_lbound=0.0,
                       geostruct=geostruct)
-    # # spatial hk pars
-    # hk_files = ["hk_Layer_{0:d}.ref".format(i) for i in range(1, 4)]
-    # for hk in hk_files:
-    #     pf.add_parameters(filenames=hk, par_type="grid",
-    #                       zone_array=m.bas6.ibound[0].array,
-    #                       par_name_base="hk", alt_inst_str='lay',
-    #                       geostruct=geostruct)
     # global constant recharge par
     pf.add_parameters(filenames=rch_mfiles, par_type="constant",
                       zone_array=m.bas6.ibound[0].array,
@@ -341,6 +355,7 @@ def freyberg_prior_build():
     # zonal recharge pars
     pf.add_parameters(filenames=rch_mfiles,
                       par_type="zone", par_name_base='rch_zone')
+
 
     # add model run command
     pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
@@ -354,8 +369,9 @@ def freyberg_prior_build():
     # check mult files are in pst input files
     csv = os.path.join(template_ws, "mult2model_info.csv")
     df = pd.read_csv(csv, index_col=0)
-    mults_not_linked_to_pst = (set(df.mlt_file.unique()) -
-                               set(pst.input_files))
+    mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
+                                set(pst.input_files)) -
+                               set(df.loc[df.pp_file.notna()].mlt_file))
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
     pst.write_input_files(pst_path=pf.new_d)
@@ -383,5 +399,5 @@ def freyberg_prior_build():
 
 
 if __name__ == "__main__":
-    # freyberg_test()
-    freyberg_prior_build()
+    freyberg_test()
+    freyberg_prior_build_test()
