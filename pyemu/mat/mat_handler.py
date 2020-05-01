@@ -1756,8 +1756,8 @@ class Matrix(object):
         return data,row_names,col_names
 
 
-    @classmethod
-    def from_fortranfile(cls, filename):
+    @staticmethod
+    def from_fortranfile(filename):
         """ a binary load method to accommodate one of the many
             bizarre fortran binary writing formats
 
@@ -1765,7 +1765,12 @@ class Matrix(object):
             filename (`str`): name of the binary matrix file
 
         Returns:
-            `Matrix`
+            tuple containing
+
+            - **numpy.ndarray**: the numeric values in the file
+            - **['str']**: list of row names
+            - **[`str`]**: list of col_names
+
 
         """
         try:
@@ -1774,7 +1779,7 @@ class Matrix(object):
             raise Exception("Matrix.from_fortranfile requires scipy")
         f = FortranFile(filename,mode='r')
         itemp1, itemp2 = f.read_ints()
-        icount = f.read_ints()
+        icount = int(f.read_ints())
         if itemp1 >= 0:
            raise TypeError('Matrix.from_binary(): Jco produced by ' +
                            'deprecated version of PEST,' +
@@ -1806,7 +1811,8 @@ class Matrix(object):
             raise Exception("Matrix.from_fortranfile() len(col_names) (" + \
           str(len(col_names)) +\
           ") != self.shape[1] (" + str(x.shape[1]) + ")")
-        return cls(x=x,row_names=row_names,col_names=col_names)
+        #return cls(x=x,row_names=row_names,col_names=col_names)
+        return x, row_names, col_names
 
     def to_ascii(self, filename, icode=2):
         """write a PEST-compatible ASCII Matrix/vector file

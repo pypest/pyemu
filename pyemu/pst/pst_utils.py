@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import os
 import warnings
 import multiprocessing as mp
+import re
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
@@ -744,8 +745,10 @@ def clean_missing_exponent(pst_filename,clean_filename="clean.pst"):
         for line in lines:
             f.write(line+'\n')
 
+
 def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None,
-                    marker='~',includes_header=True,includes_index=True,prefix=''):
+                    marker='~',includes_header=True,includes_index=True,prefix='',
+                    longnames=False, head_lines_len=0, sep=','):
     """write a PEST-style instruction file from an existing CSV file
 
     Args:
@@ -785,18 +788,20 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
 
     # process only_cols
     if only_cols is None:
-        only_cols = set(df.columns.map(str.lower))
+        only_cols = set(df.columns)
     else:
-        if isinstance(only_cols,str): # incase it is a single name
+        if isinstance(only_cols, str): # incase it is a single name
             only_cols = [only_cols]
         only_cols = set(only_cols)
+    only_cols = {c.lower() if isinstance(c, str) else c for c in only_cols}
 
     if only_rows is None:
-        only_rows = set(df.index.map(str.lower))
+        only_rows = set(df.index)
     else:
-        if isinstance(only_rows,str): # incase it is a single name
+        if isinstance(only_rows, str): # incase it is a single name
             only_rows = [only_rows]
         only_rows = set(only_rows)
+    only_cols = {c.lower() if isinstance(c, str) else c for c in only_cols}
 
     # process the row labels, handling duplicates
     rlabels = []
@@ -842,25 +847,44 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     onames = []
     ovals = []
     with open(ins_filename,'w') as f:
-        f.write("pif ~\nl1\n")
+        f.write("pif {0}\n".format(marker))
+        [f.write("l1\n") for _ in range(head_lines_len)]
+        if includes_header:
+            f.write("l1\n")  # skip the row (index) label
         for i,rlabel in enumerate(rlabels):
-            if includes_header:
-                f.write("l1 ") #skip the row (index) label
+            f.write("l1")
+            c_count = 0
             for j,clabel in enumerate(clabels):
-                if rlabel in only_rlabels and clabel in only_clabels:
-                    oname = prefix+rlabel+"_"+clabel
-                    onames.append(oname)
-                    ovals.append(df.iloc[i,j])
-                else:
-                    oname = "dum"
-                if j == 0:
-                    if includes_index:
-                        f.write(" {0},{0} ".format(marker))
-                else:
-                    f.write(" {0},{0} ".format(marker))
-                f.write(" !{0}! ".format(oname))
+                if c_count < len(only_clabels):
+                    if rlabel in only_rlabels and clabel in only_clabels:
+                        c_count += 1
+                        if longnames:
+                            oname = "{0}_use_col:{1}_{2}".format(prefix, clabel,
+                                                                 rlabel)
+                        else:
+                            oname = prefix+rlabel+"_"+clabel
+                        onames.append(oname)
+                        ovals.append(df.iloc[i,j])
+                        oname = " !{0}!".format(oname)
+                        if sep == ',':
+                            oname = "{0} {1},{1}".format(oname, marker)
+                    else:
+                        if sep == ',':
+                            oname = " {0},{0}".format(marker)
+                        else:
+                            oname = " w"
+                    if j == 0:
+                        if includes_index:
+                            if sep == ',':
+                                f.write(" {0},{0}".format(marker))
+                            else:
+                                f.write(" w")
+                    # else:
+                    #     if sep == ',':
+                    #         oname = "{0} {1},{1}".format(oname, marker)
+                    f.write(oname)
             f.write('\n')
-    odf = pd.DataFrame({"obsnme":onames,"obsval":ovals},index=onames)
+    odf = pd.DataFrame({"obsnme": onames, "obsval": ovals}, index=onames)
     return odf
 
 
@@ -898,6 +922,11 @@ class InstructionFile(object):
         self._instruction_lcount = []
 
         self.read_ins_file()
+
+    @property
+    def obs_name_set(self):
+        return self._found_oname_set
+
 
     def read_ins_file(self):
         """read the instruction and do some minimal error checking.
@@ -1034,7 +1063,13 @@ class InstructionFile(object):
         """
         cursor_pos = 0
         val_dict = {}
-        for ii,ins in enumerate(ins_line):
+        #for ii,ins in enumerate(ins_line):
+        ii = 0
+        all_markers = True
+        while True:
+            if ii >= len(ins_line):
+                break
+            ins = ins_line[ii]
 
             #primary marker
             if ii == 0 and ins.startswith(self._marker):
@@ -1062,12 +1097,17 @@ class InstructionFile(object):
                                              format(nlines, ins, ins_lcount))
             elif ins == 'w':
                 raw = line[cursor_pos:].replace(","," ").split()
-                if line[cursor_pos] == ' ':
+                if line[cursor_pos] in [","," ","\t"]:
                     raw.insert(0,'')
                 if len(raw) == 1:
                     self.throw_out_error("no whitespaces found on output line {0} past {1}".format(line,cursor_pos))
-                cursor_pos = cursor_pos + line[cursor_pos:].index(" "+raw[1]) + 1
-
+                # step over current value
+                cursor_pos = (cursor_pos +
+                              line[cursor_pos:].replace(',', ' ').index(' '))
+                # now find position of next entry
+                cursor_pos = (cursor_pos +
+                              line[cursor_pos:].replace(',', ' ').
+                              index(raw[1]))
 
             elif ins.startswith('!'):
                 oname = ins.replace('!','')
@@ -1076,9 +1116,9 @@ class InstructionFile(object):
                     m = ins_line[ii+1].replace(self._marker,'')
                     if m not in line[cursor_pos:]:
                         self.throw_out_error("secondary marker '{0}' not found from cursor_pos {2}".format(m,cursor_pos))
-                    val_str = line[cursor_pos:].split(m)[0].replace(","," ")
+                    val_str = line[cursor_pos:].split(m)[0]
                 else:
-                    val_str = line[cursor_pos:].split()[0].replace(","," ")
+                    val_str = line[cursor_pos:].replace(","," ").split()[0]
                 try:
                     val = float(val_str)
                 except Exception as e:
@@ -1086,24 +1126,25 @@ class InstructionFile(object):
 
                 if oname != "dum":
                     val_dict[oname] = val
-                #ipos = line[cursor_pos:].index(val_str)
+                ipos = line[cursor_pos:].index(val_str.strip())
                 #val_len = len(val_str)
-                cursor_pos = cursor_pos + line[cursor_pos:].index(val_str) + len(val_str)
-
-                #print(val,cursor_pos)
-
-                #print(line[cursor_pos:])
-                #print('')
+                cursor_pos = cursor_pos + line[cursor_pos:].index(val_str.strip()) + len(val_str)
+                all_markers = False
 
             elif ins.startswith(self._marker):
                 m = ins.replace(self._marker,'')
                 if m not in line[cursor_pos:]:
-                    self.throw_out_error("secondary marker '{0}' not found from cursor_pos {2}".format(m,cursor_pos))
+                    if all_markers:
+                        ii = 0
+                        continue
+                    else:
+                        self.throw_out_error("secondary marker '{0}' not found from cursor_pos {2}".\
+                                             format(m,cursor_pos))
                 cursor_pos = cursor_pos + line[cursor_pos:].index(m) + len(m)
 
             else:
                 self.throw_out_error("unrecognized instruction '{0}' on ins file line {1}".format(ins,ins_lcount))
-
+            ii += 1
         return val_dict
 
     def _readline_ins(self):
@@ -1119,7 +1160,30 @@ class InstructionFile(object):
         if line == '':
             return None
         self._last_line = line
-        return line.lower().strip().split()
+        # check for spaces in between the markers - this gets ugly
+        line = line.lower()
+        if self._marker is not None and self._marker in line:
+            def find_all(a_str, sub):
+                start = 0
+                while True:
+                    start = a_str.find(sub, start)
+                    if start == -1: return
+                    yield start
+                    start += len(sub)
+            midx = list(find_all(line,self._marker))
+            midx.append(len(line)-1)
+            first =line[:midx[0]].strip()
+            tokens = []
+            if len(first) > 0:
+                tokens.append(first)
+            for idx in range(1,len(midx)-1,2):
+                mstr = line[midx[idx-1]:midx[idx]+1]
+                ostr = line[midx[idx]+1:midx[idx+1]]
+                tokens.append(mstr)
+                tokens.extend(ostr.split())
+        else:
+            tokens = line.strip().split()
+        return tokens
 
 
     def _readline_output(self):

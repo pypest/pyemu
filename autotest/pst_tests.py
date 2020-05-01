@@ -531,7 +531,8 @@ def csv_to_ins_test():
     df.to_csv(os.path.join("temp", "temp.csv"))
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
                                             only_cols=cnames[0],prefix="test")
-    assert len(names) == df.shape[0], names
+    obnames = pyemu.pst_utils.parse_ins_file(os.path.join("temp", "temp.csv.ins"))
+    assert len(names) == df.shape[0] == len(obnames), names
     for name in names.obsnme:
         assert name.startswith("test"),name
 
@@ -798,8 +799,17 @@ def process_output_files_test():
     i4 = pst_utils.InstructionFile(ins_files[3])
     s4 = i4.read_output_file(out_files[3])
     print(s4)
-    assert s4.loc["h01_02","obsval"] == 1.024
-    assert s4.loc["h01_10","obsval"] == 4.498
+    assert s4.loc["h01_02", "obsval"] == 1.024
+    assert s4.loc["h01_10", "obsval"] == 4.498
+
+    i5 = pst_utils.InstructionFile(ins_files[4])
+    s5 = i5.read_output_file(out_files[4])
+    print(s5)
+    assert s5.loc["obs3_1","obsval"] == 1962323.838381853
+    assert s5.loc["obs3_2","obsval"] == 1012443.579448909
+
+
+
     i3 = pst_utils.InstructionFile(ins_files[2])
     s3 = i3.read_output_file(out_files[2])
     #print(s3)
@@ -853,17 +863,18 @@ def new_format_path_mechanics_test():
 
 
 if __name__ == "__main__":
-    # process_output_files_test()
+
+    process_output_files_test()
     #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
-    #csv_to_ins_test()
+    csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()
     #pst_from_flopy_specsim_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
-    test_write_input_files()
+    # test_write_input_files()
     # add_obs_test()
     # add_pars_test()
     # setattr_test()

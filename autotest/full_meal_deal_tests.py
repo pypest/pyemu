@@ -230,11 +230,119 @@ def freyberg_kl_pp_compare():
 
 
 
+def freyberg_diff_obs_test():
+    import shutil
+
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except Exception as e:
+        return
+    import pyemu
+
+    ext = ''
+    bin_path = os.path.join("..", "..", "bin")
+    if "linux" in platform.platform().lower():
+        bin_path = os.path.join(bin_path, "linux")
+    elif "darwin" in platform.platform().lower():
+        bin_path = os.path.join(bin_path, "mac")
+    else:
+        bin_path = os.path.join(bin_path, "win")
+        ext = '.exe'
+
+    oorg_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=oorg_model_ws, check=False,forgive=False,
+                                   exe_name=mf_exe_name)
+    org_model_ws = "temp"
+
+    m.change_model_ws(org_model_ws)
+    m.write_input()
+    print("{0} {1}".format(mf_exe_name,m.name+".nam"),org_model_ws)
+    pyemu.os_utils.run("{0} {1}".format(mf_exe_name,m.name+".nam"),cwd=org_model_ws)
+    hds_file = "freyberg.hds"
+    list_file = "freyberg.list"
+    for f in [hds_file, list_file]:
+        assert os.path.exists(os.path.join(org_model_ws, f))
+
+    new_model_ws = "template_diff_obs"
+
+    props = [["upw.hk",None]]
+
+    hds_kperk = [[0,k] for k in range(m.nlay)]
+
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
+                                         const_props=props,
+                                         hds_kperk=hds_kperk,
+                                         sfr_pars=True,sfr_obs=True,
+                                         remove_existing=True,
+                                         model_exe_name="mfnwt")
+
+
+    obs_locs = pd.read_csv(os.path.join(oorg_model_ws,"obs_loc.csv"))
+    obs_locs.loc[:, "i"] = obs_locs.pop("row") - 1
+    obs_locs.loc[:, "j"] = obs_locs.pop("col") - 1
+    obs_locs.loc[:,"site"] = obs_locs.apply(lambda x: "trgw_{0:03d}_{1:03d}".format(x.i,x.j),axis=1)
+    kij_dict = {site: (2, i, j) for site, i, j in zip(obs_locs.site, obs_locs.i, obs_locs.j)}
+
+    binary_file = os.path.join(ph.m.model_ws, nam_file.replace(".nam", ".hds"))
+    frun_line, tr_hds_df = pyemu.gw_utils.setup_hds_timeseries(binary_file, kij_dict=kij_dict, include_path=True,
+                                                               model=ph.m)
+    ph.frun_post_lines.append(frun_line)
+    ins_file = os.path.join(ph.m.model_ws,nam_file.replace(".nam", ".hds_timeseries.processed.ins"))
+    df = ph.pst.add_observations(ins_file,pst_path=".")
+    obs = ph.pst.observation_data
+    obs.loc[df.index, "obgnme"] = df.index.map(lambda x: "_".join(x.split("_")[:-1]))
+    obs.loc[df.index, "weight"] = 1.0
+
+    #trgw_groups = obs.loc[df.index, "obgnme"].unique()
+    #obs.loc[obs.obgnme.apply(lambda x: x in trgw_groups[::2]),"weight"] = 0.0
+    #obs.loc[ph.pst.nnz_obs_names[::2],"weight"] = 0.0
+
+    frun_line, tr_hds_diff_df = pyemu.helpers.setup_temporal_diff_obs(ph.pst, ins_file, include_path=True,
+                                                                      prefix="hdif")
+    ph.frun_post_lines.append(frun_line)
+    ins_file = os.path.join(ph.m.model_ws, nam_file.replace(".nam", ".hds_timeseries.processed.diff.processed.ins"))
+    df = ph.pst.add_observations(ins_file, pst_path=".")
+    obs = ph.pst.observation_data
+    obs.loc[df.index, "obgnme"] = df.index.map(lambda x: "_".join(x.split("_")[:-1]))
+    obs.loc[tr_hds_diff_df.index, "weight"] = tr_hds_diff_df.weight
+    obs.loc[tr_hds_diff_df.index, "obgnme"] = tr_hds_diff_df.obgnme
+
+    ins_file = os.path.join(ph.m.model_ws,nam_file.replace(".nam",".sfr.out.processed.ins"))
+    frun_line,tr_hds_diff_df = pyemu.helpers.setup_temporal_diff_obs(ph.pst,ins_file,include_path=True,
+                                                                     prefix="sfrdif")
+    ph.frun_post_lines.append(frun_line)
+    ins_file = os.path.join(ph.m.model_ws, nam_file.replace(".nam", ".sfr.out.processed.diff.processed.ins"))
+    df = ph.pst.add_observations(ins_file, pst_path=".")
+    obs = ph.pst.observation_data
+    obs.loc[df.index, "obgnme"] = df.index.map(lambda x: "_".join(x.split("_")[:-1]))
+    obs.loc[tr_hds_diff_df.index, "weight"] = tr_hds_diff_df.weight
+    obs.loc[tr_hds_diff_df.index, "obgnme"] = tr_hds_diff_df.obgnme
+
+    ph.write_forward_run()
+
+    tmp = mf_exe_name.split(os.sep)
+    tmp = os.path.join(*tmp[1:])+ext
+    assert os.path.exists(tmp),tmp
+    shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
+    ph.pst.control_data.noptmax = 0
+    ph.pst.write(os.path.join(new_model_ws,"test.pst"))
+    print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
+    pyemu.os_utils.run("{0} {1}".format(pp_exe_name,"test.pst"),cwd=new_model_ws)
+    for ext in ["rec",'rei',"par"]:
+        assert os.path.exists(os.path.join(new_model_ws,"test.{0}".format(ext))),ext
+    pst = pyemu.Pst(os.path.join(new_model_ws,"test.pst"))
+    print(pst.phi)
+    assert pst.phi < 1.0e-6,pst.phi
+
+
 
 if __name__ == "__main__":
-
+    freyberg_diff_obs_test()
     freyberg_test()
-    #freyberg_kl_pp_compare()
+    freyberg_kl_pp_compare()
     #import shapefile
     #run_sweep_test()
-    #fake_run_test()
+    fake_run_test()

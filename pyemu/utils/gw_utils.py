@@ -459,21 +459,31 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
         return
 
     assert os.path.exists(bin_file), "binary file not found"
-
+    iscbc = False
     if text is not None:
         text = text.upper()
+
         try:
             # hack: if model is passed and its None, it trips up CellBudgetFile...
             if model is not None:
                 bf = flopy.utils.CellBudgetFile(bin_file,precision=precision,model=model)
+                iscbc=True
             else:
                 bf = flopy.utils.CellBudgetFile(bin_file, precision=precision)
+                iscbc=True
         except Exception as e:
-            raise Exception("error instantiating CellBudgetFile:{0}".format(str(e)))
-        tl = [t.decode().strip() for t in bf.textlist]
-        if text not in tl:
-            raise Exception("'text' {0} not found in CellBudgetFile.textlist:{1}".\
-                            format(text,tl))
+            try:
+                if model is not None:
+                    bf = flopy.utils.HeadFile(bin_file, precision=precision, model=model,text=text)
+                else:
+                    bf = flopy.utils.HeadFile(bin_file, precision=precision,text=text)
+            except Exception as e1:
+                raise Exception("error instantiating binary file as either CellBudgetFile:{0} or as HeadFile with text arg: {1}".format(str(e),str(e1)))
+        if iscbc:
+            tl = [t.decode().strip() for t in bf.textlist]
+            if text not in tl:
+                raise Exception("'text' {0} not found in CellBudgetFile.textlist:{1}".\
+                                format(text,tl))
     elif bin_file.lower().endswith(".ucn"):
         try:
             bf = flopy.utils.UcnFile(bin_file)
@@ -502,13 +512,13 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
     if model is not None:
         if model.dis.itmuni != 4:
             warnings.warn("setup_hds_timeseries only supports 'days' time units...",PyemuWarning)
-        f_config.write("{0},{1},d,{2},{3},{4}\n".
+        f_config.write("{0},{1},d,{2},{3},{4},{5}\n".
                        format(os.path.split(bin_file)[-1],
-                              model.start_datetime,text,fill,precision))
+                              model.start_datetime,text,fill,precision,iscbc))
         start = pd.to_datetime(model.start_datetime)
     else:
-        f_config.write("{0},none,none,{1},{2},{3}\n".format(os.path.split(bin_file)[-1],
-                                                        text, fill,precision))
+        f_config.write("{0},none,none,{1},{2},{3},{4}\n".format(os.path.split(bin_file)[-1],
+                                                        text, fill,precision,iscbc))
     f_config.write("site,k,i,j\n")
     dfs = []
 
@@ -517,7 +527,7 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
         assert i >= 0 and i < nrow, i
         assert j >= 0 and j < ncol, j
         site = site.lower().replace(" ",'')
-        if text.upper() != "NONE":
+        if iscbc:
             ts = bf.get_ts((k, i, j),text=text)
             #print(ts)
             df = pd.DataFrame(data=ts, columns=["totim", site])
@@ -566,9 +576,10 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
     config_file = os.path.split(config_file)[-1]
     try:
         df = apply_hds_timeseries(config_file, postprocess_inact=postprocess_inact)
+
     except Exception as e:
-        os.chdir(bd)
-        raise Exception("error in apply_hds_timeseries(): {0}".format(str(e)))
+       os.chdir(bd)
+       raise Exception("error in apply_hds_timeseries(): {0}".format(str(e)))
     os.chdir(bd)
 
 
@@ -607,25 +618,32 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
     assert os.path.exists(config_file), config_file
     with open(config_file,'r') as f:
         line = f.readline()
-        bf_file,start_datetime,time_units, text, fill, precision = line.strip().split(',')
+        bf_file,start_datetime,time_units, text, fill, precision,_iscbc = line.strip().split(',')
         site_df = pd.read_csv(f)
     text = text.upper()
-    #print(site_df)
-
+    if _iscbc.lower().strip() == "false":
+        iscbc = False
+    elif _iscbc.lower().strip() == "true":
+        iscbc = True
+    else:
+        raise Exception("apply_hds_timeseries() error: unrecognized 'iscbc' string in config file: {0}".format(_iscbc))
     assert os.path.exists(bf_file), "head save file not found"
-    if text != "NONE":
+    if iscbc:
         try:
             bf = flopy.utils.CellBudgetFile(bf_file,precision=precision)
         except Exception as e:
             raise Exception("error instantiating CellBudgetFile:{0}".format(str(e)))
     elif bf_file.lower().endswith(".ucn"):
         try:
-            bf = flopy.utils.UcnFile(bf_file)
+            bf = flopy.utils.UcnFile(bf_file,precision=precision)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            bf = flopy.utils.HeadFile(bf_file)
+            if text != "NONE":
+                bf = flopy.utils.HeadFile(bf_file,text=text, precision=precision)
+            else:
+                bf = flopy.utils.HeadFile(bf_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
@@ -636,7 +654,7 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
         assert k >= 0 and k < nlay
         assert i >= 0 and i < nrow
         assert j >= 0 and j < ncol
-        if text.upper() != "NONE":
+        if iscbc:
             df = pd.DataFrame(data=bf.get_ts((k, i, j), text=text), columns=["totim", site])
         else:
             df = pd.DataFrame(data=bf.get_ts((k,i,j)),columns=["totim",site])
@@ -693,20 +711,23 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
     assert os.path.exists(config_file), config_file
     with open(config_file,'r') as f:
         line = f.readline()
-        hds_file,start_datetime,time_units,text,fill,precision = line.strip().split(',')
+        hds_file,start_datetime,time_units,text,fill,precision,_iscbc = line.strip().split(',')
         site_df = pd.read_csv(f)
 
     #print(site_df)
-
+    text = text.upper()
     assert os.path.exists(hds_file), "head save file not found"
     if hds_file.lower().endswith(".ucn"):
         try:
-            hds = flopy.utils.UcnFile(hds_file)
+            hds = flopy.utils.UcnFile(hds_file,precision=precision)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            hds = flopy.utils.HeadFile(hds_file)
+            if text != "NONE":
+                hds = flopy.utils.HeadFile(hds_file,text=text,precision=precision)
+            else:
+                hds = flopy.utils.HeadFile(hds_file,precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
@@ -718,7 +739,7 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
         assert i >= 0 and i < nrow
         assert j >= 0 and j < ncol
         if text.upper() != "NONE":
-            df = pd.DataFrame(data=hds.get_ts((k, i, j),text=text), columns=["totim", site])
+            df = pd.DataFrame(data=hds.get_ts((k, i, j)), columns=["totim", site])
         else:
             df = pd.DataFrame(data=hds.get_ts((k, i, j)), columns=["totim", site])
         df.index = df.pop("totim")
@@ -736,8 +757,9 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
     df.to_csv(hds_file+"_timeseries.post_processed", sep=' ')
     return df
 
-def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds",
-                  include_path=True):
+
+def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds",text="head", precision="single",
+                  include_path=False):
     """a function to setup using all values from a layer-stress period
     pair for observations.
 
@@ -755,9 +777,11 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds",
             Observations are set up only for cells with Non-zero values in the array.
             If not np.ndarray or np.scalar(skip), then skip will be treated as a lambda function that
             returns np.NaN if the value should be skipped.
-        prefix (`str`, optional): the prefix to use for the observation names. default is "hds".
+        prefix (`str`): the prefix to use for the observation names. default is "hds".
+        text (`str`): the text tag the flopy HeadFile instance.  Default is "head"
+        precison (`str`): the precision string for the flopy HeadFile instance.  Default is "single"
         include_path (`bool`, optional): flag to setup the binary file processing in directory where the hds_file
-            is located (if different from where python is running).  This is useful for setting up
+        is located (if different from where python is running).  This is useful for setting up
             the process in separate directory for where python is running.
 
     Returns:
@@ -788,7 +812,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds",
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            hds = flopy.utils.HeadFile(hds_file)
+            hds = flopy.utils.HeadFile(hds_file,text=text,precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
@@ -890,7 +914,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds",
     df.to_csv(setup_file)
     if not include_path:
         hds_file = os.path.split(hds_file)[-1]
-    fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}')\n".format(hds_file)
+    fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}',precision='{1}',text='{2}')\n".format(hds_file,precision,text)
     df.index = df.obsnme
     return fwd_run_line, df
 
@@ -920,9 +944,9 @@ def last_kstp_from_kper(hds,kper):
     return kstp
 
 
-def apply_hds_obs(hds_file, inact_abs_val=1.0e+20):
+def apply_hds_obs(hds_file, inact_abs_val=1.0e+20, precision="single",text="head"):
     """ process a modflow head save file.  A companion function to
-    `gw_utils.setup_hds_obsI()` that is called during the forward run process
+    `gw_utils.setup_hds_obs()` that is called during the forward run process
 
     Args:
         hds_file (`str`): a modflow head save filename. if hds_file ends with 'ucn',
@@ -958,7 +982,7 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e+20):
     if hds_file.lower().endswith('ucn'):
         hds = flopy.utils.UcnFile(hds_file)
     else:
-        hds = flopy.utils.HeadFile(hds_file)
+        hds = flopy.utils.HeadFile(hds_file, precision=precision,text=text)
     kpers = df.kper.unique()
     df.loc[:,"obsval"] = np.NaN
     for kper in kpers:
