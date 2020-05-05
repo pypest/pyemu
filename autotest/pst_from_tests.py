@@ -137,12 +137,12 @@ def freyberg_test():
 
     # pars
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
-                      index_cols=[0, 1, 2], use_cols=[3, 4],
-                      par_name_base=["rivbot_grid", "rivstage_grid"],
+                      index_cols=[0, 1, 2], use_cols=[3, 5],
+                      par_name_base=["rivstage_grid", "rivbot_grid"],
                       mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F',
                       pargp='rivbot')
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
-                      index_cols=[0, 1, 2], use_cols=5)
+                      index_cols=[0, 1, 2], use_cols=4)
     pf.add_parameters(filenames=["WEL_0000.dat", "WEL_0001.dat"],
                       par_type="grid", index_cols=[0, 1, 2], use_cols=3,
                       par_name_base="welflux_grid",
@@ -278,15 +278,17 @@ def freyberg_prior_build_test():
     # specifying formatted model file and passing a geostruct
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
                       index_cols=[0, 1, 2], use_cols=[3, 4],
-                      par_name_base=["rivbot_grid", "rivstage_grid"],
+                      par_name_base=["rivstage_grid", "rivcond_grid"],
                       mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F',
-                      geostruct=geostruct)
-    # 2 constant pars applied to columns 2 and 3
+                      geostruct=geostruct, lower_bound=[0.9, 0.01],
+                      upper_bound=[1.1, 100.], ult_lbound=[0.3, None])
+    # 2 constant pars applied to columns 3 and 4
     # this time specifying free formatted model file
     pf.add_parameters(filenames="RIV_0000.dat", par_type="constant",
                       index_cols=[0, 1, 2], use_cols=[3, 4],
-                      par_name_base=["rivbot_grid", "rivstage_grid"],
-                      mfile_fmt='free')
+                      par_name_base=["rivstage_grid", "rivcond_grid"],
+                      mfile_fmt='free', lower_bound=[0.9, 0.01],
+                      upper_bound=[1.1, 100.], ult_lbound=[None, 0.01])
     # setting up temporal variogram for correlating temporal pars
     date = m.dis.start_datetime
     v = pyemu.geostats.ExpVario(contribution=1.0, a=180.0)  # 180 correlation length
@@ -303,7 +305,8 @@ def freyberg_prior_build_test():
                           index_cols=[0, 1, 2], use_cols=3,
                           par_name_base="flux", alt_inst_str='kper',
                           datetime=date, geostruct=t_geostruct,
-                          pargp='wellflux_t')
+                          pargp='wellflux_t', lower_bound=0.25,
+                          upper_bound=1.75)
         date = (pd.to_datetime(date) +
                 pd.DateOffset(m.dis.perlen.array[t], 'day'))
     # par for each well (same par through time)
@@ -311,12 +314,13 @@ def freyberg_prior_build_test():
                       par_type="grid", index_cols=[0, 1, 2], use_cols=3,
                       par_name_base="welflux_grid",
                       zone_array=m.bas6.ibound.array,
-                      geostruct=None)
+                      geostruct=None, lower_bound=0.25, upper_bound=1.75)
     # global constant across all files
     pf.add_parameters(filenames=well_mfiles,
                       par_type="constant",
                       index_cols=[0, 1, 2], use_cols=3,
-                      par_name_base=["flux_global"])
+                      par_name_base=["flux_global"],
+                      lower_bound=0.25, upper_bound=1.75)
 
     # Spatial array style pars - cell-by-cell
     hk_files = ["hk_Layer_{0:d}.ref".format(i) for i in range(1, 4)]
@@ -324,7 +328,8 @@ def freyberg_prior_build_test():
         pf.add_parameters(filenames=hk, par_type="grid",
                           zone_array=m.bas6.ibound[0].array,
                           par_name_base="hk", alt_inst_str='lay',
-                          geostruct=geostruct)
+                          geostruct=geostruct,
+                          lower_bound=0.01, upper_bound=100.)
 
     # Pars for temporal array style model files
     date = m.dis.start_datetime  # reset date
@@ -335,7 +340,7 @@ def freyberg_prior_build_test():
                           zone_array=m.bas6.ibound[0].array,
                           par_name_base="rch", alt_inst_str='kper',
                           datetime=date, geostruct=t_geostruct,
-                          pargp='rch_t')
+                          pargp='rch_t', lower_bound=0.9, upper_bound=1.1)
         date = (pd.to_datetime(date) +
                 pd.DateOffset(m.dis.perlen.array[t], 'day'))
     # spatially distributed array style pars - cell-by-cell
@@ -346,15 +351,18 @@ def freyberg_prior_build_test():
     pf.add_parameters(filenames=rch_mfiles, par_type="pilot_point",
                       zone_array=m.bas6.ibound[0].array,
                       par_name_base="rch", pp_space=1,
-                      ult_ubound=100, ult_lbound=0.0,
-                      geostruct=geostruct)
+                      ult_ubound=None, ult_lbound=None,
+                      geostruct=geostruct, lower_bound=0.9, upper_bound=1.1)
     # global constant recharge par
     pf.add_parameters(filenames=rch_mfiles, par_type="constant",
                       zone_array=m.bas6.ibound[0].array,
-                      par_name_base="rch_global")
+                      par_name_base="rch_global", lower_bound=0.9,
+                      upper_bound=1.1)
     # zonal recharge pars
     pf.add_parameters(filenames=rch_mfiles,
-                      par_type="zone", par_name_base='rch_zone')
+                      par_type="zone", par_name_base='rch_zone',
+                      lower_bound=0.9, upper_bound=1.1, ult_lbound=0.001, 
+                      ult_ubound=0.5)
 
 
     # add model run command
@@ -366,6 +374,7 @@ def freyberg_prior_build_test():
     # build pest
     pst = pf.build_pst('freyberg.pst')
     cov = pf.build_prior(fmt="ascii")
+    pe = pf.draw(10, use_specsim=True)
     # check mult files are in pst input files
     csv = os.path.join(template_ws, "mult2model_info.csv")
     df = pd.read_csv(csv, index_col=0)
@@ -386,7 +395,7 @@ def freyberg_prior_build_test():
         raise Exception(str(e))
     os.chdir(b_d)
 
-    pst.control_data.noptmax = 0
+    pst.control_data.noptmax = 1
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
     pyemu.os_utils.run("{0} freyberg.pst".format(
         os.path.join(bin_path, "pestpp-ies")), cwd=pf.new_d)
@@ -399,5 +408,5 @@ def freyberg_prior_build_test():
 
 
 if __name__ == "__main__":
-    freyberg_test()
+    # freyberg_test()
     freyberg_prior_build_test()

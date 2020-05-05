@@ -23,6 +23,7 @@ def _get_datetime_from_str(sdt):
     return sdt
 
 
+# noinspection PyProtectedMember
 class PstFrom(object):
     """
 
@@ -114,6 +115,30 @@ class PstFrom(object):
                 self.logger.warn(
                     "format mismatch for {0}, fmt passed {1}"
                     "".format(name, [f for f in g.fmt.unique()]))
+            bounds = g.apply(
+                lambda x: pd.Series(
+                    {k: v for n, c in enumerate(x.use_cols)
+                     for k, v in [['ubound{0}'.format(c), x.upper_bound[n]],
+                                  ['lbound{0}'.format(c), x.lower_bound[n]]]})
+                if x.use_cols is not None
+                else pd.Series(
+                    {k: v for k, v in [['ubound', x.upper_bound],
+                                       'lbound', x.lower_bound]}), axis=1)
+            if bounds.nunique(0, False).gt(1).any():
+                if bounds.nunique(0, False).gt(2).any():
+                    self.logger.lraise(
+                        "different upper bounds requested for same par for {0}"
+                        "".format(name))
+                else:
+                    pass
+
+
+            # TODO catch where different ultimate ubound and lbound have been passe for same par
+            # if not pd.isna(g.upper_bound.to_list()).all():
+            # if g.upper_bound.nunique() > 1:
+            #     pass
+            # if g.lower_bound.nunique() > 1:
+            #     pass
         pr['zero_based'] = self.zero_based
         return pr
 
@@ -211,6 +236,19 @@ class PstFrom(object):
             f.write("if __name__ == '__main__':\n")
             f.write("    mp.freeze_support()\n    main()\n\n")
 
+    def _pivot_par_struct_dict(self):
+        struct_dict = {}
+        for gs, gps in self.par_struct_dict.items():
+            par_dfs = []
+            for _, l in gps.items():
+                df = pd.concat(l)
+                if 'timedelta' in df.columns:
+                    df.loc[:, "y"] = 0  #
+                    df.loc[:, "x"] = df.timedelta.apply(lambda x: x.days)
+                par_dfs.append(df)
+            struct_dict[gs] = par_dfs
+        return struct_dict
+    
     def build_prior(self, fmt="ascii", filename=None, droptol=None, chunk=None,
                     sigma_range=6):
         """
@@ -225,30 +263,7 @@ class PstFrom(object):
         Returns:
 
         """
-        struct_dict = {}
-        for gs, gps in self.par_struct_dict.items():
-            par_dfs = []
-            for _, l in gps.items():
-                df = pd.concat(l)
-                if 'timedelta' in df.columns:
-                    df.loc[:, "y"] = 0  #
-                    df.loc[:, "x"] = df.timedelta.apply(lambda x: x.days)
-                par_dfs.append(df)
-            struct_dict[gs] = par_dfs
-        # TODO: sort out how to combine correlated temporal pars /
-        #  / setup with multiple calls to add_parameters()
-        # if "temporal_list" in self.par_dfs.keys():
-        #     bc_df = self.par_dfs["temporal_list"]
-        #     bc_df.loc[:, "y"] = 0  #
-        #     bc_df.loc[:, "x"] = bc_df.timedelta.apply(lambda x: x.days)
-        #     bc_dfs = []
-        #     for pargp in bc_df.pargp.unique():
-        #         gp_df = bc_df.loc[bc_df.pargp == pargp, :]
-        #         p_df = gp_df.drop_duplicates(subset="parnme")
-        #         # print(p_df)
-        #         bc_dfs.append(p_df)
-        #     # bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
-        #     struct_dict[self.temporal_list_geostruct] = bc_dfs
+        struct_dict = self._pivot_par_struct_dict()
         self.logger.log("building prior covariance matrix")
         if len(struct_dict) > 0:
             cov = pyemu.helpers.geostatistical_prior_builder(self.pst,
@@ -272,8 +287,66 @@ class PstFrom(object):
         self.logger.log("building prior covariance matrix")
         return cov
 
-    def draw(self):
-        pass
+    def draw(self, num_reals=100, sigma_range=6, use_specsim=False,
+             scale_offset=True):
+        """
+
+        Args:
+            num_reals:
+            sigma_range:
+            use_specsim:
+            scale_offset:
+
+        Returns:
+
+        """
+        self.logger.log("drawing realizations")
+        # precondition {geostruct:{group:df}} dict to {geostruct:[par_dfs]}
+        struct_dict = self._pivot_par_struct_dict()
+        # list for holding grid style groups
+        gr_pe_l = []
+        if use_specsim:
+            if not pyemu.geostats.SpecSim2d.grid_is_regular(
+                    self.spatial_reference.delr, self.spatial_reference.delc):
+                self.logger.lraise("draw() error: can't use spectral simulation with irregular grid")
+            self.logger.log("spectral simulation for grid-scale pars")
+            # loop over geostructures defined in PestFrom object
+            # (setup through add_parameters)
+            for geostruct, par_df_l in struct_dict.items():
+                par_df = pd.concat(par_df_l)  # force to single df
+                grd_p = (par_df.partype == 'grid')  # grid par slicer
+                # if there are grid pars (also grid pars with i,j info)
+                if grd_p.sum() > 0 and 'i' in par_df.columns:
+                    # select pars to use specsim for
+                    gr_df = par_df.loc[grd_p & pd.notna(par_df.i)]
+                    gr_df = gr_df.astype({'i': int, 'j': int})  # make sure int
+                    # (won't be if there were nans in concatenated df)
+                    if len(gr_df) > 0:
+                        # get specsim object for geostruct
+                        ss = pyemu.geostats.SpecSim2d(
+                            delx=self.spatial_reference.delr,
+                            dely=self.spatial_reference.delc,
+                            geostruct=geostruct)
+                        # specsim draw (returns df)
+                        gr_pe1 = ss.grid_par_ensemble_helper(
+                            pst=self.pst, gr_df=gr_df, num_reals=num_reals,
+                            sigma_range=sigma_range, logger=self.logger)
+                        gr_pe_l.append(gr_pe1)  # append to list
+                        # drop these pars as already drawn
+                        par_df = par_df.drop(gr_df.index, axis=0)
+                        # redefine struct_dict entry to not include spec sim par
+                        struct_dict[geostruct] = par_df
+            self.logger.log("spectral simulation for grid-scale pars")
+        # draw remaining pars based on their geostruct
+        pe = pyemu.helpers.geostatistical_draws(
+            self.pst, struct_dict=struct_dict, num_reals=num_reals,
+            sigma_range=sigma_range, scale_offset=scale_offset)._df
+        if len(gr_pe_l) > 0:
+            gr_par_pe = pd.concat(gr_pe_l, axis=1)
+            pe.loc[:, gr_par_pe.columns] = gr_par_pe.values
+        par_ens = pyemu.ParameterEnsemble(pst=self.pst, df=pe)
+        self.logger.log("drawing realizations")
+        return par_ens
 
     def build_pst(self, filename=None, update=False):
         """Build control file from i/o files in PstFrom object.
@@ -843,12 +916,17 @@ class PstFrom(object):
         pp_filename = None  # setup placeholder variables
         fac_filename = None
 
-        def _check_var_len(var, n):
+        def _check_var_len(var, n, fill=None):
             if not isinstance(var, list):
                 var = [var]
+            if fill is not None:
+                if fill == 'first':
+                    fill = var[0]
+                elif fill == 'last':
+                    fill = var[-1]
             nv = len(var)
             if nv < n:
-                var.extend([None for _ in range(n-nv)])
+                var.extend([fill for _ in range(n-nv)])
             return var
 
         # Process model parameter files to produce appropriate pest pars
@@ -858,15 +936,9 @@ class PstFrom(object):
             ult_lbound = _check_var_len(ult_lbound, ncol)
             ult_ubound = _check_var_len(ult_ubound, ncol)
             pargp = _check_var_len(pargp, ncol)
-            # if ult_lbound is None:
-            #     ult_lbound = [None for _ in use_cols]
-            # if ult_ubound is None:
-            #     ult_ubound = [None for _ in use_cols]
-            # if len(use_cols) == 1:
-            #     if not isinstance(ult_lbound, list):
-            #         ult_lbound = [ult_lbound]
-            #     if not isinstance(ult_ubound, list):
-            #         ult_ubound = [ult_ubound]
+            lower_bound = _check_var_len(lower_bound, ncol, fill='first')
+            upper_bound = _check_var_len(upper_bound, ncol, fill='first')
+            transform = _check_var_len(transform, ncol, fill='first')
             if len(use_cols) != len(ult_lbound) != len(ult_ubound):
                 self.logger.lraise("mismatch in number of columns to use {0} "
                                    "and number of ultimate lower {0} or upper "
@@ -885,6 +957,13 @@ class PstFrom(object):
                 longnames=self.longnames, get_xy=self.get_xy,
                 zero_based=self.zero_based,
                 input_filename=os.path.join(self.mult_file_d, mlt_filename))
+            assert np.mod(len(df), len(use_cols)) == 0., (
+                "Parameter dataframe wrong shape for number of cols {0}"
+                "".format(use_cols))
+            # variables need to be passed to each row in df
+            lower_bound = np.tile(lower_bound, int(len(df)/ncol))
+            upper_bound = np.tile(upper_bound, int(len(df)/ncol))
+            transform = np.tile(transform, int(len(df)/ncol))
             self.logger.log(
                 "writing list-based template file '{0}'".format(tpl_filename))
         else:  # Assume array type parameter file
@@ -1373,8 +1452,8 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
                                 get_xy=get_xy, zero_based=zero_based)
     parnme = list(df_tpl.loc[:, use_cols].values.flatten())
     pargp = list(
-        df_tpl.loc[:,
-        ["pargp{0}".format(col) for col in use_cols]].values.flatten())
+        df_tpl.loc[:, ["pargp{0}".format(col)
+                       for col in use_cols]].values.flatten())
     df_par = pd.DataFrame({"parnme": parnme, "pargp": pargp}, index=parnme)
     if par_type == 'grid' and 'x' in df_tpl.columns:  # TODO work out if x,y needed for constant and zone pars too
         df_par['x'], df_par['y'] = np.concatenate(
