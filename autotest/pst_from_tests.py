@@ -438,7 +438,7 @@ def mf6_freyberg_test():
     sim.set_all_data_external()
     sim.write_simulation()
 
-    pyemu.os_utils.run(mf6_exe_name, cwd=tmp_model_ws)
+    # pyemu.os_utils.run(mf6_exe_name, cwd=tmp_model_ws)
 
     # SETUP pest stuff...
     # print("{0} {1}".format(mf_exe_name, m.name + ".nam"), org_model_ws)
