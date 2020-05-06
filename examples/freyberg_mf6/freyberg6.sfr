@@ -1,0 +1,121 @@
+BEGIN Options
+  BOUNDNAMES
+  PRINT_INPUT
+  SAVE_FLOWS
+  OBS6  FILEIN  sfr.obs
+  MAXIMUM_DEPTH_CHANGE  1.00000000E-04
+  UNIT_CONVERSION   86400.00000000
+END Options
+
+BEGIN Dimensions
+  NREACHES  40
+END Dimensions
+
+BEGIN PACKAGEDATA
+    OPEN/CLOSE  'freyberg6.sfr_packagedata.txt'
+END PACKAGEDATA
+
+BEGIN CONNECTIONDATA
+    OPEN/CLOSE  'freyberg6.sfr_connectiondata.txt'
+END CONNECTIONDATA
+
+BEGIN PERIOD  1
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_1.txt'
+END PERIOD  1
+
+BEGIN PERIOD  2
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_2.txt'
+END PERIOD  2
+
+BEGIN PERIOD  3
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_3.txt'
+END PERIOD  3
+
+BEGIN PERIOD  4
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_4.txt'
+END PERIOD  4
+
+BEGIN PERIOD  5
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_5.txt'
+END PERIOD  5
+
+BEGIN PERIOD  6
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_6.txt'
+END PERIOD  6
+
+BEGIN PERIOD  7
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_7.txt'
+END PERIOD  7
+
+BEGIN PERIOD  8
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_8.txt'
+END PERIOD  8
+
+BEGIN PERIOD  9
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_9.txt'
+END PERIOD  9
+
+BEGIN PERIOD  10
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_10.txt'
+END PERIOD  10
+
+BEGIN PERIOD  11
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_11.txt'
+END PERIOD  11
+
+BEGIN PERIOD  12
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_12.txt'
+END PERIOD  12
+
+BEGIN PERIOD  13
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_13.txt'
+END PERIOD  13
+
+BEGIN PERIOD  14
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_14.txt'
+END PERIOD  14
+
+BEGIN PERIOD  15
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_15.txt'
+END PERIOD  15
+
+BEGIN PERIOD  16
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_16.txt'
+END PERIOD  16
+
+BEGIN PERIOD  17
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_17.txt'
+END PERIOD  17
+
+BEGIN PERIOD  18
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_18.txt'
+END PERIOD  18
+
+BEGIN PERIOD  19
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_19.txt'
+END PERIOD  19
+
+BEGIN PERIOD  20
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_20.txt'
+END PERIOD  20
+
+BEGIN PERIOD  21
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_21.txt'
+END PERIOD  21
+
+BEGIN PERIOD  22
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_22.txt'
+END PERIOD  22
+
+BEGIN PERIOD  23
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_23.txt'
+END PERIOD  23
+
+BEGIN PERIOD  24
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_24.txt'
+END PERIOD  24
+
+BEGIN PERIOD  25
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_25.txt'
+END PERIOD  25
+
