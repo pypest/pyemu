@@ -365,7 +365,6 @@ class PstFrom(object):
                         # redefine struct_dict entry to not include spec sim par
                         struct_dict[geostruct] = par_df
 
-
             self.logger.log("spectral simulation for grid-scale pars")
         # draw remaining pars based on their geostruct
         pe = pyemu.helpers.geostatistical_draws(
