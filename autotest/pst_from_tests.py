@@ -469,18 +469,29 @@ def mf6_freyberg_test():
 
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
-
+    v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
     for tag,bnd in tags.items():
         lb,ub = bnd[0],bnd[1]
-        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f]
-        for arr_file in arr_files:
-            pf.add_parameters(filenames=arr_file,par_type="grid",par_name_base=arr_file.split('.')[1]+"_gr",
-                              pargp=arr_file.split('.')[1]+"_gr",zone_array=ib,upper_bound=ub,lower_bound=lb)
-            pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
-                              pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,)
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
+                              pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                              geostruct=gr_gs)
+            for arr_file in arr_files:
+                pf.add_parameters(filenames=arr_file,par_type="constant",par_name_base=arr_file.split('.')[1]+"_cn",
+                                  pargp=arr_file.split('.')[1]+"_gr",zone_array=ib,upper_bound=ub,lower_bound=lb)
+        else:
+            for arr_file in arr_files:
+                pf.add_parameters(filenames=arr_file,par_type="grid",par_name_base=arr_file.split('.')[1]+"_gr",
+                                  pargp=arr_file.split('.')[1]+"_gr",zone_array=ib,upper_bound=ub,lower_bound=lb,
+                                  geostruct=gr_gs)
+                pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
+                                  pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,)
+
 
     list_files = [f for f in os.listdir(tmp_model_ws) if "wel_stress_period_data" in f]
     for list_file in list_files:
@@ -528,9 +539,12 @@ def mf6_freyberg_test():
     pst.set_res(res_file)
     print(pst.phi)
     #assert pst.phi < 1.0e-5, pst.phi
-    pe = pf.draw(100)
-    pe.to_binary(os.path.join(template_ws,"prior.jcb"))
 
+    num_reals = 100
+    pe = pf.draw(num_reals,use_specsim=True)
+    pe.to_binary(os.path.join(template_ws,"prior.jcb"))
+    assert pe.shape[1] == pst.npar_adj,"{0} vs {1}".format(pe.shape[0],pst.npar_adj)
+    assert pe.shape[0] == num_reals
 
 if __name__ == "__main__":
     # freyberg_test()

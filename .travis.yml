@@ -67,7 +67,7 @@ before_install:
   - ln -fs /usr/bin/g++-6 "$HOME/.local/bin/g++" && g++ --version
   - ls -l /usr/bin/g++-6
   - export CXX="g++"
-  - git clone -b develop --depth 1 https://github.com/jtwhite79/pestpp
+  - git clone -b develop --depth 1 https://github.com/usgs/pestpp
   - cd pestpp/src
   - bindir=../../../../bin/linux COMPILER=gcc CXX=g++ FC=gfortran STATIC=no make -j 20 install
   - cd ../../

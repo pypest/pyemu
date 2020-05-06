@@ -105,7 +105,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
         if not isinstance(items, list):
             items = [items]
         # items.sort()
-        for item in items:
+        for iitem,item in enumerate(items):
             if isinstance(item, str):
                 assert os.path.exists(item), "file {0} not found". \
                     format(item)
@@ -127,6 +127,10 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                               "in the control file: {0}". \
                               format(','.join(missing)), PyemuWarning)
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
+            if df.shape[0] == 0:
+                warnings.warn("geostatistical_draws(): empty parameter df at position {0} items for geostruct {1}, skipping...".\
+                              format(iitem,gs))
+                continue
             if "zone" not in df.columns:
                 df.loc[:, "zone"] = 1
             zones = df.zone.unique()
