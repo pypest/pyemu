@@ -466,7 +466,6 @@ def mf6_freyberg_test():
 
     df = pd.read_csv(os.path.join(tmp_model_ws,"heads.csv"),index_col=0)
     pf.add_observations("heads.csv",insfile="heads.csv.ins",index_cols="time",use_cols=list(df.columns.values),prefix="hds")
-
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
     v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
@@ -498,7 +497,7 @@ def mf6_freyberg_test():
         kper = list_file.split(".")[1].split('_')[-1]
         pf.add_parameters(filenames=list_file,par_type="grid",par_name_base="wel_{0}".format(kper),
                           pargp="wel_{0}".format(kper),index_cols=[0,1,2],use_cols=[3],
-                          upper_bound=1.5,lower_bound=0.5)
+                          upper_bound=1.5,lower_bound=0.5, geostruct=gr_gs)
 
 
     # add model run command
