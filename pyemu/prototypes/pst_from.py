@@ -115,30 +115,58 @@ class PstFrom(object):
                 self.logger.warn(
                     "format mismatch for {0}, fmt passed {1}"
                     "".format(name, [f for f in g.fmt.unique()]))
-            bounds = g.apply(
+            # if ultimate parameter bounds have been set for only one instance
+            # of the model file we need to pass this through to all
+            ubound = g.apply(
                 lambda x: pd.Series(
                     {k: v for n, c in enumerate(x.use_cols)
-                     for k, v in [['ubound{0}'.format(c), x.upper_bound[n]],
-                                  ['lbound{0}'.format(c), x.lower_bound[n]]]})
+                     for k, v in [['ubound{0}'.format(c), x.upper_bound[n]]]})
                 if x.use_cols is not None
                 else pd.Series(
-                    {k: v for k, v in [['ubound', x.upper_bound],
-                                       'lbound', x.lower_bound]}), axis=1)
-            if bounds.nunique(0, False).gt(1).any():
-                if bounds.nunique(0, False).gt(2).any():
+                    {k: v for k, v in [['ubound', x.upper_bound]]}), axis=1)
+            if ubound.nunique(0, False).gt(1).any():
+                if ubound.nunique(0, False).gt(2).any():
+                    # more than one upper bound set
                     self.logger.lraise(
                         "different upper bounds requested for same par for {0}"
                         "".format(name))
                 else:
-                    pass
-
-
-            # TODO catch where different ultimate ubound and lbound have been passe for same par
-            # if not pd.isna(g.upper_bound.to_list()).all():
-            # if g.upper_bound.nunique() > 1:
-            #     pass
-            # if g.lower_bound.nunique() > 1:
-            #     pass
+                    # one set - the rest are None - need to replace None
+                    # with set values
+                    # df with set values
+                    fil = ubound.apply(lambda x:
+                                       pd.Series([None]) if x.isna().all()
+                                       else x[x.notna()].values).T
+                    self.logger.warn("Upper bound for par passed for some but "
+                                     "not all instances, will set NA to "
+                                     "passed values\n{}".format(fil))
+                    # replace Nones in list in Series with passed values
+                    pr.loc[g.index, 'upper_bound'] = g.use_cols.apply(
+                        lambda x: [fil[0].loc['ubound{0}'.format(c)] for c in x]
+                        if x is not None else fil[0].loc['ubound'])
+            # repeat for lower bounds
+            lbound = g.apply(
+                lambda x: pd.Series(
+                    {k: v for n, c in enumerate(x.use_cols)
+                     for k, v in [['lbound{0}'.format(c), x.lower_bound[n]]]})
+                if x.use_cols is not None
+                else pd.Series(
+                    {k: v for k, v in [['lbound', x.lower_bound]]}), axis=1)
+            if lbound.nunique(0, False).gt(1).any():
+                if lbound.nunique(0, False).gt(2).any():
+                    self.logger.lraise(
+                        "different lower bounds requested for same par for {0}"
+                        "".format(name))
+                else:
+                    fil = lbound.apply(lambda x:
+                                       pd.Series([None]) if x.isna().all()
+                                       else x[x.notna()].values).T
+                    self.logger.warn("Lower bound for par passed for some but "
+                                     "not all instances, will set NA to "
+                                     "passed values\n{}".format(fil))
+                    pr.loc[g.index, 'lower_bound'] = g.use_cols.apply(
+                        lambda x: [fil[0].loc['lbound{0}'.format(c)] for c in x]
+                        if x is not None else fil[0].loc['lbound'])
         pr['zero_based'] = self.zero_based
         return pr
 

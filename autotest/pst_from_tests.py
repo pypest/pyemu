@@ -286,9 +286,15 @@ def freyberg_prior_build_test():
     # this time specifying free formatted model file
     pf.add_parameters(filenames="RIV_0000.dat", par_type="constant",
                       index_cols=[0, 1, 2], use_cols=[3, 4],
-                      par_name_base=["rivstage_grid", "rivcond_grid"],
+                      par_name_base=["rivstage", "rivcond"],
                       mfile_fmt='free', lower_bound=[0.9, 0.01],
                       upper_bound=[1.1, 100.], ult_lbound=[None, 0.01])
+    # pf.add_parameters(filenames="RIV_0000.dat", par_type="constant",
+    #                   index_cols=[0, 1, 2], use_cols=5,
+    #                   par_name_base="rivbot",
+    #                   mfile_fmt='free', lower_bound=0.9,
+    #                   upper_bound=1.1, ult_ubound=100.,
+    #                   ult_lbound=0.001)
     # setting up temporal variogram for correlating temporal pars
     date = m.dis.start_datetime
     v = pyemu.geostats.ExpVario(contribution=1.0, a=180.0)  # 180 correlation length
@@ -361,8 +367,8 @@ def freyberg_prior_build_test():
     # zonal recharge pars
     pf.add_parameters(filenames=rch_mfiles,
                       par_type="zone", par_name_base='rch_zone',
-                      lower_bound=0.9, upper_bound=1.1, ult_lbound=0.001, 
-                      ult_ubound=0.5)
+                      lower_bound=0.9, upper_bound=1.1, ult_lbound=1.e-6,
+                      ult_ubound=100.)
 
 
     # add model run command
@@ -395,7 +401,7 @@ def freyberg_prior_build_test():
         raise Exception(str(e))
     os.chdir(b_d)
 
-    pst.control_data.noptmax = 1
+    pst.control_data.noptmax = 0
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
     pyemu.os_utils.run("{0} freyberg.pst".format(
         os.path.join(bin_path, "pestpp-ies")), cwd=pf.new_d)
