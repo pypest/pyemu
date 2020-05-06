@@ -107,3 +107,4 @@ class Logger(object):
             self.f.flush
             self.f.close()
         raise Exception(message)
+

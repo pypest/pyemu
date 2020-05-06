@@ -397,9 +397,9 @@ TRGW_0_33_7                               Continuous HEAD                  All t
 TRGW_0_34_10                              Continuous HEAD                  All times    "1 35 11"
     BINARY GRID INFORMATION WILL BE WRITTEN TO:
       UNIT NUMBER: 1048
-      FILE NAME: /Users/briochh/Documents/mf6_pest_freyberg/test2/freyberg6.dis.grb
+      FILE NAME: /Users/jwhite/Dev/pyemu/examples/freyberg_mf6/freyberg6.dis.grb
 
- OPENED /Users/briochh/Documents/mf6_pest_freyberg/test2/freyberg6.dis.grb
+ OPENED /Users/jwhite/Dev/pyemu/examples/freyberg_mf6/freyberg6.dis.grb
  FILE TYPE:DATA(BINARY)   UNIT 1048   STATUS:REPLACE             
  FORMAT:UNFORMATTED            ACCESS:STREAM              
  ACTION:READWRITE           
