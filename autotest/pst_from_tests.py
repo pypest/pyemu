@@ -321,7 +321,7 @@ def freyberg_prior_build_test():
                       par_type="grid", index_cols=[0, 1, 2], use_cols=3,
                       par_name_base="welflux_grid",
                       zone_array=m.bas6.ibound.array,
-                      geostruct=None, lower_bound=0.25, upper_bound=1.75)
+                      geostruct=geostruct, lower_bound=0.25, upper_bound=1.75)
     # global constant across all files
     pf.add_parameters(filenames=well_mfiles,
                       par_type="constant",
@@ -503,7 +503,7 @@ def mf6_freyberg_test():
         kper = list_file.split(".")[1].split('_')[-1]
         pf.add_parameters(filenames=list_file,par_type="grid",par_name_base="wel_{0}".format(kper),
                           pargp="wel_{0}".format(kper),index_cols=[0,1,2],use_cols=[3],
-                          upper_bound=1.5,lower_bound=0.5, geostruct=wel_gs)
+                          upper_bound=1.5,lower_bound=0.5, geostruct=gr_gs)
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
