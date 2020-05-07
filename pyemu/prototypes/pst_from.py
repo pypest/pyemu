@@ -361,9 +361,12 @@ class PstFrom(object):
                             sigma_range=sigma_range, logger=self.logger)
                         gr_pe_l.append(gr_pe1)  # append to list
                         # drop these pars as already drawn
-                        par_df = par_df.drop(gr_df.index, axis=0)
+                        trimmed = []
+                        for p_df in par_df_l:
+                            if not p_df.index.isin(gr_df.index).all():
+                                trimmed.append(p_df)
                         # redefine struct_dict entry to not include spec sim par
-                        struct_dict[geostruct] = par_df
+                        struct_dict[geostruct] = trimmed
 
             self.logger.log("spectral simulation for grid-scale pars")
         # draw remaining pars based on their geostruct
