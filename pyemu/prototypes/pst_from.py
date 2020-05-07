@@ -189,11 +189,11 @@ class PstFrom(object):
                 self._spatial_reference.ycellcenters[i, j])
 
     def parse_kij_args(self, *args):
-        if len(args) == 3:  # kij
-            i, j = args[1], args[2]
+        if len(args) >= 2:  # kij
+            i, j = args[-2], args[-1]
 
-        elif len(args) == 2:  # ij
-            i, j = args[0], args[1]
+        #elif len(args) == 2:  # ij
+        #    i, j = args[0], args[1]
         else:
             self.logger.lraise(("get_xy() error: wrong number of args, "
                                 "should be 3 (kij) or 2 (ij)"

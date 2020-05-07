@@ -505,6 +505,10 @@ def mf6_freyberg_test():
                           pargp="wel_{0}".format(kper),index_cols=[0,1,2],use_cols=[3],
                           upper_bound=1.5,lower_bound=0.5, geostruct=gr_gs)
 
+    pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt",par_name_base="sfr_rhk",
+                      pargp="sfr_rhk",index_cols=[0,1,2,3],use_cols=[9],upper_bound=10.,lower_bound=0.1,
+                      par_type="grid")
+
     # add model run command
     pf.mod_sys_cmds.append("mf6")
     print(pf.mult_files)
@@ -646,6 +650,10 @@ def mf6_freyberg_shortnames_test():
         pf.add_parameters(filenames=list_file,par_type="grid",par_name_base="w{0}".format(kper),
                           pargp="wel_{0}".format(kper),index_cols=[0,1,2],use_cols=[3],
                           upper_bound=1.5,lower_bound=0.5, geostruct=gr_gs)
+
+    pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="rhk",
+                      pargp="sfr_rhk", index_cols=[0, 1, 2, 3], use_cols=[9], upper_bound=10., lower_bound=0.1,
+                      par_type="grid")
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
