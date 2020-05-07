@@ -1585,8 +1585,12 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
         else:
             inames = ["idx{0}".format(i) for i in range(len(index_cols))]
     else:
-        fmt = "{1:03d}"
+        fmt = "{1:3}"
         j = ''
+        if isinstance(index_cols[0], str):
+            inames = index_cols
+        else:
+            inames = ["{0}".format(i) for i in range(len(index_cols))]
 
     if not zero_based:
         # TODO: need to be careful here potential to have two
