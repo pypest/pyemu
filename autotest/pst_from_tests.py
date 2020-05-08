@@ -500,10 +500,16 @@ def mf6_freyberg_test():
 
     list_files = [f for f in os.listdir(tmp_model_ws) if "wel_stress_period_data" in f]
     for list_file in list_files:
-        kper = list_file.split(".")[1].split('_')[-1]
-        pf.add_parameters(filenames=list_file,par_type="grid",par_name_base="wel_{0}".format(kper),
-                          pargp="wel_{0}".format(kper),index_cols=[0,1,2],use_cols=[3],
-                          upper_bound=1.5,lower_bound=0.5, geostruct=gr_gs)
+        kper = int(list_file.split(".")[1].split('_')[-1]) - 1
+        # add spatially constant, but temporally correlated wel flux pars
+        pf.add_parameters(filenames=list_file,par_type="constant",par_name_base="twel_mlt_{0}".format(kper),
+                          pargp="twel_mlt".format(kper),index_cols=[0,1,2],use_cols=[3],
+                          upper_bound=1.5,lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
+
+        # add temporally indep, but spatially correlated wel flux pars
+        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
+                          pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
+                          upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
 
     pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt",par_name_base="sfr_rhk",
                       pargp="sfr_rhk",index_cols=[0,1,2,3],use_cols=[9],upper_bound=10.,lower_bound=0.1,
@@ -518,11 +524,17 @@ def mf6_freyberg_test():
     pst = pf.build_pst('freyberg.pst')
 
     cov = pf.build_prior(fmt="none").to_dataframe()
+    twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
+    twcov = cov.loc[twel_pars,twel_pars]
+    dsum = np.diag(twcov.values).sum()
+    assert twcov.sum().sum() > dsum
+
     rch_cn = [p for p in pst.par_names if "_cn" in p]
     print(rch_cn)
     rcov = cov.loc[rch_cn,rch_cn]
     dsum = np.diag(rcov.values).sum()
     assert rcov.sum().sum() > dsum
+
 
     num_reals = 100
     pe = pf.draw(num_reals, use_specsim=True)
@@ -628,39 +640,39 @@ def mf6_freyberg_shortnames_test():
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
     print(dts)
-    for tag,bnd in tags.items():
-        lb,ub = bnd[0],bnd[1]
-        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-        if "rch" in tag:
-            pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rg",
-                              pargp="rg", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                              geostruct=gr_gs)
-            for arr_file in arr_files:
-                kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-                pf.add_parameters(filenames=arr_file,par_type="constant",par_name_base="rc{0}_".format(kper),
-                                  pargp="rc",zone_array=ib,upper_bound=ub,lower_bound=lb,geostruct=rch_temporal_gs,
-                                  datetime=dts[kper])
-        else:
-
-            for arr_file in arr_files:
-                pb = tag.split('_')[1] + arr_file.split('.')[1][-1]
-                pf.add_parameters(filenames=arr_file,par_type="grid",par_name_base=pb+"g",
-                                  pargp=pb+"g",zone_array=ib,upper_bound=ub,lower_bound=lb,
-                                  geostruct=gr_gs)
-                pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=pb+"p",
-                                  pargp=pb+"p", zone_array=ib,upper_bound=ub,lower_bound=lb,)
+    # for tag,bnd in tags.items():
+    #     lb,ub = bnd[0],bnd[1]
+    #     arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+    #     if "rch" in tag:
+    #         pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rg",
+    #                           pargp="rg", zone_array=ib, upper_bound=ub, lower_bound=lb,
+    #                           geostruct=gr_gs)
+    #         for arr_file in arr_files:
+    #             kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+    #             pf.add_parameters(filenames=arr_file,par_type="constant",par_name_base="rc{0}_".format(kper),
+    #                               pargp="rc",zone_array=ib,upper_bound=ub,lower_bound=lb,geostruct=rch_temporal_gs,
+    #                               datetime=dts[kper])
+    #     else:
+    #
+    #         for arr_file in arr_files:
+    #             pb = tag.split('_')[1] + arr_file.split('.')[1][-1]
+    #             pf.add_parameters(filenames=arr_file,par_type="grid",par_name_base=pb+"g",
+    #                               pargp=pb+"g",zone_array=ib,upper_bound=ub,lower_bound=lb,
+    #                               geostruct=gr_gs)
+    #             pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=pb+"p",
+    #                               pargp=pb+"p", zone_array=ib,upper_bound=ub,lower_bound=lb,)
 
 
     list_files = [f for f in os.listdir(tmp_model_ws) if "wel_stress_period_data" in f]
     for list_file in list_files:
         kper = list_file.split(".")[1].split('_')[-1]
-        pf.add_parameters(filenames=list_file,par_type="grid",par_name_base="w{0}".format(kper),
+        pf.add_parameters(filenames=list_file,par_type="constant",par_name_base="w{0}".format(kper),
                           pargp="wel_{0}".format(kper),index_cols=[0,1,2],use_cols=[3],
-                          upper_bound=1.5,lower_bound=0.5, geostruct=gr_gs)
+                          upper_bound=1.5,lower_bound=0.5)
 
-    pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="rhk",
-                      pargp="sfr_rhk", index_cols=[0, 1, 2, 3], use_cols=[9], upper_bound=10., lower_bound=0.1,
-                      par_type="grid")
+    # pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="rhk",
+    #                   pargp="sfr_rhk", index_cols=[0, 1, 2, 3], use_cols=[9], upper_bound=10., lower_bound=0.1,
+    #                   par_type="grid")
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
