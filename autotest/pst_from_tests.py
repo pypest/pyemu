@@ -517,6 +517,13 @@ def mf6_freyberg_test():
     # build pest
     pst = pf.build_pst('freyberg.pst')
 
+    cov = pf.build_prior(fmt="none").to_dataframe()
+    rch_cn = [p for p in pst.par_names if "_cn" in p]
+    print(rch_cn)
+    rcov = cov.loc[rch_cn,rch_cn]
+    dsum = np.diag(rcov.values).sum()
+    assert rcov.sum().sum() > dsum
+
     num_reals = 100
     pe = pf.draw(num_reals, use_specsim=True)
     pe.to_binary(os.path.join(template_ws, "prior.jcb"))
