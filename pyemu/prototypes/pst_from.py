@@ -189,6 +189,8 @@ class PstFrom(object):
                 self._spatial_reference.ycellcenters[i, j])
 
     def parse_kij_args(self, *args):
+        # TODO - deal with args not being ordered k,i,j
+        #  perhaps support mapping e.g. {'i':, 'j':,...}
         if len(args) >= 2:  # kij
             i, j = args[-2], args[-1]
 
@@ -1605,6 +1607,8 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
                           for xx, iname in zip(x, inames)])).str.replace(' ', '')
 
     if get_xy is not None:
+        # TODO need to be more flexible with index_cols
+        #   cant just assume index_cols will be k,i,j (if 3) and i,j (if 2)
         df_ti.loc[:, 'xy'] = df_ti.sidx.apply(lambda x: get_xy(*x))
         df_ti.loc[:, 'x'] = df_ti.xy.apply(lambda x: x[0])
         df_ti.loc[:, 'y'] = df_ti.xy.apply(lambda x: x[1])
