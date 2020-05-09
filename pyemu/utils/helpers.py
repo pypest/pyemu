@@ -3254,7 +3254,7 @@ def apply_genericlist_pars(df):
              "use_cols": columns to mults act on,
              "upper_bound": ultimate upper bound for model input file 
                             parameter,
-            "lower_bound": ultimate lower bound for model input file 
+             "lower_bound": ultimate lower bound for model input file
                             parameter}
         
 
@@ -3326,7 +3326,8 @@ def apply_genericlist_pars(df):
             mlt_cols = [str(col) for col in mlt.use_cols]
             new_df.loc[:, mlt_cols] = (new_df.loc[:, mlt_cols] *
                                        mlts.loc[:, mlt_cols])
-            new_df = new_df.reset_index()
+            # bring mult index back to columns AND re-order
+            new_df = new_df.reset_index()[org_data.columns]
         if "upper_bound" in df.columns:
             ub = df_mf.apply(
                 lambda x: pd.Series(

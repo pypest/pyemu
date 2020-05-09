@@ -470,7 +470,6 @@ def mf6_freyberg_test():
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
     v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
     gr_gs = pyemu.geostats.GeoStruct(variograms=v)
-    wel_gs = pyemu.geostats.GeoStruct(variograms=v,name="wel")
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0,a=60))
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
@@ -512,7 +511,7 @@ def mf6_freyberg_test():
                           upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
 
     pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt",par_name_base="sfr_rhk",
-                      pargp="sfr_rhk",index_cols=[0,1,2,3],use_cols=[9],upper_bound=10.,lower_bound=0.1,
+                      pargp="sfr_rhk",index_cols=[1,2,3],use_cols=[9],upper_bound=10.,lower_bound=0.1,
                       par_type="grid")
 
     # add model run command
@@ -633,7 +632,6 @@ def mf6_freyberg_shortnames_test():
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
     v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
     gr_gs = pyemu.geostats.GeoStruct(variograms=v)
-    wel_gs = pyemu.geostats.GeoStruct(variograms=v,name="wel")
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0,a=60))
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
