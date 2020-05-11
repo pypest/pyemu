@@ -650,7 +650,7 @@ class PstFrom(object):
     def add_observations(self, filename, insfile=None,
                          index_cols=None, use_cols=None,
                          use_rows=None, prefix='', ofile_skip=None,
-                         ofile_sep=None, rebuild_pst=False):
+                         ofile_sep=None, rebuild_pst=False, obsgp=True):
         """
         Add list style outputs as observation files to PstFrom object
 
@@ -704,21 +704,24 @@ class PstFrom(object):
                 use_rows = [r for r in use_rows if r <= len(df)]
                 use_rows = df.iloc[use_rows].unique()
             # construct ins_file from df
-            # TODO: make sure obgnme is assigned...
+            ncol = len(use_cols)
+            obsgp = _check_var_len(obsgp, ncol, fill=True)
             df_ins = pyemu.pst_utils.csv_to_ins_file(
                 df.set_index('idx_str'),
                 ins_filename=os.path.join(
                     self.new_d, insfile),
                 only_cols=use_cols, only_rows=use_rows, marker='~',
                 includes_header=True, includes_index=False, prefix=prefix,
-                longnames=True, head_lines_len=len(storehead), sep=sep)
+                longnames=True, head_lines_len=len(storehead), sep=sep,
+                gpname=obsgp)
             self.logger.log("building insfile for tabular output file {0}"
                             "".format(filename))
             new_obs = self.add_observations_from_ins(
                 ins_file=insfile, out_file=os.path.join(self.new_d, filename))
+            if 'obgnme' in df_ins.columns:
+                new_obs.loc[:, 'obgnme'] = df_ins.loc[new_obs.index, 'obgnme']
             new_obs_l.append(new_obs)
         new_obs = pd.concat(new_obs_l)
-        # TODO obs group names
         self.logger.log("adding observations from tabular output file")
         if rebuild_pst:
             if self.pst is not None:

@@ -132,7 +132,9 @@ def freyberg_test():
     pf.add_observations('freyberg.sfo.csv', insfile=None,
                         index_cols=['segment', 'reach', 'kstp', 'kper'],
                         use_cols=["Qaquifer", "Qout"], prefix='sfr2',
-                        ofile_sep=',')
+                        ofile_sep=',', obsgp=['qaquifer', 'qout'])
+    obsnmes = pd.concat([df.obgnme for df in pf.obs_dfs]).unique()
+    assert all([gp in obsnmes for gp in ['qaquifer', 'qout']])
     pf.post_py_cmds.append(
         "sfodf.to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
 
