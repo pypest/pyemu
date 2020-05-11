@@ -132,7 +132,9 @@ def freyberg_test():
     pf.add_observations('freyberg.sfo.csv', insfile=None,
                         index_cols=['segment', 'reach', 'kstp', 'kper'],
                         use_cols=["Qaquifer", "Qout"], prefix='sfr2',
-                        ofile_sep=',')
+                        ofile_sep=',', obsgp=['qaquifer', 'qout'])
+    obsnmes = pd.concat([df.obgnme for df in pf.obs_dfs]).unique()
+    assert all([gp in obsnmes for gp in ['qaquifer', 'qout']])
     pf.post_py_cmds.append(
         "sfodf.to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
 
@@ -511,7 +513,7 @@ def mf6_freyberg_test():
                           upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
 
     pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt",par_name_base="sfr_rhk",
-                      pargp="sfr_rhk",index_cols=[1,2,3],use_cols=[9],upper_bound=10.,lower_bound=0.1,
+                      pargp="sfr_rhk",index_cols={'k':1,'i':2,'j':3},use_cols=[9],upper_bound=10.,lower_bound=0.1,
                       par_type="grid")
 
     # add model run command
@@ -725,4 +727,4 @@ if __name__ == "__main__":
     # freyberg_test()
     # freyberg_prior_build_test()
     mf6_freyberg_test()
-    #mf6_freyberg_shortnames_test()
+    # mf6_freyberg_shortnames_test()

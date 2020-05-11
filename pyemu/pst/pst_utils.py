@@ -748,7 +748,7 @@ def clean_missing_exponent(pst_filename,clean_filename="clean.pst"):
 
 def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None,
                     marker='~',includes_header=True,includes_index=True,prefix='',
-                    longnames=False, head_lines_len=0, sep=','):
+                    longnames=False, head_lines_len=0, sep=',', gpname=False):
     """write a PEST-style instruction file from an existing CSV file
 
     Args:
@@ -767,6 +767,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
             index column as the first column.  Default is True.
         prefix (`str`, optional): a prefix to prepend to observation names.
             Default is ""
+        gpname (`str` or [`str`]): Optional PEST group name for columns
 
     Returns:
         `pandas.DataFrame`: a dataframe of observation names and values found in
@@ -846,6 +847,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     row_visit, col_visit = {},{}
     onames = []
     ovals = []
+    ognames = []
     with open(ins_filename,'w') as f:
         f.write("pif {0}\n".format(marker))
         [f.write("l1\n") for _ in range(head_lines_len)]
@@ -857,17 +859,29 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
             for j,clabel in enumerate(clabels):
                 if c_count < len(only_clabels):
                     if rlabel in only_rlabels and clabel in only_clabels:
-                        c_count += 1
                         if longnames:
-                            oname = "{0}_use_col:{1}_{2}".format(prefix, clabel,
-                                                                 rlabel)
+                            nname = "{0}_use_col:{1}".format(prefix, clabel)
+                            oname = "{0}_{1}".format(nname, rlabel)
                         else:
+                            nname = prefix+clabel
                             oname = prefix+rlabel+"_"+clabel
                         onames.append(oname)
                         ovals.append(df.iloc[i,j])
+                        if gpname is False or gpname[c_count] is False:
+                            # keeping consistent behaviour
+                            ngpname = None  # nname
+                        elif gpname is True or gpname[c_count] is True:
+                            ngpname = nname
+                        else:
+                            if not isinstance(gpname, str):
+                                ngpname = gpname[c_count]
+                            else:
+                                ngpname = gpname
+                        ognames.append(ngpname)
                         oname = " !{0}!".format(oname)
                         if sep == ',':
                             oname = "{0} {1},{1}".format(oname, marker)
+                        c_count += 1
                     else:
                         if sep == ',':
                             oname = " {0},{0}".format(marker)
@@ -884,7 +898,8 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
                     #         oname = "{0} {1},{1}".format(oname, marker)
                     f.write(oname)
             f.write('\n')
-    odf = pd.DataFrame({"obsnme": onames, "obsval": ovals}, index=onames)
+    odf = pd.DataFrame({"obsnme": onames, "obsval": ovals, 'obgnme': ognames},
+                       index=onames).dropna(axis=1)  # dropna to keep consistent after adding obgnme
     return odf
 
 
