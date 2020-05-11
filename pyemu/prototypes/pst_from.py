@@ -23,6 +23,20 @@ def _get_datetime_from_str(sdt):
     return sdt
 
 
+def _check_var_len(var, n, fill=None):
+    if not isinstance(var, list):
+        var = [var]
+    if fill is not None:
+        if fill == 'first':
+            fill = var[0]
+        elif fill == 'last':
+            fill = var[-1]
+    nv = len(var)
+    if nv < n:
+        var.extend([fill for _ in range(n - nv)])
+    return var
+
+
 # noinspection PyProtectedMember
 class PstFrom(object):
     """
@@ -36,10 +50,7 @@ class PstFrom(object):
         zero_based:
         start_datetime:
     """
-    # TODO auto ins setup from list style output (or array) and use_cols etc
-    # TODO reals draw
-    # TODO poss move/test some of the flopy/modflow specific setup apply
-    #  methods to/in gw_utils. - save reinventing the setup/apply methods
+    # TODO: doc strings!!!
     def __init__(self, original_d, new_d, longnames=True,
                  remove_existing=False, spatial_reference=None,
                  zero_based=True, start_datetime=None):  # TODO geostruct?
@@ -170,42 +181,42 @@ class PstFrom(object):
         pr['zero_based'] = self.zero_based
         return pr
 
-    def _generic_get_xy(self, *args):
-        if len(args) == 3:  # kij
-            return float(args[1]), float(args[2])
-        elif len(args) == 2:  # ij
-            return float(args[0]), float(args[1])
+    def _generic_get_xy(self, args, **kwargs):
+        i, j = self.parse_kij_args(args, kwargs)
+        return i, j
+
+    def _flopy_sr_get_xy(self, args, **kwargs):
+        i, j = self.parse_kij_args(args, kwargs)
+        if all([ij is None for ij in [i, j]]):
+            return i, j
         else:
-            return 0.0, 0.0
+            return (self._spatial_reference.xcentergrid[i, j],
+                    self._spatial_reference.ycentergrid[i, j])
 
-    def _flopy_sr_get_xy(self, *args):
-        i, j = self.parse_kij_args(*args)
-        return (self._spatial_reference.xcentergrid[i, j],
-                self._spatial_reference.ycentergrid[i, j])
-
-    def _flopy_mg_get_xy(self, *args):
-        i, j = self.parse_kij_args(*args)
-        return (self._spatial_reference.xcellcenters[i, j],
-                self._spatial_reference.ycellcenters[i, j])
-
-    def parse_kij_args(self, *args):
-        # TODO - deal with args not being ordered k,i,j
-        #  perhaps support mapping e.g. {'i':, 'j':,...}
-        if len(args) >= 2:  # kij
-            i, j = args[-2], args[-1]
-
-        #elif len(args) == 2:  # ij
-        #    i, j = args[0], args[1]
+    def _flopy_mg_get_xy(self, args, **kwargs):
+        i, j = self.parse_kij_args(args, kwargs)
+        if all([ij is None for ij in [i,j]]):
+            return i, j
         else:
-            self.logger.lraise(("get_xy() error: wrong number of args, "
-                                "should be 3 (kij) or 2 (ij)"
-                                ", not '{0}'").format(str(args)))
-        # if not self.zero_based:
-        #     # TODO: check this,
-        #     # I think index is already being adjusted in write_list_tpl()
-        #     # and write_array_tpl() should always be zero_based (I think)
-        #     i -= 1
-        #     j -= 1
+            return (self._spatial_reference.xcellcenters[i, j],
+                    self._spatial_reference.ycellcenters[i, j])
+
+    def parse_kij_args(self, args, kwargs):
+        if len(args) >= 2:
+            ij_id = None
+            if 'ij_id' in kwargs:
+                ij_id = kwargs['ij_id']
+            if ij_id is not None:
+                i, j = [args[ij] for ij in ij_id]
+            else:
+                # assume i and j are the final two entries in index_cols
+                i, j = args[-2], args[-1]
+        else:
+            self.logger.warn(("get_xy() warning: need locational information "
+                              "(e.g. i,j) to generate xy, "
+                              "insufficient index cols passed to interpret: {}"
+                              "").format(str(args)))
+            i, j = None, None
         return i, j
 
     def initialize_spatial_reference(self):
@@ -659,6 +670,7 @@ class PstFrom(object):
         Returns: DataFrame of new observations
 
         """
+        # TODO - array style outputs? or expecting post processing to tabular
         if insfile is None:
             insfile = "{0}.ins".format(filename)
         self.logger.log("adding observations from tabular output file")
@@ -692,6 +704,7 @@ class PstFrom(object):
                 use_rows = [r for r in use_rows if r <= len(df)]
                 use_rows = df.iloc[use_rows].unique()
             # construct ins_file from df
+            # TODO: make sure obgnme is assigned...
             df_ins = pyemu.pst_utils.csv_to_ins_file(
                 df.set_index('idx_str'),
                 ins_filename=os.path.join(
@@ -855,7 +868,10 @@ class PstFrom(object):
             par_name_base (`str`): basename for parameters that are set up
             index_cols (`list`-like): if not None, will attempt to parameterize
                 expecting a tabular-style model input file. `index_cols`
-                defines the unique columns used to set up pars
+                defines the unique columns used to set up pars.
+                May be passed as a dictionary using the keys `i` and `j`
+                to allow columns that relate to model rows and columns to be
+                identified and processed to x,y.
             use_cols (`list`-like or `int`): for tabular-style model input file,
                 defines the columns to be parameterised
             pargp (`str`): Parameter group to assign pars to. This is PESTs
@@ -889,20 +905,39 @@ class PstFrom(object):
             alt_inst_str (`str`): Alternative to default `inst` string in
                 parameter names
         """
-        # TODO need to support temporal pars?
+        # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
-        #  - for now, can support if passed from separate input files with datetime arg
+
+        # TODO support passing par_file (i,j)/(x,y) directly where information
+        #  is not contained in model parameter file - e.g. no i,j columns
         # Default par data columns used for pst
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         self.logger.log("adding parameters for file(s) "
                         "{0}".format(str(filenames)))
 
         # Get useful variables from arguments passed
+        # if index_cols passed as a dictionary that maps i,j information
+        idx_cols = index_cols
+        ij_in_idx = None
+        xy_in_idx = None
+        if isinstance(index_cols, dict):
+            # only useful if i and j are in keys .... or xy?
+            # TODO: or datetime str?
+            keys = np.array([k.lower() for k in index_cols.keys()])
+            idx_cols = [index_cols[k] for k in keys]
+            if all(ij in keys for ij in ['i', 'j']):
+                o_idx = np.argsort(keys)
+                ij_in_idx = o_idx[np.searchsorted(keys[o_idx], ['i', 'j'])]
+            if all(xy in keys for xy in ['x', 'y']):
+                o_idx = np.argsort(keys)
+                xy_in_idx = o_idx[np.searchsorted(keys[o_idx], ['x', 'y'])]
+
         (index_cols, use_cols, file_dict,
          fmt_dict, sep_dict, skip_dict) = self._par_prep(
-            filenames, index_cols, use_cols, fmts=mfile_fmt,
+            filenames, idx_cols, use_cols, fmts=mfile_fmt,
             skip_rows=mfile_skip)
         if datetime is not None:  # convert and check datetime
+            # TODO: something needed here to allow a different relative point.
             datetime = _get_datetime_from_str(datetime)
             if self.start_datetime is None:
                 self.logger.warn("NO START_DATEIME PROVIDED, ASSUMING PAR "
@@ -950,19 +985,6 @@ class PstFrom(object):
         pp_filename = None  # setup placeholder variables
         fac_filename = None
 
-        def _check_var_len(var, n, fill=None):
-            if not isinstance(var, list):
-                var = [var]
-            if fill is not None:
-                if fill == 'first':
-                    fill = var[0]
-                elif fill == 'last':
-                    fill = var[-1]
-            nv = len(var)
-            if nv < n:
-                var.extend([fill for _ in range(n-nv)])
-            return var
-
         # Process model parameter files to produce appropriate pest pars
         if index_cols is not None:  # Assume list/tabular type input files
             # ensure inputs are provided for all required cols
@@ -988,7 +1010,8 @@ class PstFrom(object):
                 tpl_filename=os.path.join(self.new_d, tpl_filename),
                 par_type=par_type, suffix='', index_cols=index_cols,
                 use_cols=use_cols, zone_array=zone_array, gpname=pargp,
-                longnames=self.longnames, get_xy=self.get_xy,
+                longnames=self.longnames, ij_in_idx=ij_in_idx,
+                xy_in_idx=xy_in_idx, get_xy=self.get_xy,
                 zero_based=self.zero_based,
                 input_filename=os.path.join(self.mult_file_d, mlt_filename))
             assert np.mod(len(df), len(use_cols)) == 0., (
@@ -1438,7 +1461,8 @@ class PstFrom(object):
 
 def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
                    use_cols=None, suffix='', zone_array=None, gpname=None,
-                   longnames=False, get_xy=None, zero_based=True,
+                   longnames=False, get_xy=None, ij_in_idx=None, xy_in_idx=None,
+                   zero_based=True,
                    input_filename=None):
     """ Write template files for a list style input.
 
@@ -1483,7 +1507,8 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
     df_tpl = _get_tpl_or_ins_df(dfs, name, index_cols, par_type,
                                 use_cols=use_cols, suffix=suffix, gpname=gpname,
                                 zone_array=zone_array, longnames=longnames,
-                                get_xy=get_xy, zero_based=zero_based)
+                                get_xy=get_xy, ij_in_idx=ij_in_idx,
+                                xy_in_idx=xy_in_idx, zero_based=zero_based)
     parnme = list(df_tpl.loc[:, use_cols].values.flatten())
     pargp = list(
         df_tpl.loc[:, ["pargp{0}".format(col)
@@ -1517,7 +1542,8 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
 
 def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
                        suffix='', zone_array=None, longnames=False, get_xy=None,
-                       zero_based=True, gpname=None):
+                       ij_in_idx=None, xy_in_idx=None, zero_based=True,
+                       gpname=None):
     """
     Private method to auto-generate parameter or obs names from tabular
     model files (input or output) read into pandas dataframes
@@ -1595,11 +1621,6 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
             inames = ["{0}".format(i) for i in range(len(index_cols))]
 
     if not zero_based:
-        # TODO: need to be careful here potential to have two
-        #  conflicting/compounding `zero_based` actions
-        #  by default we pass PestFrom zero_based object to this method
-        #  so if not zero_based will subtract 1 from idx here...
-        #  ----the get_xy method also -= 1 (checkout changes to get_xy())
         df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
             lambda x: tuple(xx - 1 for xx in x))
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
@@ -1607,11 +1628,16 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
                           for xx, iname in zip(x, inames)])).str.replace(' ', '')
 
     if get_xy is not None:
-        # TODO need to be more flexible with index_cols
-        #   cant just assume index_cols will be k,i,j (if 3) and i,j (if 2)
-        df_ti.loc[:, 'xy'] = df_ti.sidx.apply(lambda x: get_xy(*x))
-        df_ti.loc[:, 'x'] = df_ti.xy.apply(lambda x: x[0])
-        df_ti.loc[:, 'y'] = df_ti.xy.apply(lambda x: x[1])
+        if xy_in_idx is not None:
+            # x and y already in index cols
+            df_ti[['x', 'y']] = pd.DataFrame(
+                df_ti.sidx.to_list()).iloc[:, xy_in_idx]
+        else:
+            # TODO need to be more flexible with index_cols
+            #   cant just assume index_cols will be k,i,j (if 3) and i,j (if 2)
+            df_ti.loc[:, 'xy'] = df_ti.sidx.apply(get_xy, ij_id=ij_in_idx)
+            df_ti.loc[:, 'x'] = df_ti.xy.apply(lambda x: x[0])
+            df_ti.loc[:, 'y'] = df_ti.xy.apply(lambda x: x[1])
 
     if typ == 'obs':
         return df_ti  #################### RETURN if OBS
@@ -1764,7 +1790,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         if longnames:
             pname = "{0}_i:{1}_j:{2}".format(name, i, j)
             if get_xy is not None:
-                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy(i, j))
+                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy([i, j]))
             if zone_array is not None:
                 pname += "_zone:{0}".format(zone_array[i, j])
             if suffix != '':
@@ -1796,7 +1822,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
                     pname = " {0} ".format(fill_value)
                 else:
                     if get_xy is not None:
-                        x, y = get_xy(i, j)
+                        x, y = get_xy([i, j])
                         xx.append(x)
                         yy.append(y)
                     ii.append(i)
