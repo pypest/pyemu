@@ -228,8 +228,12 @@ class Pst(object):
 
         """
         # use a dictionary comprehension to go through and normalize each component of phi to the total
-        phi_components_normalized = {i: self.phi_components[i]/self.phi for i in self.phi_components}
-        return phi_components_normalized
+        phi = self.phi
+        comps = self.phi_components
+        norm = {i: c/phi for i,c in comps.items()}
+        print(phi,comps,norm)
+
+        return norm
 
     def set_res(self,res):
         """ reset the private `Pst.res` attribute.
