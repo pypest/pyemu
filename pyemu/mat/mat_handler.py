@@ -1694,7 +1694,7 @@ class Matrix(object):
             f.close()
             return Matrix.from_fortranfile(filename)
         ncol, nrow = abs(itemp1), abs(itemp2)
-        if itemp1 >= 0:
+        if itemp1 >= 0:  # new fmt detect
             # raise TypeError('Matrix.from_binary(): Jco produced by ' +
             #                 'deprecated version of PEST,' +
             #                 'Use JcoTRANS to convert to new format')
@@ -1705,8 +1705,11 @@ class Matrix(object):
                 raise Exception("Matrix.from_binary(): 'i' index values less than 0")
             if data['j'].min() < 0:
                 raise Exception("Matrix.from_binary(): 'j' index values less than 0")
+
+            icols = data['j'] + 1
+            irows = data['i'] + 1
             x = np.zeros((nrow, ncol))
-            x[data['i'], data['j']] = data["dtemp"]
+            x[irows, icols] = data["dtemp"]
             data = x
             # read obs and parameter names
             col_names = []
@@ -1722,7 +1725,7 @@ class Matrix(object):
                     .strip().lower().decode()
                 row_names.append(name)
             f.close()
-        else:
+        else:  # old fmt detect
 
             # read all data records
             # using this a memory hog, but really fast
