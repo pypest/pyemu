@@ -1,0 +1,7 @@
+BEGIN GRIDDATA
+  strt  LAYERED
+    OPEN/CLOSE  'freyberg6.ic_strt_layer1.txt'  FACTOR  1.0
+    OPEN/CLOSE  'freyberg6.ic_strt_layer2.txt'  FACTOR  1.0
+    OPEN/CLOSE  'freyberg6.ic_strt_layer3.txt'  FACTOR  1.0
+END GRIDDATA
+
