@@ -814,6 +814,11 @@ def mf6_freyberg_da_test():
                       pargp="sfr_rhk",index_cols={'k':1,'i':2,'j':3},use_cols=[9],upper_bound=10.,lower_bound=0.1,
                       par_type="grid")
 
+    #setup direct (non mult) pars on the IC files with par names that match the obs names
+    hdf = pd.read_csv(os.path.join(tmp_model_ws,"head.obs"),delim_whitespace=True,skiprows=1,header=None,names=["obsnme","type","k","i","j"])
+    print(hdf)
+    return
+
     # add model run command
     pf.mod_sys_cmds.append("mf6")
     print(pf.mult_files)

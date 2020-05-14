@@ -13,5 +13,6 @@ BEGIN Packages
   rch6  freyberg6.rch
   ghb6  freyberg6.ghb
   sfr6  freyberg6.sfr  sfr_1
+  obs6 head.obs
 END Packages
 
