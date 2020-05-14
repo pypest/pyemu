@@ -814,11 +814,6 @@ def mf6_freyberg_da_test():
                       pargp="sfr_rhk",index_cols={'k':1,'i':2,'j':3},use_cols=[9],upper_bound=10.,lower_bound=0.1,
                       par_type="grid")
 
-    #setup direct (non mult) pars on the IC files with par names that match the obs names
-    hdf = pd.read_csv(os.path.join(tmp_model_ws,"head.obs"),delim_whitespace=True,skiprows=1,header=None,names=["obsnme","type","k","i","j"])
-    print(hdf)
-    return
-
     # add model run command
     pf.mod_sys_cmds.append("mf6")
     print(pf.mult_files)
@@ -826,19 +821,46 @@ def mf6_freyberg_da_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
+    pst.write(os.path.join(template_ws,"freyberg6_da.pst"),version=2)
+    # setup direct (non mult) pars on the IC files with par names that match the obs names
+    #hdf = pd.read_csv(os.path.join(tmp_model_ws, "head.obs"), delim_whitespace=True, skiprows=1, header=None,
+    #                  names=["obsnme", "type", "k", "i", "j"]).iloc[:-1, :]
+    #for field in ["k","i","j"]:
+    #    hdf.loc[:,field] = hdf.loc[:,field].astype(np.int)
+    obs = pst.observation_data
+    hobs = obs.loc[obs.obsnme.str.startswith("hds"),:].copy()
+    hobs.loc[:,"k"] = hobs.obsnme.apply(lambda x: int(x.split(':')[1].split("_")[1]))
+    hobs.loc[:, "i"] = hobs.obsnme.apply(lambda x: int(x.split(':')[1].split("_")[2]))
+    hobs.loc[:, "j"] = hobs.obsnme.apply(lambda x: int(x.split(':')[1].split("_")[3]))
+    hobs_set = set(hobs.obsnme.to_list())
+    ic_files = [f for f in os.listdir(template_ws) if "ic_strt" in f and f.endswith(".txt")]
+    print(ic_files)
+    ib = m.dis.idomain[0].array
+    tpl_files = []
+    for ic_file in ic_files:
+        tpl_file = os.path.join(template_ws,ic_file+".tpl")
+        vals,names = [],[]
+        with open(tpl_file,'w') as f:
+            f.write("ptf ~\n")
+            k = int(ic_file.split('.')[1][-1]) - 1
+            org_arr = np.loadtxt(os.path.join(template_ws,ic_file))
+            for i in range(org_arr.shape[0]):
+                for j in range(org_arr.shape[1]):
+                    if ib[i,j] < 1:
+                        f.write(" -1.0e+30 ")
+                    else:
+                        pname = "hds_use_col:trgw_{0}_{1}_{2}_time:31.0".format(k,i,j)
+                        if pname not in hobs_set and ib[i,j] > 0:
+                            print(k,i,j,pname,ib[i,j])
+                        f.write(" ~  {0}   ~".format(pname))
+                        vals.append(org_arr[i,j])
+                        names.append(pname)
+                f.write("\n")
+        df = pf.pst.add_parameters(tpl_file,pst_path=".")
+        pf.pst.parameter_data.loc[df.parnme,"partrans"] = "fixed"
+        pf.pst.parameter_data.loc[names,"parval1"] = vals
 
-    cov = pf.build_prior(fmt="none").to_dataframe()
-    twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
-    twcov = cov.loc[twel_pars,twel_pars]
-    dsum = np.diag(twcov.values).sum()
-    assert twcov.sum().sum() > dsum
-
-    rch_cn = [p for p in pst.par_names if "_cn" in p]
-    print(rch_cn)
-    rcov = cov.loc[rch_cn,rch_cn]
-    dsum = np.diag(rcov.values).sum()
-    assert rcov.sum().sum() > dsum
-
+    pf.pst.write(os.path.join(template_ws,"freyberg6_da.pst"),version=2)
 
     num_reals = 100
     pe = pf.draw(num_reals, use_specsim=True)
