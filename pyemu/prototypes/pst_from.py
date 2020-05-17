@@ -11,6 +11,7 @@ import pandas as pd
 import pyemu
 import time
 from ..pyemu_warnings import PyemuWarning
+import copy
 
 
 def _get_datetime_from_str(sdt):
@@ -355,15 +356,19 @@ class PstFrom(object):
             # (setup through add_parameters)
             for geostruct, par_df_l in struct_dict.items():
                 par_df = pd.concat(par_df_l)  # force to single df
-                grd_p = (par_df.partype == 'grid')  # grid par slicer
+                if 'i' in par_df.columns:  # need 'i' and 'j' for specsim
+                    # grid par slicer
+                    grd_p = (par_df.partype == 'grid') & pd.notna(par_df.i)
+                else:
+                    grd_p = np.array([0])
                 # if there are grid pars (also grid pars with i,j info)
-                if grd_p.sum() > 0 and 'i' in par_df.columns:
+                if grd_p.sum() > 0:
                     # select pars to use specsim for
-                    gr_df = par_df.loc[grd_p & pd.notna(par_df.i)]
+                    gr_df = par_df.loc[grd_p]
                     gr_df = gr_df.astype({'i': int, 'j': int})  # make sure int
                     # (won't be if there were nans in concatenated df)
                     if len(gr_df) > 0:
-                        # get specsim object for geostruct
+                        # get specsim object for this geostruct
                         ss = pyemu.geostats.SpecSim2d(
                             delx=self.spatial_reference.delr,
                             dely=self.spatial_reference.delc,
@@ -372,26 +377,29 @@ class PstFrom(object):
                         gr_pe1 = ss.grid_par_ensemble_helper(
                             pst=self.pst, gr_df=gr_df, num_reals=num_reals,
                             sigma_range=sigma_range, logger=self.logger)
-                        gr_pe_l.append(gr_pe1)  # append to list
-                        # drop these pars as already drawn
-                        trimmed = []
+                        # append to list of specsim drawn pars
+                        gr_pe_l.append(gr_pe1)
+                        # rebuild struct_dict entry for this geostruct
+                        # to not include specsim pars
+                        struct_dict[geostruct] = []
+                        # loop over all in list associated with geostruct
                         for p_df in par_df_l:
+                            # if pars are not in the specsim pars just created
+                            # assign them to this struct_dict entry
+                            # needed if none specsim pars are linked to same geostruct
                             if not p_df.index.isin(gr_df.index).all():
-                                trimmed.append(p_df)
-                        # redefine struct_dict entry to not include spec sim par
-                        struct_dict[geostruct] = trimmed
-
+                                struct_dict[geostruct].append(p_df)
             self.logger.log("spectral simulation for grid-scale pars")
         # draw remaining pars based on their geostruct
         pe = pyemu.helpers.geostatistical_draws(
             self.pst, struct_dict=struct_dict, num_reals=num_reals,
-            sigma_range=sigma_range, scale_offset=scale_offset)._df
+            sigma_range=sigma_range, scale_offset=scale_offset)
         if len(gr_pe_l) > 0:
             gr_par_pe = pd.concat(gr_pe_l, axis=1)
             pe.loc[:, gr_par_pe.columns] = gr_par_pe.values
-        par_ens = pyemu.ParameterEnsemble(pst=self.pst, df=pe)
+        # par_ens = pyemu.ParameterEnsemble(pst=self.pst, df=pe)
         self.logger.log("drawing realizations")
-        return par_ens
+        return pe
 
     def build_pst(self, filename=None, update=False):
         """Build control file from i/o files in PstFrom object.
@@ -917,6 +925,23 @@ class PstFrom(object):
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         self.logger.log("adding parameters for file(s) "
                         "{0}".format(str(filenames)))
+        if geostruct is not None:
+            if geostruct.transform != transform:
+                self.logger.warn("0) Inconsistency between "
+                                 "geostruct transform and partrans.")
+                self.logger.warn("1) Setting geostruct transform to "
+                                 "{0}".format(transform))
+                if geostruct not in self.par_struct_dict.keys():
+                    # safe to just reset transform
+                    geostruct.transform = transform
+                else:
+                    self.logger.warn("2) This will create a new copy of "
+                                     "geostruct")
+                    # to avoid flip flopping transform need to make a new geostruct
+                    geostruct = copy.copy(geostruct)
+                    geostruct.transform = transform
+                self.logger.warn("-) Better to pass an appropriately "
+                                 "transformed geostruct")
 
         # Get useful variables from arguments passed
         # if index_cols passed as a dictionary that maps i,j information
@@ -997,7 +1022,6 @@ class PstFrom(object):
             pargp = _check_var_len(pargp, ncol)
             lower_bound = _check_var_len(lower_bound, ncol, fill='first')
             upper_bound = _check_var_len(upper_bound, ncol, fill='first')
-            transform = _check_var_len(transform, ncol, fill='first')
             if len(use_cols) != len(ult_lbound) != len(ult_ubound):
                 self.logger.lraise("mismatch in number of columns to use {0} "
                                    "and number of ultimate lower {0} or upper "
@@ -1023,7 +1047,6 @@ class PstFrom(object):
             # variables need to be passed to each row in df
             lower_bound = np.tile(lower_bound, int(len(df)/ncol))
             upper_bound = np.tile(upper_bound, int(len(df)/ncol))
-            transform = np.tile(transform, int(len(df)/ncol))
             self.logger.log(
                 "writing list-based template file '{0}'".format(tpl_filename))
         else:  # Assume array type parameter file
@@ -1091,9 +1114,22 @@ class PstFrom(object):
                                 spatial_reference.delc.max()))
                         v = pyemu.geostats.ExpVario(contribution=1.0, a=pp_dist)
                         pp_geostruct = pyemu.geostats.GeoStruct(
-                            variograms=v, name="pp_geostruct", transform="log")
+                            variograms=v, name="pp_geostruct",
+                            transform=transform)
                     else:
                         pp_geostruct = self.geostruct
+                        if pp_geostruct.transform != transform:
+                            self.logger.warn("0) Inconsistency between "
+                                             "pp_geostruct transform and "
+                                             "partrans.")
+                            self.logger.warn("1) Setting pp_geostruct transform "
+                                             "to {0}".format(transform))
+                            self.logger.warn("2) This will create a new copy of "
+                                             "pp_geostruct")
+                            self.logger.warn("3) Better to pass an appropriately "
+                                             "transformed geostruct")
+                            pp_geostruct = copy.copy(pp_geostruct)
+                            pp_geostruct.transform = transform
                 else:
                     pp_geostruct = geostruct
                 # Set up pilot points
