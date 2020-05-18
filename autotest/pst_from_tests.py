@@ -822,11 +822,9 @@ def mf6_freyberg_da_test():
     # build pest
     pst = pf.build_pst('freyberg.pst')
     pst.write(os.path.join(template_ws,"freyberg6_da.pst"),version=2)
+
+
     # setup direct (non mult) pars on the IC files with par names that match the obs names
-    #hdf = pd.read_csv(os.path.join(tmp_model_ws, "head.obs"), delim_whitespace=True, skiprows=1, header=None,
-    #                  names=["obsnme", "type", "k", "i", "j"]).iloc[:-1, :]
-    #for field in ["k","i","j"]:
-    #    hdf.loc[:,field] = hdf.loc[:,field].astype(np.int)
     obs = pst.observation_data
     hobs = obs.loc[obs.obsnme.str.startswith("hds"),:].copy()
     hobs.loc[:,"k"] = hobs.obsnme.apply(lambda x: int(x.split(':')[1].split("_")[1]))
