@@ -10,7 +10,7 @@ python modules for model-independent FOSM (first-order, second-moment) (a.k.a li
 Read the docs
 =============
 
-[https://jtwhite79.github.io/pyemudoc/](https://jtwhite79.github.io/pyemudoc)
+[https://pypest.github.io/pyemudoc/](https://pypest.github.io/pyemudoc)
 
 The pyEMU documentation is being treated as a first-class citizen!  Also see the example notebooks in the repo.
 
