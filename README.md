@@ -5,7 +5,7 @@ python modules for model-independent FOSM (first-order, second-moment) (a.k.a li
 
 [![Travis Status](https://travis-ci.org/pypest/pyemu.svg?branch=master)](https://travis-ci.org/pypest/pyemu)
 [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/jtwhite79/pyemu?branch=master&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
-[![Coverage Status](https://coveralls.io/repos/github/jtwhite79/pyemu/badge.svg?branch=master)](https://coveralls.io/github/jtwhite79/pyemu?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=master)](https://coveralls.io/github/pypest/pyemu?branch=master)
 
 Read the docs
 =============
