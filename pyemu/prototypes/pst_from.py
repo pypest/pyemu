@@ -535,7 +535,7 @@ class PstFrom(object):
         self.logger.log("setting up dirs")
 
     def _par_prep(self, filenames, index_cols, use_cols, fmts=None, seps=None,
-                  skip_rows=None):
+                  skip_rows=None, c_char=None):
 
         # todo: cast str column names, index_cols and use_cols to lower if str?
         # todo: check that all index_cols and use_cols are the same type
@@ -550,7 +550,11 @@ class PstFrom(object):
             for filename, sep, fmt, skip in zip(filenames, seps, fmts,
                                                 skip_rows):
                 df, storehead = self._load_listtype_file(
-                    filename, index_cols, use_cols, fmt, sep, skip)
+                    filename, index_cols, use_cols, fmt, sep, skip, c_char)
+                # Currently just passing through comments in header (i.e. before the table data)
+                stkeys = np.array(sorted(storehead.keys()))  # comments line numbers as sorted array
+                if stkeys.size > 0 and stkeys.min() == 0:  # TODO pass comment_char through to par_file_rel so mid-table comments can be preserved
+                    skip = 1 + np.sum(stkeys[1:] > stkeys[:-1])
                 file_path = os.path.join(self.new_d, filename)
                 # # looping over model input filenames
                 if fmt.lower() == 'free':
@@ -580,11 +584,34 @@ class PstFrom(object):
                     if "win" in platform.platform().lower():
                         kwargs = {"line_terminator": "\n"}
                     with open(os.path.join(
-                            self.original_file_d, filename, 'w')) as fp:
-                        fp.write('\n'.join(storehead))
-                        fp.flush()
-                        df.to_csv(fp, sep=',', mode='a', header=hheader,
-                                  **kwargs)
+                            self.original_file_d, filename), 'w') as fp:
+                        lc = 0
+                        fr = 0
+                        for key in sorted(storehead.keys()):
+                            if key > lc:
+                                self.logger.warn("Detected mid-table comment "
+                                                 "on line {0} tabular model file, "
+                                                 "comment will be lost"
+                                                 "".format(key+1))
+                                lc += 1
+                                continue
+                                # TODO if we want to preserve mid-table comments,
+                                #  these lines might help - will also need to
+                                #  pass comment_char through so it can be
+                                #  used by the apply methods
+                                # to = key - lc
+                                # df.iloc[fr:to].to_csv(
+                                #     fp, sep=',', mode='a', header=hheader, # todo - presence of header may cause an issue with this
+                                #     **kwargs)
+                                # lc += to - fr
+                                # fr = to
+                            fp.write(storehead[key])
+                            fp.flush()
+                            lc += 1
+                        if lc < len(df):
+                            df.iloc[fr:].to_csv(
+                                fp, sep=',', mode='a', header=hheader,
+                                index=False, **kwargs)
                 else:
                     df.to_csv(os.path.join(self.original_file_d, filename),
                               index=False, sep=',', header=hheader)
@@ -690,6 +717,11 @@ class PstFrom(object):
         # load model output file
         df, storehead = self._load_listtype_file(
             filenames, index_cols, use_cols, fmts, seps, skip_rows)
+        # Currently just passing through comments in header (i.e. before the table data)
+        lenhead = 0
+        stkeys = np.array(sorted(storehead.keys()))  # comments line numbers as sorted array
+        if stkeys.size > 0 and stkeys.min() == 0:
+            lenhead += 1 + np.sum(stkeys[1:] > stkeys[:-1])
         new_obs_l = []
         for filename, sep in zip(filenames, seps):  # should only ever be one but hey...
             self.logger.log("building insfile for tabular output file {0}"
@@ -720,7 +752,7 @@ class PstFrom(object):
                     self.new_d, insfile),
                 only_cols=use_cols, only_rows=use_rows, marker='~',
                 includes_header=True, includes_index=False, prefix=prefix,
-                longnames=True, head_lines_len=len(storehead), sep=sep,
+                longnames=True, head_lines_len=lenhead, sep=sep,
                 gpname=obsgp)
             self.logger.log("building insfile for tabular output file {0}"
                             "".format(filename))
@@ -856,7 +888,7 @@ class PstFrom(object):
                        spatial_reference=None, geostruct=None,
                        datetime=None, mfile_fmt='free', mfile_skip=None,
                        ult_ubound=None, ult_lbound=None, rebuild_pst=False,
-                       alt_inst_str='inst'):
+                       alt_inst_str='inst', comment_char=None):
         """
         Add list or array style model input files to PstFrom object.
         This method
@@ -905,8 +937,9 @@ class PstFrom(object):
                 setting up temporally correlated pars. Where datetime is passed
                  correlation axis for pars will be set to timedelta.
             mfile_fmt (`str`): format of model input file - this will be preserved
-            mfile_skip (`int`): header in model input file to skip when reading
-                and reapply when writing
+            mfile_skip (`int` or `str`): header in model input file to skip
+                when reading and reapply when writing. Can optionally be `str` in which case `mf_skip` will be treated
+                as a `comment_char`.
             ult_ubound (`float`): Ultimate upper bound for model input
                 parameter once all mults are applied - ensure physical model par vals
             ult_lbound (`float`): Ultimate lower bound for model input
@@ -915,6 +948,10 @@ class PstFrom(object):
                 new parameters
             alt_inst_str (`str`): Alternative to default `inst` string in
                 parameter names
+            comment_char (`str`): option to skip comment lines in model file.
+                This is not additive with `mfile_skip` option.
+                Warning: currently comment lines within list-like tabular data
+                will be lost.
         """
         # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
@@ -963,7 +1000,7 @@ class PstFrom(object):
         (index_cols, use_cols, file_dict,
          fmt_dict, sep_dict, skip_dict) = self._par_prep(
             filenames, idx_cols, use_cols, fmts=mfile_fmt,
-            skip_rows=mfile_skip)
+            skip_rows=mfile_skip, c_char=comment_char)
         if datetime is not None:  # convert and check datetime
             # TODO: something needed here to allow a different relative point.
             datetime = _get_datetime_from_str(datetime)
@@ -1336,7 +1373,7 @@ class PstFrom(object):
                                  "new control file will be written")
 
     def _load_listtype_file(self, filename, index_cols, use_cols,
-                            fmt=None, sep=None, skip=None):
+                            fmt=None, sep=None, skip=None, c_char=None):
         if isinstance(filename, list):
             assert len(filename) == 1
             filename = filename[0]
@@ -1397,13 +1434,30 @@ class PstFrom(object):
             self.logger.warn("2) Desired format string will still "
                              "be passed through")
             sep = '\s+'
-        # read each input file
-        if skip > 0:
+        try:
+            # read each input file
+            if skip > 0 or c_char is not None:
+                if c_char is None:
+                    with open(file_path, 'r') as fp:
+                        storehead = {lp: line
+                                     for lp, line in enumerate(fp) if lp < skip}
+                else:
+                    with open(file_path, 'r') as fp:
+                        storehead = {lp: line
+                                     for lp, line in enumerate(fp)
+                                     if lp < skip
+                                     or line.strip().startswith(c_char)}
+            else:
+                storehead = {}
+        except TypeError:
+            c_char = skip
+            skip = None
             with open(file_path, 'r') as fp:
-                storehead = [next(fp) for _ in range(skip)]
-        else:
-            storehead = []
-        df = pd.read_csv(file_path, header=header, skiprows=skip, sep=sep)
+                storehead = {lp: line
+                             for lp, line in enumerate(fp)
+                             if line.strip().startswith(c_char)}
+        df = pd.read_csv(file_path, comment=c_char, sep=sep, skiprows=skip,
+                         header=header)
         self.logger.log("reading list {0}".format(file_path))
         # ensure that column ids from index_col is in input file
         missing = []

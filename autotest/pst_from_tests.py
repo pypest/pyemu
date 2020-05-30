@@ -475,6 +475,26 @@ def mf6_freyberg_test():
     # SETUP pest stuff...
     os_utils.run("{0} ".format("mf6"),
                  cwd=tmp_model_ws)
+    # doctor some of the list par files to add a comment string
+    with open(
+            os.path.join('temp_pst_from',
+                         "freyberg6.wel_stress_period_data_1.txt"), 'r') as fr:
+        lines = [line for line in fr]
+    with open(os.path.join('temp_pst_from',
+                         "freyberg6.wel_stress_period_data_1.txt"), 'w') as fw:
+        fw.write("# comment line explaining this external file\n")
+        for line in lines:
+            fw.write(line)
+    # doctor some of the list par files to add a comment string
+    with open(
+            os.path.join('temp_pst_from',
+                         "freyberg6.wel_stress_period_data_2.txt"), 'r') as fr:
+        lines = [line for line in fr]
+    with open(os.path.join('temp_pst_from',
+                         "freyberg6.wel_stress_period_data_2.txt"), 'w') as fw:
+        fw.write("# comment line explaining this external file\n")
+        for line in lines[0:3] + ["# comment mid table \n"] + lines[3:]:
+            fw.write(line)
 
 
     template_ws = "new_temp"
@@ -525,8 +545,38 @@ def mf6_freyberg_test():
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
                                   pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,)
 
+    # add SP1 spatially constant, but temporally correlated wel flux pars
+    kper = 0
+    list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
+    pf.add_parameters(filenames=list_file, par_type="constant",
+                      par_name_base="twel_mlt_{0}".format(kper),
+                      pargp="twel_mlt".format(kper), index_cols=[0, 1, 2],
+                      use_cols=[3], upper_bound=1.5, lower_bound=0.5,
+                      datetime=dts[kper], geostruct=rch_temporal_gs,
+                      mfile_skip=1)
 
-    list_files = [f for f in os.listdir(tmp_model_ws) if "wel_stress_period_data" in f]
+    # add temporally indep, but spatially correlated wel flux pars
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base="wel_grid_{0}".format(kper),
+                      pargp="wel_{0}".format(kper), index_cols=[0, 1, 2],
+                      use_cols=[3], upper_bound=1.5, lower_bound=0.5,
+                      geostruct=gr_gs, mfile_skip=1)
+    kper = 1
+    list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
+    pf.add_parameters(filenames=list_file, par_type="constant",
+                      par_name_base="twel_mlt_{0}".format(kper),
+                      pargp="twel_mlt".format(kper), index_cols=[0, 1, 2],
+                      use_cols=[3], upper_bound=1.5, lower_bound=0.5,
+                      datetime=dts[kper], geostruct=rch_temporal_gs,
+                      mfile_skip='#')
+    # add temporally indep, but spatially correlated wel flux pars
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base="wel_grid_{0}".format(kper),
+                      pargp="wel_{0}".format(kper), index_cols=[0, 1, 2],
+                      use_cols=[3], upper_bound=1.5, lower_bound=0.5,
+                      geostruct=gr_gs, mfile_skip='#')
+    list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
+                  for t in range(3, m.nper+1)]
     for list_file in list_files:
         kper = int(list_file.split(".")[1].split('_')[-1]) - 1
         # add spatially constant, but temporally correlated wel flux pars
