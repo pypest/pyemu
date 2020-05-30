@@ -3,14 +3,14 @@ pyEMU
 
 python modules for model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) uncertainty analyses and data-worth analyses, non-linear uncertainty analyses and interfacing with PEST and PEST++.  pyEMU also has a pure python (pandas and numpy) implementation of ordinary kriging for geostatistical interpolation and support for generating high-dimensional PEST(++) model interfaces, including support for (very) high-dimensional ensemble generation and handling   
 
-[![Travis Status](https://travis-ci.org/jtwhite79/pyemu.svg?branch=master)](https://travis-ci.org/jtwhite79/pyemu)
+[![Travis Status](https://travis-ci.org/pypest/pyemu.svg?branch=master)](https://travis-ci.org/pypest/pyemu)
 [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/jtwhite79/pyemu?branch=master&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
 [![Coverage Status](https://coveralls.io/repos/github/jtwhite79/pyemu/badge.svg?branch=master)](https://coveralls.io/github/jtwhite79/pyemu?branch=master)
 
 Read the docs
 =============
 
-[https://jtwhite79.github.io/pyemudoc/](https://jtwhite79.github.io/pyemudoc)
+[https://pypest.github.io/pyemudoc/](https://pypest.github.io/pyemudoc)
 
 The pyEMU documentation is being treated as a first-class citizen!  Also see the example notebooks in the repo.
 
