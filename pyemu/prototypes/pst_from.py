@@ -554,7 +554,7 @@ class PstFrom(object):
                 # Currently just passing through comments in header (i.e. before the table data)
                 stkeys = np.array(sorted(storehead.keys()))  # comments line numbers as sorted array
                 if stkeys.size > 0 and stkeys.min() == 0:  # TODO pass comment_char through to par_file_rel so mid-table comments can be preserved
-                    skip = 1 + np.sum(stkeys[1:] > stkeys[:-1])
+                    skip = 1 + np.sum(np.diff(stkeys) == 1)
                 file_path = os.path.join(self.new_d, filename)
                 # # looping over model input filenames
                 if fmt.lower() == 'free':
@@ -721,7 +721,7 @@ class PstFrom(object):
         lenhead = 0
         stkeys = np.array(sorted(storehead.keys()))  # comments line numbers as sorted array
         if stkeys.size > 0 and stkeys.min() == 0:
-            lenhead += 1 + np.sum(stkeys[1:] > stkeys[:-1])
+            lenhead += 1 + np.sum(np.diff(stkeys) == 1)
         new_obs_l = []
         for filename, sep in zip(filenames, seps):  # should only ever be one but hey...
             self.logger.log("building insfile for tabular output file {0}"
