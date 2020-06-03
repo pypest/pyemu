@@ -3314,7 +3314,14 @@ def apply_genericlist_pars(df):
         org_data.columns = org_data.columns.astype(str)
         new_df = org_data.copy()
         for mlt in df_mf.itertuples():
-            new_df = new_df.set_index(mlt.index_cols)
+            print("setting mlt index_cols: ", str(mlt.index_cols), " for new_df with cols: ",
+                  list(new_df.columns))
+            try:
+                new_df = new_df.set_index(mlt.index_cols)
+            except Exception as e:
+                print("error setting mlt index_cols: ",str(mlt.index_cols)," for new_df with cols: ",list(new_df.columns))
+                raise Exception("error setting mlt index_cols: "+str(e))
+
             mlts = pd.read_csv(mlt.mlt_file)
             # get mult index to align with org_data,
             # mult idxs will always be written zero based
