@@ -3261,6 +3261,7 @@ def apply_genericlist_pars(df):
     """
     uniq = df.model_file.unique()
     for model_file in uniq:
+        print("processing model file:",model_file)
         df_mf = df.loc[df.model_file == model_file, :].copy()
         # read data stored in org (mults act on this)
         org_file = df_mf.org_file.unique()
@@ -3268,6 +3269,7 @@ def apply_genericlist_pars(df):
             raise Exception("wrong number of org_files for {0}".
                             format(model_file))
         org_file = org_file[0]
+        print("org file:",org_file)
         notfree = df_mf.fmt[df_mf.fmt != 'free']
         if len(notfree) > 1:
             raise Exception("too many different format specifiers for "
@@ -3307,11 +3309,14 @@ def apply_genericlist_pars(df):
             # to be compatible when the saved original file is read in.
             df_mf.loc[:, 'index_cols'] = df_mf.index_cols.apply(
                 lambda x: [str(i) for i in x])
+
         # if writen by PstFrom this should always be comma delim - tidy
         org_data = pd.read_csv(org_file, skiprows=datastrtrow,
                                header=header)
         # mult columns will be string type, so to make sure they align
         org_data.columns = org_data.columns.astype(str)
+        print("org_data columns:",org_data.columns)
+        print("org_data shape:",org_data.shape)
         new_df = org_data.copy()
         for mlt in df_mf.itertuples():
             print("setting mlt index_cols: ", str(mlt.index_cols), " for new_df with cols: ",
