@@ -853,49 +853,52 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
         [f.write("l1\n") for _ in range(head_lines_len)]
         if includes_header:
             f.write("l1\n")  # skip the row (index) label
-        for i,rlabel in enumerate(rlabels):
+        for i,rlabel in enumerate(rlabels):  # loop over rows
             f.write("l1")
             c_count = 0
-            for j,clabel in enumerate(clabels):
-                if c_count < len(only_clabels):
+            for j,clabel in enumerate(clabels):  # loop over columns
+                if c_count < len(only_clabels):  # if we haven't yet set up all obs
                     if rlabel in only_rlabels and clabel in only_clabels:
+                        # define obs names
                         if longnames:
                             nname = "{0}_use_col:{1}".format(prefix, clabel)
                             oname = "{0}_{1}".format(nname, rlabel)
                         else:
                             nname = prefix+clabel
                             oname = prefix+rlabel+"_"+clabel
-                        onames.append(oname)
-                        ovals.append(df.iloc[i,j])
+                        onames.append(oname)  # append list of obs
+                        ovals.append(df.iloc[i, j])  # store current obs val
+                        # defin group name
                         if gpname is False or gpname[c_count] is False:
                             # keeping consistent behaviour
                             ngpname = None  # nname
                         elif gpname is True or gpname[c_count] is True:
-                            ngpname = nname
-                        else:
+                            ngpname = nname  #  set to base of obs name
+                        else:  # a group name has been specified
                             if not isinstance(gpname, str):
                                 ngpname = gpname[c_count]
                             else:
                                 ngpname = gpname
-                        ognames.append(ngpname)
+                        ognames.append(ngpname)  # add to list of group names
+                        # start defining string to write in ins
                         oname = " !{0}!".format(oname)
                         if sep == ',':
-                            oname = "{0} {1},{1}".format(oname, marker)
+                            if j < len(clabels) - 1:
+                                # obs will be follwed by another delim
+                                oname = "{0} {1},{1}".format(oname, marker)
                         c_count += 1
-                    else:
+                    else:  # not a requested observation; add spacer
                         if sep == ',':
                             oname = " {0},{0}".format(marker)
                         else:
                             oname = " w"
                     if j == 0:
+                        # if first col and input file has an index need additional spacer
                         if includes_index:
                             if sep == ',':
                                 f.write(" {0},{0}".format(marker))
                             else:
                                 f.write(" w")
-                    # else:
-                    #     if sep == ',':
-                    #         oname = "{0} {1},{1}".format(oname, marker)
                     f.write(oname)
             f.write('\n')
     odf = pd.DataFrame({"obsnme": onames, "obsval": ovals, 'obgnme': ognames},

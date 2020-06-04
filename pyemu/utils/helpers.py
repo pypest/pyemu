@@ -3329,7 +3329,7 @@ def apply_genericlist_pars(df):
             mlt_cols = [str(col) for col in mlt.use_cols]
             new_df.loc[common_idx, mlt_cols] = (new_df.loc[common_idx, mlt_cols]
                                                 * mlts.loc[common_idx, mlt_cols]
-                                                )
+                                                ).values
             # bring mult index back to columns AND re-order
             new_df = new_df.reset_index().set_index(
                 'oidx')[org_data.columns].sort_index()
