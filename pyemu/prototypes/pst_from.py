@@ -990,12 +990,14 @@ class PstFrom(object):
             # TODO: or datetime str?
             keys = np.array([k.lower() for k in index_cols.keys()])
             idx_cols = [index_cols[k] for k in keys]
-            if all(ij in keys for ij in ['i', 'j']):
-                o_idx = np.argsort(keys)
-                ij_in_idx = o_idx[np.searchsorted(keys[o_idx], ['i', 'j'])]
-            if all(xy in keys for xy in ['x', 'y']):
-                o_idx = np.argsort(keys)
-                xy_in_idx = o_idx[np.searchsorted(keys[o_idx], ['x', 'y'])]
+            if any(all(a in keys for a in aa)
+                   for aa in [['i', 'j'], ['x', 'y']]):
+                if all(ij in keys for ij in ['i', 'j']):
+                    o_idx = np.argsort(keys)
+                    ij_in_idx = o_idx[np.searchsorted(keys[o_idx], ['i', 'j'])]
+                if all(xy in keys for xy in ['x', 'y']):
+                    o_idx = np.argsort(keys)
+                    xy_in_idx = o_idx[np.searchsorted(keys[o_idx], ['x', 'y'])]
             else:
                 self.logger.lraise("If passing `index_cols` as type == dict, "
                                    "keys need to contain [`i` and `j`] or "
