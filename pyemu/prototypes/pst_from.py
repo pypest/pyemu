@@ -1,4 +1,3 @@
-
 from __future__ import print_function, division
 import os
 from datetime import datetime
@@ -18,7 +17,7 @@ def _get_datetime_from_str(sdt):
     # could be expanded if someone is feeling clever.
     if isinstance(sdt, str):
         PyemuWarning("Assuming passed reference start date time is "
-                         "year first str {0}".format(sdt))
+                     "year first str {0}".format(sdt))
         sdt = pd.to_datetime(sdt, yearfirst=True)
     assert isinstance(sdt, pd.Timestamp), ("Error interpreting start_datetime")
     return sdt
@@ -51,6 +50,7 @@ class PstFrom(object):
         zero_based:
         start_datetime:
     """
+
     # TODO: doc strings!!!
     def __init__(self, original_d, new_d, longnames=True,
                  remove_existing=False, spatial_reference=None,
@@ -196,7 +196,7 @@ class PstFrom(object):
 
     def _flopy_mg_get_xy(self, args, **kwargs):
         i, j = self.parse_kij_args(args, kwargs)
-        if all([ij is None for ij in [i,j]]):
+        if all([ij is None for ij in [i, j]]):
             return i, j
         else:
             return (self._spatial_reference.xcellcenters[i, j],
@@ -245,7 +245,7 @@ class PstFrom(object):
             if ilist is None:
                 continue
 
-            if not isinstance(ilist,list):
+            if not isinstance(ilist, list):
                 ilist = [ilist]
             for cmd in ilist:
                 self.logger.statement("forward_run line:{0}".format(cmd))
@@ -290,7 +290,7 @@ class PstFrom(object):
                 par_dfs.append(df)
             struct_dict[gs] = par_dfs
         return struct_dict
-    
+
     def build_prior(self, fmt="ascii", filename=None, droptol=None, chunk=None,
                     sigma_range=6):
         """
@@ -592,7 +592,7 @@ class PstFrom(object):
                                 self.logger.warn("Detected mid-table comment "
                                                  "on line {0} tabular model file, "
                                                  "comment will be lost"
-                                                 "".format(key+1))
+                                                 "".format(key + 1))
                                 lc += 1
                                 continue
                                 # TODO if we want to preserve mid-table comments,
@@ -624,14 +624,14 @@ class PstFrom(object):
             # check for compatibility
             fnames = list(file_dict.keys())
             for i in range(len(fnames)):
-                for j in range(i+1, len(fnames)):
+                for j in range(i + 1, len(fnames)):
                     if (file_dict[fnames[i]].shape[1] !=
                             file_dict[fnames[j]].shape[1]):
                         self.logger.lraise(
                             "shape mismatch for array types, '{0}' "
                             "shape {1} != '{2}' shape {3}".
-                            format(fnames[i], file_dict[fnames[i]].shape[1],
-                                   fnames[j], file_dict[fnames[j]].shape[1]))
+                                format(fnames[i], file_dict[fnames[i]].shape[1],
+                                       fnames[j], file_dict[fnames[j]].shape[1]))
         else:  # load array type files
             # loop over model input files
             for filename, sep, fmt, skip in zip(filenames, seps, fmts,
@@ -664,7 +664,7 @@ class PstFrom(object):
             # check for compatibility
             fnames = list(file_dict.keys())
             for i in range(len(fnames)):
-                for j in range(i+1, len(fnames)):
+                for j in range(i + 1, len(fnames)):
                     if (file_dict[fnames[i]].shape !=
                             file_dict[fnames[j]].shape):
                         self.logger.lraise(
@@ -674,7 +674,7 @@ class PstFrom(object):
                                       fnames[j], file_dict[fnames[j]].shape))
         return index_cols, use_cols, file_dict, fmt_dict, sep_dict, skip_dict
 
-    def _next_count(self,prefix):
+    def _next_count(self, prefix):
         if prefix not in self._prefix_count:
             self._prefix_count[prefix] = 0
         else:
@@ -836,7 +836,7 @@ class PstFrom(object):
             self.logger.lraise(
                 "the following obs instruction file {0} are already in the "
                 "control file:{1}".
-                format(ins_file, ','.join(sint)))
+                    format(ins_file, ','.join(sint)))
 
         # find "new" obs that are not already in the control file
         new_obsnme = sobsnme - sexist
@@ -996,6 +996,10 @@ class PstFrom(object):
             if all(xy in keys for xy in ['x', 'y']):
                 o_idx = np.argsort(keys)
                 xy_in_idx = o_idx[np.searchsorted(keys[o_idx], ['x', 'y'])]
+            else:
+                self.logger.lraise("If passing `index_cols` as type == dict, "
+                                   "keys need to contain [`i` and `j`] or "
+                                   "[`x` and `y`]")
 
         (index_cols, use_cols, file_dict,
          fmt_dict, sep_dict, skip_dict) = self._par_prep(
@@ -1082,8 +1086,8 @@ class PstFrom(object):
                 "Parameter dataframe wrong shape for number of cols {0}"
                 "".format(use_cols))
             # variables need to be passed to each row in df
-            lower_bound = np.tile(lower_bound, int(len(df)/ncol))
-            upper_bound = np.tile(upper_bound, int(len(df)/ncol))
+            lower_bound = np.tile(lower_bound, int(len(df) / ncol))
+            upper_bound = np.tile(upper_bound, int(len(df) / ncol))
             self.logger.log(
                 "writing list-based template file '{0}'".format(tpl_filename))
         else:  # Assume array type parameter file
@@ -1285,7 +1289,7 @@ class PstFrom(object):
         df.loc[:, "partrans"] = transform
         df.loc[:, "parubnd"] = upper_bound
         df.loc[:, "parlbnd"] = lower_bound
-        #df.loc[:,"tpl_filename"] = tpl_filename
+        # df.loc[:,"tpl_filename"] = tpl_filename
 
         # store tpl --> in filename pair
         self.tpl_filenames.append(tpl_filename)
@@ -1312,7 +1316,10 @@ class PstFrom(object):
         # TODO maybe use different marker to denote a relationship between pars
         #  at the moment relating pars using common geostruct and pargp but may
         #  want to reserve pargp for just PEST
-        gp_dict = {g: [d] for g, d in df.groupby('pargp')}
+        if 'covgp' not in df.columns:
+            gp_dict = {g: [d] for g, d in df.groupby('pargp')}
+        else:
+            gp_dict = {g: [d] for g, d in df.groupby('covgp')}
         # df_list = [d for g, d in df.groupby('pargp')]
         if geostruct is not None:
             # relating pars to geostruct....
@@ -1330,7 +1337,7 @@ class PstFrom(object):
                         # update dict entry with new {key:par} pair
                         self.par_struct_dict[geostruct].update({gp: gppars})
                     else:
-                        # if pargp already assigned to this geostruct append par
+                        # if gp already assigned to this geostruct append par
                         # list to approprate group key
                         self.par_struct_dict[geostruct][gp].extend(gppars)
                 # self.par_struct_dict_l[geostruct].extend(list(gp_dict.values()))
@@ -1586,7 +1593,9 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
         longnames (`boolean`): Specify is pars will be specified without the
             12 char restriction - recommended if using Pest++.
         get_xy (`pyemu.PstFrom` method): Can be specified to get real-world xy
-            from `index_cols` passed (to include in par name)
+            from `index_cols` passed (to assist correlation definition)
+        ij_in_idx (`list` or `array`): defining which `index_cols` contain i,j
+        xy_in_idx (`list` or `array`): defining which `index_cols` contain x,y
         zero_based (`boolean`): IMPORTANT - pass as False if `index_cols`
             are NOT zero-based indicies (e.g. MODFLOW row/cols).
             If False 1 with be subtracted from `index_cols`.
@@ -1595,18 +1604,66 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
     Returns:
 
     """
-    # get dataframe with autogenerated parnames based on `name`, `indx_cols`,
+    # get dataframe with autogenerated parnames based on `name`, `index_cols`,
     # `use_cols`, `suffix` and `par_type`
     df_tpl = _get_tpl_or_ins_df(dfs, name, index_cols, par_type,
                                 use_cols=use_cols, suffix=suffix, gpname=gpname,
                                 zone_array=zone_array, longnames=longnames,
                                 get_xy=get_xy, ij_in_idx=ij_in_idx,
                                 xy_in_idx=xy_in_idx, zero_based=zero_based)
+
+    for col in use_cols:  # corellations flagged using pargp
+        df_tpl["covgp{0}".format(col)] = df_tpl.loc[:,
+                                         "pargp{0}".format(col)].values
+    # needs modifying if colocated pars in same group
+    if par_type == 'grid' and 'x' in df_tpl.columns:
+        if df_tpl.duplicated(['x', 'y']).any():
+            # may need to use a different grouping for parameter correlations
+            # where parameter x and y values are the same but pars are not
+            # correlated (e.g. 2d correlation but different layers)
+            # - this will only work if `index_cols` contains a third dimension.
+            if len(index_cols) > 2:
+                third_d = index_cols.copy()
+                if xy_in_idx is not None:
+                    for idx in xy_in_idx:
+                        third_d.pop(idx)
+                elif ij_in_idx is not None:
+                    for idx in ij_in_idx:
+                        third_d.pop(idx)
+                else:  # if xy_in_idx and ij_in_idx ar None
+                    # then parse_kij assumes that i is at idx[-2] and j at idx[-1]
+                    third_d.pop()  # pops -1
+                    third_d.pop()  # pops -2
+                PyemuWarning("Coincidently located pars in list-like file, "
+                             "attempting to separate pars based on `index_cols` "
+                             "passed - using index_col[{0}] for third dimension"
+                             "".format(third_d[-1]))
+                for col in use_cols:
+                    df_tpl["covgp{0}".format(col)
+                    ] = df_tpl.loc[:, "covgp{0}".format(col)
+                        ].str.cat(
+                        pd.DataFrame(
+                            df_tpl.sidx.to_list()).iloc[:, 0].astype(str),
+                        '_cov')
+            else:
+                PyemuWarning("Coincidently located pars in list-like file. "
+                             "Likely to cause issues building par cov or "
+                             "drawing par ensemble. Can be resolved by passing "
+                             "an additional `index_col` as a basis for "
+                             "splitting colocated correlations (e.g. Layer)")
+    # pull out par details where multiple `use_cols` are requested
     parnme = list(df_tpl.loc[:, use_cols].values.flatten())
     pargp = list(
         df_tpl.loc[:, ["pargp{0}".format(col)
                        for col in use_cols]].values.flatten())
-    df_par = pd.DataFrame({"parnme": parnme, "pargp": pargp}, index=parnme)
+    covgp = list(
+        df_tpl.loc[:, ["covgp{0}".format(col)
+                       for col in use_cols]].values.flatten())
+    df_tpl = df_tpl.drop([
+        col for col in df_tpl.columns if str(col).startswith('covgp')], axis=1)
+    df_par = pd.DataFrame({"parnme": parnme, "pargp": pargp, 'covgp': covgp},
+                          index=parnme)
+
     if par_type == 'grid' and 'x' in df_tpl.columns:  # TODO work out if x,y needed for constant and zone pars too
         df_par['x'], df_par['y'] = np.concatenate(
             df_tpl.apply(lambda r: [[r.x, r.y] for _ in use_cols],
@@ -1663,6 +1720,8 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
             20/12 char restriction - recommended if using Pest++.
         get_xy (`pyemu.PstFrom` method): Can be specified to get real-world xy
             from `index_cols` passed (to include in obs/par name)
+        ij_in_idx (`list` or `array`): defining which `index_cols` contain i,j
+        xy_in_idx (`list` or `array`): defining which `index_cols` contain x,y
         zero_based (`boolean`): IMPORTANT - pass as False if `index_cols`
             are NOT zero-based indicies (e.g. MODFLOW row/cols).
             If False 1 with be subtracted from `index_cols`.
@@ -1726,8 +1785,6 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
             df_ti[['x', 'y']] = pd.DataFrame(
                 df_ti.sidx.to_list()).iloc[:, xy_in_idx]
         else:
-            # TODO need to be more flexible with index_cols
-            #   cant just assume index_cols will be k,i,j (if 3) and i,j (if 2)
             df_ti.loc[:, 'xy'] = df_ti.sidx.apply(get_xy, ij_id=ij_in_idx)
             df_ti.loc[:, 'x'] = df_ti.xy.apply(lambda x: x[0])
             df_ti.loc[:, 'y'] = df_ti.xy.apply(lambda x: x[1])
@@ -1944,5 +2001,3 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         np.savetxt(input_filename, arr, fmt="%2.1f")
 
     return df
-
-

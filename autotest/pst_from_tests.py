@@ -238,6 +238,12 @@ def freyberg_prior_build_test():
             [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
             [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]]]})
 
+    welsp = m.wel.stress_period_data.data.copy()
+    addwell = welsp[0].copy()
+    addwell['k'] = 1
+    welsp[0] = np.rec.array(np.concatenate([welsp[0], addwell]))
+    m.wel.stress_period_data = welsp
+
     org_model_ws = "temp_pst_from"
     if os.path.exists(org_model_ws):
         shutil.rmtree(org_model_ws)

@@ -3314,7 +3314,9 @@ def apply_genericlist_pars(df):
         org_data.columns = org_data.columns.astype(str)
         new_df = org_data.copy()
         for mlt in df_mf.itertuples():
-            new_df = new_df.set_index(mlt.index_cols)
+            new_df = new_df.reset_index().rename(
+                columns={'index': 'oidx'}).set_index(mlt.index_cols)
+            new_df = new_df.sort_index()
             mlts = pd.read_csv(mlt.mlt_file)
             # get mult index to align with org_data,
             # mult idxs will always be written zero based
@@ -3323,11 +3325,14 @@ def apply_genericlist_pars(df):
             mlts.index = pd.MultiIndex.from_tuples(mlts.sidx.apply(
                 lambda x: tuple(add1+np.array(literal_eval(x)))),
                 names=mlt.index_cols)
+            common_idx = new_df.index.intersection(mlts.index).sort_values()
             mlt_cols = [str(col) for col in mlt.use_cols]
-            new_df.loc[:, mlt_cols] = (new_df.loc[:, mlt_cols] *
-                                       mlts.loc[:, mlt_cols])
+            new_df.loc[common_idx, mlt_cols] = (new_df.loc[common_idx, mlt_cols]
+                                                * mlts.loc[common_idx, mlt_cols]
+                                                )
             # bring mult index back to columns AND re-order
-            new_df = new_df.reset_index()[org_data.columns]
+            new_df = new_df.reset_index().set_index(
+                'oidx')[org_data.columns].sort_index()
         if "upper_bound" in df.columns:
             ub = df_mf.apply(
                 lambda x: pd.Series(
