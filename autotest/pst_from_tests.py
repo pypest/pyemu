@@ -508,9 +508,10 @@ def mf6_freyberg_test():
 
     template_ws = "new_temp"
     # sr0 = m.sr
-    sr = pyemu.helpers.SpatialReference.from_namfile(
-        os.path.join(tmp_model_ws, "freyberg6.nam"),
-        delr=m.dis.delr.array, delc=m.dis.delc.array)
+    # sr = pyemu.helpers.SpatialReference.from_namfile(
+    #     os.path.join(tmp_model_ws, "freyberg6.nam"),
+    #     delr=m.dis.delr.array, delc=m.dis.delc.array)
+    sr = m.modelgrid
     # set up PstFrom object
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
                  remove_existing=True,
@@ -522,8 +523,6 @@ def mf6_freyberg_test():
     # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
     #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
-    df = pd.read_csv(os.path.join(tmp_model_ws,"heads.csv"),index_col=0)
-    pf.add_observations("heads.csv",insfile="heads.csv.ins",index_cols="time",use_cols=list(df.columns.values),prefix="hds")
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
     v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
@@ -598,9 +597,7 @@ def mf6_freyberg_test():
                           pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
                           upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
 
-    pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt",par_name_base="sfr_rhk",
-                      pargp="sfr_rhk",index_cols={'k':1,'i':2,'j':3},use_cols=[9],upper_bound=10.,lower_bound=0.1,
-                      par_type="grid")
+
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
@@ -609,6 +606,17 @@ def mf6_freyberg_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
+
+    # add more:
+    pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="sfr_rhk",
+                      pargp="sfr_rhk", index_cols={'k': 1, 'i': 2, 'j': 3}, use_cols=[9], upper_bound=10.,
+                      lower_bound=0.1,
+                      par_type="grid", rebuild_pst=True)
+
+    df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
+    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
+                        prefix="hds", rebuild_pst=True)
+
 
     cov = pf.build_prior(fmt="none").to_dataframe()
     twel_pars = [p for p in pst.par_names if "twel_mlt" in p]

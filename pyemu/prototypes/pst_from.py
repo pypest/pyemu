@@ -230,7 +230,7 @@ class PstFrom(object):
               hasattr(self._spatial_reference, "ycellcenters")):
             # support modelgrid style cell locs
             self._spatial_reference.xcentergrid = self._spatial_reference.xcellcenters
-            self._spatial_reference.xcentergrid = self._spatial_reference.xcellcenters
+            self._spatial_reference.ycentergrid = self._spatial_reference.ycellcenters
             self.get_xy = self._flopy_mg_get_xy
         else:
             self.logger.lraise("initialize_spatial_reference() error: "
@@ -443,7 +443,7 @@ class PstFrom(object):
             if update is True:
                 update = {'pars': False, 'obs': False}
             elif isinstance(update, str):
-                update = {str: True}
+                update = {update: True}
             elif isinstance(update, (set, list)):
                 update = {s: True for s in update}
             uupdate = True
