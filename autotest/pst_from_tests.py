@@ -86,8 +86,8 @@ def freyberg_test():
                       "Processed into tabular form using the lines:\n",
                       "sfo = flopy.utils.SfrFile('freyberg.sfr.out')\n",
                       "sfo.get_dataframe().to_csv('freyberg.sfo.dat')\n"])
-        sfodf.to_csv(fp, sep=' ', index_label='idx')
-    sfodf.to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
+        sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx')
+    sfodf.sort_index(1).to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
                  index_label='idx')
     template_ws = "new_temp"
     # sr0 = m.sr
@@ -111,7 +111,7 @@ def freyberg_test():
     # sfr outputs to obs
     pf.add_observations('freyberg.sfo.dat', insfile=None,
                         index_cols=['segment', 'reach', 'kstp', 'kper'],
-                        use_cols=["Qaquifer", "Qout"], prefix='sfr',
+                        use_cols=["Qaquifer", "Qout", 'width'], prefix='sfr',
                         ofile_skip=4, ofile_sep=' ')
     pf.tmp_files.append(f"{m.name}.sfr.out")
     pf.extra_py_imports.append('flopy')
@@ -126,17 +126,17 @@ def freyberg_test():
          "'Processed into tabular form using the lines:\\n', "
          "'sfo = flopy.utils.SfrFile(`freyberg.sfr.out`)\\n', "
          "'sfo.get_dataframe().to_csv(`freyberg.sfo.dat`)\\n'])",
-         "    sfodf.to_csv(fp, sep=' ', index_label='idx')"])
+         "    sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx')"])
     # csv version of sfr obs
     # sfr outputs to obs
     pf.add_observations('freyberg.sfo.csv', insfile=None,
                         index_cols=['segment', 'reach', 'kstp', 'kper'],
-                        use_cols=["Qaquifer", "Qout"], prefix='sfr2',
-                        ofile_sep=',', obsgp=['qaquifer', 'qout'])
+                        use_cols=["Qaquifer", "Qout", "width"], prefix='sfr2',
+                        ofile_sep=',', obsgp=['qaquifer', 'qout', "width"])
     obsnmes = pd.concat([df.obgnme for df in pf.obs_dfs]).unique()
     assert all([gp in obsnmes for gp in ['qaquifer', 'qout']])
     pf.post_py_cmds.append(
-        "sfodf.to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
+        "sfodf.sort_index(1).to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
 
     # pars
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
@@ -237,6 +237,15 @@ def freyberg_prior_build_test():
         0: [[0, 0, 0, m.dis.top.array[0, 0], 1.0, m.dis.botm.array[0, 0, 0]],
             [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
             [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]]]})
+
+    welsp = m.wel.stress_period_data.data.copy()
+    addwell = welsp[0].copy()
+    addwell['k'] = 1
+    welsp[0] = np.rec.array(np.concatenate([welsp[0], addwell]))
+    samewell = welsp[1].copy()
+    samewell['flux'] *= 10
+    welsp[1] = np.rec.array(np.concatenate([welsp[1], samewell]))
+    m.wel.stress_period_data = welsp
 
     org_model_ws = "temp_pst_from"
     if os.path.exists(org_model_ws):
@@ -499,9 +508,10 @@ def mf6_freyberg_test():
 
     template_ws = "new_temp"
     # sr0 = m.sr
-    sr = pyemu.helpers.SpatialReference.from_namfile(
-        os.path.join(tmp_model_ws, "freyberg6.nam"),
-        delr=m.dis.delr.array, delc=m.dis.delc.array)
+    # sr = pyemu.helpers.SpatialReference.from_namfile(
+    #     os.path.join(tmp_model_ws, "freyberg6.nam"),
+    #     delr=m.dis.delr.array, delc=m.dis.delc.array)
+    sr = m.modelgrid
     # set up PstFrom object
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
                  remove_existing=True,
@@ -513,8 +523,6 @@ def mf6_freyberg_test():
     # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
     #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
-    df = pd.read_csv(os.path.join(tmp_model_ws,"heads.csv"),index_col=0)
-    pf.add_observations("heads.csv",insfile="heads.csv.ins",index_cols="time",use_cols=list(df.columns.values),prefix="hds")
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
     v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
@@ -589,9 +597,7 @@ def mf6_freyberg_test():
                           pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
                           upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
 
-    pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt",par_name_base="sfr_rhk",
-                      pargp="sfr_rhk",index_cols={'k':1,'i':2,'j':3},use_cols=[9],upper_bound=10.,lower_bound=0.1,
-                      par_type="grid")
+
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
@@ -600,6 +606,17 @@ def mf6_freyberg_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
+
+    # add more:
+    pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="sfr_rhk",
+                      pargp="sfr_rhk", index_cols={'k': 1, 'i': 2, 'j': 3}, use_cols=[9], upper_bound=10.,
+                      lower_bound=0.1,
+                      par_type="grid", rebuild_pst=True)
+
+    df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
+    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
+                        prefix="hds", rebuild_pst=True)
+
 
     cov = pf.build_prior(fmt="none").to_dataframe()
     twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
