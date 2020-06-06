@@ -11,10 +11,12 @@ import platform
 import struct
 import shutil
 import copy
-import numpy as np
-import pandas as pd
 import time
 from ast import literal_eval
+import traceback
+import sys
+import numpy as np
+import pandas as pd
 
 pd.options.display.max_colwidth = 100
 from ..pyemu_warnings import PyemuWarning
@@ -3101,13 +3103,21 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
             [-1, chunk_len]).tolist()
         remainder = np.array(pp_args)[num_chunk_floor * chunk_len:].tolist()
         chunks = main_chunks + [remainder]
-        procs = []
-        for chunk in chunks:
-            p = mp.Process(target=_process_chunk_fac2real, args=[chunk])
-            p.start()
-            procs.append(p)
-        for p in procs:
-            p.join()
+
+        pool = mp.Pool()
+        x = pool.apply_async(_process_chunk_fac2real,args=chunks)
+        x.get()
+        pool.close()
+        pool.join()
+        # procs = []
+        # for chunk in chunks:
+        #     p = mp.Process(target=_process_chunk_fac2real, args=[chunk])
+        #     p.start()
+        #     procs.append(p)
+        # for p in procs:
+        #     p.join()
+
+
 
         print("finished fac2real", datetime.now())
 
@@ -3123,13 +3133,19 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
         [-1, chunk_len]).tolist()  # the list of files broken down into chunks
     remainder = uniq[num_chunk_floor * chunk_len:].tolist()  # remaining files
     chunks = main_chunks + [remainder]
-    procs = []
-    for chunk in chunks:  # now only spawn processor for each chunk
-        p = mp.Process(target=_process_chunk_model_files, args=[chunk, df])
-        p.start()
-        procs.append(p)
-    for p in procs:
-        p.join()
+    # procs = []
+    # for chunk in chunks:  # now only spawn processor for each chunk
+    #     p = mp.Process(target=_process_chunk_model_files, args=[chunk, df])
+    #     p.start()
+    #     procs.append(p)
+    # for p in procs:
+    #     r = p.get(False)
+    #     p.join()
+    pool = mp.Pool()
+    x = pool.apply_async(_process_chunk_model_files,args=chunks,kwds={"df":df})
+    x.get()
+    pool.close()
+    pool.join()
     print("finished arr mlt", datetime.now())
 
 
