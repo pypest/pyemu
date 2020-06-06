@@ -3016,6 +3016,10 @@ def _process_model_file(model_file, df):
     org_arr = np.loadtxt(org_file[0])
 
     for mlt in df_mf.mlt_file:
+        mlt_data = np.loadtxt(mlt)
+        if org_arr.shape != mlt_data.shape:
+            raise Exception("shape of org file {}:{} differs from mlt file {}:{}".format(org_file, org_arr.shape,
+                                                                                         mlt, mlt_data.shape))
         org_arr *= np.loadtxt(mlt)
     if "upper_bound" in df.columns:
         ub_vals = df_mf.upper_bound.value_counts().dropna().to_dict()
