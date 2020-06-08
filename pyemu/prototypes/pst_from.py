@@ -1134,6 +1134,13 @@ class PstFrom(object):
                         self.logger.lraise("No spatial reference in parent "
                                            "object either. "
                                            "Can't set-up pilotpoints")
+                # check that spatial reference lines up with the original array dimensions
+                orgdata = np.loadtxt(os.path.join(
+                    *os.path.split(self.original_file_d)[1:], mod_file)).shape
+                assert orgdata[0] == spatial_reference.nrow, "Spatial reference nrow not equal to original data nrow for\n" + \
+                    os.path.join(*os.path.split(self.original_file_d)[1:], mod_file)
+                assert orgdata[1] == spatial_reference.ncol, "Spatial reference ncol not equal to original data ncol for\n" + \
+                    os.path.join(*os.path.split(self.original_file_d)[1:], mod_file)
                 # (stolen from helpers.PstFromFlopyModel()._pp_prep())
                 # but only settting up one set of pps at a time
                 pp_dict = {0: par_name_base}
