@@ -742,7 +742,7 @@ class PstFrom(object):
                 elif isinstance(use_rows, int):
                     use_rows = [use_rows]
                 use_rows = [r for r in use_rows if r <= len(df)]
-                use_rows = df.iloc[use_rows].unique()
+                use_rows = df.iloc[use_rows].idx_str.unique()
             # construct ins_file from df
             ncol = len(use_cols)
             obsgp = _check_var_len(obsgp, ncol, fill=True)
@@ -1134,6 +1134,13 @@ class PstFrom(object):
                         self.logger.lraise("No spatial reference in parent "
                                            "object either. "
                                            "Can't set-up pilotpoints")
+                # check that spatial reference lines up with the original array dimensions
+                for mod_file, ar in file_dict.items():
+                    orgdata = ar.shape
+                    assert orgdata[0] == spatial_reference.nrow, "Spatial reference nrow not equal to original data nrow for\n" + \
+                        os.path.join(*os.path.split(self.original_file_d)[1:], mod_file)
+                    assert orgdata[1] == spatial_reference.ncol, "Spatial reference ncol not equal to original data ncol for\n" + \
+                        os.path.join(*os.path.split(self.original_file_d)[1:], mod_file)
                 # (stolen from helpers.PstFromFlopyModel()._pp_prep())
                 # but only settting up one set of pps at a time
                 pp_dict = {0: par_name_base}

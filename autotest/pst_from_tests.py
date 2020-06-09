@@ -109,10 +109,25 @@ def freyberg_test():
     pf.post_py_cmds.append(hds_runline)
     pf.tmp_files.append(f"{m.name}.hds")
     # sfr outputs to obs
+    sfr_idx = ['segment', 'reach', 'kstp', 'kper']
+    sfr_use = ["Qaquifer", "Qout", 'width']
     pf.add_observations('freyberg.sfo.dat', insfile=None,
-                        index_cols=['segment', 'reach', 'kstp', 'kper'],
-                        use_cols=["Qaquifer", "Qout", 'width'], prefix='sfr',
-                        ofile_skip=4, ofile_sep=' ')
+                        index_cols=sfr_idx,
+                        use_cols=sfr_use, prefix='sfr',
+                        ofile_skip=4, ofile_sep=' ', use_rows=np.arange(0, 50))
+    # check obs set up
+    sfrobs = pf.obs_dfs[-1]
+    sfrobs[['col'] + sfr_idx] = sfrobs.obsnme.apply(
+        lambda x: pd.Series([s.split(':')[1] for s in x.split('_') if ':' in s]))
+    sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
+    sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
+                                  columns=['col'], values='obsval')
+    sfodf_c = sfodf.set_index(sfr_idx).sort_index()
+    sfodf_c.columns = sfodf_c.columns.str.lower()
+    assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
+                                    sfrobs_p.columns]).all().all(), (
+        "Mis-match between expected and processed obs values")
+
     pf.tmp_files.append(f"{m.name}.sfr.out")
     pf.extra_py_imports.append('flopy')
     pf.post_py_cmds.extend(
@@ -132,7 +147,20 @@ def freyberg_test():
     pf.add_observations('freyberg.sfo.csv', insfile=None,
                         index_cols=['segment', 'reach', 'kstp', 'kper'],
                         use_cols=["Qaquifer", "Qout", "width"], prefix='sfr2',
-                        ofile_sep=',', obsgp=['qaquifer', 'qout', "width"])
+                        ofile_sep=',', obsgp=['qaquifer', 'qout', "width"],
+                        use_rows=np.arange(50, 101))
+    # check obs set up
+    sfrobs = pf.obs_dfs[-1]
+    sfrobs[['col'] + sfr_idx] = sfrobs.obsnme.apply(
+        lambda x: pd.Series([s.split(':')[1] for s in x.split('_') if ':' in s]))
+    sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
+    sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
+                                  columns=['col'], values='obsval')
+    sfodf_c = sfodf.set_index(sfr_idx).sort_index()
+    sfodf_c.columns = sfodf_c.columns.str.lower()
+    assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
+                                    sfrobs_p.columns]).all().all(), (
+        "Mis-match between expected and processed obs values")
     obsnmes = pd.concat([df.obgnme for df in pf.obs_dfs]).unique()
     assert all([gp in obsnmes for gp in ['qaquifer', 'qout']])
     pf.post_py_cmds.append(
