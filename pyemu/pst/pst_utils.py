@@ -857,6 +857,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
             f.write("l1")
             c_count = 0
             for j,clabel in enumerate(clabels):  # loop over columns
+                oname = ''
                 if c_count < len(only_clabels):  # if we haven't yet set up all obs
                     if rlabel in only_rlabels and clabel in only_clabels:
                         # define obs names
@@ -882,16 +883,13 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
                         ognames.append(ngpname)  # add to list of group names
                         # start defining string to write in ins
                         oname = " !{0}!".format(oname)
-                        if sep == ',':
-                            if j < len(clabels) - 1:
-                                # obs will be follwed by another delim
-                                oname = "{0} {1},{1}".format(oname, marker)
                         c_count += 1
-                    else:  # not a requested observation; add spacer
+                    # else:  # not a requested observation; add spacer
+                    if j < len(clabels) - 1:
                         if sep == ',':
-                            oname = " {0},{0}".format(marker)
+                            oname = "{0} {1},{1}".format(oname, marker)
                         else:
-                            oname = " w"
+                            oname = "{0} w".format(oname)
                     if j == 0:
                         # if first col and input file has an index need additional spacer
                         if includes_index:

@@ -742,7 +742,7 @@ class PstFrom(object):
                 elif isinstance(use_rows, int):
                     use_rows = [use_rows]
                 use_rows = [r for r in use_rows if r <= len(df)]
-                use_rows = df.iloc[use_rows].unique()
+                use_rows = df.iloc[use_rows].idx_str.unique()
             # construct ins_file from df
             ncol = len(use_cols)
             obsgp = _check_var_len(obsgp, ncol, fill=True)
