@@ -553,6 +553,7 @@ def mf6_freyberg_test():
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
                                   pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,)
 
+
     # add SP1 spatially constant, but temporally correlated wel flux pars
     kper = 0
     list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
@@ -617,6 +618,16 @@ def mf6_freyberg_test():
     pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
                         prefix="hds", rebuild_pst=True)
 
+    # test par mults are working
+    b_d = os.getcwd()
+    os.chdir(pf.new_d)
+    try:
+        pyemu.helpers.apply_list_and_array_pars(
+            arr_par_file="mult2model_info.csv")
+    except Exception as e:
+        os.chdir(b_d)
+        raise Exception(str(e))
+    os.chdir(b_d)
 
     cov = pf.build_prior(fmt="none").to_dataframe()
     twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
@@ -630,23 +641,12 @@ def mf6_freyberg_test():
     dsum = np.diag(rcov.values).sum()
     assert rcov.sum().sum() > dsum
 
-
     num_reals = 100
     pe = pf.draw(num_reals, use_specsim=True)
     pe.to_binary(os.path.join(template_ws, "prior.jcb"))
     assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
     assert pe.shape[0] == num_reals
 
-    # test par mults are working
-    b_d = os.getcwd()
-    os.chdir(pf.new_d)
-    try:
-        pyemu.helpers.apply_list_and_array_pars(
-            arr_par_file="mult2model_info.csv")
-    except Exception as e:
-        os.chdir(b_d)
-        raise Exception(str(e))
-    os.chdir(b_d)
 
     pst.control_data.noptmax = 0
     pst.pestpp_options["additional_ins_delimiters"] = ","
@@ -996,8 +996,8 @@ def mf6_freyberg_da_test():
 
 
 if __name__ == "__main__":
-    freyberg_test()
-    freyberg_prior_build_test()
+    #freyberg_test()
+    #freyberg_prior_build_test()
     mf6_freyberg_test()
-    mf6_freyberg_shortnames_test()
-    mf6_freyberg_da_test()
+    #mf6_freyberg_shortnames_test()
+    #mf6_freyberg_da_test()

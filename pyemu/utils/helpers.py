@@ -11,10 +11,12 @@ import platform
 import struct
 import shutil
 import copy
-import numpy as np
-import pandas as pd
 import time
 from ast import literal_eval
+import traceback
+import sys
+import numpy as np
+import pandas as pd
 
 pd.options.display.max_colwidth = 100
 from ..pyemu_warnings import PyemuWarning
@@ -3105,13 +3107,21 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
             [-1, chunk_len]).tolist()
         remainder = np.array(pp_args)[num_chunk_floor * chunk_len:].tolist()
         chunks = main_chunks + [remainder]
-        procs = []
-        for chunk in chunks:
-            p = mp.Process(target=_process_chunk_fac2real, args=[chunk])
-            p.start()
-            procs.append(p)
-        for p in procs:
-            p.join()
+
+        pool = mp.Pool()
+        x = pool.apply_async(_process_chunk_fac2real,args=chunks)
+        x.get()
+        pool.close()
+        pool.join()
+        # procs = []
+        # for chunk in chunks:
+        #     p = mp.Process(target=_process_chunk_fac2real, args=[chunk])
+        #     p.start()
+        #     procs.append(p)
+        # for p in procs:
+        #     p.join()
+
+
 
         print("finished fac2real", datetime.now())
 
@@ -3127,13 +3137,19 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
         [-1, chunk_len]).tolist()  # the list of files broken down into chunks
     remainder = uniq[num_chunk_floor * chunk_len:].tolist()  # remaining files
     chunks = main_chunks + [remainder]
-    procs = []
-    for chunk in chunks:  # now only spawn processor for each chunk
-        p = mp.Process(target=_process_chunk_model_files, args=[chunk, df])
-        p.start()
-        procs.append(p)
-    for p in procs:
-        p.join()
+    # procs = []
+    # for chunk in chunks:  # now only spawn processor for each chunk
+    #     p = mp.Process(target=_process_chunk_model_files, args=[chunk, df])
+    #     p.start()
+    #     procs.append(p)
+    # for p in procs:
+    #     r = p.get(False)
+    #     p.join()
+    pool = mp.Pool()
+    x = pool.apply_async(_process_chunk_model_files,args=chunks,kwds={"df":df})
+    x.get()
+    pool.close()
+    pool.join()
     print("finished arr mlt", datetime.now())
 
 
@@ -3265,6 +3281,7 @@ def apply_genericlist_pars(df):
     """
     uniq = df.model_file.unique()
     for model_file in uniq:
+        print("processing model file:",model_file)
         df_mf = df.loc[df.model_file == model_file, :].copy()
         # read data stored in org (mults act on this)
         org_file = df_mf.org_file.unique()
@@ -3272,6 +3289,7 @@ def apply_genericlist_pars(df):
             raise Exception("wrong number of org_files for {0}".
                             format(model_file))
         org_file = org_file[0]
+        print("org file:",org_file)
         notfree = df_mf.fmt[df_mf.fmt != 'free']
         if len(notfree) > 1:
             raise Exception("too many different format specifiers for "
@@ -3311,16 +3329,24 @@ def apply_genericlist_pars(df):
             # to be compatible when the saved original file is read in.
             df_mf.loc[:, 'index_cols'] = df_mf.index_cols.apply(
                 lambda x: [str(i) for i in x])
+
         # if writen by PstFrom this should always be comma delim - tidy
         org_data = pd.read_csv(org_file, skiprows=datastrtrow,
                                header=header)
         # mult columns will be string type, so to make sure they align
         org_data.columns = org_data.columns.astype(str)
+        print("org_data columns:",org_data.columns)
+        print("org_data shape:",org_data.shape)
         new_df = org_data.copy()
         for mlt in df_mf.itertuples():
-            new_df = new_df.reset_index().rename(
-                columns={'index': 'oidx'}).set_index(mlt.index_cols)
-            new_df = new_df.sort_index()
+            try:
+                new_df = new_df.reset_index().rename(
+                    columns={'index': 'oidx'}).set_index(mlt.index_cols)
+                new_df = new_df.sort_index()
+            except Exception as e:
+                print("error setting mlt index_cols: ",str(mlt.index_cols)," for new_df with cols: ",list(new_df.columns))
+                raise Exception("error setting mlt index_cols: "+str(e))
+
             mlts = pd.read_csv(mlt.mlt_file)
             # get mult index to align with org_data,
             # mult idxs will always be written zero based
