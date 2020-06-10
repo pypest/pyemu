@@ -651,7 +651,7 @@ def mf6_freyberg_test():
     os.chdir(pf.new_d)
     try:
         pyemu.helpers.apply_list_and_array_pars(
-            arr_par_file="mult2model_info.csv")
+            arr_par_file="mult2model_info.csv",chunk_len=1)
     except Exception as e:
         os.chdir(b_d)
         raise Exception(str(e))
