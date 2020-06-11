@@ -565,7 +565,7 @@ class PstFrom(object):
                 if df.columns.is_integer():
                     hheader = False
                 else:
-                    hheader = 0
+                    hheader = df.columns
 
                 self.logger.statement("loaded list '{0}' of shape {1}"
                                       "".format(file_path, df.shape))
