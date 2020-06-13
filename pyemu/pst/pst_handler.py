@@ -1702,6 +1702,10 @@ class Pst(object):
             `df`: a pandas DataFrame object with rows being parameter groups and columns 
                 <iter>_num_at_ub, <iter>_num_at_lb, and <iter>_total_at_bounds
                 row 0 is total at bounds, subsequent rows correspond with groups
+                
+        Example:
+            pst = pyemu.Pst("my.pst")
+            df = pst.bound_report(iterations=[0,2,3])
 
         """        
         # sort out which files are parameter files and parse pstroot from pst directory
@@ -1718,19 +1722,22 @@ class Pst(object):
         
         # exception if no par files found
         if len(parfiles) == 0:
-            raise("no par files with root {} in directory {}".format(pstdir,pstroot))
+            raise Exception("no par files with root {} in directory {}".format(pstdir,pstroot))
         
         is_ies = any(['base' in i.lower() for i in parfiles])
         # decide which iterations we care about
+        if is_ies:
+            iters = [os.path.basename(cf).replace(pstroot,'').split('.')[1] for cf in parfiles if 'base' in cf.lower()]
+            iters = [int(i) for i in iters if i != 'base']
+            parfiles = [i for i in parfiles if 'base' in i]
+        else:
+            iters = [os.path.basename(cf).replace(pstroot,'').split('.')[1] for cf in parfiles if 'base' not in cf.lower()]
+            iters = [int(i) for i in iters if i != 'par']
+            parfiles = [i for i in parfiles if 'base' not in i]
+        
         if iterations is None:
-            if is_ies:
-                iterations = [os.path.basename(cf).replace(pstroot,'').split('.')[1] for cf in parfiles if 'base' in cf.lower()]
-                iterations = [int(i) for i in iterations if i != 'base']
-                parfiles = [i for i in parfiles if 'base' in i]
-            else:
-                iterations = [os.path.basename(cf).replace(pstroot,'').split('.')[1] for cf in parfiles if 'base' not in cf.lower()]
-                iterations = [int(i) for i in iterations if i != 'par']
-                parfiles = [i for i in parfiles if 'base' not in i]
+            iterations = iters
+            
         
         if isinstance(iterations, tuple):
             iterations = list(iterations)
@@ -1746,8 +1753,11 @@ class Pst(object):
         
         # loop over iterations and calculate which are at upper and lower bounds
         for citer in iterations:
-            tmp = pd.read_csv(os.path.join(pstdir,'{}.{}.base.par'.format(pstroot,citer)), skiprows=1, index_col=0,
+            try:
+                tmp = pd.read_csv(os.path.join(pstdir,'{}.{}.base.par'.format(pstroot,citer)), skiprows=1, index_col=0,
                         usecols =[0,1], delim_whitespace=True, header=None)
+            except FileNotFoundError:
+                raise Exception("iteration {} does not have a paramter file associated with it in {}".format(citer,pstdir))
             tmp.columns = ['pars_iter_{}'.format(citer)]
             allpars=allpars.merge(tmp, left_index =True, right_index=True)
             allpars['at_upper_bound_{}'.format(citer)] = allpars['pars_iter_{}'.format(citer)] >= allpars['parubnd']
