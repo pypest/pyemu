@@ -2966,11 +2966,13 @@ class PstFromFlopyModel(object):
             self.frun_post_lines.append(line)
 
 
-def apply_list_and_array_pars(arr_par_file="mult2model_info.csv"):
+def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     """ Apply multiplier parameters to list and array style model files
     
     Args:
-        arr_par_file (str): 
+        arr_par_file (str):
+        chunk_len (`int`): the number of files to process per multiprocessing
+            chunk in appl_array_pars().  default is 50.
 
     Returns:
         
@@ -2994,17 +2996,19 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv"):
         lambda x: literal_eval(x))
     # TODO check use_cols is always present
     apply_genericlist_pars(list_pars)
-    apply_array_pars(arr_pars)
+    apply_array_pars(arr_pars,chunk_len=chunk_len)
     
 
-def _process_chunk_fac2real(chunk):
+def _process_chunk_fac2real(chunk,i):
     for args in chunk:
         pyemu.geostats.fac2real(**args)
+    print("process",i," processed ",len(chunk),"fac2real calls")
 
 
-def _process_chunk_model_files(chunk, df):
+def _process_chunk_model_files(chunk,i,df):
     for model_file in chunk:
         _process_model_file(model_file, df)
+    print("process", i, " processed ", len(chunk), "process_model_file calls")
 
 
 def _process_model_file(model_file, df):
@@ -3047,7 +3051,7 @@ def _process_model_file(model_file, df):
 
 
 
-def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
+def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None,chunk_len=50):
     """ a function to apply array-based multipler parameters.
 
     Args:
@@ -3057,6 +3061,9 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
         if type `pandas.DataFrame` is Dataframe with columns of 
         ['mlt_file', 'model_file', 'org_file'] and optionally 
         ['pp_file', 'fac_file'].
+        chunk_len (`int`) : the number of files to process per chunk
+            with multiprocessing - applies to both fac2real and process_
+            input_files. Default is 50.
 
     Note:
         Used to implement the parameterization constructed by
@@ -3101,7 +3108,6 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
         # don't need to process all (e.g. if const. mults apply across kper...)
         pp_args = pp_df.drop_duplicates().to_dict('records')
         num_ppargs = len(pp_args)
-        chunk_len = 50
         num_chunk_floor = num_ppargs // chunk_len
         main_chunks = np.array(pp_args)[:num_chunk_floor * chunk_len].reshape(
             [-1, chunk_len]).tolist()
@@ -3109,8 +3115,8 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
         chunks = main_chunks + [remainder]
 
         pool = mp.Pool()
-        x = pool.apply_async(_process_chunk_fac2real,args=chunks)
-        x.get()
+        x = [pool.apply_async(_process_chunk_fac2real,args=(chunk,i)) for i,chunk in enumerate(chunks)]
+        [xx.get() for xx in x]
         pool.close()
         pool.join()
         # procs = []
@@ -3129,8 +3135,6 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
     uniq = df.model_file.unique()  # unique model input files to be produced
     num_uniq = len(uniq)  # number of input files to be produced
     # number of files to send to each processor
-    chunk_len = 50  # - this may not be the optimum number,
-    # sure there is some cleverway of working it out
     # lazy plitting the files to be processed into even chunks
     num_chunk_floor = num_uniq // chunk_len  # number of whole chunks
     main_chunks = uniq[:num_chunk_floor * chunk_len].reshape(
@@ -3146,8 +3150,8 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None):
     #     r = p.get(False)
     #     p.join()
     pool = mp.Pool()
-    x = pool.apply_async(_process_chunk_model_files,args=chunks,kwds={"df":df})
-    x.get()
+    x = [pool.apply_async(_process_chunk_model_files,args=(chunk,i,df)) for i,chunk in enumerate(chunks)]
+    [xx.get() for xx in x]
     pool.close()
     pool.join()
     print("finished arr mlt", datetime.now())
