@@ -1,6 +1,7 @@
 
 from __future__ import print_function, division
 import os
+import glob
 import re
 import copy
 import warnings
@@ -1689,7 +1690,99 @@ class Pst(object):
 
         f_out.close()
 
+    def bounds_report(self, iterations=None):
+        """report how many parameters are at bounds. If ensemble, the base enbsemble member is evaluated
 
+        Args:
+            iterations ([`int`]): a list of iterations for which a bounds report is requested
+                If None, all iterations for which `par` files are located are reported. Default
+                is None
+
+        Returns:
+            `df`: a pandas DataFrame object with rows being parameter groups and columns 
+                <iter>_num_at_ub, <iter>_num_at_lb, and <iter>_total_at_bounds
+                row 0 is total at bounds, subsequent rows correspond with groups
+                
+        Example:
+            pst = pyemu.Pst("my.pst")
+            df = pst.bound_report(iterations=[0,2,3])
+
+        """        
+        # sort out which files are parameter files and parse pstroot from pst directory
+        pstroot = self.filename
+        if pstroot.lower().endswith('.pst'):
+            pstroot = pstroot[:-4]
+        pstdir = os.path.dirname(pstroot)
+        if len(pstdir) == 0:
+            pstdir = '.'
+        pstroot = os.path.basename(pstroot)
+
+        # find all the par files
+        parfiles = glob.glob(os.path.join(pstdir,'{}*.par'.format(pstroot)))
+        
+        # exception if no par files found
+        if len(parfiles) == 0:
+            raise Exception("no par files with root {} in directory {}".format(pstdir,pstroot))
+        
+        is_ies = any(['base' in i.lower() for i in parfiles])
+        # decide which iterations we care about
+        if is_ies:
+            iters = [os.path.basename(cf).replace(pstroot,'').split('.')[1] for cf in parfiles if 'base' in cf.lower()]
+            iters = [int(i) for i in iters if i != 'base']
+            parfiles = [i for i in parfiles if 'base' in i]
+        else:
+            iters = [os.path.basename(cf).replace(pstroot,'').split('.')[1] for cf in parfiles if 'base' not in cf.lower()]
+            iters = [int(i) for i in iters if i != 'par']
+            parfiles = [i for i in parfiles if 'base' not in i]
+        
+        if iterations is None:
+            iterations = iters
+            
+        
+        if isinstance(iterations, tuple):
+            iterations = list(iterations)
+        
+        if not isinstance(iterations, list):
+            iterations = [iterations]
+        
+        # sort the iterations to go through them in order
+        iterations.sort()
+        
+        # set up a DataFrame with bounds and into which to put the par values
+        allpars = self.parameter_data[['parlbnd','parubnd', 'pargp']].copy()
+        
+        # loop over iterations and calculate which are at upper and lower bounds
+        for citer in iterations:
+            try:
+                tmp = pd.read_csv(os.path.join(pstdir,'{}.{}.base.par'.format(pstroot,citer)), skiprows=1, index_col=0,
+                        usecols =[0,1], delim_whitespace=True, header=None)
+            except FileNotFoundError:
+                raise Exception("iteration {} does not have a paramter file associated with it in {}".format(citer,pstdir))
+            tmp.columns = ['pars_iter_{}'.format(citer)]
+            allpars=allpars.merge(tmp, left_index =True, right_index=True)
+            allpars['at_upper_bound_{}'.format(citer)] = allpars['pars_iter_{}'.format(citer)] >= allpars['parubnd']
+            allpars['at_lower_bound_{}'.format(citer)] = allpars['pars_iter_{}'.format(citer)] <= allpars['parlbnd']
+
+        # sum up by groups
+        df = allpars.groupby('pargp').sum()[[i for i in allpars.columns if i.startswith('at_')]].astype(int)
+        
+        
+        # add the total
+        df.loc['total'] = df.sum()
+        
+        # sum up upper and lower bounds
+        cols = []
+        for citer in iterations:
+            df['at_either_bound_{}'.format(citer)] = df['at_upper_bound_{}'.format(citer)] + \
+                df['at_lower_bound_{}'.format(citer)]
+            cols.extend(['at_either_bound_{}'.format(citer),
+                        'at_lower_bound_{}'.format(citer),
+                        'at_upper_bound_{}'.format(citer)])
+        
+        # reorder by iterations and return
+        return df[cols]
+        
+        # loop over the iterations and count the pars at bounds
     def get(self, par_names=None, obs_names=None):
         """get a new pst object with subset of parameters and/or observations
 
