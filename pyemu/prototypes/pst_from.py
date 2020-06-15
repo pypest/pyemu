@@ -13,6 +13,12 @@ from ..pyemu_warnings import PyemuWarning
 import copy
 
 
+#the tolerable percent difference (100 * (max - min)/mean)
+#used when checking that constant and zone type parameters are in fact constant (within
+#a given zone)
+#DIRECT_PAR_PERCENT_DIFF_TOL = 1.0
+
+
 def _get_datetime_from_str(sdt):
     # could be expanded if someone is feeling clever.
     if isinstance(sdt, str):
@@ -49,12 +55,14 @@ class PstFrom(object):
         spatial_reference:
         zero_based:
         start_datetime:
+
     """
 
     # TODO: doc strings!!!
     def __init__(self, original_d, new_d, longnames=True,
                  remove_existing=False, spatial_reference=None,
-                 zero_based=True, start_datetime=None):  # TODO geostruct?
+                 zero_based=True, start_datetime=None):
+    # TODO geostruct?
 
         self.original_d = original_d
         self.new_d = new_d
@@ -1079,7 +1087,7 @@ class PstFrom(object):
             tpl_filename = mlt_filename + ".tpl"
             in_fileabs = os.path.join(self.mult_file_d, mlt_filename)
         else:
-            mlt_filename = None
+            mlt_filename = np.NaN
             # pst input file (for tpl->in pair) is multfile (in mult dir)
             in_filepst = os.path.relpath(os.path.join(
                 self.original_file_d, filenames[0]), self.new_d)
@@ -1304,8 +1312,7 @@ class PstFrom(object):
             mult_dict = {
                 "org_file": os.path.join(
                     *os.path.split(self.original_file_d)[1:], mod_file),
-                "mlt_file": os.path.join(
-                    *os.path.split(self.mult_file_d)[1:], mlt_filename),
+
                 "model_file": mod_file,
                 "use_cols": use_cols,
                 "index_cols": index_cols,
@@ -1314,6 +1321,10 @@ class PstFrom(object):
                 "head_rows": skip_dict[mod_file],
                 "upper_bound": ult_ubound,
                 "lower_bound": ult_lbound}
+            if par_style == "multiplier":
+               mult_dict["mlt_file"] =  os.path.join(
+                    *os.path.split(self.mult_file_d)[1:], mlt_filename)
+
             if pp_filename is not None:
                 # if pilotpoint need to store more info
                 assert fac_filename is not None, (
@@ -2006,20 +2017,41 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
                         "'{0}'".format(par_type))
 
     par_style = par_style.lower()
+
     if par_style == "direct":
         if not os.path.exists(input_filename):
             raise Exception("write_grid_tpl() error: couldnt find input file "+
                             " {0}, which is required for 'direct' par_style"\
                             .format(input_filename))
         org_arr = np.loadtxt(input_filename)
+        if par_type == "grid":
+            pass
+        elif par_type == "constant":
+            percent_diff = 100. * np.abs(np.nanmax(org_arr) - np.nanmin(org_arr) / np.nanmean(org_arr))
+            if percent_diff > DIRECT_PAR_PERCENT_DIFF_TOL:
+                raise Exception("write_grid_tpl() error: constant-type direct par for file '{0}'".format(input_filename) +\
+                                "exceeds tolerance for percent difference: {1} > {2}".
+                                format(percent_diff,DIRECT_PAR_PERCENT_DIFF_TOL))
+        elif par_type == "zone":
+            for zval in np.unique(zone_array):
+                if zval < 1:
+                    continue
+                zone_org_arr = org_arr.copy()
+                zone_org_arr[zone_array!=zval] = np.NaN
+                percent_diff = 100. * np.abs(np.nanmax(org_arr) - np.nanmin(org_arr) / np.nanmean(org_arr))
+                if percent_diff > DIRECT_PAR_PERCENT_DIFF_TOL:
+                    raise Exception("write_grid_tpl() error: zone-type direct par for file '{0}'".format(input_filename) +\
+                                    "exceeds tolerance for percent difference for zone {1}: {2} > {3}".
+                                    format(zval,percent_diff,DIRECT_PAR_PERCENT_DIFF_TOL))
     elif par_style == "multiplier":
-        pass
+        org_arr = np.ones(shape)
     else:
         raise Exception("write_grid_tpl() error: unrecognized 'par_style' {0} ".format(par_style) +
                         "should be 'direct' or 'multiplier'")
 
 
-    parnme,parval = [], []
+    parnme = []
+    org_par_val_dict = {}
     xx, yy, ii, jj = [], [], [], []
     with open(tpl_filename, 'w') as f:
         f.write("ptf ~\n")
@@ -2037,11 +2069,13 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
 
                     pname = namer(i, j)
                     parnme.append(pname)
+                    org_par_val_dict[parnme] = org_arr[i,j]
                     pname = " ~   {0}    ~".format(pname)
 
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
+    df.loc[:,"parval1"] = df.parnme.apply(lambda x: org_par_val_dict[x])
     if par_type == 'grid':
         df.loc[:, 'i'] = ii
         df.loc[:, 'j'] = jj
