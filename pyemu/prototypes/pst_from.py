@@ -1123,7 +1123,8 @@ class PstFrom(object):
                 longnames=self.longnames, ij_in_idx=ij_in_idx,
                 xy_in_idx=xy_in_idx, get_xy=self.get_xy,
                 zero_based=self.zero_based,
-                input_filename=in_fileabs)
+                input_filename=in_fileabs,
+                par_style=par_style)
             assert np.mod(len(df), len(use_cols)) == 0., (
                 "Parameter dataframe wrong shape for number of cols {0}"
                 "".format(use_cols))
@@ -1615,8 +1616,7 @@ class PstFrom(object):
 def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
                    use_cols=None, suffix='', zone_array=None, gpname=None,
                    longnames=False, get_xy=None, ij_in_idx=None, xy_in_idx=None,
-                   zero_based=True,
-                   input_filename=None):
+                   zero_based=True,input_filename=None,par_style="multiplier"):
     """ Write template files for a list style input.
 
     Args:
@@ -1653,6 +1653,7 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
             are NOT zero-based indicies (e.g. MODFLOW row/cols).
             If False 1 with be subtracted from `index_cols`.
         input_filename (`str`): Path to input file (paired with tpl file)
+        par_style (`str`): either 'direct' or 'multiplier'
 
     Returns:
 
@@ -1944,7 +1945,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         fill_value:
         get_xy:
         input_filename:
-        par_style (`str`):
+        par_style (`str`): either 'direct' or 'multiplier'
 
     Returns:
         df (`pandas.DataFrame`): a dataframe with parameter information
@@ -1963,61 +1964,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         raise Exception("write_array_tpl() error: shape '{0}' not 2D"
                         "".format(str(shape)))
 
-    def constant_namer(i, j):
-        if longnames:
-            pname = "const_{0}".format(name)
-            if suffix != '':
-                pname += "_{0}".format(suffix)
-        else:
-            pname = "{0}{1}".format(name, suffix)
-            if len(pname) > 12:
-                raise ("constant par name too long:"
-                       "{0}".format(pname))
-        return pname
-
-    def zone_namer(i, j):
-        zval = 1
-        if zone_array is not None:
-            zval = zone_array[i, j]
-        if longnames:
-            pname = "{0}_zone:{1}".format(name, zval)
-            if suffix != '':
-                pname += "_{0}".format(suffix)
-        else:
-
-            pname = "{0}_zn{1}".format(name, zval)
-            if len(pname) > 12:
-                raise ("zone par name too long:{0}".format(pname))
-        return pname
-
-    def grid_namer(i, j):
-        if longnames:
-            pname = "{0}_i:{1}_j:{2}".format(name, i, j)
-            if get_xy is not None:
-                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy([i, j]))
-            if zone_array is not None:
-                pname += "_zone:{0}".format(zone_array[i, j])
-            if suffix != '':
-                pname += "_{0}".format(suffix)
-        else:
-            pname = "{0}{1:03d}{2:03d}".format(name, i, j)
-            if len(pname) > 12:
-                raise ("grid pname too long:{0}".format(pname))
-        return pname
-
-    if par_type == "constant":
-        namer = constant_namer
-    elif par_type == "zone":
-        namer = zone_namer
-    elif par_type == "grid":
-        namer = grid_namer
-    else:
-        raise Exception("write_array_tpl() error: unsupported par_type"
-                        ", options are 'constant', 'zone', or 'grid', not"
-                        "'{0}'".format(par_type))
-
     par_style = par_style.lower()
-
     if par_style == "direct":
         if not os.path.exists(input_filename):
             raise Exception("write_grid_tpl() error: couldnt find input file "+
@@ -2049,6 +1996,58 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         raise Exception("write_grid_tpl() error: unrecognized 'par_style' {0} ".format(par_style) +
                         "should be 'direct' or 'multiplier'")
 
+    def constant_namer(i, j):
+        if longnames:
+            pname = "{0}_const_{1}".format(par_style,name)
+            if suffix != '':
+                pname += "_{0}".format(suffix)
+        else:
+            pname = "{0}{1}{2}".format(par_style[0],name, suffix)
+            if len(pname) > 12:
+                raise ("constant par name too long:"
+                       "{0}".format(pname))
+        return pname
+
+    def zone_namer(i, j):
+        zval = 1
+        if zone_array is not None:
+            zval = zone_array[i, j]
+        if longnames:
+            pname = "{0}_{1}_zone:{2}".format(par_style,name, zval)
+            if suffix != '':
+                pname += "_{0}".format(suffix)
+        else:
+
+            pname = "{0}{1}_zn{2}".format(par_style[0],name, zval)
+            if len(pname) > 12:
+                raise ("zone par name too long:{0}".format(pname))
+        return pname
+
+    def grid_namer(i, j):
+        if longnames:
+            pname = "{0}_{1}_i:{2}_j:{3}".format(par_style,name, i, j)
+            if get_xy is not None:
+                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy([i, j]))
+            if zone_array is not None:
+                pname += "_zone:{0}".format(zone_array[i, j])
+            if suffix != '':
+                pname += "_{0}".format(suffix)
+        else:
+            pname = "{0}{1}{2:03d}{3:03d}".format(par_style[0],name, i, j)
+            if len(pname) > 12:
+                raise ("grid pname too long:{0}".format(pname))
+        return pname
+
+    if par_type == "constant":
+        namer = constant_namer
+    elif par_type == "zone":
+        namer = zone_namer
+    elif par_type == "grid":
+        namer = grid_namer
+    else:
+        raise Exception("write_array_tpl() error: unsupported par_type"
+                        ", options are 'constant', 'zone', or 'grid', not"
+                        "'{0}'".format(par_type))
 
     parnme = []
     org_par_val_dict = {}
@@ -2069,7 +2068,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
 
                     pname = namer(i, j)
                     parnme.append(pname)
-                    org_par_val_dict[parnme] = org_arr[i,j]
+                    org_par_val_dict[pname] = org_arr[i,j]
                     pname = " ~   {0}    ~".format(pname)
 
                 f.write(pname)
