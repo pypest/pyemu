@@ -554,6 +554,20 @@ def mf6_freyberg_test():
         for line in lines:
             fw.write(line)
 
+    # generate a test with headers and non spatial idex
+    sfr_pkgdf = pd.DataFrame.from_records(m.sfr.packagedata.array)
+    l = sfr_pkgdf.columns.to_list()
+    l = ['#rno', 'k', 'i', 'j'] + l[2:]
+    with open(
+            os.path.join('temp_pst_from',
+                         "freyberg6.sfr_packagedata.txt"), 'r') as fr:
+        lines = [line for line in fr]
+    with open(os.path.join('temp_pst_from',
+                           "freyberg6.sfr_packagedata_test.txt"), 'w') as fw:
+        fw.write(' '.join(l))
+        fw.write('\n')
+        for line in lines:
+            fw.write(line)
 
     template_ws = "new_temp"
     # sr0 = m.sr
@@ -674,7 +688,11 @@ def mf6_freyberg_test():
                           pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
                           upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
 
-
+    # test non spatial idx in list like
+    pf.add_parameters(filenames="freyberg6.sfr_packagedata_test.txt", par_name_base="sfr_rhk",
+                      pargp="sfr_rhk", index_cols=['#rno'], use_cols=['rhk'], upper_bound=10.,
+                      lower_bound=0.1,
+                      par_type="grid")
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
@@ -683,6 +701,35 @@ def mf6_freyberg_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
+
+    # quick check of write and apply method
+    pars = pst.parameter_data
+    # set reach 1 hk to 100
+    sfr_pars = pars.loc[pars.parnme.str.startswith('sfr')].index
+    pars.loc[sfr_pars, 'parval1'] = np.random.random(len(sfr_pars)) * 10
+
+    sfr_pars = pars.loc[sfr_pars].copy()
+    sfr_pars[['inst', 'col', '#rno']] = sfr_pars.parnme.apply(
+        lambda x: pd.DataFrame([s.split(':') for s in x.split('_')
+                                if ':' in s]).set_index(0)[1])
+    sfr_pars['#rno'] = sfr_pars['#rno'] .astype(int)
+    os.chdir(pf.new_d)
+    pst.write_input_files()
+    try:
+        pyemu.helpers.apply_list_and_array_pars()
+    except Exception as e:
+        os.chdir('..')
+        raise e
+    os.chdir('..')
+    # verify apply
+    df = pd.read_csv(os.path.join(
+        pf.new_d, "freyberg6.sfr_packagedata_test.txt"),
+        delim_whitespace=True, index_col=0)
+    df.index = df.index - 1
+    assert np.isclose(
+        df.rhk, (sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
+                 sfr_pars.set_index('#rno').loc[df.index, 'parval1'])).all()
+    pars.loc[sfr_pars.index, 'parval1'] = 1.0
 
     # add more:
     pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="sfr_rhk",

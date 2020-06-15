@@ -462,7 +462,7 @@ class PstFrom(object):
                                                       'mult2model_info.csv'))
                 if not any(["apply_list_and_array_pars" in s
                             for s in self.pre_py_cmds]):
-                    self.pre_py_cmds.append(
+                    self.pre_py_cmds.insert(0,
                         "pyemu.helpers.apply_list_and_array_pars("
                         "arr_par_file='mult2model_info.csv')")
             else:

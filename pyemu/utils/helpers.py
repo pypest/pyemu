@@ -3359,6 +3359,8 @@ def apply_genericlist_pars(df):
             mlts.index = pd.MultiIndex.from_tuples(mlts.sidx.apply(
                 lambda x: tuple(add1+np.array(literal_eval(x)))),
                 names=mlt.index_cols)
+            if mlts.index.nlevels < 2:  # just in case only one index col is used
+                mlts.index = mlts.index.get_level_values(0)
             common_idx = new_df.index.intersection(mlts.index).sort_values()
             mlt_cols = [str(col) for col in mlt.use_cols]
             new_df.loc[common_idx, mlt_cols] = (new_df.loc[common_idx, mlt_cols]
