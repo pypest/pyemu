@@ -3022,6 +3022,8 @@ def _process_model_file(model_file, df):
     org_arr = np.loadtxt(org_file[0])
 
     for mlt in df_mf.mlt_file:
+        if pd.isna(mlt):
+            continue
         mlt_data = np.loadtxt(mlt)
         if org_arr.shape != mlt_data.shape:
             raise Exception("shape of org file {}:{} differs from mlt file {}:{}".format(org_file, org_arr.shape,
@@ -3343,6 +3345,7 @@ def apply_genericlist_pars(df):
         print("org_data shape:",org_data.shape)
         new_df = org_data.copy()
         for mlt in df_mf.itertuples():
+
             try:
                 new_df = new_df.reset_index().rename(
                     columns={'index': 'oidx'}).set_index(mlt.index_cols)
@@ -3350,20 +3353,22 @@ def apply_genericlist_pars(df):
             except Exception as e:
                 print("error setting mlt index_cols: ",str(mlt.index_cols)," for new_df with cols: ",list(new_df.columns))
                 raise Exception("error setting mlt index_cols: "+str(e))
-
-            mlts = pd.read_csv(mlt.mlt_file)
-            # get mult index to align with org_data,
-            # mult idxs will always be written zero based
-            # if original model files is not zero based need to add 1
-            add1 = int(mlt.zero_based==False)
-            mlts.index = pd.MultiIndex.from_tuples(mlts.sidx.apply(
-                lambda x: tuple(add1+np.array(literal_eval(x)))),
-                names=mlt.index_cols)
-            common_idx = new_df.index.intersection(mlts.index).sort_values()
-            mlt_cols = [str(col) for col in mlt.use_cols]
-            new_df.loc[common_idx, mlt_cols] = (new_df.loc[common_idx, mlt_cols]
-                                                * mlts.loc[common_idx, mlt_cols]
-                                                ).values
+            if "mlt_file" not in mlt or pd.isna(mlt.mlt_file):
+                print("null mlt file for org_file '" + org_file + "', continuing...")
+            else:
+                mlts = pd.read_csv(mlt.mlt_file)
+                # get mult index to align with org_data,
+                # mult idxs will always be written zero based
+                # if original model files is not zero based need to add 1
+                add1 = int(mlt.zero_based==False)
+                mlts.index = pd.MultiIndex.from_tuples(mlts.sidx.apply(
+                    lambda x: tuple(add1+np.array(literal_eval(x)))),
+                    names=mlt.index_cols)
+                common_idx = new_df.index.intersection(mlts.index).sort_values()
+                mlt_cols = [str(col) for col in mlt.use_cols]
+                new_df.loc[common_idx, mlt_cols] = (new_df.loc[common_idx, mlt_cols]
+                                                    * mlts.loc[common_idx, mlt_cols]
+                                                    ).values
             # bring mult index back to columns AND re-order
             new_df = new_df.reset_index().set_index(
                 'oidx')[org_data.columns].sort_index()

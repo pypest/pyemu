@@ -1138,34 +1138,37 @@ def mf6_freyberg_direct_test():
                                   pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
                                   geostruct=gr_gs,par_style="direct")
 
-        #     for arr_file in arr_files:
-        #         kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-        #         pf.add_parameters(filenames=arr_file, par_type="constant",
-        #                           par_name_base=arr_file.split('.')[1] + "_cn",
-        #                           pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
-        #                           geostruct=rch_temporal_gs,
-        #                           datetime=dts[kper])
-        # else:
-        #     for arr_file in arr_files:
-        #         pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
-        #                           pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub,
-        #                           lower_bound=lb,
-        #                           geostruct=gr_gs)
+            for arr_file in arr_files:
+                kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+                pf.add_parameters(filenames=arr_file, par_type="constant",
+                                  par_name_base=arr_file.split('.')[1] + "_cn",
+                                  pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                                  geostruct=rch_temporal_gs,
+                                  datetime=dts[kper])
+        else:
+            for arr_file in arr_files:
+                pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
+                                  pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub,
+                                  lower_bound=lb,
+                                  geostruct=gr_gs)
 
 
     list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
-                  for t in range(5, m.nper + 1)]
+                  for t in range(1, m.nper + 1)]
+    list_files.sort()
     for list_file in list_files:
         kper = int(list_file.split(".")[1].split('_')[-1]) - 1
         # add spatially constant, but temporally correlated wel flux pars
-        pf.add_parameters(filenames=list_file, par_type="constant", par_name_base="twel_mlt_{0}".format(kper),
-                          pargp="twel_mlt".format(kper), index_cols=[0, 1, 2], use_cols=[3],
-                          upper_bound=1.5, lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
+        # pf.add_parameters(filenames=list_file, par_type="constant", par_name_base="twel_mlt_{0}".format(kper),
+        #                   pargp="twel_mlt".format(kper), index_cols=[0, 1, 2], use_cols=[3],
+        #                   upper_bound=1.5, lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
 
         # add temporally indep, but spatially correlated wel flux pars
         pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
                           pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
-                          upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs,par_style="direct")
+                          upper_bound=0.0, lower_bound=-1000, geostruct=gr_gs,par_style="direct",
+                          transform="none")
+
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
@@ -1174,7 +1177,7 @@ def mf6_freyberg_direct_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
-    return
+
     df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
     pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
                         prefix="hds", rebuild_pst=True)
@@ -1190,17 +1193,17 @@ def mf6_freyberg_direct_test():
         raise Exception(str(e))
     os.chdir(b_d)
 
-    cov = pf.build_prior(fmt="none").to_dataframe()
-    twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
-    twcov = cov.loc[twel_pars, twel_pars]
-    dsum = np.diag(twcov.values).sum()
-    assert twcov.sum().sum() > dsum
-
-    rch_cn = [p for p in pst.par_names if "_cn" in p]
-    print(rch_cn)
-    rcov = cov.loc[rch_cn, rch_cn]
-    dsum = np.diag(rcov.values).sum()
-    assert rcov.sum().sum() > dsum
+    #cov = pf.build_prior(fmt="none").to_dataframe()
+    # twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
+    # twcov = cov.loc[twel_pars, twel_pars]
+    # dsum = np.diag(twcov.values).sum()
+    # assert twcov.sum().sum() > dsum
+    #
+    # rch_cn = [p for p in pst.par_names if "_cn" in p]
+    # print(rch_cn)
+    # rcov = cov.loc[rch_cn, rch_cn]
+    # dsum = np.diag(rcov.values).sum()
+    # assert rcov.sum().sum() > dsum
 
     num_reals = 100
     pe = pf.draw(num_reals, use_specsim=True)
