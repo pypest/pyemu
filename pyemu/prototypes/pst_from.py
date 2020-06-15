@@ -110,6 +110,8 @@ class PstFrom(object):
         self._pp_facs = {}
         self.pst = None
 
+        self.direct_org_files = []
+
     @property
     def parfile_relations(self):
         if isinstance(self._parfile_relations, list):
@@ -888,7 +890,8 @@ class PstFrom(object):
                        spatial_reference=None, geostruct=None,
                        datetime=None, mfile_fmt='free', mfile_skip=None,
                        ult_ubound=None, ult_lbound=None, rebuild_pst=False,
-                       alt_inst_str='inst', comment_char=None):
+                       alt_inst_str='inst', comment_char=None,
+                       par_style="multiplier"):
         """
         Add list or array style model input files to PstFrom object.
         This method
@@ -952,17 +955,37 @@ class PstFrom(object):
                 This is not additive with `mfile_skip` option.
                 Warning: currently comment lines within list-like tabular data
                 will be lost.
+            par_style (`str`): either "multiplier" or "direct" where the former setups
+                up a multiplier parameter process against the exsting model input
+                array and the former setups a template file to write the model
+                input file directly.  Default is "multiplier".
         """
         # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
 
         # TODO support passing par_file (i,j)/(x,y) directly where information
         #  is not contained in model parameter file - e.g. no i,j columns
+
+        #some checks for direct parameters
+        par_style = par_style.lower()
+        if par_style not in ["multiplier", "direct"]:
+            self.logger.lraise("add_parameters(): unrecognized 'style': {0}, should be either 'multiplier' or 'direct'". \
+                               format(par_style))
+        if isinstance(filenames,str):
+            filenames = [filenames]
+        if par_style == "direct":
+            if len(filenames) != 1:
+                self.logger.lraise("add_parameters(): 'filenames' arg for 'direct' style must contain " + \
+                                   "one and only one filename, not {0} files".format(len(filenames)))
+            if filenames[0] in self.direct_org_files:
+                self.logger.lraise("add_parameters(): original model input file '{0}' ".format(filenames[0]) + \
+                                   " already used for 'direct' parameterization")
         # Default par data columns used for pst
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
-        self.logger.log("adding parameters for file(s) "
-                        "{0}".format(str(filenames)))
+        self.logger.log("adding {0} type {1} style parameters for file(s) {2}".format(par_type, par_style, str(filenames)))
         if geostruct is not None:
+            if geostruct.sill != 1.0 and par_style != "multiplier":
+                self.logger.warn("geostruct sill != 1.0 for 'multiplier' style parameters")
             if geostruct.transform != transform:
                 self.logger.warn("0) Inconsistency between "
                                  "geostruct transform and partrans.")
@@ -1048,11 +1071,20 @@ class PstFrom(object):
         par_name_store = par_name_base[0].replace(':', '')  # for os filename
 
         # Define requisite filenames
-        mlt_filename = "{0}_{1}.csv".format(par_name_store, par_type)
-        # pst input file (for tpl->in pair) is multfile (in mult dir)
-        in_filepst = os.path.relpath(os.path.join(
-            self.mult_file_d, mlt_filename), self.new_d)
-        tpl_filename = mlt_filename + ".tpl"
+        if par_style == "multiplier":
+            mlt_filename = "{0}_{1}.csv".format(par_name_store, par_type)
+            # pst input file (for tpl->in pair) is multfile (in mult dir)
+            in_filepst = os.path.relpath(os.path.join(
+                self.mult_file_d, mlt_filename), self.new_d)
+            tpl_filename = mlt_filename + ".tpl"
+            in_fileabs = os.path.join(self.mult_file_d, mlt_filename)
+        else:
+            mlt_filename = None
+            # pst input file (for tpl->in pair) is multfile (in mult dir)
+            in_filepst = os.path.relpath(os.path.join(
+                self.original_file_d, filenames[0]), self.new_d)
+            tpl_filename = filenames[0] + ".tpl"
+            in_fileabs = os.path.join(self.new_d,in_filepst)
         pp_filename = None  # setup placeholder variables
         fac_filename = None
 
@@ -1083,7 +1115,7 @@ class PstFrom(object):
                 longnames=self.longnames, ij_in_idx=ij_in_idx,
                 xy_in_idx=xy_in_idx, get_xy=self.get_xy,
                 zero_based=self.zero_based,
-                input_filename=os.path.join(self.mult_file_d, mlt_filename))
+                input_filename=in_fileabs)
             assert np.mod(len(df), len(use_cols)) == 0., (
                 "Parameter dataframe wrong shape for number of cols {0}"
                 "".format(use_cols))
@@ -1108,8 +1140,7 @@ class PstFrom(object):
                     suffix='', par_type=par_type, zone_array=zone_array,
                     shape=shp, longnames=self.longnames, get_xy=self.get_xy,
                     fill_value=1.0, gpname=pargp,
-                    input_filename=os.path.join(self.mult_file_d,
-                                                mlt_filename))
+                    input_filename=in_fileabs,par_style=par_style)
                 self.logger.log(
                     "writing template file"
                     " {0} for {1}".format(tpl_filename, par_name_base))
@@ -1117,6 +1148,8 @@ class PstFrom(object):
             elif par_type in {"pilotpoints", "pilot_points",
                               "pilotpoint", "pilot_point",
                               "pilot-point", "pilot-points"}:
+                if par_style == "direct":
+                    self.logger.lraise("pilot points not supported for 'direct' par_style")
                 # Setup pilotpoints for array type par files
                 self.logger.log("setting up pilot point parameters")
                 # finding spatial references for for setting up pilot points
@@ -1882,7 +1915,7 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
 
 def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
                     gpname=None, shape=None, longnames=False, fill_value=1.0,
-                    get_xy=None, input_filename=None):
+                    get_xy=None, input_filename=None,par_style="multiplier"):
     """
     write a template file for a 2D array.
      Args:
@@ -1900,6 +1933,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         fill_value:
         get_xy:
         input_filename:
+        par_style (`str`):
 
     Returns:
         df (`pandas.DataFrame`): a dataframe with parameter information
@@ -1971,7 +2005,21 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
                         ", options are 'constant', 'zone', or 'grid', not"
                         "'{0}'".format(par_type))
 
-    parnme = []
+    par_style = par_style.lower()
+    if par_style == "direct":
+        if not os.path.exists(input_filename):
+            raise Exception("write_grid_tpl() error: couldnt find input file "+
+                            " {0}, which is required for 'direct' par_style"\
+                            .format(input_filename))
+        org_arr = np.loadtxt(input_filename)
+    elif par_style == "multiplier":
+        pass
+    else:
+        raise Exception("write_grid_tpl() error: unrecognized 'par_style' {0} ".format(par_style) +
+                        "should be 'direct' or 'multiplier'")
+
+
+    parnme,parval = [], []
     xx, yy, ii, jj = [], [], [], []
     with open(tpl_filename, 'w') as f:
         f.write("ptf ~\n")
@@ -1990,6 +2038,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
                     pname = namer(i, j)
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
+
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
