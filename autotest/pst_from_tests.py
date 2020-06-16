@@ -1127,30 +1127,30 @@ def mf6_freyberg_direct_test():
     ib = m.dis.idomain[0].array
     tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
             "rch_recharge": [.5, 1.5]}
-    # dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-    # print(dts)
-    # for tag, bnd in tags.items():
-    #     lb, ub = bnd[0], bnd[1]
-    #     arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-    #     if "rch" in tag:
-    #         for arr_file in arr_files:
-    #             pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
-    #                               pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
-    #                               geostruct=gr_gs,par_style="direct")
-    #
-    #         for arr_file in arr_files:
-    #             kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-    #             pf.add_parameters(filenames=arr_file, par_type="constant",
-    #                               par_name_base=arr_file.split('.')[1] + "_cn",
-    #                               pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
-    #                               geostruct=rch_temporal_gs,
-    #                               datetime=dts[kper])
-    #     else:
-    #         for arr_file in arr_files:
-    #             pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
-    #                               pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub,
-    #                               lower_bound=lb,
-    #                               geostruct=gr_gs)
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            for arr_file in arr_files:
+                pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
+                                  pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
+                                  geostruct=gr_gs,par_style="direct")
+
+            for arr_file in arr_files:
+                kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+                pf.add_parameters(filenames=arr_file, par_type="constant",
+                                  par_name_base=arr_file.split('.')[1] + "_cn",
+                                  pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                                  geostruct=rch_temporal_gs,
+                                  datetime=dts[kper])
+        else:
+            for arr_file in arr_files:
+                pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
+                                  pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub,
+                                  lower_bound=lb,
+                                  geostruct=gr_gs)
 
 
     list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
@@ -1158,17 +1158,17 @@ def mf6_freyberg_direct_test():
     list_files.sort()
     for list_file in list_files:
         kper = int(list_file.split(".")[1].split('_')[-1]) - 1
-        # add spatially constant, but temporally correlated wel flux pars
-        # pf.add_parameters(filenames=list_file, par_type="constant", par_name_base="twel_mlt_{0}".format(kper),
-        #                   pargp="twel_mlt".format(kper), index_cols=[0, 1, 2], use_cols=[3],
-        #                   upper_bound=1.5, lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
+        #add spatially constant, but temporally correlated wel flux pars
+        pf.add_parameters(filenames=list_file, par_type="constant", par_name_base="twel_mlt_{0}".format(kper),
+                          pargp="twel_mlt".format(kper), index_cols=[0, 1, 2], use_cols=[3],
+                          upper_bound=1.5, lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
 
         # add temporally indep, but spatially correlated wel flux pars
         pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
                           pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
                           upper_bound=0.0, lower_bound=-1000, geostruct=gr_gs,par_style="direct",
                           transform="none")
-        break
+
 
 
     # add model run command

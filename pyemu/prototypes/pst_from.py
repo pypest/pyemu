@@ -1728,8 +1728,9 @@ def write_list_tpl(filenames, dfs, name, tpl_filename, index_cols, par_type,
     df_par = pd.DataFrame({"parnme": parnme, "pargp": pargp, 'covgp': covgp},
                           index=parnme)
 
-    if "parval1" in df_tpl.columns:
-        df_par.loc[:,"parval1"] = df_tpl.loc[:,"parval1"].values
+    parval_cols = [c for c in df_tpl.columns if "parval1" in str(c)]
+    parval = list(
+        df_tpl.loc[:, [pc for pc in parval_cols]].values.flatten())
 
     if par_type == 'grid' and 'x' in df_tpl.columns:  # TODO work out if x,y needed for constant and zone pars too
         df_par['x'], df_par['y'] = np.concatenate(
@@ -1755,6 +1756,8 @@ def write_list_tpl(filenames, dfs, name, tpl_filename, index_cols, par_type,
             df_in.to_csv(input_filename)
     df_par.loc[:, "tpl_filename"] = tpl_filename
     df_par.loc[:, "input_filename"] = input_filename
+    if len(parval) > 0:
+        df_par.loc[:,"parval1"] = parval
     return df_par
 
 
