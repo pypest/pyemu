@@ -1219,6 +1219,11 @@ def mf6_freyberg_direct_test():
                           upper_bound=0.0, lower_bound=-1000, geostruct=gr_gs,par_style="direct",
                           transform="none")
 
+    list_file = "freyberg6.ghb_stress_period_data_1.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base=["ghb_stage","ghb_cond"],
+                      pargp=["ghb_stage","ghb_cond"], index_cols=[0, 1, 2], use_cols=[3,4],
+                      upper_bound=[35,150], lower_bound=[32,50], geostruct=gr_gs, par_style="direct",
+                      transform="none")
 
 
     # add model run command
@@ -1292,7 +1297,7 @@ def mf6_freyberg_direct_test():
 if __name__ == "__main__":
     #freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
+    #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_da_test()
-    #mf6_freyberg_direct_test()
+    mf6_freyberg_direct_test()
