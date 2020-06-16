@@ -1719,16 +1719,17 @@ def write_list_tpl(filenames, dfs, name, tpl_filename, index_cols, par_type,
     pargp = list(
         df_tpl.loc[:, ["pargp{0}".format(col)
                        for col in use_cols]].values.flatten())
-    parval1 = list(
-        df_tpl.loc[:, ["parval1_{0}".format(col)
-                       for col in use_cols]].values.flatten())
+
     covgp = list(
         df_tpl.loc[:, ["covgp{0}".format(col)
                        for col in use_cols]].values.flatten())
     df_tpl = df_tpl.drop([
         col for col in df_tpl.columns if str(col).startswith('covgp')], axis=1)
-    df_par = pd.DataFrame({"parnme": parnme, "pargp": pargp, 'covgp': covgp,"parval1":parval1},
+    df_par = pd.DataFrame({"parnme": parnme, "pargp": pargp, 'covgp': covgp},
                           index=parnme)
+
+    if "parval1" in df_tpl.columns:
+        df_par.loc[:,"parval1"] = df_tpl.loc[:,"parval1"].values
 
     if par_type == 'grid' and 'x' in df_tpl.columns:  # TODO work out if x,y needed for constant and zone pars too
         df_par['x'], df_par['y'] = np.concatenate(
@@ -1923,8 +1924,9 @@ def _write_direct_df_tpl(tpl_filename,df,name,index_cols,typ,use_cols=None,
                             "unrecognized 'typ', if not 'obs', "
                             "should be 'constant','zone', "
                             "or 'grid', not '{0}'".format(typ))
-        direct_tpl_df.loc[:, use_col] = df_ti.loc[:, use_col].values
-    pyemu.helpers._write_df_tpl(tpl_filename,direct_tpl_df)
+        direct_tpl_df.loc[:, use_col] = df_ti.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
+
+    pyemu.helpers._write_df_tpl(tpl_filename,direct_tpl_df,index=False,header=False)
 
     return df_ti
 

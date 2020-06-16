@@ -1127,30 +1127,30 @@ def mf6_freyberg_direct_test():
     ib = m.dis.idomain[0].array
     tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
             "rch_recharge": [.5, 1.5]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-    print(dts)
-    for tag, bnd in tags.items():
-        lb, ub = bnd[0], bnd[1]
-        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-        if "rch" in tag:
-            for arr_file in arr_files:
-                pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
-                                  pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
-                                  geostruct=gr_gs,par_style="direct")
-
-            for arr_file in arr_files:
-                kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-                pf.add_parameters(filenames=arr_file, par_type="constant",
-                                  par_name_base=arr_file.split('.')[1] + "_cn",
-                                  pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                                  geostruct=rch_temporal_gs,
-                                  datetime=dts[kper])
-        else:
-            for arr_file in arr_files:
-                pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
-                                  pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub,
-                                  lower_bound=lb,
-                                  geostruct=gr_gs)
+    # dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    # print(dts)
+    # for tag, bnd in tags.items():
+    #     lb, ub = bnd[0], bnd[1]
+    #     arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+    #     if "rch" in tag:
+    #         for arr_file in arr_files:
+    #             pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
+    #                               pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
+    #                               geostruct=gr_gs,par_style="direct")
+    #
+    #         for arr_file in arr_files:
+    #             kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+    #             pf.add_parameters(filenames=arr_file, par_type="constant",
+    #                               par_name_base=arr_file.split('.')[1] + "_cn",
+    #                               pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+    #                               geostruct=rch_temporal_gs,
+    #                               datetime=dts[kper])
+    #     else:
+    #         for arr_file in arr_files:
+    #             pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
+    #                               pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub,
+    #                               lower_bound=lb,
+    #                               geostruct=gr_gs)
 
 
     list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
@@ -1168,6 +1168,7 @@ def mf6_freyberg_direct_test():
                           pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
                           upper_bound=0.0, lower_bound=-1000, geostruct=gr_gs,par_style="direct",
                           transform="none")
+        break
 
 
     # add model run command
@@ -1224,13 +1225,6 @@ def mf6_freyberg_direct_test():
     print(pst.phi)
     # assert pst.phi < 1.0e-5, pst.phi
 
-    # check mult files are in pst input files
-    csv = os.path.join(template_ws, "mult2model_info.csv")
-    df = pd.read_csv(csv, index_col=0)
-    mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
-                                set(pst.input_files)) -
-                               set(df.loc[df.pp_file.notna()].mlt_file))
-    assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
 if __name__ == "__main__":
     #freyberg_test()
