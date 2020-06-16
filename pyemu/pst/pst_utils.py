@@ -861,12 +861,16 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
                 if c_count < len(only_clabels):  # if we haven't yet set up all obs
                     if rlabel in only_rlabels and clabel in only_clabels:
                         # define obs names
+                        if not isinstance(prefix, str):
+                            nprefix = prefix[c_count]
+                        else:
+                            nprefix = prefix
                         if longnames:
-                            nname = "{0}_use_col:{1}".format(prefix, clabel)
+                            nname = "{0}_usecol:{1}".format(nprefix, clabel)
                             oname = "{0}_{1}".format(nname, rlabel)
                         else:
-                            nname = prefix+clabel
-                            oname = prefix+rlabel+"_"+clabel
+                            nname = nprefix+clabel
+                            oname = nprefix+rlabel+"_"+clabel
                         onames.append(oname)  # append list of obs
                         ovals.append(df.iloc[i, j])  # store current obs val
                         # defin group name

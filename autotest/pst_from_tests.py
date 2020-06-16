@@ -116,12 +116,13 @@ def freyberg_test():
                         use_cols=sfr_use, prefix='sfr',
                         ofile_skip=4, ofile_sep=' ', use_rows=np.arange(0, 50))
     # check obs set up
-    sfrobs = pf.obs_dfs[-1]
-    sfrobs[['col'] + sfr_idx] = sfrobs.obsnme.apply(
-        lambda x: pd.Series([s.split(':')[1] for s in x.split('_') if ':' in s]))
+    sfrobs = pf.obs_dfs[-1].copy()
+    sfrobs[['usecol'] + sfr_idx] = sfrobs.obsnme.apply(
+        lambda x: pd.Series(
+            dict([s.split(':') for s in x.split('_') if ':' in s])))
     sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
     sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
-                                  columns=['col'], values='obsval')
+                                  columns=['usecol'], values='obsval')
     sfodf_c = sfodf.set_index(sfr_idx).sort_index()
     sfodf_c.columns = sfodf_c.columns.str.lower()
     assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
@@ -150,12 +151,13 @@ def freyberg_test():
                         ofile_sep=',', obsgp=['qaquifer', 'qout', "width"],
                         use_rows=np.arange(50, 101))
     # check obs set up
-    sfrobs = pf.obs_dfs[-1]
-    sfrobs[['col'] + sfr_idx] = sfrobs.obsnme.apply(
-        lambda x: pd.Series([s.split(':')[1] for s in x.split('_') if ':' in s]))
+    sfrobs = pf.obs_dfs[-1].copy()
+    sfrobs[['usecol'] + sfr_idx] = sfrobs.obsnme.apply(
+        lambda x: pd.Series(
+            dict([s.split(':') for s in x.split('_') if ':' in s])))
     sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
     sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
-                                  columns=['col'], values='obsval')
+                                  columns=['usecol'], values='obsval')
     sfodf_c = sfodf.set_index(sfr_idx).sort_index()
     sfodf_c.columns = sfodf_c.columns.str.lower()
     assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
@@ -709,7 +711,7 @@ def mf6_freyberg_test():
     pars.loc[sfr_pars, 'parval1'] = np.random.random(len(sfr_pars)) * 10
 
     sfr_pars = pars.loc[sfr_pars].copy()
-    sfr_pars[['inst', 'col', '#rno']] = sfr_pars.parnme.apply(
+    sfr_pars[['inst', 'usecol', '#rno']] = sfr_pars.parnme.apply(
         lambda x: pd.DataFrame([s.split(':') for s in x.split('_')
                                 if ':' in s]).set_index(0)[1])
     sfr_pars['#rno'] = sfr_pars['#rno'] .astype(int)
@@ -1067,7 +1069,7 @@ def mf6_freyberg_da_test():
                     if ib[i,j] < 1:
                         f.write(" -1.0e+30 ")
                     else:
-                        pname = "hds_use_col:trgw_{0}_{1}_{2}_time:31.0".format(k,i,j)
+                        pname = "hds_usecol:trgw_{0}_{1}_{2}_time:31.0".format(k,i,j)
                         if pname not in hobs_set and ib[i,j] > 0:
                             print(k,i,j,pname,ib[i,j])
                         f.write(" ~  {0}   ~".format(pname))
@@ -1295,9 +1297,9 @@ def mf6_freyberg_direct_test():
             raise Exception("recharge too diff")
 
 if __name__ == "__main__":
-    #freyberg_test()
-    #freyberg_prior_build_test()
-    #mf6_freyberg_test()
-    #mf6_freyberg_shortnames_test()
-    #mf6_freyberg_da_test()
+    freyberg_test()
+    freyberg_prior_build_test()
+    mf6_freyberg_test()
+    mf6_freyberg_shortnames_test()
+    mf6_freyberg_da_test()
     mf6_freyberg_direct_test()

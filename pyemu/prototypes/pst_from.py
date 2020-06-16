@@ -1878,7 +1878,7 @@ def _write_direct_df_tpl(in_filename, tpl_filename,df,name,index_cols,typ,use_co
         if typ == "constant":
             # one par for entire use_col column
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_use_col:{1}_{2}".format(
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}_{2}".format(
                     nname, use_col, "direct")
                 if suffix != '':
                     df_ti.loc[:, use_col] += "_{0}".format(suffix)
@@ -1893,7 +1893,7 @@ def _write_direct_df_tpl(in_filename, tpl_filename,df,name,index_cols,typ,use_co
         elif typ == "zone":
             # one par for each zone
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_use_col:{1}_{2}".format(
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}_{2}".format(
                     nname, use_col, "direct")
                 if zone_array is not None:
                     df_ti.loc[:, use_col] += df_ti.zval.apply(
@@ -1912,7 +1912,7 @@ def _write_direct_df_tpl(in_filename, tpl_filename,df,name,index_cols,typ,use_co
         elif typ == "grid":
             # one par for each index
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_use_col:{1}_{2}".format(
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}_{2}".format(
                     nname, use_col, "direct")
                 if zone_array is not None:
                     df_ti.loc[:, use_col] += df_ti.zval.apply(
@@ -2075,7 +2075,7 @@ def _get_tpl_or_ins_df(filenames, dfs, name, index_cols, typ, use_cols=None,
         if typ == "constant":
             # one par for entire use_col column
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}".format(
                     nname, use_col)
                 if suffix != '':
                     df_ti.loc[:, use_col] += "_{0}".format(suffix)
@@ -2087,7 +2087,7 @@ def _get_tpl_or_ins_df(filenames, dfs, name, index_cols, typ, use_cols=None,
         elif typ == "zone":
             # one par for each zone
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}".format(
                     nname, use_col)
                 if zone_array is not None:
                     df_ti.loc[:, use_col] += df_ti.zval.apply(
@@ -2102,7 +2102,7 @@ def _get_tpl_or_ins_df(filenames, dfs, name, index_cols, typ, use_cols=None,
         elif typ == "grid":
             # one par for each index
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}".format(
                     nname, use_col)
                 if zone_array is not None:
                     df_ti.loc[:, use_col] += df_ti.zval.apply(
