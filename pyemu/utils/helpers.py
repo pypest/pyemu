@@ -3354,7 +3354,7 @@ def apply_genericlist_pars(df):
                 print("error setting mlt index_cols: ",str(mlt.index_cols)," for new_df with cols: ",list(new_df.columns))
                 raise Exception("error setting mlt index_cols: "+str(e))
 
-            if "mlt_file" not in mlt or pd.isna(mlt.mlt_file):
+            if not hasattr(mlt,"mlt_file") or pd.isna(mlt.mlt_file):
                 print("null mlt file for org_file '" + org_file + "', continuing...")
             else:
                 mlts = pd.read_csv(mlt.mlt_file)

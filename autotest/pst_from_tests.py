@@ -726,6 +726,9 @@ def mf6_freyberg_test():
         pf.new_d, "freyberg6.sfr_packagedata_test.txt"),
         delim_whitespace=True, index_col=0)
     df.index = df.index - 1
+    print(df.rhk)
+    print((sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
+                 sfr_pars.set_index('#rno').loc[df.index, 'parval1']))
     assert np.isclose(
         df.rhk, (sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
                  sfr_pars.set_index('#rno').loc[df.index, 'parval1'])).all()
@@ -1289,7 +1292,7 @@ def mf6_freyberg_direct_test():
 if __name__ == "__main__":
     #freyberg_test()
     #freyberg_prior_build_test()
-    #mf6_freyberg_test()
+    mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_da_test()
-    mf6_freyberg_direct_test()
+    #mf6_freyberg_direct_test()
