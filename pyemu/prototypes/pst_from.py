@@ -260,7 +260,7 @@ class PstFrom(object):
             for cmd in ilist:
                 new_sys_cmd = "pyemu.os_utils.run(r'{0}')\n".format(cmd)
                 if new_sys_cmd in alist:
-                    self.logger.statement("sys_cmd '{0}' already in sys cmds, skipping...")
+                    self.logger.warn("sys_cmd '{0}' already in sys cmds, skipping...".format(new_sys_cmd))
                 else:
                     self.logger.statement("forward_run line:{0}".format(new_sys_cmd))
                     alist.append(new_sys_cmd)
