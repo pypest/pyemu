@@ -3353,6 +3353,7 @@ def apply_genericlist_pars(df):
             except Exception as e:
                 print("error setting mlt index_cols: ",str(mlt.index_cols)," for new_df with cols: ",list(new_df.columns))
                 raise Exception("error setting mlt index_cols: "+str(e))
+
             if "mlt_file" not in mlt or pd.isna(mlt.mlt_file):
                 print("null mlt file for org_file '" + org_file + "', continuing...")
             else:
@@ -3360,10 +3361,12 @@ def apply_genericlist_pars(df):
                 # get mult index to align with org_data,
                 # mult idxs will always be written zero based
                 # if original model files is not zero based need to add 1
-                add1 = int(mlt.zero_based==False)
+                add1 = int(mlt.zero_based == False)
                 mlts.index = pd.MultiIndex.from_tuples(mlts.sidx.apply(
-                    lambda x: tuple(add1+np.array(literal_eval(x)))),
+                    lambda x: tuple(add1 + np.array(literal_eval(x)))),
                     names=mlt.index_cols)
+                if mlts.index.nlevels < 2:  # just in case only one index col is used
+                    mlts.index = mlts.index.get_level_values(0)
                 common_idx = new_df.index.intersection(mlts.index).sort_values()
                 mlt_cols = [str(col) for col in mlt.use_cols]
                 new_df.loc[common_idx, mlt_cols] = (new_df.loc[common_idx, mlt_cols]
