@@ -1194,18 +1194,6 @@ def mf6_freyberg_direct_test():
         raise Exception(str(e))
     os.chdir(b_d)
 
-    #cov = pf.build_prior(fmt="none").to_dataframe()
-    # twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
-    # twcov = cov.loc[twel_pars, twel_pars]
-    # dsum = np.diag(twcov.values).sum()
-    # assert twcov.sum().sum() > dsum
-    #
-    # rch_cn = [p for p in pst.par_names if "_cn" in p]
-    # print(rch_cn)
-    # rcov = cov.loc[rch_cn, rch_cn]
-    # dsum = np.diag(rcov.values).sum()
-    # assert rcov.sum().sum() > dsum
-
     num_reals = 100
     pe = pf.draw(num_reals, use_specsim=True)
     pe.to_binary(os.path.join(template_ws, "prior.jcb"))
@@ -1223,8 +1211,33 @@ def mf6_freyberg_direct_test():
     assert os.path.exists(res_file), res_file
     pst.set_res(res_file)
     print(pst.phi)
-    # assert pst.phi < 1.0e-5, pst.phi
+    assert pst.phi < 0.1, pst.phi
 
+
+    # turn direct recharge to min and direct wel to min and
+    # check that the model results are consistent
+    par = pst.parameter_data
+    rch_par = par.loc[par.parnme.apply(lambda x: "rch_gr" in x and "direct" in x),"parnme"]
+    wel_par = par.loc[par.parnme.apply(lambda x: "wel_grid" in x and "direct" in x),"parnme"]
+    par.loc[rch_par,"parval1"] = par.loc[rch_par,"parlbnd"]
+    # this should set wells to zero since they are negative values in the control file
+    par.loc[wel_par,"parval1"] = par.loc[wel_par,"parubnd"]
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(
+        os.path.join("pestpp-ies")), cwd=pf.new_d)
+    lst = flopy.utils.Mf6ListBudget(os.path.join(pf.new_d,"freyberg6.lst"))
+    flx,cum = lst.get_dataframes(diff=True)
+    wel_tot = flx.wel.apply(np.abs).sum()
+    print(flx.wel)
+    assert wel_tot < 1.0e-6,wel_tot
+
+    rch_files = [f for f in os.listdir(pf.new_d) if ".rch_rechage" in f and f.endswith(".txt")]
+    rch_val = par.loc[rch_par,"parval1"][0]
+    for rch_file in rch_files:
+        arr = np.loadtxt(os.path.join(pf.new_d,rch_file))
+        print(rch_file,rch_val,arr.mean(),arr.max(),arr.min)
+        if np.abs(arr.max() - rch_val) > 1.0e-6 or np.abs(arr.min() - rch_val) > 1.0e-6:
+            raise Exception("recharge too diff")
 
 if __name__ == "__main__":
     #freyberg_test()

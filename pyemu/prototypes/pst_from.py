@@ -258,8 +258,12 @@ class PstFrom(object):
             if not isinstance(ilist, list):
                 ilist = [ilist]
             for cmd in ilist:
-                self.logger.statement("forward_run line:{0}".format(cmd))
-                alist.append("pyemu.os_utils.run(r'{0}')\n".format(cmd))
+                new_sys_cmd = "pyemu.os_utils.run(r'{0}')\n".format(cmd)
+                if new_sys_cmd in alist:
+                    self.logger.statement("sys_cmd '{0}' already in sys cmds, skipping...")
+                else:
+                    self.logger.statement("forward_run line:{0}".format(new_sys_cmd))
+                    alist.append(new_sys_cmd)
 
         with open(os.path.join(self.new_d, self.py_run_file),
                   'w') as f:
@@ -775,7 +779,7 @@ class PstFrom(object):
         self.logger.log("adding observations from tabular output file")
         if rebuild_pst:
             if self.pst is not None:
-                self.logger.log("Adding pars to control file "
+                self.logger.log("Adding obs to control file "
                                 "and rewriting pst")
                 self.build_pst(filename=self.pst.filename, update='obs')
             else:
