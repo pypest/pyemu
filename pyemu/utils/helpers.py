@@ -1055,8 +1055,10 @@ def pst_from_io_files(tpl_files, in_files, ins_files, out_files,
         new_pst.output_files = [os.path.join(
             pst_path, os.path.split(out_file)[-1]) for out_file in out_files]
 
+    new_pst.try_parse_name_metadata()
     if pst_filename:
         new_pst.write(pst_filename)
+
     return new_pst
 
 
