@@ -2814,13 +2814,16 @@ class Pst(object):
         """
         par = self.parameter_data
         obs = self.observation_data
-        for df,name in zip([par,obs],["parnme","obsnme"]):
+        par_cols = pst_utils.pst_config["par_fieldnames"]
+        obs_cols = pst_utils.pst_config["obs_fieldnames"]
+
+        for df,name,fieldnames in zip([par,obs],["parnme","obsnme"],[par_cols,obs_cols]):
             items = df.loc[:,name].apply(lambda x: [item.split(':') for item in x.split('_') if ':' in item])
             meta_dict = items.apply(lambda x: {k:v for xx in x for k,v in x})
             unique_keys = []
             for k,v in meta_dict.items():
                 for kk,vv in v.items():
-                    if kk not in unique_keys:
+                    if kk not in fieldnames and kk not in unique_keys:
                         unique_keys.append(kk)
             for uk in unique_keys:
                 if uk not in df.columns:
