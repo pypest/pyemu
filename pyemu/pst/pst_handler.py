@@ -2818,8 +2818,7 @@ class Pst(object):
         obs_cols = pst_utils.pst_config["obs_fieldnames"]
 
         for df,name,fieldnames in zip([par,obs],["parnme","obsnme"],[par_cols,obs_cols]):
-            items = df.loc[:,name].apply(lambda x: [item.split(':') for item in x.split('_') if ':' in item])
-            meta_dict = items.apply(lambda x: {k:v for xx in x for k,v in x})
+            meta_dict = df.loc[:,name].apply(lambda x: dict([item.split(':') for item in x.split('_') if ':' in item]))
             unique_keys = []
             for k,v in meta_dict.items():
                 for kk,vv in v.items():
