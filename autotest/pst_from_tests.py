@@ -1235,7 +1235,7 @@ def mf6_freyberg_direct_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
-
+    pst.try_parse_name_metadata()
     df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
     pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
                         prefix="hds", rebuild_pst=True)
@@ -1297,9 +1297,9 @@ def mf6_freyberg_direct_test():
             raise Exception("recharge too diff")
 
 if __name__ == "__main__":
-    freyberg_test()
-    freyberg_prior_build_test()
-    mf6_freyberg_test()
-    mf6_freyberg_shortnames_test()
-    mf6_freyberg_da_test()
+    # freyberg_test()
+    # freyberg_prior_build_test()
+    # mf6_freyberg_test()
+    # mf6_freyberg_shortnames_test()
+    # mf6_freyberg_da_test()
     mf6_freyberg_direct_test()
