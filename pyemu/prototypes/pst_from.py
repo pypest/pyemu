@@ -505,6 +505,7 @@ class PstFrom(object):
         self.pst = pst
         self.pst.write(filename)
         self.write_forward_run()
+        pst.try_parse_name_metadata()
         return pst
 
     def _setup_dirs(self):
