@@ -13,6 +13,12 @@ from ..pyemu_warnings import PyemuWarning
 import copy
 
 
+#the tolerable percent difference (100 * (max - min)/mean)
+#used when checking that constant and zone type parameters are in fact constant (within
+#a given zone)
+#DIRECT_PAR_PERCENT_DIFF_TOL = 1.0
+
+
 def _get_datetime_from_str(sdt):
     # could be expanded if someone is feeling clever.
     if isinstance(sdt, str):
@@ -49,12 +55,14 @@ class PstFrom(object):
         spatial_reference:
         zero_based:
         start_datetime:
+
     """
 
     # TODO: doc strings!!!
     def __init__(self, original_d, new_d, longnames=True,
                  remove_existing=False, spatial_reference=None,
-                 zero_based=True, start_datetime=None):  # TODO geostruct?
+                 zero_based=True, start_datetime=None):
+    # TODO geostruct?
 
         self.original_d = original_d
         self.new_d = new_d
@@ -109,6 +117,8 @@ class PstFrom(object):
         self._parfile_relations = []
         self._pp_facs = {}
         self.pst = None
+
+        self.direct_org_files = []
 
     @property
     def parfile_relations(self):
@@ -248,8 +258,12 @@ class PstFrom(object):
             if not isinstance(ilist, list):
                 ilist = [ilist]
             for cmd in ilist:
-                self.logger.statement("forward_run line:{0}".format(cmd))
-                alist.append("pyemu.os_utils.run(r'{0}')\n".format(cmd))
+                new_sys_cmd = "pyemu.os_utils.run(r'{0}')\n".format(cmd)
+                if new_sys_cmd in alist:
+                    self.logger.warn("sys_cmd '{0}' already in sys cmds, skipping...".format(new_sys_cmd))
+                else:
+                    self.logger.statement("forward_run line:{0}".format(new_sys_cmd))
+                    alist.append(new_sys_cmd)
 
         with open(os.path.join(self.new_d, self.py_run_file),
                   'w') as f:
@@ -462,7 +476,7 @@ class PstFrom(object):
                                                       'mult2model_info.csv'))
                 if not any(["apply_list_and_array_pars" in s
                             for s in self.pre_py_cmds]):
-                    self.pre_py_cmds.append(
+                    self.pre_py_cmds.insert(0,
                         "pyemu.helpers.apply_list_and_array_pars("
                         "arr_par_file='mult2model_info.csv')")
             else:
@@ -491,6 +505,7 @@ class PstFrom(object):
         self.pst = pst
         self.pst.write(filename)
         self.write_forward_run()
+        pst.try_parse_name_metadata()
         return pst
 
     def _setup_dirs(self):
@@ -726,7 +741,7 @@ class PstFrom(object):
         for filename, sep in zip(filenames, seps):  # should only ever be one but hey...
             self.logger.log("building insfile for tabular output file {0}"
                             "".format(filename))
-            df_temp = _get_tpl_or_ins_df(df, prefix, typ='obs',
+            df_temp = _get_tpl_or_ins_df(filename, df, prefix, typ='obs',
                                          index_cols=index_cols,
                                          use_cols=use_cols,
                                          longnames=self.longnames)
@@ -765,7 +780,7 @@ class PstFrom(object):
         self.logger.log("adding observations from tabular output file")
         if rebuild_pst:
             if self.pst is not None:
-                self.logger.log("Adding pars to control file "
+                self.logger.log("Adding obs to control file "
                                 "and rewriting pst")
                 self.build_pst(filename=self.pst.filename, update='obs')
             else:
@@ -888,7 +903,8 @@ class PstFrom(object):
                        spatial_reference=None, geostruct=None,
                        datetime=None, mfile_fmt='free', mfile_skip=None,
                        ult_ubound=None, ult_lbound=None, rebuild_pst=False,
-                       alt_inst_str='inst', comment_char=None):
+                       alt_inst_str='inst', comment_char=None,
+                       par_style="multiplier"):
         """
         Add list or array style model input files to PstFrom object.
         This method
@@ -952,17 +968,37 @@ class PstFrom(object):
                 This is not additive with `mfile_skip` option.
                 Warning: currently comment lines within list-like tabular data
                 will be lost.
+            par_style (`str`): either "multiplier" or "direct" where the former setups
+                up a multiplier parameter process against the exsting model input
+                array and the former setups a template file to write the model
+                input file directly.  Default is "multiplier".
         """
         # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
 
         # TODO support passing par_file (i,j)/(x,y) directly where information
         #  is not contained in model parameter file - e.g. no i,j columns
+
+        #some checks for direct parameters
+        par_style = par_style.lower()
+        if par_style not in ["multiplier", "direct"]:
+            self.logger.lraise("add_parameters(): unrecognized 'style': {0}, should be either 'multiplier' or 'direct'". \
+                               format(par_style))
+        if isinstance(filenames,str):
+            filenames = [filenames]
+        if par_style == "direct":
+            if len(filenames) != 1:
+                self.logger.lraise("add_parameters(): 'filenames' arg for 'direct' style must contain " + \
+                                   "one and only one filename, not {0} files".format(len(filenames)))
+            if filenames[0] in self.direct_org_files:
+                self.logger.lraise("add_parameters(): original model input file '{0}' ".format(filenames[0]) + \
+                                   " already used for 'direct' parameterization")
         # Default par data columns used for pst
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
-        self.logger.log("adding parameters for file(s) "
-                        "{0}".format(str(filenames)))
+        self.logger.log("adding {0} type {1} style parameters for file(s) {2}".format(par_type, par_style, str(filenames)))
         if geostruct is not None:
+            if geostruct.sill != 1.0 and par_style != "multiplier":
+                self.logger.warn("geostruct sill != 1.0 for 'multiplier' style parameters")
             if geostruct.transform != transform:
                 self.logger.warn("0) Inconsistency between "
                                  "geostruct transform and partrans.")
@@ -1048,11 +1084,20 @@ class PstFrom(object):
         par_name_store = par_name_base[0].replace(':', '')  # for os filename
 
         # Define requisite filenames
-        mlt_filename = "{0}_{1}.csv".format(par_name_store, par_type)
-        # pst input file (for tpl->in pair) is multfile (in mult dir)
-        in_filepst = os.path.relpath(os.path.join(
-            self.mult_file_d, mlt_filename), self.new_d)
-        tpl_filename = mlt_filename + ".tpl"
+        if par_style == "multiplier":
+            mlt_filename = "{0}_{1}.csv".format(par_name_store, par_type)
+            # pst input file (for tpl->in pair) is multfile (in mult dir)
+            in_filepst = os.path.relpath(os.path.join(
+                self.mult_file_d, mlt_filename), self.new_d)
+            tpl_filename = mlt_filename + ".tpl"
+            in_fileabs = os.path.join(self.mult_file_d, mlt_filename)
+        else:
+            mlt_filename = np.NaN
+            # pst input file (for tpl->in pair) is multfile (in mult dir)
+            in_filepst = os.path.relpath(os.path.join(
+                self.original_file_d, filenames[0]), self.new_d)
+            tpl_filename = filenames[0] + ".tpl"
+            in_fileabs = os.path.join(self.new_d,in_filepst)
         pp_filename = None  # setup placeholder variables
         fac_filename = None
 
@@ -1075,15 +1120,17 @@ class PstFrom(object):
             self.logger.log(
                 "writing list-based template file '{0}'".format(tpl_filename))
             # Generate tabular type template - also returns par data
-            df = write_list_tpl(
-                file_dict.values(), par_name_base,
+            dfs = [file_dict[filename] for filename in filenames]
+            df = write_list_tpl(filenames,
+                dfs, par_name_base,
                 tpl_filename=os.path.join(self.new_d, tpl_filename),
                 par_type=par_type, suffix='', index_cols=index_cols,
                 use_cols=use_cols, zone_array=zone_array, gpname=pargp,
                 longnames=self.longnames, ij_in_idx=ij_in_idx,
                 xy_in_idx=xy_in_idx, get_xy=self.get_xy,
                 zero_based=self.zero_based,
-                input_filename=os.path.join(self.mult_file_d, mlt_filename))
+                input_filename=in_fileabs,
+                par_style=par_style)
             assert np.mod(len(df), len(use_cols)) == 0., (
                 "Parameter dataframe wrong shape for number of cols {0}"
                 "".format(use_cols))
@@ -1108,8 +1155,7 @@ class PstFrom(object):
                     suffix='', par_type=par_type, zone_array=zone_array,
                     shape=shp, longnames=self.longnames, get_xy=self.get_xy,
                     fill_value=1.0, gpname=pargp,
-                    input_filename=os.path.join(self.mult_file_d,
-                                                mlt_filename))
+                    input_filename=in_fileabs,par_style=par_style)
                 self.logger.log(
                     "writing template file"
                     " {0} for {1}".format(tpl_filename, par_name_base))
@@ -1117,6 +1163,8 @@ class PstFrom(object):
             elif par_type in {"pilotpoints", "pilot_points",
                               "pilotpoint", "pilot_point",
                               "pilot-point", "pilot-points"}:
+                if par_style == "direct":
+                    self.logger.lraise("pilot points not supported for 'direct' par_style")
                 # Setup pilotpoints for array type par files
                 self.logger.log("setting up pilot point parameters")
                 # finding spatial references for for setting up pilot points
@@ -1271,8 +1319,7 @@ class PstFrom(object):
             mult_dict = {
                 "org_file": os.path.join(
                     *os.path.split(self.original_file_d)[1:], mod_file),
-                "mlt_file": os.path.join(
-                    *os.path.split(self.mult_file_d)[1:], mlt_filename),
+
                 "model_file": mod_file,
                 "use_cols": use_cols,
                 "index_cols": index_cols,
@@ -1281,6 +1328,10 @@ class PstFrom(object):
                 "head_rows": skip_dict[mod_file],
                 "upper_bound": ult_ubound,
                 "lower_bound": ult_lbound}
+            if par_style == "multiplier":
+               mult_dict["mlt_file"] =  os.path.join(
+                    *os.path.split(self.mult_file_d)[1:], mlt_filename)
+
             if pp_filename is not None:
                 # if pilotpoint need to store more info
                 assert fac_filename is not None, (
@@ -1568,14 +1619,14 @@ class PstFrom(object):
         return filenames, fmts, seps, skip_rows, index_cols, use_cols
 
 
-def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
+def write_list_tpl(filenames, dfs, name, tpl_filename, index_cols, par_type,
                    use_cols=None, suffix='', zone_array=None, gpname=None,
                    longnames=False, get_xy=None, ij_in_idx=None, xy_in_idx=None,
-                   zero_based=True,
-                   input_filename=None):
+                   zero_based=True,input_filename=None,par_style="multiplier"):
     """ Write template files for a list style input.
 
     Args:
+        filenames (`str` of `container` of `str`): original input filenames
         dfs (`pandas.DataFrame` or `container` of pandas.DataFrames): pandas
             representations of input file.
         name (`str` or container of str): parameter name prefixes.
@@ -1609,17 +1660,25 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
             are NOT zero-based indicies (e.g. MODFLOW row/cols).
             If False 1 with be subtracted from `index_cols`.
         input_filename (`str`): Path to input file (paired with tpl file)
+        par_style (`str`): either 'direct' or 'multiplier'
 
     Returns:
 
     """
     # get dataframe with autogenerated parnames based on `name`, `index_cols`,
     # `use_cols`, `suffix` and `par_type`
-    df_tpl = _get_tpl_or_ins_df(dfs, name, index_cols, par_type,
-                                use_cols=use_cols, suffix=suffix, gpname=gpname,
-                                zone_array=zone_array, longnames=longnames,
-                                get_xy=get_xy, ij_in_idx=ij_in_idx,
-                                xy_in_idx=xy_in_idx, zero_based=zero_based)
+    if par_style == "direct":
+        df_tpl = _write_direct_df_tpl(filenames[0],tpl_filename,dfs[0],name,index_cols,par_type,
+                                    use_cols=use_cols,suffix=suffix,gpname=gpname,
+                                    zone_array=zone_array,longnames=longnames,
+                                    get_xy=get_xy,ij_in_idx=ij_in_idx,
+                                    xy_in_idx=xy_in_idx,zero_based=zero_based)
+    else:
+        df_tpl = _get_tpl_or_ins_df(filenames, dfs, name, index_cols, par_type,
+                                    use_cols=use_cols, suffix=suffix, gpname=gpname,
+                                    zone_array=zone_array, longnames=longnames,
+                                    get_xy=get_xy, ij_in_idx=ij_in_idx,
+                                    xy_in_idx=xy_in_idx, zero_based=zero_based)
 
     for col in use_cols:  # corellations flagged using pargp
         df_tpl["covgp{0}".format(col)] = df_tpl.loc[:,
@@ -1665,6 +1724,7 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
     pargp = list(
         df_tpl.loc[:, ["pargp{0}".format(col)
                        for col in use_cols]].values.flatten())
+
     covgp = list(
         df_tpl.loc[:, ["covgp{0}".format(col)
                        for col in use_cols]].values.flatten())
@@ -1672,6 +1732,10 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
         col for col in df_tpl.columns if str(col).startswith('covgp')], axis=1)
     df_par = pd.DataFrame({"parnme": parnme, "pargp": pargp, 'covgp': covgp},
                           index=parnme)
+
+    parval_cols = [c for c in df_tpl.columns if "parval1" in str(c)]
+    parval = list(
+        df_tpl.loc[:, [pc for pc in parval_cols]].values.flatten())
 
     if par_type == 'grid' and 'x' in df_tpl.columns:  # TODO work out if x,y needed for constant and zone pars too
         df_par['x'], df_par['y'] = np.concatenate(
@@ -1687,19 +1751,197 @@ def write_list_tpl(dfs, name, tpl_filename, index_cols, par_type,
     for use_col in use_cols:
         df_tpl.loc[:, use_col] = df_tpl.loc[:, use_col].apply(
             lambda x: "~  {0}  ~".format(x))
-    pyemu.helpers._write_df_tpl(filename=tpl_filename, df=df_tpl, sep=',',
-                                tpl_marker='~')
+    if par_style == "multiplier":
+        pyemu.helpers._write_df_tpl(filename=tpl_filename, df=df_tpl, sep=',',
+                                    tpl_marker='~')
 
-    if input_filename is not None:
-        df_in = df_tpl.copy()
-        df_in.loc[:, use_cols] = 1.0
-        df_in.to_csv(input_filename)
+        if input_filename is not None:
+            df_in = df_tpl.copy()
+            df_in.loc[:, use_cols] = 1.0
+            df_in.to_csv(input_filename)
     df_par.loc[:, "tpl_filename"] = tpl_filename
     df_par.loc[:, "input_filename"] = input_filename
+    df_par.loc[:,"parval1"] = parval
     return df_par
 
 
-def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
+def _write_direct_df_tpl(in_filename, tpl_filename,df,name,index_cols,typ,use_cols=None,
+                       suffix='',zone_array=None,longnames=False,get_xy=None,
+                       ij_in_idx=None,xy_in_idx=None,zero_based=True,gpname=None):
+
+    """
+    Private method to auto-generate parameter or obs names from tabular
+    model files (input or output) read into pandas dataframes
+    Args:
+        tpl_filename (`str` ): template filename
+        df (`pandas.DataFrame`): DataFrame of list type input file
+        name (`str`): Parameter name prefix
+        index_cols (`str` or `list`): columns of dataframes to use as indicies
+        typ (`str`): 'constant','zone', or 'grid' used in parname generation.
+            If `constant`, one par is set up for each `use_cols`.
+            If `zone`, one par is set up for each zone for each `use_cols`.
+            If `grid`, one par is set up for every unique index combination
+            (from `index_cols`) for each `use_cols`.
+        use_cols (`list`): Columns to parameterise. If None, pars are set up
+            for all columns apart from index cols
+        suffix (`str`): Optional par name suffix.
+        zone_array (`np.ndarray`): Array defining zone divisions.
+            If not None and `par_type` is `grid` or `zone` it is expected that
+            `index_cols` provide the indicies for querying `zone_array`.
+            Therefore, array dimension should equal `len(index_cols)`.
+        longnames (`boolean`): Specify is obs/pars will be specified without the
+            20/12 char restriction - recommended if using Pest++.
+        get_xy (`pyemu.PstFrom` method): Can be specified to get real-world xy
+            from `index_cols` passed (to include in obs/par name)
+        ij_in_idx (`list` or `array`): defining which `index_cols` contain i,j
+        xy_in_idx (`list` or `array`): defining which `index_cols` contain x,y
+        zero_based (`boolean`): IMPORTANT - pass as False if `index_cols`
+            are NOT zero-based indicies (e.g. MODFLOW row/cols).
+            If False 1 with be subtracted from `index_cols`.
+
+    Returns:
+        pandas.DataFrame with paranme and pargroup define for each `use_col`
+
+    """
+    # work out the union of indices across all dfs
+
+    sidx = set()
+
+    didx = set(df.loc[:, index_cols].apply(
+        lambda x: tuple(x), axis=1))
+    sidx.update(didx)
+
+    df_ti = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
+    # get some index strings for naming
+    if longnames:
+        j = '_'
+        fmt = "{0}:{1}"
+        if isinstance(index_cols[0], str):
+            inames = index_cols
+        else:
+            inames = ["idx{0}".format(i) for i in range(len(index_cols))]
+    else:
+        fmt = "{1:3}"
+        j = ''
+        if isinstance(index_cols[0], str):
+            inames = index_cols
+        else:
+            inames = ["{0}".format(i) for i in range(len(index_cols))]
+
+    if not zero_based:
+        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
+            lambda x: tuple(xx - 1 for xx in x))
+    df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
+        lambda x: j.join([fmt.format(iname, xx)
+                          for xx, iname in zip(x, inames)])).str.replace(' ', '')
+
+    if get_xy is not None:
+        if xy_in_idx is not None:
+            # x and y already in index cols
+            df_ti[['x', 'y']] = pd.DataFrame(
+                df_ti.sidx.to_list()).iloc[:, xy_in_idx]
+        else:
+            df_ti.loc[:, 'xy'] = df_ti.sidx.apply(get_xy, ij_id=ij_in_idx)
+            df_ti.loc[:, 'x'] = df_ti.xy.apply(lambda x: x[0])
+            df_ti.loc[:, 'y'] = df_ti.xy.apply(lambda x: x[1])
+
+
+    if use_cols is None:
+        use_cols = [c for c in df_ti.columns if c not in index_cols]
+
+
+    direct_tpl_df = df.copy()
+    for iuc, use_col in enumerate(use_cols):
+        if not isinstance(name, str):
+            nname = name[iuc]
+            # if zone type, find the zones for each index position
+        else:
+            nname = name
+        if zone_array is not None and typ in ["zone", "grid"]:
+            if zone_array.ndim != len(index_cols):
+                raise Exception("get_tpl_or_ins_df() error: "
+                                "zone_array.ndim "
+                                "({0}) != len(index_cols)({1})"
+                                "".format(zone_array.ndim,
+                                          len(index_cols)))
+            df_ti.loc[:, "zval"] = df_ti.sidx.apply(
+                lambda x: zone_array[x])
+
+
+        if gpname is None or gpname[iuc] is None:
+            ngpname = nname
+        else:
+            if not isinstance(gpname, str):
+                ngpname = gpname[iuc]
+            else:
+                ngpname = gpname
+        df_ti.loc[:, "pargp{}".format(use_col)] = ngpname
+        if typ == "constant":
+            # one par for entire use_col column
+            if longnames:
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}_{2}".format(
+                    nname, use_col, "direct")
+                if suffix != '':
+                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
+            else:
+                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                if suffix != '':
+                    df_ti.loc[:, use_col] += suffix
+
+            _check_diff(df.loc[:, use_col].values, in_filename)
+            df_ti.loc[:, "parval1_{0}".format(use_col)] = df.loc[:, use_col][0]
+
+        elif typ == "zone":
+            # one par for each zone
+            if longnames:
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}_{2}".format(
+                    nname, use_col, "direct")
+                if zone_array is not None:
+                    df_ti.loc[:, use_col] += df_ti.zval.apply(
+                        lambda x: "_zone:{0}".format(x))
+                if suffix != '':
+                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
+            else:
+                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                if suffix != '':
+                    df_ti.loc[:, use_col] += suffix
+
+            #todo check that values are constant within zones and
+            #assign parval1
+            raise NotImplementedError("list-based direct zone-type parameters not implemented")
+
+        elif typ == "grid":
+            # one par for each index
+            if longnames:
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}_{2}".format(
+                    nname, use_col, "direct")
+                if zone_array is not None:
+                    df_ti.loc[:, use_col] += df_ti.zval.apply(
+                        lambda x: "_zone:{0}".format(x))
+                df_ti.loc[:, use_col] += '_' + df_ti.idx_strs
+                if suffix != '':
+                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
+
+            else:
+                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                df_ti.loc[:, use_col] += df_ti.idx_strs
+                if suffix != '':
+                    df_ti.loc[:, use_col] += suffix
+
+            df_ti.loc[:, "parval1_{0}".format(use_col)] = df.loc[:, use_col].values
+
+        else:
+            raise Exception("get_tpl_or_ins_df() error: "
+                            "unrecognized 'typ', if not 'obs', "
+                            "should be 'constant','zone', "
+                            "or 'grid', not '{0}'".format(typ))
+        direct_tpl_df.loc[:, use_col] = df_ti.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
+
+    pyemu.helpers._write_df_tpl(tpl_filename,direct_tpl_df,index=False,header=False)
+
+    return df_ti
+
+def _get_tpl_or_ins_df(filenames, dfs, name, index_cols, typ, use_cols=None,
                        suffix='', zone_array=None, longnames=False, get_xy=None,
                        ij_in_idx=None, xy_in_idx=None, zero_based=True,
                        gpname=None):
@@ -1707,6 +1949,7 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
     Private method to auto-generate parameter or obs names from tabular
     model files (input or output) read into pandas dataframes
     Args:
+        filenames (`str` or `list` of str`): filenames
         dfs (`pandas.DataFrame` or `list`): DataFrames (can be list of DataFrames)
             to set up parameters or observations
         name (`str`): Parameter name or Observation name prefix
@@ -1733,7 +1976,7 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
         xy_in_idx (`list` or `array`): defining which `index_cols` contain x,y
         zero_based (`boolean`): IMPORTANT - pass as False if `index_cols`
             are NOT zero-based indicies (e.g. MODFLOW row/cols).
-            If False 1 with be subtracted from `index_cols`.
+            If False 1 with be subtracted from `index_cols`.=
 
     Returns:
         if `typ`==`obs`: pandas.DataFrame with index strings for setting up obs
@@ -1800,11 +2043,12 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
 
     if typ == 'obs':
         return df_ti  #################### RETURN if OBS
-    # else
-    # use all non-index columns if use_cols not passed
+
     if use_cols is None:
         use_cols = [c for c in df_ti.columns if c not in index_cols]
+        # if direct, we have more to deal with...
     for iuc, use_col in enumerate(use_cols):
+
         if not isinstance(name, str):
             nname = name[iuc]
             # if zone type, find the zones for each index position
@@ -1819,6 +2063,7 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
                                           len(index_cols)))
             df_ti.loc[:, "zval"] = df_ti.sidx.apply(
                 lambda x: zone_array[x])
+
         if gpname is None or gpname[iuc] is None:
             ngpname = nname
         else:
@@ -1827,10 +2072,11 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
             else:
                 ngpname = gpname
         df_ti.loc[:, "pargp{}".format(use_col)] = ngpname
+        df_ti.loc[:, "parval1_{0}".format(use_col)] = 1.0
         if typ == "constant":
             # one par for entire use_col column
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}".format(
                     nname, use_col)
                 if suffix != '':
                     df_ti.loc[:, use_col] += "_{0}".format(suffix)
@@ -1842,7 +2088,7 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
         elif typ == "zone":
             # one par for each zone
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}".format(
                     nname, use_col)
                 if zone_array is not None:
                     df_ti.loc[:, use_col] += df_ti.zval.apply(
@@ -1857,7 +2103,7 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
         elif typ == "grid":
             # one par for each index
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_use_col:{1}".format(
+                df_ti.loc[:, use_col] = "{0}_usecol:{1}".format(
                     nname, use_col)
                 if zone_array is not None:
                     df_ti.loc[:, use_col] += df_ti.zval.apply(
@@ -1882,7 +2128,7 @@ def _get_tpl_or_ins_df(dfs, name, index_cols, typ, use_cols=None,
 
 def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
                     gpname=None, shape=None, longnames=False, fill_value=1.0,
-                    get_xy=None, input_filename=None):
+                    get_xy=None, input_filename=None,par_style="multiplier"):
     """
     write a template file for a 2D array.
      Args:
@@ -1900,6 +2146,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         fill_value:
         get_xy:
         input_filename:
+        par_style (`str`): either 'direct' or 'multiplier'
 
     Returns:
         df (`pandas.DataFrame`): a dataframe with parameter information
@@ -1918,15 +2165,39 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         raise Exception("write_array_tpl() error: shape '{0}' not 2D"
                         "".format(str(shape)))
 
+    par_style = par_style.lower()
+    if par_style == "direct":
+        if not os.path.exists(input_filename):
+            raise Exception("write_grid_tpl() error: couldn't find input file "+
+                            " {0}, which is required for 'direct' par_style"\
+                            .format(input_filename))
+        org_arr = np.loadtxt(input_filename)
+        if par_type == "grid":
+            pass
+        elif par_type == "constant":
+            _check_diff(org_arr,input_filename)
+        elif par_type == "zone":
+            for zval in np.unique(zone_array):
+                if zval < 1:
+                    continue
+                zone_org_arr = org_arr.copy()
+                zone_org_arr[zone_array!=zval] = np.NaN
+                _check_diff(zone_org_arr,input_filename,zval)
+    elif par_style == "multiplier":
+        org_arr = np.ones(shape)
+    else:
+        raise Exception("write_grid_tpl() error: unrecognized 'par_style' {0} ".format(par_style) +
+                        "should be 'direct' or 'multiplier'")
+
     def constant_namer(i, j):
         if longnames:
-            pname = "const_{0}".format(name)
+            pname = "{0}_const_{1}".format(par_style,name)
             if suffix != '':
                 pname += "_{0}".format(suffix)
         else:
-            pname = "{0}{1}".format(name, suffix)
+            pname = "{1}{2}".format(par_style[0],name, suffix)
             if len(pname) > 12:
-                raise ("constant par name too long:"
+                raise Exception("constant par name too long:"
                        "{0}".format(pname))
         return pname
 
@@ -1935,19 +2206,18 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         if zone_array is not None:
             zval = zone_array[i, j]
         if longnames:
-            pname = "{0}_zone:{1}".format(name, zval)
+            pname = "{0}_{1}_zone:{2}".format(par_style,name, zval)
             if suffix != '':
                 pname += "_{0}".format(suffix)
         else:
-
-            pname = "{0}_zn{1}".format(name, zval)
+            pname = "{1}_zn{2}".format(par_style[0],name, zval)
             if len(pname) > 12:
-                raise ("zone par name too long:{0}".format(pname))
+                raise Exception("zone par name too long:{0}".format(pname))
         return pname
 
     def grid_namer(i, j):
         if longnames:
-            pname = "{0}_i:{1}_j:{2}".format(name, i, j)
+            pname = "{0}_{1}_i:{2}_j:{3}".format(par_style,name, i, j)
             if get_xy is not None:
                 pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy([i, j]))
             if zone_array is not None:
@@ -1955,9 +2225,9 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
             if suffix != '':
                 pname += "_{0}".format(suffix)
         else:
-            pname = "{0}{1:03d}{2:03d}".format(name, i, j)
+            pname = "{1}{2:03d}{3:03d}".format(par_style[0],name, i, j)
             if len(pname) > 12:
-                raise ("grid pname too long:{0}".format(pname))
+                raise Exception("grid pname too long:{0}".format(pname))
         return pname
 
     if par_type == "constant":
@@ -1972,6 +2242,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
                         "'{0}'".format(par_type))
 
     parnme = []
+    org_par_val_dict = {}
     xx, yy, ii, jj = [], [], [], []
     with open(tpl_filename, 'w') as f:
         f.write("ptf ~\n")
@@ -1989,10 +2260,13 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
 
                     pname = namer(i, j)
                     parnme.append(pname)
+                    org_par_val_dict[pname] = org_arr[i,j]
                     pname = " ~   {0}    ~".format(pname)
+
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
+    df.loc[:,"parval1"] = df.parnme.apply(lambda x: org_par_val_dict[x])
     if par_type == 'grid':
         df.loc[:, 'i'] = ii
         df.loc[:, 'j'] = jj
@@ -2001,8 +2275,8 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
             df.loc[:, 'y'] = yy
     if gpname is None:
         gpname = name
-    df.loc[:, "pargp"] = "{0}_{1}".format(
-        gpname, suffix.replace('_', '')).rstrip('_')
+    df.loc[:, "pargp"] = "{0}_{1}_{2}".format(
+        gpname, suffix.replace('_', ''),par_style).rstrip('_')
     df.loc[:, "tpl_filename"] = tpl_filename
     df.loc[:, "input_filename"] = input_filename
     if input_filename is not None:
@@ -2010,3 +2284,13 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         np.savetxt(input_filename, arr, fmt="%2.1f")
 
     return df
+
+def _check_diff(org_arr, input_filename, zval=None):
+    percent_diff = 100. * np.abs(np.nanmax(org_arr) - np.nanmin(org_arr) / np.nanmean(org_arr))
+    if percent_diff > DIRECT_PAR_PERCENT_DIFF_TOL:
+        message = "_check_diff() error: direct par for file '{0}'".format(input_filename) + \
+                        "exceeds tolerance for percent difference: {2} > {3}".\
+                        format(percent_diff, DIRECT_PAR_PERCENT_DIFF_TOL)
+        if zval is not None:
+            message += " in zone {0}".format(zval)
+        raise Exception(message)
