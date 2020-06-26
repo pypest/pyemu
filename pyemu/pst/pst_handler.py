@@ -1469,8 +1469,8 @@ class Pst(object):
             self.reg_data.write_keyword(f_out)
 
         for k,v in self.pestpp_options.items():
-            if isinstance(v,list):
-                v = ','.join([str(vv) for vv in v])
+            if isinstance(v,list) or isinstance(v, tuple):
+                v = ','.join([str(vv) for vv in list(v)])
             f_out.write("{0:30} {1}\n".format(k,v))
 
         f_out.write("* parameter groups external\n")
@@ -1680,8 +1680,8 @@ class Pst(object):
             f_out.write(line+'\n')
 
         for key,value in self.pestpp_options.items():
-            if isinstance(value,list):
-                value  = ','.join([str(v) for v in value])
+            if isinstance(value,list) or isinstance(value, tuple):
+                value  = ','.join([str(v) for v in list(value)])
             f_out.write("++{0}({1})\n".format(str(key),str(value)))
 
         if self.with_comments:
