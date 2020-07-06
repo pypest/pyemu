@@ -372,7 +372,7 @@ class PstFrom(object):
                 par_df = pd.concat(par_df_l)  # force to single df
                 if 'i' in par_df.columns:  # need 'i' and 'j' for specsim
                     # grid par slicer
-                    grd_p = (par_df.partype == 'grid') & pd.notna(par_df.i)
+                    grd_p = pd.notna(par_df.i)  # & (par_df.partype == 'grid') &
                 else:
                     grd_p = np.array([0])
                 # if there are grid pars (also grid pars with i,j info)
@@ -405,9 +405,11 @@ class PstFrom(object):
                                 struct_dict[geostruct].append(p_df)
             self.logger.log("spectral simulation for grid-scale pars")
         # draw remaining pars based on their geostruct
+        self.logger.log("Drawing non-specsim pars")
         pe = pyemu.helpers.geostatistical_draws(
             self.pst, struct_dict=struct_dict, num_reals=num_reals,
             sigma_range=sigma_range, scale_offset=scale_offset)
+        self.logger.log("Drawing non-specsim pars")
         if len(gr_pe_l) > 0:
             gr_par_pe = pd.concat(gr_pe_l, axis=1)
             pe.loc[:, gr_par_pe.columns] = gr_par_pe.values
@@ -564,13 +566,14 @@ class PstFrom(object):
         if index_cols is not None:
             for filename, sep, fmt, skip in zip(filenames, seps, fmts,
                                                 skip_rows):
+                file_path = os.path.join(self.new_d, filename)
+                self.logger.log("loading list {0}".format(file_path))
                 df, storehead = self._load_listtype_file(
                     filename, index_cols, use_cols, fmt, sep, skip, c_char)
                 # Currently just passing through comments in header (i.e. before the table data)
                 stkeys = np.array(sorted(storehead.keys()))  # comments line numbers as sorted array
                 if stkeys.size > 0 and stkeys.min() == 0:  # TODO pass comment_char through to par_file_rel so mid-table comments can be preserved
                     skip = 1 + np.sum(np.diff(stkeys) == 1)
-                file_path = os.path.join(self.new_d, filename)
                 # # looping over model input filenames
                 if fmt.lower() == 'free':
                     if sep is None:
@@ -1425,8 +1428,9 @@ class PstFrom(object):
             # geostruct = pyemu.geostats.GeoStruct(
             #     variograms=v)
 
-        self.logger.log("adding parameters for file(s) "
-                        "{0}".format(str(filenames)))
+        self.logger.log(
+            "adding {0} type {1} style parameters for file(s) {2}"
+            "".format(par_type, par_style, str(filenames)))
 
         if rebuild_pst:  # may want to just update pst and rebuild
             # (with new relations)
@@ -2284,6 +2288,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
         np.savetxt(input_filename, arr, fmt="%2.1f")
 
     return df
+
 
 def _check_diff(org_arr, input_filename, zval=None):
     percent_diff = 100. * np.abs(np.nanmax(org_arr) - np.nanmin(org_arr) / np.nanmean(org_arr))
