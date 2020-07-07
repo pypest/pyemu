@@ -5,7 +5,7 @@ import platform
 # sys.path.append(os.path.join("..","pyemu"))
 import pyemu
 from pyemu import os_utils
-from pyemu.prototypes.pst_from import PstFrom
+from pyemu.utils import PstFrom
 import shutil
 
 ext = ''
