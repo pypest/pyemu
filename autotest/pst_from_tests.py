@@ -18,12 +18,15 @@ else:
     bin_path = os.path.join(bin_path, "win")
     ext = '.exe'
 
-mf_exe_name = os.path.join(bin_path, "mfnwt")
-mt_exe_name = os.path.join(bin_path, "mt3dusgs")
-mf6_exe_name = os.path.join(bin_path, "mf6")
-pp_exe_name = os.path.join(bin_path, "pestpp")
-ies_exe_name = os.path.join(bin_path, "pestpp-ies")
-swp_exe_name = os.path.join(bin_path, "pestpp-swp")
+mf_exe_path = os.path.join(bin_path, "mfnwt")
+mt_exe_path = os.path.join(bin_path, "mt3dusgs")
+mf6_exe_path = os.path.join(bin_path, "mf6")
+pp_exe_path = os.path.join(bin_path, "pestpp")
+ies_exe_path = os.path.join(bin_path, "pestpp-ies")
+swp_exe_path = os.path.join(bin_path, "pestpp-swp")
+
+mf_exe_name = os.path.basename(mf_exe_path)
+mf6_exe_name = os.path.basename(mf6_exe_path)
 
 
 def freyberg_test():
@@ -37,21 +40,11 @@ def freyberg_test():
     except:
         return
 
-    ext = ''
-    bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "mac")
-    else:
-        bin_path = os.path.join(bin_path, "win")
-        ext = '.exe'
-
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws,
                                    check=False, forgive=False,
-                                   exe_name=mf_exe_name)
+                                   exe_name=mf_exe_path)
     flopy.modflow.ModflowRiv(m, stress_period_data={
         0: [[0, 0, 0, m.dis.top.array[0, 0], 1.0, m.dis.botm.array[0, 0, 0]],
             [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
@@ -63,8 +56,8 @@ def freyberg_test():
     m.external_path = "."
     m.change_model_ws(org_model_ws)
     m.write_input()
-    print("{0} {1}".format(mf_exe_name, m.name + ".nam"), org_model_ws)
-    os_utils.run("{0} {1}".format(mf_exe_name, m.name + ".nam"),
+    print("{0} {1}".format(mf_exe_path, m.name + ".nam"), org_model_ws)
+    os_utils.run("{0} {1}".format(mf_exe_path, m.name + ".nam"),
                  cwd=org_model_ws)
     hds_kperk = []
     for k in range(m.nlay):
@@ -227,8 +220,7 @@ def freyberg_test():
 
     pst.control_data.noptmax = 0
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-    pyemu.os_utils.run("{0} freyberg.pst".format(
-        os.path.join(bin_path, "pestpp-ies")), cwd=pf.new_d)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
     res_file = os.path.join(pf.new_d, "freyberg.base.rei")
     assert os.path.exists(res_file), res_file
@@ -248,21 +240,11 @@ def freyberg_prior_build_test():
     except:
         return
 
-    ext = ''
-    bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "mac")
-    else:
-        bin_path = os.path.join(bin_path, "win")
-        ext = '.exe'
-
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws,
                                    check=False, forgive=False,
-                                   exe_name=mf_exe_name)
+                                   exe_name=mf_exe_path)
     flopy.modflow.ModflowRiv(m, stress_period_data={
         0: [[0, 0, 0, m.dis.top.array[0, 0], 1.0, m.dis.botm.array[0, 0, 0]],
             [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
@@ -283,8 +265,12 @@ def freyberg_prior_build_test():
     m.external_path = "."
     m.change_model_ws(org_model_ws)
     m.write_input()
-    print("{0} {1}".format(mf_exe_name, m.name + ".nam"), org_model_ws)
-    os_utils.run("{0} {1}".format(mf_exe_name, m.name + ".nam"),
+
+    # for exe in [mf_exe_path, mt_exe_path, ies_exe_path]:
+    #     shutil.copy(os.path.relpath(exe, '..'), org_model_ws)
+
+    print("{0} {1}".format(mf_exe_path, m.name + ".nam"), org_model_ws)
+    os_utils.run("{0} {1}".format(mf_exe_path, m.name + ".nam"),
                  cwd=org_model_ws)
     hds_kperk = []
     for k in range(m.nlay):
@@ -460,8 +446,7 @@ def freyberg_prior_build_test():
 
     pst.control_data.noptmax = 0
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-    pyemu.os_utils.run("{0} freyberg.pst".format(
-        os.path.join(bin_path, "pestpp-ies")), cwd=pf.new_d)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
     res_file = os.path.join(pf.new_d, "freyberg.base.rei")
     assert os.path.exists(res_file), res_file
@@ -478,8 +463,12 @@ def freyberg_prior_build_test():
     # par = pst.parameter_data
     # par.loc[:, 'parval1'] = pe.iloc[0].T
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-    pyemu.os_utils.run("{0} freyberg.pst".format(
-        os.path.join(bin_path, "pestpp-ies")), cwd=pf.new_d)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    # pyemu.os_utils.start_workers(pf.new_d,
+    #                              exe_rel_path="pestpp-ies",
+    #                              pst_rel_path="freyberg.pst",
+    #                              num_workers=20, master_dir="master",
+    #                              cleanup=False, port=4005)
 
 
 def mf6_freyberg_test():
@@ -512,8 +501,7 @@ def mf6_freyberg_test():
     # m = sim.get_model("freyberg6")
 
     # SETUP pest stuff...
-    os_utils.run("{0} ".format("mf6"),
-                 cwd=tmp_model_ws)
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
     # doctor some of the list par files to add a comment string
     with open(
             os.path.join('temp_pst_from',
@@ -780,8 +768,7 @@ def mf6_freyberg_test():
     pst.pestpp_options["additional_ins_delimiters"] = ","
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-    pyemu.os_utils.run("{0} freyberg.pst".format(
-        os.path.join("pestpp-ies")), cwd=pf.new_d)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
     res_file = os.path.join(pf.new_d, "freyberg.base.rei")
     assert os.path.exists(res_file), res_file
@@ -830,9 +817,7 @@ def mf6_freyberg_shortnames_test():
     m = sim.get_model("freyberg6")
 
     # SETUP pest stuff...
-    os_utils.run("{0} ".format("mf6"),
-                 cwd=tmp_model_ws)
-
+    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
     template_ws = "new_temp"
     # sr0 = m.sr
@@ -925,8 +910,7 @@ def mf6_freyberg_shortnames_test():
     pst.pestpp_options["additional_ins_delimiters"] = ","
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-    pyemu.os_utils.run("{0} freyberg.pst".format(
-        os.path.join("pestpp-ies")), cwd=pf.new_d)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
     res_file = os.path.join(pf.new_d, "freyberg.base.rei")
     assert os.path.exists(res_file), res_file
@@ -966,9 +950,7 @@ def mf6_freyberg_da_test():
     m = sim.get_model("freyberg6")
 
     # SETUP pest stuff...
-    os_utils.run("{0} ".format("mf6"),
-                 cwd=tmp_model_ws)
-
+    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
     template_ws = "new_temp_da"
     # sr0 = m.sr
@@ -1103,8 +1085,7 @@ def mf6_freyberg_da_test():
     pst.pestpp_options["additional_ins_delimiters"] = ","
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-    pyemu.os_utils.run("{0} freyberg.pst".format(
-        os.path.join("pestpp-ies")), cwd=pf.new_d)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
     res_file = os.path.join(pf.new_d, "freyberg.base.rei")
     assert os.path.exists(res_file), res_file
@@ -1154,8 +1135,7 @@ def mf6_freyberg_direct_test():
     # m = sim.get_model("freyberg6")
 
     # SETUP pest stuff...
-    os_utils.run("{0} ".format("mf6"),
-                 cwd=tmp_model_ws)
+    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
     template_ws = "new_temp_direct"
     sr = m.modelgrid
@@ -1261,8 +1241,7 @@ def mf6_freyberg_direct_test():
     pst.pestpp_options["additional_ins_delimiters"] = ","
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-    pyemu.os_utils.run("{0} freyberg.pst".format(
-        os.path.join("pestpp-ies")), cwd=pf.new_d)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
     res_file = os.path.join(pf.new_d, "freyberg.base.rei")
     assert os.path.exists(res_file), res_file
@@ -1274,32 +1253,35 @@ def mf6_freyberg_direct_test():
     # turn direct recharge to min and direct wel to min and
     # check that the model results are consistent
     par = pst.parameter_data
-    rch_par = par.loc[par.parnme.apply(lambda x: "rch_gr" in x and "direct" in x),"parnme"]
-    wel_par = par.loc[par.parnme.apply(lambda x: "wel_grid" in x and "direct" in x),"parnme"]
-    par.loc[rch_par,"parval1"] = par.loc[rch_par,"parlbnd"]
+    rch_par = par.loc[par.parnme.apply(
+        lambda x: "rch_gr" in x and "direct" in x), "parnme"]
+    wel_par = par.loc[par.parnme.apply(
+        lambda x: "wel_grid" in x and "direct" in x), "parnme"]
+    par.loc[rch_par,"parval1"] = par.loc[rch_par, "parlbnd"]
     # this should set wells to zero since they are negative values in the control file
-    par.loc[wel_par,"parval1"] = par.loc[wel_par,"parubnd"]
+    par.loc[wel_par,"parval1"] = par.loc[wel_par, "parubnd"]
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-    pyemu.os_utils.run("{0} freyberg.pst".format(
-        os.path.join("pestpp-ies")), cwd=pf.new_d)
-    lst = flopy.utils.Mf6ListBudget(os.path.join(pf.new_d,"freyberg6.lst"))
-    flx,cum = lst.get_dataframes(diff=True)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    lst = flopy.utils.Mf6ListBudget(os.path.join(pf.new_d, "freyberg6.lst"))
+    flx, cum = lst.get_dataframes(diff=True)
     wel_tot = flx.wel.apply(np.abs).sum()
     print(flx.wel)
-    assert wel_tot < 1.0e-6,wel_tot
+    assert wel_tot < 1.0e-6, wel_tot
 
-    rch_files = [f for f in os.listdir(pf.new_d) if ".rch_rechage" in f and f.endswith(".txt")]
+    rch_files = [f for f in os.listdir(pf.new_d)
+                 if ".rch_recharge" in f and f.endswith(".txt")]
     rch_val = par.loc[rch_par,"parval1"][0]
+    i, j = par.loc[rch_par, ["i", 'j']].astype(int).values.T
     for rch_file in rch_files:
-        arr = np.loadtxt(os.path.join(pf.new_d,rch_file))
-        print(rch_file,rch_val,arr.mean(),arr.max(),arr.min)
+        arr = np.loadtxt(os.path.join(pf.new_d, rch_file))[i, j]
+        print(rch_file, rch_val, arr.mean(), arr.max(), arr.min())
         if np.abs(arr.max() - rch_val) > 1.0e-6 or np.abs(arr.min() - rch_val) > 1.0e-6:
             raise Exception("recharge too diff")
 
 if __name__ == "__main__":
-    #freyberg_test()
-    # freyberg_prior_build_test()
-    #mf6_freyberg_test()
-    # mf6_freyberg_shortnames_test()
-    # mf6_freyberg_da_test()
+    freyberg_test()
+    freyberg_prior_build_test()
+    mf6_freyberg_test()
+    mf6_freyberg_shortnames_test()
+    mf6_freyberg_da_test()
     mf6_freyberg_direct_test()
