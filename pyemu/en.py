@@ -209,8 +209,8 @@ class Ensemble(object):
             if type(lhs) == type(self._df):
                 return type(self)(pst=self.pst,df=lhs,istransformed=self.istransformed)
             elif "DataFrame" in str(lhs):
-                warnings.warn("return type uncaught, losing Ensemble type, returing DataFrame",pyemu.PyemuWarning)
-                print("return type uncaught, losing Ensemble type, returing DataFrame")
+                warnings.warn("return type uncaught, losing Ensemble type, returning DataFrame", PyemuWarning)
+                print("return type uncaught, losing Ensemble type, returning DataFrame")
                 return lhs
             else:
                 return lhs
@@ -326,7 +326,7 @@ class Ensemble(object):
         if self.istransformed:
             self.back_transform()
             retrans = True
-        if self.isnull().values.any():
+        if self._df.isnull().values.any():
             warnings.warn("NaN in ensemble",PyemuWarning)
         self._df.to_csv(filename,*args,**kwargs)
         if retrans:
@@ -354,7 +354,7 @@ class Ensemble(object):
         if self.istransformed:
             self.back_transform()
             retrans = True
-        if self.isnull().values.any():
+        if self._df.isnull().values.any():
             warnings.warn("NaN in ensemble",PyemuWarning)
         pyemu.Matrix.from_dataframe(self._df).to_coo(filename)
         if retrans:
@@ -1184,9 +1184,10 @@ class ParameterEnsemble(Ensemble):
         if self.istransformed:
             return
         li = self.pst.parameter_data.loc[:,"partrans"] == "log"
+        df = self._df
         #self.loc[:,:] = (self.loc[:,:] * self.pst.parameter_data.scale) +\
         #                 self.pst.parameter_data.offset
-        self.loc[:, li] = self.loc[:, li].apply(np.log10)
+        df.loc[:, li] = df.loc[:, li].apply(np.log10)
         self._istransformed = True
 
     def add_base(self):

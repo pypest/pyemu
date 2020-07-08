@@ -531,7 +531,8 @@ def csv_to_ins_test():
     df.to_csv(os.path.join("temp", "temp.csv"))
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
                                             only_cols=cnames[0],prefix="test")
-    assert len(names) == df.shape[0], names
+    obnames = pyemu.pst_utils.parse_ins_file(os.path.join("temp", "temp.csv.ins"))
+    assert len(names) == df.shape[0] == len(obnames), names
     for name in names.obsnme:
         assert name.startswith("test"),name
 
@@ -867,13 +868,13 @@ if __name__ == "__main__":
     #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
-    #csv_to_ins_test()
+    csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()
     #pst_from_flopy_specsim_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
-    #test_write_input_files()
+    # test_write_input_files()
     # add_obs_test()
     # add_pars_test()
     # setattr_test()

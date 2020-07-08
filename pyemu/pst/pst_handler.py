@@ -1,6 +1,7 @@
 
 from __future__ import print_function, division
 import os
+import glob
 import re
 import copy
 import warnings
@@ -979,210 +980,9 @@ class Pst(object):
             raise Exception("Pst.load() error: first non-comment line must start with 'pcf', not '{0}'".format(line))
 
         self._load_version2(filename)
+        self.try_parse_name_metadata()
 
 
-    # def _load_version1(self, filename):
-    #     """load a version 1 pest control file information
-    #
-    #     """
-    #
-    #     f = open(filename, 'r')
-    #     f.readline()
-    #
-    #     #control section
-    #     line = f.readline()
-    #
-    #     if "* control data" not in line:
-    #         raise Exception("Pst.load() error: looking for control" +\
-    #         " data section, found:" + line)
-    #     iskeyword = False
-    #     if "keyword" in line.lower():
-    #         iskeyword = True
-    #     control_lines = []
-    #     while True:
-    #         line = f.readline()
-    #         if line == '':
-    #             raise Exception("Pst.load() EOF while " +\
-    #                             "reading control data section")
-    #         if line.startswith('*'):
-    #             break
-    #         control_lines.append(line)
-    #     self.control_data.parse_values_from_lines(control_lines,iskeyword)
-    #
-    #
-    #     #anything between control data and SVD
-    #     while True:
-    #         if line == '':
-    #             raise Exception("EOF before parameter groups section found")
-    #         if "* singular value decomposition" in line.lower() or\
-    #             "* parameter groups" in line.lower():
-    #             break
-    #         self.other_lines.append(line)
-    #         line = f.readline()
-    #
-    #     if "* singular value decomposition" in line.lower():
-    #         svd_lines = []
-    #         for _ in range(3):
-    #             line = f.readline()
-    #             if line == '':
-    #                 raise Exception("EOF while reading SVD section")
-    #             svd_lines.append(line)
-    #         self.svd_data.parse_values_from_lines(svd_lines)
-    #         line = f.readline()
-    #     while True:
-    #         if line == '':
-    #             raise Exception("EOF before parameter groups section found")
-    #         if "* parameter groups" in line.lower():
-    #             break
-    #         self.other_lines.append(line)
-    #         line = f.readline()
-    #
-    #     #parameter group
-    #     if "* parameter groups" not in line.lower():
-    #         raise Exception("Pst.load() error: looking for parameter" +\
-    #             " group section, found:" + line)
-    #     #try:
-    #     self.parameter_groups = self._read_df(f,self.control_data.npargp,
-    #                                           self.pargp_fieldnames,
-    #                                           self.pargp_converters,
-    #                                           self.pargp_defaults)
-    #     self.parameter_groups.index = self.parameter_groups.pargpnme
-    #     #except Exception as e:
-    #     #    raise Exception("Pst.load() error reading parameter groups: {0}".format(str(e)))
-    #
-    #     #parameter data
-    #     line = f.readline()
-    #     if "* parameter data" not in line.lower():
-    #         raise Exception("Pst.load() error: looking for parameter" +\
-    #         " data section, found:" + line)
-    #
-    #     try:
-    #         self.parameter_data = self._read_df(f,self.control_data.npar,
-    #                                             self.par_fieldnames,
-    #                                             self.par_converters,
-    #                                             self.par_defaults)
-    #         self.parameter_data.index = self.parameter_data.parnme
-    #     except Exception as e:
-    #         raise Exception("Pst.load() error reading parameter data: {0}".format(str(e)))
-    #
-    #     # oh the tied parameter bullshit, how do I hate thee
-    #     counts = self.parameter_data.partrans.value_counts()
-    #     if "tied" in counts.index:
-    #         # tied_lines = [f.readline().lower().strip().split() for _ in range(counts["tied"])]
-    #         # self.tied = pd.DataFrame(tied_lines,columns=["parnme","partied"])
-    #         # self.tied.index = self.tied.pop("parnme")
-    #         tied = self._read_df(f,counts["tied"],self.tied_fieldnames,
-    #                                   self.tied_converters)
-    #         tied.index = tied.parnme
-    #         self.parameter_data.loc[:,"partied"] = np.NaN
-    #         self.parameter_data.loc[tied.index,"partied"] = tied.partied
-    #
-    #     # obs groups - just read past for now
-    #
-    #     line = f.readline()
-    #     # assert "* observation groups" in line.lower(),\
-    #     #     "Pst.load() error: looking for obs" +\
-    #     #     " group section, found:" + line
-    #     # [f.readline() for _ in range(self.control_data.nobsgp)]
-    #     if "* observation groups" in line:
-    #         while True:
-    #             seekpoint = f.tell()
-    #             line = f.readline()
-    #             if line == "":
-    #                 raise Exception("Pst.load() error: EOF when searching for '* observation data'")
-    #             if line.startswith("*"):
-    #                 f.seek(seekpoint)
-    #                 break
-    #         line = f.readline()
-    #         assert "* observation data" in line.lower(), \
-    #             "Pst.load() error: looking for observation" + \
-    #             " data section, found:" + line
-    #     else:
-    #
-    #         if "* observation data" not in line.lower():
-    #             raise Exception("Pst.load() error: looking for observation" +\
-    #             " data section, found:" + line)
-    #
-    #     try:
-    #         self.observation_data = self._read_df(f,self.control_data.nobs,
-    #                                               self.obs_fieldnames,
-    #                                               self.obs_converters)
-    #         self.observation_data.index = self.observation_data.obsnme
-    #     except Exception as e:
-    #         raise Exception("Pst.load() error reading observation data: {0}".format(str(e)))
-    #     #model command line
-    #     line = f.readline()
-    #     assert "* model command line" in line.lower(),\
-    #         "Pst.load() error: looking for model " +\
-    #         "command section, found:" + line
-    #     for _ in range(self.control_data.numcom):
-    #         self.model_command.append(f.readline().strip())
-    #
-    #     #model io
-    #     line = f.readline()
-    #     if "* model input/output" not in line.lower():
-    #         raise Exception("Pst.load() error; looking for model " +\
-    #                 " i/o section, found:" + line)
-    #
-    #     for i in range(self.control_data.ntplfle):
-    #         raw = f.readline().strip().split()
-    #         self.template_files.append(raw[0])
-    #         self.input_files.append(raw[1])
-    #     for i in range(self.control_data.ninsfle):
-    #         raw = f.readline().strip().split()
-    #         self.instruction_files.append(raw[0])
-    #         self.output_files.append(raw[1])
-    #
-    #     #prior information - sort of hackish
-    #     if self.control_data.nprior == 0:
-    #         self.prior_information = self.null_prior
-    #     else:
-    #         pilbl, obgnme, weight, equation = [], [], [], []
-    #         line = f.readline()
-    #         if "* prior information" not in line.lower():
-    #             raise Exception("Pst.load() error; looking for prior " +\
-    #             " info section, found:" + line)
-    #         for _ in range(self.control_data.nprior):
-    #             line = f.readline()
-    #             if line == '':
-    #                 raise Exception("EOF during prior information " +
-    #                                 "section")
-    #             raw = line.strip().split()
-    #             pilbl.append(raw[0].lower())
-    #             obgnme.append(raw[-1].lower())
-    #             weight.append(float(raw[-2]))
-    #             eq = ' '.join(raw[1:-2])
-    #             equation.append(eq)
-    #         self.prior_information = pd.DataFrame({"pilbl": pilbl,
-    #                                                    "equation": equation,
-    #                                                    "weight": weight,
-    #                                                    "obgnme": obgnme})
-    #         self.prior_information.index = self.prior_information.pilbl
-    #     if "regul" in self.control_data.pestmode:
-    #         line = f.readline()
-    #         if "* regul" not in line.lower():
-    #             raise Exception("Pst.load() error; looking for regul " +\
-    #             " section, found:" + line)
-    #         #[self.regul_lines.append(f.readline()) for _ in range(3)]
-    #         regul_lines = [f.readline() for _ in range(3)]
-    #         raw = regul_lines[0].strip().split()
-    #         self.reg_data.phimlim = float(raw[0])
-    #         self.reg_data.phimaccept = float(raw[1])
-    #         raw = regul_lines[1].strip().split()
-    #         self.wfinit = float(raw[0])
-    #
-    #
-    #     for line in f:
-    #         if line.strip().startswith("++") and '#' not in line:
-    #             self._parse_pestpp_line(line)
-    #     f.close()
-    #
-    #     for df in [self.parameter_groups,self.parameter_data,
-    #                self.observation_data,self.prior_information]:
-    #         if "extra" in df.columns and df.extra.dropna().shape[0] > 0:
-    #             self.with_comments = False
-    #             break
-    #     return
 
 
     def _parse_pestpp_line(self,line):
@@ -1468,8 +1268,8 @@ class Pst(object):
             self.reg_data.write_keyword(f_out)
 
         for k,v in self.pestpp_options.items():
-            if isinstance(v,list):
-                v = ','.join([str(vv) for vv in v])
+            if isinstance(v,list) or isinstance(v, tuple):
+                v = ','.join([str(vv) for vv in list(v)])
             f_out.write("{0:30} {1}\n".format(k,v))
 
         f_out.write("* parameter groups external\n")
@@ -1679,8 +1479,8 @@ class Pst(object):
             f_out.write(line+'\n')
 
         for key,value in self.pestpp_options.items():
-            if isinstance(value,list):
-                value  = ','.join([str(v) for v in value])
+            if isinstance(value,list) or isinstance(value, tuple):
+                value  = ','.join([str(v) for v in list(value)])
             f_out.write("++{0}({1})\n".format(str(key),str(value)))
 
         if self.with_comments:
@@ -1689,7 +1489,99 @@ class Pst(object):
 
         f_out.close()
 
+    def bounds_report(self, iterations=None):
+        """report how many parameters are at bounds. If ensemble, the base enbsemble member is evaluated
 
+        Args:
+            iterations ([`int`]): a list of iterations for which a bounds report is requested
+                If None, all iterations for which `par` files are located are reported. Default
+                is None
+
+        Returns:
+            `df`: a pandas DataFrame object with rows being parameter groups and columns 
+                <iter>_num_at_ub, <iter>_num_at_lb, and <iter>_total_at_bounds
+                row 0 is total at bounds, subsequent rows correspond with groups
+                
+        Example:
+            pst = pyemu.Pst("my.pst")
+            df = pst.bound_report(iterations=[0,2,3])
+
+        """        
+        # sort out which files are parameter files and parse pstroot from pst directory
+        pstroot = self.filename
+        if pstroot.lower().endswith('.pst'):
+            pstroot = pstroot[:-4]
+        pstdir = os.path.dirname(pstroot)
+        if len(pstdir) == 0:
+            pstdir = '.'
+        pstroot = os.path.basename(pstroot)
+
+        # find all the par files
+        parfiles = glob.glob(os.path.join(pstdir,'{}*.par'.format(pstroot)))
+        
+        # exception if no par files found
+        if len(parfiles) == 0:
+            raise Exception("no par files with root {} in directory {}".format(pstdir,pstroot))
+        
+        is_ies = any(['base' in i.lower() for i in parfiles])
+        # decide which iterations we care about
+        if is_ies:
+            iters = [os.path.basename(cf).replace(pstroot,'').split('.')[1] for cf in parfiles if 'base' in cf.lower()]
+            iters = [int(i) for i in iters if i != 'base']
+            parfiles = [i for i in parfiles if 'base' in i]
+        else:
+            iters = [os.path.basename(cf).replace(pstroot,'').split('.')[1] for cf in parfiles if 'base' not in cf.lower()]
+            iters = [int(i) for i in iters if i != 'par']
+            parfiles = [i for i in parfiles if 'base' not in i]
+        
+        if iterations is None:
+            iterations = iters
+            
+        
+        if isinstance(iterations, tuple):
+            iterations = list(iterations)
+        
+        if not isinstance(iterations, list):
+            iterations = [iterations]
+        
+        # sort the iterations to go through them in order
+        iterations.sort()
+        
+        # set up a DataFrame with bounds and into which to put the par values
+        allpars = self.parameter_data[['parlbnd','parubnd', 'pargp']].copy()
+        
+        # loop over iterations and calculate which are at upper and lower bounds
+        for citer in iterations:
+            try:
+                tmp = pd.read_csv(os.path.join(pstdir,'{}.{}.base.par'.format(pstroot,citer)), skiprows=1, index_col=0,
+                        usecols =[0,1], delim_whitespace=True, header=None)
+            except FileNotFoundError:
+                raise Exception("iteration {} does not have a paramter file associated with it in {}".format(citer,pstdir))
+            tmp.columns = ['pars_iter_{}'.format(citer)]
+            allpars=allpars.merge(tmp, left_index =True, right_index=True)
+            allpars['at_upper_bound_{}'.format(citer)] = allpars['pars_iter_{}'.format(citer)] >= allpars['parubnd']
+            allpars['at_lower_bound_{}'.format(citer)] = allpars['pars_iter_{}'.format(citer)] <= allpars['parlbnd']
+
+        # sum up by groups
+        df = allpars.groupby('pargp').sum()[[i for i in allpars.columns if i.startswith('at_')]].astype(int)
+        
+        
+        # add the total
+        df.loc['total'] = df.sum()
+        
+        # sum up upper and lower bounds
+        cols = []
+        for citer in iterations:
+            df['at_either_bound_{}'.format(citer)] = df['at_upper_bound_{}'.format(citer)] + \
+                df['at_lower_bound_{}'.format(citer)]
+            cols.extend(['at_either_bound_{}'.format(citer),
+                        'at_lower_bound_{}'.format(citer),
+                        'at_upper_bound_{}'.format(citer)])
+        
+        # reorder by iterations and return
+        return df[cols]
+        
+        # loop over the iterations and count the pars at bounds
     def get(self, par_names=None, obs_names=None):
         """get a new pst object with subset of parameters and/or observations
 
@@ -2325,9 +2217,9 @@ class Pst(object):
 
         Example::
 
-            pst = pyemu.Pst(os.path.join("template","my.pst"))
-            pst.add_observations(os.path.join("template","new_obs.dat.tpl",pst_path=".")
-            pst.write(os.path.join("template","my_new.pst")
+            pst = pyemu.Pst(os.path.join("template", "my.pst"))
+            pst.add_observations(os.path.join("template","new_obs.dat.ins"), pst_path=".")
+            pst.write(os.path.join("template", "my_new.pst")
 
         """
         if not os.path.exists(ins_file):
@@ -2911,4 +2803,29 @@ class Pst(object):
         under_lb = par.loc[par.apply(lambda x: x.parval1 <= (1.+frac_tol) * x.parlbnd, axis=1),"parnme"].tolist()
 
         return under_lb,over_ub
+
+    def try_parse_name_metadata(self):
+        """try to add meta data columns to parameter and observation data based on
+        item names.  Used with the PstFrom process.
+
+        Note: metadata is identified in key-value pairs that are separated by a colon.
+            each key-value pair is separated from others by underscore
+
+        """
+        par = self.parameter_data
+        obs = self.observation_data
+        par_cols = pst_utils.pst_config["par_fieldnames"]
+        obs_cols = pst_utils.pst_config["obs_fieldnames"]
+
+        for df,name,fieldnames in zip([par,obs],["parnme","obsnme"],[par_cols,obs_cols]):
+            meta_dict = df.loc[:,name].apply(lambda x: dict([item.split(':') for item in x.split('_') if ':' in item]))
+            unique_keys = []
+            for k,v in meta_dict.items():
+                for kk,vv in v.items():
+                    if kk not in fieldnames and kk not in unique_keys:
+                        unique_keys.append(kk)
+            for uk in unique_keys:
+                if uk not in df.columns:
+                    df.loc[:,uk] = np.NaN
+                df.loc[:,uk] = meta_dict.apply(lambda x: x.get(uk,np.NaN))
 

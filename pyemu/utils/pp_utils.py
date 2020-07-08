@@ -4,20 +4,21 @@ import os
 import copy
 import numpy as np
 import pandas as pd
+import warnings
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config
-from pyemu.utils.helpers import run
+from pyemu.utils.helpers import run, _write_df_tpl
 from ..pyemu_warnings import PyemuWarning
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
 PP_NAMES = ["name","x","y","zone","parval1"]
 
 
-def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
-                           every_n_cell=4,
+def setup_pilotpoints_grid(ml=None, sr=None, ibound=None, prefix_dict=None,
+                           every_n_cell=4, ninst=1,
                            use_ibound_zones=False,
-                           pp_dir='.',tpl_dir='.',
-                           shapename="pp.shp"):
+                           pp_dir='.', tpl_dir='.',
+                           shapename="pp.shp", longnames=False):
     """ setup a regularly-spaced (gridded) pilot point parameterization
 
     Args:
@@ -31,6 +32,9 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
             For example : `{0:["hk,"vk"]}` would setup pilot points with the prefix "hk" and "vk" for
             model layer 1. If None, a generic set of pilot points with
             the "pp" prefix are setup for a generic nrow by ncol grid. Default is None
+        ninst (`int`): Number of instances of pilot_points to set up. 
+            e.g. number of layers. If ml is None and prefix_dict is None, 
+            this is used to set up default prefix_dict.
         use_ibound_zones (`bool`): a flag to use the greater-than-zero values in the
             ibound as pilot point zones.  If False ,ibound values greater than zero are
             treated as a single zone.  Default is False.
@@ -50,44 +54,59 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
     """
 
-    import flopy
-
     if ml is not None:
+        try:
+            import flopy
+        except Exception as e:
+            raise ImportError(
+                "error importing flopy: {0}".format(
+                    str(e)))
         assert isinstance(ml,flopy.modflow.Modflow)
         sr = ml.sr
         if ibound is None:
             ibound = ml.bas6.ibound.array
+            # build a generic prefix_dict
+        if prefix_dict is None:
+            prefix_dict = {k: ["pp_{0:02d}_".format(k)] for k in
+                           range(ml.nlay)}
     else:
-        assert sr is not None,"if 'ml' is not passed, 'sr' must be passed"
+        assert sr is not None, "if 'ml' is not passed, 'sr' must be passed"
+        if prefix_dict is None:
+            prefix_dict = {k: ["pp_{0:02d}_".format(k)] for k in
+                           range(ninst)}
         if ibound is None:
             print("ibound not passed, using array of ones")
-            ibound = {k:np.ones((sr.nrow,sr.ncol)) for k in prefix_dict.keys()}
+            ibound = {k: np.ones((sr.nrow, sr.ncol)) 
+                      for k in prefix_dict.keys()}
         #assert ibound is not None,"if 'ml' is not pass, 'ibound' must be passed"
 
     if isinstance(ibound, np.ndarray):
         assert np.ndim(ibound) == 2 or np.ndim(ibound) == 3, \
-            "ibound needs to be either 3d np.ndarry or k_dict of 2d arrays. " \
+            "ibound needs to be either 3d np.ndarray or k_dict of 2d arrays. " \
             "Array of {0} dimensions passed".format(np.ndim(ibound))
         if np.ndim(ibound) == 2:
             ibound = {0: ibound}
         else:
             ibound = {k: arr for k, arr in enumerate(ibound)}
 
-
-    try:
+    try: 
         xcentergrid = sr.xcentergrid
         ycentergrid = sr.ycentergrid
-    except Exception as e:
-        raise Exception("error getting xcentergrid and/or ycentergrid from 'sr':{0}".format(str(e)))
+    except AttributeError as e0:
+        warnings.warn("xcentergrid and/or ycentergrid not in 'sr':{0}",
+                      PyemuWarning)
+        try:
+            xcentergrid = sr.xcellcenters
+            ycentergrid = sr.ycellcenters
+        except AttributeError as e1:
+            raise Exception("error getting xcentergrid and/or ycentergrid "
+                            "from 'sr':{0}:{1}".format(str(e0), str(e1)))
     start = int(float(every_n_cell) / 2.0)
-
-    #build a generic prefix_dict
-    if prefix_dict is None:
-        prefix_dict = {k:["pp_{0:02d}_".format(k)] for k in range(ml.nlay)}
-
-    #check prefix_dict
+    
+    # check prefix_dict
     keys = list(prefix_dict.keys())
     keys.sort()
+    
     #for k, prefix in prefix_dict.items():
     for k in keys:
         prefix = prefix_dict[k]
@@ -160,7 +179,8 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                     # if parameter prefix relates to current zone definition
                     if prefix.startswith(par) or (
                             ~np.any([prefix.startswith(p) for p in ibound.keys()]) and par == "general_zn"):
-                        base_filename = prefix+"pp.dat"
+                        base_filename = "{0}pp.dat".format(
+                            prefix.replace(':', ''))
                         pp_filename = os.path.join(pp_dir, base_filename)
                         # write the base pilot point file
                         write_pp_file(pp_filename, pp_df)
@@ -168,7 +188,8 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                         tpl_filename = os.path.join(tpl_dir, base_filename + ".tpl")
                         #write the tpl file
                         pilot_points_to_tpl(pp_df, tpl_filename,
-                                            name_prefix=prefix)
+                                            name_prefix=prefix,
+                                            longnames=longnames)
                         pp_df.loc[:,"tpl_filename"] = tpl_filename
                         pp_df.loc[:,"pp_filename"] = pp_filename
                         pp_df.loc[:,"pargp"] = prefix
@@ -353,7 +374,8 @@ def write_pp_file(filename,pp_df):
                                 index=False) + '\n')
 
 
-def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
+def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None,
+                        longnames=False):
     """write a template file for a pilot points file
 
     Args:
@@ -383,33 +405,49 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
     if tpl_file is None:
         tpl_file = pp_file + ".tpl"
 
-    if name_prefix is not None:
-        digits = str(len(str(pp_df.shape[0])))
-        fmt = "{0:0"+digits+"d}"
-        names = [name_prefix+fmt.format(i) for i in range(pp_df.shape[0])]
+    if longnames:
+        if name_prefix is not None:
+            pp_df.loc[:, "parnme"] = pp_df.apply(
+                lambda x: "{0}_i:{1}_j:{2}".format(
+                    name_prefix, int(x.i), int(x.j)), axis=1)
+            pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
+                lambda x: "~    {0}    ~".format(x))
+        else:
+            names = pp_df.name.copy()
+            pp_df.loc[:, "parnme"] = pp_df.name
+            pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
+                lambda x: "~    {0}    ~".format(x))
+        _write_df_tpl(tpl_file,
+                      pp_df.loc[:, ["name", "x", "y", "zone", "tpl"]],
+                      sep=' ', index_label="index", header=False, index=False)
     else:
-        names = pp_df.name.copy()
-
-    too_long = []
-    for name in names:
-        if len(name) > 12:
-            too_long.append(name)
-    if len(too_long) > 0:
-        raise Exception("the following parameter names are too long:" +\
-                        ",".join(too_long))
-
-    tpl_entries = ["~    {0}    ~".format(name) for name in names]
-    pp_df.loc[:,"tpl"] = tpl_entries
-    pp_df.loc[:,"parnme"] = names
-
-
-    f_tpl = open(tpl_file,'w')
-    f_tpl.write("ptf ~\n")
-    f_tpl.write(pp_df.to_string(col_space=0,
-                              columns=["name","x","y","zone","tpl"],
-                              formatters=PP_FMT,
-                              justify="left",
-                              header=False,
-                              index=False) + '\n')
+        if name_prefix is not None:
+            digits = str(len(str(pp_df.shape[0])))
+            fmt = "{0:0"+digits+"d}"
+            if len(name_prefix) + 1 + int(digits) > 12:
+                warnings.warn("name_prefix too long for parameter names", 
+                              PyemuWarning)
+            names = ["{0}_{1}".format(name_prefix, fmt.format(i)) 
+                     for i in range(pp_df.shape[0])]
+        else:
+            names = pp_df.name.copy()
+        too_long = []
+        for name in names:
+            if len(name) > 12:
+                too_long.append(name)
+        if len(too_long) > 0:
+            raise Exception("the following parameter names are too long:"
+                            ",".join(too_long))
+        tpl_entries = ["~    {0}    ~".format(name) for name in names]
+        pp_df.loc[:, "tpl"] = tpl_entries
+        pp_df.loc[:, "parnme"] = names
+        f_tpl = open(tpl_file,'w')
+        f_tpl.write("ptf ~\n")
+        f_tpl.write(pp_df.to_string(col_space=0,
+                                  columns=["name","x","y","zone","tpl"],
+                                  formatters=PP_FMT,
+                                  justify="left",
+                                  header=False,
+                                  index=False) + '\n')
 
     return pp_df

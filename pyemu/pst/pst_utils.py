@@ -745,8 +745,10 @@ def clean_missing_exponent(pst_filename,clean_filename="clean.pst"):
         for line in lines:
             f.write(line+'\n')
 
+
 def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None,
-                    marker='~',includes_header=True,includes_index=True,prefix=''):
+                    marker='~',includes_header=True,includes_index=True,prefix='',
+                    longnames=False, head_lines_len=0, sep=',', gpname=False):
     """write a PEST-style instruction file from an existing CSV file
 
     Args:
@@ -765,6 +767,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
             index column as the first column.  Default is True.
         prefix (`str`, optional): a prefix to prepend to observation names.
             Default is ""
+        gpname (`str` or [`str`]): Optional PEST group name for columns
 
     Returns:
         `pandas.DataFrame`: a dataframe of observation names and values found in
@@ -786,18 +789,20 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
 
     # process only_cols
     if only_cols is None:
-        only_cols = set(df.columns.map(str.lower))
+        only_cols = set(df.columns)
     else:
-        if isinstance(only_cols,str): # incase it is a single name
+        if isinstance(only_cols, str): # incase it is a single name
             only_cols = [only_cols]
         only_cols = set(only_cols)
+    only_cols = {c.lower() if isinstance(c, str) else c for c in only_cols}
 
     if only_rows is None:
-        only_rows = set(df.index.map(str.lower))
+        only_rows = set(df.index)
     else:
-        if isinstance(only_rows,str): # incase it is a single name
+        if isinstance(only_rows, str): # incase it is a single name
             only_rows = [only_rows]
         only_rows = set(only_rows)
+    only_cols = {c.lower() if isinstance(c, str) else c for c in only_cols}
 
     # process the row labels, handling duplicates
     rlabels = []
@@ -842,26 +847,64 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     row_visit, col_visit = {},{}
     onames = []
     ovals = []
+    ognames = []
     with open(ins_filename,'w') as f:
-        f.write("pif ~\nl1\n")
-        for i,rlabel in enumerate(rlabels):
-            if includes_header:
-                f.write("l1 ") #skip the row (index) label
-            for j,clabel in enumerate(clabels):
-                if rlabel in only_rlabels and clabel in only_clabels:
-                    oname = prefix+rlabel+"_"+clabel
-                    onames.append(oname)
-                    ovals.append(df.iloc[i,j])
-                else:
-                    oname = "dum"
-                if j == 0:
-                    if includes_index:
-                        f.write(" {0},{0} ".format(marker))
-                else:
-                    f.write(" {0},{0} ".format(marker))
-                f.write(" !{0}! ".format(oname))
+        f.write("pif {0}\n".format(marker))
+        [f.write("l1\n") for _ in range(head_lines_len)]
+        if includes_header:
+            f.write("l1\n")  # skip the row (index) label
+        for i,rlabel in enumerate(rlabels):  # loop over rows
+            f.write("l1")
+            c_count = 0
+            for j,clabel in enumerate(clabels):  # loop over columns
+                oname = ''
+                if c_count < len(only_clabels):  # if we haven't yet set up all obs
+                    if rlabel in only_rlabels and clabel in only_clabels:
+                        # define obs names
+                        if not isinstance(prefix, str):
+                            nprefix = prefix[c_count]
+                        else:
+                            nprefix = prefix
+                        if longnames:
+                            nname = "{0}_usecol:{1}".format(nprefix, clabel)
+                            oname = "{0}_{1}".format(nname, rlabel)
+                        else:
+                            nname = nprefix+clabel
+                            oname = nprefix+rlabel+"_"+clabel
+                        onames.append(oname)  # append list of obs
+                        ovals.append(df.iloc[i, j])  # store current obs val
+                        # defin group name
+                        if gpname is False or gpname[c_count] is False:
+                            # keeping consistent behaviour
+                            ngpname = None  # nname
+                        elif gpname is True or gpname[c_count] is True:
+                            ngpname = nname  #  set to base of obs name
+                        else:  # a group name has been specified
+                            if not isinstance(gpname, str):
+                                ngpname = gpname[c_count]
+                            else:
+                                ngpname = gpname
+                        ognames.append(ngpname)  # add to list of group names
+                        # start defining string to write in ins
+                        oname = " !{0}!".format(oname)
+                        c_count += 1
+                    # else:  # not a requested observation; add spacer
+                    if j < len(clabels) - 1:
+                        if sep == ',':
+                            oname = "{0} {1},{1}".format(oname, marker)
+                        else:
+                            oname = "{0} w".format(oname)
+                    if j == 0:
+                        # if first col and input file has an index need additional spacer
+                        if includes_index:
+                            if sep == ',':
+                                f.write(" {0},{0}".format(marker))
+                            else:
+                                f.write(" w")
+                    f.write(oname)
             f.write('\n')
-    odf = pd.DataFrame({"obsnme":onames,"obsval":ovals},index=onames)
+    odf = pd.DataFrame({"obsnme": onames, "obsval": ovals, 'obgnme': ognames},
+                       index=onames).dropna(axis=1)  # dropna to keep consistent after adding obgnme
     return odf
 
 

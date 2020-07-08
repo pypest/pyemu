@@ -1,0 +1,12 @@
+BEGIN Options
+  BUDGET  FILEOUT  freyberg6_freyberg.cbc
+  HEAD  FILEOUT  freyberg6_freyberg.hds
+  HEAD  PRINT_FORMAT  COLUMNS  10  WIDTH  11  DIGITS  4  general
+END Options
+
+BEGIN PERIOD  1
+  SAVE  budget  all
+  SAVE  head  all
+  PRINT  budget  all
+END PERIOD  1
+
