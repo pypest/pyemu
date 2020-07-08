@@ -209,7 +209,7 @@ class Ensemble(object):
             if type(lhs) == type(self._df):
                 return type(self)(pst=self.pst,df=lhs,istransformed=self.istransformed)
             elif "DataFrame" in str(lhs):
-                warnings.warn("return type uncaught, losing Ensemble type, returning DataFrame",pyemu.PyemuWarning)
+                warnings.warn("return type uncaught, losing Ensemble type, returning DataFrame", PyemuWarning)
                 print("return type uncaught, losing Ensemble type, returning DataFrame")
                 return lhs
             else:
@@ -1184,9 +1184,10 @@ class ParameterEnsemble(Ensemble):
         if self.istransformed:
             return
         li = self.pst.parameter_data.loc[:,"partrans"] == "log"
+        df = self._df
         #self.loc[:,:] = (self.loc[:,:] * self.pst.parameter_data.scale) +\
         #                 self.pst.parameter_data.offset
-        self.loc[:, li] = self.loc[:, li].apply(np.log10)
+        df.loc[:, li] = df.loc[:, li].apply(np.log10)
         self._istransformed = True
 
     def add_base(self):
