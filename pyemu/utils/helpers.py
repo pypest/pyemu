@@ -310,6 +310,19 @@ def geostatistical_prior_builder(pst, struct_dict, sigma_range=4,
                 #     print(full_cov.names[i])
     return full_cov
 
+def _rmse(v1, v2):
+    """return root mean squared error between v1 and v2
+
+    Args:
+        v1 (iterable): one vector
+        v2 (iterable): another vector
+
+    Returns:
+        scalar: root mean squared error of v1,v2
+    """
+
+    return np.sqrt(np.mean(np.square(v1-v2)))
+
 def calc_observation_ensemble_quantiles(ens, pst, quantiles, subset_obsnames=None, subset_obsgroups=None):
     """Given an observation ensemble, and requested quantiles, this function calculates the requested
        quantile point-by-point in the ensemble. This resulting set of values does not, however, correspond
@@ -319,8 +332,11 @@ def calc_observation_ensemble_quantiles(ens, pst, quantiles, subset_obsnames=Non
 
     Args:
         ens (pandas DataFrame): DataFrame read from an observation 
-        pst ([type]): pyemy.Pst object - needed to obtain observation weights
-        quantiles ([type]): iterable of quantiles ranging from 0-1.0 for which results requested
+        pst (pyemy.Pst object) - needed to obtain observation weights
+        quantiles (iterable): quantiles ranging from 0-1.0 for which results requested
+        subset_obsnames (iterable): list of observation names to include in calculations
+        subset_obsgroups (iterable): list of observation groups to include in calculations
+        
     Returns:
         ens (pandas DataFrame): same ens object that was input but with quantile realizations
                             appended as new rows labelled with 'q_#' where '#' is the slected quantile
@@ -390,6 +406,52 @@ def calc_observation_ensemble_quantiles(ens, pst, quantiles, subset_obsnames=Non
 
     return ens, quantile_idx
 
+def calc_rmse_ensemble(ens, pst, bygroups=True, subset_realizations=None):
+    """Calculates RMSE (without weights) to quantify fit to observations for ensemble members
+
+    Args:
+        ens (pandas DataFrame): DataFrame read from an observation 
+        pst (pyemy.Pst object) - needed to obtain observation weights
+        bygroups (Bool): Flag to summarize by groups or not. Defaults to True.
+        subset_realizations (iterable, optional): Subset of realizations for which
+                to report RMSE. Defaults to None which returns all realizations.
+                
+    Returns:
+        rmse (pandas DataFrame object): rows are realizations. Columns are groups. Content is RMSE
+    """
+
+        #TODO: handle zero weights due to PDC
+    
+    # make sure subset_realizations is a list
+    if not isinstance(subset_realizations, list) and subset_realizations is not None:
+        subset_realizations = list(subset_realizations)
+        
+    if 'real_name' in ens.columns:
+        ens.set_index('real_name')
+    if not isinstance(pst, pyemu.Pst):
+        raise Exception('pst object must be of type pyemu.Pst')
+ 
+    # get the observation data
+    obs = pst.observation_data.copy()
+    
+    # confirm that the indices and observations line up
+    if  False in np.unique(ens.columns == obs.index):
+        raise Exception('ens and pst observation names do not align')
+
+    
+    rmse = pd.DataFrame(index=ens.index)
+    if subset_realizations is not None:
+        rmse = rmse.loc[subset_realizations]
+    
+    # calculate the rmse total first
+    rmse['total'] = [_rmse(ens.loc[i], obs.obsval) for i in rmse.index]
+    
+    # if bygroups, do the groups as columns
+    if bygroups is True:
+        for cg in obs.obgnme.unique():
+            cnames = obs.loc[obs.obgnme == cg].obsnme
+            rmse[cg] = [_rmse(ens.loc[i][cnames], obs.loc[cnames].obsval) for i in rmse.index]
+    return rmse
 
 def _condition_on_par_knowledge(cov, par_knowledge_dict):
     """  experimental function to include conditional prior information
