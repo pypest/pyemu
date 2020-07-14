@@ -310,6 +310,148 @@ def geostatistical_prior_builder(pst, struct_dict, sigma_range=4,
                 #     print(full_cov.names[i])
     return full_cov
 
+def _rmse(v1, v2):
+    """return root mean squared error between v1 and v2
+
+    Args:
+        v1 (iterable): one vector
+        v2 (iterable): another vector
+
+    Returns:
+        scalar: root mean squared error of v1,v2
+    """
+
+    return np.sqrt(np.mean(np.square(v1-v2)))
+
+def calc_observation_ensemble_quantiles(ens, pst, quantiles, subset_obsnames=None, subset_obsgroups=None):
+    """Given an observation ensemble, and requested quantiles, this function calculates the requested
+       quantile point-by-point in the ensemble. This resulting set of values does not, however, correspond
+       to a single realization in the ensemble. So, this function finds the minimum weighted squared 
+       distance to the quantile and labels it in the ensemble. Also indicates which realizations
+       correspond to the selected quantiles.
+
+    Args:
+        ens (pandas DataFrame): DataFrame read from an observation 
+        pst (pyemy.Pst object) - needed to obtain observation weights
+        quantiles (iterable): quantiles ranging from 0-1.0 for which results requested
+        subset_obsnames (iterable): list of observation names to include in calculations
+        subset_obsgroups (iterable): list of observation groups to include in calculations
+        
+    Returns:
+        ens (pandas DataFrame): same ens object that was input but with quantile realizations
+                            appended as new rows labelled with 'q_#' where '#' is the slected quantile
+        quantile_idx (dictionary): dictionary with keys being quantiles and values being realizations
+                                corresponding to each realization
+    """
+    #TODO: handle zero weights due to PDC
+    
+    quantile_idx = {}
+    # make sure quantiles and subset names and groups are lists
+    if not isinstance(quantiles, list):
+        quantiles = list(quantiles)
+    if not isinstance(subset_obsnames, list) and subset_obsnames is not None:
+        subset_obsnames = list(subset_obsnames)
+    if not isinstance(subset_obsgroups, list) and subset_obsgroups is not None:
+        subset_obsgroups = list(subset_obsgroups)
+    
+        
+    if 'real_name' in ens.columns:
+        ens.set_index('real_name')
+    if not isinstance(pst, pyemu.Pst):
+        raise Exception('pst object must be of type pyemu.Pst')
+ 
+    # get the observation data
+    obs = pst.observation_data.copy()
+    
+    # confirm that the indices and weights line up
+    if  False in np.unique(ens.columns == obs.index):
+        raise Exception('ens and pst observation names do not align')
+    
+    # deal with any subsetting of observations that isn't handled through weights
+    
+    trimnames = obs.index.values
+    if subset_obsgroups is not None and subset_obsnames is not None:
+        raise Exception('can only specify information in one of subset_obsnames of subset_obsgroups. not both')
+    
+    if subset_obsnames is not None:
+        trimnames = subset_obsnames
+        if len(set(trimnames) - set(obs.index.values)) is not 0:
+            raise Exception('the following names in subset_obsnames are not in the ensemble:\n' +
+                            ['{}\n'.format(i) for i in (set(trimnames) - set(obs.index.values))])
+
+    
+    if subset_obsgroups is not None:
+        if len((set(subset_obsgroups) - set(pst.obs_groups))) is not 0:
+            raise Exception('the following groups in subset_obsgroups are not in pst:\n' +
+                ['{}\n'.format(i) for i in (set(subset_obsgroups) - set(pst.obs_groups))])
+
+        trimnames = obs.loc[obs.obgnme.isin(subset_obsgroups)].obsnme.tolist()
+        if len((set(trimnames) - set(obs.index.values)))is not 0:
+            raise Exception('the following names in subset_obsnames are not in the ensemble:\n' +
+                ['{}\n'.format(i) for i in (set(trimnames) - set(obs.index.values))])
+    # trim the data to subsets (or complete )    
+    ens_eval = ens[trimnames].copy()
+    weights = obs.loc[trimnames].weight.values
+    
+    for cq in quantiles:
+        # calculate the point-wise quantile values
+        qfit = np.quantile(ens_eval, cq, axis=0)
+        # calculate the weighted distance between all reals and the desired quantile
+        qreal = np.argmin(np.linalg.norm([(i - qfit)*weights for i in ens_eval.values], axis=1))
+        quantile_idx['q{}'.format(cq)] = qreal
+        ens = ens.append(ens.iloc[qreal])
+        idx = ens.index.values
+        idx[-1] = 'q{}'.format(cq)
+        ens.set_index(idx, inplace=True)
+
+    return ens, quantile_idx
+
+def calc_rmse_ensemble(ens, pst, bygroups=True, subset_realizations=None):
+    """Calculates RMSE (without weights) to quantify fit to observations for ensemble members
+
+    Args:
+        ens (pandas DataFrame): DataFrame read from an observation 
+        pst (pyemy.Pst object) - needed to obtain observation weights
+        bygroups (Bool): Flag to summarize by groups or not. Defaults to True.
+        subset_realizations (iterable, optional): Subset of realizations for which
+                to report RMSE. Defaults to None which returns all realizations.
+                
+    Returns:
+        rmse (pandas DataFrame object): rows are realizations. Columns are groups. Content is RMSE
+    """
+
+        #TODO: handle zero weights due to PDC
+    
+    # make sure subset_realizations is a list
+    if not isinstance(subset_realizations, list) and subset_realizations is not None:
+        subset_realizations = list(subset_realizations)
+        
+    if 'real_name' in ens.columns:
+        ens.set_index('real_name')
+    if not isinstance(pst, pyemu.Pst):
+        raise Exception('pst object must be of type pyemu.Pst')
+ 
+    # get the observation data
+    obs = pst.observation_data.copy()
+    
+    # confirm that the indices and observations line up
+    if  False in np.unique(ens.columns == obs.index):
+        raise Exception('ens and pst observation names do not align')
+
+    
+    rmse = pd.DataFrame(index=ens.index)
+    if subset_realizations is not None:
+        rmse = rmse.loc[subset_realizations]
+    
+    # calculate the rmse total first
+    rmse['total'] = [_rmse(ens.loc[i], obs.obsval) for i in rmse.index]
+    
+    # if bygroups, do the groups as columns
+    if bygroups is True:
+        for cg in obs.obgnme.unique():
+            cnames = obs.loc[obs.obgnme == cg].obsnme
+            rmse[cg] = [_rmse(ens.loc[i][cnames], obs.loc[cnames].obsval) for i in rmse.index]
+    return rmse
 
 def _condition_on_par_knowledge(cov, par_knowledge_dict):
     """  experimental function to include conditional prior information
@@ -615,7 +757,6 @@ def _regweight_from_parbound(pst):
         else:
             print("prior information name does not correspond" + \
                   " to a parameter: " + str(parnme))
-
 
 def first_order_pearson_tikhonov(pst, cov, reset=True, abs_drop_tol=1.0e-3):
     """setup preferred-difference regularization from a covariance matrix.
