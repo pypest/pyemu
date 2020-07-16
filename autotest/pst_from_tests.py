@@ -1279,9 +1279,9 @@ def mf6_freyberg_direct_test():
             raise Exception("recharge too diff")
 
 if __name__ == "__main__":
-    freyberg_test()
-    freyberg_prior_build_test()
+    #freyberg_test()
+    #freyberg_prior_build_test()
     mf6_freyberg_test()
-    mf6_freyberg_shortnames_test()
-    mf6_freyberg_da_test()
-    mf6_freyberg_direct_test()
+    # mf6_freyberg_shortnames_test()
+    #mf6_freyberg_da_test()
+    #mf6_freyberg_direct_test()
