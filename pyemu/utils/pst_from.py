@@ -71,6 +71,8 @@ class PstFrom(object):
         self.remove_existing = bool(remove_existing)
         self.zero_based = bool(zero_based)
         self._spatial_reference = spatial_reference
+        self._spatial_ref_xarray = None
+        self._spatial_ref_yarray = None
         self.spatial_reference = None
         if start_datetime is not None:
             start_datetime = _get_datetime_from_str(start_datetime)
@@ -209,8 +211,12 @@ class PstFrom(object):
         if all([ij is None for ij in [i, j]]):
             return i, j
         else:
-            return (self._spatial_reference.xcellcenters[i, j],
-                    self._spatial_reference.ycellcenters[i, j])
+            if self._spatial_ref_xarray is None:
+                self._spatial_ref_xarray = self._spatial_reference.xcellcenters
+                self._spatial_ref_yarray = self._spatial_reference.ycellcenters
+
+            return (self._spatial_ref_xarray[i, j],
+                    self._spatial_ref_yarray[i, j])
 
     def parse_kij_args(self, args, kwargs):
         if len(args) >= 2:
