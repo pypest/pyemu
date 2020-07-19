@@ -65,7 +65,7 @@ Several example ipython notebooks are provided to demostrate typical workflows f
 Links
 =====
 
-[https://github.com/jtwhite79/pestpp](https://github.com/usgs/pestpp)
+[https://github.com/usgs/pestpp](https://github.com/usgs/pestpp)
 
 [PEST - http://www.pesthomepage.org/](http://www.pesthomepage.org/)
 
