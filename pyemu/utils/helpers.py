@@ -357,6 +357,8 @@ def calc_observation_ensemble_quantiles(ens, pst, quantiles, subset_obsnames=Non
         
     if 'real_name' in ens.columns:
         ens.set_index('real_name')
+    # if 'base' real was lost, then the index is of type int. needs to be string later so set here
+    ens.index = [str(i) for i in ens.index]
     if not isinstance(pst, pyemu.Pst):
         raise Exception('pst object must be of type pyemu.Pst')
  
