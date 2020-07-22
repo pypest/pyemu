@@ -5970,3 +5970,74 @@ class SpatialReference(object):
 #                   "instead.", category=DeprecationWarning)
 # 
 #     return get_spatialreference(epsg, text='proj4')
+
+def get_maha_obs_summary(sim_en):
+    """ calculate the 1-D and 2-D mahalanobis distance
+
+    Args:
+        sim_en (`pyemu.ObservationEnsemble`): a simulated outputs ensemble
+
+    Returns:
+
+        tuple containing
+
+        - **pandas.DataFrame**: 1-D subspace squared mahalanobis distances
+        - **pandas.DataFrame**: 2-D subspace squared mahalanobis distances
+
+    Note:
+        Noise realizations are added to `sim_en` to account for measurement
+            noise.
+
+
+
+
+    """
+
+    if not isinstance(sim_en,pyemu.ObservationEnsemble):
+        raise Exception("'sim_en' must be a "+\
+                        " pyemu.ObservationEnsemble instance")
+    if sim_en.pst.nnz_obs < 1:
+        raise Exception(" at least one non-zero weighted obs is needed")
+
+    # process the simulated ensemblet to only have non-zero weighted obs
+    obs = sim_en.pst.observation_data
+    nz_names =sim_en.pst.nnz_obs_names
+    # get the full cov matrix
+    nz_cov_df = sim_en.covariance_matrix().to_dataframe()
+    nnz_en = sim_en.loc[:,nz_names].copy()
+    nz_cov_df = nz_cov_df.loc[nz_names,nz_names]
+    # get some noise realizations
+    nnz_en.reseed()
+    obsmean = obs.loc[nnz_en.columns.values, "obsval"]
+    noise_en = pyemu.ObservationEnsemble.from_gaussian_draw(sim_en.pst,num_reals=sim_en.shape[0])
+    noise_en -= obsmean #subtract off the obs val bc we just want the noise
+    noise_en.index = nnz_en.index
+    nnz_en += noise_en
+
+
+
+    #obsval_dict = obs.loc[nnz_en.columns.values,"obsval"].to_dict()
+
+    # first calculate the 1-D subspace maha distances
+    sim_mean = nnz_en.mean()
+    obs_mean = obs.loc[nnz_en.columns.values,"obsval"]
+    simvar_inv = 1. / (nnz_en.std()**2)
+    res_mean = sim_mean - obs_mean
+    l1_maha_sq_df = res_mean**2 * simvar_inv
+
+    # now calculate the 2-D subspace maha distances
+    onames1,onames2,l2_maha_sq_vals = [],[],[]
+    for i1,o1 in enumerate(nz_names):
+        r1 = res_mean[o1]
+        print("{0} of {1}".format(i1+1,len(nz_names)))
+        for i2,o2 in enumerate(nz_names[i1+1:]):
+            c_inv = np.linalg.inv(nz_cov_df.loc[[o1,o2],[o1,o2]].values)
+            r2 = res_mean[o2]
+            r_vec = np.array([r1,r2])
+            l2_maha_sq_val = np.dot(np.dot(r_vec,c_inv),r_vec.transpose())
+            onames1.append(o1)
+            onames2.append(o2)
+            l2_maha_sq_vals.append(l2_maha_sq_val)
+    l2_maha_sq_df = pd.DataFrame({"obsnme_1":onames1,"obsnme_2":onames2,"sq_distance":l2_maha_sq_vals})
+
+    return l1_maha_sq_df,l2_maha_sq_df
