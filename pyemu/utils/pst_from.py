@@ -11,6 +11,7 @@ import pyemu
 import time
 from ..pyemu_warnings import PyemuWarning
 import copy
+import string
 
 
 #the tolerable percent difference (100 * (max - min)/mean)
@@ -119,7 +120,7 @@ class PstFrom(object):
         self._parfile_relations = []
         self._pp_facs = {}
         self.pst = None
-
+        self._function_lines_list = [] #each function is itself a list of lines
         self.direct_org_files = []
 
     @property
@@ -277,11 +278,19 @@ class PstFrom(object):
                 "import os\nimport multiprocessing as mp\nimport numpy as np" + \
                 "\nimport pandas as pd\n")
             f.write("import pyemu\n")
+            for ex_imp in self.extra_py_imports:
+                f.write('import {0}\n'.format(ex_imp))
+
+
+            for func_lines in self._function_lines_list:
+                f.write("\n")
+                f.write("# function added thru PstFrom.add_py_function()\n")
+                for func_line in func_lines:
+                    f.write(func_line)
+                f.write("\n")
             f.write("def main():\n")
             f.write("\n")
             s = "    "
-            for ex_imp in self.extra_py_imports:
-                f.write(s + 'import {0}\n'.format(ex_imp))
             for tmp_file in self.tmp_files:
                 f.write(s + "try:\n")
                 f.write(s + "   os.remove('{0}')\n".format(tmp_file))
@@ -705,6 +714,74 @@ class PstFrom(object):
             self._prefix_count[prefix] += 1
 
         return self._prefix_count[prefix]
+
+
+    def add_py_function(self,file_name,function_name, is_pre_cmd=True):
+        """add a python function to the forward run script
+
+        Args:
+            file_name (`str`): a python source file
+            function_name (`str`): a python function in
+                `file_name`
+            is_pre_cmd (`bool`): flag to include `function_name` in
+                PstFrom.pre_py_cmds.  If False, `function_name` is
+                added to PstFrom.post_py_cmds instead. Default is True.
+        Returns:
+            None
+
+        Note:
+            `function_name` is expected to be standalone a function
+                that contains all the imports it needs or these imports
+                should have been added to the forward run script through the
+                `PstFrom.py_imports` list.
+            This function adds the `function_name` call to the forward
+                run script (either as a pre or post command). It is up to users
+                 to make sure `function_name` is a valid python function call
+                  that includes the parentheses and requisite arguments
+            This function expects "def " + `function_name` to be flushed left at the outer
+                most indentation level
+
+        Example::
+
+            pf = PstFrom()
+            pf.add_py_function("preprocess.py","mult_well_function()",is_pre_cmd=True)
+
+
+        """
+
+        if not os.path.exists(file_name):
+            self.logger.lraise("add_py_function(): couldnt find python source file '{0}'".\
+                               format(file_name))
+        if '(' not in function_name or ')' not in function_name:
+            self.logger.lraise("add_py_function(): function_name '{0}' missing paretheses".\
+                               format(function_name))
+
+        func_lines = []
+        search_str = "def " + function_name
+        abet_set = set(string.ascii_uppercase)
+        abet_set.update(set(string.ascii_lowercase))
+        with open(file_name,'r') as f:
+            while True:
+                line = f.readline()
+                if line == '':
+                    self.logger.lraise("add_py_function(): EOF while searching for function '[0}'".\
+                                       format(search_str))
+                if line.startswith(search_str): #case sens and no strip since 'def' should be flushed left
+                    func_lines.append(line)
+                    while True:
+                        line = f.readline()
+                        if line == '':
+                            break
+                        if line[0] in abet_set:
+                            break
+                        func_lines.append(line)
+                    break
+
+        self._function_lines_list.append(func_lines)
+        if is_pre_cmd:
+            self.pre_py_cmds.append(function_name)
+        else:
+            self.post_py_cmds.append(function_name)
 
     def add_observations(self, filename, insfile=None,
                          index_cols=None, use_cols=None,

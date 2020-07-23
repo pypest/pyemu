@@ -471,6 +471,14 @@ def freyberg_prior_build_test():
     #                              cleanup=False, port=4005)
 
 
+def generic_function():
+    import pandas as pd
+    onames = ["generic_obs_{0}".format(i) for i in range(100)]
+    df = pd.DataFrame({"obsval":1,"simval":2,"obsnme":onames},index=onames)
+    df.to_csv("generic.csv",index=False)
+    return df
+
+
 def mf6_freyberg_test():
     import numpy as np
     import pandas as pd
@@ -576,6 +584,16 @@ def mf6_freyberg_test():
     # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
     #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
+    # call generic once so that the output file exists
+    os.chdir(template_ws)
+    df = generic_function()
+    os.chdir("..")
+    # add the values in generic to the ctl file
+    pf.add_observations("generic.csv",insfile="generic.csv.ins",index_cols="obsnme",use_cols="simval")
+    # add the function call to make generic to the forward run script
+    pf.add_py_function("pst_from_tests.py","generic_function()",is_pre_cmd=False)
+
+    #pf.post_py_cmds.append("generic_function()")
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
     v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
