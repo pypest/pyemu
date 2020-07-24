@@ -2818,14 +2818,18 @@ class Pst(object):
         obs_cols = pst_utils.pst_config["obs_fieldnames"]
 
         for df,name,fieldnames in zip([par,obs],["parnme","obsnme"],[par_cols,obs_cols]):
-            meta_dict = df.loc[:,name].apply(lambda x: dict([item.split(':') for item in x.split('_') if ':' in item]))
-            unique_keys = []
-            for k,v in meta_dict.items():
-                for kk,vv in v.items():
-                    if kk not in fieldnames and kk not in unique_keys:
-                        unique_keys.append(kk)
-            for uk in unique_keys:
-                if uk not in df.columns:
-                    df.loc[:,uk] = np.NaN
-                df.loc[:,uk] = meta_dict.apply(lambda x: x.get(uk,np.NaN))
+            try:
+                meta_dict = df.loc[:,name].apply(lambda x: dict([item.split(':') for item in x.split('_') if ':' in item]))
+                unique_keys = []
+                for k,v in meta_dict.items():
+                    for kk,vv in v.items():
+                        if kk not in fieldnames and kk not in unique_keys:
+                            unique_keys.append(kk)
+                for uk in unique_keys:
+                    if uk not in df.columns:
+                        df.loc[:,uk] = np.NaN
+                    df.loc[:,uk] = meta_dict.apply(lambda x: x.get(uk,np.NaN))
+            except Exception as e:
+                print("error parsing metadata from '{0}', continuing".format(name))
+
 
