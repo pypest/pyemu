@@ -592,7 +592,7 @@ if __name__ == "__main__":
     #phi_vector_test()
     #add_base_test()
     #nz_test()
-    # deviations_test()
+    deviations_test()
     # as_pyemu_matrix_test()
     # dropna_test()
     #enforce_test()
