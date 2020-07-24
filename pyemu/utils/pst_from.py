@@ -1902,13 +1902,13 @@ def _write_direct_df_tpl(in_filename, tpl_filename,df,name,index_cols,typ,use_co
     # get some index strings for naming
     if longnames:
         j = '_'
-        fmt = "{0}:{1}"
+        fmt = "{0}|{1}"
         if isinstance(index_cols[0], str):
             inames = index_cols
         else:
             inames = ["idx{0}".format(i) for i in range(len(index_cols))]
     else:
-        fmt = "{1:3}"
+        fmt = "{1|3}"
         j = ''
         if isinstance(index_cols[0], str):
             inames = index_cols
