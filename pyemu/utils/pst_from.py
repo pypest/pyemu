@@ -2107,7 +2107,7 @@ def _get_tpl_or_ins_df(filenames, dfs, name, index_cols, typ, use_cols=None,
         else:
             inames = ["idx{0}".format(i) for i in range(len(index_cols))]
     else:
-        fmt = "{1|3}"
+        fmt = "{1:3}"
         j = ''
         if isinstance(index_cols[0], str):
             inames = index_cols
