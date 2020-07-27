@@ -1902,13 +1902,13 @@ def _write_direct_df_tpl(in_filename, tpl_filename,df,name,index_cols,typ,use_co
     # get some index strings for naming
     if longnames:
         j = '_'
-        fmt = "{0}:{1}"
+        fmt = "{0}|{1}"
         if isinstance(index_cols[0], str):
             inames = index_cols
         else:
             inames = ["idx{0}".format(i) for i in range(len(index_cols))]
     else:
-        fmt = "{1:3}"
+        fmt = "{1|3}"
         j = ''
         if isinstance(index_cols[0], str):
             inames = index_cols
@@ -1921,6 +1921,9 @@ def _write_direct_df_tpl(in_filename, tpl_filename,df,name,index_cols,typ,use_co
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
         lambda x: j.join([fmt.format(iname, xx)
                           for xx, iname in zip(x, inames)])).str.replace(' ', '')
+
+    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "")
+    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":")
 
     if get_xy is not None:
         if xy_in_idx is not None:
@@ -2098,7 +2101,7 @@ def _get_tpl_or_ins_df(filenames, dfs, name, index_cols, typ, use_cols=None,
     # get some index strings for naming
     if longnames:
         j = '_'
-        fmt = "{0}:{1}"
+        fmt = "{0}|{1}"
         if isinstance(index_cols[0], str):
             inames = index_cols
         else:
@@ -2114,9 +2117,12 @@ def _get_tpl_or_ins_df(filenames, dfs, name, index_cols, typ, use_cols=None,
     if not zero_based:
         df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
             lambda x: tuple(xx - 1 for xx in x))
+
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
         lambda x: j.join([fmt.format(iname, xx)
                           for xx, iname in zip(x, inames)])).str.replace(' ', '')
+    df_ti.loc[:,"idx_strs"] = df_ti.idx_strs.str.replace(":","")
+    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":")
 
     if get_xy is not None:
         if xy_in_idx is not None:

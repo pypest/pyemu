@@ -473,9 +473,12 @@ def freyberg_prior_build_test():
 
 def generic_function():
     import pandas as pd
-    onames = ["generic_obs_{0}".format(i) for i in range(100)]
-    df = pd.DataFrame({"obsval":1,"simval":2,"obsnme":onames},index=onames)
-    df.to_csv("generic.csv",index=False)
+    import numpy as np
+    #onames = ["generic_obs_{0}".format(i) for i in range(100)]
+    onames = pd.date_range("1-1-2020",periods=100,freq='d')
+    df = pd.DataFrame({"index_2":np.arange(100),"simval1":1,"simval2":2,"datetime":onames})
+    df.index = df.pop("datetime")
+    df.to_csv("generic.csv",date_format="%d-%m-%Y %H:%M:%S")
     return df
 
 
@@ -589,7 +592,7 @@ def mf6_freyberg_test():
     df = generic_function()
     os.chdir("..")
     # add the values in generic to the ctl file
-    pf.add_observations("generic.csv",insfile="generic.csv.ins",index_cols="obsnme",use_cols="simval")
+    pf.add_observations("generic.csv",insfile="generic.csv.ins",index_cols=["datetime","index_2"],use_cols=["simval1","simval2"])
     # add the function call to make generic to the forward run script
     pf.add_py_function("pst_from_tests.py","generic_function()",is_pre_cmd=False)
 
@@ -720,6 +723,7 @@ def mf6_freyberg_test():
     sfr_pars[['inst', 'usecol', '#rno']] = sfr_pars.parnme.apply(
         lambda x: pd.DataFrame([s.split(':') for s in x.split('_')
                                 if ':' in s]).set_index(0)[1])
+
     sfr_pars['#rno'] = sfr_pars['#rno'] .astype(int)
     os.chdir(pf.new_d)
     pst.write_input_files()
@@ -1299,7 +1303,7 @@ def mf6_freyberg_direct_test():
 if __name__ == "__main__":
     #freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
-    # mf6_freyberg_shortnames_test()
+    #mf6_freyberg_test()
+    mf6_freyberg_shortnames_test()
     #mf6_freyberg_da_test()
     #mf6_freyberg_direct_test()

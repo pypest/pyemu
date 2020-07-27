@@ -5971,25 +5971,28 @@ class SpatialReference(object):
 # 
 #     return get_spatialreference(epsg, text='proj4')
 
-def get_maha_obs_summary(sim_en):
+def get_maha_obs_summary(sim_en,l1_crit_val=6.34,l2_crit_val=9.2):
     """ calculate the 1-D and 2-D mahalanobis distance
 
     Args:
         sim_en (`pyemu.ObservationEnsemble`): a simulated outputs ensemble
+        l1_crit_val (`float1): the chi squared critical value for the 1-D
+            mahalanobis distance.  Default is 6.4 (p=0.01,df=1)
+        l2_crit_val (`float1): the chi squared critical value for the 2-D
+            mahalanobis distance.  Default is 9.2 (p=0.01,df=2)
 
     Returns:
 
         tuple containing
 
         - **pandas.DataFrame**: 1-D subspace squared mahalanobis distances
+            that exceed the `l1_crit_val` threshold
         - **pandas.DataFrame**: 2-D subspace squared mahalanobis distances
+            that exceed the `l2_crit_val` threshold
 
     Note:
         Noise realizations are added to `sim_en` to account for measurement
             noise.
-
-
-
 
     """
 
@@ -6019,25 +6022,75 @@ def get_maha_obs_summary(sim_en):
     #obsval_dict = obs.loc[nnz_en.columns.values,"obsval"].to_dict()
 
     # first calculate the 1-D subspace maha distances
+    print("calculating L-1 maha distances")
     sim_mean = nnz_en.mean()
     obs_mean = obs.loc[nnz_en.columns.values,"obsval"]
     simvar_inv = 1. / (nnz_en.std()**2)
     res_mean = sim_mean - obs_mean
     l1_maha_sq_df = res_mean**2 * simvar_inv
-
+    l1_maha_sq_df = l1_maha_sq_df.loc[l1_maha_sq_df > l1_crit_val]
     # now calculate the 2-D subspace maha distances
-    onames1,onames2,l2_maha_sq_vals = [],[],[]
-    for i1,o1 in enumerate(nz_names):
-        r1 = res_mean[o1]
-        print("{0} of {1}".format(i1+1,len(nz_names)))
-        for i2,o2 in enumerate(nz_names[i1+1:]):
-            c_inv = np.linalg.inv(nz_cov_df.loc[[o1,o2],[o1,o2]].values)
-            r2 = res_mean[o2]
-            r_vec = np.array([r1,r2])
-            l2_maha_sq_val = np.dot(np.dot(r_vec,c_inv),r_vec.transpose())
-            onames1.append(o1)
-            onames2.append(o2)
-            l2_maha_sq_vals.append(l2_maha_sq_val)
+    print("preparing L-2 maha distance containers")
+    manager = mp.Manager()
+    ns = manager.Namespace()
+    results = manager.dict()
+    mean = manager.dict(res_mean.to_dict())
+    var = manager.dict()
+    cov = manager.dict()
+    var_arr = np.diag(nz_cov_df.values)
+    for i1, o1 in enumerate(nz_names):
+        var[o1] = var_arr[i1]
+
+        cov_vals = nz_cov_df.loc[o1, :].values[i1+1:]
+        ostr_vals = ["{0}_{1}".format(o1, o2) for o2 in nz_names[i1+1:]]
+        cd = {o:c for o,c in zip(ostr_vals,cov_vals)}
+        cov.update(cd)
+    print("starting L-2 maha distance parallel calcs")
+    #pool = mp.Pool(processes=5)
+    with mp.get_context("spawn").Pool() as pool:
+        for i1,o1 in enumerate(nz_names):
+            o2names = [o2 for o2 in nz_names[i1+1:]]
+            rresults = [pool.apply_async(_l2_maha_worker,args=(o1,o2names,mean,var,cov,results,l2_crit_val))]
+        [r.get() for r in rresults]
+
+        print("closing pool")
+        pool.close()
+
+        print("joining pool")
+        pool.join()
+
+    #print(results)
+    #print(len(results),len(ostr_vals))
+
+    keys = list(results.keys())
+    onames1 = [k.split('|')[0] for k in keys]
+    onames2 = [k.split('|')[1] for k in keys]
+    l2_maha_sq_vals = [results[k] for k in keys]
     l2_maha_sq_df = pd.DataFrame({"obsnme_1":onames1,"obsnme_2":onames2,"sq_distance":l2_maha_sq_vals})
 
     return l1_maha_sq_df,l2_maha_sq_df
+
+
+def _l2_maha_worker(o1,o2names,mean,var,cov,results,l2_crit_val):
+
+    rresults = {}
+    v1 = var[o1]
+    c = np.zeros((2, 2))
+    c[0, 0] = v1
+    r1 = mean[o1]
+    for o2 in o2names:
+        ostr = "{0}_{1}".format(o1,o2)
+        cv = cov[ostr]
+        v2 = var[o2]
+        c[1,1] = v2
+        c[0,1] = cv
+        c[1,0] = cv
+        c_inv = np.linalg.inv(c)
+
+        r2 = mean[o2]
+        r_vec = np.array([r1, r2])
+        l2_maha_sq_val = np.dot(np.dot(r_vec, c_inv), r_vec.transpose())
+        if l2_maha_sq_val > l2_crit_val:
+            rresults[ostr] = l2_maha_sq_val
+    results.update(rresults)
+    print(o1,"done")

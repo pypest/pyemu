@@ -11,7 +11,6 @@ import pandas as pd
 from pyemu.mat.mat_handler import Cov
 from pyemu.utils.pp_utils import pp_file_to_dataframe
 from ..pyemu_warnings import PyemuWarning
-from flopy.discretization import StructuredGrid
 
 EPSILON = 1.0e-7
 
@@ -586,6 +585,7 @@ class SpecSim2d(object):
             log transformation is respected and the returned `reals` array is
             in arithmetic space
         """
+
 
         # get a dataframe for the observation points, from file unless passed
         if isinstance(obs_points, str):
