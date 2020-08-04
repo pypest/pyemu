@@ -1191,7 +1191,7 @@ class InstructionFile(object):
                     yield start
                     start += len(sub)
             midx = list(find_all(line,self._marker))
-            midx.append(len(line)-1)
+            midx.append(len(line))
             first =line[:midx[0]].strip()
             tokens = []
             if len(first) > 0:
