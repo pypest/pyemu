@@ -482,6 +482,12 @@ def generic_function():
     return df
 
 
+def another_generic_function(some_arg):
+    import pandas as pd
+    import numpy as np
+    print(some_arg)
+
+
 def mf6_freyberg_test():
     import numpy as np
     import pandas as pd
@@ -595,6 +601,12 @@ def mf6_freyberg_test():
     pf.add_observations("generic.csv",insfile="generic.csv.ins",index_cols=["datetime","index_2"],use_cols=["simval1","simval2"])
     # add the function call to make generic to the forward run script
     pf.add_py_function("pst_from_tests.py","generic_function()",is_pre_cmd=False)
+
+    # add a function that isnt going to be called directly
+    pf.add_py_function("pst_from_tests.py","another_generic_function(some_arg)",is_pre_cmd=None)
+
+
+
 
     #pf.post_py_cmds.append("generic_function()")
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
