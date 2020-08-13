@@ -468,24 +468,26 @@ def parse_ins_file(ins_file):
 def _parse_ins_string(string):
     """ split up an instruction file line to get the observation names
     """
-    istart_markers = ["[","(","!"]
-    iend_markers = ["]",")","!"]
+    istart_markers = set(["[","(","!"])
+    marker_dict = {"[":"]","(":")","!":"!"}
+    #iend_markers = set(["]",")","!"])
 
     obs_names = []
-
+    slen = len(string)
     idx = 0
     while True:
-        if idx >= len(string) - 1:
+        if idx >= slen - 1:
             break
         char = string[idx]
         if char in istart_markers:
-            em = iend_markers[istart_markers.index(char)]
+            #em = iend_markers[istart_markers.index(char)]
+            em = marker_dict[char]
             # print("\n",idx)
             # print(string)
             # print(string[idx+1:])
             # print(string[idx+1:].index(em))
             # print(string[idx+1:].index(em)+idx+1)
-            eidx = min(len(string),string[idx+1:].index(em)+idx+1)
+            eidx = min(slen,string[idx+1:].index(em)+idx+1)
             obs_name = string[idx+1:eidx]
             if obs_name.lower() != "dum":
                 obs_names.append(obs_name)
@@ -848,6 +850,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     onames = []
     ovals = []
     ognames = []
+    vals = df.values.copy() # wasteful but way faster
     with open(ins_filename,'w') as f:
         f.write("pif {0}\n".format(marker))
         [f.write("l1\n") for _ in range(head_lines_len)]
@@ -872,7 +875,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
                             nname = nprefix+clabel
                             oname = nprefix+rlabel+"_"+clabel
                         onames.append(oname)  # append list of obs
-                        ovals.append(df.iloc[i, j])  # store current obs val
+                        ovals.append(vals[i, j])  # store current obs val
                         # defin group name
                         if gpname is False or gpname[c_count] is False:
                             # keeping consistent behaviour
@@ -1086,6 +1089,7 @@ class InstructionFile(object):
         #for ii,ins in enumerate(ins_line):
         ii = 0
         all_markers = True
+        line_seps = set([","," ","\t"])
         while True:
             if ii >= len(ins_line):
                 break
@@ -1117,7 +1121,7 @@ class InstructionFile(object):
                                              format(nlines, ins, ins_lcount))
             elif ins == 'w':
                 raw = line[cursor_pos:].replace(","," ").split()
-                if line[cursor_pos] in [","," ","\t"]:
+                if line[cursor_pos] in line_seps:
                     raw.insert(0,'')
                 if len(raw) == 1:
                     self.throw_out_error("no whitespaces found on output line {0} past {1}".format(line,cursor_pos))
