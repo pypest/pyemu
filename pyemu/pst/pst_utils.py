@@ -791,7 +791,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
 
     # process only_cols
     if only_cols is None:
-        only_cols = set(df.columns)
+        only_cols = set(df.columns.map(lambda x: x.lower().strip()).tolist())
     else:
         if isinstance(only_cols, str): # incase it is a single name
             only_cols = [only_cols]
@@ -799,7 +799,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     only_cols = {c.lower() if isinstance(c, str) else c for c in only_cols}
 
     if only_rows is None:
-        only_rows = set(df.index)
+        only_rows = set(df.index.map(lambda x: x.lower().strip()).tolist())
     else:
         if isinstance(only_rows, str): # incase it is a single name
             only_rows = [only_rows]

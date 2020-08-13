@@ -1555,8 +1555,8 @@ class PstFrom(object):
             self.logger.lraise("unrecognized type for index_cols or use_cols "
                                "should be str or int and both should be of the "
                                "same type, not {0} or {1}".
-                               format(str(type(index_cols)),
-                                      str(type(use_cols))))
+                               format(str(type(index_cols[0])),
+                                      str(type(use_cols[0]))))
         itype = type(index_cols)
         utype = type(use_cols)
         if itype != utype:
