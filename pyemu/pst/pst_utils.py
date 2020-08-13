@@ -841,6 +841,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
         clabels.append(clabel)
         if cname in only_cols:
             only_clabels.append(clabel)
+    only_clabels = set(only_clabels)
 
     if ins_filename is None:
         if not isinstance(csv_filename,str):
@@ -850,6 +851,9 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     onames = []
     ovals = []
     ognames = []
+    only_clabels_len = len(only_clabels)
+    clabels_len = len(clabels)
+    prefix_is_str = isinstance(prefix, str)
     vals = df.values.copy() # wasteful but way faster
     with open(ins_filename,'w') as f:
         f.write("pif {0}\n".format(marker))
@@ -861,10 +865,10 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
             c_count = 0
             for j,clabel in enumerate(clabels):  # loop over columns
                 oname = ''
-                if c_count < len(only_clabels):  # if we haven't yet set up all obs
+                if c_count < only_clabels_len:  # if we haven't yet set up all obs
                     if rlabel in only_rlabels and clabel in only_clabels:
                         # define obs names
-                        if not isinstance(prefix, str):
+                        if not prefix_is_str:
                             nprefix = prefix[c_count]
                         else:
                             nprefix = prefix
@@ -892,7 +896,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
                         oname = " !{0}!".format(oname)
                         c_count += 1
                     # else:  # not a requested observation; add spacer
-                    if j < len(clabels) - 1:
+                    if j < clabels_len - 1:
                         if sep == ',':
                             oname = "{0} {1},{1}".format(oname, marker)
                         else:
