@@ -468,24 +468,26 @@ def parse_ins_file(ins_file):
 def _parse_ins_string(string):
     """ split up an instruction file line to get the observation names
     """
-    istart_markers = ["[","(","!"]
-    iend_markers = ["]",")","!"]
+    istart_markers = set(["[","(","!"])
+    marker_dict = {"[":"]","(":")","!":"!"}
+    #iend_markers = set(["]",")","!"])
 
     obs_names = []
-
+    slen = len(string)
     idx = 0
     while True:
-        if idx >= len(string) - 1:
+        if idx >= slen - 1:
             break
         char = string[idx]
         if char in istart_markers:
-            em = iend_markers[istart_markers.index(char)]
+            #em = iend_markers[istart_markers.index(char)]
+            em = marker_dict[char]
             # print("\n",idx)
             # print(string)
             # print(string[idx+1:])
             # print(string[idx+1:].index(em))
             # print(string[idx+1:].index(em)+idx+1)
-            eidx = min(len(string),string[idx+1:].index(em)+idx+1)
+            eidx = min(slen,string[idx+1:].index(em)+idx+1)
             obs_name = string[idx+1:eidx]
             if obs_name.lower() != "dum":
                 obs_names.append(obs_name)
@@ -789,7 +791,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
 
     # process only_cols
     if only_cols is None:
-        only_cols = set(df.columns)
+        only_cols = set(df.columns.map(lambda x: x.lower().strip()).tolist())
     else:
         if isinstance(only_cols, str): # incase it is a single name
             only_cols = [only_cols]
@@ -797,7 +799,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     only_cols = {c.lower() if isinstance(c, str) else c for c in only_cols}
 
     if only_rows is None:
-        only_rows = set(df.index)
+        only_rows = set(df.index.map(lambda x: x.lower().strip()).tolist())
     else:
         if isinstance(only_rows, str): # incase it is a single name
             only_rows = [only_rows]
@@ -839,6 +841,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
         clabels.append(clabel)
         if cname in only_cols:
             only_clabels.append(clabel)
+    only_clabels = set(only_clabels)
 
     if ins_filename is None:
         if not isinstance(csv_filename,str):
@@ -848,6 +851,10 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     onames = []
     ovals = []
     ognames = []
+    only_clabels_len = len(only_clabels)
+    clabels_len = len(clabels)
+    prefix_is_str = isinstance(prefix, str)
+    vals = df.values.copy() # wasteful but way faster
     with open(ins_filename,'w') as f:
         f.write("pif {0}\n".format(marker))
         [f.write("l1\n") for _ in range(head_lines_len)]
@@ -858,10 +865,10 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
             c_count = 0
             for j,clabel in enumerate(clabels):  # loop over columns
                 oname = ''
-                if c_count < len(only_clabels):  # if we haven't yet set up all obs
+                if c_count < only_clabels_len:  # if we haven't yet set up all obs
                     if rlabel in only_rlabels and clabel in only_clabels:
                         # define obs names
-                        if not isinstance(prefix, str):
+                        if not prefix_is_str:
                             nprefix = prefix[c_count]
                         else:
                             nprefix = prefix
@@ -872,7 +879,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
                             nname = nprefix+clabel
                             oname = nprefix+rlabel+"_"+clabel
                         onames.append(oname)  # append list of obs
-                        ovals.append(df.iloc[i, j])  # store current obs val
+                        ovals.append(vals[i, j])  # store current obs val
                         # defin group name
                         if gpname is False or gpname[c_count] is False:
                             # keeping consistent behaviour
@@ -889,7 +896,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
                         oname = " !{0}!".format(oname)
                         c_count += 1
                     # else:  # not a requested observation; add spacer
-                    if j < len(clabels) - 1:
+                    if j < clabels_len - 1:
                         if sep == ',':
                             oname = "{0} {1},{1}".format(oname, marker)
                         else:
@@ -1086,6 +1093,7 @@ class InstructionFile(object):
         #for ii,ins in enumerate(ins_line):
         ii = 0
         all_markers = True
+        line_seps = set([","," ","\t"])
         while True:
             if ii >= len(ins_line):
                 break
@@ -1117,7 +1125,7 @@ class InstructionFile(object):
                                              format(nlines, ins, ins_lcount))
             elif ins == 'w':
                 raw = line[cursor_pos:].replace(","," ").split()
-                if line[cursor_pos] in [","," ","\t"]:
+                if line[cursor_pos] in line_seps:
                     raw.insert(0,'')
                 if len(raw) == 1:
                     self.throw_out_error("no whitespaces found on output line {0} past {1}".format(line,cursor_pos))

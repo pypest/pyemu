@@ -725,7 +725,9 @@ class PstFrom(object):
                 `file_name`
             is_pre_cmd (`bool`): flag to include `function_name` in
                 PstFrom.pre_py_cmds.  If False, `function_name` is
-                added to PstFrom.post_py_cmds instead. Default is True.
+                added to PstFrom.post_py_cmds instead. If passed as `None`,
+                then the function `function_name` is added to the forward run
+                script but is not called.  Default is True.
         Returns:
             None
 
@@ -764,7 +766,7 @@ class PstFrom(object):
             while True:
                 line = f.readline()
                 if line == '':
-                    self.logger.lraise("add_py_function(): EOF while searching for function '[0}'".\
+                    self.logger.lraise("add_py_function(): EOF while searching for function '{0}'".\
                                        format(search_str))
                 if line.startswith(search_str): #case sens and no strip since 'def' should be flushed left
                     func_lines.append(line)
@@ -778,10 +780,13 @@ class PstFrom(object):
                     break
 
         self._function_lines_list.append(func_lines)
-        if is_pre_cmd:
+        if is_pre_cmd is True:
             self.pre_py_cmds.append(function_name)
-        else:
+        elif is_pre_cmd is False:
             self.post_py_cmds.append(function_name)
+        else:
+            self.logger.warn("add_py_function() command: {0} is not being called directly".\
+                             format(function_name))
 
     def add_observations(self, filename, insfile=None,
                          index_cols=None, use_cols=None,
@@ -1550,8 +1555,8 @@ class PstFrom(object):
             self.logger.lraise("unrecognized type for index_cols or use_cols "
                                "should be str or int and both should be of the "
                                "same type, not {0} or {1}".
-                               format(str(type(index_cols)),
-                                      str(type(use_cols))))
+                               format(str(type(index_cols[0])),
+                                      str(type(use_cols[0]))))
         itype = type(index_cols)
         utype = type(use_cols)
         if itype != utype:

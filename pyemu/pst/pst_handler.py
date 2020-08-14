@@ -2236,21 +2236,15 @@ class Pst(object):
         sexist = set(self.obs_names)
         sint = sobsnme.intersection(sexist)
         if len(sint) > 0:
-            raise Exception("the following obs instruction file {0} are already in the control file:{1}".
+            raise Exception("the following obs in instruction file {0} are already in the control file:{1}".
                             format(ins_file,','.join(sint)))
 
-        # find "new" parameters that are not already in the control file
-        new_obsnme = [o for o in obsnme if o not in self.observation_data.obsnme]
-
-        if len(new_obsnme) == 0:
-            raise Exception("no new observations found in instruction file {0}".format(ins_file))
-
         # extend observation_data
-        new_obs_data = pst_utils._populate_dataframe(new_obsnme, pst_utils.pst_config["obs_fieldnames"],
+        new_obs_data = pst_utils._populate_dataframe(obsnme, pst_utils.pst_config["obs_fieldnames"],
                                                      pst_utils.pst_config["obs_defaults"],
                                                      pst_utils.pst_config["obs_dtype"])
-        new_obs_data.loc[new_obsnme,"obsnme"] = new_obsnme
-        new_obs_data.index = new_obsnme
+        new_obs_data.loc[obsnme,"obsnme"] = obsnme
+        new_obs_data.index = obsnme
         self.observation_data = self.observation_data.append(new_obs_data)
         cwd = '.'
         if pst_path is not None:
