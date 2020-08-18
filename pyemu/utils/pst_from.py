@@ -1163,7 +1163,10 @@ class PstFrom(object):
 
         # otherewise, things get tripped up in the ensemble/cov stuff
         if pargp is not None:
-            pargp = pargp.lower()
+            if isinstance(pargp,list):
+                pargp = [pg.lower() for pg in pargp]
+            else:
+                pargp = pargp.lower()
         par_name_base = [pnb.lower() for pnb in par_name_base]
 
         if self.longnames:  # allow par names to be long... fine for pestpp
