@@ -851,6 +851,7 @@ class PstFrom(object):
                 use_rows = df.iloc[use_rows].idx_str.unique()
             # construct ins_file from df
             ncol = len(use_cols)
+
             obsgp = _check_var_len(obsgp, ncol, fill=True)
             df_ins = pyemu.pst_utils.csv_to_ins_file(
                 df.set_index('idx_str'),
@@ -1159,6 +1160,12 @@ class PstFrom(object):
                                "single-element container, or container of "
                                "len use_cols, not '{0}'"
                                "".format(str(par_name_base)))
+
+        # otherewise, things get tripped up in the ensemble/cov stuff
+        if pargp is not None:
+            pargp = pargp.lower()
+        par_name_base = [pnb.lower() for pnb in par_name_base]
+
         if self.longnames:  # allow par names to be long... fine for pestpp
             fmt = "_{0}".format(alt_inst_str) + ":{0}"
             chk_prefix = "_{0}".format(alt_inst_str)  # add `instance` identifier
@@ -1169,9 +1176,11 @@ class PstFrom(object):
         for i in range(len(par_name_base)):
             par_name_base[i] += fmt.format(
                 self._next_count(par_name_base[i] + chk_prefix))
+
         # multiplier file name will be taken first par group, if passed
         # (the same multipliers will apply to all pars passed in this call)
         # Remove `:` for filenames
+
         par_name_store = par_name_base[0].replace(':', '')  # for os filename
 
         # Define requisite filenames
