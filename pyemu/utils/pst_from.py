@@ -122,6 +122,8 @@ class PstFrom(object):
         self.pst = None
         self._function_lines_list = [] #each function is itself a list of lines
         self.direct_org_files = []
+        self.ult_ubound_fill = 1.0e+30
+        self.ult_lbound_fill = -1.0e+30
 
     @property
     def parfile_relations(self):
@@ -150,25 +152,10 @@ class PstFrom(object):
                 else pd.Series(
                     {k: v for k, v in [['ubound', x.upper_bound]]}), axis=1)
             if ubound.nunique(0, False).gt(1).any():
-                if ubound.nunique(0, False).gt(2).any():
-                    # more than one upper bound set
-                    self.logger.lraise(
-                        "different upper bounds requested for same par for {0}"
-                        "".format(name))
-                else:
-                    # one set - the rest are None - need to replace None
-                    # with set values
-                    # df with set values
-                    fil = ubound.apply(lambda x:
-                                       pd.Series([None]) if x.isna().all()
-                                       else x[x.notna()].values).T
-                    self.logger.warn("Upper bound for par passed for some but "
-                                     "not all instances, will set NA to "
-                                     "passed values\n{}".format(fil))
-                    # replace Nones in list in Series with passed values
-                    pr.loc[g.index, 'upper_bound'] = g.use_cols.apply(
-                        lambda x: [fil[0].loc['ubound{0}'.format(c)] for c in x]
-                        if x is not None else fil[0].loc['ubound'])
+                ub_min = ubound.min().fillna(self.ult_ubound_fill).to_dict()
+                pr.loc[g.index, 'upper_bound'] = g.use_cols.apply(
+                    lambda x: [ub_min['ubound{0}'.format(c)] for c in x]
+                    if x is not None else ub_min["ubound"])
             # repeat for lower bounds
             lbound = g.apply(
                 lambda x: pd.Series(
@@ -178,20 +165,10 @@ class PstFrom(object):
                 else pd.Series(
                     {k: v for k, v in [['lbound', x.lower_bound]]}), axis=1)
             if lbound.nunique(0, False).gt(1).any():
-                if lbound.nunique(0, False).gt(2).any():
-                    self.logger.lraise(
-                        "different lower bounds requested for same par for {0}"
-                        "".format(name))
-                else:
-                    fil = lbound.apply(lambda x:
-                                       pd.Series([None]) if x.isna().all()
-                                       else x[x.notna()].values).T
-                    self.logger.warn("Lower bound for par passed for some but "
-                                     "not all instances, will set NA to "
-                                     "passed values\n{}".format(fil))
-                    pr.loc[g.index, 'lower_bound'] = g.use_cols.apply(
-                        lambda x: [fil[0].loc['lbound{0}'.format(c)] for c in x]
-                        if x is not None else fil[0].loc['lbound'])
+                lb_max = lbound.min().fillna(self.ult_lbound_fill).to_dict()
+                pr.loc[g.index, 'lower_bound'] = g.use_cols.apply(
+                    lambda x: [lb_max['lbound{0}'.format(c)] for c in x]
+                    if x is not None else lb_max['lbound'])
         pr['zero_based'] = self.zero_based
         return pr
 
@@ -1076,12 +1053,9 @@ class PstFrom(object):
 
         # this keeps denormal values for creeping into the model input arrays
         if ult_ubound is None:
-            ult_ubound = 1.0e+30
+            ult_ubound = self.ult_ubound_fill
         if ult_lbound is None:
-            if transform.lower() == "log":
-                ult_lbound == 1.0e-30
-            else:
-                ult_lbound = -1.0e+30
+            ult_lbound = self.ult_lbound_fill
 
         #some checks for direct parameters
         par_style = par_style.lower()
