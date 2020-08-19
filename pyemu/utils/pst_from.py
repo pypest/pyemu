@@ -1049,9 +1049,11 @@ class PstFrom(object):
                 when reading and reapply when writing. Can optionally be `str` in which case `mf_skip` will be treated
                 as a `comment_char`.
             ult_ubound (`float`): Ultimate upper bound for model input
-                parameter once all mults are applied - ensure physical model par vals
+                parameter once all mults are applied - ensure physical model par vals. If not passed,
+                it is set to 1.0e+30
             ult_lbound (`float`): Ultimate lower bound for model input
-                parameter once all mults are applied
+                parameter once all mults are applied.  If not passed, it is set to
+                1.0e-30 for log transform and -1.0e+30 for non-log transform
             rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after adding
                 new parameters
             alt_inst_str (`str`): Alternative to default `inst` string in
@@ -1070,6 +1072,16 @@ class PstFrom(object):
 
         # TODO support passing par_file (i,j)/(x,y) directly where information
         #  is not contained in model parameter file - e.g. no i,j columns
+
+
+        # this keeps denormal values for creeping into the model input arrays
+        if ult_ubound is None:
+            ult_ubound = 1.0e+30
+        if ult_lbound is None:
+            if transform.lower() == "log":
+                ult_lbound == 1.0e-30
+            else:
+                ult_lbound = -1.0e+30
 
         #some checks for direct parameters
         par_style = par_style.lower()
