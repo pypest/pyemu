@@ -165,7 +165,7 @@ class PstFrom(object):
                 else pd.Series(
                     {k: v for k, v in [['lbound', x.lower_bound]]}), axis=1)
             if lbound.nunique(0, False).gt(1).any():
-                lb_max = lbound.min().fillna(self.ult_lbound_fill).to_dict()
+                lb_max = lbound.max().fillna(self.ult_lbound_fill).to_dict()
                 pr.loc[g.index, 'lower_bound'] = g.use_cols.apply(
                     lambda x: [lb_max['lbound{0}'.format(c)] for c in x]
                     if x is not None else lb_max['lbound'])
