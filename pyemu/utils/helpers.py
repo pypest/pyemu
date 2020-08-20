@@ -377,18 +377,18 @@ def calc_observation_ensemble_quantiles(ens, pst, quantiles, subset_obsnames=Non
     
     if subset_obsnames is not None:
         trimnames = subset_obsnames
-        if len(set(trimnames) - set(obs.index.values)) is not 0:
+        if len(set(trimnames) - set(obs.index.values)) != 0:
             raise Exception('the following names in subset_obsnames are not in the ensemble:\n' +
                             ['{}\n'.format(i) for i in (set(trimnames) - set(obs.index.values))])
 
     
     if subset_obsgroups is not None:
-        if len((set(subset_obsgroups) - set(pst.obs_groups))) is not 0:
+        if len((set(subset_obsgroups) - set(pst.obs_groups))) != 0:
             raise Exception('the following groups in subset_obsgroups are not in pst:\n' +
                 ['{}\n'.format(i) for i in (set(subset_obsgroups) - set(pst.obs_groups))])
 
         trimnames = obs.loc[obs.obgnme.isin(subset_obsgroups)].obsnme.tolist()
-        if len((set(trimnames) - set(obs.index.values)))is not 0:
+        if len((set(trimnames) - set(obs.index.values))) != 0:
             raise Exception('the following names in subset_obsnames are not in the ensemble:\n' +
                 ['{}\n'.format(i) for i in (set(trimnames) - set(obs.index.values))])
     # trim the data to subsets (or complete )    
