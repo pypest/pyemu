@@ -210,12 +210,12 @@ def freyberg_test():
     # test par mults are working
     b_d = os.getcwd()
     os.chdir(pf.new_d)
-    #try:
-    pyemu.helpers.apply_list_and_array_pars(
-        arr_par_file="mult2model_info.csv")
-    # except Exception as e:
-    #     os.chdir(b_d)
-    #     raise Exception(str(e))
+    try:
+        pyemu.helpers.apply_list_and_array_pars(
+            arr_par_file="mult2model_info.csv")
+    except Exception as e:
+        os.chdir(b_d)
+        raise Exception(str(e))
     os.chdir(b_d)
 
     pst.control_data.noptmax = 0
