@@ -605,9 +605,6 @@ def mf6_freyberg_test():
     # add a function that isnt going to be called directly
     pf.add_py_function("pst_from_tests.py","another_generic_function(some_arg)",is_pre_cmd=None)
 
-
-
-
     #pf.post_py_cmds.append("generic_function()")
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
@@ -635,11 +632,13 @@ def mf6_freyberg_test():
             for arr_file in arr_files:
 
                 # these ult bounds are used later in an assert
+                # and also are used so that the initial input array files
+                # are preserved
                 ult_lb = None
                 ult_ub = None
                 if "npf_k_" in arr_file:
-                    ult_ub = 20.0
-                    ult_lb = 2.0
+                   ult_ub = 31.0
+                   ult_lb = -1.3
                 pf.add_parameters(filenames=arr_file,par_type="grid",par_name_base=arr_file.split('.')[1]+"_gr",
                                   pargp=arr_file.split('.')[1]+"_gr",zone_array=ib,upper_bound=ub,lower_bound=lb,
                                   geostruct=gr_gs,ult_ubound=None if ult_ub is None else ult_ub + 1,
@@ -836,8 +835,8 @@ def mf6_freyberg_test():
     print(df)
     print(df.upper_bound)
     print(df.lower_bound)
-    assert np.abs(float(df.upper_bound.min()) - 19.) < 1.0e-6,df.upper_bound.min()
-    assert np.abs(float(df.lower_bound.max()) - 3.) < 1.0e-6,df.lower_bound.max()
+    assert np.abs(float(df.upper_bound.min()) - 30.) < 1.0e-6,df.upper_bound.min()
+    assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
 
 def mf6_freyberg_shortnames_test():
     import numpy as np
@@ -1330,10 +1329,138 @@ def mf6_freyberg_direct_test():
         if np.abs(arr.max() - rch_val) > 1.0e-6 or np.abs(arr.min() - rch_val) > 1.0e-6:
             raise Exception("recharge too diff")
 
+def mf6_freyberg_varying_idomain():
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
+    tmp_model_ws = "temp_pst_from"
+    if os.path.exists(tmp_model_ws):
+        shutil.rmtree(tmp_model_ws)
+    os.mkdir(tmp_model_ws)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
+    # sim.set_all_data_external()
+    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    # sim.set_all_data_external()
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
+
+    #sim = None
+    ib_file = os.path.join(tmp_model_ws,"freyberg6.dis_idomain_layer1.txt")
+    arr = np.loadtxt(ib_file,dtype=np.int)
+
+    arr[:2,:14] = 0
+    np.savetxt(ib_file,arr,fmt="%2d")
+    print(arr)
+
+    sim = flopy.mf6.MFSimulation.load(sim_ws=tmp_model_ws)
+    m = sim.get_model("freyberg6")
+
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+
+
+
+    template_ws = "new_temp"
+
+    # if os.path.exists(template_ws):
+    #     shutil.rmtree(template_ws)
+    # shutil.copytree(tmp_model_ws,template_ws)
+    # hk_file = os.path.join(template_ws, "freyberg6.npf_k_layer1.txt")
+    # hk = np.loadtxt(hk_file)
+    #
+    # hk[arr == 0] = 1.0e+30
+    # np.savetxt(hk_file,hk,fmt="%50.45f")
+    # os_utils.run("{0} ".format(mf6_exe_path), cwd=template_ws)
+    # import matplotlib.pyplot as plt
+    # hds1 = flopy.utils.HeadFile(os.path.join(tmp_model_ws, "freyberg6_freyberg.hds"))
+    # hds2 = flopy.utils.HeadFile(os.path.join(template_ws, "freyberg6_freyberg.hds"))
+    #
+    # d = hds1.get_data() - hds2.get_data()
+    # for dd in d:
+    #     cb = plt.imshow(dd)
+    #     plt.colorbar(cb)
+    #     plt.show()
+    # return
+
+    # sr0 = m.sr
+    # sr = pyemu.helpers.SpatialReference.from_namfile(
+    #     os.path.join(tmp_model_ws, "freyberg6.nam"),
+    #     delr=m.dis.delr.array, delc=m.dis.delc.array)
+
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018")
+
+
+    # pf.post_py_cmds.append("generic_function()")
+    df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values),
+                        ofile_sep=",")
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+    rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
+    pf.extra_py_imports.append('flopy')
+
+    ib = {}
+    for k in range(m.dis.nlay.data):
+        a = m.dis.idomain.array[k,:,:].copy()
+        print(a)
+        ib[k] = a
+    #return
+    #ib[0][:2,:]  = 0
+
+    tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+
+        for arr_file in arr_files:
+
+            # these ult bounds are used later in an assert
+            ult_lb = None
+            ult_ub = None
+            k = int(arr_file.split(".")[-2].split("layer")[1].split("_")[0]) - 1
+            pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1] + "_pp",
+                              pargp=arr_file.split('.')[1] + "_pp", upper_bound=ub, lower_bound=lb,
+                              geostruct=gr_gs, zone_array=ib[k])
+
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
+    df = pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
+                        prefix="hds", ofile_sep=",")
+
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+    assert pst.phi < 1.0e-6
+
 if __name__ == "__main__":
     # freyberg_test()
     # freyberg_prior_build_test()
-    mf6_freyberg_test()
-    # mf6_freyberg_shortnames_test()
+    #mf6_freyberg_test()
+    #mf6_freyberg_shortnames_test()
     # mf6_freyberg_da_test()
     # mf6_freyberg_direct_test()
+    mf6_freyberg_varying_idomain()

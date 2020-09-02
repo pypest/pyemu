@@ -82,6 +82,16 @@ class GeoStruct(object):
     def __gt__(self,other):
         return self.name > other.name
 
+    def same_as_other(self,other):
+        if self.nugget != other.nugget:
+            return False
+        if len(self.variograms) != len(other.variograms):
+            return False
+        for sv,ov in zip(self.variograms,other.variograms):
+            if not sv.same_as_other(ov):
+                return False
+        return True
+
     def to_struct_file(self, f):
         """ write a PEST-style structure file
 
@@ -1337,6 +1347,20 @@ class Vario2d(object):
         self.anisotropy = float(anisotropy)
         assert self.anisotropy > 0.0
         self.bearing = float(bearing)
+
+
+    def same_as_other(self,other):
+        if type(self) != type(other):
+            return False
+        if self.contribution != other.contribution:
+            return False
+        if self.anisotropy != other.anisotropy:
+            return False
+        if self.a != other.a:
+            return False
+        if self.bearing != other.bearing:
+            return False
+        return True
 
     def to_struct_file(self, f):
         """ write the `Vario2d` to a PEST-style structure file

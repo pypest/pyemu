@@ -1355,6 +1355,10 @@ class PstFrom(object):
                 fac_processed = False
                 for facfile, info in self._pp_facs.items():  # check against
                     # factors already calculated
+
+                    print(pp_info_dict["zn_ar"])
+                    print(info["zn_ar"])
+
                     if (info['pp_data'].equals(pp_info_dict['pp_data']) and
                             info['cov'].equals(pp_info_dict['cov']) and
                             np.array_equal(info['zn_ar'],
