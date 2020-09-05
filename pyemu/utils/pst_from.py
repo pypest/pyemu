@@ -11,6 +11,7 @@ import pyemu
 import time
 from ..pyemu_warnings import PyemuWarning
 import copy
+import string
 
 
 #the tolerable percent difference (100 * (max - min)/mean)
@@ -71,6 +72,8 @@ class PstFrom(object):
         self.remove_existing = bool(remove_existing)
         self.zero_based = bool(zero_based)
         self._spatial_reference = spatial_reference
+        self._spatial_ref_xarray = None
+        self._spatial_ref_yarray = None
         self.spatial_reference = None
         if start_datetime is not None:
             start_datetime = _get_datetime_from_str(start_datetime)
@@ -117,8 +120,10 @@ class PstFrom(object):
         self._parfile_relations = []
         self._pp_facs = {}
         self.pst = None
-
+        self._function_lines_list = [] #each function is itself a list of lines
         self.direct_org_files = []
+        self.ult_ubound_fill = 1.0e+30
+        self.ult_lbound_fill = -1.0e+30
 
     @property
     def parfile_relations(self):
@@ -147,25 +152,10 @@ class PstFrom(object):
                 else pd.Series(
                     {k: v for k, v in [['ubound', x.upper_bound]]}), axis=1)
             if ubound.nunique(0, False).gt(1).any():
-                if ubound.nunique(0, False).gt(2).any():
-                    # more than one upper bound set
-                    self.logger.lraise(
-                        "different upper bounds requested for same par for {0}"
-                        "".format(name))
-                else:
-                    # one set - the rest are None - need to replace None
-                    # with set values
-                    # df with set values
-                    fil = ubound.apply(lambda x:
-                                       pd.Series([None]) if x.isna().all()
-                                       else x[x.notna()].values).T
-                    self.logger.warn("Upper bound for par passed for some but "
-                                     "not all instances, will set NA to "
-                                     "passed values\n{}".format(fil))
-                    # replace Nones in list in Series with passed values
-                    pr.loc[g.index, 'upper_bound'] = g.use_cols.apply(
-                        lambda x: [fil[0].loc['ubound{0}'.format(c)] for c in x]
-                        if x is not None else fil[0].loc['ubound'])
+                ub_min = ubound.min().fillna(self.ult_ubound_fill).to_dict()
+                pr.loc[g.index, 'upper_bound'] = g.use_cols.apply(
+                    lambda x: [ub_min['ubound{0}'.format(c)] for c in x]
+                    if x is not None else ub_min["ubound"])
             # repeat for lower bounds
             lbound = g.apply(
                 lambda x: pd.Series(
@@ -175,20 +165,10 @@ class PstFrom(object):
                 else pd.Series(
                     {k: v for k, v in [['lbound', x.lower_bound]]}), axis=1)
             if lbound.nunique(0, False).gt(1).any():
-                if lbound.nunique(0, False).gt(2).any():
-                    self.logger.lraise(
-                        "different lower bounds requested for same par for {0}"
-                        "".format(name))
-                else:
-                    fil = lbound.apply(lambda x:
-                                       pd.Series([None]) if x.isna().all()
-                                       else x[x.notna()].values).T
-                    self.logger.warn("Lower bound for par passed for some but "
-                                     "not all instances, will set NA to "
-                                     "passed values\n{}".format(fil))
-                    pr.loc[g.index, 'lower_bound'] = g.use_cols.apply(
-                        lambda x: [fil[0].loc['lbound{0}'.format(c)] for c in x]
-                        if x is not None else fil[0].loc['lbound'])
+                lb_max = lbound.max().fillna(self.ult_lbound_fill).to_dict()
+                pr.loc[g.index, 'lower_bound'] = g.use_cols.apply(
+                    lambda x: [lb_max['lbound{0}'.format(c)] for c in x]
+                    if x is not None else lb_max['lbound'])
         pr['zero_based'] = self.zero_based
         return pr
 
@@ -209,8 +189,12 @@ class PstFrom(object):
         if all([ij is None for ij in [i, j]]):
             return i, j
         else:
-            return (self._spatial_reference.xcellcenters[i, j],
-                    self._spatial_reference.ycellcenters[i, j])
+            if self._spatial_ref_xarray is None:
+                self._spatial_ref_xarray = self._spatial_reference.xcellcenters
+                self._spatial_ref_yarray = self._spatial_reference.ycellcenters
+
+            return (self._spatial_ref_xarray[i, j],
+                    self._spatial_ref_yarray[i, j])
 
     def parse_kij_args(self, args, kwargs):
         if len(args) >= 2:
@@ -271,11 +255,19 @@ class PstFrom(object):
                 "import os\nimport multiprocessing as mp\nimport numpy as np" + \
                 "\nimport pandas as pd\n")
             f.write("import pyemu\n")
+            for ex_imp in self.extra_py_imports:
+                f.write('import {0}\n'.format(ex_imp))
+
+
+            for func_lines in self._function_lines_list:
+                f.write("\n")
+                f.write("# function added thru PstFrom.add_py_function()\n")
+                for func_line in func_lines:
+                    f.write(func_line)
+                f.write("\n")
             f.write("def main():\n")
             f.write("\n")
             s = "    "
-            for ex_imp in self.extra_py_imports:
-                f.write(s + 'import {0}\n'.format(ex_imp))
             for tmp_file in self.tmp_files:
                 f.write(s + "try:\n")
                 f.write(s + "   os.remove('{0}')\n".format(tmp_file))
@@ -700,6 +692,79 @@ class PstFrom(object):
 
         return self._prefix_count[prefix]
 
+
+    def add_py_function(self,file_name,function_name, is_pre_cmd=True):
+        """add a python function to the forward run script
+
+        Args:
+            file_name (`str`): a python source file
+            function_name (`str`): a python function in
+                `file_name`
+            is_pre_cmd (`bool`): flag to include `function_name` in
+                PstFrom.pre_py_cmds.  If False, `function_name` is
+                added to PstFrom.post_py_cmds instead. If passed as `None`,
+                then the function `function_name` is added to the forward run
+                script but is not called.  Default is True.
+        Returns:
+            None
+
+        Note:
+            `function_name` is expected to be standalone a function
+                that contains all the imports it needs or these imports
+                should have been added to the forward run script through the
+                `PstFrom.py_imports` list.
+            This function adds the `function_name` call to the forward
+                run script (either as a pre or post command). It is up to users
+                 to make sure `function_name` is a valid python function call
+                  that includes the parentheses and requisite arguments
+            This function expects "def " + `function_name` to be flushed left at the outer
+                most indentation level
+
+        Example::
+
+            pf = PstFrom()
+            pf.add_py_function("preprocess.py","mult_well_function()",is_pre_cmd=True)
+
+
+        """
+
+        if not os.path.exists(file_name):
+            self.logger.lraise("add_py_function(): couldnt find python source file '{0}'".\
+                               format(file_name))
+        if '(' not in function_name or ')' not in function_name:
+            self.logger.lraise("add_py_function(): function_name '{0}' missing paretheses".\
+                               format(function_name))
+
+        func_lines = []
+        search_str = "def " + function_name
+        abet_set = set(string.ascii_uppercase)
+        abet_set.update(set(string.ascii_lowercase))
+        with open(file_name,'r') as f:
+            while True:
+                line = f.readline()
+                if line == '':
+                    self.logger.lraise("add_py_function(): EOF while searching for function '{0}'".\
+                                       format(search_str))
+                if line.startswith(search_str): #case sens and no strip since 'def' should be flushed left
+                    func_lines.append(line)
+                    while True:
+                        line = f.readline()
+                        if line == '':
+                            break
+                        if line[0] in abet_set:
+                            break
+                        func_lines.append(line)
+                    break
+
+        self._function_lines_list.append(func_lines)
+        if is_pre_cmd is True:
+            self.pre_py_cmds.append(function_name)
+        elif is_pre_cmd is False:
+            self.post_py_cmds.append(function_name)
+        else:
+            self.logger.warn("add_py_function() command: {0} is not being called directly".\
+                             format(function_name))
+
     def add_observations(self, filename, insfile=None,
                          index_cols=None, use_cols=None,
                          use_rows=None, prefix='', ofile_skip=None,
@@ -763,6 +828,7 @@ class PstFrom(object):
                 use_rows = df.iloc[use_rows].idx_str.unique()
             # construct ins_file from df
             ncol = len(use_cols)
+
             obsgp = _check_var_len(obsgp, ncol, fill=True)
             df_ins = pyemu.pst_utils.csv_to_ins_file(
                 df.set_index('idx_str'),
@@ -960,9 +1026,11 @@ class PstFrom(object):
                 when reading and reapply when writing. Can optionally be `str` in which case `mf_skip` will be treated
                 as a `comment_char`.
             ult_ubound (`float`): Ultimate upper bound for model input
-                parameter once all mults are applied - ensure physical model par vals
+                parameter once all mults are applied - ensure physical model par vals. If not passed,
+                it is set to 1.0e+30
             ult_lbound (`float`): Ultimate lower bound for model input
-                parameter once all mults are applied
+                parameter once all mults are applied.  If not passed, it is set to
+                1.0e-30 for log transform and -1.0e+30 for non-log transform
             rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after adding
                 new parameters
             alt_inst_str (`str`): Alternative to default `inst` string in
@@ -981,6 +1049,13 @@ class PstFrom(object):
 
         # TODO support passing par_file (i,j)/(x,y) directly where information
         #  is not contained in model parameter file - e.g. no i,j columns
+
+
+        # this keeps denormal values for creeping into the model input arrays
+        if ult_ubound is None:
+            ult_ubound = self.ult_ubound_fill
+        if ult_lbound is None:
+            ult_lbound = self.ult_lbound_fill
 
         #some checks for direct parameters
         par_style = par_style.lower()
@@ -1071,6 +1146,15 @@ class PstFrom(object):
                                "single-element container, or container of "
                                "len use_cols, not '{0}'"
                                "".format(str(par_name_base)))
+
+        # otherewise, things get tripped up in the ensemble/cov stuff
+        if pargp is not None:
+            if isinstance(pargp,list):
+                pargp = [pg.lower() for pg in pargp]
+            else:
+                pargp = pargp.lower()
+        par_name_base = [pnb.lower() for pnb in par_name_base]
+
         if self.longnames:  # allow par names to be long... fine for pestpp
             fmt = "_{0}".format(alt_inst_str) + ":{0}"
             chk_prefix = "_{0}".format(alt_inst_str)  # add `instance` identifier
@@ -1081,9 +1165,11 @@ class PstFrom(object):
         for i in range(len(par_name_base)):
             par_name_base[i] += fmt.format(
                 self._next_count(par_name_base[i] + chk_prefix))
+
         # multiplier file name will be taken first par group, if passed
         # (the same multipliers will apply to all pars passed in this call)
         # Remove `:` for filenames
+
         par_name_store = par_name_base[0].replace(':', '')  # for os filename
 
         # Define requisite filenames
@@ -1467,8 +1553,8 @@ class PstFrom(object):
             self.logger.lraise("unrecognized type for index_cols or use_cols "
                                "should be str or int and both should be of the "
                                "same type, not {0} or {1}".
-                               format(str(type(index_cols)),
-                                      str(type(use_cols))))
+                               format(str(type(index_cols[0])),
+                                      str(type(use_cols[0]))))
         itype = type(index_cols)
         utype = type(use_cols)
         if itype != utype:
@@ -1819,13 +1905,13 @@ def _write_direct_df_tpl(in_filename, tpl_filename,df,name,index_cols,typ,use_co
     # get some index strings for naming
     if longnames:
         j = '_'
-        fmt = "{0}:{1}"
+        fmt = "{0}|{1}"
         if isinstance(index_cols[0], str):
             inames = index_cols
         else:
             inames = ["idx{0}".format(i) for i in range(len(index_cols))]
     else:
-        fmt = "{1:3}"
+        fmt = "{1|3}"
         j = ''
         if isinstance(index_cols[0], str):
             inames = index_cols
@@ -1838,6 +1924,9 @@ def _write_direct_df_tpl(in_filename, tpl_filename,df,name,index_cols,typ,use_co
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
         lambda x: j.join([fmt.format(iname, xx)
                           for xx, iname in zip(x, inames)])).str.replace(' ', '')
+
+    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "")
+    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":")
 
     if get_xy is not None:
         if xy_in_idx is not None:
@@ -2015,7 +2104,7 @@ def _get_tpl_or_ins_df(filenames, dfs, name, index_cols, typ, use_cols=None,
     # get some index strings for naming
     if longnames:
         j = '_'
-        fmt = "{0}:{1}"
+        fmt = "{0}|{1}"
         if isinstance(index_cols[0], str):
             inames = index_cols
         else:
@@ -2031,9 +2120,12 @@ def _get_tpl_or_ins_df(filenames, dfs, name, index_cols, typ, use_cols=None,
     if not zero_based:
         df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
             lambda x: tuple(xx - 1 for xx in x))
+
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
         lambda x: j.join([fmt.format(iname, xx)
                           for xx, iname in zip(x, inames)])).str.replace(' ', '')
+    df_ti.loc[:,"idx_strs"] = df_ti.idx_strs.str.replace(":","")
+    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":")
 
     if get_xy is not None:
         if xy_in_idx is not None:

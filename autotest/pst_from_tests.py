@@ -471,6 +471,23 @@ def freyberg_prior_build_test():
     #                              cleanup=False, port=4005)
 
 
+def generic_function():
+    import pandas as pd
+    import numpy as np
+    #onames = ["generic_obs_{0}".format(i) for i in range(100)]
+    onames = pd.date_range("1-1-2020",periods=100,freq='d')
+    df = pd.DataFrame({"index_2":np.arange(100),"simval1":1,"simval2":2,"datetime":onames})
+    df.index = df.pop("datetime")
+    df.to_csv("generic.csv",date_format="%d-%m-%Y %H:%M:%S")
+    return df
+
+
+def another_generic_function(some_arg):
+    import pandas as pd
+    import numpy as np
+    print(some_arg)
+
+
 def mf6_freyberg_test():
     import numpy as np
     import pandas as pd
@@ -492,7 +509,7 @@ def mf6_freyberg_test():
     sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
-    sim.set_all_data_external()
+    sim.set_all_data_external(check_data=False)
     sim.write_simulation()
 
     # to by pass the issues with flopy
@@ -576,6 +593,22 @@ def mf6_freyberg_test():
     # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
     #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
+    # call generic once so that the output file exists
+    os.chdir(template_ws)
+    df = generic_function()
+    os.chdir("..")
+    # add the values in generic to the ctl file
+    pf.add_observations("generic.csv",insfile="generic.csv.ins",index_cols=["datetime","index_2"],use_cols=["simval1","simval2"])
+    # add the function call to make generic to the forward run script
+    pf.add_py_function("pst_from_tests.py","generic_function()",is_pre_cmd=False)
+
+    # add a function that isnt going to be called directly
+    pf.add_py_function("pst_from_tests.py","another_generic_function(some_arg)",is_pre_cmd=None)
+
+
+
+
+    #pf.post_py_cmds.append("generic_function()")
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
     v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
@@ -600,11 +633,22 @@ def mf6_freyberg_test():
                                   datetime=dts[kper])
         else:
             for arr_file in arr_files:
+
+                # these ult bounds are used later in an assert
+                ult_lb = None
+                ult_ub = None
+                if "npf_k_" in arr_file:
+                    ult_ub = 20.0
+                    ult_lb = 2.0
                 pf.add_parameters(filenames=arr_file,par_type="grid",par_name_base=arr_file.split('.')[1]+"_gr",
                                   pargp=arr_file.split('.')[1]+"_gr",zone_array=ib,upper_bound=ub,lower_bound=lb,
-                                  geostruct=gr_gs)
+                                  geostruct=gr_gs,ult_ubound=None if ult_ub is None else ult_ub + 1,
+                                  ult_lbound=None if ult_lb is None else ult_lb + 1)
+                # use a slightly lower ult bound here
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
-                                  pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,)
+                                  pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,
+                                  ult_ubound=None if ult_ub is None else ult_ub - 1,
+                                  ult_lbound=None if ult_lb is None else ult_lb - 1)
 
 
     # add SP1 spatially constant, but temporally correlated wel flux pars
@@ -702,6 +746,7 @@ def mf6_freyberg_test():
     sfr_pars[['inst', 'usecol', '#rno']] = sfr_pars.parnme.apply(
         lambda x: pd.DataFrame([s.split(':') for s in x.split('_')
                                 if ':' in s]).set_index(0)[1])
+
     sfr_pars['#rno'] = sfr_pars['#rno'] .astype(int)
     os.chdir(pf.new_d)
     pst.write_input_files()
@@ -776,8 +821,6 @@ def mf6_freyberg_test():
     print(pst.phi)
     #assert pst.phi < 1.0e-5, pst.phi
 
-
-
     # check mult files are in pst input files
     csv = os.path.join(template_ws, "mult2model_info.csv")
     df = pd.read_csv(csv, index_col=0)
@@ -786,6 +829,15 @@ def mf6_freyberg_test():
                                set(df.loc[df.pp_file.notna()].mlt_file))
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
+    # make sure the appropriate ult bounds have made it thru
+    df = pd.read_csv(os.path.join(template_ws,"mult2model_info.csv"))
+    print(df.columns)
+    df = df.loc[df.model_file.apply(lambda x: "npf_k_" in x),:]
+    print(df)
+    print(df.upper_bound)
+    print(df.lower_bound)
+    assert np.abs(float(df.upper_bound.min()) - 19.) < 1.0e-6,df.upper_bound.min()
+    assert np.abs(float(df.lower_bound.max()) - 3.) < 1.0e-6,df.lower_bound.max()
 
 def mf6_freyberg_shortnames_test():
     import numpy as np
@@ -1279,9 +1331,9 @@ def mf6_freyberg_direct_test():
             raise Exception("recharge too diff")
 
 if __name__ == "__main__":
-    freyberg_test()
-    freyberg_prior_build_test()
+    # freyberg_test()
+    # freyberg_prior_build_test()
     mf6_freyberg_test()
-    mf6_freyberg_shortnames_test()
-    mf6_freyberg_da_test()
-    mf6_freyberg_direct_test()
+    # mf6_freyberg_shortnames_test()
+    # mf6_freyberg_da_test()
+    # mf6_freyberg_direct_test()

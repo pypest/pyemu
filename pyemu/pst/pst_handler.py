@@ -2236,21 +2236,15 @@ class Pst(object):
         sexist = set(self.obs_names)
         sint = sobsnme.intersection(sexist)
         if len(sint) > 0:
-            raise Exception("the following obs instruction file {0} are already in the control file:{1}".
+            raise Exception("the following obs in instruction file {0} are already in the control file:{1}".
                             format(ins_file,','.join(sint)))
 
-        # find "new" parameters that are not already in the control file
-        new_obsnme = [o for o in obsnme if o not in self.observation_data.obsnme]
-
-        if len(new_obsnme) == 0:
-            raise Exception("no new observations found in instruction file {0}".format(ins_file))
-
         # extend observation_data
-        new_obs_data = pst_utils._populate_dataframe(new_obsnme, pst_utils.pst_config["obs_fieldnames"],
+        new_obs_data = pst_utils._populate_dataframe(obsnme, pst_utils.pst_config["obs_fieldnames"],
                                                      pst_utils.pst_config["obs_defaults"],
                                                      pst_utils.pst_config["obs_dtype"])
-        new_obs_data.loc[new_obsnme,"obsnme"] = new_obsnme
-        new_obs_data.index = new_obsnme
+        new_obs_data.loc[obsnme,"obsnme"] = obsnme
+        new_obs_data.index = obsnme
         self.observation_data = self.observation_data.append(new_obs_data)
         cwd = '.'
         if pst_path is not None:
@@ -2818,14 +2812,18 @@ class Pst(object):
         obs_cols = pst_utils.pst_config["obs_fieldnames"]
 
         for df,name,fieldnames in zip([par,obs],["parnme","obsnme"],[par_cols,obs_cols]):
-            meta_dict = df.loc[:,name].apply(lambda x: dict([item.split(':') for item in x.split('_') if ':' in item]))
-            unique_keys = []
-            for k,v in meta_dict.items():
-                for kk,vv in v.items():
-                    if kk not in fieldnames and kk not in unique_keys:
-                        unique_keys.append(kk)
-            for uk in unique_keys:
-                if uk not in df.columns:
-                    df.loc[:,uk] = np.NaN
-                df.loc[:,uk] = meta_dict.apply(lambda x: x.get(uk,np.NaN))
+            try:
+                meta_dict = df.loc[:,name].apply(lambda x: dict([item.split(':') for item in x.split('_') if ':' in item]))
+                unique_keys = []
+                for k,v in meta_dict.items():
+                    for kk,vv in v.items():
+                        if kk not in fieldnames and kk not in unique_keys:
+                            unique_keys.append(kk)
+                for uk in unique_keys:
+                    if uk not in df.columns:
+                        df.loc[:,uk] = np.NaN
+                    df.loc[:,uk] = meta_dict.apply(lambda x: x.get(uk,np.NaN))
+            except Exception as e:
+                print("error parsing metadata from '{0}', continuing".format(name))
+
 

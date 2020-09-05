@@ -488,6 +488,11 @@ def try_process_ins_test():
     import pandas as pd
     import pyemu
 
+    ins_file = os.path.join("ins","primary.dat.ins")
+    i = pyemu.pst_utils.InstructionFile(ins_file)
+    df2 = i.read_output_file(ins_file.replace(".ins", ""))
+    print(df2)
+
     ins_file = os.path.join("utils", "BH.mt3d.processed.ins")
     i = pyemu.pst_utils.InstructionFile(ins_file)
     df2 = i.read_output_file(ins_file.replace(".ins",""))
@@ -504,6 +509,7 @@ def try_process_ins_test():
     print(diff.max(), diff.min())
     print(diff.sum())
     assert diff.sum() < 1.0e+10
+
 
 
 
@@ -864,14 +870,14 @@ def new_format_path_mechanics_test():
 
 if __name__ == "__main__":
 
-    process_output_files_test()
+    #process_output_files_test()
     #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
-    csv_to_ins_test()
+    #csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()
     #pst_from_flopy_specsim_draw_test()
-    #try_process_ins_test()
+    try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
     # test_write_input_files()

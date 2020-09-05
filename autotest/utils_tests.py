@@ -1787,6 +1787,29 @@ def run_test():
         raise Exception("should have failed")
 
 
+def maha_pdc_test():
+    import pyemu
+    l1_critical_value = 6.4 #chi squared value at df=1,p=0.01
+    l2_critical_value = 9.2 #chi sqaured value at df=2,p=0.01
+    pst = pyemu.Pst(os.path.join("la", "pest.pst"))
+    pst.observation_data.loc[:,"weight"] = 1.0
+    en = pyemu.ObservationEnsemble.from_gaussian_draw(pst=pst,num_reals=20)
+    level_1,level_2 = pyemu.helpers.get_maha_obs_summary(en)
+    assert level_1.shape[0] == 0
+    assert level_2.shape[0] == 0
+
+
+    pst = pyemu.Pst(os.path.join("pst","zoned_nz_64.pst"))
+    en = pyemu.ObservationEnsemble.from_gaussian_draw(pst=pst, num_reals=20)
+    level_1, level_2 = pyemu.helpers.get_maha_obs_summary(en)
+    level_1.sort_values(inplace=True)
+    level_2.sort_values(by="sq_distance",inplace=True)
+    print(level_1)
+    print(level_2)
+    assert level_1.shape[0] == 0
+    assert level_2.shape[0] == 0
+
+
 if __name__ == "__main__":
 
     #run_test()
@@ -1805,13 +1828,13 @@ if __name__ == "__main__":
     # sfr_obs_test()
     #sfr_reach_obs_test()
     #gage_obs_test()
-    setup_pp_test()
+    #setup_pp_test()
     # sfr_helper_test()
     # gw_sft_ins_test()
     #par_knowledge_test()
     # grid_obs_test()
     #hds_timeseries_test()
-    postprocess_inactive_conc_test()
+    #postprocess_inactive_conc_test()
     #plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
@@ -1857,3 +1880,4 @@ if __name__ == "__main__":
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
     #ok_grid_invest()
+    maha_pdc_test()
