@@ -1235,12 +1235,25 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
                 #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
                 ax.fill_between(obs_gg.obsval,en,ex,facecolor=c,alpha=0.2)
         #ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+        omn = []
+        omx = []
         for c,en in ensembles.items():
             en_g = en.loc[:,obs_g.obsnme]
             ex = en_g.max()
             en = en_g.min()
+            omn.append(en)
+            omx.append(ex)
             [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
 
+        omn = pd.concat(omn).min()
+        omx = pd.concat(omx).max()
+        # if outputs are broader than obs(plus noise)
+        # focus on obs(plus) noise
+        # -> if obs(plus noise) is broader, focus on sim out
+        if omn > mn:
+            mn = omn
+        if omx < mx:
+            mx = omx
 
         ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
         xlim = (mn,mx)
@@ -1269,12 +1282,24 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
                 en = en_g.min()
                 #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
                 ax.fill_between(obs_gg.obsval,en,ex,facecolor=c,alpha=0.2)
-
+        omn = []
+        omx = []
         for c,en in ensembles.items():
             en_g = en.loc[:,obs_g.obsnme].subtract(obs_g.obsval,axis=1)
             ex = en_g.max()
             en = en_g.min()
+            omn.append(en)
+            omx.append(ex)
             [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
+
+        omn = pd.concat(omn).min()
+        omx = pd.concat(omx).max()
+        # always focus on outputs
+        # -> if obs(plus noise) is broader, focus on sim out
+        mn = omn
+        mx = omx
+        ax.set_ylim(mn, mx)
+
         # if base_ensemble is not None:
         #     if base_ensemble is not None:
         #         for c, en in base_ensemble.items():
