@@ -1248,30 +1248,31 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
 
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()
-        # if outputs are broader than obs(plus noise)
-        # focus on obs(plus) noise
-        # -> if obs(plus noise) is broader, focus on sim out
-        if omn < (bn * 0.9):
-            if omx < (bn * 0.9):
-                mn = omx * 0.9
-            else:
-                mn = bn * 0.9
+        # focus on obs(plus noise)
+        # need to make sure all obs are captured
+        # but helpful if not zoomed out too far
+        rng = obx-obn
+        if omn < bn:
+            mn = bn
         else:
-            mn = omn
-        if omx > (bx * 1.1):
-            if omn > (bx * 1.1):
-                mx = omn * 1.1
+            if 0.1 * obn > 0.5 * rng:
+                mn = obn - (0.5 * rng)
             else:
-                mx = bx * 1.1
+                mn = obn * 0.9
+        if omx > bx:
+            mx = bx
         else:
-            mx = omx
+            if 0.1 * obx > 0.5 * rng:
+                mx = obx + (0.5 * rng)
+            else:
+                mx = obx * 1.1
         ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
         xlim = (mn,mx)
         ax.set_xlim(mn,mx)
         ax.set_ylim(mn,mx)
         if mx > 1.0e5:
-            ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%1.1e'))
-            ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%1.1e'))
+            ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%1.0e'))
+            ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%1.0e'))
         ax.grid()
 
         ax.set_xlabel("observed",labelpad=0.1)
