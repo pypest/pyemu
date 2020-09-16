@@ -1202,7 +1202,8 @@ def mf6_freyberg_direct_test():
     #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
-    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
+                        use_cols=["gage_1","headwaters","tailwaters"],ofile_sep=",")
     v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
     gr_gs = pyemu.geostats.GeoStruct(variograms=v,transform="log")
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
@@ -1217,6 +1218,7 @@ def mf6_freyberg_direct_test():
         arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
         if "rch" in tag:
             for arr_file in arr_files:
+                recharge_files = ["recharge_1.txt","recharge_2.txt","recharge_3.txt"]
                 pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
                                   pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
                                   geostruct=gr_gs,par_style="direct")
@@ -1287,7 +1289,8 @@ def mf6_freyberg_direct_test():
     pe.to_binary(os.path.join(template_ws, "prior.jcb"))
     assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
     assert pe.shape[0] == num_reals
-
+    cov = pf.buid_prior()
+    cov.to_uncfile("prior.unc")
     pst.control_data.noptmax = 0
     pst.pestpp_options["additional_ins_delimiters"] = ","
 
