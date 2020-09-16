@@ -1,0 +1,191 @@
+:mod:`pyemu.mc`
+===============
+
+.. py:module:: pyemu.mc
+
+.. autoapi-nested-parse::
+
+   pyEMU Monte Carlo module.  Supports easy Monte Carlo
+   and GLUE analyses.  The MonteCarlo class inherits from
+   pyemu.LinearAnalysis
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   pyemu.mc.MonteCarlo
+
+
+
+.. py:class:: MonteCarlo(**kwargs)
+
+   Bases: :class:`pyemu.la.LinearAnalysis`
+
+   LinearAnalysis derived type for monte carlo analysis
+
+   :param \*\*kwargs: dictionary of keyword arguments.  See pyemu.LinearAnalysis for
+                      complete definitions
+   :type \*\*kwargs: dict
+
+   .. attribute:: parensemble
+
+      pyemu object derived from a pandas dataframe, the ensemble
+      of parameters from the PEST control file with associated
+      starting value and bounds.  Object also exposes methods
+      relevant to the dataframe and parameters-- see documentation.
+
+      :type: pyemu.ParameterEnsemble
+
+   .. attribute:: obsensemble
+
+      pyemu object derived from a pandas dataframe, the ensemble
+      of observations from the PEST control file with associated
+      starting weights.  Object also exposes methods
+      relevant to the dataframe and observations-- see documentation.
+
+      :type: pyemu.ObservationEnsemble
+
+   :returns: pyEMU MonteCarlo object
+   :rtype: MonteCarlo
+
+   .. rubric:: Example
+
+   ``>>>import pyemu``
+
+   ``>>>mc = pyemu.MonteCarlo(pst="pest.pst")``
+
+   .. method:: num_reals(self)
+      :property:
+
+      get the number of realizations in the parameter ensemble
+
+      :returns: **num_real**
+      :rtype: int
+
+
+   .. method:: get_nsing(self, epsilon=0.0001)
+
+      get the number of solution space dimensions given
+      a ratio between the largest and smallest singular values
+
+      :param epsilon: singular value ratio
+      :type epsilon: float
+
+      :returns: **nsing** -- number of singular components above the epsilon ratio threshold
+      :rtype: float
+
+      .. note:: If nsing == nadj_par, then None is returned
+
+
+   .. method:: get_null_proj(self, nsing=None)
+
+      get a null-space projection matrix of XTQX
+
+      :param nsing: optional number of singular components to use
+                    If Nonte, then nsing is determined from
+                    call to MonteCarlo.get_nsing()
+      :type nsing: int
+
+      :returns: **v2_proj** -- the null-space projection matrix (V2V2^T)
+      :rtype: pyemu.Matrix
+
+
+   .. method:: draw(self, num_reals=1, par_file=None, obs=False, enforce_bounds=None, cov=None, how='gaussian')
+
+      draw stochastic realizations of parameters and
+         optionally observations, filling MonteCarlo.parensemble and
+         optionally MonteCarlo.obsensemble.
+
+      :param num_reals: number of realization to generate
+      :type num_reals: int
+      :param par_file: parameter file to use as mean values. If None,
+                       use MonteCarlo.pst.parameter_data.parval1.
+                       Default is None
+      :type par_file: str
+      :param obs: add a realization of measurement noise to observation values,
+                  forming MonteCarlo.obsensemble.Default is False
+      :type obs: bool
+      :param enforce_bounds: enforce parameter bounds based on control file information.
+                             options are 'reset', 'drop' or None.  Default is None
+      :type enforce_bounds: str
+      :param how: type of distribution to draw from. Must be in ["gaussian","uniform"]
+                  default is "gaussian".
+      :type how: str
+
+      .. rubric:: Example
+
+      ``>>>import pyemu``
+
+      ``>>>mc = pyemu.MonteCarlo(pst="pest.pst")``
+
+      ``>>>mc.draw(1000)``
+
+
+   .. method:: project_parensemble(self, par_file=None, nsing=None, inplace=True, enforce_bounds='reset')
+
+      perform the null-space projection operations for null-space monte carlo
+
+      :param par_file: an optional file of parameter values to use
+      :type par_file: str
+      :param nsing: number of singular values to in forming null subspace matrix
+      :type nsing: int
+      :param inplace: overwrite the existing parameter ensemble with the
+                      projected values
+      :type inplace: bool
+      :param enforce_bounds: how to enforce parameter bounds.  can be None, 'reset', or 'drop'.
+                             Default is None
+      :type enforce_bounds: str
+
+      :returns: **par_en** -- if inplace is False, otherwise None
+      :rtype: pyemu.ParameterEnsemble
+
+      .. note::
+
+         to use this method, the MonteCarlo instance must have been constructed
+         with the ``jco`` argument.
+
+      .. rubric:: Example
+
+      ``>>>import pyemu``
+
+      ``>>>mc = pyemu.MonteCarlo(jco="pest.jcb")``
+
+      ``>>>mc.draw(1000)``
+
+      ``>>>mc.project_parensemble(par_file="final.par",nsing=100)``
+
+
+   .. method:: write_psts(self, prefix, existing_jco=None, noptmax=None)
+
+      write parameter and optionally observation realizations
+          to a series of pest control files
+
+      :param prefix: pest control file prefix
+      :type prefix: str
+      :param existing_jco: filename of an existing jacobian matrix to add to the
+                           pest++ options in the control file.  This is useful for
+                           NSMC since this jco can be used to get the first set of
+                           parameter upgrades for free!  Needs to be the path the jco
+                           file as seen from the location where pest++ will be run
+      :type existing_jco: str
+      :param noptmax: value of NOPTMAX to set in new pest control files
+      :type noptmax: int
+
+      .. rubric:: Example
+
+      ``>>>import pyemu``
+
+      ``>>>mc = pyemu.MonteCarlo(jco="pest.jcb")``
+
+      ``>>>mc.draw(1000, obs=True)``
+
+      ``>>>mc.write_psts("mc_", existing_jco="pest.jcb", noptmax=1)``
+
+
+

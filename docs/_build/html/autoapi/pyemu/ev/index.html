@@ -1,0 +1,737 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyemu.ev &mdash; pyEMU 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> pyEMU
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.ev</span></code></a><ul>
+<li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#classes">Classes</a><ul>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar">ErrVar</a><ul>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.__load_omitted_predictions">__load_omitted_predictions</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.__load_omitted_parcov">__load_omitted_parcov</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.__load_omitted_jco">__load_omitted_jco</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.omitted_predictions">omitted_predictions</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.omitted_jco">omitted_jco</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.omitted_parcov">omitted_parcov</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.get_errvar_dataframe">get_errvar_dataframe</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.get_identifiability_dataframe">get_identifiability_dataframe</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.variance_at">variance_at</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.R">R</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.I_minus_R">I_minus_R</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.G">G</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.first_forecast">first_forecast</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.first_prediction">first_prediction</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.first_parameter">first_parameter</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.second_forecast">second_forecast</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.second_prediction">second_prediction</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.second_parameter">second_parameter</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.third_forecast">third_forecast</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.third_prediction">third_prediction</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.third_parameter">third_parameter</a></li>
+<li><a class="reference internal" href="#pyemu.ev.ErrVar.get_null_proj">get_null_proj</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">pyEMU</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.ev</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/autoapi/pyemu/ev/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pyemu.ev">
+<span id="pyemu-ev"></span><h1><a class="reference internal" href="../../../pyemu.html#module-pyemu.ev" title="pyemu.ev"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.ev</span></code></a><a class="headerlink" href="#module-pyemu.ev" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../pyemu.html#pyemu.ev.ErrVar" title="pyemu.ev.ErrVar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ErrVar</span></code></a></p></td>
+<td><p>FOSM-based error variance analysis</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt id="pyemu.ev.ErrVar">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.ev.</code><code class="sig-name descname">ErrVar</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">jco</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../../../pyemu.html#pyemu.la.LinearAnalysis" title="pyemu.la.LinearAnalysis"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyemu.la.LinearAnalysis</span></code></a></p>
+<p>FOSM-based error variance analysis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>jco</strong> (<em>varies</em><em>, </em><em>optional</em>) – something that can be cast or loaded into a <cite>pyemu.Jco</cite>.  Can be a
+str for a filename or <cite>pyemu.Matrix</cite>/<cite>pyemu.Jco</cite> object.</p></li>
+<li><p><strong>pst</strong> (<em>varies</em><em>, </em><em>optional</em>) – something that can be cast into a <cite>pyemu.Pst</cite>.  Can be an <cite>str</cite> for a
+filename or an existing <cite>pyemu.Pst</cite>.  If <cite>None</cite>, a pst filename is sought
+with the same base name as the jco argument (if passed)</p></li>
+<li><p><strong>parcov</strong> (<em>varies</em><em>, </em><em>optional</em>) – prior parameter covariance matrix.  If <cite>str</cite>, a filename is assumed and
+the prior parameter covariance matrix is loaded from a file using
+the file extension (“.jcb”/”.jco” for binary, “.cov”/”.mat” for PEST-style ASCII matrix,
+or “.unc” for uncertainty files).  If <cite>None</cite>, the prior parameter covariance matrix is
+constructed from the parameter bounds in <cite>LinearAnalysis.pst</cite>.  Can also be a <cite>pyemu.Cov</cite> instance</p></li>
+<li><p><strong>obscov</strong> (<em>varies</em><em>, </em><em>optional</em>) – observation noise covariance matrix.  If <cite>str</cite>, a filename is assumed and
+the noise covariance matrix is loaded from a file using
+the file extension (“.jcb”/”.jco” for binary, “.cov”/”.mat” for PEST-style ASCII matrix,
+or “.unc” for uncertainty files).  If <cite>None</cite>, the noise covariance matrix is
+constructed from the obsevation weights in <cite>LinearAnalysis.pst</cite>.  Can also be a <cite>pyemu.Cov</cite> instance</p></li>
+<li><p><strong>forecasts</strong> (<em>varies</em><em>, </em><em>optional</em>) – forecast sensitivity vectors.  If <cite>str</cite>, first an observation name is assumed (a row
+in <cite>LinearAnalysis.jco</cite>).  If that is not found, a filename is assumed and predictions are
+loaded from a file using the file extension.  If [<cite>str</cite>], a list of observation names is assumed.
+Can also be a <cite>pyemu.Matrix</cite> instance, a <cite>numpy.ndarray</cite> or a collection.  Note if the PEST++ option
+“++forecasts()” is set in the pest control file (under the <cite>pyemu.Pst.pestpp_options</cite> dictionary),
+then there is no need to pass this argument (unless you want to analyze different forecasts)
+of <cite>pyemu.Matrix</cite> or <cite>numpy.ndarray</cite>.</p></li>
+<li><p><strong>ref_var</strong> (<em>float</em><em>, </em><em>optional</em>) – reference variance.  Default is 1.0</p></li>
+<li><p><strong>verbose</strong> (<cite>bool</cite>) – controls screen output.  If <cite>str</cite>, a filename is assumed and
+and log file is written.</p></li>
+<li><p><strong>sigma_range</strong> (<cite>float</cite>, optional) – defines range of upper bound - lower bound in terms of standard
+deviation (sigma). For example, if sigma_range = 4, the bounds represent 4 * sigma.
+Default is 4.0, representing approximately 95% confidence of implied normal distribution.
+This arg is only used if constructing parcov from parameter bounds.</p></li>
+<li><p><strong>scale_offset</strong> (<cite>bool</cite>, optional) – flag to apply parameter scale and offset to parameter bounds
+when calculating prior parameter covariance matrix from bounds.  This arg is onlyused if
+constructing parcov from parameter bounds.Default is True.</p></li>
+<li><p><strong>omitted_parameters</strong> ([<cite>str</cite>]) – list of parameters to treat as “omitted”.  Passing this argument
+activates 3-term error variance analysis.</p></li>
+<li><p><strong>omitted_parcov</strong> (<em>varies</em>) – an argument that can be cast to a parcov for the omitted parameters.
+If None, omitted_parcov will be formed by extracting a sub-matrix from the <cite>LinearAnalsis.parcov</cite>
+attribute.</p></li>
+<li><p><strong>omitted_predictions</strong> (<em>varies</em>) – an argument that can be cast to a “predictions” (e.g. “forecasts”)
+attribute to form prediction sensitivity vectors with respec to the omitted parameters.  If None,
+these vectors will be extracted from the <cite>pyemu.LinearAnalysis.predictions</cite> attribute</p></li>
+<li><p><strong>kl</strong> (<cite>bool</cite>, optional) – flag to perform Karhunen-Loeve scaling on the jacobian before error variance
+calculations. If <cite>True</cite>, the <cite>pyemu.ErrVar.jco</cite> and <cite>pyemu.ErrVar.parcov</cite> are altered in place.
+Default is <cite>False</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ev</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">ErrVar</span><span class="p">(</span><span class="n">jco</span><span class="o">=</span><span class="s2">&quot;my.jco&quot;</span><span class="p">,</span><span class="n">omitted_parameters</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;wel1&quot;</span><span class="p">,</span><span class="s2">&quot;wel2&quot;</span><span class="p">])</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">get_errvar_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.__load_omitted_predictions">
+<code class="sig-name descname">__load_omitted_predictions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.__load_omitted_predictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>private: set the omitted_predictions attribute</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.__load_omitted_parcov">
+<code class="sig-name descname">__load_omitted_parcov</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.__load_omitted_parcov" title="Permalink to this definition">¶</a></dt>
+<dd><p>private: set the omitted_parcov attribute</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.__load_omitted_jco">
+<code class="sig-name descname">__load_omitted_jco</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.__load_omitted_jco" title="Permalink to this definition">¶</a></dt>
+<dd><p>private: set the omitted jco attribute</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.omitted_predictions">
+<em class="property">property </em><code class="sig-name descname">omitted_predictions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.omitted_predictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>omitted prediction sensitivity vectors</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a matrix of prediction sensitivity vectors (column wise) to
+omitted parameters</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pyemu.Matrix</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.omitted_jco">
+<em class="property">property </em><code class="sig-name descname">omitted_jco</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.omitted_jco" title="Permalink to this definition">¶</a></dt>
+<dd><p>the omitted-parameters jacobian matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the jacobian matrix instance of non-zero-weighted observations and
+omitted parameters</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pyemu.Jco</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.omitted_parcov">
+<em class="property">property </em><code class="sig-name descname">omitted_parcov</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.omitted_parcov" title="Permalink to this definition">¶</a></dt>
+<dd><p>the prior omitted-parameter covariance matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the prior parameter covariance matrix of the
+omitted parameters</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pyemu.Cov</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.get_errvar_dataframe">
+<code class="sig-name descname">get_errvar_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_values</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.get_errvar_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>primary entry point for error variance analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_values</strong> ([<cite>int</cite>], optional) – a list singular values to test. If <cite>None</cite>,
+defaults to <cite>range(0,min(nnz_obs,nadj_par) + 1)</cite>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a multi-indexed pandas dataframe summarizing each of the
+error variance terms for each nominated forecast. Rows are the singluar values
+tested, columns are a multi-index of forecast name and error variance term number
+(e.g. 1,2 or (optionally) 3).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ev</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">ErrVar</span><span class="p">(</span><span class="n">jco</span><span class="o">=</span><span class="s2">&quot;my.jco&quot;</span><span class="p">,</span><span class="n">omitted_parameters</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;wel1&quot;</span><span class="p">,</span><span class="s2">&quot;wel2&quot;</span><span class="p">])</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">get_errvar_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.get_identifiability_dataframe">
+<code class="sig-name descname">get_identifiability_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">precondition</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.get_identifiability_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>primary entry point for identifiability analysis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>singular_value</strong> (<cite>int</cite>) – the singular spectrum truncation point. Defaults
+to minimum of non-zero-weighted observations and adjustable parameters</p></li>
+<li><p><strong>precondition</strong> (<cite>bool</cite>) – flag to use the preconditioned hessian with the prior
+parameter covariance matrix (xtqt + sigma_theta^-1).  This should be used
+KL scaling. Default is <cite>False</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A pandas dataframe of the right solution-space singular
+vectors and identifiability (identifiabiity is in the column labeled “ident”)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ev</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">ErrVar</span><span class="p">(</span><span class="n">jco</span><span class="o">=</span><span class="s2">&quot;my.jco&quot;</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">get_identifiability_dataframe</span><span class="p">(</span><span class="n">singular_value</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">df</span><span class="o">.</span><span class="n">ident</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.variance_at">
+<code class="sig-name descname">variance_at</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.variance_at" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>get the error variance of all three error variance terms at a</dt><dd><p>given singluar value</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to test</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dictionary of (err var term,prediction_name), variance pairs</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>dict</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.R">
+<code class="sig-name descname">R</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.R" title="Permalink to this definition">¶</a></dt>
+<dd><p>get resolution Matrix (V_1 * V_1^T) at a given singular value</p>
+<p>Args:
+singular_value (<cite>int</cite>): singular value to calculate <cite>R</cite> at</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>resolution matrix at <cite>singular_value</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pyemu.Matrix</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.I_minus_R">
+<code class="sig-name descname">I_minus_R</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.I_minus_R" title="Permalink to this definition">¶</a></dt>
+<dd><p>get I - R at a given singular value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to calculate I - R at</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>identity matrix minus resolution matrix at <cite>singular_value</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Matrix</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.G">
+<code class="sig-name descname">G</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.G" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the parameter solution Matrix at a given singular value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to calc G at</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>parameter solution matrix  (V_1 * S_1^(_1) * U_1^T) at <cite>singular_value</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Matrix</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.first_forecast">
+<code class="sig-name descname">first_forecast</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.first_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>get the null space term (first term) contribution to forecast (e.g. prediction)</dt><dd><p>error variance at a given singular value.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to calc first term at</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method is used to construct the error variance dataframe</p>
+<p>Just a wrapper around <cite>ErrVar.first_forecast</cite></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dictionary of (“first”,prediction_names),error variance pairs at <cite>singular_value</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>dict</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.first_prediction">
+<code class="sig-name descname">first_prediction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.first_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>get the null space term (first term) contribution to prediction error variance</dt><dd><p>at a given singular value.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to calc first term at</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method is used to construct the error variance dataframe</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dictionary of (“first”,prediction_names),error variance pairs at <cite>singular_value</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>dict</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.first_parameter">
+<code class="sig-name descname">first_parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.first_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>get the null space term (first term) contribution to parameter error variance</dt><dd><p>at a given singular value</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to calc first term at</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>first term contribution to parameter error variance</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Cov</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.second_forecast">
+<code class="sig-name descname">second_forecast</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.second_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the solution space contribution to forecast (e.g. “prediction”) error variance
+at a given singular value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to calc second term at</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method is used to construct error variance dataframe</p>
+<p>Just a thin wrapper around <cite>ErrVar.second_prediction</cite></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dictionary of (“second”,prediction_names), error variance
+arising from the solution space contribution (y^t * G * obscov * G^T * y)</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>dict</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.second_prediction">
+<code class="sig-name descname">second_prediction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.second_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the solution space contribution to predictive error variance
+at a given singular value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to calc second term at</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method is used to construct error variance dataframe</p>
+</div>
+<dl class="simple">
+<dt>Returns:            <cite>dict</cite>:  dictionary of (“second”,prediction_names), error variance</dt><dd><p>arising from the solution space contribution (y^t * G * obscov * G^T * y)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.second_parameter">
+<code class="sig-name descname">second_parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.second_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>get the solution space contribution to parameter error variance</dt><dd><p>at a given singular value (G * obscov * G^T)</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to calc second term at</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the second term contribution to parameter error variance
+(G * obscov * G^T)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Cov</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.third_forecast">
+<code class="sig-name descname">third_forecast</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.third_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>get the omitted parameter contribution to forecast (<cite>prediction</cite>) error variance</dt><dd><p>at a given singular value.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to calc third term at</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>used to construct error variance dataframe
+just a thin wrapper around <cite>ErrVar.third_prediction()</cite></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a dictionary of (“third”,prediction_names),error variance</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>dict</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.third_prediction">
+<code class="sig-name descname">third_prediction</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.third_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>get the omitted parameter contribution to prediction error variance</dt><dd><p>at a given singular value.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to calc third term at</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>used to construct error variance dataframe</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a dictionary of (“third”,prediction_names),error variance</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>dict</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.third_parameter">
+<code class="sig-name descname">third_parameter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">singular_value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.third_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>get the omitted parameter contribution to parameter error variance</dt><dd><p>at a given singular value</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>singular_value</strong> (<cite>int</cite>) – singular value to calc third term at</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the third term contribution to parameter error variance
+calculated at <cite>singular_value</cite> (G * omitted_jco * Sigma_(omitted_pars) *
+omitted_jco^T * G^T).  Returns 0.0 if third term calculations are not
+being used.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Cov</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.ev.ErrVar.get_null_proj">
+<code class="sig-name descname">get_null_proj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">maxsing</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">eigthresh</span><span class="o">=</span><span class="default_value">1e-06</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.ev.ErrVar.get_null_proj" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a null-space projection matrix of XTQX</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>maxsing</strong> (<cite>int</cite>, optional) – number of singular components
+to use (the truncation point).  If None, <cite>pyemu.Matrx.get_maxsing()
+is used to determine the truncation point with `eigthresh</cite>. Default
+is None</p></li>
+<li><p><strong>eigthresh</strong> (<cite>float</cite>, optional) – the ratio of smallest to largest singular
+value to keep in the range (solution) space of XtQX.  Not used if
+<cite>maxsing</cite> is not <cite>None</cite>.  Default is 1.0e-6</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>used for null-space monte carlo operations.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><cite>pyemu.Matrix</cite> the null-space projection matrix (V2V2^T)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,31 @@
+:mod:`pyemu.utils.optimization`
+===============================
+
+.. py:module:: pyemu.utils.optimization
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   pyemu.utils.optimization.add_pi_obj_func
+
+
+.. data:: OPERATOR_WORDS
+   :annotation: = ['l', 'g', 'n', 'e']
+
+   
+
+.. data:: OPERATOR_SYMBOLS
+   :annotation: = ['<=', '>=', '=', '=']
+
+   
+
+.. function:: add_pi_obj_func(pst, obj_func_dict=None, out_pst_name=None)
+
+

@@ -1,0 +1,1452 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyemu.utils.geostats &mdash; pyEMU 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> pyEMU
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.geostats</span></code></a><ul>
+<li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#classes">Classes</a></li>
+<li><a class="reference internal" href="#functions">Functions</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.geostats.EPSILON">EPSILON</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct">GeoStruct</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.nugget">nugget</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.variograms">variograms</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.transform">transform</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.__lt__">__lt__</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.__gt__">__gt__</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.same_as_other">same_as_other</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.to_struct_file">to_struct_file</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.covariance_matrix">covariance_matrix</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.covariance">covariance</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.covariance_points">covariance_points</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.sill">sill</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.plot">plot</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GeoStruct.__str__">__str__</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.SpecSim2d">SpecSim2d</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.geostats.SpecSim2d.grid_is_regular">grid_is_regular</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.SpecSim2d.initialize">initialize</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.SpecSim2d.draw_arrays">draw_arrays</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.SpecSim2d.grid_par_ensemble_helper">grid_par_ensemble_helper</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.SpecSim2d.draw_conditional">draw_conditional</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige">OrdinaryKrige</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige.check_point_data_dist">check_point_data_dist</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige.calc_factors_grid">calc_factors_grid</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige._dist_calcs">_dist_calcs</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige._cov_points">_cov_points</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige._form">_form</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige._solve">_solve</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige.calc_factors">calc_factors</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige._calc_factors_org">_calc_factors_org</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige._calc_factors_mp">_calc_factors_mp</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige._worker">_worker</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.OrdinaryKrige.to_grid_factors_file">to_grid_factors_file</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d">Vario2d</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d.same_as_other">same_as_other</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d.to_struct_file">to_struct_file</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d.bearing_rads">bearing_rads</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d.rotation_coefs">rotation_coefs</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d.inv_h">inv_h</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d.plot">plot</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d.covariance_matrix">covariance_matrix</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d._specsim_grid_contrib">_specsim_grid_contrib</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d._apply_rotation">_apply_rotation</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d.covariance_points">covariance_points</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d.covariance">covariance</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.Vario2d.__str__">__str__</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.ExpVario">ExpVario</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.geostats.ExpVario._h_function">_h_function</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GauVario">GauVario</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.geostats.GauVario._h_function">_h_function</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.SphVario">SphVario</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.geostats.SphVario._h_function">_h_function</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.read_struct_file">read_struct_file</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats._read_variogram">_read_variogram</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats._read_structure_attributes">_read_structure_attributes</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.read_sgems_variogram_xml">read_sgems_variogram_xml</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.gslib_2_dataframe">gslib_2_dataframe</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.load_sgems_exp_var">load_sgems_exp_var</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats.fac2real">fac2real</a></li>
+<li><a class="reference internal" href="#pyemu.utils.geostats._parse_factor_line">_parse_factor_line</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">pyEMU</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.geostats</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../../_sources/autoapi/pyemu/utils/geostats/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pyemu.utils.geostats">
+<span id="pyemu-utils-geostats"></span><h1><a class="reference internal" href="../../../../pyemu.utils.html#module-pyemu.utils.geostats" title="pyemu.utils.geostats"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.geostats</span></code></a><a class="headerlink" href="#module-pyemu.utils.geostats" title="Permalink to this headline">¶</a></h1>
+<p>Geostatistics in the PEST(++) realm</p>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.GeoStruct" title="pyemu.utils.geostats.GeoStruct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GeoStruct</span></code></a></p></td>
+<td><p>a geostatistical structure object that mimics the behavior of a PEST</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.SpecSim2d" title="pyemu.utils.geostats.SpecSim2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpecSim2d</span></code></a></p></td>
+<td><p>2-D unconditional spectral simulation for regular grids</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.OrdinaryKrige" title="pyemu.utils.geostats.OrdinaryKrige"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OrdinaryKrige</span></code></a></p></td>
+<td><p>Ordinary Kriging using Pandas and Numpy.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.Vario2d" title="pyemu.utils.geostats.Vario2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Vario2d</span></code></a></p></td>
+<td><p>base class for 2-D variograms.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.ExpVario" title="pyemu.utils.geostats.ExpVario"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ExpVario</span></code></a></p></td>
+<td><p>Gaussian variogram derived type</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.GauVario" title="pyemu.utils.geostats.GauVario"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GauVario</span></code></a></p></td>
+<td><p>Gaussian variogram derived type</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.SphVario" title="pyemu.utils.geostats.SphVario"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SphVario</span></code></a></p></td>
+<td><p>Spherical variogram derived type</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.read_struct_file" title="pyemu.utils.geostats.read_struct_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_struct_file</span></code></a>(struct_file, return_type=GeoStruct)</p></td>
+<td><p>read an existing PEST-type structure file into a GeoStruct instance</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.utils.geostats._read_variogram" title="pyemu.utils.geostats._read_variogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_read_variogram</span></code></a>(f)</p></td>
+<td><p>Function to instantiate a Vario2d from a PEST-style structure file</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.utils.geostats._read_structure_attributes" title="pyemu.utils.geostats._read_structure_attributes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_read_structure_attributes</span></code></a>(f)</p></td>
+<td><p>function to read information from a PEST-style structure file</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.read_sgems_variogram_xml" title="pyemu.utils.geostats.read_sgems_variogram_xml"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_sgems_variogram_xml</span></code></a>(xml_file, return_type=GeoStruct)</p></td>
+<td><p>function to read an SGEMS-type variogram XML file into</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.gslib_2_dataframe" title="pyemu.utils.geostats.gslib_2_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gslib_2_dataframe</span></code></a>(filename, attr_name=None, x_idx=0, y_idx=1)</p></td>
+<td><p>function to read a GSLIB point data file into a pandas.DataFrame</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.load_sgems_exp_var" title="pyemu.utils.geostats.load_sgems_exp_var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_sgems_exp_var</span></code></a>(filename)</p></td>
+<td><p>read an SGEM experimental variogram into a sequence of</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.fac2real" title="pyemu.utils.geostats.fac2real"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fac2real</span></code></a>(pp_file=None, factors_file='factors.dat', out_file='test.ref', upper_lim=1e+30, lower_lim=-1e+30, fill_value=1e+30)</p></td>
+<td><p>A python replication of the PEST fac2real utility for creating a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.utils.geostats._parse_factor_line" title="pyemu.utils.geostats._parse_factor_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_parse_factor_line</span></code></a>(line)</p></td>
+<td><p>function to parse a factor file line.  Used by fac2real()</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py data">
+<dt id="pyemu.utils.geostats.EPSILON">
+<code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">EPSILON</code><em class="property"> = 1e-07</em><a class="headerlink" href="#pyemu.utils.geostats.EPSILON" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.utils.geostats.GeoStruct">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">GeoStruct</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">nugget</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">variograms</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">'struct1'</span></em>, <em class="sig-param"><span class="n">transform</span><span class="o">=</span><span class="default_value">'none'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>a geostatistical structure object that mimics the behavior of a PEST
+geostatistical structure.  The object contains variogram instances and
+(optionally) nugget information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nugget</strong> (<cite>float</cite> (optional)) – nugget contribution. Default is 0.0</p></li>
+<li><p><strong>variograms</strong> – ([<cite>pyemu.Vario2d</cite>] (optional)): variogram(s) associated
+with this GeoStruct instance. Default is empty list</p></li>
+<li><p><strong>name</strong> (<cite>str</cite> (optional)) – name to assign the structure.  Default
+is “struct1”.</p></li>
+<li><p><strong>transform</strong> (<cite>str</cite> (optional)) – the transformation to apply to
+the GeoStruct.  Can be “none” or “log”, depending on the
+transformation of the property being represented by the <cite>GeoStruct</cite>.
+Default is “none”</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">ExpVario</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="n">contribution</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">gs</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">GeoStruct</span><span class="p">(</span><span class="n">variograms</span><span class="o">=</span><span class="n">v</span><span class="p">,</span><span class="n">nugget</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt id="pyemu.utils.geostats.GeoStruct.nugget">
+<code class="sig-name descname">nugget</code><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.nugget" title="Permalink to this definition">¶</a></dt>
+<dd><p>the nugget effect contribution</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><cite>float</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.geostats.GeoStruct.variograms">
+<code class="sig-name descname">variograms</code><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.variograms" title="Permalink to this definition">¶</a></dt>
+<dd><p>a list of variogram instances</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>[<cite>pyemu.utils.geostats.Vario2d</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.geostats.GeoStruct.transform">
+<code class="sig-name descname">transform</code><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>the transformation of the <cite>GeoStruct</cite>.  Can be ‘log’ or ‘none’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><cite>str</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.GeoStruct.__lt__">
+<code class="sig-name descname">__lt__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.__lt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return self&lt;value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.GeoStruct.__gt__">
+<code class="sig-name descname">__gt__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.__gt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return self&gt;value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.GeoStruct.same_as_other">
+<code class="sig-name descname">same_as_other</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.same_as_other" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.GeoStruct.to_struct_file">
+<code class="sig-name descname">to_struct_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">f</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.to_struct_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a PEST-style structure file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>f</strong> (<cite>str</cite>) – file to write the GeoStruct information in to.  Can
+also be an open file handle</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.GeoStruct.covariance_matrix">
+<code class="sig-name descname">covariance_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cov</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.covariance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a <cite>pyemu.Cov</cite> instance from <cite>GeoStruct</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> ([<cite>floats</cite>]) – x-coordinate locations</p></li>
+<li><p><strong>y</strong> ([<cite>float</cite>]) – y-coordinate locations</p></li>
+<li><p><strong>names</strong> ([<cite>str</cite>] (optional)) – names of location. If None,
+cov must not be None.  Default is None.</p></li>
+<li><p><strong>cov</strong> (<cite>pyemu.Cov</cite>) – an existing Cov instance.  The contribution
+of this GeoStruct is added to cov.  If cov is None,
+names must not be None. Default is None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the covariance matrix implied by this
+GeoStruct for the x,y pairs. <cite>cov</cite> has row and column
+names supplied by the names argument unless the “cov”
+argument was passed.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Cov</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>either “names” or “cov” must be passed.  If “cov” is passed, cov.shape
+must equal len(x) and len(y).</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pp_df</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pp_utils</span><span class="o">.</span><span class="n">pp_file_to_dataframe</span><span class="p">(</span><span class="s2">&quot;hkpp.dat&quot;</span><span class="p">)</span>
+<span class="n">cov</span> <span class="o">=</span> <span class="n">gs</span><span class="o">.</span><span class="n">covariance_matrix</span><span class="p">(</span><span class="n">pp_df</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">pp_df</span><span class="o">.</span><span class="n">y</span><span class="p">,</span><span class="n">pp_df</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="n">cov</span><span class="o">.</span><span class="n">to_binary</span><span class="p">(</span><span class="s2">&quot;cov.jcb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.GeoStruct.covariance">
+<code class="sig-name descname">covariance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">pt0</span></em>, <em class="sig-param"><span class="n">pt1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.covariance" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the covariance between two points implied by the <cite>GeoStruct</cite>.
+This is used during the ordinary kriging process to get the RHS</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pt0</strong> ([<cite>float</cite>]) – xy-pair</p></li>
+<li><p><strong>pt1</strong> ([<cite>float</cite>]) – xy-pair</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the covariance between pt0 and pt1 implied
+by the GeoStruct</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>float</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.GeoStruct.covariance_points">
+<code class="sig-name descname">covariance_points</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">x0</span></em>, <em class="sig-param"><span class="n">y0</span></em>, <em class="sig-param"><span class="n">xother</span></em>, <em class="sig-param"><span class="n">yother</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.covariance_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the covariance between point (x0,y0) and the points
+contained in xother, yother.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x0</strong> (<cite>float</cite>) – x-coordinate</p></li>
+<li><p><strong>y0</strong> (<cite>float</cite>) – y-coordinate</p></li>
+<li><p><strong>xother</strong> ([<cite>float</cite>]) – x-coordinates of other points</p></li>
+<li><p><strong>yother</strong> ([<cite>float</cite>]) – y-coordinates of other points</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a 1-D array of covariance between point x0,y0 and the
+points contained in xother, yother.  len(cov) = len(xother) =
+len(yother)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>numpy.ndarray</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.GeoStruct.sill">
+<em class="property">property </em><code class="sig-name descname">sill</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.sill" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the sill of the <cite>GeoStruct</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the sill of the (nested) <cite>GeoStruct</cite>, including
+nugget and contribution from each variogram</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>float</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.GeoStruct.plot">
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>make a cheap plot of the <cite>GeoStruct</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**kwargs</strong> – (dict)
+keyword arguments to use for plotting.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the axis with the GeoStruct plot</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>matplotlib.pyplot.axis</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>optional arguments include “ax” (an existing axis),
+“individuals” (plot each variogram on a separate axis),
+“legend” (add a legend to the plot(s)).  All other kwargs
+are passed to matplotlib.pyplot.plot()</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.GeoStruct.__str__">
+<code class="sig-name descname">__str__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GeoStruct.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><p>the <cite>str</cite> representation of the <cite>GeoStruct</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the string representation of the GeoStruct</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>str</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.utils.geostats.SpecSim2d">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">SpecSim2d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">delx</span></em>, <em class="sig-param"><span class="n">dely</span></em>, <em class="sig-param"><span class="n">geostruct</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.SpecSim2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>2-D unconditional spectral simulation for regular grids</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>delx</strong> (<cite>numpy.ndarray</cite>) – a 1-D array of x-dimension cell centers
+(or leading/trailing edges).  Only the distance between points
+is important</p></li>
+<li><p><strong>dely</strong> (<cite>numpy.ndarray</cite>) – a 1-D array of y-dimension cell centers
+(or leading/trailing edges).  Only the distance between points
+is important</p></li>
+<li><p><strong>geostruct</strong> (<cite>pyemu.geostats.Geostruct</cite>) – geostatistical structure instance</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">ExpVario</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="n">contribution</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">gs</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">GeoStruct</span><span class="p">(</span><span class="n">variograms</span><span class="o">=</span><span class="n">v</span><span class="p">,</span><span class="n">nugget</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">delx</span><span class="p">,</span><span class="n">dely</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">arrange</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">ss</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">SpecSim2d</span><span class="p">(</span><span class="n">delx</span><span class="p">,</span><span class="n">dely</span><span class="p">,</span><span class="n">gs</span><span class="p">)</span>
+<span class="n">arrays</span> <span class="o">=</span> <span class="n">ss</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">num_reals</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="pyemu.utils.geostats.SpecSim2d.grid_is_regular">
+<em class="property">static </em><code class="sig-name descname">grid_is_regular</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">delx</span></em>, <em class="sig-param"><span class="n">dely</span></em>, <em class="sig-param"><span class="n">tol</span><span class="o">=</span><span class="default_value">0.0001</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.SpecSim2d.grid_is_regular" title="Permalink to this definition">¶</a></dt>
+<dd><p>check that a grid is regular using delx and dely vectors</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>delx</strong> – <cite>numpy.ndarray</cite>
+a 1-D array of x-dimension cell centers (or leading/trailing edges).  Only the
+distance between points is important</p></li>
+<li><p><strong>dely</strong> – <cite>numpy.ndarray</cite>
+a 1-D array of y-dimension cell centers (or leading/trailing edges).  Only the
+distance between points is important</p></li>
+<li><p><strong>tol</strong> – <cite>float</cite> (optional)
+tolerance to determine grid regularity.  Default is 1.0e-4</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>flag indicating if the grid defined by <cite>delx</cite> and <cite>dely</cite> is regular</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>bool</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.SpecSim2d.initialize">
+<code class="sig-name descname">initialize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.SpecSim2d.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare for spectral simulation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><cite>initialize()</cite> prepares for simulation by undertaking
+the fast FFT on the wave number matrix and should be called
+if the <cite>SpecSim2d.geostruct</cite> is changed.</p>
+<p>This method is called by the constructor.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.SpecSim2d.draw_arrays">
+<code class="sig-name descname">draw_arrays</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">num_reals</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">mean_value</span><span class="o">=</span><span class="default_value">1.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.SpecSim2d.draw_arrays" title="Permalink to this definition">¶</a></dt>
+<dd><p>draw realizations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_reals</strong> (<cite>int</cite>) – number of realizations to generate</p></li>
+<li><p><strong>mean_value</strong> (<cite>float</cite>) – the mean value of the realizations</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a 3-D array of realizations.  Shape
+is (num_reals,self.dely.shape[0],self.delx.shape[0])</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>numpy.ndarray</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>log transformation is respected and the returned <cite>reals</cite> array is
+in arithmatic space</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.SpecSim2d.grid_par_ensemble_helper">
+<code class="sig-name descname">grid_par_ensemble_helper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">gr_df</span></em>, <em class="sig-param"><span class="n">num_reals</span></em>, <em class="sig-param"><span class="n">sigma_range</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.SpecSim2d.grid_par_ensemble_helper" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>wrapper around <cite>SpecSim2d.draw()</cite> designed to support <cite>pyemu.PstFromFlopy</cite></dt><dd><p>grid-based parameters</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – a control file instance</p></li>
+<li><p><strong>gr_df</strong> (<cite>pandas.DataFrame</cite>) – a dataframe listing <cite>parval1</cite>,
+<cite>pargp</cite>, <cite>i</cite>, <cite>j</cite> for each grid based parameter</p></li>
+<li><p><strong>num_reals</strong> (<cite>int</cite>) – number of realizations to generate</p></li>
+<li><p><strong>sigma_range</strong> (<cite>float</cite> (optional)) – number of standard deviations
+implied by parameter bounds in control file. Default is 6</p></li>
+<li><p><strong>logger</strong> (<cite>pyemu.Logger</cite> (optional)) – a logger instance for logging</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>an untransformed parameter ensemble of
+realized grid-parameter values</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.ParameterEnsemble</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>the method processes each unique <cite>pargp</cite> value in <cite>gr_df</cite> and resets the sill of <cite>self.geostruct</cite> by
+the maximum bounds-implied variance of each <cite>pargp</cite>.  This method makes repeated calls to
+<cite>self.initialize()</cite> to deal with the geostruct changes.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.SpecSim2d.draw_conditional">
+<code class="sig-name descname">draw_conditional</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">seed</span></em>, <em class="sig-param"><span class="n">obs_points</span></em>, <em class="sig-param"><span class="n">sg</span></em>, <em class="sig-param"><span class="n">base_values_file</span></em>, <em class="sig-param"><span class="n">local</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">factors_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">num_reals</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">mean_value</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">R_factor</span><span class="o">=</span><span class="default_value">1.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.SpecSim2d.draw_conditional" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Generate a conditional, correlated random field using the Spec2dSim</dt><dd><p>object, a set of observation points, and a factors file.</p>
+<p>The conditional field is made by generating an unconditional correlated random
+field that captures the covariance in the variogram and conditioning it by kriging
+a second surface using the value of the random field as observations.
+This second conditioning surface provides an estimate of uncertainty (kriging error)
+away from the observation points. At the observation points, the kriged surface is
+equal to (less nugget effects) the observation. The conditioned correlated field
+is then generated using: T(x) = Z(x) + [S(x) − S∗(x)]
+where T(x) is the conditioned simulation, Z(x) is a kriging estimator of the
+unknown field, S(x) is an unconditioned random field with the same covariance
+structure as the desired field, and S∗(x) is a kriging estimate of the unconditioned
+random field using its values at the observation points (pilot points).
+[S(x) − S∗(x)] is an estimate of the kriging error.</p>
+<p>This approach makes T(x) match the observed values at the observation points
+(x_a, y_z), T(a) = Z(a), and have a structure away from the observation points that
+follows the variogram used to generate Z, S, and S∗.</p>
+<dl class="simple">
+<dt>Chiles, J-P, and Delfiner, P., Geostatistics- Modeling Spatial Uncertainty: Wiley,</dt><dd><p>London, 695 p.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seed</strong> (<cite>int</cite>) – integer used for random seed.  If seed is used as a PEST parameter,
+then passing the same value for seed will yield the same
+conditioned random fields. This allows runs to be recreated
+given an ensemble of seeds.</p></li>
+<li><p><strong>obs_points</strong> (<cite>str</cite> or <cite>dataframe</cite>) – locations for observation points.
+Either filename in pyemupilot point file format:
+[“name”,”x”,”y”,”zone”,”parval1”] ora dataframe with these columns.
+Note that parval1 is not used.</p></li>
+<li><p><strong>base_values_file</strong> (<cite>str</cite>) – filename containing 2d array with the base
+parameter values from which the random field will depart (Z(x)) above.
+Values of Z(x) are used for conditioning, not parval1 in the
+observation point file.</p></li>
+<li><p><strong>factors_file</strong> (<cite>str</cite>) – name of the factors file generated using the
+locations of the observation points and the target grid.
+If None this file will be generated and called conditional_factors.dat;
+but this is a slow step and should not generally be called for every simulation.</p></li>
+<li><p><strong>sg</strong> – flopy StructuredGrid object</p></li>
+<li><p><strong>local</strong> (<cite>boolean</cite>) – whether coordinates in obs_points are in local (model) or map coordinates</p></li>
+<li><p><strong>num_reals</strong> (<cite>int</cite>) – number of realizations to generate</p></li>
+<li><p><strong>mean_value</strong> (<cite>float</cite>) – the mean value of the realizations</p></li>
+<li><p><strong>R_factor</strong> (<cite>float</cite>) – a factor to scale the field, sometimes the variation from the
+geostruct parameters is larger or smaller than desired.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>a 3-D array of realizations.  Shape is</dt><dd><p>(num_reals, self.dely.shape[0], self.delx.shape[0])</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>numpy.ndarray</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>log transformation is respected and the returned <cite>reals</cite></dt><dd><p>array is in arithmetic space</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.utils.geostats.OrdinaryKrige">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">OrdinaryKrige</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">geostruct</span></em>, <em class="sig-param"><span class="n">point_data</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Ordinary Kriging using Pandas and Numpy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>geostruct</strong> (<cite>GeoStruct</cite>) – a pyemu.geostats.GeoStruct to use for the kriging</p></li>
+<li><p><strong>point_data</strong> (<cite>pandas.DataFrame</cite>) – the conditioning points to use for kriging.
+<cite>point_data</cite> must contain columns “name”, “x”, “y”.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>if <cite>point_data</cite> is an <cite>str</cite>, then it is assumed to be a pilot points file
+and is loaded as such using <cite>pyemu.pp_utils.pp_file_to_dataframe()</cite></p>
+<p>If zoned interpolation is used for grid-based interpolation, then
+<cite>point_data</cite> must also contain a “zone” column</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyemu</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">ExpVario</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="n">contribution</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">gs</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">GeoStruct</span><span class="p">(</span><span class="n">variograms</span><span class="o">=</span><span class="n">v</span><span class="p">,</span><span class="n">nugget</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">pp_df</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pp_utils</span><span class="o">.</span><span class="n">pp_file_to_dataframe</span><span class="p">(</span><span class="s2">&quot;hkpp.dat&quot;</span><span class="p">)</span>
+<span class="n">ok</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">OrdinaryKrige</span><span class="p">(</span><span class="n">gs</span><span class="p">,</span><span class="n">pp_df</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="pyemu.utils.geostats.OrdinaryKrige.check_point_data_dist">
+<code class="sig-name descname">check_point_data_dist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">rectify</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige.check_point_data_dist" title="Permalink to this definition">¶</a></dt>
+<dd><p>check for point_data entries that are closer than
+EPSILON distance - this will cause a singular kriging matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>rectify</strong> (<cite>bool</cite>) – flag to fix the problems with point_data
+by dropping additional points that are
+closer than EPSILON distance.  Default is False</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>this method will issue warnings for points that are closer
+than EPSILON distance</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.OrdinaryKrige.calc_factors_grid">
+<code class="sig-name descname">calc_factors_grid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">spatial_reference</span></em>, <em class="sig-param"><span class="n">zone_array</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">minpts_interp</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">maxpts_interp</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">search_radius</span><span class="o">=</span><span class="default_value">10000000000.0</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">var_filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">forgive</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">num_threads</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige.calc_factors_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate kriging factors (weights) for a structured grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spatial_reference</strong> (<cite>flopy.utils.reference.SpatialReference</cite>) – a spatial
+reference that describes the orientation and
+spatail projection of the the structured grid</p></li>
+<li><p><strong>zone_array</strong> (<cite>numpy.ndarray</cite>) – an integer array of zones to use for kriging.
+If not None, then <cite>point_data</cite> must also contain a “zone” column.  <cite>point_data</cite>
+entries with a zone value not found in zone_array will be skipped.
+If None, then all <cite>point_data</cite> will (potentially) be used for
+interpolating each grid node. Default is None</p></li>
+<li><p><strong>minpts_interp</strong> (<cite>int</cite>) – minimum number of <cite>point_data</cite> entires to use for interpolation at
+a given grid node.  grid nodes with less than <cite>minpts_interp</cite>
+<cite>point_data</cite> found will be skipped (assigned np.NaN).  Defaut is 1</p></li>
+<li><p><strong>maxpts_interp</strong> (<cite>int</cite>) – a given grid node.  A larger <cite>maxpts_interp</cite> will yield “smoother”
+interplation, but using a large <cite>maxpts_interp</cite> will slow the
+(already) slow kriging solution process and may lead to
+memory errors. Default is 20.</p></li>
+<li><p><strong>search_radius</strong> (<cite>float</cite>) – <cite>point_data</cite> entries. Default is 1.0e+10</p></li>
+<li><p><strong>verbose</strong> – (<cite>bool</cite>): a flag to  echo process to stdout during the interpolatino process.
+Default is False</p></li>
+<li><p><strong>var_filename</strong> (<cite>str</cite>) – a filename to save the kriging variance for each interpolated grid node.
+Default is None.</p></li>
+<li><p><strong>forgive</strong> (<cite>bool</cite>) – flag to continue if inversion of the kriging matrix failes at one or more
+grid nodes.  Inversion usually fails if the kriging matrix is singular,
+resulting from <cite>point_data</cite> entries closer than EPSILON distance.  If True,
+warnings are issued for each failed inversion.  If False, an exception
+is raised for failed matrix inversion.</p></li>
+<li><p><strong>num_threads</strong> (<cite>int</cite>) – number of multiprocessing workers to use to try to speed up
+kriging in python.  Default is 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with information summarizing the ordinary kriging
+process for each grid node</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>this method calls OrdinaryKrige.calc_factors()</p>
+<p>this method is the main entry point for grid-based kriging factor generation</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">flopy</span>
+
+<span class="kn">import</span> <span class="nn">pyemu</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">ExpVario</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="n">contribution</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">gs</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">GeoStruct</span><span class="p">(</span><span class="n">variograms</span><span class="o">=</span><span class="n">v</span><span class="p">,</span><span class="n">nugget</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">pp_df</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pp_utils</span><span class="o">.</span><span class="n">pp_file_to_dataframe</span><span class="p">(</span><span class="s2">&quot;hkpp.dat&quot;</span><span class="p">)</span>
+<span class="n">ok</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">OrdinaryKrige</span><span class="p">(</span><span class="n">gs</span><span class="p">,</span><span class="n">pp_df</span><span class="p">)</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">flopy</span><span class="o">.</span><span class="n">modflow</span><span class="o">.</span><span class="n">Modflow</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;mymodel.nam&quot;</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">ok</span><span class="o">.</span><span class="n">calc_factors_grid</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">sr</span><span class="p">,</span><span class="n">zone_array</span><span class="o">=</span><span class="n">m</span><span class="o">.</span><span class="n">bas6</span><span class="o">.</span><span class="n">ibound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+                          <span class="n">var_filename</span><span class="o">=</span><span class="s2">&quot;ok_var.dat&quot;</span><span class="p">)</span>
+<span class="n">ok</span><span class="o">.</span><span class="n">to_grid_factor_file</span><span class="p">(</span><span class="s2">&quot;factors.dat&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.OrdinaryKrige._dist_calcs">
+<code class="sig-name descname">_dist_calcs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">ix</span></em>, <em class="sig-param"><span class="n">iy</span></em>, <em class="sig-param"><span class="n">ptx_array</span></em>, <em class="sig-param"><span class="n">pty_array</span></em>, <em class="sig-param"><span class="n">ptnames</span></em>, <em class="sig-param"><span class="n">sqradius</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige._dist_calcs" title="Permalink to this definition">¶</a></dt>
+<dd><p>private: find nearby points</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.OrdinaryKrige._cov_points">
+<code class="sig-name descname">_cov_points</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">ix</span></em>, <em class="sig-param"><span class="n">iy</span></em>, <em class="sig-param"><span class="n">pt_names</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige._cov_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>private: get covariance between points</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.OrdinaryKrige._form">
+<code class="sig-name descname">_form</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">pt_names</span></em>, <em class="sig-param"><span class="n">point_cov</span></em>, <em class="sig-param"><span class="n">interp_cov</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige._form" title="Permalink to this definition">¶</a></dt>
+<dd><p>private: form the kriging equations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.OrdinaryKrige._solve">
+<code class="sig-name descname">_solve</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">A</span></em>, <em class="sig-param"><span class="n">rhs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige._solve" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.OrdinaryKrige.calc_factors">
+<code class="sig-name descname">calc_factors</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">minpts_interp</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">maxpts_interp</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">search_radius</span><span class="o">=</span><span class="default_value">10000000000.0</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pt_zone</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">forgive</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">num_threads</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige.calc_factors" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate ordinary kriging factors (weights) for the points
+represented by arguments x and y</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> ([<cite>float</cite>]) – x-coordinates to calculate kriging factors for</p></li>
+<li><p><strong>y</strong> (([<cite>float</cite>]) – y-coordinates to calculate kriging factors for</p></li>
+<li><p><strong>minpts_interp</strong> (<cite>int</cite>) – minimum number of point_data entires to use for interpolation at
+a given x,y interplation point.  interpolation points with less
+than <cite>minpts_interp</cite> <cite>point_data</cite> found will be skipped
+(assigned np.NaN).  Defaut is 1</p></li>
+<li><p><strong>maxpts_interp</strong> (<cite>int</cite>) – maximum number of point_data entries to use for interpolation at
+a given x,y interpolation point.  A larger <cite>maxpts_interp</cite> will
+yield “smoother” interplation, but using a large <cite>maxpts_interp</cite>
+will slow the (already) slow kriging solution process and may
+lead to memory errors. Default is 20.</p></li>
+<li><p><strong>search_radius</strong> (<cite>float</cite>) – the size of the region around a given x,y
+interpolation point to search for <cite>point_data</cite> entries. Default is 1.0e+10</p></li>
+<li><p><strong>verbose</strong> (<cite>bool</cite>) – a flag to  echo process to stdout during the interpolatino process.
+Default is False</p></li>
+<li><p><strong>forgive</strong> (<cite>bool</cite>) – flag to continue if inversion of the kriging matrix failes at one or more
+interpolation points.  Inversion usually fails if the kriging matrix is singular,
+resulting from <cite>point_data</cite> entries closer than EPSILON distance.  If True,
+warnings are issued for each failed inversion.  If False, an exception
+is raised for failed matrix inversion.</p></li>
+<li><p><strong>num_threads</strong> (<cite>int</cite>) – number of multiprocessing workers to use to try to speed up
+kriging in python.  Default is 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with information summarizing the ordinary kriging
+process for each interpolation points</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>this method calls either <cite>OrdinaryKrige.calc_factors_org()</cite> or
+<cite>OrdinaryKrige.calc_factors_mp()</cite> depending on the value of <cite>num_threads</cite></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.OrdinaryKrige._calc_factors_org">
+<code class="sig-name descname">_calc_factors_org</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">minpts_interp</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">maxpts_interp</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">search_radius</span><span class="o">=</span><span class="default_value">10000000000.0</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pt_zone</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">forgive</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige._calc_factors_org" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.OrdinaryKrige._calc_factors_mp">
+<code class="sig-name descname">_calc_factors_mp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">minpts_interp</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">maxpts_interp</span><span class="o">=</span><span class="default_value">20</span></em>, <em class="sig-param"><span class="n">search_radius</span><span class="o">=</span><span class="default_value">10000000000.0</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pt_zone</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">forgive</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">num_threads</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige._calc_factors_mp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.OrdinaryKrige._worker">
+<em class="property">static </em><code class="sig-name descname">_worker</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ithread</span></em>, <em class="sig-param"><span class="n">point_data</span></em>, <em class="sig-param"><span class="n">point_pairs</span></em>, <em class="sig-param"><span class="n">inames</span></em>, <em class="sig-param"><span class="n">idist</span></em>, <em class="sig-param"><span class="n">ifacts</span></em>, <em class="sig-param"><span class="n">err_var</span></em>, <em class="sig-param"><span class="n">point_cov_df</span></em>, <em class="sig-param"><span class="n">geostruct</span></em>, <em class="sig-param"><span class="n">epsilon</span></em>, <em class="sig-param"><span class="n">search_radius</span></em>, <em class="sig-param"><span class="n">pt_zone</span></em>, <em class="sig-param"><span class="n">minpts_interp</span></em>, <em class="sig-param"><span class="n">maxpts_interp</span></em>, <em class="sig-param"><span class="n">lock</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige._worker" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.OrdinaryKrige.to_grid_factors_file">
+<code class="sig-name descname">to_grid_factors_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">points_file</span><span class="o">=</span><span class="default_value">'points.junk'</span></em>, <em class="sig-param"><span class="n">zone_file</span><span class="o">=</span><span class="default_value">'zone.junk'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.OrdinaryKrige.to_grid_factors_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a grid-based PEST-style factors file.  This file can be used with
+the fac2real() method to write an interpolated structured array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<cite>str</cite>) – factor filename</p></li>
+<li><p><strong>points_file</strong> (<cite>str</cite>) – points filename to add to the header of the factors file.
+This is not used by the fac2real() method.  Default is “points.junk”</p></li>
+<li><p><strong>zone_file</strong> (<cite>str</cite>) – zone filename to add to the header of the factors file.
+This is notused by the fac2real() method.  Default is “zone.junk”</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>this method should be called after OrdinaryKirge.calc_factors_grid()</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.utils.geostats.Vario2d">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">Vario2d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">contribution</span></em>, <em class="sig-param"><span class="n">a</span></em>, <em class="sig-param"><span class="n">anisotropy</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">bearing</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">'var1'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>base class for 2-D variograms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>contribution</strong> (<em>float</em>) – sill of the variogram</p></li>
+<li><p><strong>a</strong> (<cite>float</cite>) – (practical) range of correlation</p></li>
+<li><p><strong>anisotropy</strong> (<cite>float</cite>, optional) – Anisotropy ratio. Default is 1.0</p></li>
+<li><p><strong>bearing</strong> – (<cite>float</cite>, optional): angle in degrees East of North corresponding
+to anisotropy ellipse. Default is 0.0</p></li>
+<li><p><strong>name</strong> (<cite>str</cite>, optinoal) – name of the variogram.  Default is “var1”</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This base class should not be instantiated directly as it does not implement
+an h_function() method.</p>
+</div>
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d.same_as_other">
+<code class="sig-name descname">same_as_other</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d.same_as_other" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d.to_struct_file">
+<code class="sig-name descname">to_struct_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">f</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d.to_struct_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>write the <cite>Vario2d</cite> to a PEST-style structure file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>f</strong> (<cite>str</cite>) – filename to write to.  <cite>f</cite> can also be an open
+file handle.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d.bearing_rads">
+<em class="property">property </em><code class="sig-name descname">bearing_rads</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d.bearing_rads" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the bearing of the Vario2d in radians</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the Vario2d bearing in radians</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>float</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d.rotation_coefs">
+<em class="property">property </em><code class="sig-name descname">rotation_coefs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d.rotation_coefs" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the rotation coefficents in radians</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the rotation coefficients implied by <cite>Vario2d.bearing</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>float</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d.inv_h">
+<code class="sig-name descname">inv_h</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">h</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d.inv_h" title="Permalink to this definition">¶</a></dt>
+<dd><p>the inverse of the h_function.  Used for plotting</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>h</strong> (<cite>float</cite>) – the value of h_function to invert</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the inverse of h</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>float</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d.plot">
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a cheap plot of the Vario2d</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**kwargs</strong> (<cite>dict</cite>) – keyword arguments to use for plotting</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>matplotlib.pyplot.axis</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>optional arguments in kwargs include
+“ax” (existing <cite>matplotlib.pyplot.axis</cite>).  Other
+kwargs are passed to <cite>matplotlib.pyplot.plot()</cite></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d.covariance_matrix">
+<code class="sig-name descname">covariance_matrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cov</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d.covariance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a pyemu.Cov instance implied by Vario2d</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> ([<cite>float</cite>]) – x-coordinate locations</p></li>
+<li><p><strong>y</strong> ([<cite>float</cite>]) – y-coordinate locations</p></li>
+<li><p><strong>names</strong> ([<cite>str</cite>]) – names of locations. If None, cov must not be None</p></li>
+<li><p><strong>cov</strong> (<cite>pyemu.Cov</cite>) – an existing Cov instance.  Vario2d contribution is added to cov</p></li>
+<li><p><strong>place</strong> (<em>in</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the covariance matrix for <cite>x</cite>, <cite>y</cite> implied by <cite>Vario2d</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Cov</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>either <cite>names</cite> or <cite>cov</cite> must not be None.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d._specsim_grid_contrib">
+<code class="sig-name descname">_specsim_grid_contrib</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">grid</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d._specsim_grid_contrib" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d._apply_rotation">
+<code class="sig-name descname">_apply_rotation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">dx</span></em>, <em class="sig-param"><span class="n">dy</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d._apply_rotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>private method to rotate points
+according to Vario2d.bearing and Vario2d.anisotropy</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d.covariance_points">
+<code class="sig-name descname">covariance_points</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">x0</span></em>, <em class="sig-param"><span class="n">y0</span></em>, <em class="sig-param"><span class="n">xother</span></em>, <em class="sig-param"><span class="n">yother</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d.covariance_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the covariance between base point (x0,y0) and
+other points xother,yother implied by <cite>Vario2d</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x0</strong> (<cite>float</cite>) – x-coordinate</p></li>
+<li><p><strong>y0</strong> (<cite>float</cite>) – y-coordinate</p></li>
+<li><p><strong>xother</strong> ([<cite>float</cite>]) – x-coordinates of other points</p></li>
+<li><p><strong>yother</strong> ([<cite>float</cite>]) – y-coordinates of other points</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a 1-D array of covariance between point x0,y0 and the
+points contained in xother, yother.  len(cov) = len(xother) =
+len(yother)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>numpy.ndarray</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d.covariance">
+<code class="sig-name descname">covariance</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">pt0</span></em>, <em class="sig-param"><span class="n">pt1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d.covariance" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the covarince between two points implied by Vario2d</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pt0</strong> – ([<cite>float</cite>]): first point x and y</p></li>
+<li><p><strong>pt1</strong> – ([<cite>float</cite>]): second point x and y</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>covariance between pt0 and pt1</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>float</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.geostats.Vario2d.__str__">
+<code class="sig-name descname">__str__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.Vario2d.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the str representation of Vario2d</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>string rep</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>str</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.utils.geostats.ExpVario">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">ExpVario</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">contribution</span></em>, <em class="sig-param"><span class="n">a</span></em>, <em class="sig-param"><span class="n">anisotropy</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">bearing</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">'var1'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.ExpVario" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.Vario2d" title="pyemu.utils.geostats.Vario2d"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyemu.utils.geostats.Vario2d</span></code></a></p>
+<p>Gaussian variogram derived type</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>contribution</strong> (<em>float</em>) – sill of the variogram</p></li>
+<li><p><strong>a</strong> (<cite>float</cite>) – (practical) range of correlation</p></li>
+<li><p><strong>anisotropy</strong> (<cite>float</cite>, optional) – Anisotropy ratio. Default is 1.0</p></li>
+<li><p><strong>bearing</strong> – (<cite>float</cite>, optional): angle in degrees East of North corresponding
+to anisotropy ellipse. Default is 0.0</p></li>
+<li><p><strong>name</strong> (<cite>str</cite>, optinoal) – name of the variogram.  Default is “var1”</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">ExpVario</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="n">contribution</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="pyemu.utils.geostats.ExpVario._h_function">
+<code class="sig-name descname">_h_function</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">h</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.ExpVario._h_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>private method exponential variogram “h” function</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.utils.geostats.GauVario">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">GauVario</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">contribution</span></em>, <em class="sig-param"><span class="n">a</span></em>, <em class="sig-param"><span class="n">anisotropy</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">bearing</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">'var1'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GauVario" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.Vario2d" title="pyemu.utils.geostats.Vario2d"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyemu.utils.geostats.Vario2d</span></code></a></p>
+<p>Gaussian variogram derived type</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>contribution</strong> (<em>float</em>) – sill of the variogram</p></li>
+<li><p><strong>a</strong> (<cite>float</cite>) – (practical) range of correlation</p></li>
+<li><p><strong>anisotropy</strong> (<cite>float</cite>, optional) – Anisotropy ratio. Default is 1.0</p></li>
+<li><p><strong>bearing</strong> – (<cite>float</cite>, optional): angle in degrees East of North corresponding
+to anisotropy ellipse. Default is 0.0</p></li>
+<li><p><strong>name</strong> (<cite>str</cite>, optinoal) – name of the variogram.  Default is “var1”</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">GauVario</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span><span class="n">contribution</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>the Gaussian variogram can be unstable (not invertible) for long ranges.</p>
+</div>
+<dl class="py method">
+<dt id="pyemu.utils.geostats.GauVario._h_function">
+<code class="sig-name descname">_h_function</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">h</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.GauVario._h_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>private method for the gaussian variogram “h” function</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.utils.geostats.SphVario">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">SphVario</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">contribution</span></em>, <em class="sig-param"><span class="n">a</span></em>, <em class="sig-param"><span class="n">anisotropy</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">bearing</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">'var1'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.SphVario" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.geostats.Vario2d" title="pyemu.utils.geostats.Vario2d"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyemu.utils.geostats.Vario2d</span></code></a></p>
+<p>Spherical variogram derived type</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>contribution</strong> (<em>float</em>) – sill of the variogram</p></li>
+<li><p><strong>a</strong> (<cite>float</cite>) – (practical) range of correlation</p></li>
+<li><p><strong>anisotropy</strong> (<cite>float</cite>, optional) – Anisotropy ratio. Default is 1.0</p></li>
+<li><p><strong>bearing</strong> – (<cite>float</cite>, optional): angle in degrees East of North corresponding
+to anisotropy ellipse. Default is 0.0</p></li>
+<li><p><strong>name</strong> – name of the variogram.  Default is “var1”</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="pyemu.utils.geostats.SphVario._h_function">
+<code class="sig-name descname">_h_function</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">h</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.SphVario._h_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>private method for the spherical variogram “h” function</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.geostats.read_struct_file">
+<code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">read_struct_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">struct_file</span></em>, <em class="sig-param"><span class="n">return_type</span><span class="o">=</span><span class="default_value">GeoStruct</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.read_struct_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>read an existing PEST-type structure file into a GeoStruct instance</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>struct_file</strong> (<cite>str</cite>) – existing pest-type structure file</p></li>
+<li><p><strong>return_type</strong> (<cite>object</cite>) – the instance type to return.  Default is GeoStruct</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list of <cite>GeoStruct</cite> instances.  If
+only one <cite>GeoStruct</cite> is in the file, then a <cite>GeoStruct</cite> is returned</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>[<cite>pyemu.GeoStruct</cite>]</p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gs</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">reads_struct_file</span><span class="p">(</span><span class="s2">&quot;struct.dat&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.geostats._read_variogram">
+<code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">_read_variogram</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">f</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats._read_variogram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to instantiate a Vario2d from a PEST-style structure file</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.geostats._read_structure_attributes">
+<code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">_read_structure_attributes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">f</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats._read_structure_attributes" title="Permalink to this definition">¶</a></dt>
+<dd><p>function to read information from a PEST-style structure file</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.geostats.read_sgems_variogram_xml">
+<code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">read_sgems_variogram_xml</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">xml_file</span></em>, <em class="sig-param"><span class="n">return_type</span><span class="o">=</span><span class="default_value">GeoStruct</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.read_sgems_variogram_xml" title="Permalink to this definition">¶</a></dt>
+<dd><p>function to read an SGEMS-type variogram XML file into
+a <cite>GeoStruct</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xml_file</strong> (<cite>str</cite>) – SGEMS variogram XML file</p></li>
+<li><p><strong>return_type</strong> (<cite>object</cite>) – the instance type to return.  Default is <cite>GeoStruct</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>GeoStruct</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>gs</p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gs</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">read_sgems_variogram_xml</span><span class="p">(</span><span class="s2">&quot;sgems.xml&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.geostats.gslib_2_dataframe">
+<code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">gslib_2_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">attr_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">x_idx</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">y_idx</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.gslib_2_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>function to read a GSLIB point data file into a pandas.DataFrame</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<cite>str</cite>) – GSLIB file</p></li>
+<li><p><strong>attr_name</strong> (<cite>str</cite>) – the column name in the dataframe for the attribute.
+If None, GSLIB file can have only 3 columns.  <cite>attr_name</cite> must be in
+the GSLIB file header</p></li>
+<li><p><strong>x_idx</strong> (<cite>int</cite>) – the index of the x-coordinate information in the GSLIB file. Default is
+0 (first column)</p></li>
+<li><p><strong>y_idx</strong> (<cite>int</cite>) – the index of the y-coordinate information in the GSLIB file.
+Default is 1 (second column)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe of info from the GSLIB file</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>assigns generic point names (“pt0, pt1, etc)</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">utiils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">gslib_2_dataframe</span><span class="p">(</span><span class="s2">&quot;prop.gslib&quot;</span><span class="p">,</span><span class="n">attr_name</span><span class="o">=</span><span class="s2">&quot;hk&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.geostats.load_sgems_exp_var">
+<code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">load_sgems_exp_var</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.load_sgems_exp_var" title="Permalink to this definition">¶</a></dt>
+<dd><p>read an SGEM experimental variogram into a sequence of
+pandas.DataFrames</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<cite>str</cite>) – an SGEMS experimental variogram XML file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of pandas.DataFrames of x, y, pairs for each
+division in the experimental variogram</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>[<cite>pandas.DataFrame</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.geostats.fac2real">
+<code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">fac2real</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pp_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">factors_file</span><span class="o">=</span><span class="default_value">'factors.dat'</span></em>, <em class="sig-param"><span class="n">out_file</span><span class="o">=</span><span class="default_value">'test.ref'</span></em>, <em class="sig-param"><span class="n">upper_lim</span><span class="o">=</span><span class="default_value">1e+30</span></em>, <em class="sig-param"><span class="n">lower_lim</span><span class="o">=</span><span class="default_value">- 1e+30</span></em>, <em class="sig-param"><span class="n">fill_value</span><span class="o">=</span><span class="default_value">1e+30</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats.fac2real" title="Permalink to this definition">¶</a></dt>
+<dd><p>A python replication of the PEST fac2real utility for creating a
+structure grid array from previously calculated kriging factors (weights)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pp_file</strong> (<cite>str</cite>) – PEST-type pilot points file</p></li>
+<li><p><strong>factors_file</strong> (<cite>str</cite>) – PEST-style factors file</p></li>
+<li><p><strong>out_file</strong> (<cite>str</cite>) – filename of array to write.  If None, array is returned, else
+value of out_file is returned.  Default is “test.ref”.</p></li>
+<li><p><strong>upper_lim</strong> (<cite>float</cite>) – maximum interpolated value in the array.  Values greater than
+<cite>upper_lim</cite> are set to fill_value</p></li>
+<li><p><strong>lower_lim</strong> (<cite>float</cite>) – minimum interpolated value in the array.  Values less than
+<cite>lower_lim</cite> are set to fill_value</p></li>
+<li><p><strong>fill_value</strong> (<cite>float</cite>) – the value to assign array nodes that are not interpolated</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>if out_file is None</p>
+<p><cite>str</cite>: if out_file it not None</p>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>numpy.ndarray</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pyemu</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geostats</span><span class="o">.</span><span class="n">fac2real</span><span class="p">(</span><span class="s2">&quot;hkpp.dat&quot;</span><span class="p">,</span><span class="n">out_file</span><span class="o">=</span><span class="s2">&quot;hk_layer_1.ref&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.geostats._parse_factor_line">
+<code class="sig-prename descclassname">pyemu.utils.geostats.</code><code class="sig-name descname">_parse_factor_line</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">line</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.geostats._parse_factor_line" title="Permalink to this definition">¶</a></dt>
+<dd><p>function to parse a factor file line.  Used by fac2real()</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

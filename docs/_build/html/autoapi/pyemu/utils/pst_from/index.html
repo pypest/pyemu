@@ -1,0 +1,899 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyemu.utils.pst_from &mdash; pyEMU 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> pyEMU
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.pst_from</span></code></a><ul>
+<li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#classes">Classes</a></li>
+<li><a class="reference internal" href="#functions">Functions</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.pst_from._get_datetime_from_str">_get_datetime_from_str</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from._check_var_len">_check_var_len</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom">PstFrom</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom.parfile_relations">parfile_relations</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom._generic_get_xy">_generic_get_xy</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom._flopy_sr_get_xy">_flopy_sr_get_xy</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom._flopy_mg_get_xy">_flopy_mg_get_xy</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom.parse_kij_args">parse_kij_args</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom.initialize_spatial_reference">initialize_spatial_reference</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom.write_forward_run">write_forward_run</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom._pivot_par_struct_dict">_pivot_par_struct_dict</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom.build_prior">build_prior</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom.draw">draw</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom.build_pst">build_pst</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom._setup_dirs">_setup_dirs</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom._par_prep">_par_prep</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom._next_count">_next_count</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom.add_py_function">add_py_function</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom.add_observations">add_observations</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom.add_observations_from_ins">add_observations_from_ins</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom.add_parameters">add_parameters</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom._load_listtype_file">_load_listtype_file</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.PstFrom._prep_arg_list_lengths">_prep_arg_list_lengths</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.write_list_tpl">write_list_tpl</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from._write_direct_df_tpl">_write_direct_df_tpl</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from._get_tpl_or_ins_df">_get_tpl_or_ins_df</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from.write_array_tpl">write_array_tpl</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pst_from._check_diff">_check_diff</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">pyEMU</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.pst_from</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../../_sources/autoapi/pyemu/utils/pst_from/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pyemu.utils.pst_from">
+<span id="pyemu-utils-pst-from"></span><h1><a class="reference internal" href="../../../../pyemu.utils.html#module-pyemu.utils.pst_from" title="pyemu.utils.pst_from"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.pst_from</span></code></a><a class="headerlink" href="#module-pyemu.utils.pst_from" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.pst_from.PstFrom" title="pyemu.utils.pst_from.PstFrom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PstFrom</span></code></a></p></td>
+<td><p>construct high-dimensional PEST(++) interfaces with all the bells and whistles</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.utils.pst_from._get_datetime_from_str" title="pyemu.utils.pst_from._get_datetime_from_str"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_datetime_from_str</span></code></a>(sdt)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.utils.pst_from._check_var_len" title="pyemu.utils.pst_from._check_var_len"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_check_var_len</span></code></a>(var, n, fill=None)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.pst_from.write_list_tpl" title="pyemu.utils.pst_from.write_list_tpl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_list_tpl</span></code></a>(filenames, dfs, name, tpl_filename, index_cols, par_type, use_cols=None, suffix='', zone_array=None, gpname=None, longnames=False, get_xy=None, ij_in_idx=None, xy_in_idx=None, zero_based=True, input_filename=None, par_style='multiplier')</p></td>
+<td><p>Write template files for a list style input.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.utils.pst_from._write_direct_df_tpl" title="pyemu.utils.pst_from._write_direct_df_tpl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_write_direct_df_tpl</span></code></a>(in_filename, tpl_filename, df, name, index_cols, typ, use_cols=None, suffix='', zone_array=None, longnames=False, get_xy=None, ij_in_idx=None, xy_in_idx=None, zero_based=True, gpname=None)</p></td>
+<td><p>Private method to auto-generate parameter or obs names from tabular</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.utils.pst_from._get_tpl_or_ins_df" title="pyemu.utils.pst_from._get_tpl_or_ins_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_tpl_or_ins_df</span></code></a>(filenames, dfs, name, index_cols, typ, use_cols=None, suffix='', zone_array=None, longnames=False, get_xy=None, ij_in_idx=None, xy_in_idx=None, zero_based=True, gpname=None)</p></td>
+<td><p>Private method to auto-generate parameter or obs names from tabular</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.pst_from.write_array_tpl" title="pyemu.utils.pst_from.write_array_tpl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_array_tpl</span></code></a>(name, tpl_filename, suffix, par_type, zone_array=None, gpname=None, shape=None, longnames=False, fill_value=1.0, get_xy=None, input_filename=None, par_style='multiplier')</p></td>
+<td><p>write a template file for a 2D array.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.utils.pst_from._check_diff" title="pyemu.utils.pst_from._check_diff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_check_diff</span></code></a>(org_arr, input_filename, zval=None)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt id="pyemu.utils.pst_from._get_datetime_from_str">
+<code class="sig-prename descclassname">pyemu.utils.pst_from.</code><code class="sig-name descname">_get_datetime_from_str</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sdt</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from._get_datetime_from_str" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pst_from._check_var_len">
+<code class="sig-prename descclassname">pyemu.utils.pst_from.</code><code class="sig-name descname">_check_var_len</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">var</span></em>, <em class="sig-param"><span class="n">n</span></em>, <em class="sig-param"><span class="n">fill</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from._check_var_len" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.utils.pst_from.PstFrom">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.utils.pst_from.</code><code class="sig-name descname">PstFrom</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">original_d</span></em>, <em class="sig-param"><span class="n">new_d</span></em>, <em class="sig-param"><span class="n">longnames</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">remove_existing</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">spatial_reference</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">zero_based</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">start_datetime</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>construct high-dimensional PEST(++) interfaces with all the bells and whistles</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>original_d</strong> (<cite>str</cite>) – the path to a complete set of model input and output files</p></li>
+<li><p><strong>new_d</strong> (<cite>str</cite>) – the path to where the model files and PEST interface files will be copied/built</p></li>
+<li><p><strong>longnames</strong> (<cite>bool</cite>) – flag to use longer-than-PEST-likes parameter and observation names.  Default is True</p></li>
+<li><p><strong>remove_existing</strong> (<cite>bool</cite>) – flag to destroy any existing files and folders in <cite>new_d</cite>.  Default is False</p></li>
+<li><p><strong>spatial_reference</strong> (<em>varies</em>) – an object that faciliates geo-locating model cells based on index.  Default is None</p></li>
+<li><p><strong>zero_based</strong> (<cite>bool</cite>) – flag if the model uses zero-based indices, Default is True</p></li>
+<li><p><strong>start_datetime</strong> (<cite>str</cite>) – a string that can be case to a datatime instance the represents the starting datetime
+of the model</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom.parfile_relations">
+<em class="property">property </em><code class="sig-name descname">parfile_relations</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom.parfile_relations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom._generic_get_xy">
+<code class="sig-name descname">_generic_get_xy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom._generic_get_xy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom._flopy_sr_get_xy">
+<code class="sig-name descname">_flopy_sr_get_xy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom._flopy_sr_get_xy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom._flopy_mg_get_xy">
+<code class="sig-name descname">_flopy_mg_get_xy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom._flopy_mg_get_xy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom.parse_kij_args">
+<code class="sig-name descname">parse_kij_args</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">args</span></em>, <em class="sig-param"><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom.parse_kij_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse args into kij indices</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom.initialize_spatial_reference">
+<code class="sig-name descname">initialize_spatial_reference</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom.initialize_spatial_reference" title="Permalink to this definition">¶</a></dt>
+<dd><p>process the spatial reference argument</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom.write_forward_run">
+<code class="sig-name descname">write_forward_run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom.write_forward_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>write the forward run script</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom._pivot_par_struct_dict">
+<code class="sig-name descname">_pivot_par_struct_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom._pivot_par_struct_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom.build_prior">
+<code class="sig-name descname">build_prior</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">fmt</span><span class="o">=</span><span class="default_value">'ascii'</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">droptol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">chunk</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sigma_range</span><span class="o">=</span><span class="default_value">6</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom.build_prior" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build the prior parameter covariance matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fmt</strong> (<cite>str</cite>) – the file format to save to.  Default is “ASCII”, can be “binary”, “coo”, or “none”</p></li>
+<li><p><strong>filename</strong> (<cite>str</cite>) – the filename to save the cov to</p></li>
+<li><p><strong>droptol</strong> (<cite>float</cite>) – absolute value of prior cov entries that are smaller than <cite>droptol</cite> are treated as
+zero.</p></li>
+<li><p><strong>chunk</strong> (<cite>int</cite>) – number of entries to write to binary/coo at once.  Default is None (write all elements at once</p></li>
+<li><p><strong>sigma_range</strong> (<cite>int</cite>) – number of standard deviations represented by parameter bounds.  Default is 6 (99%
+confidence).  4 would be approximately 95% confidence bounds</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the prior parameter covariance matrix</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Cov</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method processes parameters by group names</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom.draw">
+<code class="sig-name descname">draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">num_reals</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">sigma_range</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">use_specsim</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">scale_offset</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom.draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a parameter ensemble from the distribution implied by the initial parameter values in the
+control file and the prior parameter covariance matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_reals</strong> (<cite>int</cite>) – the number of realizations to draw</p></li>
+<li><p><strong>sigma_range</strong> (<cite>int</cite>) – number of standard deviations represented by parameter bounds.  Default is 6 (99%
+confidence).  4 would be approximately 95% confidence bounds</p></li>
+<li><p><strong>use_specsim</strong> (<cite>bool</cite>) – flag to use spectral simulation for grid-scale pars (highly recommended).
+Default is False</p></li>
+<li><p><strong>scale_offset</strong> (<cite>bool</cite>) – flag to apply scale and offset to parameter bounds before calculating prior variance.
+Dfault is True</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a prior parameter ensemble</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.ParameterEnsemble</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method draws by parameter group</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom.build_pst">
+<code class="sig-name descname">build_pst</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">update</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">version</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom.build_pst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build control file from i/o files in PstFrom object.
+Warning: This builds a pest control file from scratch, overwriting
+anything already in self.pst object and anything already writen to <cite>filename</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<cite>str</cite>) – the filename to save the control file to.
+If None, the name is formed from the <cite>PstFrom.original_d</cite>
+,the orginal directory name from which the forward model
+was extracted.  Default is None.
+The control file is saved in the <cite>PstFrom.new_d</cite> directory.</p></li>
+<li><p><strong>update</strong> (<em>bool</em><em>) or </em><em>(</em><em>str</em>) – flag to add to existing Pst object and
+rewrite. If string {‘pars’, ‘obs’} just update respective
+components of Pst. Default is False - build from PstFrom
+components.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>This builds a pest control file from scratch, overwriting anything already</dt><dd><p>in self.pst object and anything already writen to <cite>filename</cite></p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom._setup_dirs">
+<code class="sig-name descname">_setup_dirs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom._setup_dirs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom._par_prep">
+<code class="sig-name descname">_par_prep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filenames</span></em>, <em class="sig-param"><span class="n">index_cols</span></em>, <em class="sig-param"><span class="n">use_cols</span></em>, <em class="sig-param"><span class="n">fmts</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">seps</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">skip_rows</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">c_char</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom._par_prep" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom._next_count">
+<code class="sig-name descname">_next_count</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">prefix</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom._next_count" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom.add_py_function">
+<code class="sig-name descname">add_py_function</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">file_name</span></em>, <em class="sig-param"><span class="n">function_name</span></em>, <em class="sig-param"><span class="n">is_pre_cmd</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom.add_py_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>add a python function to the forward run script</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_name</strong> (<cite>str</cite>) – a python source file</p></li>
+<li><p><strong>function_name</strong> (<cite>str</cite>) – a python function in
+<cite>file_name</cite></p></li>
+<li><p><strong>is_pre_cmd</strong> (<cite>bool</cite>) – flag to include <cite>function_name</cite> in
+PstFrom.pre_py_cmds.  If False, <cite>function_name</cite> is
+added to PstFrom.post_py_cmds instead. If passed as <cite>None</cite>,
+then the function <cite>function_name</cite> is added to the forward run
+script but is not called.  Default is True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt><cite>function_name</cite> is expected to be standalone a function</dt><dd><p>that contains all the imports it needs or these imports
+should have been added to the forward run script through the
+<cite>PstFrom.py_imports</cite> list.</p>
+</dd>
+<dt>This function adds the <cite>function_name</cite> call to the forward</dt><dd><dl class="simple">
+<dt>run script (either as a pre or post command). It is up to users</dt><dd><dl class="simple">
+<dt>to make sure <cite>function_name</cite> is a valid python function call</dt><dd><p>that includes the parentheses and requisite arguments</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>This function expects “def ” + <cite>function_name</cite> to be flushed left at the outer</dt><dd><p>most indentation level</p>
+</dd>
+</dl>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pf</span> <span class="o">=</span> <span class="n">PstFrom</span><span class="p">()</span>
+<span class="n">pf</span><span class="o">.</span><span class="n">add_py_function</span><span class="p">(</span><span class="s2">&quot;preprocess.py&quot;</span><span class="p">,</span><span class="s2">&quot;mult_well_function()&quot;</span><span class="p">,</span><span class="n">is_pre_cmd</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom.add_observations">
+<code class="sig-name descname">add_observations</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">insfile</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_rows</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">prefix</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">ofile_skip</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ofile_sep</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">rebuild_pst</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">obsgp</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom.add_observations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add list style outputs as observation files to PstFrom object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<cite>str</cite>) – path to model output file name to set up
+as observations</p></li>
+<li><p><strong>insfile</strong> (<cite>str</cite>) – desired instructions file filename</p></li>
+<li><p><strong>index_cols</strong> (<cite>list</cite>-like or <cite>int</cite>) – columns to denote are indices for obs</p></li>
+<li><p><strong>use_cols</strong> (<cite>list</cite>-like or <cite>int</cite>) – columns to set up as obs</p></li>
+<li><p><strong>use_rows</strong> (<cite>list</cite>-like or <cite>int</cite>) – select only specific row of file for obs</p></li>
+<li><p><strong>prefix</strong> (<cite>str</cite>) – prefix for obsnmes</p></li>
+<li><p><strong>ofile_skip</strong> (<cite>int</cite>) – number of lines to skip in model output file</p></li>
+<li><p><strong>ofile_sep</strong> (<cite>str</cite>) – delimiter in output file</p></li>
+<li><p><strong>rebuild_pst</strong> (<cite>bool</cite>) – (Re)Construct PstFrom.pst object after adding
+new obs</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dataframe with info for new observations</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>Pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom.add_observations_from_ins">
+<code class="sig-name descname">add_observations_from_ins</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">ins_file</span></em>, <em class="sig-param"><span class="n">out_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">inschek</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom.add_observations_from_ins" title="Permalink to this definition">¶</a></dt>
+<dd><p>add new observations to a control file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ins_file</strong> (<cite>str</cite>) – instruction file with exclusively new
+observation names</p></li>
+<li><p><strong>out_file</strong> (<cite>str</cite>) – model output file.  If None, then
+ins_file.replace(“.ins”,””) is used. Default is None</p></li>
+<li><p><strong>pst_path</strong> (<cite>str</cite>) – the path to append to the instruction file and
+out file in the control file.  If not None, then any existing
+path in front of the template or in file is split off and
+pst_path is prepended.  If python is being run in a directory
+other than where the control file will reside, it is useful
+to pass <cite>pst_path</cite> as <cite>.</cite>. Default is None</p></li>
+<li><p><strong>inschek</strong> (<cite>bool</cite>) – flag to try to process the existing output file
+using the <cite>pyemu.InstructionFile</cite> class.  If successful,
+processed outputs are used as obsvals</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>the data for the new observations that were</dt><dd><p>added</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>populates the new observation information with default values</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span> <span class="s2">&quot;my.pst&quot;</span><span class="p">))</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">add_observations</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span><span class="s2">&quot;new_obs.dat.ins&quot;</span><span class="p">),</span>
+                     <span class="n">pst_path</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span> <span class="s2">&quot;my_new.pst&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom.add_parameters">
+<code class="sig-name descname">add_parameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filenames</span></em>, <em class="sig-param"><span class="n">par_type</span></em>, <em class="sig-param"><span class="n">zone_array</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dist_type</span><span class="o">=</span><span class="default_value">'gaussian'</span></em>, <em class="sig-param"><span class="n">sigma_range</span><span class="o">=</span><span class="default_value">4.0</span></em>, <em class="sig-param"><span class="n">upper_bound</span><span class="o">=</span><span class="default_value">10000000000.0</span></em>, <em class="sig-param"><span class="n">lower_bound</span><span class="o">=</span><span class="default_value">1e-10</span></em>, <em class="sig-param"><span class="n">transform</span><span class="o">=</span><span class="default_value">'log'</span></em>, <em class="sig-param"><span class="n">par_name_base</span><span class="o">=</span><span class="default_value">'p'</span></em>, <em class="sig-param"><span class="n">index_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pargp</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pp_space</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">use_pp_zones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">num_eig_kl</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">spatial_reference</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">geostruct</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">datetime</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mfile_fmt</span><span class="o">=</span><span class="default_value">'free'</span></em>, <em class="sig-param"><span class="n">mfile_skip</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ult_ubound</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ult_lbound</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">rebuild_pst</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">alt_inst_str</span><span class="o">=</span><span class="default_value">'inst'</span></em>, <em class="sig-param"><span class="n">comment_char</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">par_style</span><span class="o">=</span><span class="default_value">'multiplier'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom.add_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add list or array style model input files to PstFrom object.
+This method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filenames</strong> (<cite>str</cite>) – Model input filenames to parameterize</p></li>
+<li><p><strong>par_type</strong> (<cite>str</cite>) – One of <cite>grid</cite> - for every element, <cite>constant</cite> - for single
+parameter applied to every element, <cite>zone</cite> - for zone-based
+parameterization (only for array-style) or <cite>pilotpoint</cite> - for
+pilot-point base parameterization of array style input files.
+Note <cite>kl</cite> not yet implemented # TODO</p></li>
+<li><p><strong>zone_array</strong> (<cite>np.ndarray</cite>) – array defining spatial limits or zones
+for parameterization.</p></li>
+<li><p><strong>dist_type</strong> – not yet implemented # TODO</p></li>
+<li><p><strong>sigma_range</strong> – not yet implemented # TODO</p></li>
+<li><p><strong>upper_bound</strong> (<cite>float</cite>) – PEST parameter upper bound # TODO support different ubound,lbound,transform if multiple use_col</p></li>
+<li><p><strong>lower_bound</strong> (<cite>float</cite>) – PEST parameter lower bound</p></li>
+<li><p><strong>transform</strong> (<cite>str</cite>) – PEST parameter transformation</p></li>
+<li><p><strong>par_name_base</strong> (<cite>str</cite>) – basename for parameters that are set up</p></li>
+<li><p><strong>index_cols</strong> (<cite>list</cite>-like) – if not None, will attempt to parameterize
+expecting a tabular-style model input file. <cite>index_cols</cite>
+defines the unique columns used to set up pars.
+May be passed as a dictionary using the keys <cite>i</cite> and <cite>j</cite>
+to allow columns that relate to model rows and columns to be
+identified and processed to x,y.</p></li>
+<li><p><strong>use_cols</strong> (<cite>list</cite>-like or <cite>int</cite>) – for tabular-style model input file,
+defines the columns to be parameterised</p></li>
+<li><p><strong>pargp</strong> (<cite>str</cite>) – Parameter group to assign pars to. This is PESTs
+pargp but is also used to gather correlated parameters set up
+using multiple <cite>add_parameters()</cite> calls (e.g. temporal pars)
+with common geostructs.</p></li>
+<li><p><strong>pp_space</strong> (<cite>int</cite>) – Spacing between pilot point parameters</p></li>
+<li><p><strong>use_pp_zones</strong> (<cite>bool</cite>) – a flag to use the greater-than-zero values
+in the zone_array as pilot point zones.
+If False, zone_array values greater than zero are treated as a
+single zone.  Default is False.</p></li>
+<li><p><strong>num_eig_kl</strong> – TODO - impliment with KL pars</p></li>
+<li><p><strong>spatial_reference</strong> (<cite>pyemu.helpers.SpatialReference</cite>) – If different
+spatial reference required for pilotpoint setup.
+If None spatial reference passed to <cite>PstFrom()</cite> will be used
+for pilot-points</p></li>
+<li><p><strong>geostruct</strong> (<cite>pyemu.geostats.GeoStruct()</cite>) – For specifying correlation
+geostruct for pilot-points and par covariance.</p></li>
+<li><p><strong>datetime</strong> (<cite>str</cite>) – <p>optional %Y%m%d string or datetime object for
+setting up temporally correlated pars. Where datetime is passed</p>
+<blockquote>
+<div><p>correlation axis for pars will be set to timedelta.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>mfile_fmt</strong> (<cite>str</cite>) – format of model input file - this will be preserved</p></li>
+<li><p><strong>mfile_skip</strong> (<cite>int</cite> or <cite>str</cite>) – header in model input file to skip
+when reading and reapply when writing. Can optionally be <cite>str</cite> in which case <cite>mf_skip</cite> will be treated
+as a <cite>comment_char</cite>.</p></li>
+<li><p><strong>ult_ubound</strong> (<cite>float</cite>) – Ultimate upper bound for model input
+parameter once all mults are applied - ensure physical model par vals. If not passed,
+it is set to 1.0e+30</p></li>
+<li><p><strong>ult_lbound</strong> (<cite>float</cite>) – Ultimate lower bound for model input
+parameter once all mults are applied.  If not passed, it is set to
+1.0e-30 for log transform and -1.0e+30 for non-log transform</p></li>
+<li><p><strong>rebuild_pst</strong> (<cite>bool</cite>) – (Re)Construct PstFrom.pst object after adding
+new parameters</p></li>
+<li><p><strong>alt_inst_str</strong> (<cite>str</cite>) – Alternative to default <cite>inst</cite> string in
+parameter names</p></li>
+<li><p><strong>comment_char</strong> (<cite>str</cite>) – option to skip comment lines in model file.
+This is not additive with <cite>mfile_skip</cite> option.
+Warning: currently comment lines within list-like tabular data
+will be lost.</p></li>
+<li><p><strong>par_style</strong> (<cite>str</cite>) – either “multiplier” or “direct” where the former setups
+up a multiplier parameter process against the exsting model input
+array and the former setups a template file to write the model
+input file directly.  Default is “multiplier”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dataframe with info for new parameters</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom._load_listtype_file">
+<code class="sig-name descname">_load_listtype_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">index_cols</span></em>, <em class="sig-param"><span class="n">use_cols</span></em>, <em class="sig-param"><span class="n">fmt</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sep</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">skip</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">c_char</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom._load_listtype_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.pst_from.PstFrom._prep_arg_list_lengths">
+<code class="sig-name descname">_prep_arg_list_lengths</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filenames</span></em>, <em class="sig-param"><span class="n">fmts</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">seps</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">skip_rows</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_cols</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.PstFrom._prep_arg_list_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Private wrapper function to align filenames, formats, delimiters,
+reading options and setup columns for passing sequentially to
+load_listtype
+:param filenames: names for files ot eventually read
+:type filenames: <cite>str</cite>) or (<cite>list</cite>
+:param fmts: of column formaters for input file.</p>
+<blockquote>
+<div><p>If <cite>None</cite>, free-formatting is assumed</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seps</strong> (<cite>str</cite>) or (<cite>list</cite>) – column separator free formatter files.
+If <cite>None</cite>, a list of <cite>None`s is returned and the delimiter
+is eventually governed by the file extension (</cite>,` for .csv)</p></li>
+<li><p><strong>skip_rows</strong> (<cite>str</cite>) or (<cite>list</cite>) – Number of rows in file header to not
+form part of the dataframe</p></li>
+<li><p><strong>index_cols</strong> (<cite>int</cite>) or (<cite>list</cite>) – Columns in tabular file to use as indicies</p></li>
+<li><p><strong>use_cols</strong> (<cite>int</cite>) or (<cite>list</cite>) – Columns in tabular file to
+use as par or obs cols</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>filenames, fmts, seps, skip_rows, index_cols, use_cols
+for squentially passing to <cite>_load_listtype_file()</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>algined lists of</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pst_from.write_list_tpl">
+<code class="sig-prename descclassname">pyemu.utils.pst_from.</code><code class="sig-name descname">write_list_tpl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filenames</span></em>, <em class="sig-param"><span class="n">dfs</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">tpl_filename</span></em>, <em class="sig-param"><span class="n">index_cols</span></em>, <em class="sig-param"><span class="n">par_type</span></em>, <em class="sig-param"><span class="n">use_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">suffix</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">zone_array</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">gpname</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">longnames</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">get_xy</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ij_in_idx</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xy_in_idx</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">zero_based</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">input_filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">par_style</span><span class="o">=</span><span class="default_value">'multiplier'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.write_list_tpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write template files for a list style input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filenames</strong> (<cite>str</cite> of <cite>container</cite> of <cite>str</cite>) – original input filenames</p></li>
+<li><p><strong>dfs</strong> (<cite>pandas.DataFrame</cite> or <cite>container</cite> of pandas.DataFrames) – pandas
+representations of input file.</p></li>
+<li><p><strong>name</strong> (<cite>str</cite> or container of str) – parameter name prefixes.
+If more that one column to be parameterised, must be a container
+of strings providing the prefix for the parameters in the
+different columns.</p></li>
+<li><p><strong>tpl_filename</strong> (<cite>str</cite>) – Path (from current execution directory)
+for desired template file</p></li>
+<li><p><strong>index_cols</strong> (<cite>list</cite>) – column names to use as indices in tabular
+input dataframe</p></li>
+<li><p><strong>par_type</strong> (<cite>str</cite>) – ‘constant’,’zone’, or ‘grid’ used in parname
+generation. If <cite>constant</cite>, one par is set up for each <cite>use_cols</cite>.
+If <cite>zone</cite>, one par is set up for each zone for each <cite>use_cols</cite>.
+If <cite>grid</cite>, one par is set up for every unique index combination
+(from <cite>index_cols</cite>) for each <cite>use_cols</cite>.</p></li>
+<li><p><strong>use_cols</strong> (<cite>list</cite>) – Columns in tabular input file to paramerterise.
+If None, pars are set up for all columns apart from index cols.</p></li>
+<li><p><strong>suffix</strong> (<cite>str</cite>) – Optional par name suffix</p></li>
+<li><p><strong>zone_array</strong> (<cite>np.ndarray</cite>) – Array defining zone divisions.
+If not None and <cite>par_type</cite> is <cite>grid</cite> or <cite>zone</cite> it is expected that
+<cite>index_cols</cite> provide the indicies for
+querying <cite>zone_array</cite>. Therefore, array dimension should equal
+<cite>len(index_cols)</cite>.</p></li>
+<li><p><strong>longnames</strong> (<cite>boolean</cite>) – Specify is pars will be specified without the
+12 char restriction - recommended if using Pest++.</p></li>
+<li><p><strong>get_xy</strong> (<cite>pyemu.PstFrom</cite> method) – Can be specified to get real-world xy
+from <cite>index_cols</cite> passed (to assist correlation definition)</p></li>
+<li><p><strong>ij_in_idx</strong> (<cite>list</cite> or <cite>array</cite>) – defining which <cite>index_cols</cite> contain i,j</p></li>
+<li><p><strong>xy_in_idx</strong> (<cite>list</cite> or <cite>array</cite>) – defining which <cite>index_cols</cite> contain x,y</p></li>
+<li><p><strong>zero_based</strong> (<cite>boolean</cite>) – IMPORTANT - pass as False if <cite>index_cols</cite>
+are NOT zero-based indicies (e.g. MODFLOW row/cols).
+If False 1 with be subtracted from <cite>index_cols</cite>.</p></li>
+<li><p><strong>input_filename</strong> (<cite>str</cite>) – Path to input file (paired with tpl file)</p></li>
+<li><p><strong>par_style</strong> (<cite>str</cite>) – either ‘direct’ or ‘multiplier’</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dataframe with info for the new parameters</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pst_from._write_direct_df_tpl">
+<code class="sig-prename descclassname">pyemu.utils.pst_from.</code><code class="sig-name descname">_write_direct_df_tpl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">in_filename</span></em>, <em class="sig-param"><span class="n">tpl_filename</span></em>, <em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">index_cols</span></em>, <em class="sig-param"><span class="n">typ</span></em>, <em class="sig-param"><span class="n">use_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">suffix</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">zone_array</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">longnames</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">get_xy</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ij_in_idx</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xy_in_idx</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">zero_based</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">gpname</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from._write_direct_df_tpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Private method to auto-generate parameter or obs names from tabular
+model files (input or output) read into pandas dataframes
+:param tpl_filename: template filename
+:type tpl_filename: <cite>str</cite>
+:param df: DataFrame of list type input file
+:type df: <cite>pandas.DataFrame</cite>
+:param name: Parameter name prefix
+:type name: <cite>str</cite>
+:param index_cols: columns of dataframes to use as indicies
+:type index_cols: <cite>str</cite> or <cite>list</cite>
+:param typ: ‘constant’,’zone’, or ‘grid’ used in parname generation.</p>
+<blockquote>
+<div><p>If <cite>constant</cite>, one par is set up for each <cite>use_cols</cite>.
+If <cite>zone</cite>, one par is set up for each zone for each <cite>use_cols</cite>.
+If <cite>grid</cite>, one par is set up for every unique index combination
+(from <cite>index_cols</cite>) for each <cite>use_cols</cite>.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>use_cols</strong> (<cite>list</cite>) – Columns to parameterise. If None, pars are set up
+for all columns apart from index cols</p></li>
+<li><p><strong>suffix</strong> (<cite>str</cite>) – Optional par name suffix.</p></li>
+<li><p><strong>zone_array</strong> (<cite>np.ndarray</cite>) – Array defining zone divisions.
+If not None and <cite>par_type</cite> is <cite>grid</cite> or <cite>zone</cite> it is expected that
+<cite>index_cols</cite> provide the indicies for querying <cite>zone_array</cite>.
+Therefore, array dimension should equal <cite>len(index_cols)</cite>.</p></li>
+<li><p><strong>longnames</strong> (<cite>boolean</cite>) – Specify is obs/pars will be specified without the
+20/12 char restriction - recommended if using Pest++.</p></li>
+<li><p><strong>get_xy</strong> (<cite>pyemu.PstFrom</cite> method) – Can be specified to get real-world xy
+from <cite>index_cols</cite> passed (to include in obs/par name)</p></li>
+<li><p><strong>ij_in_idx</strong> (<cite>list</cite> or <cite>array</cite>) – defining which <cite>index_cols</cite> contain i,j</p></li>
+<li><p><strong>xy_in_idx</strong> (<cite>list</cite> or <cite>array</cite>) – defining which <cite>index_cols</cite> contain x,y</p></li>
+<li><p><strong>zero_based</strong> (<cite>boolean</cite>) – IMPORTANT - pass as False if <cite>index_cols</cite>
+are NOT zero-based indicies (e.g. MODFLOW row/cols).
+If False 1 with be subtracted from <cite>index_cols</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>pandas.DataFrame with paranme and pargroup define for each <cite>use_col</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pst_from._get_tpl_or_ins_df">
+<code class="sig-prename descclassname">pyemu.utils.pst_from.</code><code class="sig-name descname">_get_tpl_or_ins_df</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filenames</span></em>, <em class="sig-param"><span class="n">dfs</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">index_cols</span></em>, <em class="sig-param"><span class="n">typ</span></em>, <em class="sig-param"><span class="n">use_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">suffix</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">zone_array</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">longnames</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">get_xy</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ij_in_idx</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xy_in_idx</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">zero_based</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">gpname</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from._get_tpl_or_ins_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Private method to auto-generate parameter or obs names from tabular
+model files (input or output) read into pandas dataframes
+:param filenames: filenames
+:type filenames: <cite>str</cite> or <cite>list</cite> of str`
+:param dfs: DataFrames (can be list of DataFrames)</p>
+<blockquote>
+<div><p>to set up parameters or observations</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<cite>str</cite>) – Parameter name or Observation name prefix</p></li>
+<li><p><strong>index_cols</strong> (<cite>str</cite> or <cite>list</cite>) – columns of dataframes to use as indicies</p></li>
+<li><p><strong>typ</strong> (<cite>str</cite>) – ‘obs’ to set up observation names or,
+‘constant’,’zone’, or ‘grid’ used in parname generation.
+If <cite>constant</cite>, one par is set up for each <cite>use_cols</cite>.
+If <cite>zone</cite>, one par is set up for each zone for each <cite>use_cols</cite>.
+If <cite>grid</cite>, one par is set up for every unique index combination
+(from <cite>index_cols</cite>) for each <cite>use_cols</cite>.</p></li>
+<li><p><strong>use_cols</strong> (<cite>list</cite>) – Columns to parameterise. If None, pars are set up
+for all columns apart from index cols. Not used if <cite>typ`==`obs</cite>.</p></li>
+<li><p><strong>suffix</strong> (<cite>str</cite>) – Optional par name suffix. Not used if <cite>typ`==`obs</cite>.</p></li>
+<li><p><strong>zone_array</strong> (<cite>np.ndarray</cite>) – Only used for paremeters (<cite>typ</cite> != <cite>obs</cite>).
+Array defining zone divisions.
+If not None and <cite>par_type</cite> is <cite>grid</cite> or <cite>zone</cite> it is expected that
+<cite>index_cols</cite> provide the indicies for querying <cite>zone_array</cite>.
+Therefore, array dimension should equal <cite>len(index_cols)</cite>.</p></li>
+<li><p><strong>longnames</strong> (<cite>boolean</cite>) – Specify is obs/pars will be specified without the
+20/12 char restriction - recommended if using Pest++.</p></li>
+<li><p><strong>get_xy</strong> (<cite>pyemu.PstFrom</cite> method) – Can be specified to get real-world xy
+from <cite>index_cols</cite> passed (to include in obs/par name)</p></li>
+<li><p><strong>ij_in_idx</strong> (<cite>list</cite> or <cite>array</cite>) – defining which <cite>index_cols</cite> contain i,j</p></li>
+<li><p><strong>xy_in_idx</strong> (<cite>list</cite> or <cite>array</cite>) – defining which <cite>index_cols</cite> contain x,y</p></li>
+<li><p><strong>zero_based</strong> (<cite>boolean</cite>) – IMPORTANT - pass as False if <cite>index_cols</cite>
+are NOT zero-based indicies (e.g. MODFLOW row/cols).
+If False 1 with be subtracted from <cite>index_cols</cite>.=</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>pandas.DataFrame with index strings for setting up obs
+names when passing through to
+pyemu.pst_utils.csv_to_ins_file(df.set_index(‘idx_str’)</p>
+<p>else: pandas.DataFrame with paranme and pargroup define for each <cite>use_col</cite></p>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>if <cite>typ`==`obs</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pst_from.write_array_tpl">
+<code class="sig-prename descclassname">pyemu.utils.pst_from.</code><code class="sig-name descname">write_array_tpl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">tpl_filename</span></em>, <em class="sig-param"><span class="n">suffix</span></em>, <em class="sig-param"><span class="n">par_type</span></em>, <em class="sig-param"><span class="n">zone_array</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">gpname</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">longnames</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fill_value</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">get_xy</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">input_filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">par_style</span><span class="o">=</span><span class="default_value">'multiplier'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from.write_array_tpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a template file for a 2D array.</p>
+<blockquote>
+<div><dl>
+<dt>Args:</dt><dd><p>name (<cite>str</cite>): the base parameter name
+tpl_filename (<cite>str</cite>): the template file to write - include path
+suffix (<cite>str</cite>): suffix to append to par names
+par_type (<cite>str</cite>): type of parameter
+zone_array (<cite>numpy.ndarray</cite>): an array used to skip inactive cells. Values less than 1 are</p>
+<blockquote>
+<div><p>not parameterized and are assigned a value of fill_value. Default is None.</p>
+</div></blockquote>
+<p>gpname (<cite>str</cite>): pargp filed in dataframe
+shape (<cite>tuple</cite>): dimensions of array to write
+longnames (<cite>bool</cite>): Use parnames &gt; 12 char
+fill_value:
+get_xy:
+input_filename:
+par_style (<cite>str</cite>): either ‘direct’ or ‘multiplier’</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a dataframe with parameter information</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>df (<cite>pandas.DataFrame</cite>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pst_from._check_diff">
+<code class="sig-prename descclassname">pyemu.utils.pst_from.</code><code class="sig-name descname">_check_diff</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">org_arr</span></em>, <em class="sig-param"><span class="n">input_filename</span></em>, <em class="sig-param"><span class="n">zval</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pst_from._check_diff" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

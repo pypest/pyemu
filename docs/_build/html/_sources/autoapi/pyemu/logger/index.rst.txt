@@ -1,0 +1,75 @@
+:mod:`pyemu.logger`
+===================
+
+.. py:module:: pyemu.logger
+
+.. autoapi-nested-parse::
+
+   module for logging pyemu progress
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   pyemu.logger.Logger
+
+
+
+.. py:class:: Logger(filename, echo=False)
+
+   Bases: :class:`object`
+
+   a basic class for logging events during the linear analysis calculations
+       if filename is passed, then a file handle is opened.
+
+   :param filename: Filename to write logged events to. If False, no file will be created,
+                    and logged events will be displayed on standard out.
+   :type filename: `str`
+   :param echo: Flag to cause logged events to be echoed to the screen.
+   :type echo: `bool`
+
+   .. method:: statement(self, phrase)
+
+      log a one-time statement
+
+      Arg:
+          phrase (`str`): statement to log
+
+
+   .. method:: log(self, phrase)
+
+      log something that happened.
+
+      Arg:
+          phrase (`str`): statement to log
+
+      .. rubric:: Notes
+
+      The first time phrase is passed the start time is saved.
+          The second time the phrase is logged, the elapsed time is written
+
+
+   .. method:: warn(self, message)
+
+      write a warning to the log file.
+
+      Arg:
+          phrase (`str`): warning statement to log
+
+
+
+   .. method:: lraise(self, message)
+
+      log an exception, close the log file, then raise the exception
+
+      Arg:
+          phrase (`str`): exception statement to log and raise
+
+
+
