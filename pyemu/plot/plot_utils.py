@@ -1234,7 +1234,8 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
                 ex = en_g.max()
                 en = en_g.min()
                 #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
-                ax.fill_between(obs_gg.obsval,en,ex,facecolor=c,alpha=0.2)
+                ax.fill_between(obs_gg.obsval,en,ex,facecolor=c,alpha=0.2,
+                                zorder=2)
         #ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
         omn = []
         omx = []
@@ -1244,7 +1245,7 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
             en = en_g.min()
             omn.append(en)
             omx.append(ex)
-            [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
+            [ax.plot([ov,ov],[een,eex],color=c, zorder=1) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
 
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()
@@ -1266,7 +1267,7 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
                 mx = obx + (0.5 * rng)
             else:
                 mx = obx * 1.1
-        ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
+        ax.plot([mn,mx],[mn,mx],'k--',lw=1.0, zorder=3)
         xlim = (mn,mx)
         ax.set_xlim(mn,mx)
         ax.set_ylim(mn,mx)
@@ -1292,7 +1293,7 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
                 ex = en_g.max()
                 en = en_g.min()
                 #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
-                ax.fill_between(obs_gg.obsval,en,ex,facecolor=c,alpha=0.2)
+                ax.fill_between(obs_gg.obsval,en,ex,facecolor=c,alpha=0.2, zorder=2)
         omn = []
         omx = []
         for c,en in ensembles.items():
@@ -1301,7 +1302,7 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
             en = en_g.min()
             omn.append(en)
             omx.append(ex)
-            [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
+            [ax.plot([ov,ov],[een,eex],color=c, zorder=1) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
 
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()
@@ -1325,7 +1326,7 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
             mx *= 1.1
         ax.set_ylim(-mx, mx)
         #show a zero residuals line
-        ax.plot(xlim, [0,0], 'k--', lw=1.0)
+        ax.plot(xlim, [0,0], 'k--', lw=1.0, zorder=3)
 
         ax.set_xlim(xlim)
         ax.set_ylabel("residual",labelpad=0.1)
