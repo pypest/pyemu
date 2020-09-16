@@ -214,8 +214,8 @@ def geostatistical_prior_builder(
         struct_dict (`dict`): a dict of GeoStruct (or structure file), and list of
             pilot point template files pairs. If the values in the dict are
             `pd.DataFrames`, then they must have an 'x','y', and 'parnme' column.
-             If the filename ends in '.csv', then a pd.DataFrame is loaded,
-             otherwise a pilot points file is loaded.
+            If the filename ends in '.csv', then a pd.DataFrame is loaded,
+            otherwise a pilot points file is loaded.
         sigma_range (`float`): a float representing the number of standard deviations
             implied by parameter bounds. Default is 4.0, which implies 95% confidence parameter bounds.
         verbose (`bool`, optional): flag to control output to stdout.  Default is True.
@@ -1091,15 +1091,6 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
         `pyemu.Jco`: a jacobian matrix constructed from the run results and
         pest control file information.
 
-
-    TODO:
-        Check rnj file contains transformed par vals (i.e., in model input space)
-
-        Currently only returns pyemu.Jco; doesn't write jco file due to memory
-        issues associated with very large problems
-
-        Compare rnj and jco from Freyberg problem in autotests
-
     """
 
     header_dtype = np.dtype(
@@ -1170,7 +1161,7 @@ def parse_dir_for_io_files(d, prepend_path=False):
 
     Args:
         d (`str`): directory to search for interface files
-        prepend_path (`bool, optional): flag to prepend `d` to each file name.
+        prepend_path (`bool`, optional): flag to prepend `d` to each file name.
             Default is False
 
     Note:
@@ -1216,9 +1207,9 @@ def pst_from_io_files(
         pst_filename (`str`): name of control file to write.  If None, no file is written.
             Default is None
         pst_path (`str`): the path to append to the template_file and in_file in the control file.  If
-                not None, then any existing path in front of the template or in file is split off
-                and pst_path is prepended.  If python is being run in a directory other than where the control
-                file will reside, it is useful to pass `pst_path` as `.`.  Default is None
+            not None, then any existing path in front of the template or in file is split off
+            and pst_path is prepended.  If python is being run in a directory other than where the control
+            file will reside, it is useful to pass `pst_path` as `.`.  Default is None
 
 
     Returns:
@@ -1232,10 +1223,6 @@ def pst_from_io_files(
         to set somewhat meaningful observation values
 
         all file paths are relatively to where python is running.
-
-    TODO:
-        add pst_path option
-        make in_files and out_files optional
 
     Example::
 
@@ -3927,25 +3914,21 @@ def apply_genericlist_pars(df):
     """ a function to apply list style mult parameters
     
     Args:
-        df (pandas.DataFrame): DataFrame that relates files containing 
+        df (pandas.DataFrame): DataFrame that relates files containing
             multipliers to model input file names. Required columns include:
             {"model_file": file name of resulatant model input file, 
-             "org_file": file name of original file that multipliers act on, 
-             "fmt": format specifier for model input file 
-                    (currently on 'free' supported),
-             "sep": separator for model input file if 'free' formatted,
-             "head_rows": Number of header rows to transfer from orig file 
-                          to model file,
-             "index_cols": list of columns (either indexes or strings) to be 
-                            used to align mults, orig and model files,
-             "use_cols": columns to mults act on,
-             "upper_bound": ultimate upper bound for model input file 
-                            parameter,
-             "lower_bound": ultimate lower bound for model input file
-                            parameter}
+            "org_file": file name of original file that multipliers act on,
+            "fmt": format specifier for model input file (currently on 'free' supported),
+            "sep": separator for model input file if 'free' formatted,
+            "head_rows": Number of header rows to transfer from orig file to model file,
+            "index_cols": list of columns (either indexes or strings) to be used to align mults, orig and model files,
+            "use_cols": columns to mults act on,
+            "upper_bound": ultimate upper bound for model input file parameter,
+            "lower_bound": ultimate lower bound for model input file parameter}
         
 
     """
+
     uniq = df.model_file.unique()
     for model_file in uniq:
         print("processing model file:", model_file)
@@ -6607,9 +6590,9 @@ def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
 
     Args:
         sim_en (`pyemu.ObservationEnsemble`): a simulated outputs ensemble
-        l1_crit_val (`float1): the chi squared critical value for the 1-D
+        l1_crit_val (`float`): the chi squared critical value for the 1-D
             mahalanobis distance.  Default is 6.4 (p=0.01,df=1)
-        l2_crit_val (`float1): the chi squared critical value for the 2-D
+        l2_crit_val (`float`): the chi squared critical value for the 2-D
             mahalanobis distance.  Default is 9.2 (p=0.01,df=2)
 
     Returns:

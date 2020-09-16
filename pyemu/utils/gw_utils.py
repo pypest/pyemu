@@ -2327,8 +2327,7 @@ def modflow_sfr_gag_to_instruction_file(
 
         If `parse_namefile` is true, only text up to first '.' is used as the gage_num
 
-    TODO:
-        allow other observation types and align explicitly with times - now returns all values
+
     """
 
     if ins_file is None:

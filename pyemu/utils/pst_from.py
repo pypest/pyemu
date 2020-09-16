@@ -51,13 +51,14 @@ class PstFrom(object):
     """
 
     Args:
-        original_d:
-        new_d:
-        longnames:
-        remove_existing:
-        spatial_reference:
-        zero_based:
-        start_datetime:
+        original_d (`str`): the path to a complete set of model input and output files
+        new_d (`str`): the path to where the model files and PEST interface files will be copied/built
+        longnames (`bool`): flag to use longer-than-PEST-likes parameter and observation names.  Default is True
+        remove_existing (`bool`): flag to destroy any existing files and folders in `new_d`.  Default is False
+        spatial_reference (varies): an object that faciliates geo-locating model cells based on index.  Default is None
+        zero_based (`bool`): flag if the model uses zero-based indices, Default is True
+        start_datetime (`str`): a string that can be case to a datatime instance the represents the starting datetime
+            of the model
 
     """
 
@@ -72,7 +73,6 @@ class PstFrom(object):
         zero_based=True,
         start_datetime=None,
     ):
-        # TODO geostruct?
 
         self.original_d = original_d
         self.new_d = new_d
@@ -222,6 +222,8 @@ class PstFrom(object):
             return (self._spatial_ref_xarray[i, j], self._spatial_ref_yarray[i, j])
 
     def parse_kij_args(self, args, kwargs):
+        """parse args into kij indices
+        """
         if len(args) >= 2:
             ij_id = None
             if "ij_id" in kwargs:
@@ -244,6 +246,8 @@ class PstFrom(object):
         return i, j
 
     def initialize_spatial_reference(self):
+        """process the spatial reference argument
+        """
         if self._spatial_reference is None:
             self.get_xy = self._generic_get_xy
         elif hasattr(self._spatial_reference, "xcentergrid") and hasattr(
@@ -264,6 +268,9 @@ class PstFrom(object):
         self.spatial_reference = self._spatial_reference
 
     def write_forward_run(self):
+        """write the forward run script
+
+        """
         # update python commands with system style commands
         for alist, ilist in zip(
             [self.pre_py_cmds, self.mod_py_cmds, self.post_py_cmds],
@@ -337,16 +344,22 @@ class PstFrom(object):
     def build_prior(
         self, fmt="ascii", filename=None, droptol=None, chunk=None, sigma_range=6
     ):
-        """
+        """Build the prior parameter covariance matrix
 
         Args:
-            fmt:
-            filename:
-            droptol:
-            chunk:
-            sigma_range:
+            fmt (`str`): the file format to save to.  Default is "ASCII", can be "binary", "coo", or "none"
+            filename (`str`): the filename to save the cov to
+            droptol (`float`): absolute value of prior cov entries that are smaller than `droptol` are treated as
+                zero.
+            chunk (`int`): number of entries to write to binary/coo at once.  Default is None (write all elements at once
+            sigma_range (`int`): number of standard deviations represented by parameter bounds.  Default is 6 (99%
+                confidence).  4 would be approximately 95% confidence bounds
 
         Returns:
+            `pyemu.Cov`: the prior parameter covariance matrix
+
+        Note:
+            This method processes parameters by group names
 
         """
         struct_dict = self._pivot_par_struct_dict()
@@ -376,15 +389,24 @@ class PstFrom(object):
         return cov
 
     def draw(self, num_reals=100, sigma_range=6, use_specsim=False, scale_offset=True):
-        """
+        """Draw a parameter ensemble from the distribution implied by the initial parameter values in the
+        control file and the prior parameter covariance matrix.
 
         Args:
-            num_reals:
-            sigma_range:
-            use_specsim:
-            scale_offset:
+            num_reals (`int`): the number of realizations to draw
+            sigma_range (`int`): number of standard deviations represented by parameter bounds.  Default is 6 (99%
+                confidence).  4 would be approximately 95% confidence bounds
+            use_specsim (`bool`): flag to use spectral simulation for grid-scale pars (highly recommended).
+                Default is False
+            scale_offset (`bool`): flag to apply scale and offset to parameter bounds before calculating prior variance.
+                Dfault is True
 
         Returns:
+            `pyemu.ParameterEnsemble`: a prior parameter ensemble
+
+        Note:
+            This method draws by parameter group
+
 
         """
         self.logger.log("drawing realizations")
@@ -462,14 +484,13 @@ class PstFrom(object):
 
     def build_pst(self, filename=None, update=False, version=1):
         """Build control file from i/o files in PstFrom object.
-        Warning: This builds a pest control file from scratch
-            - overwriting anything already in self.pst object and
-            anything already writen to `filename`
+        Warning: This builds a pest control file from scratch, overwriting
+        anything already in self.pst object and anything already writen to `filename`
 
         Args:
             filename (`str`): the filename to save the control file to.
                 If None, the name is formed from the `PstFrom.original_d`
-                --- the orginal directory name from which the forward model
+                ,the orginal directory name from which the forward model
                 was extracted.  Default is None.
                 The control file is saved in the `PstFrom.new_d` directory.
             update (bool) or (str): flag to add to existing Pst object and
@@ -477,10 +498,11 @@ class PstFrom(object):
                 components of Pst. Default is False - build from PstFrom
                 components.
         Note:
-            This builds a pest control file from scratch
-            - overwriting anything already in self.pst object and
-            anything already writen to `filename`
+            This builds a pest control file from scratch, overwriting anything already
+                in self.pst object and anything already writen to `filename`
+
         """
+
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         obs_data_cols = pyemu.pst_utils.pst_config["obs_fieldnames"]
         if update:
@@ -910,7 +932,8 @@ class PstFrom(object):
             rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after adding
                 new obs
 
-        Returns: DataFrame of new observations
+        Returns:
+            `Pandas.DataFrame`: dataframe with info for new observations
 
         """
         # TODO - array style outputs? or expecting post processing to tabular
@@ -1157,11 +1180,10 @@ class PstFrom(object):
 
         Args:
             filenames (`str`): Model input filenames to parameterize
-            par_type (`str`): One of `grid` - for every element,
-                `constant` - for single parameter applied to every element,
-                `zone` - for zone-based parameterization (only for array-style) or
-                `pilotpoint` - for pilot-point base parameterization of array
-                    style input files.
+            par_type (`str`): One of `grid` - for every element, `constant` - for single
+                parameter applied to every element, `zone` - for zone-based
+                parameterization (only for array-style) or `pilotpoint` - for
+                pilot-point base parameterization of array style input files.
                 Note `kl` not yet implemented # TODO
             zone_array (`np.ndarray`): array defining spatial limits or zones
                 for parameterization.
@@ -1220,6 +1242,10 @@ class PstFrom(object):
                 up a multiplier parameter process against the exsting model input
                 array and the former setups a template file to write the model
                 input file directly.  Default is "multiplier".
+
+        Returns:
+            `pandas.DataFrame`: dataframe with info for new parameters
+
         """
         # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
@@ -2072,6 +2098,7 @@ def write_list_tpl(
         par_style (`str`): either 'direct' or 'multiplier'
 
     Returns:
+        `pandas.DataFrame`: dataframe with info for the new parameters
 
     """
     # get dataframe with autogenerated parnames based on `name`, `index_cols`,
@@ -2618,15 +2645,14 @@ def write_array_tpl(
 ):
     """
     write a template file for a 2D array.
+
      Args:
         name (`str`): the base parameter name
         tpl_filename (`str`): the template file to write - include path
         suffix (`str`): suffix to append to par names
         par_type (`str`): type of parameter
-        zone_array (`numpy.ndarray`): an array used to skip inactive cells.
-            Values less than 1 are
-            not parameterized and are assigned a value of fill_value.
-            Default is None.
+        zone_array (`numpy.ndarray`): an array used to skip inactive cells. Values less than 1 are
+            not parameterized and are assigned a value of fill_value. Default is None.
         gpname (`str`): pargp filed in dataframe
         shape (`tuple`): dimensions of array to write
         longnames (`bool`): Use parnames > 12 char
@@ -2637,6 +2663,7 @@ def write_array_tpl(
 
     Returns:
         df (`pandas.DataFrame`): a dataframe with parameter information
+
     """
 
     if shape is None and zone_array is None:

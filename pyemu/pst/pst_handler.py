@@ -2370,9 +2370,6 @@ class Pst(object):
 
             all file paths are relatively to where python is running.
 
-        TODO:
-            add pst_path option
-            make in_files and out_files optional
 
         Example::
 

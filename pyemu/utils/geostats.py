@@ -579,8 +579,7 @@ class SpecSim2d(object):
             This second conditioning surface provides an estimate of uncertainty (kriging error)
             away from the observation points. At the observation points, the kriged surface is
             equal to (less nugget effects) the observation. The conditioned correlated field
-            is then generated using:
-                        T(x) = Z(x) + [S(x) − S∗(x)]
+            is then generated using: T(x) = Z(x) + [S(x) − S∗(x)]
             where T(x) is the conditioned simulation, Z(x) is a kriging estimator of the
             unknown field, S(x) is an unconditioned random field with the same covariance
             structure as the desired field, and S∗(x) is a kriging estimate of the unconditioned
@@ -596,20 +595,21 @@ class SpecSim2d(object):
 
         Args:
             seed (`int`): integer used for random seed.  If seed is used as a PEST parameter,
-                          then passing the same value for seed will yield the same
-                          conditioned random fields. This allows runs to be recreated
-                          given an ensemble of seeds.
-            obs_points (`str` or `dataframe`): locations for observation points.  Either filename in pyemu
-                           pilot point file format: ["name","x","y","zone","parval1"] or
-                           a dataframe with these columns. Note that parval1 is not used.
-            base_values_file (`str`): filename containing 2d array with the base parameter values
-                              from which the random field will depart (Z(x)) above.
-                              Values of Z(x) are used for conditioning, not parval1 in the
-                              observation point file.
-            factors_file (`str`): name of the factors file generated using the locations of the
-                             observation points and the target grid.   If None this file will
-                             be generated and called conditional_factors.dat; but this is a slow
-                             step and should not generally be called for every simulation.
+                then passing the same value for seed will yield the same
+                conditioned random fields. This allows runs to be recreated
+                given an ensemble of seeds.
+            obs_points (`str` or `dataframe`): locations for observation points.
+                Either filename in pyemupilot point file format:
+                ["name","x","y","zone","parval1"] ora dataframe with these columns.
+                Note that parval1 is not used.
+            base_values_file (`str`): filename containing 2d array with the base
+                parameter values from which the random field will depart (Z(x)) above.
+                Values of Z(x) are used for conditioning, not parval1 in the
+                observation point file.
+            factors_file (`str`): name of the factors file generated using the
+                locations of the observation points and the target grid.
+                If None this file will be generated and called conditional_factors.dat;
+                but this is a slow step and should not generally be called for every simulation.
             sg: flopy StructuredGrid object
             local (`boolean`): whether coordinates in obs_points are in local (model) or map coordinates
             num_reals (`int`): number of realizations to generate
@@ -618,11 +618,11 @@ class SpecSim2d(object):
                                 geostruct parameters is larger or smaller than desired.
 
         Returns:
-            `numpy.ndarray`: a 3-D array of realizations.  Shape
-                             is (num_reals, self.dely.shape[0], self.delx.shape[0])
+            `numpy.ndarray`: a 3-D array of realizations.  Shape is
+                (num_reals, self.dely.shape[0], self.delx.shape[0])
         Note:
-            log transformation is respected and the returned `reals` array is
-            in arithmetic space
+            log transformation is respected and the returned `reals`
+                array is in arithmetic space
         """
 
         # get a dataframe for the observation points, from file unless passed

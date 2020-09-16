@@ -651,9 +651,6 @@ def pst_prior(pst, logger=None, filename=None, **kwargs):
     Returns:
         [`matplotlib.Figure`]: a list of figures created.
 
-    TODO:
-        external parcov, unique mean-std pairs
-
     """
     if logger is None:
         logger = Logger("Default_Loggger.log", echo=False)
