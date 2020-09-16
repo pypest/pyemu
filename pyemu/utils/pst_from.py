@@ -409,7 +409,7 @@ class PstFrom(object):
         self.logger.log("drawing realizations")
         return pe
 
-    def build_pst(self, filename=None, update=False):
+    def build_pst(self, filename=None, update=False, version=1):
         """Build control file from i/o files in PstFrom object.
         Warning: This builds a pest control file from scratch
             - overwriting anything already in self.pst object and
@@ -497,7 +497,7 @@ class PstFrom(object):
 
         pst.prior_information = pst.null_prior
         self.pst = pst
-        self.pst.write(filename)
+        self.pst.write(filename, version=version)
         self.write_forward_run()
         pst.try_parse_name_metadata()
         return pst
@@ -2254,7 +2254,7 @@ def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None,
     elif shape is not None and zone_array is not None:
         if shape != zone_array.shape:
             raise Exception("write_array_tpl() error: passed "
-                            "shape != zone_array.shape")
+                            "shape {0} != zone_array.shape {1}".format(shape,zone_array.shape))
     elif shape is None:
         shape = zone_array.shape
     if len(shape) != 2:
