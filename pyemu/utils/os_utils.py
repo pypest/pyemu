@@ -13,15 +13,15 @@ from datetime import datetime
 import pandas as pd
 from ..pyemu_warnings import PyemuWarning
 
-ext = ''
-bin_path = os.path.join("..","bin")
+ext = ""
+bin_path = os.path.join("..", "bin")
 if "linux" in platform.platform().lower():
-    bin_path = os.path.join(bin_path,"linux")
+    bin_path = os.path.join(bin_path, "linux")
 elif "darwin" in platform.platform().lower():
-    bin_path = os.path.join(bin_path,"mac")
+    bin_path = os.path.join(bin_path, "mac")
 else:
-    bin_path = os.path.join(bin_path,"win")
-    ext = '.exe'
+    bin_path = os.path.join(bin_path, "win")
+    ext = ".exe"
 
 bin_path = os.path.abspath(bin_path)
 os.environ["PATH"] += os.pathsep + bin_path
@@ -40,6 +40,7 @@ def _istextfile(filename, blocksize=512):
     """
 
     import sys
+
     PY3 = sys.version_info[0] == 3
 
     # A function that takes an integer in the 8-bit range and returns
@@ -48,11 +49,9 @@ def _istextfile(filename, blocksize=512):
     #
     int2byte = (lambda x: bytes((x,))) if PY3 else chr
 
-    _text_characters = (
-        b''.join(int2byte(i) for i in range(32, 127)) +
-        b'\n\r\t\f\b')
-    block = open(filename,'rb').read(blocksize)
-    if b'\x00' in block:
+    _text_characters = b"".join(int2byte(i) for i in range(32, 127)) + b"\n\r\t\f\b"
+    block = open(filename, "rb").read(blocksize)
+    if b"\x00" in block:
         # Files with null bytes are binary
         return False
     elif not block:
@@ -68,10 +67,11 @@ def _istextfile(filename, blocksize=512):
 def _remove_readonly(func, path, excinfo):
     """remove readonly dirs, apparently only a windows issue
     add to all rmtree calls: shutil.rmtree(**,onerror=remove_readonly), wk"""
-    os.chmod(path, 128) #stat.S_IWRITE==128==normal
+    os.chmod(path, 128)  # stat.S_IWRITE==128==normal
     func(path)
 
-def run(cmd_str,cwd='.',verbose=False):
+
+def run(cmd_str, cwd=".", verbose=False):
     """ an OS agnostic function to execute a command line
 
     Args:
@@ -99,14 +99,14 @@ def run(cmd_str,cwd='.',verbose=False):
             if not exe_name.lower().endswith("exe"):
                 raw = cmd_str.split()
                 raw[0] = exe_name + ".exe"
-                cmd_str = ' '.join(raw)
+                cmd_str = " ".join(raw)
         else:
-            if exe_name.lower().endswith('exe'):
+            if exe_name.lower().endswith("exe"):
                 raw = cmd_str.split()
-                exe_name = exe_name.replace('.exe','')
+                exe_name = exe_name.replace(".exe", "")
                 raw[0] = exe_name
-                cmd_str = '{0} {1} '.format(*raw)
-            if os.path.exists(exe_name) and not exe_name.startswith('./'):
+                cmd_str = "{0} {1} ".format(*raw)
+            if os.path.exists(exe_name) and not exe_name.startswith("./"):
                 cmd_str = "./" + cmd_str
 
     except Exception as e:
@@ -131,9 +131,21 @@ def run(cmd_str,cwd='.',verbose=False):
             raise Exception("run() returned non-zero: {0}".format(estat))
 
 
-def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_root="..",
-                 port=4004,rel_path=None,local=True,cleanup=True,master_dir=None,
-                 verbose=False,silent_master=False, reuse_master=False):
+def start_workers(
+    worker_dir,
+    exe_rel_path,
+    pst_rel_path,
+    num_workers=None,
+    worker_root="..",
+    port=4004,
+    rel_path=None,
+    local=True,
+    cleanup=True,
+    master_dir=None,
+    verbose=False,
+    silent_master=False,
+    reuse_master=False,
+):
     """ start a group of pest(++) workers on the local machine
 
     Args:
@@ -189,22 +201,22 @@ def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_r
         num_workers = mp.cpu_count()
     else:
         num_workers = int(num_workers)
-    #assert os.path.exists(os.path.join(worker_dir,rel_path,exe_rel_path))
+    # assert os.path.exists(os.path.join(worker_dir,rel_path,exe_rel_path))
     exe_verf = True
 
     if rel_path:
-        if not os.path.exists(os.path.join(worker_dir,rel_path,exe_rel_path)):
-            #print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
+        if not os.path.exists(os.path.join(worker_dir, rel_path, exe_rel_path)):
+            # print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
             exe_verf = False
     else:
-        if not os.path.exists(os.path.join(worker_dir,exe_rel_path)):
-            #print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
+        if not os.path.exists(os.path.join(worker_dir, exe_rel_path)):
+            # print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
             exe_verf = False
     if rel_path is not None:
-        if not os.path.exists(os.path.join(worker_dir,rel_path,pst_rel_path)):
+        if not os.path.exists(os.path.join(worker_dir, rel_path, pst_rel_path)):
             raise Exception("pst_rel_path not found from worker_dir using rel_path")
     else:
-        if not os.path.exists(os.path.join(worker_dir,pst_rel_path)):
+        if not os.path.exists(os.path.join(worker_dir, pst_rel_path)):
             raise Exception("pst_rel_path not found from worker_dir")
     if local:
         hostname = "localhost"
@@ -214,65 +226,76 @@ def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_r
     base_dir = os.getcwd()
     port = int(port)
 
-    if os.path.exists(os.path.join(worker_dir,exe_rel_path)):
+    if os.path.exists(os.path.join(worker_dir, exe_rel_path)):
         if "window" in platform.platform().lower():
             if not exe_rel_path.lower().endswith("exe"):
                 exe_rel_path = exe_rel_path + ".exe"
         else:
-            if not exe_rel_path.startswith('./'):
+            if not exe_rel_path.startswith("./"):
                 exe_rel_path = "./" + exe_rel_path
 
     if master_dir is not None:
-        if master_dir != '.' and os.path.exists(master_dir) and not reuse_master:
+        if master_dir != "." and os.path.exists(master_dir) and not reuse_master:
             try:
-                shutil.rmtree(master_dir, onerror=_remove_readonly)#, onerror=del_rw)
+                shutil.rmtree(master_dir, onerror=_remove_readonly)  # , onerror=del_rw)
             except Exception as e:
-                raise Exception("unable to remove existing master dir:" + \
-                                "{0}\n{1}".format(master_dir,str(e)))
-        if master_dir != '.' and not reuse_master:
+                raise Exception(
+                    "unable to remove existing master dir:"
+                    + "{0}\n{1}".format(master_dir, str(e))
+                )
+        if master_dir != "." and not reuse_master:
             try:
-                shutil.copytree(worker_dir,master_dir)
+                shutil.copytree(worker_dir, master_dir)
             except Exception as e:
-                raise Exception("unable to copy files from base worker dir: " + \
-                                "{0} to master dir: {1}\n{2}".\
-                                format(worker_dir,master_dir,str(e)))
+                raise Exception(
+                    "unable to copy files from base worker dir: "
+                    + "{0} to master dir: {1}\n{2}".format(
+                        worker_dir, master_dir, str(e)
+                    )
+                )
 
         args = [exe_rel_path, pst_rel_path, "/h", ":{0}".format(port)]
         if rel_path is not None:
-            cwd = os.path.join(master_dir,rel_path)
+            cwd = os.path.join(master_dir, rel_path)
         else:
             cwd = master_dir
         if verbose:
-            print("master:{0} in {1}".format(' '.join(args),cwd))
-        stdout=None
+            print("master:{0} in {1}".format(" ".join(args), cwd))
+        stdout = None
         if silent_master:
-            stdout = open(os.devnull,'w')
+            stdout = open(os.devnull, "w")
         try:
             os.chdir(cwd)
-            master_p = sp.Popen(args,stdout=stdout)#,stdout=sp.PIPE,stderr=sp.PIPE)
+            master_p = sp.Popen(args, stdout=stdout)  # ,stdout=sp.PIPE,stderr=sp.PIPE)
             os.chdir(base_dir)
         except Exception as e:
-            raise Exception("error starting master instance: {0}".\
-                            format(str(e)))
-        time.sleep(1.5) # a few cycles to let the master get ready
+            raise Exception("error starting master instance: {0}".format(str(e)))
+        time.sleep(1.5)  # a few cycles to let the master get ready
 
-
-    tcp_arg = "{0}:{1}".format(hostname,port)
+    tcp_arg = "{0}:{1}".format(hostname, port)
     procs = []
     worker_dirs = []
     for i in range(num_workers):
-        new_worker_dir = os.path.join(worker_root,"worker_{0}".format(i))
+        new_worker_dir = os.path.join(worker_root, "worker_{0}".format(i))
         if os.path.exists(new_worker_dir):
             try:
-                shutil.rmtree(new_worker_dir, onerror=_remove_readonly)#, onerror=del_rw)
+                shutil.rmtree(
+                    new_worker_dir, onerror=_remove_readonly
+                )  # , onerror=del_rw)
             except Exception as e:
-                raise Exception("unable to remove existing worker dir:" + \
-                                "{0}\n{1}".format(new_worker_dir,str(e)))
+                raise Exception(
+                    "unable to remove existing worker dir:"
+                    + "{0}\n{1}".format(new_worker_dir, str(e))
+                )
         try:
-            shutil.copytree(worker_dir,new_worker_dir)
+            shutil.copytree(worker_dir, new_worker_dir)
         except Exception as e:
-            raise Exception("unable to copy files from worker dir: " + \
-                            "{0} to new worker dir: {1}\n{2}".format(worker_dir,new_worker_dir,str(e)))
+            raise Exception(
+                "unable to copy files from worker dir: "
+                + "{0} to new worker dir: {1}\n{2}".format(
+                    worker_dir, new_worker_dir, str(e)
+                )
+            )
         try:
             if exe_verf:
                 # if rel_path is not None:
@@ -282,17 +305,17 @@ def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_r
             else:
                 exe_path = exe_rel_path
             args = [exe_path, pst_rel_path, "/h", tcp_arg]
-            #print("starting worker in {0} with args: {1}".format(new_worker_dir,args))
+            # print("starting worker in {0} with args: {1}".format(new_worker_dir,args))
             if rel_path is not None:
-                cwd = os.path.join(new_worker_dir,rel_path)
+                cwd = os.path.join(new_worker_dir, rel_path)
             else:
                 cwd = new_worker_dir
 
             os.chdir(cwd)
             if verbose:
-                print("worker:{0} in {1}".format(' '.join(args),cwd))
-            with open(os.devnull,'w') as f:
-                p = sp.Popen(args,stdout=f,stderr=f)
+                print("worker:{0} in {1}".format(" ".join(args), cwd))
+            with open(os.devnull, "w") as f:
+                p = sp.Popen(args, stdout=f, stderr=f)
             procs.append(p)
             os.chdir(base_dir)
         except Exception as e:
@@ -317,7 +340,7 @@ def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_r
                 time.sleep(5)
         else:
             master_p.wait()
-            time.sleep(1.5) # a few cycles to let the workers end gracefully
+            time.sleep(1.5)  # a few cycles to let the workers end gracefully
         # kill any remaining workers
         for p in procs:
             p.kill()
@@ -325,13 +348,15 @@ def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_r
     for p in procs:
         p.wait()
     if cleanup:
-        cleanit=0
-        while len(worker_dirs)>0 and cleanit<100000: # arbitrary 100000 limit
-            cleanit=cleanit+1
+        cleanit = 0
+        while len(worker_dirs) > 0 and cleanit < 100000:  # arbitrary 100000 limit
+            cleanit = cleanit + 1
             for d in worker_dirs:
                 try:
                     shutil.rmtree(d, onerror=_remove_readonly)
-                    worker_dirs.pop(worker_dirs.index(d)) #if successfully removed
+                    worker_dirs.pop(worker_dirs.index(d))  # if successfully removed
                 except Exception as e:
-                    warnings.warn("unable to remove slavr dir{0}:{1}".format(d,str(e)),PyemuWarning)
-
+                    warnings.warn(
+                        "unable to remove slavr dir{0}:{1}".format(d, str(e)),
+                        PyemuWarning,
+                    )

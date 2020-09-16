@@ -30,9 +30,9 @@ import pyemu
 from pyemu.utils.os_utils import run, start_workers
 
 
-
-def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=True,
-                         scale_offset=True):
+def geostatistical_draws(
+    pst, struct_dict, num_reals=100, sigma_range=4, verbose=True, scale_offset=True
+):
     """construct a parameter ensemble from a prior covariance matrix
     implied by geostatistical structure(s) and parameter bounds.
 
@@ -76,12 +76,15 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
 
     if isinstance(pst, str):
         pst = pyemu.Pst(pst)
-    assert isinstance(pst, pyemu.Pst), "pst arg must be a Pst instance, not {0}". \
-        format(type(pst))
-    if verbose: print("building diagonal cov")
+    assert isinstance(pst, pyemu.Pst), "pst arg must be a Pst instance, not {0}".format(
+        type(pst)
+    )
+    if verbose:
+        print("building diagonal cov")
 
-    full_cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range,
-                                             scale_offset=scale_offset)
+    full_cov = pyemu.Cov.from_parameter_data(
+        pst, sigma_range=sigma_range, scale_offset=scale_offset
+    )
     full_cov_dict = {n: float(v) for n, v in zip(full_cov.col_names, full_cov.x)}
 
     # par_org = pst.parameter_data.copy  # not sure about the need or function of this line? (BH)
@@ -93,12 +96,14 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
 
     for gs in keys:
         items = struct_dict[gs]
-        if verbose: print("processing ", gs)
+        if verbose:
+            print("processing ", gs)
         if isinstance(gs, str):
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss, list):
-                warnings.warn("using first geostat structure in file {0}". \
-                              format(gs), PyemuWarning)
+                warnings.warn(
+                    "using first geostat structure in file {0}".format(gs), PyemuWarning
+                )
                 gs = gss[0]
             else:
                 gs = gss
@@ -107,10 +112,9 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
         if not isinstance(items, list):
             items = [items]
         # items.sort()
-        for iitem,item in enumerate(items):
+        for iitem, item in enumerate(items):
             if isinstance(item, str):
-                assert os.path.exists(item), "file {0} not found". \
-                    format(item)
+                assert os.path.exists(item), "file {0} not found".format(item)
                 if item.lower().endswith(".tpl"):
                     df = pyemu.pp_utils.pp_tpl_to_dataframe(item)
                 elif item.lower.endswith(".csv"):
@@ -118,20 +122,25 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
             else:
                 df = item
             if "pargp" in df.columns:
-                if verbose: print("working on pargroups {0}".format(df.pargp.unique().tolist()))
-            for req in ['x', 'y', 'parnme']:
+                if verbose:
+                    print("working on pargroups {0}".format(df.pargp.unique().tolist()))
+            for req in ["x", "y", "parnme"]:
                 if req not in df.columns:
                     raise Exception("{0} is not in the columns".format(req))
-            missing = df.loc[df.parnme.apply(
-                lambda x: x not in par.parnme), "parnme"]
+            missing = df.loc[df.parnme.apply(lambda x: x not in par.parnme), "parnme"]
             if len(missing) > 0:
-                warnings.warn("the following parameters are not " + \
-                              "in the control file: {0}". \
-                              format(','.join(missing)), PyemuWarning)
+                warnings.warn(
+                    "the following parameters are not "
+                    + "in the control file: {0}".format(",".join(missing)),
+                    PyemuWarning,
+                )
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
             if df.shape[0] == 0:
-                warnings.warn("geostatistical_draws(): empty parameter df at position {0} items for geostruct {1}, skipping...".\
-                              format(iitem,gs))
+                warnings.warn(
+                    "geostatistical_draws(): empty parameter df at position {0} items for geostruct {1}, skipping...".format(
+                        iitem, gs
+                    )
+                )
                 continue
             if "zone" not in df.columns:
                 df.loc[:, "zone"] = 1
@@ -141,50 +150,62 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                 df_zone = df.loc[df.zone == zone, :].copy()
                 df_zone = df_zone.loc[df_zone.parnme.apply(lambda x: x in aset), :]
                 if df_zone.shape[0] == 0:
-                    warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),
-                                  PyemuWarning)
+                    warnings.warn(
+                        "all parameters in zone {0} tied and/or fixed, skipping...".format(
+                            zone
+                        ),
+                        PyemuWarning,
+                    )
                     continue
 
                 # df_zone.sort_values(by="parnme",inplace=True)
                 df_zone.sort_index(inplace=True)
-                if verbose: print("build cov matrix")
+                if verbose:
+                    print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x, df_zone.y, df_zone.parnme)
-                if verbose: print("done")
+                if verbose:
+                    print("done")
 
-                if verbose: print("getting diag var cov", df_zone.shape[0])
+                if verbose:
+                    print("getting diag var cov", df_zone.shape[0])
                 # tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
                 tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
 
-                if verbose: print("scaling full cov by diag var cov")
+                if verbose:
+                    print("scaling full cov by diag var cov")
                 # cov.x *= tpl_var
                 for i in range(cov.shape[0]):
                     cov.x[i, :] *= tpl_var
                 # no fixed values here
-                pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst, cov=cov, num_reals=num_reals,
-                                                                by_groups=False, fill=False)
+                pe = pyemu.ParameterEnsemble.from_gaussian_draw(
+                    pst=pst, cov=cov, num_reals=num_reals, by_groups=False, fill=False
+                )
                 # df = pe.iloc[:,:]
                 par_ens.append(pe._df)
                 pars_in_cov.update(set(pe.columns))
 
-    if verbose: print("adding remaining parameters to diagonal")
+    if verbose:
+        print("adding remaining parameters to diagonal")
     fset = set(full_cov.row_names)
     diff = list(fset.difference(pars_in_cov))
-    if (len(diff) > 0):
+    if len(diff) > 0:
         name_dict = {name: i for i, name in enumerate(full_cov.row_names)}
         vec = np.atleast_2d(np.array([full_cov.x[name_dict[d]] for d in diff]))
         cov = pyemu.Cov(x=vec, names=diff, isdiagonal=True)
         # cov = full_cov.get(diff,diff)
         # here we fill in the fixed values
-        pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals,
-                                                        fill=False)
+        pe = pyemu.ParameterEnsemble.from_gaussian_draw(
+            pst, cov, num_reals=num_reals, fill=False
+        )
         par_ens.append(pe._df)
     par_ens = pd.concat(par_ens, axis=1)
     par_ens = pyemu.ParameterEnsemble(pst=pst, df=par_ens)
     return par_ens
 
 
-def geostatistical_prior_builder(pst, struct_dict, sigma_range=4,
-                                 verbose=False, scale_offset=False):
+def geostatistical_prior_builder(
+    pst, struct_dict, sigma_range=4, verbose=False, scale_offset=False
+):
     """construct a full prior covariance matrix using geostastical structures
     and parameter bounds information.
 
@@ -193,8 +214,8 @@ def geostatistical_prior_builder(pst, struct_dict, sigma_range=4,
         struct_dict (`dict`): a dict of GeoStruct (or structure file), and list of
             pilot point template files pairs. If the values in the dict are
             `pd.DataFrames`, then they must have an 'x','y', and 'parnme' column.
-             If the filename ends in '.csv', then a pd.DataFrame is loaded,
-             otherwise a pilot points file is loaded.
+            If the filename ends in '.csv', then a pd.DataFrame is loaded,
+            otherwise a pilot points file is loaded.
         sigma_range (`float`): a float representing the number of standard deviations
             implied by parameter bounds. Default is 4.0, which implies 95% confidence parameter bounds.
         verbose (`bool`, optional): flag to control output to stdout.  Default is True.
@@ -225,48 +246,55 @@ def geostatistical_prior_builder(pst, struct_dict, sigma_range=4,
 
     if isinstance(pst, str):
         pst = pyemu.Pst(pst)
-    assert isinstance(pst, pyemu.Pst), "pst arg must be a Pst instance, not {0}". \
-        format(type(pst))
-    if verbose: print("building diagonal cov")
-    full_cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range,
-                                             scale_offset=scale_offset)
+    assert isinstance(pst, pyemu.Pst), "pst arg must be a Pst instance, not {0}".format(
+        type(pst)
+    )
+    if verbose:
+        print("building diagonal cov")
+    full_cov = pyemu.Cov.from_parameter_data(
+        pst, sigma_range=sigma_range, scale_offset=scale_offset
+    )
 
     full_cov_dict = {n: float(v) for n, v in zip(full_cov.col_names, full_cov.x)}
     # full_cov = None
     par = pst.parameter_data
     for gs, items in struct_dict.items():
-        if verbose: print("processing ", gs)
+        if verbose:
+            print("processing ", gs)
         if isinstance(gs, str):
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss, list):
-                warnings.warn("using first geostat structure in file {0}". \
-                              format(gs), PyemuWarning)
+                warnings.warn(
+                    "using first geostat structure in file {0}".format(gs), PyemuWarning
+                )
                 gs = gss[0]
             else:
                 gs = gss
         if gs.sill != 1.0:
-            warnings.warn("geostatistical_prior_builder() warning: geostruct sill != 1.0, user beware!")
+            warnings.warn(
+                "geostatistical_prior_builder() warning: geostruct sill != 1.0, user beware!"
+            )
         if not isinstance(items, list):
             items = [items]
         for item in items:
             if isinstance(item, str):
-                assert os.path.exists(item), "file {0} not found". \
-                    format(item)
+                assert os.path.exists(item), "file {0} not found".format(item)
                 if item.lower().endswith(".tpl"):
                     df = pyemu.pp_utils.pp_tpl_to_dataframe(item)
                 elif item.lower.endswith(".csv"):
                     df = pd.read_csv(item)
             else:
                 df = item
-            for req in ['x', 'y', 'parnme']:
+            for req in ["x", "y", "parnme"]:
                 if req not in df.columns:
                     raise Exception("{0} is not in the columns".format(req))
-            missing = df.loc[df.parnme.apply(
-                lambda x: x not in par.parnme), "parnme"]
+            missing = df.loc[df.parnme.apply(lambda x: x not in par.parnme), "parnme"]
             if len(missing) > 0:
-                warnings.warn("the following parameters are not " + \
-                              "in the control file: {0}". \
-                              format(','.join(missing)), PyemuWarning)
+                warnings.warn(
+                    "the following parameters are not "
+                    + "in the control file: {0}".format(",".join(missing)),
+                    PyemuWarning,
+                )
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
             if "zone" not in df.columns:
                 df.loc[:, "zone"] = 1
@@ -276,39 +304,49 @@ def geostatistical_prior_builder(pst, struct_dict, sigma_range=4,
                 df_zone = df.loc[df.zone == zone, :].copy()
                 df_zone = df_zone.loc[df_zone.parnme.apply(lambda x: x in aset), :]
                 if df_zone.shape[0] == 0:
-                    warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),
-                                  PyemuWarning)
+                    warnings.warn(
+                        "all parameters in zone {0} tied and/or fixed, skipping...".format(
+                            zone
+                        ),
+                        PyemuWarning,
+                    )
                     continue
                 # df_zone.sort_values(by="parnme",inplace=True)
                 df_zone.sort_index(inplace=True)
-                if verbose: print("build cov matrix")
+                if verbose:
+                    print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x, df_zone.y, df_zone.parnme)
-                if verbose: print("done")
+                if verbose:
+                    print("done")
                 # find the variance in the diagonal cov
-                if verbose: print("getting diag var cov", df_zone.shape[0])
+                if verbose:
+                    print("getting diag var cov", df_zone.shape[0])
                 # tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
                 tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
                 # if np.std(tpl_var) > 1.0e-6:
                 #    warnings.warn("pars have different ranges" +\
                 #                  " , using max range as variance for all pars")
                 # tpl_var = tpl_var.max()
-                if verbose: print("scaling full cov by diag var cov")
+                if verbose:
+                    print("scaling full cov by diag var cov")
                 cov *= tpl_var
-                if verbose: print("test for inversion")
+                if verbose:
+                    print("test for inversion")
                 try:
                     ci = cov.inv
                 except:
                     df_zone.to_csv("prior_builder_crash.csv")
-                    raise Exception("error inverting cov {0}".
-                                    format(cov.row_names[:3]))
+                    raise Exception("error inverting cov {0}".format(cov.row_names[:3]))
 
-                    if verbose: print('replace in full cov')
+                    if verbose:
+                        print("replace in full cov")
                 full_cov.replace(cov)
                 # d = np.diag(full_cov.x)
                 # idx = np.argwhere(d==0.0)
                 # for i in idx:
                 #     print(full_cov.names[i])
     return full_cov
+
 
 def _rmse(v1, v2):
     """return root mean squared error between v1 and v2
@@ -321,9 +359,12 @@ def _rmse(v1, v2):
         scalar: root mean squared error of v1,v2
     """
 
-    return np.sqrt(np.mean(np.square(v1-v2)))
+    return np.sqrt(np.mean(np.square(v1 - v2)))
 
-def calc_observation_ensemble_quantiles(ens, pst, quantiles, subset_obsnames=None, subset_obsgroups=None):
+
+def calc_observation_ensemble_quantiles(
+    ens, pst, quantiles, subset_obsnames=None, subset_obsgroups=None
+):
     """Given an observation ensemble, and requested quantiles, this function calculates the requested
        quantile point-by-point in the ensemble. This resulting set of values does not, however, correspond
        to a single realization in the ensemble. So, this function finds the minimum weighted squared 
@@ -343,8 +384,8 @@ def calc_observation_ensemble_quantiles(ens, pst, quantiles, subset_obsnames=Non
         quantile_idx (dictionary): dictionary with keys being quantiles and values being realizations
                                 corresponding to each realization
     """
-    #TODO: handle zero weights due to PDC
-    
+    # TODO: handle zero weights due to PDC
+
     quantile_idx = {}
     # make sure quantiles and subset names and groups are lists
     if not isinstance(quantiles, list):
@@ -353,60 +394,72 @@ def calc_observation_ensemble_quantiles(ens, pst, quantiles, subset_obsnames=Non
         subset_obsnames = list(subset_obsnames)
     if not isinstance(subset_obsgroups, list) and subset_obsgroups is not None:
         subset_obsgroups = list(subset_obsgroups)
-    
-        
-    if 'real_name' in ens.columns:
-        ens.set_index('real_name')
+
+    if "real_name" in ens.columns:
+        ens.set_index("real_name")
     # if 'base' real was lost, then the index is of type int. needs to be string later so set here
     ens.index = [str(i) for i in ens.index]
     if not isinstance(pst, pyemu.Pst):
-        raise Exception('pst object must be of type pyemu.Pst')
- 
+        raise Exception("pst object must be of type pyemu.Pst")
+
     # get the observation data
     obs = pst.observation_data.copy()
-    
+
     # confirm that the indices and weights line up
-    if  False in np.unique(ens.columns == obs.index):
-        raise Exception('ens and pst observation names do not align')
-    
+    if False in np.unique(ens.columns == obs.index):
+        raise Exception("ens and pst observation names do not align")
+
     # deal with any subsetting of observations that isn't handled through weights
-    
+
     trimnames = obs.index.values
     if subset_obsgroups is not None and subset_obsnames is not None:
-        raise Exception('can only specify information in one of subset_obsnames of subset_obsgroups. not both')
-    
+        raise Exception(
+            "can only specify information in one of subset_obsnames of subset_obsgroups. not both"
+        )
+
     if subset_obsnames is not None:
         trimnames = subset_obsnames
         if len(set(trimnames) - set(obs.index.values)) != 0:
-            raise Exception('the following names in subset_obsnames are not in the ensemble:\n' +
-                            ['{}\n'.format(i) for i in (set(trimnames) - set(obs.index.values))])
+            raise Exception(
+                "the following names in subset_obsnames are not in the ensemble:\n"
+                + ["{}\n".format(i) for i in (set(trimnames) - set(obs.index.values))]
+            )
 
-    
     if subset_obsgroups is not None:
         if len((set(subset_obsgroups) - set(pst.obs_groups))) != 0:
-            raise Exception('the following groups in subset_obsgroups are not in pst:\n' +
-                ['{}\n'.format(i) for i in (set(subset_obsgroups) - set(pst.obs_groups))])
+            raise Exception(
+                "the following groups in subset_obsgroups are not in pst:\n"
+                + [
+                    "{}\n".format(i)
+                    for i in (set(subset_obsgroups) - set(pst.obs_groups))
+                ]
+            )
 
         trimnames = obs.loc[obs.obgnme.isin(subset_obsgroups)].obsnme.tolist()
         if len((set(trimnames) - set(obs.index.values))) != 0:
-            raise Exception('the following names in subset_obsnames are not in the ensemble:\n' +
-                ['{}\n'.format(i) for i in (set(trimnames) - set(obs.index.values))])
-    # trim the data to subsets (or complete )    
+            raise Exception(
+                "the following names in subset_obsnames are not in the ensemble:\n"
+                + ["{}\n".format(i) for i in (set(trimnames) - set(obs.index.values))]
+            )
+    # trim the data to subsets (or complete )
     ens_eval = ens[trimnames].copy()
     weights = obs.loc[trimnames].weight.values
-    
+
     for cq in quantiles:
         # calculate the point-wise quantile values
         qfit = np.quantile(ens_eval, cq, axis=0)
         # calculate the weighted distance between all reals and the desired quantile
-        qreal = np.argmin(np.linalg.norm([(i - qfit)*weights for i in ens_eval.values], axis=1))
-        quantile_idx['q{}'.format(cq)] = qreal
+        qreal = np.argmin(
+            np.linalg.norm([(i - qfit) * weights for i in ens_eval.values], axis=1)
+        )
+        quantile_idx["q{}".format(cq)] = qreal
         ens = ens.append(ens.iloc[qreal])
         idx = ens.index.values
-        idx[-1] = 'q{}'.format(cq)
+        idx[-1] = "q{}".format(cq)
         ens.set_index(idx, inplace=True)
 
     return ens, quantile_idx
+
 
 def calc_rmse_ensemble(ens, pst, bygroups=True, subset_realizations=None):
     """Calculates RMSE (without weights) to quantify fit to observations for ensemble members
@@ -422,38 +475,40 @@ def calc_rmse_ensemble(ens, pst, bygroups=True, subset_realizations=None):
         rmse (pandas DataFrame object): rows are realizations. Columns are groups. Content is RMSE
     """
 
-        #TODO: handle zero weights due to PDC
-    
+    # TODO: handle zero weights due to PDC
+
     # make sure subset_realizations is a list
     if not isinstance(subset_realizations, list) and subset_realizations is not None:
         subset_realizations = list(subset_realizations)
-        
-    if 'real_name' in ens.columns:
-        ens.set_index('real_name')
+
+    if "real_name" in ens.columns:
+        ens.set_index("real_name")
     if not isinstance(pst, pyemu.Pst):
-        raise Exception('pst object must be of type pyemu.Pst')
- 
+        raise Exception("pst object must be of type pyemu.Pst")
+
     # get the observation data
     obs = pst.observation_data.copy()
-    
-    # confirm that the indices and observations line up
-    if  False in np.unique(ens.columns == obs.index):
-        raise Exception('ens and pst observation names do not align')
 
-    
+    # confirm that the indices and observations line up
+    if False in np.unique(ens.columns == obs.index):
+        raise Exception("ens and pst observation names do not align")
+
     rmse = pd.DataFrame(index=ens.index)
     if subset_realizations is not None:
         rmse = rmse.loc[subset_realizations]
-    
+
     # calculate the rmse total first
-    rmse['total'] = [_rmse(ens.loc[i], obs.obsval) for i in rmse.index]
-    
+    rmse["total"] = [_rmse(ens.loc[i], obs.obsval) for i in rmse.index]
+
     # if bygroups, do the groups as columns
     if bygroups is True:
         for cg in obs.obgnme.unique():
             cnames = obs.loc[obs.obgnme == cg].obsnme
-            rmse[cg] = [_rmse(ens.loc[i][cnames], obs.loc[cnames].obsval) for i in rmse.index]
+            rmse[cg] = [
+                _rmse(ens.loc[i][cnames], obs.loc[cnames].obsval) for i in rmse.index
+            ]
     return rmse
+
 
 def _condition_on_par_knowledge(cov, par_knowledge_dict):
     """  experimental function to include conditional prior information
@@ -465,8 +520,9 @@ def _condition_on_par_knowledge(cov, par_knowledge_dict):
         if parnme not in cov.row_names:
             missing.append(parnme)
     if len(missing):
-        raise Exception("par knowledge dict parameters not found: {0}". \
-                        format(','.join(missing)))
+        raise Exception(
+            "par knowledge dict parameters not found: {0}".format(",".join(missing))
+        )
     # build the selection matrix and sigma epsilon
     # sel = pyemu.Cov(x=np.identity(cov.shape[0]),names=cov.row_names)
     sel = cov.zero2d
@@ -493,10 +549,16 @@ def _condition_on_par_knowledge(cov, par_knowledge_dict):
     return new_cov_diag
 
 
-def kl_setup(num_eig, sr, struct, prefixes,
-             factors_file="kl_factors.dat",
-             islog=True, basis_file=None,
-             tpl_dir="."):
+def kl_setup(
+    num_eig,
+    sr,
+    struct,
+    prefixes,
+    factors_file="kl_factors.dat",
+    islog=True,
+    basis_file=None,
+    tpl_dir=".",
+):
     """setup a karhuenen-Loeve based parameterization for a given
     geostatistical structure.
 
@@ -553,9 +615,9 @@ def kl_setup(num_eig, sr, struct, prefixes,
     for i in range(sr.nrow):
         names.extend(["i{0:04d}j{1:04d}".format(i, j) for j in range(sr.ncol)])
 
-    cov = gs.covariance_matrix(sr.xcentergrid.flatten(),
-                               sr.ycentergrid.flatten(),
-                               names=names)
+    cov = gs.covariance_matrix(
+        sr.xcentergrid.flatten(), sr.ycentergrid.flatten(), names=names
+    )
 
     eig_names = ["eig_{0:04d}".format(i) for i in range(cov.shape[0])]
     trunc_basis = cov.u
@@ -573,8 +635,9 @@ def kl_setup(num_eig, sr, struct, prefixes,
     pp_df.loc[:, "parval1"] = 1.0
     pyemu.pp_utils.write_pp_file(os.path.join("temp.dat"), pp_df)
 
-    _eigen_basis_to_factor_file(sr.nrow, sr.ncol, trunc_basis,
-                                factors_file=factors_file, islog=islog)
+    _eigen_basis_to_factor_file(
+        sr.nrow, sr.ncol, trunc_basis, factors_file=factors_file, islog=islog
+    )
     dfs = []
     for prefix in prefixes:
         tpl_file = os.path.join(tpl_dir, "{0}.dat_kl.tpl".format(prefix))
@@ -615,7 +678,7 @@ def kl_setup(num_eig, sr, struct, prefixes,
 
 def _eigen_basis_to_factor_file(nrow, ncol, basis, factors_file, islog=True):
     assert nrow * ncol == basis.shape[0]
-    with open(factors_file, 'w') as f:
+    with open(factors_file, "w") as f:
         f.write("junk.dat\n")
         f.write("junk.zone.dat\n")
         f.write("{0} {1}\n".format(ncol, nrow))
@@ -626,7 +689,10 @@ def _eigen_basis_to_factor_file(nrow, ncol, basis, factors_file, islog=True):
             t = 1
         for i in range(nrow * ncol):
             f.write("{0} {1} {2} {3:8.5e}".format(i + 1, t, basis.shape[1], 0.0))
-            [f.write(" {0} {1:12.8g} ".format(i + 1, w)) for i, w in enumerate(basis.x[i, :])]
+            [
+                f.write(" {0} {1:12.8g} ".format(i + 1, w))
+                for i, w in enumerate(basis.x[i, :])
+            ]
             f.write("\n")
 
 
@@ -656,8 +722,7 @@ def kl_apply(par_file, basis_file, par_to_file_dict, arr_shape):
 
     df.loc[:, "prefix"] = df.name.apply(lambda x: x[:-4])
     for prefix in df.prefix.unique():
-        assert prefix in par_to_file_dict.keys(), "missing prefix:{0}". \
-            format(prefix)
+        assert prefix in par_to_file_dict.keys(), "missing prefix:{0}".format(prefix)
     basis = pyemu.Matrix.from_binary(basis_file)
     assert basis.shape[1] == arr_shape[0] * arr_shape[1]
     arr_min = 1.0e-10  # a temp hack
@@ -668,15 +733,14 @@ def kl_apply(par_file, basis_file, par_to_file_dict, arr_shape):
     for prefix, filename in par_to_file_dict.items():
         factors = pyemu.Matrix.from_dataframe(df.loc[df.prefix == prefix, ["new_val"]])
         factors.autoalign = False
-        basis_prefix = basis[:factors.shape[0], :]
+        basis_prefix = basis[: factors.shape[0], :]
         arr = (factors.T * basis_prefix).x.reshape(arr_shape)
         # arr += means.loc[means.prefix==prefix,"new_val"].values
         arr[arr < arr_min] = arr_min
         np.savetxt(filename, arr, fmt="%20.8E")
 
 
-def zero_order_tikhonov(pst, parbounds=True, par_groups=None,
-                        reset=True):
+def zero_order_tikhonov(pst, parbounds=True, par_groups=None, reset=True):
     """setup preferred-value regularization in a pest control file.
 
     Args:
@@ -707,8 +771,7 @@ def zero_order_tikhonov(pst, parbounds=True, par_groups=None,
             pt = pt.decode()
         except:
             pass
-        if pt not in ["tied", "fixed"] and \
-                row["pargp"] in par_groups:
+        if pt not in ["tied", "fixed"] and row["pargp"] in par_groups:
             pilbl.append(row["parnme"])
             weight.append(1.0)
             ogp_name = "regul" + row["pargp"]
@@ -722,15 +785,13 @@ def zero_order_tikhonov(pst, parbounds=True, par_groups=None,
             equation.append(eq)
 
     if reset:
-        pst.prior_information = pd.DataFrame({"pilbl": pilbl,
-                                              "equation": equation,
-                                              "obgnme": obgnme,
-                                              "weight": weight})
+        pst.prior_information = pd.DataFrame(
+            {"pilbl": pilbl, "equation": equation, "obgnme": obgnme, "weight": weight}
+        )
     else:
-        pi = pd.DataFrame({"pilbl": pilbl,
-                           "equation": equation,
-                           "obgnme": obgnme,
-                           "weight": weight})
+        pi = pd.DataFrame(
+            {"pilbl": pilbl, "equation": equation, "obgnme": obgnme, "weight": weight}
+        )
         pst.prior_information = pst.prior_information.append(pi)
     if parbounds:
         _regweight_from_parbound(pst)
@@ -757,8 +818,12 @@ def _regweight_from_parbound(pst):
                 weight = 1.0 / (ubnd - lbnd)
             pst.prior_information.loc[parnme, "weight"] = weight
         else:
-            print("prior information name does not correspond" + \
-                  " to a parameter: " + str(parnme))
+            print(
+                "prior information name does not correspond"
+                + " to a parameter: "
+                + str(parnme)
+            )
+
 
 def first_order_pearson_tikhonov(pst, cov, reset=True, abs_drop_tol=1.0e-3):
     """setup preferred-difference regularization from a covariance matrix.
@@ -802,7 +867,7 @@ def first_order_pearson_tikhonov(pst, cov, reset=True, abs_drop_tol=1.0e-3):
     for i, iname in enumerate(cc_mat.row_names):
         if iname not in sadj_names:
             continue
-        for j, jname in enumerate(cc_mat.row_names[i + 1:]):
+        for j, jname in enumerate(cc_mat.row_names[i + 1 :]):
             if jname not in sadj_names:
                 continue
             # print(i,iname,i+j+1,jname)
@@ -816,13 +881,13 @@ def first_order_pearson_tikhonov(pst, cov, reset=True, abs_drop_tol=1.0e-3):
             jjname = str(jname)
             if str(ptrans[jname]) == "log":
                 jjname = "log(" + jname + ")"
-            equation.append("1.0 * {0} - 1.0 * {1} = 0.0". \
-                            format(iiname, jjname))
+            equation.append("1.0 * {0} - 1.0 * {1} = 0.0".format(iiname, jjname))
             weight.append(cc)
             obgnme.append("regul_cc")
             pi_num += 1
-    df = pd.DataFrame({"pilbl": pilbl, "equation": equation,
-                       "obgnme": obgnme, "weight": weight})
+    df = pd.DataFrame(
+        {"pilbl": pilbl, "equation": equation, "obgnme": obgnme, "weight": weight}
+    )
     df.index = df.pilbl
     if reset:
         pst.prior_information = df
@@ -833,7 +898,7 @@ def first_order_pearson_tikhonov(pst, cov, reset=True, abs_drop_tol=1.0e-3):
         pst.control_data.pestmode = "regularization"
 
 
-def simple_tpl_from_pars(parnames, tplfilename='model.input.tpl'):
+def simple_tpl_from_pars(parnames, tplfilename="model.input.tpl"):
     """Make a simple template file from a list of parameter names.
 
     Args:
@@ -846,12 +911,12 @@ def simple_tpl_from_pars(parnames, tplfilename='model.input.tpl'):
         writes a file `tplfilename` with each parameter name in `parnames` on a line
 
     """
-    with open(tplfilename, 'w') as ofp:
-        ofp.write('ptf ~\n')
-        [ofp.write('~{0:^12}~\n'.format(cname)) for cname in parnames]
+    with open(tplfilename, "w") as ofp:
+        ofp.write("ptf ~\n")
+        [ofp.write("~{0:^12}~\n".format(cname)) for cname in parnames]
 
 
-def simple_ins_from_obs(obsnames, insfilename='model.output.ins'):
+def simple_ins_from_obs(obsnames, insfilename="model.output.ins"):
     """write a simple instruction file that reads the values named
      in obsnames in order, one per line from a model output file
 
@@ -866,13 +931,14 @@ def simple_ins_from_obs(obsnames, insfilename='model.output.ins'):
         of a single line
 
     """
-    with open(insfilename, 'w') as ofp:
-        ofp.write('pif ~\n')
-        [ofp.write('!{0}!\n'.format(cob)) for cob in obsnames]
+    with open(insfilename, "w") as ofp:
+        ofp.write("pif ~\n")
+        [ofp.write("!{0}!\n".format(cob)) for cob in obsnames]
 
 
-def pst_from_parnames_obsnames(parnames, obsnames,
-                               tplfilename='model.input.tpl', insfilename='model.output.ins'):
+def pst_from_parnames_obsnames(
+    parnames, obsnames, tplfilename="model.input.tpl", insfilename="model.output.ins"
+):
     """Creates a Pst object from a list of parameter names and a list of observation names.
 
     Args:
@@ -888,10 +954,12 @@ def pst_from_parnames_obsnames(parnames, obsnames,
     simple_tpl_from_pars(parnames, tplfilename)
     simple_ins_from_obs(obsnames, insfilename)
 
-    modelinputfilename = tplfilename.replace('.tpl', '')
-    modeloutputfilename = insfilename.replace('.ins', '')
+    modelinputfilename = tplfilename.replace(".tpl", "")
+    modeloutputfilename = insfilename.replace(".ins", "")
 
-    return pyemu.Pst.from_io_files(tplfilename, modelinputfilename, insfilename, modeloutputfilename)
+    return pyemu.Pst.from_io_files(
+        tplfilename, modelinputfilename, insfilename, modeloutputfilename
+    )
 
 
 def read_pestpp_runstorage(filename, irun=0, with_metadata=False):
@@ -913,8 +981,14 @@ def read_pestpp_runstorage(filename, irun=0, with_metadata=False):
 
     """
 
-    header_dtype = np.dtype([("n_runs", np.int64), ("run_size", np.int64), ("p_name_size", np.int64),
-                             ("o_name_size", np.int64)])
+    header_dtype = np.dtype(
+        [
+            ("n_runs", np.int64),
+            ("run_size", np.int64),
+            ("p_name_size", np.int64),
+            ("o_name_size", np.int64),
+        ]
+    )
 
     try:
         irun = int(irun)
@@ -922,8 +996,9 @@ def read_pestpp_runstorage(filename, irun=0, with_metadata=False):
         if irun.lower() == "all":
             irun = irun.lower()
         else:
-            raise Exception("unrecognized 'irun': should be int or 'all', not '{0}'".
-                            format(irun))
+            raise Exception(
+                "unrecognized 'irun': should be int or 'all', not '{0}'".format(irun)
+            )
 
     def status_str(r_status):
         if r_status == 0:
@@ -939,10 +1014,20 @@ def read_pestpp_runstorage(filename, irun=0, with_metadata=False):
     f = open(filename, "rb")
     header = np.fromfile(f, dtype=header_dtype, count=1)
     p_name_size, o_name_size = header["p_name_size"][0], header["o_name_size"][0]
-    par_names = struct.unpack('{0}s'.format(p_name_size),
-                              f.read(p_name_size))[0].strip().lower().decode().split('\0')[:-1]
-    obs_names = struct.unpack('{0}s'.format(o_name_size),
-                              f.read(o_name_size))[0].strip().lower().decode().split('\0')[:-1]
+    par_names = (
+        struct.unpack("{0}s".format(p_name_size), f.read(p_name_size))[0]
+        .strip()
+        .lower()
+        .decode()
+        .split("\0")[:-1]
+    )
+    obs_names = (
+        struct.unpack("{0}s".format(o_name_size), f.read(o_name_size))[0]
+        .strip()
+        .lower()
+        .decode()
+        .split("\0")[:-1]
+    )
     n_runs, run_size = header["n_runs"][0], header["run_size"][0]
     run_start = f.tell()
 
@@ -1006,24 +1091,21 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
         `pyemu.Jco`: a jacobian matrix constructed from the run results and
         pest control file information.
 
-
-    TODO:
-        Check rnj file contains transformed par vals (i.e., in model input space)
-
-        Currently only returns pyemu.Jco; doesn't write jco file due to memory
-        issues associated with very large problems
-
-        Compare rnj and jco from Freyberg problem in autotests
-
     """
 
-    header_dtype = np.dtype([("n_runs", np.int64), ("run_size", np.int64), ("p_name_size", np.int64),
-                             ("o_name_size", np.int64)])
+    header_dtype = np.dtype(
+        [
+            ("n_runs", np.int64),
+            ("run_size", np.int64),
+            ("p_name_size", np.int64),
+            ("o_name_size", np.int64),
+        ]
+    )
 
     pst = pyemu.Pst(pst_filename)
     par = pst.parameter_data
     log_pars = set(par.loc[par.partrans == "log", "parnme"].values)
-    with open(rnj_filename, 'rb') as f:
+    with open(rnj_filename, "rb") as f:
         header = np.fromfile(f, dtype=header_dtype, count=1)
 
     try:
@@ -1041,7 +1123,9 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
         par_diff = base_par - par_df
         # check only one non-zero element per col(par)
         if len(par_diff[par_diff.parval1 != 0]) > 1:
-            raise Exception("more than one par diff - looks like the file wasn't created during jco filling...")
+            raise Exception(
+                "more than one par diff - looks like the file wasn't created during jco filling..."
+            )
         parnme = par_diff[par_diff.parval1 != 0].index[0]
         parval = par_diff.parval1.loc[parnme]
 
@@ -1049,11 +1133,18 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
         jco_col = obs_diff / parval
         # some tracking, checks
         print("processing par {0}: {1}...".format(irun, parnme))
-        print("%nzsens: {0}%...".format((jco_col[abs(jco_col.obsval) > 1e-8].shape[0] / jco_col.shape[0]) * 100.))
+        print(
+            "%nzsens: {0}%...".format(
+                (jco_col[abs(jco_col.obsval) > 1e-8].shape[0] / jco_col.shape[0])
+                * 100.0
+            )
+        )
 
         jco_cols[parnme] = jco_col.obsval
 
-    jco_cols = pd.DataFrame.from_records(data=jco_cols, index=list(obs_diff.index.values))
+    jco_cols = pd.DataFrame.from_records(
+        data=jco_cols, index=list(obs_diff.index.values)
+    )
 
     jco_cols = pyemu.Jco.from_dataframe(jco_cols)
 
@@ -1064,13 +1155,13 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
     return jco_cols
 
 
-def parse_dir_for_io_files(d,prepend_path=False):
+def parse_dir_for_io_files(d, prepend_path=False):
     """ find template/input file pairs and instruction file/output file
     pairs by extension.
 
     Args:
         d (`str`): directory to search for interface files
-        prepend_path (`bool, optional): flag to prepend `d` to each file name.
+        prepend_path (`bool`, optional): flag to prepend `d` to each file name.
             Default is False
 
     Note:
@@ -1095,7 +1186,7 @@ def parse_dir_for_io_files(d,prepend_path=False):
     ins_files = [f for f in files if f.endswith(".ins")]
     out_files = [f.replace(".ins", "") for f in ins_files]
     if prepend_path:
-        tpl_files = [os.path.join(d,item) for item in tpl_files]
+        tpl_files = [os.path.join(d, item) for item in tpl_files]
         in_files = [os.path.join(d, item) for item in in_files]
         ins_files = [os.path.join(d, item) for item in ins_files]
         out_files = [os.path.join(d, item) for item in out_files]
@@ -1103,8 +1194,9 @@ def parse_dir_for_io_files(d,prepend_path=False):
     return tpl_files, in_files, ins_files, out_files
 
 
-def pst_from_io_files(tpl_files, in_files, ins_files, out_files,
-                      pst_filename=None, pst_path=None):
+def pst_from_io_files(
+    tpl_files, in_files, ins_files, out_files, pst_filename=None, pst_path=None
+):
     """ create a Pst instance from model interface files.
 
     Args:
@@ -1115,9 +1207,9 @@ def pst_from_io_files(tpl_files, in_files, ins_files, out_files,
         pst_filename (`str`): name of control file to write.  If None, no file is written.
             Default is None
         pst_path (`str`): the path to append to the template_file and in_file in the control file.  If
-                not None, then any existing path in front of the template or in file is split off
-                and pst_path is prepended.  If python is being run in a directory other than where the control
-                file will reside, it is useful to pass `pst_path` as `.`.  Default is None
+            not None, then any existing path in front of the template or in file is split off
+            and pst_path is prepended.  If python is being run in a directory other than where the control
+            file will reside, it is useful to pass `pst_path` as `.`.  Default is None
 
 
     Returns:
@@ -1131,10 +1223,6 @@ def pst_from_io_files(tpl_files, in_files, ins_files, out_files,
         to set somewhat meaningful observation values
 
         all file paths are relatively to where python is running.
-
-    TODO:
-        add pst_path option
-        make in_files and out_files optional
 
     Example::
 
@@ -1177,7 +1265,7 @@ def pst_from_io_files(tpl_files, in_files, ins_files, out_files,
     new_pst = pyemu.pst_utils.generic_pst(list(par_names), list(obs_names))
 
     if "window" in platform.platform().lower() and pst_path == ".":
-        pst_path = ''
+        pst_path = ""
 
     new_pst.instruction_files = ins_files
     new_pst.output_files = out_files
@@ -1188,15 +1276,22 @@ def pst_from_io_files(tpl_files, in_files, ins_files, out_files,
         new_pst.template_files = tpl_files
         new_pst.input_files = in_files
     else:
-        new_pst.template_files = [os.path.join(
-            pst_path, os.path.split(tpl_file)[-1]) for tpl_file in tpl_files]
-        new_pst.input_files = [os.path.join(
-            pst_path, os.path.split(in_file)[-1]) for in_file in in_files]
+        new_pst.template_files = [
+            os.path.join(pst_path, os.path.split(tpl_file)[-1])
+            for tpl_file in tpl_files
+        ]
+        new_pst.input_files = [
+            os.path.join(pst_path, os.path.split(in_file)[-1]) for in_file in in_files
+        ]
         # now set the true path location to instruction files and output files
-        new_pst.instruction_files = [os.path.join(
-            pst_path, os.path.split(ins_file)[-1]) for ins_file in ins_files]
-        new_pst.output_files = [os.path.join(
-            pst_path, os.path.split(out_file)[-1]) for out_file in out_files]
+        new_pst.instruction_files = [
+            os.path.join(pst_path, os.path.split(ins_file)[-1])
+            for ins_file in ins_files
+        ]
+        new_pst.output_files = [
+            os.path.join(pst_path, os.path.split(out_file)[-1])
+            for out_file in out_files
+        ]
 
     new_pst.try_parse_name_metadata()
     if pst_filename:
@@ -1205,11 +1300,16 @@ def pst_from_io_files(tpl_files, in_files, ins_files, out_files,
     return new_pst
 
 
-wildass_guess_par_bounds_dict = {"hk": [0.01, 100.0], "vka": [0.1, 10.0],
-                                 "sy": [0.25, 1.75], "ss": [0.1, 10.0],
-                                 "cond": [0.01, 100.0], "flux": [0.25, 1.75],
-                                 "rech": [0.9, 1.1], "stage": [0.9, 1.1],
-                                 }
+wildass_guess_par_bounds_dict = {
+    "hk": [0.01, 100.0],
+    "vka": [0.1, 10.0],
+    "sy": [0.25, 1.75],
+    "ss": [0.1, 10.0],
+    "cond": [0.01, 100.0],
+    "flux": [0.25, 1.75],
+    "rech": [0.9, 1.1],
+    "stage": [0.9, 1.1],
+}
 
 
 class PstFromFlopyModel(object):
@@ -1380,19 +1480,49 @@ class PstFromFlopyModel(object):
 
     """
 
-    def __init__(self, model, new_model_ws, org_model_ws=None, pp_props=[], const_props=[],
-                 temporal_bc_props=[], temporal_list_props=[], grid_props=[],
-                 grid_geostruct=None, pp_space=None,
-                 zone_props=[], pp_geostruct=None, par_bounds_dict=None, sfr_pars=False, temporal_sfr_pars=False,
-                 temporal_list_geostruct=None, remove_existing=False, k_zone_dict=None,
-                 mflist_waterbudget=True, mfhyd=True, hds_kperk=[], use_pp_zones=False,
-                 obssim_smp_pairs=None, external_tpl_in_pairs=None,
-                 external_ins_out_pairs=None, extra_pre_cmds=None,
-                 extra_model_cmds=None, extra_post_cmds=None, redirect_forward_output=True,
-                 tmp_files=None, model_exe_name=None, build_prior=True,
-                 sfr_obs=False,
-                 spatial_bc_props=[], spatial_list_props=[], spatial_list_geostruct=None,
-                 hfb_pars=False, kl_props=None, kl_num_eig=100, kl_geostruct=None):
+    def __init__(
+        self,
+        model,
+        new_model_ws,
+        org_model_ws=None,
+        pp_props=[],
+        const_props=[],
+        temporal_bc_props=[],
+        temporal_list_props=[],
+        grid_props=[],
+        grid_geostruct=None,
+        pp_space=None,
+        zone_props=[],
+        pp_geostruct=None,
+        par_bounds_dict=None,
+        sfr_pars=False,
+        temporal_sfr_pars=False,
+        temporal_list_geostruct=None,
+        remove_existing=False,
+        k_zone_dict=None,
+        mflist_waterbudget=True,
+        mfhyd=True,
+        hds_kperk=[],
+        use_pp_zones=False,
+        obssim_smp_pairs=None,
+        external_tpl_in_pairs=None,
+        external_ins_out_pairs=None,
+        extra_pre_cmds=None,
+        extra_model_cmds=None,
+        extra_post_cmds=None,
+        redirect_forward_output=True,
+        tmp_files=None,
+        model_exe_name=None,
+        build_prior=True,
+        sfr_obs=False,
+        spatial_bc_props=[],
+        spatial_list_props=[],
+        spatial_list_geostruct=None,
+        hfb_pars=False,
+        kl_props=None,
+        kl_num_eig=100,
+        kl_geostruct=None,
+    ):
 
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
@@ -1436,30 +1566,45 @@ class PstFromFlopyModel(object):
 
         if len(temporal_bc_props) > 0:
             if len(temporal_list_props) > 0:
-                self.logger.lraise("temporal_bc_props and temporal_list_props. " + \
-                                   "temporal_bc_props is deprecated and replaced by temporal_list_props")
-            self.logger.warn("temporal_bc_props is deprecated and replaced by temporal_list_props")
+                self.logger.lraise(
+                    "temporal_bc_props and temporal_list_props. "
+                    + "temporal_bc_props is deprecated and replaced by temporal_list_props"
+                )
+            self.logger.warn(
+                "temporal_bc_props is deprecated and replaced by temporal_list_props"
+            )
             temporal_list_props = temporal_bc_props
         if len(spatial_bc_props) > 0:
             if len(spatial_list_props) > 0:
-                self.logger.lraise("spatial_bc_props and spatial_list_props. " + \
-                                   "spatial_bc_props is deprecated and replaced by spatial_list_props")
-            self.logger.warn("spatial_bc_props is deprecated and replaced by spatial_list_props")
+                self.logger.lraise(
+                    "spatial_bc_props and spatial_list_props. "
+                    + "spatial_bc_props is deprecated and replaced by spatial_list_props"
+                )
+            self.logger.warn(
+                "spatial_bc_props is deprecated and replaced by spatial_list_props"
+            )
             spatial_list_props = spatial_bc_props
 
         self.temporal_list_props = temporal_list_props
         self.temporal_list_geostruct = temporal_list_geostruct
         if self.temporal_list_geostruct is None:
-            v = pyemu.geostats.ExpVario(contribution=1.0, a=180.0)  # 180 correlation length
-            self.temporal_list_geostruct = pyemu.geostats.GeoStruct(variograms=v, name="temporal_list_geostruct")
+            v = pyemu.geostats.ExpVario(
+                contribution=1.0, a=180.0
+            )  # 180 correlation length
+            self.temporal_list_geostruct = pyemu.geostats.GeoStruct(
+                variograms=v, name="temporal_list_geostruct"
+            )
 
         self.spatial_list_props = spatial_list_props
         self.spatial_list_geostruct = spatial_list_geostruct
         if self.spatial_list_geostruct is None:
-            dist = 10 * float(max(self.m.dis.delr.array.max(),
-                                  self.m.dis.delc.array.max()))
+            dist = 10 * float(
+                max(self.m.dis.delr.array.max(), self.m.dis.delc.array.max())
+            )
             v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
-            self.spatial_list_geostruct = pyemu.geostats.GeoStruct(variograms=v, name="spatial_list_geostruct")
+            self.spatial_list_geostruct = pyemu.geostats.GeoStruct(
+                variograms=v, name="spatial_list_geostruct"
+            )
 
         self.obssim_smp_pairs = obssim_smp_pairs
         self.hds_kperk = hds_kperk
@@ -1475,7 +1620,9 @@ class PstFromFlopyModel(object):
             self.tmp_files.extend(tmp_files)
 
         if k_zone_dict is None:
-            self.k_zone_dict = {k: self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)}
+            self.k_zone_dict = {
+                k: self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)
+            }
         else:
             # check if k_zone_dict is a dictionary of dictionaries
             if np.all([isinstance(v, dict) for v in k_zone_dict.values()]):
@@ -1483,25 +1630,37 @@ class PstFromFlopyModel(object):
                 for par_key in k_zone_dict.keys():
                     for k, arr in k_zone_dict[par_key].items():
                         if k not in np.arange(self.m.nlay):
-                            self.logger.lraise("k_zone_dict for par {1}, layer index not in nlay:{0}".
-                                               format(k, par_key))
+                            self.logger.lraise(
+                                "k_zone_dict for par {1}, layer index not in nlay:{0}".format(
+                                    k, par_key
+                                )
+                            )
                         if arr.shape != (self.m.nrow, self.m.ncol):
-                            self.logger.lraise("k_zone_dict arr for k {0} for par{2} has wrong shape:{1}".
-                                               format(k, arr.shape, par_key))
+                            self.logger.lraise(
+                                "k_zone_dict arr for k {0} for par{2} has wrong shape:{1}".format(
+                                    k, arr.shape, par_key
+                                )
+                            )
             else:
                 for k, arr in k_zone_dict.items():
                     if k not in np.arange(self.m.nlay):
-                        self.logger.lraise("k_zone_dict layer index not in nlay:{0}".
-                                           format(k))
+                        self.logger.lraise(
+                            "k_zone_dict layer index not in nlay:{0}".format(k)
+                        )
                     if arr.shape != (self.m.nrow, self.m.ncol):
-                        self.logger.lraise("k_zone_dict arr for k {0} has wrong shape:{1}".
-                                           format(k, arr.shape))
+                        self.logger.lraise(
+                            "k_zone_dict arr for k {0} has wrong shape:{1}".format(
+                                k, arr.shape
+                            )
+                        )
             self.k_zone_dict = k_zone_dict
 
         # add any extra commands to the forward run lines
 
-        for alist, ilist in zip([self.frun_pre_lines, self.frun_model_lines, self.frun_post_lines],
-                                [extra_pre_cmds, extra_model_cmds, extra_post_cmds]):
+        for alist, ilist in zip(
+            [self.frun_pre_lines, self.frun_model_lines, self.frun_post_lines],
+            [extra_pre_cmds, extra_model_cmds, extra_post_cmds],
+        ):
             if ilist is None:
                 continue
 
@@ -1515,11 +1674,17 @@ class PstFromFlopyModel(object):
 
         if model_exe_name is None:
             model_exe_name = self.m.exe_name
-            self.logger.warn("using flopy binary to execute the model:{0}".format(model))
+            self.logger.warn(
+                "using flopy binary to execute the model:{0}".format(model)
+            )
         if redirect_forward_output:
-            line = "pyemu.os_utils.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(model_exe_name, self.m.namefile)
+            line = "pyemu.os_utils.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(
+                model_exe_name, self.m.namefile
+            )
         else:
-            line = "pyemu.os_utils.run('{0} {1} ')".format(model_exe_name, self.m.namefile)
+            line = "pyemu.os_utils.run('{0} {1} ')".format(
+                model_exe_name, self.m.namefile
+            )
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_model_lines.append(line)
 
@@ -1559,16 +1724,26 @@ class PstFromFlopyModel(object):
             self.parcov = self.build_prior()
         else:
             self.parcov = None
-        self.log("saving intermediate _setup_<> dfs into {0}".
-                 format(self.m.model_ws))
+        self.log("saving intermediate _setup_<> dfs into {0}".format(self.m.model_ws))
         for tag, df in self.par_dfs.items():
-            df.to_csv(os.path.join(self.m.model_ws, "_setup_par_{0}_{1}.csv".
-                                   format(tag.replace(" ", '_'), self.pst_name)))
+            df.to_csv(
+                os.path.join(
+                    self.m.model_ws,
+                    "_setup_par_{0}_{1}.csv".format(
+                        tag.replace(" ", "_"), self.pst_name
+                    ),
+                )
+            )
         for tag, df in self.obs_dfs.items():
-            df.to_csv(os.path.join(self.m.model_ws, "_setup_obs_{0}_{1}.csv".
-                                   format(tag.replace(" ", '_'), self.pst_name)))
-        self.log("saving intermediate _setup_<> dfs into {0}".
-                 format(self.m.model_ws))
+            df.to_csv(
+                os.path.join(
+                    self.m.model_ws,
+                    "_setup_obs_{0}_{1}.csv".format(
+                        tag.replace(" ", "_"), self.pst_name
+                    ),
+                )
+            )
+        self.log("saving intermediate _setup_<> dfs into {0}".format(self.m.model_ws))
 
         self.logger.statement("all done")
 
@@ -1579,18 +1754,29 @@ class PstFromFlopyModel(object):
 
         if self.m.sfr is None:
             self.logger.lraise("no sfr package found...")
-        org_sfr_out_file = os.path.join(self.org_model_ws, "{0}.sfr.out".format(self.m.name))
+        org_sfr_out_file = os.path.join(
+            self.org_model_ws, "{0}.sfr.out".format(self.m.name)
+        )
         if not os.path.exists(org_sfr_out_file):
-            self.logger.lraise("setup_sfr_obs() error: could not locate existing sfr out file: {0}".
-                               format(org_sfr_out_file))
-        new_sfr_out_file = os.path.join(self.m.model_ws, os.path.split(org_sfr_out_file)[-1])
+            self.logger.lraise(
+                "setup_sfr_obs() error: could not locate existing sfr out file: {0}".format(
+                    org_sfr_out_file
+                )
+            )
+        new_sfr_out_file = os.path.join(
+            self.m.model_ws, os.path.split(org_sfr_out_file)[-1]
+        )
         shutil.copy2(org_sfr_out_file, new_sfr_out_file)
         seg_group_dict = None
         if isinstance(self.sfr_obs, dict):
             seg_group_dict = self.sfr_obs
 
-        df = pyemu.gw_utils.setup_sfr_obs(new_sfr_out_file, seg_group_dict=seg_group_dict,
-                                          model=self.m, include_path=True)
+        df = pyemu.gw_utils.setup_sfr_obs(
+            new_sfr_out_file,
+            seg_group_dict=seg_group_dict,
+            model=self.m,
+            include_path=True,
+        )
         if df is not None:
             self.obs_dfs["sfr"] = df
         self.frun_post_lines.append("pyemu.gw_utils.apply_sfr_obs()")
@@ -1605,8 +1791,8 @@ class PstFromFlopyModel(object):
         seg_pars = True
         par_dfs = {}
         df = pyemu.gw_utils.setup_sfr_seg_parameters(
-            self.m, par_cols=par_cols,
-            include_temporal_pars=include_temporal_pars)  # now just pass model
+            self.m, par_cols=par_cols, include_temporal_pars=include_temporal_pars
+        )  # now just pass model
         # self.par_dfs["sfr"] = df
         if df.empty:
             warnings.warn("No sfr segment parameters have been set up", PyemuWarning)
@@ -1633,7 +1819,10 @@ class PstFromFlopyModel(object):
         if len(par_dfs["sfr"]) > 0:
             self.par_dfs["sfr"] = pd.concat(par_dfs["sfr"])
             self.frun_pre_lines.append(
-                "pyemu.gw_utils.apply_sfr_parameters(seg_pars={0}, reach_pars={1})".format(seg_pars, reach_pars))
+                "pyemu.gw_utils.apply_sfr_parameters(seg_pars={0}, reach_pars={1})".format(
+                    seg_pars, reach_pars
+                )
+            )
         else:
             warnings.warn("No sfr parameters have been set up!", PyemuWarning)
 
@@ -1658,11 +1847,13 @@ class PstFromFlopyModel(object):
         set_dirs = []
         #        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
         #                        len(self.grid_props) > 0:
-        if self.pp_props is not None or \
-                self.zone_props is not None or \
-                self.grid_props is not None or \
-                self.const_props is not None or \
-                self.kl_props is not None:
+        if (
+            self.pp_props is not None
+            or self.zone_props is not None
+            or self.grid_props is not None
+            or self.const_props is not None
+            or self.kl_props is not None
+        ):
             set_dirs.append(self.arr_org)
             set_dirs.append(self.arr_mlt)
         #       if len(self.bc_props) > 0:
@@ -1678,8 +1869,7 @@ class PstFromFlopyModel(object):
                 if self.remove_existing:
                     shutil.rmtree(d, onerror=remove_readonly)
                 else:
-                    raise Exception("dir '{0}' already exists".
-                                    format(d))
+                    raise Exception("dir '{0}' already exists".format(d))
             os.mkdir(d)
             self.log("setting up '{0}' dir".format(d))
 
@@ -1691,8 +1881,11 @@ class PstFromFlopyModel(object):
         """
         split_new_mws = [i for i in os.path.split(new_model_ws) if len(i) > 0]
         if len(split_new_mws) != 1:
-            self.logger.lraise("new_model_ws can only be 1 folder-level deep:{0}".
-                               format(str(split_new_mws)))
+            self.logger.lraise(
+                "new_model_ws can only be 1 folder-level deep:{0}".format(
+                    str(split_new_mws)
+                )
+            )
 
         if isinstance(model, str):
             self.log("loading flopy model")
@@ -1703,8 +1896,9 @@ class PstFromFlopyModel(object):
             # prepare the flopy model
             self.org_model_ws = org_model_ws
             self.new_model_ws = new_model_ws
-            self.m = flopy.modflow.Modflow.load(model, model_ws=org_model_ws,
-                                                check=False, verbose=True, forgive=False)
+            self.m = flopy.modflow.Modflow.load(
+                model, model_ws=org_model_ws, check=False, verbose=True, forgive=False
+            )
             self.log("loading flopy model")
         else:
             self.m = model
@@ -1714,7 +1908,7 @@ class PstFromFlopyModel(object):
         self.log("updating model attributes")
         self.m.array_free_format = True
         self.m.free_format_input = True
-        self.m.external_path = '.'
+        self.m.external_path = "."
         self.log("updating model attributes")
         if os.path.exists(new_model_ws):
             if not self.remove_existing:
@@ -1724,7 +1918,7 @@ class PstFromFlopyModel(object):
                 shutil.rmtree(new_model_ws, onerror=pyemu.os_utils._remove_readonly)
                 time.sleep(1)
         self.m.change_model_ws(new_model_ws, reset_external=True)
-        self.m.exe_name = self.m.exe_name.replace(".exe", '')
+        self.m.exe_name = self.m.exe_name.replace(".exe", "")
         self.m.exe = self.m.version
         self.log("writing new modflow input files")
         self.m.write_input()
@@ -1748,12 +1942,20 @@ class PstFromFlopyModel(object):
         writes generic (ones) multiplier arrays
 
         """
-        par_props = [self.pp_props, self.grid_props,
-                     self.zone_props, self.const_props,
-                     self.kl_props]
-        par_suffixs = [self.pp_suffix, self.gr_suffix,
-                       self.zn_suffix, self.cn_suffix,
-                       self.kl_suffix]
+        par_props = [
+            self.pp_props,
+            self.grid_props,
+            self.zone_props,
+            self.const_props,
+            self.kl_props,
+        ]
+        par_suffixs = [
+            self.pp_suffix,
+            self.gr_suffix,
+            self.zn_suffix,
+            self.cn_suffix,
+            self.kl_suffix,
+        ]
 
         # Need to remove props and suffixes for which no info was provided (e.g. still None)
         del_idx = []
@@ -1761,8 +1963,8 @@ class PstFromFlopyModel(object):
             if cp is None:
                 del_idx.append(i)
         for i in del_idx[::-1]:
-            del (par_props[i])
-            del (par_suffixs[i])
+            del par_props[i]
+            del par_suffixs[i]
 
         mlt_dfs = []
         for par_prop, suffix in zip(par_props, par_suffixs):
@@ -1772,7 +1974,7 @@ class PstFromFlopyModel(object):
             if len(par_prop) == 0:
                 continue
             for pakattr, k_org in par_prop:
-                attr_name = pakattr.split('.')[1]
+                attr_name = pakattr.split(".")[1]
                 pak, attr = self._parse_pakattr(pakattr)
                 ks = np.arange(self.m.nlay)
                 if isinstance(attr, flopy.utils.Transient2d):
@@ -1780,13 +1982,13 @@ class PstFromFlopyModel(object):
                 try:
                     k_parse = self._parse_k(k_org, ks)
                 except Exception as e:
-                    self.logger.lraise("error parsing k {0}:{1}".
-                                       format(k_org, str(e)))
+                    self.logger.lraise("error parsing k {0}:{1}".format(k_org, str(e)))
                 org, mlt, mod, layer = [], [], [], []
                 c = self._get_count(attr_name)
                 mlt_prefix = "{0}{1}".format(attr_name, c)
-                mlt_name = os.path.join(self.arr_mlt, "{0}.dat{1}"
-                                        .format(mlt_prefix, suffix))
+                mlt_name = os.path.join(
+                    self.arr_mlt, "{0}.dat{1}".format(mlt_prefix, suffix)
+                )
                 for k in k_parse:
                     # horrible kludge to avoid passing int64 to flopy
                     # this gift may give again...
@@ -1805,7 +2007,14 @@ class PstFromFlopyModel(object):
                     mod.append(os.path.join(self.m.external_path, fname))
                     mlt.append(mlt_name)
                     org.append(os.path.join(self.arr_org, fname))
-                df = pd.DataFrame({"org_file": org, "mlt_file": mlt, "model_file": mod, "layer": layer})
+                df = pd.DataFrame(
+                    {
+                        "org_file": org,
+                        "mlt_file": mlt,
+                        "model_file": mod,
+                        "layer": layer,
+                    }
+                )
                 df.loc[:, "suffix"] = suffix
                 df.loc[:, "prefix"] = mlt_prefix
                 df.loc[:, "attr_name"] = attr_name
@@ -1820,8 +2029,11 @@ class PstFromFlopyModel(object):
 
         """
         filename = os.path.split(u2d.filename)[-1]
-        np.savetxt(os.path.join(self.m.model_ws, self.arr_org, filename),
-                   u2d.array, fmt="%15.6E")
+        np.savetxt(
+            os.path.join(self.m.model_ws, self.arr_org, filename),
+            u2d.array,
+            fmt="%15.6E",
+        )
         return filename
 
     def _write_const_tpl(self, name, tpl_file, zn_array):
@@ -1829,7 +2041,7 @@ class PstFromFlopyModel(object):
 
         """
         parnme = []
-        with open(os.path.join(self.m.model_ws, tpl_file), 'w') as f:
+        with open(os.path.join(self.m.model_ws, tpl_file), "w") as f:
             f.write("ptf ~\n")
             for i in range(self.m.nrow):
                 for j in range(self.m.ncol):
@@ -1838,15 +2050,16 @@ class PstFromFlopyModel(object):
                     else:
                         pname = "{0}{1}".format(name, self.cn_suffix)
                         if len(pname) > 12:
-                            self.logger.warn("zone pname too long for pest:{0}". \
-                                             format(pname))
+                            self.logger.warn(
+                                "zone pname too long for pest:{0}".format(pname)
+                            )
                         parnme.append(pname)
                         pname = " ~   {0}    ~".format(pname)
                     f.write(pname)
                 f.write("\n")
         df = pd.DataFrame({"parnme": parnme}, index=parnme)
         # df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-        df.loc[:, "pargp"] = "{0}_{1}".format(self.cn_suffix.replace('_', ''), name)
+        df.loc[:, "pargp"] = "{0}_{1}".format(self.cn_suffix.replace("_", ""), name)
         df.loc[:, "tpl"] = tpl_file
         return df
 
@@ -1855,25 +2068,26 @@ class PstFromFlopyModel(object):
 
         """
         parnme, x, y = [], [], []
-        with open(os.path.join(self.m.model_ws, tpl_file), 'w') as f:
+        with open(os.path.join(self.m.model_ws, tpl_file), "w") as f:
             f.write("ptf ~\n")
             for i in range(self.m.nrow):
                 for j in range(self.m.ncol):
                     if zn_array[i, j] < 1:
-                        pname = ' 1.0 '
+                        pname = " 1.0 "
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                         if len(pname) > 12:
-                            self.logger.warn("grid pname too long for pest:{0}". \
-                                             format(pname))
+                            self.logger.warn(
+                                "grid pname too long for pest:{0}".format(pname)
+                            )
                         parnme.append(pname)
-                        pname = ' ~     {0}   ~ '.format(pname)
+                        pname = " ~     {0}   ~ ".format(pname)
                         x.append(self.m.sr.xcentergrid[i, j])
                         y.append(self.m.sr.ycentergrid[i, j])
                     f.write(pname)
                 f.write("\n")
         df = pd.DataFrame({"parnme": parnme, "x": x, "y": y}, index=parnme)
-        df.loc[:, "pargp"] = "{0}{1}".format(self.gr_suffix.replace('_', ''), name)
+        df.loc[:, "pargp"] = "{0}{1}".format(self.gr_suffix.replace("_", ""), name)
         df.loc[:, "tpl"] = tpl_file
         return df
 
@@ -1885,12 +2099,17 @@ class PstFromFlopyModel(object):
             return
 
         if self.grid_geostruct is None:
-            self.logger.warn("grid_geostruct is None," \
-                             " using ExpVario with contribution=1 and a=(max(delc,delr)*10")
-            dist = 10 * float(max(self.m.dis.delr.array.max(),
-                                  self.m.dis.delc.array.max()))
+            self.logger.warn(
+                "grid_geostruct is None,"
+                " using ExpVario with contribution=1 and a=(max(delc,delr)*10"
+            )
+            dist = 10 * float(
+                max(self.m.dis.delr.array.max(), self.m.dis.delc.array.max())
+            )
             v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
-            self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v, name="grid_geostruct", transform="log")
+            self.grid_geostruct = pyemu.geostats.GeoStruct(
+                variograms=v, name="grid_geostruct", transform="log"
+            )
 
     def _pp_prep(self, mlt_df):
         """ prepare pilot point based parameterization
@@ -1903,17 +2122,24 @@ class PstFromFlopyModel(object):
             self.logger.warn("pp_space is None, using 10...\n")
             self.pp_space = 10
         if self.pp_geostruct is None:
-            self.logger.warn("pp_geostruct is None," \
-                             " using ExpVario with contribution=1 and a=(pp_space*max(delr,delc))")
-            pp_dist = self.pp_space * float(max(self.m.dis.delr.array.max(),
-                                                self.m.dis.delc.array.max()))
+            self.logger.warn(
+                "pp_geostruct is None,"
+                " using ExpVario with contribution=1 and a=(pp_space*max(delr,delc))"
+            )
+            pp_dist = self.pp_space * float(
+                max(self.m.dis.delr.array.max(), self.m.dis.delc.array.max())
+            )
             v = pyemu.geostats.ExpVario(contribution=1.0, a=pp_dist)
-            self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v, name="pp_geostruct", transform="log")
+            self.pp_geostruct = pyemu.geostats.GeoStruct(
+                variograms=v, name="pp_geostruct", transform="log"
+            )
 
         pp_df = mlt_df.loc[mlt_df.suffix == self.pp_suffix, :]
         layers = pp_df.layer.unique()
         layers.sort()
-        pp_dict = {l: list(pp_df.loc[pp_df.layer == l, "prefix"].unique()) for l in layers}
+        pp_dict = {
+            l: list(pp_df.loc[pp_df.layer == l, "prefix"].unique()) for l in layers
+        }
         # big assumption here - if prefix is listed more than once, use the lowest layer index
         pp_dict_sort = {}
         for i, l in enumerate(layers):
@@ -1921,7 +2147,7 @@ class PstFromFlopyModel(object):
             pl = list(p)
             pl.sort()
             pp_dict_sort[l] = pl
-            for ll in layers[i + 1:]:
+            for ll in layers[i + 1 :]:
                 pp = set(pp_dict[ll])
                 d = list(pp - p)
                 d.sort()
@@ -1935,20 +2161,28 @@ class PstFromFlopyModel(object):
         if self.use_pp_zones:
             # check if k_zone_dict is a dictionary of dictionaries
             if np.all([isinstance(v, dict) for v in self.k_zone_dict.values()]):
-                ib = {p.split('.')[-1]: k_dict for p, k_dict in self.k_zone_dict.items()}
+                ib = {
+                    p.split(".")[-1]: k_dict for p, k_dict in self.k_zone_dict.items()
+                }
                 for attr in pp_df.attr_name.unique():
-                    if attr not in [p.split('.')[-1] for p in ib.keys()]:
-                        if 'general_zn' not in ib.keys():
-                            warnings.warn("Dictionary of dictionaries passed as zones, {0} not in keys: {1}. "
-                                          "Will use ibound for zones".format(attr, ib.keys()), PyemuWarning)
+                    if attr not in [p.split(".")[-1] for p in ib.keys()]:
+                        if "general_zn" not in ib.keys():
+                            warnings.warn(
+                                "Dictionary of dictionaries passed as zones, {0} not in keys: {1}. "
+                                "Will use ibound for zones".format(attr, ib.keys()),
+                                PyemuWarning,
+                            )
                         else:
                             self.logger.statement(
                                 "Dictionary of dictionaries passed as pp zones, "
-                                "using 'general_zn' for {0}".format(attr))
-                    if 'general_zn' not in ib.keys():
-                        ib['general_zn'] = {k: self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
+                                "using 'general_zn' for {0}".format(attr)
+                            )
+                    if "general_zn" not in ib.keys():
+                        ib["general_zn"] = {
+                            k: self.m.bas6.ibound[k].array for k in range(self.m.nlay)
+                        }
             else:
-                ib = {'general_zn': self.k_zone_dict}
+                ib = {"general_zn": self.k_zone_dict}
         else:
             ib = {}
             for k in range(self.m.nlay):
@@ -1959,30 +2193,35 @@ class PstFromFlopyModel(object):
                 if np.any(i < 0):
                     u, c = np.unique(i[i > 0], return_counts=True)
                     counts = dict(zip(u, c))
-                    mx = -1.0e+10
+                    mx = -1.0e10
                     imx = None
                     for u, c in counts.items():
                         if c > mx:
                             mx = c
                             imx = u
-                    self.logger.warn("resetting negative ibound values for PP zone"+ \
-                                     "array in layer {0} : {1}".format(k+1, u))
-                    i[i<0] = u
+                    self.logger.warn(
+                        "resetting negative ibound values for PP zone"
+                        + "array in layer {0} : {1}".format(k + 1, u)
+                    )
+                    i[i < 0] = u
                 ib[k] = i
-            ib = {'general_zn': ib}
-        pp_df = pyemu.pp_utils.setup_pilotpoints_grid(self.m,
-                                                      ibound=ib,
-                                                      use_ibound_zones=self.use_pp_zones,
-                                                      prefix_dict=pp_dict,
-                                                      every_n_cell=self.pp_space,
-                                                      pp_dir=self.m.model_ws,
-                                                      tpl_dir=self.m.model_ws,
-                                                      shapename=os.path.join(
-                                                          self.m.model_ws, "pp.shp"))
-        self.logger.statement("{0} pilot point parameters created".
-                              format(pp_df.shape[0]))
-        self.logger.statement("pilot point 'pargp':{0}".
-                              format(','.join(pp_df.pargp.unique())))
+            ib = {"general_zn": ib}
+        pp_df = pyemu.pp_utils.setup_pilotpoints_grid(
+            self.m,
+            ibound=ib,
+            use_ibound_zones=self.use_pp_zones,
+            prefix_dict=pp_dict,
+            every_n_cell=self.pp_space,
+            pp_dir=self.m.model_ws,
+            tpl_dir=self.m.model_ws,
+            shapename=os.path.join(self.m.model_ws, "pp.shp"),
+        )
+        self.logger.statement(
+            "{0} pilot point parameters created".format(pp_df.shape[0])
+        )
+        self.logger.statement(
+            "pilot point 'pargp':{0}".format(",".join(pp_df.pargp.unique()))
+        )
         self.log("calling setup_pilot_point_grid()")
 
         # calc factors for each layer
@@ -1994,21 +2233,29 @@ class PstFromFlopyModel(object):
         for pg in pargp:
             ks = pp_df.loc[pp_df.pargp == pg, "k"].unique()
             if len(ks) == 0:
-                self.logger.lraise("something is wrong in fac calcs for par group {0}".format(pg))
+                self.logger.lraise(
+                    "something is wrong in fac calcs for par group {0}".format(pg)
+                )
             if len(ks) == 1:
-                if np.all([isinstance(v, dict) for v in ib.values()]):  # check is dict of dicts
+                if np.all(
+                    [isinstance(v, dict) for v in ib.values()]
+                ):  # check is dict of dicts
                     if np.any([pg.startswith(p) for p in ib.keys()]):
                         p = next(p for p in ib.keys() if pg.startswith(p))
                         # get dict relating to parameter prefix
                         ib_k = ib[p][ks[0]]
                     else:
-                        p = 'general_zn'
+                        p = "general_zn"
                         ib_k = ib[p][ks[0]]
                 else:
                     ib_k = ib[ks[0]]
             if len(ks) != 1:  # TODO
                 # self.logger.lraise("something is wrong in fac calcs for par group {0}".format(pg))
-                self.logger.warn("multiple k values for {0},forming composite zone array...".format(pg))
+                self.logger.warn(
+                    "multiple k values for {0},forming composite zone array...".format(
+                        pg
+                    )
+                )
                 ib_k = np.zeros((self.m.nrow, self.m.ncol))
                 for k in ks:
                     t = ib["general_zn"][k].copy()
@@ -2023,12 +2270,19 @@ class PstFromFlopyModel(object):
                 var_file = fac_file.replace(".fac", ".var.dat")
                 pp_df_k = pp_df.loc[pp_df.pargp == pg]
                 if kattr_id not in pp_processed:
-                    self.logger.statement("saving krige variance file:{0}"
-                                          .format(var_file))
-                    self.logger.statement("saving krige factors file:{0}"
-                                          .format(fac_file))
+                    self.logger.statement(
+                        "saving krige variance file:{0}".format(var_file)
+                    )
+                    self.logger.statement(
+                        "saving krige factors file:{0}".format(fac_file)
+                    )
                     ok_pp = pyemu.geostats.OrdinaryKrige(self.pp_geostruct, pp_df_k)
-                    ok_pp.calc_factors_grid(self.m.sr, var_filename=var_file, zone_array=ib_k, num_threads=10)
+                    ok_pp.calc_factors_grid(
+                        self.m.sr,
+                        var_filename=var_file,
+                        zone_array=ib_k,
+                        num_threads=10,
+                    )
                     ok_pp.to_grid_factors_file(fac_file)
                     pp_processed.add(kattr_id)
                 fac_files[kp_id] = fac_file
@@ -2036,45 +2290,59 @@ class PstFromFlopyModel(object):
                 pp_dfs_k[kp_id] = pp_df_k
 
         for kp_id, fac_file in fac_files.items():
-            k = int(kp_id.split('_')[0])
-            pp_prefix = kp_id.split('_', 1)[-1]
+            k = int(kp_id.split("_")[0])
+            pp_prefix = kp_id.split("_", 1)[-1]
             # pp_files = pp_df.pp_filename.unique()
             fac_file = os.path.split(fac_file)[-1]
             # pp_prefixes = pp_dict[k]
             # for pp_prefix in pp_prefixes:
             self.log("processing pp_prefix:{0}".format(pp_prefix))
             if pp_prefix not in pp_array_file.keys():
-                self.logger.lraise("{0} not in self.pp_array_file.keys()".
-                                   format(pp_prefix, ','.
-                                          join(pp_array_file.keys())))
+                self.logger.lraise(
+                    "{0} not in self.pp_array_file.keys()".format(
+                        pp_prefix, ",".join(pp_array_file.keys())
+                    )
+                )
 
-            out_file = os.path.join(self.arr_mlt, os.path.split(pp_array_file[pp_prefix])[-1])
+            out_file = os.path.join(
+                self.arr_mlt, os.path.split(pp_array_file[pp_prefix])[-1]
+            )
 
-            pp_files = pp_df.loc[pp_df.pp_filename.apply(
-                lambda x:
-                os.path.split(x)[-1].split(
-                    '.')[0] == "{0}pp".format(pp_prefix)), 'pp_filename']
+            pp_files = pp_df.loc[
+                pp_df.pp_filename.apply(
+                    lambda x: os.path.split(x)[-1].split(".")[0]
+                    == "{0}pp".format(pp_prefix)
+                ),
+                "pp_filename",
+            ]
             if pp_files.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of pp_files found:{0}".format(','.join(pp_files)))
+                self.logger.lraise(
+                    "wrong number of pp_files found:{0}".format(",".join(pp_files))
+                )
             pp_file = os.path.split(pp_files.iloc[0])[-1]
             pp_df.loc[pp_df.pargp == pp_prefix, "fac_file"] = fac_file
             pp_df.loc[pp_df.pargp == pp_prefix, "pp_file"] = pp_file
             pp_df.loc[pp_df.pargp == pp_prefix, "out_file"] = out_file
 
         pp_df.loc[:, "pargp"] = pp_df.pargp.apply(lambda x: "pp_{0}".format(x))
-        out_files = mlt_df.loc[mlt_df.mlt_file.
-                                   apply(lambda x: x.endswith(self.pp_suffix)), "mlt_file"]
+        out_files = mlt_df.loc[
+            mlt_df.mlt_file.apply(lambda x: x.endswith(self.pp_suffix)), "mlt_file"
+        ]
         # mlt_df.loc[:,"fac_file"] = np.NaN
         # mlt_df.loc[:,"pp_file"] = np.NaN
         for out_file in out_files:
             pp_df_pf = pp_df.loc[pp_df.out_file == out_file, :]
             fac_files = pp_df_pf.fac_file
             if fac_files.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of fac files:{0}".format(str(fac_files.unique())))
+                self.logger.lraise(
+                    "wrong number of fac files:{0}".format(str(fac_files.unique()))
+                )
             fac_file = fac_files.iloc[0]
             pp_files = pp_df_pf.pp_file
             if pp_files.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of pp files:{0}".format(str(pp_files.unique())))
+                self.logger.lraise(
+                    "wrong number of pp files:{0}".format(str(pp_files.unique()))
+                )
             pp_file = pp_files.iloc[0]
             mlt_df.loc[mlt_df.mlt_file == out_file, "fac_file"] = fac_file
             mlt_df.loc[mlt_df.mlt_file == out_file, "pp_file"] = pp_file
@@ -2090,12 +2358,17 @@ class PstFromFlopyModel(object):
             return
 
         if self.kl_geostruct is None:
-            self.logger.warn("kl_geostruct is None," \
-                             " using ExpVario with contribution=1 and a=(10.0*max(delr,delc))")
-            kl_dist = 10.0 * float(max(self.m.dis.delr.array.max(),
-                                       self.m.dis.delc.array.max()))
+            self.logger.warn(
+                "kl_geostruct is None,"
+                " using ExpVario with contribution=1 and a=(10.0*max(delr,delc))"
+            )
+            kl_dist = 10.0 * float(
+                max(self.m.dis.delr.array.max(), self.m.dis.delc.array.max())
+            )
             v = pyemu.geostats.ExpVario(contribution=1.0, a=kl_dist)
-            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v, name="kl_geostruct", transform="log")
+            self.kl_geostruct = pyemu.geostats.GeoStruct(
+                variograms=v, name="kl_geostruct", transform="log"
+            )
 
         kl_df = mlt_df.loc[mlt_df.suffix == self.kl_suffix, :]
         layers = kl_df.layer.unique()
@@ -2116,22 +2389,30 @@ class PstFromFlopyModel(object):
 
         self.log("calling kl_setup() with factors file {0}".format(fac_file))
 
-        kl_df = kl_setup(self.kl_num_eig, self.m.sr, self.kl_geostruct, kl_prefix,
-                         factors_file=fac_file, basis_file=fac_file + ".basis.jcb",
-                         tpl_dir=self.m.model_ws)
-        self.logger.statement("{0} kl parameters created".
-                              format(kl_df.shape[0]))
-        self.logger.statement("kl 'pargp':{0}".
-                              format(','.join(kl_df.pargp.unique())))
+        kl_df = kl_setup(
+            self.kl_num_eig,
+            self.m.sr,
+            self.kl_geostruct,
+            kl_prefix,
+            factors_file=fac_file,
+            basis_file=fac_file + ".basis.jcb",
+            tpl_dir=self.m.model_ws,
+        )
+        self.logger.statement("{0} kl parameters created".format(kl_df.shape[0]))
+        self.logger.statement("kl 'pargp':{0}".format(",".join(kl_df.pargp.unique())))
 
         self.log("calling kl_setup() with factors file {0}".format(fac_file))
         kl_mlt_df = mlt_df.loc[mlt_df.suffix == self.kl_suffix]
         for prefix in kl_df.prefix.unique():
             prefix_df = kl_df.loc[kl_df.prefix == prefix, :]
             in_file = os.path.split(prefix_df.loc[:, "in_file"].iloc[0])[-1]
-            assert prefix in mlt_df.prefix.values, "{0}:{1}".format(prefix, mlt_df.prefix)
+            assert prefix in mlt_df.prefix.values, "{0}:{1}".format(
+                prefix, mlt_df.prefix
+            )
             mlt_df.loc[mlt_df.prefix == prefix, "pp_file"] = in_file
-            mlt_df.loc[mlt_df.prefix == prefix, "fac_file"] = os.path.split(fac_file)[-1]
+            mlt_df.loc[mlt_df.prefix == prefix, "fac_file"] = os.path.split(fac_file)[
+                -1
+            ]
 
         print(kl_mlt_df)
         mlt_df.loc[mlt_df.suffix == self.kl_suffix, "tpl_file"] = np.NaN
@@ -2145,7 +2426,9 @@ class PstFromFlopyModel(object):
         mlt_df = self._prep_mlt_arrays()
         if mlt_df is None:
             return
-        mlt_df.loc[:, "tpl_file"] = mlt_df.mlt_file.apply(lambda x: os.path.split(x)[-1] + ".tpl")
+        mlt_df.loc[:, "tpl_file"] = mlt_df.mlt_file.apply(
+            lambda x: os.path.split(x)[-1] + ".tpl"
+        )
         # mlt_df.loc[mlt_df.tpl_file.apply(lambda x:pd.notnull(x.pp_file)),"tpl_file"] = np.NaN
         mlt_files = mlt_df.mlt_file.unique()
         # for suffix,tpl_file,layer,name in zip(self.mlt_df.suffix,
@@ -2155,14 +2438,12 @@ class PstFromFlopyModel(object):
         for mlt_file in mlt_files:
             suffixes = mlt_df.loc[mlt_df.mlt_file == mlt_file, "suffix"]
             if suffixes.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of suffixes for {0}" \
-                                   .format(mlt_file))
+                self.logger.lraise("wrong number of suffixes for {0}".format(mlt_file))
             suffix = suffixes.iloc[0]
 
             tpl_files = mlt_df.loc[mlt_df.mlt_file == mlt_file, "tpl_file"]
             if tpl_files.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of tpl_files for {0}" \
-                                   .format(mlt_file))
+                self.logger.lraise("wrong number of tpl_files for {0}".format(mlt_file))
             tpl_file = tpl_files.iloc[0]
             layers = mlt_df.loc[mlt_df.mlt_file == mlt_file, "layer"]
             # if layers.unique().shape[0] != 1:
@@ -2171,12 +2452,13 @@ class PstFromFlopyModel(object):
             layer = layers.iloc[0]
             names = mlt_df.loc[mlt_df.mlt_file == mlt_file, "prefix"]
             if names.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of names for {0}" \
-                                   .format(mlt_file))
+                self.logger.lraise("wrong number of names for {0}".format(mlt_file))
             name = names.iloc[0]
             attr_names = mlt_df.loc[mlt_df.mlt_file == mlt_file, "attr_name"]
             if attr_names.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of attr_names for {0}".format(mlt_file))
+                self.logger.lraise(
+                    "wrong number of attr_names for {0}".format(mlt_file)
+                )
             attr_name = attr_names.iloc[0]
 
             # ib = self.k_zone_dict[layer]
@@ -2185,41 +2467,72 @@ class PstFromFlopyModel(object):
                 self.log("writing const tpl:{0}".format(tpl_file))
                 # df = self.write_const_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
                 try:
-                    df = write_const_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.cn_suffix,
-                                         self.m.bas6.ibound[layer].array, (self.m.nrow, self.m.ncol), self.m.sr)
+                    df = write_const_tpl(
+                        name,
+                        os.path.join(self.m.model_ws, tpl_file),
+                        self.cn_suffix,
+                        self.m.bas6.ibound[layer].array,
+                        (self.m.nrow, self.m.ncol),
+                        self.m.sr,
+                    )
                 except Exception as e:
-                    self.logger.lraise("error writing const template: {0}".format(str(e)))
+                    self.logger.lraise(
+                        "error writing const template: {0}".format(str(e))
+                    )
                 self.log("writing const tpl:{0}".format(tpl_file))
 
             elif suffix == self.gr_suffix:
                 self.log("writing grid tpl:{0}".format(tpl_file))
                 # df = self.write_grid_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
                 try:
-                    df = write_grid_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.gr_suffix,
-                                        self.m.bas6.ibound[layer].array, (self.m.nrow, self.m.ncol), self.m.sr)
+                    df = write_grid_tpl(
+                        name,
+                        os.path.join(self.m.model_ws, tpl_file),
+                        self.gr_suffix,
+                        self.m.bas6.ibound[layer].array,
+                        (self.m.nrow, self.m.ncol),
+                        self.m.sr,
+                    )
                 except Exception as e:
-                    self.logger.lraise("error writing grid template: {0}".format(str(e)))
+                    self.logger.lraise(
+                        "error writing grid template: {0}".format(str(e))
+                    )
                 self.log("writing grid tpl:{0}".format(tpl_file))
 
             elif suffix == self.zn_suffix:
                 self.log("writing zone tpl:{0}".format(tpl_file))
-                if np.all([isinstance(v, dict) for v in self.k_zone_dict.values()]):  # check is dict of dicts
-                    if attr_name in [p.split('.')[-1] for p in self.k_zone_dict.keys()]:
-                        k_zone_dict = next(k_dict for p, k_dict in self.k_zone_dict.items()
-                                           if p.split('.')[-1] == attr_name)  # get dict relating to parameter prefix
+                if np.all(
+                    [isinstance(v, dict) for v in self.k_zone_dict.values()]
+                ):  # check is dict of dicts
+                    if attr_name in [p.split(".")[-1] for p in self.k_zone_dict.keys()]:
+                        k_zone_dict = next(
+                            k_dict
+                            for p, k_dict in self.k_zone_dict.items()
+                            if p.split(".")[-1] == attr_name
+                        )  # get dict relating to parameter prefix
                     else:
-                        assert 'general_zn' in self.k_zone_dict.keys(), \
-                            "Neither {0} nor 'general_zn' are in k_zone_dict keys: {1}".format(attr_name,
-                                                                                               self.k_zone_dict.keys())
-                        k_zone_dict = self.k_zone_dict['general_zn']
+                        assert (
+                            "general_zn" in self.k_zone_dict.keys()
+                        ), "Neither {0} nor 'general_zn' are in k_zone_dict keys: {1}".format(
+                            attr_name, self.k_zone_dict.keys()
+                        )
+                        k_zone_dict = self.k_zone_dict["general_zn"]
                 else:
                     k_zone_dict = self.k_zone_dict
                 # df = self.write_zone_tpl(self.m, name, tpl_file, self.k_zone_dict[layer], self.zn_suffix, self.logger)
                 try:
-                    df = write_zone_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.zn_suffix,
-                                        k_zone_dict[layer], (self.m.nrow, self.m.ncol), self.m.sr)
+                    df = write_zone_tpl(
+                        name,
+                        os.path.join(self.m.model_ws, tpl_file),
+                        self.zn_suffix,
+                        k_zone_dict[layer],
+                        (self.m.nrow, self.m.ncol),
+                        self.m.sr,
+                    )
                 except Exception as e:
-                    self.logger.lraise("error writing zone template: {0}".format(str(e)))
+                    self.logger.lraise(
+                        "error writing zone template: {0}".format(str(e))
+                    )
                 self.log("writing zone tpl:{0}".format(tpl_file))
 
             if df is None:
@@ -2250,13 +2563,11 @@ class PstFromFlopyModel(object):
         ones = np.ones((self.m.nrow, self.m.ncol))
         for mlt_file in mlt_df.mlt_file.unique():
             self.log("save test mlt array {0}".format(mlt_file))
-            np.savetxt(os.path.join(self.m.model_ws, mlt_file),
-                       ones, fmt="%15.6E")
+            np.savetxt(os.path.join(self.m.model_ws, mlt_file), ones, fmt="%15.6E")
             self.log("save test mlt array {0}".format(mlt_file))
             tpl_files = mlt_df.loc[mlt_df.mlt_file == mlt_file, "tpl_file"]
             if tpl_files.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of tpl_files for {0}" \
-                                   .format(mlt_file))
+                self.logger.lraise("wrong number of tpl_files for {0}".format(mlt_file))
             tpl_file = tpl_files.iloc[0]
             if pd.notnull(tpl_file):
                 self.tpl_files.append(tpl_file)
@@ -2273,8 +2584,9 @@ class PstFromFlopyModel(object):
             apply_array_pars()
         except Exception as e:
             os.chdir("..")
-            self.logger.lraise("error test running apply_array_pars():{0}".
-                               format(str(e)))
+            self.logger.lraise(
+                "error test running apply_array_pars():{0}".format(str(e))
+            )
         os.chdir("..")
         line = "pyemu.helpers.apply_array_pars()\n"
         self.logger.statement("forward_run line:{0}".format(line))
@@ -2284,18 +2596,29 @@ class PstFromFlopyModel(object):
         """ main entry point for setting up observations
 
         """
-        obs_methods = [self._setup_water_budget_obs, self._setup_hyd,
-                       self._setup_smp, self._setup_hob, self._setup_hds,
-                       self._setup_sfr_obs]
-        obs_types = ["mflist water budget obs", "hyd file",
-                     "external obs-sim smp files", "hob", "hds", "sfr"]
+        obs_methods = [
+            self._setup_water_budget_obs,
+            self._setup_hyd,
+            self._setup_smp,
+            self._setup_hob,
+            self._setup_hds,
+            self._setup_sfr_obs,
+        ]
+        obs_types = [
+            "mflist water budget obs",
+            "hyd file",
+            "external obs-sim smp files",
+            "hob",
+            "hds",
+            "sfr",
+        ]
         self.obs_dfs = {}
         for obs_method, obs_type in zip(obs_methods, obs_types):
             self.log("processing obs type {0}".format(obs_type))
             obs_method()
             self.log("processing obs type {0}".format(obs_type))
 
-    def draw(self, num_reals=100, sigma_range=6,use_specsim=False, scale_offset=True):
+    def draw(self, num_reals=100, sigma_range=6, use_specsim=False, scale_offset=True):
 
         """ draw from the geostatistically-implied parameter covariance matrix
 
@@ -2344,19 +2667,35 @@ class PstFromFlopyModel(object):
                 # gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
                 struct_dict[self.grid_geostruct] = gr_dfs
             else:
-                if not pyemu.geostats.SpecSim2d.grid_is_regular(self.m.dis.delr.array, self.m.dis.delc.array):
-                    self.logger.lraise("draw() error: can't use spectral simulation with irregular grid")
+                if not pyemu.geostats.SpecSim2d.grid_is_regular(
+                    self.m.dis.delr.array, self.m.dis.delc.array
+                ):
+                    self.logger.lraise(
+                        "draw() error: can't use spectral simulation with irregular grid"
+                    )
                 gr_df.loc[:, "i"] = gr_df.parnme.apply(lambda x: int(x[-6:-3]))
                 gr_df.loc[:, "j"] = gr_df.parnme.apply(lambda x: int(x[-3:]))
                 if gr_df.i.max() > self.m.nrow - 1 or gr_df.i.min() < 0:
-                    self.logger.lraise("draw(): error parsing grid par names for 'i' index")
+                    self.logger.lraise(
+                        "draw(): error parsing grid par names for 'i' index"
+                    )
                 if gr_df.j.max() > self.m.ncol - 1 or gr_df.j.min() < 0:
-                    self.logger.lraise("draw(): error parsing grid par names for 'j' index")
+                    self.logger.lraise(
+                        "draw(): error parsing grid par names for 'j' index"
+                    )
                 self.log("spectral simulation for grid-scale pars")
-                ss = pyemu.geostats.SpecSim2d(delx=self.m.dis.delr.array, dely=self.m.dis.delc.array,
-                                              geostruct=self.grid_geostruct)
-                gr_par_pe = ss.grid_par_ensemble_helper(pst=self.pst, gr_df=gr_df, num_reals=num_reals,
-                                                        sigma_range=sigma_range, logger=self.logger)
+                ss = pyemu.geostats.SpecSim2d(
+                    delx=self.m.dis.delr.array,
+                    dely=self.m.dis.delc.array,
+                    geostruct=self.grid_geostruct,
+                )
+                gr_par_pe = ss.grid_par_ensemble_helper(
+                    pst=self.pst,
+                    gr_df=gr_df,
+                    num_reals=num_reals,
+                    sigma_range=sigma_range,
+                    logger=self.logger,
+                )
                 self.log("spectral simulation for grid-scale pars")
         if "temporal_list" in self.par_dfs.keys():
             bc_df = self.par_dfs["temporal_list"]
@@ -2380,15 +2719,21 @@ class PstFromFlopyModel(object):
                 bc_dfs.append(gp_df)
             struct_dict[self.spatial_list_geostruct] = bc_dfs
 
-        pe = geostatistical_draws(self.pst,struct_dict=struct_dict,num_reals=num_reals,
-                             sigma_range=sigma_range,scale_offset=scale_offset)
+        pe = geostatistical_draws(
+            self.pst,
+            struct_dict=struct_dict,
+            num_reals=num_reals,
+            sigma_range=sigma_range,
+            scale_offset=scale_offset,
+        )
         if gr_par_pe is not None:
             pe.loc[:, gr_par_pe.columns] = gr_par_pe.values
         self.log("drawing realizations")
         return pe
 
-    def build_prior(self, fmt="ascii", filename=None, droptol=None, chunk=None,
-                    sigma_range=6):
+    def build_prior(
+        self, fmt="ascii", filename=None, droptol=None, chunk=None, sigma_range=6
+    ):
         """ build and optionally save the prior parameter covariance matrix.
 
         Args:
@@ -2412,8 +2757,11 @@ class PstFromFlopyModel(object):
         fmt = fmt.lower()
         acc_fmts = ["ascii", "binary", "uncfile", "none", "coo"]
         if fmt not in acc_fmts:
-            self.logger.lraise("unrecognized prior save 'fmt':{0}, options are: {1}".
-                               format(fmt, ','.join(acc_fmts)))
+            self.logger.lraise(
+                "unrecognized prior save 'fmt':{0}, options are: {1}".format(
+                    fmt, ",".join(acc_fmts)
+                )
+            )
 
         self.log("building prior covariance matrix")
         struct_dict = {}
@@ -2466,23 +2814,25 @@ class PstFromFlopyModel(object):
             self.logger.warn("geospatial prior not implemented for SFR pars")
 
         if len(struct_dict) > 0:
-            cov = pyemu.helpers.geostatistical_prior_builder(self.pst,
-                                                             struct_dict=struct_dict,
-                                                             sigma_range=sigma_range)
+            cov = pyemu.helpers.geostatistical_prior_builder(
+                self.pst, struct_dict=struct_dict, sigma_range=sigma_range
+            )
         else:
             cov = pyemu.Cov.from_parameter_data(self.pst, sigma_range=sigma_range)
 
         if filename is None:
             filename = os.path.join(self.m.model_ws, self.pst_name + ".prior.cov")
         if fmt != "none":
-            self.logger.statement("saving prior covariance matrix to file {0}".format(filename))
-        if fmt == 'ascii':
+            self.logger.statement(
+                "saving prior covariance matrix to file {0}".format(filename)
+            )
+        if fmt == "ascii":
             cov.to_ascii(filename)
-        elif fmt == 'binary':
+        elif fmt == "binary":
             cov.to_binary(filename, droptol=droptol, chunk=chunk)
-        elif fmt == 'uncfile':
+        elif fmt == "uncfile":
             cov.to_uncfile(filename)
-        elif fmt == 'coo':
+        elif fmt == "coo":
             cov.to_coo(filename, droptol=droptol, chunk=chunk)
         self.log("building prior covariance matrix")
         return cov
@@ -2507,13 +2857,15 @@ class PstFromFlopyModel(object):
         tpl_files = copy.deepcopy(self.tpl_files)
         in_files = copy.deepcopy(self.in_files)
         try:
-            files = os.listdir('.')
-            new_tpl_files = [f for f in files if f.endswith(".tpl") and f not in tpl_files]
-            new_in_files = [f.replace(".tpl", '') for f in new_tpl_files]
+            files = os.listdir(".")
+            new_tpl_files = [
+                f for f in files if f.endswith(".tpl") and f not in tpl_files
+            ]
+            new_in_files = [f.replace(".tpl", "") for f in new_tpl_files]
             tpl_files.extend(new_tpl_files)
             in_files.extend(new_in_files)
             ins_files = [f for f in files if f.endswith(".ins")]
-            out_files = [f.replace(".ins", '') for f in ins_files]
+            out_files = [f.replace(".ins", "") for f in ins_files]
             for tpl_file, in_file in zip(tpl_files, in_files):
                 if tpl_file not in self.tpl_files:
                     self.tpl_files.append(tpl_file)
@@ -2526,16 +2878,18 @@ class PstFromFlopyModel(object):
             self.log("instantiating control file from i/o files")
             self.logger.statement("tpl files: {0}".format(",".join(self.tpl_files)))
             self.logger.statement("ins files: {0}".format(",".join(self.ins_files)))
-            pst = pyemu.Pst.from_io_files(tpl_files=self.tpl_files,
-                                          in_files=self.in_files,
-                                          ins_files=self.ins_files,
-                                          out_files=self.out_files)
+            pst = pyemu.Pst.from_io_files(
+                tpl_files=self.tpl_files,
+                in_files=self.in_files,
+                ins_files=self.ins_files,
+                out_files=self.out_files,
+            )
 
             self.log("instantiating control file from i/o files")
         except Exception as e:
             os.chdir("..")
             self.logger.lraise("error build Pst:{0}".format(str(e)))
-        os.chdir('..')
+        os.chdir("..")
         # more customization here
         par = pst.parameter_data
         for name, df in self.par_dfs.items():
@@ -2610,30 +2964,41 @@ class PstFromFlopyModel(object):
                 external_tpl_in_pairs = [self.external_tpl_in_pairs]
             for tpl_file, in_file in self.external_tpl_in_pairs:
                 if not os.path.exists(tpl_file):
-                    self.logger.lraise("couldn't find external tpl file:{0}". \
-                                       format(tpl_file))
+                    self.logger.lraise(
+                        "couldn't find external tpl file:{0}".format(tpl_file)
+                    )
                 self.logger.statement("external tpl:{0}".format(tpl_file))
-                shutil.copy2(tpl_file, os.path.join(self.m.model_ws,
-                                                    os.path.split(tpl_file)[-1]))
+                shutil.copy2(
+                    tpl_file, os.path.join(self.m.model_ws, os.path.split(tpl_file)[-1])
+                )
                 if os.path.exists(in_file):
-                    shutil.copy2(in_file, os.path.join(self.m.model_ws,
-                                                       os.path.split(in_file)[-1]))
+                    shutil.copy2(
+                        in_file,
+                        os.path.join(self.m.model_ws, os.path.split(in_file)[-1]),
+                    )
 
         if self.external_ins_out_pairs is not None:
             if not isinstance(self.external_ins_out_pairs, list):
                 external_ins_out_pairs = [self.external_ins_out_pairs]
             for ins_file, out_file in self.external_ins_out_pairs:
                 if not os.path.exists(ins_file):
-                    self.logger.lraise("couldn't find external ins file:{0}". \
-                                       format(ins_file))
+                    self.logger.lraise(
+                        "couldn't find external ins file:{0}".format(ins_file)
+                    )
                 self.logger.statement("external ins:{0}".format(ins_file))
-                shutil.copy2(ins_file, os.path.join(self.m.model_ws,
-                                                    os.path.split(ins_file)[-1]))
+                shutil.copy2(
+                    ins_file, os.path.join(self.m.model_ws, os.path.split(ins_file)[-1])
+                )
                 if os.path.exists(out_file):
-                    shutil.copy2(out_file, os.path.join(self.m.model_ws,
-                                                        os.path.split(out_file)[-1]))
-                    self.logger.warn("obs listed in {0} will have values listed in {1}"
-                                     .format(ins_file, out_file))
+                    shutil.copy2(
+                        out_file,
+                        os.path.join(self.m.model_ws, os.path.split(out_file)[-1]),
+                    )
+                    self.logger.warn(
+                        "obs listed in {0} will have values listed in {1}".format(
+                            ins_file, out_file
+                        )
+                    )
                 else:
                     self.logger.warn("obs listed in {0} will have generic values")
 
@@ -2645,26 +3010,30 @@ class PstFromFlopyModel(object):
             changed to the pre- and/or post-processing routines.
 
         """
-        with open(os.path.join(self.m.model_ws, self.forward_run_file), 'w') as f:
-            f.write("import os\nimport multiprocessing as mp\nimport numpy as np" + \
-                    "\nimport pandas as pd\nimport flopy\n")
+        with open(os.path.join(self.m.model_ws, self.forward_run_file), "w") as f:
+            f.write(
+                "import os\nimport multiprocessing as mp\nimport numpy as np"
+                + "\nimport pandas as pd\nimport flopy\n"
+            )
             f.write("import pyemu\n")
             f.write("def main():\n")
             f.write("\n")
             s = "    "
             for ex_imp in self.extra_forward_imports:
-                f.write(s + 'import {0}\n'.format(ex_imp))
+                f.write(s + "import {0}\n".format(ex_imp))
             for tmp_file in self.tmp_files:
                 f.write(s + "try:\n")
                 f.write(s + "   os.remove('{0}')\n".format(tmp_file))
                 f.write(s + "except Exception as e:\n")
-                f.write(s + "   print('error removing tmp file:{0}')\n".format(tmp_file))
+                f.write(
+                    s + "   print('error removing tmp file:{0}')\n".format(tmp_file)
+                )
             for line in self.frun_pre_lines:
-                f.write(s + line + '\n')
+                f.write(s + line + "\n")
             for line in self.frun_model_lines:
-                f.write(s + line + '\n')
+                f.write(s + line + "\n")
             for line in self.frun_post_lines:
-                f.write(s + line + '\n')
+                f.write(s + line + "\n")
             f.write("\n")
             f.write("if __name__ == '__main__':\n")
             f.write("    mp.freeze_support()\n    main()\n\n")
@@ -2685,8 +3054,7 @@ class PstFromFlopyModel(object):
             try:
                 k_vals = vals[k]
             except Exception as e:
-                raise Exception("error slicing vals with {0}:{1}".
-                                format(k, str(e)))
+                raise Exception("error slicing vals with {0}:{1}".format(k, str(e)))
             return k_vals
 
     def _parse_pakattr(self, pakattr):
@@ -2695,7 +3063,7 @@ class PstFromFlopyModel(object):
 
         """
 
-        raw = pakattr.lower().split('.')
+        raw = pakattr.lower().split(".")
         if len(raw) != 2:
             self.logger.lraise("pakattr is wrong:{0}".format(pakattr))
         pakname = raw[0]
@@ -2704,7 +3072,13 @@ class PstFromFlopyModel(object):
         if pak is None:
             if pakname == "extra":
                 self.logger.statement("'extra' pak detected:{0}".format(pakattr))
-                ud = flopy.utils.Util3d(self.m, (self.m.nlay, self.m.nrow, self.m.ncol), np.float32, 1.0, attrname)
+                ud = flopy.utils.Util3d(
+                    self.m,
+                    (self.m.nlay, self.m.nrow, self.m.ncol),
+                    np.float32,
+                    1.0,
+                    attrname,
+                )
                 return "extra", ud
 
             self.logger.lraise("pak {0} not found".format(pakname))
@@ -2714,8 +3088,11 @@ class PstFromFlopyModel(object):
         elif hasattr(pak, "stress_period_data"):
             dtype = pak.stress_period_data.dtype
             if attrname not in dtype.names:
-                self.logger.lraise("attr {0} not found in dtype.names for {1}.stress_period_data". \
-                                   format(attrname, pakname))
+                self.logger.lraise(
+                    "attr {0} not found in dtype.names for {1}.stress_period_data".format(
+                        attrname, pakname
+                    )
+                )
             attr = pak.stress_period_data
             return pak, attr, attrname
         # elif hasattr(pak,'hfb_data'):
@@ -2742,8 +3119,10 @@ class PstFromFlopyModel(object):
             apply_list_pars()
         except Exception as e:
             os.chdir("..")
-            self.logger.lraise("error test running apply_list_pars():{0}".format(str(e)))
-        os.chdir('..')
+            self.logger.lraise(
+                "error test running apply_list_pars():{0}".format(str(e))
+            )
+        os.chdir("..")
         line = "pyemu.helpers.apply_list_pars()\n"
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_pre_lines.append(line)
@@ -2772,15 +3151,21 @@ class PstFromFlopyModel(object):
                 pak_name = pak.name[0].lower()
                 bc_pak.append(pak_name)
                 bc_k.append(k)
-                bc_dtype_names.append(','.join(attr.dtype.names))
+                bc_dtype_names.append(",".join(attr.dtype.names))
 
                 bc_parnme.append("{0}{1}_{2:03d}".format(pak_name, col, c))
 
-        df = pd.DataFrame({"filename": bc_filenames, "col": bc_cols,
-                           "kper": bc_k, "pak": bc_pak,
-                           "dtype_names": bc_dtype_names,
-                           "parnme": bc_parnme})
-        tds = pd.to_timedelta(np.cumsum(self.m.dis.perlen.array), unit='d')
+        df = pd.DataFrame(
+            {
+                "filename": bc_filenames,
+                "col": bc_cols,
+                "kper": bc_k,
+                "pak": bc_pak,
+                "dtype_names": bc_dtype_names,
+                "parnme": bc_parnme,
+            }
+        )
+        tds = pd.to_timedelta(np.cumsum(self.m.dis.perlen.array), unit="d")
         dts = pd.to_datetime(self.m._start_datetime) + tds
         df.loc[:, "datetime"] = df.kper.apply(lambda x: dts[x])
         df.loc[:, "timedelta"] = df.kper.apply(lambda x: tds[x])
@@ -2790,12 +3175,22 @@ class PstFromFlopyModel(object):
         df.loc[:, "tpl_str"] = df.parnme.apply(lambda x: "~   {0}   ~".format(x))
         df.loc[:, "list_org"] = self.list_org
         df.loc[:, "model_ext_path"] = self.m.external_path
-        df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
-        names = ["filename", "dtype_names", "list_org", "model_ext_path", "col", "kper", "pak", "val"]
-        df.loc[:, names]. \
-            to_csv(os.path.join(self.m.model_ws, "temporal_list_pars.dat"), sep=' ')
+        df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split("_")[0])
+        names = [
+            "filename",
+            "dtype_names",
+            "list_org",
+            "model_ext_path",
+            "col",
+            "kper",
+            "pak",
+            "val",
+        ]
+        df.loc[:, names].to_csv(
+            os.path.join(self.m.model_ws, "temporal_list_pars.dat"), sep=" "
+        )
         df.loc[:, "val"] = df.tpl_str
-        tpl_name = os.path.join(self.m.model_ws, 'temporal_list_pars.dat.tpl')
+        tpl_name = os.path.join(self.m.model_ws, "temporal_list_pars.dat.tpl")
         # f_tpl =  open(tpl_name,'w')
         # f_tpl.write("ptf ~\n")
         # f_tpl.flush()
@@ -2803,7 +3198,9 @@ class PstFromFlopyModel(object):
         # f_tpl.write("index ")
         # f_tpl.write(df.loc[:,names].to_string(index_names=True))
         # f_tpl.close()
-        _write_df_tpl(tpl_name, df.loc[:, names], sep=' ', index_label="index", quotechar=" ")
+        _write_df_tpl(
+            tpl_name, df.loc[:, names], sep=" ", index_label="index", quotechar=" "
+        )
         self.par_dfs["temporal_list"] = df
 
         self.log("processing temporal_list_props")
@@ -2828,10 +3225,13 @@ class PstFromFlopyModel(object):
             pak, attr, col = self._parse_pakattr(pakattr)
             k_parse = self._parse_k(k_org, np.arange(self.m.nlay))
             if len(k_parse) > 1:
-                self.logger.lraise("spatial_list_pars error: each set of spatial list pars can only be applied " + \
-                                   "to a single layer (e.g. [wel.flux,0].\n" + \
-                                   "You passed [{0},{1}], implying broadcasting to layers {2}".
-                                   format(pakattr, k_org, k_parse))
+                self.logger.lraise(
+                    "spatial_list_pars error: each set of spatial list pars can only be applied "
+                    + "to a single layer (e.g. [wel.flux,0].\n"
+                    + "You passed [{0},{1}], implying broadcasting to layers {2}".format(
+                        pakattr, k_org, k_parse
+                    )
+                )
             # # horrible special case for HFB since it cannot vary over time
             # if type(pak) != flopy.modflow.mfhfb.ModflowHfb:
             for k in range(self.m.nper):
@@ -2840,11 +3240,17 @@ class PstFromFlopyModel(object):
                 pak_name = pak.name[0].lower()
                 bc_pak.append(pak_name)
                 bc_k.append(k_parse[0])
-                bc_dtype_names.append(','.join(attr.dtype.names))
+                bc_dtype_names.append(",".join(attr.dtype.names))
 
-        info_df = pd.DataFrame({"filename": bc_filenames, "col": bc_cols,
-                                "k": bc_k, "pak": bc_pak,
-                                "dtype_names": bc_dtype_names})
+        info_df = pd.DataFrame(
+            {
+                "filename": bc_filenames,
+                "col": bc_cols,
+                "k": bc_k,
+                "pak": bc_pak,
+                "dtype_names": bc_dtype_names,
+            }
+        )
         info_df.loc[:, "list_mlt"] = self.list_mlt
         info_df.loc[:, "list_org"] = self.list_org
         info_df.loc[:, "model_ext_path"] = self.m.external_path
@@ -2856,12 +3262,16 @@ class PstFromFlopyModel(object):
             df_pak = info_df.loc[info_df.pak == pak, :]
             itmp = []
             for filename in df_pak.filename:
-                names = df_pak.dtype_names.iloc[0].split(',')
+                names = df_pak.dtype_names.iloc[0].split(",")
 
                 # mif pak != 'hfb6':
-                fdf = pd.read_csv(os.path.join(self.m.model_ws, filename),
-                                  delim_whitespace=True, header=None, names=names)
-                for c in ['k', 'i', 'j']:
+                fdf = pd.read_csv(
+                    os.path.join(self.m.model_ws, filename),
+                    delim_whitespace=True,
+                    header=None,
+                    names=names,
+                )
+                for c in ["k", "i", "j"]:
                     fdf.loc[:, c] -= 1
                 # else:
                 #     # need to navigate the HFB file to skip both comments and header line
@@ -2879,18 +3289,24 @@ class PstFromFlopyModel(object):
             info_df.loc[info_df.pak == pak, "itmp"] = itmp
             if np.unique(np.array(itmp)).shape[0] != 1:
                 info_df.to_csv("spatial_list_trouble.csv")
-                self.logger.lraise("spatial_list_pars() error: must have same number of " + \
-                                   "entries for every stress period for {0}".format(pak))
+                self.logger.lraise(
+                    "spatial_list_pars() error: must have same number of "
+                    + "entries for every stress period for {0}".format(pak)
+                )
 
         # make the pak dfs have unique model indices
         for pak, df in pak_dfs.items():
             # if pak != 'hfb6':
-            df.loc[:, "idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k, x.i, x.j), axis=1)
+            df.loc[:, "idx"] = df.apply(
+                lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k, x.i, x.j), axis=1
+            )
             # else:
             #     df.loc[:, "idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
             #                                                                                                  x.irow2, x.icol2), axis=1)
             if df.idx.unique().shape[0] != df.shape[0]:
-                self.logger.warn("duplicate entries in list pak {0}...collapsing".format(pak))
+                self.logger.warn(
+                    "duplicate entries in list pak {0}...collapsing".format(pak)
+                )
                 df.drop_duplicates(subset="idx", inplace=True)
             df.index = df.idx
             pak_dfs[pak] = df
@@ -2901,16 +3317,29 @@ class PstFromFlopyModel(object):
             pak_df = info_df.loc[info_df.pak == pak, :]
             # reset all non-index cols to 1.0
             for col in df.columns:
-                if col not in ['k', 'i', 'j', 'inode', 'irow1', 'icol1', 'irow2', 'icol2']:
+                if col not in [
+                    "k",
+                    "i",
+                    "j",
+                    "inode",
+                    "irow1",
+                    "icol1",
+                    "irow2",
+                    "icol2",
+                ]:
                     df.loc[:, col] = 1.0
             in_file = os.path.join(self.list_mlt, pak + ".csv")
             tpl_file = os.path.join(pak + ".csv.tpl")
             # save an all "ones" mult df for testing
-            df.to_csv(os.path.join(self.m.model_ws, in_file), sep=' ')
+            df.to_csv(os.path.join(self.m.model_ws, in_file), sep=" ")
             parnme, pargp = [], []
             # if pak != 'hfb6':
-            x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.i), int(x.j)], axis=1).values
-            y = df.apply(lambda x: self.m.sr.ycentergrid[int(x.i), int(x.j)], axis=1).values
+            x = df.apply(
+                lambda x: self.m.sr.xcentergrid[int(x.i), int(x.j)], axis=1
+            ).values
+            y = df.apply(
+                lambda x: self.m.sr.ycentergrid[int(x.i), int(x.j)], axis=1
+            ).values
             # else:
             #     # note -- for HFB6, only row and col for node 1
             #     x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.irow1),int(x.icol1)],axis=1).values
@@ -2926,13 +3355,20 @@ class PstFromFlopyModel(object):
 
                 df.loc[:, col] = names.map(lambda x: "~   {0}   ~".format(x))
                 df.loc[df.k.apply(lambda x: x not in k_vals), col] = 1.0
-                par_df = pd.DataFrame({"parnme": names, "x": x, "y": y, "k": df.k.values}, index=names)
+                par_df = pd.DataFrame(
+                    {"parnme": names, "x": x, "y": y, "k": df.k.values}, index=names
+                )
                 par_df = par_df.loc[par_df.k.apply(lambda x: x in k_vals)]
                 if par_df.shape[0] == 0:
-                    self.logger.lraise("no parameters found for spatial list k,pak,attr {0}, {1}, {2}".
-                                       format(k_vals, pak, col))
+                    self.logger.lraise(
+                        "no parameters found for spatial list k,pak,attr {0}, {1}, {2}".format(
+                            k_vals, pak, col
+                        )
+                    )
 
-                par_df.loc[:, "pargp"] = df.k.apply(lambda x: "{0}{1}_k{2:02.0f}".format(pak, col, int(x))).values
+                par_df.loc[:, "pargp"] = df.k.apply(
+                    lambda x: "{0}{1}_k{2:02.0f}".format(pak, col, int(x))
+                ).values
 
                 par_df.loc[:, "tpl_file"] = tpl_file
                 par_df.loc[:, "in_file"] = in_file
@@ -2944,13 +3380,19 @@ class PstFromFlopyModel(object):
             # df.to_csv(f)
             #    f.write("index ")
             #    f.write(df.to_string(index_names=False)+'\n')
-            _write_df_tpl(os.path.join(self.m.model_ws, tpl_file), df, sep=' ', quotechar=" ", index_label="index")
+            _write_df_tpl(
+                os.path.join(self.m.model_ws, tpl_file),
+                df,
+                sep=" ",
+                quotechar=" ",
+                index_label="index",
+            )
             self.tpl_files.append(tpl_file)
             self.in_files.append(in_file)
 
         par_df = pd.concat(par_dfs)
         self.par_dfs["spatial_list"] = par_df
-        info_df.to_csv(os.path.join(self.m.model_ws, "spatial_list_pars.dat"), sep=' ')
+        info_df.to_csv(os.path.join(self.m.model_ws, "spatial_list_pars.dat"), sep=" ")
 
         self.log("processing spatial_list_props")
         return True
@@ -2966,8 +3408,10 @@ class PstFromFlopyModel(object):
         # else:
         filename = attr.get_filename(k)
         filename_model = os.path.join(self.m.external_path, filename)
-        shutil.copy2(os.path.join(self.m.model_ws, filename_model),
-                     os.path.join(self.m.model_ws, self.list_org, filename))
+        shutil.copy2(
+            os.path.join(self.m.model_ws, filename_model),
+            os.path.join(self.m.model_ws, self.list_org, filename),
+        )
         return filename_model
 
     def _setup_hds(self):
@@ -2979,6 +3423,7 @@ class PstFromFlopyModel(object):
         if self.hds_kperk is None or len(self.hds_kperk) == 0:
             return
         from .gw_utils import setup_hds_obs
+
         # if len(self.hds_kperk) == 2:
         #     try:
         #         if len(self.hds_kperk[0] == 2):
@@ -2992,10 +3437,13 @@ class PstFromFlopyModel(object):
             raise Exception("OC not saving hds, can't setup grid obs")
         hds_unit = oc.iuhead
         hds_file = self.m.get_output(unit=hds_unit)
-        assert os.path.exists(os.path.join(self.org_model_ws, hds_file)), \
-            "couldn't find existing hds file {0} in org_model_ws".format(hds_file)
-        shutil.copy2(os.path.join(self.org_model_ws, hds_file),
-                     os.path.join(self.m.model_ws, hds_file))
+        assert os.path.exists(
+            os.path.join(self.org_model_ws, hds_file)
+        ), "couldn't find existing hds file {0} in org_model_ws".format(hds_file)
+        shutil.copy2(
+            os.path.join(self.org_model_ws, hds_file),
+            os.path.join(self.m.model_ws, hds_file),
+        )
         inact = None
         if self.m.lpf is not None:
             inact = self.m.lpf.hdry
@@ -3006,10 +3454,15 @@ class PstFromFlopyModel(object):
         else:
             skip = lambda x: np.NaN if x == self.m.bas6.hnoflo or x == inact else x
         print(self.hds_kperk)
-        frun_line, df = setup_hds_obs(os.path.join(self.m.model_ws, hds_file),
-                                      kperk_pairs=self.hds_kperk, skip=skip)
+        frun_line, df = setup_hds_obs(
+            os.path.join(self.m.model_ws, hds_file),
+            kperk_pairs=self.hds_kperk,
+            skip=skip,
+        )
         self.obs_dfs["hds"] = df
-        self.frun_post_lines.append("pyemu.gw_utils.apply_hds_obs('{0}')".format(hds_file))
+        self.frun_post_lines.append(
+            "pyemu.gw_utils.apply_hds_obs('{0}')".format(hds_file)
+        )
         self.tmp_files.append(hds_file)
 
     def _setup_smp(self):
@@ -3027,11 +3480,9 @@ class PstFromFlopyModel(object):
                 self.logger.lraise("couldn't find obs smp: {0}".format(obs_smp))
             if not os.path.exists(sim_smp):
                 self.logger.lraise("couldn't find sim smp: {0}".format(sim_smp))
-            new_obs_smp = os.path.join(self.m.model_ws,
-                                       os.path.split(obs_smp)[-1])
+            new_obs_smp = os.path.join(self.m.model_ws, os.path.split(obs_smp)[-1])
             shutil.copy2(obs_smp, new_obs_smp)
-            new_sim_smp = os.path.join(self.m.model_ws,
-                                       os.path.split(sim_smp)[-1])
+            new_sim_smp = os.path.join(self.m.model_ws, os.path.split(sim_smp)[-1])
             shutil.copy2(sim_smp, new_sim_smp)
             pyemu.smp_utils.smp_to_ins(new_sim_smp)
 
@@ -3042,11 +3493,17 @@ class PstFromFlopyModel(object):
         if self.m.hob is None:
             return
         hob_out_unit = self.m.hob.iuhobsv
-        new_hob_out_fname = os.path.join(self.m.model_ws, self.m.get_output_attribute(unit=hob_out_unit))
-        org_hob_out_fname = os.path.join(self.org_model_ws, self.m.get_output_attribute(unit=hob_out_unit))
+        new_hob_out_fname = os.path.join(
+            self.m.model_ws, self.m.get_output_attribute(unit=hob_out_unit)
+        )
+        org_hob_out_fname = os.path.join(
+            self.org_model_ws, self.m.get_output_attribute(unit=hob_out_unit)
+        )
 
         if not os.path.exists(org_hob_out_fname):
-            self.logger.warn("could not find hob out file: {0}...skipping".format(hob_out_fname))
+            self.logger.warn(
+                "could not find hob out file: {0}...skipping".format(hob_out_fname)
+            )
             return
         shutil.copy2(org_hob_out_fname, new_hob_out_fname)
         hob_df = pyemu.gw_utils.modflow_hob_to_instruction_file(new_hob_out_fname)
@@ -3061,15 +3518,19 @@ class PstFromFlopyModel(object):
         if self.mfhyd:
             org_hyd_out = os.path.join(self.org_model_ws, self.m.name + ".hyd.bin")
             if not os.path.exists(org_hyd_out):
-                self.logger.warn("can't find existing hyd out file:{0}...skipping".
-                                 format(org_hyd_out))
+                self.logger.warn(
+                    "can't find existing hyd out file:{0}...skipping".format(
+                        org_hyd_out
+                    )
+                )
                 return
             new_hyd_out = os.path.join(self.m.model_ws, os.path.split(org_hyd_out)[-1])
             shutil.copy2(org_hyd_out, new_hyd_out)
             df = pyemu.gw_utils.modflow_hydmod_to_instruction_file(new_hyd_out)
-            df.loc[:, "obgnme"] = df.obsnme.apply(lambda x: '_'.join(x.split('_')[:-1]))
-            line = "pyemu.gw_utils.modflow_read_hydmod_file('{0}')". \
-                format(os.path.split(new_hyd_out)[-1])
+            df.loc[:, "obgnme"] = df.obsnme.apply(lambda x: "_".join(x.split("_")[:-1]))
+            line = "pyemu.gw_utils.modflow_read_hydmod_file('{0}')".format(
+                os.path.split(new_hyd_out)[-1]
+            )
             self.logger.statement("forward_run line: {0}".format(line))
             self.frun_post_lines.append(line)
             self.obs_dfs["hyd"] = df
@@ -3083,30 +3544,35 @@ class PstFromFlopyModel(object):
         if self.mflist_waterbudget:
             org_listfile = os.path.join(self.org_model_ws, self.m.lst.file_name[0])
             if os.path.exists(org_listfile):
-                shutil.copy2(org_listfile, os.path.join(self.m.model_ws,
-                                                        self.m.lst.file_name[0]))
+                shutil.copy2(
+                    org_listfile, os.path.join(self.m.model_ws, self.m.lst.file_name[0])
+                )
             else:
-                self.logger.warn("can't find existing list file:{0}...skipping".
-                                 format(org_listfile))
+                self.logger.warn(
+                    "can't find existing list file:{0}...skipping".format(org_listfile)
+                )
                 return
             list_file = os.path.join(self.m.model_ws, self.m.lst.file_name[0])
             flx_file = os.path.join(self.m.model_ws, "flux.dat")
             vol_file = os.path.join(self.m.model_ws, "vol.dat")
-            df = pyemu.gw_utils.setup_mflist_budget_obs(list_file,
-                                                        flx_filename=flx_file,
-                                                        vol_filename=vol_file,
-                                                        start_datetime=self.m.start_datetime)
+            df = pyemu.gw_utils.setup_mflist_budget_obs(
+                list_file,
+                flx_filename=flx_file,
+                vol_filename=vol_file,
+                start_datetime=self.m.start_datetime,
+            )
             if df is not None:
                 self.obs_dfs["wb"] = df
             # line = "try:\n    os.remove('{0}')\nexcept:\n    pass".format(os.path.split(list_file)[-1])
             # self.logger.statement("forward_run line:{0}".format(line))
             # self.frun_pre_lines.append(line)
             self.tmp_files.append(os.path.split(list_file)[-1])
-            line = "pyemu.gw_utils.apply_mflist_budget_obs('{0}',flx_filename='{1}',vol_filename='{2}',start_datetime='{3}')". \
-                format(os.path.split(list_file)[-1],
-                       os.path.split(flx_file)[-1],
-                       os.path.split(vol_file)[-1],
-                       self.m.start_datetime)
+            line = "pyemu.gw_utils.apply_mflist_budget_obs('{0}',flx_filename='{1}',vol_filename='{2}',start_datetime='{3}')".format(
+                os.path.split(list_file)[-1],
+                os.path.split(flx_file)[-1],
+                os.path.split(vol_file)[-1],
+                self.m.start_datetime,
+            )
             self.logger.statement("forward_run line:{0}".format(line))
             self.frun_post_lines.append(line)
 
@@ -3131,26 +3597,22 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     arr_pars = df.loc[df.index_cols.isna()].copy()
     list_pars = df.loc[df.index_cols.notna()].copy()
     # extract lists from string in input df
-    list_pars['index_cols'] = list_pars.index_cols.apply(
-        lambda x: literal_eval(x))
-    list_pars['use_cols'] = list_pars.use_cols.apply(
-        lambda x: literal_eval(x))
-    list_pars['lower_bound'] = list_pars.lower_bound.apply(
-        lambda x: literal_eval(x))
-    list_pars['upper_bound'] = list_pars.upper_bound.apply(
-        lambda x: literal_eval(x))
+    list_pars["index_cols"] = list_pars.index_cols.apply(lambda x: literal_eval(x))
+    list_pars["use_cols"] = list_pars.use_cols.apply(lambda x: literal_eval(x))
+    list_pars["lower_bound"] = list_pars.lower_bound.apply(lambda x: literal_eval(x))
+    list_pars["upper_bound"] = list_pars.upper_bound.apply(lambda x: literal_eval(x))
     # TODO check use_cols is always present
     apply_genericlist_pars(list_pars)
-    apply_array_pars(arr_pars,chunk_len=chunk_len)
-    
+    apply_array_pars(arr_pars, chunk_len=chunk_len)
 
-def _process_chunk_fac2real(chunk,i):
+
+def _process_chunk_fac2real(chunk, i):
     for args in chunk:
         pyemu.geostats.fac2real(**args)
-    print("process",i," processed ",len(chunk),"fac2real calls")
+    print("process", i, " processed ", len(chunk), "fac2real calls")
 
 
-def _process_chunk_model_files(chunk,i,df):
+def _process_chunk_model_files(chunk, i, df):
     for model_file in chunk:
         _process_model_file(model_file, df)
     print("process", i, " processed ", len(chunk), "process_model_file calls")
@@ -3162,8 +3624,7 @@ def _process_model_file(model_file, df):
     results = []
     org_file = df_mf.org_file.unique()
     if org_file.shape[0] != 1:
-        raise Exception("wrong number of org_files for {0}".
-                        format(model_file))
+        raise Exception("wrong number of org_files for {0}".format(model_file))
     org_arr = np.loadtxt(org_file[0])
 
     for mlt in df_mf.mlt_file:
@@ -3171,8 +3632,11 @@ def _process_model_file(model_file, df):
             continue
         mlt_data = np.loadtxt(mlt)
         if org_arr.shape != mlt_data.shape:
-            raise Exception("shape of org file {}:{} differs from mlt file {}:{}".format(org_file, org_arr.shape,
-                                                                                         mlt, mlt_data.shape))
+            raise Exception(
+                "shape of org file {}:{} differs from mlt file {}:{}".format(
+                    org_file, org_arr.shape, mlt, mlt_data.shape
+                )
+            )
         org_arr *= np.loadtxt(mlt)
     if "upper_bound" in df.columns:
         ub_vals = df_mf.upper_bound.value_counts().dropna().to_dict()
@@ -3183,7 +3647,7 @@ def _process_model_file(model_file, df):
             raise Exception("different upper bound values for {0}".format(org_file))
         else:
             ub = float(list(ub_vals.keys())[0])
-            org_arr[org_arr>ub] = ub
+            org_arr[org_arr > ub] = ub
     if "lower_bound" in df.columns:
         lb_vals = df_mf.lower_bound.value_counts().dropna().to_dict()
         if len(lb_vals) == 0:
@@ -3194,11 +3658,10 @@ def _process_model_file(model_file, df):
             lb = float(list(lb_vals.keys())[0])
             org_arr[org_arr < lb] = lb
 
-    np.savetxt(model_file, np.atleast_2d(org_arr), fmt="%15.6E", delimiter='')
+    np.savetxt(model_file, np.atleast_2d(org_arr), fmt="%15.6E", delimiter="")
 
 
-
-def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None,chunk_len=50):
+def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     """ a function to apply array-based multipler parameters.
 
     Args:
@@ -3227,42 +3690,52 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None,chunk_len=50):
 
     """
     if arr_par_file is not None:
-        warnings.warn("`arr_par_file` argument is deprecated and replaced "
-                      "by arr_par. Method now support passing DataFrame as "
-                      "arr_par arg.",
-                      PyemuWarning)
+        warnings.warn(
+            "`arr_par_file` argument is deprecated and replaced "
+            "by arr_par. Method now support passing DataFrame as "
+            "arr_par arg.",
+            PyemuWarning,
+        )
         arr_par = arr_par_file
     if isinstance(arr_par, str):
         df = pd.read_csv(arr_par, index_col=0)
     elif isinstance(arr_par, pd.DataFrame):
         df = arr_par
     else:
-        raise TypeError("`arr_par` argument must be filename string or "
-                        "Pandas DataFrame, "
-                        "type {0} passed".format(type(arr_par)))
+        raise TypeError(
+            "`arr_par` argument must be filename string or "
+            "Pandas DataFrame, "
+            "type {0} passed".format(type(arr_par))
+        )
     # for fname in df.model_file:
     #     try:
     #         os.remove(fname)
     #     except:
     #         print("error removing mult array:{0}".format(fname))
 
-    if 'pp_file' in df.columns:
+    if "pp_file" in df.columns:
         print("starting fac2real", datetime.now())
-        pp_df = df.loc[df.pp_file.notna(),
-                       ['pp_file', 'fac_file', 'mlt_file']].rename(
-            columns={'fac_file': 'factors_file', 'mlt_file': 'out_file'})
-        pp_df.loc[:, 'lower_lim'] = 1.0e-10
+        pp_df = df.loc[df.pp_file.notna(), ["pp_file", "fac_file", "mlt_file"]].rename(
+            columns={"fac_file": "factors_file", "mlt_file": "out_file"}
+        )
+        pp_df.loc[:, "lower_lim"] = 1.0e-10
         # don't need to process all (e.g. if const. mults apply across kper...)
-        pp_args = pp_df.drop_duplicates().to_dict('records')
+        pp_args = pp_df.drop_duplicates().to_dict("records")
         num_ppargs = len(pp_args)
         num_chunk_floor = num_ppargs // chunk_len
-        main_chunks = np.array(pp_args)[:num_chunk_floor * chunk_len].reshape(
-            [-1, chunk_len]).tolist()
-        remainder = np.array(pp_args)[num_chunk_floor * chunk_len:].tolist()
+        main_chunks = (
+            np.array(pp_args)[: num_chunk_floor * chunk_len]
+            .reshape([-1, chunk_len])
+            .tolist()
+        )
+        remainder = np.array(pp_args)[num_chunk_floor * chunk_len :].tolist()
         chunks = main_chunks + [remainder]
 
         pool = mp.Pool()
-        x = [pool.apply_async(_process_chunk_fac2real,args=(chunk,i)) for i,chunk in enumerate(chunks)]
+        x = [
+            pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
+            for i, chunk in enumerate(chunks)
+        ]
         [xx.get() for xx in x]
         pool.close()
         pool.join()
@@ -3274,8 +3747,6 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None,chunk_len=50):
         # for p in procs:
         #     p.join()
 
-
-
         print("finished fac2real", datetime.now())
 
     print("starting arr mlt", datetime.now())
@@ -3284,9 +3755,10 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None,chunk_len=50):
     # number of files to send to each processor
     # lazy plitting the files to be processed into even chunks
     num_chunk_floor = num_uniq // chunk_len  # number of whole chunks
-    main_chunks = uniq[:num_chunk_floor * chunk_len].reshape(
-        [-1, chunk_len]).tolist()  # the list of files broken down into chunks
-    remainder = uniq[num_chunk_floor * chunk_len:].tolist()  # remaining files
+    main_chunks = (
+        uniq[: num_chunk_floor * chunk_len].reshape([-1, chunk_len]).tolist()
+    )  # the list of files broken down into chunks
+    remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
     chunks = main_chunks + [remainder]
     # procs = []
     # for chunk in chunks:  # now only spawn processor for each chunk
@@ -3297,7 +3769,10 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None,chunk_len=50):
     #     r = p.get(False)
     #     p.join()
     pool = mp.Pool()
-    x = [pool.apply_async(_process_chunk_model_files,args=(chunk,i,df)) for i,chunk in enumerate(chunks)]
+    x = [
+        pool.apply_async(_process_chunk_model_files, args=(chunk, i, df))
+        for i, chunk in enumerate(chunks)
+    ]
     [xx.get() for xx in x]
     pool.close()
     pool.join()
@@ -3323,12 +3798,16 @@ def apply_list_pars():
     temp_df, spat_df = None, None
     if os.path.exists(temp_file):
         temp_df = pd.read_csv(temp_file, delim_whitespace=True)
-        temp_df.loc[:, "split_filename"] = temp_df.filename.apply(lambda x: os.path.split(x)[-1])
+        temp_df.loc[:, "split_filename"] = temp_df.filename.apply(
+            lambda x: os.path.split(x)[-1]
+        )
         org_dir = temp_df.list_org.iloc[0]
         model_ext_path = temp_df.model_ext_path.iloc[0]
     if os.path.exists(spat_file):
         spat_df = pd.read_csv(spat_file, delim_whitespace=True)
-        spat_df.loc[:, "split_filename"] = spat_df.filename.apply(lambda x: os.path.split(x)[-1])
+        spat_df.loc[:, "split_filename"] = spat_df.filename.apply(
+            lambda x: os.path.split(x)[-1]
+        )
         mlt_dir = spat_df.list_mlt.iloc[0]
         org_dir = spat_df.list_org.iloc[0]
         model_ext_path = spat_df.model_ext_path.iloc[0]
@@ -3340,9 +3819,13 @@ def apply_list_pars():
 
         for f in os.listdir(mlt_dir):
             pak = f.split(".")[0].lower()
-            df = pd.read_csv(os.path.join(mlt_dir, f), index_col=0, delim_whitespace=True)
+            df = pd.read_csv(
+                os.path.join(mlt_dir, f), index_col=0, delim_whitespace=True
+            )
             # if pak != 'hfb6':
-            df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k, x.i, x.j), axis=1)
+            df.index = df.apply(
+                lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k, x.i, x.j), axis=1
+            )
             # else:
             #     df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
             #                                                                      x.irow2, x.icol2), axis = 1)
@@ -3369,25 +3852,43 @@ def apply_list_pars():
         if temp_df is not None and fname in temp_df.split_filename.values:
             temp_df_fname = temp_df.loc[temp_df.split_filename == fname, :]
             if temp_df_fname.shape[0] > 0:
-                names = temp_df_fname.dtype_names.iloc[0].split(',')
+                names = temp_df_fname.dtype_names.iloc[0].split(",")
         if spat_df is not None and fname in spat_df.split_filename.values:
             spat_df_fname = spat_df.loc[spat_df.split_filename == fname, :]
             if spat_df_fname.shape[0] > 0:
-                names = spat_df_fname.dtype_names.iloc[0].split(',')
+                names = spat_df_fname.dtype_names.iloc[0].split(",")
         if names is not None:
 
-            df_list = pd.read_csv(os.path.join(org_dir, fname),
-                                  delim_whitespace=True, header=None, names=names)
+            df_list = pd.read_csv(
+                os.path.join(org_dir, fname),
+                delim_whitespace=True,
+                header=None,
+                names=names,
+            )
             df_list.loc[:, "idx"] = df_list.apply(
-                lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k - 1, x.i - 1, x.j - 1), axis=1)
+                lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(
+                    x.k - 1, x.i - 1, x.j - 1
+                ),
+                axis=1,
+            )
 
             df_list.index = df_list.idx
-            pak_name = fname.split('_')[0].lower()
+            pak_name = fname.split("_")[0].lower()
             if pak_name in sp_mlts:
                 mlt_df = sp_mlts[pak_name]
                 mlt_df_ri = mlt_df.reindex(df_list.index)
                 for col in df_list.columns:
-                    if col in ["k", "i", "j", "inode", 'irow1', 'icol1', 'irow2', 'icol2', 'idx']:
+                    if col in [
+                        "k",
+                        "i",
+                        "j",
+                        "inode",
+                        "irow1",
+                        "icol1",
+                        "irow2",
+                        "icol2",
+                        "idx",
+                    ]:
                         continue
                     if col in mlt_df.columns:
                         # print(mlt_df.loc[mlt_df.index.duplicated(),:])
@@ -3398,70 +3899,71 @@ def apply_list_pars():
                 temp_df_fname = temp_df.loc[temp_df.split_filename == fname, :]
                 for col, val in zip(temp_df_fname.col, temp_df_fname.val):
                     df_list.loc[:, col] *= val
-            fmts = ''
+            fmts = ""
             for name in names:
-                if name in ["i", "j", "k", "inode", 'irow1', 'icol1', 'irow2', 'icol2']:
+                if name in ["i", "j", "k", "inode", "irow1", "icol1", "irow2", "icol2"]:
                     fmts += " %9d"
                 else:
                     fmts += " %9G"
-        np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts)
+        np.savetxt(
+            os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts
+        )
 
 
 def apply_genericlist_pars(df):
     """ a function to apply list style mult parameters
     
     Args:
-        df (pandas.DataFrame): DataFrame that relates files containing 
+        df (pandas.DataFrame): DataFrame that relates files containing
             multipliers to model input file names. Required columns include:
             {"model_file": file name of resulatant model input file, 
-             "org_file": file name of original file that multipliers act on, 
-             "fmt": format specifier for model input file 
-                    (currently on 'free' supported),
-             "sep": separator for model input file if 'free' formatted,
-             "head_rows": Number of header rows to transfer from orig file 
-                          to model file,
-             "index_cols": list of columns (either indexes or strings) to be 
-                            used to align mults, orig and model files,
-             "use_cols": columns to mults act on,
-             "upper_bound": ultimate upper bound for model input file 
-                            parameter,
-             "lower_bound": ultimate lower bound for model input file
-                            parameter}
+            "org_file": file name of original file that multipliers act on,
+            "fmt": format specifier for model input file (currently on 'free' supported),
+            "sep": separator for model input file if 'free' formatted,
+            "head_rows": Number of header rows to transfer from orig file to model file,
+            "index_cols": list of columns (either indexes or strings) to be used to align mults, orig and model files,
+            "use_cols": columns to mults act on,
+            "upper_bound": ultimate upper bound for model input file parameter,
+            "lower_bound": ultimate lower bound for model input file parameter}
         
 
     """
+
     uniq = df.model_file.unique()
     for model_file in uniq:
-        print("processing model file:",model_file)
+        print("processing model file:", model_file)
         df_mf = df.loc[df.model_file == model_file, :].copy()
         # read data stored in org (mults act on this)
         org_file = df_mf.org_file.unique()
         if org_file.shape[0] != 1:
-            raise Exception("wrong number of org_files for {0}".
-                            format(model_file))
+            raise Exception("wrong number of org_files for {0}".format(model_file))
         org_file = org_file[0]
-        print("org file:",org_file)
-        notfree = df_mf.fmt[df_mf.fmt != 'free']
+        print("org file:", org_file)
+        notfree = df_mf.fmt[df_mf.fmt != "free"]
         if len(notfree) > 1:
-            raise Exception("too many different format specifiers for "
-                            "model file: {0}".format(model_file))
+            raise Exception(
+                "too many different format specifiers for "
+                "model file: {0}".format(model_file)
+            )
         elif len(notfree) == 1:
             fmt = notfree.values[0]
         else:
             fmt = df_mf.fmt.values[-1]
-        if fmt == 'free':
+        if fmt == "free":
             if df_mf.sep.dropna().nunique() > 1:
-                raise Exception("too many different sep specifiers for "
-                                "model file: {0}".format(model_file))
+                raise Exception(
+                    "too many different sep specifiers for "
+                    "model file: {0}".format(model_file)
+                )
             else:
                 sep = df_mf.sep.dropna().values[-1]
         else:
             sep = None
         datastrtrow = df_mf.head_rows.values[-1]
-        if fmt.lower() == 'free' and sep == ' ':
+        if fmt.lower() == "free" and sep == " ":
             delim_whitespace = True
         if datastrtrow > 0:
-            with open(org_file, 'r') as fp:
+            with open(org_file, "r") as fp:
                 storehead = [next(fp) for _ in range(datastrtrow)]
         else:
             storehead = []
@@ -3471,35 +3973,43 @@ def apply_genericlist_pars(df):
             # TODO: add test for model file with headers
             # index_cols can be from header str
             header = 0
-            hheader=True
+            hheader = True
         elif isinstance(index_col_eg, int):
             # index_cols are column numbers in input file
             header = None
             hheader = None
             # actually do need index cols to be list of strings
             # to be compatible when the saved original file is read in.
-            df_mf.loc[:, 'index_cols'] = df_mf.index_cols.apply(
-                lambda x: [str(i) for i in x])
+            df_mf.loc[:, "index_cols"] = df_mf.index_cols.apply(
+                lambda x: [str(i) for i in x]
+            )
 
         # if writen by PstFrom this should always be comma delim - tidy
-        org_data = pd.read_csv(org_file, skiprows=datastrtrow,
-                               header=header)
+        org_data = pd.read_csv(org_file, skiprows=datastrtrow, header=header)
         # mult columns will be string type, so to make sure they align
         org_data.columns = org_data.columns.astype(str)
-        print("org_data columns:",org_data.columns)
-        print("org_data shape:",org_data.shape)
+        print("org_data columns:", org_data.columns)
+        print("org_data shape:", org_data.shape)
         new_df = org_data.copy()
         for mlt in df_mf.itertuples():
 
             try:
-                new_df = new_df.reset_index().rename(
-                    columns={'index': 'oidx'}).set_index(mlt.index_cols)
+                new_df = (
+                    new_df.reset_index()
+                    .rename(columns={"index": "oidx"})
+                    .set_index(mlt.index_cols)
+                )
                 new_df = new_df.sort_index()
             except Exception as e:
-                print("error setting mlt index_cols: ",str(mlt.index_cols)," for new_df with cols: ",list(new_df.columns))
-                raise Exception("error setting mlt index_cols: "+str(e))
+                print(
+                    "error setting mlt index_cols: ",
+                    str(mlt.index_cols),
+                    " for new_df with cols: ",
+                    list(new_df.columns),
+                )
+                raise Exception("error setting mlt index_cols: " + str(e))
 
-            if not hasattr(mlt,"mlt_file") or pd.isna(mlt.mlt_file):
+            if not hasattr(mlt, "mlt_file") or pd.isna(mlt.mlt_file):
                 print("null mlt file for org_file '" + org_file + "', continuing...")
             else:
                 mlts = pd.read_csv(mlt.mlt_file)
@@ -3507,53 +4017,61 @@ def apply_genericlist_pars(df):
                 # mult idxs will always be written zero based
                 # if original model files is not zero based need to add 1
                 add1 = int(mlt.zero_based == False)
-                mlts.index = pd.MultiIndex.from_tuples(mlts.sidx.apply(
-                    lambda x: tuple(add1 + np.array(literal_eval(x)))),
-                    names=mlt.index_cols)
+                mlts.index = pd.MultiIndex.from_tuples(
+                    mlts.sidx.apply(lambda x: tuple(add1 + np.array(literal_eval(x)))),
+                    names=mlt.index_cols,
+                )
                 if mlts.index.nlevels < 2:  # just in case only one index col is used
                     mlts.index = mlts.index.get_level_values(0)
-                common_idx = new_df.index.intersection(
-                    mlts.index).sort_values().drop_duplicates()
+                common_idx = (
+                    new_df.index.intersection(mlts.index)
+                    .sort_values()
+                    .drop_duplicates()
+                )
                 mlt_cols = [str(col) for col in mlt.use_cols]
-                new_df.loc[common_idx, mlt_cols] = (new_df.loc[common_idx, mlt_cols]
-                                                    * mlts.loc[common_idx, mlt_cols]
-                                                    ).values
+                new_df.loc[common_idx, mlt_cols] = (
+                    new_df.loc[common_idx, mlt_cols] * mlts.loc[common_idx, mlt_cols]
+                ).values
             # bring mult index back to columns AND re-order
-            new_df = new_df.reset_index().set_index(
-                'oidx')[org_data.columns].sort_index()
+            new_df = (
+                new_df.reset_index().set_index("oidx")[org_data.columns].sort_index()
+            )
         if "upper_bound" in df.columns:
             ub = df_mf.apply(
                 lambda x: pd.Series(
-                    {str(c): b for c, b in
-                     zip(x.use_cols, x.upper_bound)}), axis=1).max()
+                    {str(c): b for c, b in zip(x.use_cols, x.upper_bound)}
+                ),
+                axis=1,
+            ).max()
             if ub.notnull().any():
                 for col, val in ub.items():
                     new_df.loc[new_df.loc[:, col] > val, col] = val
         if "lower_bound" in df.columns:
             lb = df_mf.apply(
                 lambda x: pd.Series(
-                    {str(c): b for c, b in
-                     zip(x.use_cols, x.lower_bound)}), axis=1).min()
+                    {str(c): b for c, b in zip(x.use_cols, x.lower_bound)}
+                ),
+                axis=1,
+            ).min()
             if lb.notnull().any():
                 for col, val in lb.items():
                     new_df.loc[new_df.loc[:, col] < val, col] = val
-        with open(model_file, 'w') as fo:
+        with open(model_file, "w") as fo:
             kwargs = {}
             if "win" in platform.platform().lower():
                 kwargs = {"line_terminator": "\n"}
             if len(storehead) != 0:
-                fo.write('\n'.join(storehead))
+                fo.write("\n".join(storehead))
                 fo.flush()
-            if fmt.lower() == 'free':
-                new_df.to_csv(fo, index=False, mode='a',
-                              sep=sep, header=hheader,
-                              **kwargs)
+            if fmt.lower() == "free":
+                new_df.to_csv(
+                    fo, index=False, mode="a", sep=sep, header=hheader, **kwargs
+                )
             else:
                 np.savetxt(fo, np.atleast_2d(new_df.values), fmt=fmt)
 
 
-def write_const_tpl(name, tpl_file, suffix, zn_array=None,
-                    shape=None, longnames=False):
+def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, longnames=False):
     """ write a constant (uniform) template file for a 2-D array
 
     Args:
@@ -3578,7 +4096,7 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None,
         shape = zn_array.shape
 
     parnme = []
-    with open(tpl_file, 'w') as f:
+    with open(tpl_file, "w") as f:
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
@@ -3590,21 +4108,29 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None,
                     else:
                         pname = "{0}{1}".format(name, suffix)
                         if len(pname) > 12:
-                            warnings.warn("zone pname too long for pest:{0}". \
-                                          format(pname))
+                            warnings.warn(
+                                "zone pname too long for pest:{0}".format(pname)
+                            )
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
     # df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace('_', ''), name)
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace("_", ""), name)
     df.loc[:, "tpl"] = tpl_file
     return df
 
 
-def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
-                   spatial_reference=None, longnames=False):
+def write_grid_tpl(
+    name,
+    tpl_file,
+    suffix,
+    zn_array=None,
+    shape=None,
+    spatial_reference=None,
+    longnames=False,
+):
     """ write a grid-based template file for a 2-D array
 
     Args:
@@ -3631,26 +4157,28 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
         shape = zn_array.shape
 
     parnme, x, y = [], [], []
-    with open(tpl_file, 'w') as f:
+    with open(tpl_file, "w") as f:
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
                 if zn_array is not None and zn_array[i, j] < 1:
-                    pname = ' 1.0 '
+                    pname = " 1.0 "
                 else:
                     if longnames:
                         pname = "{0}_i:{0}_j:{1}_{2}".format(name, i, j, suffix)
                         if spatial_reference is not None:
                             pname += "_x:{0:10.2E}_y:{1:10.2E}".format(
-                                spatial_reference.xcentergrid[i,j],
-                                spatial_reference.ycentergrid[i,j])
+                                spatial_reference.xcentergrid[i, j],
+                                spatial_reference.ycentergrid[i, j],
+                            )
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                         if len(pname) > 12:
-                            warnings.warn("grid pname too long for pest:{0}". \
-                                          format(pname))
+                            warnings.warn(
+                                "grid pname too long for pest:{0}".format(pname)
+                            )
                     parnme.append(pname)
-                    pname = ' ~     {0}   ~ '.format(pname)
+                    pname = " ~     {0}   ~ ".format(pname)
                     if spatial_reference is not None:
                         x.append(spatial_reference.xcentergrid[i, j])
                         y.append(spatial_reference.ycentergrid[i, j])
@@ -3659,15 +4187,22 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
     if spatial_reference is not None:
-        df.loc[:, 'x'] = x
-        df.loc[:, 'y'] = y
-    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace('_', ''), name)
+        df.loc[:, "x"] = x
+        df.loc[:, "y"] = y
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace("_", ""), name)
     df.loc[:, "tpl"] = tpl_file
     return df
 
 
-def write_zone_tpl(name, tpl_file, suffix="", zn_array=None, shape=None,
-                   longnames=False,fill_value="1.0"):
+def write_zone_tpl(
+    name,
+    tpl_file,
+    suffix="",
+    zn_array=None,
+    shape=None,
+    longnames=False,
+    fill_value="1.0",
+):
     """ write a zone-based template file for a 2-D array
 
     Args:
@@ -3695,7 +4230,7 @@ def write_zone_tpl(name, tpl_file, suffix="", zn_array=None, shape=None,
 
     parnme = []
     zone = []
-    with open(tpl_file, 'w') as f:
+    with open(tpl_file, "w") as f:
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
@@ -3711,15 +4246,16 @@ def write_zone_tpl(name, tpl_file, suffix="", zn_array=None, shape=None,
 
                         pname = "{0}_zn{1}".format(name, zval)
                         if len(pname) > 12:
-                            warnings.warn("zone pname too long for pest:{0}". \
-                                          format(pname))
+                            warnings.warn(
+                                "zone pname too long for pest:{0}".format(pname)
+                            )
                     parnme.append(pname)
                     zone.append(zval)
                     pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
             f.write("\n")
-    df = pd.DataFrame({"parnme": parnme,"zone":zone}, index=parnme)
-    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace("_", ''), name)
+    df = pd.DataFrame({"parnme": parnme, "zone": zone}, index=parnme)
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace("_", ""), name)
     return df
 
 
@@ -3784,19 +4320,19 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
                 sign = -1.0
                 val = org_val + (sign * incr[par_name])
                 if val < lbnd[par_name]:
-                    raise Exception("parameter {0} went out of bounds".
-                                    format(par_name))
+                    raise Exception("parameter {0} went out of bounds".format(par_name))
             elif val < lbnd[par_name]:
                 sign = 1.0
                 val = org_val + (sign * incr[par_name])
                 if val > ubnd[par_name]:
-                    raise Exception("parameter {0} went out of bounds".
-                                    format(par_name))
+                    raise Exception("parameter {0} went out of bounds".format(par_name))
 
             vals.loc[par_name] = val
             vals.loc[li] = 10 ** vals.loc[li]
             df.loc[idx[irow], pst.par_names] = vals
-            full_names.append("{0}_{1:<15.6E}".format(par_name, vals.loc[par_name]).strip())
+            full_names.append(
+                "{0}_{1:<15.6E}".format(par_name, vals.loc[par_name]).strip()
+            )
 
             irow += 1
             last_val = val
@@ -3804,20 +4340,22 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
     return df
 
 
-def _write_df_tpl(filename, df, sep=',', tpl_marker='~', **kwargs):
+def _write_df_tpl(filename, df, sep=",", tpl_marker="~", **kwargs):
     """function write a pandas dataframe to a template file.
 
     """
     if "line_terminator" not in kwargs:
         if "win" in platform.platform().lower():
             kwargs["line_terminator"] = "\n"
-    with open(filename, 'w') as f:
+    with open(filename, "w") as f:
         f.write("ptf {0}\n".format(tpl_marker))
         f.flush()
-        df.to_csv(f, sep=sep, mode='a', **kwargs)
+        df.to_csv(f, sep=sep, mode="a", **kwargs)
 
 
-def setup_fake_forward_run(pst, new_pst_name, org_cwd='.', bak_suffix="._bak", new_cwd='.'):
+def setup_fake_forward_run(
+    pst, new_pst_name, org_cwd=".", bak_suffix="._bak", new_cwd="."
+):
     """setup a fake forward run for a pst.
 
     Args:
@@ -3890,7 +4428,7 @@ def setup_fake_forward_run(pst, new_pst_name, org_cwd='.', bak_suffix="._bak", n
             if os.path.exists(org_pth):
                 shutil.copy2(org_pth, new_pth)
 
-    with open(os.path.join(new_cwd, "fake_forward_run.py"), 'w') as f:
+    with open(os.path.join(new_cwd, "fake_forward_run.py"), "w") as f:
         f.write("import os\nimport shutil\n")
         for org, bak in pairs.items():
             f.write("shutil.copy2(r'{0}',r'{1}')\n".format(bak, org))
@@ -3900,10 +4438,16 @@ def setup_fake_forward_run(pst, new_pst_name, org_cwd='.', bak_suffix="._bak", n
     return pst
 
 
-def setup_temporal_diff_obs(pst, ins_file, out_file=None,
-                            include_zero_weight=False, include_path=False,
-                            sort_by_name=True,long_names=True,
-                            prefix="dif"):
+def setup_temporal_diff_obs(
+    pst,
+    ins_file,
+    out_file=None,
+    include_zero_weight=False,
+    include_path=False,
+    sort_by_name=True,
+    long_names=True,
+    prefix="dif",
+):
     """ a helper function to setup difference-in-time observations based on an existing
     set of observations in an instruction file using the observation grouping in the
     control file
@@ -3943,14 +4487,18 @@ def setup_temporal_diff_obs(pst, ins_file, out_file=None,
 
     """
     if not os.path.exists(ins_file):
-        raise Exception("setup_temporal_diff_obs() error: ins_file '{0}' not found". \
-                        format(ins_file))
+        raise Exception(
+            "setup_temporal_diff_obs() error: ins_file '{0}' not found".format(ins_file)
+        )
     # the ins routines will check for missing obs, etc
     try:
         ins = pyemu.pst_utils.InstructionFile(ins_file, pst)
     except Exception as e:
-        raise Exception("setup_temporal_diff_obs(): error processing instruction file: {0}". \
-                        format(str(e)))
+        raise Exception(
+            "setup_temporal_diff_obs(): error processing instruction file: {0}".format(
+                str(e)
+            )
+        )
 
     if out_file is None:
         out_file = ins_file.replace(".ins", "")
@@ -3962,67 +4510,84 @@ def setup_temporal_diff_obs(pst, ins_file, out_file=None,
         group_vc = pst.observation_data.loc[ins.obs_name_set, "obgnme"].value_counts()
     else:
 
-        group_vc = obs.loc[obs.apply(lambda x: x.weight > 0 and \
-                                               x.obsnme in ins.obs_name_set, axis=1),\
-                                               "obgnme"].value_counts()
+        group_vc = obs.loc[
+            obs.apply(lambda x: x.weight > 0 and x.obsnme in ins.obs_name_set, axis=1),
+            "obgnme",
+        ].value_counts()
     groups = list(group_vc.loc[group_vc > 1].index)
     if len(groups) == 0:
-        raise Exception("setup_temporal_diff_obs() error: no obs groups found " +
-                        "with more than one non-zero weighted obs")
+        raise Exception(
+            "setup_temporal_diff_obs() error: no obs groups found "
+            + "with more than one non-zero weighted obs"
+        )
 
     # process each group
     diff_dfs = []
     for group in groups:
         # get a sub dataframe with non-zero weighted obs that are in this group and in the instruction file
-        obs_group = obs.loc[obs.obgnme == group,:].copy()
-        obs_group = obs_group.loc[obs_group.apply(lambda x: x.weight > 0 and x.obsnme in ins.obs_name_set,axis=1),:]
+        obs_group = obs.loc[obs.obgnme == group, :].copy()
+        obs_group = obs_group.loc[
+            obs_group.apply(
+                lambda x: x.weight > 0 and x.obsnme in ins.obs_name_set, axis=1
+            ),
+            :,
+        ]
         # sort if requested
         if sort_by_name:
-            obs_group = obs_group.sort_values(by="obsnme",ascending=True)
+            obs_group = obs_group.sort_values(by="obsnme", ascending=True)
         # the names starting with the first
         diff1 = obs_group.obsnme[:-1].values
         # the names ending with the last
         diff2 = obs_group.obsnme[1:].values
         # form a dataframe
-        diff_df = pd.DataFrame({"diff1":diff1,"diff2":diff2})
-        #build up some obs names
+        diff_df = pd.DataFrame({"diff1": diff1, "diff2": diff2})
+        # build up some obs names
         if long_names:
-            diff_df.loc[:,"obsnme"] = ["{0}_{1}__{2}".format(prefix,d1,d2) for d1,d2 in zip(diff1,diff2)]
+            diff_df.loc[:, "obsnme"] = [
+                "{0}_{1}__{2}".format(prefix, d1, d2) for d1, d2 in zip(diff1, diff2)
+            ]
         else:
-            diff_df.loc[:,"obsnme"] = ["{0}_{1}_{2}".format(prefix,group,c) for c in len(diff1)]
+            diff_df.loc[:, "obsnme"] = [
+                "{0}_{1}_{2}".format(prefix, group, c) for c in len(diff1)
+            ]
         # set the obs names as the index (per usual)
         diff_df.index = diff_df.obsnme
         # set the group name for the diff obs
-        diff_df.loc[:,"obgnme"] = "{0}_{1}".format(prefix,group)
+        diff_df.loc[:, "obgnme"] = "{0}_{1}".format(prefix, group)
         # set the weights using the standard prop of variance formula
-        d1_std,d2_std = 1./obs_group.weight[:-1].values,1./obs_group.weight[1:].values
-        diff_df.loc[:,"weight"] = 1./(np.sqrt((d1_std**2)+(d2_std**2)))
+        d1_std, d2_std = (
+            1.0 / obs_group.weight[:-1].values,
+            1.0 / obs_group.weight[1:].values,
+        )
+        diff_df.loc[:, "weight"] = 1.0 / (np.sqrt((d1_std ** 2) + (d2_std ** 2)))
 
         diff_dfs.append(diff_df)
     # concat all the diff dataframes
     diff_df = pd.concat(diff_dfs)
 
-    #save the dataframe as a config file
-    config_file = ins_file.replace(".ins",".diff.config")
+    # save the dataframe as a config file
+    config_file = ins_file.replace(".ins", ".diff.config")
 
-    f = open(config_file, 'w')
+    f = open(config_file, "w")
     if include_path:
-        #ins_path = os.path.split(ins_file)[0]
-        #f = open(os.path.join(ins_path,config_file),'w')
-        f.write("{0},{1}\n".format(os.path.split(ins_file)[-1],os.path.split(out_file)[-1]))
-        #diff_df.to_csv(os.path.join(ins_path,config_file))
+        # ins_path = os.path.split(ins_file)[0]
+        # f = open(os.path.join(ins_path,config_file),'w')
+        f.write(
+            "{0},{1}\n".format(os.path.split(ins_file)[-1], os.path.split(out_file)[-1])
+        )
+        # diff_df.to_csv(os.path.join(ins_path,config_file))
     else:
-        f.write("{0},{1}\n".format(ins_file,out_file))
-        #diff_df.to_csv(os.path.join(config_file))
+        f.write("{0},{1}\n".format(ins_file, out_file))
+        # diff_df.to_csv(os.path.join(config_file))
 
     f.flush()
-    diff_df.to_csv(f,mode="a")
+    diff_df.to_csv(f, mode="a")
     f.flush()
     f.close()
 
     # write the instruction file
     diff_ins_file = config_file.replace(".config", ".processed.ins")
-    with open(diff_ins_file, 'w') as f:
+    with open(diff_ins_file, "w") as f:
         f.write("pif ~\n")
         f.write("l1 \n")
         for oname in diff_df.obsnme:
@@ -4047,14 +4612,14 @@ def setup_temporal_diff_obs(pst, ins_file, out_file=None,
 
         # ok, now we can use the new instruction file to process the diff outputs
         ins = pyemu.pst_utils.InstructionFile(diff_ins_file)
-        ins_pro_diff_df = ins.read_output_file(diff_ins_file.replace(".ins",""))
+        ins_pro_diff_df = ins.read_output_file(diff_ins_file.replace(".ins", ""))
 
         if include_path:
             os.chdir(b_d)
         print(ins_pro_diff_df)
-        diff_df.loc[ins_pro_diff_df.index,"obsval"] = ins_pro_diff_df.obsval
+        diff_df.loc[ins_pro_diff_df.index, "obsval"] = ins_pro_diff_df.obsval
     frun_line = "pyemu.helpers.apply_temporal_diff_obs('{0}')\n".format(config_file)
-    return frun_line,diff_df
+    return frun_line, diff_df
 
 
 def apply_temporal_diff_obs(config_file):
@@ -4073,42 +4638,60 @@ def apply_temporal_diff_obs(config_file):
     """
 
     if not os.path.exists(config_file):
-        raise Exception("apply_temporal_diff_obs() error: config_file '{0}' not found".format(config_file))
-    with open(config_file,'r') as f:
-        line = f.readline().strip().split(',')
-        ins_file,out_file = line[0],line[1]
+        raise Exception(
+            "apply_temporal_diff_obs() error: config_file '{0}' not found".format(
+                config_file
+            )
+        )
+    with open(config_file, "r") as f:
+        line = f.readline().strip().split(",")
+        ins_file, out_file = line[0], line[1]
         diff_df = pd.read_csv(f)
     if not os.path.exists(out_file):
-        raise Exception("apply_temporal_diff_obs() error: out_file '{0}' not found".format(out_file))
+        raise Exception(
+            "apply_temporal_diff_obs() error: out_file '{0}' not found".format(out_file)
+        )
     if not os.path.exists(ins_file):
-        raise Exception("apply_temporal_diff_obs() error: ins_file '{0}' not found".format(ins_file))
+        raise Exception(
+            "apply_temporal_diff_obs() error: ins_file '{0}' not found".format(ins_file)
+        )
     try:
         ins = pyemu.pst_utils.InstructionFile(ins_file)
     except Exception as e:
-        raise Exception("apply_temporal_diff_obs() error instantiating ins file: {0}".format(str(e)))
+        raise Exception(
+            "apply_temporal_diff_obs() error instantiating ins file: {0}".format(str(e))
+        )
     try:
         out_df = ins.read_output_file(out_file)
     except Exception as e:
-        raise Exception("apply_temporal_diff_obs() error processing ins-out file pair: {0}".format(str(e)))
+        raise Exception(
+            "apply_temporal_diff_obs() error processing ins-out file pair: {0}".format(
+                str(e)
+            )
+        )
 
-    #make sure all the listed obs names in the diff_df are in the out_df
+    # make sure all the listed obs names in the diff_df are in the out_df
     diff_names = set(diff_df.diff1.to_list())
     diff_names.update(set(diff_df.diff2.to_list()))
     missing = diff_names - set(list(out_df.index.values))
     if len(missing) > 0:
-        raise Exception("apply_temporal_diff_obs() error: the following obs names in the config file "+\
-                        "are not in the instruction file processed outputs :" + ",".join(missing))
-    diff_df.loc[:,"diff1_obsval"] = out_df.loc[diff_df.diff1.values,"obsval"].values
+        raise Exception(
+            "apply_temporal_diff_obs() error: the following obs names in the config file "
+            + "are not in the instruction file processed outputs :"
+            + ",".join(missing)
+        )
+    diff_df.loc[:, "diff1_obsval"] = out_df.loc[diff_df.diff1.values, "obsval"].values
     diff_df.loc[:, "diff2_obsval"] = out_df.loc[diff_df.diff2.values, "obsval"].values
-    diff_df.loc[:,"diff_obsval"] = diff_df.diff1_obsval - diff_df.diff2_obsval
-    processed_name = config_file.replace(".config",".processed")
-    diff_df.loc[:, ["obsnme","diff1_obsval", "diff2_obsval", "diff_obsval"]].\
-        to_csv(processed_name,sep=' ',index=False)
+    diff_df.loc[:, "diff_obsval"] = diff_df.diff1_obsval - diff_df.diff2_obsval
+    processed_name = config_file.replace(".config", ".processed")
+    diff_df.loc[:, ["obsnme", "diff1_obsval", "diff2_obsval", "diff_obsval"]].to_csv(
+        processed_name, sep=" ", index=False
+    )
     return diff_df
 
 
 # web address of spatial reference dot org
-srefhttp = 'https://spatialreference.org'
+srefhttp = "https://spatialreference.org"
 
 
 class SpatialReference(object):
@@ -4203,51 +4786,72 @@ class SpatialReference(object):
 
     xul, yul = None, None
     xll, yll = None, None
-    rotation = 0.
-    length_multiplier = 1.
-    origin_loc = 'ul'  # or ll
+    rotation = 0.0
+    length_multiplier = 1.0
+    origin_loc = "ul"  # or ll
 
-    defaults = {"xul": None, "yul": None, "rotation": 0.,
-                "proj4_str": None,
-                "units": None, "lenuni": 2,
-                "length_multiplier": None,
-                "source": 'defaults'}
+    defaults = {
+        "xul": None,
+        "yul": None,
+        "rotation": 0.0,
+        "proj4_str": None,
+        "units": None,
+        "lenuni": 2,
+        "length_multiplier": None,
+        "source": "defaults",
+    }
 
-    lenuni_values = {'undefined': 0,
-                     'feet': 1,
-                     'meters': 2,
-                     'centimeters': 3}
+    lenuni_values = {"undefined": 0, "feet": 1, "meters": 2, "centimeters": 3}
     lenuni_text = {v: k for k, v in lenuni_values.items()}
 
-    def __init__(self, delr=np.array([]), delc=np.array([]), lenuni=2,
-                 xul=None, yul=None, xll=None, yll=None, rotation=0.0,
-                 proj4_str=None, epsg=None, prj=None, units=None,
-                 length_multiplier=None, source=None):
+    def __init__(
+        self,
+        delr=np.array([]),
+        delc=np.array([]),
+        lenuni=2,
+        xul=None,
+        yul=None,
+        xll=None,
+        yll=None,
+        rotation=0.0,
+        proj4_str=None,
+        epsg=None,
+        prj=None,
+        units=None,
+        length_multiplier=None,
+        source=None,
+    ):
 
         for delrc in [delr, delc]:
             if isinstance(delrc, float) or isinstance(delrc, int):
-                msg = ('delr and delcs must be an array or sequences equal in '
-                       'length to the number of rows/columns.')
+                msg = (
+                    "delr and delcs must be an array or sequences equal in "
+                    "length to the number of rows/columns."
+                )
                 raise TypeError(msg)
 
         self.delc = np.atleast_1d(np.array(delc)).astype(
-            np.float64)  # * length_multiplier
+            np.float64
+        )  # * length_multiplier
         self.delr = np.atleast_1d(np.array(delr)).astype(
-            np.float64)  # * length_multiplier
+            np.float64
+        )  # * length_multiplier
 
         if self.delr.sum() == 0 or self.delc.sum() == 0:
             if xll is None or yll is None:
-                msg = ('Warning: no grid spacing. '
-                       'Lower-left corner offset calculation methods requires '
-                       'arguments for delr and delc. Origin will be set to '
-                       'upper-left')
+                msg = (
+                    "Warning: no grid spacing. "
+                    "Lower-left corner offset calculation methods requires "
+                    "arguments for delr and delc. Origin will be set to "
+                    "upper-left"
+                )
                 warnings.warn(msg, PyemuWarning)
                 xll, yll = None, None
                 # xul, yul = None, None
 
         self._lenuni = lenuni
         self._proj4_str = proj4_str
-        # 
+        #
         self._epsg = epsg
         # if epsg is not None:
         #     self._proj4_str = getproj4(self._epsg)
@@ -4263,45 +4867,49 @@ class SpatialReference(object):
 
     @property
     def xll(self):
-        if self.origin_loc == 'll':
-            xll = self._xll if self._xll is not None else 0.
-        elif self.origin_loc == 'ul':
+        if self.origin_loc == "ll":
+            xll = self._xll if self._xll is not None else 0.0
+        elif self.origin_loc == "ul":
             # calculate coords for lower left corner
-            xll = self._xul - (np.sin(self.theta) * self.yedge[0] *
-                               self.length_multiplier)
+            xll = self._xul - (
+                np.sin(self.theta) * self.yedge[0] * self.length_multiplier
+            )
         return xll
 
     @property
     def yll(self):
-        if self.origin_loc == 'll':
-            yll = self._yll if self._yll is not None else 0.
-        elif self.origin_loc == 'ul':
+        if self.origin_loc == "ll":
+            yll = self._yll if self._yll is not None else 0.0
+        elif self.origin_loc == "ul":
             # calculate coords for lower left corner
-            yll = self._yul - (np.cos(self.theta) * self.yedge[0] *
-                               self.length_multiplier)
+            yll = self._yul - (
+                np.cos(self.theta) * self.yedge[0] * self.length_multiplier
+            )
         return yll
 
     @property
     def xul(self):
-        if self.origin_loc == 'll':
+        if self.origin_loc == "ll":
             # calculate coords for upper left corner
-            xul = self._xll + (np.sin(self.theta) * self.yedge[0] *
-                               self.length_multiplier)
-        if self.origin_loc == 'ul':
+            xul = self._xll + (
+                np.sin(self.theta) * self.yedge[0] * self.length_multiplier
+            )
+        if self.origin_loc == "ul":
             # calculate coords for lower left corner
-            xul = self._xul if self._xul is not None else 0.
+            xul = self._xul if self._xul is not None else 0.0
         return xul
 
     @property
     def yul(self):
-        if self.origin_loc == 'll':
+        if self.origin_loc == "ll":
             # calculate coords for upper left corner
-            yul = self._yll + (np.cos(self.theta) * self.yedge[0] *
-                               self.length_multiplier)
+            yul = self._yll + (
+                np.cos(self.theta) * self.yedge[0] * self.length_multiplier
+            )
 
-        if self.origin_loc == 'ul':
+        if self.origin_loc == "ul":
             # calculate coords for lower left corner
-            yul = self._yul if self._yul is not None else 0.
+            yul = self._yul if self._yul is not None else 0.0
         return yul
 
     @property
@@ -4314,13 +4922,12 @@ class SpatialReference(object):
                 else:
                     proj4_str = self._proj4_str
                 # set the epsg if proj4 specifies it
-                tmp = [i for i in self._proj4_str.split() if
-                       'epsg' in i.lower()]
-                self._epsg = int(tmp[0].split(':')[1])
+                tmp = [i for i in self._proj4_str.split() if "epsg" in i.lower()]
+                self._epsg = int(tmp[0].split(":")[1])
             else:
                 proj4_str = self._proj4_str
         elif self.epsg is not None:
-            proj4_str = '+init=epsg:{}'.format(self.epsg)
+            proj4_str = "+init=epsg:{}".format(self.epsg)
         return proj4_str
 
     @property
@@ -4373,15 +4980,16 @@ class SpatialReference(object):
             # "ft", "0.3048", "International Foot",
             if "units=m" in proj_str:
                 units = "meters"
-            elif "units=ft" in proj_str or \
-                    "units=us-ft" in proj_str or \
-                    "to_meters:0.3048" in proj_str:
+            elif (
+                "units=ft" in proj_str
+                or "units=us-ft" in proj_str
+                or "to_meters:0.3048" in proj_str
+            ):
                 units = "feet"
             return units
         except:
             if self.proj4_str is not None:
-                print('   could not parse units from {}'.format(
-                    self.proj4_str))
+                print("   could not parse units from {}".format(self.proj4_str))
 
     @property
     def units(self):
@@ -4391,7 +4999,7 @@ class SpatialReference(object):
             units = self._parse_units_from_proj4()
         if units is None:
             # print("warning: assuming SpatialReference units are meters")
-            units = 'meters'
+            units = "meters"
         assert units in self.supported_units
         return units
 
@@ -4405,23 +5013,23 @@ class SpatialReference(object):
         if self._length_multiplier is not None:
             lm = self._length_multiplier
         else:
-            if self.model_length_units == 'feet':
-                if self.units == 'meters':
+            if self.model_length_units == "feet":
+                if self.units == "meters":
                     lm = 0.3048
-                elif self.units == 'feet':
-                    lm = 1.
-            elif self.model_length_units == 'meters':
-                if self.units == 'feet':
-                    lm = 1 / .3048
-                elif self.units == 'meters':
-                    lm = 1.
-            elif self.model_length_units == 'centimeters':
-                if self.units == 'meters':
-                    lm = 1 / 100.
-                elif self.units == 'feet':
+                elif self.units == "feet":
+                    lm = 1.0
+            elif self.model_length_units == "meters":
+                if self.units == "feet":
+                    lm = 1 / 0.3048
+                elif self.units == "meters":
+                    lm = 1.0
+            elif self.model_length_units == "centimeters":
+                if self.units == "meters":
+                    lm = 1 / 100.0
+                elif self.units == "feet":
                     lm = 1 / 30.48
             else:  # model units unspecified; default to 1
-                lm = 1.
+                lm = 1.0
         return lm
 
     @property
@@ -4437,7 +5045,7 @@ class SpatialReference(object):
         return xmin, ymin, xmax, ymax
 
     @staticmethod
-    def load(namefile=None, reffile='usgs.model.reference'):
+    def load(namefile=None, reffile="usgs.model.reference"):
         """
         Attempts to load spatial reference information from
         the following files (in order):
@@ -4459,118 +5067,120 @@ class SpatialReference(object):
     def attribs_from_namfile_header(namefile):
         # check for reference info in the nam file header
         d = SpatialReference.defaults.copy()
-        d['source'] = 'namfile'
+        d["source"] = "namfile"
         if namefile is None:
             return None
         header = []
-        with open(namefile, 'r') as f:
+        with open(namefile, "r") as f:
             for line in f:
-                if not line.startswith('#'):
+                if not line.startswith("#"):
                     break
-                header.extend(line.strip().replace(
-                    '#', '').replace(',', ';').split(';'))
+                header.extend(
+                    line.strip().replace("#", "").replace(",", ";").split(";")
+                )
 
         for item in header:
             if "xul" in item.lower():
                 try:
-                    d['xul'] = float(item.split(':')[1])
+                    d["xul"] = float(item.split(":")[1])
                 except:
-                    print('   could not parse xul ' +
-                          'in {}'.format(namefile))
+                    print("   could not parse xul " + "in {}".format(namefile))
             elif "yul" in item.lower():
                 try:
-                    d['yul'] = float(item.split(':')[1])
+                    d["yul"] = float(item.split(":")[1])
                 except:
-                    print('   could not parse yul ' +
-                          'in {}'.format(namefile))
+                    print("   could not parse yul " + "in {}".format(namefile))
             elif "rotation" in item.lower():
                 try:
-                    d['rotation'] = float(item.split(':')[1])
+                    d["rotation"] = float(item.split(":")[1])
                 except:
-                    print('   could not parse rotation ' +
-                          'in {}'.format(namefile))
+                    print("   could not parse rotation " + "in {}".format(namefile))
             elif "proj4_str" in item.lower():
                 try:
-                    proj4_str = ':'.join(item.split(':')[1:]).strip()
-                    if proj4_str.lower() == 'none':
+                    proj4_str = ":".join(item.split(":")[1:]).strip()
+                    if proj4_str.lower() == "none":
                         proj4_str = None
-                    d['proj4_str'] = proj4_str
+                    d["proj4_str"] = proj4_str
                 except:
-                    print('   could not parse proj4_str ' +
-                          'in {}'.format(namefile))
+                    print("   could not parse proj4_str " + "in {}".format(namefile))
             elif "start" in item.lower():
                 try:
-                    d['start_datetime'] = item.split(':')[1].strip()
+                    d["start_datetime"] = item.split(":")[1].strip()
                 except:
-                    print('   could not parse start ' +
-                          'in {}'.format(namefile))
+                    print("   could not parse start " + "in {}".format(namefile))
 
             # spatial reference length units
             elif "units" in item.lower():
-                d['units'] = item.split(':')[1].strip()
+                d["units"] = item.split(":")[1].strip()
             # model length units
             elif "lenuni" in item.lower():
-                d['lenuni'] = int(item.split(':')[1].strip())
+                d["lenuni"] = int(item.split(":")[1].strip())
             # multiplier for converting from model length units to sr length units
             elif "length_multiplier" in item.lower():
-                d['length_multiplier'] = float(item.split(':')[1].strip())
+                d["length_multiplier"] = float(item.split(":")[1].strip())
         return d
 
     @staticmethod
-    def read_usgs_model_reference_file(reffile='usgs.model.reference'):
+    def read_usgs_model_reference_file(reffile="usgs.model.reference"):
         """
         read spatial reference info from the usgs.model.reference file
         https://water.usgs.gov/ogw/policy/gw-model/modelers-setup.html
         """
 
-        ITMUNI = {0: "undefined", 1: "seconds", 2: "minutes", 3: "hours",
-                  4: "days",
-                  5: "years"}
+        ITMUNI = {
+            0: "undefined",
+            1: "seconds",
+            2: "minutes",
+            3: "hours",
+            4: "days",
+            5: "years",
+        }
         itmuni_values = {v: k for k, v in ITMUNI.items()}
 
         d = SpatialReference.defaults.copy()
-        d['source'] = 'usgs.model.reference'
+        d["source"] = "usgs.model.reference"
         # discard default to avoid confusion with epsg code if entered
-        d.pop('proj4_str')
+        d.pop("proj4_str")
         if os.path.exists(reffile):
             with open(reffile) as fref:
                 for line in fref:
                     if len(line) > 1:
-                        if line.strip()[0] != '#':
-                            info = line.strip().split('#')[0].split()
+                        if line.strip()[0] != "#":
+                            info = line.strip().split("#")[0].split()
                             if len(info) > 1:
-                                d[info[0].lower()] = ' '.join(info[1:])
-            d['xul'] = float(d['xul'])
-            d['yul'] = float(d['yul'])
-            d['rotation'] = float(d['rotation'])
+                                d[info[0].lower()] = " ".join(info[1:])
+            d["xul"] = float(d["xul"])
+            d["yul"] = float(d["yul"])
+            d["rotation"] = float(d["rotation"])
 
             # convert the model.reference text to a lenuni value
             # (these are the model length units)
-            if 'length_units' in d.keys():
-                d['lenuni'] = SpatialReference.lenuni_values[d['length_units']]
-            if 'time_units' in d.keys():
-                d['itmuni'] = itmuni_values[d['time_units']]
-            if 'start_date' in d.keys():
-                start_datetime = d.pop('start_date')
-                if 'start_time' in d.keys():
-                    start_datetime += ' {}'.format(d.pop('start_time'))
-                d['start_datetime'] = start_datetime
-            if 'epsg' in d.keys():
+            if "length_units" in d.keys():
+                d["lenuni"] = SpatialReference.lenuni_values[d["length_units"]]
+            if "time_units" in d.keys():
+                d["itmuni"] = itmuni_values[d["time_units"]]
+            if "start_date" in d.keys():
+                start_datetime = d.pop("start_date")
+                if "start_time" in d.keys():
+                    start_datetime += " {}".format(d.pop("start_time"))
+                d["start_datetime"] = start_datetime
+            if "epsg" in d.keys():
                 try:
-                    d['epsg'] = int(d['epsg'])
+                    d["epsg"] = int(d["epsg"])
                 except Exception as e:
-                    raise Exception(
-                        "error reading epsg code from file:\n" + str(e))
+                    raise Exception("error reading epsg code from file:\n" + str(e))
             # this prioritizes epsg over proj4 if both are given
             # (otherwise 'proj4' entry will be dropped below)
-            elif 'proj4' in d.keys():
-                d['proj4_str'] = d['proj4']
+            elif "proj4" in d.keys():
+                d["proj4_str"] = d["proj4"]
 
             # drop any other items that aren't used in sr class
-            d = {k: v for k, v in d.items() if
-                 k.lower() in SpatialReference.defaults.keys()
-                 or k.lower() in {'epsg', 'start_datetime', 'itmuni',
-                                  'source'}}
+            d = {
+                k: v
+                for k, v in d.items()
+                if k.lower() in SpatialReference.defaults.keys()
+                or k.lower() in {"epsg", "start_datetime", "itmuni", "source"}
+            }
             return d
         else:
             return None
@@ -4578,59 +5188,52 @@ class SpatialReference(object):
     def __setattr__(self, key, value):
         reset = True
         if key == "delr":
-            super(SpatialReference, self). \
-                __setattr__("delr", np.atleast_1d(np.array(value)))
+            super(SpatialReference, self).__setattr__(
+                "delr", np.atleast_1d(np.array(value))
+            )
         elif key == "delc":
-            super(SpatialReference, self). \
-                __setattr__("delc", np.atleast_1d(np.array(value)))
+            super(SpatialReference, self).__setattr__(
+                "delc", np.atleast_1d(np.array(value))
+            )
         elif key == "xul":
-            super(SpatialReference, self). \
-                __setattr__("_xul", float(value))
-            self.origin_loc = 'ul'
+            super(SpatialReference, self).__setattr__("_xul", float(value))
+            self.origin_loc = "ul"
         elif key == "yul":
-            super(SpatialReference, self). \
-                __setattr__("_yul", float(value))
-            self.origin_loc = 'ul'
+            super(SpatialReference, self).__setattr__("_yul", float(value))
+            self.origin_loc = "ul"
         elif key == "xll":
-            super(SpatialReference, self). \
-                __setattr__("_xll", float(value))
-            self.origin_loc = 'll'
+            super(SpatialReference, self).__setattr__("_xll", float(value))
+            self.origin_loc = "ll"
         elif key == "yll":
-            super(SpatialReference, self). \
-                __setattr__("_yll", float(value))
-            self.origin_loc = 'll'
+            super(SpatialReference, self).__setattr__("_yll", float(value))
+            self.origin_loc = "ll"
         elif key == "length_multiplier":
-            super(SpatialReference, self). \
-                __setattr__("_length_multiplier", float(value))
+            super(SpatialReference, self).__setattr__(
+                "_length_multiplier", float(value)
+            )
         elif key == "rotation":
-            super(SpatialReference, self). \
-                __setattr__("rotation", float(value))
+            super(SpatialReference, self).__setattr__("rotation", float(value))
         elif key == "lenuni":
-            super(SpatialReference, self). \
-                __setattr__("_lenuni", int(value))
+            super(SpatialReference, self).__setattr__("_lenuni", int(value))
         elif key == "units":
             value = value.lower()
             assert value in self.supported_units
-            super(SpatialReference, self). \
-                __setattr__("_units", value)
+            super(SpatialReference, self).__setattr__("_units", value)
         elif key == "proj4_str":
-            super(SpatialReference, self). \
-                __setattr__("_proj4_str", value)
+            super(SpatialReference, self).__setattr__("_proj4_str", value)
             # reset the units and epsg
             units = self._parse_units_from_proj4()
             if units is not None:
                 self._units = units
             self._epsg = None
         elif key == "epsg":
-            super(SpatialReference, self). \
-                __setattr__("_epsg", value)
+            super(SpatialReference, self).__setattr__("_epsg", value)
             # reset the units and proj4
             # self._units = None
             # self._proj4_str = getproj4(self._epsg)
             # self.crs = crs(epsg=value)
         elif key == "prj":
-            super(SpatialReference, self). \
-                __setattr__("prj", value)
+            super(SpatialReference, self).__setattr__("prj", value)
             # translation to proj4 strings in crs class not robust yet
             # leave units and proj4 alone for now.
             # self.crs = CRS(prj=value, epsg=self.epsg)
@@ -4677,22 +5280,25 @@ class SpatialReference(object):
     @classmethod
     def from_namfile(cls, namefile, delr=np.array([]), delc=np.array([])):
         if delr is None or delc is None:
-            warnings.warn("One or both of grid spacing information "
-                          "missing,\n    required for most pyemu methods "
-                          "that use sr,\n    can be passed later if desired "
-                          "(e.g. sr.delr = row spacing)", PyemuWarning)
+            warnings.warn(
+                "One or both of grid spacing information "
+                "missing,\n    required for most pyemu methods "
+                "that use sr,\n    can be passed later if desired "
+                "(e.g. sr.delr = row spacing)",
+                PyemuWarning,
+            )
         attribs = SpatialReference.attribs_from_namfile_header(namefile)
-        attribs['delr'] = delr
-        attribs['delc'] = delc
+        attribs["delr"] = delr
+        attribs["delc"] = delc
         try:
             attribs.pop("start_datetime")
         except:
-            print('   could not remove start_datetime')
+            print("   could not remove start_datetime")
         return SpatialReference(**attribs)
 
     @classmethod
     def from_gridspec(cls, gridspec_file, lenuni=0):
-        f = open(gridspec_file, 'r')
+        f = open(gridspec_file, "r")
         raw = f.readline().strip().split()
         nrow = int(raw[0])
         ncol = int(raw[1])
@@ -4703,8 +5309,8 @@ class SpatialReference(object):
         while j < ncol:
             raw = f.readline().strip().split()
             for r in raw:
-                if '*' in r:
-                    rraw = r.split('*')
+                if "*" in r:
+                    rraw = r.split("*")
                     for n in range(int(rraw[0])):
                         delr.append(float(rraw[1]))
                         j += 1
@@ -4716,8 +5322,8 @@ class SpatialReference(object):
         while i < nrow:
             raw = f.readline().strip().split()
             for r in raw:
-                if '*' in r:
-                    rraw = r.split('*')
+                if "*" in r:
+                    rraw = r.split("*")
                     for n in range(int(rraw[0])):
                         delc.append(float(rraw[1]))
                         i += 1
@@ -4725,50 +5331,59 @@ class SpatialReference(object):
                     delc.append(float(r))
                     i += 1
         f.close()
-        return cls(np.array(delr), np.array(delc),
-                   lenuni, xul=xul, yul=yul, rotation=rot)
+        return cls(
+            np.array(delr), np.array(delc), lenuni, xul=xul, yul=yul, rotation=rot
+        )
 
     @property
     def attribute_dict(self):
-        return {"xul": self.xul, "yul": self.yul, "rotation": self.rotation,
-                "proj4_str": self.proj4_str}
+        return {
+            "xul": self.xul,
+            "yul": self.yul,
+            "rotation": self.rotation,
+            "proj4_str": self.proj4_str,
+        }
 
-    def set_spatialreference(self, xul=None, yul=None, xll=None, yll=None,
-                             rotation=0.0):
+    def set_spatialreference(
+        self, xul=None, yul=None, xll=None, yll=None, rotation=0.0
+    ):
         """
         set spatial reference - can be called from model instance
 
         """
         if xul is not None and xll is not None:
-            msg = ('Both xul and xll entered. Please enter either xul, yul or '
-                   'xll, yll.')
+            msg = (
+                "Both xul and xll entered. Please enter either xul, yul or " "xll, yll."
+            )
             raise ValueError(msg)
         if yul is not None and yll is not None:
-            msg = ('Both yul and yll entered. Please enter either xul, yul or '
-                   'xll, yll.')
+            msg = (
+                "Both yul and yll entered. Please enter either xul, yul or " "xll, yll."
+            )
             raise ValueError(msg)
         # set the origin priority based on the left corner specified
         # (the other left corner will be calculated).  If none are specified
         # then default to upper left
         if xul is None and yul is None and xll is None and yll is None:
-            self.origin_loc = 'ul'
-            xul = 0.
+            self.origin_loc = "ul"
+            xul = 0.0
             yul = self.delc.sum()
         elif xll is not None:
-            self.origin_loc = 'll'
+            self.origin_loc = "ll"
         else:
-            self.origin_loc = 'ul'
+            self.origin_loc = "ul"
 
         self.rotation = rotation
-        self._xll = xll if xll is not None else 0.
-        self._yll = yll if yll is not None else 0.
-        self._xul = xul if xul is not None else 0.
-        self._yul = yul if yul is not None else 0.
+        self._xll = xll if xll is not None else 0.0
+        self._yll = yll if yll is not None else 0.0
+        self._xul = xul if xul is not None else 0.0
+        self._yul = yul if yul is not None else 0.0
         return
 
     def __repr__(self):
-        s = "xul:{0:<.10G}; yul:{1:<.10G}; rotation:{2:<G}; ". \
-            format(self.xul, self.yul, self.rotation)
+        s = "xul:{0:<.10G}; yul:{1:<.10G}; rotation:{2:<G}; ".format(
+            self.xul, self.yul, self.rotation
+        )
         s += "proj4_str:{0}; ".format(self.proj4_str)
         s += "units:{0}; ".format(self.units)
         s += "lenuni:{0}; ".format(self.lenuni)
@@ -4777,7 +5392,7 @@ class SpatialReference(object):
 
     @property
     def theta(self):
-        return -self.rotation * np.pi / 180.
+        return -self.rotation * np.pi / 180.0
 
     @property
     def xedge(self):
@@ -4820,18 +5435,17 @@ class SpatialReference(object):
         return self._xcentergrid
 
     def _set_xycentergrid(self):
-        self._xcentergrid, self._ycentergrid = np.meshgrid(self.xcenter,
-                                                           self.ycenter)
+        self._xcentergrid, self._ycentergrid = np.meshgrid(self.xcenter, self.ycenter)
         self._xcentergrid, self._ycentergrid = self.transform(
-            self._xcentergrid,
-            self._ycentergrid)
+            self._xcentergrid, self._ycentergrid
+        )
 
     def _set_xygrid(self):
         self._xgrid, self._ygrid = np.meshgrid(self.xedge, self.yedge)
         self._xgrid, self._ygrid = self.transform(self._xgrid, self._ygrid)
 
     @staticmethod
-    def rotate(x, y, theta, xorigin=0., yorigin=0.):
+    def rotate(x, y, theta, xorigin=0.0, yorigin=0.0):
         """
         Given x and y array-like values calculate the rotation about an
         arbitrary origin and then return the rotated coordinates.  theta is in
@@ -4840,12 +5454,10 @@ class SpatialReference(object):
         """
         # jwhite changed on Oct 11 2016 - rotation is now positive CCW
         # theta = -theta * np.pi / 180.
-        theta = theta * np.pi / 180.
+        theta = theta * np.pi / 180.0
 
-        xrot = xorigin + np.cos(theta) * (x - xorigin) - np.sin(theta) * \
-               (y - yorigin)
-        yrot = yorigin + np.sin(theta) * (x - xorigin) + np.cos(theta) * \
-               (y - yorigin)
+        xrot = xorigin + np.cos(theta) * (x - xorigin) - np.sin(theta) * (y - yorigin)
+        yrot = yorigin + np.sin(theta) * (x - xorigin) + np.cos(theta) * (y - yorigin)
         return xrot, yrot
 
     def transform(self, x, y, inverse=False):
@@ -4864,11 +5476,11 @@ class SpatialReference(object):
             y *= self.length_multiplier
             x += self.xll
             y += self.yll
-            x, y = SpatialReference.rotate(x, y, theta=self.rotation,
-                                           xorigin=self.xll, yorigin=self.yll)
+            x, y = SpatialReference.rotate(
+                x, y, theta=self.rotation, xorigin=self.xll, yorigin=self.yll
+            )
         else:
-            x, y = SpatialReference.rotate(x, y, -self.rotation,
-                                           self.xll, self.yll)
+            x, y = SpatialReference.rotate(x, y, -self.rotation, self.xll, self.yll)
             x -= self.xll
             y -= self.yll
             x /= self.length_multiplier
@@ -4954,9 +5566,9 @@ class SpatialReference(object):
         coordinate for every column in the grid in model space - not offset or rotated.
 
         """
-        assert (self.delr is not None 
-                and len(self.delr) > 0), ("delr not passed to "
-                                          "spatial reference object")
+        assert self.delr is not None and len(self.delr) > 0, (
+            "delr not passed to " "spatial reference object"
+        )
         x = np.add.accumulate(self.delr) - 0.5 * self.delr
         return x
 
@@ -4966,12 +5578,11 @@ class SpatialReference(object):
         coordinate for every row in the grid in model space - not offset of rotated.
 
         """
-        assert (self.delc is not None 
-                and len(self.delc) > 0), ("delc not passed to "
-                                          "spatial reference object")
+        assert self.delc is not None and len(self.delc) > 0, (
+            "delc not passed to " "spatial reference object"
+        )
         Ly = np.add.reduce(self.delc)
-        y = Ly - (np.add.accumulate(self.delc) - 0.5 *
-                  self.delc)
+        y = Ly - (np.add.accumulate(self.delc) - 0.5 * self.delc)
         return y
 
     def get_xedge_array(self):
@@ -4981,10 +5592,10 @@ class SpatialReference(object):
         or rotated.  Array is of size (ncol + 1)
 
         """
-        assert (self.delr is not None 
-                and len(self.delr) > 0), ("delr not passed to "
-                                          "spatial reference object")
-        xedge = np.concatenate(([0.], np.add.accumulate(self.delr)))
+        assert self.delr is not None and len(self.delr) > 0, (
+            "delr not passed to " "spatial reference object"
+        )
+        xedge = np.concatenate(([0.0], np.add.accumulate(self.delr)))
         return xedge
 
     def get_yedge_array(self):
@@ -4994,31 +5605,32 @@ class SpatialReference(object):
         rotated. Array is of size (nrow + 1)
 
         """
-        assert (self.delc is not None 
-                and len(self.delc) > 0), ("delc not passed to "
-                                          "spatial reference object")
+        assert self.delc is not None and len(self.delc) > 0, (
+            "delc not passed to " "spatial reference object"
+        )
         length_y = np.add.reduce(self.delc)
-        yedge = np.concatenate(([length_y], length_y -
-                                np.add.accumulate(self.delc)))
+        yedge = np.concatenate(([length_y], length_y - np.add.accumulate(self.delc)))
         return yedge
 
     def write_gridspec(self, filename):
         """ write a PEST-style grid specification file
         """
-        f = open(filename, 'w')
+        f = open(filename, "w")
+        f.write("{0:10d} {1:10d}\n".format(self.delc.shape[0], self.delr.shape[0]))
         f.write(
-            "{0:10d} {1:10d}\n".format(self.delc.shape[0], self.delr.shape[0]))
-        f.write("{0:15.6E} {1:15.6E} {2:15.6E}\n".format(
-            self.xul * self.length_multiplier,
-            self.yul * self.length_multiplier,
-            self.rotation))
+            "{0:15.6E} {1:15.6E} {2:15.6E}\n".format(
+                self.xul * self.length_multiplier,
+                self.yul * self.length_multiplier,
+                self.rotation,
+            )
+        )
 
         for r in self.delr:
             f.write("{0:15.6E} ".format(r))
-        f.write('\n')
+        f.write("\n")
         for c in self.delc:
             f.write("{0:15.6E} ".format(c))
-        f.write('\n')
+        f.write("\n")
         return
 
     def get_vertices(self, i, j):
@@ -5102,7 +5714,7 @@ class SpatialReference(object):
     #     """
     #     Write a numpy array to Arc Ascii grid or shapefile with the
     #     model reference.
-    # 
+    #
     #     Parameters
     #     ----------
     #     filename : str
@@ -5122,7 +5734,7 @@ class SpatialReference(object):
     #         keyword arguments to np.savetxt (ascii)
     #         rasterio.open (GeoTIFF)
     #         or flopy.export.shapefile_utils.write_grid_shapefile2
-    # 
+    #
     #     Notes
     #     -----
     #     Rotated grids will be either be unrotated prior to export,
@@ -5134,14 +5746,14 @@ class SpatialReference(object):
     #     Arc Ascii and GeoTiff (besides disk usage) is that the
     #     unrotated Arc Ascii will have a different grid size, whereas the GeoTiff
     #     will have the same number of rows and pixels as the original.
-    # 
+    #
     #     """
-    # 
+    #
     #     if filename.lower().endswith(".asc"):
     #         if len(np.unique(self.delr)) != len(np.unique(self.delc)) != 1 \
     #                 or self.delr[0] != self.delc[0]:
     #             raise ValueError('Arc ascii arrays require a uniform grid.')
-    # 
+    #
     #         xll, yll = self.xll, self.yll
     #         cellsize = self.delr[0] * self.length_multiplier
     #         fmt = kwargs.get('fmt', '%.18e')
@@ -5160,7 +5772,7 @@ class SpatialReference(object):
     #                 xll, yll = xmin, ymin
     #             except ImportError:
     #                 print('scipy package required to export rotated grid.')
-    # 
+    #
     #         filename = '.'.join(
     #             filename.split('.')[:-1]) + '.asc'  # enforce .asc ending
     #         nrow, ncol = a.shape
@@ -5177,7 +5789,7 @@ class SpatialReference(object):
     #         with open(filename, 'ab') as output:
     #             np.savetxt(output, a, **kwargs)
     #         print('wrote {}'.format(filename))
-    # 
+    #
     #     elif filename.lower().endswith(".tif"):
     #         if len(np.unique(self.delr)) != len(np.unique(self.delc)) != 1 \
     #                 or self.delr[0] != self.delc[0]:
@@ -5192,7 +5804,7 @@ class SpatialReference(object):
     #         trans = Affine.translation(self.xul, self.yul) * \
     #                 Affine.rotation(self.rotation) * \
     #                 Affine.scale(dxdy, -dxdy)
-    # 
+    #
     #         # third dimension is the number of bands
     #         a = a.copy()
     #         if len(a.shape) == 2:
@@ -5209,7 +5821,7 @@ class SpatialReference(object):
     #         else:
     #             msg = 'ERROR: invalid dtype "{}"'.format(a.dtype.name)
     #             raise TypeError(msg)
-    # 
+    #
     #         meta = {'count': a.shape[0],
     #                 'width': a.shape[2],
     #                 'height': a.shape[1],
@@ -5223,7 +5835,7 @@ class SpatialReference(object):
     #         with rasterio.open(filename, 'w', **meta) as dst:
     #             dst.write(a)
     #         print('wrote {}'.format(filename))
-    # 
+    #
     #     elif filename.lower().endswith(".shp"):
     #         from ..export.shapefile_utils import write_grid_shapefile2
     #         epsg = kwargs.get('epsg', None)
@@ -5239,7 +5851,7 @@ class SpatialReference(object):
     #                     **kwargs):
     #     """
     #     Convert matplotlib contour plot object to shapefile.
-    # 
+    #
     #     Parameters
     #     ----------
     #     filename : str
@@ -5251,23 +5863,23 @@ class SpatialReference(object):
     #     prj : str
     #         Existing projection file to be used with new shapefile.
     #     **kwargs : key-word arguments to flopy.export.shapefile_utils.recarray2shp
-    # 
+    #
     #     Returns
     #     -------
     #     df : dataframe of shapefile contents
-    # 
+    #
     #     """
     #     from flopy.utils.geometry import LineString
     #     from flopy.export.shapefile_utils import recarray2shp
-    # 
+    #
     #     if not isinstance(contours, list):
     #         contours = [contours]
-    # 
+    #
     #     if epsg is None:
     #         epsg = self._epsg
     #     if prj is None:
     #         prj = self.proj4_str
-    # 
+    #
     #     geoms = []
     #     level = []
     #     for ctr in contours:
@@ -5276,13 +5888,13 @@ class SpatialReference(object):
     #             paths = c.get_paths()
     #             geoms += [LineString(p.vertices) for p in paths]
     #             level += list(np.ones(len(paths)) * levels[i])
-    # 
+    #
     #     # convert the dictionary to a recarray
     #     ra = np.array(level,
     #                   dtype=[(fieldname, float)]).view(np.recarray)
-    # 
+    #
     #     recarray2shp(ra, geoms, filename, epsg=epsg, prj=prj, **kwargs)
-    # 
+    #
     # def export_array_contours(self, filename, a,
     #                           fieldname='level',
     #                           interval=None,
@@ -5293,7 +5905,7 @@ class SpatialReference(object):
     #                           **kwargs):
     #     """
     #     Contour an array using matplotlib; write shapefile of contours.
-    # 
+    #
     #     Parameters
     #     ----------
     #     filename : str
@@ -5305,15 +5917,15 @@ class SpatialReference(object):
     #     prj : str
     #         Existing projection file to be used with new shapefile.
     #     **kwargs : key-word arguments to flopy.export.shapefile_utils.recarray2shp
-    # 
+    #
     #     """
     #     import matplotlib.pyplot as plt
-    # 
+    #
     #     if epsg is None:
     #         epsg = self._epsg
     #     if prj is None:
     #         prj = self.proj4_str
-    # 
+    #
     #     if interval is not None:
     #         vmin = np.nanmin(a)
     #         vmax = np.nanmax(a)
@@ -5327,30 +5939,30 @@ class SpatialReference(object):
     #     ctr = self.contour_array(ax, a, levels=levels)
     #     self.export_contours(filename, ctr, fieldname, epsg, prj, **kwargs)
     #     plt.close()
-    # 
+    #
     # def contour_array(self, ax, a, **kwargs):
     #     """
     #     Create a QuadMesh plot of the specified array using pcolormesh
-    # 
+    #
     #     Parameters
     #     ----------
     #     ax : matplotlib.axes.Axes
     #         ax to add the contours
-    # 
+    #
     #     a : np.ndarray
     #         array to contour
-    # 
+    #
     #     Returns
     #     -------
     #     contour_set : ContourSet
-    # 
+    #
     #     """
     #     from flopy.plot import ModelMap
-    # 
+    #
     #     kwargs['ax'] = ax
     #     mm = ModelMap(sr=self)
     #     contour_set = mm.contour_array(a=a, **kwargs)
-    # 
+    #
     #     return contour_set
 
     @property
@@ -5599,12 +6211,12 @@ class SpatialReference(object):
 #     """
 #     Sets up a local database of text representations of coordinate reference
 #     systems, keyed by EPSG code.
-# 
+#
 #     The database is epsgref.json, located in the user's data directory. If
 #     optional 'appdirs' package is available, this is in the platform-dependent
 #     user directory, otherwise in the user's 'HOME/.flopy' directory.
 #     """
-# 
+#
 #     def __init__(self):
 #         try:
 #             from appdirs import user_data_dir
@@ -5619,7 +6231,7 @@ class SpatialReference(object):
 #             os.makedirs(datadir)
 #         dbname = 'epsgref.json'
 #         self.location = os.path.join(datadir, dbname)
-# 
+#
 #     def to_dict(self):
 #         """
 #         Returns dict with EPSG code integer key, and WKT CRS text
@@ -5635,18 +6247,18 @@ class SpatialReference(object):
 #                 except ValueError:
 #                     data[key] = value
 #         return data
-# 
+#
 #     def _write(self, data):
 #         with open(self.location, 'w') as f:
 #             json.dump(data, f, indent=0)
 #             f.write('\n')
-# 
+#
 #     def reset(self, verbose=True):
 #         if os.path.exists(self.location):
 #             os.remove(self.location)
 #         if verbose:
 #             print('Resetting {}'.format(self.location))
-# 
+#
 #     def add(self, epsg, prj):
 #         """
 #         add an epsg code to epsgref.json
@@ -5654,14 +6266,14 @@ class SpatialReference(object):
 #         data = self.to_dict()
 #         data[epsg] = prj
 #         self._write(data)
-# 
+#
 #     def get(self, epsg):
 #         """
 #         returns prj from a epsg code, otherwise None if not found
 #         """
 #         data = self.to_dict()
 #         return data.get(epsg)
-# 
+#
 #     def remove(self, epsg):
 #         """
 #         removes an epsg entry from epsgref.json
@@ -5670,7 +6282,7 @@ class SpatialReference(object):
 #         if epsg in data:
 #             del data[epsg]
 #             self._write(data)
-# 
+#
 #     @staticmethod
 #     def show():
 #         ep = EpsgRef()
@@ -5684,7 +6296,7 @@ class SpatialReference(object):
 #     Container to parse and store coordinate reference system parameters,
 #     and translate between different formats.
 #     """
-# 
+#
 #     def __init__(self, prj=None, esri_wkt=None, epsg=None):
 #         warnings.warn(
 #             "crs has been deprecated. Use CRS in shapefile_utils instead.",
@@ -5701,7 +6313,7 @@ class SpatialReference(object):
 #                 self.wktstr = wktstr
 #         if self.wktstr is not None:
 #             self.parse_wkt()
-# 
+#
 #     @property
 #     def crs(self):
 #         """
@@ -5727,7 +6339,7 @@ class SpatialReference(object):
 #                 proj = 'aea'
 #         elif self.projcs is None and self.geogcs is not None:
 #             proj = 'longlat'
-# 
+#
 #         # datum
 #         datum = None
 #         if 'NAD' in self.datum.lower() or \
@@ -5740,7 +6352,7 @@ class SpatialReference(object):
 #                 datum += '27'
 #         elif '84' in self.datum.lower():
 #             datum = 'wgs84'
-# 
+#
 #         # ellipse
 #         ellps = None
 #         if '1866' in self.spheroid_name:
@@ -5749,10 +6361,10 @@ class SpatialReference(object):
 #             ellps = 'grs80'
 #         elif 'wgs' in self.spheroid_name.lower():
 #             ellps = 'wgs84'
-# 
+#
 #         # prime meridian
 #         pm = self.primem[0].lower()
-# 
+#
 #         return {'proj': proj,
 #                 'datum': datum,
 #                 'ellps': ellps,
@@ -5767,7 +6379,7 @@ class SpatialReference(object):
 #                 'y_0': self.false_northing,
 #                 'units': self.projcs_unit,
 #                 'zone': self.utm_zone}
-# 
+#
 #     @property
 #     def grid_mapping_attribs(self):
 #         """
@@ -5799,16 +6411,16 @@ class SpatialReference(object):
 #                        'false_easting': self.crs['x_0'],
 #                        'false_northing': self.crs['y_0']}
 #             return {k: v for k, v in attribs.items() if v is not None}
-# 
+#
 #     @property
 #     def proj4(self):
 #         """
 #         Not implemented yet
 #         """
 #         return None
-# 
+#
 #     def parse_wkt(self):
-# 
+#
 #         self.projcs = self._gettxt('PROJCS["', '"')
 #         self.utm_zone = None
 #         if self.projcs is not None and 'utm' in self.projcs.lower():
@@ -5830,7 +6442,7 @@ class SpatialReference(object):
 #         self.false_easting = self._getvalue('false_easting')
 #         self.false_northing = self._getvalue('false_northing')
 #         self.projcs_unit = self._getprojcs_unit()
-# 
+#
 #     def _gettxt(self, s1, s2):
 #         s = self.wktstr.lower()
 #         strt = s.find(s1.lower())
@@ -5838,7 +6450,7 @@ class SpatialReference(object):
 #             strt += len(s1)
 #             end = s[strt:].find(s2.lower()) + strt
 #             return self.wktstr[strt:end]
-# 
+#
 #     def _getvalue(self, k):
 #         s = self.wktstr.lower()
 #         strt = s.find(k.lower())
@@ -5849,7 +6461,7 @@ class SpatialReference(object):
 #                 return float(self.wktstr[strt:end].split(',')[1])
 #             except:
 #                 print('   could not typecast wktstr to a float')
-# 
+#
 #     def _getgcsparam(self, txt):
 #         nvalues = 3 if txt.lower() == 'spheroid' else 2
 #         tmp = self._gettxt('{}["'.format(txt), ']')
@@ -5860,7 +6472,7 @@ class SpatialReference(object):
 #             return name + values
 #         else:
 #             return [None] * nvalues
-# 
+#
 #     def _getprojcs_unit(self):
 #         if self.projcs is not None:
 #             tmp = self.wktstr.lower().split('unit["')[-1]
@@ -5874,7 +6486,7 @@ class SpatialReference(object):
 #     """
 #     Gets projection file (.prj) text for given epsg code from
 #     spatialreference.org
-# 
+#
 #     Parameters
 #     ----------
 #     epsg : int
@@ -5882,16 +6494,16 @@ class SpatialReference(object):
 #     addlocalreference : boolean
 #         adds the projection file text associated with epsg to a local
 #         database, epsgref.json, located in the user's data directory.
-# 
+#
 #     References
 #     ----------
 #     https://www.epsg-registry.org/
-# 
+#
 #     Returns
 #     -------
 #     prj : str
 #         text for a projection (*.prj) file.
-# 
+#
 #     """
 #     warnings.warn("SpatialReference has been deprecated. Use StructuredGrid "
 #                   "instead.", category=DeprecationWarning)
@@ -5903,33 +6515,33 @@ class SpatialReference(object):
 #         epsgfile.add(epsg, wktstr)
 #     return wktstr
 
-# 
+#
 # def get_spatialreference(epsg, text='esriwkt'):
 #     """
 #     Gets text for given epsg code and text format from spatialreference.org
-# 
+#
 #     Fetches the reference text using the url:
 #         https://spatialreference.org/ref/epsg/<epsg code>/<text>/
-# 
+#
 #     See: https://www.epsg-registry.org/
-# 
+#
 #     Parameters
 #     ----------
 #     epsg : int
 #         epsg code for coordinate system
 #     text : str
 #         string added to url
-# 
+#
 #     Returns
 #     -------
 #     url : str
-# 
+#
 #     """
 #     from flopy.utils.flopy_io import get_url_text
-# 
+#
 #     warnings.warn("SpatialReference has been deprecated. Use StructuredGrid "
 #                   "instead.", category=DeprecationWarning)
-# 
+#
 #     epsg_categories = ['epsg', 'esri']
 #     for cat in epsg_categories:
 #         url = "{}/ref/{}/{}/{}/".format(srefhttp, cat, epsg, text)
@@ -5949,37 +6561,38 @@ class SpatialReference(object):
 #     # may still work with pyproj
 #     elif text == 'epsg':
 #         return '+init=epsg:{}'.format(epsg)
-# 
-# 
+#
+#
 # def getproj4(epsg):
 #     """
 #     Get projection file (.prj) text for given epsg code from
 #     spatialreference.org. See: https://www.epsg-registry.org/
-# 
+#
 #     Parameters
 #     ----------
 #     epsg : int
 #         epsg code for coordinate system
-# 
+#
 #     Returns
 #     -------
 #     prj : str
 #         text for a projection (*.prj) file.
-# 
+#
 #     """
 #     warnings.warn("SpatialReference has been deprecated. Use StructuredGrid "
 #                   "instead.", category=DeprecationWarning)
-# 
+#
 #     return get_spatialreference(epsg, text='proj4')
 
-def get_maha_obs_summary(sim_en,l1_crit_val=6.34,l2_crit_val=9.2):
+
+def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
     """ calculate the 1-D and 2-D mahalanobis distance
 
     Args:
         sim_en (`pyemu.ObservationEnsemble`): a simulated outputs ensemble
-        l1_crit_val (`float1): the chi squared critical value for the 1-D
+        l1_crit_val (`float`): the chi squared critical value for the 1-D
             mahalanobis distance.  Default is 6.4 (p=0.01,df=1)
-        l2_crit_val (`float1): the chi squared critical value for the 2-D
+        l2_crit_val (`float`): the chi squared critical value for the 2-D
             mahalanobis distance.  Default is 9.2 (p=0.01,df=2)
 
     Returns:
@@ -5997,38 +6610,37 @@ def get_maha_obs_summary(sim_en,l1_crit_val=6.34,l2_crit_val=9.2):
 
     """
 
-    if not isinstance(sim_en,pyemu.ObservationEnsemble):
-        raise Exception("'sim_en' must be a "+\
-                        " pyemu.ObservationEnsemble instance")
+    if not isinstance(sim_en, pyemu.ObservationEnsemble):
+        raise Exception("'sim_en' must be a " + " pyemu.ObservationEnsemble instance")
     if sim_en.pst.nnz_obs < 1:
         raise Exception(" at least one non-zero weighted obs is needed")
 
     # process the simulated ensemblet to only have non-zero weighted obs
     obs = sim_en.pst.observation_data
-    nz_names =sim_en.pst.nnz_obs_names
+    nz_names = sim_en.pst.nnz_obs_names
     # get the full cov matrix
     nz_cov_df = sim_en.covariance_matrix().to_dataframe()
-    nnz_en = sim_en.loc[:,nz_names].copy()
-    nz_cov_df = nz_cov_df.loc[nz_names,nz_names]
+    nnz_en = sim_en.loc[:, nz_names].copy()
+    nz_cov_df = nz_cov_df.loc[nz_names, nz_names]
     # get some noise realizations
     nnz_en.reseed()
     obsmean = obs.loc[nnz_en.columns.values, "obsval"]
-    noise_en = pyemu.ObservationEnsemble.from_gaussian_draw(sim_en.pst,num_reals=sim_en.shape[0])
-    noise_en -= obsmean #subtract off the obs val bc we just want the noise
+    noise_en = pyemu.ObservationEnsemble.from_gaussian_draw(
+        sim_en.pst, num_reals=sim_en.shape[0]
+    )
+    noise_en -= obsmean  # subtract off the obs val bc we just want the noise
     noise_en.index = nnz_en.index
     nnz_en += noise_en
 
-
-
-    #obsval_dict = obs.loc[nnz_en.columns.values,"obsval"].to_dict()
+    # obsval_dict = obs.loc[nnz_en.columns.values,"obsval"].to_dict()
 
     # first calculate the 1-D subspace maha distances
     print("calculating L-1 maha distances")
     sim_mean = nnz_en.mean()
-    obs_mean = obs.loc[nnz_en.columns.values,"obsval"]
-    simvar_inv = 1. / (nnz_en.std()**2)
+    obs_mean = obs.loc[nnz_en.columns.values, "obsval"]
+    simvar_inv = 1.0 / (nnz_en.std() ** 2)
     res_mean = sim_mean - obs_mean
-    l1_maha_sq_df = res_mean**2 * simvar_inv
+    l1_maha_sq_df = res_mean ** 2 * simvar_inv
     l1_maha_sq_df = l1_maha_sq_df.loc[l1_maha_sq_df > l1_crit_val]
     # now calculate the 2-D subspace maha distances
     print("preparing L-2 maha distance containers")
@@ -6042,16 +6654,21 @@ def get_maha_obs_summary(sim_en,l1_crit_val=6.34,l2_crit_val=9.2):
     for i1, o1 in enumerate(nz_names):
         var[o1] = var_arr[i1]
 
-        cov_vals = nz_cov_df.loc[o1, :].values[i1+1:]
-        ostr_vals = ["{0}_{1}".format(o1, o2) for o2 in nz_names[i1+1:]]
-        cd = {o:c for o,c in zip(ostr_vals,cov_vals)}
+        cov_vals = nz_cov_df.loc[o1, :].values[i1 + 1 :]
+        ostr_vals = ["{0}_{1}".format(o1, o2) for o2 in nz_names[i1 + 1 :]]
+        cd = {o: c for o, c in zip(ostr_vals, cov_vals)}
         cov.update(cd)
     print("starting L-2 maha distance parallel calcs")
-    #pool = mp.Pool(processes=5)
+    # pool = mp.Pool(processes=5)
     with mp.get_context("spawn").Pool() as pool:
-        for i1,o1 in enumerate(nz_names):
-            o2names = [o2 for o2 in nz_names[i1+1:]]
-            rresults = [pool.apply_async(_l2_maha_worker,args=(o1,o2names,mean,var,cov,results,l2_crit_val))]
+        for i1, o1 in enumerate(nz_names):
+            o2names = [o2 for o2 in nz_names[i1 + 1 :]]
+            rresults = [
+                pool.apply_async(
+                    _l2_maha_worker,
+                    args=(o1, o2names, mean, var, cov, results, l2_crit_val),
+                )
+            ]
         [r.get() for r in rresults]
 
         print("closing pool")
@@ -6060,19 +6677,21 @@ def get_maha_obs_summary(sim_en,l1_crit_val=6.34,l2_crit_val=9.2):
         print("joining pool")
         pool.join()
 
-    #print(results)
-    #print(len(results),len(ostr_vals))
+    # print(results)
+    # print(len(results),len(ostr_vals))
 
     keys = list(results.keys())
-    onames1 = [k.split('|')[0] for k in keys]
-    onames2 = [k.split('|')[1] for k in keys]
+    onames1 = [k.split("|")[0] for k in keys]
+    onames2 = [k.split("|")[1] for k in keys]
     l2_maha_sq_vals = [results[k] for k in keys]
-    l2_maha_sq_df = pd.DataFrame({"obsnme_1":onames1,"obsnme_2":onames2,"sq_distance":l2_maha_sq_vals})
+    l2_maha_sq_df = pd.DataFrame(
+        {"obsnme_1": onames1, "obsnme_2": onames2, "sq_distance": l2_maha_sq_vals}
+    )
 
-    return l1_maha_sq_df,l2_maha_sq_df
+    return l1_maha_sq_df, l2_maha_sq_df
 
 
-def _l2_maha_worker(o1,o2names,mean,var,cov,results,l2_crit_val):
+def _l2_maha_worker(o1, o2names, mean, var, cov, results, l2_crit_val):
 
     rresults = {}
     v1 = var[o1]
@@ -6080,12 +6699,12 @@ def _l2_maha_worker(o1,o2names,mean,var,cov,results,l2_crit_val):
     c[0, 0] = v1
     r1 = mean[o1]
     for o2 in o2names:
-        ostr = "{0}_{1}".format(o1,o2)
+        ostr = "{0}_{1}".format(o1, o2)
         cv = cov[ostr]
         v2 = var[o2]
-        c[1,1] = v2
-        c[0,1] = cv
-        c[1,0] = cv
+        c[1, 1] = v2
+        c[0, 1] = cv
+        c[1, 0] = cv
         c_inv = np.linalg.inv(c)
 
         r2 = mean[o2]
@@ -6094,4 +6713,4 @@ def _l2_maha_worker(o1,o2names,mean,var,cov,results,l2_crit_val):
         if l2_maha_sq_val > l2_crit_val:
             rresults[ostr] = l2_maha_sq_val
     results.update(rresults)
-    print(o1,"done")
+    print(o1, "done")
