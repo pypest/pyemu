@@ -1203,7 +1203,7 @@ def mf6_freyberg_direct_test():
 
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
-                        use_cols=["gage_1","headwaters","tailwaters"],ofile_sep=",")
+                        use_cols=["GAGE_1","HEADWATER","TAILWATER"],ofile_sep=",")
     v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
     gr_gs = pyemu.geostats.GeoStruct(variograms=v,transform="log")
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
@@ -1221,7 +1221,7 @@ def mf6_freyberg_direct_test():
                 recharge_files = ["recharge_1.txt","recharge_2.txt","recharge_3.txt"]
                 pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
                                   pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
-                                  geostruct=gr_gs,par_style="direct")
+                                  par_style="direct")
 
             for arr_file in arr_files:
                 kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
@@ -1245,7 +1245,7 @@ def mf6_freyberg_direct_test():
         kper = int(list_file.split(".")[1].split('_')[-1]) - 1
         #add spatially constant, but temporally correlated wel flux pars
         pf.add_parameters(filenames=list_file, par_type="constant", par_name_base="twel_mlt_{0}".format(kper),
-                          pargp="twel_mlt".format(kper), index_cols=[0, 1, 2], use_cols=[3],
+                          pargp="twel_mlt_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
                           upper_bound=1.5, lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
 
         # add temporally indep, but spatially correlated wel flux pars
@@ -1268,6 +1268,8 @@ def mf6_freyberg_direct_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
+    cov = pf.build_prior(fmt="non")
+    cov.to_coo("prior.jcb")
     pst.try_parse_name_metadata()
     df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
     pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
@@ -1289,8 +1291,7 @@ def mf6_freyberg_direct_test():
     pe.to_binary(os.path.join(template_ws, "prior.jcb"))
     assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
     assert pe.shape[0] == num_reals
-    cov = pf.buid_prior()
-    cov.to_uncfile("prior.unc")
+
     pst.control_data.noptmax = 0
     pst.pestpp_options["additional_ins_delimiters"] = ","
 
@@ -1465,5 +1466,5 @@ if __name__ == "__main__":
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     # mf6_freyberg_da_test()
-    # mf6_freyberg_direct_test()
-    mf6_freyberg_varying_idomain()
+    mf6_freyberg_direct_test()
+    #mf6_freyberg_varying_idomain()
