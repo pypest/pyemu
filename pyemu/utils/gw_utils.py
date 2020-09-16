@@ -741,6 +741,26 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
             precision,
             _iscbc,
         ) = line.strip().split(",")
+        if len(line.strip().split(",")) == 6:
+            (
+                bf_file,
+                start_datetime,
+                time_units,
+                text,
+                fill,
+                precision,
+            ) = line.strip().split(",")
+            _iscbc = "false"
+        else:
+            (
+                bf_file,
+                start_datetime,
+                time_units,
+                text,
+                fill,
+                precision,
+                _iscbc,
+            ) = line.strip().split(",")
         site_df = pd.read_csv(f)
     text = text.upper()
     if _iscbc.lower().strip() == "false":
@@ -855,6 +875,26 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
             precision,
             _iscbc,
         ) = line.strip().split(",")
+        if len(line.strip().split(",")) == 6:
+            (
+                hds_file,
+                start_datetime,
+                time_units,
+                text,
+                fill,
+                precision,
+            ) = line.strip().split(",")
+            _iscbc = "false"
+        else:
+            (
+                hds_file,
+                start_datetime,
+                time_units,
+                text,
+                fill,
+                precision,
+                _iscbc,
+            ) = line.strip().split(",")
         site_df = pd.read_csv(f)
 
     # print(site_df)
@@ -1236,7 +1276,7 @@ def setup_sft_obs(sft_file, ins_file=None, start_datetime=None, times=None, ncom
     df.loc[:, "icomp"] = 1
     icomp_idx = list(df.columns).index("icomp")
     for t in times:
-        df_time = df.loc[df.time == t, :]
+        df_time = df.loc[df.time == t, :].copy()
         vc = df_time.sfr_node.value_counts()
         ncomp = vc.max()
         assert np.all(vc.values == ncomp)

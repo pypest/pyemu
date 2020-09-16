@@ -132,7 +132,6 @@ class PstFrom(object):
         self.ult_ubound_fill = 1.0e30
         self.ult_lbound_fill = -1.0e30
 
-
     @property
     def parfile_relations(self):
         if isinstance(self._parfile_relations, list):
@@ -266,7 +265,6 @@ class PstFrom(object):
             )
         self.spatial_reference = self._spatial_reference
 
-
     def write_forward_run(self):
         """write the forward run script
 
@@ -341,7 +339,9 @@ class PstFrom(object):
             struct_dict[gs] = par_dfs
         return struct_dict
 
-    def build_prior(self, fmt="ascii", filename=None, droptol=None, chunk=None, sigma_range=6):
+    def build_prior(
+        self, fmt="ascii", filename=None, droptol=None, chunk=None, sigma_range=6
+    ):
         """Build the prior parameter covariance matrix
 
         Args:
