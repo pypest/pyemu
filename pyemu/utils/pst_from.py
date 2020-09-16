@@ -48,7 +48,7 @@ def _check_var_len(var, n, fill=None):
 
 # noinspection PyProtectedMember
 class PstFrom(object):
-    """
+    """construct high-dimensional PEST(++) interfaces with all the bells and whistles
 
     Args:
         original_d (`str`): the path to a complete set of model input and output files
