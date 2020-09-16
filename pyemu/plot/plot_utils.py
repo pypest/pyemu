@@ -1212,18 +1212,19 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
             ax_count = 0
 
         ax = axes[ax_count]
+        obx = obs_g.obsval.max()
+        obn = obs_g.obsval.min()
         if base_ensemble is None:
-            mx = obs_g.obsval.max()
-            mn =  obs_g.obsval.min()
+            bx = obx
+            bn = obn
         else:
             ben = base_ensemble["r"]
             ben = ben.loc[:,ben.columns.intersection(names)]
 
-            mn = ben.min().min()
-            mx = ben.max().max()
+            bn = ben.min().min()
+            bx = ben.max().max()
         #if obs_g.shape[0] == 1:
-        mx *= 1.1
-        mn *= 0.9
+
         #ax.axis('square')
         if base_ensemble is not None:
             obs_gg = obs_g.sort_values(by="obsval")
@@ -1250,18 +1251,27 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
         # if outputs are broader than obs(plus noise)
         # focus on obs(plus) noise
         # -> if obs(plus noise) is broader, focus on sim out
-        if omn > mn:
+        if omn < (bn * 0.9):
+            if omx < (bn * 0.9):
+                mn = omx * 0.9
+            else:
+                mn = bn * 0.9
+        else:
             mn = omn
-        if omx < mx:
+        if omx > (bx * 1.1):
+            if omn > (bx * 1.1):
+                mx = omn * 1.1
+            else:
+                mx = bx * 1.1
+        else:
             mx = omx
-
         ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
         xlim = (mn,mx)
         ax.set_xlim(mn,mx)
         ax.set_ylim(mn,mx)
         if mx > 1.0e5:
-            ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%1.0e'))
-            ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%1.0e'))
+            ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%1.1e'))
+            ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%1.1e'))
         ax.grid()
 
         ax.set_xlabel("observed",labelpad=0.1)
