@@ -1,2 +1,6 @@
+numpy
+pandas
+matplotlib
+flopy
 sphinx-autoapi
 sphinx-rtd-theme
