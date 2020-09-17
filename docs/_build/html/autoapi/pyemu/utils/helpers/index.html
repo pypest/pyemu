@@ -1,0 +1,2305 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyemu.utils.helpers &mdash; pyEMU 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> pyEMU
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.helpers</span></code></a><ul>
+<li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#classes">Classes</a></li>
+<li><a class="reference internal" href="#functions">Functions</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.helpers.max_colwidth">max_colwidth</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.geostatistical_draws">geostatistical_draws</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.geostatistical_prior_builder">geostatistical_prior_builder</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers._rmse">_rmse</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.calc_observation_ensemble_quantiles">calc_observation_ensemble_quantiles</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.calc_rmse_ensemble">calc_rmse_ensemble</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers._condition_on_par_knowledge">_condition_on_par_knowledge</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.kl_setup">kl_setup</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers._eigen_basis_to_factor_file">_eigen_basis_to_factor_file</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.kl_apply">kl_apply</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.zero_order_tikhonov">zero_order_tikhonov</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers._regweight_from_parbound">_regweight_from_parbound</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.first_order_pearson_tikhonov">first_order_pearson_tikhonov</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.simple_tpl_from_pars">simple_tpl_from_pars</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.simple_ins_from_obs">simple_ins_from_obs</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.pst_from_parnames_obsnames">pst_from_parnames_obsnames</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.read_pestpp_runstorage">read_pestpp_runstorage</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.jco_from_pestpp_runstorage">jco_from_pestpp_runstorage</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.parse_dir_for_io_files">parse_dir_for_io_files</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.pst_from_io_files">pst_from_io_files</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.wildass_guess_par_bounds_dict">wildass_guess_par_bounds_dict</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel">PstFromFlopyModel</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_sfr_obs">_setup_sfr_obs</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_sfr_pars">_setup_sfr_pars</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_hfb_pars">_setup_hfb_pars</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_mult_dirs">_setup_mult_dirs</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_model">_setup_model</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._get_count">_get_count</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._prep_mlt_arrays">_prep_mlt_arrays</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._write_u2d">_write_u2d</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._write_const_tpl">_write_const_tpl</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._write_grid_tpl">_write_grid_tpl</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._grid_prep">_grid_prep</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._pp_prep">_pp_prep</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._kl_prep">_kl_prep</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_array_pars">_setup_array_pars</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_observations">_setup_observations</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel.draw">draw</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel.build_prior">build_prior</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel.build_pst">build_pst</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._add_external">_add_external</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel.write_forward_run">write_forward_run</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._parse_k">_parse_k</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._parse_pakattr">_parse_pakattr</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_list_pars">_setup_list_pars</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_temporal_list_pars">_setup_temporal_list_pars</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_spatial_list_pars">_setup_spatial_list_pars</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._list_helper">_list_helper</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_hds">_setup_hds</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_smp">_setup_smp</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_hob">_setup_hob</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_hyd">_setup_hyd</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_water_budget_obs">_setup_water_budget_obs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.apply_list_and_array_pars">apply_list_and_array_pars</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers._process_chunk_fac2real">_process_chunk_fac2real</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers._process_chunk_model_files">_process_chunk_model_files</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers._process_model_file">_process_model_file</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.apply_array_pars">apply_array_pars</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.apply_list_pars">apply_list_pars</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.apply_genericlist_pars">apply_genericlist_pars</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.write_const_tpl">write_const_tpl</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.write_grid_tpl">write_grid_tpl</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.write_zone_tpl">write_zone_tpl</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.build_jac_test_csv">build_jac_test_csv</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers._write_df_tpl">_write_df_tpl</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.setup_fake_forward_run">setup_fake_forward_run</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.setup_temporal_diff_obs">setup_temporal_diff_obs</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.apply_temporal_diff_obs">apply_temporal_diff_obs</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.srefhttp">srefhttp</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference">SpatialReference</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.xedge">xedge</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.yedge">yedge</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.xgrid">xgrid</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.ygrid">ygrid</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.xcenter">xcenter</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.ycenter">ycenter</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.xcentergrid">xcentergrid</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.ycentergrid">ycentergrid</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.vertices">vertices</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.rotation">rotation</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.length_multiplier">length_multiplier</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.origin_loc">origin_loc</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.defaults">defaults</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.lenuni_values">lenuni_values</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.lenuni_text">lenuni_text</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.xll">xll</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.yll">yll</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.xul">xul</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.yul">yul</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.proj4_str">proj4_str</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.epsg">epsg</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.lenuni">lenuni</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference._parse_units_from_proj4">_parse_units_from_proj4</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.units">units</a></li>
+<li><a class="reference internal" href="#id0">length_multiplier</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.model_length_units">model_length_units</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.bounds">bounds</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.load">load</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.attribs_from_namfile_header">attribs_from_namfile_header</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.read_usgs_model_reference_file">read_usgs_model_reference_file</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.__setattr__">__setattr__</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.reset">reset</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference._reset">_reset</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.nrow">nrow</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.ncol">ncol</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.__eq__">__eq__</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.from_namfile">from_namfile</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.from_gridspec">from_gridspec</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.attribute_dict">attribute_dict</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.set_spatialreference">set_spatialreference</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.__repr__">__repr__</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.theta">theta</a></li>
+<li><a class="reference internal" href="#id1">xedge</a></li>
+<li><a class="reference internal" href="#id2">yedge</a></li>
+<li><a class="reference internal" href="#id3">xgrid</a></li>
+<li><a class="reference internal" href="#id4">ygrid</a></li>
+<li><a class="reference internal" href="#id5">xcenter</a></li>
+<li><a class="reference internal" href="#id6">ycenter</a></li>
+<li><a class="reference internal" href="#id7">ycentergrid</a></li>
+<li><a class="reference internal" href="#id8">xcentergrid</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference._set_xycentergrid">_set_xycentergrid</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference._set_xygrid">_set_xygrid</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.rotate">rotate</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.transform">transform</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.get_extent">get_extent</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.get_grid_lines">get_grid_lines</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.get_xcenter_array">get_xcenter_array</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.get_ycenter_array">get_ycenter_array</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.get_xedge_array">get_xedge_array</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.get_yedge_array">get_yedge_array</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.write_gridspec">write_gridspec</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.get_vertices">get_vertices</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.get_rc">get_rc</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference.get_ij">get_ij</a></li>
+<li><a class="reference internal" href="#id9">vertices</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.SpatialReference._set_vertices">_set_vertices</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.utils.helpers.get_maha_obs_summary">get_maha_obs_summary</a></li>
+<li><a class="reference internal" href="#pyemu.utils.helpers._l2_maha_worker">_l2_maha_worker</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">pyEMU</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.helpers</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../../_sources/autoapi/pyemu/utils/helpers/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pyemu.utils.helpers">
+<span id="pyemu-utils-helpers"></span><h1><a class="reference internal" href="../../../../pyemu.utils.html#module-pyemu.utils.helpers" title="pyemu.utils.helpers"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.helpers</span></code></a><a class="headerlink" href="#module-pyemu.utils.helpers" title="Permalink to this headline">¶</a></h1>
+<p>High-level functions to help perform complex tasks</p>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.PstFromFlopyModel" title="pyemu.utils.helpers.PstFromFlopyModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PstFromFlopyModel</span></code></a></p></td>
+<td><p>a monster helper class to setup a complex PEST interface around</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.SpatialReference" title="pyemu.utils.helpers.SpatialReference"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpatialReference</span></code></a></p></td>
+<td><p>a class to locate a structured model grid in x-y space.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.geostatistical_draws" title="pyemu.utils.helpers.geostatistical_draws"><code class="xref py py-obj docutils literal notranslate"><span class="pre">geostatistical_draws</span></code></a>(pst, struct_dict, num_reals=100, sigma_range=4, verbose=True, scale_offset=True)</p></td>
+<td><p>construct a parameter ensemble from a prior covariance matrix</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.geostatistical_prior_builder" title="pyemu.utils.helpers.geostatistical_prior_builder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">geostatistical_prior_builder</span></code></a>(pst, struct_dict, sigma_range=4, verbose=False, scale_offset=False)</p></td>
+<td><p>construct a full prior covariance matrix using geostastical structures</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.utils.helpers._rmse" title="pyemu.utils.helpers._rmse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_rmse</span></code></a>(v1, v2)</p></td>
+<td><p>return root mean squared error between v1 and v2</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.calc_observation_ensemble_quantiles" title="pyemu.utils.helpers.calc_observation_ensemble_quantiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calc_observation_ensemble_quantiles</span></code></a>(ens, pst, quantiles, subset_obsnames=None, subset_obsgroups=None)</p></td>
+<td><p>Given an observation ensemble, and requested quantiles, this function calculates the requested</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.calc_rmse_ensemble" title="pyemu.utils.helpers.calc_rmse_ensemble"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calc_rmse_ensemble</span></code></a>(ens, pst, bygroups=True, subset_realizations=None)</p></td>
+<td><p>Calculates RMSE (without weights) to quantify fit to observations for ensemble members</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.utils.helpers._condition_on_par_knowledge" title="pyemu.utils.helpers._condition_on_par_knowledge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_condition_on_par_knowledge</span></code></a>(cov, par_knowledge_dict)</p></td>
+<td><p>experimental function to include conditional prior information</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.kl_setup" title="pyemu.utils.helpers.kl_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kl_setup</span></code></a>(num_eig, sr, struct, prefixes, factors_file='kl_factors.dat', islog=True, basis_file=None, tpl_dir='.')</p></td>
+<td><p>setup a karhuenen-Loeve based parameterization for a given</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.utils.helpers._eigen_basis_to_factor_file" title="pyemu.utils.helpers._eigen_basis_to_factor_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_eigen_basis_to_factor_file</span></code></a>(nrow, ncol, basis, factors_file, islog=True)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.kl_apply" title="pyemu.utils.helpers.kl_apply"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kl_apply</span></code></a>(par_file, basis_file, par_to_file_dict, arr_shape)</p></td>
+<td><p>Apply a KL parameterization transform from basis factors to model</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.zero_order_tikhonov" title="pyemu.utils.helpers.zero_order_tikhonov"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zero_order_tikhonov</span></code></a>(pst, parbounds=True, par_groups=None, reset=True)</p></td>
+<td><p>setup preferred-value regularization in a pest control file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.utils.helpers._regweight_from_parbound" title="pyemu.utils.helpers._regweight_from_parbound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_regweight_from_parbound</span></code></a>(pst)</p></td>
+<td><p>sets regularization weights from parameter bounds</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.first_order_pearson_tikhonov" title="pyemu.utils.helpers.first_order_pearson_tikhonov"><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_order_pearson_tikhonov</span></code></a>(pst, cov, reset=True, abs_drop_tol=0.001)</p></td>
+<td><p>setup preferred-difference regularization from a covariance matrix.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.simple_tpl_from_pars" title="pyemu.utils.helpers.simple_tpl_from_pars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simple_tpl_from_pars</span></code></a>(parnames, tplfilename='model.input.tpl')</p></td>
+<td><p>Make a simple template file from a list of parameter names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.simple_ins_from_obs" title="pyemu.utils.helpers.simple_ins_from_obs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simple_ins_from_obs</span></code></a>(obsnames, insfilename='model.output.ins')</p></td>
+<td><p>write a simple instruction file that reads the values named</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.pst_from_parnames_obsnames" title="pyemu.utils.helpers.pst_from_parnames_obsnames"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pst_from_parnames_obsnames</span></code></a>(parnames, obsnames, tplfilename='model.input.tpl', insfilename='model.output.ins')</p></td>
+<td><p>Creates a Pst object from a list of parameter names and a list of observation names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.read_pestpp_runstorage" title="pyemu.utils.helpers.read_pestpp_runstorage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_pestpp_runstorage</span></code></a>(filename, irun=0, with_metadata=False)</p></td>
+<td><p>read pars and obs from a specific run in a pest++ serialized</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.jco_from_pestpp_runstorage" title="pyemu.utils.helpers.jco_from_pestpp_runstorage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jco_from_pestpp_runstorage</span></code></a>(rnj_filename, pst_filename)</p></td>
+<td><p>read pars and obs from a pest++ serialized run storage</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.parse_dir_for_io_files" title="pyemu.utils.helpers.parse_dir_for_io_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_dir_for_io_files</span></code></a>(d, prepend_path=False)</p></td>
+<td><p>find template/input file pairs and instruction file/output file</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.pst_from_io_files" title="pyemu.utils.helpers.pst_from_io_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pst_from_io_files</span></code></a>(tpl_files, in_files, ins_files, out_files, pst_filename=None, pst_path=None)</p></td>
+<td><p>create a Pst instance from model interface files.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.apply_list_and_array_pars" title="pyemu.utils.helpers.apply_list_and_array_pars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_list_and_array_pars</span></code></a>(arr_par_file='mult2model_info.csv', chunk_len=50)</p></td>
+<td><p>Apply multiplier parameters to list and array style model files</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.utils.helpers._process_chunk_fac2real" title="pyemu.utils.helpers._process_chunk_fac2real"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_process_chunk_fac2real</span></code></a>(chunk, i)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.utils.helpers._process_chunk_model_files" title="pyemu.utils.helpers._process_chunk_model_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_process_chunk_model_files</span></code></a>(chunk, i, df)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.utils.helpers._process_model_file" title="pyemu.utils.helpers._process_model_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_process_model_file</span></code></a>(model_file, df)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.apply_array_pars" title="pyemu.utils.helpers.apply_array_pars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_array_pars</span></code></a>(arr_par='arr_pars.csv', arr_par_file=None, chunk_len=50)</p></td>
+<td><p>a function to apply array-based multipler parameters.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.apply_list_pars" title="pyemu.utils.helpers.apply_list_pars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_list_pars</span></code></a>()</p></td>
+<td><p>a function to apply boundary condition multiplier parameters.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.apply_genericlist_pars" title="pyemu.utils.helpers.apply_genericlist_pars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_genericlist_pars</span></code></a>(df)</p></td>
+<td><p>a function to apply list style mult parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.write_const_tpl" title="pyemu.utils.helpers.write_const_tpl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_const_tpl</span></code></a>(name, tpl_file, suffix, zn_array=None, shape=None, longnames=False)</p></td>
+<td><p>write a constant (uniform) template file for a 2-D array</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.write_grid_tpl" title="pyemu.utils.helpers.write_grid_tpl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_grid_tpl</span></code></a>(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None, longnames=False)</p></td>
+<td><p>write a grid-based template file for a 2-D array</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.write_zone_tpl" title="pyemu.utils.helpers.write_zone_tpl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_zone_tpl</span></code></a>(name, tpl_file, suffix='', zn_array=None, shape=None, longnames=False, fill_value='1.0')</p></td>
+<td><p>write a zone-based template file for a 2-D array</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.build_jac_test_csv" title="pyemu.utils.helpers.build_jac_test_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_jac_test_csv</span></code></a>(pst, num_steps, par_names=None, forward=True)</p></td>
+<td><p>build a dataframe of jactest inputs for use with sweep</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.utils.helpers._write_df_tpl" title="pyemu.utils.helpers._write_df_tpl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_write_df_tpl</span></code></a>(filename, df, sep=',', tpl_marker='~', **kwargs)</p></td>
+<td><p>function write a pandas dataframe to a template file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.setup_fake_forward_run" title="pyemu.utils.helpers.setup_fake_forward_run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_fake_forward_run</span></code></a>(pst, new_pst_name, org_cwd='.', bak_suffix='._bak', new_cwd='.')</p></td>
+<td><p>setup a fake forward run for a pst.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.setup_temporal_diff_obs" title="pyemu.utils.helpers.setup_temporal_diff_obs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_temporal_diff_obs</span></code></a>(pst, ins_file, out_file=None, include_zero_weight=False, include_path=False, sort_by_name=True, long_names=True, prefix='dif')</p></td>
+<td><p>a helper function to setup difference-in-time observations based on an existing</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.apply_temporal_diff_obs" title="pyemu.utils.helpers.apply_temporal_diff_obs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_temporal_diff_obs</span></code></a>(config_file)</p></td>
+<td><p>process an instruction-output file pair and formulate difference observations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.helpers.get_maha_obs_summary" title="pyemu.utils.helpers.get_maha_obs_summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_maha_obs_summary</span></code></a>(sim_en, l1_crit_val=6.34, l2_crit_val=9.2)</p></td>
+<td><p>calculate the 1-D and 2-D mahalanobis distance</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.utils.helpers._l2_maha_worker" title="pyemu.utils.helpers._l2_maha_worker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_l2_maha_worker</span></code></a>(o1, o2names, mean, var, cov, results, l2_crit_val)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py data">
+<dt id="pyemu.utils.helpers.max_colwidth">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">max_colwidth</code><em class="property"> = 100</em><a class="headerlink" href="#pyemu.utils.helpers.max_colwidth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.geostatistical_draws">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">geostatistical_draws</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">struct_dict</span></em>, <em class="sig-param"><span class="n">num_reals</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">sigma_range</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">scale_offset</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.geostatistical_draws" title="Permalink to this definition">¶</a></dt>
+<dd><p>construct a parameter ensemble from a prior covariance matrix
+implied by geostatistical structure(s) and parameter bounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – a control file (or the name of control file).  The
+parameter bounds in <cite>pst</cite> are used to define the variance of each
+parameter group.</p></li>
+<li><p><strong>struct_dict</strong> (<cite>dict</cite>) – a dict of GeoStruct (or structure file), and list of
+pilot point template files pairs. If the values in the dict are
+<cite>pd.DataFrames</cite>, then they must have an ‘x’,’y’, and ‘parnme’ column.
+If the filename ends in ‘.csv’, then a pd.DataFrame is loaded,
+otherwise a pilot points file is loaded.</p></li>
+<li><p><strong>num_reals</strong> (<cite>int</cite>, optional) – number of realizations to draw.  Default is 100</p></li>
+<li><p><strong>sigma_range</strong> (<cite>float</cite>) – a float representing the number of standard deviations
+implied by parameter bounds. Default is 4.0, which implies 95% confidence parameter bounds.</p></li>
+<li><p><strong>verbose</strong> (<cite>bool</cite>, optional) – flag to control output to stdout.  Default is True.
+flag for stdout.</p></li>
+<li><p><strong>scale_offset</strong> (<cite>bool</cite>,optional) – flag to apply scale and offset to parameter bounds
+when calculating variances - this is passed through to <cite>pyemu.Cov.from_parameter_data()</cite>.
+Default is True.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns</dt><dd><p><cite>pyemu.ParameterEnsemble</cite>: the realized parameter ensemble.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>parameters are realized by parameter group.  The variance of each
+parameter group is used to scale the resulting geostatistical
+covariance matrix Therefore, the sill of the geostatistical structures
+in <cite>struct_dict</cite> should be 1.0</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">sd</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;struct.dat&quot;</span><span class="p">:[</span><span class="s2">&quot;hkpp.dat.tpl&quot;</span><span class="p">,</span><span class="s2">&quot;vka.dat.tpl&quot;</span><span class="p">]}</span>
+<span class="n">pe</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">geostatistical_draws</span><span class="p">(</span><span class="n">pst</span><span class="p">,</span><span class="n">struct_dict</span><span class="o">=</span><span class="n">sd</span><span class="p">}</span>
+<span class="n">pe</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;my_pe.csv&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.geostatistical_prior_builder">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">geostatistical_prior_builder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">struct_dict</span></em>, <em class="sig-param"><span class="n">sigma_range</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">scale_offset</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.geostatistical_prior_builder" title="Permalink to this definition">¶</a></dt>
+<dd><p>construct a full prior covariance matrix using geostastical structures
+and parameter bounds information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – a control file instance (or the name of control file)</p></li>
+<li><p><strong>struct_dict</strong> (<cite>dict</cite>) – a dict of GeoStruct (or structure file), and list of
+pilot point template files pairs. If the values in the dict are
+<cite>pd.DataFrames</cite>, then they must have an ‘x’,’y’, and ‘parnme’ column.
+If the filename ends in ‘.csv’, then a pd.DataFrame is loaded,
+otherwise a pilot points file is loaded.</p></li>
+<li><p><strong>sigma_range</strong> (<cite>float</cite>) – a float representing the number of standard deviations
+implied by parameter bounds. Default is 4.0, which implies 95% confidence parameter bounds.</p></li>
+<li><p><strong>verbose</strong> (<cite>bool</cite>, optional) – flag to control output to stdout.  Default is True.
+flag for stdout.</p></li>
+<li><p><strong>scale_offset</strong> (<cite>bool</cite>) – a flag to apply scale and offset to parameter upper and lower bounds
+before applying log transform.  Passed to pyemu.Cov.from_parameter_data().  Default
+is False</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a covariance matrix that includes all adjustable parameters in the control
+file.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Cov</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The covariance of parameters associated with geostatistical structures is defined
+as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
+pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
+sigma_range. Most users will want to sill of the geostruct to sum to 1.0 so that the resulting
+covariance matrices have variance proportional to the parameter bounds. Sounds complicated…</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">sd</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;struct.dat&quot;</span><span class="p">:[</span><span class="s2">&quot;hkpp.dat.tpl&quot;</span><span class="p">,</span><span class="s2">&quot;vka.dat.tpl&quot;</span><span class="p">]}</span>
+<span class="n">cov</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">geostatistical_draws</span><span class="p">(</span><span class="n">pst</span><span class="p">,</span><span class="n">struct_dict</span><span class="o">=</span><span class="n">sd</span><span class="p">}</span>
+<span class="n">cov</span><span class="o">.</span><span class="n">to_binary</span><span class="p">(</span><span class="s2">&quot;prior.jcb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers._rmse">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">_rmse</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">v1</span></em>, <em class="sig-param"><span class="n">v2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers._rmse" title="Permalink to this definition">¶</a></dt>
+<dd><p>return root mean squared error between v1 and v2</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v1</strong> (<em>iterable</em>) – one vector</p></li>
+<li><p><strong>v2</strong> (<em>iterable</em>) – another vector</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>root mean squared error of v1,v2</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>scalar</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.calc_observation_ensemble_quantiles">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">calc_observation_ensemble_quantiles</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ens</span></em>, <em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">quantiles</span></em>, <em class="sig-param"><span class="n">subset_obsnames</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">subset_obsgroups</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.calc_observation_ensemble_quantiles" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Given an observation ensemble, and requested quantiles, this function calculates the requested</dt><dd><p>quantile point-by-point in the ensemble. This resulting set of values does not, however, correspond
+to a single realization in the ensemble. So, this function finds the minimum weighted squared
+distance to the quantile and labels it in the ensemble. Also indicates which realizations
+correspond to the selected quantiles.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ens</strong> (<em>pandas DataFrame</em>) – DataFrame read from an observation</p></li>
+<li><p><strong>pst</strong> (<em>pyemy.Pst object</em>) – </p></li>
+<li><p><strong>quantiles</strong> (<em>iterable</em>) – quantiles ranging from 0-1.0 for which results requested</p></li>
+<li><p><strong>subset_obsnames</strong> (<em>iterable</em>) – list of observation names to include in calculations</p></li>
+<li><p><strong>subset_obsgroups</strong> (<em>iterable</em>) – list of observation groups to include in calculations</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>same ens object that was input but with quantile realizations</dt><dd><p>appended as new rows labelled with ‘q_#’ where ‘#’ is the slected quantile</p>
+</dd>
+<dt>quantile_idx (dictionary): dictionary with keys being quantiles and values being realizations</dt><dd><p>corresponding to each realization</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ens (pandas DataFrame)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.calc_rmse_ensemble">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">calc_rmse_ensemble</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ens</span></em>, <em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">bygroups</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">subset_realizations</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.calc_rmse_ensemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates RMSE (without weights) to quantify fit to observations for ensemble members</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ens</strong> (<em>pandas DataFrame</em>) – DataFrame read from an observation</p></li>
+<li><p><strong>pst</strong> (<em>pyemy.Pst object</em>) – </p></li>
+<li><p><strong>bygroups</strong> (<em>Bool</em>) – Flag to summarize by groups or not. Defaults to True.</p></li>
+<li><p><strong>subset_realizations</strong> (<em>iterable</em><em>, </em><em>optional</em>) – Subset of realizations for which
+to report RMSE. Defaults to None which returns all realizations.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>rows are realizations. Columns are groups. Content is RMSE</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>rmse (pandas DataFrame object)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers._condition_on_par_knowledge">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">_condition_on_par_knowledge</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cov</span></em>, <em class="sig-param"><span class="n">par_knowledge_dict</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers._condition_on_par_knowledge" title="Permalink to this definition">¶</a></dt>
+<dd><p>experimental function to include conditional prior information
+for one or more parameters in a full covariance matrix</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.kl_setup">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">kl_setup</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num_eig</span></em>, <em class="sig-param"><span class="n">sr</span></em>, <em class="sig-param"><span class="n">struct</span></em>, <em class="sig-param"><span class="n">prefixes</span></em>, <em class="sig-param"><span class="n">factors_file</span><span class="o">=</span><span class="default_value">'kl_factors.dat'</span></em>, <em class="sig-param"><span class="n">islog</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">basis_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tpl_dir</span><span class="o">=</span><span class="default_value">'.'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.kl_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup a karhuenen-Loeve based parameterization for a given
+geostatistical structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_eig</strong> (<cite>int</cite>) – the number of basis vectors to retain in the
+reduced basis</p></li>
+<li><p><strong>sr</strong> (<cite>flopy.reference.SpatialReference</cite>) – a spatial reference instance</p></li>
+<li><p><strong>struct</strong> (<cite>str</cite>) – a PEST-style structure file.  Can also be a
+<cite>pyemu.geostats.Geostruct</cite> instance.</p></li>
+<li><p><strong>prefixes</strong> ([<cite>str</cite>]) – a list of parameter prefixes to generate KL
+parameterization for.</p></li>
+<li><p><strong>factors_file</strong> (<cite>str</cite>, optional) – name of the PEST-style interpolation
+factors file to write (can be processed with FAC2REAL).
+Default is “kl_factors.dat”.</p></li>
+<li><p><strong>islog</strong> (<cite>bool</cite>, optional) – flag to indicate if the parameters are log transformed.
+Default is True</p></li>
+<li><p><strong>basis_file</strong> (<cite>str</cite>, optional) – the name of the PEST-style binary (e.g. jco)
+file to write the reduced basis vectors to.  Default is None (not saved).</p></li>
+<li><p><strong>tpl_dir</strong> (<cite>str</cite>, optional) – the directory to write the resulting
+template files to.  Default is “.” (current directory).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe of parameter information.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is the companion function to <cite>helpers.apply_kl()</cite></p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">flopy</span><span class="o">.</span><span class="n">modflow</span><span class="o">.</span><span class="n">Modflow</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;mymodel.nam&quot;</span><span class="p">)</span>
+<span class="n">prefixes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;hk&quot;</span><span class="p">,</span><span class="s2">&quot;vka&quot;</span><span class="p">,</span><span class="s2">&quot;ss&quot;</span><span class="p">]</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">kl_setup</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="n">m</span><span class="o">.</span><span class="n">sr</span><span class="p">,</span><span class="s2">&quot;struct.dat&quot;</span><span class="p">,</span><span class="n">prefixes</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers._eigen_basis_to_factor_file">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">_eigen_basis_to_factor_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">nrow</span></em>, <em class="sig-param"><span class="n">ncol</span></em>, <em class="sig-param"><span class="n">basis</span></em>, <em class="sig-param"><span class="n">factors_file</span></em>, <em class="sig-param"><span class="n">islog</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers._eigen_basis_to_factor_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.kl_apply">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">kl_apply</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">par_file</span></em>, <em class="sig-param"><span class="n">basis_file</span></em>, <em class="sig-param"><span class="n">par_to_file_dict</span></em>, <em class="sig-param"><span class="n">arr_shape</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.kl_apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply a KL parameterization transform from basis factors to model
+input arrays.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par_file</strong> (<cite>str</cite>) – the csv file to get factor values from.  Must contain
+the following columns: “name”, “new_val”, “org_val”</p></li>
+<li><p><strong>basis_file</strong> (<cite>str</cite>) – the PEST-style binary file that contains the reduced
+basis</p></li>
+<li><p><strong>par_to_file_dict</strong> (<cite>dict</cite>) – a mapping from KL parameter prefixes to array
+file names.</p></li>
+<li><p><strong>arr_shape</strong> (<em>tuple</em>) – a length 2 tuple of number of rows and columns
+the resulting arrays should have.</p></li>
+<li><p><strong>Note</strong> – This is the companion function to kl_setup.
+This function should be called during the forward run</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.zero_order_tikhonov">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">zero_order_tikhonov</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">parbounds</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">par_groups</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">reset</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.zero_order_tikhonov" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup preferred-value regularization in a pest control file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – the control file instance</p></li>
+<li><p><strong>parbounds</strong> (<cite>bool</cite>, optional) – flag to weight the new prior information
+equations according to parameter bound width - approx the KL
+transform. Default is True</p></li>
+<li><p><strong>par_groups</strong> (<cite>list</cite>) – a list of parameter groups to build PI equations for.
+If None, all adjustable parameters are used. Default is None</p></li>
+<li><p><strong>reset</strong> (<cite>bool</cite>) – a flag to remove any existing prior information equations
+in the control file.  Default is True</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">pyemu</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">zero_order_tikhonov</span><span class="p">(</span><span class="n">pst</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;my_reg.pst&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers._regweight_from_parbound">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">_regweight_from_parbound</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers._regweight_from_parbound" title="Permalink to this definition">¶</a></dt>
+<dd><p>sets regularization weights from parameter bounds
+which approximates the KL expansion.  Called by
+zero_order_tikhonov().</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.first_order_pearson_tikhonov">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">first_order_pearson_tikhonov</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">cov</span></em>, <em class="sig-param"><span class="n">reset</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">abs_drop_tol</span><span class="o">=</span><span class="default_value">0.001</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.first_order_pearson_tikhonov" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup preferred-difference regularization from a covariance matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – the PEST control file</p></li>
+<li><p><strong>cov</strong> (<cite>pyemu.Cov</cite>) – a covariance matrix instance with
+some or all of the parameters listed in <cite>pst</cite>.</p></li>
+<li><p><strong>reset</strong> (<cite>bool</cite>) – a flag to remove any existing prior information equations
+in the control file.  Default is True</p></li>
+<li><p><strong>abs_drop_tol</strong> (<cite>float</cite>, optional) – tolerance to control how many pi equations
+are written. If the absolute value of the Pearson CC is less than
+abs_drop_tol, the prior information equation will not be included in
+the control file.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The weights on the prior information equations are the Pearson
+correlation coefficients implied by covariance matrix.</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">cov</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Cov</span><span class="o">.</span><span class="n">from_ascii</span><span class="p">(</span><span class="s2">&quot;my.cov&quot;</span><span class="p">)</span>
+<span class="n">pyemu</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">first_order_pearson_tikhonov</span><span class="p">(</span><span class="n">pst</span><span class="p">,</span><span class="n">cov</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;my_reg.pst&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.simple_tpl_from_pars">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">simple_tpl_from_pars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parnames</span></em>, <em class="sig-param"><span class="n">tplfilename</span><span class="o">=</span><span class="default_value">'model.input.tpl'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.simple_tpl_from_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a simple template file from a list of parameter names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parnames</strong> ([<cite>str</cite>]) – list of parameter names to put in the
+new template file</p></li>
+<li><p><strong>tplfilename</strong> (<cite>str</cite>) – Name of the template file to create.  Default
+is “model.input.tpl”</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>writes a file <cite>tplfilename</cite> with each parameter name in <cite>parnames</cite> on a line</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.simple_ins_from_obs">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">simple_ins_from_obs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obsnames</span></em>, <em class="sig-param"><span class="n">insfilename</span><span class="o">=</span><span class="default_value">'model.output.ins'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.simple_ins_from_obs" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>write a simple instruction file that reads the values named</dt><dd><p>in obsnames in order, one per line from a model output file</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obsnames</strong> (<cite>str</cite>) – list of observation names to put in the
+new instruction file</p></li>
+<li><p><strong>insfilename</strong> (<cite>str</cite>) – the name of the instruction file to
+create. Default is “model.output.ins”</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>writes a file <cite>insfilename</cite> with each observation read off
+of a single line</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.pst_from_parnames_obsnames">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">pst_from_parnames_obsnames</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parnames</span></em>, <em class="sig-param"><span class="n">obsnames</span></em>, <em class="sig-param"><span class="n">tplfilename</span><span class="o">=</span><span class="default_value">'model.input.tpl'</span></em>, <em class="sig-param"><span class="n">insfilename</span><span class="o">=</span><span class="default_value">'model.output.ins'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.pst_from_parnames_obsnames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a Pst object from a list of parameter names and a list of observation names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parnames</strong> (<cite>str</cite>) – list of parameter names</p></li>
+<li><p><strong>obsnames</strong> (<cite>str</cite>) – list of observation names</p></li>
+<li><p><strong>tplfilename</strong> (<cite>str</cite>) – template filename. Default is  “model.input.tpl”</p></li>
+<li><p><strong>insfilename</strong> (<cite>str</cite>) – instruction filename. Default is “model.output.ins”</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the generic control file</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Pst</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.read_pestpp_runstorage">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">read_pestpp_runstorage</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">irun</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">with_metadata</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.read_pestpp_runstorage" title="Permalink to this definition">¶</a></dt>
+<dd><p>read pars and obs from a specific run in a pest++ serialized
+run storage file into dataframes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<cite>str</cite>) – the name of the run storage file</p></li>
+<li><p><strong>irun</strong> (<cite>int</cite>) – the run id to process. If ‘all’, then all runs are
+read. Default is 0</p></li>
+<li><p><strong>with_metadata</strong> (<cite>bool</cite>) – flag to return run stats and info txt as well</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>tuple containing</p>
+<ul class="simple">
+<li><p><strong>pandas.DataFrame</strong>: parameter information</p></li>
+<li><p><strong>pandas.DataFrame</strong>: observation information</p></li>
+<li><p><strong>pandas.DataFrame</strong>: optionally run status and info txt.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.jco_from_pestpp_runstorage">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">jco_from_pestpp_runstorage</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rnj_filename</span></em>, <em class="sig-param"><span class="n">pst_filename</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.jco_from_pestpp_runstorage" title="Permalink to this definition">¶</a></dt>
+<dd><p>read pars and obs from a pest++ serialized run storage
+file (e.g., .rnj) and return jacobian matrix instance</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rnj_filename</strong> (<cite>str</cite>) – the name of the run storage file</p></li>
+<li><p><strong>pst_filename</strong> (<cite>str</cite>) – the name of the pst file</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This can then be passed to Jco.to_binary or Jco.to_coo, etc., to write jco
+file in a subsequent step to avoid memory resource issues associated
+with very large problems.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a jacobian matrix constructed from the run results and
+pest control file information.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pyemu.Jco</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.parse_dir_for_io_files">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">parse_dir_for_io_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">d</span></em>, <em class="sig-param"><span class="n">prepend_path</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.parse_dir_for_io_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>find template/input file pairs and instruction file/output file
+pairs by extension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d</strong> (<cite>str</cite>) – directory to search for interface files</p></li>
+<li><p><strong>prepend_path</strong> (<cite>bool</cite>, optional) – flag to prepend <cite>d</cite> to each file name.
+Default is False</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>the return values from this function can be passed straight to
+<cite>pyemu.Pst.from_io_files()</cite> classmethod constructor. Assumes the
+template file names are &lt;input_file&gt;.tpl and instruction file names
+are &lt;output_file&gt;.ins.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><p>tuple containing</p>
+<ul class="simple">
+<li><p><strong>[`str`]</strong>: list of template files in d</p></li>
+<li><p><strong>[`str`]</strong>: list of input files in d</p></li>
+<li><p><strong>[`str`]</strong>: list of instruction files in d</p></li>
+<li><p><strong>[`str`]</strong>: list of output files in d</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.pst_from_io_files">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">pst_from_io_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tpl_files</span></em>, <em class="sig-param"><span class="n">in_files</span></em>, <em class="sig-param"><span class="n">ins_files</span></em>, <em class="sig-param"><span class="n">out_files</span></em>, <em class="sig-param"><span class="n">pst_filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.pst_from_io_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>create a Pst instance from model interface files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tpl_files</strong> ([<cite>str</cite>]) – list of template file names</p></li>
+<li><p><strong>in_files</strong> ([<cite>str</cite>]) – list of model input file names (pairs with template files)</p></li>
+<li><p><strong>ins_files</strong> ([<cite>str</cite>]) – list of instruction file names</p></li>
+<li><p><strong>out_files</strong> ([<cite>str</cite>]) – list of model output file names (pairs with instruction files)</p></li>
+<li><p><strong>pst_filename</strong> (<cite>str</cite>) – name of control file to write.  If None, no file is written.
+Default is None</p></li>
+<li><p><strong>pst_path</strong> (<cite>str</cite>) – the path to append to the template_file and in_file in the control file.  If
+not None, then any existing path in front of the template or in file is split off
+and pst_path is prepended.  If python is being run in a directory other than where the control
+file will reside, it is useful to pass <cite>pst_path</cite> as <cite>.</cite>.  Default is None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>new control file instance with parameter and observation names
+found in <cite>tpl_files</cite> and <cite>ins_files</cite>, repsectively.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>Pst</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>calls <cite>pyemu.helpers.pst_from_io_files()</cite></p>
+<p>Assigns generic values for parameter info.  Tries to use INSCHEK
+to set somewhat meaningful observation values</p>
+<p>all file paths are relatively to where python is running.</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tpl_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;my.tpl&quot;</span><span class="p">]</span>
+<span class="n">in_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;my.in&quot;</span><span class="p">]</span>
+<span class="n">ins_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;my.ins&quot;</span><span class="p">]</span>
+<span class="n">out_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;my.out&quot;</span><span class="p">]</span>
+<span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="o">.</span><span class="n">from_io_files</span><span class="p">(</span><span class="n">tpl_files</span><span class="p">,</span><span class="n">in_files</span><span class="p">,</span><span class="n">ins_files</span><span class="p">,</span><span class="n">out_files</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">control_data</span><span class="o">.</span><span class="n">noptmax</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;my.pst)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py data">
+<dt id="pyemu.utils.helpers.wildass_guess_par_bounds_dict">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">wildass_guess_par_bounds_dict</code><a class="headerlink" href="#pyemu.utils.helpers.wildass_guess_par_bounds_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">PstFromFlopyModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">new_model_ws</span></em>, <em class="sig-param"><span class="n">org_model_ws</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pp_props</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">const_props</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">temporal_bc_props</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">temporal_list_props</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">grid_props</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">grid_geostruct</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pp_space</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">zone_props</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">pp_geostruct</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">par_bounds_dict</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sfr_pars</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">temporal_sfr_pars</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">temporal_list_geostruct</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">remove_existing</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">k_zone_dict</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mflist_waterbudget</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">mfhyd</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">hds_kperk</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">use_pp_zones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">obssim_smp_pairs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">external_tpl_in_pairs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">external_ins_out_pairs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">extra_pre_cmds</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">extra_model_cmds</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">extra_post_cmds</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">redirect_forward_output</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">tmp_files</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">model_exe_name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">build_prior</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">sfr_obs</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">spatial_bc_props</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">spatial_list_props</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">spatial_list_geostruct</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">hfb_pars</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">kl_props</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">kl_num_eig</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">kl_geostruct</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>a monster helper class to setup a complex PEST interface around
+an existing MODFLOW-2005-family model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<cite>flopy.mbase</cite>) – a loaded flopy model instance. If model is an str, it is treated as a
+MODFLOW nam file (requires org_model_ws)</p></li>
+<li><p><strong>new_model_ws</strong> (<cite>str</cite>) – a directory where the new version of MODFLOW input files and PEST(++)
+files will be written</p></li>
+<li><p><strong>org_model_ws</strong> (<cite>str</cite>) – directory to existing MODFLOW model files.  Required if model argument
+is an str.  Default is None</p></li>
+<li><p><strong>pp_props</strong> ([[<cite>str</cite>,[<cite>int</cite>]]]) – pilot point multiplier parameters for grid-based properties.
+A nested list of grid-scale model properties to parameterize using
+name, iterable pairs.  For 3D properties, the iterable is zero-based
+layer indices.  For example, [“lpf.hk”,[0,1,2,]] would setup pilot point multiplier
+parameters for layer property file horizontal hydraulic conductivity for model
+layers 1,2, and 3.  For time-varying properties (e.g. recharge), the
+iterable is for zero-based stress period indices.  For example, [“rch.rech”,[0,4,10,15]]
+would setup pilot point multiplier parameters for recharge for stress
+period 1,5,11,and 16.</p></li>
+<li><p><strong>const_props</strong> ([[<cite>str</cite>,[<cite>int</cite>]]]) – constant (uniform) multiplier parameters for grid-based properties.
+A nested list of grid-scale model properties to parameterize using
+name, iterable pairs.  For 3D properties, the iterable is zero-based
+layer indices.  For example, [“lpf.hk”,[0,1,2,]] would setup constant (uniform) multiplier
+parameters for layer property file horizontal hydraulic conductivity for model
+layers 1,2, and 3.  For time-varying properties (e.g. recharge), the
+iterable is for zero-based stress period indices.  For example, [“rch.rech”,[0,4,10,15]]
+would setup constant (uniform) multiplier parameters for recharge for stress
+period 1,5,11,and 16.</p></li>
+<li><p><strong>temporal_list_props</strong> ([[<cite>str</cite>,[<cite>int</cite>]]]) – list-type input stress-period level multiplier parameters.
+A nested list of list-type input elements to parameterize using
+name, iterable pairs.  The iterable is zero-based stress-period indices.
+For example, to setup multipliers for WEL flux and for RIV conductance,
+temporal_list_props = [[“wel.flux”,[0,1,2]],[“riv.cond”,None]] would setup
+multiplier parameters for well flux for stress periods 1,2 and 3 and
+would setup one single river conductance multiplier parameter that is applied
+to all stress periods</p></li>
+<li><p><strong>spatial_list_props</strong> ([[<cite>str</cite>,[<cite>int</cite>]]]) – list-type input for spatial multiplier parameters.
+A nested list of list-type elements to parameterize using
+names (e.g. [[“riv.cond”,0],[“wel.flux”,1] to setup up cell-based parameters for
+each list-type element listed.  These multiplier parameters are applied across
+all stress periods.  For this to work, there must be the same number of entries
+for all stress periods.  If more than one list element of the same type is in a single
+cell, only one parameter is used to multiply all lists in the same cell.</p></li>
+<li><p><strong>grid_props</strong> ([[<cite>str</cite>,[<cite>int</cite>]]]) – grid-based (every active model cell) multiplier parameters.
+A nested list of grid-scale model properties to parameterize using
+name, iterable pairs.  For 3D properties, the iterable is zero-based
+layer indices (e.g., [“lpf.hk”,[0,1,2,]] would setup a multiplier
+parameter for layer property file horizontal hydraulic conductivity for model
+layers 1,2, and 3 in every active model cell).  For time-varying properties (e.g. recharge), the
+iterable is for zero-based stress period indices.  For example, [“rch.rech”,[0,4,10,15]]
+would setup grid-based multiplier parameters in every active model cell
+for recharge for stress period 1,5,11,and 16.</p></li>
+<li><p><strong>sfr_pars</strong> (<cite>bool</cite>) – setup parameters for the stream flow routing modflow package.
+If list is passed it defines the parameters to set up.</p></li>
+<li><p><strong>sfr_temporal_pars</strong> (<cite>bool</cite>) – flag to include stress-period level spatially-global multipler parameters in addition to
+the spatially-discrete <cite>sfr_pars</cite>.  Requires <cite>sfr_pars</cite> to be passed.  Default is False</p></li>
+<li><p><strong>grid_geostruct</strong> (<cite>pyemu.geostats.GeoStruct</cite>) – the geostatistical structure to build the prior parameter covariance matrix
+elements for grid-based parameters.  If None, a generic GeoStruct is created
+using an “a” parameter that is 10 times the max cell size.  Default is None</p></li>
+<li><p><strong>pp_space</strong> (<cite>int</cite>) – number of grid cells between pilot points.  If None, use the default
+in pyemu.pp_utils.setup_pilot_points_grid.  Default is None</p></li>
+<li><p><strong>zone_props</strong> ([[<cite>str</cite>,[<cite>int</cite>]]]) – zone-based multiplier parameters.
+A nested list of zone-based model properties to parameterize using
+name, iterable pairs.  For 3D properties, the iterable is zero-based
+layer indices (e.g., [“lpf.hk”,[0,1,2,]] would setup a multiplier
+parameter for layer property file horizontal hydraulic conductivity for model
+layers 1,2, and 3 for unique zone values in the ibound array.
+For time-varying properties (e.g. recharge), the iterable is for
+zero-based stress period indices.  For example, [“rch.rech”,[0,4,10,15]]
+would setup zone-based multiplier parameters for recharge for stress
+period 1,5,11,and 16.</p></li>
+<li><p><strong>pp_geostruct</strong> (<cite>pyemu.geostats.GeoStruct</cite>) – the geostatistical structure to use for building the prior parameter
+covariance matrix for pilot point parameters.  If None, a generic
+GeoStruct is created using pp_space and grid-spacing information.
+Default is None</p></li>
+<li><p><strong>par_bounds_dict</strong> (<cite>dict</cite>) – a dictionary of model property/boundary condition name, upper-lower bound pairs.
+For example, par_bounds_dict = {“hk”:[0.01,100.0],”flux”:[0.5,2.0]} would
+set the bounds for horizontal hydraulic conductivity to
+0.001 and 100.0 and set the bounds for flux parameters to 0.5 and
+2.0.  For parameters not found in par_bounds_dict,
+<cite>pyemu.helpers.wildass_guess_par_bounds_dict</cite> is
+used to set somewhat meaningful bounds.  Default is None</p></li>
+<li><p><strong>temporal_list_geostruct</strong> (<cite>pyemu.geostats.GeoStruct</cite>) – the geostastical struture to
+build the prior parameter covariance matrix
+for time-varying list-type multiplier parameters.  This GeoStruct
+express the time correlation so that the ‘a’ parameter is the length of
+time that boundary condition multiplier parameters are correlated across.
+If None, then a generic GeoStruct is created that uses an ‘a’ parameter
+of 3 stress periods.  Default is None</p></li>
+<li><p><strong>spatial_list_geostruct</strong> (<cite>pyemu.geostats.GeoStruct</cite>) – the geostastical struture to
+build the prior parameter covariance matrix
+for spatially-varying list-type multiplier parameters.
+If None, a generic GeoStruct is created using an “a” parameter that
+is 10 times the max cell size.  Default is None.</p></li>
+<li><p><strong>remove_existing</strong> (<cite>bool</cite>) – a flag to remove an existing new_model_ws directory.  If False and
+new_model_ws exists, an exception is raised.  If True and new_model_ws
+exists, the directory is destroyed - user beware! Default is False.</p></li>
+<li><p><strong>k_zone_dict</strong> (<cite>dict</cite>) – a dictionary of zero-based layer index, zone array pairs.
+e.g. {lay: np.2darray}  Used to
+override using ibound zones for zone-based parameterization.  If None,
+use ibound values greater than zero as zones. Alternatively a dictionary of dictionaries
+can be passed to allow different zones to be defined for different parameters.
+e.g. {“upw.hk” {lay: np.2darray}, “extra.rc11” {lay: np.2darray}}
+or {“hk” {lay: np.2darray}, “rc11” {lay: np.2darray}}</p></li>
+<li><p><strong>use_pp_zones</strong> (<cite>bool</cite>) – a flag to use ibound zones (or k_zone_dict, see above) as pilot
+point zones.  If False, ibound values greater than zero are treated as
+a single zone for pilot points.  Default is False</p></li>
+<li><p><strong>(</strong><strong>[</strong><strong>[</strong><strong>str</strong> (<em>external_ins_out_pairs</em>) – a list of observed-simulated PEST-type SMP file
+pairs to get observations
+from and include in the control file.  Default is []</p></li>
+<li><p><strong>str</strong><strong>]</strong><strong>]</strong> – a list of observed-simulated PEST-type SMP file
+pairs to get observations
+from and include in the control file.  Default is []</p></li>
+<li><p><strong>(</strong><strong>[</strong><strong>[</strong><strong>str</strong> – a list of existing template file, model input
+file pairs to parse parameters
+from and include in the control file.  Default is []</p></li>
+<li><p><strong>str</strong><strong>]</strong><strong>]</strong> – a list of existing template file, model input
+file pairs to parse parameters
+from and include in the control file.  Default is []</p></li>
+<li><p><strong>(</strong><strong>[</strong><strong>[</strong><strong>str</strong> – a list of existing instruction file,
+model output file pairs to parse
+observations from and include in the control file.  Default is []</p></li>
+<li><p><strong>str</strong><strong>]</strong><strong>]</strong> – a list of existing instruction file,
+model output file pairs to parse
+observations from and include in the control file.  Default is []</p></li>
+<li><p><strong>extra_pre_cmds</strong> ([<cite>str</cite>]) – a list of preprocessing commands to add to the forward_run.py script
+commands are executed with os.system() within forward_run.py. Default is None.</p></li>
+<li><p><strong>redirect_forward_output</strong> (<cite>bool</cite>) – flag for whether to redirect forward model output to text files (True) or
+allow model output to be directed to the screen (False).  Default is True</p></li>
+<li><p><strong>extra_post_cmds</strong> ([<cite>str</cite>]) – a list of post-processing commands to add to the forward_run.py script.
+Commands are executed with os.system() within forward_run.py. Default is None.</p></li>
+<li><p><strong>tmp_files</strong> ([<cite>str</cite>]) – a list of temporary files that should be removed at the start of the forward
+run script.  Default is [].</p></li>
+<li><p><strong>model_exe_name</strong> (<cite>str</cite>) – binary name to run modflow.  If None, a default from flopy is used,
+which is dangerous because of the non-standard binary names
+(e.g. MODFLOW-NWT_x64, MODFLOWNWT, mfnwt, etc). Default is None.</p></li>
+<li><p><strong>build_prior</strong> (<cite>bool</cite>) – flag to build prior covariance matrix. Default is True</p></li>
+<li><p><strong>sfr_obs</strong> (<cite>bool</cite>) – flag to include observations of flow and aquifer exchange from
+the sfr ASCII output file</p></li>
+<li><p><strong>hfb_pars</strong> (<cite>bool</cite>) – add HFB parameters.  uses pyemu.gw_utils.write_hfb_template().  the resulting
+HFB pars have parval1 equal to the values in the original file and use the
+spatial_list_geostruct to build geostatistical covariates between parameters</p></li>
+<li><p><strong>kl_props</strong> ([[<cite>str</cite>,[<cite>int</cite>]]]) – karhunen-loeve based multiplier parameters.
+A nested list of KL-based model properties to parameterize using
+name, iterable pairs.  For 3D properties, the iterable is zero-based
+layer indices (e.g., [“lpf.hk”,[0,1,2,]] would setup a multiplier
+parameter for layer property file horizontal hydraulic conductivity for model
+layers 1,2, and 3 for unique zone values in the ibound array.
+For time-varying properties (e.g. recharge), the iterable is for
+zero-based stress period indices.  For example, [“rch.rech”,[0,4,10,15]]
+would setup zone-based multiplier parameters for recharge for stress
+period 1,5,11,and 16.</p></li>
+<li><p><strong>kl_num_eig</strong> (<cite>int</cite>) – the number of KL-based eigenvector multiplier parameters to use for each
+KL parameter set. default is 100</p></li>
+<li><p><strong>kl_geostruct</strong> (<cite>pyemu.geostats.Geostruct</cite>) – the geostatistical structure
+to build the prior parameter covariance matrix
+elements for KL-based parameters.  If None, a generic GeoStruct is created
+using an “a” parameter that is 10 times the max cell size.  Default is None</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Setup up multiplier parameters for an existing MODFLOW model.</p>
+<p>Does all kinds of coolness like building a
+meaningful prior, assigning somewhat meaningful parameter groups and
+bounds, writes a forward_run.py script with all the calls need to
+implement multiplier parameters, run MODFLOW and post-process.</p>
+<p>Works a lot better if TEMPCHEK, INSCHEK and PESTCHEK are available in the
+system path variable</p>
+</div>
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_sfr_obs">
+<code class="sig-name descname">_setup_sfr_obs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_sfr_obs" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup sfr ASCII observations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_sfr_pars">
+<code class="sig-name descname">_setup_sfr_pars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">par_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_temporal_pars</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_sfr_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup multiplier parameters for sfr segment data
+Adding support for reachinput (and isfropt = 1)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_hfb_pars">
+<code class="sig-name descname">_setup_hfb_pars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_hfb_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup non-mult parameters for hfb (yuck!)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_mult_dirs">
+<code class="sig-name descname">_setup_mult_dirs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_mult_dirs" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup the directories to use for multiplier parameterization.  Directories
+are make within the PstFromFlopyModel.m.model_ws directory</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_model">
+<code class="sig-name descname">_setup_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">org_model_ws</span></em>, <em class="sig-param"><span class="n">new_model_ws</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup the flopy.mbase instance for use with multipler parameters.
+Changes model_ws, sets external_path and writes new MODFLOW input
+files</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._get_count">
+<code class="sig-name descname">_get_count</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._get_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the latest counter for a certain parameter type.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._prep_mlt_arrays">
+<code class="sig-name descname">_prep_mlt_arrays</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._prep_mlt_arrays" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare multipler arrays.  Copies existing model input arrays and
+writes generic (ones) multiplier arrays</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._write_u2d">
+<code class="sig-name descname">_write_u2d</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">u2d</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._write_u2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a flopy.utils.Util2D instance to an ASCII text file using the
+Util2D filename</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._write_const_tpl">
+<code class="sig-name descname">_write_const_tpl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">tpl_file</span></em>, <em class="sig-param"><span class="n">zn_array</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._write_const_tpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a template file a for a constant (uniform) multiplier parameter</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._write_grid_tpl">
+<code class="sig-name descname">_write_grid_tpl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">tpl_file</span></em>, <em class="sig-param"><span class="n">zn_array</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._write_grid_tpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a template file a for grid-based multiplier parameters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._grid_prep">
+<code class="sig-name descname">_grid_prep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._grid_prep" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare grid-based parameterizations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._pp_prep">
+<code class="sig-name descname">_pp_prep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">mlt_df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._pp_prep" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare pilot point based parameterization</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._kl_prep">
+<code class="sig-name descname">_kl_prep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">mlt_df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._kl_prep" title="Permalink to this definition">¶</a></dt>
+<dd><p>prepare KL based parameterizations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_array_pars">
+<code class="sig-name descname">_setup_array_pars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_array_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>main entry point for setting up array multipler parameters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_observations">
+<code class="sig-name descname">_setup_observations</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_observations" title="Permalink to this definition">¶</a></dt>
+<dd><p>main entry point for setting up observations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel.draw">
+<code class="sig-name descname">draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">num_reals</span><span class="o">=</span><span class="default_value">100</span></em>, <em class="sig-param"><span class="n">sigma_range</span><span class="o">=</span><span class="default_value">6</span></em>, <em class="sig-param"><span class="n">use_specsim</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">scale_offset</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel.draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>draw from the geostatistically-implied parameter covariance matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_reals</strong> (<cite>int</cite>) – number of realizations to generate. Default is 100</p></li>
+<li><p><strong>sigma_range</strong> (<cite>float</cite>) – number of standard deviations represented by
+the parameter bounds.  Default is 6.</p></li>
+<li><p><strong>use_specsim</strong> (<cite>bool</cite>) – flag to use spectral simulation for grid-based
+parameters.  Requires a regular grid but is wicked fast.  Default is False</p></li>
+<li><p><strong>scale_offset</strong> (<cite>bool</cite>, optional) – flag to apply scale and offset to parameter
+bounds when calculating variances - this is passed through to
+<cite>pyemu.Cov.from_parameter_data</cite>.  Default is True.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>operates on parameters by groups to avoid having to construct a very large
+covariance matrix for problems with more the 30K parameters.</p>
+<p>uses <cite>helpers.geostatitical_draw()</cite></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The realized parameter ensemble</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pyemu.ParameterEnsemble</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel.build_prior">
+<code class="sig-name descname">build_prior</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">fmt</span><span class="o">=</span><span class="default_value">'ascii'</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">droptol</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">chunk</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sigma_range</span><span class="o">=</span><span class="default_value">6</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel.build_prior" title="Permalink to this definition">¶</a></dt>
+<dd><p>build and optionally save the prior parameter covariance matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fmt</strong> (<cite>str</cite>, optional) – the format to save the cov matrix.  Options are “ascii”,”binary”,”uncfile”, “coo”.
+Default is “ascii”.  If “none” (lower case string, not None), then no file is created.</p></li>
+<li><p><strong>filename</strong> (<cite>str</cite>, optional) – the filename to save the prior cov matrix to.  If None, the name is formed using
+model nam_file name.  Default is None.</p></li>
+<li><p><strong>droptol</strong> (<cite>float</cite>, optional) – tolerance for dropping near-zero values when writing compressed binary.
+Default is None.</p></li>
+<li><p><strong>chunk</strong> (<cite>int</cite>, optional) – chunk size to write in a single pass - for binary only.  Default
+is None (no chunking).</p></li>
+<li><p><strong>sigma_range</strong> (<cite>float</cite>) – number of standard deviations represented by the parameter bounds.  Default
+is 6.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the full prior parameter covariance matrix, generated by processing parameters by
+groups</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Cov</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel.build_pst">
+<code class="sig-name descname">build_pst</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel.build_pst" title="Permalink to this definition">¶</a></dt>
+<dd><p>build the pest control file using the parameters and
+observations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<cite>str</cite>) – the filename to save the contorl file to.  If None, the
+name if formed from the model namfile name.  Default is None.  The control
+is saved in the <cite>PstFromFlopy.m.model_ws</cite> directory.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>calls pyemu.Pst.from_io_files</p>
+<p>calls PESTCHEK</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._add_external">
+<code class="sig-name descname">_add_external</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._add_external" title="Permalink to this definition">¶</a></dt>
+<dd><p>add external (existing) template files and/or instruction files to the
+Pst instance</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel.write_forward_run">
+<code class="sig-name descname">write_forward_run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel.write_forward_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>write the forward run script forward_run.py</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method can be called repeatedly, especially after any
+changed to the pre- and/or post-processing routines.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._parse_k">
+<code class="sig-name descname">_parse_k</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">k</span></em>, <em class="sig-param"><span class="n">vals</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._parse_k" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse the iterable from a property or boundary condition argument</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._parse_pakattr">
+<code class="sig-name descname">_parse_pakattr</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">pakattr</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._parse_pakattr" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse package-iterable pairs from a property or boundary condition
+argument</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_list_pars">
+<code class="sig-name descname">_setup_list_pars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_list_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>main entry point for setting up list multiplier
+parameters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_temporal_list_pars">
+<code class="sig-name descname">_setup_temporal_list_pars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_temporal_list_pars" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_spatial_list_pars">
+<code class="sig-name descname">_setup_spatial_list_pars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_spatial_list_pars" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._list_helper">
+<code class="sig-name descname">_list_helper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">k</span></em>, <em class="sig-param"><span class="n">pak</span></em>, <em class="sig-param"><span class="n">attr</span></em>, <em class="sig-param"><span class="n">col</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._list_helper" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper to setup list multiplier parameters for a given
+k, pak, attr set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_hds">
+<code class="sig-name descname">_setup_hds</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_hds" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup modflow head save file observations for given kper (zero-based
+stress period index) and k (zero-based layer index) pairs using the
+kperk argument.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_smp">
+<code class="sig-name descname">_setup_smp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_smp" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup observations from PEST-style SMP file pairs</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_hob">
+<code class="sig-name descname">_setup_hob</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_hob" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup observations from the MODFLOW HOB package</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_hyd">
+<code class="sig-name descname">_setup_hyd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_hyd" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup observations from the MODFLOW HYDMOD package</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.PstFromFlopyModel._setup_water_budget_obs">
+<code class="sig-name descname">_setup_water_budget_obs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.PstFromFlopyModel._setup_water_budget_obs" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup observations from the MODFLOW list file for
+volume and flux water buget information</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.apply_list_and_array_pars">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">apply_list_and_array_pars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arr_par_file</span><span class="o">=</span><span class="default_value">'mult2model_info.csv'</span></em>, <em class="sig-param"><span class="n">chunk_len</span><span class="o">=</span><span class="default_value">50</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.apply_list_and_array_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply multiplier parameters to list and array style model files</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr_par_file</strong> (<em>str</em>) – </p></li>
+<li><p><strong>chunk_len</strong> (<cite>int</cite>) – the number of files to process per multiprocessing
+chunk in appl_array_pars().  default is 50.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns:</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Used to implement the parameterization constructed by
+PstFrom during a forward run</p>
+<p>Should be added to the forward_run.py script</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers._process_chunk_fac2real">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">_process_chunk_fac2real</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">chunk</span></em>, <em class="sig-param"><span class="n">i</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers._process_chunk_fac2real" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers._process_chunk_model_files">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">_process_chunk_model_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">chunk</span></em>, <em class="sig-param"><span class="n">i</span></em>, <em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers._process_chunk_model_files" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers._process_model_file">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">_process_model_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_file</span></em>, <em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers._process_model_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.apply_array_pars">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">apply_array_pars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arr_par</span><span class="o">=</span><span class="default_value">'arr_pars.csv'</span></em>, <em class="sig-param"><span class="n">arr_par_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">chunk_len</span><span class="o">=</span><span class="default_value">50</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.apply_array_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>a function to apply array-based multipler parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr_par</strong> (<cite>str</cite> or <cite>pandas.DataFrame</cite>) – if type <cite>str</cite>,</p></li>
+<li><p><strong>to csv file detailing parameter array multipliers.</strong> (<em>path</em>) – This file can be written by PstFromFlopy.</p></li>
+<li><p><strong>type pandas.DataFrame is Dataframe with columns of</strong> (<em>if</em>) – </p></li>
+<li><p><strong>[</strong><strong>'mlt_file'</strong> – </p></li>
+<li><p><strong>'model_file'</strong> – </p></li>
+<li><p><strong>and optionally</strong> (<em>'org_file'</em><em>]</em>) – </p></li>
+<li><p><strong>[</strong><strong>'pp_file'</strong> – </p></li>
+<li><p><strong>'fac_file'</strong><strong>]</strong><strong></strong> – </p></li>
+<li><p><strong>chunk_len</strong> (<cite>int</cite>) – the number of files to process per chunk
+with multiprocessing - applies to both fac2real and <a href="#id10"><span class="problematic" id="id11">process_</span></a>
+input_files. Default is 50.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Used to implement the parameterization constructed by
+PstFromFlopyModel during a forward run</p>
+<p>This function should be added to the forward_run.py script but can
+be called on any correctly formatted csv</p>
+<p>This function using multiprocessing, spawning one process for each
+model input array (and optionally pp files).  This speeds up
+execution time considerably but means you need to make sure your
+forward run script uses the proper multiprocessing idioms for
+freeze support and main thread handling.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.apply_list_pars">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">apply_list_pars</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.apply_list_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>a function to apply boundary condition multiplier parameters.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Used to implement the parameterization constructed by
+PstFromFlopyModel during a forward run</p>
+<p>Requires either “temporal_list_pars.csv” or “spatial_list_pars.csv”</p>
+<p>Should be added to the forward_run.py script</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.apply_genericlist_pars">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">apply_genericlist_pars</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.apply_genericlist_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>a function to apply list style mult parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>df</strong> (<em>pandas.DataFrame</em>) – DataFrame that relates files containing
+multipliers to model input file names. Required columns include:
+{“model_file”: file name of resulatant model input file,
+“org_file”: file name of original file that multipliers act on,
+“fmt”: format specifier for model input file (currently on ‘free’ supported),
+“sep”: separator for model input file if ‘free’ formatted,
+“head_rows”: Number of header rows to transfer from orig file to model file,
+“index_cols”: list of columns (either indexes or strings) to be used to align mults, orig and model files,
+“use_cols”: columns to mults act on,
+“upper_bound”: ultimate upper bound for model input file parameter,
+“lower_bound”: ultimate lower bound for model input file parameter}</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.write_const_tpl">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">write_const_tpl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">tpl_file</span></em>, <em class="sig-param"><span class="n">suffix</span></em>, <em class="sig-param"><span class="n">zn_array</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">longnames</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.write_const_tpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a constant (uniform) template file for a 2-D array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<cite>str</cite>) – the base parameter name</p></li>
+<li><p><strong>tpl_file</strong> (<cite>str</cite>) – the template file to write</p></li>
+<li><p><strong>zn_array</strong> (<cite>numpy.ndarray</cite>, optional) – an array used to skip inactive cells,
+and optionally get shape info.</p></li>
+<li><p><strong>shape</strong> (<cite>tuple</cite>) – tuple nrow and ncol.  Either <cite>zn_array</cite> or <cite>shape</cite>
+must be passed</p></li>
+<li><p><strong>longnames</strong> (<cite>bool</cite>) – flag to use longer names that exceed 12 chars in length.
+Default is False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with parameter information</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.write_grid_tpl">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">write_grid_tpl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">tpl_file</span></em>, <em class="sig-param"><span class="n">suffix</span></em>, <em class="sig-param"><span class="n">zn_array</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">spatial_reference</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">longnames</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.write_grid_tpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a grid-based template file for a 2-D array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<cite>str</cite>) – the base parameter name</p></li>
+<li><p><strong>tpl_file</strong> (<cite>str</cite>) – the template file to write - include path</p></li>
+<li><p><strong>zn_array</strong> (<cite>numpy.ndarray</cite>, optional) – zone array to identify
+inactive cells.  Default is None</p></li>
+<li><p><strong>shape</strong> (<cite>tuple</cite>, optional) – a length-two tuple of nrow and ncol.  Either
+<cite>zn_array</cite> or <cite>shape</cite> must be passed.</p></li>
+<li><p><strong>spatial_reference</strong> (<cite>flopy.utils.SpatialReference</cite>) – a spatial reference instance.
+If <cite>longnames</cite> is True, then <cite>spatial_reference</cite> is used to add spatial info
+to the parameter names.</p></li>
+<li><p><strong>longnames</strong> (<cite>bool</cite>) – flag to use longer names that exceed 12 chars in length.
+Default is False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with parameter information</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.write_zone_tpl">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">write_zone_tpl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">tpl_file</span></em>, <em class="sig-param"><span class="n">suffix</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">zn_array</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">shape</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">longnames</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">fill_value</span><span class="o">=</span><span class="default_value">'1.0'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.write_zone_tpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a zone-based template file for a 2-D array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<cite>str</cite>) – the base parameter name</p></li>
+<li><p><strong>tpl_file</strong> (<cite>str</cite>) – the template file to write</p></li>
+<li><p><strong>suffix</strong> (<cite>str</cite>) – suffix to add to parameter names.  Only used if <cite>longnames=True</cite></p></li>
+<li><p><strong>zn_array</strong> (<cite>numpy.ndarray</cite>, optional) – an array used to skip inactive cells,
+and optionally get shape info.  zn_array values less than 1 are given <cite>fill_value</cite></p></li>
+<li><p><strong>shape</strong> (<cite>tuple</cite>) – tuple nrow and ncol.  Either <cite>zn_array</cite> or <cite>shape</cite>
+must be passed</p></li>
+<li><p><strong>longnames</strong> (<cite>bool</cite>) – flag to use longer names that exceed 12 chars in length.
+Default is False.</p></li>
+<li><p><strong>fill_value</strong> (<cite>str</cite>) – value to fill locations where <cite>zn_array</cite> is less than 1.0.
+Default is “1.0”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with parameter information</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.build_jac_test_csv">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">build_jac_test_csv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">num_steps</span></em>, <em class="sig-param"><span class="n">par_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">forward</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.build_jac_test_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>build a dataframe of jactest inputs for use with sweep</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – existing control file</p></li>
+<li><p><strong>num_steps</strong> (<cite>int</cite>) – number of pertubation steps for each parameter</p></li>
+<li><p><strong>[</strong><strong>str</strong><strong>]</strong> (<em>par_names</em>) – list of parameter names of pars to test.
+If None, all adjustable pars are used. Default is None</p></li>
+<li><p><strong>forward</strong> (<cite>bool</cite>) – flag to start with forward pertubations.
+Default is True</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the sequence of model runs to evaluate
+for the jactesting.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers._write_df_tpl">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">_write_df_tpl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">sep</span><span class="o">=</span><span class="default_value">','</span></em>, <em class="sig-param"><span class="n">tpl_marker</span><span class="o">=</span><span class="default_value">'~'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers._write_df_tpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>function write a pandas dataframe to a template file.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.setup_fake_forward_run">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">setup_fake_forward_run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">new_pst_name</span></em>, <em class="sig-param"><span class="n">org_cwd</span><span class="o">=</span><span class="default_value">'.'</span></em>, <em class="sig-param"><span class="n">bak_suffix</span><span class="o">=</span><span class="default_value">'._bak'</span></em>, <em class="sig-param"><span class="n">new_cwd</span><span class="o">=</span><span class="default_value">'.'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.setup_fake_forward_run" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup a fake forward run for a pst.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – existing control file</p></li>
+<li><p><strong>new_pst_name</strong> (<cite>str</cite>) – new control file to write</p></li>
+<li><p><strong>org_cwd</strong> (<cite>str</cite>) – existing working dir.  Default is “.”</p></li>
+<li><p><strong>bak_suffix</strong> (<cite>str</cite>, optional) – suffix to add to existing
+model output files when making backup copies.</p></li>
+<li><p><strong>new_cwd</strong> (<cite>str</cite>) – new working dir.  Default is “.”.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The fake forward run simply copies existing backup versions of
+model output files to the outfiles pest(pp) is looking
+for.  This is really a development option for debugging
+PEST++ issues.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.setup_temporal_diff_obs">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">setup_temporal_diff_obs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">ins_file</span></em>, <em class="sig-param"><span class="n">out_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">include_zero_weight</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">include_path</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">sort_by_name</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">long_names</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">prefix</span><span class="o">=</span><span class="default_value">'dif'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.setup_temporal_diff_obs" title="Permalink to this definition">¶</a></dt>
+<dd><p>a helper function to setup difference-in-time observations based on an existing
+set of observations in an instruction file using the observation grouping in the
+control file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – existing control file</p></li>
+<li><p><strong>ins_file</strong> (<cite>str</cite>) – an existing instruction file</p></li>
+<li><p><strong>out_file</strong> (<cite>str</cite>, optional) – an existing model output file that corresponds to
+the instruction file.  If None, <cite>ins_file.replace(“.ins”,””)</cite> is used</p></li>
+<li><p><strong>include_zero_weight</strong> (<cite>bool</cite>, optional) – flag to include zero-weighted observations
+in the difference observation process.  Default is False so that only non-zero
+weighted observations are used.</p></li>
+<li><p><strong>include_path</strong> (<cite>bool</cite>, optional) – flag to setup the binary file processing in directory where the hds_file
+is located (if different from where python is running).  This is useful for setting up
+the process in separate directory for where python is running.</p></li>
+<li><p><strong>sort_by_name</strong> (<cite>bool</cite>,optional) – flag to sort observation names in each group prior to setting up
+the differencing.  The order of the observations matters for the differencing.  If False, then
+the control file order is used.  If observation names have a datetime suffix, make sure the format is
+year-month-day to use this sorting.  Default is True</p></li>
+<li><p><strong>long_names</strong> (<cite>bool</cite>, optional) – flag to use long, descriptive names by concating the two observation names
+that are being differenced.  This will produce names that are too long for tradtional PEST(_HP).
+Default is True.</p></li>
+<li><p><strong>prefix</strong> (<cite>str</cite>, optional) – prefix to prepend to observation names and group names.  Default is “dif”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>tuple containing</p>
+<ul class="simple">
+<li><p><strong>str</strong>: the forward run command to execute the binary file process during model runs.</p></li>
+<li><p><strong>pandas.DataFrame</strong>: a dataframe of observation information for use in the pest control file</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>this is the companion function of <cite>helpers.apply_temporal_diff_obs()</cite>.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.apply_temporal_diff_obs">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">apply_temporal_diff_obs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.apply_temporal_diff_obs" title="Permalink to this definition">¶</a></dt>
+<dd><p>process an instruction-output file pair and formulate difference observations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>config_file</strong> (<cite>str</cite>) – configuration file written by <cite>pyemu.helpers.setup_temporal_diff_obs</cite>.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>processed difference observations</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>diff_df (<cite>pandas.DataFrame</cite>)</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>writes <cite>config_file.replace(“.config”,”.processed”)</cite> output file that can be read
+with the instruction file that is created by <cite>pyemu.helpers.setup_temporal_diff_obs()</cite>.</p>
+<p>this is the companion function of <cite>helpers.setup_setup_temporal_diff_obs()</cite>.</p>
+</div>
+</dd></dl>
+
+<dl class="py data">
+<dt id="pyemu.utils.helpers.srefhttp">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">srefhttp</code><em class="property"> = https://spatialreference.org</em><a class="headerlink" href="#pyemu.utils.helpers.srefhttp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.utils.helpers.SpatialReference">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">SpatialReference</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">delr</span><span class="o">=</span><span class="default_value">np.array([])</span></em>, <em class="sig-param"><span class="n">delc</span><span class="o">=</span><span class="default_value">np.array([])</span></em>, <em class="sig-param"><span class="n">lenuni</span><span class="o">=</span><span class="default_value">2</span></em>, <em class="sig-param"><span class="n">xul</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">yul</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xll</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">yll</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">rotation</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">proj4_str</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">epsg</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">prj</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">units</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">length_multiplier</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">source</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>a class to locate a structured model grid in x-y space.
+Lifted wholesale from Flopy, and preserved here…
+…maybe slighlty over-engineered for here</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>delr</strong> (<em>numpy ndarray</em>) – the model discretization delr vector
+(An array of spacings along a row)</p></li>
+<li><p><strong>delc</strong> (<em>numpy ndarray</em>) – the model discretization delc vector
+(An array of spacings along a column)</p></li>
+<li><p><strong>lenuni</strong> (<em>int</em>) – the length units flag from the discretization package
+(default 2)</p></li>
+<li><p><strong>xul</strong> (<em>float</em>) – the x coordinate of the upper left corner of the grid
+Enter either xul and yul or xll and yll.</p></li>
+<li><p><strong>yul</strong> (<em>float</em>) – the y coordinate of the upper left corner of the grid
+Enter either xul and yul or xll and yll.</p></li>
+<li><p><strong>xll</strong> (<em>float</em>) – the x coordinate of the lower left corner of the grid
+Enter either xul and yul or xll and yll.</p></li>
+<li><p><strong>yll</strong> (<em>float</em>) – the y coordinate of the lower left corner of the grid
+Enter either xul and yul or xll and yll.</p></li>
+<li><p><strong>rotation</strong> (<em>float</em>) – the counter-clockwise rotation (in degrees) of the grid</p></li>
+<li><p><strong>proj4_str</strong> (<em>str</em>) – a PROJ4 string that identifies the grid in space. warning: case
+sensitive!</p></li>
+<li><p><strong>units</strong> (<em>string</em>) – Units for the grid.  Must be either feet or meters</p></li>
+<li><p><strong>epsg</strong> (<em>int</em>) – EPSG code that identifies the grid in space. Can be used in lieu of
+proj4. PROJ4 attribute will auto-populate if there is an internet
+connection(via get_proj4 method).
+See <a class="reference external" href="https://www.epsg-registry.org/">https://www.epsg-registry.org/</a> or spatialreference.org</p></li>
+<li><p><strong>length_multiplier</strong> (<em>float</em>) – multiplier to convert model units to spatial reference units.
+delr and delc above will be multiplied by this value. (default=1.)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.xedge">
+<code class="sig-name descname">xedge</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.xedge" title="Permalink to this definition">¶</a></dt>
+<dd><p>array of column edges</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.yedge">
+<code class="sig-name descname">yedge</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.yedge" title="Permalink to this definition">¶</a></dt>
+<dd><p>array of row edges</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.xgrid">
+<code class="sig-name descname">xgrid</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.xgrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>numpy meshgrid of xedges</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.ygrid">
+<code class="sig-name descname">ygrid</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.ygrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>numpy meshgrid of yedges</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.xcenter">
+<code class="sig-name descname">xcenter</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.xcenter" title="Permalink to this definition">¶</a></dt>
+<dd><p>array of column centers</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.ycenter">
+<code class="sig-name descname">ycenter</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.ycenter" title="Permalink to this definition">¶</a></dt>
+<dd><p>array of row centers</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.xcentergrid">
+<code class="sig-name descname">xcentergrid</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.xcentergrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>numpy meshgrid of column centers</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.ycentergrid">
+<code class="sig-name descname">ycentergrid</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.ycentergrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>numpy meshgrid of row centers</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.vertices">
+<code class="sig-name descname">vertices</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.vertices" title="Permalink to this definition">¶</a></dt>
+<dd><p>1D array of cell vertices for whole grid in C-style (row-major) order
+(same as np.ravel())</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>1D array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<p>xul and yul can be explicitly (re)set after SpatialReference
+instantiation, but only before any of the other attributes and methods are
+accessed</p>
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.rotation">
+<code class="sig-name descname">rotation</code><em class="property"> = 0.0</em><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.rotation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.length_multiplier">
+<code class="sig-name descname">length_multiplier</code><em class="property"> = 1.0</em><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.length_multiplier" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.origin_loc">
+<code class="sig-name descname">origin_loc</code><em class="property"> = ul</em><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.origin_loc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.defaults">
+<code class="sig-name descname">defaults</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.defaults" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.lenuni_values">
+<code class="sig-name descname">lenuni_values</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.lenuni_values" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.utils.helpers.SpatialReference.lenuni_text">
+<code class="sig-name descname">lenuni_text</code><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.lenuni_text" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.xll">
+<em class="property">property </em><code class="sig-name descname">xll</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.xll" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.yll">
+<em class="property">property </em><code class="sig-name descname">yll</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.yll" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.xul">
+<em class="property">property </em><code class="sig-name descname">xul</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.xul" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.yul">
+<em class="property">property </em><code class="sig-name descname">yul</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.yul" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.proj4_str">
+<em class="property">property </em><code class="sig-name descname">proj4_str</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.proj4_str" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.epsg">
+<em class="property">property </em><code class="sig-name descname">epsg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.epsg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.lenuni">
+<em class="property">property </em><code class="sig-name descname">lenuni</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.lenuni" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference._parse_units_from_proj4">
+<code class="sig-name descname">_parse_units_from_proj4</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference._parse_units_from_proj4" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.units">
+<em class="property">property </em><code class="sig-name descname">units</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.units" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="id0">
+<em class="property">property </em><code class="sig-name descname">length_multiplier</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attempt to identify multiplier for converting from
+model units to sr units, defaulting to 1.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.model_length_units">
+<em class="property">property </em><code class="sig-name descname">model_length_units</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.model_length_units" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.bounds">
+<em class="property">property </em><code class="sig-name descname">bounds</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return bounding box in shapely order.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.load">
+<em class="property">static </em><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">namefile</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">reffile</span><span class="o">=</span><span class="default_value">'usgs.model.reference'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attempts to load spatial reference information from
+the following files (in order):
+1) usgs.model.reference
+2) NAM file (header comment)
+3) SpatialReference.default dictionary</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.attribs_from_namfile_header">
+<em class="property">static </em><code class="sig-name descname">attribs_from_namfile_header</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">namefile</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.attribs_from_namfile_header" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.read_usgs_model_reference_file">
+<em class="property">static </em><code class="sig-name descname">read_usgs_model_reference_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">reffile</span><span class="o">=</span><span class="default_value">'usgs.model.reference'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.read_usgs_model_reference_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>read spatial reference info from the usgs.model.reference file
+<a class="reference external" href="https://water.usgs.gov/ogw/policy/gw-model/modelers-setup.html">https://water.usgs.gov/ogw/policy/gw-model/modelers-setup.html</a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.__setattr__">
+<code class="sig-name descname">__setattr__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.__setattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implement setattr(self, name, value).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference._reset">
+<code class="sig-name descname">_reset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference._reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.nrow">
+<em class="property">property </em><code class="sig-name descname">nrow</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.nrow" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.ncol">
+<em class="property">property </em><code class="sig-name descname">ncol</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.ncol" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.__eq__">
+<code class="sig-name descname">__eq__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">other</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return self==value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.from_namfile">
+<em class="property">classmethod </em><code class="sig-name descname">from_namfile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">namefile</span></em>, <em class="sig-param"><span class="n">delr</span><span class="o">=</span><span class="default_value">np.array([])</span></em>, <em class="sig-param"><span class="n">delc</span><span class="o">=</span><span class="default_value">np.array([])</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.from_namfile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.from_gridspec">
+<em class="property">classmethod </em><code class="sig-name descname">from_gridspec</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">gridspec_file</span></em>, <em class="sig-param"><span class="n">lenuni</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.from_gridspec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.attribute_dict">
+<em class="property">property </em><code class="sig-name descname">attribute_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.attribute_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.set_spatialreference">
+<code class="sig-name descname">set_spatialreference</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">xul</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">yul</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">xll</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">yll</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">rotation</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.set_spatialreference" title="Permalink to this definition">¶</a></dt>
+<dd><p>set spatial reference - can be called from model instance</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.__repr__">
+<code class="sig-name descname">__repr__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return repr(self).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.theta">
+<em class="property">property </em><code class="sig-name descname">theta</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.theta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="id1">
+<em class="property">property </em><code class="sig-name descname">xedge</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="id2">
+<em class="property">property </em><code class="sig-name descname">yedge</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="id3">
+<em class="property">property </em><code class="sig-name descname">xgrid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id3" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="id4">
+<em class="property">property </em><code class="sig-name descname">ygrid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id4" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="id5">
+<em class="property">property </em><code class="sig-name descname">xcenter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id5" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="id6">
+<em class="property">property </em><code class="sig-name descname">ycenter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id6" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="id7">
+<em class="property">property </em><code class="sig-name descname">ycentergrid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id7" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="id8">
+<em class="property">property </em><code class="sig-name descname">xcentergrid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id8" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference._set_xycentergrid">
+<code class="sig-name descname">_set_xycentergrid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference._set_xycentergrid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference._set_xygrid">
+<code class="sig-name descname">_set_xygrid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference._set_xygrid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.rotate">
+<em class="property">static </em><code class="sig-name descname">rotate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">theta</span></em>, <em class="sig-param"><span class="n">xorigin</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">yorigin</span><span class="o">=</span><span class="default_value">0.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.rotate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given x and y array-like values calculate the rotation about an
+arbitrary origin and then return the rotated coordinates.  theta is in
+degrees.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.transform">
+<code class="sig-name descname">transform</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">inverse</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given x and y array-like values, apply rotation, scale and offset,
+to convert them from model coordinates to real-world coordinates.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.get_extent">
+<code class="sig-name descname">get_extent</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.get_extent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the extent of the rotated and offset grid</p>
+<p>Return (xmin, xmax, ymin, ymax)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.get_grid_lines">
+<code class="sig-name descname">get_grid_lines</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.get_grid_lines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the grid lines as a list</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.get_xcenter_array">
+<code class="sig-name descname">get_xcenter_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.get_xcenter_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a numpy one-dimensional float array that has the cell center x
+coordinate for every column in the grid in model space - not offset or rotated.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.get_ycenter_array">
+<code class="sig-name descname">get_ycenter_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.get_ycenter_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a numpy one-dimensional float array that has the cell center x
+coordinate for every row in the grid in model space - not offset of rotated.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.get_xedge_array">
+<code class="sig-name descname">get_xedge_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.get_xedge_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a numpy one-dimensional float array that has the cell edge x
+coordinates for every column in the grid in model space - not offset
+or rotated.  Array is of size (ncol + 1)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.get_yedge_array">
+<code class="sig-name descname">get_yedge_array</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.get_yedge_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a numpy one-dimensional float array that has the cell edge y
+coordinates for every row in the grid in model space - not offset or
+rotated. Array is of size (nrow + 1)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.write_gridspec">
+<code class="sig-name descname">write_gridspec</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.write_gridspec" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a PEST-style grid specification file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.get_vertices">
+<code class="sig-name descname">get_vertices</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">i</span></em>, <em class="sig-param"><span class="n">j</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.get_vertices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get vertices for a single cell or sequence if i, j locations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.get_rc">
+<code class="sig-name descname">get_rc</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.get_rc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference.get_ij">
+<code class="sig-name descname">get_ij</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference.get_ij" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the row and column of a point or sequence of points
+in real-world coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>scalar</em><em> or </em><em>sequence of x coordinates</em>) – </p></li>
+<li><p><strong>y</strong> (<em>scalar</em><em> or </em><em>sequence of y coordinates</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>i</strong> (<em>row or sequence of rows (zero-based)</em>)</p></li>
+<li><p><strong>j</strong> (<em>column or sequence of columns (zero-based)</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="id9">
+<em class="property">property </em><code class="sig-name descname">vertices</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#id9" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of vertices for</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.utils.helpers.SpatialReference._set_vertices">
+<code class="sig-name descname">_set_vertices</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.SpatialReference._set_vertices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Populate vertices for the whole grid</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers.get_maha_obs_summary">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">get_maha_obs_summary</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sim_en</span></em>, <em class="sig-param"><span class="n">l1_crit_val</span><span class="o">=</span><span class="default_value">6.34</span></em>, <em class="sig-param"><span class="n">l2_crit_val</span><span class="o">=</span><span class="default_value">9.2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers.get_maha_obs_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate the 1-D and 2-D mahalanobis distance</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sim_en</strong> (<cite>pyemu.ObservationEnsemble</cite>) – a simulated outputs ensemble</p></li>
+<li><p><strong>l1_crit_val</strong> (<cite>float</cite>) – the chi squared critical value for the 1-D
+mahalanobis distance.  Default is 6.4 (p=0.01,df=1)</p></li>
+<li><p><strong>l2_crit_val</strong> (<cite>float</cite>) – the chi squared critical value for the 2-D
+mahalanobis distance.  Default is 9.2 (p=0.01,df=2)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><p>tuple containing</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><strong>pandas.DataFrame</strong>: 1-D subspace squared mahalanobis distances</dt><dd><p>that exceed the <cite>l1_crit_val</cite> threshold</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>pandas.DataFrame</strong>: 2-D subspace squared mahalanobis distances</dt><dd><p>that exceed the <cite>l2_crit_val</cite> threshold</p>
+</dd>
+</dl>
+</li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>Noise realizations are added to <cite>sim_en</cite> to account for measurement</dt><dd><p>noise.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.helpers._l2_maha_worker">
+<code class="sig-prename descclassname">pyemu.utils.helpers.</code><code class="sig-name descname">_l2_maha_worker</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">o1</span></em>, <em class="sig-param"><span class="n">o2names</span></em>, <em class="sig-param"><span class="n">mean</span></em>, <em class="sig-param"><span class="n">var</span></em>, <em class="sig-param"><span class="n">cov</span></em>, <em class="sig-param"><span class="n">results</span></em>, <em class="sig-param"><span class="n">l2_crit_val</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.helpers._l2_maha_worker" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

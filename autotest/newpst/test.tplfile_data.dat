@@ -1,0 +1,4 @@
+pest_file model_file
+INSET_MNF1_pars_nz_64_lpf.tpl INSET_MNF1_pars_nz_64.lpf
+INSET_MNF1_rch.tpl INSET_MNF1.rch
+SFR_multiplier_par.tpl SFR_multiplier.par

@@ -166,9 +166,9 @@ def ensemble_1to1_test():
     print(oe1.loc[:,pst.nnz_obs_names].std())
     print(oe2.loc[:,pst.nnz_obs_names].std())
 
-    pyemu.plot_utils.ensemble_res_1to1(oe1,pst,filename=os.path.join("temp","e1to1.pdf"))
-
-    pyemu.plot_utils.ensemble_res_1to1({"0.5":oe1,"b":oe2},pst,filename=os.path.join("temp","e1to1.pdf"))
+    # pyemu.plot_utils.ensemble_res_1to1(oe1,pst,filename=os.path.join("temp","e1to1.pdf"))
+    #
+    # pyemu.plot_utils.ensemble_res_1to1({"0.5":oe1,"b":oe2},pst,filename=os.path.join("temp","e1to1.pdf"))
 
     pyemu.plot_utils.ensemble_res_1to1({"0.5": oe1, "b": oe2}, pst, filename=os.path.join("temp", "e1to1_noise.pdf"),
                                        base_ensemble=oe_base)
@@ -250,5 +250,5 @@ if __name__ == "__main__":
     #ensemble_plot_test()
     ensemble_1to1_test()
     #
-    ensemble_change_test()
+    #ensemble_change_test()
 

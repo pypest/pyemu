@@ -587,16 +587,16 @@ def mixed_par_draw_test():
 
 
 if __name__ == "__main__":
-    #par_gauss_draw_consistency_test()
-    #obs_gauss_draw_consistency_test()
+    par_gauss_draw_consistency_test()
+    obs_gauss_draw_consistency_test()
     #phi_vector_test()
-    add_base_test()
+    #add_base_test()
     #nz_test()
-    # deviations_test()
+    deviations_test()
     # as_pyemu_matrix_test()
     # dropna_test()
     #enforce_test()
-    # pnulpar_test()
+    pnulpar_test()
     # triangular_draw_test()
     # uniform_draw_test()
     # fill_test()

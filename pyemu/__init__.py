@@ -11,11 +11,20 @@ from .la import LinearAnalysis
 from .sc import Schur
 from .ev import ErrVar
 from .en import Ensemble, ParameterEnsemble, ObservationEnsemble
+
 # from .mc import MonteCarlo
 # from .inf import Influence
 from .mat import Matrix, Jco, Cov
 from .pst import Pst, pst_utils
-from .utils import helpers, gw_utils, optimization, geostats, pp_utils, os_utils, smp_utils
+from .utils import (
+    helpers,
+    gw_utils,
+    optimization,
+    geostats,
+    pp_utils,
+    os_utils,
+    smp_utils,
+)
 from .plot import plot_utils
 from .logger import Logger
 
@@ -23,9 +32,25 @@ from .prototypes import *
 
 from ._version import get_versions
 
-__version__ = get_versions()['version']
-__all__ = ["LinearAnalysis", "Schur", "ErrVar", "Ensemble",
-           "ParameterEnsemble", "ObservationEnsemble", "Matrix",
-           "Jco", "Cov", "Pst", "pst_utils", "helpers", "gw_utils",
-           "geostats", "pp_utils", "os_utils", "smp_utils", "plot_utils"]
+__version__ = get_versions()["version"]
+__all__ = [
+    "LinearAnalysis",
+    "Schur",
+    "ErrVar",
+    "Ensemble",
+    "ParameterEnsemble",
+    "ObservationEnsemble",
+    "Matrix",
+    "Jco",
+    "Cov",
+    "Pst",
+    "pst_utils",
+    "helpers",
+    "gw_utils",
+    "geostats",
+    "pp_utils",
+    "os_utils",
+    "smp_utils",
+    "plot_utils",
+]
 # del get_versions

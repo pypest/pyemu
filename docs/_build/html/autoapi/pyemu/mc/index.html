@@ -1,0 +1,430 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyemu.mc &mdash; pyEMU 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> pyEMU
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.mc</span></code></a><ul>
+<li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#classes">Classes</a><ul>
+<li><a class="reference internal" href="#pyemu.mc.MonteCarlo">MonteCarlo</a><ul>
+<li><a class="reference internal" href="#pyemu.mc.MonteCarlo.parensemble">parensemble</a></li>
+<li><a class="reference internal" href="#pyemu.mc.MonteCarlo.obsensemble">obsensemble</a></li>
+<li><a class="reference internal" href="#pyemu.mc.MonteCarlo.num_reals">num_reals</a></li>
+<li><a class="reference internal" href="#pyemu.mc.MonteCarlo.get_nsing">get_nsing</a></li>
+<li><a class="reference internal" href="#pyemu.mc.MonteCarlo.get_null_proj">get_null_proj</a></li>
+<li><a class="reference internal" href="#pyemu.mc.MonteCarlo.draw">draw</a></li>
+<li><a class="reference internal" href="#pyemu.mc.MonteCarlo.project_parensemble">project_parensemble</a></li>
+<li><a class="reference internal" href="#pyemu.mc.MonteCarlo.write_psts">write_psts</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">pyEMU</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.mc</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/autoapi/pyemu/mc/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pyemu.mc">
+<span id="pyemu-mc"></span><h1><a class="reference internal" href="../../../pyemu.html#module-pyemu.mc" title="pyemu.mc"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.mc</span></code></a><a class="headerlink" href="#module-pyemu.mc" title="Permalink to this headline">¶</a></h1>
+<p>pyEMU Monte Carlo module.  Supports easy Monte Carlo
+and GLUE analyses.  The MonteCarlo class inherits from
+pyemu.LinearAnalysis</p>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../pyemu.html#pyemu.mc.MonteCarlo" title="pyemu.mc.MonteCarlo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MonteCarlo</span></code></a></p></td>
+<td><p>LinearAnalysis derived type for monte carlo analysis</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt id="pyemu.mc.MonteCarlo">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.mc.</code><code class="sig-name descname">MonteCarlo</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.mc.MonteCarlo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../../../pyemu.html#pyemu.la.LinearAnalysis" title="pyemu.la.LinearAnalysis"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyemu.la.LinearAnalysis</span></code></a></p>
+<p>LinearAnalysis derived type for monte carlo analysis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**kwargs</strong> (<em>dict</em>) – dictionary of keyword arguments.  See pyemu.LinearAnalysis for
+complete definitions</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="pyemu.mc.MonteCarlo.parensemble">
+<code class="sig-name descname">parensemble</code><a class="headerlink" href="#pyemu.mc.MonteCarlo.parensemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>pyemu object derived from a pandas dataframe, the ensemble
+of parameters from the PEST control file with associated
+starting value and bounds.  Object also exposes methods
+relevant to the dataframe and parameters– see documentation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../../pyemu.html#pyemu.ParameterEnsemble" title="pyemu.ParameterEnsemble">pyemu.ParameterEnsemble</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.mc.MonteCarlo.obsensemble">
+<code class="sig-name descname">obsensemble</code><a class="headerlink" href="#pyemu.mc.MonteCarlo.obsensemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>pyemu object derived from a pandas dataframe, the ensemble
+of observations from the PEST control file with associated
+starting weights.  Object also exposes methods
+relevant to the dataframe and observations– see documentation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../../pyemu.html#pyemu.ObservationEnsemble" title="pyemu.ObservationEnsemble">pyemu.ObservationEnsemble</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>pyEMU MonteCarlo object</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="../../../pyemu.html#pyemu.mc.MonteCarlo" title="pyemu.mc.MonteCarlo">MonteCarlo</a></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc</span> <span class="pre">=</span> <span class="pre">pyemu.MonteCarlo(pst=&quot;pest.pst&quot;)</span></code></p>
+<dl class="py method">
+<dt id="pyemu.mc.MonteCarlo.num_reals">
+<em class="property">property </em><code class="sig-name descname">num_reals</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.mc.MonteCarlo.num_reals" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the number of realizations in the parameter ensemble</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>num_real</strong></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.mc.MonteCarlo.get_nsing">
+<code class="sig-name descname">get_nsing</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">epsilon</span><span class="o">=</span><span class="default_value">0.0001</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.mc.MonteCarlo.get_nsing" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the number of solution space dimensions given
+a ratio between the largest and smallest singular values</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>epsilon</strong> (<em>float</em>) – singular value ratio</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>nsing</strong> – number of singular components above the epsilon ratio threshold</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If nsing == nadj_par, then None is returned</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.mc.MonteCarlo.get_null_proj">
+<code class="sig-name descname">get_null_proj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">nsing</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.mc.MonteCarlo.get_null_proj" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a null-space projection matrix of XTQX</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>nsing</strong> (<em>int</em>) – optional number of singular components to use
+If Nonte, then nsing is determined from
+call to MonteCarlo.get_nsing()</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>v2_proj</strong> – the null-space projection matrix (V2V2^T)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../../pyemu.html#pyemu.Matrix" title="pyemu.Matrix">pyemu.Matrix</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.mc.MonteCarlo.draw">
+<code class="sig-name descname">draw</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">num_reals</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">par_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">obs</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">enforce_bounds</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cov</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">how</span><span class="o">=</span><span class="default_value">'gaussian'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.mc.MonteCarlo.draw" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>draw stochastic realizations of parameters and</dt><dd><p>optionally observations, filling MonteCarlo.parensemble and
+optionally MonteCarlo.obsensemble.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_reals</strong> (<em>int</em>) – number of realization to generate</p></li>
+<li><p><strong>par_file</strong> (<em>str</em>) – parameter file to use as mean values. If None,
+use MonteCarlo.pst.parameter_data.parval1.
+Default is None</p></li>
+<li><p><strong>obs</strong> (<em>bool</em>) – add a realization of measurement noise to observation values,
+forming MonteCarlo.obsensemble.Default is False</p></li>
+<li><p><strong>enforce_bounds</strong> (<em>str</em>) – enforce parameter bounds based on control file information.
+options are ‘reset’, ‘drop’ or None.  Default is None</p></li>
+<li><p><strong>how</strong> (<em>str</em>) – type of distribution to draw from. Must be in [“gaussian”,”uniform”]
+default is “gaussian”.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc</span> <span class="pre">=</span> <span class="pre">pyemu.MonteCarlo(pst=&quot;pest.pst&quot;)</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.draw(1000)</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.mc.MonteCarlo.project_parensemble">
+<code class="sig-name descname">project_parensemble</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">par_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">nsing</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">inplace</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">enforce_bounds</span><span class="o">=</span><span class="default_value">'reset'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.mc.MonteCarlo.project_parensemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform the null-space projection operations for null-space monte carlo</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par_file</strong> (<em>str</em>) – an optional file of parameter values to use</p></li>
+<li><p><strong>nsing</strong> (<em>int</em>) – number of singular values to in forming null subspace matrix</p></li>
+<li><p><strong>inplace</strong> (<em>bool</em>) – overwrite the existing parameter ensemble with the
+projected values</p></li>
+<li><p><strong>enforce_bounds</strong> (<em>str</em>) – how to enforce parameter bounds.  can be None, ‘reset’, or ‘drop’.
+Default is None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>par_en</strong> – if inplace is False, otherwise None</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../../pyemu.html#pyemu.ParameterEnsemble" title="pyemu.ParameterEnsemble">pyemu.ParameterEnsemble</a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>to use this method, the MonteCarlo instance must have been constructed
+with the <code class="docutils literal notranslate"><span class="pre">jco</span></code> argument.</p>
+</div>
+<p class="rubric">Example</p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc</span> <span class="pre">=</span> <span class="pre">pyemu.MonteCarlo(jco=&quot;pest.jcb&quot;)</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.draw(1000)</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.project_parensemble(par_file=&quot;final.par&quot;,nsing=100)</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.mc.MonteCarlo.write_psts">
+<code class="sig-name descname">write_psts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">prefix</span></em>, <em class="sig-param"><span class="n">existing_jco</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">noptmax</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.mc.MonteCarlo.write_psts" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>write parameter and optionally observation realizations</dt><dd><p>to a series of pest control files</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prefix</strong> (<em>str</em>) – pest control file prefix</p></li>
+<li><p><strong>existing_jco</strong> (<em>str</em>) – filename of an existing jacobian matrix to add to the
+pest++ options in the control file.  This is useful for
+NSMC since this jco can be used to get the first set of
+parameter upgrades for free!  Needs to be the path the jco
+file as seen from the location where pest++ will be run</p></li>
+<li><p><strong>noptmax</strong> (<em>int</em>) – value of NOPTMAX to set in new pest control files</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc</span> <span class="pre">=</span> <span class="pre">pyemu.MonteCarlo(jco=&quot;pest.jcb&quot;)</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.draw(1000,</span> <span class="pre">obs=True)</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.write_psts(&quot;mc_&quot;,</span> <span class="pre">existing_jco=&quot;pest.jcb&quot;,</span> <span class="pre">noptmax=1)</span></code></p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -3,14 +3,20 @@ pyEMU
 
 python modules for model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) uncertainty analyses and data-worth analyses, non-linear uncertainty analyses and interfacing with PEST and PEST++.  pyEMU also has a pure python (pandas and numpy) implementation of ordinary kriging for geostatistical interpolation and support for generating high-dimensional PEST(++) model interfaces, including support for (very) high-dimensional ensemble generation and handling   
 
-[![Travis Status](https://travis-ci.org/jtwhite79/pyemu.svg?branch=master)](https://travis-ci.org/jtwhite79/pyemu)
-[![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/jtwhite79/pyemu?branch=master&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
-[![Coverage Status](https://coveralls.io/repos/github/jtwhite79/pyemu/badge.svg?branch=master)](https://coveralls.io/github/jtwhite79/pyemu?branch=master)
+Master branch:
+[![Travis Status](https://travis-ci.org/pypest/pyemu.svg?branch=master)](https://travis-ci.org/pypest/pyemu)
+[![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/pypest/pyemu?branch=master&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
+[![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=master)](https://coveralls.io/github/pypest/pyemu?branch=master)
+
+Develop branch:
+[![Travis Status](https://travis-ci.org/pypest/pyemu.svg?branch=develop)](https://travis-ci.org/pypest/pyemu)
+[![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/pypest/pyemu?branch=develop&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
+[![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/pypest/pyemu?branch=develop)
 
 Read the docs
 =============
 
-[https://jtwhite79.github.io/pyemudoc/](https://jtwhite79.github.io/pyemudoc)
+[https://pyemu.readthedocs.io/en/latest/](https://pyemu.readthedocs.io/en/latest/)
 
 The pyEMU documentation is being treated as a first-class citizen!  Also see the example notebooks in the repo.
 
@@ -46,6 +52,12 @@ A publication documenting pyEMU and an example application can be found here:
 
 [http://dx.doi.org/10.1016/j.envsoft.2016.08.017](http://dx.doi.org/10.1016/j.envsoft.2016.08.017)
 
+
+Funding
+=======
+
+pyEMU was originally developed with support from the U.S Geological Survey. The New Zealand Strategic Science Investment Fund as part of GNS Science’s (https://www.gns.cri.nz/) Groundwater Research Programme has also funded contributions 2018-present.
+
 Examples
 ========
 
@@ -54,7 +66,7 @@ Several example ipython notebooks are provided to demostrate typical workflows f
 Links
 =====
 
-[https://github.com/jtwhite79/pestpp](https://github.com/usgs/pestpp)
+[https://github.com/usgs/pestpp](https://github.com/usgs/pestpp)
 
 [PEST - http://www.pesthomepage.org/](http://www.pesthomepage.org/)
 

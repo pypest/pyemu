@@ -1,0 +1,253 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyemu.Schur &mdash; pyEMU 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pyEMU
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">pyemu.Schur</a><ul>
+<li><a class="reference internal" href="#pyemu.Schur">Schur</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyEMU</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>pyemu.Schur</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_autosummary/pyemu.Schur.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pyemu-schur">
+<h1>pyemu.Schur<a class="headerlink" href="#pyemu-schur" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="pyemu.Schur">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.</code><code class="sig-name descname">Schur</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">jco</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.Schur" title="Permalink to this definition">¶</a></dt>
+<dd><p>FOSM-based uncertainty and data-worth analysis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>jco</strong> (<em>varies</em><em>, </em><em>optional</em>) – something that can be cast or loaded into a <cite>pyemu.Jco</cite>.  Can be a
+str for a filename or <cite>pyemu.Matrix</cite>/<cite>pyemu.Jco</cite> object.</p></li>
+<li><p><strong>pst</strong> (<em>varies</em><em>, </em><em>optional</em>) – something that can be cast into a <cite>pyemu.Pst</cite>.  Can be an <cite>str</cite> for a
+filename or an existing <cite>pyemu.Pst</cite>.  If <cite>None</cite>, a pst filename is sought
+with the same base name as the jco argument (if passed)</p></li>
+<li><p><strong>parcov</strong> (<em>varies</em><em>, </em><em>optional</em>) – prior parameter covariance matrix.  If <cite>str</cite>, a filename is assumed and
+the prior parameter covariance matrix is loaded from a file using
+the file extension (“.jcb”/”.jco” for binary, “.cov”/”.mat” for PEST-style ASCII matrix,
+or “.unc” for uncertainty files).  If <cite>None</cite>, the prior parameter covariance matrix is
+constructed from the parameter bounds in <cite>LinearAnalysis.pst</cite>.  Can also be a <cite>pyemu.Cov</cite> instance</p></li>
+<li><p><strong>obscov</strong> (<em>varies</em><em>, </em><em>optional</em>) – observation noise covariance matrix.  If <cite>str</cite>, a filename is assumed and
+the noise covariance matrix is loaded from a file using
+the file extension (“.jcb”/”.jco” for binary, “.cov”/”.mat” for PEST-style ASCII matrix,
+or “.unc” for uncertainty files).  If <cite>None</cite>, the noise covariance matrix is
+constructed from the obsevation weights in <cite>LinearAnalysis.pst</cite>.  Can also be a <cite>pyemu.Cov</cite> instance</p></li>
+<li><p><strong>forecasts</strong> (<em>varies</em><em>, </em><em>optional</em>) – forecast sensitivity vectors.  If <cite>str</cite>, first an observation name is assumed (a row
+in <cite>LinearAnalysis.jco</cite>).  If that is not found, a filename is assumed and predictions are
+loaded from a file using the file extension.  If [<cite>str</cite>], a list of observation names is assumed.
+Can also be a <cite>pyemu.Matrix</cite> instance, a <cite>numpy.ndarray</cite> or a collection.  Note if the PEST++ option
+“++forecasts()” is set in the pest control file (under the <cite>pyemu.Pst.pestpp_options</cite> dictionary),
+then there is no need to pass this argument (unless you want to analyze different forecasts)
+of <cite>pyemu.Matrix</cite> or <cite>numpy.ndarray</cite>.</p></li>
+<li><p><strong>ref_var</strong> (<em>float</em><em>, </em><em>optional</em>) – reference variance.  Default is 1.0</p></li>
+<li><p><strong>verbose</strong> (<cite>bool</cite>) – controls screen output.  If <cite>str</cite>, a filename is assumed and
+and log file is written.</p></li>
+<li><p><strong>sigma_range</strong> (<cite>float</cite>, optional) – defines range of upper bound - lower bound in terms of standard
+deviation (sigma). For example, if sigma_range = 4, the bounds represent 4 * sigma.
+Default is 4.0, representing approximately 95% confidence of implied normal distribution.
+This arg is only used if constructing parcov from parameter bounds.</p></li>
+<li><p><strong>scale_offset</strong> (<cite>bool</cite>, optional) – flag to apply parameter scale and offset to parameter bounds
+when calculating prior parameter covariance matrix from bounds.  This arg is onlyused if
+constructing parcov from parameter bounds.Default is True.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This class is the primary entry point for FOSM-based uncertainty and
+dataworth analyses</p>
+<p>This class replicates and extends the behavior of the PEST PREDUNC utilities.</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#assumes &quot;my.pst&quot; exists</span>
+<span class="n">sc</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Schur</span><span class="p">(</span><span class="n">jco</span><span class="o">=</span><span class="s2">&quot;my.jco&quot;</span><span class="p">,</span><span class="n">forecasts</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;fore1&quot;</span><span class="p">,</span><span class="s2">&quot;fore2&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">get_forecast_summary</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">sc</span><span class="o">.</span><span class="n">get_parameter_contribution</span><span class="p">())</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

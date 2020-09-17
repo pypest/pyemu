@@ -1,0 +1,25 @@
+BEGIN Options
+  PRINT_INPUT
+  SAVE_FLOWS
+  MAXIMUM_DEPTH_CHANGE  1.00000000E-04
+  UNIT_CONVERSION   86400.00000000
+  BOUNDNAMES
+  OBS6 FILEIN sfr.obs
+END Options
+
+BEGIN Dimensions
+  NREACHES  40
+END Dimensions
+
+BEGIN PACKAGEDATA
+    OPEN/CLOSE  'freyberg6.sfr_packagedata.txt'
+END PACKAGEDATA
+
+BEGIN CONNECTIONDATA
+    OPEN/CLOSE  'freyberg6.sfr_connectiondata.txt'
+END CONNECTIONDATA
+
+BEGIN PERIOD  1
+    OPEN/CLOSE  'freyberg6.sfr_perioddata_1.txt'
+END PERIOD  1
+

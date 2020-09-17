@@ -1,0 +1,9 @@
+BEGIN Options
+  READASARRAYS
+  SAVE_FLOWS
+END Options
+
+BEGIN PERIOD  1
+  recharge
+    OPEN/CLOSE  'freyberg6.rch_recharge_1.txt'  FACTOR  1.0
+END PERIOD  1

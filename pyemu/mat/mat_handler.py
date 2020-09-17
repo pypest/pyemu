@@ -5,13 +5,15 @@ import struct
 import warnings
 import numpy as np
 import pandas as pd
-#import scipy.linalg as la
+
+# import scipy.linalg as la
 
 
 from pyemu.pst.pst_handler import Pst
 from ..pyemu_warnings import PyemuWarning
 
-def save_coo(x, row_names, col_names,  filename, chunk=None):
+
+def save_coo(x, row_names, col_names, filename, chunk=None):
     """write a PEST-compatible binary file.  The data format is
     [int,int,float] for i,j,value.  It is autodetected during
     the read with Matrix.from_binary().
@@ -28,11 +30,10 @@ def save_coo(x, row_names, col_names,  filename, chunk=None):
 
     """
 
-    f = open(filename, 'wb')
+    f = open(filename, "wb")
     # print("counting nnz")
     # write the header
-    header = np.array((x.shape[1], x.shape[0], x.nnz),
-                      dtype=Matrix.binary_header_dt)
+    header = np.array((x.shape[1], x.shape[0], x.nnz), dtype=Matrix.binary_header_dt)
     header.tofile(f)
 
     data = np.core.records.fromarrays([x.row, x.col, x.data], dtype=Matrix.coo_rec_dt)
@@ -40,17 +41,17 @@ def save_coo(x, row_names, col_names,  filename, chunk=None):
 
     for name in col_names:
         if len(name) > Matrix.new_par_length:
-            name = name[:Matrix.new_par_length - 1]
+            name = name[: Matrix.new_par_length - 1]
         elif len(name) < Matrix.new_par_length:
             for _ in range(len(name), Matrix.new_par_length):
-                name = name + ' '
+                name = name + " "
         f.write(name.encode())
     for name in row_names:
         if len(name) > Matrix.new_obs_length:
-            name = name[:Matrix.new_obs_length - 1]
+            name = name[: Matrix.new_obs_length - 1]
         elif len(name) < Matrix.new_obs_length:
             for i in range(len(name), Matrix.new_obs_length):
-                name = name + ' '
+                name = name + " "
         f.write(name.encode())
     f.close()
 
@@ -76,12 +77,15 @@ def concat(mats):
         if sorted(mats[0].col_names) != sorted(mat.col_names):
             col_match = False
     if not row_match and not col_match:
-        raise Exception("mat_handler.concat(): all Matrix objects"+\
-                        "must share either rows or cols")
+        raise Exception(
+            "mat_handler.concat(): all Matrix objects"
+            + "must share either rows or cols"
+        )
 
     if row_match and col_match:
-        raise Exception("mat_handler.concat(): all Matrix objects"+\
-                        "share both rows and cols")
+        raise Exception(
+            "mat_handler.concat(): all Matrix objects" + "share both rows and cols"
+        )
 
     if row_match:
         row_names = copy.deepcopy(mats[0].row_names)
@@ -153,25 +157,25 @@ class Matrix(object):
         private attributes
 
     """
+
     integer = np.int32
     double = np.float64
     char = np.uint8
 
-    binary_header_dt = np.dtype([('itemp1', integer),
-                                ('itemp2', integer),
-                                ('icount', integer)])
-    binary_rec_dt = np.dtype([('j', integer),
-                            ('dtemp', double)])
-    coo_rec_dt = np.dtype([('i', integer),('j', integer),
-                          ('dtemp', double)])
+    binary_header_dt = np.dtype(
+        [("itemp1", integer), ("itemp2", integer), ("icount", integer)]
+    )
+    binary_rec_dt = np.dtype([("j", integer), ("dtemp", double)])
+    coo_rec_dt = np.dtype([("i", integer), ("j", integer), ("dtemp", double)])
 
     par_length = 12
     obs_length = 20
     new_par_length = 200
     new_obs_length = 200
 
-    def __init__(self, x=None, row_names=[], col_names=[], isdiagonal=False,
-                 autoalign=True):
+    def __init__(
+        self, x=None, row_names=[], col_names=[], isdiagonal=False, autoalign=True
+    ):
 
         self.col_names, self.row_names = [], []
         _ = [self.col_names.append(str(c).lower()) for c in col_names]
@@ -183,36 +187,48 @@ class Matrix(object):
         if x is not None:
             if x.ndim != 2:
                 raise Exception("ndim != 2")
-            #x = np.atleast_2d(x)
+            # x = np.atleast_2d(x)
             if isdiagonal and len(row_names) > 0:
-                #assert 1 in x.shape,"Matrix error: diagonal matrix must have " +\
+                # assert 1 in x.shape,"Matrix error: diagonal matrix must have " +\
                 #                    "one dimension == 1,shape is {0}".format(x.shape)
                 mx_dim = max(x.shape)
                 if len(row_names) != mx_dim:
-                    raise Exception('Matrix.__init__(): diagonal shape[1] != len(row_names) ' +\
-                    str(x.shape) + ' ' + str(len(row_names)))
+                    raise Exception(
+                        "Matrix.__init__(): diagonal shape[1] != len(row_names) "
+                        + str(x.shape)
+                        + " "
+                        + str(len(row_names))
+                    )
                 if mx_dim != x.shape[0]:
                     x = x.transpose()
-                #x = x.transpose()
+                # x = x.transpose()
             else:
                 if len(row_names) > 0:
                     if len(row_names) != x.shape[0]:
-                        raise Exception('Matrix.__init__(): shape[0] != len(row_names) ' +\
-                        str(x.shape) + ' ' + str(len(row_names)))
+                        raise Exception(
+                            "Matrix.__init__(): shape[0] != len(row_names) "
+                            + str(x.shape)
+                            + " "
+                            + str(len(row_names))
+                        )
 
                 if len(col_names) > 0:
                     # if this a row vector
                     if len(row_names) == 0 and x.shape[1] == 1:
                         x.transpose()
                     if len(col_names) != x.shape[1]:
-                        raise Exception('Matrix.__init__(): shape[1] != len(col_names) ' + \
-                        str(x.shape) + ' ' + str(len(col_names)))
+                        raise Exception(
+                            "Matrix.__init__(): shape[1] != len(col_names) "
+                            + str(x.shape)
+                            + " "
+                            + str(len(col_names))
+                        )
             self.__x = x
 
         self.isdiagonal = bool(isdiagonal)
         self.autoalign = bool(autoalign)
 
-    def reset_x(self,x,copy=True):
+    def reset_x(self, x, copy=True):
         """reset self.__x private attribute
 
         Args:
@@ -234,8 +250,16 @@ class Matrix(object):
             `str`: string representation
 
         """
-        s = "shape:{0}:{1}".format(*self.shape)+" row names: " + str(self.row_names) + \
-            '\n' + "col names: " + str(self.col_names) + '\n' + str(self.__x)
+        s = (
+            "shape:{0}:{1}".format(*self.shape)
+            + " row names: "
+            + str(self.row_names)
+            + "\n"
+            + "col names: "
+            + str(self.col_names)
+            + "\n"
+            + str(self.__x)
+        )
         return s
 
     def __getitem__(self, item):
@@ -255,15 +279,18 @@ class Matrix(object):
         # transpose a row vector to a column vector
         if submat.shape[0] == 1:
             submat = submat.transpose()
-        row_names = self.row_names[:submat.shape[0]]
+        row_names = self.row_names[: submat.shape[0]]
         if self.isdiagonal:
             col_names = row_names
         else:
-            col_names = self.col_names[:submat.shape[1]]
-        return type(self)(x=submat, isdiagonal=self.isdiagonal,
-                          row_names=row_names, col_names=col_names,
-                          autoalign=self.autoalign)
-
+            col_names = self.col_names[: submat.shape[1]]
+        return type(self)(
+            x=submat,
+            isdiagonal=self.isdiagonal,
+            row_names=row_names,
+            col_names=col_names,
+            autoalign=self.autoalign,
+        )
 
     def __pow__(self, power):
         """overload of numpy.ndarray.__pow__() operator
@@ -284,22 +311,26 @@ class Matrix(object):
             elif power == -0.5:
                 return (self.inv).sqrt
             else:
-                raise NotImplementedError("Matrix.__pow__() not implemented " +
-                                          "for negative powers except for -1")
+                raise NotImplementedError(
+                    "Matrix.__pow__() not implemented "
+                    + "for negative powers except for -1"
+                )
 
         elif int(power) != float(power):
             if power == 0.5:
                 return self.sqrt
             else:
-                raise NotImplementedError("Matrix.__pow__() not implemented " +
-                                          "for fractional powers except 0.5")
+                raise NotImplementedError(
+                    "Matrix.__pow__() not implemented "
+                    + "for fractional powers except 0.5"
+                )
         else:
-            return type(self)(self.__x**power, row_names=self.row_names,
-                              col_names=self.col_names,
-                              isdiagonal=self.isdiagonal)
-
-
-
+            return type(self)(
+                self.__x ** power,
+                row_names=self.row_names,
+                col_names=self.col_names,
+                isdiagonal=self.isdiagonal,
+            )
 
     def __sub__(self, other):
         """numpy.ndarray.__sub__() overload.  Tries to speedup by
@@ -319,74 +350,91 @@ class Matrix(object):
         """
 
         if np.isscalar(other):
-            return Matrix(x=self.x - other, row_names=self.row_names,
-                          col_names=self.col_names,
-                          isdiagonal=self.isdiagonal)
+            return Matrix(
+                x=self.x - other,
+                row_names=self.row_names,
+                col_names=self.col_names,
+                isdiagonal=self.isdiagonal,
+            )
         else:
-            if isinstance(other,pd.DataFrame):
+            if isinstance(other, pd.DataFrame):
                 other = Matrix.from_dataframe(other)
 
             if isinstance(other, np.ndarray):
                 if self.shape != other.shape:
-                    raise Exception("Matrix.__sub__() shape" + \
-                                                  "mismatch: " + \
-                                                  str(self.shape) + ' ' + \
-                                                  str(other.shape))
+                    raise Exception(
+                        "Matrix.__sub__() shape"
+                        + "mismatch: "
+                        + str(self.shape)
+                        + " "
+                        + str(other.shape)
+                    )
                 if self.isdiagonal:
                     elem_sub = -1.0 * other
                     for j in range(self.shape[0]):
                         elem_sub[j, j] += self.x[j]
-                    return type(self)(x=elem_sub, row_names=self.row_names,
-                                      col_names=self.col_names)
+                    return type(self)(
+                        x=elem_sub, row_names=self.row_names, col_names=self.col_names
+                    )
                 else:
-                    return type(self)(x=self.x - other,
-                                      row_names=self.row_names,
-                                      col_names=self.col_names)
+                    return type(self)(
+                        x=self.x - other,
+                        row_names=self.row_names,
+                        col_names=self.col_names,
+                    )
             elif isinstance(other, Matrix):
-                if self.autoalign and other.autoalign \
-                        and not self.element_isaligned(other):
-                    common_rows = get_common_elements(self.row_names,
-                                                      other.row_names)
-                    common_cols = get_common_elements(self.col_names,
-                                                      other.col_names)
+                if (
+                    self.autoalign
+                    and other.autoalign
+                    and not self.element_isaligned(other)
+                ):
+                    common_rows = get_common_elements(self.row_names, other.row_names)
+                    common_cols = get_common_elements(self.col_names, other.col_names)
 
                     if len(common_rows) == 0:
                         raise Exception("Matrix.__sub__ error: no common rows")
 
                     if len(common_cols) == 0:
                         raise Exception("Matrix.__sub__ error: no common cols")
-                    first = self.get(row_names=common_rows,
-                                     col_names=common_cols)
-                    second = other.get(row_names=common_rows,
-                                       col_names=common_cols)
+                    first = self.get(row_names=common_rows, col_names=common_cols)
+                    second = other.get(row_names=common_rows, col_names=common_cols)
                 else:
-                    assert self.shape == other.shape, \
-                        "Matrix.__sub__():shape mismatch: " +\
-                        str(self.shape) + ' ' + str(other.shape)
+                    assert self.shape == other.shape, (
+                        "Matrix.__sub__():shape mismatch: "
+                        + str(self.shape)
+                        + " "
+                        + str(other.shape)
+                    )
                     first = self
                     second = other
 
                 if first.isdiagonal and second.isdiagonal:
-                    return type(self)(x=first.x - second.x, isdiagonal=True,
-                                      row_names=first.row_names,
-                                      col_names=first.col_names)
+                    return type(self)(
+                        x=first.x - second.x,
+                        isdiagonal=True,
+                        row_names=first.row_names,
+                        col_names=first.col_names,
+                    )
                 elif first.isdiagonal:
                     elem_sub = -1.0 * second.newx
                     for j in range(first.shape[0]):
                         elem_sub[j, j] += first.x[j, 0]
-                    return type(self)(x=elem_sub, row_names=first.row_names,
-                                      col_names=first.col_names)
+                    return type(self)(
+                        x=elem_sub, row_names=first.row_names, col_names=first.col_names
+                    )
                 elif second.isdiagonal:
                     elem_sub = first.newx
                     for j in range(second.shape[0]):
                         elem_sub[j, j] -= second.x[j, 0]
-                    return type(self)(x=elem_sub, row_names=first.row_names,
-                                      col_names=first.col_names)
+                    return type(self)(
+                        x=elem_sub, row_names=first.row_names, col_names=first.col_names
+                    )
                 else:
-                    return type(self)(x=first.x - second.x,
-                                      row_names=first.row_names,
-                                      col_names=first.col_names)
-
+                    return type(self)(
+                        x=first.x - second.x,
+                        row_names=first.row_names,
+                        col_names=first.col_names,
+                    )
 
     def __add__(self, other):
         """Overload of numpy.ndarray.__add__().  Tries to speedup by checking for
@@ -406,30 +454,36 @@ class Matrix(object):
 
         """
         if np.isscalar(other):
-            return type(self)(x=self.x + other,row_names=self.row_names,
-                              col_names=self.col_names,isdiagonal=self.isdiagonal)
+            return type(self)(
+                x=self.x + other,
+                row_names=self.row_names,
+                col_names=self.col_names,
+                isdiagonal=self.isdiagonal,
+            )
 
-        if isinstance(other,pd.DataFrame):
+        if isinstance(other, pd.DataFrame):
             other = Matrix.from_dataframe(other)
 
         if isinstance(other, np.ndarray):
-            assert self.shape == other.shape, \
-                "Matrix.__add__(): shape mismatch: " +\
-                str(self.shape) + ' ' + str(other.shape)
+            assert self.shape == other.shape, (
+                "Matrix.__add__(): shape mismatch: "
+                + str(self.shape)
+                + " "
+                + str(other.shape)
+            )
             if self.isdiagonal:
-                raise NotImplementedError("Matrix.__add__ not supported for" +
-                                          "diagonal self")
+                raise NotImplementedError(
+                    "Matrix.__add__ not supported for" + "diagonal self"
+                )
             else:
-                return type(self)(x=self.x + other, row_names=self.row_names,
-                                  col_names=self.col_names)
+                return type(self)(
+                    x=self.x + other, row_names=self.row_names, col_names=self.col_names
+                )
 
         elif isinstance(other, Matrix):
-            if self.autoalign and other.autoalign \
-                    and not self.element_isaligned(other):
-                common_rows = get_common_elements(self.row_names,
-                                                  other.row_names)
-                common_cols = get_common_elements(self.col_names,
-                                                  other.col_names)
+            if self.autoalign and other.autoalign and not self.element_isaligned(other):
+                common_rows = get_common_elements(self.row_names, other.row_names)
+                common_cols = get_common_elements(self.col_names, other.col_names)
                 if len(common_rows) == 0:
                     raise Exception("Matrix.__add__ error: no common rows")
 
@@ -439,34 +493,47 @@ class Matrix(object):
                 first = self.get(row_names=common_rows, col_names=common_cols)
                 second = other.get(row_names=common_rows, col_names=common_cols)
             else:
-                assert self.shape == other.shape, \
-                    "Matrix.__add__(): shape mismatch: " +\
-                    str(self.shape) + ' ' + str(other.shape)
+                assert self.shape == other.shape, (
+                    "Matrix.__add__(): shape mismatch: "
+                    + str(self.shape)
+                    + " "
+                    + str(other.shape)
+                )
                 first = self
                 second = other
             if first.isdiagonal and second.isdiagonal:
-                return type(self)(x=first.x + second.x, isdiagonal=True,
-                                  row_names=first.row_names,
-                                  col_names=first.col_names)
+                return type(self)(
+                    x=first.x + second.x,
+                    isdiagonal=True,
+                    row_names=first.row_names,
+                    col_names=first.col_names,
+                )
             elif first.isdiagonal:
                 ox = second.newx
                 for j in range(first.shape[0]):
                     ox[j, j] += first.__x[j]
-                return type(self)(x=ox, row_names=first.row_names,
-                                  col_names=first.col_names)
+                return type(self)(
+                    x=ox, row_names=first.row_names, col_names=first.col_names
+                )
             elif second.isdiagonal:
                 x = first.x
                 for j in range(second.shape[0]):
                     x[j, j] += second.x[j]
-                return type(self)(x=x, row_names=first.row_names,
-                                  col_names=first.col_names)
+                return type(self)(
+                    x=x, row_names=first.row_names, col_names=first.col_names
+                )
             else:
-                return type(self)(x=first.x + second.x,
-                                  row_names=first.row_names,
-                                  col_names=first.col_names)
+                return type(self)(
+                    x=first.x + second.x,
+                    row_names=first.row_names,
+                    col_names=first.col_names,
+                )
         else:
-            raise Exception("Matrix.__add__(): unrecognized type for " +
-                            "other in __add__: " + str(type(other)))
+            raise Exception(
+                "Matrix.__add__(): unrecognized type for "
+                + "other in __add__: "
+                + str(type(other))
+            )
 
     def hadamard_product(self, other):
         """Overload of numpy.ndarray.__mult__(): element-wise multiplication.
@@ -489,26 +556,29 @@ class Matrix(object):
         if np.isscalar(other):
             return type(self)(x=self.x * other)
 
-        if isinstance(other,pd.DataFrame):
+        if isinstance(other, pd.DataFrame):
             other = Matrix.from_dataframe(other)
 
         if isinstance(other, np.ndarray):
             if other.shape != self.shape:
-                raise Exception("Matrix.hadamard_product(): shape mismatch: " + \
-                str(self.shape) + ' ' + str(other.shape))
+                raise Exception(
+                    "Matrix.hadamard_product(): shape mismatch: "
+                    + str(self.shape)
+                    + " "
+                    + str(other.shape)
+                )
             if self.isdiagonal:
-                raise NotImplementedError("Matrix.hadamard_product() not supported for" +
-                                          "diagonal self")
+                raise NotImplementedError(
+                    "Matrix.hadamard_product() not supported for" + "diagonal self"
+                )
             else:
-                return type(self)(x=self.x * other, row_names=self.row_names,
-                                  col_names=self.col_names)
+                return type(self)(
+                    x=self.x * other, row_names=self.row_names, col_names=self.col_names
+                )
         elif isinstance(other, Matrix):
-            if self.autoalign and other.autoalign \
-                    and not self.element_isaligned(other):
-                common_rows = get_common_elements(self.row_names,
-                                                  other.row_names)
-                common_cols = get_common_elements(self.col_names,
-                                                  other.col_names)
+            if self.autoalign and other.autoalign and not self.element_isaligned(other):
+                common_rows = get_common_elements(self.row_names, other.row_names)
+                common_cols = get_common_elements(self.col_names, other.col_names)
                 if len(common_rows) == 0:
                     raise Exception("Matrix.hadamard_product error: no common rows")
 
@@ -519,15 +589,22 @@ class Matrix(object):
                 second = other.get(row_names=common_rows, col_names=common_cols)
             else:
                 if other.shape != self.shape:
-                    raise Exception("Matrix.hadamard_product(): shape mismatch: " + \
-                                    str(self.shape) + ' ' + str(other.shape))
+                    raise Exception(
+                        "Matrix.hadamard_product(): shape mismatch: "
+                        + str(self.shape)
+                        + " "
+                        + str(other.shape)
+                    )
                 first = self
                 second = other
 
             if first.isdiagonal and second.isdiagonal:
-                return type(self)(x=first.x * second.x, isdiagonal=True,
-                                  row_names=first.row_names,
-                                  col_names=first.col_names)
+                return type(self)(
+                    x=first.x * second.x,
+                    isdiagonal=True,
+                    row_names=first.row_names,
+                    col_names=first.col_names,
+                )
             # elif first.isdiagonal:
             #     #ox = second.as_2d
             #     #for j in range(first.shape[0]):
@@ -541,13 +618,17 @@ class Matrix(object):
             #     return type(self)(x=first.x * second.as_2d, row_names=first.row_names,
             #                       col_names=first.col_names)
             else:
-                return type(self)(x=first.as_2d * second.as_2d,
-                                  row_names=first.row_names,
-                                  col_names=first.col_names)
+                return type(self)(
+                    x=first.as_2d * second.as_2d,
+                    row_names=first.row_names,
+                    col_names=first.col_names,
+                )
         else:
-            raise Exception("Matrix.hadamard_product(): unrecognized type for " +
-                            "other: " + str(type(other)))
-
+            raise Exception(
+                "Matrix.hadamard_product(): unrecognized type for "
+                + "other: "
+                + str(type(other))
+            )
 
     def __mul__(self, other):
         """Dot product multiplication overload.  Tries to speedup by
@@ -570,31 +651,40 @@ class Matrix(object):
             other = Matrix.from_dataframe(other)
 
         if np.isscalar(other):
-            return type(self)(x=self.x.copy() * other,
-                              row_names=self.row_names,
-                              col_names=self.col_names,
-                              isdiagonal=self.isdiagonal)
+            return type(self)(
+                x=self.x.copy() * other,
+                row_names=self.row_names,
+                col_names=self.col_names,
+                isdiagonal=self.isdiagonal,
+            )
 
         elif isinstance(other, np.ndarray):
 
             if self.shape[1] != other.shape[0]:
-                raise Exception("Matrix.__mul__(): matrices are not aligned: " +\
-                                str(self.shape) + ' ' + str(other.shape))
+                raise Exception(
+                    "Matrix.__mul__(): matrices are not aligned: "
+                    + str(self.shape)
+                    + " "
+                    + str(other.shape)
+                )
             if self.isdiagonal:
-                return type(self)(x=np.dot(np.diag(self.__x.flatten()).transpose(),
-                                           other))
+                return type(self)(
+                    x=np.dot(np.diag(self.__x.flatten()).transpose(), other)
+                )
             else:
                 return type(self)(x=np.atleast_2d(np.dot(self.__x, other)))
         elif isinstance(other, Matrix):
-            if self.autoalign and other.autoalign\
-               and not self.mult_isaligned(other):
+            if self.autoalign and other.autoalign and not self.mult_isaligned(other):
                 common = get_common_elements(self.col_names, other.row_names)
                 if len(common) == 0:
-                    raise Exception("Matrix.__mult__():self.col_names " +\
-                                       "and other.row_names" +\
-                                       "don't share any common elements.  first 10: " +\
-                                       ','.join(self.col_names[:9]) + '...and..' +\
-                                       ','.join(other.row_names[:9]))
+                    raise Exception(
+                        "Matrix.__mult__():self.col_names "
+                        + "and other.row_names"
+                        + "don't share any common elements.  first 10: "
+                        + ",".join(self.col_names[:9])
+                        + "...and.."
+                        + ",".join(other.row_names[:9])
+                    )
                 # these should be aligned
                 if isinstance(self, Cov):
                     first = self.get(row_names=common, col_names=common)
@@ -603,42 +693,53 @@ class Matrix(object):
                 if isinstance(other, Cov):
                     second = other.get(row_names=common, col_names=common)
                 else:
-                    second = other.get(row_names=common,
-                                       col_names=other.col_names)
+                    second = other.get(row_names=common, col_names=other.col_names)
 
             else:
                 if self.shape[1] != other.shape[0]:
-                    raise Exception("Matrix.__mul__(): matrices are not aligned: " +\
-                    str(self.shape) + ' ' + str(other.shape))
+                    raise Exception(
+                        "Matrix.__mul__(): matrices are not aligned: "
+                        + str(self.shape)
+                        + " "
+                        + str(other.shape)
+                    )
                 first = self
                 second = other
             if first.isdiagonal and second.isdiagonal:
-                elem_prod = type(self)(x=first.x.transpose() * second.x,
-                                   row_names=first.row_names,
-                                   col_names=second.col_names)
+                elem_prod = type(self)(
+                    x=first.x.transpose() * second.x,
+                    row_names=first.row_names,
+                    col_names=second.col_names,
+                )
                 elem_prod.isdiagonal = True
                 return elem_prod
             elif first.isdiagonal:
                 ox = second.newx
                 for j in range(first.shape[0]):
                     ox[j, :] *= first.x[j]
-                return type(self)(x=ox, row_names=first.row_names,
-                              col_names=second.col_names)
+                return type(self)(
+                    x=ox, row_names=first.row_names, col_names=second.col_names
+                )
             elif second.isdiagonal:
                 x = first.newx
                 ox = second.x
                 for j in range(first.shape[1]):
                     x[:, j] *= ox[j]
-                return type(self)(x=x, row_names=first.row_names,
-                              col_names=second.col_names)
+                return type(self)(
+                    x=x, row_names=first.row_names, col_names=second.col_names
+                )
             else:
-                return type(self)(np.dot(first.x, second.x),
-                              row_names=first.row_names,
-                              col_names=second.col_names)
+                return type(self)(
+                    np.dot(first.x, second.x),
+                    row_names=first.row_names,
+                    col_names=second.col_names,
+                )
         else:
-            raise Exception("Matrix.__mul__(): unrecognized " +
-                            "other arg type in __mul__: " + str(type(other)))
-
+            raise Exception(
+                "Matrix.__mul__(): unrecognized "
+                + "other arg type in __mul__: "
+                + str(type(other))
+            )
 
     def __rmul__(self, other):
         """Reverse order Dot product multiplication overload.
@@ -661,26 +762,36 @@ class Matrix(object):
         #     other = Matrix.from_dataframe(other)
 
         if np.isscalar(other):
-            return type(self)(x=self.x.copy() * other,row_names=self.row_names,\
-                              col_names=self.col_names,isdiagonal=self.isdiagonal)
+            return type(self)(
+                x=self.x.copy() * other,
+                row_names=self.row_names,
+                col_names=self.col_names,
+                isdiagonal=self.isdiagonal,
+            )
 
         elif isinstance(other, np.ndarray):
             if self.shape[0] != other.shape[1]:
-                raise Exception("Matrix.__rmul__(): matrices are not aligned: " +\
-                str(other.shape) + ' ' + str(self.shape))
+                raise Exception(
+                    "Matrix.__rmul__(): matrices are not aligned: "
+                    + str(other.shape)
+                    + " "
+                    + str(self.shape)
+                )
             if self.isdiagonal:
-                return type(self)(x=np.dot(other,np.diag(self.__x.flatten()).\
-                                           transpose()))
+                return type(self)(
+                    x=np.dot(other, np.diag(self.__x.flatten()).transpose())
+                )
             else:
-                return type(self)(x=np.dot(other,self.__x))
+                return type(self)(x=np.dot(other, self.__x))
         elif isinstance(other, Matrix):
-            if self.autoalign and other.autoalign \
-                    and not self.mult_isaligned(other):
+            if self.autoalign and other.autoalign and not self.mult_isaligned(other):
                 common = get_common_elements(self.row_names, other.col_names)
                 if len(common) == 0:
-                    raise Exception("Matrix.__rmul__():self.col_names " +\
-                                       "and other.row_names" +\
-                                       "don't share any common elements")
+                    raise Exception(
+                        "Matrix.__rmul__():self.col_names "
+                        + "and other.row_names"
+                        + "don't share any common elements"
+                    )
                 # these should be aligned
                 if isinstance(self, Cov):
                     first = self.get(row_names=common, col_names=common)
@@ -689,42 +800,53 @@ class Matrix(object):
                 if isinstance(other, Cov):
                     second = other.get(row_names=common, col_names=common)
                 else:
-                    second = other.get(col_names=common,
-                                       row_names=other.col_names)
+                    second = other.get(col_names=common, row_names=other.col_names)
 
             else:
                 if self.shape[0] != other.shape[1]:
-                    raise Exception("Matrix.__rmul__(): matrices are not aligned: " +\
-                    str(other.shape) + ' ' + str(self.shape))
+                    raise Exception(
+                        "Matrix.__rmul__(): matrices are not aligned: "
+                        + str(other.shape)
+                        + " "
+                        + str(self.shape)
+                    )
                 first = other
                 second = self
             if first.isdiagonal and second.isdiagonal:
-                elem_prod = type(self)(x=first.x.transpose() * second.x,
-                                   row_names=first.row_names,
-                                   col_names=second.col_names)
+                elem_prod = type(self)(
+                    x=first.x.transpose() * second.x,
+                    row_names=first.row_names,
+                    col_names=second.col_names,
+                )
                 elem_prod.isdiagonal = True
                 return elem_prod
             elif first.isdiagonal:
                 ox = second.newx
                 for j in range(first.shape[0]):
                     ox[j, :] *= first.x[j]
-                return type(self)(x=ox, row_names=first.row_names,
-                              col_names=second.col_names)
+                return type(self)(
+                    x=ox, row_names=first.row_names, col_names=second.col_names
+                )
             elif second.isdiagonal:
                 x = first.newx
                 ox = second.x
                 for j in range(first.shape[1]):
                     x[:, j] *= ox[j]
-                return type(self)(x=x, row_names=first.row_names,
-                              col_names=second.col_names)
+                return type(self)(
+                    x=x, row_names=first.row_names, col_names=second.col_names
+                )
             else:
-                return type(self)(np.dot(first.x, second.x),
-                              row_names=first.row_names,
-                              col_names=second.col_names)
+                return type(self)(
+                    np.dot(first.x, second.x),
+                    row_names=first.row_names,
+                    col_names=second.col_names,
+                )
         else:
-            raise Exception("Matrix.__rmul__(): unrecognized " +
-                            "other arg type in __mul__: " + str(type(other)))
-
+            raise Exception(
+                "Matrix.__rmul__(): unrecognized "
+                + "other arg type in __mul__: "
+                + str(type(other))
+            )
 
     def __set_svd(self):
         """private method to set SVD components.
@@ -747,24 +869,31 @@ class Matrix(object):
                 v, s, u = np.linalg.svd(x.transpose(), full_matrices=True)
                 u = u.transpose()
             except Exception as e:
-                np.savetxt("failed_svd.dat",x,fmt="%15.6E")
-                raise Exception("Matrix.__set_svd(): " +
-                                "unable to compute SVD of self.x, " +
-                                "saved matrix to 'failed_svd.dat' -- {0}".\
-                                format(str(e)))
+                np.savetxt("failed_svd.dat", x, fmt="%15.6E")
+                raise Exception(
+                    "Matrix.__set_svd(): "
+                    + "unable to compute SVD of self.x, "
+                    + "saved matrix to 'failed_svd.dat' -- {0}".format(str(e))
+                )
 
         col_names = ["left_sing_vec_" + str(i + 1) for i in range(u.shape[1])]
-        self.__u = Matrix(x=u, row_names=self.row_names,
-                          col_names=col_names, autoalign=False)
+        self.__u = Matrix(
+            x=u, row_names=self.row_names, col_names=col_names, autoalign=False
+        )
 
         sing_names = ["sing_val_" + str(i + 1) for i in range(s.shape[0])]
-        self.__s = Matrix(x=np.atleast_2d(s).transpose(), row_names=sing_names,
-                          col_names=sing_names, isdiagonal=True,
-                          autoalign=False)
+        self.__s = Matrix(
+            x=np.atleast_2d(s).transpose(),
+            row_names=sing_names,
+            col_names=sing_names,
+            isdiagonal=True,
+            autoalign=False,
+        )
 
         col_names = ["right_sing_vec_" + str(i + 1) for i in range(v.shape[0])]
-        self.__v = Matrix(v, row_names=self.col_names, col_names=col_names,
-                          autoalign=False)
+        self.__v = Matrix(
+            v, row_names=self.col_names, col_names=col_names, autoalign=False
+        )
 
     def mult_isaligned(self, other):
         """check if matrices are aligned for dot product multiplication
@@ -776,14 +905,14 @@ class Matrix(object):
             `bool`: True if aligned, False if not aligned
 
         """
-        assert isinstance(other, Matrix), \
-            "Matrix.isaligned(): other argumnent must be type Matrix, not: " +\
-            str(type(other))
+        assert isinstance(other, Matrix), (
+            "Matrix.isaligned(): other argumnent must be type Matrix, not: "
+            + str(type(other))
+        )
         if self.col_names == other.row_names:
             return True
         else:
             return False
-
 
     def element_isaligned(self, other):
         """check if matrices are aligned for element-wise operations
@@ -795,15 +924,15 @@ class Matrix(object):
             `bool`: True if aligned, False if not aligned
 
         """
-        if not isinstance(other,Matrix):
-            raise Exception("Matrix.isaligned(): other argument must be type Matrix, not: " +\
-                            str(type(other)))
-        if self.row_names == other.row_names \
-                and self.col_names == other.col_names:
+        if not isinstance(other, Matrix):
+            raise Exception(
+                "Matrix.isaligned(): other argument must be type Matrix, not: "
+                + str(type(other))
+            )
+        if self.row_names == other.row_names and self.col_names == other.col_names:
             return True
         else:
             return False
-
 
     @property
     def newx(self):
@@ -814,7 +943,6 @@ class Matrix(object):
 
         """
         return self.__x.copy()
-
 
     @property
     def x(self):
@@ -840,7 +968,6 @@ class Matrix(object):
             return self.x
         return np.diag(self.x.flatten())
 
-
     def to_2d(self):
         """ get a 2D `Matrix` representation of `Matrix`.  If not `Matrix.isdiagonal`, simply
                 return a copy of `Matrix`, otherwise, constructs and returns a new `Matrix`
@@ -852,8 +979,12 @@ class Matrix(object):
         """
         if not self.isdiagonal:
             return self.copy()
-        return type(self)(x=np.diag(self.x.flatten()),row_names=self.row_names,
-                          col_names=self.col_names,isdiagonal=False)
+        return type(self)(
+            x=np.diag(self.x.flatten()),
+            row_names=self.row_names,
+            col_names=self.col_names,
+            isdiagonal=False,
+        )
 
     @property
     def shape(self):
@@ -901,7 +1032,6 @@ class Matrix(object):
         """
         return self.transpose
 
-
     @property
     def transpose(self):
         """transpose operation of self
@@ -911,15 +1041,20 @@ class Matrix(object):
 
         """
         if not self.isdiagonal:
-            return type(self)(x=self.__x.copy().transpose(),
-                              row_names=self.col_names,
-                              col_names=self.row_names,
-                              autoalign=self.autoalign)
+            return type(self)(
+                x=self.__x.copy().transpose(),
+                row_names=self.col_names,
+                col_names=self.row_names,
+                autoalign=self.autoalign,
+            )
         else:
-            return type(self)(x=self.__x.copy(), row_names=self.row_names,
-                              col_names=self.col_names,
-                              isdiagonal=True, autoalign=self.autoalign)
-
+            return type(self)(
+                x=self.__x.copy(),
+                row_names=self.row_names,
+                col_names=self.col_names,
+                isdiagonal=True,
+                autoalign=self.autoalign,
+            )
 
     @property
     def inv(self):
@@ -941,23 +1076,34 @@ class Matrix(object):
 
         if self.isdiagonal:
             inv = 1.0 / self.__x
-            if (np.any(~np.isfinite(inv))):
+            if np.any(~np.isfinite(inv)):
                 idx = np.isfinite(inv)
-                np.savetxt("testboo.dat",idx)
-                invalid = [self.row_names[i] for i in range(idx.shape[0]) if idx[i] == 0.0]
-                raise Exception("Matrix.inv has produced invalid floating points " +
-                                " for the following elements:" + ','.join(invalid))
-            return type(self)(x=inv, isdiagonal=True,
-                              row_names=self.row_names,
-                              col_names=self.col_names,
-                              autoalign=self.autoalign)
+                np.savetxt("testboo.dat", idx)
+                invalid = [
+                    self.row_names[i] for i in range(idx.shape[0]) if idx[i] == 0.0
+                ]
+                raise Exception(
+                    "Matrix.inv has produced invalid floating points "
+                    + " for the following elements:"
+                    + ",".join(invalid)
+                )
+            return type(self)(
+                x=inv,
+                isdiagonal=True,
+                row_names=self.row_names,
+                col_names=self.col_names,
+                autoalign=self.autoalign,
+            )
         else:
-            return type(self)(x=np.linalg.inv(self.__x), row_names=self.row_names,
-                              col_names=self.col_names,
-                              autoalign=self.autoalign)
+            return type(self)(
+                x=np.linalg.inv(self.__x),
+                row_names=self.row_names,
+                col_names=self.col_names,
+                autoalign=self.autoalign,
+            )
 
     @staticmethod
-    def get_maxsing_from_s(s,eigthresh=1.0e-5):
+    def get_maxsing_from_s(s, eigthresh=1.0e-5):
         """static method to work out the maxsing for a
         given singular spectrum
 
@@ -985,7 +1131,7 @@ class Matrix(object):
                 break
         return max(1, ising)
 
-    def get_maxsing(self,eigthresh=1.0e-5):
+    def get_maxsing(self, eigthresh=1.0e-5):
         """ Get the number of singular components with a singular
         value ratio greater than or equal to eigthresh
 
@@ -1008,7 +1154,7 @@ class Matrix(object):
 
         return Matrix.get_maxsing_from_s(self.s.x, eigthresh=eigthresh)
 
-    def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5,truncate=True):
+    def pseudo_inv_components(self, maxsing=None, eigthresh=1.0e-5, truncate=True):
         """ Get the (optionally) truncated SVD components
 
         Args:
@@ -1039,16 +1185,16 @@ class Matrix(object):
         if maxsing is None:
             maxsing = self.get_maxsing(eigthresh=eigthresh)
         else:
-             maxsing = min(self.get_maxsing(eigthresh=eigthresh),maxsing)
+            maxsing = min(self.get_maxsing(eigthresh=eigthresh), maxsing)
 
         s = self.full_s.copy()
         v = self.v.copy()
         u = self.u.copy()
         if truncate:
 
-            s = s[:maxsing,:maxsing]
-            v = v[:,:maxsing]
-            u = u[:,:maxsing]
+            s = s[:maxsing, :maxsing]
+            v = v[:, :maxsing]
+            u = u[:, :maxsing]
         else:
             new_s = self.full_s.copy()
             s = new_s
@@ -1056,9 +1202,9 @@ class Matrix(object):
             v.x[:, maxsing:] = 0.0
             u.x[:, maxsing:] = 0.0
 
-        return u,s,v
+        return u, s, v
 
-    def pseudo_inv(self,maxsing=None,eigthresh=1.0e-5):
+    def pseudo_inv(self, maxsing=None, eigthresh=1.0e-5):
         """ The pseudo inverse of self.  Formed using truncated singular
         value decomposition and `Matrix.pseudo_inv_components`
 
@@ -1077,9 +1223,9 @@ class Matrix(object):
         full_s = self.full_s.T
         for i in range(self.s.shape[0]):
             if i <= maxsing:
-                full_s.x[i,i] = 1.0 / full_s.x[i,i]
+                full_s.x[i, i] = 1.0 / full_s.x[i, i]
             else:
-                full_s.x[i,i] = 0.0
+                full_s.x[i, i] = 0.0
         return self.v * full_s * self.u.T
 
     @property
@@ -1095,19 +1241,29 @@ class Matrix(object):
 
         """
         if self.isdiagonal:
-            return type(self)(x=np.sqrt(self.__x), isdiagonal=True,
-                              row_names=self.row_names,
-                              col_names=self.col_names,
-                              autoalign=self.autoalign)
-        elif self.shape[1] == 1: #a vector
-            return type(self)(x=np.sqrt(self.__x), isdiagonal=False,
-                              row_names=self.row_names,
-                              col_names=self.col_names,
-                              autoalign=self.autoalign)
+            return type(self)(
+                x=np.sqrt(self.__x),
+                isdiagonal=True,
+                row_names=self.row_names,
+                col_names=self.col_names,
+                autoalign=self.autoalign,
+            )
+        elif self.shape[1] == 1:  # a vector
+            return type(self)(
+                x=np.sqrt(self.__x),
+                isdiagonal=False,
+                row_names=self.row_names,
+                col_names=self.col_names,
+                autoalign=self.autoalign,
+            )
         else:
-            return type(self)(x=np.sqrt(self.__x), row_names=self.row_names,
-                              col_names=self.col_names,
-                              autoalign=self.autoalign)
+            return type(self)(
+                x=np.sqrt(self.__x),
+                row_names=self.row_names,
+                col_names=self.col_names,
+                autoalign=self.autoalign,
+            )
+
     @property
     def full_s(self):
         """ Get the full singular value matrix
@@ -1117,12 +1273,16 @@ class Matrix(object):
             with zeros along the diagonal from `min(Matrix.shape)` to `max(Matrix.shape)`
 
         """
-        x = np.zeros((self.shape),dtype=np.float32)
+        x = np.zeros((self.shape), dtype=np.float32)
 
-        x[:self.s.shape[0],:self.s.shape[0]] = self.s.as_2d
-        s = Matrix(x=x, row_names=self.row_names,
-                          col_names=self.col_names, isdiagonal=False,
-                          autoalign=False)
+        x[: self.s.shape[0], : self.s.shape[0]] = self.s.as_2d
+        s = Matrix(
+            x=x,
+            row_names=self.row_names,
+            col_names=self.col_names,
+            isdiagonal=False,
+            autoalign=False,
+        )
         return s
 
     @property
@@ -1137,7 +1297,6 @@ class Matrix(object):
             self.__set_svd()
         return self.__s
 
-
     @property
     def u(self):
         """the left singular vector Matrix
@@ -1149,7 +1308,6 @@ class Matrix(object):
         if self.__u is None:
             self.__set_svd()
         return self.__u
-
 
     @property
     def v(self):
@@ -1171,14 +1329,15 @@ class Matrix(object):
             `Matrix`: `Matrix of zeros`
 
         """
-        return type(self)(x=np.atleast_2d(np.zeros((self.shape[0],self.shape[1]))),
-                   row_names=self.row_names,
-                   col_names=self.col_names,
-                   isdiagonal=False)
-
+        return type(self)(
+            x=np.atleast_2d(np.zeros((self.shape[0], self.shape[1]))),
+            row_names=self.row_names,
+            col_names=self.col_names,
+            isdiagonal=False,
+        )
 
     @staticmethod
-    def find_rowcol_indices(names,row_names,col_names,axis=None):
+    def find_rowcol_indices(names, row_names, col_names, axis=None):
         """fast(er) look of row and colum names indices
 
         Args:
@@ -1203,29 +1362,33 @@ class Matrix(object):
         col_idxs = []
         for name in names:
             name = name.lower()
-            if name not in scol \
-                    and name not in srow:
-                raise Exception('Matrix.indices(): name not found: ' + name)
+            if name not in scol and name not in srow:
+                raise Exception("Matrix.indices(): name not found: " + name)
             if name in scol:
                 col_idxs.append(self_col_idxs[name])
             if name.lower() in srow:
                 row_idxs.append(self_row_idxs[name])
         if axis is None:
-            return np.array(row_idxs, dtype=np.int32), \
-                   np.array(col_idxs, dtype=np.int32)
+            return (
+                np.array(row_idxs, dtype=np.int32),
+                np.array(col_idxs, dtype=np.int32),
+            )
         elif axis == 0:
             if len(row_idxs) != len(names):
-                raise Exception("Matrix.indices(): " +
-                                "not all names found in row_names")
+                raise Exception(
+                    "Matrix.indices(): " + "not all names found in row_names"
+                )
             return np.array(row_idxs, dtype=np.int32)
         elif axis == 1:
             if len(col_idxs) != len(names):
-                raise Exception("Matrix.indices(): " +
-                                "not all names found in col_names")
+                raise Exception(
+                    "Matrix.indices(): " + "not all names found in col_names"
+                )
             return np.array(col_idxs, dtype=np.int32)
         else:
-            raise Exception("Matrix.indices(): " +
-                            "axis argument must 0 or 1, not:" + str(axis))
+            raise Exception(
+                "Matrix.indices(): " + "axis argument must 0 or 1, not:" + str(axis)
+            )
 
     def indices(self, names, axis=None):
         """get the row and col indices of names. If axis is None, two ndarrays
@@ -1246,8 +1409,9 @@ class Matrix(object):
             thin wrapper around `Matrix.find_rowcol_indices` static method
 
         """
-        return Matrix.find_rowcol_indices(names,self.row_names,self.col_names,axis=axis)
-
+        return Matrix.find_rowcol_indices(
+            names, self.row_names, self.col_names, axis=axis
+        )
 
     def align(self, names, axis=None):
         """reorder `Matrix` by names in place.  If axis is None, reorder both indices
@@ -1278,26 +1442,33 @@ class Matrix(object):
 
         else:
             if axis is None:
-                raise Exception("Matrix.align(): must specify axis in " +
-                                "align call for non-diagonal instances")
+                raise Exception(
+                    "Matrix.align(): must specify axis in "
+                    + "align call for non-diagonal instances"
+                )
             if axis == 0:
                 if row_idxs.shape[0] != self.shape[0]:
-                    raise Exception("Matrix.align(): not all names found in self.row_names")
+                    raise Exception(
+                        "Matrix.align(): not all names found in self.row_names"
+                    )
                 self.__x = self.__x[row_idxs, :]
                 row_names = []
                 _ = [row_names.append(self.row_names[i]) for i in row_idxs]
                 self.row_names = row_names
             elif axis == 1:
                 if col_idxs.shape[0] != self.shape[1]:
-                    raise Exception("Matrix.align(): not all names found in self.col_names")
+                    raise Exception(
+                        "Matrix.align(): not all names found in self.col_names"
+                    )
                 self.__x = self.__x[:, col_idxs]
                 col_names = []
                 _ = [col_names.append(self.col_names[i]) for i in row_idxs]
                 self.col_names = col_names
             else:
-                raise Exception("Matrix.align(): axis argument to align()" +
-                                " must be either 0 or 1")
-
+                raise Exception(
+                    "Matrix.align(): axis argument to align()"
+                    + " must be either 0 or 1"
+                )
 
     def get(self, row_names=None, col_names=None, drop=False):
         """get a new `Matrix` instance ordered on row_names or col_names
@@ -1314,15 +1485,16 @@ class Matrix(object):
 
         """
         if row_names is None and col_names is None:
-            raise Exception("Matrix.get(): must pass at least" +
-                            " row_names or col_names")
+            raise Exception(
+                "Matrix.get(): must pass at least" + " row_names or col_names"
+            )
 
         if row_names is not None and not isinstance(row_names, list):
             row_names = [row_names]
         if col_names is not None and not isinstance(col_names, list):
             col_names = [col_names]
 
-        if isinstance(self,Cov) and (row_names is None or col_names is None ):
+        if isinstance(self, Cov) and (row_names is None or col_names is None):
             if row_names is not None:
                 idxs = self.indices(row_names, axis=0)
                 names = row_names
@@ -1359,7 +1531,6 @@ class Matrix(object):
 
         return type(self)(x=extract, row_names=row_names, col_names=col_names)
 
-
     def copy(self):
         """get a copy of `Matrix`
 
@@ -1367,10 +1538,13 @@ class Matrix(object):
             `Matrix`: copy of this `Matrix`
 
         """
-        return type(self)(x=self.newx,row_names=self.row_names,
-                          col_names=self.col_names,
-                          isdiagonal=self.isdiagonal,autoalign=self.autoalign)
-
+        return type(self)(
+            x=self.newx,
+            row_names=self.row_names,
+            col_names=self.col_names,
+            isdiagonal=self.isdiagonal,
+            autoalign=self.autoalign,
+        )
 
     def drop(self, names, axis):
         """ drop elements from `Matrix` in place
@@ -1397,22 +1571,26 @@ class Matrix(object):
             self.__x = np.delete(self.__x, idxs, 0)
             keep_names = [name for name in self.row_names if name not in names]
             if len(keep_names) != self.__x.shape[0]:
-                raise Exception("shape-name mismatch:"+\
-                   "{0}:{0}".format(len(keep_names),self.__x.shape))
+                raise Exception(
+                    "shape-name mismatch:"
+                    + "{0}:{0}".format(len(keep_names), self.__x.shape)
+                )
             self.row_names = keep_names
             self.col_names = copy.deepcopy(keep_names)
             # idxs = np.sort(idxs)
             # for idx in idxs[::-1]:
             #     del self.row_names[idx]
             #     del self.col_names[idx]
-        elif isinstance(self,Cov):
+        elif isinstance(self, Cov):
             self.__x = np.delete(self.__x, idxs, 0)
             self.__x = np.delete(self.__x, idxs, 1)
             keep_names = [name for name in self.row_names if name not in names]
 
             if len(keep_names) != self.__x.shape[0]:
-                raise Exception("shape-name mismatch:"+\
-                   "{0}:{0}".format(len(keep_names),self.__x.shape))
+                raise Exception(
+                    "shape-name mismatch:"
+                    + "{0}:{0}".format(len(keep_names), self.__x.shape)
+                )
             self.row_names = keep_names
             self.col_names = copy.deepcopy(keep_names)
             # idxs = np.sort(idxs)
@@ -1427,8 +1605,10 @@ class Matrix(object):
             self.__x = np.delete(self.__x, idxs, 0)
             keep_names = [name for name in self.row_names if name not in names]
             if len(keep_names) != self.__x.shape[0]:
-                raise Exception("shape-name mismatch:"+\
-                   "{0}:{1}".format(len(keep_names),self.__x.shape))
+                raise Exception(
+                    "shape-name mismatch:"
+                    + "{0}:{1}".format(len(keep_names), self.__x.shape)
+                )
             self.row_names = keep_names
             # idxs = np.sort(idxs)
             # for idx in idxs[::-1]:
@@ -1441,15 +1621,16 @@ class Matrix(object):
             self.__x = np.delete(self.__x, idxs, 1)
             keep_names = [name for name in self.col_names if name not in names]
             if len(keep_names) != self.__x.shape[1]:
-                raise Exception("shape-name mismatch:"+\
-                   "{0}:{1}".format(len(keep_names),self.__x.shape))
+                raise Exception(
+                    "shape-name mismatch:"
+                    + "{0}:{1}".format(len(keep_names), self.__x.shape)
+                )
             self.col_names = keep_names
             # idxs = np.sort(idxs)
             # for idx in idxs[::-1]:
             #     del self.col_names[idx]
         else:
             raise Exception("Matrix.drop(): axis argument must be 0 or 1")
-
 
     def extract(self, row_names=None, col_names=None):
         """wrapper method that `Matrix.gets()` then `Matrix.drops()` elements.
@@ -1467,8 +1648,7 @@ class Matrix(object):
 
         """
         if row_names is None and col_names is None:
-            raise Exception("Matrix.extract() " +
-                            "row_names and col_names both None")
+            raise Exception("Matrix.extract() " + "row_names and col_names both None")
         extract = self.get(row_names, col_names, drop=True)
         return extract
 
@@ -1486,14 +1666,16 @@ class Matrix(object):
             raise Exception("not diagonal")
         if self.isdiagonal:
             raise Exception("already diagonal")
-        if not isinstance(col_name,str):
+        if not isinstance(col_name, str):
             raise Exception("col_name must be type str")
-        return type(self)(x=np.atleast_2d(np.diag(self.x)).transpose(),
-                          row_names=self.row_names,
-                          col_names=[col_name],isdiagonal=False)
+        return type(self)(
+            x=np.atleast_2d(np.diag(self.x)).transpose(),
+            row_names=self.row_names,
+            col_names=[col_name],
+            isdiagonal=False,
+        )
 
-
-    def to_coo(self,filename,droptol=None,chunk=None):
+    def to_coo(self, filename, droptol=None, chunk=None):
         """write an extended PEST-format binary file.  The data format is
         [int,int,float] for i,j,value.  It is autodetected during
         the read with `Matrix.from_binary()`.
@@ -1508,66 +1690,73 @@ class Matrix(object):
 
         """
         if self.isdiagonal:
-            #raise NotImplementedError()
+            # raise NotImplementedError()
             self.__x = self.as_2d
             self.isdiagonal = False
         if droptol is not None:
             self.x[np.abs(self.x) < droptol] = 0.0
-        f = open(filename, 'wb')
-        #print("counting nnz")
-        nnz = np.count_nonzero(self.x) #number of non-zero entries
+        f = open(filename, "wb")
+        # print("counting nnz")
+        nnz = np.count_nonzero(self.x)  # number of non-zero entries
         # write the header
-        header = np.array((self.shape[1], self.shape[0], nnz),
-                          dtype=self.binary_header_dt)
+        header = np.array(
+            (self.shape[1], self.shape[0], nnz), dtype=self.binary_header_dt
+        )
         header.tofile(f)
         # get the indices of non-zero entries
-        #print("getting nnz idxs")
+        # print("getting nnz idxs")
         row_idxs, col_idxs = np.nonzero(self.x)
 
         if chunk is None:
             flat = self.x[row_idxs, col_idxs].flatten()
-            data = np.core.records.fromarrays([row_idxs,col_idxs,flat],dtype=self.coo_rec_dt)
+            data = np.core.records.fromarrays(
+                [row_idxs, col_idxs, flat], dtype=self.coo_rec_dt
+            )
             data.tofile(f)
         else:
 
-            start,end = 0,min(chunk,row_idxs.shape[0])
+            start, end = 0, min(chunk, row_idxs.shape[0])
             while True:
-                #print(row_idxs[start],row_idxs[end])
-                #print("chunk",start,end)
-                flat = self.x[row_idxs[start:end],col_idxs[start:end]].flatten()
-                data = np.core.records.fromarrays([row_idxs[start:end],col_idxs[start:end],
-                                                   flat],
-                                                  dtype=self.coo_rec_dt)
+                # print(row_idxs[start],row_idxs[end])
+                # print("chunk",start,end)
+                flat = self.x[row_idxs[start:end], col_idxs[start:end]].flatten()
+                data = np.core.records.fromarrays(
+                    [row_idxs[start:end], col_idxs[start:end], flat],
+                    dtype=self.coo_rec_dt,
+                )
                 data.tofile(f)
                 if end == row_idxs.shape[0]:
                     break
                 start = end
-                end = min(row_idxs.shape[0],start + chunk)
-
+                end = min(row_idxs.shape[0], start + chunk)
 
         for name in self.col_names:
             if len(name) > self.new_par_length:
-                warnings.warn("par name '{0}' greater than {1} chars"\
-                              .format(name,self.new_par_length))
-                name = name[:self.new_par_length - 1]
+                warnings.warn(
+                    "par name '{0}' greater than {1} chars".format(
+                        name, self.new_par_length
+                    )
+                )
+                name = name[: self.new_par_length - 1]
             elif len(name) < self.new_par_length:
                 for _ in range(len(name), self.new_par_length):
-                    name = name + ' '
+                    name = name + " "
             f.write(name.encode())
         for name in self.row_names:
             if len(name) > self.new_obs_length:
-                warnings.warn("obs name '{0}' greater than {1} chars"\
-                              .format(name, self.new_obs_length))
-                name = name[:self.new_obs_length - 1]
+                warnings.warn(
+                    "obs name '{0}' greater than {1} chars".format(
+                        name, self.new_obs_length
+                    )
+                )
+                name = name[: self.new_obs_length - 1]
             elif len(name) < self.new_obs_length:
                 for _ in range(len(name), self.new_obs_length):
-                    name = name + ' '
+                    name = name + " "
             f.write(name.encode())
         f.close()
 
-
-
-    def to_binary(self, filename,droptol=None, chunk=None):
+    def to_binary(self, filename, droptol=None, chunk=None):
         """write a PEST-compatible binary file.  The format is the same
         as the format used to storage a PEST Jacobian matrix
 
@@ -1580,31 +1769,31 @@ class Matrix(object):
                 `Matrix` at once. This is faster but requires more memory.
 
         """
-        #print(self.x)
-        #print(type(self.x))
+        # print(self.x)
+        # print(type(self.x))
 
         if np.any(np.isnan(self.x)):
             raise Exception("Matrix.to_binary(): nans found")
         if self.isdiagonal:
-            #raise NotImplementedError()
+            # raise NotImplementedError()
             self.__x = self.as_2d
             self.isdiagonal = False
         if droptol is not None:
             self.x[np.abs(self.x) < droptol] = 0.0
-        f = open(filename, 'wb')
-        nnz = np.count_nonzero(self.x) #number of non-zero entries
+        f = open(filename, "wb")
+        nnz = np.count_nonzero(self.x)  # number of non-zero entries
         # write the header
-        header = np.array((-self.shape[1], -self.shape[0], nnz),
-                          dtype=self.binary_header_dt)
+        header = np.array(
+            (-self.shape[1], -self.shape[0], nnz), dtype=self.binary_header_dt
+        )
         header.tofile(f)
         # get the indices of non-zero entries
         row_idxs, col_idxs = np.nonzero(self.x)
         icount = row_idxs + 1 + col_idxs * self.shape[0]
         # flatten the array
-        #flat = self.x[row_idxs, col_idxs].flatten()
+        # flat = self.x[row_idxs, col_idxs].flatten()
         # zip up the index position and value pairs
-        #data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
-
+        # data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
 
         if chunk is None:
             flat = self.x[row_idxs, col_idxs].flatten()
@@ -1612,42 +1801,48 @@ class Matrix(object):
             # write
             data.tofile(f)
         else:
-            start,end = 0,min(chunk,row_idxs.shape[0])
+            start, end = 0, min(chunk, row_idxs.shape[0])
             while True:
-                #print(row_idxs[start],row_idxs[end])
+                # print(row_idxs[start],row_idxs[end])
                 flat = self.x[row_idxs[start:end], col_idxs[start:end]].flatten()
-                data = np.core.records.fromarrays([icount[start:end],
-                                                   flat],
-                                                  dtype=self.binary_rec_dt)
+                data = np.core.records.fromarrays(
+                    [icount[start:end], flat], dtype=self.binary_rec_dt
+                )
                 data.tofile(f)
                 if end == row_idxs.shape[0]:
                     break
                 start = end
-                end = min(row_idxs.shape[0],start + chunk)
-
+                end = min(row_idxs.shape[0], start + chunk)
 
         for name in self.col_names:
             if len(name) > self.par_length:
-                warnings.warn("par name '{0}' greater than {1} chars".format(name, self.par_length))
-                name = name[:self.par_length - 1]
+                warnings.warn(
+                    "par name '{0}' greater than {1} chars".format(
+                        name, self.par_length
+                    )
+                )
+                name = name[: self.par_length - 1]
             elif len(name) < self.par_length:
                 for i in range(len(name), self.par_length):
-                    name = name + ' '
+                    name = name + " "
             f.write(name.encode())
         for name in self.row_names:
             if len(name) > self.obs_length:
-                warnings.warn("obs name '{0}' greater than {1} chars".format(name, self.obs_length))
-                name = name[:self.obs_length - 1]
+                warnings.warn(
+                    "obs name '{0}' greater than {1} chars".format(
+                        name, self.obs_length
+                    )
+                )
+                name = name[: self.obs_length - 1]
             elif len(name) < self.obs_length:
                 for i in range(len(name), self.obs_length):
-                    name = name + ' '
+                    name = name + " "
             f.write(name.encode())
 
         f.close()
 
-
     @classmethod
-    def from_binary(cls,filename):
+    def from_binary(cls, filename):
         """class method load from PEST-compatible binary file into a
         Matrix instance
 
@@ -1663,9 +1858,9 @@ class Matrix(object):
             cov = pyemi.Cov.from_binary("large_cov.jcb")
 
         """
-        x,row_names,col_names = Matrix.read_binary(filename)
+        x, row_names, col_names = Matrix.read_binary(filename)
         if np.any(np.isnan(x)):
-            warnings.warn("Matrix.from_binary(): nans in matrix",PyemuWarning)
+            warnings.warn("Matrix.from_binary(): nans in matrix", PyemuWarning)
         return cls(x=x, row_names=row_names, col_names=col_names)
 
     @staticmethod
@@ -1683,14 +1878,16 @@ class Matrix(object):
             - **[`str`]**: list of col_names
 
         """
-        f = open(filename, 'rb')
+        f = open(filename, "rb")
         # the header datatype
         itemp1, itemp2, icount = np.fromfile(f, Matrix.binary_header_dt, 1)[0]
         if itemp1 > 0 and itemp2 < 0 and icount < 0:
-            print(" WARNING: it appears this file was \n" +\
-                  " written with 'sequential` " +\
-                  " binary fortran specification\n...calling " +\
-                  " Matrix.from_fortranfile()")
+            print(
+                " WARNING: it appears this file was \n"
+                + " written with 'sequential` "
+                + " binary fortran specification\n...calling "
+                + " Matrix.from_fortranfile()"
+            )
             f.close()
             return Matrix.from_fortranfile(filename)
         ncol, nrow = abs(itemp1), abs(itemp2)
@@ -1698,25 +1895,38 @@ class Matrix(object):
             # raise TypeError('Matrix.from_binary(): Jco produced by ' +
             #                 'deprecated version of PEST,' +
             #                 'Use JcoTRANS to convert to new format')
-            #print("new binary format detected...")
+            # print("new binary format detected...")
 
             data = np.fromfile(f, Matrix.coo_rec_dt, icount)
-
+            if data["i"].min() < 0:
+                raise Exception("Matrix.from_binary(): 'i' index values less than 0")
+            if data["j"].min() < 0:
+                raise Exception("Matrix.from_binary(): 'j' index values less than 0")
             x = np.zeros((nrow, ncol))
-            x[data['i'], data['j']] = data["dtemp"]
+            x[data["i"], data["j"]] = data["dtemp"]
             data = x
             # read obs and parameter names
             col_names = []
             row_names = []
             for j in range(ncol):
-                name = struct.unpack(str(Matrix.new_par_length) + "s",
-                                     f.read(Matrix.new_par_length))[0] \
-                    .strip().lower().decode()
+                name = (
+                    struct.unpack(
+                        str(Matrix.new_par_length) + "s", f.read(Matrix.new_par_length)
+                    )[0]
+                    .strip()
+                    .lower()
+                    .decode()
+                )
                 col_names.append(name)
             for i in range(nrow):
-                name = struct.unpack(str(Matrix.new_obs_length) + "s",
-                                     f.read(Matrix.new_obs_length))[0] \
-                    .strip().lower().decode()
+                name = (
+                    struct.unpack(
+                        str(Matrix.new_obs_length) + "s", f.read(Matrix.new_obs_length)
+                    )[0]
+                    .strip()
+                    .lower()
+                    .decode()
+                )
                 row_names.append(name)
             f.close()
         else:
@@ -1724,8 +1934,8 @@ class Matrix(object):
             # read all data records
             # using this a memory hog, but really fast
             data = np.fromfile(f, Matrix.binary_rec_dt, icount)
-            icols = ((data['j'] - 1) // nrow) + 1
-            irows = data['j'] - ((icols - 1) * nrow)
+            icols = ((data["j"] - 1) // nrow) + 1
+            irows = data["j"] - ((icols - 1) * nrow)
             x = np.zeros((nrow, ncol))
             x[irows - 1, icols - 1] = data["dtemp"]
             data = x
@@ -1733,28 +1943,47 @@ class Matrix(object):
             col_names = []
             row_names = []
             for j in range(ncol):
-                name = struct.unpack(str(Matrix.par_length) + "s",
-                                     f.read(Matrix.par_length))[0]\
-                                      .strip().lower().decode()
+                name = (
+                    struct.unpack(
+                        str(Matrix.par_length) + "s", f.read(Matrix.par_length)
+                    )[0]
+                    .strip()
+                    .lower()
+                    .decode()
+                )
                 col_names.append(name)
             for i in range(nrow):
 
-                name = struct.unpack(str(Matrix.obs_length) + "s",
-                                     f.read(Matrix.obs_length))[0]\
-                                      .strip().lower().decode()
+                name = (
+                    struct.unpack(
+                        str(Matrix.obs_length) + "s", f.read(Matrix.obs_length)
+                    )[0]
+                    .strip()
+                    .lower()
+                    .decode()
+                )
                 row_names.append(name)
             f.close()
         if len(row_names) != data.shape[0]:
-            raise Exception("Matrix.read_binary() len(row_names) (" + str(len(row_names)) +\
-          ") != x.shape[0] (" + str(data.shape[0]) + ")")
+            raise Exception(
+                "Matrix.read_binary() len(row_names) ("
+                + str(len(row_names))
+                + ") != x.shape[0] ("
+                + str(data.shape[0])
+                + ")"
+            )
         if len(col_names) != data.shape[1]:
-            raise Exception("Matrix.read_binary() len(col_names) (" + str(len(col_names)) +\
-          ") != self.shape[1] (" + str(data.shape[1]) + ")")
-        return data,row_names,col_names
+            raise Exception(
+                "Matrix.read_binary() len(col_names) ("
+                + str(len(col_names))
+                + ") != self.shape[1] ("
+                + str(data.shape[1])
+                + ")"
+            )
+        return data, row_names, col_names
 
-
-    @classmethod
-    def from_fortranfile(cls, filename):
+    @staticmethod
+    def from_fortranfile(filename):
         """ a binary load method to accommodate one of the many
             bizarre fortran binary writing formats
 
@@ -1762,28 +1991,35 @@ class Matrix(object):
             filename (`str`): name of the binary matrix file
 
         Returns:
-            `Matrix`
+            tuple containing
+
+            - **numpy.ndarray**: the numeric values in the file
+            - **['str']**: list of row names
+            - **[`str`]**: list of col_names
+
 
         """
         try:
             from scipy.io import FortranFile
         except Exception as e:
             raise Exception("Matrix.from_fortranfile requires scipy")
-        f = FortranFile(filename,mode='r')
+        f = FortranFile(filename, mode="r")
         itemp1, itemp2 = f.read_ints()
-        icount = f.read_ints()
+        icount = int(f.read_ints())
         if itemp1 >= 0:
-           raise TypeError('Matrix.from_binary(): Jco produced by ' +
-                           'deprecated version of PEST,' +
-                           'Use JcoTRANS to convert to new format')
+            raise TypeError(
+                "Matrix.from_binary(): Jco produced by "
+                + "deprecated version of PEST,"
+                + "Use JcoTRANS to convert to new format"
+            )
         ncol, nrow = abs(itemp1), abs(itemp2)
         data = []
         for _ in range(icount):
             d = f.read_record(Matrix.binary_rec_dt)[0]
             data.append(d)
-        data = np.array(data,dtype=Matrix.binary_rec_dt)
-        icols = ((data['j'] - 1) // nrow) + 1
-        irows = data['j'] - ((icols - 1) * nrow)
+        data = np.array(data, dtype=Matrix.binary_rec_dt)
+        icols = ((data["j"] - 1) // nrow) + 1
+        irows = data["j"] - ((icols - 1) * nrow)
         x = np.zeros((nrow, ncol))
         x[irows - 1, icols - 1] = data["dtemp"]
         row_names = []
@@ -1791,19 +2027,28 @@ class Matrix(object):
         for j in range(ncol):
             name = f.read_record("|S12")[0].strip().decode()
             col_names.append(name)
-        #obs_rec = np.dtype((np.str_, self.obs_length))
+        # obs_rec = np.dtype((np.str_, self.obs_length))
         for i in range(nrow):
             name = f.read_record("|S20")[0].strip().decode()
             row_names.append(name)
         if len(row_names) != x.shape[0]:
-            raise Exception("Matrix.from_fortranfile() len(row_names) (" + \
-          str(len(row_names)) +\
-          ") != self.shape[0] (" + str(x.shape[0]) + ")")
+            raise Exception(
+                "Matrix.from_fortranfile() len(row_names) ("
+                + str(len(row_names))
+                + ") != self.shape[0] ("
+                + str(x.shape[0])
+                + ")"
+            )
         if len(col_names) != x.shape[1]:
-            raise Exception("Matrix.from_fortranfile() len(col_names) (" + \
-          str(len(col_names)) +\
-          ") != self.shape[1] (" + str(x.shape[1]) + ")")
-        return cls(x=x,row_names=row_names,col_names=col_names)
+            raise Exception(
+                "Matrix.from_fortranfile() len(col_names) ("
+                + str(len(col_names))
+                + ") != self.shape[1] ("
+                + str(x.shape[1])
+                + ")"
+            )
+        # return cls(x=x,row_names=row_names,col_names=col_names)
+        return x, row_names, col_names
 
     def to_ascii(self, filename, icode=2):
         """write a PEST-compatible ASCII Matrix/vector file
@@ -1815,34 +2060,32 @@ class Matrix(object):
 
         """
         nrow, ncol = self.shape
-        f_out = open(filename, 'w')
-        f_out.write(' {0:7.0f} {1:7.0f} {2:7.0f}\n'.
-                    format(nrow, ncol, icode))
+        f_out = open(filename, "w")
+        f_out.write(" {0:7.0f} {1:7.0f} {2:7.0f}\n".format(nrow, ncol, icode))
         f_out.close()
-        f_out = open(filename,'ab')
+        f_out = open(filename, "ab")
         if self.isdiagonal:
             x = np.diag(self.__x[:, 0])
         else:
             x = self.__x
-        np.savetxt(f_out, x, fmt='%15.7E', delimiter='')
+        np.savetxt(f_out, x, fmt="%15.7E", delimiter="")
         f_out.close()
-        f_out = open(filename,'a')
+        f_out = open(filename, "a")
         if icode == 1:
-            f_out.write('* row and column names\n')
+            f_out.write("* row and column names\n")
             for r in self.row_names:
-                f_out.write(r + '\n')
+                f_out.write(r + "\n")
         else:
-            f_out.write('* row names\n')
+            f_out.write("* row names\n")
             for r in self.row_names:
-                f_out.write(r + '\n')
-            f_out.write('* column names\n')
+                f_out.write(r + "\n")
+            f_out.write("* column names\n")
             for c in self.col_names:
-                f_out.write(c + '\n')
+                f_out.write(c + "\n")
             f_out.close()
 
-
     @classmethod
-    def from_ascii(cls,filename):
+    def from_ascii(cls, filename):
         """load a PEST-compatible ASCII matrix/vector file into a
         `Matrix` instance
 
@@ -1858,9 +2101,8 @@ class Matrix(object):
             cov = pyemi.Cov.from_ascii("my.cov")
 
         """
-        x,row_names,col_names,isdiag = Matrix.read_ascii(filename)
-        return cls(x=x,row_names=row_names,col_names=col_names,isdiagonal=isdiag)
-
+        x, row_names, col_names, isdiag = Matrix.read_ascii(filename)
+        return cls(x=x, row_names=row_names, col_names=col_names, isdiagonal=isdiag)
 
     @staticmethod
     def read_ascii(filename):
@@ -1879,10 +2121,10 @@ class Matrix(object):
 
         """
 
-        f = open(filename, 'r')
+        f = open(filename, "r")
         raw = f.readline().strip().split()
         nrow, ncol = int(raw[0]), int(raw[1])
-        #x = np.fromfile(f, dtype=self.double, count=nrow * ncol, sep=' ')
+        # x = np.fromfile(f, dtype=self.double, count=nrow * ncol, sep=' ')
         # this painfully slow and ugly read is needed to catch the
         # fortran floating points that have 3-digit exponents,
         # which leave out the base (e.g. 'e') : "-1.23455+300"
@@ -1890,7 +2132,7 @@ class Matrix(object):
         x = []
         while True:
             line = f.readline()
-            if line == '':
+            if line == "":
                 raise Exception("Matrix.from_ascii() error: EOF")
             raw = line.strip().split()
             for r in raw:
@@ -1898,27 +2140,34 @@ class Matrix(object):
                     x.append(float(r))
                 except Exception as e:
                     # overflow
-                    if '+' in r:
-                        x.append(1.0e+30)
+                    if "+" in r:
+                        x.append(1.0e30)
                     # underflow
-                    elif '-' in r:
+                    elif "-" in r:
                         x.append(0.0)
                     else:
-                        raise Exception("Matrix.from_ascii() error: " +
-                                        " can't cast " + r + " to float")
+                        raise Exception(
+                            "Matrix.from_ascii() error: "
+                            + " can't cast "
+                            + r
+                            + " to float"
+                        )
                 count += 1
                 if count == (nrow * ncol):
                     break
             if count == (nrow * ncol):
-                    break
+                break
 
-        x = np.array(x,dtype=Matrix.double)
+        x = np.array(x, dtype=Matrix.double)
         x.resize(nrow, ncol)
         line = f.readline().strip().lower()
-        if not line.startswith('*'):
-            raise Exception('Matrix.from_ascii(): error loading ascii file," +\
-                "line should start with * not ' + line)
-        if 'row' in line and 'column' in line:
+        if not line.startswith("*"):
+            raise Exception(
+                'Matrix.from_ascii(): error loading ascii file," +\
+                "line should start with * not '
+                + line
+            )
+        if "row" in line and "column" in line:
             if nrow != ncol:
                 raise Exception("nrow != ncol")
             names = []
@@ -1936,8 +2185,11 @@ class Matrix(object):
             row_names = names
             line = f.readline().strip().lower()
             if "column" not in line:
-                raise Exception("Matrix.from_ascii(): line should be * column names " +\
-                "instead of: " + line)
+                raise Exception(
+                    "Matrix.from_ascii(): line should be * column names "
+                    + "instead of: "
+                    + line
+                )
             names = []
             for _ in range(ncol):
                 line = f.readline().strip().lower()
@@ -1945,7 +2197,7 @@ class Matrix(object):
             col_names = names
         f.close()
         # test for diagonal
-        isdiagonal=False
+        isdiagonal = False
         if nrow == ncol:
             diag = np.diag(np.diag(x))
             diag_tol = 1.0e-6
@@ -1953,7 +2205,7 @@ class Matrix(object):
             if diag_delta < diag_tol:
                 isdiagonal = True
                 x = np.atleast_2d(np.diag(x)).transpose()
-        return x,row_names,col_names,isdiagonal
+        return x, row_names, col_names, isdiagonal
 
     def df(self):
         """wrapper of Matrix.to_dataframe()
@@ -1977,15 +2229,16 @@ class Matrix(object):
             mat = pyemu.Matrix.from_dataframe(df)
 
         """
-        if not isinstance(df,pd.DataFrame):
+        if not isinstance(df, pd.DataFrame):
             raise Exception("df is not a DataFrame")
         row_names = copy.deepcopy(list(df.index))
         col_names = copy.deepcopy(list(df.columns))
-        return cls(x=df.values,row_names=row_names,col_names=col_names)
-
+        return cls(x=df.values, row_names=row_names, col_names=col_names)
 
     @classmethod
-    def from_names(cls,row_names,col_names,isdiagonal=False,autoalign=True, random=False):
+    def from_names(
+        cls, row_names, col_names, isdiagonal=False, autoalign=True, random=False
+    ):
         """ class method to create a new Matrix instance from
         row names and column names, filled with trash
 
@@ -2003,12 +2256,21 @@ class Matrix(object):
 
         """
         if random:
-            return cls(x=np.random.random((len(row_names), len(col_names))), row_names=row_names,
-                       col_names=col_names, isdiagonal=isdiagonal, autoalign=autoalign)
+            return cls(
+                x=np.random.random((len(row_names), len(col_names))),
+                row_names=row_names,
+                col_names=col_names,
+                isdiagonal=isdiagonal,
+                autoalign=autoalign,
+            )
         else:
-            return cls(x=np.empty((len(row_names),len(col_names))),row_names=row_names,
-                      col_names=col_names,isdiagonal=isdiagonal,autoalign=autoalign)
-
+            return cls(
+                x=np.empty((len(row_names), len(col_names))),
+                row_names=row_names,
+                col_names=col_names,
+                isdiagonal=isdiagonal,
+                autoalign=autoalign,
+            )
 
     def to_dataframe(self):
         """return a pandas.DataFrame representation of `Matrix`
@@ -2021,10 +2283,9 @@ class Matrix(object):
             x = np.diag(self.__x[:, 0])
         else:
             x = self.__x
-        return pd.DataFrame(data=x,index=self.row_names,columns=self.col_names)
+        return pd.DataFrame(data=x, index=self.row_names, columns=self.col_names)
 
-
-    def extend(self,other):
+    def extend(self, other):
         """ extend `Matrix` with the elements of other.
 
         Args:
@@ -2048,21 +2309,29 @@ class Matrix(object):
         new_col_names = copy.copy(self.col_names)
         new_col_names.extend(other.col_names)
 
-        new_x = np.zeros((len(new_row_names),len(new_col_names)))
-        new_x[0:self.shape[0],0:self.shape[1]] = self.as_2d
-        new_x[self.shape[0]:self.shape[0]+other.shape[0],
-              self.shape[1]:self.shape[1]+other.shape[1]] = other.as_2d
+        new_x = np.zeros((len(new_row_names), len(new_col_names)))
+        new_x[0 : self.shape[0], 0 : self.shape[1]] = self.as_2d
+        new_x[
+            self.shape[0] : self.shape[0] + other.shape[0],
+            self.shape[1] : self.shape[1] + other.shape[1],
+        ] = other.as_2d
         isdiagonal = True
         if not self.isdiagonal or not other.isdiagonal:
             isdiagonal = False
 
-        return type(self)(x=new_x,row_names=new_row_names,
-                           col_names=new_col_names,isdiagonal=isdiagonal)
+        return type(self)(
+            x=new_x,
+            row_names=new_row_names,
+            col_names=new_col_names,
+            isdiagonal=isdiagonal,
+        )
+
 
 class Jco(Matrix):
     """a thin wrapper class to get more intuitive attribute names.  Functions
     exactly like `Matrix`
     """
+
     def __init(self, **kwargs):
         """ Jco constuctor takes the same arguments as Matrix.
 
@@ -2078,7 +2347,6 @@ class Jco(Matrix):
 
         super(Jco, self).__init__(kwargs)
 
-
     @property
     def par_names(self):
         """ thin wrapper around `Matrix.col_names`
@@ -2088,7 +2356,6 @@ class Jco(Matrix):
 
         """
         return self.col_names
-
 
     @property
     def obs_names(self):
@@ -2100,7 +2367,6 @@ class Jco(Matrix):
         """
         return self.row_names
 
-
     @property
     def npar(self):
         """ number of parameters in the Jco
@@ -2111,7 +2377,6 @@ class Jco(Matrix):
         """
         return self.shape[1]
 
-
     @property
     def nobs(self):
         """ number of observations in the Jco
@@ -2121,7 +2386,6 @@ class Jco(Matrix):
 
         """
         return self.shape[0]
-
 
     @classmethod
     def from_pst(cls, pst, random=False):
@@ -2140,10 +2404,11 @@ class Jco(Matrix):
 
         """
 
-        if isinstance(pst,str):
+        if isinstance(pst, str):
             pst = Pst(pst)
 
         return Jco.from_names(pst.obs_names, pst.adj_par_names, random=random)
+
 
 class Cov(Matrix):
     """Diagonal and/or dense Covariance matrices
@@ -2167,12 +2432,20 @@ class Cov(Matrix):
         so support inheritance.  However, users should only pass `names`
 
     """
-    def __init__(self, x=None, names=[],row_names=[],col_names=[],
-                 isdiagonal=False, autoalign=True):
+
+    def __init__(
+        self,
+        x=None,
+        names=[],
+        row_names=[],
+        col_names=[],
+        isdiagonal=False,
+        autoalign=True,
+    ):
 
         self.__identity = None
         self.__zero = None
-        #if len(row_names) > 0 and len(col_names) > 0:
+        # if len(row_names) > 0 and len(col_names) > 0:
         #    assert row_names == col_names
         self.__identity = None
         self.__zero = None
@@ -2182,15 +2455,20 @@ class Cov(Matrix):
             row_names = names
         if len(names) != 0 and len(col_names) == 0:
             col_names = names
-        super(Cov, self).__init__(x=x, isdiagonal=isdiagonal,
-                                  row_names=row_names,
-                                  col_names=col_names,
-                                  autoalign=autoalign)
-        super(Cov, self).__init__(x=x, isdiagonal=isdiagonal,
-                                  row_names=row_names,
-                                  col_names=col_names,
-                                  autoalign=autoalign)
-
+        super(Cov, self).__init__(
+            x=x,
+            isdiagonal=isdiagonal,
+            row_names=row_names,
+            col_names=col_names,
+            autoalign=autoalign,
+        )
+        super(Cov, self).__init__(
+            x=x,
+            isdiagonal=isdiagonal,
+            row_names=row_names,
+            col_names=col_names,
+            autoalign=autoalign,
+        )
 
     @property
     def identity(self):
@@ -2201,11 +2479,12 @@ class Cov(Matrix):
 
         """
         if self.__identity is None:
-            self.__identity = Cov(x=np.atleast_2d(np.ones(self.shape[0]))
-                                  .transpose(), names=self.row_names,
-                                  isdiagonal=True)
+            self.__identity = Cov(
+                x=np.atleast_2d(np.ones(self.shape[0])).transpose(),
+                names=self.row_names,
+                isdiagonal=True,
+            )
         return self.__identity
-
 
     @property
     def zero(self):
@@ -2216,13 +2495,14 @@ class Cov(Matrix):
 
         """
         if self.__zero is None:
-            self.__zero = Cov(x=np.atleast_2d(np.zeros(self.shape[0]))
-                              .transpose(), names=self.row_names,
-                              isdiagonal=True)
+            self.__zero = Cov(
+                x=np.atleast_2d(np.zeros(self.shape[0])).transpose(),
+                names=self.row_names,
+                isdiagonal=True,
+            )
         return self.__zero
 
-
-    def condition_on(self,conditioning_elements):
+    def condition_on(self, conditioning_elements):
         """get a new Covariance object that is conditional on knowing some
         elements.  uses Schur's complement for conditional Covariance
         propagation
@@ -2233,7 +2513,7 @@ class Cov(Matrix):
         Returns:
             `Cov`: new conditional `Cov` that assumes `conditioning_elements` have become known
         """
-        if not isinstance(conditioning_elements,list):
+        if not isinstance(conditioning_elements, list):
             conditioning_elements = [conditioning_elements]
         for iname, name in enumerate(conditioning_elements):
             conditioning_elements[iname] = name.lower()
@@ -2243,18 +2523,16 @@ class Cov(Matrix):
         for name in self.col_names:
             if name not in conditioning_elements:
                 keep_names.append(name)
-        #C11
+        # C11
         new_Cov = self.get(keep_names)
         if self.isdiagonal:
             return new_Cov
-        #C22^1
+        # C22^1
         cond_Cov = self.get(conditioning_elements).inv
-        #C12
+        # C12
         upper_off_diag = self.get(keep_names, conditioning_elements)
-        #print(new_Cov.shape,upper_off_diag.shape,cond_Cov.shape)
+        # print(new_Cov.shape,upper_off_diag.shape,cond_Cov.shape)
         return new_Cov - (upper_off_diag * cond_Cov * upper_off_diag.T)
-
-
 
     @property
     def names(self):
@@ -2266,8 +2544,7 @@ class Cov(Matrix):
         """
         return self.row_names
 
-
-    def replace(self,other):
+    def replace(self, other):
         """replace elements in the covariance matrix with elements from other.
         if other is not diagonal, then this `Cov` becomes non diagonal
 
@@ -2278,16 +2555,19 @@ class Cov(Matrix):
             operates in place
 
         """
-        if not isinstance(other,Cov):
-            raise Exception("Cov.replace() other must be Cov, not {0}".\
-            format(type(other)))
+        if not isinstance(other, Cov):
+            raise Exception(
+                "Cov.replace() other must be Cov, not {0}".format(type(other))
+            )
         # make sure the names of other are in self
         missing = [n for n in other.names if n not in self.names]
         if len(missing) > 0:
-            raise Exception("Cov.replace(): the following other names are not" +\
-                            " in self names: {0}".format(','.join(missing)))
-        self_idxs = self.indices(other.names,0)
-        other_idxs = other.indices(other.names,0)
+            raise Exception(
+                "Cov.replace(): the following other names are not"
+                + " in self names: {0}".format(",".join(missing))
+            )
+        self_idxs = self.indices(other.names, 0)
+        other_idxs = other.indices(other.names, 0)
 
         if self.isdiagonal and other.isdiagonal:
             self._Matrix__x[self_idxs] = other.x[other_idxs]
@@ -2296,16 +2576,18 @@ class Cov(Matrix):
             self._Matrix__x = self.as_2d
             self.isdiagonal = False
 
-        #print("allocating other_x")
+        # print("allocating other_x")
         other_x = other.as_2d
-        #print("replacing")
-        for i,ii in zip(self_idxs,other_idxs):
-            self._Matrix__x[i,self_idxs] = other_x[ii,other_idxs].copy()
-        #print("resetting")
-        #self.reset_x(self_x)
-        #self.isdiagonal = False
+        # print("replacing")
+        for i, ii in zip(self_idxs, other_idxs):
+            self._Matrix__x[i, self_idxs] = other_x[ii, other_idxs].copy()
+        # print("resetting")
+        # self.reset_x(self_x)
+        # self.isdiagonal = False
 
-    def to_uncfile(self, unc_file, covmat_file="cov.mat", var_mult=1.0, include_path=True):
+    def to_uncfile(
+        self, unc_file, covmat_file="cov.mat", var_mult=1.0, include_path=True
+    ):
         """write a PEST-compatible uncertainty file
 
         Args:
@@ -2322,12 +2604,13 @@ class Cov(Matrix):
             cov.to_uncfile("my.unc")
 
         """
-        assert len(self.row_names) == self.shape[0], \
-            "Cov.to_uncfile(): len(row_names) != x.shape[0] "
+        assert (
+            len(self.row_names) == self.shape[0]
+        ), "Cov.to_uncfile(): len(row_names) != x.shape[0] "
         if len(self.row_names) != self.shape[0]:
             raise Exception("Cov.to_uncfile(): len(row_names) != x.shape[0]")
         if covmat_file:
-            f = open(unc_file, 'w')
+            f = open(unc_file, "w")
             f.write("START COVARIANCE_MATRIX\n")
             if include_path:
                 f.write(" file " + covmat_file + "\n")
@@ -2339,16 +2622,19 @@ class Cov(Matrix):
             self.to_ascii(covmat_file, icode=1)
         else:
             if self.isdiagonal:
-                f = open(unc_file, 'w')
+                f = open(unc_file, "w")
                 f.write("START STANDARD_DEVIATION\n")
                 for iname, name in enumerate(self.row_names):
-                    f.write("  {0:20s}  {1:15.6E}\n".
-                            format(name, np.sqrt(self.x[iname, 0])))
+                    f.write(
+                        "  {0:20s}  {1:15.6E}\n".format(name, np.sqrt(self.x[iname, 0]))
+                    )
                 f.write("END STANDARD_DEVIATION\n")
                 f.close()
             else:
-                raise Exception("Cov.to_uncfile(): can't write non-diagonal " +
-                                "object as standard deviation block")
+                raise Exception(
+                    "Cov.to_uncfile(): can't write non-diagonal "
+                    + "object as standard deviation block"
+                )
 
     @classmethod
     def from_obsweights(cls, pst_file):
@@ -2397,16 +2683,18 @@ class Cov(Matrix):
         x = np.zeros((nobs, 1))
         onames = []
         ocount = 0
-        for weight,obsnme in zip(pst.observation_data.weight,pst.observation_data.obsnme):
+        for weight, obsnme in zip(
+            pst.observation_data.weight, pst.observation_data.obsnme
+        ):
             w = float(weight)
             w = max(w, 1.0e-30)
             x[ocount] = (1.0 / w) ** 2
             ocount += 1
             onames.append(obsnme.lower())
-        return cls(x=x,names=onames,isdiagonal=True)
+        return cls(x=x, names=onames, isdiagonal=True)
 
     @classmethod
-    def from_parbounds(cls, pst_file, sigma_range = 4.0,scale_offset=True):
+    def from_parbounds(cls, pst_file, sigma_range=4.0, scale_offset=True):
         """Instantiates a `Cov` from a pest control file parameter data section using
         parameter bounds as a proxy for uncertainty.
 
@@ -2434,7 +2722,7 @@ class Cov(Matrix):
         return Cov.from_parameter_data(new_pst, sigma_range, scale_offset)
 
     @classmethod
-    def from_parameter_data(cls, pst, sigma_range = 4.0, scale_offset=True):
+    def from_parameter_data(cls, pst, sigma_range=4.0, scale_offset=True):
         """Instantiates a `Cov` from a pest control file parameter data section using
         parameter bounds as a proxy for uncertainty.
 
@@ -2476,12 +2764,15 @@ class Cov(Matrix):
             else:
                 var = ((ub - lb) / sigma_range) ** 2
             if np.isnan(var) or not np.isfinite(var):
-                raise Exception("Cov.from_parameter_data() error: " +\
-                                "variance for parameter {0} is nan".\
-                                format(row["parnme"]))
-            if (var == 0.0):
-                s = "Cov.from_parameter_data() error: " +\
-                                "variance for parameter {0} is 0.0.".format(row["parnme"])
+                raise Exception(
+                    "Cov.from_parameter_data() error: "
+                    + "variance for parameter {0} is nan".format(row["parnme"])
+                )
+            if var == 0.0:
+                s = (
+                    "Cov.from_parameter_data() error: "
+                    + "variance for parameter {0} is 0.0.".format(row["parnme"])
+                )
                 s += "  This might be from enforcement of scale/offset and log transform."
                 s += "  Try changing 'scale_offset' arg"
                 raise Exception(s)
@@ -2489,7 +2780,7 @@ class Cov(Matrix):
             names.append(row["parnme"].lower())
             idx += 1
 
-        return cls(x=x,names=names,isdiagonal=True)
+        return cls(x=x, names=names, isdiagonal=True)
 
     @classmethod
     def from_uncfile(cls, filename):
@@ -2511,7 +2802,7 @@ class Cov(Matrix):
         x = np.zeros((nentries, nentries))
         row_names = []
         col_names = []
-        f = open(filename, 'r')
+        f = open(filename, "r")
         isdiagonal = True
         idx = 0
         while True:
@@ -2519,78 +2810,87 @@ class Cov(Matrix):
             if len(line) == 0:
                 break
             line = line.strip()
-            if 'start' in line:
-                if 'standard_deviation' in line:
+            if "start" in line:
+                if "standard_deviation" in line:
                     std_mult = 1.0
                     while True:
                         line2 = f.readline().strip().lower()
                         if line2.strip().lower().startswith("end"):
                             break
 
-
                         raw = line2.strip().split()
-                        name,val = raw[0], float(raw[1])
+                        name, val = raw[0], float(raw[1])
                         if name == "std_multiplier":
                             std_mult = val
                         else:
-                            x[idx, idx] = (val*std_mult)**2
+                            x[idx, idx] = (val * std_mult) ** 2
                             if name in row_names:
-                                raise Exception("Cov.from_uncfile():" +
-                                                "duplicate name: " + str(name))
+                                raise Exception(
+                                    "Cov.from_uncfile():"
+                                    + "duplicate name: "
+                                    + str(name)
+                                )
                             row_names.append(name)
                             col_names.append(name)
                             idx += 1
 
-                elif 'covariance_matrix' in line:
+                elif "covariance_matrix" in line:
                     isdiagonal = False
                     var = 1.0
                     while True:
                         line2 = f.readline().strip().lower()
                         if line2.strip().lower().startswith("end"):
                             break
-                        if line2.startswith('file'):
-                            filename = line2.split()[1].replace("'",'').replace('"','')
+                        if line2.startswith("file"):
+                            filename = (
+                                line2.split()[1].replace("'", "").replace('"', "")
+                            )
                             cov = Matrix.from_ascii(filename)
 
-                        elif line2.startswith('variance_multiplier'):
+                        elif line2.startswith("variance_multiplier"):
                             var = float(line2.split()[1])
                         else:
-                            raise Exception("Cov.from_uncfile(): " +
-                                            "unrecognized keyword in" +
-                                            "std block: " + line2)
+                            raise Exception(
+                                "Cov.from_uncfile(): "
+                                + "unrecognized keyword in"
+                                + "std block: "
+                                + line2
+                            )
                     if var != 1.0:
                         cov *= var
                     for name in cov.row_names:
                         if name in row_names:
-                            raise Exception("Cov.from_uncfile():" +
-                                            " duplicate name: " + str(name))
+                            raise Exception(
+                                "Cov.from_uncfile():" + " duplicate name: " + str(name)
+                            )
                     row_names.extend(cov.row_names)
                     col_names.extend(cov.col_names)
 
                     for i in range(cov.shape[0]):
-                        x[idx + i,idx:idx + cov.shape[0]] = cov.x[i, :].copy()
+                        x[idx + i, idx : idx + cov.shape[0]] = cov.x[i, :].copy()
                     idx += cov.shape[0]
                 else:
-                    raise Exception('Cov.from_uncfile(): ' +
-                                    'unrecognized block:' + str(line))
+                    raise Exception(
+                        "Cov.from_uncfile(): " + "unrecognized block:" + str(line)
+                    )
         f.close()
         if isdiagonal:
             x = np.atleast_2d(np.diag(x)).transpose()
-        return cls(x=x,names=row_names,isdiagonal=isdiagonal)
+        return cls(x=x, names=row_names, isdiagonal=isdiagonal)
 
     @staticmethod
     def _get_uncfile_dimensions(filename):
         """quickly read an uncertainty file to find the dimensions
         """
-        f = open(filename, 'r')
+        f = open(filename, "r")
         nentries = 0
         while True:
             line = f.readline().lower()
             if len(line) == 0:
                 break
             line = line.strip()
-            if 'start' in line:
-                if 'standard_deviation' in line:
+            if "start" in line:
+                if "standard_deviation" in line:
                     while True:
                         line2 = f.readline().strip().lower()
                         if "std_multiplier" in line2:
@@ -2599,29 +2899,36 @@ class Cov(Matrix):
                             break
                         nentries += 1
 
-                elif 'covariance_matrix' in line:
+                elif "covariance_matrix" in line:
                     while True:
                         line2 = f.readline().strip().lower()
                         if line2.strip().lower().startswith("end"):
                             break
-                        if line2.startswith('file'):
-                            filename = line2.split()[1].replace("'", '').replace('"', '')
+                        if line2.startswith("file"):
+                            filename = (
+                                line2.split()[1].replace("'", "").replace('"', "")
+                            )
                             cov = Matrix.from_ascii(filename)
                             nentries += len(cov.row_names)
-                        elif line2.startswith('variance_multiplier'):
+                        elif line2.startswith("variance_multiplier"):
                             pass
                         else:
-                            raise Exception('Cov.get_uncfile_dimensions(): ' +
-                            'unrecognized keyword in Covariance block: ' +
-                                            line2)
+                            raise Exception(
+                                "Cov.get_uncfile_dimensions(): "
+                                + "unrecognized keyword in Covariance block: "
+                                + line2
+                            )
                 else:
-                    raise Exception('Cov.get_uncfile_dimensions():' +
-                                    'unrecognized block:' + str(line))
+                    raise Exception(
+                        "Cov.get_uncfile_dimensions():"
+                        + "unrecognized block:"
+                        + str(line)
+                    )
         f.close()
         return nentries
 
     @classmethod
-    def identity_like(cls,other):
+    def identity_like(cls, other):
         """ Get an identity matrix Cov instance like other `Cov`
 
         Args:
@@ -2634,7 +2941,7 @@ class Cov(Matrix):
         if other.shape[0] != other.shape[1]:
             raise Exception("not square")
         x = np.identity(other.shape[0])
-        return cls(x=x,names=other.row_names,isdiagonal=False)
+        return cls(x=x, names=other.row_names, isdiagonal=False)
 
     def to_pearson(self):
         """ Convert Cov instance to Pearson correlation coefficient
@@ -2645,30 +2952,26 @@ class Cov(Matrix):
             on purpose so that it is clear the returned instance is not a Cov
 
         """
-        std_dict = self.get_diagonal_vector().to_dataframe()["diag"].\
-            apply(np.sqrt).to_dict()
+        std_dict = (
+            self.get_diagonal_vector().to_dataframe()["diag"].apply(np.sqrt).to_dict()
+        )
         pearson = self.identity.as_2d
         if self.isdiagonal:
-            return Matrix(x=pearson,row_names=self.row_names,
-                          col_names=self.col_names)
+            return Matrix(x=pearson, row_names=self.row_names, col_names=self.col_names)
         df = self.to_dataframe()
         # fill the lower triangle
-        for i,iname in enumerate(self.row_names):
-            for j,jname in enumerate(self.row_names[i+1:]):
+        for i, iname in enumerate(self.row_names):
+            for j, jname in enumerate(self.row_names[i + 1 :]):
                 # cv = df.loc[iname,jname]
                 # std1,std2 = std_dict[iname],std_dict[jname]
                 # cc = cv / (std1*std2)
                 # v1 = np.sqrt(df.loc[iname,iname])
                 # v2 = np.sqrt(df.loc[jname,jname])
-                pearson[i,j+i+1] = df.loc[iname,jname] / (std_dict[iname] * std_dict[jname])
+                pearson[i, j + i + 1] = df.loc[iname, jname] / (
+                    std_dict[iname] * std_dict[jname]
+                )
 
         # replicate across diagonal
-        for i,iname in enumerate(self.row_names[:-1]):
-             pearson[i+1:,i] = pearson[i,i+1:]
-        return Matrix(x=pearson,row_names=self.row_names,
-                      col_names=self.col_names)
-
-
-
-
-
+        for i, iname in enumerate(self.row_names[:-1]):
+            pearson[i + 1 :, i] = pearson[i, i + 1 :]
+        return Matrix(x=pearson, row_names=self.row_names, col_names=self.col_names)

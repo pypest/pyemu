@@ -291,23 +291,29 @@ def setup_pp_test():
 
     pp_dir = os.path.join("utils")
     #ml.export(os.path.join("temp","test_unrot_grid.shp"))
-
-    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=ml.sr, prefix_dict={0: "hk1",1:"hk2"},
+    sr = pyemu.helpers.SpatialReference().from_namfile(
+        os.path.join(ml.model_ws, ml.namefile),
+        delc=ml.dis.delc, delr=ml.dis.delr)
+    sr.rotation = 0.
+    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr, prefix_dict={0: "hk1",1:"hk2"},
                                                            every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
                                                            shapename=os.path.join("temp", "test_unrot.shp"),
                                                            )
     #print(par_info_unrot.parnme.value_counts())
     gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0))
     ok = pyemu.geostats.OrdinaryKrige(gs,par_info_unrot)
-    ok.calc_factors_grid(ml.sr)
-    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=ml.sr, prefix_dict={0: ["hk1_", "sy1_", "rch_"]},
+    ok.calc_factors_grid(sr)
+    
+    sr2 = pyemu.helpers.SpatialReference.from_gridspec(
+        os.path.join(ml.model_ws, "test.spc"), lenuni=2)
+    par_info_drot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr2, prefix_dict={0: ["hk1_", "sy1_", "rch_"]},
                                                            every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
                                                            shapename=os.path.join("temp", "test_unrot.shp"),
                                                            )
     ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
-    ok.calc_factors_grid(ml.sr)
+    ok.calc_factors_grid(sr2)
 
-    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
+    par_info_mrot = pyemu.pp_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
                                                      every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp","test_unrot.shp"))
     ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
@@ -315,16 +321,18 @@ def setup_pp_test():
 
 
 
-    ml.sr.rotation = 15
+    sr.rotation = 15
     #ml.export(os.path.join("temp","test_rot_grid.shp"))
 
     #pyemu.gw_utils.setup_pilotpoints_grid(ml)
 
-    par_info_rot = pyemu.pp_utils.setup_pilotpoints_grid(ml,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+    par_info_rot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp", "test_rot.shp"))
     ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
-    ok.calc_factors_grid(ml.sr)
+    ok.calc_factors_grid(sr)
     print(par_info_unrot.x)
+    print(par_info_drot.x)
+    print(par_info_mrot.x)
     print(par_info_rot.x)
 
 
@@ -1120,11 +1128,11 @@ def postprocess_inactive_conc_test():
     frun_line, df = pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True, prefix="hds",
                                                         postprocess_inact=1E30)
     os.chdir("temp")
-    df0 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
-    df1 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    df0 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
+    df1 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
     eval(frun_line)
-    df2 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
-    df3 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    df2 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
+    df3 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
     assert np.allclose(df0, df2)
     assert np.allclose(df2.test1, df3.test1)
     assert np.allclose(df2.test2, df3.test2)
@@ -1778,7 +1786,32 @@ def run_test():
     else:
         raise Exception("should have failed")
 
+
+def maha_pdc_test():
+    import pyemu
+    l1_critical_value = 6.4 #chi squared value at df=1,p=0.01
+    l2_critical_value = 9.2 #chi sqaured value at df=2,p=0.01
+    pst = pyemu.Pst(os.path.join("la", "pest.pst"))
+    pst.observation_data.loc[:,"weight"] = 1.0
+    en = pyemu.ObservationEnsemble.from_gaussian_draw(pst=pst,num_reals=20)
+    level_1,level_2 = pyemu.helpers.get_maha_obs_summary(en)
+    assert level_1.shape[0] == 0
+    assert level_2.shape[0] == 0
+
+
+    pst = pyemu.Pst(os.path.join("pst","zoned_nz_64.pst"))
+    en = pyemu.ObservationEnsemble.from_gaussian_draw(pst=pst, num_reals=20)
+    level_1, level_2 = pyemu.helpers.get_maha_obs_summary(en)
+    level_1.sort_values(inplace=True)
+    level_2.sort_values(by="sq_distance",inplace=True)
+    print(level_1)
+    print(level_2)
+    assert level_1.shape[0] == 0
+    assert level_2.shape[0] == 0
+
+
 if __name__ == "__main__":
+
     #run_test()
     #specsim_test()
     #aniso_invest()
@@ -1800,7 +1833,7 @@ if __name__ == "__main__":
     # gw_sft_ins_test()
     #par_knowledge_test()
     # grid_obs_test()
-    # hds_timeseries_test()
+    #hds_timeseries_test()
     #postprocess_inactive_conc_test()
     #plot_summary_test()
     # load_sgems_expvar_test()
@@ -1813,7 +1846,7 @@ if __name__ == "__main__":
     #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     # mflist_budget_test()
-    mtlist_budget_test()
+    #mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
     # hfb_test()
@@ -1828,7 +1861,7 @@ if __name__ == "__main__":
     # pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
-    #setup_pp_test()
+    # setup_pp_test()
     # pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()
@@ -1843,7 +1876,8 @@ if __name__ == "__main__":
     # covariance_matrix_test()
     # add_pi_obj_func_test()
     # ok_test()
-    #ok_grid_test()
+    # ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
     #ok_grid_invest()
+    maha_pdc_test()

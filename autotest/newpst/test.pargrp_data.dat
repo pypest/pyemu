@@ -1,0 +1,4 @@
+pargpnme inctyp derinc derinclb forcen derincmul dermthd splitthresh splitreldiff splitaction extra
+k relative 1000.0 0.0 switch 2.0 parabolic 1e-05 0.5 smaller "missing"
+lk relative 0.01 0.0 switch 2.0 parabolic 1e-05 0.5 smaller "missing"
+rch relative 0.01 0.0 switch 2.0 parabolic 1e-05 0.5 smaller "missing"

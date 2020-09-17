@@ -714,7 +714,7 @@ PD_half           7.893220e+00     0.000000e+00  pred
  misc\pred_dist_half.ins misc\pred_dist_half.dat
 * prior information
 mult1         1.0 * log(mult1) =   0.000000      1.0 regul_m
-kr01c01       1.0 * log(kr01c01) =   2.301030      1.0 regul_p
+#kr01c01       1.0 * log(kr01c01) =   2.301030      1.0 regul_p
 kr01c02       1.0 * log(kr01c02) =   2.301030      1.0 regul_p
 kr01c03       1.0 * log(kr01c03) =   2.301030      1.0 regul_p
 kr01c04       1.0 * log(kr01c04) =   2.301030      1.0 regul_p

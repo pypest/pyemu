@@ -2,38 +2,44 @@ from __future__ import print_function, division
 import os, sys
 import numpy as np
 import pandas as pd
-from pyemu import Matrix,Pst,Schur,Cov
+from pyemu import Matrix, Pst, Schur, Cov
 
-OPERATOR_WORDS = ["l","g","n","e"]
-OPERATOR_SYMBOLS = ["<=",">=","=","="]
+OPERATOR_WORDS = ["l", "g", "n", "e"]
+OPERATOR_SYMBOLS = ["<=", ">=", "=", "="]
 
 # self.prior_information = pd.DataFrame({"pilbl": pilbl,
 #                                        "equation": equation,
 #                                        "weight": weight,
 #                                        "obgnme": obgnme})
 
-def add_pi_obj_func(pst,obj_func_dict=None,out_pst_name=None):
-    if not isinstance(pst,Pst):
+
+def add_pi_obj_func(pst, obj_func_dict=None, out_pst_name=None):
+    if not isinstance(pst, Pst):
         pst = Pst(pst)
     if obj_func_dict is None:
-        obj_func_dict = {name:1.0 for name in pst.adj_par_names}
-    pi_equation = ''
-    for name,coef in obj_func_dict.items():
-        assert(name in pst.adj_par_names),"obj func component not in adjustable pars:"+name
+        obj_func_dict = {name: 1.0 for name in pst.adj_par_names}
+    pi_equation = ""
+    for name, coef in obj_func_dict.items():
+        assert name in pst.adj_par_names, (
+            "obj func component not in adjustable pars:" + name
+        )
         if coef < 0.0:
-            pi_equation += ' - {0}*{1}'.format(coef,name)
+            pi_equation += " - {0}*{1}".format(coef, name)
         else:
-            pi_equation += ' + {0}*{1}'.format(coef, name)
-    pi_equation += ' = 0.0'
+            pi_equation += " + {0}*{1}".format(coef, name)
+    pi_equation += " = 0.0"
     pilbl = "pi_obj_func"
-    pi_df = pd.DataFrame({"pilbl":pilbl,"equation":pi_equation,"weight":0.0,"obgnme":pilbl},index=[pilbl])
+    pi_df = pd.DataFrame(
+        {"pilbl": pilbl, "equation": pi_equation, "weight": 0.0, "obgnme": pilbl},
+        index=[pilbl],
+    )
 
     if pst.prior_information.shape[0] == 0:
         pst.prior_information = pi_df
     else:
         assert pilbl not in pst.prior_information.index
         # append by enlargement
-        pst.prior_information.loc[pilbl,:] = pi_df.loc[pilbl,:]
+        pst.prior_information.loc[pilbl, :] = pi_df.loc[pilbl, :]
 
     if out_pst_name is not None:
         pst.write(out_pst_name)
@@ -401,6 +407,3 @@ def add_pi_obj_func(pst,obj_func_dict=None,out_pst_name=None):
 #             f.write(" {0:2} {1:8}  {2:8}  {3:10G}\n".\
 #                     format("LO","BOUND",name,lw))
 #         f.write("ENDATA\n")
-
-
-

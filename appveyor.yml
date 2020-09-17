@@ -41,7 +41,7 @@ install:
 
 test_script:
   - python setup.py install
-  - nosetests -v --with-id --nocapture --with-timer -w autotest full_meal_deal_tests.py
+  - nosetests -v --with-id --nocapture --with-timer -w autotest full_meal_deal_tests.py:freyberg_test
   - nosetests -v --with-id --nocapture --with-timer -w autotest utils_tests.py
 
 after_test:

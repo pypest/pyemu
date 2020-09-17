@@ -1,0 +1,684 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyemu.plot.plot_utils &mdash; pyEMU 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> pyEMU
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.plot.plot_utils</span></code></a><ul>
+<li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#functions">Functions</a><ul>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.font">font</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.figsize">figsize</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.abet">abet</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.plot_summary_distributions">plot_summary_distributions</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.gaussian_distribution">gaussian_distribution</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.pst_helper">pst_helper</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.phi_progress">phi_progress</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils._get_page_axes">_get_page_axes</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.res_1to1">res_1to1</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.plot_id_bar">plot_id_bar</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.res_phi_pie">res_phi_pie</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.pst_prior">pst_prior</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.ensemble_helper">ensemble_helper</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.ensemble_change_summary">ensemble_change_summary</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils._process_ensemble_arg">_process_ensemble_arg</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.ensemble_res_1to1">ensemble_res_1to1</a></li>
+<li><a class="reference internal" href="#pyemu.plot.plot_utils.plot_jac_test">plot_jac_test</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">pyEMU</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.plot.plot_utils</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../../_sources/autoapi/pyemu/plot/plot_utils/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pyemu.plot.plot_utils">
+<span id="pyemu-plot-plot-utils"></span><h1><a class="reference internal" href="../../../../pyemu.plot.html#module-pyemu.plot.plot_utils" title="pyemu.plot.plot_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.plot.plot_utils</span></code></a><a class="headerlink" href="#module-pyemu.plot.plot_utils" title="Permalink to this headline">¶</a></h1>
+<p>Plotting functions for various PEST(++) and pyemu operations</p>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.plot_summary_distributions" title="pyemu.plot.plot_utils.plot_summary_distributions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_summary_distributions</span></code></a>(df, ax=None, label_post=False, label_prior=False, subplots=False, figsize=(11, 8.5), pt_color='b')</p></td>
+<td><p>helper function to plot gaussian distrbutions from prior and posterior</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.gaussian_distribution" title="pyemu.plot.plot_utils.gaussian_distribution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gaussian_distribution</span></code></a>(mean, stdev, num_pts=50)</p></td>
+<td><p>get an x and y numpy.ndarray that spans the +/- 4</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.pst_helper" title="pyemu.plot.plot_utils.pst_helper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pst_helper</span></code></a>(pst, kind=None, **kwargs)</p></td>
+<td><p><cite>pyemu.Pst</cite> plot helper - takes the</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.phi_progress" title="pyemu.plot.plot_utils.phi_progress"><code class="xref py py-obj docutils literal notranslate"><span class="pre">phi_progress</span></code></a>(pst, logger=None, filename=None, **kwargs)</p></td>
+<td><p>make plot of phi vs number of model runs - requires</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.plot.plot_utils._get_page_axes" title="pyemu.plot.plot_utils._get_page_axes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_page_axes</span></code></a>(count=nr * nc)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.res_1to1" title="pyemu.plot.plot_utils.res_1to1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">res_1to1</span></code></a>(pst, logger=None, filename=None, plot_hexbin=False, histogram=False, **kwargs)</p></td>
+<td><p>make 1-to-1 plots and also observed vs residual by observation group</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.plot_id_bar" title="pyemu.plot.plot_utils.plot_id_bar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_id_bar</span></code></a>(id_df, nsv=None, logger=None, **kwargs)</p></td>
+<td><p>Plot a stacked bar chart of identifiability based on</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.res_phi_pie" title="pyemu.plot.plot_utils.res_phi_pie"><code class="xref py py-obj docutils literal notranslate"><span class="pre">res_phi_pie</span></code></a>(pst, logger=None, **kwargs)</p></td>
+<td><p>plot current phi components as a pie chart.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.pst_prior" title="pyemu.plot.plot_utils.pst_prior"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pst_prior</span></code></a>(pst, logger=None, filename=None, **kwargs)</p></td>
+<td><p>helper to plot prior parameter histograms implied by</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.ensemble_helper" title="pyemu.plot.plot_utils.ensemble_helper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ensemble_helper</span></code></a>(ensemble, bins=10, facecolor='0.5', plot_cols=None, filename=None, func_dict=None, sync_bins=True, deter_vals=None, std_window=None, deter_range=False, **kwargs)</p></td>
+<td><p>helper function to plot ensemble histograms</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.ensemble_change_summary" title="pyemu.plot.plot_utils.ensemble_change_summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ensemble_change_summary</span></code></a>(ensemble1, ensemble2, pst, bins=10, facecolor='0.5', logger=None, filename=None, **kwargs)</p></td>
+<td><p>helper function to plot first and second moment change histograms between two</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.plot.plot_utils._process_ensemble_arg" title="pyemu.plot.plot_utils._process_ensemble_arg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_process_ensemble_arg</span></code></a>(ensemble, facecolor, logger)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.ensemble_res_1to1" title="pyemu.plot.plot_utils.ensemble_res_1to1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ensemble_res_1to1</span></code></a>(ensemble, pst, facecolor='0.5', logger=None, filename=None, skip_groups=[], base_ensemble=None, **kwargs)</p></td>
+<td><p>helper function to plot ensemble 1-to-1 plots sbowing the simulated range</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.plot.html#pyemu.plot.plot_utils.plot_jac_test" title="pyemu.plot.plot_utils.plot_jac_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_jac_test</span></code></a>(csvin, csvout, targetobs=None, filetype=None, maxoutputpages=1, outputdirectory=None)</p></td>
+<td><p>helper function to plot results of the Jacobian test performed using the pest++</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py data">
+<dt id="pyemu.plot.plot_utils.font">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">font</code><a class="headerlink" href="#pyemu.plot.plot_utils.font" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt id="pyemu.plot.plot_utils.figsize">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">figsize</code><em class="property"> = [8, 10.5]</em><a class="headerlink" href="#pyemu.plot.plot_utils.figsize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt id="pyemu.plot.plot_utils.abet">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">abet</code><a class="headerlink" href="#pyemu.plot.plot_utils.abet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.plot_summary_distributions">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">plot_summary_distributions</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">ax</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">label_post</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">label_prior</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">subplots</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">figsize</span><span class="o">=</span><span class="default_value">11, 8.5</span></em>, <em class="sig-param"><span class="n">pt_color</span><span class="o">=</span><span class="default_value">'b'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.plot_summary_distributions" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper function to plot gaussian distrbutions from prior and posterior
+means and standard deviations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<cite>pandas.DataFrame</cite>) – a dataframe and csv file.  Must have columns named:
+‘prior_mean’,’prior_stdev’,’post_mean’,’post_stdev’.  If loaded
+from a csv file, column 0 is assumed to tbe the index</p></li>
+<li><p><strong>ax</strong> (<cite>atplotlib.pyplot.axis</cite>) – If None, and not subplots, then one is created
+and all distributions are plotted on a single plot</p></li>
+<li><p><strong>label_post</strong> (<cite>bool</cite>) – flag to add text labels to the peak of the posterior</p></li>
+<li><p><strong>label_prior</strong> (<cite>bool</cite>) – flag to add text labels to the peak of the prior</p></li>
+<li><p><strong>subplots</strong> (<cite>bool</cite>) – flag to use subplots.  If True, then 6 axes per page
+are used and a single prior and posterior is plotted on each</p></li>
+<li><p><strong>figsize</strong> (<cite>tuple</cite>) – matplotlib figure size</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>[`matplotlib.figure`]</strong>: list of figures</p></li>
+<li><p><strong>[`matplotlib.axis`]</strong>: list of axes</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple containing</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is useful for demystifying FOSM results</p>
+<p>if subplots is False, a single axis is returned</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">pyemu</span>
+<span class="n">pyemu</span><span class="o">.</span><span class="n">plot_utils</span><span class="o">.</span><span class="n">plot_summary_distributions</span><span class="p">(</span><span class="s2">&quot;pest.par.usum.csv&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.gaussian_distribution">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">gaussian_distribution</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mean</span></em>, <em class="sig-param"><span class="n">stdev</span></em>, <em class="sig-param"><span class="n">num_pts</span><span class="o">=</span><span class="default_value">50</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.gaussian_distribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>get an x and y numpy.ndarray that spans the +/- 4
+standard deviation range of a gaussian distribution with
+a given mean and standard deviation. useful for plotting</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mean</strong> (<cite>float</cite>) – the mean of the distribution</p></li>
+<li><p><strong>stdev</strong> (<cite>float</cite>) – the standard deviation of the distribution</p></li>
+<li><p><strong>num_pts</strong> (<cite>int</cite>) – the number of points in the returned ndarrays.
+Default is 50</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>numpy.ndarray</strong>: the x-values of the distribution</p></li>
+<li><p><strong>numpy.ndarray</strong>: the y-values of the distribution</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple containing</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.pst_helper">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">pst_helper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">kind</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.pst_helper" title="Permalink to this definition">¶</a></dt>
+<dd><p><cite>pyemu.Pst</cite> plot helper - takes the
+handoff from <cite>pyemu.Pst.plot()</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kind</strong> (<cite>str</cite>) – the kind of plot to make</p></li>
+<li><p><strong>**kargs</strong> (<cite>dict</cite>) – keyword arguments to pass to the
+plotting function and ultimately to <cite>matplotlib</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>usually a combination of <cite>matplotlib.figure</cite> (s) and/or
+<cite>matplotlib.axis</cite> (s)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>varies</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.phi_progress">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">phi_progress</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.phi_progress" title="Permalink to this definition">¶</a></dt>
+<dd><p>make plot of phi vs number of model runs - requires
+available  “.iobj” file generated by a PESTPP-GLM run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – a control file instance</p></li>
+<li><p><strong>logger</strong> (<cite>pyemu.Logger</cite>) – if None, a generic one is created.  Default is None</p></li>
+<li><p><strong>filename</strong> (<cite>str</cite>) – PDF filename to save figures to.  If None, figures
+are returned.  Default is None</p></li>
+<li><p><strong>kwargs</strong> (<cite>dict</cite>) – optional keyword args to pass to plotting function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the axis the plot was made on</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>matplotlib.axis</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">pyemu</span>
+<span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">pyemu</span><span class="o">.</span><span class="n">plot_utils</span><span class="o">.</span><span class="n">phi_progress</span><span class="p">(</span><span class="n">pst</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils._get_page_axes">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">_get_page_axes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">count</span><span class="o">=</span><span class="default_value">nr * nc</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils._get_page_axes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.res_1to1">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">res_1to1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">plot_hexbin</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">histogram</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.res_1to1" title="Permalink to this definition">¶</a></dt>
+<dd><p>make 1-to-1 plots and also observed vs residual by observation group</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – a control file instance</p></li>
+<li><p><strong>logger</strong> (<cite>pyemu.Logger</cite>) – if None, a generic one is created.  Default is None</p></li>
+<li><p><strong>filename</strong> (<cite>str</cite>) – PDF filename to save figures to.  If None, figures
+are returned.  Default is None</p></li>
+<li><p><strong>hexbin</strong> (<cite>bool</cite>) – flag to use the hexbinning for large numbers of residuals.
+Default is False</p></li>
+<li><p><strong>histogram</strong> (<cite>bool</cite>) – flag to plot residual histograms instead of obs vs residual.
+Default is False (use <cite>matplotlib.pyplot.scatter</cite> )</p></li>
+<li><p><strong>kwargs</strong> (<cite>dict</cite>) – optional keyword args to pass to plotting function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the axis the plot was made on</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>matplotlib.axis</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">pyemu</span>
+<span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">pyemu</span><span class="o">.</span><span class="n">plot_utils</span><span class="o">.</span><span class="n">phi_progress</span><span class="p">(</span><span class="n">pst</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.plot_id_bar">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">plot_id_bar</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">id_df</span></em>, <em class="sig-param"><span class="n">nsv</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.plot_id_bar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a stacked bar chart of identifiability based on
+a the <cite>pyemu.ErrVar.get_identifiability()</cite> dataframe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>id_df</strong> (<cite>pandas.DataFrame</cite>) – dataframe of identifiability</p></li>
+<li><p><strong>nsv</strong> (<cite>int</cite>) – number of singular values to consider</p></li>
+<li><p><strong>logger</strong> (<cite>pyemu.Logger</cite>, optonal) – a logger.  If None, a generic
+one is created</p></li>
+<li><p><strong>kwargs</strong> (<cite>dict</cite>) – a dict of keyword arguments to pass to the
+plotting function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the axis with the plot</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>matplotlib.Axis</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyemu</span>
+<span class="n">pest_obj</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="n">pest_control_file</span><span class="p">)</span>
+<span class="n">ev</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">ErrVar</span><span class="p">(</span><span class="n">jco</span><span class="o">=</span><span class="s1">&#39;freyberg_jac.jcb&#39;</span><span class="p">))</span>
+<span class="n">id_df</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">get_identifiability_dataframe</span><span class="p">(</span><span class="n">singular_value</span><span class="o">=</span><span class="mi">48</span><span class="p">)</span>
+<span class="n">pyemu</span><span class="o">.</span><span class="n">plot_utils</span><span class="o">.</span><span class="n">plot_id_bar</span><span class="p">(</span><span class="n">id_df</span><span class="p">,</span> <span class="n">nsv</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.res_phi_pie">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">res_phi_pie</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.res_phi_pie" title="Permalink to this definition">¶</a></dt>
+<dd><p>plot current phi components as a pie chart.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – a control file instance with the residual datafrane
+instance available.</p></li>
+<li><p><strong>logger</strong> (<cite>pyemu.Logger</cite>) – a logger.  If None, a generic one is created</p></li>
+<li><p><strong>kwargs</strong> (<cite>dict</cite>) – a dict of plotting options. Accepts ‘include_zero’
+as a flag to include phi groups with only zero-weight obs (not
+sure why anyone would do this, but whatevs). Any additional
+args are passed to <cite>matplotlib</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the axis with the plot.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>matplotlib.Axis</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyemu</span>
+<span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">pyemu</span><span class="o">.</span><span class="n">plot_utils</span><span class="o">.</span><span class="n">res_phi_pie</span><span class="p">(</span><span class="n">pst</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.pst_prior">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">pst_prior</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.pst_prior" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper to plot prior parameter histograms implied by
+parameter bounds. Saves a multipage pdf named &lt;case&gt;.prior.pdf</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – control file</p></li>
+<li><p><strong>logger</strong> (<cite>pyemu.Logger</cite>) – a logger.  If None, a generic one is created.</p></li>
+<li><p><strong>filename</strong> (<cite>str</cite>) – PDF filename to save plots to.
+If None, return figs without saving.  Default is None.</p></li>
+<li><p><strong>kwargs</strong> (<cite>dict</cite>) – additional plotting options. Accepts ‘grouper’ as
+dict to group parameters on to a single axis (use
+parameter groups if not passed),’unqiue_only’ to only show unique
+mean-stdev combinations within a given group.  Any additional args
+are passed to <cite>matplotlib</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of figures created.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>[<cite>matplotlib.Figure</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.ensemble_helper">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">ensemble_helper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ensemble</span></em>, <em class="sig-param"><span class="n">bins</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">facecolor</span><span class="o">=</span><span class="default_value">'0.5'</span></em>, <em class="sig-param"><span class="n">plot_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">func_dict</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sync_bins</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">deter_vals</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">std_window</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">deter_range</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.ensemble_helper" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper function to plot ensemble histograms</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ensemble</strong> – varies
+the ensemble argument can be a pandas.DataFrame or derived type or a str, which
+is treated as a filename.  Optionally, ensemble can be a list of these types or
+a dict, in which case, the keys are treated as facecolor str (e.g., ‘b’, ‘y’, etc).</p></li>
+<li><p><strong>facecolor</strong> – str
+the histogram facecolor.  Only applies if ensemble is a single thing</p></li>
+<li><p><strong>plot_cols</strong> – enumerable
+a collection of columns (in form of a list of parameters, or a dict with keys for
+parsing plot axes and values of parameters) from the ensemble(s) to plot.  If None,
+(the union of) all cols are plotted. Default is None</p></li>
+<li><p><strong>filename</strong> – str
+the name of the pdf to create.  If None, return figs without saving.  Default is None.</p></li>
+<li><p><strong>func_dict</strong> – dict
+a dictionary of unary functions (e.g., <cite>np.log10</cite> to apply to columns.  Key is
+column name.  Default is None</p></li>
+<li><p><strong>sync_bins</strong> – bool
+flag to use the same bin edges for all ensembles. Only applies if more than
+one ensemble is being plotted.  Default is True</p></li>
+<li><p><strong>deter_vals</strong> – dict
+dict of deterministic values to plot as a vertical line. key is ensemble columnn name</p></li>
+<li><p><strong>std_window</strong> – float
+the number of standard deviations around the mean to mark as vertical lines.  If None,
+nothing happens.  Default is None</p></li>
+<li><p><strong>deter_range</strong> – bool
+flag to set xlims to deterministic value +/- std window.  If True, std_window must not be None.
+Default is False</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">prior</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">ParameterEnsemble</span><span class="o">.</span><span class="n">from_binary</span><span class="p">(</span><span class="n">pst</span><span class="o">=</span><span class="n">pst</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;prior.jcb&quot;</span><span class="p">)</span>
+<span class="n">post</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">ParameterEnsemble</span><span class="o">.</span><span class="n">from_binary</span><span class="p">(</span><span class="n">pst</span><span class="o">=</span><span class="n">pst</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;my.3.par.jcb&quot;</span><span class="p">)</span>
+<span class="n">pyemu</span><span class="o">.</span><span class="n">plot_utils</span><span class="o">.</span><span class="n">ensemble_helper</span><span class="p">(</span><span class="n">ensemble</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;0.5&quot;</span><span class="p">:</span><span class="n">prior</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span><span class="n">post</span><span class="p">},</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;ensemble.pdf&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.ensemble_change_summary">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">ensemble_change_summary</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ensemble1</span></em>, <em class="sig-param"><span class="n">ensemble2</span></em>, <em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">bins</span><span class="o">=</span><span class="default_value">10</span></em>, <em class="sig-param"><span class="n">facecolor</span><span class="o">=</span><span class="default_value">'0.5'</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.ensemble_change_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper function to plot first and second moment change histograms between two
+ensembles</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ensemble1</strong> (<em>varies</em>) – filename or <cite>pandas.DataFrame</cite> or <cite>pyemu.Ensemble</cite></p></li>
+<li><p><strong>ensemble2</strong> (<em>varies</em>) – filename or <cite>pandas.DataFrame</cite> or <cite>pyemu.Ensemble</cite></p></li>
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – control file</p></li>
+<li><p><strong>facecolor</strong> (<cite>str</cite>) – the histogram facecolor.</p></li>
+<li><p><strong>filename</strong> (<cite>str</cite>) – the name of the multi-pdf to create. If None, return figs without saving.  Default is None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of figures.  Returns None is
+<cite>filename</cite> is not None</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>[<cite>matplotlib.Figure</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils._process_ensemble_arg">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">_process_ensemble_arg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ensemble</span></em>, <em class="sig-param"><span class="n">facecolor</span></em>, <em class="sig-param"><span class="n">logger</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils._process_ensemble_arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.ensemble_res_1to1">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">ensemble_res_1to1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ensemble</span></em>, <em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">facecolor</span><span class="o">=</span><span class="default_value">'0.5'</span></em>, <em class="sig-param"><span class="n">logger</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">skip_groups</span><span class="o">=</span><span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">base_ensemble</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.ensemble_res_1to1" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper function to plot ensemble 1-to-1 plots sbowing the simulated range</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ensemble</strong> (<em>varies</em>) – the ensemble argument can be a pandas.DataFrame or derived type or a str, which
+is treated as a fileanme.  Optionally, ensemble can be a list of these types or
+a dict, in which case, the keys are treated as facecolor str (e.g., ‘b’, ‘y’, etc).</p></li>
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – a control file instance</p></li>
+<li><p><strong>facecolor</strong> (<cite>str</cite>) – the histogram facecolor.  Only applies if <cite>ensemble</cite> is a single thing</p></li>
+<li><p><strong>filename</strong> (<cite>str</cite>) – the name of the pdf to create. If None, return figs
+without saving.  Default is None.</p></li>
+<li><p><strong>base_ensemble</strong> (<cite>varies</cite>) – an optional ensemble argument for the observations + noise ensemble.
+This will be plotted as a transparent red bar on the 1to1 plot.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.plot.plot_utils.plot_jac_test">
+<code class="sig-prename descclassname">pyemu.plot.plot_utils.</code><code class="sig-name descname">plot_jac_test</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">csvin</span></em>, <em class="sig-param"><span class="n">csvout</span></em>, <em class="sig-param"><span class="n">targetobs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">filetype</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">maxoutputpages</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">outputdirectory</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.plot.plot_utils.plot_jac_test" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper function to plot results of the Jacobian test performed using the pest++
+program pestpp-swp.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>csvin</strong> (<cite>str</cite>) – name of csv file used as input to sweep, typically developed with
+static method pyemu.helpers.build_jac_test_csv()</p></li>
+<li><p><strong>csvout</strong> (<cite>str</cite>) – name of csv file with output generated by sweep, both input
+and output files can be specified in the pest++ control file
+with pyemu using: pest_object.pestpp_options[“sweep_parameter_csv_file”] = jactest_in_file.csv
+pest_object.pestpp_options[“sweep_output_csv_file”] = jactest_out_file.csv</p></li>
+<li><p><strong>targetobs</strong> ([<cite>str</cite>]) – list of observation file names to plot, each parameter used for jactest can
+have up to 32 observations plotted per page, throws a warning if more tha
+10 pages of output are requested per parameter. If none, all observations in
+the output csv file are used.</p></li>
+<li><p><strong>filetype</strong> (<cite>str</cite>) – file type to store output, if None, plt.show() is called.</p></li>
+<li><p><strong>maxoutputpages</strong> (<cite>int</cite>) – maximum number of pages of output per parameter.  Each page can
+hold up to 32 observation derivatives.  If value &gt; 10, set it to
+10 and throw a warning.  If observations in targetobs &gt; 32*maxoutputpages,
+then a random set is selected from the targetobs list (or all observations
+in the csv file if targetobs=None).</p></li>
+<li><p><strong>outputdirectory</strong> (<cite>str</cite>) – directory to store results, if None, current working directory is used.
+If string is passed, it is joined to the current working directory and
+created if needed. If os.path is passed, it is used directly.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Used in conjunction with pyemu.helpers.build_jac_test_csv() and sweep to perform
+a Jacobian Test and then view the results. Can generate a lot of plots so easiest
+to put into a separate directory and view the files.</p>
+</div>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

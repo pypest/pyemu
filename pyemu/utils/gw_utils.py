@@ -6,18 +6,32 @@ import warnings
 import numpy as np
 import pandas as pd
 import re
+
 pd.options.display.max_colwidth = 100
-from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,\
-    parse_tpl_file,try_process_output_file
+from pyemu.pst.pst_utils import (
+    SFMT,
+    IFMT,
+    FFMT,
+    pst_config,
+    parse_tpl_file,
+    try_process_output_file,
+)
 from pyemu.utils.os_utils import run
 from pyemu.utils.helpers import _write_df_tpl
 from ..pyemu_warnings import PyemuWarning
-PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
-          "parval1": FFMT}
-PP_NAMES = ["name","x","y","zone","parval1"]
+
+PP_FMT = {
+    "name": SFMT,
+    "x": FFMT,
+    "y": FFMT,
+    "zone": IFMT,
+    "tpl": SFMT,
+    "parval1": FFMT,
+}
+PP_NAMES = ["name", "x", "y", "zone", "parval1"]
 
 
-def modflow_pval_to_template_file(pval_file,tpl_file=None):
+def modflow_pval_to_template_file(pval_file, tpl_file=None):
     """write a template file for a modflow parameter value file.
 
     Args:
@@ -33,20 +47,29 @@ def modflow_pval_to_template_file(pval_file,tpl_file=None):
 
     if tpl_file is None:
         tpl_file = pval_file + ".tpl"
-    pval_df = pd.read_csv(pval_file,delim_whitespace=True,
-                          header=None,skiprows=2,
-                          names=["parnme","parval1"])
+    pval_df = pd.read_csv(
+        pval_file,
+        delim_whitespace=True,
+        header=None,
+        skiprows=2,
+        names=["parnme", "parval1"],
+    )
     pval_df.index = pval_df.parnme
-    pval_df.loc[:,"tpl"] = pval_df.parnme.apply(lambda x: " ~   {0:15s}   ~".format(x))
-    with open(tpl_file,'w') as f:
+    pval_df.loc[:, "tpl"] = pval_df.parnme.apply(lambda x: " ~   {0:15s}   ~".format(x))
+    with open(tpl_file, "w") as f:
         f.write("ptf ~\n#pval template file from pyemu\n")
         f.write("{0:10d} #NP\n".format(pval_df.shape[0]))
-        f.write(pval_df.loc[:,["parnme","tpl"]].to_string(col_space=0,
-                                                          formatters=[SFMT,SFMT],
-                                                          index=False,
-                                                          header=False,
-                                                          justify="left"))
+        f.write(
+            pval_df.loc[:, ["parnme", "tpl"]].to_string(
+                col_space=0,
+                formatters=[SFMT, SFMT],
+                index=False,
+                header=False,
+                justify="left",
+            )
+        )
     return pval_df
+
 
 def modflow_hob_to_instruction_file(hob_file, ins_file=None):
     """write an instruction file for a modflow head observation file
@@ -61,26 +84,37 @@ def modflow_hob_to_instruction_file(hob_file, ins_file=None):
 
     """
 
-    hob_df = pd.read_csv(hob_file,delim_whitespace=True,skiprows=1,
-                         header=None,names=["simval","obsval","obsnme"])
+    hob_df = pd.read_csv(
+        hob_file,
+        delim_whitespace=True,
+        skiprows=1,
+        header=None,
+        names=["simval", "obsval", "obsnme"],
+    )
 
-    hob_df.loc[:,"obsnme"] = hob_df.obsnme.apply(str.lower)
-    hob_df.loc[:,"ins_line"] = hob_df.obsnme.apply(lambda x:"l1 !{0:s}!".format(x))
-    hob_df.loc[0,"ins_line"] = hob_df.loc[0,"ins_line"].replace('l1','l2')
+    hob_df.loc[:, "obsnme"] = hob_df.obsnme.apply(str.lower)
+    hob_df.loc[:, "ins_line"] = hob_df.obsnme.apply(lambda x: "l1 !{0:s}!".format(x))
+    hob_df.loc[0, "ins_line"] = hob_df.loc[0, "ins_line"].replace("l1", "l2")
 
     if ins_file is None:
         ins_file = hob_file + ".ins"
-    f_ins = open(ins_file, 'w')
+    f_ins = open(ins_file, "w")
     f_ins.write("pif ~\n")
-    f_ins.write(hob_df.loc[:,["ins_line"]].to_string(col_space=0,
-                                                     columns=["ins_line"],
-                                                     header=False,
-                                                     index=False,
-                                                     formatters=[SFMT]) + '\n')
-    hob_df.loc[:,"weight"] = 1.0
-    hob_df.loc[:,"obgnme"] = "obgnme"
+    f_ins.write(
+        hob_df.loc[:, ["ins_line"]].to_string(
+            col_space=0,
+            columns=["ins_line"],
+            header=False,
+            index=False,
+            formatters=[SFMT],
+        )
+        + "\n"
+    )
+    hob_df.loc[:, "weight"] = 1.0
+    hob_df.loc[:, "obgnme"] = "obgnme"
     f_ins.close()
     return hob_df
+
 
 def modflow_hydmod_to_instruction_file(hydmod_file, ins_file=None):
     """write an instruction file for a modflow hydmod file
@@ -98,29 +132,37 @@ def modflow_hydmod_to_instruction_file(hydmod_file, ins_file=None):
     """
 
     hydmod_df, hydmod_outfile = modflow_read_hydmod_file(hydmod_file)
-    hydmod_df.loc[:,"ins_line"] = hydmod_df.obsnme.apply(lambda x:"l1 w !{0:s}!".format(x))
+    hydmod_df.loc[:, "ins_line"] = hydmod_df.obsnme.apply(
+        lambda x: "l1 w !{0:s}!".format(x)
+    )
 
     if ins_file is None:
         ins_file = hydmod_outfile + ".ins"
 
-    with open(ins_file, 'w') as f_ins:
+    with open(ins_file, "w") as f_ins:
         f_ins.write("pif ~\nl1\n")
-        f_ins.write(hydmod_df.loc[:,["ins_line"]].to_string(col_space=0,
-                                                     columns=["ins_line"],
-                                                     header=False,
-                                                     index=False,
-                                                     formatters=[SFMT]) + '\n')
-    hydmod_df.loc[:,"weight"] = 1.0
-    hydmod_df.loc[:,"obgnme"] = "obgnme"
+        f_ins.write(
+            hydmod_df.loc[:, ["ins_line"]].to_string(
+                col_space=0,
+                columns=["ins_line"],
+                header=False,
+                index=False,
+                formatters=[SFMT],
+            )
+            + "\n"
+        )
+    hydmod_df.loc[:, "weight"] = 1.0
+    hydmod_df.loc[:, "obgnme"] = "obgnme"
 
-    df = try_process_output_file(hydmod_outfile+".ins")
+    df = try_process_output_file(hydmod_outfile + ".ins")
     if df is not None:
-        df.loc[:,"obsnme"] = df.index.values
-        df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: x[:-9])
-        df.to_csv("_setup_"+os.path.split(hydmod_outfile)[-1]+'.csv',index=False)
+        df.loc[:, "obsnme"] = df.index.values
+        df.loc[:, "obgnme"] = df.obsnme.apply(lambda x: x[:-9])
+        df.to_csv("_setup_" + os.path.split(hydmod_outfile)[-1] + ".csv", index=False)
         return df
 
     return hydmod_df
+
 
 def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
     """ read a binary hydmod file and return a dataframe of the results
@@ -136,44 +178,51 @@ def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
     try:
         import flopy.utils as fu
     except Exception as e:
-        print('flopy is not installed - cannot read {0}\n{1}'.format(hydmod_file, e))
+        print("flopy is not installed - cannot read {0}\n{1}".format(hydmod_file, e))
         return
 
     obs = fu.HydmodObs(hydmod_file)
     hyd_df = obs.get_dataframe()
 
-    hyd_df.columns = [i[2:] if i.lower() != 'totim' else i for i in hyd_df.columns]
-    #hyd_df.loc[:,"datetime"] = hyd_df.index
-    hyd_df['totim'] = hyd_df.index.map(lambda x: x.strftime("%Y%m%d"))
+    hyd_df.columns = [i[2:] if i.lower() != "totim" else i for i in hyd_df.columns]
+    # hyd_df.loc[:,"datetime"] = hyd_df.index
+    hyd_df["totim"] = hyd_df.index.map(lambda x: x.strftime("%Y%m%d"))
 
-    hyd_df.rename(columns={'totim': 'datestamp'}, inplace=True)
-
+    hyd_df.rename(columns={"totim": "datestamp"}, inplace=True)
 
     # reshape into a single column
-    hyd_df = pd.melt(hyd_df, id_vars='datestamp')
+    hyd_df = pd.melt(hyd_df, id_vars="datestamp")
 
-    hyd_df.rename(columns={'value': 'obsval'}, inplace=True)
+    hyd_df.rename(columns={"value": "obsval"}, inplace=True)
 
-    hyd_df['obsnme'] = [i.lower() + '_' + j.lower() for i, j in zip(hyd_df.variable, hyd_df.datestamp)]
+    hyd_df["obsnme"] = [
+        i.lower() + "_" + j.lower() for i, j in zip(hyd_df.variable, hyd_df.datestamp)
+    ]
 
     vc = hyd_df.obsnme.value_counts().sort_values()
-    vc = list(vc.loc[vc>1].index.values)
+    vc = list(vc.loc[vc > 1].index.values)
     if len(vc) > 0:
         hyd_df.to_csv("hyd_df.duplciates.csv")
         obs.get_dataframe().to_csv("hyd_org.duplicates.csv")
         raise Exception("duplicates in obsnme:{0}".format(vc))
-    #assert hyd_df.obsnme.value_counts().max() == 1,"duplicates in obsnme"
+    # assert hyd_df.obsnme.value_counts().max() == 1,"duplicates in obsnme"
 
     if not hydmod_outfile:
-        hydmod_outfile = hydmod_file + '.dat'
-    hyd_df.to_csv(hydmod_outfile, columns=['obsnme','obsval'], sep=' ',index=False)
-    #hyd_df = hyd_df[['obsnme','obsval']]
-    return hyd_df[['obsnme','obsval']], hydmod_outfile
+        hydmod_outfile = hydmod_file + ".dat"
+    hyd_df.to_csv(hydmod_outfile, columns=["obsnme", "obsval"], sep=" ", index=False)
+    # hyd_df = hyd_df[['obsnme','obsval']]
+    return hyd_df[["obsnme", "obsval"]], hydmod_outfile
 
 
-def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filename="mtlist_sw.dat",
-                            start_datetime="1-1-1970",gw_prefix='gw',sw_prefix="sw",
-                            save_setup_file=False):
+def setup_mtlist_budget_obs(
+    list_filename,
+    gw_filename="mtlist_gw.dat",
+    sw_filename="mtlist_sw.dat",
+    start_datetime="1-1-1970",
+    gw_prefix="gw",
+    sw_prefix="sw",
+    save_setup_file=False,
+):
     """ setup observations of gw (and optionally sw) mass budgets from mt3dusgs list file.
 
     Args:
@@ -212,12 +261,14 @@ def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filenam
         This is the companion function of `gw_utils.apply_mtlist_budget_obs()`.
 
         """
-    gw,sw = apply_mtlist_budget_obs(list_filename, gw_filename, sw_filename, start_datetime)
+    gw, sw = apply_mtlist_budget_obs(
+        list_filename, gw_filename, sw_filename, start_datetime
+    )
     gw_ins = gw_filename + ".ins"
     _write_mtlist_ins(gw_ins, gw, gw_prefix)
     ins_files = [gw_ins]
 
-    df_gw = try_process_output_file(gw_ins,gw_filename)
+    df_gw = try_process_output_file(gw_ins, gw_filename)
     if df_gw is None:
         raise Exception("error processing groundwater instruction file")
     if sw is not None:
@@ -225,18 +276,19 @@ def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filenam
         _write_mtlist_ins(sw_ins, sw, sw_prefix)
         ins_files.append(sw_ins)
 
-        df_sw = try_process_output_file(sw_ins,sw_filename)
+        df_sw = try_process_output_file(sw_ins, sw_filename)
         if df_sw is None:
             raise Exception("error processing surface water instruction file")
         df_gw = df_gw.append(df_sw)
-        df_gw.obsnme = df_gw.index.values
+        df_gw.loc[:, "obsnme"] = df_gw.index.values
     if save_setup_file:
-        df_gw.to_csv("_setup_" + os.path.split(list_filename)[-1] + '.csv', index=False)
+        df_gw.to_csv("_setup_" + os.path.split(list_filename)[-1] + ".csv", index=False)
 
     frun_line = "pyemu.gw_utils.apply_mtlist_budget_obs('{0}')".format(list_filename)
-    return frun_line,ins_files,df_gw
+    return frun_line, ins_files, df_gw
 
-def _write_mtlist_ins(ins_filename,df,prefix):
+
+def _write_mtlist_ins(ins_filename, df, prefix):
     """ write an instruction file for a MT3D-USGS list file
 
     """
@@ -244,22 +296,27 @@ def _write_mtlist_ins(ins_filename,df,prefix):
         dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
     except:
         dt_str = df.index.map(lambda x: "{0:08.1f}".format(x).strip())
-    with open(ins_filename,'w') as f:
-        f.write('pif ~\nl1\n')
+    with open(ins_filename, "w") as f:
+        f.write("pif ~\nl1\n")
         for dt in dt_str:
             f.write("l1 ")
             for col in df.columns.str.translate(
-                    {ord(s): None for s in ['(', ')', '/', '=']}):
-                if prefix == '':
+                {ord(s): None for s in ["(", ")", "/", "="]}
+            ):
+                if prefix == "":
                     obsnme = "{0}_{1}".format(col, dt)
                 else:
                     obsnme = "{0}_{1}_{2}".format(prefix, col, dt)
                 f.write(" w !{0}!".format(obsnme))
             f.write("\n")
 
-def apply_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",
-                            sw_filename="mtlist_sw.dat",
-                            start_datetime="1-1-1970"):
+
+def apply_mtlist_budget_obs(
+    list_filename,
+    gw_filename="mtlist_gw.dat",
+    sw_filename="mtlist_sw.dat",
+    start_datetime="1-1-1970",
+):
     """ process an MT3D-USGS list file to extract mass budget entries.
 
     Args:
@@ -287,20 +344,38 @@ def apply_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",
         raise Exception("error import flopy: {0}".format(str(e)))
     mt = flopy.utils.MtListBudget(list_filename)
     gw, sw = mt.parse(start_datetime=start_datetime, diff=True)
-    gw = gw.drop([col for col in gw.columns
-                  for drop_col in ["kper", "kstp", "tkstp"]
-                  if (col.lower().startswith(drop_col))], axis=1)
-    gw.to_csv(gw_filename, sep=' ', index_label="datetime", date_format="%Y%m%d")
+    gw = gw.drop(
+        [
+            col
+            for col in gw.columns
+            for drop_col in ["kper", "kstp", "tkstp"]
+            if (col.lower().startswith(drop_col))
+        ],
+        axis=1,
+    )
+    gw.to_csv(gw_filename, sep=" ", index_label="datetime", date_format="%Y%m%d")
     if sw is not None:
-        sw = sw.drop([col for col in sw.columns
-                      for drop_col in ["kper", "kstp", "tkstp"]
-                      if (col.lower().startswith(drop_col))], axis=1)
-        sw.to_csv(sw_filename, sep=' ', index_label="datetime", date_format="%Y%m%d")
+        sw = sw.drop(
+            [
+                col
+                for col in sw.columns
+                for drop_col in ["kper", "kstp", "tkstp"]
+                if (col.lower().startswith(drop_col))
+            ],
+            axis=1,
+        )
+        sw.to_csv(sw_filename, sep=" ", index_label="datetime", date_format="%Y%m%d")
     return gw, sw
 
-def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
-                            vol_filename="vol.dat",start_datetime="1-1'1970",prefix='',
-                            save_setup_file=False):
+
+def setup_mflist_budget_obs(
+    list_filename,
+    flx_filename="flux.dat",
+    vol_filename="vol.dat",
+    start_datetime="1-1'1970",
+    prefix="",
+    save_setup_file=False,
+):
     """ setup observations of budget volume and flux from modflow list file.
 
     Args:
@@ -325,33 +400,38 @@ def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
 
         It is recommended to use the default values for flux_file and vol_file.
 
-        This is the companion function of `gw_utils.setup_mflist_budget_obs()`.
+        This is the companion function of `gw_utils.apply_mflist_budget_obs()`.
 
 
     """
-    flx,vol = apply_mflist_budget_obs(list_filename,flx_filename,vol_filename,
-                                      start_datetime)
-    _write_mflist_ins(flx_filename+".ins",flx,prefix+"flx")
-    _write_mflist_ins(vol_filename+".ins",vol, prefix+"vol")
+    flx, vol = apply_mflist_budget_obs(
+        list_filename, flx_filename, vol_filename, start_datetime
+    )
+    _write_mflist_ins(flx_filename + ".ins", flx, prefix + "flx")
+    _write_mflist_ins(vol_filename + ".ins", vol, prefix + "vol")
 
-    df = try_process_output_file(flx_filename+".ins")
+    df = try_process_output_file(flx_filename + ".ins")
     if df is None:
         raise Exception("error processing flux instruction file")
 
-    df2 = try_process_output_file(vol_filename+".ins")
+    df2 = try_process_output_file(vol_filename + ".ins")
     if df2 is None:
         raise Exception("error processing volume instruction file")
 
     df = df.append(df2)
-    df.loc[:,"obsnme"] = df.index.values
+    df.loc[:, "obsnme"] = df.index.values
     if save_setup_file:
-        df.to_csv("_setup_" + os.path.split(list_filename)[-1] + '.csv', index=False)
+        df.to_csv("_setup_" + os.path.split(list_filename)[-1] + ".csv", index=False)
 
     return df
 
-def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
-                            vol_filename="vol.dat",
-                            start_datetime="1-1-1970"):
+
+def apply_mflist_budget_obs(
+    list_filename,
+    flx_filename="flux.dat",
+    vol_filename="vol.dat",
+    start_datetime="1-1-1970",
+):
     """ process a MODFLOW list file to extract flux and volume water budget entries.
 
    Args:
@@ -383,31 +463,39 @@ def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
     except Exception as e:
         raise Exception("error import flopy: {0}".format(str(e)))
     mlf = flopy.utils.MfListBudget(list_filename)
-    flx,vol = mlf.get_dataframes(start_datetime=start_datetime,diff=True)
-    flx.to_csv(flx_filename,sep=' ',index_label="datetime",date_format="%Y%m%d")
-    vol.to_csv(vol_filename,sep=' ',index_label="datetime",date_format="%Y%m%d")
-    return flx,vol
+    flx, vol = mlf.get_dataframes(start_datetime=start_datetime, diff=True)
+    flx.to_csv(flx_filename, sep=" ", index_label="datetime", date_format="%Y%m%d")
+    vol.to_csv(vol_filename, sep=" ", index_label="datetime", date_format="%Y%m%d")
+    return flx, vol
 
 
-def _write_mflist_ins(ins_filename,df,prefix):
+def _write_mflist_ins(ins_filename, df, prefix):
     """ write an instruction file for a MODFLOW list file
 
     """
 
     dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
-    with open(ins_filename,'w') as f:
-        f.write('pif ~\nl1\n')
+    with open(ins_filename, "w") as f:
+        f.write("pif ~\nl1\n")
         for dt in dt_str:
             f.write("l1 ")
             for col in df.columns:
-                obsnme = "{0}_{1}_{2}".format(prefix,col,dt)
+                obsnme = "{0}_{1}_{2}".format(prefix, col, dt)
                 f.write(" w !{0}!".format(obsnme))
             f.write("\n")
 
 
-def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
-                         model=None, postprocess_inact=None, text=None,
-                         fill=None,precision="single"):
+def setup_hds_timeseries(
+    bin_file,
+    kij_dict,
+    prefix=None,
+    include_path=False,
+    model=None,
+    postprocess_inact=None,
+    text=None,
+    fill=None,
+    precision="single",
+):
     """a function to setup a forward process to extract time-series style values
     from a binary modflow binary file (or equivalent format - hds, ucn, sub, cbb, etc).
 
@@ -416,7 +504,7 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
         kij_dict (`dict`): dictionary of site_name: [k,i,j] pairs. For example: `{"wel1":[0,1,1]}`.
         prefix (`str`, optional): string to prepend to site_name when forming observation names.  Default is None
         include_path (`bool`, optional): flag to setup the binary file processing in directory where the hds_file
-        is located (if different from where python is running).  This is useful for setting up
+            is located (if different from where python is running).  This is useful for setting up
             the process in separate directory for where python is running.
         model (`flopy.mbase`, optional): a `flopy.basemodel` instance.  If passed, the observation names will
             have the datetime of the observation appended to them (using the flopy `start_datetime` attribute.
@@ -459,21 +547,42 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
         return
 
     assert os.path.exists(bin_file), "binary file not found"
-
+    iscbc = False
     if text is not None:
         text = text.upper()
+
         try:
             # hack: if model is passed and its None, it trips up CellBudgetFile...
             if model is not None:
-                bf = flopy.utils.CellBudgetFile(bin_file,precision=precision,model=model)
+                bf = flopy.utils.CellBudgetFile(
+                    bin_file, precision=precision, model=model
+                )
+                iscbc = True
             else:
                 bf = flopy.utils.CellBudgetFile(bin_file, precision=precision)
+                iscbc = True
         except Exception as e:
-            raise Exception("error instantiating CellBudgetFile:{0}".format(str(e)))
-        tl = [t.decode().strip() for t in bf.textlist]
-        if text not in tl:
-            raise Exception("'text' {0} not found in CellBudgetFile.textlist:{1}".\
-                            format(text,tl))
+            try:
+                if model is not None:
+                    bf = flopy.utils.HeadFile(
+                        bin_file, precision=precision, model=model, text=text
+                    )
+                else:
+                    bf = flopy.utils.HeadFile(bin_file, precision=precision, text=text)
+            except Exception as e1:
+                raise Exception(
+                    "error instantiating binary file as either CellBudgetFile:{0} or as HeadFile with text arg: {1}".format(
+                        str(e), str(e1)
+                    )
+                )
+        if iscbc:
+            tl = [t.decode().strip() for t in bf.textlist]
+            if text not in tl:
+                raise Exception(
+                    "'text' {0} not found in CellBudgetFile.textlist:{1}".format(
+                        text, tl
+                    )
+                )
     elif bin_file.lower().endswith(".ucn"):
         try:
             bf = flopy.utils.UcnFile(bin_file)
@@ -488,100 +597,117 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
     if text is None:
         text = "none"
 
-    nlay,nrow,ncol = bf.nlay,bf.nrow,bf.ncol
+    nlay, nrow, ncol = bf.nlay, bf.nrow, bf.ncol
 
-    #if include_path:
+    # if include_path:
     #    pth = os.path.join(*[p for p in os.path.split(hds_file)[:-1]])
     #    config_file = os.path.join(pth,"{0}_timeseries.config".format(hds_file))
-    #else:
+    # else:
     config_file = "{0}_timeseries.config".format(bin_file)
     print("writing config file to {0}".format(config_file))
     if fill is None:
         fill = "none"
-    f_config = open(config_file,'w')
+    f_config = open(config_file, "w")
     if model is not None:
         if model.dis.itmuni != 4:
-            warnings.warn("setup_hds_timeseries only supports 'days' time units...",PyemuWarning)
-        f_config.write("{0},{1},d,{2},{3},{4}\n".
-                       format(os.path.split(bin_file)[-1],
-                              model.start_datetime,text,fill,precision))
+            warnings.warn(
+                "setup_hds_timeseries only supports 'days' time units...", PyemuWarning
+            )
+        f_config.write(
+            "{0},{1},d,{2},{3},{4},{5}\n".format(
+                os.path.split(bin_file)[-1],
+                model.start_datetime,
+                text,
+                fill,
+                precision,
+                iscbc,
+            )
+        )
         start = pd.to_datetime(model.start_datetime)
     else:
-        f_config.write("{0},none,none,{1},{2},{3}\n".format(os.path.split(bin_file)[-1],
-                                                        text, fill,precision))
+        f_config.write(
+            "{0},none,none,{1},{2},{3},{4}\n".format(
+                os.path.split(bin_file)[-1], text, fill, precision, iscbc
+            )
+        )
     f_config.write("site,k,i,j\n")
     dfs = []
 
-    for site,(k,i,j) in kij_dict.items():
+    for site, (k, i, j) in kij_dict.items():
         assert k >= 0 and k < nlay, k
         assert i >= 0 and i < nrow, i
         assert j >= 0 and j < ncol, j
-        site = site.lower().replace(" ",'')
-        if text.upper() != "NONE":
-            ts = bf.get_ts((k, i, j),text=text)
-            #print(ts)
+        site = site.lower().replace(" ", "")
+        if iscbc:
+            ts = bf.get_ts((k, i, j), text=text)
+            # print(ts)
             df = pd.DataFrame(data=ts, columns=["totim", site])
         else:
-            df = pd.DataFrame(data=bf.get_ts((k,i,j)),columns=["totim",site])
+            df = pd.DataFrame(data=bf.get_ts((k, i, j)), columns=["totim", site])
 
         if model is not None:
-            dts = start + pd.to_timedelta(df.totim,unit='d')
-            df.loc[:,"totim"] = dts
-        #print(df)
-        f_config.write("{0},{1},{2},{3}\n".format(site,k,i,j))
+            dts = start + pd.to_timedelta(df.totim, unit="d")
+            df.loc[:, "totim"] = dts
+        # print(df)
+        f_config.write("{0},{1},{2},{3}\n".format(site, k, i, j))
         df.index = df.pop("totim")
         dfs.append(df)
 
     f_config.close()
-    df = pd.concat(dfs,axis=1)
-    df.to_csv(bin_file + "_timeseries.processed", sep=' ')
+    df = pd.concat(dfs, axis=1).T
+    df.to_csv(bin_file + "_timeseries.processed", sep=" ")
     if model is not None:
-        t_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+        t_str = df.columns.map(lambda x: x.strftime("%Y%m%d"))
     else:
-        t_str = df.index.map(lambda x: "{0:08.2f}".format(x))
+        t_str = df.columns.map(lambda x: "{0:08.2f}".format(x))
 
     ins_file = bin_file + "_timeseries.processed.ins"
     print("writing instruction file to {0}".format(ins_file))
-    with open(ins_file,'w') as f:
-        f.write('pif ~\n')
+    with open(ins_file, "w") as f:
+        f.write("pif ~\n")
         f.write("l1 \n")
-        for t in t_str:
+        for site in df.index:
+            # for t in t_str:
             f.write("l1 w ")
-            for site in df.columns:
+            # for site in df.columns:
+            for t in t_str:
                 if prefix is not None:
-                    obsnme = "{0}_{1}_{2}".format(prefix,site,t)
+                    obsnme = "{0}_{1}_{2}".format(prefix, site, t)
                 else:
                     obsnme = "{0}_{1}".format(site, t)
                 f.write(" !{0}!".format(obsnme))
-            f.write('\n')
+            f.write("\n")
     if postprocess_inact is not None:
-        _setup_postprocess_hds_timeseries(bin_file, df, config_file, prefix=prefix, model=model)
-    bd = '.'
+        _setup_postprocess_hds_timeseries(
+            bin_file, df, config_file, prefix=prefix, model=model
+        )
+    bd = "."
     if include_path:
         bd = os.getcwd()
         pth = os.path.join(*[p for p in os.path.split(bin_file)[:-1]])
         os.chdir(pth)
     config_file = os.path.split(config_file)[-1]
-    df = apply_hds_timeseries(config_file, postprocess_inact=postprocess_inact)
     try:
         df = apply_hds_timeseries(config_file, postprocess_inact=postprocess_inact)
+
     except Exception as e:
         os.chdir(bd)
         raise Exception("error in apply_hds_timeseries(): {0}".format(str(e)))
     os.chdir(bd)
 
-
     df = try_process_output_file(ins_file)
     if df is None:
         raise Exception("error processing {0} instruction file".format(ins_file))
 
-    df.loc[:,"weight"] = 0.0
+    df.loc[:, "weight"] = 0.0
     if prefix is not None:
-        df.loc[:,"obgnme"] = df.index.map(lambda x: '_'.join(x.split('_')[:2]))
+        df.loc[:, "obgnme"] = df.index.map(lambda x: "_".join(x.split("_")[:2]))
     else:
-        df.loc[:, "obgnme"] = df.index.map(lambda x: x.split('_')[0])
-    frun_line = "pyemu.gw_utils.apply_hds_timeseries('{0}',{1})\n".format(config_file, postprocess_inact)
-    return frun_line,df
+        df.loc[:, "obgnme"] = df.index.map(lambda x: x.split("_")[0])
+    frun_line = "pyemu.gw_utils.apply_hds_timeseries('{0}',{1})\n".format(
+        config_file, postprocess_inact
+    )
+    return frun_line, df
 
 
 def apply_hds_timeseries(config_file=None, postprocess_inact=None):
@@ -604,80 +730,129 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
         config_file = "hds_timeseries.config"
 
     assert os.path.exists(config_file), config_file
-    with open(config_file,'r') as f:
+    with open(config_file, "r") as f:
         line = f.readline()
-        bf_file,start_datetime,time_units, text, fill, precision = line.strip().split(',')
+        (
+            bf_file,
+            start_datetime,
+            time_units,
+            text,
+            fill,
+            precision,
+            _iscbc,
+        ) = line.strip().split(",")
+        if len(line.strip().split(",")) == 6:
+            (
+                bf_file,
+                start_datetime,
+                time_units,
+                text,
+                fill,
+                precision,
+            ) = line.strip().split(",")
+            _iscbc = "false"
+        else:
+            (
+                bf_file,
+                start_datetime,
+                time_units,
+                text,
+                fill,
+                precision,
+                _iscbc,
+            ) = line.strip().split(",")
         site_df = pd.read_csv(f)
     text = text.upper()
-    #print(site_df)
-
+    if _iscbc.lower().strip() == "false":
+        iscbc = False
+    elif _iscbc.lower().strip() == "true":
+        iscbc = True
+    else:
+        raise Exception(
+            "apply_hds_timeseries() error: unrecognized 'iscbc' string in config file: {0}".format(
+                _iscbc
+            )
+        )
     assert os.path.exists(bf_file), "head save file not found"
-    if text != "NONE":
+    if iscbc:
         try:
-            bf = flopy.utils.CellBudgetFile(bf_file,precision=precision)
+            bf = flopy.utils.CellBudgetFile(bf_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating CellBudgetFile:{0}".format(str(e)))
     elif bf_file.lower().endswith(".ucn"):
         try:
-            bf = flopy.utils.UcnFile(bf_file)
+            bf = flopy.utils.UcnFile(bf_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            bf = flopy.utils.HeadFile(bf_file)
+            if text != "NONE":
+                bf = flopy.utils.HeadFile(bf_file, text=text, precision=precision)
+            else:
+                bf = flopy.utils.HeadFile(bf_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
     nlay, nrow, ncol = bf.nlay, bf.nrow, bf.ncol
 
     dfs = []
-    for site,k,i,j in zip(site_df.site,site_df.k,site_df.i,site_df.j):
+    for site, k, i, j in zip(site_df.site, site_df.k, site_df.i, site_df.j):
         assert k >= 0 and k < nlay
         assert i >= 0 and i < nrow
         assert j >= 0 and j < ncol
-        if text.upper() != "NONE":
-            df = pd.DataFrame(data=bf.get_ts((k, i, j), text=text), columns=["totim", site])
+        if iscbc:
+            df = pd.DataFrame(
+                data=bf.get_ts((k, i, j), text=text), columns=["totim", site]
+            )
         else:
-            df = pd.DataFrame(data=bf.get_ts((k,i,j)),columns=["totim",site])
+            df = pd.DataFrame(data=bf.get_ts((k, i, j)), columns=["totim", site])
         df.index = df.pop("totim")
         dfs.append(df)
-    df = pd.concat(dfs,axis=1)
+    df = pd.concat(dfs, axis=1).T
     if df.shape != df.dropna().shape:
-        warnings.warn("NANs in processed timeseries file",PyemuWarning)
+        warnings.warn("NANs in processed timeseries file", PyemuWarning)
         if fill.upper() != "NONE":
             fill = float(fill)
-            df.fillna(fill,inplace=True)
-    #print(df)
-    df.to_csv(bf_file+"_timeseries.processed",sep=' ')
+            df.fillna(fill, inplace=True)
+    # print(df)
+    df.to_csv(bf_file + "_timeseries.processed", sep=" ")
     if postprocess_inact is not None:
         _apply_postprocess_hds_timeseries(config_file, postprocess_inact)
     return df
 
-def _setup_postprocess_hds_timeseries(hds_file, df, config_file, prefix=None, model=None):
+
+def _setup_postprocess_hds_timeseries(
+    hds_file, df, config_file, prefix=None, model=None
+):
     """Dirty function to setup post processing concentrations in inactive/dry cells"""
     warnings.warn(
         "Setting up post processing of hds or ucn timeseries obs. "
-        "Prepending 'pp' to obs name may cause length to exceed 20 chars", PyemuWarning)
+        "Prepending 'pp' to obs name may cause length to exceed 20 chars",
+        PyemuWarning,
+    )
     if model is not None:
-        t_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+        t_str = df.columns.map(lambda x: x.strftime("%Y%m%d"))
     else:
-        t_str = df.index.map(lambda x: "{0:08.2f}".format(x))
+        t_str = df.columns.map(lambda x: "{0:08.2f}".format(x))
     if prefix is not None:
         prefix = "pp{0}".format(prefix)
     else:
         prefix = "pp"
-    ins_file = hds_file+"_timeseries.post_processed.ins"
+    ins_file = hds_file + "_timeseries.post_processed.ins"
     print("writing instruction file to {0}".format(ins_file))
-    with open(ins_file,'w') as f:
-        f.write('pif ~\n')
+    with open(ins_file, "w") as f:
+        f.write("pif ~\n")
         f.write("l1 \n")
-        for t in t_str:
+        for site in df.index:
             f.write("l1 w ")
-            for site in df.columns:
+            # for site in df.columns:
+            for t in t_str:
                 obsnme = "{0}{1}_{2}".format(prefix, site, t)
                 f.write(" !{0}!".format(obsnme))
-            f.write('\n')
-    frun_line = "pyemu.gw_utils._apply_postprocess_hds_timeseries('{0}')\n".format(config_file)
+            f.write("\n")
+    frun_line = "pyemu.gw_utils._apply_postprocess_hds_timeseries('{0}')\n".format(
+        config_file
+    )
     return frun_line
 
 
@@ -689,22 +864,53 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
         config_file = "hds_timeseries.config"
 
     assert os.path.exists(config_file), config_file
-    with open(config_file,'r') as f:
+    with open(config_file, "r") as f:
         line = f.readline()
-        hds_file,start_datetime,time_units,text,fill,precision = line.strip().split(',')
+        (
+            hds_file,
+            start_datetime,
+            time_units,
+            text,
+            fill,
+            precision,
+            _iscbc,
+        ) = line.strip().split(",")
+        if len(line.strip().split(",")) == 6:
+            (
+                hds_file,
+                start_datetime,
+                time_units,
+                text,
+                fill,
+                precision,
+            ) = line.strip().split(",")
+            _iscbc = "false"
+        else:
+            (
+                hds_file,
+                start_datetime,
+                time_units,
+                text,
+                fill,
+                precision,
+                _iscbc,
+            ) = line.strip().split(",")
         site_df = pd.read_csv(f)
 
-    #print(site_df)
-
+    # print(site_df)
+    text = text.upper()
     assert os.path.exists(hds_file), "head save file not found"
     if hds_file.lower().endswith(".ucn"):
         try:
-            hds = flopy.utils.UcnFile(hds_file)
+            hds = flopy.utils.UcnFile(hds_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            hds = flopy.utils.HeadFile(hds_file)
+            if text != "NONE":
+                hds = flopy.utils.HeadFile(hds_file, text=text, precision=precision)
+            else:
+                hds = flopy.utils.HeadFile(hds_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
@@ -716,25 +922,39 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
         assert i >= 0 and i < nrow
         assert j >= 0 and j < ncol
         if text.upper() != "NONE":
-            df = pd.DataFrame(data=hds.get_ts((k, i, j),text=text), columns=["totim", site])
+            df = pd.DataFrame(data=hds.get_ts((k, i, j)), columns=["totim", site])
         else:
             df = pd.DataFrame(data=hds.get_ts((k, i, j)), columns=["totim", site])
         df.index = df.pop("totim")
         inact_obs = df[site].apply(lambda x: np.isclose(x, cinact))
         if inact_obs.sum() > 0:
-            assert k+1 < nlay, "Inactive observation in lowest layer"
-            df_lower = pd.DataFrame(data=hds.get_ts((k+1, i, j)), columns=["totim", site])
+            assert k + 1 < nlay, "Inactive observation in lowest layer"
+            df_lower = pd.DataFrame(
+                data=hds.get_ts((k + 1, i, j)), columns=["totim", site]
+            )
             df_lower.index = df_lower.pop("totim")
             df.loc[inact_obs] = df_lower.loc[inact_obs]
-            print("{0} observation(s) post-processed for site {1} at kij ({2},{3},{4})".
-                  format(inact_obs.sum(), site, k, i, j))
+            print(
+                "{0} observation(s) post-processed for site {1} at kij ({2},{3},{4})".format(
+                    inact_obs.sum(), site, k, i, j
+                )
+            )
         dfs.append(df)
-    df = pd.concat(dfs, axis=1)
-    #print(df)
-    df.to_csv(hds_file+"_timeseries.post_processed", sep=' ')
+    df = pd.concat(dfs, axis=1).T
+    # print(df)
+    df.to_csv(hds_file + "_timeseries.post_processed", sep=" ")
     return df
 
-def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
+
+def setup_hds_obs(
+    hds_file,
+    kperk_pairs=None,
+    skip=None,
+    prefix="hds",
+    text="head",
+    precision="single",
+    include_path=False,
+):
     """a function to setup using all values from a layer-stress period
     pair for observations.
 
@@ -745,7 +965,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
             (zero-based stress period index) and k (zero-based layer index) to
             setup observations for.  If None, then all layers and stress period records
             found in the file will be used.  Caution: a shit-ton of observations may be produced!
-        skip (variable): a value or function used to determine which values
+        skip (variable, optional): a value or function used to determine which values
             to skip when setting up observations.  If np.scalar(skip)
             is True, then values equal to skip will not be used.
             If skip can also be a np.ndarry with dimensions equal to the model.
@@ -753,6 +973,11 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
             If not np.ndarray or np.scalar(skip), then skip will be treated as a lambda function that
             returns np.NaN if the value should be skipped.
         prefix (`str`): the prefix to use for the observation names. default is "hds".
+        text (`str`): the text tag the flopy HeadFile instance.  Default is "head"
+        precison (`str`): the precision string for the flopy HeadFile instance.  Default is "single"
+        include_path (`bool`, optional): flag to setup the binary file processing in directory where the hds_file
+        is located (if different from where python is running).  This is useful for setting up
+            the process in separate directory for where python is running.
 
     Returns:
         tuple containing
@@ -774,7 +999,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
         print("error importing flopy, returning {0}".format(str(e)))
         return
 
-    assert os.path.exists(hds_file),"head save file not found"
+    assert os.path.exists(hds_file), "head save file not found"
     if hds_file.lower().endswith(".ucn"):
         try:
             hds = flopy.utils.UcnFile(hds_file)
@@ -782,14 +1007,14 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            hds = flopy.utils.HeadFile(hds_file)
+            hds = flopy.utils.HeadFile(hds_file, text=text, precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
     if kperk_pairs is None:
         kperk_pairs = []
-        for kstp,kper in hds.kstpkper:
-            kperk_pairs.extend([(kper-1,k) for k in range(hds.nlay)])
+        for kstp, kper in hds.kstpkper:
+            kperk_pairs.extend([(kper - 1, k) for k in range(hds.nlay)])
     if len(kperk_pairs) == 2:
         try:
             if len(kperk_pairs[0]) == 2:
@@ -797,68 +1022,86 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
         except:
             kperk_pairs = [kperk_pairs]
 
-    #if start_datetime is not None:
+    # if start_datetime is not None:
     #    start_datetime = pd.to_datetime(start_datetime)
     #    dts = start_datetime + pd.to_timedelta(hds.times,unit='d')
     data = {}
-    kpers = [kper-1 for kstp,kper in hds.kstpkper]
+    kpers = [kper - 1 for kstp, kper in hds.kstpkper]
     for kperk_pair in kperk_pairs:
-        kper,k = kperk_pair
+        kper, k = kperk_pair
         assert kper in kpers, "kper not in hds:{0}".format(kper)
         assert k in range(hds.nlay), "k not in hds:{0}".format(k)
-        kstp = last_kstp_from_kper(hds,kper)
-        d = hds.get_data(kstpkper=(kstp,kper))[k,:,:]
+        kstp = last_kstp_from_kper(hds, kper)
+        d = hds.get_data(kstpkper=(kstp, kper))[k, :, :]
 
-        data["{0}_{1}".format(kper,k)] = d.flatten()
-        #data[(kper,k)] = d.flatten()
-    idx,iidx,jidx = [],[],[]
+        data["{0}_{1}".format(kper, k)] = d.flatten()
+        # data[(kper,k)] = d.flatten()
+    idx, iidx, jidx = [], [], []
     for _ in range(len(data)):
         for i in range(hds.nrow):
             iidx.extend([i for _ in range(hds.ncol)])
             jidx.extend([j for j in range(hds.ncol)])
-            idx.extend(["i{0:04d}_j{1:04d}".format(i,j) for j in range(hds.ncol)])
-    idx = idx[:hds.nrow*hds.ncol]
+            idx.extend(["i{0:04d}_j{1:04d}".format(i, j) for j in range(hds.ncol)])
+    idx = idx[: hds.nrow * hds.ncol]
 
-    df = pd.DataFrame(data,index=idx)
+    df = pd.DataFrame(data, index=idx)
     data_cols = list(df.columns)
     data_cols.sort()
-    #df.loc[:,"iidx"] = iidx
-    #df.loc[:,"jidx"] = jidx
+    # df.loc[:,"iidx"] = iidx
+    # df.loc[:,"jidx"] = jidx
     if skip is not None:
         for col in data_cols:
             if np.isscalar(skip):
-                df.loc[df.loc[:,col]==skip,col] = np.NaN
+                df.loc[df.loc[:, col] == skip, col] = np.NaN
             elif isinstance(skip, np.ndarray):
-                assert skip.ndim >= 2, "skip passed as {}D array, At least 2D (<= 4D) array required".format(skip.ndim)
-                assert skip.shape[-2:] == (hds.nrow, hds.ncol), \
-                    "Array dimensions of arg. skip needs to match model dimensions ({0},{1}). ({2},{3}) passed".\
-                        format(hds.nrow, hds.ncol, skip.shape[-2], skip.shape[-1])
+                assert (
+                    skip.ndim >= 2
+                ), "skip passed as {}D array, At least 2D (<= 4D) array required".format(
+                    skip.ndim
+                )
+                assert skip.shape[-2:] == (
+                    hds.nrow,
+                    hds.ncol,
+                ), "Array dimensions of arg. skip needs to match model dimensions ({0},{1}). ({2},{3}) passed".format(
+                    hds.nrow, hds.ncol, skip.shape[-2], skip.shape[-1]
+                )
                 if skip.ndim == 2:
-                    print("2D array passed for skip, assuming constant for all layers and kper")
+                    print(
+                        "2D array passed for skip, assuming constant for all layers and kper"
+                    )
                     skip = np.tile(skip, (len(kpers), hds.nlay, 1, 1))
                 if skip.ndim == 3:
                     print("3D array passed for skip, assuming constant for all kper")
                     skip = np.tile(skip, (len(kpers), 1, 1, 1))
-                kper, k = [int(c) for c in col.split('_')]
-                df.loc[df.index.map(
-                    lambda x: skip[kper, k, int(x.split('_')[0].strip('i')), int(x.split('_')[1].strip('j'))] == 0),
-                    col] = np.NaN
+                kper, k = [int(c) for c in col.split("_")]
+                df.loc[
+                    df.index.map(
+                        lambda x: skip[
+                            kper,
+                            k,
+                            int(x.split("_")[0].strip("i")),
+                            int(x.split("_")[1].strip("j")),
+                        ]
+                        == 0
+                    ),
+                    col,
+                ] = np.NaN
             else:
-                df.loc[:,col] = df.loc[:,col].apply(skip)
+                df.loc[:, col] = df.loc[:, col].apply(skip)
 
     # melt to long form
-    df = df.melt(var_name="kperk",value_name="obsval")
+    df = df.melt(var_name="kperk", value_name="obsval")
     # set row and col identifies
-    df.loc[:,"iidx"] = iidx
-    df.loc[:,"jidx"] = jidx
-    #drop nans from skip
+    df.loc[:, "iidx"] = iidx
+    df.loc[:, "jidx"] = jidx
+    # drop nans from skip
     df = df.dropna()
-    #set some additional identifiers
-    df.loc[:,"kper"] = df.kperk.apply(lambda x: int(x.split('_')[0]))
-    df.loc[:,"kidx"] = df.pop("kperk").apply(lambda x: int(x.split('_')[1]))
+    # set some additional identifiers
+    df.loc[:, "kper"] = df.kperk.apply(lambda x: int(x.split("_")[0]))
+    df.loc[:, "kidx"] = df.pop("kperk").apply(lambda x: int(x.split("_")[1]))
 
     # form obs names
-    #def get_kper_str(kper):
+    # def get_kper_str(kper):
     #    if start_datetime is not None:
     #        return  dts[int(kper)].strftime("%Y%m%d")
     #    else:
@@ -866,28 +1109,35 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
     fmt = prefix + "_{0:02.0f}_{1:03.0f}_{2:03.0f}_{3:03.0f}"
     # df.loc[:,"obsnme"] = df.apply(lambda x: fmt.format(x.kidx,x.iidx,x.jidx,
     #                                                   get_kper_str(x.kper)),axis=1)
-    df.loc[:,"obsnme"] = df.apply(lambda x: fmt.format(x.kidx,x.iidx,x.jidx,
-                                                      x.kper),axis=1)
+    df.loc[:, "obsnme"] = df.apply(
+        lambda x: fmt.format(x.kidx, x.iidx, x.jidx, x.kper), axis=1
+    )
 
-    df.loc[:,"ins_str"] = df.obsnme.apply(lambda x: "l1 w !{0}!".format(x))
-    df.loc[:,"obgnme"] = prefix
-    #write the instruction file
-    with open(hds_file+".dat.ins","w") as f:
+    df.loc[:, "ins_str"] = df.obsnme.apply(lambda x: "l1 w !{0}!".format(x))
+    df.loc[:, "obgnme"] = prefix
+    # write the instruction file
+    with open(hds_file + ".dat.ins", "w") as f:
         f.write("pif ~\nl1\n")
-        df.ins_str.to_string(f,index=False,header=False)
+        df.ins_str.to_string(f, index=False, header=False)
 
-    #write the corresponding output file
-    df.loc[:,["obsnme","obsval"]].to_csv(hds_file+".dat",sep=' ',index=False)
+    # write the corresponding output file
+    df.loc[:, ["obsnme", "obsval"]].to_csv(hds_file + ".dat", sep=" ", index=False)
 
     hds_path = os.path.dirname(hds_file)
-    setup_file = os.path.join(hds_path,"_setup_{0}.csv".format(os.path.split(hds_file)[-1]))
+    setup_file = os.path.join(
+        hds_path, "_setup_{0}.csv".format(os.path.split(hds_file)[-1])
+    )
     df.to_csv(setup_file)
-    fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}')\n".format(hds_file)
+    if not include_path:
+        hds_file = os.path.split(hds_file)[-1]
+    fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}',precision='{1}',text='{2}')\n".format(
+        hds_file, precision, text
+    )
     df.index = df.obsnme
     return fwd_run_line, df
 
 
-def last_kstp_from_kper(hds,kper):
+def last_kstp_from_kper(hds, kper):
     """ function to find the last time step (kstp) for a
     give stress period (kper) in a modflow head save file.
 
@@ -901,10 +1151,10 @@ def last_kstp_from_kper(hds,kper):
         kper in the head save file
 
     """
-    #find the last kstp with this kper
+    # find the last kstp with this kper
     kstp = -1
-    for kkstp,kkper in hds.kstpkper:
-        if kkper == kper+1 and kkstp > kstp:
+    for kkstp, kkper in hds.kstpkper:
+        if kkper == kper + 1 and kkstp > kstp:
             kstp = kkstp
     if kstp == -1:
         raise Exception("kstp not found for kper {0}".format(kper))
@@ -912,9 +1162,9 @@ def last_kstp_from_kper(hds,kper):
     return kstp
 
 
-def apply_hds_obs(hds_file, inact_abs_val=1.0e+20):
+def apply_hds_obs(hds_file, inact_abs_val=1.0e20, precision="single", text="head"):
     """ process a modflow head save file.  A companion function to
-    `gw_utils.setup_hds_obsI()` that is called during the forward run process
+    `gw_utils.setup_hds_obs()` that is called during the forward run process
 
     Args:
         hds_file (`str`): a modflow head save filename. if hds_file ends with 'ucn',
@@ -932,43 +1182,43 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e+20):
     try:
         import flopy
     except Exception as e:
-        raise Exception("apply_hds_obs(): error importing flopy: {0}".\
-                        format(str(e)))
+        raise Exception("apply_hds_obs(): error importing flopy: {0}".format(str(e)))
     from .. import pst_utils
+
     assert os.path.exists(hds_file)
-    out_file = hds_file+".dat"
+    out_file = hds_file + ".dat"
     ins_file = out_file + ".ins"
     assert os.path.exists(ins_file)
-    df = pd.DataFrame({"obsnme":pst_utils.parse_ins_file(ins_file)})
+    df = pd.DataFrame({"obsnme": pst_utils.parse_ins_file(ins_file)})
     df.index = df.obsnme
 
     # populate metdata
-    items = ["k","i","j","kper"]
-    for i,item in enumerate(items):
-        df.loc[:,item] = df.obsnme.apply(lambda x: int(x.split('_')[i+1]))
+    items = ["k", "i", "j", "kper"]
+    for i, item in enumerate(items):
+        df.loc[:, item] = df.obsnme.apply(lambda x: int(x.split("_")[i + 1]))
 
-    if hds_file.lower().endswith('ucn'):
+    if hds_file.lower().endswith("ucn"):
         hds = flopy.utils.UcnFile(hds_file)
     else:
-        hds = flopy.utils.HeadFile(hds_file)
+        hds = flopy.utils.HeadFile(hds_file, precision=precision, text=text)
     kpers = df.kper.unique()
-    df.loc[:,"obsval"] = np.NaN
+    df.loc[:, "obsval"] = np.NaN
     for kper in kpers:
-        kstp = last_kstp_from_kper(hds,kper)
-        data = hds.get_data(kstpkper=(kstp,kper))
-        #jwhite 15jan2018 fix for really large values that are getting some
-        #trash added to them...
+        kstp = last_kstp_from_kper(hds, kper)
+        data = hds.get_data(kstpkper=(kstp, kper))
+        # jwhite 15jan2018 fix for really large values that are getting some
+        # trash added to them...
         data[np.isnan(data)] = 0.0
-        data[data>np.abs(inact_abs_val)] = np.abs(inact_abs_val)
-        data[data<-np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
-        df_kper = df.loc[df.kper==kper,:]
-        df.loc[df_kper.index,"obsval"] = data[df_kper.k,df_kper.i,df_kper.j]
+        data[data > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
+        data[data < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
+        df_kper = df.loc[df.kper == kper, :]
+        df.loc[df_kper.index, "obsval"] = data[df_kper.k, df_kper.i, df_kper.j]
     assert df.dropna().shape[0] == df.shape[0]
-    df.loc[:,["obsnme","obsval"]].to_csv(out_file,index=False,sep=" ")
+    df.loc[:, ["obsnme", "obsval"]].to_csv(out_file, index=False, sep=" ")
     return df
 
 
-def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1):
+def setup_sft_obs(sft_file, ins_file=None, start_datetime=None, times=None, ncomp=1):
     """writes a post-processor and instruction file for a mt3d-usgs sft output file
 
     Args:
@@ -992,8 +1242,8 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
 
     """
 
-    df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)
-    df.columns = [c.lower().replace("-","_") for c in df.columns]
+    df = pd.read_csv(sft_file, skiprows=1, delim_whitespace=True)
+    df.columns = [c.lower().replace("-", "_") for c in df.columns]
     if times is None:
         times = df.time.unique()
     missing = []
@@ -1003,52 +1253,58 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
             missing.append(str(t))
     if len(missing) > 0:
         print(df.time)
-        raise Exception("the following times are missing:{0}".format(','.join(missing)))
-    with open("sft_obs.config",'w') as f:
-        f.write(sft_file+'\n')
+        raise Exception("the following times are missing:{0}".format(",".join(missing)))
+    with open("sft_obs.config", "w") as f:
+        f.write(sft_file + "\n")
         [f.write("{0:15.6E}\n".format(t)) for t in times]
     df = apply_sft_obs()
     utimes = df.time.unique()
     for t in times:
-        assert t in utimes,"time {0} missing in processed dataframe".format(t)
+        assert t in utimes, "time {0} missing in processed dataframe".format(t)
     idx = df.time.apply(lambda x: x in times)
     if start_datetime is not None:
         start_datetime = pd.to_datetime(start_datetime)
-        df.loc[:,"time_str"] = pd.to_timedelta(df.time,unit='d') + start_datetime
-        df.loc[:,"time_str"] = df.time_str.apply(lambda x: datetime.strftime(x,"%Y%m%d"))
+        df.loc[:, "time_str"] = pd.to_timedelta(df.time, unit="d") + start_datetime
+        df.loc[:, "time_str"] = df.time_str.apply(
+            lambda x: datetime.strftime(x, "%Y%m%d")
+        )
     else:
-        df.loc[:,"time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
-    df.loc[:,"ins_str"] = "l1\n"
+        df.loc[:, "time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
+    df.loc[:, "ins_str"] = "l1\n"
     # check for multiple components
-    df_times = df.loc[idx,:]
-    df.loc[:,"icomp"] = 1
+    df_times = df.loc[idx, :]
+    df.loc[:, "icomp"] = 1
     icomp_idx = list(df.columns).index("icomp")
     for t in times:
-        df_time = df.loc[df.time==t,:]
+        df_time = df.loc[df.time == t, :].copy()
         vc = df_time.sfr_node.value_counts()
         ncomp = vc.max()
-        assert np.all(vc.values==ncomp)
+        assert np.all(vc.values == ncomp)
         nstrm = df_time.shape[0] / ncomp
         for icomp in range(ncomp):
-            s = int(nstrm*(icomp))
-            e = int(nstrm*(icomp+1))
-            idxs = df_time.iloc[s:e,:].index
-            #df_time.iloc[nstrm*(icomp):nstrm*(icomp+1),icomp_idx.loc["icomp"] = int(icomp+1)
-            df_time.loc[idxs,"icomp"] = int(icomp+1)
+            s = int(nstrm * (icomp))
+            e = int(nstrm * (icomp + 1))
+            idxs = df_time.iloc[s:e, :].index
+            # df_time.iloc[nstrm*(icomp):nstrm*(icomp+1),icomp_idx.loc["icomp"] = int(icomp+1)
+            df_time.loc[idxs, "icomp"] = int(icomp + 1)
 
-        #df.loc[df_time.index,"ins_str"] = df_time.apply(lambda x: "l1 w w !sfrc{0}_{1}_{2}! !swgw{0}_{1}_{2}! !gwcn{0}_{1}_{2}!\n".\
+        # df.loc[df_time.index,"ins_str"] = df_time.apply(lambda x: "l1 w w !sfrc{0}_{1}_{2}! !swgw{0}_{1}_{2}! !gwcn{0}_{1}_{2}!\n".\
         #                                 format(x.sfr_node,x.icomp,x.time_str),axis=1)
         df.loc[df_time.index, "ins_str"] = df_time.apply(
-            lambda x: "l1 w w !sfrc{0}_{1}_{2}!\n".format(x.sfr_node, x.icomp, x.time_str), axis=1)
+            lambda x: "l1 w w !sfrc{0}_{1}_{2}!\n".format(
+                x.sfr_node, x.icomp, x.time_str
+            ),
+            axis=1,
+        )
     df.index = np.arange(df.shape[0])
     if ins_file is None:
-        ins_file = sft_file+".processed.ins"
+        ins_file = sft_file + ".processed.ins"
 
-    with open(ins_file,'w') as f:
+    with open(ins_file, "w") as f:
         f.write("pif ~\nl1\n")
         [f.write(i) for i in df.ins_str]
-    #df = try_process_ins_file(ins_file,sft_file+".processed")
-    df = try_process_output_file(ins_file,sft_file+".processed")
+    # df = try_process_ins_file(ins_file,sft_file+".processed")
+    df = try_process_output_file(ins_file, sft_file + ".processed")
     return df
 
 
@@ -1075,26 +1331,27 @@ def apply_sft_obs():
         sft_file = f.readline().strip()
         for line in f:
             times.append(float(line.strip()))
-    df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)#,nrows=10000000)
+    df = pd.read_csv(sft_file, skiprows=1, delim_whitespace=True)  # ,nrows=10000000)
     df.columns = [c.lower().replace("-", "_") for c in df.columns]
     df = df.loc[df.time.apply(lambda x: x in times), :]
-    #print(df.dtypes)
-    #normalize
+    # print(df.dtypes)
+    # normalize
     for c in df.columns:
-        #print(c)
+        # print(c)
         if not "node" in c:
-            df.loc[:,c] = df.loc[:,c].apply(try_cast)
-        #print(df.loc[df.loc[:,c].apply(lambda x : type(x) == str),:])
-        df.loc[df.loc[:,c].apply(lambda x: x<1e-30),c] = 0.0
-        df.loc[df.loc[:, c] > 1e+30, c] = 1.0e+30
-    df.loc[:,"sfr_node"] = df.sfr_node.apply(np.int)
+            df.loc[:, c] = df.loc[:, c].apply(try_cast)
+        # print(df.loc[df.loc[:,c].apply(lambda x : type(x) == str),:])
+        df.loc[df.loc[:, c].apply(lambda x: x < 1e-30), c] = 0.0
+        df.loc[df.loc[:, c] > 1e30, c] = 1.0e30
+    df.loc[:, "sfr_node"] = df.sfr_node.apply(np.int)
 
-    df.to_csv(sft_file+".processed",sep=' ',index=False)
+    df.to_csv(sft_file + ".processed", sep=" ", index=False)
     return df
 
 
-def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
-                             tie_hcond=True, include_temporal_pars=None):
+def setup_sfr_seg_parameters(
+    nam_file, model_ws=".", par_cols=None, tie_hcond=True, include_temporal_pars=None
+):
     """Setup multiplier parameters for SFR segment data.
 
     Args:
@@ -1135,22 +1392,23 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
     if tie_hcond:
         if "hcond1" not in par_cols or "hcond2" not in par_cols:
             tie_hcond = False
-        
-    if isinstance(nam_file,flopy.modflow.mf.Modflow) and nam_file.sfr is not None:
+
+    if isinstance(nam_file, flopy.modflow.mf.Modflow) and nam_file.sfr is not None:
         m = nam_file
         nam_file = m.namefile
         model_ws = m.model_ws
     else:
         # load MODFLOW model # is this needed? could we just pass the model if it has already been read in?
-        m = flopy.modflow.Modflow.load(nam_file,load_only=["sfr"],model_ws=model_ws,check=False,forgive=False)
+        m = flopy.modflow.Modflow.load(
+            nam_file, load_only=["sfr"], model_ws=model_ws, check=False, forgive=False
+        )
     if include_temporal_pars:
         if include_temporal_pars is True:
             tmp_par_cols = {col: range(m.dis.nper) for col in par_cols}
         elif isinstance(include_temporal_pars, str):
             tmp_par_cols = {include_temporal_pars: range(m.dis.nper)}
         elif isinstance(include_temporal_pars, list):
-            tmp_par_cols = {col: range(m.dis.nper)
-                            for col in include_temporal_pars}
+            tmp_par_cols = {col: range(m.dis.nper) for col in include_temporal_pars}
         elif isinstance(include_temporal_pars, dict):
             tmp_par_cols = include_temporal_pars
         include_temporal_pars = True
@@ -1158,25 +1416,34 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
         tmp_par_cols = {}
         include_temporal_pars = False
 
-    #make backup copy of sfr file
-    shutil.copy(os.path.join(model_ws,m.sfr.file_name[0]),os.path.join(model_ws,nam_file+"_backup_.sfr"))
+    # make backup copy of sfr file
+    shutil.copy(
+        os.path.join(model_ws, m.sfr.file_name[0]),
+        os.path.join(model_ws, nam_file + "_backup_.sfr"),
+    )
 
-    #get the segment data (dict)
+    # get the segment data (dict)
     segment_data = m.sfr.segment_data
     shape = segment_data[list(segment_data.keys())[0]].shape
     # check
-    for kper,seg_data in m.sfr.segment_data.items():
-        assert seg_data.shape == shape,"cannot use: seg data must have the same number of entires for all kpers"
+    for kper, seg_data in m.sfr.segment_data.items():
+        assert (
+            seg_data.shape == shape
+        ), "cannot use: seg data must have the same number of entires for all kpers"
     seg_data_col_order = list(seg_data.dtype.names)
     # convert segment_data dictionary to multi index df - this could get ugly
-    reform = {(k, c): segment_data[k][c] for k in segment_data.keys() for c in segment_data[k].dtype.names}
+    reform = {
+        (k, c): segment_data[k][c]
+        for k in segment_data.keys()
+        for c in segment_data[k].dtype.names
+    }
     seg_data_all_kper = pd.DataFrame.from_dict(reform)
-    seg_data_all_kper.columns.names = ['kper', 'col']
+    seg_data_all_kper.columns.names = ["kper", "col"]
 
     # extract the first seg data kper to a dataframe
-    seg_data = seg_data_all_kper[0].copy() # pd.DataFrame.from_records(seg_data)
+    seg_data = seg_data_all_kper[0].copy()  # pd.DataFrame.from_records(seg_data)
 
-    #make sure all par cols are found and search of any data in kpers
+    # make sure all par cols are found and search of any data in kpers
     missing = []
     cols = par_cols.copy()
     for par_col in set(par_cols + list(tmp_par_cols.keys())):
@@ -1187,37 +1454,52 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
                 _ = tmp_par_cols.pop(par_col)
         # look across all kper in multiindex df to check for values entry - fill with absmax should capture entries
         else:
-            seg_data.loc[:, par_col] = seg_data_all_kper.loc[:, (slice(None), par_col)].abs().max(level=1, axis=1)
+            seg_data.loc[:, par_col] = (
+                seg_data_all_kper.loc[:, (slice(None), par_col)]
+                .abs()
+                .max(level=1, axis=1)
+            )
     if len(missing) > 0:
-        warnings.warn("the following par_cols were not found in segment data: {0}".format(','.join(missing)), PyemuWarning)
+        warnings.warn(
+            "the following par_cols were not found in segment data: {0}".format(
+                ",".join(missing)
+            ),
+            PyemuWarning,
+        )
         if len(missing) >= len(par_cols):
-            warnings.warn("None of the passed par_cols ({0}) were found in segment data.".
-                          format(','.join(par_cols)), PyemuWarning)
+            warnings.warn(
+                "None of the passed par_cols ({0}) were found in segment data.".format(
+                    ",".join(par_cols)
+                ),
+                PyemuWarning,
+            )
     seg_data = seg_data[seg_data_col_order]  # reset column orders to inital
     seg_data_org = seg_data.copy()
-    seg_data.to_csv(os.path.join(model_ws, "sfr_seg_pars.dat"), sep=',')
+    seg_data.to_csv(os.path.join(model_ws, "sfr_seg_pars.dat"), sep=",")
 
-    #the data cols not to parameterize
+    # the data cols not to parameterize
     # better than a column indexer as pandas can change column orders
-    idx_cols=['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
-    notpar_cols = [c for c in seg_data.columns if c not in cols+idx_cols]
+    idx_cols = ["nseg", "icalc", "outseg", "iupseg", "iprior", "nstrpts"]
+    notpar_cols = [c for c in seg_data.columns if c not in cols + idx_cols]
 
-    #process par cols
+    # process par cols
     tpl_str, pvals = [], []
     if include_temporal_pars:
         tmp_pnames, tmp_tpl_str = [], []
-        tmp_df = pd.DataFrame(data={c: 1.0 for c in tmp_par_cols.keys()},
-                              index=list(m.sfr.segment_data.keys()))
+        tmp_df = pd.DataFrame(
+            data={c: 1.0 for c in tmp_par_cols.keys()},
+            index=list(m.sfr.segment_data.keys()),
+        )
         tmp_df.sort_index(inplace=True)
         tmp_df.to_csv(os.path.join(model_ws, "sfr_seg_temporal_pars.dat"))
     for par_col in set(cols + list(tmp_par_cols.keys())):
         print(par_col)
         prefix = par_col
-        if tie_hcond and par_col == 'hcond2':
-            prefix = 'hcond1'
+        if tie_hcond and par_col == "hcond2":
+            prefix = "hcond1"
         if seg_data.loc[:, par_col].sum() == 0.0:
             print("all zeros for {0}...skipping...".format(par_col))
-            #seg_data.loc[:,par_col] = 1
+            # seg_data.loc[:,par_col] = 1
             # all zero so no need to set up
             if par_col in cols:
                 # - add to notpar
@@ -1225,9 +1507,12 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
             if par_col in tmp_par_cols.keys():
                 _ = tmp_par_cols.pop(par_col)
         if par_col in cols:
-            seg_data.loc[:, par_col] = seg_data.apply(lambda x: "~    {0}_{1:04d}   ~".
-                                                      format(prefix, int(x.nseg)) if float(x[par_col]) != 0.0
-                                                      else "1.0", axis=1)
+            seg_data.loc[:, par_col] = seg_data.apply(
+                lambda x: "~    {0}_{1:04d}   ~".format(prefix, int(x.nseg))
+                if float(x[par_col]) != 0.0
+                else "1.0",
+                axis=1,
+            )
             org_vals = seg_data_org.loc[seg_data_org.loc[:, par_col] != 0.0, par_col]
             pnames = seg_data.loc[org_vals.index, par_col]
             pvals.extend(list(org_vals.values))
@@ -1235,51 +1520,64 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
         if par_col in tmp_par_cols.keys():
             parnme = tmp_df.index.map(
                 lambda x: "{0}_{1:04d}_tmp".format(par_col, int(x))
-                if x in tmp_par_cols[par_col] else 1.0)
+                if x in tmp_par_cols[par_col]
+                else 1.0
+            )
             sel = parnme != 1.0
-            tmp_df.loc[sel, par_col] = parnme[sel].map(
-                lambda x: "~   {0}  ~".format(x))
+            tmp_df.loc[sel, par_col] = parnme[sel].map(lambda x: "~   {0}  ~".format(x))
             tmp_tpl_str.extend(list(tmp_df.loc[sel, par_col].values))
             tmp_pnames.extend(list(parnme[sel].values))
-    pnames = [t.replace('~','').strip() for t in tpl_str]
-    df = pd.DataFrame({"parnme":pnames,"org_value":pvals,"tpl_str":tpl_str},index=pnames)
+    pnames = [t.replace("~", "").strip() for t in tpl_str]
+    df = pd.DataFrame(
+        {"parnme": pnames, "org_value": pvals, "tpl_str": tpl_str}, index=pnames
+    )
     df.drop_duplicates(inplace=True)
     if df.empty:
-        warnings.warn("No spatial sfr segment parameters have been set up, "
-                      "either none of {0} were found or all were zero.".
-                      format(','.join(par_cols)), PyemuWarning)
+        warnings.warn(
+            "No spatial sfr segment parameters have been set up, "
+            "either none of {0} were found or all were zero.".format(
+                ",".join(par_cols)
+            ),
+            PyemuWarning,
+        )
         # return df
     # set not par cols to 1.0
     seg_data.loc[:, notpar_cols] = "1.0"
 
-    #write the template file
-    _write_df_tpl(os.path.join(model_ws, "sfr_seg_pars.dat.tpl"), seg_data, sep=',')
+    # write the template file
+    _write_df_tpl(os.path.join(model_ws, "sfr_seg_pars.dat.tpl"), seg_data, sep=",")
 
-    #make sure the tpl file exists and has the same num of pars
-    parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
+    # make sure the tpl file exists and has the same num of pars
+    parnme = parse_tpl_file(os.path.join(model_ws, "sfr_seg_pars.dat.tpl"))
     assert len(parnme) == df.shape[0]
 
-    #set some useful par info
-    df["pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+    # set some useful par info
+    df["pargp"] = df.parnme.apply(lambda x: x.split("_")[0])
 
     if include_temporal_pars:
-        _write_df_tpl(filename=os.path.join(model_ws, "sfr_seg_temporal_pars.dat.tpl"), df=tmp_df)
-        pargp = [pname.split('_')[0]+"_tmp" for pname in tmp_pnames]
-        tmp_df = pd.DataFrame(data={"parnme":tmp_pnames,"pargp":pargp},index=tmp_pnames)
+        _write_df_tpl(
+            filename=os.path.join(model_ws, "sfr_seg_temporal_pars.dat.tpl"), df=tmp_df
+        )
+        pargp = [pname.split("_")[0] + "_tmp" for pname in tmp_pnames]
+        tmp_df = pd.DataFrame(
+            data={"parnme": tmp_pnames, "pargp": pargp}, index=tmp_pnames
+        )
         if not tmp_df.empty:
-            tmp_df.loc[:,"org_value"] = 1.0
-            tmp_df.loc[:,"tpl_str"] = tmp_tpl_str
+            tmp_df.loc[:, "org_value"] = 1.0
+            tmp_df.loc[:, "tpl_str"] = tmp_tpl_str
             df = df.append(tmp_df[df.columns])
     if df.empty:
-        warnings.warn("No sfr segment parameters have been set up, "
-                      "either none of {0} were found or all were zero.".
-                      format(','.join(set(par_cols + 
-                                          list(tmp_par_cols.keys())))),
-                      PyemuWarning)
+        warnings.warn(
+            "No sfr segment parameters have been set up, "
+            "either none of {0} were found or all were zero.".format(
+                ",".join(set(par_cols + list(tmp_par_cols.keys())))
+            ),
+            PyemuWarning,
+        )
         return df
 
     # write the config file used by apply_sfr_pars()
-    with open(os.path.join(model_ws, "sfr_seg_pars.config"), 'w') as f:
+    with open(os.path.join(model_ws, "sfr_seg_pars.config"), "w") as f:
         f.write("nam_file {0}\n".format(nam_file))
         f.write("model_ws {0}\n".format(model_ws))
         f.write("mult_file sfr_seg_pars.dat\n")
@@ -1297,7 +1595,7 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
     return df
 
 
-def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
+def setup_sfr_reach_parameters(nam_file, model_ws=".", par_cols=["strhc1"]):
     """Setup multiplier paramters for reach data, when reachinput option is specififed in sfr.
 
 
@@ -1331,28 +1629,30 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
     except Exception as e:
         return
     if par_cols is None:
-        par_cols = ['strhc1']
-    if isinstance(nam_file,flopy.modflow.mf.Modflow) and nam_file.sfr is not None:
+        par_cols = ["strhc1"]
+    if isinstance(nam_file, flopy.modflow.mf.Modflow) and nam_file.sfr is not None:
         # flopy MODFLOW model has been passed and has SFR loaded
         m = nam_file
         nam_file = m.namefile
         model_ws = m.model_ws
     else:
         # if model has not been passed or SFR not loaded # load MODFLOW model
-        m = flopy.modflow.Modflow.load(nam_file, load_only=["sfr"], model_ws=model_ws, check=False, forgive=False)
+        m = flopy.modflow.Modflow.load(
+            nam_file, load_only=["sfr"], model_ws=model_ws, check=False, forgive=False
+        )
     # get reachdata as dataframe
     reach_data = pd.DataFrame.from_records(m.sfr.reach_data)
     # write inital reach_data as csv
     reach_data_orig = reach_data.copy()
-    reach_data.to_csv(os.path.join(m.model_ws, "sfr_reach_pars.dat"), sep=',')
+    reach_data.to_csv(os.path.join(m.model_ws, "sfr_reach_pars.dat"), sep=",")
 
     # generate template file with pars in par_cols
-    #process par cols
-    tpl_str,pvals = [],[]
+    # process par cols
+    tpl_str, pvals = [], []
     # par_cols=["strhc1"]
-    idx_cols=["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
-    #the data cols not to parameterize
-    notpar_cols = [c for c in reach_data.columns if c not in par_cols+idx_cols]
+    idx_cols = ["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
+    # the data cols not to parameterize
+    notpar_cols = [c for c in reach_data.columns if c not in par_cols + idx_cols]
     # make sure all par cols are found and search of any data in kpers
     missing = []
     cols = par_cols.copy()
@@ -1361,38 +1661,57 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
             missing.append(par_col)
             cols.remove(par_col)
     if len(missing) > 0:
-        warnings.warn("the following par_cols were not found in reach data: {0}".format(','.join(missing)),
-                      PyemuWarning)
+        warnings.warn(
+            "the following par_cols were not found in reach data: {0}".format(
+                ",".join(missing)
+            ),
+            PyemuWarning,
+        )
         if len(missing) >= len(par_cols):
-            warnings.warn("None of the passed par_cols ({0}) were found in reach data.".
-                          format(','.join(par_cols)), PyemuWarning)
+            warnings.warn(
+                "None of the passed par_cols ({0}) were found in reach data.".format(
+                    ",".join(par_cols)
+                ),
+                PyemuWarning,
+            )
     for par_col in cols:
         if par_col == "strhc1":
-            prefix = 'strk'  # shorten par
+            prefix = "strk"  # shorten par
         else:
             prefix = par_col
         reach_data.loc[:, par_col] = reach_data.apply(
             lambda x: "~    {0}_{1:04d}   ~".format(prefix, int(x.reachID))
-            if float(x[par_col]) != 0.0 else "1.0", axis=1)
+            if float(x[par_col]) != 0.0
+            else "1.0",
+            axis=1,
+        )
         org_vals = reach_data_orig.loc[reach_data_orig.loc[:, par_col] != 0.0, par_col]
         pnames = reach_data.loc[org_vals.index, par_col]
         pvals.extend(list(org_vals.values))
         tpl_str.extend(list(pnames.values))
-    pnames = [t.replace('~','').strip() for t in tpl_str]
-    df = pd.DataFrame({"parnme":pnames,"org_value":pvals,"tpl_str":tpl_str},index=pnames)
+    pnames = [t.replace("~", "").strip() for t in tpl_str]
+    df = pd.DataFrame(
+        {"parnme": pnames, "org_value": pvals, "tpl_str": tpl_str}, index=pnames
+    )
     df.drop_duplicates(inplace=True)
     if df.empty:
-        warnings.warn("No sfr reach parameters have been set up, either none of {0} were found or all were zero.".
-                      format(','.join(par_cols)), PyemuWarning)
+        warnings.warn(
+            "No sfr reach parameters have been set up, either none of {0} were found or all were zero.".format(
+                ",".join(par_cols)
+            ),
+            PyemuWarning,
+        )
     else:
         # set not par cols to 1.0
         reach_data.loc[:, notpar_cols] = "1.0"
 
         # write the template file
-        _write_df_tpl(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), reach_data, sep=',')
+        _write_df_tpl(
+            os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), reach_data, sep=","
+        )
 
         # write the config file used by apply_sfr_pars()
-        with open(os.path.join(model_ws, "sfr_reach_pars.config"), 'w') as f:
+        with open(os.path.join(model_ws, "sfr_reach_pars.config"), "w") as f:
             f.write("nam_file {0}\n".format(nam_file))
             f.write("model_ws {0}\n".format(model_ws))
             f.write("mult_file sfr_reach_pars.dat\n")
@@ -1403,7 +1722,7 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
         assert len(parnme) == df.shape[0]
 
         # set some useful par info
-        df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+        df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split("_")[0])
         df.loc[:, "parubnd"] = 1.25
         df.loc[:, "parlbnd"] = 0.75
         hpars = df.loc[df.pargp.apply(lambda x: x.startswith("strk")), "parnme"]
@@ -1434,23 +1753,26 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
     """
 
     if not seg_pars and not reach_pars:
-        raise Exception("gw_utils.apply_sfr_pars() error: both seg_pars and reach_pars are False")
-    #if seg_pars and reach_pars:
+        raise Exception(
+            "gw_utils.apply_sfr_pars() error: both seg_pars and reach_pars are False"
+        )
+    # if seg_pars and reach_pars:
     #    raise Exception("gw_utils.apply_sfr_pars() error: both seg_pars and reach_pars are True")
 
     import flopy
-    bak_sfr_file,pars = None,None
+
+    bak_sfr_file, pars = None, None
 
     if seg_pars:
         assert os.path.exists("sfr_seg_pars.config")
 
-        with open("sfr_seg_pars.config",'r') as f:
+        with open("sfr_seg_pars.config", "r") as f:
             pars = {}
             for line in f:
                 line = line.strip().split()
                 pars[line[0]] = line[1]
-        bak_sfr_file = pars["nam_file"]+"_backup_.sfr"
-        #m = flopy.modflow.Modflow.load(pars["nam_file"],model_ws=pars["model_ws"],load_only=["sfr"],check=False)
+        bak_sfr_file = pars["nam_file"] + "_backup_.sfr"
+        # m = flopy.modflow.Modflow.load(pars["nam_file"],model_ws=pars["model_ws"],load_only=["sfr"],check=False)
         m = flopy.modflow.Modflow.load(pars["nam_file"], load_only=[], check=False)
         sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file), m)
         sfrfile = pars["sfr_filename"]
@@ -1460,7 +1782,7 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
         #     time_mult_file = pars["time_mult_file"]
         #     time_mlt_df = pd.read_csv(pars["time_mult_file"], delim_whitespace=False,index_col=0)
 
-        idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
+        idx_cols = ["nseg", "icalc", "outseg", "iupseg", "iprior", "nstrpts"]
         present_cols = [c for c in idx_cols if c in mlt_df.columns]
         mlt_cols = mlt_df.columns.drop(present_cols)
         for key, val in m.sfr.segment_data.items():
@@ -1470,37 +1792,41 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
             sfr.segment_data[key] = val
     if reach_pars:
         assert os.path.exists("sfr_reach_pars.config")
-        with open("sfr_reach_pars.config", 'r') as f:
+        with open("sfr_reach_pars.config", "r") as f:
             r_pars = {}
             for line in f:
                 line = line.strip().split()
                 r_pars[line[0]] = line[1]
         if bak_sfr_file is None:  # will be the case is seg_pars is false
-            bak_sfr_file = r_pars["nam_file"]+"_backup_.sfr"
-            #m = flopy.modflow.Modflow.load(pars["nam_file"],model_ws=pars["model_ws"],load_only=["sfr"],check=False)
-            m = flopy.modflow.Modflow.load(r_pars["nam_file"], load_only=[], check=False)
+            bak_sfr_file = r_pars["nam_file"] + "_backup_.sfr"
+            # m = flopy.modflow.Modflow.load(pars["nam_file"],model_ws=pars["model_ws"],load_only=["sfr"],check=False)
+            m = flopy.modflow.Modflow.load(
+                r_pars["nam_file"], load_only=[], check=False
+            )
             sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file), m)
             sfrfile = r_pars["sfr_filename"]
-        r_mlt_df = pd.read_csv(r_pars["mult_file"],sep=',',index_col=0)
+        r_mlt_df = pd.read_csv(r_pars["mult_file"], sep=",", index_col=0)
         r_idx_cols = ["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
         r_mlt_cols = r_mlt_df.columns.drop(r_idx_cols)
         r_df = pd.DataFrame.from_records(m.sfr.reach_data)
         r_df.loc[:, r_mlt_cols] *= r_mlt_df.loc[:, r_mlt_cols]
         sfr.reach_data = r_df.to_records(index=False)
 
-
-    #m.remove_package("sfr")
+    # m.remove_package("sfr")
     if pars is not None and "time_mult_file" in pars:
         time_mult_file = pars["time_mult_file"]
         time_mlt_df = pd.read_csv(time_mult_file, delim_whitespace=False, index_col=0)
         for kper, sdata in m.sfr.segment_data.items():
-            assert kper in time_mlt_df.index, "gw_utils.apply_sfr_seg_parameters() error: kper " + \
-                                              "{0} not in time_mlt_df index".format(kper)
+            assert kper in time_mlt_df.index, (
+                "gw_utils.apply_sfr_seg_parameters() error: kper "
+                + "{0} not in time_mlt_df index".format(kper)
+            )
             for col in time_mlt_df.columns:
                 sdata[col] *= time_mlt_df.loc[kper, col]
 
     sfr.write_file(filename=sfrfile)
     return sfr
+
 
 def apply_sfr_parameters(seg_pars=True, reach_pars=False):
     """thin wrapper around `gw_utils.apply_sfr_seg_parameters()`
@@ -1525,8 +1851,9 @@ def apply_sfr_parameters(seg_pars=True, reach_pars=False):
     return sfr
 
 
-def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
-                  include_path=False):
+def setup_sfr_obs(
+    sfr_out_file, seg_group_dict=None, ins_file=None, model=None, include_path=False
+):
     """setup observations using the sfr ASCII output file.  Setups
     the ability to aggregate flows for groups of segments.  Applies
     only flow to aquier and flow out.
@@ -1559,16 +1886,18 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
     kpers.sort()
 
     if seg_group_dict is None:
-        seg_group_dict = {"seg{0:04d}".format(s):s for s in sfr_dict[kpers[0]].segment}
+        seg_group_dict = {"seg{0:04d}".format(s): s for s in sfr_dict[kpers[0]].segment}
     else:
-        warnings.warn("Flow out (flout) of grouped segments will be aggregated... ", PyemuWarning)
+        warnings.warn(
+            "Flow out (flout) of grouped segments will be aggregated... ", PyemuWarning
+        )
     sfr_segs = set(sfr_dict[list(sfr_dict.keys())[0]].segment)
     keys = ["sfr_out_file"]
     if include_path:
         values = [os.path.split(sfr_out_file)[-1]]
     else:
         values = [sfr_out_file]
-    for oname,segs in seg_group_dict.items():
+    for oname, segs in seg_group_dict.items():
         if np.isscalar(segs):
             segs_set = {segs}
             segs = [segs]
@@ -1576,22 +1905,25 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
             segs_set = set(segs)
         diff = segs_set.difference(sfr_segs)
         if len(diff) > 0:
-            raise Exception("the following segs listed with oname {0} where not found: {1}".
-                            format(oname,','.join([str(s) for s in diff])))
+            raise Exception(
+                "the following segs listed with oname {0} where not found: {1}".format(
+                    oname, ",".join([str(s) for s in diff])
+                )
+            )
         for seg in segs:
             keys.append(oname)
             values.append(seg)
 
-    df_key = pd.DataFrame({"obs_base":keys,"segment":values})
+    df_key = pd.DataFrame({"obs_base": keys, "segment": values})
     if include_path:
         pth = os.path.join(*[p for p in os.path.split(sfr_out_file)[:-1]])
-        config_file = os.path.join(pth,"sfr_obs.config")
+        config_file = os.path.join(pth, "sfr_obs.config")
     else:
         config_file = "sfr_obs.config"
     print("writing 'sfr_obs.config' to {0}".format(config_file))
     df_key.to_csv(config_file)
 
-    bd = '.'
+    bd = "."
     if include_path:
         bd = os.getcwd()
         os.chdir(pth)
@@ -1602,34 +1934,45 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
         raise Exception("error in apply_sfr_obs(): {0}".format(str(e)))
     os.chdir(bd)
     if model is not None:
-        dts = (pd.to_datetime(model.start_datetime) + pd.to_timedelta(np.cumsum(model.dis.perlen.array),unit='d')).date
-        df.loc[:,"datetime"] = df.kper.apply(lambda x: dts[x])
-        df.loc[:,"time_str"] = df.datetime.apply(lambda x: x.strftime("%Y%m%d"))
+        dts = (
+            pd.to_datetime(model.start_datetime)
+            + pd.to_timedelta(np.cumsum(model.dis.perlen.array), unit="d")
+        ).date
+        df.loc[:, "datetime"] = df.kper.apply(lambda x: dts[x])
+        df.loc[:, "time_str"] = df.datetime.apply(lambda x: x.strftime("%Y%m%d"))
     else:
-        df.loc[:,"time_str"] = df.kper.apply(lambda x: "{0:04d}".format(x))
-    df.loc[:,"flaqx_obsnme"] = df.apply(lambda x: "{0}_{1}_{2}".format("fa",x.obs_base,x.time_str),axis=1)
-    df.loc[:,"flout_obsnme"] = df.apply(lambda x: "{0}_{1}_{2}".format("fo",x.obs_base,x.time_str),axis=1)
+        df.loc[:, "time_str"] = df.kper.apply(lambda x: "{0:04d}".format(x))
+    df.loc[:, "flaqx_obsnme"] = df.apply(
+        lambda x: "{0}_{1}_{2}".format("fa", x.obs_base, x.time_str), axis=1
+    )
+    df.loc[:, "flout_obsnme"] = df.apply(
+        lambda x: "{0}_{1}_{2}".format("fo", x.obs_base, x.time_str), axis=1
+    )
 
     if ins_file is None:
         ins_file = sfr_out_file + ".processed.ins"
 
-    with open(ins_file,'w') as f:
+    with open(ins_file, "w") as f:
         f.write("pif ~\nl1\n")
-        for fla,flo in zip(df.flaqx_obsnme,df.flout_obsnme):
-            f.write("l1 w w !{0}! !{1}!\n".format(fla,flo))
+        for fla, flo in zip(df.flaqx_obsnme, df.flout_obsnme):
+            f.write("l1 w w !{0}! !{1}!\n".format(fla, flo))
 
     df = None
     pth = os.path.split(ins_file)[:-1]
     pth = os.path.join(*pth)
-    if pth == '':
-        pth = '.'
+    if pth == "":
+        pth = "."
     bd = os.getcwd()
     os.chdir(pth)
-    df = try_process_output_file(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
+    df = try_process_output_file(
+        os.path.split(ins_file)[-1], os.path.split(sfr_out_file + ".processed")[-1]
+    )
     os.chdir(bd)
     if df is not None:
-        df.loc[:,"obsnme"] = df.index.values
-        df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: "flaqx" if x.startswith("fa") else "flout")
+        df.loc[:, "obsnme"] = df.index.values
+        df.loc[:, "obgnme"] = df.obsnme.apply(
+            lambda x: "flaqx" if x.startswith("fa") else "flout"
+        )
         return df
 
 
@@ -1647,11 +1990,11 @@ def apply_sfr_obs():
         **pandas.DataFrame**: a dataframe of aggregrated sfr segment aquifer and outflow
     """
     assert os.path.exists("sfr_obs.config")
-    df_key = pd.read_csv("sfr_obs.config",index_col=0)
+    df_key = pd.read_csv("sfr_obs.config", index_col=0)
 
-    assert df_key.iloc[0,0] == "sfr_out_file",df_key.iloc[0,:]
-    sfr_out_file = df_key.iloc[0,1]
-    df_key = df_key.iloc[1:,:]
+    assert df_key.iloc[0, 0] == "sfr_out_file", df_key.iloc[0, :]
+    sfr_out_file = df_key.iloc[0, 1]
+    df_key = df_key.iloc[1:, :]
     df_key.loc[:, "segment"] = df_key.segment.apply(np.int)
     df_key.index = df_key.segment
     seg_group_dict = df_key.groupby(df_key.obs_base).groups
@@ -1659,17 +2002,19 @@ def apply_sfr_obs():
     sfr_kper = load_sfr_out(sfr_out_file)
     kpers = list(sfr_kper.keys())
     kpers.sort()
-    #results = {o:[] for o in seg_group_dict.keys()}
+    # results = {o:[] for o in seg_group_dict.keys()}
     results = []
     for kper in kpers:
         df = sfr_kper[kper]
-        for obs_base,segs in seg_group_dict.items():
-            agg = df.loc[segs.values,:].sum()  # still agg flout where seg groups are passed!
-            #print(obs_base,agg)
-            results.append([kper,obs_base,agg["flaqx"],agg["flout"]])
-    df = pd.DataFrame(data=results,columns=["kper","obs_base","flaqx","flout"])
-    df.sort_values(by=["kper","obs_base"],inplace=True)
-    df.to_csv(sfr_out_file+".processed",sep=' ',index=False)
+        for obs_base, segs in seg_group_dict.items():
+            agg = df.loc[
+                segs.values, :
+            ].sum()  # still agg flout where seg groups are passed!
+            # print(obs_base,agg)
+            results.append([kper, obs_base, agg["flaqx"], agg["flout"]])
+    df = pd.DataFrame(data=results, columns=["kper", "obs_base", "flaqx", "flout"])
+    df.sort_values(by=["kper", "obs_base"], inplace=True)
+    df.to_csv(sfr_out_file + ".processed", sep=" ", index=False)
     return df
 
 
@@ -1689,40 +2034,43 @@ def load_sfr_out(sfr_out_file, selection=None):
         **dict**: dictionary of {kper:`pandas.DataFrame`} of SFR output.
 
     """
-    assert os.path.exists(sfr_out_file),"couldn't find sfr out file {0}".\
-        format(sfr_out_file)
+    assert os.path.exists(sfr_out_file), "couldn't find sfr out file {0}".format(
+        sfr_out_file
+    )
     tag = " stream listing"
     lcount = 0
     sfr_dict = {}
     if selection is None:
         pass
     elif isinstance(selection, str):
-        assert selection == 'all', \
-            "If string passed as selection only 'all' allowed: " \
-            "{}".format(selection)
+        assert (
+            selection == "all"
+        ), "If string passed as selection only 'all' allowed: " "{}".format(selection)
     else:
-        assert isinstance(selection, pd.DataFrame), \
-            "'selection needs to be pandas Dataframe. " \
+        assert isinstance(selection, pd.DataFrame), (
+            "'selection needs to be pandas Dataframe. "
             "Type {} passed.".format(type(selection))
-        assert np.all([sr in selection.columns for sr in ['segment', 'reach']]
-                      ), "Either 'segment' or 'reach' not in selection columns"
+        )
+        assert np.all(
+            [sr in selection.columns for sr in ["segment", "reach"]]
+        ), "Either 'segment' or 'reach' not in selection columns"
     with open(sfr_out_file) as f:
         while True:
             line = f.readline().lower()
             lcount += 1
-            if line == '':
+            if line == "":
                 break
             if line.startswith(tag):
                 raw = line.strip().split()
                 kper = int(raw[3]) - 1
                 kstp = int(raw[5]) - 1
-                [f.readline() for _ in range(4)] #skip to where the data starts
+                [f.readline() for _ in range(4)]  # skip to where the data starts
                 lcount += 4
                 dlines = []
                 while True:
                     dline = f.readline()
                     lcount += 1
-                    if dline.strip() == '':
+                    if dline.strip() == "":
                         break
                     draw = dline.strip().split()
                     dlines.append(draw)
@@ -1732,49 +2080,70 @@ def load_sfr_out(sfr_out_file, selection=None):
                 df["reach"] = df.reach.astype(np.int)
                 df["flaqx"] = df.flaqx.astype(np.float)
                 df["flout"] = df.flout.astype(np.float)
-                df.index = ["{0:03d}_{1:03d}".format(s, r) for s, r in
-                            np.array([df.segment.values, df.reach.values]).T]
+                df.index = [
+                    "{0:03d}_{1:03d}".format(s, r)
+                    for s, r in np.array([df.segment.values, df.reach.values]).T
+                ]
                 # df.index = df.apply(
                 # lambda x: "{0:03d}_{1:03d}".format(
                 # int(x.segment), int(x.reach)), axis=1)
                 if selection is None:  # setup for all segs, aggregate
                     gp = df.groupby(df.segment)
-                    bot_reaches = gp[['reach']].max().apply(
-                        lambda x: "{0:03d}_{1:03d}".format(
-                            int(x.name), int(x.reach)), axis=1)
+                    bot_reaches = (
+                        gp[["reach"]]
+                        .max()
+                        .apply(
+                            lambda x: "{0:03d}_{1:03d}".format(
+                                int(x.name), int(x.reach)
+                            ),
+                            axis=1,
+                        )
+                    )
                     # only sum distributed output # take flow out of seg
                     df2 = pd.DataFrame(
-                        {'flaqx':gp.flaqx.sum(),
-                         'flout': df.loc[bot_reaches, 'flout'].values},
-                        index=gp.groups.keys())
+                        {
+                            "flaqx": gp.flaqx.sum(),
+                            "flout": df.loc[bot_reaches, "flout"].values,
+                        },
+                        index=gp.groups.keys(),
+                    )
                     # df = df.groupby(df.segment).sum()
                     df2["segment"] = df2.index
-                elif isinstance(selection, str) and selection == 'all':
+                elif isinstance(selection, str) and selection == "all":
                     df2 = df
                 else:
                     seg_reach_id = selection.apply(
                         lambda x: "{0:03d}_{1:03d}".format(
-                            int(x.segment), int(x.reach)), axis=1).values
+                            int(x.segment), int(x.reach)
+                        ),
+                        axis=1,
+                    ).values
                     for sr in seg_reach_id:
                         if sr not in df.index:
-                            s, r = [x.lstrip('0') for x in sr.split('_')]
+                            s, r = [x.lstrip("0") for x in sr.split("_")]
                             warnings.warn(
                                 "Requested segment reach pair ({0},{1}) "
                                 "is not in sfr output. Dropping...".format(
-                                    int(r), int(s)), PyemuWarning)
+                                    int(r), int(s)
+                                ),
+                                PyemuWarning,
+                            )
                             seg_reach_id = np.delete(
-                                seg_reach_id,
-                                np.where(seg_reach_id == sr), axis=0)
+                                seg_reach_id, np.where(seg_reach_id == sr), axis=0
+                            )
                     df2 = df.loc[seg_reach_id].copy()
                 if kper in sfr_dict.keys():
-                    print("multiple entries found for kper {0}, "
-                          "replacing...".format(kper))
+                    print(
+                        "multiple entries found for kper {0}, "
+                        "replacing...".format(kper)
+                    )
                 sfr_dict[kper] = df2
     return sfr_dict
 
 
-def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
-                        include_path=False):
+def setup_sfr_reach_obs(
+    sfr_out_file, seg_reach=None, ins_file=None, model=None, include_path=False
+):
     """setup observations using the sfr ASCII output file.  Setups
     sfr point observations using segment and reach numbers.
 
@@ -1803,54 +2172,76 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
     """
     if seg_reach is None:
         warnings.warn("Obs will be set up for every reach", PyemuWarning)
-        seg_reach = 'all'
+        seg_reach = "all"
     elif isinstance(seg_reach, list) or isinstance(seg_reach, np.ndarray):
         if np.ndim(seg_reach) == 1:
             seg_reach = [seg_reach]
-        assert np.shape(
-            seg_reach)[1] == 2, "varible seg_reach expected shape (n,2), received {0}".format(np.shape(seg_reach))
-        seg_reach = pd.DataFrame(seg_reach, columns=['segment', 'reach'])
-        seg_reach.index = seg_reach.apply(lambda x: "s{0:03d}r{1:03d}".format(int(x.segment), int(x.reach)), axis=1)
+        assert (
+            np.shape(seg_reach)[1] == 2
+        ), "varible seg_reach expected shape (n,2), received {0}".format(
+            np.shape(seg_reach)
+        )
+        seg_reach = pd.DataFrame(seg_reach, columns=["segment", "reach"])
+        seg_reach.index = seg_reach.apply(
+            lambda x: "s{0:03d}r{1:03d}".format(int(x.segment), int(x.reach)), axis=1
+        )
     elif isinstance(seg_reach, dict):
-        seg_reach = pd.DataFrame.from_dict(seg_reach, orient='index', columns=['segment', 'reach'])
+        seg_reach = pd.DataFrame.from_dict(
+            seg_reach, orient="index", columns=["segment", "reach"]
+        )
     else:
         assert isinstance(
-            seg_reach, pd.DataFrame), "'selection needs to be pandas Dataframe. Type {} passed.".format(type(seg_reach))
-        assert np.all([sr in seg_reach.columns for sr in ['segment', 'reach']]
-                      ), "Either 'segment' or 'reach' not in selection columns"
+            seg_reach, pd.DataFrame
+        ), "'selection needs to be pandas Dataframe. Type {} passed.".format(
+            type(seg_reach)
+        )
+        assert np.all(
+            [sr in seg_reach.columns for sr in ["segment", "reach"]]
+        ), "Either 'segment' or 'reach' not in selection columns"
 
     sfr_dict = load_sfr_out(sfr_out_file, selection=seg_reach)
     kpers = list(sfr_dict.keys())
     kpers.sort()
 
-    if isinstance(seg_reach, str) and seg_reach == 'all':
-        seg_reach = sfr_dict[kpers[0]][['segment', 'reach']]
-        seg_reach.index = seg_reach.apply(lambda x: "s{0:03d}r{1:03d}".format(int(x.segment), int(x.reach)), axis=1)
+    if isinstance(seg_reach, str) and seg_reach == "all":
+        seg_reach = sfr_dict[kpers[0]][["segment", "reach"]]
+        seg_reach.index = seg_reach.apply(
+            lambda x: "s{0:03d}r{1:03d}".format(int(x.segment), int(x.reach)), axis=1
+        )
     keys = ["sfr_out_file"]
     if include_path:
         values = [os.path.split(sfr_out_file)[-1]]
     else:
         values = [sfr_out_file]
-    diff = seg_reach.loc[seg_reach.apply(lambda x: "{0:03d}_{1:03d}".format(int(x.segment), int(x.reach))
-                                         not in sfr_dict[list(sfr_dict.keys())[0]].index, axis=1)]
+    diff = seg_reach.loc[
+        seg_reach.apply(
+            lambda x: "{0:03d}_{1:03d}".format(int(x.segment), int(x.reach))
+            not in sfr_dict[list(sfr_dict.keys())[0]].index,
+            axis=1,
+        )
+    ]
 
     if len(diff) > 0:
         for ob in diff.itertuples():
-            warnings.warn("segs,reach pair listed with onames {0} was not found: {1}".
-                          format(ob.Index, "({},{})".format(ob.segment, ob.reach)), PyemuWarning)
+            warnings.warn(
+                "segs,reach pair listed with onames {0} was not found: {1}".format(
+                    ob.Index, "({},{})".format(ob.segment, ob.reach)
+                ),
+                PyemuWarning,
+            )
     seg_reach = seg_reach.drop(diff.index)
-    seg_reach['obs_base'] = seg_reach.index
-    df_key = pd.DataFrame({"obs_base": keys, "segment": 0, 'reach': values})
+    seg_reach["obs_base"] = seg_reach.index
+    df_key = pd.DataFrame({"obs_base": keys, "segment": 0, "reach": values})
     df_key = pd.concat([df_key, seg_reach], sort=True).reset_index(drop=True)
     if include_path:
         pth = os.path.join(*[p for p in os.path.split(sfr_out_file)[:-1]])
-        config_file = os.path.join(pth,"sfr_reach_obs.config")
+        config_file = os.path.join(pth, "sfr_reach_obs.config")
     else:
         config_file = "sfr_reach_obs.config"
     print("writing 'sfr_reach_obs.config' to {0}".format(config_file))
     df_key.to_csv(config_file)
 
-    bd = '.'
+    bd = "."
     if include_path:
         bd = os.getcwd()
         os.chdir(pth)
@@ -1861,18 +2252,25 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
         raise Exception("error in apply_sfr_reach_obs(): {0}".format(str(e)))
     os.chdir(bd)
     if model is not None:
-        dts = (pd.to_datetime(model.start_datetime) + pd.to_timedelta(np.cumsum(model.dis.perlen.array), unit='d')).date
+        dts = (
+            pd.to_datetime(model.start_datetime)
+            + pd.to_timedelta(np.cumsum(model.dis.perlen.array), unit="d")
+        ).date
         df.loc[:, "datetime"] = df.kper.apply(lambda x: dts[x])
         df.loc[:, "time_str"] = df.datetime.apply(lambda x: x.strftime("%Y%m%d"))
     else:
         df.loc[:, "time_str"] = df.kper.apply(lambda x: "{0:04d}".format(x))
-    df.loc[:, "flaqx_obsnme"] = df.apply(lambda x: "{0}_{1}_{2}".format("fa", x.obs_base, x.time_str), axis=1)
-    df.loc[:, "flout_obsnme"] = df.apply(lambda x: "{0}_{1}_{2}".format("fo", x.obs_base, x.time_str), axis=1)
+    df.loc[:, "flaqx_obsnme"] = df.apply(
+        lambda x: "{0}_{1}_{2}".format("fa", x.obs_base, x.time_str), axis=1
+    )
+    df.loc[:, "flout_obsnme"] = df.apply(
+        lambda x: "{0}_{1}_{2}".format("fo", x.obs_base, x.time_str), axis=1
+    )
 
     if ins_file is None:
         ins_file = sfr_out_file + ".reach_processed.ins"
 
-    with open(ins_file, 'w') as f:
+    with open(ins_file, "w") as f:
         f.write("pif ~\nl1\n")
         for fla, flo in zip(df.flaqx_obsnme, df.flout_obsnme):
             f.write("l1 w w !{0}! !{1}!\n".format(fla, flo))
@@ -1880,19 +2278,23 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
     df = None
     pth = os.path.split(ins_file)[:-1]
     pth = os.path.join(*pth)
-    if pth == '':
-        pth = '.'
+    if pth == "":
+        pth = "."
     bd = os.getcwd()
     os.chdir(pth)
     try:
-        df = try_process_output_file(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
+        df = try_process_output_file(
+            os.path.split(ins_file)[-1], os.path.split(sfr_out_file + ".processed")[-1]
+        )
 
     except Exception as e:
         pass
     os.chdir(bd)
     if df is not None:
         df.loc[:, "obsnme"] = df.index.values
-        df.loc[:, "obgnme"] = df.obsnme.apply(lambda x: "flaqx" if x.startswith("fa") else "flout")
+        df.loc[:, "obgnme"] = df.obsnme.apply(
+            lambda x: "flaqx" if x.startswith("fa") else "flout"
+        )
         return df
 
 
@@ -1919,7 +2321,7 @@ def apply_sfr_reach_obs():
     df_key = df_key.iloc[1:, :].copy()
     df_key.loc[:, "segment"] = df_key.segment.apply(np.int)
     df_key.loc[:, "reach"] = df_key.reach.apply(np.int)
-    df_key = df_key.set_index('obs_base')
+    df_key = df_key.set_index("obs_base")
 
     sfr_kper = load_sfr_out(sfr_out_file, df_key)
     kpers = list(sfr_kper.keys())
@@ -1933,11 +2335,13 @@ def apply_sfr_reach_obs():
             results.append([kper, sr.Index, ob["flaqx"], ob["flout"]])
     df = pd.DataFrame(data=results, columns=["kper", "obs_base", "flaqx", "flout"])
     df.sort_values(by=["kper", "obs_base"], inplace=True)
-    df.to_csv(sfr_out_file+".reach_processed", sep=' ', index=False)
+    df.to_csv(sfr_out_file + ".reach_processed", sep=" ", index=False)
     return df
 
 
-def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None, parse_filename=False):
+def modflow_sfr_gag_to_instruction_file(
+    gage_output_file, ins_file=None, parse_filename=False
+):
     """writes an instruction file for an SFR gage output file to read Flow only at all times
 
     Args:
@@ -1963,46 +2367,56 @@ def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None, parse_f
 
         If `parse_namefile` is true, only text up to first '.' is used as the gage_num
 
-    TODO:
-        allow other observation types and align explicitly with times - now returns all values
+
     """
 
     if ins_file is None:
-        ins_file = gage_output_file + '.ins'
+        ins_file = gage_output_file + ".ins"
 
     # navigate the file to be sure the header makes sense
-    indat = [line.strip() for line in open(gage_output_file, 'r').readlines()]
+    indat = [line.strip() for line in open(gage_output_file, "r").readlines()]
     header = [i for i in indat if i.startswith('"')]
     # yank out the gage number to identify the observation names
     if parse_filename:
-        gage_num = os.path.basename(gage_output_file).split('.')[0]
+        gage_num = os.path.basename(gage_output_file).split(".")[0]
     else:
-        gage_num = re.sub("[^0-9]", "", indat[0].lower().split("gage no.")[-1].strip().split()[0])
+        gage_num = re.sub(
+            "[^0-9]", "", indat[0].lower().split("gage no.")[-1].strip().split()[0]
+        )
 
     # get the column names
-    cols = [i.lower() for i in header if 'data' in i.lower()][0].lower().replace('"', '').replace('data:', '').split()
+    cols = (
+        [i.lower() for i in header if "data" in i.lower()][0]
+        .lower()
+        .replace('"', "")
+        .replace("data:", "")
+        .split()
+    )
 
     # make sure "Flow" is included in the columns
-    if 'flow' not in cols:
+    if "flow" not in cols:
         raise Exception('Requested field "Flow" not in gage output columns')
 
     # find which column is for  "Flow"
-    flowidx = np.where(np.array(cols) == 'flow')[0][0]
+    flowidx = np.where(np.array(cols) == "flow")[0][0]
 
     # write out the instruction file lines
-    inslines = ['l1 ' + (flowidx + 1) * 'w ' + '!g{0}_{1:d}!'.format(gage_num, j)
-                for j in range(len(indat) - len(header))]
-    inslines[0] = inslines[0].replace('l1', 'l{0:d}'.format(len(header) + 1))
+    inslines = [
+        "l1 " + (flowidx + 1) * "w " + "!g{0}_{1:d}!".format(gage_num, j)
+        for j in range(len(indat) - len(header))
+    ]
+    inslines[0] = inslines[0].replace("l1", "l{0:d}".format(len(header) + 1))
 
     # write the instruction file
-    with open(ins_file, 'w') as ofp:
-        ofp.write('pif ~\n')
-        [ofp.write('{0}\n'.format(line)) for line in inslines]
+    with open(ins_file, "w") as ofp:
+        ofp.write("pif ~\n")
+        [ofp.write("{0}\n".format(line)) for line in inslines]
 
     df = try_process_output_file(ins_file, gage_output_file)
     return df, ins_file, gage_output_file
 
-def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
+
+def setup_gage_obs(gage_file, ins_file=None, start_datetime=None, times=None):
     """setup a forward run post processor routine for the modflow gage file
 
     Args:
@@ -2030,26 +2444,38 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
          This is the companion function of `gw_utils.apply_gage_obs()`
     """
 
-    with open(gage_file, 'r') as f:
+    with open(gage_file, "r") as f:
         line1 = f.readline()
-        gage_num = int(re.sub("[^0-9]", "", line1.split("GAGE No.")[-1].strip().split()[0]))
+        gage_num = int(
+            re.sub("[^0-9]", "", line1.split("GAGE No.")[-1].strip().split()[0])
+        )
         gage_type = line1.split("GAGE No.")[-1].strip().split()[1].lower()
-        obj_num = int(line1.replace('"', '').strip().split()[-1])
+        obj_num = int(line1.replace('"', "").strip().split()[-1])
         line2 = f.readline()
-        df = pd.read_csv(f, delim_whitespace=True, names=line2.replace('"', '').split()[1:])
+        df = pd.read_csv(
+            f, delim_whitespace=True, names=line2.replace('"', "").split()[1:]
+        )
 
-    df.columns = [c.lower().replace("-", "_").replace('.', '_').strip('_') for c in df.columns]
+    df.columns = [
+        c.lower().replace("-", "_").replace(".", "_").strip("_") for c in df.columns
+    ]
     # get unique observation ids
-    obs_ids = {col:"" for col in df.columns[1:]} # empty dictionary for observation ids
-    for col in df.columns[1:]: # exclude column 1 (TIME)
-        colspl = col.split('_')
+    obs_ids = {
+        col: "" for col in df.columns[1:]
+    }  # empty dictionary for observation ids
+    for col in df.columns[1:]:  # exclude column 1 (TIME)
+        colspl = col.split("_")
         if len(colspl) > 1:
             # obs name built out of "g"(for gage) "s" or "l"(for gage type) 2 chars from column name - date added later
-            obs_ids[col] = "g{0}{1}{2}".format(gage_type[0], colspl[0][0],colspl[-1][0])
+            obs_ids[col] = "g{0}{1}{2}".format(
+                gage_type[0], colspl[0][0], colspl[-1][0]
+            )
         else:
             obs_ids[col] = "g{0}{1}".format(gage_type[0], col[0:2])
-    with open("_gage_obs_ids.csv", "w") as f: # write file relating obs names to meaningfull keys!
-        [f.write('{0},{1}\n'.format(key, obs)) for key, obs in obs_ids.items()]
+    with open(
+        "_gage_obs_ids.csv", "w"
+    ) as f:  # write file relating obs names to meaningfull keys!
+        [f.write("{0},{1}\n".format(key, obs)) for key, obs in obs_ids.items()]
     # find passed times in df
     if times is None:
         times = df.time.unique()
@@ -2060,38 +2486,50 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
             missing.append(str(t))
     if len(missing) > 0:
         print(df.time)
-        raise Exception("the following times are missing:{0}".format(','.join(missing)))
+        raise Exception("the following times are missing:{0}".format(",".join(missing)))
     # write output times to config file
-    with open("gage_obs.config", 'w') as f:
-        f.write(gage_file+'\n')
+    with open("gage_obs.config", "w") as f:
+        f.write(gage_file + "\n")
         [f.write("{0:15.10E}\n".format(t)) for t in times]
     # extract data for times: returns dataframe and saves a processed df - read by pest
     df, obs_file = apply_gage_obs(return_obs_file=True)
     utimes = df.time.unique()
     for t in times:
-        assert np.isclose(t, utimes).any(), "time {0} missing in processed dataframe".format(t)
-    idx = df.time.apply(lambda x: np.isclose(x, times).any())  # boolean selector of desired times in df
+        assert np.isclose(
+            t, utimes
+        ).any(), "time {0} missing in processed dataframe".format(t)
+    idx = df.time.apply(
+        lambda x: np.isclose(x, times).any()
+    )  # boolean selector of desired times in df
     if start_datetime is not None:
         # convert times to usable observation times
         start_datetime = pd.to_datetime(start_datetime)
-        df.loc[:, "time_str"] = pd.to_timedelta(df.time, unit='d') + start_datetime
-        df.loc[:, "time_str"] = df.time_str.apply(lambda x: datetime.strftime(x, "%Y%m%d"))
+        df.loc[:, "time_str"] = pd.to_timedelta(df.time, unit="d") + start_datetime
+        df.loc[:, "time_str"] = df.time_str.apply(
+            lambda x: datetime.strftime(x, "%Y%m%d")
+        )
     else:
         df.loc[:, "time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
     # set up instructions (line feed for lines without obs (not in time)
     df.loc[:, "ins_str"] = "l1\n"
     df_times = df.loc[idx, :]  # Slice by desired times
     # TODO include GAGE No. in obs name (if permissible)
-    df.loc[df_times.index, "ins_str"] = df_times.apply(lambda x: "l1 w {}\n".format(
-        ' w '.join(["!{0}{1}!".format(obs, x.time_str) for key,obs in obs_ids.items()])), axis=1)
+    df.loc[df_times.index, "ins_str"] = df_times.apply(
+        lambda x: "l1 w {}\n".format(
+            " w ".join(
+                ["!{0}{1}!".format(obs, x.time_str) for key, obs in obs_ids.items()]
+            )
+        ),
+        axis=1,
+    )
     df.index = np.arange(df.shape[0])
     if ins_file is None:
-        ins_file = gage_file+".processed.ins"
+        ins_file = gage_file + ".processed.ins"
 
-    with open(ins_file, 'w') as f:
+    with open(ins_file, "w") as f:
         f.write("pif ~\nl1\n")
         [f.write(i) for i in df.ins_str]
-    df = try_process_output_file(ins_file, gage_file+".processed")
+    df = try_process_output_file(ins_file, gage_file + ".processed")
     return df, ins_file, obs_file
 
 
@@ -2113,24 +2551,28 @@ def apply_gage_obs(return_obs_file=False):
         gage_file = f.readline().strip()
         for line in f:
             times.append(float(line.strip()))
-    obs_file = gage_file+".processed"
-    with open(gage_file, 'r') as f:
+    obs_file = gage_file + ".processed"
+    with open(gage_file, "r") as f:
         line1 = f.readline()
-        gage_num = int(re.sub("[^0-9]", "", line1.split("GAGE No.")[-1].strip().split()[0]))
+        gage_num = int(
+            re.sub("[^0-9]", "", line1.split("GAGE No.")[-1].strip().split()[0])
+        )
         gage_type = line1.split("GAGE No.")[-1].strip().split()[1].lower()
-        obj_num = int(line1.replace('"', '').strip().split()[-1])
+        obj_num = int(line1.replace('"', "").strip().split()[-1])
         line2 = f.readline()
-        df = pd.read_csv(f, delim_whitespace=True, names=line2.replace('"', '').split()[1:])
-    df.columns = [c.lower().replace("-", "_").replace('.', '_') for c in df.columns]
+        df = pd.read_csv(
+            f, delim_whitespace=True, names=line2.replace('"', "").split()[1:]
+        )
+    df.columns = [c.lower().replace("-", "_").replace(".", "_") for c in df.columns]
     df = df.loc[df.time.apply(lambda x: np.isclose(x, times).any()), :]
-    df.to_csv(obs_file, sep=' ', index=False)
+    df.to_csv(obs_file, sep=" ", index=False)
     if return_obs_file:
         return df, obs_file
     else:
         return df
 
 
-def apply_hfb_pars(par_file='hfb6_pars.csv'):
+def apply_hfb_pars(par_file="hfb6_pars.csv"):
     """ a function to apply HFB multiplier parameters.
 
     Args:
@@ -2150,19 +2592,28 @@ def apply_hfb_pars(par_file='hfb6_pars.csv'):
     """
     hfb_pars = pd.read_csv(par_file)
 
-    hfb_mults_contents = open(hfb_pars.mlt_file.values[0], 'r').readlines()
-    skiprows = sum([1 if i.strip().startswith('#') else 0
-                    for i in hfb_mults_contents]) + 1
+    hfb_mults_contents = open(hfb_pars.mlt_file.values[0], "r").readlines()
+    skiprows = (
+        sum([1 if i.strip().startswith("#") else 0 for i in hfb_mults_contents]) + 1
+    )
     header = hfb_mults_contents[:skiprows]
 
     # read in the multipliers
-    names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
-    hfb_mults = pd.read_csv(hfb_pars.mlt_file.values[0], skiprows=skiprows,
-                            delim_whitespace=True, names=names).dropna()
+    names = ["lay", "irow1", "icol1", "irow2", "icol2", "hydchr"]
+    hfb_mults = pd.read_csv(
+        hfb_pars.mlt_file.values[0],
+        skiprows=skiprows,
+        delim_whitespace=True,
+        names=names,
+    ).dropna()
 
     # read in the original file
-    hfb_org = pd.read_csv(hfb_pars.org_file.values[0], skiprows=skiprows,
-                          delim_whitespace=True, names=names).dropna()
+    hfb_org = pd.read_csv(
+        hfb_pars.org_file.values[0],
+        skiprows=skiprows,
+        delim_whitespace=True,
+        names=names,
+    ).dropna()
 
     # multiply it out
     hfb_org.hydchr *= hfb_mults.hydchr
@@ -2171,11 +2622,12 @@ def apply_hfb_pars(par_file='hfb6_pars.csv'):
         hfb_mults[cn] = hfb_mults[cn].astype(np.int)
         hfb_org[cn] = hfb_org[cn].astype(np.int)
     # write the results
-    with open(hfb_pars.model_file.values[0], 'w', newline='') as ofp:
-        [ofp.write('{0}\n'.format(line.strip())) for line in header]
+    with open(hfb_pars.model_file.values[0], "w", newline="") as ofp:
+        [ofp.write("{0}\n".format(line.strip())) for line in header]
         ofp.flush()
-        hfb_org[['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'hydchr']].to_csv(
-            ofp, sep=' ', header=None, index=None)
+        hfb_org[["lay", "irow1", "icol1", "irow2", "icol2", "hydchr"]].to_csv(
+            ofp, sep=" ", header=None, index=None
+        )
 
 
 def write_hfb_zone_multipliers_template(m):
@@ -2198,61 +2650,72 @@ def write_hfb_zone_multipliers_template(m):
     hfb_file = os.path.join(m.model_ws, m.hfb6.file_name[0])
 
     # this will use multipliers, so need to copy down the original
-    if not os.path.exists(os.path.join(m.model_ws, 'hfb6_org')):
-        os.mkdir(os.path.join(m.model_ws, 'hfb6_org'))
+    if not os.path.exists(os.path.join(m.model_ws, "hfb6_org")):
+        os.mkdir(os.path.join(m.model_ws, "hfb6_org"))
     # copy down the original file
-    shutil.copy2(os.path.join(m.model_ws, m.hfb6.file_name[0]),
-                 os.path.join(m.model_ws,'hfb6_org', m.hfb6.file_name[0]))
+    shutil.copy2(
+        os.path.join(m.model_ws, m.hfb6.file_name[0]),
+        os.path.join(m.model_ws, "hfb6_org", m.hfb6.file_name[0]),
+    )
 
-    if not os.path.exists(os.path.join(m.model_ws, 'hfb6_mlt')):
-        os.mkdir(os.path.join(m.model_ws, 'hfb6_mlt'))
+    if not os.path.exists(os.path.join(m.model_ws, "hfb6_mlt")):
+        os.mkdir(os.path.join(m.model_ws, "hfb6_mlt"))
 
     # read in the model file
-    hfb_file_contents = open(hfb_file, 'r').readlines()
+    hfb_file_contents = open(hfb_file, "r").readlines()
 
     # navigate the header
-    skiprows = sum([1 if i.strip().startswith('#') else 0
-                    for i in hfb_file_contents]) + 1
+    skiprows = (
+        sum([1 if i.strip().startswith("#") else 0 for i in hfb_file_contents]) + 1
+    )
     header = hfb_file_contents[:skiprows]
 
     # read in the data
-    names = ['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'hydchr']
-    hfb_in = pd.read_csv(hfb_file, skiprows=skiprows,
-                         delim_whitespace=True, names=names).dropna()
+    names = ["lay", "irow1", "icol1", "irow2", "icol2", "hydchr"]
+    hfb_in = pd.read_csv(
+        hfb_file, skiprows=skiprows, delim_whitespace=True, names=names
+    ).dropna()
     for cn in names[:-1]:
         hfb_in[cn] = hfb_in[cn].astype(np.int)
 
     # set up a multiplier for each unique conductivity value
     unique_cond = hfb_in.hydchr.unique()
-    hfb_mults = dict(zip(unique_cond, ['hbz_{0:04d}'.format(i)
-                                       for i in range(len(unique_cond))]))
+    hfb_mults = dict(
+        zip(unique_cond, ["hbz_{0:04d}".format(i) for i in range(len(unique_cond))])
+    )
     # set up the TPL line for each parameter and assign
-    hfb_in['tpl'] = 'blank'
-    for cn, cg in hfb_in.groupby('hydchr'):
-        hfb_in.loc[hfb_in.hydchr == cn, 'tpl'] = '~{0:^10s}~'.format(
-            hfb_mults[cn])
+    hfb_in["tpl"] = "blank"
+    for cn, cg in hfb_in.groupby("hydchr"):
+        hfb_in.loc[hfb_in.hydchr == cn, "tpl"] = "~{0:^10s}~".format(hfb_mults[cn])
 
-    assert 'blank' not in hfb_in.tpl
+    assert "blank" not in hfb_in.tpl
 
     # write out the TPL file
     tpl_file = os.path.join(m.model_ws, "hfb6.mlt.tpl")
-    with open(tpl_file, 'w', newline='') as ofp:
-        ofp.write('ptf ~\n')
-        [ofp.write('{0}\n'.format(line.strip())) for line in header]
+    with open(tpl_file, "w", newline="") as ofp:
+        ofp.write("ptf ~\n")
+        [ofp.write("{0}\n".format(line.strip())) for line in header]
         ofp.flush()
-        hfb_in[['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'tpl']].to_csv(
-            ofp, sep=' ', quotechar=' ', header=None, index=None, mode='a')
+        hfb_in[["lay", "irow1", "icol1", "irow2", "icol2", "tpl"]].to_csv(
+            ofp, sep=" ", quotechar=" ", header=None, index=None, mode="a"
+        )
 
     # make a lookup for lining up the necessary files to
     # perform multiplication with the helpers.apply_hfb_pars() function
     # which must be added to the forward run script
-    with open(os.path.join(m.model_ws, 'hfb6_pars.csv'), 'w') as ofp:
-        ofp.write('org_file,mlt_file,model_file\n')
-        ofp.write('{0},{1},{2}\n'.format(
-            os.path.join(m.model_ws, 'hfb6_org', m.hfb6.file_name[0]),
-            os.path.join(m.model_ws, 'hfb6_mlt',
-                         os.path.basename(tpl_file).replace('.tpl', '')),
-            hfb_file))
+    with open(os.path.join(m.model_ws, "hfb6_pars.csv"), "w") as ofp:
+        ofp.write("org_file,mlt_file,model_file\n")
+        ofp.write(
+            "{0},{1},{2}\n".format(
+                os.path.join(m.model_ws, "hfb6_org", m.hfb6.file_name[0]),
+                os.path.join(
+                    m.model_ws,
+                    "hfb6_mlt",
+                    os.path.basename(tpl_file).replace(".tpl", ""),
+                ),
+                hfb_file,
+            )
+        )
 
     return hfb_mults, tpl_file
 
@@ -2274,14 +2737,14 @@ def write_hfb_template(m):
     """
 
     assert m.hfb6 is not None
-    hfb_file = os.path.join(m.model_ws,m.hfb6.file_name[0])
-    assert os.path.exists(hfb_file),"couldn't find hfb_file {0}".format(hfb_file)
-    f_in = open(hfb_file,'r')
-    tpl_file = hfb_file+".tpl"
-    f_tpl = open(tpl_file,'w')
+    hfb_file = os.path.join(m.model_ws, m.hfb6.file_name[0])
+    assert os.path.exists(hfb_file), "couldn't find hfb_file {0}".format(hfb_file)
+    f_in = open(hfb_file, "r")
+    tpl_file = hfb_file + ".tpl"
+    f_tpl = open(tpl_file, "w")
     f_tpl.write("ptf ~\n")
-    parnme,parval1,xs,ys = [],[],[],[]
-    iis,jjs,kks = [],[],[]
+    parnme, parval1, xs, ys = [], [], [], []
+    iis, jjs, kks = [], [], []
     xc = m.sr.xcentergrid
     yc = m.sr.ycentergrid
 
@@ -2305,15 +2768,15 @@ def write_hfb_template(m):
                 k = int(raw[0]) - 1
                 i = int(raw[1]) - 1
                 j = int(raw[2]) - 1
-                pn = "hb{0:02}{1:04d}{2:04}".format(k,i,j)
+                pn = "hb{0:02}{1:04d}{2:04}".format(k, i, j)
                 pv = float(raw[5])
                 raw[5] = "~ {0}  ~".format(pn)
-                line = ' '.join(raw)+'\n'
+                line = " ".join(raw) + "\n"
                 f_tpl.write(line)
                 parnme.append(pn)
                 parval1.append(pv)
-                xs.append(xc[i,j])
-                ys.append(yc[i,j])
+                xs.append(xc[i, j])
+                ys.append(yc[i, j])
                 iis.append(i)
                 jjs.append(j)
                 kks.append(k)
@@ -2322,11 +2785,19 @@ def write_hfb_template(m):
 
     f_tpl.close()
     f_in.close()
-    df = pd.DataFrame({"parnme":parnme,"parval1":parval1,"x":xs,"y":ys,
-                       "i":iis,"j":jjs,"k":kks},index=parnme)
-    df.loc[:,"pargp"] = "hfb_hydfac"
-    df.loc[:,"parubnd"] = df.parval1.max() * 10.0
-    df.loc[:,"parlbnd"] = df.parval1.min() * 0.1
-    return tpl_file,df
-
-
+    df = pd.DataFrame(
+        {
+            "parnme": parnme,
+            "parval1": parval1,
+            "x": xs,
+            "y": ys,
+            "i": iis,
+            "j": jjs,
+            "k": kks,
+        },
+        index=parnme,
+    )
+    df.loc[:, "pargp"] = "hfb_hydfac"
+    df.loc[:, "parubnd"] = df.parval1.max() * 10.0
+    df.loc[:, "parlbnd"] = df.parval1.min() * 0.1
+    return tpl_file, df
