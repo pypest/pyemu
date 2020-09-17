@@ -1,0 +1,590 @@
+:mod:`pyemu.utils.pst_from`
+===========================
+
+.. py:module:: pyemu.utils.pst_from
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   pyemu.utils.pst_from.PstFrom
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   pyemu.utils.pst_from._get_datetime_from_str
+   pyemu.utils.pst_from._check_var_len
+   pyemu.utils.pst_from.write_list_tpl
+   pyemu.utils.pst_from._write_direct_df_tpl
+   pyemu.utils.pst_from._get_tpl_or_ins_df
+   pyemu.utils.pst_from.write_array_tpl
+   pyemu.utils.pst_from._check_diff
+
+
+.. function:: _get_datetime_from_str(sdt)
+
+
+.. function:: _check_var_len(var, n, fill=None)
+
+
+.. py:class:: PstFrom(original_d, new_d, longnames=True, remove_existing=False, spatial_reference=None, zero_based=True, start_datetime=None)
+
+   Bases: :class:`object`
+
+   construct high-dimensional PEST(++) interfaces with all the bells and whistles
+
+   :param original_d: the path to a complete set of model input and output files
+   :type original_d: `str`
+   :param new_d: the path to where the model files and PEST interface files will be copied/built
+   :type new_d: `str`
+   :param longnames: flag to use longer-than-PEST-likes parameter and observation names.  Default is True
+   :type longnames: `bool`
+   :param remove_existing: flag to destroy any existing files and folders in `new_d`.  Default is False
+   :type remove_existing: `bool`
+   :param spatial_reference: an object that faciliates geo-locating model cells based on index.  Default is None
+   :type spatial_reference: varies
+   :param zero_based: flag if the model uses zero-based indices, Default is True
+   :type zero_based: `bool`
+   :param start_datetime: a string that can be case to a datatime instance the represents the starting datetime
+                          of the model
+   :type start_datetime: `str`
+
+   .. method:: parfile_relations(self)
+      :property:
+
+
+   .. method:: _generic_get_xy(self, args, **kwargs)
+
+
+   .. method:: _flopy_sr_get_xy(self, args, **kwargs)
+
+
+   .. method:: _flopy_mg_get_xy(self, args, **kwargs)
+
+
+   .. method:: parse_kij_args(self, args, kwargs)
+
+      parse args into kij indices
+
+
+   .. method:: initialize_spatial_reference(self)
+
+      process the spatial reference argument
+
+
+   .. method:: write_forward_run(self)
+
+      write the forward run script
+
+
+
+   .. method:: _pivot_par_struct_dict(self)
+
+
+   .. method:: build_prior(self, fmt='ascii', filename=None, droptol=None, chunk=None, sigma_range=6)
+
+      Build the prior parameter covariance matrix
+
+      :param fmt: the file format to save to.  Default is "ASCII", can be "binary", "coo", or "none"
+      :type fmt: `str`
+      :param filename: the filename to save the cov to
+      :type filename: `str`
+      :param droptol: absolute value of prior cov entries that are smaller than `droptol` are treated as
+                      zero.
+      :type droptol: `float`
+      :param chunk: number of entries to write to binary/coo at once.  Default is None (write all elements at once
+      :type chunk: `int`
+      :param sigma_range: number of standard deviations represented by parameter bounds.  Default is 6 (99%
+                          confidence).  4 would be approximately 95% confidence bounds
+      :type sigma_range: `int`
+
+      :returns: the prior parameter covariance matrix
+      :rtype: `pyemu.Cov`
+
+      .. note:: This method processes parameters by group names
+
+
+   .. method:: draw(self, num_reals=100, sigma_range=6, use_specsim=False, scale_offset=True)
+
+      Draw a parameter ensemble from the distribution implied by the initial parameter values in the
+      control file and the prior parameter covariance matrix.
+
+      :param num_reals: the number of realizations to draw
+      :type num_reals: `int`
+      :param sigma_range: number of standard deviations represented by parameter bounds.  Default is 6 (99%
+                          confidence).  4 would be approximately 95% confidence bounds
+      :type sigma_range: `int`
+      :param use_specsim: flag to use spectral simulation for grid-scale pars (highly recommended).
+                          Default is False
+      :type use_specsim: `bool`
+      :param scale_offset: flag to apply scale and offset to parameter bounds before calculating prior variance.
+                           Dfault is True
+      :type scale_offset: `bool`
+
+      :returns: a prior parameter ensemble
+      :rtype: `pyemu.ParameterEnsemble`
+
+      .. note:: This method draws by parameter group
+
+
+   .. method:: build_pst(self, filename=None, update=False, version=1)
+
+      Build control file from i/o files in PstFrom object.
+      Warning: This builds a pest control file from scratch, overwriting
+      anything already in self.pst object and anything already writen to `filename`
+
+      :param filename: the filename to save the control file to.
+                       If None, the name is formed from the `PstFrom.original_d`
+                       ,the orginal directory name from which the forward model
+                       was extracted.  Default is None.
+                       The control file is saved in the `PstFrom.new_d` directory.
+      :type filename: `str`
+      :param update: flag to add to existing Pst object and
+                     rewrite. If string {'pars', 'obs'} just update respective
+                     components of Pst. Default is False - build from PstFrom
+                     components.
+      :type update: bool) or (str
+
+      .. note::
+
+         This builds a pest control file from scratch, overwriting anything already
+             in self.pst object and anything already writen to `filename`
+
+
+   .. method:: _setup_dirs(self)
+
+
+   .. method:: _par_prep(self, filenames, index_cols, use_cols, fmts=None, seps=None, skip_rows=None, c_char=None)
+
+
+   .. method:: _next_count(self, prefix)
+
+
+   .. method:: add_py_function(self, file_name, function_name, is_pre_cmd=True)
+
+      add a python function to the forward run script
+
+      :param file_name: a python source file
+      :type file_name: `str`
+      :param function_name: a python function in
+                            `file_name`
+      :type function_name: `str`
+      :param is_pre_cmd: flag to include `function_name` in
+                         PstFrom.pre_py_cmds.  If False, `function_name` is
+                         added to PstFrom.post_py_cmds instead. If passed as `None`,
+                         then the function `function_name` is added to the forward run
+                         script but is not called.  Default is True.
+      :type is_pre_cmd: `bool`
+
+      :returns: None
+
+      .. note::
+
+         `function_name` is expected to be standalone a function
+             that contains all the imports it needs or these imports
+             should have been added to the forward run script through the
+             `PstFrom.py_imports` list.
+         This function adds the `function_name` call to the forward
+             run script (either as a pre or post command). It is up to users
+              to make sure `function_name` is a valid python function call
+               that includes the parentheses and requisite arguments
+         This function expects "def " + `function_name` to be flushed left at the outer
+             most indentation level
+
+      Example::
+
+          pf = PstFrom()
+          pf.add_py_function("preprocess.py","mult_well_function()",is_pre_cmd=True)
+
+
+
+   .. method:: add_observations(self, filename, insfile=None, index_cols=None, use_cols=None, use_rows=None, prefix='', ofile_skip=None, ofile_sep=None, rebuild_pst=False, obsgp=True)
+
+      Add list style outputs as observation files to PstFrom object
+
+      :param filename: path to model output file name to set up
+                       as observations
+      :type filename: `str`
+      :param insfile: desired instructions file filename
+      :type insfile: `str`
+      :param index_cols: columns to denote are indices for obs
+      :type index_cols: `list`-like or `int`
+      :param use_cols: columns to set up as obs
+      :type use_cols: `list`-like or `int`
+      :param use_rows: select only specific row of file for obs
+      :type use_rows: `list`-like or `int`
+      :param prefix: prefix for obsnmes
+      :type prefix: `str`
+      :param ofile_skip: number of lines to skip in model output file
+      :type ofile_skip: `int`
+      :param ofile_sep: delimiter in output file
+      :type ofile_sep: `str`
+      :param rebuild_pst: (Re)Construct PstFrom.pst object after adding
+                          new obs
+      :type rebuild_pst: `bool`
+
+      :returns: dataframe with info for new observations
+      :rtype: `Pandas.DataFrame`
+
+
+   .. method:: add_observations_from_ins(self, ins_file, out_file=None, pst_path=None, inschek=True)
+
+      add new observations to a control file
+
+      :param ins_file: instruction file with exclusively new
+                       observation names
+      :type ins_file: `str`
+      :param out_file: model output file.  If None, then
+                       ins_file.replace(".ins","") is used. Default is None
+      :type out_file: `str`
+      :param pst_path: the path to append to the instruction file and
+                       out file in the control file.  If not None, then any existing
+                       path in front of the template or in file is split off and
+                       pst_path is prepended.  If python is being run in a directory
+                       other than where the control file will reside, it is useful
+                       to pass `pst_path` as `.`. Default is None
+      :type pst_path: `str`
+      :param inschek: flag to try to process the existing output file
+                      using the `pyemu.InstructionFile` class.  If successful,
+                      processed outputs are used as obsvals
+      :type inschek: `bool`
+
+      :returns:
+
+                the data for the new observations that were
+                   added
+      :rtype: `pandas.DataFrame`
+
+      .. note:: populates the new observation information with default values
+
+      Example::
+
+          pst = pyemu.Pst(os.path.join("template", "my.pst"))
+          pst.add_observations(os.path.join("template","new_obs.dat.ins"),
+                               pst_path=".")
+          pst.write(os.path.join("template", "my_new.pst")
+
+
+   .. method:: add_parameters(self, filenames, par_type, zone_array=None, dist_type='gaussian', sigma_range=4.0, upper_bound=10000000000.0, lower_bound=1e-10, transform='log', par_name_base='p', index_cols=None, use_cols=None, pargp=None, pp_space=10, use_pp_zones=False, num_eig_kl=100, spatial_reference=None, geostruct=None, datetime=None, mfile_fmt='free', mfile_skip=None, ult_ubound=None, ult_lbound=None, rebuild_pst=False, alt_inst_str='inst', comment_char=None, par_style='multiplier')
+
+      Add list or array style model input files to PstFrom object.
+      This method
+
+      :param filenames: Model input filenames to parameterize
+      :type filenames: `str`
+      :param par_type: One of `grid` - for every element, `constant` - for single
+                       parameter applied to every element, `zone` - for zone-based
+                       parameterization (only for array-style) or `pilotpoint` - for
+                       pilot-point base parameterization of array style input files.
+                       Note `kl` not yet implemented # TODO
+      :type par_type: `str`
+      :param zone_array: array defining spatial limits or zones
+                         for parameterization.
+      :type zone_array: `np.ndarray`
+      :param dist_type: not yet implemented # TODO
+      :param sigma_range: not yet implemented # TODO
+      :param upper_bound: PEST parameter upper bound # TODO support different ubound,lbound,transform if multiple use_col
+      :type upper_bound: `float`
+      :param lower_bound: PEST parameter lower bound
+      :type lower_bound: `float`
+      :param transform: PEST parameter transformation
+      :type transform: `str`
+      :param par_name_base: basename for parameters that are set up
+      :type par_name_base: `str`
+      :param index_cols: if not None, will attempt to parameterize
+                         expecting a tabular-style model input file. `index_cols`
+                         defines the unique columns used to set up pars.
+                         May be passed as a dictionary using the keys `i` and `j`
+                         to allow columns that relate to model rows and columns to be
+                         identified and processed to x,y.
+      :type index_cols: `list`-like
+      :param use_cols: for tabular-style model input file,
+                       defines the columns to be parameterised
+      :type use_cols: `list`-like or `int`
+      :param pargp: Parameter group to assign pars to. This is PESTs
+                    pargp but is also used to gather correlated parameters set up
+                    using multiple `add_parameters()` calls (e.g. temporal pars)
+                    with common geostructs.
+      :type pargp: `str`
+      :param pp_space: Spacing between pilot point parameters
+      :type pp_space: `int`
+      :param use_pp_zones: a flag to use the greater-than-zero values
+                           in the zone_array as pilot point zones.
+                           If False, zone_array values greater than zero are treated as a
+                           single zone.  Default is False.
+      :type use_pp_zones: `bool`
+      :param num_eig_kl: TODO - impliment with KL pars
+      :param spatial_reference: If different
+                                spatial reference required for pilotpoint setup.
+                                If None spatial reference passed to `PstFrom()` will be used
+                                for pilot-points
+      :type spatial_reference: `pyemu.helpers.SpatialReference`
+      :param geostruct: For specifying correlation
+                        geostruct for pilot-points and par covariance.
+      :type geostruct: `pyemu.geostats.GeoStruct()`
+      :param datetime: optional %Y%m%d string or datetime object for
+                       setting up temporally correlated pars. Where datetime is passed
+                        correlation axis for pars will be set to timedelta.
+      :type datetime: `str`
+      :param mfile_fmt: format of model input file - this will be preserved
+      :type mfile_fmt: `str`
+      :param mfile_skip: header in model input file to skip
+                         when reading and reapply when writing. Can optionally be `str` in which case `mf_skip` will be treated
+                         as a `comment_char`.
+      :type mfile_skip: `int` or `str`
+      :param ult_ubound: Ultimate upper bound for model input
+                         parameter once all mults are applied - ensure physical model par vals. If not passed,
+                         it is set to 1.0e+30
+      :type ult_ubound: `float`
+      :param ult_lbound: Ultimate lower bound for model input
+                         parameter once all mults are applied.  If not passed, it is set to
+                         1.0e-30 for log transform and -1.0e+30 for non-log transform
+      :type ult_lbound: `float`
+      :param rebuild_pst: (Re)Construct PstFrom.pst object after adding
+                          new parameters
+      :type rebuild_pst: `bool`
+      :param alt_inst_str: Alternative to default `inst` string in
+                           parameter names
+      :type alt_inst_str: `str`
+      :param comment_char: option to skip comment lines in model file.
+                           This is not additive with `mfile_skip` option.
+                           Warning: currently comment lines within list-like tabular data
+                           will be lost.
+      :type comment_char: `str`
+      :param par_style: either "multiplier" or "direct" where the former setups
+                        up a multiplier parameter process against the exsting model input
+                        array and the former setups a template file to write the model
+                        input file directly.  Default is "multiplier".
+      :type par_style: `str`
+
+      :returns: dataframe with info for new parameters
+      :rtype: `pandas.DataFrame`
+
+
+   .. method:: _load_listtype_file(self, filename, index_cols, use_cols, fmt=None, sep=None, skip=None, c_char=None)
+
+
+   .. method:: _prep_arg_list_lengths(self, filenames, fmts=None, seps=None, skip_rows=None, index_cols=None, use_cols=None)
+
+      Private wrapper function to align filenames, formats, delimiters,
+      reading options and setup columns for passing sequentially to
+      load_listtype
+      :param filenames: names for files ot eventually read
+      :type filenames: `str`) or (`list`
+      :param fmts: of column formaters for input file.
+                   If `None`, free-formatting is assumed
+      :type fmts: `str`) or (`list`
+      :param seps: column separator free formatter files.
+                   If `None`, a list of `None`s is returned and the delimiter
+                   is eventually governed by the file extension (`,` for .csv)
+      :type seps: `str`) or (`list`
+      :param skip_rows: Number of rows in file header to not
+                        form part of the dataframe
+      :type skip_rows: `str`) or (`list`
+      :param index_cols: Columns in tabular file to use as indicies
+      :type index_cols: `int`) or (`list`
+      :param use_cols: Columns in tabular file to
+                       use as par or obs cols
+      :type use_cols: `int`) or (`list`
+
+      :returns: filenames, fmts, seps, skip_rows, index_cols, use_cols
+                for squentially passing to `_load_listtype_file()`
+      :rtype: algined lists of
+
+
+
+.. function:: write_list_tpl(filenames, dfs, name, tpl_filename, index_cols, par_type, use_cols=None, suffix='', zone_array=None, gpname=None, longnames=False, get_xy=None, ij_in_idx=None, xy_in_idx=None, zero_based=True, input_filename=None, par_style='multiplier')
+
+   Write template files for a list style input.
+
+   :param filenames: original input filenames
+   :type filenames: `str` of `container` of `str`
+   :param dfs: pandas
+               representations of input file.
+   :type dfs: `pandas.DataFrame` or `container` of pandas.DataFrames
+   :param name: parameter name prefixes.
+                If more that one column to be parameterised, must be a container
+                of strings providing the prefix for the parameters in the
+                different columns.
+   :type name: `str` or container of str
+   :param tpl_filename: Path (from current execution directory)
+                        for desired template file
+   :type tpl_filename: `str`
+   :param index_cols: column names to use as indices in tabular
+                      input dataframe
+   :type index_cols: `list`
+   :param par_type: 'constant','zone', or 'grid' used in parname
+                    generation. If `constant`, one par is set up for each `use_cols`.
+                    If `zone`, one par is set up for each zone for each `use_cols`.
+                    If `grid`, one par is set up for every unique index combination
+                    (from `index_cols`) for each `use_cols`.
+   :type par_type: `str`
+   :param use_cols: Columns in tabular input file to paramerterise.
+                    If None, pars are set up for all columns apart from index cols.
+   :type use_cols: `list`
+   :param suffix: Optional par name suffix
+   :type suffix: `str`
+   :param zone_array: Array defining zone divisions.
+                      If not None and `par_type` is `grid` or `zone` it is expected that
+                      `index_cols` provide the indicies for
+                      querying `zone_array`. Therefore, array dimension should equal
+                      `len(index_cols)`.
+   :type zone_array: `np.ndarray`
+   :param longnames: Specify is pars will be specified without the
+                     12 char restriction - recommended if using Pest++.
+   :type longnames: `boolean`
+   :param get_xy: Can be specified to get real-world xy
+                  from `index_cols` passed (to assist correlation definition)
+   :type get_xy: `pyemu.PstFrom` method
+   :param ij_in_idx: defining which `index_cols` contain i,j
+   :type ij_in_idx: `list` or `array`
+   :param xy_in_idx: defining which `index_cols` contain x,y
+   :type xy_in_idx: `list` or `array`
+   :param zero_based: IMPORTANT - pass as False if `index_cols`
+                      are NOT zero-based indicies (e.g. MODFLOW row/cols).
+                      If False 1 with be subtracted from `index_cols`.
+   :type zero_based: `boolean`
+   :param input_filename: Path to input file (paired with tpl file)
+   :type input_filename: `str`
+   :param par_style: either 'direct' or 'multiplier'
+   :type par_style: `str`
+
+   :returns: dataframe with info for the new parameters
+   :rtype: `pandas.DataFrame`
+
+
+.. function:: _write_direct_df_tpl(in_filename, tpl_filename, df, name, index_cols, typ, use_cols=None, suffix='', zone_array=None, longnames=False, get_xy=None, ij_in_idx=None, xy_in_idx=None, zero_based=True, gpname=None)
+
+   Private method to auto-generate parameter or obs names from tabular
+   model files (input or output) read into pandas dataframes
+   :param tpl_filename: template filename
+   :type tpl_filename: `str`
+   :param df: DataFrame of list type input file
+   :type df: `pandas.DataFrame`
+   :param name: Parameter name prefix
+   :type name: `str`
+   :param index_cols: columns of dataframes to use as indicies
+   :type index_cols: `str` or `list`
+   :param typ: 'constant','zone', or 'grid' used in parname generation.
+               If `constant`, one par is set up for each `use_cols`.
+               If `zone`, one par is set up for each zone for each `use_cols`.
+               If `grid`, one par is set up for every unique index combination
+               (from `index_cols`) for each `use_cols`.
+   :type typ: `str`
+   :param use_cols: Columns to parameterise. If None, pars are set up
+                    for all columns apart from index cols
+   :type use_cols: `list`
+   :param suffix: Optional par name suffix.
+   :type suffix: `str`
+   :param zone_array: Array defining zone divisions.
+                      If not None and `par_type` is `grid` or `zone` it is expected that
+                      `index_cols` provide the indicies for querying `zone_array`.
+                      Therefore, array dimension should equal `len(index_cols)`.
+   :type zone_array: `np.ndarray`
+   :param longnames: Specify is obs/pars will be specified without the
+                     20/12 char restriction - recommended if using Pest++.
+   :type longnames: `boolean`
+   :param get_xy: Can be specified to get real-world xy
+                  from `index_cols` passed (to include in obs/par name)
+   :type get_xy: `pyemu.PstFrom` method
+   :param ij_in_idx: defining which `index_cols` contain i,j
+   :type ij_in_idx: `list` or `array`
+   :param xy_in_idx: defining which `index_cols` contain x,y
+   :type xy_in_idx: `list` or `array`
+   :param zero_based: IMPORTANT - pass as False if `index_cols`
+                      are NOT zero-based indicies (e.g. MODFLOW row/cols).
+                      If False 1 with be subtracted from `index_cols`.
+   :type zero_based: `boolean`
+
+   :returns: pandas.DataFrame with paranme and pargroup define for each `use_col`
+
+
+.. function:: _get_tpl_or_ins_df(filenames, dfs, name, index_cols, typ, use_cols=None, suffix='', zone_array=None, longnames=False, get_xy=None, ij_in_idx=None, xy_in_idx=None, zero_based=True, gpname=None)
+
+   Private method to auto-generate parameter or obs names from tabular
+   model files (input or output) read into pandas dataframes
+   :param filenames: filenames
+   :type filenames: `str` or `list` of str`
+   :param dfs: DataFrames (can be list of DataFrames)
+               to set up parameters or observations
+   :type dfs: `pandas.DataFrame` or `list`
+   :param name: Parameter name or Observation name prefix
+   :type name: `str`
+   :param index_cols: columns of dataframes to use as indicies
+   :type index_cols: `str` or `list`
+   :param typ: 'obs' to set up observation names or,
+               'constant','zone', or 'grid' used in parname generation.
+               If `constant`, one par is set up for each `use_cols`.
+               If `zone`, one par is set up for each zone for each `use_cols`.
+               If `grid`, one par is set up for every unique index combination
+               (from `index_cols`) for each `use_cols`.
+   :type typ: `str`
+   :param use_cols: Columns to parameterise. If None, pars are set up
+                    for all columns apart from index cols. Not used if `typ`==`obs`.
+   :type use_cols: `list`
+   :param suffix: Optional par name suffix. Not used if `typ`==`obs`.
+   :type suffix: `str`
+   :param zone_array: Only used for paremeters (`typ` != `obs`).
+                      Array defining zone divisions.
+                      If not None and `par_type` is `grid` or `zone` it is expected that
+                      `index_cols` provide the indicies for querying `zone_array`.
+                      Therefore, array dimension should equal `len(index_cols)`.
+   :type zone_array: `np.ndarray`
+   :param longnames: Specify is obs/pars will be specified without the
+                     20/12 char restriction - recommended if using Pest++.
+   :type longnames: `boolean`
+   :param get_xy: Can be specified to get real-world xy
+                  from `index_cols` passed (to include in obs/par name)
+   :type get_xy: `pyemu.PstFrom` method
+   :param ij_in_idx: defining which `index_cols` contain i,j
+   :type ij_in_idx: `list` or `array`
+   :param xy_in_idx: defining which `index_cols` contain x,y
+   :type xy_in_idx: `list` or `array`
+   :param zero_based: IMPORTANT - pass as False if `index_cols`
+                      are NOT zero-based indicies (e.g. MODFLOW row/cols).
+                      If False 1 with be subtracted from `index_cols`.=
+   :type zero_based: `boolean`
+
+   :returns: pandas.DataFrame with index strings for setting up obs
+             names when passing through to
+             pyemu.pst_utils.csv_to_ins_file(df.set_index('idx_str')
+
+             else: pandas.DataFrame with paranme and pargroup define for each `use_col`
+   :rtype: if `typ`==`obs`
+
+
+.. function:: write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None, gpname=None, shape=None, longnames=False, fill_value=1.0, get_xy=None, input_filename=None, par_style='multiplier')
+
+   write a template file for a 2D array.
+
+    Args:
+       name (`str`): the base parameter name
+       tpl_filename (`str`): the template file to write - include path
+       suffix (`str`): suffix to append to par names
+       par_type (`str`): type of parameter
+       zone_array (`numpy.ndarray`): an array used to skip inactive cells. Values less than 1 are
+           not parameterized and are assigned a value of fill_value. Default is None.
+       gpname (`str`): pargp filed in dataframe
+       shape (`tuple`): dimensions of array to write
+       longnames (`bool`): Use parnames > 12 char
+       fill_value:
+       get_xy:
+       input_filename:
+       par_style (`str`): either 'direct' or 'multiplier'
+
+   :returns: a dataframe with parameter information
+   :rtype: df (`pandas.DataFrame`)
+
+
+.. function:: _check_diff(org_arr, input_filename, zval=None)
+
+

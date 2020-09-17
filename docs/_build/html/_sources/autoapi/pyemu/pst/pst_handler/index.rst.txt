@@ -1,0 +1,1130 @@
+:mod:`pyemu.pst.pst_handler`
+============================
+
+.. py:module:: pyemu.pst.pst_handler
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   pyemu.pst.pst_handler.Pst
+
+
+
+.. data:: max_colwidth
+   :annotation: = 100
+
+   
+
+.. py:class:: Pst(filename, load=True, resfile=None)
+
+   Bases: :class:`object`
+
+   All things PEST(++) control file
+
+   :param filename: the name of the control file
+   :type filename: `str`
+   :param load: flag to load the control file. Default is True
+   :type load: `bool`, optional
+   :param resfile: corresponding residual file.  If `None`, a residual file
+                   with the control file base name is sought.  Default is `None`
+   :type resfile: `str`, optional
+
+   .. note::
+
+      This class is the primary mechanism for dealing with PEST control files.  Support is provided
+      for constructing new control files as well as manipulating existing control files.
+
+   Example::
+
+       pst = pyemu.Pst("my.pst")
+       pst.control_data.noptmax = -1
+       pst.write("my_new.pst")
+
+   .. attribute:: parameter_data
+      
+
+      '* parameter data' information.  Columns are
+      standard PEST variable names
+
+      Example::
+
+          pst.parameter_data.loc[:,"partrans"] = "log"
+          pst.parameter_data.loc[:,"parubnd"] = 10.0
+
+      :type: pandas.DataFrame
+
+
+   .. attribute:: observation_data
+      
+
+      '* observation data' information.  Columns are standard PEST
+      variable names
+
+      Example::
+
+          pst.observation_data.loc[:,"weight"] = 1.0
+          pst.observation_data.loc[:,"obgnme"] = "obs_group"
+
+      :type: pandas.DataFrame
+
+
+   .. attribute:: prior_information
+      
+
+      '* prior information' data.  Columns are standard PEST
+      variable names
+
+      :type: pandas.DataFrame
+
+
+   .. attribute:: control_data
+      
+
+      '* control data' information.
+      Access with standard PEST variable names
+
+      Example::
+
+          pst.control_data.noptmax = 2
+          pst.control_data.pestmode = "estimation"
+
+      :type: pyemu.pst.pst_controldata.ControlData
+
+
+   .. attribute:: svd_data
+      
+
+      '* singular value decomposition' section information.
+      Access with standard PEST variable names
+
+      Example::
+
+          pst.svd_data.maxsing = 100
+
+      :type: pyemu.pst.pst_controldata.SvdData
+
+
+   .. attribute:: reg_data
+      
+
+      '* regularization' section information.
+      Access with standard PEST variable names.
+
+      Example::
+
+          pst.reg_data.phimlim = 1.00 #yeah right!
+
+      :type: pyemu.pst.pst_controldata.RegData
+
+
+   .. method:: __setattr__(self, key, value)
+
+      Implement setattr(self, name, value).
+
+
+   .. method:: from_par_obs_names(cls, par_names=['par1'], obs_names=['obs1'])
+      :classmethod:
+
+      construct a shell `Pst` instance from parameter and observation names
+
+      :param par_names: list of parameter names.  Default is [`par1`]
+      :type par_names: [`str`]
+      :param obs_names: list of observation names.  Default is [`obs1`]
+      :type obs_names: [`str`]
+
+      .. note::
+
+         While this method works, it does not make template or instruction files.
+         Users are encouraged to use `Pst.from_io_files()` for more usefulness
+
+      Example::
+
+          par_names = ["par1","par2"]
+          obs_names = ["obs1","obs2"]
+          pst = pyemu.Pst.from_par_obs_names(par_names,obs_names)
+
+
+   .. method:: phi(self)
+      :property:
+
+      get the weighted total objective function.
+
+      :returns: sum of squared residuals
+      :rtype: `float`
+
+      .. note:: Requires `Pst.res` (the residuals file) to be available
+
+
+   .. method:: phi_components(self)
+      :property:
+
+      get the individual components of the total objective function
+
+      :returns: dictionary of observation group, contribution to total phi
+      :rtype: `dict`
+
+      .. note:: Requires `Pst.res` (the residuals file) to be available
+
+
+   .. method:: phi_components_normalized(self)
+      :property:
+
+      get the individual components of the total objective function
+          normalized to the total PHI being 1.0
+
+      :returns: dictionary of observation group,
+                normalized contribution to total phi
+      :rtype: `dict`
+
+      .. note:: Requires `Pst.res` (the residuals file) to be available
+
+
+   .. method:: set_res(self, res)
+
+      reset the private `Pst.res` attribute.
+
+      :param res: (`pandas.DataFrame` or `str`): something to use as Pst.res attribute.
+                  If `res` is `str`, a dataframe is read from file `res`
+
+
+   .. method:: res(self)
+      :property:
+
+      get the residuals dataframe attribute
+
+      :returns: a dataframe containing the
+                residuals information.
+      :rtype: `pandas.DataFrame`
+
+      .. note::
+
+         if the Pst.__res attribute has not been loaded,
+             this call loads the res dataframe from a file
+
+
+   .. method:: nprior(self)
+      :property:
+
+      number of prior information equations
+
+      :returns: the number of prior info equations
+      :rtype: `int`
+
+
+   .. method:: nnz_obs(self)
+      :property:
+
+      get the number of non-zero weighted observations
+
+      :returns: the number of non-zeros weighted observations
+      :rtype: `int`
+
+
+   .. method:: nobs(self)
+      :property:
+
+      get the number of observations
+
+      :returns: the number of observations
+      :rtype: `int`
+
+
+   .. method:: npar_adj(self)
+      :property:
+
+      get the number of adjustable parameters (not fixed or tied)
+
+      :returns: the number of adjustable parameters
+      :rtype: `int`
+
+
+   .. method:: npar(self)
+      :property:
+
+      get number of parameters
+
+      :returns: the number of parameters
+      :rtype: `int`
+
+
+   .. method:: forecast_names(self)
+      :property:
+
+      get the forecast names from the pestpp options (if any).
+      Returns None if no forecasts are named
+
+      :returns: a list of forecast names.
+      :rtype: [`str`]
+
+
+   .. method:: obs_groups(self)
+      :property:
+
+      get the observation groups
+
+      :returns: a list of unique observation groups
+      :rtype: [`str`]
+
+
+   .. method:: nnz_obs_groups(self)
+      :property:
+
+      get the observation groups that contain at least one non-zero weighted
+       observation
+
+      :returns: a list of observation groups that contain at
+                least one non-zero weighted observation
+      :rtype: [`str`]
+
+
+   .. method:: adj_par_groups(self)
+      :property:
+
+      get the parameter groups with atleast one adjustable parameter
+
+      :returns: a list of parameter groups with
+                at least one adjustable parameter
+      :rtype: [`str`]
+
+
+   .. method:: par_groups(self)
+      :property:
+
+      get the parameter groups
+
+      :returns: a list of parameter groups
+      :rtype: [`str`]
+
+
+   .. method:: prior_groups(self)
+      :property:
+
+      get the prior info groups
+
+      :returns: a list of prior information groups
+      :rtype: [`str`]
+
+
+   .. method:: prior_names(self)
+      :property:
+
+      get the prior information names
+
+      :returns: a list of prior information names
+      :rtype: [`str`]
+
+
+   .. method:: par_names(self)
+      :property:
+
+      get the parameter names
+
+      :returns: a list of parameter names
+      :rtype: [`str`]
+
+
+   .. method:: adj_par_names(self)
+      :property:
+
+      get the adjustable (not fixed or tied) parameter names
+
+      :returns: list of adjustable (not fixed or tied)
+                parameter names
+      :rtype: [`str`]
+
+
+   .. method:: obs_names(self)
+      :property:
+
+      get the observation names
+
+      :returns: a list of observation names
+      :rtype: [`str`]
+
+
+   .. method:: nnz_obs_names(self)
+      :property:
+
+      get the non-zero weight observation names
+
+      :returns: a list of non-zero weighted observation names
+      :rtype: [`str`]
+
+
+   .. method:: zero_weight_obs_names(self)
+      :property:
+
+      get the zero-weighted observation names
+
+      :returns: a list of zero-weighted observation names
+      :rtype: [`str`]
+
+
+   .. method:: estimation(self)
+      :property:
+
+      check if the control_data.pestmode is set to estimation
+
+      :returns: True if `control_data.pestmode` is estmation, False otherwise
+      :rtype: `bool`
+
+
+   .. method:: tied(self)
+      :property:
+
+      list of tied parameter names
+
+      :returns: a dataframe of tied parameter information.
+                Columns of `tied` are `parnme` and `partied`.  Returns `None` if
+                no tied parameters are found.
+      :rtype: `pandas.DataFrame`
+
+
+   .. method:: _read_df(f, nrows, names, converters, defaults=None)
+      :staticmethod:
+
+      a private method to read part of an open file into a pandas.DataFrame.
+
+      :param f: open file handle
+      :type f: `file`
+      :param nrows: number of rows to read
+      :type nrows: `int`
+      :param names: names to set the columns of the dataframe with
+      :type names: [`str`]
+      :param converters: dictionary of lambda functions to convert strings
+                         to numerical format
+      :type converters: `dict`
+      :param defaults: dictionary of default values to assign columns.
+                       Default is None
+      :type defaults: `dict`
+
+      :returns: dataframe of control file section info
+      :rtype: `pandas.DataFrame`
+
+
+   .. method:: _read_line_comments(self, f, forgive)
+
+
+   .. method:: _read_section_comments(self, f, forgive)
+
+
+   .. method:: _parse_external_line(line, pst_path='.')
+      :staticmethod:
+
+
+   .. method:: _parse_path_agnostic(filename)
+      :staticmethod:
+
+
+   .. method:: _cast_df_from_lines(section, lines, fieldnames, converters, defaults, alias_map={}, pst_path='.')
+      :staticmethod:
+
+
+   .. method:: _cast_prior_df_from_lines(self, section, lines, pst_path='.')
+
+
+   .. method:: _load_version2(self, filename)
+
+      load a version 2 control file
+
+
+   .. method:: load(self, filename)
+
+      entry point load the pest control file.
+
+      :param filename: pst filename
+      :type filename: `str`
+
+      .. note:: This method is called from the `Pst` construtor unless the `load` arg is `False`.
+
+
+   .. method:: _parse_pestpp_line(self, line)
+
+
+   .. method:: _update_control_section(self)
+
+      private method to synchronize the control section counters with the
+      various parts of the control file.  This is usually called during the
+      Pst.write() method.
+
+
+   .. method:: rectify_pgroups(self)
+
+      synchronize parameter groups section with the parameter data section
+
+      .. note::
+
+         This method is called during `Pst.write()` to make sure all parameter
+         groups named in `* parameter data` are included.  This is so users
+         don't have to manually keep this section up.  This method can also be
+         called during control file modifications to see what parameter groups
+         are present and prepare for modifying the default values in the `* parameter
+         group` section
+
+      Example::
+
+          pst = pyemu.Pst("my.pst")
+          pst.parameter_data.loc["par1","pargp"] = "new_group"
+          pst.rectify_groups()
+          pst.parameter_groups.loc["new_group","derinc"] = 1.0
+
+
+
+   .. method:: _parse_pi_par_names(self)
+
+      private method to get the parameter names from prior information
+      equations.  Sets a 'names' column in Pst.prior_information that is a list
+      of parameter names
+
+
+
+   .. method:: add_pi_equation(self, par_names, pilbl=None, rhs=0.0, weight=1.0, obs_group='pi_obgnme', coef_dict={})
+
+      a helper to construct a new prior information equation.
+
+      :param par_names: parameter names in the equation
+      :type par_names: [`str`]
+      :param pilbl: name to assign the prior information equation.  If None,
+                    a generic equation name is formed. Default is None
+      :type pilbl: `str`
+      :param rhs: the right-hand side of the pi equation
+      :type rhs: `float`
+      :param weight: the weight of the equation
+      :type weight: `float`
+      :param obs_group: the observation group for the equation. Default is 'pi_obgnme'
+      :type obs_group: `str`
+      :param coef_dict: a dictionary of parameter name, coefficient pairs to assign
+                        leading coefficients for one or more parameters in the equation.
+                        If a parameter is not listed, 1.0 is used for its coefficients.
+                        Default is {}
+      :type coef_dict: `dict`
+
+
+   .. method:: rectify_pi(self)
+
+      rectify the prior information equation with the current state of the
+      parameter_data dataframe.
+
+
+      .. note::
+
+         Equations that list fixed, tied or missing parameters
+         are removed completely even if adjustable parameters are also
+         listed in the equation. This method is called during Pst.write()
+
+
+   .. method:: _write_df(self, name, f, df, formatters, columns)
+
+
+   .. method:: sanity_checks(self)
+
+      some basic check for strangeness
+
+      .. note::
+
+         checks for duplicate names, atleast 1 adjustable parameter
+         and at least 1 non-zero-weighted observation
+
+
+   .. method:: _write_version2(self, new_filename, use_pst_path=True, pst_rel_path='.')
+
+
+   .. method:: write(self, new_filename, version=1)
+
+      main entry point to write a pest control file.
+
+      :param new_filename: name of the new pest control file
+      :type new_filename: `str`
+      :param version: flag for which version of control file to write (must be 1 or 2).
+                      if None, uses Pst._version, which set in the constructor and modified
+                      during the load
+      :type version: `int`
+
+      Example::
+
+          pst = pyemu.Pst("my.pst")
+          pst.parrep("my.par")
+          pst.write(my_new.pst")
+
+
+   .. method:: _write_version1(self, new_filename)
+
+      write a version 1 pest control file
+
+
+
+
+
+   .. method:: bounds_report(self, iterations=None)
+
+      report how many parameters are at bounds. If ensemble, the base enbsemble member is evaluated
+
+      :param iterations: a list of iterations for which a bounds report is requested
+                         If None, all iterations for which `par` files are located are reported. Default
+                         is None
+      :type iterations: [`int`]
+
+      :returns:
+
+                a pandas DataFrame object with rows being parameter groups and columns
+                    <iter>_num_at_ub, <iter>_num_at_lb, and <iter>_total_at_bounds
+                    row 0 is total at bounds, subsequent rows correspond with groups
+      :rtype: `df`
+
+      .. rubric:: Example
+
+      pst = pyemu.Pst("my.pst")
+      df = pst.bound_report(iterations=[0,2,3])
+
+
+   .. method:: get(self, par_names=None, obs_names=None)
+
+      get a new pst object with subset of parameters and/or observations
+
+      :param par_names: a list of parameter names to have in the new Pst instance.
+                        If None, all parameters are in the new Pst instance. Default
+                        is None
+      :type par_names: [`str`]
+      :param obs_names: a list of observation names to have in the new Pst instance.
+                        If None, all observations are in teh new Pst instance. Default
+                        is None
+      :type obs_names: [`str`]
+
+      :returns: a new Pst instance
+      :rtype: `Pst`
+
+      .. note::
+
+         passing `par_names` as `None` and `obs_names` as `None` effectively
+         generates a copy of the current `Pst`
+
+
+   .. method:: parrep(self, parfile=None, enforce_bounds=True)
+
+      replicates the pest parrep util. replaces the parval1 field in the
+          parameter data section dataframe with values in a PEST parameter file
+
+      :param parfile: parameter file to use.  If None, try to find and use
+                      a parameter file that corresponds to the case name.
+                      Default is None
+      :type parfile: `str`, optional
+      :param enforce_bounds: flag to enforce parameter bounds after parameter values are updated.
+                             This is useful because PEST and PEST++ round the parameter values in the
+                             par file, which may cause slight bound violations.  Default is `True`
+      :type enforce_bounds: `bool`, optional
+
+
+   .. method:: adjust_weights_discrepancy(self, resfile=None, original_ceiling=True, bygroups=False)
+
+      adjusts the weights of each non-zero weight observation based
+      on the residual in the pest residual file so each observations contribution
+      to phi is 1.0 (e.g. Mozorov's discrepancy principal)
+
+      :param resfile: residual file name.  If None, try to use a residual file
+                      with the Pst case name.  Default is None
+      :type resfile: `str`
+      :param original_ceiling: flag to keep weights from increasing - this is
+                               generally a good idea. Default is True
+      :type original_ceiling: `bool`
+      :param bygroups: flag to adjust weights by groups. If False, the weight
+                       of each non-zero weighted observation is adjusted individually. If True,
+                       intergroup weighting is preserved (the contribution to each group is used)
+                       but this may result in some strangeness if some observations in a group have
+                       a really low phi already.
+      :type bygroups: `bool`
+
+      Example::
+
+          pst = pyemu.Pst("my.pst")
+          print(pst.phi) #assumes "my.res" is colocated with "my.pst"
+          pst.adjust_weights_discrepancy()
+          print(pst.phi) # phi should equal number of non-zero observations
+
+
+   .. method:: _adjust_weights_by_phi_components(self, components, original_ceiling)
+
+      private method that resets the weights of observations by group to account for
+      residual phi components.
+
+      :param components: a dictionary of obs group:phi contribution pairs
+      :type components: `dict`
+      :param original_ceiling: flag to keep weights from increasing.
+      :type original_ceiling: `bool`
+
+
+   .. method:: __reset_weights(self, target_phis, res_idxs, obs_idxs)
+
+      private method to reset weights based on target phi values
+      for each group.  This method should not be called directly
+
+      :param target_phis: target phi contribution for groups to reweight
+      :type target_phis: `dict`
+      :param res_idxs: the index positions of each group of interest
+                       in the res dataframe
+      :type res_idxs: `dict`
+      :param obs_idxs: the index positions of each group of interest
+                       in the observation data dataframe
+      :type obs_idxs: `dict`
+
+
+   .. method:: _adjust_weights_by_list(self, obslist, weight)
+
+      a private method to reset the weight for a list of observation names.  Supports the
+      data worth analyses in pyemu.Schur class.  This method only adjusts
+      observation weights in the current weight is nonzero.  User beware!
+
+      :param obslist: list of observation names
+      :type obslist: [`str`]
+      :param weight: new weight to assign
+      :type weight: `float`
+
+
+   .. method:: adjust_weights(self, obs_dict=None, obsgrp_dict=None)
+
+      reset the weights of observations or observation groups to contribute a specified
+      amount to the composite objective function
+
+      :param obs_dict: dictionary of observation name,new contribution pairs
+      :type obs_dict: `dict`, optional
+      :param obsgrp_dict: dictionary of obs group name,contribution pairs
+      :type obsgrp_dict: `dict`, optional
+
+      .. note::
+
+         if all observations in a named obs group have zero weight, they will all be
+         assigned a non-zero weight so that the request phi contribution
+         can be met.  Similarly, any observations listed in obs_dict with zero
+         weight will also be reset. User beware!
+
+      Example::
+
+          pst = pyemu.Pst("my.pst")
+
+          # adjust a single observation
+          pst.adjust_weights(obs_dict={"obs1":10})
+
+          # adjust a single observation group
+          pst.adjust_weights(obsgrp_dict={"group1":100.0})
+
+          # make all non-zero weighted groups have a contribution of 100.0
+          balanced_groups = {grp:100 for grp in pst.nnz_obs_groups}
+          pst.adjust_weights(obsgrp_dict=balanced_groups)
+
+
+   .. method:: proportional_weights(self, fraction_stdev=1.0, wmax=100.0, leave_zero=True)
+
+      setup  weights inversely proportional to the observation value
+
+      :param fraction_stdev: the fraction portion of the observation
+                             val to treat as the standard deviation.  set to 1.0 for
+                             inversely proportional.  Default is 1.0
+      :type fraction_stdev: `float`, optional
+      :param wmax: maximum weight to allow.  Default is 100.0
+      :type wmax: `float`, optional
+      :param leave_zero: flag to leave existing zero weights.
+                         Default is True
+      :type leave_zero: `bool`, optional
+
+
+   .. method:: calculate_pertubations(self)
+
+      experimental method to calculate finite difference parameter
+      pertubations.
+
+      .. note::
+
+         The pertubation values are added to the
+         `Pst.parameter_data` attribute - user beware!
+
+
+   .. method:: build_increments(self)
+
+      experimental method to calculate parameter increments for use
+      in the finite difference pertubation calculations
+
+      .. note:: user beware!
+
+
+   .. method:: add_transform_columns(self)
+
+      add transformed values to the `Pst.parameter_data` attribute
+
+      .. note::
+
+         adds `parval1_trans`, `parlbnd_trans` and `parubnd_trans` to
+         `Pst.parameter_data`
+
+
+   .. method:: enforce_bounds(self)
+
+      enforce bounds violation
+
+      .. note:: cheap enforcement of simply bringing violators back in bounds
+
+
+   .. method:: from_io_files(cls, tpl_files, in_files, ins_files, out_files, pst_filename=None, pst_path=None)
+      :classmethod:
+
+      create a Pst instance from model interface files.
+
+      :param tpl_files: list of template file names
+      :type tpl_files: [`str`]
+      :param in_files: list of model input file names (pairs with template files)
+      :type in_files: [`str`]
+      :param ins_files: list of instruction file names
+      :type ins_files: [`str`]
+      :param out_files: list of model output file names (pairs with instruction files)
+      :type out_files: [`str`]
+      :param pst_filename: name of control file to write.  If None, no file is written.
+                           Default is None
+      :type pst_filename: `str`
+      :param pst_path: the path from the control file to the IO files.  For example, if the
+                       control will be in the same directory as the IO files, then `pst_path` should be '.'.
+                       Default is None, which doesnt do any path manipulation on the I/O file names
+      :type pst_path: 'str'
+
+      :returns: new control file instance with parameter and observation names
+                found in `tpl_files` and `ins_files`, repsectively.
+      :rtype: `Pst`
+
+      .. note::
+
+         calls `pyemu.helpers.pst_from_io_files()`
+         
+         Assigns generic values for parameter info.  Tries to use INSCHEK
+         to set somewhat meaningful observation values
+         
+         all file paths are relatively to where python is running.
+
+      Example::
+
+          tpl_files = ["my.tpl"]
+          in_files = ["my.in"]
+          ins_files = ["my.ins"]
+          out_files = ["my.out"]
+          pst = pyemu.Pst.from_io_files(tpl_files,in_files,ins_files,out_files)
+          pst.control_data.noptmax = 0
+          pst.write("my.pst)
+
+
+
+
+   .. method:: add_parameters(self, template_file, in_file=None, pst_path=None)
+
+      add new parameters to an existing control file
+
+      :param template_file: template file with (possibly) some new parameters
+      :type template_file: `str`
+      :param in_file: model input file. If None, template_file.replace('.tpl','') is used.
+                      Default is None.
+      :type in_file: `str`
+      :param pst_path: the path to append to the template_file and in_file in the control file.  If
+                       not None, then any existing path in front of the template or in file is split off
+                       and pst_path is prepended.  If python is being run in a directory other than where the control
+                       file will reside, it is useful to pass `pst_path` as `.`.  Default is None
+      :type pst_path: `str`
+
+      :returns: the data for the new parameters that were added.
+                If no new parameters are in the new template file, returns None
+      :rtype: `pandas.DataFrame`
+
+      .. note:: populates the new parameter information with default values
+
+      Example::
+
+          pst = pyemu.Pst(os.path.join("template","my.pst"))
+          pst.add_parameters(os.path.join("template","new_pars.dat.tpl",pst_path=".")
+          pst.write(os.path.join("template","my_new.pst")
+
+
+   .. method:: add_observations(self, ins_file, out_file=None, pst_path=None, inschek=True)
+
+      add new observations to a control file
+
+      :param ins_file: instruction file with exclusively new observation names
+      :type ins_file: `str`
+      :param out_file: model output file.  If None, then ins_file.replace(".ins","") is used.
+                       Default is None
+      :type out_file: `str`
+      :param pst_path: the path to append to the instruction file and out file in the control file.  If
+                       not None, then any existing path in front of the template or in file is split off
+                       and pst_path is prepended.  If python is being run in a directory other than where the control
+                       file will reside, it is useful to pass `pst_path` as `.`. Default is None
+      :type pst_path: `str`
+      :param inschek: flag to try to process the existing output file using the `pyemu.InstructionFile`
+                      class.  If successful, processed outputs are used as obsvals
+      :type inschek: `bool`
+
+      :returns: the data for the new observations that were added
+      :rtype: `pandas.DataFrame`
+
+      .. note:: populates the new observation information with default values
+
+      Example::
+
+          pst = pyemu.Pst(os.path.join("template", "my.pst"))
+          pst.add_observations(os.path.join("template","new_obs.dat.ins"), pst_path=".")
+          pst.write(os.path.join("template", "my_new.pst")
+
+
+   .. method:: write_input_files(self, pst_path='.')
+
+      writes model input files using template files and current `parval1` values.
+
+      :param pst_path: the path to where control file and template files reside.
+                       Default is '.'
+      :type pst_path: `str`
+
+      .. note::
+
+         adds "parval1_trans" column to Pst.parameter_data that includes the
+         effect of scale and offset
+
+      Example::
+
+          pst = pyemu.Pst("my.pst")
+
+          # load final parameter values
+          pst.parrep("my.par")
+
+          # write new model input files with final parameter values
+          pst.write_input_files()
+
+
+   .. method:: process_output_files(self, pst_path='.')
+
+      processing the model output files using the instruction files
+      and existing model output files.
+
+      :param pst_path: relative path from where python is running to
+                       where the control file, instruction files and model output files
+                       are located.  Default is "." (current python directory)
+      :type pst_path: `str`
+
+      :returns: model output values
+      :rtype: `pandas.Series`
+
+      .. note::
+
+         requires a complete set of model input files at relative path
+         from where python is running to `pst_path`
+
+
+   .. method:: get_res_stats(self, nonzero=True)
+
+      get some common residual stats by observation group.
+
+      :param nonzero: calculate stats using only nonzero-weighted observations.  This may seem
+                      obsvious to most users, but you never know....
+      :type nonzero: `bool`
+
+      :returns: a dataframe with columns for groups names and indices of statistic name.
+      :rtype: `pd.DataFrame`
+
+      .. note::
+
+         Stats are derived from the current obsvals, weights and grouping in
+         `Pst.observation_data` and the `modelled` values in `Pst.res`.  The
+         key here is 'current' because if obsval, weights and/or groupings have
+         changed in `Pst.observation_data` since the residuals file was generated
+         then the current values for `obsval`, `weight` and `group` are used
+         
+         the normalized RMSE is normalized against the obsval range (max - min)
+
+
+   .. method:: _stats_rss(df)
+      :staticmethod:
+
+
+   .. method:: _stats_mean(df)
+      :staticmethod:
+
+
+   .. method:: _stats_mae(df)
+      :staticmethod:
+
+
+   .. method:: _stats_rmse(df)
+      :staticmethod:
+
+
+   .. method:: _stats_nrmse(df)
+      :staticmethod:
+
+
+   .. method:: plot(self, kind=None, **kwargs)
+
+      method to plot various parts of the control.  This is sweet as!
+
+      :param kind: options are 'prior' (prior parameter histograms, '1to1' (line of equality
+                   and sim vs res), 'obs_v_sim' (time series using datetime suffix), 'phi_pie'
+                   (pie chart of phi components)
+      :type kind: `str`
+      :param kwargs: optional args for plots that are passed to pyemu plot helpers and ultimately
+                     to matplotlib
+      :type kwargs: `dict`
+
+      .. note:: Depending on 'kind' argument, a multipage pdf is written
+
+      Example::
+
+          pst = pyemu.Pst("my.pst")
+          pst.plot(kind="1to1") # requires Pst.res
+          pst.plot(kind="prior")
+          pst.plot(kind="phi_pie")
+
+
+
+   .. method:: write_par_summary_table(self, filename=None, group_names=None, sigma_range=4.0)
+
+      write a stand alone parameter summary latex table
+
+
+      :param filename: latex filename. If None, use <case>.par.tex. If `filename` is "none", no table
+                       is writtenDefault is None
+      :type filename: `str`
+      :param group_names: par group names : table names. For example {"w0":"well stress period 1"}.
+                          Default is None
+      :type group_names: `dict`
+      :param sigma_range: number of standard deviations represented by parameter bounds.  Default
+                          is 4.0, implying 95% confidence bounds
+      :type sigma_range: `float`
+
+      :returns: the summary parameter group dataframe
+      :rtype: `pandas.DataFrame`
+
+      Example::
+
+          pst = pyemu.Pst("my.pst")
+          pst.write_par_summary_table(filename="par.tex")
+
+
+   .. method:: write_obs_summary_table(self, filename=None, group_names=None)
+
+      write a stand alone observation summary latex table
+
+
+      :param filename: latex filename. If `filename` is "none", no table is written.
+                       If None, use <case>.par.tex. Default is None
+      :type filename: `str`
+      :param group_names: obs group names : table names. For example {"hds":"simulated groundwater level"}.
+                          Default is None
+      :type group_names: `dict`
+
+      :returns: the summary observation group dataframe
+      :rtype: `pandas.DataFrame`
+
+      Example::
+
+          pst = pyemu.Pst("my.pst")
+          pst.write_obs_summary_table(filename="obs.tex")
+
+
+   .. method:: _is_less_const(name)
+      :staticmethod:
+
+
+   .. method:: less_than_obs_constraints(self)
+      :property:
+
+      get the names of the observations that
+      are listed as active less than inequality constraints.
+
+      :returns: names of obseravtions that are non-zero weighted less
+                than constraints (`obgnme` starts with 'l\_' or "less")
+      :rtype: `pandas.Series`
+
+      .. note:: Zero-weighted obs are skipped
+
+
+   .. method:: less_than_pi_constraints(self)
+      :property:
+
+      get the names of the prior information eqs that
+      are listed as active less than inequality constraints.
+
+      :returns: names of prior information that are non-zero weighted
+                less than constraints (`obgnme` starts with "l\_" or "less")
+      :rtype: `pandas.Series`
+
+      .. note:: Zero-weighted pi are skipped
+
+
+   .. method:: _is_greater_const(name)
+      :staticmethod:
+
+
+   .. method:: greater_than_obs_constraints(self)
+      :property:
+
+      get the names of the observations that
+      are listed as active greater than inequality constraints.
+
+      :returns: names obseravtions that are non-zero weighted
+                greater than constraints (`obgnme` startsiwth "g\_" or "greater")
+      :rtype: `pandas.Series`
+
+      .. note:: Zero-weighted obs are skipped
+
+
+   .. method:: greater_than_pi_constraints(self)
+      :property:
+
+      get the names of the prior information eqs that
+      are listed as active greater than inequality constraints.
+
+      :returns: `pandas.Series` names of prior information that are non-zero weighted
+                greater than constraints (`obgnme` startsiwth "g\_" or "greater")
+
+      .. note:: Zero-weighted pi are skipped
+
+
+   .. method:: get_par_change_limits(self)
+
+      calculate the various parameter change limits used in pest.
+
+
+      :returns: a copy of `Pst.parameter_data`
+                with columns for relative and factor change limits
+      :rtype: `pandas.DataFrame`
+
+      .. note::
+
+         does not yet support absolute parameter change limits!
+         
+         Works in control file values space (not log transformed space).  Also
+         adds columns for effective upper and lower which account for par bounds and the
+         value of parchglim
+
+
+   .. method:: get_adj_pars_at_bounds(self, frac_tol=0.01)
+
+      get list of adjustable parameter at/near bounds
+
+      :param frac_tol: fractional tolerance of distance to bound.  For upper bound,
+                       the value `parubnd * (1-frac_tol)` is used, lower bound uses `parlbnd * (1.0 + frac_tol)`
+      :type frac_tol: 'float`
+
+      :returns:
+
+                - **[`str`]**: list of parameters at/near lower bound
+                - **[`str`]**: list of parameters at/near upper bound
+      :rtype: tuple containing
+
+
+   .. method:: try_parse_name_metadata(self)
+
+      try to add meta data columns to parameter and observation data based on
+      item names.  Used with the PstFrom process.
+
+      Note: metadata is identified in key-value pairs that are separated by a colon.
+          each key-value pair is separated from others by underscore
+
+
+

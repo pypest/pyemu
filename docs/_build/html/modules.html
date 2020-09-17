@@ -1,0 +1,660 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyemu &mdash; pyEMU 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> pyEMU
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">pyemu</a></li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyEMU</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>pyemu</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/modules.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pyemu">
+<h1>pyemu<a class="headerlink" href="#pyemu" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyemu.html">pyemu package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.mat.html">pyemu.mat package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.mat.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.mat.html#module-pyemu.mat.mat_handler">pyemu.mat.mat_handler module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.mat.html#module-pyemu.mat">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.plot.html">pyemu.plot package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.plot.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.plot.html#module-pyemu.plot.plot_utils">pyemu.plot.plot_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.plot.html#module-pyemu.plot">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.prototypes.html">pyemu.prototypes package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.prototypes.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.prototypes.html#module-pyemu.prototypes.da">pyemu.prototypes.da module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.prototypes.html#module-pyemu.prototypes.ensemble_method">pyemu.prototypes.ensemble_method module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.prototypes.html#module-pyemu.prototypes.moouu">pyemu.prototypes.moouu module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.prototypes.html#module-pyemu.prototypes">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.pst.html">pyemu.pst package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.pst.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.pst.html#module-pyemu.pst.pst_controldata">pyemu.pst.pst_controldata module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.pst.html#module-pyemu.pst.pst_handler">pyemu.pst.pst_handler module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.pst.html#module-pyemu.pst.pst_utils">pyemu.pst.pst_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.pst.html#module-pyemu.pst">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.utils.html">pyemu.utils package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.utils.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.geostats">pyemu.utils.geostats module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.gw_utils">pyemu.utils.gw_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.helpers">pyemu.utils.helpers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.optimization">pyemu.utils.optimization module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.os_utils">pyemu.utils.os_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.pp_utils">pyemu.utils.pp_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.pst_from">pyemu.utils.pst_from module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.smp_utils">pyemu.utils.smp_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.html#module-pyemu.en">pyemu.en module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.html#module-pyemu.ev">pyemu.ev module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.html#module-pyemu.la">pyemu.la module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.html#module-pyemu.logger">pyemu.logger module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.html#module-pyemu.mc">pyemu.mc module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.html#module-pyemu.pyemu_warnings">pyemu.pyemu_warnings module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.html#module-pyemu.sc">pyemu.sc module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.html#module-pyemu">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble">Ensemble</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.as_pyemu_matrix">as_pyemu_matrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.back_transform">back_transform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.copy">copy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.covariance_matrix">covariance_matrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.dropna">dropna</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.from_binary">from_binary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.from_csv">from_csv</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.from_dataframe">from_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.get_deviations">get_deviations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.istransformed">istransformed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.plot">plot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.pst">pst</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.reseed">reseed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.to_binary">to_binary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.to_csv">to_csv</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.Ensemble.transform">transform</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.en.Iloc">Iloc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.en.Loc">Loc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.en.ObservationEnsemble">ObservationEnsemble</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ObservationEnsemble.add_base">add_base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ObservationEnsemble.from_gaussian_draw">from_gaussian_draw</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ObservationEnsemble.nonzero">nonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ObservationEnsemble.phi_vector">phi_vector</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble">ParameterEnsemble</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.add_base">add_base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.adj_names">adj_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.back_transform">back_transform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.enforce">enforce</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.fixed_indexer">fixed_indexer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.from_gaussian_draw">from_gaussian_draw</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.from_mixed_draws">from_mixed_draws</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.from_parfiles">from_parfiles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.from_triangular_draw">from_triangular_draw</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.from_uniform_draw">from_uniform_draw</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.lbnd">lbnd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.log_indexer">log_indexer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.project">project</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.transform">transform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.en.ParameterEnsemble.ubnd">ubnd</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar">ErrVar</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.G">G</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.I_minus_R">I_minus_R</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.R">R</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.first_forecast">first_forecast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.first_parameter">first_parameter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.first_prediction">first_prediction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.get_errvar_dataframe">get_errvar_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.get_identifiability_dataframe">get_identifiability_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.get_null_proj">get_null_proj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.omitted_jco">omitted_jco</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.omitted_parcov">omitted_parcov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.omitted_predictions">omitted_predictions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.second_forecast">second_forecast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.second_parameter">second_parameter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.second_prediction">second_prediction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.third_forecast">third_forecast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.third_parameter">third_parameter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.third_prediction">third_prediction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ev.ErrVar.variance_at">variance_at</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis">LinearAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.adj_par_names">adj_par_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.adjust_obscov_resfile">adjust_obscov_resfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.apply_karhunen_loeve_scaling">apply_karhunen_loeve_scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.clean">clean</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.drop_prior_information">drop_prior_information</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.fehalf">fehalf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.forecast_names">forecast_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.forecasts">forecasts</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.forecasts_iter">forecasts_iter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.get">get</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.get_cso_dataframe">get_cso_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.get_obs_competition_dataframe">get_obs_competition_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.get_par_css_dataframe">get_par_css_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.jco">jco</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.mle_covariance">mle_covariance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.mle_parameter_estimate">mle_parameter_estimate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.nnz_obs_names">nnz_obs_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.obscov">obscov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.parcov">parcov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.predictions">predictions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.predictions_iter">predictions_iter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.prior_forecast">prior_forecast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.prior_parameter">prior_parameter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.prior_prediction">prior_prediction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.pst">pst</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.qhalf">qhalf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.qhalfx">qhalfx</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.reset_obscov">reset_obscov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.reset_parcov">reset_parcov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.reset_pst">reset_pst</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.la.LinearAnalysis.xtqx">xtqx</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.logger.Logger">Logger</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.logger.Logger.log">log</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.logger.Logger.lraise">lraise</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.logger.Logger.statement">statement</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.logger.Logger.warn">warn</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.mc.MonteCarlo">MonteCarlo</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.mc.MonteCarlo.parensemble">parensemble</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.mc.MonteCarlo.obsensemble">obsensemble</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.mc.MonteCarlo.draw">draw</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.mc.MonteCarlo.get_nsing">get_nsing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.mc.MonteCarlo.get_null_proj">get_null_proj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.mc.MonteCarlo.num_reals">num_reals</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.mc.MonteCarlo.project_parensemble">project_parensemble</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.mc.MonteCarlo.write_psts">write_psts</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.pyemu_warnings.PyemuWarning">PyemuWarning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur">Schur</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.get_added_obs_group_importance">get_added_obs_group_importance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.get_added_obs_importance">get_added_obs_importance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.get_conditional_instance">get_conditional_instance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.get_forecast_summary">get_forecast_summary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.get_obs_group_dict">get_obs_group_dict</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.get_par_contribution">get_par_contribution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.get_par_group_contribution">get_par_group_contribution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.get_parameter_summary">get_parameter_summary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.get_removed_obs_group_importance">get_removed_obs_group_importance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.get_removed_obs_importance">get_removed_obs_importance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.next_most_important_added_obs">next_most_important_added_obs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.next_most_par_contribution">next_most_par_contribution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.posterior_forecast">posterior_forecast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.posterior_parameter">posterior_parameter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.sc.Schur.posterior_prediction">posterior_prediction</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.Cov">Cov</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.condition_on">condition_on</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.from_observation_data">from_observation_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.from_obsweights">from_obsweights</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.from_parameter_data">from_parameter_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.from_parbounds">from_parbounds</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.from_uncfile">from_uncfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.identity">identity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.identity_like">identity_like</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.names">names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.replace">replace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.to_pearson">to_pearson</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.to_uncfile">to_uncfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Cov.zero">zero</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.Ensemble">Ensemble</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.as_pyemu_matrix">as_pyemu_matrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.back_transform">back_transform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.copy">copy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.covariance_matrix">covariance_matrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.dropna">dropna</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.from_binary">from_binary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.from_csv">from_csv</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.from_dataframe">from_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.get_deviations">get_deviations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.istransformed">istransformed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.plot">plot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.pst">pst</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.reseed">reseed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.to_binary">to_binary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.to_csv">to_csv</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Ensemble.transform">transform</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.ErrVar">ErrVar</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.G">G</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.I_minus_R">I_minus_R</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.R">R</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.first_forecast">first_forecast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.first_parameter">first_parameter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.first_prediction">first_prediction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.get_errvar_dataframe">get_errvar_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.get_identifiability_dataframe">get_identifiability_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.get_null_proj">get_null_proj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.omitted_jco">omitted_jco</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.omitted_parcov">omitted_parcov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.omitted_predictions">omitted_predictions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.second_forecast">second_forecast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.second_parameter">second_parameter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.second_prediction">second_prediction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.third_forecast">third_forecast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.third_parameter">third_parameter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.third_prediction">third_prediction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ErrVar.variance_at">variance_at</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.Jco">Jco</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Jco.from_pst">from_pst</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Jco.nobs">nobs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Jco.npar">npar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Jco.obs_names">obs_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Jco.par_names">par_names</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis">LinearAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.adj_par_names">adj_par_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.adjust_obscov_resfile">adjust_obscov_resfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.apply_karhunen_loeve_scaling">apply_karhunen_loeve_scaling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.clean">clean</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.drop_prior_information">drop_prior_information</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.fehalf">fehalf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.forecast_names">forecast_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.forecasts">forecasts</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.forecasts_iter">forecasts_iter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.get">get</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.get_cso_dataframe">get_cso_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.get_obs_competition_dataframe">get_obs_competition_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.get_par_css_dataframe">get_par_css_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.jco">jco</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.mle_covariance">mle_covariance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.mle_parameter_estimate">mle_parameter_estimate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.nnz_obs_names">nnz_obs_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.obscov">obscov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.parcov">parcov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.predictions">predictions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.predictions_iter">predictions_iter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.prior_forecast">prior_forecast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.prior_parameter">prior_parameter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.prior_prediction">prior_prediction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.pst">pst</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.qhalf">qhalf</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.qhalfx">qhalfx</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.reset_obscov">reset_obscov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.reset_parcov">reset_parcov</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.reset_pst">reset_pst</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.LinearAnalysis.xtqx">xtqx</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.Matrix">Matrix</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.T">T</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.align">align</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.as_2d">as_2d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.binary_header_dt">binary_header_dt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.binary_rec_dt">binary_rec_dt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.char">char</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.coo_rec_dt">coo_rec_dt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.copy">copy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.df">df</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.double">double</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.drop">drop</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.element_isaligned">element_isaligned</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.extend">extend</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.extract">extract</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.find_rowcol_indices">find_rowcol_indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.from_ascii">from_ascii</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.from_binary">from_binary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.from_dataframe">from_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.from_fortranfile">from_fortranfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.from_names">from_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.full_s">full_s</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.get">get</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.get_diagonal_vector">get_diagonal_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.get_maxsing">get_maxsing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.get_maxsing_from_s">get_maxsing_from_s</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.hadamard_product">hadamard_product</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.indices">indices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.integer">integer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.inv">inv</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.mult_isaligned">mult_isaligned</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.ncol">ncol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.new_obs_length">new_obs_length</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.new_par_length">new_par_length</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.newx">newx</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.nrow">nrow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.obs_length">obs_length</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.par_length">par_length</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.pseudo_inv">pseudo_inv</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.pseudo_inv_components">pseudo_inv_components</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.read_ascii">read_ascii</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.read_binary">read_binary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.reset_x">reset_x</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.s">s</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.shape">shape</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.sqrt">sqrt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.to_2d">to_2d</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.to_ascii">to_ascii</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.to_binary">to_binary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.to_coo">to_coo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.to_dataframe">to_dataframe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.transpose">transpose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.u">u</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.v">v</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.x">x</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Matrix.zero2d">zero2d</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.ObservationEnsemble">ObservationEnsemble</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ObservationEnsemble.add_base">add_base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ObservationEnsemble.from_gaussian_draw">from_gaussian_draw</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ObservationEnsemble.nonzero">nonzero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ObservationEnsemble.phi_vector">phi_vector</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble">ParameterEnsemble</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.add_base">add_base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.adj_names">adj_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.back_transform">back_transform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.enforce">enforce</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.fixed_indexer">fixed_indexer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.from_gaussian_draw">from_gaussian_draw</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.from_mixed_draws">from_mixed_draws</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.from_parfiles">from_parfiles</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.from_triangular_draw">from_triangular_draw</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.from_uniform_draw">from_uniform_draw</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.lbnd">lbnd</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.log_indexer">log_indexer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.project">project</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.transform">transform</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.ParameterEnsemble.ubnd">ubnd</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.Pst">Pst</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.add_observations">add_observations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.add_parameters">add_parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.add_pi_equation">add_pi_equation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.add_transform_columns">add_transform_columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.adj_par_groups">adj_par_groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.adj_par_names">adj_par_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.adjust_weights">adjust_weights</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.adjust_weights_discrepancy">adjust_weights_discrepancy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.bounds_report">bounds_report</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.build_increments">build_increments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.calculate_pertubations">calculate_pertubations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.control_data">control_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.enforce_bounds">enforce_bounds</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.estimation">estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.forecast_names">forecast_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.from_io_files">from_io_files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.from_par_obs_names">from_par_obs_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.get">get</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.get_adj_pars_at_bounds">get_adj_pars_at_bounds</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.get_par_change_limits">get_par_change_limits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.get_res_stats">get_res_stats</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.greater_than_obs_constraints">greater_than_obs_constraints</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.greater_than_pi_constraints">greater_than_pi_constraints</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.less_than_obs_constraints">less_than_obs_constraints</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.less_than_pi_constraints">less_than_pi_constraints</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.load">load</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.nnz_obs">nnz_obs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.nnz_obs_groups">nnz_obs_groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.nnz_obs_names">nnz_obs_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.nobs">nobs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.npar">npar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.npar_adj">npar_adj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.nprior">nprior</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.obs_groups">obs_groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.obs_names">obs_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.observation_data">observation_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.par_groups">par_groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.par_names">par_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.parameter_data">parameter_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.parrep">parrep</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.phi">phi</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.phi_components">phi_components</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.phi_components_normalized">phi_components_normalized</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.plot">plot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.prior_groups">prior_groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.prior_information">prior_information</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.prior_names">prior_names</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.process_output_files">process_output_files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.proportional_weights">proportional_weights</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.rectify_pgroups">rectify_pgroups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.rectify_pi">rectify_pi</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.reg_data">reg_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.res">res</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.sanity_checks">sanity_checks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.set_res">set_res</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.svd_data">svd_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.tied">tied</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.try_parse_name_metadata">try_parse_name_metadata</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.write">write</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.write_input_files">write_input_files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.write_obs_summary_table">write_obs_summary_table</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.write_par_summary_table">write_par_summary_table</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Pst.zero_weight_obs_names">zero_weight_obs_names</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pyemu.html#pyemu.Schur">Schur</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.get_added_obs_group_importance">get_added_obs_group_importance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.get_added_obs_importance">get_added_obs_importance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.get_conditional_instance">get_conditional_instance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.get_forecast_summary">get_forecast_summary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.get_obs_group_dict">get_obs_group_dict</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.get_par_contribution">get_par_contribution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.get_par_group_contribution">get_par_group_contribution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.get_parameter_summary">get_parameter_summary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.get_removed_obs_group_importance">get_removed_obs_group_importance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.get_removed_obs_importance">get_removed_obs_importance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.next_most_important_added_obs">next_most_important_added_obs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.next_most_par_contribution">next_most_par_contribution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.posterior_forecast">posterior_forecast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.posterior_parameter">posterior_parameter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pyemu.html#pyemu.Schur.posterior_prediction">posterior_prediction</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -13,8 +13,15 @@ import numpy as np
 import pandas as pd
 from ..pyemu_warnings import PyemuWarning
 
-def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
-               gwutils_compliant=False, datetime_format=None,prefix=''):
+
+def smp_to_ins(
+    smp_filename,
+    ins_filename=None,
+    use_generic_names=False,
+    gwutils_compliant=False,
+    datetime_format=None,
+    prefix="",
+):
     """create an instruction file for an smp file
 
     Args:
@@ -47,43 +54,55 @@ def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
 
     """
     if ins_filename is None:
-        ins_filename = smp_filename+".ins"
-    df = smp_to_dataframe(smp_filename,datetime_format=datetime_format)
-    df.loc[:,"ins_strings"] = None
-    df.loc[:,"observation_names"] = None
+        ins_filename = smp_filename + ".ins"
+    df = smp_to_dataframe(smp_filename, datetime_format=datetime_format)
+    df.loc[:, "ins_strings"] = None
+    df.loc[:, "observation_names"] = None
     name_groups = df.groupby("name").groups
-    for name,idxs in name_groups.items():
+    for name, idxs in name_groups.items():
         if not use_generic_names and len(name) <= 11:
-            onames = df.loc[idxs,"datetime"].apply(lambda x: prefix+name+'_'+x.strftime("%d%m%Y")).values
+            onames = (
+                df.loc[idxs, "datetime"]
+                .apply(lambda x: prefix + name + "_" + x.strftime("%d%m%Y"))
+                .values
+            )
         else:
-            onames = [prefix+name+"_{0:d}".format(i) for i in range(len(idxs))]
-        if False in (map(lambda x :len(x) <= 20,onames)):
+            onames = [prefix + name + "_{0:d}".format(i) for i in range(len(idxs))]
+        if False in (map(lambda x: len(x) <= 20, onames)):
             long_names = [oname for oname in onames if len(oname) > 20]
-            raise Exception("observation names longer than 20 chars:\n{0}".format(str(long_names)))
+            raise Exception(
+                "observation names longer than 20 chars:\n{0}".format(str(long_names))
+            )
         if gwutils_compliant:
             ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
         else:
             ins_strs = ["l1 w w w  !{0:s}!".format(on) for on in onames]
-        df.loc[idxs,"observation_names"] = onames
-        df.loc[idxs,"ins_strings"] = ins_strs
+        df.loc[idxs, "observation_names"] = onames
+        df.loc[idxs, "ins_strings"] = ins_strs
 
     counts = df.observation_names.value_counts()
     dup_sites = [name for name in counts.index if counts[name] > 1]
     if len(dup_sites) > 0:
-        raise Exception("duplicate observation names found:{0}"\
-                        .format(','.join(dup_sites)))
+        raise Exception(
+            "duplicate observation names found:{0}".format(",".join(dup_sites))
+        )
 
-    with open(ins_filename,'w') as f:
+    with open(ins_filename, "w") as f:
         f.write("pif ~\n")
-        [f.write(ins_str+"\n") for ins_str in df.loc[:,"ins_strings"]]
+        [f.write(ins_str + "\n") for ins_str in df.loc[:, "ins_strings"]]
     return df
 
 
-def dataframe_to_smp(dataframe,smp_filename,name_col="name",
-                     datetime_col="datetime",value_col="value",
-                     datetime_format="dd/mm/yyyy",
-                     value_format="{0:15.6E}",
-                     max_name_len=12):
+def dataframe_to_smp(
+    dataframe,
+    smp_filename,
+    name_col="name",
+    datetime_col="datetime",
+    value_col="value",
+    datetime_format="dd/mm/yyyy",
+    value_format="{0:15.6E}",
+    max_name_len=12,
+):
     """ write a dataframe as an smp file
 
     Args:
@@ -107,31 +126,32 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
         pyemu.smp_utils.dataframe_to_smp(df,"my.smp")
 
     """
-    formatters = {"name":lambda x:"{0:<20s}".format(str(x)[:max_name_len]),
-                  "value":lambda x:value_format.format(x)}
+    formatters = {
+        "name": lambda x: "{0:<20s}".format(str(x)[:max_name_len]),
+        "value": lambda x: value_format.format(x),
+    }
     if datetime_format.lower().startswith("d"):
         dt_fmt = "%d/%m/%Y    %H:%M:%S"
     elif datetime_format.lower().startswith("m"):
         dt_fmt = "%m/%d/%Y    %H:%M:%S"
     else:
-        raise Exception("unrecognized datetime_format: " +\
-                        "{0}".format(str(datetime_format)))
+        raise Exception(
+            "unrecognized datetime_format: " + "{0}".format(str(datetime_format))
+        )
 
-    for col in [name_col,datetime_col,value_col]:
+    for col in [name_col, datetime_col, value_col]:
         assert col in dataframe.columns
 
-    dataframe.loc[:,"datetime_str"] = dataframe.loc[:,"datetime"].\
-        apply(lambda x:x.strftime(dt_fmt))
-    if isinstance(smp_filename,str):
-        smp_filename = open(smp_filename,'w')
+    dataframe.loc[:, "datetime_str"] = dataframe.loc[:, "datetime"].apply(
+        lambda x: x.strftime(dt_fmt)
+    )
+    if isinstance(smp_filename, str):
+        smp_filename = open(smp_filename, "w")
         # need this to remove the leading space that pandas puts in front
-        s = dataframe.loc[:,[name_col,"datetime_str",value_col]].\
-                to_string(col_space=0,
-                          formatters=formatters,
-                          justify=None,
-                          header=False,
-                          index=False)
-        for ss in s.split('\n'):
+        s = dataframe.loc[:, [name_col, "datetime_str", value_col]].to_string(
+            col_space=0, formatters=formatters, justify=None, header=False, index=False
+        )
+        for ss in s.split("\n"):
             smp_filename.write("{0:<s}\n".format(ss.strip()))
     dataframe.pop("datetime_str")
 
@@ -140,17 +160,19 @@ def _date_parser(items):
     """ datetime parser to help load smp files
     """
     try:
-        dt = datetime.strptime(items,"%d/%m/%Y %H:%M:%S")
+        dt = datetime.strptime(items, "%d/%m/%Y %H:%M:%S")
     except Exception as e:
         try:
-            dt = datetime.strptime(items,"%m/%d/%Y %H:%M:%S")
+            dt = datetime.strptime(items, "%m/%d/%Y %H:%M:%S")
         except Exception as ee:
-            raise Exception("error parsing datetime string" +\
-                            " {0}: \n{1}\n{2}".format(str(items),str(e),str(ee)))
+            raise Exception(
+                "error parsing datetime string"
+                + " {0}: \n{1}\n{2}".format(str(items), str(e), str(ee))
+            )
     return dt
 
 
-def smp_to_dataframe(smp_filename,datetime_format=None):
+def smp_to_dataframe(smp_filename, datetime_format=None):
     """ load an smp file into a pandas dataframe
 
     Args:
@@ -171,13 +193,17 @@ def smp_to_dataframe(smp_filename,datetime_format=None):
     """
 
     if datetime_format is not None:
-        date_func = lambda x: datetime.strptime(x,datetime_format)
+        date_func = lambda x: datetime.strptime(x, datetime_format)
     else:
         date_func = _date_parser
-    df = pd.read_csv(smp_filename, delim_whitespace=True,
-                     parse_dates={"datetime":["date","time"]},
-                     header=None,names=["name","date","time","value"],
-                     dtype={"name":object,"value":np.float64},
-                     na_values=["dry"],
-                     date_parser=date_func)
+    df = pd.read_csv(
+        smp_filename,
+        delim_whitespace=True,
+        parse_dates={"datetime": ["date", "time"]},
+        header=None,
+        names=["name", "date", "time", "value"],
+        dtype={"name": object, "value": np.float64},
+        na_values=["dry"],
+        date_parser=date_func,
+    )
     return df

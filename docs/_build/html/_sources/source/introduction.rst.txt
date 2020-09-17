@@ -1,7 +1,0 @@
-Introduction
-------------
-
-pyEMU is a set of python modules for programmatically interacting with the PEST
-and PESTPP suites.  It adopts much of the terminology from the PEST ecosystem,
-but implements the functionality in a pythonic, easy-to-use interface. pyEMU is
-available via github.
