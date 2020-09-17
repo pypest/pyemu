@@ -12,7 +12,9 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../pyemu'))
+sys.path.insert(0, os.path.join('..','pyemu'))
+sys.path.append(os.path.join(".."))
+
 
 
 # -- Project information -----------------------------------------------------
@@ -37,6 +39,7 @@ extensions.append('autoapi.extension')
 
 autoapi_type = 'python'
 autoapi_dirs = [os.path.join('..','pyemu')]
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
