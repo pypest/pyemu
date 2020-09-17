@@ -16,7 +16,7 @@ Develop branch:
 Read the docs
 =============
 
-[https://pypest.github.io/pyemudoc/](https://pypest.github.io/pyemudoc)
+[https://pyemu.readthedocs.io/en/latest/](https://pyemu.readthedocs.io/en/latest/)
 
 The pyEMU documentation is being treated as a first-class citizen!  Also see the example notebooks in the repo.
 
@@ -51,6 +51,7 @@ Version 0.9 includes
 A publication documenting pyEMU and an example application can be found here:
 
 [http://dx.doi.org/10.1016/j.envsoft.2016.08.017](http://dx.doi.org/10.1016/j.envsoft.2016.08.017)
+
 
 Funding
 =======
