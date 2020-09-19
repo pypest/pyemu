@@ -150,7 +150,7 @@ def setup_pilotpoints_grid(ml=None, sr=None, ibound=None, prefix_dict=None,
             for i in range(start,ib.shape[0]-start,every_n_cell):
                 for j in range(start,ib.shape[1]-start,every_n_cell):
                     # skip if this is an inactive cell
-                    if ib[i,j] == 0:
+                    if ib[i,j] <= 0: # this will account for MF6 style ibound as well
                         continue
 
                     # get the attributes we need
