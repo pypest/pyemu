@@ -7,7 +7,8 @@ import pandas as pd
 import pyemu
 from .pyemu_warnings import PyemuWarning
 
-SEED = 358183147 #from random.org on 5 Dec 2016
+SEED = 358183147  # from random.org on 5 Dec 2016
+
 
 class Loc(object):
     """thin wrapper around `pandas.DataFrame.loc` to make sure returned type
@@ -21,17 +22,19 @@ class Loc(object):
         to each `Ensemble` instance
 
     """
-    def __init__(self,ensemble):
+
+    def __init__(self, ensemble):
         self._ensemble = ensemble
 
-    def __getitem__(self,item):
-        return type(self._ensemble)(self._ensemble.pst, 
+    def __getitem__(self, item):
+        return type(self._ensemble)(
+            self._ensemble.pst,
             self._ensemble._df.loc[item],
-            istransformed=self._ensemble.istransformed)
+            istransformed=self._ensemble.istransformed,
+        )
 
-    def __setitem__(self,idx,value):
+    def __setitem__(self, idx, value):
         self._ensemble._df.loc[idx] = value
-
 
 
 class Iloc(object):
@@ -46,15 +49,18 @@ class Iloc(object):
         to each `Ensemble` instance
 
     """
-    def __init__(self,ensemble):
+
+    def __init__(self, ensemble):
         self._ensemble = ensemble
 
-    def __getitem__(self,item):
-        return type(self._ensemble)(self._ensemble.pst, 
+    def __getitem__(self, item):
+        return type(self._ensemble)(
+            self._ensemble.pst,
             self._ensemble._df.iloc[item],
-            istransformed=self._ensemble.istransformed)
+            istransformed=self._ensemble.istransformed,
+        )
 
-    def __setitem__(self,idx,value):
+    def __setitem__(self, idx, value):
         self._ensemble._df.iloc[idx] = value
 
 
@@ -75,7 +81,8 @@ class Ensemble(object):
         pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst)
 
     """
-    def __init__(self,pst,df,istransformed=False):
+
+    def __init__(self, pst, df, istransformed=False):
         self._df = df
         """`pandas.DataFrame`: the underlying dataframe that stores the realized values"""
         self.pst = pst
@@ -90,13 +97,13 @@ class Ensemble(object):
     def __str__(self):
         return self._df.__str__()
 
-    def __sub__(self,other):
+    def __sub__(self, other):
         try:
             return self._df - other
         except:
             return self._df - other._df
 
-    def __mul__(self,other):
+    def __mul__(self, other):
         try:
             return self._df * other
         except:
@@ -108,7 +115,7 @@ class Ensemble(object):
         except:
             return self._df / other._df
 
-    def __add__(self,other):
+    def __add__(self, other):
         try:
             return self._df + other
         except:
@@ -137,9 +144,9 @@ class Ensemble(object):
             copies both `Ensemble.pst` and `Ensemble._df`
 
         """
-        return type(self)(pst=self.pst.get(),
-                          df=self._df.copy(),
-                          istransformed=self.istransformed)
+        return type(self)(
+            pst=self.pst.get(), df=self._df.copy(), istransformed=self.istransformed
+        )
 
     @property
     def istransformed(self):
@@ -193,7 +200,7 @@ class Ensemble(object):
         self._transformed = False
         return
 
-    def __getattr__(self,item):
+    def __getattr__(self, item):
         if item == "loc":
             return self.loc[item]
         elif item == "iloc":
@@ -203,27 +210,41 @@ class Ensemble(object):
         elif item == "columns":
             return self._df.columns
         elif item in set(dir(self)):
-            return getattr(self,item)
+            return getattr(self, item)
         elif item in set(dir(self._df)):
             lhs = self._df.__getattr__(item)
             if type(lhs) == type(self._df):
-                return type(self)(pst=self.pst,df=lhs,istransformed=self.istransformed)
+                return type(self)(
+                    pst=self.pst, df=lhs, istransformed=self.istransformed
+                )
             elif "DataFrame" in str(lhs):
-                warnings.warn("return type uncaught, losing Ensemble type, returning DataFrame", PyemuWarning)
+                warnings.warn(
+                    "return type uncaught, losing Ensemble type, returning DataFrame",
+                    PyemuWarning,
+                )
                 print("return type uncaught, losing Ensemble type, returning DataFrame")
                 return lhs
             else:
                 return lhs
         else:
-            raise AttributeError("Ensemble error: the following item was not" +\
-                                 "found in Ensemble or DataFrame attributes:{0}".format(item))
+            raise AttributeError(
+                "Ensemble error: the following item was not"
+                + "found in Ensemble or DataFrame attributes:{0}".format(item)
+            )
         return
 
-        #def plot(self,*args,**kwargs):
-            #self._df.plot(*args,**kwargs)
-    def plot(self, bins=10, facecolor='0.5', plot_cols=None,
-             filename="ensemble.pdf", func_dict=None,
-             **kwargs):
+        # def plot(self,*args,**kwargs):
+        # self._df.plot(*args,**kwargs)
+
+    def plot(
+        self,
+        bins=10,
+        facecolor="0.5",
+        plot_cols=None,
+        filename="ensemble.pdf",
+        func_dict=None,
+        **kwargs
+    ):
         """plot ensemble histograms to multipage pdf
 
         Args:
@@ -245,8 +266,9 @@ class Ensemble(object):
             pe.plot(bins=30)
 
         """
-        pyemu.plot_utils.ensemble_helper(self, bins=bins, facecolor=facecolor, plot_cols=plot_cols,
-                        filename=filename)
+        pyemu.plot_utils.ensemble_helper(
+            self, bins=bins, facecolor=facecolor, plot_cols=plot_cols, filename=filename
+        )
 
     @classmethod
     def from_binary(cls, pst, filename):
@@ -268,7 +290,6 @@ class Ensemble(object):
         """
         df = pyemu.Matrix.from_binary(filename).to_dataframe()
         return cls(pst=pst, df=df)
-
 
     @classmethod
     def from_csv(cls, pst, filename, *args, **kwargs):
@@ -294,14 +315,12 @@ class Ensemble(object):
 
         """
 
-
-
         if "index_col" not in kwargs:
             kwargs["index_col"] = 0
-        df = pd.read_csv(filename,*args,**kwargs)
+        df = pd.read_csv(filename, *args, **kwargs)
         return cls(pst=pst, df=df)
 
-    def to_csv(self,filename,*args,**kwargs):
+    def to_csv(self, filename, *args, **kwargs):
         """write `Ensemble` to a CSV file
 
         Args:
@@ -327,12 +346,12 @@ class Ensemble(object):
             self.back_transform()
             retrans = True
         if self._df.isnull().values.any():
-            warnings.warn("NaN in ensemble",PyemuWarning)
-        self._df.to_csv(filename,*args,**kwargs)
+            warnings.warn("NaN in ensemble", PyemuWarning)
+        self._df.to_csv(filename, *args, **kwargs)
         if retrans:
             self.transform()
 
-    def to_binary(self,filename):
+    def to_binary(self, filename):
         """write `Ensemble` to a PEST-style binary file
 
         Args:
@@ -355,35 +374,44 @@ class Ensemble(object):
             self.back_transform()
             retrans = True
         if self._df.isnull().values.any():
-            warnings.warn("NaN in ensemble",PyemuWarning)
+            warnings.warn("NaN in ensemble", PyemuWarning)
         pyemu.Matrix.from_dataframe(self._df).to_coo(filename)
         if retrans:
             self.transform()
 
     @classmethod
-    def from_dataframe(cls,pst,df,istransformed=False):
-        warnings.warn("Ensemble.from_dataframe() is deprecated and has been "
-                      "replaced with the standard constructor, which takes"
-                      "the same arguments")
-        return cls(pst=pst,df=df,istransformed=istransformed)
-
+    def from_dataframe(cls, pst, df, istransformed=False):
+        warnings.warn(
+            "Ensemble.from_dataframe() is deprecated and has been "
+            "replaced with the standard constructor, which takes"
+            "the same arguments"
+        )
+        return cls(pst=pst, df=df, istransformed=istransformed)
 
     @staticmethod
-    def _gaussian_draw(cov,mean_values,num_reals,grouper=None,fill=True, factor="eigen"):
+    def _gaussian_draw(
+        cov, mean_values, num_reals, grouper=None, fill=True, factor="eigen"
+    ):
 
         factor = factor.lower()
-        if factor not in ["eigen","svd"]:
-            raise Exception("Ensemble._gaussian_draw() error: unrecognized"+\
-                            "'factor': {0}".format(factor))
+        if factor not in ["eigen", "svd"]:
+            raise Exception(
+                "Ensemble._gaussian_draw() error: unrecognized"
+                + "'factor': {0}".format(factor)
+            )
         # make sure all cov names are found in mean_values
         cov_names = set(cov.row_names)
         mv_names = set(mean_values.index.values)
         missing = cov_names - mv_names
         if len(missing) > 0:
-            raise Exception("Ensemble._gaussian_draw() error: the following cov names are not in "
-                            "mean_values: {0}".format(','.join(missing)))
+            raise Exception(
+                "Ensemble._gaussian_draw() error: the following cov names are not in "
+                "mean_values: {0}".format(",".join(missing))
+            )
         if cov.isdiagonal:
-            stds = {name: std for name, std in zip(cov.row_names, np.sqrt(cov.x.flatten()))}
+            stds = {
+                name: std for name, std in zip(cov.row_names, np.sqrt(cov.x.flatten()))
+            }
             snv = np.random.randn(num_reals, mean_values.shape[0])
             reals = np.zeros_like(snv)
             reals[:, :] = np.NaN
@@ -391,19 +419,21 @@ class Ensemble(object):
                 if name in cov_names:
                     reals[:, i] = (snv[:, i] * stds[name]) + mean_values.loc[name]
                 elif fill:
-                   reals[:, i] = mean_values.loc[name]
+                    reals[:, i] = mean_values.loc[name]
         else:
             reals = np.zeros((num_reals, mean_values.shape[0]))
             reals[:, :] = np.NaN
             if fill:
-                for i,v in enumerate(mean_values.values):
-                   reals[:,i] = v
-            cov_map = {n:i for n,i in zip(cov.row_names,np.arange(cov.shape[0]))}
-            mv_map = {n: i for n, i in zip(mean_values.index, np.arange(mean_values.shape[0]))}
+                for i, v in enumerate(mean_values.values):
+                    reals[:, i] = v
+            cov_map = {n: i for n, i in zip(cov.row_names, np.arange(cov.shape[0]))}
+            mv_map = {
+                n: i for n, i in zip(mean_values.index, np.arange(mean_values.shape[0]))
+            }
             if grouper is not None:
 
-                for grp_name,names in grouper.items():
-                    print("drawing from group",grp_name)
+                for grp_name, names in grouper.items():
+                    print("drawing from group", grp_name)
                     idxs = [mv_map[name] for name in names]
                     snv = np.random.randn(num_reals, len(names))
                     cov_grp = cov.get(names)
@@ -417,15 +447,17 @@ class Ensemble(object):
                             except:
                                 covname = "trouble_{0}.cov".format(grp_name)
                                 cov_grp.to_ascii(covname)
-                                raise Exception("error inverting cov for group '{0}'," + \
-                                                "saved trouble cov to {1}".
-                                                format(grp_name, covname))
-
+                                raise Exception(
+                                    "error inverting cov for group '{0}',"
+                                    + "saved trouble cov to {1}".format(
+                                        grp_name, covname
+                                    )
+                                )
 
                             a, i = Ensemble._get_eigen_projection_matrix(cov_grp.as_2d)
                         elif factor == "svd":
                             a, i = Ensemble._get_svd_projection_matrix(cov_grp.as_2d)
-                            snv[:,i:] = 0.0
+                            snv[:, i:] = 0.0
                         # process each realization
                         group_mean_values = mean_values.loc[names]
                         for i in range(num_reals):
@@ -437,39 +469,39 @@ class Ensemble(object):
                     a, i = Ensemble._get_eigen_projection_matrix(cov.as_2d)
                 elif factor == "svd":
                     a, i = Ensemble._get_svd_projection_matrix(cov.as_2d)
-                    snv[:,i:] = 0.0
+                    snv[:, i:] = 0.0
                 cov_mean_values = mean_values.loc[cov.row_names].values
                 idxs = [mv_map[name] for name in cov.row_names]
                 for i in range(num_reals):
                     reals[i, idxs] = cov_mean_values + np.dot(a, snv[i, :])
 
-        df = pd.DataFrame(reals,columns=mean_values.index.values)
-        df.dropna(inplace=True,axis=1)
+        df = pd.DataFrame(reals, columns=mean_values.index.values)
+        df.dropna(inplace=True, axis=1)
         return df
 
-
     @staticmethod
-    def _get_svd_projection_matrix(x,maxsing=None,eigthresh=1.0e-7):
+    def _get_svd_projection_matrix(x, maxsing=None, eigthresh=1.0e-7):
         if x.shape[0] != x.shape[1]:
             raise Exception("matrix not square")
-        u,s,v = np.linalg.svd(x,full_matrices=True)
+        u, s, v = np.linalg.svd(x, full_matrices=True)
         v = v.transpose()
 
         if maxsing is None:
-            maxsing = pyemu.Matrix.get_maxsing_from_s(s,eigthresh=eigthresh)
-        u = u[:,:maxsing]
+            maxsing = pyemu.Matrix.get_maxsing_from_s(s, eigthresh=eigthresh)
+        u = u[:, :maxsing]
         s = s[:maxsing]
-        v = v[:,:maxsing]
+        v = v[:, :maxsing]
 
         # fill in full size svd component matrices
         s_full = np.zeros(x.shape)
-        s_full[:s.shape[0], :s.shape[1]] = np.sqrt(s)  # sqrt since sing vals are eigvals**2
+        s_full[: s.shape[0], : s.shape[1]] = np.sqrt(
+            s
+        )  # sqrt since sing vals are eigvals**2
         v_full = np.zeros_like(s_full)
-        v_full[:v.shape[0], :v.shape[1]] = v
+        v_full[: v.shape[0], : v.shape[1]] = v
         # form the projection matrix
         proj = np.dot(v_full, s_full)
         return proj, maxsing
-
 
     @staticmethod
     def _get_eigen_projection_matrix(x):
@@ -481,20 +513,25 @@ class Ensemble(object):
             if v[i] > 1.0e-10:
                 pass
             else:
-                print("near zero eigen value found", v[i], \
-                      "at index", i, " of ", v.shape[0])
+                print(
+                    "near zero eigen value found",
+                    v[i],
+                    "at index",
+                    i,
+                    " of ",
+                    v.shape[0],
+                )
                 v[i] = 0.0
 
         # form the projection matrix
         vsqrt = np.sqrt(v)
-        vsqrt[i+1:] = 0.0
+        vsqrt[i + 1 :] = 0.0
         v = np.diag(vsqrt)
         a = np.dot(w, v)
 
         return a, i
 
-
-    def get_deviations(self,center_on=None):
+    def get_deviations(self, center_on=None):
         """get the deviations of the realizations around a certain
         point in ensemble space
 
@@ -524,17 +561,19 @@ class Ensemble(object):
         mean_vec = self.mean()
         if center_on is not None:
             if center_on not in self.index:
-                raise Exception("'center_on' realization {0} not found".format(center_on))
-            mean_vec = self._df.loc[center_on,:].copy()
+                raise Exception(
+                    "'center_on' realization {0} not found".format(center_on)
+                )
+            mean_vec = self._df.loc[center_on, :].copy()
 
         df = self._df.copy()
         for col in df.columns:
-            df.loc[:,col] -= mean_vec[col]
+            df.loc[:, col] -= mean_vec[col]
         if retrans:
             self.back_transform()
-        return type(self)(pst=self.pst,df=df,istransformed=self.istransformed)
+        return type(self)(pst=self.pst, df=df, istransformed=self.istransformed)
 
-    def as_pyemu_matrix(self,typ=None):
+    def as_pyemu_matrix(self, typ=None):
         """get a `pyemu.Matrix` instance of `Ensemble`
 
         Args:
@@ -557,7 +596,7 @@ class Ensemble(object):
             typ = pyemu.Matrix
         return typ.from_dataframe(self._df)
 
-    def covariance_matrix(self,localizer=None,center_on=None):
+    def covariance_matrix(self, localizer=None, center_on=None):
         """get a empirical covariance matrix implied by the
         correlations between realizations
 
@@ -574,14 +613,13 @@ class Ensemble(object):
         """
 
         devs = self.get_deviations(center_on=center_on).as_pyemu_matrix()
-        devs *= (1.0 / np.sqrt(float(self.shape[0] - 1.0)))
+        devs *= 1.0 / np.sqrt(float(self.shape[0] - 1.0))
 
         if localizer is not None:
             devs = devs.T * devs
             return devs.hadamard_product(localizer)
 
-        return pyemu.Cov((devs.T * devs).x,names=devs.col_names)
-
+        return pyemu.Cov((devs.T * devs).x, names=devs.col_names)
 
     def dropna(self, *args, **kwargs):
         """override of `pandas.DataFrame.dropna()`
@@ -593,8 +631,8 @@ class Ensemble(object):
                 to `pandas.DataFrame.dropna()`.
 
         """
-        df = self._df.dropna(*args,**kwargs)
-        return type(self)(pst=self.pst,df=df,istransformed=self.istransformed)
+        df = self._df.dropna(*args, **kwargs)
+        return type(self)(pst=self.pst, df=df, istransformed=self.istransformed)
 
 
 class ObservationEnsemble(Ensemble):
@@ -614,12 +652,14 @@ class ObservationEnsemble(Ensemble):
         oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
 
     """
-    def __init__(self,pst,df,istransformed=False):
-        super(ObservationEnsemble,self).__init__(pst,df,istransformed)
+
+    def __init__(self, pst, df, istransformed=False):
+        super(ObservationEnsemble, self).__init__(pst, df, istransformed)
 
     @classmethod
-    def from_gaussian_draw(cls,pst,cov=None,num_reals=100,by_groups=True,fill=False,
-                           factor="eigen"):
+    def from_gaussian_draw(
+        cls, pst, cov=None, num_reals=100, by_groups=True, fill=False, factor="eigen"
+    ):
         """generate an `ObservationEnsemble` from a (multivariate) gaussian
         distribution
 
@@ -683,17 +723,23 @@ class ObservationEnsemble(Ensemble):
 
         grouper = None
         if not cov.isdiagonal and by_groups:
-            nz_obs = obs.loc[pst.nnz_obs_names,:].copy()
+            nz_obs = obs.loc[pst.nnz_obs_names, :].copy()
             grouper = nz_obs.groupby("obgnme").groups
             for grp in grouper.keys():
                 grouper[grp] = list(grouper[grp])
-        df = Ensemble._gaussian_draw(cov=nz_cov,mean_values=mean_values,
-                                     num_reals=num_reals,grouper=grouper,
-                                     fill=fill, factor=factor)
+        df = Ensemble._gaussian_draw(
+            cov=nz_cov,
+            mean_values=mean_values,
+            num_reals=num_reals,
+            grouper=grouper,
+            fill=fill,
+            factor=factor,
+        )
         if fill:
-            df.loc[:,pst.zero_weight_obs_names] = pst.observation_data.loc[pst.zero_weight_obs_names,
-                                                                           "obsval"].values
-        return cls(pst,df,istransformed=False)
+            df.loc[:, pst.zero_weight_obs_names] = pst.observation_data.loc[
+                pst.zero_weight_obs_names, "obsval"
+            ].values
+        return cls(pst, df, istransformed=False)
 
     @property
     def phi_vector(self):
@@ -728,8 +774,8 @@ class ObservationEnsemble(Ensemble):
         """
         if "base" in self.index:
             raise Exception("'base' already in ensemble")
-        self._df = self._df.iloc[:-1,:]
-        self._df.loc["base",:] = self.pst.observation_data.loc[self.columns,"obsval"]
+        self._df = self._df.iloc[:-1, :]
+        self._df.loc["base", :] = self.pst.observation_data.loc[self.columns, "obsval"]
 
     @property
     def nonzero(self):
@@ -745,7 +791,10 @@ class ObservationEnsemble(Ensemble):
 
         """
         df = self._df.loc[:, self.pst.nnz_obs_names]
-        return ObservationEnsemble(pst=self.pst.get(obs_names=self.pst.nnz_obs_names),df=df)
+        return ObservationEnsemble(
+            pst=self.pst.get(obs_names=self.pst.nnz_obs_names), df=df
+        )
+
 
 class ParameterEnsemble(Ensemble):
     """Parameter ensembles in the PEST(++) realm
@@ -764,12 +813,14 @@ class ParameterEnsemble(Ensemble):
         pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst)
 
     """
-    def __init__(self,pst,df,istransformed=False):
-        super(ParameterEnsemble,self).__init__(pst,df,istransformed)
+
+    def __init__(self, pst, df, istransformed=False):
+        super(ParameterEnsemble, self).__init__(pst, df, istransformed)
 
     @classmethod
-    def from_gaussian_draw(cls,pst,cov=None,num_reals=100,by_groups=True,
-                           fill=True, factor="eigen"):
+    def from_gaussian_draw(
+        cls, pst, cov=None, num_reals=100, by_groups=True, fill=True, factor="eigen"
+    ):
         """generate a `ParameterEnsemble` from a (multivariate) (log) gaussian
         distribution
 
@@ -829,18 +880,22 @@ class ParameterEnsemble(Ensemble):
         mean_values.loc[li] = mean_values.loc[li].apply(np.log10)
         grouper = None
         if not cov.isdiagonal and by_groups:
-            adj_par = par.loc[pst.adj_par_names,:]
+            adj_par = par.loc[pst.adj_par_names, :]
             grouper = adj_par.groupby("pargp").groups
             for grp in grouper.keys():
                 grouper[grp] = list(grouper[grp])
-        df = Ensemble._gaussian_draw(cov=cov,mean_values=mean_values,
-                                     num_reals=num_reals,grouper=grouper,
-                                     fill=fill)
-        df.loc[:,li] = 10.0**df.loc[:,li]
-        return cls(pst,df,istransformed=False)
+        df = Ensemble._gaussian_draw(
+            cov=cov,
+            mean_values=mean_values,
+            num_reals=num_reals,
+            grouper=grouper,
+            fill=fill,
+        )
+        df.loc[:, li] = 10.0 ** df.loc[:, li]
+        return cls(pst, df, istransformed=False)
 
     @classmethod
-    def from_triangular_draw(cls, pst, num_reals=100,fill=True):
+    def from_triangular_draw(cls, pst, num_reals=100, fill=True):
         """generate a `ParameterEnsemble` from a (multivariate) (log) triangular distribution
 
         Args:
@@ -893,23 +948,22 @@ class ParameterEnsemble(Ensemble):
         for i, pname in enumerate(pst.parameter_data.parnme):
             # print(pname, lb[pname], ub[pname])
             if pname in adj_par_names:
-                arr[:, i] = np.random.triangular(lb[pname],
-                                                 pv[pname],
-                                                 ub[pname],
-                                                 size=num_reals)
+                arr[:, i] = np.random.triangular(
+                    lb[pname], pv[pname], ub[pname], size=num_reals
+                )
             elif fill:
-                arr[:, i] = np.zeros((num_reals)) + \
-                            pst.parameter_data. \
-                                loc[pname, "parval1"]
+                arr[:, i] = (
+                    np.zeros((num_reals)) + pst.parameter_data.loc[pname, "parval1"]
+                )
 
         df = pd.DataFrame(arr, index=real_names, columns=pst.par_names)
-        df.dropna(inplace=True,axis=1)
+        df.dropna(inplace=True, axis=1)
         df.loc[:, li] = 10.0 ** df.loc[:, li]
         new_pe = cls(pst=pst, df=df)
         return new_pe
 
     @classmethod
-    def from_uniform_draw(cls, pst, num_reals,fill=True):
+    def from_uniform_draw(cls, pst, num_reals, fill=True):
         """ generate a `ParameterEnsemble` from a (multivariate) (log) uniform
         distribution
 
@@ -949,29 +1003,37 @@ class ParameterEnsemble(Ensemble):
 
         real_names = np.arange(num_reals, dtype=np.int64)
         arr = np.empty((num_reals, len(ub)))
-        arr[:,:] = np.NaN
+        arr[:, :] = np.NaN
         adj_par_names = set(pst.adj_par_names)
         for i, pname in enumerate(pst.parameter_data.parnme):
             # print(pname,lb[pname],ub[pname])
             if pname in adj_par_names:
-                arr[:, i] = np.random.uniform(lb[pname],
-                                              ub[pname],
-                                              size=num_reals)
+                arr[:, i] = np.random.uniform(lb[pname], ub[pname], size=num_reals)
             elif fill:
-                arr[:, i] = np.zeros((num_reals)) + \
-                            pst.parameter_data. \
-                                loc[pname, "parval1"]
+                arr[:, i] = (
+                    np.zeros((num_reals)) + pst.parameter_data.loc[pname, "parval1"]
+                )
 
         df = pd.DataFrame(arr, index=real_names, columns=pst.par_names)
-        df.dropna(inplace=True,axis=1)
+        df.dropna(inplace=True, axis=1)
         df.loc[:, li] = 10.0 ** df.loc[:, li]
 
         new_pe = cls(pst=pst, df=df)
         return new_pe
 
     @classmethod
-    def from_mixed_draws(cls, pst, how_dict, default="gaussian", num_reals=100, cov=None, sigma_range=6,
-                         enforce_bounds=True, partial=False, fill=True):
+    def from_mixed_draws(
+        cls,
+        pst,
+        how_dict,
+        default="gaussian",
+        num_reals=100,
+        cov=None,
+        sigma_range=6,
+        enforce_bounds=True,
+        partial=False,
+        fill=True,
+    ):
         """generate a `ParameterEnsemble` using a mixture of
         distributions.  Available distributions include (log) "uniform", (log) "triangular",
         and (log) "gaussian". log transformation is respected.
@@ -1001,27 +1063,39 @@ class ParameterEnsemble(Ensemble):
 
         # error checking
         accept = {"uniform", "triangular", "gaussian"}
-        assert default in accept, "ParameterEnsemble.from_mixed_draw() error: 'default' must be in {0}".format(accept)
+        assert (
+            default in accept
+        ), "ParameterEnsemble.from_mixed_draw() error: 'default' must be in {0}".format(
+            accept
+        )
         par_org = pst.parameter_data.copy()
         pset = set(pst.adj_par_names)
         hset = set(how_dict.keys())
         missing = pset.difference(hset)
         if not partial and len(missing) > 0:
-            print("{0} par names missing in how_dict, these parameters will be sampled using {1} (the 'default')". \
-                  format(len(missing), default))
+            print(
+                "{0} par names missing in how_dict, these parameters will be sampled using {1} (the 'default')".format(
+                    len(missing), default
+                )
+            )
             for m in missing:
                 how_dict[m] = default
         missing = hset.difference(pset)
-        assert len(missing) == 0, "ParameterEnsemble.from_mixed_draws() error: the following par names are not in " + \
-                                  " in the pst: {0}".format(','.join(missing))
+        assert len(missing) == 0, (
+            "ParameterEnsemble.from_mixed_draws() error: the following par names are not in "
+            + " in the pst: {0}".format(",".join(missing))
+        )
 
         unknown_draw = []
         for pname, how in how_dict.items():
             if how not in accept:
                 unknown_draw.append("{0}:{1}".format(pname, how))
         if len(unknown_draw) > 0:
-            raise Exception("ParameterEnsemble.from_mixed_draws() error: the following hows are not recognized:{0}" \
-                            .format(','.join(unknown_draw)))
+            raise Exception(
+                "ParameterEnsemble.from_mixed_draws() error: the following hows are not recognized:{0}".format(
+                    ",".join(unknown_draw)
+                )
+            )
 
         # work out 'how' grouping
         how_groups = {how: [] for how in accept}
@@ -1041,13 +1115,18 @@ class ParameterEnsemble(Ensemble):
                 cset = set(cov.row_names)
                 # gset = set(how_groups["gaussian"])
                 diff = gset.difference(cset)
-                assert len(diff) == 0, "ParameterEnsemble.from_mixed_draws() error: the 'cov' is not compatible with " + \
-                                       " the parameters listed as 'gaussian' in how_dict, the following are not in the cov:{0}". \
-                                           format(','.join(diff))
+                assert len(diff) == 0, (
+                    "ParameterEnsemble.from_mixed_draws() error: the 'cov' is not compatible with "
+                    + " the parameters listed as 'gaussian' in how_dict, the following are not in the cov:{0}".format(
+                        ",".join(diff)
+                    )
+                )
             else:
 
                 cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range)
-            pe_gauss = ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals)
+            pe_gauss = ParameterEnsemble.from_gaussian_draw(
+                pst, cov, num_reals=num_reals
+            )
             pes.append(pe_gauss)
 
         if len(how_groups["uniform"]) > 0:
@@ -1070,13 +1149,14 @@ class ParameterEnsemble(Ensemble):
 
         df.loc[:, :] = np.NaN
         if fill:
-            fixed_tied = par_org.loc[par_org.partrans.apply(lambda x: x in ["fixed", "tied"]), "parval1"].to_dict()
+            fixed_tied = par_org.loc[
+                par_org.partrans.apply(lambda x: x in ["fixed", "tied"]), "parval1"
+            ].to_dict()
             for p, v in fixed_tied.items():
                 df.loc[:, p] = v
 
         for pe in pes:
             df.loc[pe.index, pe.columns] = pe
-
 
         # this dropna covers both "fill" and "partial"
         df = df.dropna(axis=1)
@@ -1086,7 +1166,6 @@ class ParameterEnsemble(Ensemble):
         if enforce_bounds:
             pe.enforce()
         return pe
-
 
     @classmethod
     def from_parfiles(cls, pst, parfile_names, real_names=None):
@@ -1115,15 +1194,19 @@ class ParameterEnsemble(Ensemble):
             real_names = np.arange(len(parfile_names))
 
         for rname, pfile in zip(real_names, parfile_names):
-            assert os.path.exists(pfile), "ParameterEnsemble.from_parfiles() error: " + \
-                                          "file: {0} not found".format(pfile)
+            assert os.path.exists(pfile), (
+                "ParameterEnsemble.from_parfiles() error: "
+                + "file: {0} not found".format(pfile)
+            )
             df = pyemu.pst_utils.read_parfile(pfile)
             # check for scale differences - I don't who is dumb enough
             # to change scale between par files and pst...
             diff = df.scale - pst.parameter_data.scale
             if diff.apply(np.abs).sum() > 0.0:
-                warnings.warn("differences in scale detected, applying scale in par file",
-                              PyemuWarning)
+                warnings.warn(
+                    "differences in scale detected, applying scale in par file",
+                    PyemuWarning,
+                )
                 # df.loc[:,"parval1"] *= df.scale
 
             dfs[rname] = df.parval1.values
@@ -1138,16 +1221,24 @@ class ParameterEnsemble(Ensemble):
             dset = set(df_all.columns)
             diff = pset.difference(dset)
             if len(diff) > 0:
-                warnings.warn("the following parameters are not in the par files (getting NaNs) :{0}".
-                              format(','.join(diff)), PyemuWarning)
+                warnings.warn(
+                    "the following parameters are not in the par files (getting NaNs) :{0}".format(
+                        ",".join(diff)
+                    ),
+                    PyemuWarning,
+                )
                 blank_df = pd.DataFrame(index=df_all.index, columns=diff)
 
                 df_all = pd.concat([df_all, blank_df], axis=1)
 
             diff = dset.difference(pset)
             if len(diff) > 0:
-                warnings.warn("the following par file parameters are not in the control (being dropped):{0}".
-                              format(','.join(diff)), PyemuWarning)
+                warnings.warn(
+                    "the following par file parameters are not in the control (being dropped):{0}".format(
+                        ",".join(diff)
+                    ),
+                    PyemuWarning,
+                )
                 df_all = df_all.loc[:, pst.par_names]
 
         return ParameterEnsemble(pst=pst, df=df_all)
@@ -1164,9 +1255,9 @@ class ParameterEnsemble(Ensemble):
         """
         if not self.istransformed:
             return
-        li = self.pst.parameter_data.loc[:,"partrans"] == "log"
-        self.loc[:,li] = 10.0**(self._df.loc[:,li])
-        #self.loc[:,:] = (self.loc[:,:] -\
+        li = self.pst.parameter_data.loc[:, "partrans"] == "log"
+        self.loc[:, li] = 10.0 ** (self._df.loc[:, li])
+        # self.loc[:,:] = (self.loc[:,:] -\
         #                 self.pst.parameter_data.offset)/\
         #                 self.pst.parameter_data.scale
         self._istransformed = False
@@ -1183,9 +1274,9 @@ class ParameterEnsemble(Ensemble):
         """
         if self.istransformed:
             return
-        li = self.pst.parameter_data.loc[:,"partrans"] == "log"
+        li = self.pst.parameter_data.loc[:, "partrans"] == "log"
         df = self._df
-        #self.loc[:,:] = (self.loc[:,:] * self.pst.parameter_data.scale) +\
+        # self.loc[:,:] = (self.loc[:,:] * self.pst.parameter_data.scale) +\
         #                 self.pst.parameter_data.offset
         df.loc[:, li] = df.loc[:, li].apply(np.log10)
         self._istransformed = True
@@ -1203,9 +1294,11 @@ class ParameterEnsemble(Ensemble):
         self._df = self._df.iloc[:-1, :]
         if self.istransformed:
             self.pst.add_transform_columns()
-            self.loc["base", :] = self.pst.parameter_data.loc[self.columns, "parval1_trans"]
+            self.loc["base", :] = self.pst.parameter_data.loc[
+                self.columns, "parval1_trans"
+            ]
         else:
-            self.loc["base",:] = self.pst.parameter_data.loc[self.columns,"parval1"]
+            self.loc["base", :] = self.pst.parameter_data.loc[self.columns, "parval1"]
 
     @property
     def adj_names(self):
@@ -1271,13 +1364,13 @@ class ParameterEnsemble(Ensemble):
 
         """
         # isfixed = self.pst.parameter_data.partrans == "fixed"
-        tf = set(["tied","fixed"])
-        isfixed = self.pst.parameter_data.partrans. \
-            apply(lambda x: x in tf)
+        tf = set(["tied", "fixed"])
+        isfixed = self.pst.parameter_data.partrans.apply(lambda x: x in tf)
         return isfixed.values
 
-    def project(self,projection_matrix,center_on=None,
-                log=None,enforce_bounds="reset"):
+    def project(
+        self, projection_matrix, center_on=None, log=None, enforce_bounds="reset"
+    ):
         """ project the ensemble using the null-space Monte Carlo method
 
         Args:
@@ -1307,23 +1400,27 @@ class ParameterEnsemble(Ensemble):
             self.transform()
             retrans = True
 
-        #base = self._df.mean()
+        # base = self._df.mean()
         self.pst.add_transform_columns()
         base = self.pst.parameter_data.parval1_trans
         if center_on is not None:
-            if isinstance(center_on,pd.Series):
+            if isinstance(center_on, pd.Series):
                 base = center_on
             elif center_on in self._df.index:
-                base = self._df.loc[center_on,:].copy()
-            elif isinstance(center_on,"str"):
+                base = self._df.loc[center_on, :].copy()
+            elif isinstance(center_on, "str"):
                 try:
                     base = pyemu.pst_utils.read_parfile(center_on)
                 except:
-                    raise Exception("'center_on' arg not found in index and couldnt be loaded as a '.par' file")
+                    raise Exception(
+                        "'center_on' arg not found in index and couldnt be loaded as a '.par' file"
+                    )
             else:
-                raise Exception("error processing 'center_on' arg.  should be realization names, par file, or series")
+                raise Exception(
+                    "error processing 'center_on' arg.  should be realization names, par file, or series"
+                )
         names = list(base.index)
-        projection_matrix = projection_matrix.get(names,names)
+        projection_matrix = projection_matrix.get(names, names)
 
         new_en = self.copy()
 
@@ -1332,9 +1429,9 @@ class ParameterEnsemble(Ensemble):
                 log("projecting realization {0}".format(real))
 
             # null space projection of difference vector
-            pdiff = self._df.loc[real,names] - base
-            pdiff = np.dot(projection_matrix.x,pdiff.values)
-            new_en.loc[real,names] = base + pdiff
+            pdiff = self._df.loc[real, names] - base
+            pdiff = np.dot(projection_matrix.x, pdiff.values)
+            new_en.loc[real, names] = base + pdiff
 
             if log is not None:
                 log("projecting realization {0}".format(real))
@@ -1346,7 +1443,7 @@ class ParameterEnsemble(Ensemble):
             self.transform()
         return new_en
 
-    def enforce(self,how="reset",bound_tol=0.0):
+    def enforce(self, how="reset", bound_tol=0.0):
         """ entry point for bounds enforcement.  This gets called for the
         draw method(s), so users shouldn't need to call this
 
@@ -1371,9 +1468,10 @@ class ParameterEnsemble(Ensemble):
         elif how.lower().strip() == "scale":
             self._enforce_scale(bound_tol=bound_tol)
         else:
-            raise Exception("unrecognized enforce_bounds arg:"+\
-                            "{0}, should be 'reset' or 'drop'".\
-                            format(enforce_bounds))
+            raise Exception(
+                "unrecognized enforce_bounds arg:"
+                + "{0}, should be 'reset' or 'drop'".format(enforce_bounds)
+            )
 
     def _enforce_scale(self, bound_tol):
         retrans = False
@@ -1382,24 +1480,32 @@ class ParameterEnsemble(Ensemble):
             retrans = True
         ub = self.ubnd * (1.0 - bound_tol)
         lb = self.lbnd * (1.0 + bound_tol)
-        base_vals = self.pst.parameter_data.loc[self._df.columns,"parval1"].copy()
+        base_vals = self.pst.parameter_data.loc[self._df.columns, "parval1"].copy()
         ub_dist = (ub - base_vals).apply(np.abs)
         lb_dist = (base_vals - lb).apply(np.abs)
 
         if ub_dist.min() <= 0.0:
-            raise Exception("Ensemble._enforce_scale() error: the following parameter" +\
-                            "are at or over ubnd: {0}".format(ub_dist.loc[ub_dist<=0.0].index.values))
+            raise Exception(
+                "Ensemble._enforce_scale() error: the following parameter"
+                + "are at or over ubnd: {0}".format(
+                    ub_dist.loc[ub_dist <= 0.0].index.values
+                )
+            )
         if lb_dist.min() <= 0.0:
-            raise Exception("Ensemble._enforce_scale() error: the following parameter" +\
-                            "are at or under lbnd: {0}".format(lb_dist.loc[ub_dist<=0.0].index.values))
+            raise Exception(
+                "Ensemble._enforce_scale() error: the following parameter"
+                + "are at or under lbnd: {0}".format(
+                    lb_dist.loc[ub_dist <= 0.0].index.values
+                )
+            )
         for ridx in self._df.index:
-            real = self._df.loc[ridx,:]
+            real = self._df.loc[ridx, :]
             real_dist = (real - base_vals).apply(np.abs)
-            out_ubnd = (real - ub)
-            out_ubnd = out_ubnd.loc[out_ubnd>0.0]
+            out_ubnd = real - ub
+            out_ubnd = out_ubnd.loc[out_ubnd > 0.0]
             ubnd_facs = ub_dist.loc[out_ubnd.index] / real_dist.loc[out_ubnd.index]
 
-            out_lbnd = (lb - real)
+            out_lbnd = lb - real
             out_lbnd = out_lbnd.loc[out_lbnd > 0.0]
             lbnd_facs = lb_dist.loc[out_lbnd.index] / real_dist.loc[out_lbnd.index]
 
@@ -1408,23 +1514,31 @@ class ParameterEnsemble(Ensemble):
             lmin = 1.0
             umin = 1.0
             sign = np.ones((self.pst.npar_adj))
-            sign[real.loc[self.pst.adj_par_names] < base_vals.loc[self.pst.adj_par_names]] = -1.0
+            sign[
+                real.loc[self.pst.adj_par_names] < base_vals.loc[self.pst.adj_par_names]
+            ] = -1.0
             if ubnd_facs.shape[0] > 0:
                 umin = ubnd_facs.min()
                 umin_idx = ubnd_facs.idxmin()
-                print("enforce_scale ubnd controlling parameter, scale factor, " + \
-                      "current value for realization {0}: {1}, {2}, {3}". \
-                      format(ridx, umin_idx, umin, real.loc[umin_idx]))
+                print(
+                    "enforce_scale ubnd controlling parameter, scale factor, "
+                    + "current value for realization {0}: {1}, {2}, {3}".format(
+                        ridx, umin_idx, umin, real.loc[umin_idx]
+                    )
+                )
 
             if lbnd_facs.shape[0] > 0:
                 lmin = lbnd_facs.min()
                 lmin_idx = lbnd_facs.idxmin()
-                print("enforce_scale lbnd controlling parameter, scale factor, " + \
-                      "current value for realization {0}: {1}, {2}. {3}". \
-                      format(ridx, lmin_idx, lmin, real.loc[lmin_idx]))
+                print(
+                    "enforce_scale lbnd controlling parameter, scale factor, "
+                    + "current value for realization {0}: {1}, {2}. {3}".format(
+                        ridx, lmin_idx, lmin, real.loc[lmin_idx]
+                    )
+                )
             min_fac = min(umin, lmin)
 
-            self._df.loc[ridx,:] = base_vals + (sign * real_dist * min_fac)
+            self._df.loc[ridx, :] = base_vals + (sign * real_dist * min_fac)
 
         if retrans:
             self.transform()
@@ -1444,12 +1558,13 @@ class ParameterEnsemble(Ensemble):
         lb = self.lbnd * (1.0 + bound_tol)
         drop = []
         for ridx in self._df.index:
-            #mx = (ub - self.loc[id,:]).min()
-            #mn = (lb - self.loc[id,:]).max()
-            if (ub - self._df.loc[ridx,:]).min() < 0.0 or\
-                            (lb - self._df.loc[ridx,:]).max() > 0.0:
+            # mx = (ub - self.loc[id,:]).min()
+            # mn = (lb - self.loc[id,:]).max()
+            if (ub - self._df.loc[ridx, :]).min() < 0.0 or (
+                lb - self._df.loc[ridx, :]
+            ).max() > 0.0:
                 drop.append(ridx)
-        self.loc[drop,:] = np.NaN
+        self.loc[drop, :] = np.NaN
         self.dropna(inplace=True)
 
     def _enforce_reset(self, bound_tol):
@@ -1462,5 +1577,5 @@ class ParameterEnsemble(Ensemble):
 
         val_arr = self._df.values
         for iname, name in enumerate(self.columns):
-            val_arr[val_arr[:,iname] > ub[name],iname] = ub[name]
-            val_arr[val_arr[:, iname] < lb[name],iname] = lb[name]
+            val_arr[val_arr[:, iname] > ub[name], iname] = ub[name]
+            val_arr[val_arr[:, iname] < lb[name], iname] = lb[name]

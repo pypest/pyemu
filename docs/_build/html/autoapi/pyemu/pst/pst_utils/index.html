@@ -1,0 +1,905 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyemu.pst.pst_utils &mdash; pyEMU 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> pyEMU
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.pst.pst_utils</span></code></a><ul>
+<li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#classes">Classes</a></li>
+<li><a class="reference internal" href="#functions">Functions</a><ul>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.max_colwidth">max_colwidth</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.SFMT">SFMT</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.SFMT_LONG">SFMT_LONG</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.IFMT">IFMT</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.FFMT">FFMT</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.str_con">str_con</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.pst_config">pst_config</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.read_resfile">read_resfile</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.res_from_en">res_from_en</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.read_parfile">read_parfile</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.write_parfile">write_parfile</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.parse_tpl_file">parse_tpl_file</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.write_input_files">write_input_files</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils._write_chunk_to_template">_write_chunk_to_template</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.write_to_template">write_to_template</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils._get_marker_indices">_get_marker_indices</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.parse_ins_file">parse_ins_file</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils._parse_ins_string">_parse_ins_string</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils._populate_dataframe">_populate_dataframe</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.generic_pst">generic_pst</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.try_process_output_file">try_process_output_file</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.try_process_output_pst">try_process_output_pst</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils._try_run_inschek">_try_run_inschek</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.get_phi_comps_from_recfile">get_phi_comps_from_recfile</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.res_from_obseravtion_data">res_from_obseravtion_data</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.clean_missing_exponent">clean_missing_exponent</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.csv_to_ins_file">csv_to_ins_file</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.InstructionFile">InstructionFile</a><ul>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.InstructionFile.obs_name_set">obs_name_set</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.InstructionFile.read_ins_file">read_ins_file</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.InstructionFile.throw_ins_warning">throw_ins_warning</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.InstructionFile.throw_ins_error">throw_ins_error</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.InstructionFile.throw_out_error">throw_out_error</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.InstructionFile.read_output_file">read_output_file</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.InstructionFile._execute_ins_line">_execute_ins_line</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.InstructionFile._readline_ins">_readline_ins</a></li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.InstructionFile._readline_output">_readline_output</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.pst.pst_utils.process_output_files">process_output_files</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">pyEMU</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.pst.pst_utils</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../../_sources/autoapi/pyemu/pst/pst_utils/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pyemu.pst.pst_utils">
+<span id="pyemu-pst-pst-utils"></span><h1><a class="reference internal" href="../../../../pyemu.pst.html#module-pyemu.pst.pst_utils" title="pyemu.pst.pst_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.pst.pst_utils</span></code></a><a class="headerlink" href="#module-pyemu.pst.pst_utils" title="Permalink to this headline">¶</a></h1>
+<p>Various PEST(++) control file peripheral operations</p>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.InstructionFile" title="pyemu.pst.pst_utils.InstructionFile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">InstructionFile</span></code></a></p></td>
+<td><p>class for handling instruction files.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.SFMT" title="pyemu.pst.pst_utils.SFMT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SFMT</span></code></a>(item)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.str_con" title="pyemu.pst.pst_utils.str_con"><code class="xref py py-obj docutils literal notranslate"><span class="pre">str_con</span></code></a>(item)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.read_resfile" title="pyemu.pst.pst_utils.read_resfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_resfile</span></code></a>(resfile)</p></td>
+<td><p>load a PEST-style residual file into a pandas.DataFrame</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.res_from_en" title="pyemu.pst.pst_utils.res_from_en"><code class="xref py py-obj docutils literal notranslate"><span class="pre">res_from_en</span></code></a>(pst, enfile)</p></td>
+<td><p>load ensemble results from PESTPP-IES into a PEST-style</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.read_parfile" title="pyemu.pst.pst_utils.read_parfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_parfile</span></code></a>(parfile)</p></td>
+<td><p>load a PEST-style parameter value file into a pandas.DataFrame</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.write_parfile" title="pyemu.pst.pst_utils.write_parfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_parfile</span></code></a>(df, parfile)</p></td>
+<td><p>write a PEST-style parameter file from a dataframe</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.parse_tpl_file" title="pyemu.pst.pst_utils.parse_tpl_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_tpl_file</span></code></a>(tpl_file)</p></td>
+<td><p>parse a PEST-style template file to get the parameter names</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.write_input_files" title="pyemu.pst.pst_utils.write_input_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_input_files</span></code></a>(pst, pst_path='.')</p></td>
+<td><p>write parameter values to model input files</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.pst.pst_utils._write_chunk_to_template" title="pyemu.pst.pst_utils._write_chunk_to_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_write_chunk_to_template</span></code></a>(chunk, parvals, pst_path)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.write_to_template" title="pyemu.pst.pst_utils.write_to_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_to_template</span></code></a>(parvals, tpl_file, in_file)</p></td>
+<td><p>write parameter values to a model input file using</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.pst.pst_utils._get_marker_indices" title="pyemu.pst.pst_utils._get_marker_indices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_get_marker_indices</span></code></a>(marker, line)</p></td>
+<td><p>method to find the start and end parameter markers</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.parse_ins_file" title="pyemu.pst.pst_utils.parse_ins_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_ins_file</span></code></a>(ins_file)</p></td>
+<td><p>parse a PEST-style instruction file to get observation names</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.pst.pst_utils._parse_ins_string" title="pyemu.pst.pst_utils._parse_ins_string"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_parse_ins_string</span></code></a>(string)</p></td>
+<td><p>split up an instruction file line to get the observation names</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.pst.pst_utils._populate_dataframe" title="pyemu.pst.pst_utils._populate_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_populate_dataframe</span></code></a>(index, columns, default_dict, dtype)</p></td>
+<td><p>helper function to populate a generic Pst dataframe attribute.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.generic_pst" title="pyemu.pst.pst_utils.generic_pst"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generic_pst</span></code></a>(par_names=['par1'], obs_names=['obs1'], addreg=False)</p></td>
+<td><p>generate a generic pst instance.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.try_process_output_file" title="pyemu.pst.pst_utils.try_process_output_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">try_process_output_file</span></code></a>(ins_file, output_file=None)</p></td>
+<td><p>attempt to process a model output file using a PEST-style instruction file</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.try_process_output_pst" title="pyemu.pst.pst_utils.try_process_output_pst"><code class="xref py py-obj docutils literal notranslate"><span class="pre">try_process_output_pst</span></code></a>(pst)</p></td>
+<td><p>attempt to process each instruction file, model output</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.pst.pst_utils._try_run_inschek" title="pyemu.pst.pst_utils._try_run_inschek"><code class="xref py py-obj docutils literal notranslate"><span class="pre">_try_run_inschek</span></code></a>(ins_file, out_file, cwd='.')</p></td>
+<td><p>try to run inschek and load the resulting obf file</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.get_phi_comps_from_recfile" title="pyemu.pst.pst_utils.get_phi_comps_from_recfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_phi_comps_from_recfile</span></code></a>(recfile)</p></td>
+<td><p>read the phi components from a record file by iteration</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.res_from_obseravtion_data" title="pyemu.pst.pst_utils.res_from_obseravtion_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">res_from_obseravtion_data</span></code></a>(observation_data)</p></td>
+<td><p>create a PEST-style residual dataframe filled with np.NaN for</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.clean_missing_exponent" title="pyemu.pst.pst_utils.clean_missing_exponent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clean_missing_exponent</span></code></a>(pst_filename, clean_filename='clean.pst')</p></td>
+<td><p>fixes the issue where some terrible fortran program may have</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.csv_to_ins_file" title="pyemu.pst.pst_utils.csv_to_ins_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">csv_to_ins_file</span></code></a>(csv_filename, ins_filename=None, only_cols=None, only_rows=None, marker='~', includes_header=True, includes_index=True, prefix='', longnames=False, head_lines_len=0, sep=',', gpname=False)</p></td>
+<td><p>write a PEST-style instruction file from an existing CSV file</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.pst.html#pyemu.pst.pst_utils.process_output_files" title="pyemu.pst.pst_utils.process_output_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_output_files</span></code></a>(pst, pst_path='.')</p></td>
+<td><p>helper function to process output files using the</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py data">
+<dt id="pyemu.pst.pst_utils.max_colwidth">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">max_colwidth</code><em class="property"> = 100</em><a class="headerlink" href="#pyemu.pst.pst_utils.max_colwidth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.SFMT">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">SFMT</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">item</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.SFMT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt id="pyemu.pst.pst_utils.SFMT_LONG">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">SFMT_LONG</code><a class="headerlink" href="#pyemu.pst.pst_utils.SFMT_LONG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt id="pyemu.pst.pst_utils.IFMT">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">IFMT</code><a class="headerlink" href="#pyemu.pst.pst_utils.IFMT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt id="pyemu.pst.pst_utils.FFMT">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">FFMT</code><a class="headerlink" href="#pyemu.pst.pst_utils.FFMT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.str_con">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">str_con</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">item</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.str_con" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt id="pyemu.pst.pst_utils.pst_config">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">pst_config</code><a class="headerlink" href="#pyemu.pst.pst_utils.pst_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.read_resfile">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">read_resfile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resfile</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.read_resfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>load a PEST-style residual file into a pandas.DataFrame</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>resfile</strong> – path and name of an existing residual file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.res_from_en">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">res_from_en</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">enfile</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.res_from_en" title="Permalink to this definition">¶</a></dt>
+<dd><p>load ensemble results from PESTPP-IES into a PEST-style
+residuals <cite>pandas.DataFrame</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>enfile</strong> (<cite>str</cite>) – CSV-format ensemble file name</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with the same columns as a
+residual dataframe (a la <cite>pst_utils.read_resfile()</cite>)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If a “base” realization is found in the ensemble, it is used
+as the “modelled” column in the residuals dataframe.  Otherwise,
+the mean of the ensemble is used as “modelled”</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pst_utils</span><span class="o">.</span><span class="n">res_from_en</span><span class="p">(</span><span class="s2">&quot;my.0.obs.csv&quot;</span><span class="p">)</span>
+<span class="n">df</span><span class="o">.</span><span class="n">residual</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;hist&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.read_parfile">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">read_parfile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parfile</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.read_parfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>load a PEST-style parameter value file into a pandas.DataFrame</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>parfile</strong> (<cite>str</cite>) – path and name of existing parameter file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with columns of “parnme”, “parval1”,
+“scale” and “offset”</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pst_utils</span><span class="o">.</span><span class="n">read_parfile</span><span class="p">(</span><span class="s2">&quot;my.par1&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.write_parfile">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">write_parfile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">parfile</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.write_parfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a PEST-style parameter file from a dataframe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<cite>pandas.DataFrame</cite>) – a dataframe with column names
+that correspond to the entries in the parameter data
+section of the pest control file</p></li>
+<li><p><strong>parfile</strong> (<cite>str</cite>) – name of the parameter file to write</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pyemu</span><span class="o">.</span><span class="n">pst_utils</span><span class="o">.</span><span class="n">write_parfile</span><span class="p">(</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="p">,</span><span class="s2">&quot;my.par&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.parse_tpl_file">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">parse_tpl_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tpl_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.parse_tpl_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse a PEST-style template file to get the parameter names</p>
+<p>Args:
+tpl_file (<cite>str</cite>): path and name of a template file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>list of parameter names found in <cite>tpl_file</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">par_names</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pst_utils</span><span class="o">.</span><span class="n">parse_tpl_file</span><span class="p">(</span><span class="s2">&quot;my.tpl&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.write_input_files">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">write_input_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">'.'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.write_input_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>write parameter values to model input files</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – a Pst instance</p></li>
+<li><p><strong>pst_path</strong> (<cite>str</cite>) – the path to where the control file and template
+files reside.  Default is ‘.’.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function uses template files with the current parameter         values (stored in <cite>pst.parameter_data.parval1</cite>).</p>
+<p>This function uses multiprocessing - one process per template file</p>
+<p>This is a simple implementation of what PEST does.  It does not
+handle all the special cases, just a basic function…user beware</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils._write_chunk_to_template">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">_write_chunk_to_template</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">chunk</span></em>, <em class="sig-param"><span class="n">parvals</span></em>, <em class="sig-param"><span class="n">pst_path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils._write_chunk_to_template" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.write_to_template">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">write_to_template</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parvals</span></em>, <em class="sig-param"><span class="n">tpl_file</span></em>, <em class="sig-param"><span class="n">in_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.write_to_template" title="Permalink to this definition">¶</a></dt>
+<dd><p>write parameter values to a model input file using
+the corresponding template file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parvals</strong> (<cite>dict</cite>) – a container of parameter names and values.  Can
+also be a <cite>pandas.Series</cite></p></li>
+<li><p><strong>tpl_file</strong> (<cite>str</cite>) – path and name of a template file</p></li>
+<li><p><strong>in_file</strong> (<cite>str</cite>) – path and name of model input file to write</p></li>
+</ul>
+</dd>
+</dl>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pyemu</span><span class="o">.</span><span class="n">pst_utils</span><span class="o">.</span><span class="n">write_to_template</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">parval1</span><span class="p">,</span>
+                                  <span class="s2">&quot;my.tpl&quot;</span><span class="p">,</span><span class="s2">&quot;my.input&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils._get_marker_indices">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">_get_marker_indices</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">marker</span></em>, <em class="sig-param"><span class="n">line</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils._get_marker_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to find the start and end parameter markers
+on a template file line.  Used by write_to_template()</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.parse_ins_file">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">parse_ins_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ins_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.parse_ins_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>parse a PEST-style instruction file to get observation names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ins_file</strong> (<cite>str</cite>) – path and name of an existing instruction file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of observation names found in <cite>ins_file</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is a basic function for parsing instruction files to
+look for observation names.</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">obs_names</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pst_utils</span><span class="o">.</span><span class="n">parse_ins_file</span><span class="p">(</span><span class="s2">&quot;my.ins&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils._parse_ins_string">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">_parse_ins_string</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">string</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils._parse_ins_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>split up an instruction file line to get the observation names</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils._populate_dataframe">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">_populate_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">index</span></em>, <em class="sig-param"><span class="n">columns</span></em>, <em class="sig-param"><span class="n">default_dict</span></em>, <em class="sig-param"><span class="n">dtype</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils._populate_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>helper function to populate a generic Pst dataframe attribute.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function is called as part of constructing a generic Pst instance</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.generic_pst">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">generic_pst</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">par_names</span><span class="o">=</span><span class="default_value">['par1']</span></em>, <em class="sig-param"><span class="n">obs_names</span><span class="o">=</span><span class="default_value">['obs1']</span></em>, <em class="sig-param"><span class="n">addreg</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.generic_pst" title="Permalink to this definition">¶</a></dt>
+<dd><p>generate a generic pst instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par_names</strong> ([<cite>str</cite>], optional) – parameter names to include in the new
+<cite>pyemu.Pst</cite>.  Default is [“par2”].</p></li>
+<li><p><strong>obs_names</strong> ([<cite>str</cite>], optional) – observation names to include in the new
+<cite>pyemu.Pst</cite>.  Default is [“obs1”].</p></li>
+<li><p><strong>addreg</strong> (<cite>bool</cite>) – flag to add zero-order Tikhonov prior information
+equations to the new control file</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a new control file instance. This instance does not have
+all the info needed to run, but is a placeholder that can then be
+filled in later.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pyemu.Pst</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">par_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;par1&quot;</span><span class="p">,</span><span class="s2">&quot;par2&quot;</span><span class="p">]</span>
+<span class="n">obs_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;obs1&quot;</span><span class="p">,</span><span class="s2">&quot;obs2&quot;</span><span class="p">]</span>
+<span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pst_utils</span><span class="o">.</span><span class="n">generic_pst</span><span class="p">(</span><span class="n">par_names</span><span class="p">,</span><span class="n">obs_names</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.try_process_output_file">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">try_process_output_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ins_file</span></em>, <em class="sig-param"><span class="n">output_file</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.try_process_output_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>attempt to process a model output file using a PEST-style instruction file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ins_file</strong> (<cite>str</cite>) – path and name of an instruction file</p></li>
+<li><p><strong>output_file</strong> (<cite>str</cite>,optional) – path and name of existing model
+output file to process.  If <cite>None</cite>, <cite>ins_file.replace(“.ins”,””)</cite>
+is used.  Default is None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe of observation name and simulated outputs
+extracted from <cite>output_file</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If an exception is raised when processing the output file, the exception
+is echoed to the screen and <cite>None</cite> is returned.</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pst_utils</span><span class="o">.</span><span class="n">try_process_output_file</span><span class="p">(</span><span class="s2">&quot;my.ins&quot;</span><span class="p">,</span><span class="s2">&quot;my.output&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.try_process_output_pst">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">try_process_output_pst</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.try_process_output_pst" title="Permalink to this definition">¶</a></dt>
+<dd><p>attempt to process each instruction file, model output
+file pair in a <cite>pyemu.Pst</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – a control file instance</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe of observation names and simulated outputs
+extracted from model output files.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function first tries to process the output files using the
+InstructionFile class,  If that failes, then it tries to run
+INSCHEK. If an instructionfile is processed successfully,
+the extract simulated values are used to populate the
+<cite>pst.observation_data.obsval</cite> attribute.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils._try_run_inschek">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">_try_run_inschek</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ins_file</span></em>, <em class="sig-param"><span class="n">out_file</span></em>, <em class="sig-param"><span class="n">cwd</span><span class="o">=</span><span class="default_value">'.'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils._try_run_inschek" title="Permalink to this definition">¶</a></dt>
+<dd><p>try to run inschek and load the resulting obf file</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.get_phi_comps_from_recfile">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">get_phi_comps_from_recfile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">recfile</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.get_phi_comps_from_recfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>read the phi components from a record file by iteration</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>recfile</strong> (<cite>str</cite>) – pest record file name</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>nested dictionary of iteration number, {group,contribution}</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>dict</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is really poor form to use the record file in this way.  Please only
+use this as a last resort!</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.res_from_obseravtion_data">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">res_from_obseravtion_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">observation_data</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.res_from_obseravtion_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>create a PEST-style residual dataframe filled with np.NaN for
+missing information</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>observation_data</strong> (<cite>pandas.DataFrame</cite>) – the “* observation data”
+<cite>pandas.DataFrame</cite> from <cite>pyemu.Pst.observation_data</cite></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with the same columns as the
+residual dataframe (“name”,”group”,”measured”,”modelled”,
+“residual”,”weight”).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.clean_missing_exponent">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">clean_missing_exponent</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst_filename</span></em>, <em class="sig-param"><span class="n">clean_filename</span><span class="o">=</span><span class="default_value">'clean.pst'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.clean_missing_exponent" title="Permalink to this definition">¶</a></dt>
+<dd><p>fixes the issue where some terrible fortran program may have
+written a floating point format without the ‘e’ - like 1.0-3, really?!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst_filename</strong> (<cite>str</cite>) – the pest control file</p></li>
+<li><p><strong>clean_filename</strong> (<cite>str</cite>, optional) – the new pest control file to write.
+Default is “clean.pst”</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.csv_to_ins_file">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">csv_to_ins_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">csv_filename</span></em>, <em class="sig-param"><span class="n">ins_filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">only_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">only_rows</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">marker</span><span class="o">=</span><span class="default_value">'~'</span></em>, <em class="sig-param"><span class="n">includes_header</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">includes_index</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">prefix</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">longnames</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">head_lines_len</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">sep</span><span class="o">=</span><span class="default_value">','</span></em>, <em class="sig-param"><span class="n">gpname</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.csv_to_ins_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a PEST-style instruction file from an existing CSV file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>csv_filename</strong> (<cite>str</cite>) – path and name of existing CSV file</p></li>
+<li><p><strong>ins_filename</strong> (<cite>str</cite>, optional) – path and name of the instruction
+file to create.  If <cite>None</cite>, then <cite>csv_filename`+”.ins” is used.
+Default is `None</cite>.</p></li>
+<li><p><strong>only_cols</strong> ([<cite>str</cite>]) – list of columns to add observations for in the
+resulting instruction file. If <cite>None</cite>, all columns are used.</p></li>
+<li><p><strong>only_rows</strong> ([<cite>str</cite>]) – list of rows to add observations for in the
+resulting instruction file. If <cite>None</cite>, all rows are used.</p></li>
+<li><p><strong>marker</strong> (<cite>str</cite>) – the PEST instruction marker to use.  Default is “~”</p></li>
+<li><p><strong>includes_header</strong> (<cite>bool</cite>) – flag to indicate <cite>csv_filename</cite> includes a
+header row as the first row.  Default is True.</p></li>
+<li><p><strong>includes_index</strong> (<cite>bool</cite>) – lag to indicate <cite>csv_filename</cite> includes a
+index column as the first column.  Default is True.</p></li>
+<li><p><strong>prefix</strong> (<cite>str</cite>, optional) – a prefix to prepend to observation names.
+Default is “”</p></li>
+<li><p><strong>gpname</strong> (<cite>str</cite> or [<cite>str</cite>]) – Optional PEST group name for columns</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe of observation names and values found in
+<cite>csv_filename</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>resulting observation names in <cite>ins_filename</cite> are a combiation of index and
+header values.</p>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.pst.pst_utils.InstructionFile">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">InstructionFile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ins_filename</span></em>, <em class="sig-param"><span class="n">pst</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.InstructionFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>class for handling instruction files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ins_filename</strong> (<cite>str</cite>) – path and name of an existing instruction file</p></li>
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>, optional) – Pst instance - used for checking that instruction file is
+compatible with the control file (e.g. no duplicates)</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">i</span> <span class="o">=</span> <span class="n">InstructionFile</span><span class="p">(</span><span class="s2">&quot;my.ins&quot;</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">read_output_file</span><span class="p">(</span><span class="s2">&quot;my.output&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt id="pyemu.pst.pst_utils.InstructionFile.obs_name_set">
+<em class="property">property </em><code class="sig-name descname">obs_name_set</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.InstructionFile.obs_name_set" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.pst_utils.InstructionFile.read_ins_file">
+<code class="sig-name descname">read_ins_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.InstructionFile.read_ins_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>read the instruction and do some minimal error checking.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is called by the constructor</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.pst_utils.InstructionFile.throw_ins_warning">
+<code class="sig-name descname">throw_ins_warning</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="n">lcount</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.InstructionFile.throw_ins_warning" title="Permalink to this definition">¶</a></dt>
+<dd><p>throw a verbose PyemuWarning</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>message</strong> (<cite>str</cite>) – the warning message</p></li>
+<li><p><strong>lcount</strong> (<cite>int</cite>, optional) – warning line number.  If None, self._ins_linecount is used</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.pst_utils.InstructionFile.throw_ins_error">
+<code class="sig-name descname">throw_ins_error</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="n">lcount</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.InstructionFile.throw_ins_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>throw a verbose instruction file error</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>message</strong> (<cite>str</cite>) – the error message</p></li>
+<li><p><strong>lcount</strong> (<cite>int</cite>, optional) – error line number.  If None, self._ins_linecount is used</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.pst_utils.InstructionFile.throw_out_error">
+<code class="sig-name descname">throw_out_error</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">message</span></em>, <em class="sig-param"><span class="n">lcount</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.InstructionFile.throw_out_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>throw a verbose output file error</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>message</strong> (<cite>str</cite>) – the error message</p></li>
+<li><p><strong>lcount</strong> (<cite>int</cite>, optional) – error line number.  If None, self._ins_linecount is used</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.pst_utils.InstructionFile.read_output_file">
+<code class="sig-name descname">read_output_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">output_file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.InstructionFile.read_output_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>process a model output file using  <cite>InstructionFile.instruction_set</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>output_file</strong> (<cite>str</cite>) – path and name of existing output file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with observation names and simulated values
+extracted from <cite>output_file</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pd.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.pst_utils.InstructionFile._execute_ins_line">
+<code class="sig-name descname">_execute_ins_line</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">ins_line</span></em>, <em class="sig-param"><span class="n">ins_lcount</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.InstructionFile._execute_ins_line" title="Permalink to this definition">¶</a></dt>
+<dd><p>private method to process output file lines with an instruction line</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.pst_utils.InstructionFile._readline_ins">
+<code class="sig-name descname">_readline_ins</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.InstructionFile._readline_ins" title="Permalink to this definition">¶</a></dt>
+<dd><p>consolidate private method to read the next instruction file line.  Casts to lower and splits
+on whitespace</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.pst_utils.InstructionFile._readline_output">
+<code class="sig-name descname">_readline_output</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.InstructionFile._readline_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>consolidate private method to read the next output file line.  Casts to lower</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.pst.pst_utils.process_output_files">
+<code class="sig-prename descclassname">pyemu.pst.pst_utils.</code><code class="sig-name descname">process_output_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pst</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">'.'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.pst_utils.process_output_files" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>helper function to process output files using the</dt><dd><p>InstructionFile class</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pst</strong> (<cite>pyemu.Pst</cite>) – control file instance</p></li>
+<li><p><strong>pst_path</strong> – path to instruction and output files to append to the front
+of the names in the Pst instance</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

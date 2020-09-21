@@ -1,0 +1,16 @@
+:mod:`pyemu.pyemu_warnings`
+===========================
+
+.. py:module:: pyemu.pyemu_warnings
+
+
+Module Contents
+---------------
+
+.. py:exception:: PyemuWarning
+
+   Bases: :class:`RuntimeWarning`
+
+   Base class for warnings about dubious runtime behavior.
+
+

@@ -1,0 +1,20 @@
+:mod:`pyemu.plot`
+=================
+
+.. py:module:: pyemu.plot
+
+.. autoapi-nested-parse::
+
+   plot module contains helpers for plotting various aspect of pyemu.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   plot_utils/index.rst
+
+

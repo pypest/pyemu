@@ -1,0 +1,187 @@
+:mod:`pyemu.prototypes.moouu`
+=============================
+
+.. py:module:: pyemu.prototypes.moouu
+
+.. autoapi-nested-parse::
+
+   a prototype multiobjective opt under uncertainty algorithm
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   pyemu.prototypes.moouu.ParetoObjFunc
+   pyemu.prototypes.moouu.EvolAlg
+   pyemu.prototypes.moouu.EliteDiffEvol
+
+
+
+.. py:class:: ParetoObjFunc(pst, obj_function_dict, logger)
+
+   Bases: :class:`object`
+
+   multiobjective function calculator.
+
+   .. method:: is_feasible(self, obs_df, risk=0.5)
+
+      identify which candidate solutions in obs_df (rows)
+      are feasible with respect obs constraints (obs_df)
+
+      :param obs_df: a dataframe with columns of obs names and rows of realizations
+      :type obs_df: pandas.DataFrame
+      :param risk: risk value. If != 0.5, then risk shifting is used.  Otherwise, the
+                   obsval in Pst is used.  Default is 0.5.
+      :type risk: float
+
+      :returns: **is_feasible** -- series with obs_df.index and bool values
+      :rtype: pandas.Series
+
+
+   .. method:: obs_obj_signs(self)
+      :property:
+
+
+   .. method:: dominates(self, sol1, sol2)
+
+
+   .. method:: is_nondominated_pathetic(self, obs_df)
+
+      identify which candidate solutions are pareto non-dominated -
+      super patheically slow...
+
+      :param obs_df: dataframe with columns of observation names and rows of realizations
+      :type obs_df: pandas.DataFrame
+
+      :returns: **is_dominated** -- series with index of obs_df and bool series
+      :rtype: pandas.Series
+
+
+   .. method:: is_nondominated_continuous(self, obs_df)
+
+      identify which candidate solutions are pareto non-dominated continuously updated,
+      but still slow
+
+      :param obs_df: dataframe with columns of observation names and rows of realizations
+      :type obs_df: pandas.DataFrame
+
+      :returns: **is_dominated** -- series with index of obs_df and bool series
+      :rtype: pandas.Series
+
+
+   .. method:: is_nondominated_kung(self, obs_df)
+
+      identify which candidate solutions are pareto non-dominated using Kungs algorithm
+
+      :param obs_df: dataframe with columns of observation names and rows of realizations
+      :type obs_df: pandas.DataFrame
+
+      :returns: **is_dominated** -- series with index of obs_df and bool series
+      :rtype: pandas.Series
+
+
+   .. method:: crowd_distance(self, obs_df)
+
+      determine the crowding distance for each candidate solution
+
+      :param obs_df: dataframe with columns of observation names and rows of realizations
+      :type obs_df: pandas.DataFrame
+
+      :returns: **crowd_distance** -- series with index of obs_df and values of crowd distance
+      :rtype: pandas.Series
+
+
+   .. method:: get_risk_shifted_value(self, risk, series)
+
+
+   .. method:: reduce_stack_with_risk_shift(self, oe, num_reals, risk)
+
+
+
+.. py:class:: EvolAlg(pst, parcov=None, obscov=None, num_workers=0, use_approx_prior=True, submit_file=None, verbose=False, port=4004, worker_dir='template')
+
+   Bases: :class:`pyemu.prototypes.ensemble_method.EnsembleMethod`
+
+   Base class for ensemble-type methods.  Should not be instantiated directly
+
+   :param pst: a control file instance or filename
+   :type pst: pyemu.Pst or str
+   :param parcov: a prior parameter covariance matrix or filename. If None,
+                  parcov is constructed from parameter bounds (diagonal)
+   :type parcov: pyemu.Cov or str
+   :param obscov: a measurement noise covariance matrix or filename. If None,
+                  obscov is constructed from observation weights.
+   :type obscov: pyemu.Cov or str
+   :param num_workers: number of workers to use in (local machine) parallel evaluation of the parmaeter
+                       ensemble.  If 0, serial evaluation is used.  Ignored if submit_file is not None
+   :type num_workers: int
+   :param submit_file: the name of a HTCondor submit file.  If not None, HTCondor is used to
+                       evaluate the parameter ensemble in parallel by issuing condor_submit
+                       as a system command
+   :type submit_file: str
+   :param port: the TCP port number to communicate on for parallel run management
+   :type port: int
+   :param worker_dir: path to a directory with a complete set of model files and PEST
+                      interface files
+   :type worker_dir: str
+
+   .. method:: initialize(self, obj_func_dict, num_par_reals=100, num_dv_reals=100, dv_ensemble=None, par_ensemble=None, risk=0.5, dv_names=None, par_names=None)
+
+
+   .. method:: _drop_failed(failed_runs, dv_ensemble, obs_ensemble)
+      :staticmethod:
+
+
+   .. method:: _archive(self, dv_ensemble, obs_ensemble)
+
+
+   .. method:: _calc_obs(self, dv_ensemble)
+
+
+   .. method:: update(self, *args, **kwargs)
+
+
+
+.. py:class:: EliteDiffEvol(pst, parcov=None, obscov=None, num_workers=0, use_approx_prior=True, submit_file=None, verbose=False, port=4004, worker_dir='template')
+
+   Bases: :class:`pyemu.prototypes.moouu.EvolAlg`
+
+   Base class for ensemble-type methods.  Should not be instantiated directly
+
+   :param pst: a control file instance or filename
+   :type pst: pyemu.Pst or str
+   :param parcov: a prior parameter covariance matrix or filename. If None,
+                  parcov is constructed from parameter bounds (diagonal)
+   :type parcov: pyemu.Cov or str
+   :param obscov: a measurement noise covariance matrix or filename. If None,
+                  obscov is constructed from observation weights.
+   :type obscov: pyemu.Cov or str
+   :param num_workers: number of workers to use in (local machine) parallel evaluation of the parmaeter
+                       ensemble.  If 0, serial evaluation is used.  Ignored if submit_file is not None
+   :type num_workers: int
+   :param submit_file: the name of a HTCondor submit file.  If not None, HTCondor is used to
+                       evaluate the parameter ensemble in parallel by issuing condor_submit
+                       as a system command
+   :type submit_file: str
+   :param port: the TCP port number to communicate on for parallel run management
+   :type port: int
+   :param worker_dir: path to a directory with a complete set of model files and PEST
+                      interface files
+   :type worker_dir: str
+
+   .. method:: update(self, mut_base=0.8, cross_over_base=0.7, num_dv_reals=None)
+
+
+   .. method:: iter_report(self)
+
+
+   .. method:: _drop_by_crowd(self, dv_ensemble, obs_ensemble, ndrop, min_dist=0.1)
+
+
+
