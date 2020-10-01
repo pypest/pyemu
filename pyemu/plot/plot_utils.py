@@ -578,7 +578,13 @@ def res_phi_pie(pst, logger=None, **kwargs):
         logger (`pyemu.Logger`): a logger.  If None, a generic one is created
         kwargs (`dict`): a dict of plotting options. Accepts 'include_zero'
             as a flag to include phi groups with only zero-weight obs (not
-            sure why anyone would do this, but whatevs). Any additional
+            sure why anyone would do this, but whatevs). 
+            
+            Also accepts 'label_comps': list of components for the labels. Any combination
+            of ['name', 'phi_comp', 'phi_percent']. Labels will use those three components
+            in the order of the 'label_comps' list.
+            
+            Any additional
             args are passed to `matplotlib`.
 
     Returns:
@@ -613,7 +619,7 @@ def res_phi_pie(pst, logger=None, **kwargs):
     phi_comps = pst.phi_components
     norm_phi_comps = pst.phi_components_normalized
     keys = list(phi_comps.keys())
-    if "include_zero" not in kwargs or kwargs["include_zero"] is True:
+    if "include_zero" not in kwargs or kwargs["include_zero"] is False:
         phi_comps = {k: phi_comps[k] for k in keys if phi_comps[k] > 0.0}
         keys = list(phi_comps.keys())
         norm_phi_comps = {k: norm_phi_comps[k] for k in keys}
