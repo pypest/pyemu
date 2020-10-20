@@ -1341,8 +1341,9 @@ def apply_sft_obs():
         if not "node" in c:
             df.loc[:, c] = df.loc[:, c].apply(try_cast)
         # print(df.loc[df.loc[:,c].apply(lambda x : type(x) == str),:])
-        df.loc[df.loc[:, c].apply(lambda x: x < 1e-30), c] = 0.0
-        df.loc[df.loc[:, c] > 1e30, c] = 1.0e30
+        if df.dtypes[c] == float:
+            df.loc[df.loc[:, c] < 1e-30, c] = 0.0
+            df.loc[df.loc[:, c] > 1e30, c] = 1.0e30
     df.loc[:, "sfr_node"] = df.sfr_node.apply(np.int)
 
     df.to_csv(sft_file + ".processed", sep=" ", index=False)
