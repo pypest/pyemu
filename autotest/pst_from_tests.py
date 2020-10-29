@@ -1,18 +1,21 @@
 import os
 import sys
+from pathlib import Path
 import platform
 
 # sys.path.append(os.path.join("..","pyemu"))
+import numpy as np
+import pandas as pd
 import pyemu
 from pyemu import os_utils
-from pyemu.utils import PstFrom
+from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
 
 ext = ''
 bin_path = os.path.join("..", "..", "bin")
 if "linux" in platform.platform().lower():
     bin_path = os.path.join(bin_path, "linux")
-elif "darwin" in platform.platform().lower() or "macos" in platform.platform().lower():
+elif "darwin" in platform.platform().lower() or 'macos' in platform.platform().lower():
     bin_path = os.path.join(bin_path, "mac")
 else:
     bin_path = os.path.join(bin_path, "win")
@@ -201,8 +204,9 @@ def freyberg_test():
     # check mult files are in pst input files
     csv = os.path.join(template_ws, "mult2model_info.csv")
     df = pd.read_csv(csv, index_col=0)
+    pst_input_files = {str(f) for f in pst.input_files}
     mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
-                                set(pst.input_files)) -
+                                pst_input_files) -
                                set(df.loc[df.pp_file.notna()].mlt_file))
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
@@ -427,8 +431,9 @@ def freyberg_prior_build_test():
     # check mult files are in pst input files
     csv = os.path.join(template_ws, "mult2model_info.csv")
     df = pd.read_csv(csv, index_col=0)
+    pst_input_files = {str(f) for f in pst.input_files}
     mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
-                                set(pst.input_files)) -
+                                pst_input_files) -
                                set(df.loc[df.pp_file.notna()].mlt_file))
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
@@ -823,8 +828,9 @@ def mf6_freyberg_test():
     # check mult files are in pst input files
     csv = os.path.join(template_ws, "mult2model_info.csv")
     df = pd.read_csv(csv, index_col=0)
+    pst_input_files = {str(f) for f in pst.input_files}
     mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
-                                set(pst.input_files)) -
+                                pst_input_files) -
                                set(df.loc[df.pp_file.notna()].mlt_file))
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
@@ -837,6 +843,7 @@ def mf6_freyberg_test():
     print(df.lower_bound)
     assert np.abs(float(df.upper_bound.min()) - 30.) < 1.0e-6,df.upper_bound.min()
     assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
+
 
 def mf6_freyberg_shortnames_test():
     import numpy as np
@@ -974,8 +981,9 @@ def mf6_freyberg_shortnames_test():
     # check mult files are in pst input files
     csv = os.path.join(template_ws, "mult2model_info.csv")
     df = pd.read_csv(csv, index_col=0)
+    pst_input_files = {str(f) for f in pst.input_files}
     mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
-                                set(pst.input_files)) -
+                                pst_input_files) -
                                set(df.loc[df.pp_file.notna()].mlt_file))
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
@@ -1149,8 +1157,9 @@ def mf6_freyberg_da_test():
     # check mult files are in pst input files
     csv = os.path.join(template_ws, "mult2model_info.csv")
     df = pd.read_csv(csv, index_col=0)
+    pst_input_files = {str(f) for f in pst.input_files}
     mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
-                                set(pst.input_files)) -
+                                pst_input_files) -
                                set(df.loc[df.pp_file.notna()].mlt_file))
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
@@ -1333,6 +1342,7 @@ def mf6_freyberg_direct_test():
         if np.abs(arr.max() - rch_val) > 1.0e-6 or np.abs(arr.min() - rch_val) > 1.0e-6:
             raise Exception("recharge too diff")
 
+
 def mf6_freyberg_varying_idomain():
     import numpy as np
     import pandas as pd
@@ -1471,7 +1481,7 @@ def xsec_test():
         import flopy
     except:
         return
-
+    
     org_model_ws = os.path.join('..', 'examples', 'xsec')
     tmp_model_ws = "temp_pst_from"
     if os.path.exists(tmp_model_ws):
@@ -1481,44 +1491,394 @@ def xsec_test():
     # SETUP pest stuff...
     nam_file = "10par_xsec.nam"
     os_utils.run("{0} {1}".format(mf_exe_path,nam_file), cwd=tmp_model_ws)
-
+    
     m = flopy.modflow.Modflow.load(nam_file,model_ws=tmp_model_ws,version="mfnwt")
     sr = m.modelgrid
     t_d = "template_xsec"
     pf = pyemu.utils.PstFrom(tmp_model_ws,t_d,remove_existing=True,spatial_reference=sr)
     pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_style="direct",upper_bound=25,
                       lower_bound=0.25)
-    pf.add_parameters("hk_Layer_1.ref", par_type="grid", par_style="multiplier", upper_bound=10.0,
-                      lower_bound=0.1)
+                      pf.add_parameters("hk_Layer_1.ref", par_type="grid", par_style="multiplier", upper_bound=10.0,
+                                        lower_bound=0.1)
+                      
+                      hds_arr = np.loadtxt(os.path.join(t_d,"10par_xsec.hds"))
+                      with open(os.path.join(t_d,"10par_xsec.hds.ins"),'w')  as f:
+                          f.write("pif ~\n")
+                              for kper in range(hds_arr.shape[0]):
+                                  f.write("l1 ")
+                                      for j in range(hds_arr.shape[1]):
+                                          oname = "hds_{0}_{1}".format(kper,j)
+                                              f.write(" !{0}! ".format(oname))
+                                                  f.write("\n")
+                                              pf.add_observations_from_ins(os.path.join(t_d,"10par_xsec.hds.ins"),pst_path=".")
 
-    hds_arr = np.loadtxt(os.path.join(t_d,"10par_xsec.hds"))
-    with open(os.path.join(t_d,"10par_xsec.hds.ins"),'w')  as f:
-        f.write("pif ~\n")
-        for kper in range(hds_arr.shape[0]):
-            f.write("l1 ")
-            for j in range(hds_arr.shape[1]):
-                oname = "hds_{0}_{1}".format(kper,j)
-                f.write(" !{0}! ".format(oname))
-            f.write("\n")
-    pf.add_observations_from_ins(os.path.join(t_d,"10par_xsec.hds.ins"),pst_path=".")
-
-    pf.mod_sys_cmds.append("mfnwt {0}".format(nam_file))
-
+pf.mod_sys_cmds.append("mfnwt {0}".format(nam_file))
+    
     pf.build_pst(os.path.join(t_d,"pest.pst"))
-
+    
     pyemu.os_utils.run("{0} {1}".format(ies_exe_path,"pest.pst"),cwd=t_d)
     pst = pyemu.Pst(os.path.join(t_d,"pest.pst"))
     print(pst.phi)
     assert pst.phi < 1.0e-7
 
 
+class TestPstFrom():
+    """Test class for some PstFrom functionality
+    """
+    @classmethod
+    def setup(cls):
 
+        # record the original wd
+        cls.original_wd = Path().cwd()
+
+        cls.sim_ws = Path('temp/pst-from-small/')
+        external_files_folders = [cls.sim_ws / 'external',
+                                  cls.sim_ws / '../external_files']
+        for folder in external_files_folders:
+            folder.mkdir(parents=True, exist_ok=True)
+
+        cls.dest_ws = Path('temp/pst-from-small-template')
+
+        cls.sr = pyemu.helpers.SpatialReference(delr=np.ones(3),
+                                            delc=np.ones(3),
+                                            rotation=0,
+                                            epsg=3070,
+                                            xul=0.,
+                                            yul=0.,
+                                            units='meters',  # gis units of meters?
+                                            lenuni=2  # model units of meters
+                                            )
+        # make some fake external data
+        # array data
+        cls.array_file = cls.sim_ws / 'hk.dat'
+        cls.array_data = np.ones((3, 3))
+        np.savetxt(cls.array_file, cls.array_data)
+        # list data
+        cls.list_file = cls.sim_ws / 'wel.dat'
+        cls.list_data = pd.DataFrame({'#k': [0, 0, 0],
+                                      'i': [1, 2, 2],
+                                      'j': [1, 1, 0],
+                                      'flux': [1., 10., 100.]
+                                      }, columns=['#k', 'i', 'j', 'flux'])
+        cls.list_data.to_csv(cls.list_file, sep=' ', index=False)
+
+        # set up the zones
+        zone_array = np.ones((3, 3))  # default of zone 1
+        zone_array[2:, 2:] = 0  # position 3, 3 is not parametrized (no zone)
+        #zone_array[0, :2] = 2  # 0, 0 and 0, 1 are in zone 2
+        zone_array[1, 1] = 2  # 1, 1 is in zone 2
+        cls.zone_array = zone_array
+
+        # "geostatistical structure(s)"
+        v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+        cls.grid_gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
+
+        cls.pf = pyemu.utils.PstFrom(original_d=cls.sim_ws, new_d=cls.dest_ws,
+                                 remove_existing=True,
+                                 longnames=True, spatial_reference=cls.sr,
+                                 zero_based=False)
+
+    def test_add_array_parameters(self):
+        """test setting up array parameters with different external file
+        configurations and path formats.
+        """
+        tag = 'hk'
+        # test with different array input configurations
+        array_file_input = [
+            Path('hk0.dat'),  # sim_ws; just file name as Path instance
+            'hk1.dat',  # sim_ws; just file name as string
+            Path(self.sim_ws, 'hk2.dat'),  # sim_ws; full path as Path instance
+            'external/hk3.dat',  # subfolder; relative file path as string
+            Path('external/hk4.dat'),  # subfolder; relative path as Path instance
+            '../external_files/hk5.dat',  # subfolder up one level
+                            ]
+        for i, array_file in enumerate(array_file_input):
+            par_name_base = f'{tag}_{i:d}'
+
+            # create the file
+            # dest_file is the data file relative to the sim or dest ws
+            dest_file = Path(array_file)
+            if self.sim_ws in dest_file.parents:
+                dest_file = dest_file.relative_to(self.sim_ws)
+            shutil.copy(self.array_file, Path(self.dest_ws, dest_file))
+
+            self.pf.add_parameters(filenames=array_file, par_type='zone',
+                                   zone_array=self.zone_array,
+                                   par_name_base=par_name_base,  # basename for parameters that are set up
+                                   pargp=f'{tag}_zone',  # Parameter group to assign pars to.
+                                   )
+
+            assert (self.dest_ws / dest_file).exists()
+            assert (self.dest_ws / f'org/{dest_file.name}').exists()
+            # mult file name is par_name_base + `instance` identifier + part_type
+            mult_filename = f'{par_name_base}_inst0_zone.csv'
+            assert (self.dest_ws / f'mult/{mult_filename}').exists()
+            # for now, assume tpl file should be in main folder
+            assert (self.dest_ws / f'{mult_filename}.tpl').exists()
+
+            # make the PEST control file
+            pst = self.pf.build_pst()
+            assert pst.filename == Path('temp/pst-from-small-template/pst-from-small.pst')
+            assert pst.filename.exists()
+
+            # make the PEST control file (just filename)
+            pst = self.pf.build_pst('junk.pst')
+            assert pst.filename == Path('temp/pst-from-small-template/junk.pst')
+            assert pst.filename.exists()
+
+            # make the PEST control file (file path)
+            pst = self.pf.build_pst('temp/pst-from-small-template/junk2.pst')
+            assert pst.filename == Path('temp/pst-from-small-template/junk2.pst')
+            assert pst.filename.exists()
+
+            # check the mult2model info
+            df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+            # org data file relative to dest_ws
+            org_file = Path(df['org_file'].values[i])
+            assert org_file == Path(f'org/{dest_file.name}')
+            # model file relative to dest_ws
+            model_file = Path(df['model_file'].values[i])
+            assert model_file == dest_file
+            # mult file
+            mult_file = Path(df['mlt_file'].values[i])
+            assert mult_file == Path(f'mult/{mult_filename}')
+
+            # check applying the parameters (in the dest or template ws)
+            os.chdir(self.dest_ws)
+            # first delete the model file in the template ws
+            model_file.unlink()
+            # manually apply a multipler
+            mult = 4
+            mult_values = np.loadtxt(mult_file)
+            mult_values[:] = mult
+            np.savetxt(mult_file, mult_values)
+            # apply the multiplier
+            pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+            # model file should have been remade by apply_list_and_array_pars
+            assert model_file.exists()
+            result = np.loadtxt(model_file)
+            # results should be the same with default multipliers of 1
+            # assume details of parameterization are handled by other tests
+            assert np.allclose(result, self.array_data * mult)
+
+            # revert to original wd
+            os.chdir(self.original_wd)
+
+    def test_add_list_parameters(self):
+        """test setting up list parameters with different external file
+        configurations and path formats.
+        """
+        tag = 'wel'
+        # test with different array input configurations
+        list_file_input = [
+            Path('wel0.dat'),  # sim_ws; just file name as Path instance
+            'wel1.dat',  # sim_ws; just file name as string
+            Path(self.sim_ws, 'wel2.dat'),  # sim_ws; full path as Path instance
+            'external/wel3.dat',  # subfolder; relative file path as string
+            Path('external/wel4.dat'),  # subfolder; relative path as Path instance
+            '../external_files/wel5.dat',  # subfolder up one level
+                            ]
+        par_type = 'constant'
+        for i, list_file in enumerate(list_file_input):
+            par_name_base = f'{tag}_{i:d}'
+
+            # create the file
+            # dest_file is the data file relative to the sim or dest ws
+            dest_file = Path(list_file)
+            if self.sim_ws in dest_file.parents:
+                dest_file = dest_file.relative_to(self.sim_ws)
+            shutil.copy(self.list_file, Path(self.dest_ws, dest_file))
+
+            self.pf.add_parameters(filenames=list_file, par_type=par_type,
+                                   par_name_base=par_name_base,
+                                   index_cols=[0, 1, 2], use_cols=[3],
+                                   pargp=f'{tag}_{i}',
+                                   comment_char='#'
+                                   )
+
+            assert (self.dest_ws / dest_file).exists()
+            assert (self.dest_ws / f'org/{dest_file.name}').exists()
+            # mult file name is par_name_base + `instance` identifier + part_type
+            mult_filename = f'{par_name_base}_inst0_{par_type}.csv'
+            assert (self.dest_ws / f'mult/{mult_filename}').exists()
+            # for now, assume tpl file should be in main folder
+            assert (self.dest_ws / f'{mult_filename}.tpl').exists()
+
+            # make the PEST control file
+            pst = self.pf.build_pst()
+
+            # check the mult2model info
+            df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+            # org data file relative to dest_ws
+            org_file = Path(df['org_file'].values[i])
+            assert org_file == Path(f'org/{dest_file.name}')
+            # model file relative to dest_ws
+            model_file = Path(df['model_file'].values[i])
+            assert model_file == dest_file
+            # mult file
+            mult_file = Path(df['mlt_file'].values[i])
+            assert mult_file == Path(f'mult/{mult_filename}')
+
+            # check applying the parameters (in the dest or template ws)
+            os.chdir(self.dest_ws)
+            # first delete the model file in the template ws
+            model_file.unlink()
+            # manually apply a multipler
+            mult = 4
+            mult_df = pd.read_csv(mult_file)
+            # no idea why '3' is the column with multipliers and 'parval1_3' isn't
+            # what is the purpose of 'parval1_3'?
+            parval_col = '3'
+            mult_df[parval_col] = mult
+            mult_df.to_csv(mult_file, index=False)
+            # apply the multiplier
+            pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+            # model file should have been remade by apply_list_and_array_pars
+            assert model_file.exists()
+            result = pd.read_csv(model_file, delim_whitespace=True)
+            # results should be the same with default multipliers of 1
+            # assume details of parameterization are handled by other tests
+            assert np.allclose(result['flux'], self.list_data['flux'] * mult)
+
+            # revert to original wd
+            os.chdir(self.original_wd)
+
+    def test_add_array_parameters_pps_grid(self):
+        """test setting up array parameters with a list of array text
+        files in a subfolder.
+        """
+        tag = 'hk'
+        par_styles = ['multiplier', #'direct'
+                      ]
+        array_files = ['hk_{}_{}.dat', 'external/hk_{}_{}.dat']
+        for par_style in par_styles:
+            mult2model_row = 0
+            for j, array_file in enumerate(array_files):
+
+                par_types = {'pilotpoints': 'pp',
+                             'grid': 'gr'}
+                for i, (par_type, suffix) in enumerate(par_types.items()):
+                    # (re)create the file
+                    dest_file = array_file.format(mult2model_row, suffix)
+                    shutil.copy(self.array_file, Path(self.dest_ws, dest_file))
+                    # add the parameters
+                    self.pf.add_parameters(filenames=dest_file, par_type=par_type,
+                                           zone_array=self.zone_array,
+                                           par_name_base=f'{tag}_{suffix}',
+                                           pargp=f'{tag}_zone',
+                                           pp_space=1, geostruct=self.grid_gs,
+                                           par_style=par_style
+                                           )
+                    # make the PEST control file
+                    pst = self.pf.build_pst()
+                    # check the mult2model info
+                    df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+                    mult_file = Path(df['mlt_file'].values[mult2model_row])
+
+                    # check applying the parameters (in the dest or template ws)
+                    os.chdir(self.dest_ws)
+                    # first delete the model file in the template ws
+                    model_file = df['model_file'].values[mult2model_row]
+                    os.remove(model_file)
+                    # manually apply a multipler
+                    mult = 4
+                    if par_type != "pilotpoints":
+                        mult_values = np.loadtxt(mult_file)
+                        mult_values[:] = mult
+                        np.savetxt(mult_file, mult_values)
+                    else:
+                        ppdata = pp_file_to_dataframe(df['pp_file'].values[mult2model_row])
+                        ppdata['parval1'] = mult
+                        write_pp_file(df['pp_file'].values[mult2model_row], ppdata)
+                    # apply the multiplier
+                    pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+                    # model files should have been remade by apply_list_and_array_pars
+                    for model_file in df['model_file']:
+                        assert os.path.exists(model_file)
+                        result = np.loadtxt(model_file)
+                        # results should be the same with default multipliers of 1
+                        # assume details of parameterization are handled by other tests
+
+                        # not sure why zone 2 is coming back as invalid (1e30)
+                        zone1 = self.zone_array == 1
+                        assert np.allclose(result[zone1], self.array_data[zone1] * mult)
+
+                    # revert to original wd
+                    os.chdir(self.original_wd)
+                    mult2model_row += 1
+
+    def test_add_array_parameters_to_file_list(self):
+        """test setting up array parameters with a list of array text
+        files in a subfolder.
+        """
+        tag = 'r'
+        array_file_input = ['external/r0.dat',
+                            'external/r1.dat',
+                            'external/r2.dat']
+        for file in array_file_input:
+            shutil.copy(self.array_file, Path(self.dest_ws, file))
+
+        self.pf.add_parameters(filenames=array_file_input, par_type='zone',
+                               zone_array=self.zone_array,
+                               par_name_base=tag,  # basename for parameters that are set up
+                               pargp=f'{tag}_zone',  # Parameter group to assign pars to.
+                               )
+        # make the PEST control file
+        pst = self.pf.build_pst()
+        # check the mult2model info
+        df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+        mult_file = Path(df['mlt_file'].values[0])
+
+        # check applying the parameters (in the dest or template ws)
+        os.chdir(self.dest_ws)
+        # first delete the model file in the template ws
+        for model_file in df['model_file']:
+            os.remove(model_file)
+        # manually apply a multipler
+        mult = 4
+        mult_values = np.loadtxt(mult_file)
+        mult_values[:] = mult
+        np.savetxt(mult_file, mult_values)
+        # apply the multiplier
+        pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+        # model files should have been remade by apply_list_and_array_pars
+        for model_file in df['model_file']:
+            assert os.path.exists(model_file)
+            result = np.loadtxt(model_file)
+            # results should be the same with default multipliers of 1
+            # assume details of parameterization are handled by other tests
+            assert np.allclose(result, self.array_data * mult)
+
+        # revert to original wd
+        os.chdir(self.original_wd)
+
+    @classmethod
+    def teardown(cls):
+        # cleanup
+        os.chdir(cls.original_wd)
+        shutil.rmtree(cls.sim_ws / '../external_files')
+        shutil.rmtree(cls.sim_ws)
+        shutil.rmtree(cls.dest_ws)
+
+
+
+def test_get_filepath():
+    from pyemu.utils.pst_from import get_filepath
+
+    input_expected = [(('folder', 'file.txt'), Path('folder/file.txt')),
+                      ((Path('folder'), 'file.txt'), Path('folder/file.txt')),
+                      (('folder', Path('file.txt')), Path('folder/file.txt')),
+                      ((Path('folder'), Path('file.txt')), Path('folder/file.txt')),
+                      ]
+    for input, expected in input_expected:
+        result = get_filepath(*input)
+        assert result == expected
 
 
 
 if __name__ == "__main__":
-    # freyberg_test()
-    # freyberg_prior_build_test()
+    #freyberg_test()
+    freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     # mf6_freyberg_da_test()
