@@ -18,8 +18,15 @@ init:
   - echo %PYTHON_VERSION% %CONDA_INSTALL_LOCN%
 
 install:
-  - git clone -b develop --depth 1 https://github.com/jtwhite79/pestpp
-  - copy /Y pestpp\bin\win\*.* bin\win\
+  - git clone -b develop --depth 1 https://github.com/usgs/pestpp
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - cd pestpp
+  - mkdir build
+  - cd build
+  - cmake -GNinja -DCMAKE_BUILD_TYPE=Release ..
+  - cd ..
+  - cd ..
+  - copy /Y pestpp\bin\*.* bin\win\
   - set PATH=%CONDA_INSTALL_LOCN%;%CONDA_INSTALL_LOCN%\scripts;%PATH%;
   - set PYTHONUNBUFFERED=1
   # for msinttypes and newer stuff
