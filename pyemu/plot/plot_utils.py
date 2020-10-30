@@ -645,7 +645,7 @@ def res_phi_pie(pst, logger=None, **kwargs):
         # assemble all possible label components
         labfmts = {'name':['{}\n',keys], 'phi_comp':['{:4G}\n',[phi_comps[k] for k in keys]], 
                     'phi_percent':['({:3.1f}%)',[100.0 * (phi_comps[k] / phi) for k in keys]]}
-        if fmtchoices[0] is 'phi_percent':
+        if fmtchoices[0] == 'phi_percent':
             labfmts['phi_percent'][0] = '{}\n'.format(labfmts['phi_percent'][0])
         # make the string format 
         labfmtstr = ''.join([labfmts[k][0] for k in fmtchoices])
