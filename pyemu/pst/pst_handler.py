@@ -298,7 +298,7 @@ class Pst(object):
                             if self.new_filename is not None:
                                 self.resfile = self.new_filename.replace(".pst", ".res")
                                 if not os.path.exists(self.resfile):
-                                    self.resfile = self.resfile.replace(".res", "rei")
+                                    self.resfile = self.resfile.replace(".res", ".rei")
                                     if not os.path.exists(self.resfile):
                                         raise Exception(
                                             "Pst.res: "
