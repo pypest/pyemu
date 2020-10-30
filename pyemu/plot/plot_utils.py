@@ -578,7 +578,13 @@ def res_phi_pie(pst, logger=None, **kwargs):
         logger (`pyemu.Logger`): a logger.  If None, a generic one is created
         kwargs (`dict`): a dict of plotting options. Accepts 'include_zero'
             as a flag to include phi groups with only zero-weight obs (not
-            sure why anyone would do this, but whatevs). Any additional
+            sure why anyone would do this, but whatevs). 
+            
+            Also accepts 'label_comps': list of components for the labels. Options are
+            ['name', 'phi_comp', 'phi_percent']. Labels will use those three components
+            in the order of the 'label_comps' list.
+            
+            Any additional
             args are passed to `matplotlib`.
 
     Returns:
@@ -589,6 +595,8 @@ def res_phi_pie(pst, logger=None, **kwargs):
         import pyemu
         pst = pyemu.Pst("my.pst")
         pyemu.plot_utils.res_phi_pie(pst,figsize=(12,4))
+        pyemu.plot_utils.res_phi_pie(pst,label_comps = ['name','phi_percent'], figsize=(12,4))
+        
 
     """
     if logger is None:
@@ -613,7 +621,7 @@ def res_phi_pie(pst, logger=None, **kwargs):
     phi_comps = pst.phi_components
     norm_phi_comps = pst.phi_components_normalized
     keys = list(phi_comps.keys())
-    if "include_zero" not in kwargs or kwargs["include_zero"] is True:
+    if "include_zero" not in kwargs or kwargs["include_zero"] is False:
         phi_comps = {k: phi_comps[k] for k in keys if phi_comps[k] > 0.0}
         keys = list(phi_comps.keys())
         norm_phi_comps = {k: norm_phi_comps[k] for k in keys}
@@ -622,10 +630,28 @@ def res_phi_pie(pst, logger=None, **kwargs):
     else:
         fig = plt.figure(figsize=figsize)
         ax = plt.subplot(1, 1, 1, aspect="equal")
-    labels = [
-        "{0}\n{1:4G}\n({2:3.1f}%)".format(k, phi_comps[k], 100.0 * (phi_comps[k] / phi))
-        for k in keys
-    ]
+    
+    if "label_comps" not in kwargs:
+        labels = [
+            "{0}\n{1:4G}\n({2:3.1f}%)".format(k, phi_comps[k], 100.0 * (phi_comps[k] / phi))
+            for k in keys
+        ]
+    else:
+        # make sure the components for the labels are in a list
+        if not isinstance (kwargs['label_comps'], list):
+            fmtchoices = list([kwargs['label_comps']])
+        else:
+            fmtchoices = kwargs['label_comps']
+        # assemble all possible label components
+        labfmts = {'name':['{}\n',keys], 'phi_comp':['{:4G}\n',[phi_comps[k] for k in keys]], 
+                    'phi_percent':['({:3.1f}%)',[100.0 * (phi_comps[k] / phi) for k in keys]]}
+        if fmtchoices[0] == 'phi_percent':
+            labfmts['phi_percent'][0] = '{}\n'.format(labfmts['phi_percent'][0])
+        # make the string format 
+        labfmtstr = ''.join([labfmts[k][0] for k in fmtchoices])
+        # pull it together
+        labels = [labfmtstr.format(*k) for k in zip(*[labfmts[j][1] for j in fmtchoices])]
+        
     ax.pie([float(norm_phi_comps[k]) for k in keys], labels=labels)
     logger.log("plot res_phi_pie")
     if "filename" in kwargs:
