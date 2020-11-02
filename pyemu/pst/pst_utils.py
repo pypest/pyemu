@@ -200,13 +200,17 @@ pst_config["prior_format"] = {
 }
 pst_config["prior_fieldnames"] = ["pilbl", "equation", "weight", "obgnme"]
 
+pst_config["model_io_fieldnames"] = ["pest_file","model_file"]
+pst_config["model_io_format"] = {"pest_file":SFMT_LONG, "model_file":SFMT_LONG}
+pst_config["null_model_io"] = pd.DataFrame({"pest_file": None, "model_file":None},index=[])
+pst_config["model_io_defaults"] = {"pest_file":"pest_file","model_file":"model_file"}
 
 # other containers
 pst_config["model_command"] = []
-pst_config["template_files"] = []
-pst_config["input_files"] = []
-pst_config["instruction_files"] = []
-pst_config["output_files"] = []
+#pst_config["template_files"] = []
+#pst_config["input_files"] = []
+#pst_config["instruction_files"] = []
+#pst_config["output_files"] = []
 pst_config["other_lines"] = []
 pst_config["tied_lines"] = []
 pst_config["regul_lines"] = []
@@ -680,10 +684,10 @@ def generic_pst(par_names=["par1"], obs_names=["obs1"], addreg=False):
     obs_data.sort_index(inplace=True)
     new_pst.observation_data = obs_data
 
-    new_pst.template_files = ["file.tpl"]
-    new_pst.input_files = ["file.in"]
-    new_pst.instruction_files = ["file.ins"]
-    new_pst.output_files = ["file.out"]
+    #new_pst.template_files = ["file.tpl"]
+    #new_pst.input_files = ["file.in"]
+    #new_pst.instruction_files = ["file.ins"]
+    #new_pst.output_files = ["file.out"]
     new_pst.model_command = ["model.bat"]
 
     new_pst.prior_information = new_pst.null_prior

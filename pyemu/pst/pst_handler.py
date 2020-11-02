@@ -64,6 +64,9 @@ class Pst(object):
         """pandas.DataFrame:  '* prior information' data.  Columns are standard PEST
         variable names"""
 
+        self.model_input_data = pst_utils.pst_config["null_model_io"]
+        self.model_output_data = pst_utils.pst_config["null_model_io"]
+
         self.filename = filename
         self.resfile = resfile
         self.__res = None
@@ -561,6 +564,61 @@ class Pst(object):
         tied = par.loc[tied_pars, ["parnme", "partied"]]
         return tied
 
+    @property
+    def template_files(self):
+        """ list of template file names
+        Returns:
+            `[str]`: a list of template file names, extracted from
+                `Pst.model_input_data.pest_file`.  Returns `None` if this
+                attribute is `None`
+        """
+        if self.model_input_data is not None and "pest_file" in self.model_input_data.columns:
+            return self.model_input_data.pest_file.to_list()
+        else:
+            return None
+
+    @property
+    def input_files(self):
+        """ list of model input file names
+        Returns:
+            `[str]`: a list of model input file names, extracted from
+                `Pst.model_input_data.model_file`.  Returns `None` if this
+                attribute is `None`
+        """
+        if self.model_input_data is not None and "model_file" in self.model_input_data.columns:
+            return self.model_input_data.model_file.to_list()
+        else:
+            return None
+
+
+    @property
+    def instruction_files(self):
+        """ list of instruction file names
+        Returns:
+            `[str]`: a list of instruction file names, extracted from
+                `Pst.model_output_data.pest_file`.  Returns `None` if this
+                attribute is `None`
+        """
+        if self.model_output_data is not None and "pest_file" in self.model_output_data.columns:
+            return self.model_output_data.pest_file.to_list()
+        else:
+            return None
+
+
+    @property
+    def output_files(self):
+        """ list of model output file names
+        Returns:
+            `[str]`: a list of model output file names, extracted from
+                `Pst.model_output_data.model_file`.  Returns `None` if this
+                attribute is `None`
+        """
+        if self.model_output_data is not None and "model_file" in self.model_output_data.columns:
+            return self.model_output_data.model_file.to_list()
+        else:
+            return None
+
+
     @staticmethod
     def _read_df(f, nrows, names, converters, defaults=None):
         """ a private method to read part of an open file into a pandas.DataFrame.
@@ -904,9 +962,10 @@ class Pst(object):
             elif "* parameter data" in last_section.lower():
                 # check for tied pars
                 ntied = 0
-                for line in section_lines:
-                    if "tied" in line.lower():
-                        ntied += 1
+                if "external" not in last_section.lower():
+                    for line in section_lines:
+                        if "tied" in line.lower():
+                            ntied += 1
                 if ntied > 0:
                     slines = section_lines[:-ntied]
                 else:
@@ -962,19 +1021,27 @@ class Pst(object):
                             self.control_data.ntplfle, self.control_data.ninsfle
                         )
                     )
-
+                template_files, input_files = [],[]
                 for i in range(self.control_data.ntplfle):
                     raw = section_lines[i].strip().split()
-                    self.template_files.append(raw[0])
-                    self.input_files.append(raw[1])
+                    template_files.append(raw[0])
+                    input_files.append(raw[1])
+                self.model_input_data = pd.DataFrame({"pest_file":template_files,
+                                                      "model_file":input_files},
+                                                     index=template_files)
+
+                instruction_files, output_files = [],[]
                 for j in range(self.control_data.ninsfle):
                     raw = section_lines[i + j + 1].strip().split()
-                    self.instruction_files.append(raw[0])
-                    self.output_files.append(raw[1])
+                    instruction_files.append(raw[0])
+                    output_files.append(raw[1])
+                self.model_output_data = pd.DataFrame({"pest_file": instruction_files,
+                                                      "model_file": output_files},
+                                                     index=instruction_files)
 
             elif "* model input" in last_section.lower():
                 if last_section.strip().split()[-1].lower() == "external":
-                    io_df = self._cast_df_from_lines(
+                    self.model_input_data = self._cast_df_from_lines(
                         last_section,
                         section_lines,
                         ["pest_file", "model_file"],
@@ -982,18 +1049,22 @@ class Pst(object):
                         [],
                         pst_path=pst_path,
                     )
-                    self.template_files.extend(io_df.pest_file.tolist())
-                    self.input_files.extend(io_df.model_file.tolist())
+                    #self.template_files.extend(io_df.pest_file.tolist())
+                    #self.input_files.extend(io_df.model_file.tolist())
 
                 else:
+                    template_files,input_files = [],[]
                     for line in section_lines:
                         raw = line.split()
-                        self.template_files.append(raw[0])
-                        self.input_files.append(raw[1])
+                        template_files.append(raw[0])
+                        input_files.append(raw[1])
+                    self.model_input_data = pd.DataFrame({"pest_file": template_files,
+                                                          "model_file": input_files},
+                                                         index=template_files)
 
             elif "* model output" in last_section.lower():
                 if last_section.strip().split()[-1].lower() == "external":
-                    io_df = self._cast_df_from_lines(
+                    self.model_output_data = self._cast_df_from_lines(
                         last_section,
                         section_lines,
                         ["pest_file", "model_file"],
@@ -1001,14 +1072,18 @@ class Pst(object):
                         [],
                         pst_path=pst_path,
                     )
-                    self.instruction_files.extend(io_df.pest_file.tolist())
-                    self.output_files.extend(io_df.model_file.tolist())
+                    #self.instruction_files.extend(io_df.pest_file.tolist())
+                    #self.output_files.extend(io_df.model_file.tolist())
 
                 else:
+                    instruction_files,output_files = [],[]
                     for iline, line in enumerate(section_lines):
                         raw = line.split()
-                        self.instruction_files.append(raw[0])
-                        self.output_files.append(raw[1])
+                        instruction_files.append(raw[0])
+                        output_files.append(raw[1])
+                    self.model_output_data = pd.DataFrame({"pest_file": instruction_files,
+                                                           "model_file": output_files},
+                                                          index=instruction_files)
 
             elif "* prior information" in last_section.lower():
                 self._cast_prior_df_from_lines(
@@ -1132,8 +1207,10 @@ class Pst(object):
         )
 
         self.control_data.nprior = self.prior_information.shape[0]
-        self.control_data.ntplfle = len(self.template_files)
-        self.control_data.ninsfle = len(self.instruction_files)
+        #self.control_data.ntplfle = len(self.template_files)
+        self.control_data.ntplfle = self.model_input_data.shape[0]
+        #self.control_data.ninsfle = len(self.instruction_files)
+        self.control_data.ninsfle = self.model_output_data.shape[0]
         self.control_data.numcom = len(self.model_command)
 
     def rectify_pgroups(self):
@@ -1462,12 +1539,13 @@ class Pst(object):
         io_filename = new_filename.lower().replace(".pst", ".tplfile_data.csv")
         if pst_path is not None:
             io_filename = os.path.join(pst_path, os.path.split(io_filename)[-1])
-        pfiles = self.template_files
+        #pfiles = self.template_files
         # pfiles.extend(self.instruction_files)
-        mfiles = self.input_files
+        #mfiles = self.input_files
         # mfiles.extend(self.output_files)
-        io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
-        io_df.to_csv(io_filename, index=False)
+        #io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
+        #io_df.to_csv(io_filename, index=False)
+        self.model_input_data.to_csv(io_filename,index=False)
         io_filename = os.path.join(pst_rel_path, os.path.split(io_filename)[-1])
         f_out.write("{0}\n".format(io_filename))
 
@@ -1475,10 +1553,11 @@ class Pst(object):
         io_filename = new_filename.lower().replace(".pst", ".insfile_data.csv")
         if pst_path is not None:
             io_filename = os.path.join(pst_path, os.path.split(io_filename)[-1])
-        pfiles = self.instruction_files
-        mfiles = self.output_files
-        io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
-        io_df.to_csv(io_filename, index=False)
+        #pfiles = self.instruction_files
+        #mfiles = self.output_files
+        #io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
+        #io_df.to_csv(io_filename, index=False)
+        self.model_output_data.to_csv(io_filename,index=False)
         io_filename = os.path.join(pst_rel_path, os.path.split(io_filename)[-1])
         f_out.write("{0}\n".format(io_filename))
 
@@ -1611,9 +1690,11 @@ class Pst(object):
             f_out.write(cline + "\n")
 
         f_out.write("* model input/output\n")
-        for tplfle, infle in zip(self.template_files, self.input_files):
+        for tplfle, infle in zip(self.model_input_data.pest_file,
+                                 self.model_input_data.model_file):
             f_out.write("{0} {1}\n".format(tplfle, infle))
-        for insfle, outfle in zip(self.instruction_files, self.output_files):
+        for insfle, outfle in zip(self.model_output_data.pest_file,
+                                  self.model_output_data.model_file):
             f_out.write("{0} {1}\n".format(insfle, outfle))
 
         if self.nprior > 0:
@@ -1854,11 +1935,8 @@ class Pst(object):
         new_pst.control_data = self.control_data.copy()
 
         new_pst.model_command = self.model_command
-        new_pst.template_files = self.template_files
-        new_pst.input_files = self.input_files
-        new_pst.instruction_files = self.instruction_files
-        new_pst.output_files = self.output_files
-
+        new_pst.model_input_data = self.model_input_data.copy()
+        new_pst.model_output_data = self.model_output_data.copy()
         if self.tied is not None:
             warnings.warn(
                 "Pst.get() not checking for tied parameter "
@@ -2453,8 +2531,11 @@ class Pst(object):
         if pst_path is not None:
             template_file = os.path.join(pst_path, os.path.split(template_file)[-1])
             in_file = os.path.join(pst_path, os.path.split(in_file)[-1])
-        self.template_files.append(template_file)
-        self.input_files.append(in_file)
+
+        #self.template_files.append(template_file)
+        #self.input_files.append(in_file)
+        self.model_input_data.loc[template_file,"pest_file"] = template_file
+        self.model_input_data.loc[template_file,"model_file"] = in_file
 
         return new_par_data
 
@@ -2522,8 +2603,10 @@ class Pst(object):
             cwd = os.path.join(*os.path.split(ins_file)[:-1])
             ins_file = os.path.join(pst_path, os.path.split(ins_file)[-1])
             out_file = os.path.join(pst_path, os.path.split(out_file)[-1])
-        self.instruction_files.append(ins_file)
-        self.output_files.append(out_file)
+        #self.instruction_files.append(ins_file)
+        #self.output_files.append(out_file)
+        self.model_output_data.loc[ins_file,"pest_file"] = ins_file
+        self.model_output_data.loc[ins_file, "model_file"] = out_file
         df = None
         if inschek:
             # df = pst_utils._try_run_inschek(ins_file,out_file,cwd=cwd)

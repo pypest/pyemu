@@ -1267,31 +1267,41 @@ def pst_from_io_files(
     if "window" in platform.platform().lower() and pst_path == ".":
         pst_path = ""
 
-    new_pst.instruction_files = ins_files
-    new_pst.output_files = out_files
+    #new_pst.instruction_files = ins_files
+    #new_pst.output_files = out_files
+    new_pst.model_output_data = pd.DataFrame({"pest_file":ins_files,
+                                              "model_file":out_files},
+                                             index=ins_files)
 
-    # try to run inschek to find the observtion values
-    pyemu.pst_utils.try_process_output_pst(new_pst)
-    if pst_path is None:
-        new_pst.template_files = tpl_files
-        new_pst.input_files = in_files
-    else:
-        new_pst.template_files = [
+
+    if pst_path is not None:
+        tpl_files = [
             os.path.join(pst_path, os.path.split(tpl_file)[-1])
             for tpl_file in tpl_files
         ]
-        new_pst.input_files = [
+        in_files = [
             os.path.join(pst_path, os.path.split(in_file)[-1]) for in_file in in_files
         ]
         # now set the true path location to instruction files and output files
-        new_pst.instruction_files = [
+        ins_files = [
             os.path.join(pst_path, os.path.split(ins_file)[-1])
             for ins_file in ins_files
         ]
-        new_pst.output_files = [
+        out_files = [
             os.path.join(pst_path, os.path.split(out_file)[-1])
             for out_file in out_files
         ]
+
+    new_pst.model_input_data = pd.DataFrame({"pest_file": tpl_files,
+                                              "model_file": in_files},
+                                             index=tpl_files)
+
+    new_pst.model_output_data = pd.DataFrame({"pest_file": ins_files,
+                                              "model_file": out_files},
+                                             index=ins_files)
+
+    # try to run inschek to find the observtion values
+    pyemu.pst_utils.try_process_output_pst(new_pst)
 
     new_pst.try_parse_name_metadata()
     if pst_filename:
