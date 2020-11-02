@@ -2539,6 +2539,100 @@ class Pst(object):
 
         return new_par_data
 
+
+    def drop_observations(self,ins_file,pst_path=None):
+        """ remove observations in an instruction file from the control file
+
+        Args:
+            ins_file (`str`): instruction file to remove
+            pst_path (`str`): the path to append to the instruction file in the control file.  If
+                not None, then any existing path in front of the instruction is split off
+                and pst_path is prepended.  If python is being run in a directory other than where the control
+                file will reside, it is useful to pass `pst_path` as `.`. Default is None
+
+        Example::
+
+            pst = pyemu.Pst(os.path.join("template", "my.pst"))
+            pst.remove_observations(os.path.join("template","some_obs.dat.ins"), pst_path=".")
+            pst.write(os.path.join("template", "my_new_with_less_obs.pst")
+
+        """
+
+        if not os.path.exists(ins_file):
+            raise Exception("couldn't find instruction file '{0}'".format(ins_file))
+        pst_ins_file = ins_file
+        if pst_path is not None:
+            pst_ins_file = os.path.join(pst_path,os.path.split(ins_file)[1])
+        if pst_ins_file not in self.model_output_data.pest_file.to_list():
+            raise Exception("ins_file '{0}' not found in Pst.model_output_data.pest_file".\
+                            format(pst_ins_file))
+        i = pst_utils.InstructionFile(ins_file)
+        drop_obs = i.obs_name_set
+        if len(drop_obs) == self.nobs:
+            raise Exception("cannot drop all observations")
+        self.observation_data = self.observation_data.loc[self.observation_data.obsnme.apply(
+            lambda x: x not in drop_obs),:]
+        self.model_output_data = self.model_output_data.loc[self.model_output_data.pest_file != ins_file]
+        print("{0} obs dropped from instruction file {1}".format(len(drop_obs),ins_file))
+
+
+    def drop_parameters(self,tpl_file,pst_path=None):
+        """ remove parameters in a template file from the control file
+
+        Args:
+            tpl_file (`str`): template file to remove
+            pst_path (`str`): the path to append to the template file in the control file.  If
+                not None, then any existing path in front of the template or in file is split off
+                and pst_path is prepended.  If python is being run in a directory other than where the control
+                file will reside, it is useful to pass `pst_path` as `.`. Default is None
+
+        Note:
+            This method does not check for multiple occurences of the same parameter name(s) in
+                across template files so if you have the same parameter in multiple template files,
+                this is not the method you are looking for
+
+        Example::
+
+            pst = pyemu.Pst(os.path.join("template", "my.pst"))
+            pst.remove_parameters(os.path.join("template","boring_zone_pars.dat.tpl"), pst_path=".")
+            pst.write(os.path.join("template", "my_new_with_less_pars.pst")
+
+        """
+
+        if not os.path.exists(tpl_file):
+            raise Exception("couldn't find template file '{0}'".format(tpl_file))
+        pst_tpl_file = tpl_file
+        if pst_path is not None:
+            pst_tpl_file = os.path.join(pst_path,os.path.split(tpl_file)[1])
+        if pst_tpl_file not in self.model_input_data.pest_file.to_list():
+            raise Exception("tpl_file '{0}' not found in Pst.model_input_data.pest_file".\
+                            format(pst_tpl_file))
+        drop_pars = pst_utils.parse_tpl_file(tpl_file)
+        if len(drop_pars) == self.npar:
+            raise Exception("cannot drop all parameters")
+
+        # get a list of drop pars that are in parameter_data
+        par_names = set(self.par_names)
+        drop_pars_present = [p for p in drop_pars if p in par_names]
+
+        #check that other pars arent tied to the dropping pars
+        print(self.parameter_data.columns)
+        if "partied" in self.parameter_data.columns:
+            par_tied = set(self.parameter_data.loc[self.parameter_data.partrans=="tied","partied"].to_list())
+
+            par_tied = par_tied.intersection(drop_pars_present)
+            if len(par_tied) > 0:
+                raise Exception("the following pars to be dropped are 'tied' to: {0}".\
+                                format(str(par_tied)))
+
+        self.parameter_data = self.parameter_data.loc[self.parameter_data.parnme.apply(
+            lambda x: x not in drop_pars_present),:]
+        self.rectify_pi()
+        self.model_input_data = self.model_input_data.loc[self.model_input_data.pest_file != tpl_file]
+        print("{0} pars dropped from template file {1}".format(len(drop_pars),tpl_file))
+
+
+
     def add_observations(self, ins_file, out_file=None, pst_path=None, inschek=True):
         """ add new observations to a control file
 

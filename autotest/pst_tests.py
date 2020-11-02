@@ -357,11 +357,32 @@ def add_pars_test():
         f.write("ptf ~\n")
         f.write("  ~junk1   ~\n")
         f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
+    print(pst.npar)
     pst.add_parameters(tpl_file, "crap.in", pst_path="temp")
     assert npar + 1 == pst.npar
     assert "junk1" in pst.parameter_data.parnme
     assert os.path.join("temp", "crap.in") in pst.input_files
     assert os.path.join("temp", "crap.in.tpl") in pst.template_files
+
+    pyemu.helpers.zero_order_tikhonov(pst)
+    nprior,npar = pst.nprior,pst.npar
+    pst.parameter_data.loc[pst.par_names[0], "partrans"] = "tied"
+    pst.parameter_data.loc[pst.par_names[0], "partied"] = "junk1"
+    try:
+        pst.drop_parameters(tpl_file,"temp")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst.parameter_data.loc[pst.par_names[0], "partrans"] = "log"
+    pst.drop_parameters(tpl_file, "temp")
+    print(pst.npar,npar)
+    print(pst.nprior,nprior)
+    print(pst.par_names)
+    assert pst.npar == npar - 2
+    assert pst.nprior == nprior - 2
+
 
 
 def add_obs_test():
@@ -385,6 +406,10 @@ def add_obs_test():
     assert os.path.join("temp", "crap.out") in pst.output_files, str(pst.output_files)
     assert os.path.join("temp", "crap.out.ins") in pst.instruction_files
     print(pst.observation_data.loc["crap1", "obsval"], oval)
+    nobs = pst.nobs
+    pst.drop_observations(ins_file,pst_path="temp")
+    assert pst.nobs == nobs - 1
+    assert ins_file not in pst.model_output_data.pest_file.to_list()
 
 
 def test_write_input_files():
@@ -900,8 +925,8 @@ if __name__ == "__main__":
     # write_tables_test()
     # res_stats_test()
     # test_write_input_files()
-    # add_obs_test()
-    # add_pars_test()
+    #add_obs_test()
+    add_pars_test()
     # setattr_test()
 
     # add_pi_test()
@@ -916,13 +941,13 @@ if __name__ == "__main__":
     #tpl_ins_test()
     #comments_test()
     #test_e_clean()
-    load_test()
-    res_test()
-
-    from_io_with_inschek_test()
-    pestpp_args_test()
-    reweight_test()
-    reweight_res_test()
-    run_test()
-    rectify_pgroup_test()
-    sanity_check_test()
+    # load_test()
+    # res_test()
+    #
+    # from_io_with_inschek_test()
+    # pestpp_args_test()
+    # reweight_test()
+    # reweight_res_test()
+    # run_test()
+    # rectify_pgroup_test()
+    # sanity_check_test()
