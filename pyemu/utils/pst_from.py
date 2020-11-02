@@ -59,6 +59,8 @@ class PstFrom(object):
         zero_based (`bool`): flag if the model uses zero-based indices, Default is True
         start_datetime (`str`): a string that can be case to a datatime instance the represents the starting datetime
             of the model
+        tpl_subfolder (`str`): option to write template files to a subfolder within ``new_d``.
+            Default is False (write template files to ``new_d``).
 
     """
 
@@ -71,12 +73,16 @@ class PstFrom(object):
         spatial_reference=None,
         zero_based=True,
         start_datetime=None,
+        tpl_subfolder=None,
     ):
 
         self.original_d = Path(original_d)
         self.new_d = Path(new_d)
         self.original_file_d = None
         self.mult_file_d = None
+        self.tpl_d = self.new_d
+        if tpl_subfolder is not None:
+            self.tpl_d = Path(self.new_d, tpl_subfolder)
         self.remove_existing = bool(remove_existing)
         self.zero_based = bool(zero_based)
         self._spatial_reference = spatial_reference
@@ -634,6 +640,8 @@ class PstFrom(object):
                 "'mult' subdir already exists in new_d '{0}'" "".format(self.new_d)
             )
         self.mult_file_d.mkdir(exist_ok=True)
+
+        self.tpl_d.mkdir(exist_ok=True)
 
         self.logger.log("setting up dirs")
 
@@ -1197,7 +1205,7 @@ class PstFrom(object):
         rebuild_pst=False,
         alt_inst_str="inst",
         comment_char=None,
-        par_style="multiplier",
+        par_style="multiplier"
     ):
         """
         Add list or array style model input files to PstFrom object.
@@ -1442,22 +1450,19 @@ class PstFrom(object):
         if par_style == "multiplier":
             mlt_filename = "{0}_{1}.csv".format(par_name_store, par_type)
             # pst input file (for tpl->in pair) is multfile (in mult dir)
-            #in_filepst = os.path.relpath(
-            #    os.path.join(self.mult_file_d, mlt_filename), self.new_d
-            #)
             in_fileabs = self.mult_file_d / mlt_filename
             # pst input file (for tpl->in pair) is multfile (in mult dir)
             in_filepst = in_fileabs.relative_to(self.new_d)
-            tpl_filename = mlt_filename + ".tpl"
+            tpl_filename = self.tpl_d / (mlt_filename + ".tpl")
         else:
             mlt_filename = np.NaN
-            in_fileabs = self.mult_file_d / filenames[0].name
-            # pst input file (for tpl->in pair) is multfile (in mult dir)
+            # absolute path to org/datafile
+            in_fileabs = self.original_file_d / filenames[0].name
+            # pst input file (for tpl->in pair) is orgfile (in org dir)
+            # relative path to org/datafile (relative to dest model workspace):
             in_filepst = in_fileabs.relative_to(self.new_d)
-            #in_filepst = os.path.relpath(
-            #    os.path.join(self.original_file_d, filenames[0].name), self.new_d
-            #)
-            tpl_filename = str(filenames[0]) + ".tpl"
+            tpl_filename = self.tpl_d / (filenames[0].name + ".tpl")
+
         pp_filename = None  # setup placeholder variables
         fac_filename = None
 
@@ -1488,7 +1493,7 @@ class PstFrom(object):
                 filenames,
                 dfs,
                 par_name_base,
-                tpl_filename=self.new_d / tpl_filename,
+                tpl_filename=tpl_filename,
                 par_type=par_type,
                 suffix="",
                 index_cols=index_cols,
@@ -1528,7 +1533,7 @@ class PstFrom(object):
                 # Generate array type template - also returns par data
                 df = write_array_tpl(
                     name=par_name_base[0],
-                    tpl_filename=self.new_d / tpl_filename,
+                    tpl_filename=tpl_filename,
                     suffix="",
                     par_type=par_type,
                     zone_array=zone_array,
@@ -1600,7 +1605,8 @@ class PstFrom(object):
                 # pst inputfile (for tpl->in pair) is
                 # par_name_storepp.dat table (in pst ws)
                 in_filepst = pp_filename
-                tpl_filename = pp_filename + ".tpl"
+                tpl_filename = self.tpl_d / (pp_filename + ".tpl")
+                #tpl_filename = get_relative_filepath(self.new_d, tpl_filename)
                 if pp_space is None:  # default spacing if not passed
                     self.logger.warn("pp_space is None, using 10...\n")
                     pp_space = 10
@@ -1654,7 +1660,7 @@ class PstFrom(object):
                     prefix_dict=pp_dict,
                     every_n_cell=pp_space,
                     pp_dir=self.new_d,
-                    tpl_dir=self.new_d,
+                    tpl_dir=self.tpl_d,
                     shapename=str(self.new_d / "{0}.shp".format(par_name_store)),
                     longnames=self.longnames,
                 )
@@ -1770,7 +1776,7 @@ class PstFrom(object):
         # df.loc[:,"tpl_filename"] = tpl_filename
 
         # store tpl --> in filename pair
-        self.tpl_filenames.append(tpl_filename)
+        self.tpl_filenames.append(get_relative_filepath(self.new_d, tpl_filename))
         self.input_filenames.append(in_filepst)
         for file_name in file_dict.keys():
             # store mult --> original file pairs

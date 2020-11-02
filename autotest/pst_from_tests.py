@@ -1576,7 +1576,7 @@ class TestPstFrom():
         cls.pf = pyemu.utils.PstFrom(original_d=cls.sim_ws, new_d=cls.dest_ws,
                                  remove_existing=True,
                                  longnames=True, spatial_reference=cls.sr,
-                                 zero_based=False)
+                                 zero_based=False, tpl_subfolder='tpl')
 
     def test_add_array_parameters(self):
         """test setting up array parameters with different external file
@@ -1614,12 +1614,15 @@ class TestPstFrom():
             mult_filename = f'{par_name_base}_inst0_zone.csv'
             assert (self.dest_ws / f'mult/{mult_filename}').exists()
             # for now, assume tpl file should be in main folder
-            assert (self.dest_ws / f'{mult_filename}.tpl').exists()
+            template_file = (self.pf.tpl_d / f'{mult_filename}.tpl')
+            assert template_file.exists()
 
             # make the PEST control file
             pst = self.pf.build_pst()
             assert pst.filename == Path('temp/pst-from-small-template/pst-from-small.pst')
             assert pst.filename.exists()
+            rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
+            assert rel_tpl in pst.template_files
 
             # make the PEST control file (just filename)
             pst = self.pf.build_pst('junk.pst')
@@ -1702,10 +1705,13 @@ class TestPstFrom():
             mult_filename = f'{par_name_base}_inst0_{par_type}.csv'
             assert (self.dest_ws / f'mult/{mult_filename}').exists()
             # for now, assume tpl file should be in main folder
-            assert (self.dest_ws / f'{mult_filename}.tpl').exists()
+            template_file = (self.pf.tpl_d / f'{mult_filename}.tpl')
+            assert template_file.exists()
 
             # make the PEST control file
             pst = self.pf.build_pst()
+            rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
+            assert rel_tpl in pst.template_files
 
             # check the mult2model info
             df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
@@ -1762,15 +1768,26 @@ class TestPstFrom():
                     dest_file = array_file.format(mult2model_row, suffix)
                     shutil.copy(self.array_file, Path(self.dest_ws, dest_file))
                     # add the parameters
+                    par_name_base = f'{tag}_{suffix}'
                     self.pf.add_parameters(filenames=dest_file, par_type=par_type,
                                            zone_array=self.zone_array,
-                                           par_name_base=f'{tag}_{suffix}',
+                                           par_name_base=par_name_base,
                                            pargp=f'{tag}_zone',
                                            pp_space=1, geostruct=self.grid_gs,
                                            par_style=par_style
                                            )
+                    if par_type != 'pilotpoints':
+                        template_file = (self.pf.tpl_d / f'{par_name_base}_inst0_grid.csv.tpl')
+                        assert template_file.exists()
+                    else:
+                        template_file = (self.pf.tpl_d / f'{par_name_base}_inst0pp.dat.tpl')
+                        assert template_file.exists()
+
                     # make the PEST control file
                     pst = self.pf.build_pst()
+                    rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
+                    assert rel_tpl in pst.template_files
+
                     # check the mult2model info
                     df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
                     mult_file = Path(df['mlt_file'].values[mult2model_row])
@@ -1861,7 +1878,6 @@ class TestPstFrom():
         shutil.rmtree(cls.dest_ws)
 
 
-
 def test_get_filepath():
     from pyemu.utils.pst_from import get_filepath
 
@@ -1875,13 +1891,12 @@ def test_get_filepath():
         assert result == expected
 
 
-
 if __name__ == "__main__":
     #freyberg_test()
-    freyberg_prior_build_test()
+    #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     # mf6_freyberg_da_test()
-    #mf6_freyberg_direct_test()
+    mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     xsec_test()
