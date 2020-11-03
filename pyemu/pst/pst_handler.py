@@ -2536,7 +2536,8 @@ class Pst(object):
         #self.input_files.append(in_file)
         self.model_input_data.loc[template_file,"pest_file"] = template_file
         self.model_input_data.loc[template_file,"model_file"] = in_file
-
+        print("{0} pars added from template file {1}".\
+              format(len(new_parnme),template_file))
         return new_par_data
 
 
@@ -2549,6 +2550,9 @@ class Pst(object):
                 not None, then any existing path in front of the instruction is split off
                 and pst_path is prepended.  If python is being run in a directory other than where the control
                 file will reside, it is useful to pass `pst_path` as `.`. Default is None
+
+        Returns:
+            `pandas.DataFrame`: the observation data for the observations that were removed.
 
         Example::
 
@@ -2564,17 +2568,28 @@ class Pst(object):
         if pst_path is not None:
             pst_ins_file = os.path.join(pst_path,os.path.split(ins_file)[1])
         if pst_ins_file not in self.model_output_data.pest_file.to_list():
-            raise Exception("ins_file '{0}' not found in Pst.model_output_data.pest_file".\
-                            format(pst_ins_file))
+            if pst_path == ".":
+                pst_ins_file = os.path.split(ins_file)[1]
+                if pst_ins_file not in self.model_output_data.pest_file.to_list():
+                    raise Exception("ins_file '{0}' not found in Pst.model_output_data.pest_file". \
+                                    format(pst_ins_file))
+            else:
+                raise Exception("ins_file '{0}' not found in Pst.model_output_data.pest_file". \
+                                format(pst_ins_file))
         i = pst_utils.InstructionFile(ins_file)
         drop_obs = i.obs_name_set
-        if len(drop_obs) == self.nobs:
-            raise Exception("cannot drop all observations")
+
+        #if len(drop_obs) == self.nobs:
+        #    raise Exception("cannot drop all observations")
+
+        obs_names = set(self.obs_names)
+        drop_obs_present = [o for o in drop_obs if o in obs_names]
+        dropped_obs = self.observation_data.loc[drop_obs_present,:].copy()
         self.observation_data = self.observation_data.loc[self.observation_data.obsnme.apply(
             lambda x: x not in drop_obs),:]
-        self.model_output_data = self.model_output_data.loc[self.model_output_data.pest_file != ins_file]
+        self.model_output_data = self.model_output_data.loc[self.model_output_data.pest_file != pst_ins_file]
         print("{0} obs dropped from instruction file {1}".format(len(drop_obs),ins_file))
-
+        return dropped_obs
 
     def drop_parameters(self,tpl_file,pst_path=None):
         """ remove parameters in a template file from the control file
@@ -2585,6 +2600,9 @@ class Pst(object):
                 not None, then any existing path in front of the template or in file is split off
                 and pst_path is prepended.  If python is being run in a directory other than where the control
                 file will reside, it is useful to pass `pst_path` as `.`. Default is None
+
+        Returns:
+            `pandas.DataFrame`: the parameter data for the parameters that were removed.
 
         Note:
             This method does not check for multiple occurences of the same parameter name(s) in
@@ -2605,8 +2623,14 @@ class Pst(object):
         if pst_path is not None:
             pst_tpl_file = os.path.join(pst_path,os.path.split(tpl_file)[1])
         if pst_tpl_file not in self.model_input_data.pest_file.to_list():
-            raise Exception("tpl_file '{0}' not found in Pst.model_input_data.pest_file".\
-                            format(pst_tpl_file))
+            if pst_path == ".":
+                pst_tpl_file = os.path.split(tpl_file)[1]
+                if pst_tpl_file not in self.model_input_data.pest_file.to_list():
+                    raise Exception("tpl_file '{0}' not found in Pst.model_input_data.pest_file". \
+                                    format(pst_tpl_file))
+            else:
+                raise Exception("tpl_file '{0}' not found in Pst.model_input_data.pest_file".\
+                                format(pst_tpl_file))
         drop_pars = pst_utils.parse_tpl_file(tpl_file)
         if len(drop_pars) == self.npar:
             raise Exception("cannot drop all parameters")
@@ -2616,7 +2640,6 @@ class Pst(object):
         drop_pars_present = [p for p in drop_pars if p in par_names]
 
         #check that other pars arent tied to the dropping pars
-        print(self.parameter_data.columns)
         if "partied" in self.parameter_data.columns:
             par_tied = set(self.parameter_data.loc[self.parameter_data.partrans=="tied","partied"].to_list())
 
@@ -2625,12 +2648,13 @@ class Pst(object):
                 raise Exception("the following pars to be dropped are 'tied' to: {0}".\
                                 format(str(par_tied)))
 
+        dropped_par = self.parameter_data.loc[drop_pars_present,:].copy()
         self.parameter_data = self.parameter_data.loc[self.parameter_data.parnme.apply(
             lambda x: x not in drop_pars_present),:]
         self.rectify_pi()
-        self.model_input_data = self.model_input_data.loc[self.model_input_data.pest_file != tpl_file]
+        self.model_input_data = self.model_input_data.loc[self.model_input_data.pest_file != pst_tpl_file]
         print("{0} pars dropped from template file {1}".format(len(drop_pars),tpl_file))
-
+        return dropped_par
 
 
     def add_observations(self, ins_file, out_file=None, pst_path=None, inschek=True):
@@ -2713,6 +2737,8 @@ class Pst(object):
             # print(self.observation_data.index,df.index)
             self.observation_data.loc[df.index, "obsval"] = df.obsval
             new_obs_data.loc[df.index, "obsval"] = df.obsval
+        print("{0} obs added from instruction file {1}". \
+              format(len(obsnme), ins_file))
         return new_obs_data
 
     def write_input_files(self, pst_path="."):
