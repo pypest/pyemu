@@ -95,6 +95,9 @@ def pst_manip_test():
     pst = Pst(new_path)
     pst.svd_data.maxsing = 1
     pst.write(new_path)
+    pst = Pst(new_path)
+    pst.write(new_path,version=2)
+    pst = Pst(new_path)
 
 
 def load_test():
@@ -109,6 +112,8 @@ def load_test():
     exceptions = []
     load_fails = []
     for pst_file in pst_files:
+        if "pest_tied_tester" not in pst_file:
+            continue
         if pst_file.endswith(".pst") and not "comments" in pst_file and \
                 not "missing" in pst_file:
             print(pst_file)
@@ -132,6 +137,21 @@ def load_test():
             except Exception as e:
                 exceptions.append(pst_file + " reload fail: " + str(e))
                 continue
+            print(out_name)
+            # p.write(out_name)
+            try:
+                p.write(out_name,version=2)
+            except Exception as e:
+                exceptions.append(pst_file + " v2 write fail: " + str(e))
+                continue
+
+            p = Pst(out_name)
+            try:
+                p = Pst(out_name)
+            except Exception as e:
+                exceptions.append(pst_file + " v2 reload fail: " + str(e))
+                continue
+
 
     # with open("load_fails.txt",'w') as f:
     #    [f.write(pst_file+'\n') for pst_file in load_fails]
@@ -337,11 +357,32 @@ def add_pars_test():
         f.write("ptf ~\n")
         f.write("  ~junk1   ~\n")
         f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
+    print(pst.npar)
     pst.add_parameters(tpl_file, "crap.in", pst_path="temp")
     assert npar + 1 == pst.npar
     assert "junk1" in pst.parameter_data.parnme
     assert os.path.join("temp", "crap.in") in pst.input_files
     assert os.path.join("temp", "crap.in.tpl") in pst.template_files
+
+    pyemu.helpers.zero_order_tikhonov(pst)
+    nprior,npar = pst.nprior,pst.npar
+    pst.parameter_data.loc[pst.par_names[0], "partrans"] = "tied"
+    pst.parameter_data.loc[pst.par_names[0], "partied"] = "junk1"
+    try:
+        pst.drop_parameters(tpl_file,"temp")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst.parameter_data.loc[pst.par_names[0], "partrans"] = "log"
+    pst.drop_parameters(tpl_file, "temp")
+    print(pst.npar,npar)
+    print(pst.nprior,nprior)
+    print(pst.par_names)
+    assert pst.npar == npar - 2
+    assert pst.nprior == nprior - 2
+
 
 
 def add_obs_test():
@@ -365,6 +406,10 @@ def add_obs_test():
     assert os.path.join("temp", "crap.out") in pst.output_files, str(pst.output_files)
     assert os.path.join("temp", "crap.out.ins") in pst.instruction_files
     print(pst.observation_data.loc["crap1", "obsval"], oval)
+    nobs = pst.nobs
+    pst.drop_observations(ins_file,pst_path="temp")
+    assert pst.nobs == nobs - 1
+    assert ins_file not in pst.model_output_data.pest_file.to_list()
 
 
 def test_write_input_files():
@@ -870,27 +915,20 @@ def new_format_path_mechanics_test():
 
 if __name__ == "__main__":
 
-    #process_output_files_test()
-    #change_limit_test()
-    #new_format_test()
-    #lt_gt_constraint_names_test()
-    #csv_to_ins_test()
-    #pst_from_flopy_geo_draw_test()
-    #pst_from_flopy_specsim_draw_test()
-    try_process_ins_test()
+    # process_output_files_test()
+    # change_limit_test()
+    # new_format_test()
+    # lt_gt_constraint_names_test()
+    # csv_to_ins_test()
+
+    # try_process_ins_test()
     # write_tables_test()
-    #res_stats_test()
+    # res_stats_test()
     # test_write_input_files()
-    # add_obs_test()
-    # add_pars_test()
+    #add_obs_test()
+    add_pars_test()
     # setattr_test()
-    # run_array_pars()
-    #from_flopy_zone_pars()
-    #from_flopy_pp_test()
-    # from_flopy()
-    # add_obs_test()
-    #from_flopy_kl_test()
-    #from_flopy_reachinput()
+
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
@@ -898,17 +936,16 @@ if __name__ == "__main__":
     # regul_rectify_test()
     # derivative_increment_tests()
     # tied_test()
-    # smp_test()
-    # smp_dateparser_test()
-    # pst_manip_test()
-    # tpl_ins_test()
-    # comments_test()
-    # test_e_clean()
+
+    #pst_manip_test()
+    #tpl_ins_test()
+    #comments_test()
+    #test_e_clean()
     # load_test()
-    #res_test()
-    # smp_test()
-    #from_io_with_inschek_test()
-    #pestpp_args_test()
+    # res_test()
+    #
+    # from_io_with_inschek_test()
+    # pestpp_args_test()
     # reweight_test()
     # reweight_res_test()
     # run_test()

@@ -555,8 +555,11 @@ class PstFrom(object):
                     [], pst.par_fieldnames, pst.par_defaults, pst.par_dtype
                 )
             pst.parameter_data = par_data
-            pst.template_files = self.tpl_filenames
-            pst.input_files = self.input_filenames
+            #pst.template_files = self.tpl_filenames
+            #pst.input_files = self.input_filenames
+            pst.model_input_data = pd.DataFrame({"pest_file":self.tpl_filenames,
+                                                 "model_file":self.input_filenames},
+                                                index=self.tpl_filenames)
 
         if "obs" in update.keys() or not uupdate:
             if len(self.obs_dfs) > 0:
@@ -569,8 +572,11 @@ class PstFrom(object):
                 obs_data.index = []
             obs_data.sort_index(inplace=True)
             pst.observation_data = obs_data
-            pst.instruction_files = self.ins_filenames
-            pst.output_files = self.output_filenames
+            #pst.instruction_files = self.ins_filenames
+            #pst.output_files = self.output_filenames
+            pst.model_output_data = pd.DataFrame({"pest_file": self.ins_filenames,
+                                                 "model_file": self.output_filenames},
+                                                index=self.ins_filenames)
         if not uupdate:
             pst.model_command = self.mod_command
 
