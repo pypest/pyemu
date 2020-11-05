@@ -220,8 +220,7 @@ class PstFrom(object):
             return (self._spatial_ref_xarray[i, j], self._spatial_ref_yarray[i, j])
 
     def parse_kij_args(self, args, kwargs):
-        """parse args into kij indices
-        """
+        """parse args into kij indices"""
         if len(args) >= 2:
             ij_id = None
             if "ij_id" in kwargs:
@@ -244,8 +243,7 @@ class PstFrom(object):
         return i, j
 
     def initialize_spatial_reference(self):
-        """process the spatial reference argument
-        """
+        """process the spatial reference argument"""
         if self._spatial_reference is None:
             self.get_xy = self._generic_get_xy
         elif hasattr(self._spatial_reference, "xcentergrid") and hasattr(
@@ -266,9 +264,7 @@ class PstFrom(object):
         self.spatial_reference = self._spatial_reference
 
     def write_forward_run(self):
-        """write the forward run script
-
-        """
+        """write the forward run script"""
         # update python commands with system style commands
         for alist, ilist in zip(
             [self.pre_py_cmds, self.mod_py_cmds, self.post_py_cmds],
@@ -557,11 +553,12 @@ class PstFrom(object):
                     [], pst.par_fieldnames, pst.par_defaults, pst.par_dtype
                 )
             pst.parameter_data = par_data
-            #pst.template_files = self.tpl_filenames
-            #pst.input_files = self.input_filenames
-            pst.model_input_data = pd.DataFrame({"pest_file":self.tpl_filenames,
-                                                 "model_file":self.input_filenames},
-                                                index=self.tpl_filenames)
+            # pst.template_files = self.tpl_filenames
+            # pst.input_files = self.input_filenames
+            pst.model_input_data = pd.DataFrame(
+                {"pest_file": self.tpl_filenames, "model_file": self.input_filenames},
+                index=self.tpl_filenames,
+            )
 
         if "obs" in update.keys() or not uupdate:
             if len(self.obs_dfs) > 0:
@@ -574,11 +571,12 @@ class PstFrom(object):
                 obs_data.index = []
             obs_data.sort_index(inplace=True)
             pst.observation_data = obs_data
-            #pst.instruction_files = self.ins_filenames
-            #pst.output_files = self.output_filenames
-            pst.model_output_data = pd.DataFrame({"pest_file": self.ins_filenames,
-                                                 "model_file": self.output_filenames},
-                                                index=self.ins_filenames)
+            # pst.instruction_files = self.ins_filenames
+            # pst.output_files = self.output_filenames
+            pst.model_output_data = pd.DataFrame(
+                {"pest_file": self.ins_filenames, "model_file": self.output_filenames},
+                index=self.ins_filenames,
+            )
         if not uupdate:
             pst.model_command = self.mod_command
 
@@ -789,7 +787,9 @@ class PstFrom(object):
                         "par filename '{0}' not found ".format(file_path)
                     )
                 # read array type input file
-                arr = np.loadtxt(os.path.join(self.new_d, filename), delimiter=sep,ndmin=2)
+                arr = np.loadtxt(
+                    os.path.join(self.new_d, filename), delimiter=sep, ndmin=2
+                )
                 self.logger.log("loading array {0}".format(file_path))
                 self.logger.statement(
                     "loaded array '{0}' of shape {1}".format(filename, arr.shape)
@@ -1046,38 +1046,38 @@ class PstFrom(object):
     def add_observations_from_ins(
         self, ins_file, out_file=None, pst_path=None, inschek=True
     ):
-        """ add new observations to a control file
+        """add new observations to a control file
 
-         Args:
-             ins_file (`str`): instruction file with exclusively new
-                observation names
-             out_file (`str`): model output file.  If None, then 
-                ins_file.replace(".ins","") is used. Default is None
-             pst_path (`str`): the path to append to the instruction file and 
-                out file in the control file.  If not None, then any existing 
-                path in front of the template or in file is split off and 
-                pst_path is prepended.  If python is being run in a directory 
-                other than where the control file will reside, it is useful 
-                to pass `pst_path` as `.`. Default is None
-             inschek (`bool`): flag to try to process the existing output file 
-                using the `pyemu.InstructionFile` class.  If successful, 
-                processed outputs are used as obsvals
+        Args:
+            ins_file (`str`): instruction file with exclusively new
+               observation names
+            out_file (`str`): model output file.  If None, then
+               ins_file.replace(".ins","") is used. Default is None
+            pst_path (`str`): the path to append to the instruction file and
+               out file in the control file.  If not None, then any existing
+               path in front of the template or in file is split off and
+               pst_path is prepended.  If python is being run in a directory
+               other than where the control file will reside, it is useful
+               to pass `pst_path` as `.`. Default is None
+            inschek (`bool`): flag to try to process the existing output file
+               using the `pyemu.InstructionFile` class.  If successful,
+               processed outputs are used as obsvals
 
-         Returns:
-             `pandas.DataFrame`: the data for the new observations that were 
-                added
+        Returns:
+            `pandas.DataFrame`: the data for the new observations that were
+               added
 
-         Note:
-             populates the new observation information with default values
+        Note:
+            populates the new observation information with default values
 
-         Example::
+        Example::
 
-             pst = pyemu.Pst(os.path.join("template", "my.pst"))
-             pst.add_observations(os.path.join("template","new_obs.dat.ins"), 
-                                  pst_path=".")
-             pst.write(os.path.join("template", "my_new.pst")
+            pst = pyemu.Pst(os.path.join("template", "my.pst"))
+            pst.add_observations(os.path.join("template","new_obs.dat.ins"),
+                                 pst_path=".")
+            pst.write(os.path.join("template", "my_new.pst")
 
-         """
+        """
         # lifted almost completely from `Pst().add_observation()`
         if os.path.dirname(ins_file) in ["", "."]:
             ins_file = os.path.join(self.new_d, ins_file)
@@ -1479,9 +1479,10 @@ class PstFrom(object):
                 input_filename=in_fileabs,
                 par_style=par_style,
             )
-            assert np.mod(len(df), len(use_cols)) == 0.0, (
-                "Parameter dataframe wrong shape for number of cols {0}"
-                "".format(use_cols)
+            assert (
+                np.mod(len(df), len(use_cols)) == 0.0
+            ), "Parameter dataframe wrong shape for number of cols {0}" "".format(
+                use_cols
             )
             # variables need to be passed to each row in df
             lower_bound = np.tile(lower_bound, int(len(df) / ncol))
@@ -2066,7 +2067,7 @@ def write_list_tpl(
     input_filename=None,
     par_style="multiplier",
 ):
-    """ Write template files for a list style input.
+    """Write template files for a list style input.
 
     Args:
         filenames (`str` of `container` of `str`): original input filenames
@@ -2700,7 +2701,7 @@ def write_array_tpl(
                     input_filename
                 )
             )
-        org_arr = np.loadtxt(input_filename,ndmin=2)
+        org_arr = np.loadtxt(input_filename, ndmin=2)
         if par_type == "grid":
             pass
         elif par_type == "constant":

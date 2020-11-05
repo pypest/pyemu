@@ -35,7 +35,7 @@ def setup_pilotpoints_grid(
     shapename="pp.shp",
     longnames=False,
 ):
-    """ setup a regularly-spaced (gridded) pilot point parameterization
+    """setup a regularly-spaced (gridded) pilot point parameterization
 
     Args:
         ml (`flopy.mbase`, optional): a flopy mbase dervied type.  If None, `sr` must not be None.
@@ -48,8 +48,8 @@ def setup_pilotpoints_grid(
             For example : `{0:["hk,"vk"]}` would setup pilot points with the prefix "hk" and "vk" for
             model layer 1. If None, a generic set of pilot points with
             the "pp" prefix are setup for a generic nrow by ncol grid. Default is None
-        ninst (`int`): Number of instances of pilot_points to set up. 
-            e.g. number of layers. If ml is None and prefix_dict is None, 
+        ninst (`int`): Number of instances of pilot_points to set up.
+            e.g. number of layers. If ml is None and prefix_dict is None,
             this is used to set up default prefix_dict.
         use_ibound_zones (`bool`): a flag to use the greater-than-zero values in the
             ibound as pilot point zones.  If False ,ibound values greater than zero are
@@ -165,7 +165,7 @@ def setup_pilotpoints_grid(
             for i in range(start, ib.shape[0] - start, every_n_cell):
                 for j in range(start, ib.shape[1] - start, every_n_cell):
                     # skip if this is an inactive cell
-                    if ib[i,j] <= 0: # this will account for MF6 style ibound as well
+                    if ib[i, j] <= 0:  # this will account for MF6 style ibound as well
                         continue
 
                     # get the attributes we need
@@ -269,7 +269,7 @@ def setup_pilotpoints_grid(
 
 
 def pp_file_to_dataframe(pp_filename):
-    """ read a pilot point file to a pandas Dataframe
+    """read a pilot point file to a pandas Dataframe
 
     Args:
         pp_filename (`str`): path and name of an existing pilot point file
@@ -295,7 +295,7 @@ def pp_file_to_dataframe(pp_filename):
 
 
 def pp_tpl_to_dataframe(tpl_filename):
-    """ read a pilot points template file to a pandas dataframe
+    """read a pilot points template file to a pandas dataframe
 
     Args:
         tpl_filename (`str`): path and name of an existing pilot points

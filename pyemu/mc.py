@@ -27,15 +27,15 @@ class MonteCarlo(LinearAnalysis):
     ----------
     parensemble : pyemu.ParameterEnsemble
         pyemu object derived from a pandas dataframe, the ensemble
-        of parameters from the PEST control file with associated 
+        of parameters from the PEST control file with associated
         starting value and bounds.  Object also exposes methods
         relevant to the dataframe and parameters-- see documentation.
     obsensemble : pyemu.ObservationEnsemble
         pyemu object derived from a pandas dataframe, the ensemble
-        of observations from the PEST control file with associated 
+        of observations from the PEST control file with associated
         starting weights.  Object also exposes methods
         relevant to the dataframe and observations-- see documentation.
-        
+
     Returns
     -------
     MonteCarlo
@@ -62,17 +62,17 @@ class MonteCarlo(LinearAnalysis):
 
     @property
     def num_reals(self):
-        """ get the number of realizations in the parameter ensemble
+        """get the number of realizations in the parameter ensemble
 
         Returns
         -------
         num_real : int
-        
+
         """
         return self.parensemble.shape[0]
 
     def get_nsing(self, epsilon=1.0e-4):
-        """ get the number of solution space dimensions given
+        """get the number of solution space dimensions given
         a ratio between the largest and smallest singular values
 
         Parameters
@@ -84,11 +84,11 @@ class MonteCarlo(LinearAnalysis):
         -------
         nsing : float
             number of singular components above the epsilon ratio threshold
-        
+
         Note
         -----
             If nsing == nadj_par, then None is returned
-        
+
         """
         mx = self.xtqx.shape[0]
         nsing = mx - np.searchsorted(
@@ -100,7 +100,7 @@ class MonteCarlo(LinearAnalysis):
         return nsing
 
     def get_null_proj(self, nsing=None):
-        """ get a null-space projection matrix of XTQX
+        """get a null-space projection matrix of XTQX
 
         Parameters
         ----------
@@ -108,12 +108,12 @@ class MonteCarlo(LinearAnalysis):
             optional number of singular components to use
             If Nonte, then nsing is determined from
             call to MonteCarlo.get_nsing()
-        
+
         Returns
         -------
         v2_proj : pyemu.Matrix
             the null-space projection matrix (V2V2^T)
-        
+
         """
         if nsing is None:
             nsing = self.get_nsing()
@@ -227,7 +227,7 @@ class MonteCarlo(LinearAnalysis):
     def project_parensemble(
         self, par_file=None, nsing=None, inplace=True, enforce_bounds="reset"
     ):
-        """ perform the null-space projection operations for null-space monte carlo
+        """perform the null-space projection operations for null-space monte carlo
 
         Parameters
         ----------
@@ -281,7 +281,7 @@ class MonteCarlo(LinearAnalysis):
         return en
 
     def write_psts(self, prefix, existing_jco=None, noptmax=None):
-        """ write parameter and optionally observation realizations
+        """write parameter and optionally observation realizations
             to a series of pest control files
 
         Parameters
