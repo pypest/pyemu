@@ -499,6 +499,8 @@ class PstFrom(object):
             This builds a pest control file from scratch, overwriting anything already
                 in self.pst object and anything already writen to `filename`
 
+            The new pest control file is assigned an NOPTMAX value of 0
+
         """
 
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
@@ -581,7 +583,9 @@ class PstFrom(object):
             pst.model_command = self.mod_command
 
         pst.prior_information = pst.null_prior
+        pst.control_data.noptmax = 0
         self.pst = pst
+
         self.pst.write(filename, version=version)
         self.write_forward_run()
         pst.try_parse_name_metadata()
@@ -785,7 +789,7 @@ class PstFrom(object):
                         "par filename '{0}' not found ".format(file_path)
                     )
                 # read array type input file
-                arr = np.loadtxt(os.path.join(self.new_d, filename), delimiter=sep)
+                arr = np.loadtxt(os.path.join(self.new_d, filename), delimiter=sep,ndmin=2)
                 self.logger.log("loading array {0}".format(file_path))
                 self.logger.statement(
                     "loaded array '{0}' of shape {1}".format(filename, arr.shape)
@@ -2696,7 +2700,7 @@ def write_array_tpl(
                     input_filename
                 )
             )
-        org_arr = np.loadtxt(input_filename)
+        org_arr = np.loadtxt(input_filename,ndmin=2)
         if par_type == "grid":
             pass
         elif par_type == "constant":

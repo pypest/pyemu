@@ -12,7 +12,7 @@ ext = ''
 bin_path = os.path.join("..", "..", "bin")
 if "linux" in platform.platform().lower():
     bin_path = os.path.join(bin_path, "linux")
-elif "darwin" in platform.platform().lower():
+elif "darwin" in platform.platform().lower() or "macos" in platform.platform().lower():
     bin_path = os.path.join(bin_path, "mac")
 else:
     bin_path = os.path.join(bin_path, "win")
@@ -1460,11 +1460,68 @@ def mf6_freyberg_varying_idomain():
     print(pst.phi)
     assert pst.phi < 1.0e-6
 
+
+def xsec_test():
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'xsec')
+    tmp_model_ws = "temp_pst_from"
+    if os.path.exists(tmp_model_ws):
+        shutil.rmtree(tmp_model_ws)
+    shutil.copytree(org_model_ws,tmp_model_ws)
+
+    # SETUP pest stuff...
+    nam_file = "10par_xsec.nam"
+    os_utils.run("{0} {1}".format(mf_exe_path,nam_file), cwd=tmp_model_ws)
+
+    m = flopy.modflow.Modflow.load(nam_file,model_ws=tmp_model_ws,version="mfnwt")
+    sr = m.modelgrid
+    t_d = "template_xsec"
+    pf = pyemu.utils.PstFrom(tmp_model_ws,t_d,remove_existing=True,spatial_reference=sr)
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_style="direct",upper_bound=25,
+                      lower_bound=0.25)
+    pf.add_parameters("hk_Layer_1.ref", par_type="grid", par_style="multiplier", upper_bound=10.0,
+                      lower_bound=0.1)
+
+    hds_arr = np.loadtxt(os.path.join(t_d,"10par_xsec.hds"))
+    with open(os.path.join(t_d,"10par_xsec.hds.ins"),'w')  as f:
+        f.write("pif ~\n")
+        for kper in range(hds_arr.shape[0]):
+            f.write("l1 ")
+            for j in range(hds_arr.shape[1]):
+                oname = "hds_{0}_{1}".format(kper,j)
+                f.write(" !{0}! ".format(oname))
+            f.write("\n")
+    pf.add_observations_from_ins(os.path.join(t_d,"10par_xsec.hds.ins"),pst_path=".")
+
+    pf.mod_sys_cmds.append("mfnwt {0}".format(nam_file))
+
+    pf.build_pst(os.path.join(t_d,"pest.pst"))
+
+    pyemu.os_utils.run("{0} {1}".format(ies_exe_path,"pest.pst"),cwd=t_d)
+    pst = pyemu.Pst(os.path.join(t_d,"pest.pst"))
+    print(pst.phi)
+    assert pst.phi < 1.0e-7
+
+
+
+
+
+
 if __name__ == "__main__":
     # freyberg_test()
     # freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     # mf6_freyberg_da_test()
-    mf6_freyberg_direct_test()
+    #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
+    xsec_test()
