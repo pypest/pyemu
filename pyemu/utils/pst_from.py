@@ -18,7 +18,7 @@ import string
 # the tolerable percent difference (100 * (max - min)/mean)
 # used when checking that constant and zone type parameters are in fact constant (within
 # a given zone)
-# DIRECT_PAR_PERCENT_DIFF_TOL = 1.0
+DIRECT_PAR_PERCENT_DIFF_TOL = 1.0
 
 
 def _get_datetime_from_str(sdt):
@@ -763,7 +763,7 @@ class PstFrom(object):
                                 **kwargs
                             )
                 else:
-                    df.to_csv(self.original_file_d / rel_filepath,
+                    df.to_csv(org_file,
                         index=False,
                         sep=",",
                         header=hheader,
@@ -2844,7 +2844,7 @@ def write_array_tpl(
 
 def _check_diff(org_arr, input_filename, zval=None):
     percent_diff = 100.0 * np.abs(
-        np.nanmax(org_arr) - np.nanmin(org_arr) / np.nanmean(org_arr)
+        (np.nanmax(org_arr) - np.nanmin(org_arr)) / np.nanmean(org_arr)
     )
     if percent_diff > DIRECT_PAR_PERCENT_DIFF_TOL:
         message = "_check_diff() error: direct par for file '{0}'".format(

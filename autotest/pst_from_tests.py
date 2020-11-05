@@ -1555,9 +1555,9 @@ class TestPstFrom():
         np.savetxt(cls.array_file, cls.array_data)
         # list data
         cls.list_file = cls.sim_ws / 'wel.dat'
-        cls.list_data = pd.DataFrame({'#k': [0, 0, 0],
-                                      'i': [1, 2, 2],
-                                      'j': [1, 1, 0],
+        cls.list_data = pd.DataFrame({'#k': [1, 1, 1],
+                                      'i': [2, 3, 3],
+                                      'j': [2, 2, 1],
                                       'flux': [1., 10., 100.]
                                       }, columns=['#k', 'i', 'j', 'flux'])
         cls.list_data.to_csv(cls.list_file, sep=' ', index=False)
@@ -1696,7 +1696,7 @@ class TestPstFrom():
                                    par_name_base=par_name_base,
                                    index_cols=[0, 1, 2], use_cols=[3],
                                    pargp=f'{tag}_{i}',
-                                   comment_char='#'
+                                   comment_char='#',
                                    )
 
             assert (self.dest_ws / dest_file).exists()
@@ -1819,6 +1819,80 @@ class TestPstFrom():
                         # not sure why zone 2 is coming back as invalid (1e30)
                         zone1 = self.zone_array == 1
                         assert np.allclose(result[zone1], self.array_data[zone1] * mult)
+
+                    # revert to original wd
+                    os.chdir(self.original_wd)
+                    mult2model_row += 1
+
+    def test_add_direct_array_parameters(self):
+        """test setting up array parameters with a list of array text
+        files in a subfolder.
+        """
+        tag = 'hk'
+        par_styles = ['direct', #'direct'
+                      ]
+        array_files = ['hk_{}_{}.dat', 'external/hk_{}_{}.dat']
+        for par_style in par_styles:
+            mult2model_row = 0
+            for j, array_file in enumerate(array_files):
+
+                par_types = {#'constant': 'cn',
+                             'zone': 'zn',
+                             'grid': 'gr'}
+                for i, (par_type, suffix) in enumerate(par_types.items()):
+                    # (re)create the file
+                    dest_file = array_file.format(mult2model_row, suffix)
+
+                    # make a new input array file with initial values
+                    arr = np.loadtxt(self.array_file)
+                    parval = 8
+                    arr[:] = parval
+                    np.savetxt(Path(self.dest_ws, dest_file), arr)
+
+                    # add the parameters
+                    par_name_base = f'{tag}_{suffix}'
+                    self.pf.add_parameters(filenames=dest_file, par_type=par_type,
+                                           zone_array=self.zone_array,
+                                           par_name_base=par_name_base,
+                                           pargp=f'{tag}_zone',
+                                           par_style=par_style
+                                           )
+                    template_file = (self.pf.tpl_d / f'{Path(dest_file).name}.tpl')
+                    assert template_file.exists()
+
+                    # make the PEST control file
+                    pst = self.pf.build_pst()
+                    rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
+                    assert rel_tpl in pst.template_files
+
+                    # check the mult2model info
+                    df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+
+                    # check applying the parameters (in the dest or template ws)
+                    os.chdir(self.dest_ws)
+
+                    # first delete the model file that was in the template ws
+                    model_file = df['model_file'].values[mult2model_row]
+                    assert model_file == dest_file
+                    os.remove(model_file)
+
+                    # pretend that PEST created the input files
+                    # values from dest_file above formed basis for parval in PEST control data
+                    # PEST input file is set up as the org/ version
+                    # apply_list_and_array_pars then takes the org/ version and writes model_file
+                    np.savetxt(pst.input_files[mult2model_row], arr)
+
+                    pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+                    # model files should have been remade by apply_list_and_array_pars
+                    for model_file in df['model_file']:
+                        assert os.path.exists(model_file)
+                        result = np.loadtxt(model_file)
+                        # results should be the same with default multipliers of 1
+                        # assume details of parameterization are handled by other tests
+
+                        # not sure why zone 2 is coming back as invalid (1e30)
+                        zone1 = self.zone_array == 1
+                        assert np.allclose(result[zone1], parval)
 
                     # revert to original wd
                     os.chdir(self.original_wd)
