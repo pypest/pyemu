@@ -1273,6 +1273,9 @@ def pst_from_io_files(
                                               "model_file":out_files},
                                              index=ins_files)
 
+    # try to run inschek to find the observtion values
+    # do this here with full paths to files
+    pyemu.pst_utils.try_process_output_pst(new_pst)
 
     if pst_path is not None:
         tpl_files = [
@@ -1300,8 +1303,6 @@ def pst_from_io_files(
                                               "model_file": out_files},
                                              index=ins_files)
 
-    # try to run inschek to find the observtion values
-    pyemu.pst_utils.try_process_output_pst(new_pst)
 
     new_pst.try_parse_name_metadata()
     if pst_filename:
