@@ -8,7 +8,7 @@ import copy
 
 
 class Logger(object):
-    """ a basic class for logging events during the linear analysis calculations
+    """a basic class for logging events during the linear analysis calculations
         if filename is passed, then a file handle is opened.
 
     Args:
@@ -33,7 +33,7 @@ class Logger(object):
             self.filename = None
 
     def statement(self, phrase):
-        """ log a one-time statement
+        """log a one-time statement
 
         Arg:
             phrase (`str`): statement to log

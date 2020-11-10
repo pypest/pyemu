@@ -160,7 +160,7 @@ class Pst(object):
 
     @property
     def phi_components(self):
-        """ get the individual components of the total objective function
+        """get the individual components of the total objective function
 
         Returns:
             `dict`: dictionary of observation group, contribution to total phi
@@ -237,7 +237,7 @@ class Pst(object):
 
     @property
     def phi_components_normalized(self):
-        """ get the individual components of the total objective function
+        """get the individual components of the total objective function
             normalized to the total PHI being 1.0
 
         Returns:
@@ -258,7 +258,7 @@ class Pst(object):
         return norm
 
     def set_res(self, res):
-        """ reset the private `Pst.res` attribute.
+        """reset the private `Pst.res` attribute.
 
         Args:
             res : (`pandas.DataFrame` or `str`): something to use as Pst.res attribute.
@@ -338,7 +338,7 @@ class Pst(object):
 
     @property
     def nnz_obs(self):
-        """ get the number of non-zero weighted observations
+        """get the number of non-zero weighted observations
 
         Returns:
             `int`: the number of non-zeros weighted observations
@@ -422,7 +422,7 @@ class Pst(object):
 
     @property
     def nnz_obs_groups(self):
-        """ get the observation groups that contain at least one non-zero weighted
+        """get the observation groups that contain at least one non-zero weighted
          observation
 
         Returns:
@@ -471,7 +471,7 @@ class Pst(object):
 
     @property
     def prior_names(self):
-        """ get the prior information names
+        """get the prior information names
 
         Returns:
             [`str`]: a list of prior information names
@@ -490,7 +490,7 @@ class Pst(object):
 
     @property
     def adj_par_names(self):
-        """ get the adjustable (not fixed or tied) parameter names
+        """get the adjustable (not fixed or tied) parameter names
 
         Returns:
             [`str`]: list of adjustable (not fixed or tied)
@@ -526,7 +526,7 @@ class Pst(object):
 
     @property
     def zero_weight_obs_names(self):
-        """ get the zero-weighted observation names
+        """get the zero-weighted observation names
 
         Returns:
             [`str`]: a list of zero-weighted observation names
@@ -537,7 +537,7 @@ class Pst(object):
 
     @property
     def estimation(self):
-        """ check if the control_data.pestmode is set to estimation
+        """check if the control_data.pestmode is set to estimation
 
         Returns:
             `bool`: True if `control_data.pestmode` is estmation, False otherwise
@@ -547,7 +547,7 @@ class Pst(object):
 
     @property
     def tied(self):
-        """ list of tied parameter names
+        """list of tied parameter names
 
         Returns:
             `pandas.DataFrame`: a dataframe of tied parameter information.
@@ -566,62 +566,71 @@ class Pst(object):
 
     @property
     def template_files(self):
-        """ list of template file names
+        """list of template file names
         Returns:
             `[str]`: a list of template file names, extracted from
                 `Pst.model_input_data.pest_file`.  Returns `None` if this
                 attribute is `None`
         """
-        if self.model_input_data is not None and "pest_file" in self.model_input_data.columns:
+        if (
+            self.model_input_data is not None
+            and "pest_file" in self.model_input_data.columns
+        ):
             return self.model_input_data.pest_file.to_list()
         else:
             return None
 
     @property
     def input_files(self):
-        """ list of model input file names
+        """list of model input file names
         Returns:
             `[str]`: a list of model input file names, extracted from
                 `Pst.model_input_data.model_file`.  Returns `None` if this
                 attribute is `None`
         """
-        if self.model_input_data is not None and "model_file" in self.model_input_data.columns:
+        if (
+            self.model_input_data is not None
+            and "model_file" in self.model_input_data.columns
+        ):
             return self.model_input_data.model_file.to_list()
         else:
             return None
 
-
     @property
     def instruction_files(self):
-        """ list of instruction file names
+        """list of instruction file names
         Returns:
             `[str]`: a list of instruction file names, extracted from
                 `Pst.model_output_data.pest_file`.  Returns `None` if this
                 attribute is `None`
         """
-        if self.model_output_data is not None and "pest_file" in self.model_output_data.columns:
+        if (
+            self.model_output_data is not None
+            and "pest_file" in self.model_output_data.columns
+        ):
             return self.model_output_data.pest_file.to_list()
         else:
             return None
 
-
     @property
     def output_files(self):
-        """ list of model output file names
+        """list of model output file names
         Returns:
             `[str]`: a list of model output file names, extracted from
                 `Pst.model_output_data.model_file`.  Returns `None` if this
                 attribute is `None`
         """
-        if self.model_output_data is not None and "model_file" in self.model_output_data.columns:
+        if (
+            self.model_output_data is not None
+            and "model_file" in self.model_output_data.columns
+        ):
             return self.model_output_data.model_file.to_list()
         else:
             return None
 
-
     @staticmethod
     def _read_df(f, nrows, names, converters, defaults=None):
-        """ a private method to read part of an open file into a pandas.DataFrame.
+        """a private method to read part of an open file into a pandas.DataFrame.
 
         Args:
             f (`file`): open file handle
@@ -903,8 +912,7 @@ class Pst(object):
             self.prior_information.loc[:, "extra"] = extra
 
     def _load_version2(self, filename):
-        """load a version 2 control file
-        """
+        """load a version 2 control file"""
         self.lcount = 0
         self.comments = {}
         self.prior_information = self.null_prior
@@ -1021,23 +1029,25 @@ class Pst(object):
                             self.control_data.ntplfle, self.control_data.ninsfle
                         )
                     )
-                template_files, input_files = [],[]
+                template_files, input_files = [], []
                 for i in range(self.control_data.ntplfle):
                     raw = section_lines[i].strip().split()
                     template_files.append(raw[0])
                     input_files.append(raw[1])
-                self.model_input_data = pd.DataFrame({"pest_file":template_files,
-                                                      "model_file":input_files},
-                                                     index=template_files)
+                self.model_input_data = pd.DataFrame(
+                    {"pest_file": template_files, "model_file": input_files},
+                    index=template_files,
+                )
 
-                instruction_files, output_files = [],[]
+                instruction_files, output_files = [], []
                 for j in range(self.control_data.ninsfle):
                     raw = section_lines[i + j + 1].strip().split()
                     instruction_files.append(raw[0])
                     output_files.append(raw[1])
-                self.model_output_data = pd.DataFrame({"pest_file": instruction_files,
-                                                      "model_file": output_files},
-                                                     index=instruction_files)
+                self.model_output_data = pd.DataFrame(
+                    {"pest_file": instruction_files, "model_file": output_files},
+                    index=instruction_files,
+                )
 
             elif "* model input" in last_section.lower():
                 if last_section.strip().split()[-1].lower() == "external":
@@ -1049,18 +1059,19 @@ class Pst(object):
                         [],
                         pst_path=pst_path,
                     )
-                    #self.template_files.extend(io_df.pest_file.tolist())
-                    #self.input_files.extend(io_df.model_file.tolist())
+                    # self.template_files.extend(io_df.pest_file.tolist())
+                    # self.input_files.extend(io_df.model_file.tolist())
 
                 else:
-                    template_files,input_files = [],[]
+                    template_files, input_files = [], []
                     for line in section_lines:
                         raw = line.split()
                         template_files.append(raw[0])
                         input_files.append(raw[1])
-                    self.model_input_data = pd.DataFrame({"pest_file": template_files,
-                                                          "model_file": input_files},
-                                                         index=template_files)
+                    self.model_input_data = pd.DataFrame(
+                        {"pest_file": template_files, "model_file": input_files},
+                        index=template_files,
+                    )
 
             elif "* model output" in last_section.lower():
                 if last_section.strip().split()[-1].lower() == "external":
@@ -1072,18 +1083,19 @@ class Pst(object):
                         [],
                         pst_path=pst_path,
                     )
-                    #self.instruction_files.extend(io_df.pest_file.tolist())
-                    #self.output_files.extend(io_df.model_file.tolist())
+                    # self.instruction_files.extend(io_df.pest_file.tolist())
+                    # self.output_files.extend(io_df.model_file.tolist())
 
                 else:
-                    instruction_files,output_files = [],[]
+                    instruction_files, output_files = [], []
                     for iline, line in enumerate(section_lines):
                         raw = line.split()
                         instruction_files.append(raw[0])
                         output_files.append(raw[1])
-                    self.model_output_data = pd.DataFrame({"pest_file": instruction_files,
-                                                           "model_file": output_files},
-                                                          index=instruction_files)
+                    self.model_output_data = pd.DataFrame(
+                        {"pest_file": instruction_files, "model_file": output_files},
+                        index=instruction_files,
+                    )
 
             elif "* prior information" in last_section.lower():
                 self._cast_prior_df_from_lines(
@@ -1143,7 +1155,7 @@ class Pst(object):
             )
 
     def load(self, filename):
-        """ entry point load the pest control file.
+        """entry point load the pest control file.
 
         Args:
             filename (`str`): pst filename
@@ -1193,7 +1205,7 @@ class Pst(object):
             self.pestpp_options[key.lower()] = value
 
     def _update_control_section(self):
-        """ private method to synchronize the control section counters with the
+        """private method to synchronize the control section counters with the
         various parts of the control file.  This is usually called during the
         Pst.write() method.
 
@@ -1207,14 +1219,14 @@ class Pst(object):
         )
 
         self.control_data.nprior = self.prior_information.shape[0]
-        #self.control_data.ntplfle = len(self.template_files)
+        # self.control_data.ntplfle = len(self.template_files)
         self.control_data.ntplfle = self.model_input_data.shape[0]
-        #self.control_data.ninsfle = len(self.instruction_files)
+        # self.control_data.ninsfle = len(self.instruction_files)
         self.control_data.ninsfle = self.model_output_data.shape[0]
         self.control_data.numcom = len(self.model_command)
 
     def rectify_pgroups(self):
-        """ synchronize parameter groups section with the parameter data section
+        """synchronize parameter groups section with the parameter data section
 
         Note:
             This method is called during `Pst.write()` to make sure all parameter
@@ -1270,7 +1282,7 @@ class Pst(object):
             ]
 
     def _parse_pi_par_names(self):
-        """ private method to get the parameter names from prior information
+        """private method to get the parameter names from prior information
         equations.  Sets a 'names' column in Pst.prior_information that is a list
         of parameter names
 
@@ -1323,7 +1335,7 @@ class Pst(object):
         obs_group="pi_obgnme",
         coef_dict={},
     ):
-        """ a helper to construct a new prior information equation.
+        """a helper to construct a new prior information equation.
 
         Args:
             par_names ([`str`]): parameter names in the equation
@@ -1377,7 +1389,7 @@ class Pst(object):
         self.prior_information.loc[pilbl, "obgnme"] = obs_group
 
     def rectify_pi(self):
-        """ rectify the prior information equation with the current state of the
+        """rectify the prior information equation with the current state of the
         parameter_data dataframe.
 
 
@@ -1539,13 +1551,13 @@ class Pst(object):
         io_filename = new_filename.lower().replace(".pst", ".tplfile_data.csv")
         if pst_path is not None:
             io_filename = os.path.join(pst_path, os.path.split(io_filename)[-1])
-        #pfiles = self.template_files
+        # pfiles = self.template_files
         # pfiles.extend(self.instruction_files)
-        #mfiles = self.input_files
+        # mfiles = self.input_files
         # mfiles.extend(self.output_files)
-        #io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
-        #io_df.to_csv(io_filename, index=False)
-        self.model_input_data.to_csv(io_filename,index=False)
+        # io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
+        # io_df.to_csv(io_filename, index=False)
+        self.model_input_data.to_csv(io_filename, index=False)
         io_filename = os.path.join(pst_rel_path, os.path.split(io_filename)[-1])
         f_out.write("{0}\n".format(io_filename))
 
@@ -1553,11 +1565,11 @@ class Pst(object):
         io_filename = new_filename.lower().replace(".pst", ".insfile_data.csv")
         if pst_path is not None:
             io_filename = os.path.join(pst_path, os.path.split(io_filename)[-1])
-        #pfiles = self.instruction_files
-        #mfiles = self.output_files
-        #io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
-        #io_df.to_csv(io_filename, index=False)
-        self.model_output_data.to_csv(io_filename,index=False)
+        # pfiles = self.instruction_files
+        # mfiles = self.output_files
+        # io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
+        # io_df.to_csv(io_filename, index=False)
+        self.model_output_data.to_csv(io_filename, index=False)
         io_filename = os.path.join(pst_rel_path, os.path.split(io_filename)[-1])
         f_out.write("{0}\n".format(io_filename))
 
@@ -1605,11 +1617,7 @@ class Pst(object):
             )
 
     def _write_version1(self, new_filename):
-        """write a version 1 pest control file
-
-
-
-        """
+        """write a version 1 pest control file"""
         self.new_filename = new_filename
         self.rectify_pgroups()
         self.rectify_pi()
@@ -1690,11 +1698,13 @@ class Pst(object):
             f_out.write(cline + "\n")
 
         f_out.write("* model input/output\n")
-        for tplfle, infle in zip(self.model_input_data.pest_file,
-                                 self.model_input_data.model_file):
+        for tplfle, infle in zip(
+            self.model_input_data.pest_file, self.model_input_data.model_file
+        ):
             f_out.write("{0} {1}\n".format(tplfle, infle))
-        for insfle, outfle in zip(self.model_output_data.pest_file,
-                                  self.model_output_data.model_file):
+        for insfle, outfle in zip(
+            self.model_output_data.pest_file, self.model_output_data.model_file
+        ):
             f_out.write("{0} {1}\n".format(insfle, outfle))
 
         if self.nprior > 0:
@@ -1760,10 +1770,10 @@ class Pst(object):
                 is None
 
         Returns:
-            `df`: a pandas DataFrame object with rows being parameter groups and columns 
+            `df`: a pandas DataFrame object with rows being parameter groups and columns
                 <iter>_num_at_ub, <iter>_num_at_lb, and <iter>_total_at_bounds
                 row 0 is total at bounds, subsequent rows correspond with groups
-                
+
         Example:
             pst = pyemu.Pst("my.pst")
             df = pst.bound_report(iterations=[0,2,3])
@@ -2289,7 +2299,7 @@ class Pst(object):
         self.observation_data.weight = new_weights
 
     def calculate_pertubations(self):
-        """ experimental method to calculate finite difference parameter
+        """experimental method to calculate finite difference parameter
         pertubations.
 
         Note:
@@ -2331,7 +2341,7 @@ class Pst(object):
                 )
 
     def build_increments(self):
-        """ experimental method to calculate parameter increments for use
+        """experimental method to calculate parameter increments for use
         in the finite difference pertubation calculations
 
         Note:
@@ -2375,7 +2385,7 @@ class Pst(object):
         ]
 
     def add_transform_columns(self):
-        """ add transformed values to the `Pst.parameter_data` attribute
+        """add transformed values to the `Pst.parameter_data` attribute
 
         Note:
             adds `parval1_trans`, `parlbnd_trans` and `parubnd_trans` to
@@ -2396,7 +2406,7 @@ class Pst(object):
             ].apply(lambda x: np.log10(x))
 
     def enforce_bounds(self):
-        """ enforce bounds violation
+        """enforce bounds violation
 
         Note:
             cheap enforcement of simply bringing violators back in bounds
@@ -2422,7 +2432,7 @@ class Pst(object):
     def from_io_files(
         cls, tpl_files, in_files, ins_files, out_files, pst_filename=None, pst_path=None
     ):
-        """ create a Pst instance from model interface files.
+        """create a Pst instance from model interface files.
 
         Args:
             tpl_files ([`str`]): list of template file names
@@ -2474,7 +2484,7 @@ class Pst(object):
         )
 
     def add_parameters(self, template_file, in_file=None, pst_path=None):
-        """ add new parameters to an existing control file
+        """add new parameters to an existing control file
 
         Args:
             template_file (`str`): template file with (possibly) some new parameters
@@ -2532,17 +2542,19 @@ class Pst(object):
             template_file = os.path.join(pst_path, os.path.split(template_file)[-1])
             in_file = os.path.join(pst_path, os.path.split(in_file)[-1])
 
-        #self.template_files.append(template_file)
-        #self.input_files.append(in_file)
-        self.model_input_data.loc[template_file,"pest_file"] = template_file
-        self.model_input_data.loc[template_file,"model_file"] = in_file
-        print("{0} pars added from template file {1}".\
-              format(len(new_parnme),template_file))
+        # self.template_files.append(template_file)
+        # self.input_files.append(in_file)
+        self.model_input_data.loc[template_file, "pest_file"] = template_file
+        self.model_input_data.loc[template_file, "model_file"] = in_file
+        print(
+            "{0} pars added from template file {1}".format(
+                len(new_parnme), template_file
+            )
+        )
         return new_par_data
 
-
-    def drop_observations(self,ins_file,pst_path=None):
-        """ remove observations in an instruction file from the control file
+    def drop_observations(self, ins_file, pst_path=None):
+        """remove observations in an instruction file from the control file
 
         Args:
             ins_file (`str`): instruction file to remove
@@ -2566,33 +2578,44 @@ class Pst(object):
             raise Exception("couldn't find instruction file '{0}'".format(ins_file))
         pst_ins_file = ins_file
         if pst_path is not None:
-            pst_ins_file = os.path.join(pst_path,os.path.split(ins_file)[1])
+            pst_ins_file = os.path.join(pst_path, os.path.split(ins_file)[1])
         if pst_ins_file not in self.model_output_data.pest_file.to_list():
             if pst_path == ".":
                 pst_ins_file = os.path.split(ins_file)[1]
                 if pst_ins_file not in self.model_output_data.pest_file.to_list():
-                    raise Exception("ins_file '{0}' not found in Pst.model_output_data.pest_file". \
-                                    format(pst_ins_file))
+                    raise Exception(
+                        "ins_file '{0}' not found in Pst.model_output_data.pest_file".format(
+                            pst_ins_file
+                        )
+                    )
             else:
-                raise Exception("ins_file '{0}' not found in Pst.model_output_data.pest_file". \
-                                format(pst_ins_file))
+                raise Exception(
+                    "ins_file '{0}' not found in Pst.model_output_data.pest_file".format(
+                        pst_ins_file
+                    )
+                )
         i = pst_utils.InstructionFile(ins_file)
         drop_obs = i.obs_name_set
 
-        #if len(drop_obs) == self.nobs:
+        # if len(drop_obs) == self.nobs:
         #    raise Exception("cannot drop all observations")
 
         obs_names = set(self.obs_names)
         drop_obs_present = [o for o in drop_obs if o in obs_names]
-        dropped_obs = self.observation_data.loc[drop_obs_present,:].copy()
-        self.observation_data = self.observation_data.loc[self.observation_data.obsnme.apply(
-            lambda x: x not in drop_obs),:]
-        self.model_output_data = self.model_output_data.loc[self.model_output_data.pest_file != pst_ins_file]
-        print("{0} obs dropped from instruction file {1}".format(len(drop_obs),ins_file))
+        dropped_obs = self.observation_data.loc[drop_obs_present, :].copy()
+        self.observation_data = self.observation_data.loc[
+            self.observation_data.obsnme.apply(lambda x: x not in drop_obs), :
+        ]
+        self.model_output_data = self.model_output_data.loc[
+            self.model_output_data.pest_file != pst_ins_file
+        ]
+        print(
+            "{0} obs dropped from instruction file {1}".format(len(drop_obs), ins_file)
+        )
         return dropped_obs
 
-    def drop_parameters(self,tpl_file,pst_path=None):
-        """ remove parameters in a template file from the control file
+    def drop_parameters(self, tpl_file, pst_path=None):
+        """remove parameters in a template file from the control file
 
         Args:
             tpl_file (`str`): template file to remove
@@ -2621,16 +2644,22 @@ class Pst(object):
             raise Exception("couldn't find template file '{0}'".format(tpl_file))
         pst_tpl_file = tpl_file
         if pst_path is not None:
-            pst_tpl_file = os.path.join(pst_path,os.path.split(tpl_file)[1])
+            pst_tpl_file = os.path.join(pst_path, os.path.split(tpl_file)[1])
         if pst_tpl_file not in self.model_input_data.pest_file.to_list():
             if pst_path == ".":
                 pst_tpl_file = os.path.split(tpl_file)[1]
                 if pst_tpl_file not in self.model_input_data.pest_file.to_list():
-                    raise Exception("tpl_file '{0}' not found in Pst.model_input_data.pest_file". \
-                                    format(pst_tpl_file))
+                    raise Exception(
+                        "tpl_file '{0}' not found in Pst.model_input_data.pest_file".format(
+                            pst_tpl_file
+                        )
+                    )
             else:
-                raise Exception("tpl_file '{0}' not found in Pst.model_input_data.pest_file".\
-                                format(pst_tpl_file))
+                raise Exception(
+                    "tpl_file '{0}' not found in Pst.model_input_data.pest_file".format(
+                        pst_tpl_file
+                    )
+                )
         drop_pars = pst_utils.parse_tpl_file(tpl_file)
         if len(drop_pars) == self.npar:
             raise Exception("cannot drop all parameters")
@@ -2639,26 +2668,37 @@ class Pst(object):
         par_names = set(self.par_names)
         drop_pars_present = [p for p in drop_pars if p in par_names]
 
-        #check that other pars arent tied to the dropping pars
+        # check that other pars arent tied to the dropping pars
         if "partied" in self.parameter_data.columns:
-            par_tied = set(self.parameter_data.loc[self.parameter_data.partrans=="tied","partied"].to_list())
+            par_tied = set(
+                self.parameter_data.loc[
+                    self.parameter_data.partrans == "tied", "partied"
+                ].to_list()
+            )
 
             par_tied = par_tied.intersection(drop_pars_present)
             if len(par_tied) > 0:
-                raise Exception("the following pars to be dropped are 'tied' to: {0}".\
-                                format(str(par_tied)))
+                raise Exception(
+                    "the following pars to be dropped are 'tied' to: {0}".format(
+                        str(par_tied)
+                    )
+                )
 
-        dropped_par = self.parameter_data.loc[drop_pars_present,:].copy()
-        self.parameter_data = self.parameter_data.loc[self.parameter_data.parnme.apply(
-            lambda x: x not in drop_pars_present),:]
+        dropped_par = self.parameter_data.loc[drop_pars_present, :].copy()
+        self.parameter_data = self.parameter_data.loc[
+            self.parameter_data.parnme.apply(lambda x: x not in drop_pars_present), :
+        ]
         self.rectify_pi()
-        self.model_input_data = self.model_input_data.loc[self.model_input_data.pest_file != pst_tpl_file]
-        print("{0} pars dropped from template file {1}".format(len(drop_pars),tpl_file))
+        self.model_input_data = self.model_input_data.loc[
+            self.model_input_data.pest_file != pst_tpl_file
+        ]
+        print(
+            "{0} pars dropped from template file {1}".format(len(drop_pars), tpl_file)
+        )
         return dropped_par
 
-
     def add_observations(self, ins_file, out_file=None, pst_path=None, inschek=True):
-        """ add new observations to a control file
+        """add new observations to a control file
 
         Args:
             ins_file (`str`): instruction file with exclusively new observation names
@@ -2721,9 +2761,9 @@ class Pst(object):
             cwd = os.path.join(*os.path.split(ins_file)[:-1])
             ins_file = os.path.join(pst_path, os.path.split(ins_file)[-1])
             out_file = os.path.join(pst_path, os.path.split(out_file)[-1])
-        #self.instruction_files.append(ins_file)
-        #self.output_files.append(out_file)
-        self.model_output_data.loc[ins_file,"pest_file"] = ins_file
+        # self.instruction_files.append(ins_file)
+        # self.output_files.append(out_file)
+        self.model_output_data.loc[ins_file, "pest_file"] = ins_file
         self.model_output_data.loc[ins_file, "model_file"] = out_file
         df = None
         if inschek:
@@ -2737,8 +2777,7 @@ class Pst(object):
             # print(self.observation_data.index,df.index)
             self.observation_data.loc[df.index, "obsval"] = df.obsval
             new_obs_data.loc[df.index, "obsval"] = df.obsval
-        print("{0} obs added from instruction file {1}". \
-              format(len(obsnme), ins_file))
+        print("{0} obs added from instruction file {1}".format(len(obsnme), ins_file))
         return new_obs_data
 
     def write_input_files(self, pst_path="."):
@@ -2785,7 +2824,7 @@ class Pst(object):
         return pst_utils.process_output_files(self, pst_path)
 
     def get_res_stats(self, nonzero=True):
-        """ get some common residual stats by observation group.
+        """get some common residual stats by observation group.
 
         Args:
             nonzero (`bool`): calculate stats using only nonzero-weighted observations.  This may seem
@@ -3216,7 +3255,7 @@ class Pst(object):
         return gt_pi
 
     def get_par_change_limits(self):
-        """  calculate the various parameter change limits used in pest.
+        """calculate the various parameter change limits used in pest.
 
 
         Returns:

@@ -29,14 +29,14 @@ os.environ["PATH"] += os.pathsep + bin_path
 
 def _istextfile(filename, blocksize=512):
     """
-        Function found from:
-        https://eli.thegreenplace.net/2011/10/19/perls-guess-if-file-is-text-or-binary-implemented-in-python
-        Returns True if file is most likely a text file
-        Returns False if file is most likely a binary file
-        Uses heuristics to guess whether the given file is text or binary,
-        by reading a single block of bytes from the file.
-        If more than 30% of the chars in the block are non-text, or there
-        are NUL ('\x00') bytes in the block, assume this is a binary file.
+    Function found from:
+    https://eli.thegreenplace.net/2011/10/19/perls-guess-if-file-is-text-or-binary-implemented-in-python
+    Returns True if file is most likely a text file
+    Returns False if file is most likely a binary file
+    Uses heuristics to guess whether the given file is text or binary,
+    by reading a single block of bytes from the file.
+    If more than 30% of the chars in the block are non-text, or there
+    are NUL ('\x00') bytes in the block, assume this is a binary file.
     """
 
     import sys
@@ -72,7 +72,7 @@ def _remove_readonly(func, path, excinfo):
 
 
 def run(cmd_str, cwd=".", verbose=False):
-    """ an OS agnostic function to execute a command line
+    """an OS agnostic function to execute a command line
 
     Args:
         cmd_str (`str`): the str to execute with `os.system()`
@@ -146,7 +146,7 @@ def start_workers(
     silent_master=False,
     reuse_master=False,
 ):
-    """ start a group of pest(++) workers on the local machine
+    """start a group of pest(++) workers on the local machine
 
     Args:
         worker_dir (`str`): the path to a complete set of input files need by PEST(++).

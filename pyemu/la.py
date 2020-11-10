@@ -66,7 +66,7 @@ class LinearAnalysis(object):
         la = pyemu.LinearAnalysis(jco="my.jco",forecasts=["fore1","fore2"])
         print(la.prior_forecast)
 
-    
+
     """
 
     def __init__(
@@ -182,7 +182,7 @@ class LinearAnalysis(object):
         """a private method to deduce and load a filename into a matrix object.
         Uses extension: 'jco' or 'jcb': binary, 'mat','vec' or 'cov': ASCII,
         'unc': pest uncertainty file.
-        
+
         """
         assert os.path.exists(filename), (
             "LinearAnalysis.__fromfile(): " + "file not found:" + filename
@@ -224,8 +224,7 @@ class LinearAnalysis(object):
         return m
 
     def __load_pst(self):
-        """private method set the pst attribute
-        """
+        """private method set the pst attribute"""
         if self.pst_arg is None:
             return None
         if isinstance(self.pst_arg, Pst):
@@ -247,8 +246,7 @@ class LinearAnalysis(object):
                 )
 
     def __load_jco(self):
-        """private method to set the jco attribute from a file or a matrix object
-        """
+        """private method to set the jco attribute from a file or a matrix object"""
         if self.jco_arg is None:
             return None
             # raise Exception("linear_analysis.__load_jco(): jco_arg is None")
@@ -265,11 +263,11 @@ class LinearAnalysis(object):
 
     def __load_parcov(self):
         """private method to set the parcov attribute from:
-                a pest control file (parameter bounds)
-                a pst object
-                a matrix object
-                an uncert file
-                an ascii matrix file
+        a pest control file (parameter bounds)
+        a pst object
+        a matrix object
+        an uncert file
+        an ascii matrix file
         """
         # if the parcov arg was not passed but the pst arg was,
         # reset and use parbounds to build parcov
@@ -334,11 +332,11 @@ class LinearAnalysis(object):
 
     def __load_obscov(self):
         """private method to set the obscov attribute from:
-                a pest control file (observation weights)
-                a pst object
-                a matrix object
-                an uncert file
-                an ascii matrix file
+        a pest control file (observation weights)
+        a pst object
+        a matrix object
+        an uncert file
+        an ascii matrix file
         """
         # if the obscov arg is None, but the pst arg is not None,
         # reset and load from obs weights
@@ -392,10 +390,10 @@ class LinearAnalysis(object):
 
     def __load_predictions(self):
         """private method set the predictions attribute from:
-                mixed list of row names, matrix files and ndarrays
-                a single row name
-                an ascii file
-            can be none if only interested in parameters.
+            mixed list of row names, matrix files and ndarrays
+            a single row name
+            an ascii file
+        can be none if only interested in parameters.
 
         """
         if self.prediction_arg is None:
@@ -541,11 +539,11 @@ class LinearAnalysis(object):
 
     @property
     def forecast_names(self):
-        """ get the forecast (aka prediction) names
+        """get the forecast (aka prediction) names
 
         Returns:
             ([`str`]): list of forecast names
-        
+
         """
         if self.forecasts is None:
             return []
@@ -554,11 +552,11 @@ class LinearAnalysis(object):
 
     @property
     def parcov(self):
-        """ get the prior parameter covariance matrix attribute
+        """get the prior parameter covariance matrix attribute
 
         Returns:
             `pyemu.Cov`: a reference to the `LinearAnalysis.parcov` attribute
-        
+
         """
         if not self.__parcov:
             self.__load_parcov()
@@ -566,7 +564,7 @@ class LinearAnalysis(object):
 
     @property
     def obscov(self):
-        """ get the observation noise covariance matrix attribute
+        """get the observation noise covariance matrix attribute
 
         Returns:
             `pyemu.Cov`: a reference to the `LinearAnalysis.obscov` attribute
@@ -585,7 +583,7 @@ class LinearAnalysis(object):
 
         Note:
             if `LinearAnalysis.pst` is `None`, returns `LinearAnalysis.jco.row_names`
-        
+
         """
         if self.__pst is not None:
             return self.pst.nnz_obs_names
@@ -594,14 +592,14 @@ class LinearAnalysis(object):
 
     @property
     def adj_par_names(self):
-        """ adjustable parameter names
+        """adjustable parameter names
 
         Returns:
             ['str`]: list of adjustable parameter names
 
         Note:
             if `LinearAnalysis.pst` is `None`, returns `LinearAnalysis.jco.col_names`
-        
+
         """
         if self.__pst is not None:
             return self.pst.adj_par_names
@@ -610,7 +608,7 @@ class LinearAnalysis(object):
 
     @property
     def jco(self):
-        """ the jacobian matrix attribute
+        """the jacobian matrix attribute
 
         Returns:
             `pyemu.Jco`: the jacobian matrix attribute
@@ -754,7 +752,7 @@ class LinearAnalysis(object):
 
         Returns:
             `pyemu.Matrix`: maximum likelihood parameter covariance matrix
-        
+
         """
         return self.xtqx.inv
 
@@ -780,11 +778,11 @@ class LinearAnalysis(object):
 
     @property
     def mle_parameter_estimate(self):
-        """ maximum likelihood parameter estimate.
+        """maximum likelihood parameter estimate.
 
         Returns:
             `pandas.Series`: the maximum likelihood parameter estimates
-        
+
         """
         res = self.pst.res
         assert res is not None
@@ -849,8 +847,7 @@ class LinearAnalysis(object):
         self.__parcov = self.parcov.identity
 
     def clean(self):
-        """drop regularization and prior information observation from the jco
-        """
+        """drop regularization and prior information observation from the jco"""
         if self.pst_arg is None:
             self.logger.statement("linear_analysis.clean(): not pst object")
             return
@@ -858,7 +855,7 @@ class LinearAnalysis(object):
             self.drop_prior_information()
 
     def reset_pst(self, arg):
-        """ reset the LinearAnalysis.pst attribute
+        """reset the LinearAnalysis.pst attribute
 
         Args:
             arg (`str` or `pyemu.Pst`): the value to assign to the pst attribute
@@ -895,8 +892,7 @@ class LinearAnalysis(object):
             self.obscov_arg = arg
 
     def drop_prior_information(self):
-        """drop the prior information from the jco and pst attributes
-        """
+        """drop the prior information from the jco and pst attributes"""
         if self.jco is None:
             self.logger.statement("can't drop prior info, LinearAnalysis.jco is None")
             return
@@ -1029,7 +1025,7 @@ class LinearAnalysis(object):
         self.__obscov.from_observation_data(self.pst)
 
     def get_par_css_dataframe(self):
-        """ get a dataframe of composite scaled sensitivities.  Includes both
+        """get a dataframe of composite scaled sensitivities.  Includes both
         PEST-style and Hill-style.
 
         Returns:

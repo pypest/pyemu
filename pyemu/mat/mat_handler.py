@@ -234,7 +234,7 @@ class Matrix(object):
         Args:
             x (`numpy.ndarray`): the new numeric data
             copy (`bool`): flag to make a copy of 'x'. Defaule is True
-        
+
         """
         if x.shape != self.shape:
             raise Exception("shape mismatch")
@@ -905,9 +905,10 @@ class Matrix(object):
             `bool`: True if aligned, False if not aligned
 
         """
-        assert isinstance(other, Matrix), (
-            "Matrix.isaligned(): other argumnent must be type Matrix, not: "
-            + str(type(other))
+        assert isinstance(
+            other, Matrix
+        ), "Matrix.isaligned(): other argumnent must be type Matrix, not: " + str(
+            type(other)
         )
         if self.col_names == other.row_names:
             return True
@@ -956,7 +957,7 @@ class Matrix(object):
 
     @property
     def as_2d(self):
-        """ get a 2D numeric representation of `Matrix.x`.  If not `isdiagonal`, simply
+        """get a 2D numeric representation of `Matrix.x`.  If not `isdiagonal`, simply
         return reference to `Matrix.x`, otherwise, constructs and returns
         a 2D, diagonal ndarray
 
@@ -969,7 +970,7 @@ class Matrix(object):
         return np.diag(self.x.flatten())
 
     def to_2d(self):
-        """ get a 2D `Matrix` representation of `Matrix`.  If not `Matrix.isdiagonal`, simply
+        """get a 2D `Matrix` representation of `Matrix`.  If not `Matrix.isdiagonal`, simply
                 return a copy of `Matrix`, otherwise, constructs and returns a new `Matrix`
                 instance that is stored as diagonal
 
@@ -1004,7 +1005,7 @@ class Matrix(object):
 
     @property
     def ncol(self):
-        """ length of second dimension
+        """length of second dimension
 
         Returns:
             `int`: number of columns
@@ -1014,7 +1015,7 @@ class Matrix(object):
 
     @property
     def nrow(self):
-        """ length of first dimension
+        """length of first dimension
 
         Returns:
             `int`: number of rows
@@ -1072,7 +1073,7 @@ class Matrix(object):
             mat_inv = mat.inv
             mat_inv.to_binary("my_inv.jco")
 
-       """
+        """
 
         if self.isdiagonal:
             inv = 1.0 / self.__x
@@ -1132,7 +1133,7 @@ class Matrix(object):
         return max(1, ising)
 
     def get_maxsing(self, eigthresh=1.0e-5):
-        """ Get the number of singular components with a singular
+        """Get the number of singular components with a singular
         value ratio greater than or equal to eigthresh
 
          Args:
@@ -1155,7 +1156,7 @@ class Matrix(object):
         return Matrix.get_maxsing_from_s(self.s.x, eigthresh=eigthresh)
 
     def pseudo_inv_components(self, maxsing=None, eigthresh=1.0e-5, truncate=True):
-        """ Get the (optionally) truncated SVD components
+        """Get the (optionally) truncated SVD components
 
         Args:
             maxsing (`int`, optional): the number of singular components to use.  If None,
@@ -1205,7 +1206,7 @@ class Matrix(object):
         return u, s, v
 
     def pseudo_inv(self, maxsing=None, eigthresh=1.0e-5):
-        """ The pseudo inverse of self.  Formed using truncated singular
+        """The pseudo inverse of self.  Formed using truncated singular
         value decomposition and `Matrix.pseudo_inv_components`
 
         Args:
@@ -1266,7 +1267,7 @@ class Matrix(object):
 
     @property
     def full_s(self):
-        """ Get the full singular value matrix
+        """Get the full singular value matrix
 
         Returns:
             `Matrix`: full singular value matrix.  Shape is `(max(Matrix.shape),max(Matrix.shape))`
@@ -1323,7 +1324,7 @@ class Matrix(object):
 
     @property
     def zero2d(self):
-        """ get an 2D instance of self with all zeros
+        """get an 2D instance of self with all zeros
 
         Returns:
             `Matrix`: `Matrix of zeros`
@@ -1547,7 +1548,7 @@ class Matrix(object):
         )
 
     def drop(self, names, axis):
-        """ drop elements from `Matrix` in place
+        """drop elements from `Matrix` in place
 
         Args:
             names (['str']): list of names to drop
@@ -1984,7 +1985,7 @@ class Matrix(object):
 
     @staticmethod
     def from_fortranfile(filename):
-        """ a binary load method to accommodate one of the many
+        """a binary load method to accommodate one of the many
             bizarre fortran binary writing formats
 
         Args:
@@ -2208,13 +2209,12 @@ class Matrix(object):
         return x, row_names, col_names, isdiagonal
 
     def df(self):
-        """wrapper of Matrix.to_dataframe()
-        """
+        """wrapper of Matrix.to_dataframe()"""
         return self.to_dataframe()
 
     @classmethod
     def from_dataframe(cls, df):
-        """ class method to create a new `Matrix` instance from a
+        """class method to create a new `Matrix` instance from a
          `pandas.DataFrame`
 
         Args:
@@ -2239,7 +2239,7 @@ class Matrix(object):
     def from_names(
         cls, row_names, col_names, isdiagonal=False, autoalign=True, random=False
     ):
-        """ class method to create a new Matrix instance from
+        """class method to create a new Matrix instance from
         row names and column names, filled with trash
 
         Args:
@@ -2286,7 +2286,7 @@ class Matrix(object):
         return pd.DataFrame(data=x, index=self.row_names, columns=self.col_names)
 
     def extend(self, other):
-        """ extend `Matrix` with the elements of other.
+        """extend `Matrix` with the elements of other.
 
         Args:
         other (`Matrix`):  the Matrix to extend self by
@@ -2333,7 +2333,7 @@ class Jco(Matrix):
     """
 
     def __init(self, **kwargs):
-        """ Jco constuctor takes the same arguments as Matrix.
+        """Jco constuctor takes the same arguments as Matrix.
 
         Args:
             **kwargs (`dict`): constructor arguments for `Matrix`
@@ -2349,7 +2349,7 @@ class Jco(Matrix):
 
     @property
     def par_names(self):
-        """ thin wrapper around `Matrix.col_names`
+        """thin wrapper around `Matrix.col_names`
 
         Returns:
             [`str`]: a list of parameter names
@@ -2359,7 +2359,7 @@ class Jco(Matrix):
 
     @property
     def obs_names(self):
-        """ thin wrapper around `Matrix.row_names`
+        """thin wrapper around `Matrix.row_names`
 
         Returns:
             ['str']: a list of observation names
@@ -2369,7 +2369,7 @@ class Jco(Matrix):
 
     @property
     def npar(self):
-        """ number of parameters in the Jco
+        """number of parameters in the Jco
 
         Returns:
             `int`: number of parameters (columns)
@@ -2379,7 +2379,7 @@ class Jco(Matrix):
 
     @property
     def nobs(self):
-        """ number of observations in the Jco
+        """number of observations in the Jco
 
         Returns:
             `int`: number of observations (rows)
@@ -2488,7 +2488,7 @@ class Cov(Matrix):
 
     @property
     def zero(self):
-        """ get an instance of `Cov` with all zeros
+        """get an instance of `Cov` with all zeros
 
         Returns:
             `Cov`: new `Cov` instance with zeros
@@ -2880,8 +2880,7 @@ class Cov(Matrix):
 
     @staticmethod
     def _get_uncfile_dimensions(filename):
-        """quickly read an uncertainty file to find the dimensions
-        """
+        """quickly read an uncertainty file to find the dimensions"""
         f = open(filename, "r")
         nentries = 0
         while True:
@@ -2929,7 +2928,7 @@ class Cov(Matrix):
 
     @classmethod
     def identity_like(cls, other):
-        """ Get an identity matrix Cov instance like other `Cov`
+        """Get an identity matrix Cov instance like other `Cov`
 
         Args:
             other (`Matrix`):  other matrix - must be square
@@ -2944,7 +2943,7 @@ class Cov(Matrix):
         return cls(x=x, names=other.row_names, isdiagonal=False)
 
     def to_pearson(self):
-        """ Convert Cov instance to Pearson correlation coefficient
+        """Convert Cov instance to Pearson correlation coefficient
         matrix
 
         Returns:
