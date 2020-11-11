@@ -4006,10 +4006,11 @@ def apply_genericlist_pars(df):
                 add1 = int(mlt.zero_based == False)
                 mlts.index = pd.MultiIndex.from_tuples(
                     mlts.sidx.apply(lambda x:
-                                    [add1 + int(xx.strip())
+                                    [add1 + int(xx)
                                      if xx.strip().isdigit()
-                                     else xx.strip('\'\"')
-                                     for xx in x.strip('()').split(',')]),
+                                     else xx.strip('\'\" ')
+                                     for xx in x.strip('()').split(',')
+                                     if xx]),
                     names=mlt.index_cols
                 )
                 if mlts.index.nlevels < 2:  # just in case only one index col is used
