@@ -661,6 +661,7 @@ class PstFrom(object):
         ) = self._prep_arg_list_lengths(
             filenames, fmts, seps, skip_rows, index_cols, use_cols
         )
+        storehead = None
         if index_cols is not None:
             for filename, sep, fmt, skip in zip(filenames, seps, fmts, skip_rows):
                 file_path = os.path.join(self.new_d, filename)
@@ -811,7 +812,8 @@ class PstFrom(object):
                                 file_dict[fnames[j]].shape,
                             )
                         )
-        return index_cols, use_cols, file_dict, fmt_dict, sep_dict, skip_dict
+        return (index_cols, use_cols, file_dict, fmt_dict, sep_dict, skip_dict,
+                storehead)
 
     def _next_count(self, prefix):
         if prefix not in self._prefix_count:
@@ -1286,6 +1288,8 @@ class PstFrom(object):
                     )
                     + " already used for 'direct' parameterization"
                 )
+            else:
+                self.direct_org_files.append(filenames[0])
         # Default par data columns used for pst
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         self.logger.log(
@@ -1348,6 +1352,7 @@ class PstFrom(object):
             fmt_dict,
             sep_dict,
             skip_dict,
+            headerlines,  # needed for direct pars (need to be in tpl)
         ) = self._par_prep(
             filenames,
             idx_cols,
@@ -1474,6 +1479,7 @@ class PstFrom(object):
                 zero_based=self.zero_based,
                 input_filename=in_fileabs,
                 par_style=par_style,
+                headerlines=headerlines,  # only needed for direct pars
             )
             assert np.mod(len(df), len(use_cols)) == 0.0, (
                 "Parameter dataframe wrong shape for number of cols {0}"
@@ -2061,6 +2067,7 @@ def write_list_tpl(
     zero_based=True,
     input_filename=None,
     par_style="multiplier",
+    headerlines=None,
 ):
     """ Write template files for a list style input.
 
@@ -2124,6 +2131,7 @@ def write_list_tpl(
             ij_in_idx=ij_in_idx,
             xy_in_idx=xy_in_idx,
             zero_based=zero_based,
+            headerlines=headerlines,
         )
     else:
         df_tpl = _get_tpl_or_ins_df(
@@ -2253,6 +2261,7 @@ def _write_direct_df_tpl(
     xy_in_idx=None,
     zero_based=True,
     gpname=None,
+    headerlines=None
 ):
 
     """
@@ -2314,7 +2323,8 @@ def _write_direct_df_tpl(
             inames = ["{0}".format(i) for i in range(len(index_cols))]
 
     if not zero_based:
-        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(lambda x: tuple(xx - 1 for xx in x))
+        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
+            lambda x: tuple(xx - 1 if isinstance(xx,int) else xx for xx in x))
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
         lambda x: j.join([fmt.format(iname, xx) for xx, iname in zip(x, inames)])
     ).str.replace(" ", "")
@@ -2430,8 +2440,13 @@ def _write_direct_df_tpl(
         direct_tpl_df.loc[:, use_col] = (
             df_ti.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
         )
-
-    pyemu.helpers._write_df_tpl(tpl_filename, direct_tpl_df, index=False, header=False)
+    # nasty assumption to distiguish if we need to write headers
+    if isinstance(direct_tpl_df.columns[0], str):
+        header = True
+    else:
+        header = False
+    pyemu.helpers._write_df_tpl(tpl_filename, direct_tpl_df, index=False,
+                                header=header, headerlines=headerlines)
 
     return df_ti
 
@@ -2529,8 +2544,9 @@ def _get_tpl_or_ins_df(
         else:
             inames = ["{0}".format(i) for i in range(len(index_cols))]
 
-    if not zero_based:
-        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(lambda x: tuple(xx - 1 for xx in x))
+    if not zero_based:  # only if indices are ints (trying to support strings as par ids)
+        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
+            lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x))
 
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
         lambda x: j.join([fmt.format(iname, xx) for xx, iname in zip(x, inames)])

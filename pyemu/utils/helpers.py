@@ -3978,6 +3978,7 @@ def apply_genericlist_pars(df):
         else:
             storehead = []
         # work out if headers are used for index_cols
+        # big assumption here that int type index cols will not be written as headers
         index_col_eg = df_mf.index_cols.iloc[-1][0]
         if isinstance(index_col_eg, str):
             # TODO: add test for model file with headers
@@ -4024,12 +4025,16 @@ def apply_genericlist_pars(df):
             else:
                 mlts = pd.read_csv(mlt.mlt_file)
                 # get mult index to align with org_data,
-                # mult idxs will always be written zero based
+                # mult idxs will always be written zero based if int
                 # if original model files is not zero based need to add 1
                 add1 = int(mlt.zero_based == False)
                 mlts.index = pd.MultiIndex.from_tuples(
-                    mlts.sidx.apply(lambda x: tuple(add1 + np.array(literal_eval(x)))),
-                    names=mlt.index_cols,
+                    mlts.sidx.apply(lambda x:
+                                    [add1 + int(xx.strip())
+                                     if xx.strip().isdigit()
+                                     else xx.strip('\'\"')
+                                     for xx in x.strip('()').split(',')]),
+                    names=mlt.index_cols
                 )
                 if mlts.index.nlevels < 2:  # just in case only one index col is used
                     mlts.index = mlts.index.get_level_values(0)
@@ -4350,7 +4355,8 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
     return df
 
 
-def _write_df_tpl(filename, df, sep=",", tpl_marker="~", **kwargs):
+def _write_df_tpl(filename, df, sep=",", tpl_marker="~",
+                  headerlines=None, **kwargs):
     """function write a pandas dataframe to a template file.
 
     """
@@ -4360,7 +4366,30 @@ def _write_df_tpl(filename, df, sep=",", tpl_marker="~", **kwargs):
     with open(filename, "w") as f:
         f.write("ptf {0}\n".format(tpl_marker))
         f.flush()
+        if headerlines is not None:
+            _add_headerlines(f, headerlines)
         df.to_csv(f, sep=sep, mode="a", **kwargs)
+
+
+def _add_headerlines(f, headerlines):
+    lc = 0
+    for key in sorted(headerlines.keys()):
+        if key > lc:
+            lc += 1
+            continue
+            # TODO if we want to preserve mid-table comments,
+            #  these lines might help - will also need to
+            #  pass comment_char through so it can be
+            #  used by the apply methods
+            # to = key - lc
+            # df.iloc[fr:to].to_csv(
+            #     fp, sep=',', mode='a', header=hheader, # todo - presence of header may cause an issue with this
+            #     **kwargs)
+            # lc += to - fr
+            # fr = to
+        f.write(headerlines[key])
+        f.flush()
+        lc += 1
 
 
 def setup_fake_forward_run(

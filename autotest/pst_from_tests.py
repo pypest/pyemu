@@ -1240,6 +1240,24 @@ def mf6_freyberg_direct_test():
 
     list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
                   for t in range(1, m.nper + 1)]
+    # make dummy versions with headers
+    for fl in list_files[0:2]:
+        with open(os.path.join(template_ws, fl), 'r') as fr:
+            lines = [line for line in fr]
+        with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
+            fw.write("k i j flux \n")
+            for line in lines:
+                fw.write(line)
+
+    fl = "freyberg6.wel_stress_period_data_3.txt"
+    with open(os.path.join(template_ws, fl), 'r') as fr:
+        lines = [line for line in fr]
+    with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
+        fw.write("well k i j flux \n")
+        for i, line in enumerate(lines):
+            fw.write(f"well{i}" + line)
+
+
     list_files.sort()
     for list_file in list_files:
         kper = int(list_file.split(".")[1].split('_')[-1]) - 1
@@ -1278,6 +1296,7 @@ def mf6_freyberg_direct_test():
     # test par mults are working
     b_d = os.getcwd()
     os.chdir(pf.new_d)
+    pst.write_input_files()
     try:
         pyemu.helpers.apply_list_and_array_pars(
             arr_par_file="mult2model_info.csv", chunk_len=1)
