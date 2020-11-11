@@ -126,8 +126,7 @@ class ErrVar(LinearAnalysis):
         self.valid_return_types = ["parameters", "predictions"]
 
     def __load_omitted_predictions(self):
-        """private: set the omitted_predictions attribute
-        """
+        """private: set the omitted_predictions attribute"""
         # if there are no base predictions
         if self.predictions is None:
             raise Exception(
@@ -176,8 +175,7 @@ class ErrVar(LinearAnalysis):
             raise NotImplementedError()
 
     def __load_omitted_parcov(self):
-        """private: set the omitted_parcov attribute
-        """
+        """private: set the omitted_parcov attribute"""
         if self.omitted_parcov_arg is None and self.omitted_par_arg is None:
             raise Exception(
                 "ErrVar.__load_omitted_parcov: " + "both omitted args are None"
@@ -210,8 +208,7 @@ class ErrVar(LinearAnalysis):
             raise NotImplementedError()
 
     def __load_omitted_jco(self):
-        """private: set the omitted jco attribute
-        """
+        """private: set the omitted jco attribute"""
         if self.omitted_par_arg is None:
             raise Exception("ErrVar.__load_omitted: omitted_arg is None")
         if isinstance(self.omitted_par_arg, str):
@@ -287,7 +284,7 @@ class ErrVar(LinearAnalysis):
         Returns:
             `pyemu.Cov`: the prior parameter covariance matrix of the
             omitted parameters
-        
+
         """
         if self.__omitted_parcov is None:
             self.log("loading omitted_parcov")
@@ -312,7 +309,7 @@ class ErrVar(LinearAnalysis):
 
             ev = pyemu.ErrVar(jco="my.jco",omitted_parameters=["wel1","wel2"])
             df = ev.get_errvar_dataframe()
-        
+
         """
         if singular_values is None:
             singular_values = np.arange(0, min(self.pst.nnz_obs, self.pst.npar_adj) + 1)
@@ -709,7 +706,7 @@ class ErrVar(LinearAnalysis):
         return result
 
     def get_null_proj(self, maxsing=None, eigthresh=1.0e-6):
-        """ get a null-space projection matrix of XTQX
+        """get a null-space projection matrix of XTQX
 
         Args:
             maxsing (`int`, optional): number of singular components

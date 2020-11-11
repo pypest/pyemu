@@ -61,7 +61,7 @@ REG_DEFAULT_LINES = """   1.0e-10    1.05e-10  0.1  nomemsave
 
 
 class RegData(object):
-    """ an object that encapsulates the regularization section
+    """an object that encapsulates the regularization section
     of the PEST control file
 
     """
@@ -81,7 +81,7 @@ class RegData(object):
         self.should_write = ["phimlim", "phimaccept", "fracphim", "wfinit"]
 
     def write(self, f):
-        """ write the regularization section to an open
+        """write the regularization section to an open
         file handle
 
         Args:
@@ -134,20 +134,20 @@ class SvdData(object):
         self.eigwrite = kwargs.pop("eigwrite", 1)
 
     def write_keyword(self, f):
-        """ write an SVD section to a file handle using
+        """write an SVD section to a file handle using
         keyword-style format
 
                 Args:
                     f (`file handle`): open file handle for writing
 
-                """
+        """
         f.write("{0:30} {1:>10}\n".format("svdmode", self.svdmode))
         f.write("{0:30} {1:>10}\n".format("maxsing", self.maxsing))
         f.write("{0:30} {1:>10}\n".format("eigthresh", self.eigthresh))
         f.write("{0:30} {1:>10}\n".format("eigwrite", self.eigwrite))
 
     def write(self, f):
-        """ write an SVD section to a file handle
+        """write an SVD section to a file handle
 
         Args:
             f (`file handle`): open file handle for writing
@@ -159,7 +159,7 @@ class SvdData(object):
         f.write("{0}\n".format(self.eigwrite))
 
     def parse_values_from_lines(self, lines):
-        """ parse values from lines of the SVD section of
+        """parse values from lines of the SVD section of
         a PEST control file
 
         Args:
@@ -167,9 +167,10 @@ class SvdData(object):
 
 
         """
-        assert len(lines) == 3, (
-            "SvdData.parse_values_from_lines: expected "
-            + "3 lines, not {0}".format(len(lines))
+        assert (
+            len(lines) == 3
+        ), "SvdData.parse_values_from_lines: expected " + "3 lines, not {0}".format(
+            len(lines)
         )
         try:
             self.svdmode = int(lines[0].strip().split()[0])
@@ -198,7 +199,7 @@ class SvdData(object):
 
 
 class ControlData(object):
-    """ an object that encapsulates the control data section
+    """an object that encapsulates the control data section
      of the PEST control file
 
     Notes:
@@ -259,8 +260,8 @@ class ControlData(object):
 
     @staticmethod
     def get_dataframe():
-        """ get a generic (default) control section as a dataframe
-        
+        """get a generic (default) control section as a dataframe
+
         Returns:
 
             `pandas.DataFrame`: a dataframe of control data information
@@ -310,7 +311,7 @@ class ControlData(object):
         return v, t, f
 
     def parse_values_from_lines(self, lines, iskeyword=False):
-        """ cast the string lines for a pest control file into actual inputs
+        """cast the string lines for a pest control file into actual inputs
 
         Args:
             lines ([`str`]): raw ASCII lines from pest control file
@@ -366,9 +367,10 @@ class ControlData(object):
                         self._df.loc[name, "value"] = v
             return extra
 
-        assert len(lines) == len(CONTROL_VARIABLE_LINES), (
-            "ControlData error: len of lines not equal to "
-            + str(len(CONTROL_VARIABLE_LINES))
+        assert len(lines) == len(
+            CONTROL_VARIABLE_LINES
+        ), "ControlData error: len of lines not equal to " + str(
+            len(CONTROL_VARIABLE_LINES)
         )
 
         for iline, line in enumerate(lines):
@@ -421,7 +423,7 @@ class ControlData(object):
 
     @property
     def formatted_values(self):
-        """ list the entries and current values in the control data section
+        """list the entries and current values in the control data section
 
         Returns:
             pandas.Series:  formatted_values for the control data entries
@@ -430,7 +432,7 @@ class ControlData(object):
         return self._df.apply(lambda x: self.formatters[x["type"]](x["value"]), axis=1)
 
     def write_keyword(self, f):
-        """ write the control data entries to an open file handle
+        """write the control data entries to an open file handle
         using keyword-style format.
 
         Args:
@@ -448,8 +450,8 @@ class ControlData(object):
             f.write("{0:30} {1}\n".format(n, v))
 
     def write(self, f):
-        """ write control data section to a file
-        
+        """write control data section to a file
+
         Args:
             f (file handle): open file handle to write to
 

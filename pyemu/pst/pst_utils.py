@@ -200,17 +200,19 @@ pst_config["prior_format"] = {
 }
 pst_config["prior_fieldnames"] = ["pilbl", "equation", "weight", "obgnme"]
 
-pst_config["model_io_fieldnames"] = ["pest_file","model_file"]
-pst_config["model_io_format"] = {"pest_file":SFMT_LONG, "model_file":SFMT_LONG}
-pst_config["null_model_io"] = pd.DataFrame({"pest_file": None, "model_file":None},index=[])
-pst_config["model_io_defaults"] = {"pest_file":"pest_file","model_file":"model_file"}
+pst_config["model_io_fieldnames"] = ["pest_file", "model_file"]
+pst_config["model_io_format"] = {"pest_file": SFMT_LONG, "model_file": SFMT_LONG}
+pst_config["null_model_io"] = pd.DataFrame(
+    {"pest_file": None, "model_file": None}, index=[]
+)
+pst_config["model_io_defaults"] = {"pest_file": "pest_file", "model_file": "model_file"}
 
 # other containers
 pst_config["model_command"] = []
-#pst_config["template_files"] = []
-#pst_config["input_files"] = []
-#pst_config["instruction_files"] = []
-#pst_config["output_files"] = []
+# pst_config["template_files"] = []
+# pst_config["input_files"] = []
+# pst_config["instruction_files"] = []
+# pst_config["output_files"] = []
 pst_config["other_lines"] = []
 pst_config["tied_lines"] = []
 pst_config["regul_lines"] = []
@@ -220,18 +222,18 @@ pst_config["pestpp_options"] = {}
 def read_resfile(resfile):
     """load a PEST-style residual file into a pandas.DataFrame
 
-   Args:
-        resfile (`str`): path and name of an existing residual file
+    Args:
+         resfile (`str`): path and name of an existing residual file
 
-    Returns:
-        `pandas.DataFrame`: a dataframe of info from the residuals file.
-        Column names are the names from the residuals file: "name", "group",
-        "measured", "modelled" (with two "L"s), "residual", "weight".
+     Returns:
+         `pandas.DataFrame`: a dataframe of info from the residuals file.
+         Column names are the names from the residuals file: "name", "group",
+         "measured", "modelled" (with two "L"s), "residual", "weight".
 
-    Example::
+     Example::
 
-        df = pyemu.pst_utils.read_resfile("my.res")
-        df.residual.plot(kind="hist")
+         df = pyemu.pst_utils.read_resfile("my.res")
+         df.residual.plot(kind="hist")
 
     """
     assert os.path.exists(
@@ -330,7 +332,7 @@ def read_parfile(parfile):
 
 
 def write_parfile(df, parfile):
-    """ write a PEST-style parameter file from a dataframe
+    """write a PEST-style parameter file from a dataframe
 
     Args:
         df (`pandas.DataFrame`): a dataframe with column names
@@ -372,7 +374,7 @@ def write_parfile(df, parfile):
 
 
 def parse_tpl_file(tpl_file):
-    """ parse a PEST-style template file to get the parameter names
+    """parse a PEST-style template file to get the parameter names
 
     Args:
     tpl_file (`str`): path and name of a template file
@@ -398,9 +400,10 @@ def parse_tpl_file(tpl_file):
             ), "template file error: header line must have two entries: " + str(header)
 
             marker = header[1]
-            assert len(marker) == 1, (
-                "template file error: marker must be a single character, not:"
-                + str(marker)
+            assert (
+                len(marker) == 1
+            ), "template file error: marker must be a single character, not:" + str(
+                marker
             )
             for line in f:
                 par_line = set(line.lower().strip().split(marker)[1::2])
@@ -472,7 +475,7 @@ def _write_chunk_to_template(chunk, parvals, pst_path):
 
 
 def write_to_template(parvals, tpl_file, in_file):
-    """ write parameter values to a model input file using
+    """write parameter values to a model input file using
     the corresponding template file
 
     Args:
@@ -535,7 +538,7 @@ def write_to_template(parvals, tpl_file, in_file):
 
 
 def _get_marker_indices(marker, line):
-    """ method to find the start and end parameter markers
+    """method to find the start and end parameter markers
     on a template file line.  Used by write_to_template()
 
     """
@@ -573,9 +576,10 @@ def parse_ins_file(ins_file):
             "jif",
         ], "instruction file error: must start with [pif,jif], not:" + str(header[0])
         marker = header[1]
-        assert len(marker) == 1, (
-            "instruction file error: marker must be a single character, not:"
-            + str(marker)
+        assert (
+            len(marker) == 1
+        ), "instruction file error: marker must be a single character, not:" + str(
+            marker
         )
         for line in f:
             line = line.lower()
@@ -590,8 +594,7 @@ def parse_ins_file(ins_file):
 
 
 def _parse_ins_string(string):
-    """ split up an instruction file line to get the observation names
-    """
+    """split up an instruction file line to get the observation names"""
     istart_markers = set(["[", "(", "!"])
     marker_dict = {"[": "]", "(": ")", "!": "!"}
     # iend_markers = set(["]",")","!"])
@@ -622,7 +625,7 @@ def _parse_ins_string(string):
 
 
 def _populate_dataframe(index, columns, default_dict, dtype):
-    """ helper function to populate a generic Pst dataframe attribute.
+    """helper function to populate a generic Pst dataframe attribute.
 
     Note:
         This function is called as part of constructing a generic Pst instance
@@ -684,10 +687,10 @@ def generic_pst(par_names=["par1"], obs_names=["obs1"], addreg=False):
     obs_data.sort_index(inplace=True)
     new_pst.observation_data = obs_data
 
-    #new_pst.template_files = ["file.tpl"]
-    #new_pst.input_files = ["file.in"]
-    #new_pst.instruction_files = ["file.ins"]
-    #new_pst.output_files = ["file.out"]
+    # new_pst.template_files = ["file.tpl"]
+    # new_pst.input_files = ["file.in"]
+    # new_pst.instruction_files = ["file.ins"]
+    # new_pst.output_files = ["file.out"]
     new_pst.model_command = ["model.bat"]
 
     new_pst.prior_information = new_pst.null_prior
@@ -735,7 +738,7 @@ def try_process_output_file(ins_file, output_file=None):
 
 
 def try_process_output_pst(pst):
-    """ attempt to process each instruction file, model output
+    """attempt to process each instruction file, model output
     file pair in a `pyemu.Pst`.
 
     Args:
@@ -771,8 +774,7 @@ def try_process_output_pst(pst):
 
 
 def _try_run_inschek(ins_file, out_file, cwd="."):
-    """try to run inschek and load the resulting obf file
-    """
+    """try to run inschek and load the resulting obf file"""
     try:
         pyemu.os_utils.run("inschek {0} {1}".format(ins_file, out_file), cwd=cwd)
         obf_file = os.path.join(cwd, ins_file.replace(".ins", ".obf"))
@@ -1265,9 +1267,7 @@ class InstructionFile(object):
         return pd.DataFrame({"obsval": s}, index=s.index)
 
     def _execute_ins_line(self, ins_line, ins_lcount):
-        """private method to process output file lines with an instruction line
-
-        """
+        """private method to process output file lines with an instruction line"""
         cursor_pos = 0
         val_dict = {}
         # for ii,ins in enumerate(ins_line):
@@ -1427,9 +1427,7 @@ class InstructionFile(object):
         return tokens
 
     def _readline_output(self):
-        """consolidate private method to read the next output file line.  Casts to lower
-
-        """
+        """consolidate private method to read the next output file line.  Casts to lower"""
         if self._out_filehandle is None:
             if not os.path.exists(self._out_filename):
                 raise Exception(
@@ -1446,22 +1444,22 @@ class InstructionFile(object):
 
 def process_output_files(pst, pst_path="."):
     """helper function to process output files using the
-     InstructionFile class
+      InstructionFile class
 
-   Args:
-        pst (`pyemu.Pst`): control file instance
+    Args:
+         pst (`pyemu.Pst`): control file instance
 
-        pst_path (`str`): path to instruction and output files to append to the front
-            of the names in the Pst instance
+         pst_path (`str`): path to instruction and output files to append to the front
+             of the names in the Pst instance
 
-    Returns:
-        `pd.DataFrame`: dataframe of observation names and simulated values
-        extracted from the model output files listed in `pst`
+     Returns:
+         `pd.DataFrame`: dataframe of observation names and simulated values
+         extracted from the model output files listed in `pst`
 
-    Example::
+     Example::
 
-        pst = pyemu.Pst("my.pst")
-        df = pyemu.pst_utils.process_output_files(pst)
+         pst = pyemu.Pst("my.pst")
+         df = pyemu.pst_utils.process_output_files(pst)
 
 
     """

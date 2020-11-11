@@ -216,15 +216,15 @@ class Schur(LinearAnalysis):
     def posterior_prediction(self):
         """posterior prediction (e.g. forecast) variance estimate(s)
 
-       Returns:
-            `dict`: dictionary of forecast names and FOSM-estimated posterior
-            variances
+        Returns:
+             `dict`: dictionary of forecast names and FOSM-estimated posterior
+             variances
 
-        Note:
-            sames as `LinearAnalysis.posterior_forecast`
+         Note:
+             sames as `LinearAnalysis.posterior_forecast`
 
-            See `Schur.get_forecast_summary()` for a dataframe-based container of prior and posterior
-            variances
+             See `Schur.get_forecast_summary()` for a dataframe-based container of prior and posterior
+             variances
 
         """
         if self.__posterior_prediction is not None:
@@ -333,7 +333,7 @@ class Schur(LinearAnalysis):
         return cprior, cpost
 
     def get_conditional_instance(self, parameter_names):
-        """ get a new `pyemu.Schur` instance that includes conditional update from
+        """get a new `pyemu.Schur` instance that includes conditional update from
         some parameters becoming known perfectly
 
         Args:

@@ -165,7 +165,7 @@ def modflow_hydmod_to_instruction_file(hydmod_file, ins_file=None):
 
 
 def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
-    """ read a binary hydmod file and return a dataframe of the results
+    """read a binary hydmod file and return a dataframe of the results
 
     Args:
         hydmod_file (`str`): The path and name of the existing modflow hydmod binary file
@@ -223,7 +223,7 @@ def setup_mtlist_budget_obs(
     sw_prefix="sw",
     save_setup_file=False,
 ):
-    """ setup observations of gw (and optionally sw) mass budgets from mt3dusgs list file.
+    """setup observations of gw (and optionally sw) mass budgets from mt3dusgs list file.
 
     Args:
         list_filename (`str`): path and name of existing modflow list file
@@ -260,7 +260,7 @@ def setup_mtlist_budget_obs(
 
         This is the companion function of `gw_utils.apply_mtlist_budget_obs()`.
 
-        """
+    """
     gw, sw = apply_mtlist_budget_obs(
         list_filename, gw_filename, sw_filename, start_datetime
     )
@@ -289,9 +289,7 @@ def setup_mtlist_budget_obs(
 
 
 def _write_mtlist_ins(ins_filename, df, prefix):
-    """ write an instruction file for a MT3D-USGS list file
-
-    """
+    """write an instruction file for a MT3D-USGS list file"""
     try:
         dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
     except:
@@ -317,7 +315,7 @@ def apply_mtlist_budget_obs(
     sw_filename="mtlist_sw.dat",
     start_datetime="1-1-1970",
 ):
-    """ process an MT3D-USGS list file to extract mass budget entries.
+    """process an MT3D-USGS list file to extract mass budget entries.
 
     Args:
         list_filename (`str`): the path and name of an existing MT3D-USGS list file
@@ -376,7 +374,7 @@ def setup_mflist_budget_obs(
     prefix="",
     save_setup_file=False,
 ):
-    """ setup observations of budget volume and flux from modflow list file.
+    """setup observations of budget volume and flux from modflow list file.
 
     Args:
         list_filename (`str`): path and name of the existing modflow list file
@@ -432,30 +430,30 @@ def apply_mflist_budget_obs(
     vol_filename="vol.dat",
     start_datetime="1-1-1970",
 ):
-    """ process a MODFLOW list file to extract flux and volume water budget entries.
+    """process a MODFLOW list file to extract flux and volume water budget entries.
 
-   Args:
-        list_filename (`str`): path and name of the existing modflow list file
-        flx_filename (`str`, optional): output filename that will contain the budget flux
-            observations. Default is "flux.dat"
-        vol_filename (`str`, optional): output filename that will contain the budget volume
-            observations.  Default is "vol.dat"
-        start_datetime (`str`, optional): a string that can be parsed into a pandas.TimeStamp.
-            This is used to give budget observations meaningful names.  Default is "1-1-1970".
-        prefix (`str`, optional): a prefix to add to the water budget observations.  Useful if
-            processing more than one list file as part of the forward run process. Default is ''.
-        save_setup_file (`bool`): a flag to save _setup_<list_filename>.csv file that contains useful
-            control file information
+    Args:
+         list_filename (`str`): path and name of the existing modflow list file
+         flx_filename (`str`, optional): output filename that will contain the budget flux
+             observations. Default is "flux.dat"
+         vol_filename (`str`, optional): output filename that will contain the budget volume
+             observations.  Default is "vol.dat"
+         start_datetime (`str`, optional): a string that can be parsed into a pandas.TimeStamp.
+             This is used to give budget observations meaningful names.  Default is "1-1-1970".
+         prefix (`str`, optional): a prefix to add to the water budget observations.  Useful if
+             processing more than one list file as part of the forward run process. Default is ''.
+         save_setup_file (`bool`): a flag to save _setup_<list_filename>.csv file that contains useful
+             control file information
 
-    Note:
-        this is the companion function of `gw_utils.setup_mflist_budget_obs()`.
+     Note:
+         this is the companion function of `gw_utils.setup_mflist_budget_obs()`.
 
-    Returns:
-        tuple containing
+     Returns:
+         tuple containing
 
 
-        - **pandas.DataFrame**: a dataframe with flux budget information
-        - **pandas.DataFrame**: a dataframe with cumulative budget information
+         - **pandas.DataFrame**: a dataframe with flux budget information
+         - **pandas.DataFrame**: a dataframe with cumulative budget information
 
     """
     try:
@@ -470,9 +468,7 @@ def apply_mflist_budget_obs(
 
 
 def _write_mflist_ins(ins_filename, df, prefix):
-    """ write an instruction file for a MODFLOW list file
-
-    """
+    """write an instruction file for a MODFLOW list file"""
 
     dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
     with open(ins_filename, "w") as f:
@@ -1130,15 +1126,17 @@ def setup_hds_obs(
     df.to_csv(setup_file)
     if not include_path:
         hds_file = os.path.split(hds_file)[-1]
-    fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}',precision='{1}',text='{2}')\n".format(
-        hds_file, precision, text
+    fwd_run_line = (
+        "pyemu.gw_utils.apply_hds_obs('{0}',precision='{1}',text='{2}')\n".format(
+            hds_file, precision, text
+        )
     )
     df.index = df.obsnme
     return fwd_run_line, df
 
 
 def last_kstp_from_kper(hds, kper):
-    """ function to find the last time step (kstp) for a
+    """function to find the last time step (kstp) for a
     give stress period (kper) in a modflow head save file.
 
     Args:
@@ -1163,7 +1161,7 @@ def last_kstp_from_kper(hds, kper):
 
 
 def apply_hds_obs(hds_file, inact_abs_val=1.0e20, precision="single", text="head"):
-    """ process a modflow head save file.  A companion function to
+    """process a modflow head save file.  A companion function to
     `gw_utils.setup_hds_obs()` that is called during the forward run process
 
     Args:
@@ -2048,9 +2046,10 @@ def load_sfr_out(sfr_out_file, selection=None):
             selection == "all"
         ), "If string passed as selection only 'all' allowed: " "{}".format(selection)
     else:
-        assert isinstance(selection, pd.DataFrame), (
-            "'selection needs to be pandas Dataframe. "
-            "Type {} passed.".format(type(selection))
+        assert isinstance(
+            selection, pd.DataFrame
+        ), "'selection needs to be pandas Dataframe. " "Type {} passed.".format(
+            type(selection)
         )
         assert np.all(
             [sr in selection.columns for sr in ["segment", "reach"]]
@@ -2574,7 +2573,7 @@ def apply_gage_obs(return_obs_file=False):
 
 
 def apply_hfb_pars(par_file="hfb6_pars.csv"):
-    """ a function to apply HFB multiplier parameters.
+    """a function to apply HFB multiplier parameters.
 
     Args:
         par_file (`str`): the HFB parameter info file.
@@ -2724,16 +2723,16 @@ def write_hfb_zone_multipliers_template(m):
 def write_hfb_template(m):
     """write a template file for an hfb (yuck!)
 
-   Args:
-        m (`flopy.modflow.Modflow`): a model instance with an HFB package
+    Args:
+         m (`flopy.modflow.Modflow`): a model instance with an HFB package
 
-    Returns:
-        tuple containing
+     Returns:
+         tuple containing
 
-        - **str**: name of the template file that was created
+         - **str**: name of the template file that was created
 
-        - **pandas.DataFrame**: a dataframe with use control file info for the
-          HFB parameters
+         - **pandas.DataFrame**: a dataframe with use control file info for the
+           HFB parameters
 
     """
 
