@@ -17,7 +17,7 @@ import string
 # the tolerable percent difference (100 * (max - min)/mean)
 # used when checking that constant and zone type parameters are in fact constant (within
 # a given zone)
-# DIRECT_PAR_PERCENT_DIFF_TOL = 1.0
+DIRECT_PAR_PERCENT_DIFF_TOL = 1.0
 
 
 def _get_datetime_from_str(sdt):
@@ -120,7 +120,8 @@ class PstFrom(object):
         self._prefix_count = {}
 
         self.get_xy = None
-
+        self.add_pars_callcount = 0
+        self.ijwarned = {}
         self.initialize_spatial_reference()
 
         self._setup_dirs()
@@ -228,17 +229,29 @@ class PstFrom(object):
             if ij_id is not None:
                 i, j = [args[ij] for ij in ij_id]
             else:
+                if not self.ijwarned[self.add_pars_callcount]:
+                    self.logger.warn(
+                        (
+                            "get_xy() warning: position of i and j in index_cols "
+                            "not specified, assume (i,j) are final two entries in "
+                            "index_cols."
+                        )
+
+                    )
+                    self.ijwarned[self.add_pars_callcount] = True
                 # assume i and j are the final two entries in index_cols
                 i, j = args[-2], args[-1]
         else:
-            self.logger.warn(
-                (
-                    "get_xy() warning: need locational information "
-                    "(e.g. i,j) to generate xy, "
-                    "insufficient index cols passed to interpret: {}"
-                    ""
-                ).format(str(args))
-            )
+            if not self.ijwarned[self.add_pars_callcount]:
+                self.logger.warn(
+                    (
+                        "get_xy() warning: need locational information "
+                        "(e.g. i,j) to generate xy, "
+                        "insufficient index cols passed to interpret: {}"
+                        ""
+                    ).format(str(args))
+                )
+                self.ijwarned[self.add_pars_callcount] = True
             i, j = None, None
         return i, j
 
@@ -663,6 +676,7 @@ class PstFrom(object):
         ) = self._prep_arg_list_lengths(
             filenames, fmts, seps, skip_rows, index_cols, use_cols
         )
+        storehead = None
         if index_cols is not None:
             for filename, sep, fmt, skip in zip(filenames, seps, fmts, skip_rows):
                 file_path = os.path.join(self.new_d, filename)
@@ -815,7 +829,8 @@ class PstFrom(object):
                                 file_dict[fnames[j]].shape,
                             )
                         )
-        return index_cols, use_cols, file_dict, fmt_dict, sep_dict, skip_dict
+        return (index_cols, use_cols, file_dict, fmt_dict, sep_dict, skip_dict,
+                storehead)
 
     def _next_count(self, prefix):
         if prefix not in self._prefix_count:
@@ -1203,10 +1218,15 @@ class PstFrom(object):
             par_name_base (`str`): basename for parameters that are set up
             index_cols (`list`-like): if not None, will attempt to parameterize
                 expecting a tabular-style model input file. `index_cols`
-                defines the unique columns used to set up pars.
-                May be passed as a dictionary using the keys `i` and `j`
-                to allow columns that relate to model rows and columns to be
-                identified and processed to x,y.
+                defines the unique columns used to set up pars. If passed as a
+                list of `str`, stings are expected to denote the columns
+                headers in tabular-style parameter files; if `i` and `j` in
+                list, these columns will be used to define spatial position for
+                spatial correlations (if required). WARNING: If passed as list
+                of `int`, `i` and `j` will be assumed to be in last two entries
+                in the list. Can be passed as a dictionary using the keys
+                `i` and `j` to explicitly speficy the columns that relate to
+                model rows and columns to be identified and processed to x,y.
             use_cols (`list`-like or `int`): for tabular-style model input file,
                 defines the columns to be parameterised
             pargp (`str`): Parameter group to assign pars to. This is PESTs
@@ -1260,7 +1280,8 @@ class PstFrom(object):
 
         # TODO support passing par_file (i,j)/(x,y) directly where information
         #  is not contained in model parameter file - e.g. no i,j columns
-
+        self.add_pars_callcount += 1
+        self.ijwarned[self.add_pars_callcount] = False
         # this keeps denormal values for creeping into the model input arrays
         if ult_ubound is None:
             ult_ubound = self.ult_ubound_fill
@@ -1290,6 +1311,8 @@ class PstFrom(object):
                     )
                     + " already used for 'direct' parameterization"
                 )
+            else:
+                self.direct_org_files.append(filenames[0])
         # Default par data columns used for pst
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         self.logger.log(
@@ -1298,9 +1321,9 @@ class PstFrom(object):
             )
         )
         if geostruct is not None:
-            if geostruct.sill != 1.0 and par_style != "multiplier":
+            if geostruct.sill != 1.0: #  and par_style != "multiplier": #TODO !=?
                 self.logger.warn(
-                    "geostruct sill != 1.0 for 'multiplier' style parameters"
+                    "geostruct sill != 1.0" # for 'multiplier' style parameters"
                 )
             if geostruct.transform != transform:
                 self.logger.warn(
@@ -1352,6 +1375,7 @@ class PstFrom(object):
             fmt_dict,
             sep_dict,
             skip_dict,
+            headerlines,  # needed for direct pars (need to be in tpl)
         ) = self._par_prep(
             filenames,
             idx_cols,
@@ -1478,6 +1502,7 @@ class PstFrom(object):
                 zero_based=self.zero_based,
                 input_filename=in_fileabs,
                 par_style=par_style,
+                headerlines=headerlines,  # only needed for direct pars
             )
             assert (
                 np.mod(len(df), len(use_cols)) == 0.0
@@ -2066,6 +2091,7 @@ def write_list_tpl(
     zero_based=True,
     input_filename=None,
     par_style="multiplier",
+    headerlines=None,
 ):
     """Write template files for a list style input.
 
@@ -2129,6 +2155,7 @@ def write_list_tpl(
             ij_in_idx=ij_in_idx,
             xy_in_idx=xy_in_idx,
             zero_based=zero_based,
+            headerlines=headerlines,
         )
     else:
         df_tpl = _get_tpl_or_ins_df(
@@ -2258,6 +2285,7 @@ def _write_direct_df_tpl(
     xy_in_idx=None,
     zero_based=True,
     gpname=None,
+    headerlines=None
 ):
 
     """
@@ -2294,6 +2322,7 @@ def _write_direct_df_tpl(
         pandas.DataFrame with paranme and pargroup define for each `use_col`
 
     """
+    # TODO much of this duplicates what is in _get_tpl_or_ins_df() -- could posssibly be consolidated
     # work out the union of indices across all dfs
 
     sidx = set()
@@ -2311,7 +2340,7 @@ def _write_direct_df_tpl(
         else:
             inames = ["idx{0}".format(i) for i in range(len(index_cols))]
     else:
-        fmt = "{1|3}"
+        fmt = "{1:3}"
         j = ""
         if isinstance(index_cols[0], str):
             inames = index_cols
@@ -2319,7 +2348,8 @@ def _write_direct_df_tpl(
             inames = ["{0}".format(i) for i in range(len(index_cols))]
 
     if not zero_based:
-        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(lambda x: tuple(xx - 1 for xx in x))
+        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
+            lambda x: tuple(xx - 1 if isinstance(xx,int) else xx for xx in x))
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
         lambda x: j.join([fmt.format(iname, xx) for xx, iname in zip(x, inames)])
     ).str.replace(" ", "")
@@ -2398,7 +2428,7 @@ def _write_direct_df_tpl(
                     df_ti.loc[:, use_col] += suffix
 
             # todo check that values are constant within zones and
-            # assign parval1
+            #  assign parval1
             raise NotImplementedError(
                 "list-based direct zone-type parameters not implemented"
             )
@@ -2435,8 +2465,13 @@ def _write_direct_df_tpl(
         direct_tpl_df.loc[:, use_col] = (
             df_ti.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
         )
-
-    pyemu.helpers._write_df_tpl(tpl_filename, direct_tpl_df, index=False, header=False)
+    # nasty assumption to distiguish if we need to write headers
+    if isinstance(direct_tpl_df.columns[0], str):
+        header = True
+    else:
+        header = False
+    pyemu.helpers._write_df_tpl(tpl_filename, direct_tpl_df, index=False,
+                                header=header, headerlines=headerlines)
 
     return df_ti
 
@@ -2534,8 +2569,9 @@ def _get_tpl_or_ins_df(
         else:
             inames = ["{0}".format(i) for i in range(len(index_cols))]
 
-    if not zero_based:
-        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(lambda x: tuple(xx - 1 for xx in x))
+    if not zero_based:  # only if indices are ints (trying to support strings as par ids)
+        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
+            lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x))
 
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
         lambda x: j.join([fmt.format(iname, xx) for xx, iname in zip(x, inames)])
@@ -2821,13 +2857,12 @@ def write_array_tpl(
 
 
 def _check_diff(org_arr, input_filename, zval=None):
-    percent_diff = 100.0 * np.abs(
-        np.nanmax(org_arr) - np.nanmin(org_arr) / np.nanmean(org_arr)
-    )
+    percent_diff = 100.0 * np.abs((np.nanmax(org_arr) - np.nanmin(org_arr))
+                                  / np.nanmean(org_arr))
     if percent_diff > DIRECT_PAR_PERCENT_DIFF_TOL:
         message = "_check_diff() error: direct par for file '{0}'".format(
             input_filename
-        ) + "exceeds tolerance for percent difference: {2} > {3}".format(
+        ) + "exceeds tolerance for percent difference: {0} > {1}".format(
             percent_diff, DIRECT_PAR_PERCENT_DIFF_TOL
         )
         if zval is not None:
