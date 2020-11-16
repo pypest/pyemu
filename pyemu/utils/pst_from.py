@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 import os
+from pathlib import Path
 from datetime import datetime
 import shutil
 import inspect
@@ -58,6 +59,8 @@ class PstFrom(object):
         zero_based (`bool`): flag if the model uses zero-based indices, Default is True
         start_datetime (`str`): a string that can be case to a datatime instance the represents the starting datetime
             of the model
+        tpl_subfolder (`str`): option to write template files to a subfolder within ``new_d``.
+            Default is False (write template files to ``new_d``).
 
     """
 
@@ -70,12 +73,16 @@ class PstFrom(object):
         spatial_reference=None,
         zero_based=True,
         start_datetime=None,
+        tpl_subfolder=None,
     ):
 
-        self.original_d = original_d
-        self.new_d = new_d
+        self.original_d = Path(original_d)
+        self.new_d = Path(new_d)
         self.original_file_d = None
         self.mult_file_d = None
+        self.tpl_d = self.new_d
+        if tpl_subfolder is not None:
+            self.tpl_d = Path(self.new_d, tpl_subfolder)
         self.remove_existing = bool(remove_existing)
         self.zero_based = bool(zero_based)
         self._spatial_reference = spatial_reference
@@ -300,7 +307,7 @@ class PstFrom(object):
                     self.logger.statement("forward_run line:{0}".format(new_sys_cmd))
                     alist.append(new_sys_cmd)
 
-        with open(os.path.join(self.new_d, self.py_run_file), "w") as f:
+        with open(self.new_d / self.py_run_file, "w") as f:
             f.write(
                 "import os\nimport multiprocessing as mp\nimport numpy as np"
                 + "\nimport pandas as pd\n"
@@ -379,7 +386,7 @@ class PstFrom(object):
             cov = pyemu.Cov.from_parameter_data(self.pst, sigma_range=sigma_range)
 
         if filename is None:
-            filename = self.pst.filename.replace(".pst", ".prior.cov")
+            filename = self.pst.filename.with_suffix('.prior.cov')
         if fmt != "none":
             self.logger.statement(
                 "saving prior covariance matrix to file {0}".format(filename)
@@ -523,12 +530,14 @@ class PstFrom(object):
                 update = False
             else:
                 if filename is None:
-                    filename = os.path.join(self.new_d, self.pst.filename)
+                    filename = get_filepath(self.new_d, self.pst.filename)
         else:
             if filename is None:
-                filename = os.path.join(self.new_d, self.original_d)
-        if os.path.dirname(filename) in ["", "."]:
-            filename = os.path.join(self.new_d, filename)
+                filename = Path(self.new_d, self.original_d.name).with_suffix('.pst')
+        filename = get_filepath(self.new_d, filename)
+
+        #if os.path.dirname(filename) in ["", "."]:
+        #    filename = os.path.join(self.new_d, filename)
 
         if update:
             pst = self.pst
@@ -550,9 +559,7 @@ class PstFrom(object):
                 par_data = pd.concat(self.par_dfs).loc[:, par_data_cols]
                 # info relating parameter multiplier files to model input files
                 parfile_relations = self.parfile_relations
-                parfile_relations.to_csv(
-                    os.path.join(self.new_d, "mult2model_info.csv")
-                )
+                parfile_relations.to_csv(self.new_d / "mult2model_info.csv")
                 if not any(
                     ["apply_list_and_array_pars" in s for s in self.pre_py_cmds]
                 ):
@@ -610,7 +617,7 @@ class PstFrom(object):
             self.logger.lraise(
                 "original_d '{0}' is not a directory" "".format(self.original_d)
             )
-        if os.path.exists(self.new_d):
+        if self.new_d.exists():
             if self.remove_existing:
                 self.logger.log("removing existing new_d '{0}'" "".format(self.new_d))
                 shutil.rmtree(self.new_d)
@@ -633,19 +640,21 @@ class PstFrom(object):
             "".format(self.original_d, self.new_d)
         )
 
-        self.original_file_d = os.path.join(self.new_d, "org")
-        if os.path.exists(self.original_file_d):
+        self.original_file_d = self.new_d / "org"
+        if self.original_file_d.exists():
             self.logger.lraise(
                 "'org' subdir already exists in new_d '{0}'" "".format(self.new_d)
             )
-        os.makedirs(self.original_file_d)
+        self.original_file_d.mkdir(exist_ok=True)
 
-        self.mult_file_d = os.path.join(self.new_d, "mult")
-        if os.path.exists(self.mult_file_d):
+        self.mult_file_d = self.new_d / "mult"
+        if self.mult_file_d.exists():
             self.logger.lraise(
                 "'mult' subdir already exists in new_d '{0}'" "".format(self.new_d)
             )
-        os.makedirs(self.mult_file_d)
+        self.mult_file_d.mkdir(exist_ok=True)
+
+        self.tpl_d.mkdir(exist_ok=True)
 
         self.logger.log("setting up dirs")
 
@@ -679,10 +688,18 @@ class PstFrom(object):
         storehead = None
         if index_cols is not None:
             for filename, sep, fmt, skip in zip(filenames, seps, fmts, skip_rows):
-                file_path = os.path.join(self.new_d, filename)
-                self.logger.log("loading list {0}".format(file_path))
+                # cast to pathlib.Path instance
+                # input file path may or may not include original_d
+                #input_filepath = get_filepath(self.original_d, filename)
+                rel_filepath = get_relative_filepath(self.original_d, filename)
+                dest_filepath = self.new_d / rel_filepath
+
+                # data file in dest_ws/org/ folder
+                org_file = self.original_file_d / rel_filepath.name
+
+                self.logger.log("loading list {0}".format(dest_filepath))
                 df, storehead = self._load_listtype_file(
-                    filename, index_cols, use_cols, fmt, sep, skip, c_char
+                    rel_filepath, index_cols, use_cols, fmt, sep, skip, c_char
                 )
                 # Currently just passing through comments in header (i.e. before the table data)
                 stkeys = np.array(
@@ -696,7 +713,7 @@ class PstFrom(object):
                 if fmt.lower() == "free":
                     if sep is None:
                         sep = " "
-                        if filename.lower().endswith(".csv"):
+                        if rel_filepath.suffix.lower() == ".csv":
                             sep = ","
                 if df.columns.is_integer():
                     hheader = False
@@ -704,7 +721,7 @@ class PstFrom(object):
                     hheader = df.columns
 
                 self.logger.statement(
-                    "loaded list '{0}' of shape {1}" "".format(file_path, df.shape)
+                    "loaded list '{0}' of shape {1}" "".format(dest_filepath, df.shape)
                 )
                 # TODO BH: do we need to be careful of the format of the model
                 #  files? -- probs not necessary for the version in
@@ -716,11 +733,15 @@ class PstFrom(object):
                 # input file format (and sep), right?
                 # write orig version of input file to `org` (e.g.) dir
 
+                # make any subfolders if they don't exist
+                #org_path = Path(self.original_file_d, rel_file_path.parent)
+                #org_path.mkdir(exist_ok=True)
+
                 if len(storehead) != 0:
                     kwargs = {}
                     if "win" in platform.platform().lower():
                         kwargs = {"line_terminator": "\n"}
-                    with open(os.path.join(self.original_file_d, filename), "w") as fp:
+                    with open(org_file, "w") as fp:
                         lc = 0
                         fr = 0
                         for key in sorted(storehead.keys()):
@@ -756,17 +777,16 @@ class PstFrom(object):
                                 **kwargs
                             )
                 else:
-                    df.to_csv(
-                        os.path.join(self.original_file_d, filename),
+                    df.to_csv(org_file,
                         index=False,
                         sep=",",
                         header=hheader,
                     )
-                file_dict[filename] = df
-                fmt_dict[filename] = fmt
-                sep_dict[filename] = sep
-                skip_dict[filename] = skip
-                self.logger.log("loading list {0}".format(file_path))
+                file_dict[rel_filepath] = df
+                fmt_dict[rel_filepath] = fmt
+                sep_dict[rel_filepath] = sep
+                skip_dict[rel_filepath] = skip
+                self.logger.log("loading list {0}".format(dest_filepath))
 
             # check for compatibility
             fnames = list(file_dict.keys())
@@ -784,9 +804,13 @@ class PstFrom(object):
                         )
         else:  # load array type files
             # loop over model input files
-            for filename, sep, fmt, skip in zip(filenames, seps, fmts, skip_rows):
+            for input_filena, sep, fmt, skip in zip(filenames, seps, fmts, skip_rows):
+                # cast to pathlib.Path instance
+                # input file path may or may not include original_d
+                input_filena = get_filepath(self.original_d, input_filena)
                 if fmt.lower() == "free":
-                    if filename.lower().endswith(".csv"):
+                    # cast to string to work with pathlib objects
+                    if input_filena.suffix.lower() == ".csv":
                         if sep is None:
                             sep = ","
                 else:
@@ -794,26 +818,27 @@ class PstFrom(object):
                     raise NotImplementedError(
                         "Only free format array " "par files currently supported"
                     )
-                file_path = os.path.join(self.new_d, filename)
-                self.logger.log("loading array {0}".format(file_path))
-                if not os.path.exists(file_path):
+                # file path relative to model workspace
+                rel_filepath = input_filena.relative_to(self.original_d)
+                dest_filepath = self.new_d / rel_filepath
+                self.logger.log("loading array {0}".format(dest_filepath))
+                if not dest_filepath.exists():
                     self.logger.lraise(
-                        "par filename '{0}' not found ".format(file_path)
+                        "par filename '{0}' not found ".format(dest_filepath)
                     )
                 # read array type input file
-                arr = np.loadtxt(
-                    os.path.join(self.new_d, filename), delimiter=sep, ndmin=2
-                )
-                self.logger.log("loading array {0}".format(file_path))
+                arr = np.loadtxt(dest_filepath, delimiter=sep, ndmin=2)
+                self.logger.log("loading array {0}".format(dest_filepath))
                 self.logger.statement(
-                    "loaded array '{0}' of shape {1}".format(filename, arr.shape)
+                    "loaded array '{0}' of shape {1}".format(input_filena, arr.shape)
                 )
                 # save copy of input file to `org` dir
-                np.savetxt(os.path.join(self.original_file_d, filename), arr)
-                file_dict[filename] = arr
-                fmt_dict[filename] = fmt
-                sep_dict[filename] = sep
-                skip_dict[filename] = skip
+                # make any subfolders if they don't exist
+                np.savetxt(self.original_file_d / rel_filepath.name, arr)
+                file_dict[rel_filepath] = arr
+                fmt_dict[rel_filepath] = fmt
+                sep_dict[rel_filepath] = sep
+                skip_dict[rel_filepath] = skip
             # check for compatibility
             fnames = list(file_dict.keys())
             for i in range(len(fnames)):
@@ -1024,7 +1049,7 @@ class PstFrom(object):
             obsgp = _check_var_len(obsgp, ncol, fill=True)
             df_ins = pyemu.pst_utils.csv_to_ins_file(
                 df.set_index("idx_str"),
-                ins_filename=os.path.join(self.new_d, insfile),
+                ins_filename=self.new_d / insfile,
                 only_cols=use_cols,
                 only_rows=use_rows,
                 marker="~",
@@ -1040,7 +1065,7 @@ class PstFrom(object):
                 "building insfile for tabular output file {0}" "".format(filename)
             )
             new_obs = self.add_observations_from_ins(
-                ins_file=insfile, out_file=os.path.join(self.new_d, filename)
+                ins_file=insfile, out_file=self.new_d / filename
             )
             if "obgnme" in df_ins.columns:
                 new_obs.loc[:, "obgnme"] = df_ins.loc[new_obs.index, "obgnme"]
@@ -1095,14 +1120,14 @@ class PstFrom(object):
         """
         # lifted almost completely from `Pst().add_observation()`
         if os.path.dirname(ins_file) in ["", "."]:
-            ins_file = os.path.join(self.new_d, ins_file)
+            ins_file = self.new_d / ins_file
             pst_path = "."
         if not os.path.exists(ins_file):
             self.logger.lraise(
                 "ins file not found: {0}, {1}" "".format(os.getcwd(), ins_file)
             )
         if out_file is None:
-            out_file = ins_file.replace(".ins", "")
+            out_file = str(ins_file).replace(".ins", "")
         if ins_file == out_file:
             self.logger.lraise("ins_file == out_file, doh!")
 
@@ -1195,7 +1220,7 @@ class PstFrom(object):
         rebuild_pst=False,
         alt_inst_str="inst",
         comment_char=None,
-        par_style="multiplier",
+        par_style="multiplier"
     ):
         """
         Add list or array style model input files to PstFrom object.
@@ -1296,8 +1321,11 @@ class PstFrom(object):
                     par_style
                 )
             )
-        if isinstance(filenames, str):
+        if isinstance(filenames, str) or isinstance(filenames, Path):
             filenames = [filenames]
+        # data file paths relative to the model_ws
+        filenames = [get_relative_filepath(self.original_d, filename)
+                     for filename in filenames]
         if par_style == "direct":
             if len(filenames) != 1:
                 self.logger.lraise(
@@ -1446,19 +1474,19 @@ class PstFrom(object):
         if par_style == "multiplier":
             mlt_filename = "{0}_{1}.csv".format(par_name_store, par_type)
             # pst input file (for tpl->in pair) is multfile (in mult dir)
-            in_filepst = os.path.relpath(
-                os.path.join(self.mult_file_d, mlt_filename), self.new_d
-            )
-            tpl_filename = mlt_filename + ".tpl"
-            in_fileabs = os.path.join(self.mult_file_d, mlt_filename)
+            in_fileabs = self.mult_file_d / mlt_filename
+            # pst input file (for tpl->in pair) is multfile (in mult dir)
+            in_filepst = in_fileabs.relative_to(self.new_d)
+            tpl_filename = self.tpl_d / (mlt_filename + ".tpl")
         else:
             mlt_filename = np.NaN
-            # pst input file (for tpl->in pair) is multfile (in mult dir)
-            in_filepst = os.path.relpath(
-                os.path.join(self.original_file_d, filenames[0]), self.new_d
-            )
-            tpl_filename = filenames[0] + ".tpl"
-            in_fileabs = os.path.join(self.new_d, in_filepst)
+            # absolute path to org/datafile
+            in_fileabs = self.original_file_d / filenames[0].name
+            # pst input file (for tpl->in pair) is orgfile (in org dir)
+            # relative path to org/datafile (relative to dest model workspace):
+            in_filepst = in_fileabs.relative_to(self.new_d)
+            tpl_filename = self.tpl_d / (filenames[0].name + ".tpl")
+
         pp_filename = None  # setup placeholder variables
         fac_filename = None
 
@@ -1483,12 +1511,13 @@ class PstFrom(object):
                 "writing list-based template file '{0}'".format(tpl_filename)
             )
             # Generate tabular type template - also returns par data
-            dfs = [file_dict[filename] for filename in filenames]
+            # relative file paths are in file_dict as Path instances (kludgey)
+            dfs = [file_dict[Path(filename)] for filename in filenames]
             df = write_list_tpl(
                 filenames,
                 dfs,
                 par_name_base,
-                tpl_filename=os.path.join(self.new_d, tpl_filename),
+                tpl_filename=tpl_filename,
                 par_type=par_type,
                 suffix="",
                 index_cols=index_cols,
@@ -1529,7 +1558,7 @@ class PstFrom(object):
                 # Generate array type template - also returns par data
                 df = write_array_tpl(
                     name=par_name_base[0],
-                    tpl_filename=os.path.join(self.new_d, tpl_filename),
+                    tpl_filename=tpl_filename,
                     suffix="",
                     par_type=par_type,
                     zone_array=zone_array,
@@ -1601,7 +1630,8 @@ class PstFrom(object):
                 # pst inputfile (for tpl->in pair) is
                 # par_name_storepp.dat table (in pst ws)
                 in_filepst = pp_filename
-                tpl_filename = pp_filename + ".tpl"
+                tpl_filename = self.tpl_d / (pp_filename + ".tpl")
+                #tpl_filename = get_relative_filepath(self.new_d, tpl_filename)
                 if pp_space is None:  # default spacing if not passed
                     self.logger.warn("pp_space is None, using 10...\n")
                     pp_space = 10
@@ -1655,10 +1685,8 @@ class PstFrom(object):
                     prefix_dict=pp_dict,
                     every_n_cell=pp_space,
                     pp_dir=self.new_d,
-                    tpl_dir=self.new_d,
-                    shapename=os.path.join(
-                        self.new_d, "{0}.shp".format(par_name_store)
-                    ),
+                    tpl_dir=self.tpl_d,
+                    shapename=str(self.new_d / "{0}.shp".format(par_name_store)),
                     longnames=self.longnames,
                 )
                 df.set_index("parnme", drop=False, inplace=True)
@@ -1697,10 +1725,8 @@ class PstFrom(object):
                 if not fac_processed:
                     # TODO need better way of naming squential fac_files?
                     self.logger.log("calculating factors for pargp={0}".format(pg))
-                    fac_filename = os.path.join(
-                        self.new_d, "{0}pp.fac".format(par_name_store)
-                    )
-                    var_filename = fac_filename.replace(".fac", ".var.dat")
+                    fac_filename = self.new_d / "{0}pp.fac".format(par_name_store)
+                    var_filename = fac_filename.with_suffix('.var.dat')
                     self.logger.statement(
                         "saving krige variance file:{0}".format(var_filename)
                     )
@@ -1744,9 +1770,7 @@ class PstFrom(object):
         relate_parfiles = []
         for mod_file in file_dict.keys():
             mult_dict = {
-                "org_file": os.path.join(
-                    *os.path.split(self.original_file_d)[1:], mod_file
-                ),
+                "org_file": Path(self.original_file_d.name, mod_file.name),
                 "model_file": mod_file,
                 "use_cols": use_cols,
                 "index_cols": index_cols,
@@ -1757,9 +1781,7 @@ class PstFrom(object):
                 "lower_bound": ult_lbound,
             }
             if par_style == "multiplier":
-                mult_dict["mlt_file"] = os.path.join(
-                    *os.path.split(self.mult_file_d)[1:], mlt_filename
-                )
+                mult_dict["mlt_file"] = Path(self.mult_file_d.name, mlt_filename)
 
             if pp_filename is not None:
                 # if pilotpoint need to store more info
@@ -1779,7 +1801,7 @@ class PstFrom(object):
         # df.loc[:,"tpl_filename"] = tpl_filename
 
         # store tpl --> in filename pair
-        self.tpl_filenames.append(tpl_filename)
+        self.tpl_filenames.append(get_relative_filepath(self.new_d, tpl_filename))
         self.input_filenames.append(in_filepst)
         for file_name in file_dict.keys():
             # store mult --> original file pairs
@@ -1914,14 +1936,14 @@ class PstFrom(object):
                 "use_cols also listed in " "index_cols: {0}".format(str(i))
             )
 
-        file_path = os.path.join(self.new_d, filename)
+        file_path = self.new_d / filename
         if not os.path.exists(file_path):
             self.logger.lraise("par filename '{0}' not found " "".format(file_path))
         self.logger.log("reading list {0}".format(file_path))
         if fmt.lower() == "free":
             if sep is None:
                 sep = "\s+"
-                if filename.lower().endswith(".csv"):
+                if Path(filename).suffix == ".csv":
                     sep = ","
         else:
             # TODO support reading fixed-format
@@ -2857,8 +2879,10 @@ def write_array_tpl(
 
 
 def _check_diff(org_arr, input_filename, zval=None):
-    percent_diff = 100.0 * np.abs((np.nanmax(org_arr) - np.nanmin(org_arr))
-                                  / np.nanmean(org_arr))
+    percent_diff = 100.0 * np.abs(
+        (np.nanmax(org_arr) - np.nanmin(org_arr)) / np.nanmean(org_arr)
+    )
+
     if percent_diff > DIRECT_PAR_PERCENT_DIFF_TOL:
         message = "_check_diff() error: direct par for file '{0}'".format(
             input_filename
@@ -2868,3 +2892,21 @@ def _check_diff(org_arr, input_filename, zval=None):
         if zval is not None:
             message += " in zone {0}".format(zval)
         raise Exception(message)
+
+
+def get_filepath(folder, filename):
+    """Return a path to a file within a folder,
+    without repeating the folder in the output path,
+    if the input filename (path) already contains the folder."""
+    filename = Path(filename)
+    folder = Path(folder)
+    if folder not in filename.parents:
+        filename = folder / filename
+    return filename
+
+
+def get_relative_filepath(folder, filename):
+    """Like :func:`~pyemu.utils.pst_from.get_filepath`, except
+    return path for filename relative to folder.
+    """
+    return get_filepath(folder, filename).relative_to(folder)

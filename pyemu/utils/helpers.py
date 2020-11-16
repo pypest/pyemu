@@ -3613,36 +3613,37 @@ def _process_model_file(model_file, df):
         raise Exception("wrong number of org_files for {0}".format(model_file))
     org_arr = np.loadtxt(org_file[0])
 
-    for mlt in df_mf.mlt_file:
-        if pd.isna(mlt):
-            continue
-        mlt_data = np.loadtxt(mlt)
-        if org_arr.shape != mlt_data.shape:
-            raise Exception(
-                "shape of org file {}:{} differs from mlt file {}:{}".format(
-                    org_file, org_arr.shape, mlt, mlt_data.shape
+    if 'mlt_file' in df_mf.columns:
+        for mlt in df_mf.mlt_file:
+            if pd.isna(mlt):
+                continue
+            mlt_data = np.loadtxt(mlt)
+            if org_arr.shape != mlt_data.shape:
+                raise Exception(
+                    "shape of org file {}:{} differs from mlt file {}:{}".format(
+                        org_file, org_arr.shape, mlt, mlt_data.shape
+                    )
                 )
-            )
-        org_arr *= np.loadtxt(mlt)
-    if "upper_bound" in df.columns:
-        ub_vals = df_mf.upper_bound.value_counts().dropna().to_dict()
-        if len(ub_vals) == 0:
-            pass
-        elif len(ub_vals) > 1:
-            print(ub_vals)
-            raise Exception("different upper bound values for {0}".format(org_file))
-        else:
-            ub = float(list(ub_vals.keys())[0])
-            org_arr[org_arr > ub] = ub
-    if "lower_bound" in df.columns:
-        lb_vals = df_mf.lower_bound.value_counts().dropna().to_dict()
-        if len(lb_vals) == 0:
-            pass
-        elif len(lb_vals) > 1:
-            raise Exception("different lower bound values for {0}".format(org_file))
-        else:
-            lb = float(list(lb_vals.keys())[0])
-            org_arr[org_arr < lb] = lb
+            org_arr *= np.loadtxt(mlt)
+        if "upper_bound" in df.columns:
+            ub_vals = df_mf.upper_bound.value_counts().dropna().to_dict()
+            if len(ub_vals) == 0:
+                pass
+            elif len(ub_vals) > 1:
+                print(ub_vals)
+                raise Exception("different upper bound values for {0}".format(org_file))
+            else:
+                ub = float(list(ub_vals.keys())[0])
+                org_arr[org_arr > ub] = ub
+        if "lower_bound" in df.columns:
+            lb_vals = df_mf.lower_bound.value_counts().dropna().to_dict()
+            if len(lb_vals) == 0:
+                pass
+            elif len(lb_vals) > 1:
+                raise Exception("different lower bound values for {0}".format(org_file))
+            else:
+                lb = float(list(lb_vals.keys())[0])
+                org_arr[org_arr < lb] = lb
 
     np.savetxt(model_file, np.atleast_2d(org_arr), fmt="%15.6E", delimiter="")
 
