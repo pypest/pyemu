@@ -2,6 +2,11 @@
 __pycache__/
 *.py[cod]
 
+# Editor files
+#mac
+.DS_Store
+*~
+
 # C extensions
 *.so
 
