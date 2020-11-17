@@ -1589,8 +1589,6 @@ def xsec_test():
     print(pst.phi)
     assert pst.phi < 1.0e-7
 
-
-<<<<<<< HEAD
 def mf6_freyberg_short_direct_test():
 
     import numpy as np
@@ -2298,4 +2296,3 @@ if __name__ == "__main__":
     #mf6_freyberg_varying_idomain()
     xsec_test()
 
-    
