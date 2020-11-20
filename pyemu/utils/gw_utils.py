@@ -373,6 +373,7 @@ def setup_mflist_budget_obs(
     start_datetime="1-1'1970",
     prefix="",
     save_setup_file=False,
+    specify_times=None
 ):
     """setup observations of budget volume and flux from modflow list file.
 
@@ -388,6 +389,15 @@ def setup_mflist_budget_obs(
             processing more than one list file as part of the forward run process. Default is ''.
         save_setup_file (`bool`): a flag to save "_setup_"+ `list_filename` +".csv" file that contains useful
             control file information
+        specify_times (`np.ndarray`-like, optional): An array of times to
+             extract from the budget dataframes returned by the flopy
+             MfListBudget(list_filename).get_dataframe() method. This can be
+             useful to ensure consistent observation times for PEST.
+             Array needs to be alignable with index of dataframe
+             return by flopy method, care should be take to ensure that
+             this is the case. If passed will be written to
+             "budget_times.config" file as strings to be read by the companion
+             `apply_mflist_budget_obs()` method at run time.
 
     Returns:
         **pandas.DataFrame**: a dataframe with information for constructing a control file.
@@ -403,7 +413,8 @@ def setup_mflist_budget_obs(
 
     """
     flx, vol = apply_mflist_budget_obs(
-        list_filename, flx_filename, vol_filename, start_datetime
+        list_filename, flx_filename, vol_filename, start_datetime,
+        times=specify_times
     )
     _write_mflist_ins(flx_filename + ".ins", flx, prefix + "flx")
     _write_mflist_ins(vol_filename + ".ins", vol, prefix + "vol")
@@ -420,7 +431,10 @@ def setup_mflist_budget_obs(
     df.loc[:, "obsnme"] = df.index.values
     if save_setup_file:
         df.to_csv("_setup_" + os.path.split(list_filename)[-1] + ".csv", index=False)
-
+    if specify_times is not None:
+        np.savetxt(os.path.join(os.path.dirname(flx_filename),
+                                "budget_times.config"),
+                   specify_times, fmt='%s')
     return df
 
 
@@ -429,21 +443,31 @@ def apply_mflist_budget_obs(
     flx_filename="flux.dat",
     vol_filename="vol.dat",
     start_datetime="1-1-1970",
+    times=None,
 ):
-    """process a MODFLOW list file to extract flux and volume water budget entries.
+    """process a MODFLOW list file to extract flux and volume water budget
+       entries.
 
     Args:
          list_filename (`str`): path and name of the existing modflow list file
-         flx_filename (`str`, optional): output filename that will contain the budget flux
-             observations. Default is "flux.dat"
-         vol_filename (`str`, optional): output filename that will contain the budget volume
-             observations.  Default is "vol.dat"
-         start_datetime (`str`, optional): a string that can be parsed into a pandas.TimeStamp.
-             This is used to give budget observations meaningful names.  Default is "1-1-1970".
-         prefix (`str`, optional): a prefix to add to the water budget observations.  Useful if
-             processing more than one list file as part of the forward run process. Default is ''.
-         save_setup_file (`bool`): a flag to save _setup_<list_filename>.csv file that contains useful
-             control file information
+         flx_filename (`str`, optional): output filename that will contain the
+             budget flux observations. Default is "flux.dat"
+         vol_filename (`str`, optional): output filename that will contain the
+             budget volume observations.  Default is "vol.dat"
+         start_datetime (`str`, optional): a string that can be parsed into a
+             pandas.TimeStamp. This is used to give budget observations
+             meaningful names.  Default is "1-1-1970".
+         times (`np.ndarray`-like or `str`, optional): An array of times to
+             extract from the budget dataframes returned by the flopy
+             MfListBudget(list_filename).get_dataframe() method. This can be
+             useful to ensure consistent observation times for PEST.
+             If type `str`, will assume `times=filename` and attempt to read
+             single vector (no header or index) from file, parsing datetime
+             using pandas. Array needs to be alignable with index of dataframe
+             return by flopy method, care should be take to ensure that
+             this is the case. If setup with `setup_mflist_budget_obs()`
+             specifying `specify_times` argument `times` should be set to
+             "budget_times.config".
 
      Note:
          this is the companion function of `gw_utils.setup_mflist_budget_obs()`.
@@ -462,6 +486,18 @@ def apply_mflist_budget_obs(
         raise Exception("error import flopy: {0}".format(str(e)))
     mlf = flopy.utils.MfListBudget(list_filename)
     flx, vol = mlf.get_dataframes(start_datetime=start_datetime, diff=True)
+    if times is not None:
+        if isinstance(times, str):
+            if vol.index.tzinfo:
+                parse_date = {'t': [0]}
+                names = [None]
+            else:
+                parse_date = False
+                names = ['t']
+            times = pd.read_csv(times, header=None, names=names,
+                                parse_dates=parse_date)['t'].values
+        flx = flx.loc[times]
+        vol = vol.loc[times]
     flx.to_csv(flx_filename, sep=" ", index_label="datetime", date_format="%Y%m%d")
     vol.to_csv(vol_filename, sep=" ", index_label="datetime", date_format="%Y%m%d")
     return flx, vol

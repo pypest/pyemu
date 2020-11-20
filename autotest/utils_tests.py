@@ -637,6 +637,7 @@ def ppk2fac_verf_test():
 def mflist_budget_test():
     import pyemu
     import os
+    import pandas as pd
     try:
         import flopy
     except:
@@ -648,6 +649,19 @@ def mflist_budget_test():
     assert os.path.exists(list_filename)
     df = pyemu.gw_utils.setup_mflist_budget_obs(list_filename,start_datetime=ml.start_datetime)
     print(df)
+
+    times = df.loc[df.index.str.startswith('vol_wells')].index.str.split(
+        '_', expand=True).get_level_values(2)[::100]
+    times = pd.to_datetime(times, yearfirst=True)
+    df = pyemu.gw_utils.setup_mflist_budget_obs(
+        list_filename, start_datetime=ml.start_datetime, specify_times=times)
+    flx, vol = pyemu.gw_utils.apply_mflist_budget_obs(
+        list_filename, 'flux.dat', 'vol.dat', start_datetime=ml.start_datetime,
+        times='budget_times.config'
+    )
+    assert (flx.index == vol.index).all()
+    assert (flx.index == times).all()
+
 
 def mtlist_budget_test():
     import pyemu
@@ -1845,7 +1859,7 @@ if __name__ == "__main__":
     #geostat_prior_builder_test()
     #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
-    # mflist_budget_test()
+    mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
@@ -1880,4 +1894,4 @@ if __name__ == "__main__":
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
     #ok_grid_invest()
-    maha_pdc_test()
+    # maha_pdc_test()
