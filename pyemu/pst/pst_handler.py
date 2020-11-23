@@ -2967,7 +2967,7 @@ class Pst(object):
             cols = ["pargp", "partrans", "count", "parval1", "parlbnd", "parubnd"]
             
         else:
-            cols = ["pargp", "partrans", "count", "parval1", "parlbnd", "parlbnd", "stdev"]
+            cols = ["pargp", "partrans", "count", "parval1", "parlbnd", "parubnd", "stdev"]
 
         labels = {
             "parval1": "initial value",
@@ -2980,7 +2980,7 @@ class Pst(object):
         }
 
         li = par.partrans == "log"
-        if True in li.values:
+        if True in li.values and report_in_linear_space == True:
             print('Warning: because log-transformed values being reported in linear space, stdev NOT reported')
 
         if report_in_linear_space == False:
@@ -3138,7 +3138,7 @@ class Pst(object):
         # if filename indicates an Excel format, try writing to Excel
         if filename.lower().endswith('xlsx') or filename.lower().endswith('xls'):
             try:
-                pargp_df.to_excel(filename, index=None)
+                obsg_df.to_excel(filename, index=None)
             except Exception as e:
                 if filename.lower().endswith('xlsx'):
                     print('could not export {0} in Excel format. Try installing xlrd'.format(filename))
