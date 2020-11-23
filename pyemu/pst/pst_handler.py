@@ -2934,17 +2934,20 @@ class Pst(object):
         """
         return plot_utils.pst_helper(self, kind, **kwargs)
 
-    def write_par_summary_table(self, filename=None, group_names=None, sigma_range=4.0):
-        """write a stand alone parameter summary latex table
+    def write_par_summary_table(self, filename=None, group_names=None, sigma_range=4.0, report_in_linear_space=False):
+        """write a stand alone parameter summary latex table or Excel sheet
 
 
         Args:
-            filename (`str`): latex filename. If None, use <case>.par.tex. If `filename` is "none", no table
-                is writtenDefault is None
+            filename (`str`): filename. If None, use <case>.par.tex to write as LaTeX. If filename extention is '.xls' or '.xlsx',
+                tries to write as an Excel file. If `filename` is "none", no table is written
+                Default is None
             group_names (`dict`): par group names : table names. For example {"w0":"well stress period 1"}.
                 Default is None
             sigma_range (`float`): number of standard deviations represented by parameter bounds.  Default
                 is 4.0, implying 95% confidence bounds
+            report_in_linear_space (`bool`): flag, if True, that reports all logtransformed values in linear
+                space. This renders standard deviation meaningless, so that column is skipped  
 
         Returns:
             `pandas.DataFrame`: the summary parameter group dataframe
@@ -2960,7 +2963,11 @@ class Pst(object):
         par = self.parameter_data.copy()
         pargp = par.groupby(par.pargp).groups
         # cols = ["parval1","parubnd","parlbnd","stdev","partrans","pargp"]
-        cols = ["pargp", "partrans", "count", "parval1", "parubnd", "parlbnd", "stdev"]
+        if report_in_linear_space == True:
+            cols = ["pargp", "partrans", "count", "parval1", "parlbnd", "parubnd"]
+            
+        else:
+            cols = ["pargp", "partrans", "count", "parval1", "parlbnd", "parlbnd", "stdev"]
 
         labels = {
             "parval1": "initial value",
@@ -2973,10 +2980,14 @@ class Pst(object):
         }
 
         li = par.partrans == "log"
-        par.loc[li, "parval1"] = par.parval1.loc[li].apply(np.log10)
-        par.loc[li, "parubnd"] = par.parubnd.loc[li].apply(np.log10)
-        par.loc[li, "parlbnd"] = par.parlbnd.loc[li].apply(np.log10)
-        par.loc[:, "stdev"] = (par.parubnd - par.parlbnd) / sigma_range
+        if True in li.values:
+            print('Warning: because log-transformed values being reported in linear space, stdev NOT reported')
+
+        if report_in_linear_space == False:
+            par.loc[li, "parval1"] = par.parval1.loc[li].apply(np.log10)
+            par.loc[li, "parubnd"] = par.parubnd.loc[li].apply(np.log10)
+            par.loc[li, "parlbnd"] = par.parlbnd.loc[li].apply(np.log10)
+            par.loc[:, "stdev"] = (par.parubnd - par.parlbnd) / sigma_range
 
         data = {c: [] for c in cols}
         for pg, pnames in pargp.items():
@@ -3020,24 +3031,40 @@ class Pst(object):
             return pargp_df
         if filename is None:
             filename = self.filename.replace(".pst", ".par.tex")
+        # if filename indicates an Excel format, try writing to Excel
+        if filename.lower().endswith('xlsx') or filename.lower().endswith('xls'):
+            try:
+                pargp_df.to_excel(filename, index=None)
+            except Exception as e:
+                if filename.lower().endswith('xlsx'):
+                    print('could not export {0} in Excel format. Try installing xlrd'.format(filename))
+                elif filename.lower().endswith('xls'):
+                    print('could not export {0} in Excel format. Try installing xlwt'.format(filename))
+                else:
+                    print('could not export {0} in Excel format.'.format(filename))
 
-        with open(filename, "w") as f:
-            f.write(preamble)
-            f.write("\\begin{center}\nParameter Summary\n\\end{center}\n")
-            f.write("\\begin{center}\n\\begin{landscape}\n")
-            pargp_df.to_latex(f, index=False, longtable=True)
-            f.write("\\end{landscape}\n")
-            f.write("\\end{center}\n")
-            f.write("\\end{document}\n")
+        else:
+            with open(filename, "w") as f:
+                f.write(preamble)
+                f.write("\\begin{center}\nParameter Summary\n\\end{center}\n")
+                f.write("\\begin{center}\n\\begin{landscape}\n")
+                pargp_df.to_latex(f, index=False, longtable=True)
+                f.write("\\end{landscape}\n")
+                f.write("\\end{center}\n")
+                f.write("\\end{document}\n")
         return pargp_df
 
     def write_obs_summary_table(self, filename=None, group_names=None):
-        """write a stand alone observation summary latex table
-
+        """write a stand alone observation summary latex table or Excel shet
+            filename (`str`): filename. If None, use <case>.par.tex to write as LaTeX. If filename extention is '.xls' or '.xlsx',
+                tries to write as an Excel file. If `filename` is "none", no table is written
+                Default is None
 
         Args:
-            filename (`str`): latex filename. If `filename` is "none", no table is written.
-                If None, use <case>.par.tex. Default is None
+            filename (`str`): filename. If `filename` is "none", no table is written.
+                If None, use <case>.obs.tex. If filename extention is '.xls' or '.xlsx',
+                tries to write as an Excel file.
+                Default is None
             group_names (`dict`): obs group names : table names. For example {"hds":"simulated groundwater level"}.
                 Default is None
 
@@ -3106,21 +3133,33 @@ class Pst(object):
 
         if filename == "none":
             return obsg_df
-
         if filename is None:
             filename = self.filename.replace(".pst", ".obs.tex")
+        # if filename indicates an Excel format, try writing to Excel
+        if filename.lower().endswith('xlsx') or filename.lower().endswith('xls'):
+            try:
+                pargp_df.to_excel(filename, index=None)
+            except Exception as e:
+                if filename.lower().endswith('xlsx'):
+                    print('could not export {0} in Excel format. Try installing xlrd'.format(filename))
+                elif filename.lower().endswith('xls'):
+                    print('could not export {0} in Excel format. Try installing xlwt'.format(filename))
+                else:
+                    print('could not export {0} in Excel format.'.format(filename))
 
-        with open(filename, "w") as f:
 
-            f.write(preamble)
+        else:
+            with open(filename, "w") as f:
 
-            f.write("\\begin{center}\nObservation Summary\n\\end{center}\n")
-            f.write("\\begin{center}\n\\begin{landscape}\n")
-            f.write("\\setlength{\\LTleft}{-4.0cm}\n")
-            obsg_df.to_latex(f, index=False, longtable=True)
-            f.write("\\end{landscape}\n")
-            f.write("\\end{center}\n")
-            f.write("\\end{document}\n")
+                f.write(preamble)
+
+                f.write("\\begin{center}\nObservation Summary\n\\end{center}\n")
+                f.write("\\begin{center}\n\\begin{landscape}\n")
+                f.write("\\setlength{\\LTleft}{-4.0cm}\n")
+                obsg_df.to_latex(f, index=False, longtable=True)
+                f.write("\\end{landscape}\n")
+                f.write("\\end{center}\n")
+                f.write("\\end{document}\n")
 
         return obsg_df
 
