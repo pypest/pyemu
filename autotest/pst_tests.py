@@ -470,6 +470,10 @@ def write_tables_test():
     group_names = {"w0": "wells t"}
     pst.write_par_summary_table(group_names=group_names)
     pst.write_obs_summary_table(group_names={"calhead": "calibration heads"})
+    pst.write_par_summary_table(filename='testpar.xlsx', group_names=group_names)
+    pst.write_par_summary_table(filename='testpar2.xlsx', group_names=group_names, report_in_linear_space=True)   
+    pst.write_obs_summary_table(filename = 'testobs.xlsx', group_names={"calhead": "calibration heads"})
+    
 
 def test_e_clean():
     import os
@@ -926,7 +930,7 @@ if __name__ == "__main__":
     # res_stats_test()
     # test_write_input_files()
     #add_obs_test()
-    add_pars_test()
+    #add_pars_test()
     # setattr_test()
 
     # add_pi_test()
@@ -951,3 +955,4 @@ if __name__ == "__main__":
     # run_test()
     # rectify_pgroup_test()
     # sanity_check_test()
+    write_tables_test()

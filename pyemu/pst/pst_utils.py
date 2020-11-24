@@ -453,19 +453,26 @@ def write_input_files(pst, pst_path="."):
     )  # the list of files broken down into chunks
     remainder = pairs[num_chunk_floor * chunk_len :].tolist()  # remaining files
     chunks = main_chunks + [remainder]
-    procs = []
-    for chunk in chunks:
-        # write_to_template(pst.parameter_data.parval1_trans,os.path.join(pst_path,tpl_file),
-        #                  os.path.join(pst_path,in_file))
-        p = mp.Process(
-            target=_write_chunk_to_template,
-            args=[chunk, pst.parameter_data.parval1_trans, pst_path],
-        )
-        p.start()
-        procs.append(p)
-    for p in procs:
-        p.join()
-
+#    procs = []
+#   for chunk in chunks:
+#        # write_to_template(pst.parameter_data.parval1_trans,os.path.join(pst_path,tpl_file),
+#        #                  os.path.join(pst_path,in_file))
+#        p = mp.Process(
+#            target=_write_chunk_to_template,
+#            args=[chunk, pst.parameter_data.parval1_trans, pst_path],
+#        )
+#        p.start()
+#        procs.append(p)
+#    for p in procs:
+#        p.join()
+    pool = mp.Pool()
+    x = [
+        pool.apply_async(_write_chunk_to_template, args=(chunk, pst.parameter_data.parval1_trans, pst_path))
+        for i, chunk in enumerate(chunks)
+    ]
+    [xx.get() for xx in x]
+    pool.close()
+    pool.join()
 
 def _write_chunk_to_template(chunk, parvals, pst_path):
     for tpl_file, in_file in chunk:
