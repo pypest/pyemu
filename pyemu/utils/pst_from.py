@@ -1056,7 +1056,7 @@ class PstFrom(object):
                 includes_header=True,
                 includes_index=False,
                 prefix=prefix,
-                longnames=True,
+                longnames=self.longnames,
                 head_lines_len=lenhead,
                 sep=sep,
                 gpname=obsgp,

@@ -917,6 +917,15 @@ def new_format_path_mechanics_test():
     assert options["sep"] == "w", options
 
 
+def pi_helper_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","zoned_nz_64.pst"))
+
+
+
 if __name__ == "__main__":
 
     # process_output_files_test()
@@ -955,4 +964,5 @@ if __name__ == "__main__":
     # run_test()
     # rectify_pgroup_test()
     # sanity_check_test()
-    write_tables_test()
+    #write_tables_test()
+    pi_helper_test()

@@ -947,6 +947,9 @@ def mf6_freyberg_shortnames_test():
     # build pest
     pst = pf.build_pst('freyberg.pst')
 
+    assert pst.parameter_data.parnme.apply(lambda x: len(x)).max() <= 12
+    assert pst.observation_data.obsnme.apply(lambda x: len(x)).max() <= 20
+
     num_reals = 100
     pe = pf.draw(num_reals, use_specsim=True)
     pe.to_binary(os.path.join(template_ws, "prior.jcb"))
@@ -2290,9 +2293,9 @@ if __name__ == "__main__":
     #freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
-    #mf6_freyberg_shortnames_test()
+    mf6_freyberg_shortnames_test()
     # mf6_freyberg_da_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
-    xsec_test()
+    #xsec_test()
 
