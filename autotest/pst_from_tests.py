@@ -1083,7 +1083,7 @@ def mf6_freyberg_da_test():
     print(pf.org_files)
 
     # build pest
-    pst = pf.build_pst('freyberg.pst')
+    pst = pf.build_pst('freyberg.pst', version=2)
     pst.write(os.path.join(template_ws,"freyberg6_da.pst"),version=2)
 
 
@@ -2291,8 +2291,8 @@ if __name__ == "__main__":
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
-    # mf6_freyberg_da_test()
+    mf6_freyberg_da_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
-    xsec_test()
+    # xsec_test()
 

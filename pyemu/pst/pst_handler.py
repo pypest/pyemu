@@ -1488,6 +1488,7 @@ class Pst(object):
 
     def _write_version2(self, new_filename, use_pst_path=True, pst_rel_path="."):
         pst_path = None
+        new_filename = os.path.join(new_filename)
         if use_pst_path:
             pst_path, _ = Pst._parse_path_agnostic(new_filename)
         if pst_rel_path == ".":
