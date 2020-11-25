@@ -2487,8 +2487,8 @@ def _write_direct_df_tpl(
             )
 
         if not longnames:
-            if direct_tpl_df.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
-                too_long = direct_tpl_df.loc[:,use_col].apply(lambda x: len(x)) > 12
+            if df_ti.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
+                too_long = df_ti.loc[:,use_col].apply(lambda x: len(x)) > 12
                 print(too_long)
                 self.logger.lraise("_write_direct_df_tpl(): couldnt form short par names")
 

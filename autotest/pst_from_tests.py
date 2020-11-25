@@ -2387,9 +2387,9 @@ if __name__ == "__main__":
     #freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
-    mf6_freyberg_shortnames_test()
+    #mf6_freyberg_shortnames_test()
     # mf6_freyberg_da_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
-
+    mf6_freyberg_short_direct_test()
