@@ -2429,6 +2429,7 @@ def _write_direct_df_tpl(
                 if suffix != "":
                     df_ti.loc[:, use_col] += suffix
 
+
             _check_diff(df.loc[:, use_col].values, in_filename)
             df_ti.loc[:, "parval1_{0}".format(use_col)] = df.loc[:, use_col][0]
 
@@ -2484,6 +2485,13 @@ def _write_direct_df_tpl(
                 "should be 'constant','zone', "
                 "or 'grid', not '{0}'".format(typ)
             )
+
+        if not longnames:
+            if direct_tpl_df.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
+                too_long = direct_tpl_df.loc[:,use_col].apply(lambda x: len(x)) > 12
+                print(too_long)
+                self.logger.lraise("_write_direct_df_tpl(): couldnt form short par names")
+
         direct_tpl_df.loc[:, use_col] = (
             df_ti.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
         )
@@ -2693,6 +2701,12 @@ def _get_tpl_or_ins_df(
                 "should be 'constant','zone', "
                 "or 'grid', not '{0}'".format(typ)
             )
+
+        if not longnames:
+            if df_ti.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
+                too_long = df_ti.loc[:,use_col].apply(lambda x: len(x)) > 12
+                print(too_long)
+                self.logger.lraise("_get_tpl_or_ins_df(): couldnt form short par names")
     return df_ti
 
 
