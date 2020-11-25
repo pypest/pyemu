@@ -977,7 +977,7 @@ class PstFrom(object):
             prefix (`str`): prefix for obsnmes
             ofile_skip (`int`): number of lines to skip in model output file
             ofile_sep (`str`): delimiter in output file
-            rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after addin
+            rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after adding
                 new obs
 
         Returns:
