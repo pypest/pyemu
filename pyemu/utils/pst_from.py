@@ -2347,12 +2347,12 @@ def _write_direct_df_tpl(
     # TODO much of this duplicates what is in _get_tpl_or_ins_df() -- could posssibly be consolidated
     # work out the union of indices across all dfs
 
-    sidx = set()
+    sidx = []
 
-    didx = set(df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1))
-    sidx.update(didx)
+    didx = df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1)
+    sidx.extend(didx)
 
-    df_ti = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
+    df_ti = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
     # get some index strings for naming
     if longnames:
         j = "_"
