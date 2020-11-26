@@ -1031,8 +1031,13 @@ def csv_to_ins_file(
                             nname = "{0}_usecol:{1}".format(nprefix, clabel)
                             oname = "{0}_{1}".format(nname, rlabel)
                         else:
-                            nname = nprefix + clabel
-                            oname = nprefix + rlabel + "_" + clabel
+                            nname = nprefix + clabel.replace(" ","").replace("_","")
+                            oname = nprefix + rlabel.replace(" ","").replace("_","") +\
+                                    clabel.replace(" ","").replace("_","")
+                            if len(oname) > 20:
+                                raise Exception("csv_to_ins_file(): cant form observation name " + \
+                                                " for prefix '{0}' , row '{1}', col '{2}' in less than 20 chars".
+                                                format(nprefix,rlabel,clabel))
                         onames.append(oname)  # append list of obs
                         ovals.append(vals[i, j])  # store current obs val
                         # defin group name

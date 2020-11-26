@@ -1056,7 +1056,7 @@ class PstFrom(object):
                 includes_header=True,
                 includes_index=False,
                 prefix=prefix,
-                longnames=True,
+                longnames=self.longnames,
                 head_lines_len=lenhead,
                 sep=sep,
                 gpname=obsgp,
@@ -2348,12 +2348,12 @@ def _write_direct_df_tpl(
     # TODO much of this duplicates what is in _get_tpl_or_ins_df() -- could posssibly be consolidated
     # work out the union of indices across all dfs
 
-    sidx = set()
+    sidx = []
 
-    didx = set(df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1))
-    sidx.update(didx)
+    didx = df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1)
+    sidx.extend(didx)
 
-    df_ti = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
+    df_ti = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
     # get some index strings for naming
     if longnames:
         j = "_"
@@ -2430,6 +2430,7 @@ def _write_direct_df_tpl(
                 if suffix != "":
                     df_ti.loc[:, use_col] += suffix
 
+
             _check_diff(df.loc[:, use_col].values, in_filename)
             df_ti.loc[:, "parval1_{0}".format(use_col)] = df.loc[:, use_col][0]
 
@@ -2485,6 +2486,13 @@ def _write_direct_df_tpl(
                 "should be 'constant','zone', "
                 "or 'grid', not '{0}'".format(typ)
             )
+
+        if not longnames:
+            if df_ti.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
+                too_long = df_ti.loc[:,use_col].apply(lambda x: len(x)) > 12
+                print(too_long)
+                self.logger.lraise("_write_direct_df_tpl(): couldnt form short par names")
+
         direct_tpl_df.loc[:, use_col] = (
             df_ti.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
         )
@@ -2694,6 +2702,12 @@ def _get_tpl_or_ins_df(
                 "should be 'constant','zone', "
                 "or 'grid', not '{0}'".format(typ)
             )
+
+        if not longnames:
+            if df_ti.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
+                too_long = df_ti.loc[:,use_col].apply(lambda x: len(x)) > 12
+                print(too_long)
+                self.logger.lraise("_get_tpl_or_ins_df(): couldnt form short par names")
     return df_ti
 
 

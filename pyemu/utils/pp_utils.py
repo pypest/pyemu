@@ -490,7 +490,7 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
                 too_long.append(name)
         if len(too_long) > 0:
             raise Exception(
-                "the following parameter names are too long:" ",".join(too_long)
+                "the following parameter names are too long:" + ",".join(too_long)
             )
         tpl_entries = ["~    {0}    ~".format(name) for name in names]
         pp_df.loc[:, "tpl"] = tpl_entries
