@@ -1345,7 +1345,7 @@ class PstFrom(object):
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         self.logger.log(
             "adding {0} type {1} style parameters for file(s) {2}".format(
-                par_type, par_style, str(filenames)
+                par_type, par_style, [str(f) for f in filenames]
             )
         )
         if geostruct is not None:
@@ -1875,8 +1875,9 @@ class PstFrom(object):
             #     variograms=v)
 
         self.logger.log(
-            "adding {0} type {1} style parameters for file(s) {2}"
-            "".format(par_type, par_style, str(filenames))
+            "adding {0} type {1} style parameters for file(s) {2}".format(
+                par_type, par_style, [str(f) for f in filenames]
+            )
         )
 
         if rebuild_pst:  # may want to just update pst and rebuild
