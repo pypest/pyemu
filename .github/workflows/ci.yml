@@ -26,7 +26,7 @@ jobs:
     steps:
      # check out repo
     - name: Checkout pyemu repo
-      uses:  actions/checkout@v2.3.4  # must be a better way to checkout current version....
+      uses:  actions/checkout@v2.3.4  
 
     - name: Cache Miniconda
       uses: actions/cache@v2.1.0
@@ -36,6 +36,9 @@ jobs:
       with:
         path: ~/conda_pkgs_dir
         key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.run-type }}-${{ env.CACHE_NUMBER }}-${{ hashFiles('etc/environment.yml') }}
+    
+    # - name: Get specific version CMake, v3.19
+    #  uses: lukka/get-cmake@v3.19 
 
     # Standard python fails on windows without GDAL installation
     # Using custom bash shell ("shell: bash -l {0}") with Miniconda
@@ -70,31 +73,35 @@ jobs:
         if [[ ! -d "$HOME/.local/bin" ]]; then
             mkdir "$HOME/.local/bin";
         fi
-        export PATH="$HOME/.local/bin:$PATH"
-        ln -fs /usr/bin/gfortran-6 "$HOME/.local/bin/gfortran" && gfortran --version
-        ls -l /usr/bin/gfortran-6
-        ln -fs /usr/bin/gcc-6 "$HOME/.local/bin/gcc" && gcc --version
-        ls -l /usr/bin/gcc-6
-        ln -fs /usr/bin/g++-6 "$HOME/.local/bin/g++" && g++ --version
-        ls -l /usr/bin/g++-6
-        export CXX="g++"
+        # export PATH="$HOME/.local/bin:$PATH"
+        # ln -fs /usr/bin/gfortran-6 "$HOME/.local/bin/gfortran" && gfortran --version
+        # ls -l /usr/bin/gfortran-6
+        # ln -fs /usr/bin/gcc-6 "$HOME/.local/bin/gcc" && gcc --version
+        # ls -l /usr/bin/gcc-6
+        # ln -fs /usr/bin/g++-6 "$HOME/.local/bin/g++" && g++ --version
+        # ls -l /usr/bin/g++-6
+        # export CXX="g++"
         git clone -b develop --depth 1 https://github.com/usgs/pestpp
-        cd pestpp/src
-        bindir=../../../../bin/linux COMPILER=gcc CXX=g++ FC=gfortran STATIC=no make -j 20 install
+        cd pestpp
+        mkdir build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Release ..
+        make -j2
+        # cd pestpp/src
+        # bindir=../../../../bin/linux COMPILER=gcc CXX=g++ FC=gfortran STATIC=no make -j 20 install
         cd ../../
         # might be able to get away without this line? wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         # might be able to get away without this line? bash miniconda.sh -b -p $HOME/miniconda
         # might be able to get away without this line? export PATH="$HOME/miniconda/bin:$PATH"
-        - export PATH="$HOME/pestpp/bin/linux:$PATH"
+        # export PATH="$HOME/pestpp/bin/linux:$PATH"
         # might be able to get away without this line? conda update --yes conda
-        - "export DISPLAY=:99.0"
-        - "sh -e /etc/init.d/xvfb start"
+        # - "export DISPLAY=:99.0"
+        # - "sh -e /etc/init.d/xvfb start"
     
     - name: Install pymake and flopy
       shell: bash -l {0}
       run: |
-        pip install https://github.com/modflowpy/pymake/zipball/master
-        python setup.py install
+        # pip install https://github.com/modflowpy/pymake/zipball/master
+        # python setup.py install
         git clone -b develop --depth 1 https://github.com/modflowpy/flopy.git
         cd flopy
         python setup.py install
@@ -103,13 +110,18 @@ jobs:
     - name: Add executables directory to path
       shell: bash
       run: |
-        echo "$HOME/pestpp/bin/linux" >> $GITHUB_PATH
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: Run nosetests
       shell: bash -l {0}
       run: |
-        nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu ${{ matrix.test-path }}
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest ${{ matrix.test-path }}
 
-
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1.0.15
+      with:
+        file: ./coverage.xml
 
 
