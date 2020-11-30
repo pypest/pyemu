@@ -7,3 +7,4 @@ dependencies:
   - pyshp
   - nose-timer
   - nbsphinx
+  - matplotlib

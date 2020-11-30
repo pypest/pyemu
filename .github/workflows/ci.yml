@@ -16,7 +16,10 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.8, 3.7, 3.6]
         run-type: [std]
-        test-pth: [""]
+        test-pth: ["pst_tests.py", "utils_tests.py", "mat_tests.py",
+                   "en_tests.py", "la_tests.py", "pst_from_tests.py",
+                   "da_tests.py", "moouu_tests.py", "full_meal_deal_tests.py",
+                   "plot_tests.py", "pst_tests_2.py"]
         nclude:
           - os: ubuntu-latest
             python-version: 3.8
