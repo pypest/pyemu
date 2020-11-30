@@ -1,0 +1,115 @@
+name: pyemu continuous integration
+
+on: 
+  schedule:
+    - cron: '0 8 * * *' # run at 8 AM UTC (12 am PST)
+  push:
+  pull_request:
+
+jobs:
+  pyemuCI:
+    name: autotests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: [3.8, 3.7, 3.6, 2.7]
+        run-type: [std]
+        test-pth: [""]
+        nclude:
+          - os: ubuntu-latest
+            python-version: 3.8
+            run-type: nb
+            test-path: autotest_notebooks.py
+
+    steps:
+     # check out repo
+    - name: Checkout pyemu repo
+      uses:  actions/checkout@v2.3.4  # must be a better way to checkout current version....
+
+    - name: Cache Miniconda
+      uses: actions/cache@v2.1.0
+      env:
+        # Increase this value to reset cache if environment.yml has changed
+        CACHE_NUMBER: 0
+      with:
+        path: ~/conda_pkgs_dir
+        key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.run-type }}-${{ env.CACHE_NUMBER }}-${{ hashFiles('etc/environment.yml') }}
+
+    # Standard python fails on windows without GDAL installation
+    # Using custom bash shell ("shell: bash -l {0}") with Miniconda
+    - name: Setup Miniconda
+      uses: conda-incubator/setup-miniconda@v2.0.0
+      with:
+        python-version: ${{ matrix.python-version }}
+        mamba-version: "*"
+        channels: conda-forge
+        auto-update-conda: true
+        activate-environment: pyemu
+        use-only-tar-bz2: true
+
+    - name: Add jupyter and jupytext to notebooks run
+      if: matrix.run-type == 'nb'
+      shell: bash -l {0}
+      run: |
+        mamba install --name pyemu jupyter jupytext
+
+    - name: Add packages to pyemu environment using mamba or conda
+      shell: bash -l {0}
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          conda env update --name pyemu --file etc/environment.yml
+        else
+          mamba env update --name pyemu --file etc/environment.yml
+        fi
+    
+    - name: Prep for exe install
+      shell: bash -l {0}
+      run: |
+        if [[ ! -d "$HOME/.local/bin" ]]; then
+            mkdir "$HOME/.local/bin";
+        fi
+        export PATH="$HOME/.local/bin:$PATH"
+        ln -fs /usr/bin/gfortran-6 "$HOME/.local/bin/gfortran" && gfortran --version
+        ls -l /usr/bin/gfortran-6
+        ln -fs /usr/bin/gcc-6 "$HOME/.local/bin/gcc" && gcc --version
+        ls -l /usr/bin/gcc-6
+        ln -fs /usr/bin/g++-6 "$HOME/.local/bin/g++" && g++ --version
+        ls -l /usr/bin/g++-6
+        export CXX="g++"
+        git clone -b develop --depth 1 https://github.com/usgs/pestpp
+        cd pestpp/src
+        bindir=../../../../bin/linux COMPILER=gcc CXX=g++ FC=gfortran STATIC=no make -j 20 install
+        cd ../../
+        # might be able to get away without this line? wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+        # might be able to get away without this line? bash miniconda.sh -b -p $HOME/miniconda
+        # might be able to get away without this line? export PATH="$HOME/miniconda/bin:$PATH"
+        - export PATH="$HOME/pestpp/bin/linux:$PATH"
+        # might be able to get away without this line? conda update --yes conda
+        - "export DISPLAY=:99.0"
+        - "sh -e /etc/init.d/xvfb start"
+    
+    - name: Install pymake and flopy
+      shell: bash -l {0}
+      run: |
+        pip install https://github.com/modflowpy/pymake/zipball/master
+        python setup.py install
+        git clone -b develop --depth 1 https://github.com/modflowpy/flopy.git
+        cd flopy
+        python setup.py install
+        cd ..
+
+    - name: Add executables directory to path
+      shell: bash
+      run: |
+        echo "$HOME/pestpp/bin/linux" >> $GITHUB_PATH
+
+    - name: Run nosetests
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu ${{ matrix.test-path }}
+
+
+
+
