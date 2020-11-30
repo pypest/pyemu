@@ -17,11 +17,11 @@ jobs:
         python-version: [3.8, 3.7, 3.6]
         run-type: [std]
         test-pth: [""]
-        # include:
-          #- os: ubuntu-latest
-          #  python-version: 3.8
-          #  run-type: nb
-          #  test-path: autotest_notebooks.py
+        include:
+          - os: ubuntu-latest
+            python-version: 3.8
+            run-type: nb
+            test-path: autotest_notebooks.py
 
     steps:
      # check out repo
@@ -89,6 +89,7 @@ jobs:
         # cd pestpp/src
         # bindir=../../../../bin/linux COMPILER=gcc CXX=g++ FC=gfortran STATIC=no make -j 20 install
         cd ..
+        # do we also need to cp to os specific within .local/bin/? probs...
         find bin -maxdepth 1 -type f -exec cp {} $HOME/.local/bin/. \;
         cd ..
         # might be able to get away without this line? wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -121,6 +122,84 @@ jobs:
         --with-coverage --cover-package=pyemu --cover-xml \
         --cover-xml-file=../coverage.xml -w ./autotest pst_tests.py
 
+    - name: "utils tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest utils_tests.py
+
+    - name: "mat tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest mat_tests.py
+
+    - name: "en tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest en_tests.py
+
+    - name: "la tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest la_tests.py
+
+    - name: "PstFrom tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest pst_from_tests.py
+
+    - name: "da tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest da_tests.py
+
+    - name: "moouu tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest moouu_tests.py       
+
+    - name: "full meal deal tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest full_meal_deal_tests.py
+ 
+    - name: "plot tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest plot_tests.py
+
+    - name: "pst tests 2"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest pst_tests_2.py
+
+    - name: "notebook tests"
+      if: matrix.run-type == 'nb'
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest autotest_notebooks.py
+    
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1.0.15
       with:
