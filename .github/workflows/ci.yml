@@ -71,7 +71,7 @@ jobs:
       shell: bash -l {0}
       run: |
         if [[ ! -d "$HOME/.local/bin" ]]; then
-            mkdir "$HOME/.local/bin";
+            mkdir -p "$HOME/.local/bin";
         fi
         # export PATH="$HOME/.local/bin:$PATH"
         # ln -fs /usr/bin/gfortran-6 "$HOME/.local/bin/gfortran" && gfortran --version
