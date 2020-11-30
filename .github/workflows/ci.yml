@@ -115,12 +115,11 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: "pst tests"
-      env: TEST_SCRIPT="pst_tests.py"
       shell: bash -l {0}
       run: |
         nosetests -v --with-id --nocapture --with-timer \
         --with-coverage --cover-package=pyemu --cover-xml \
-        --cover-xml-file=../coverage.xml -w ./autotest ${{ env.TEST_SCRIPT }}
+        --cover-xml-file=../coverage.xml -w ./autotest pst_tests.py
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1.0.15
