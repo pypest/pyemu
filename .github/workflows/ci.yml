@@ -89,7 +89,7 @@ jobs:
         # cd pestpp/src
         # bindir=../../../../bin/linux COMPILER=gcc CXX=g++ FC=gfortran STATIC=no make -j 20 install
         cd ..
-        cp -v bin/* $HOME/.local/bin/*
+        cp bin/* $HOME/.local/bin/*
         cd ..
         # might be able to get away without this line? wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         # might be able to get away without this line? bash miniconda.sh -b -p $HOME/miniconda
@@ -99,15 +99,15 @@ jobs:
         # - "export DISPLAY=:99.0"
         # - "sh -e /etc/init.d/xvfb start"
     
-    - name: Install pymake and flopy
+    - name: Install Flopy & pyemu?
       shell: bash -l {0}
       run: |
-        # pip install https://github.com/modflowpy/pymake/zipball/master
-        # python setup.py install
         git clone -b develop --depth 1 https://github.com/modflowpy/flopy.git
         cd flopy
         python setup.py install
         cd ..
+        pip install https://github.com/modflowpy/pymake/zipball/master
+        python setup.py install
 
     - name: Add executables directory to path
       shell: bash
