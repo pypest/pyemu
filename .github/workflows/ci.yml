@@ -84,8 +84,8 @@ jobs:
         git clone -b develop --depth 1 https://github.com/usgs/pestpp
         cd pestpp
         mkdir build && cd build
-        cmake -DCMAKE_BUILD_TYPE=Release ..
-        make -j2
+        cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+        ninja
         # cd pestpp/src
         # bindir=../../../../bin/linux COMPILER=gcc CXX=g++ FC=gfortran STATIC=no make -j 20 install
         cd ..
