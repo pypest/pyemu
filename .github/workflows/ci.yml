@@ -25,7 +25,7 @@ jobs:
 
     steps:
     - name: Setup Ninja
-      if: ${{ martix.os }} == "windows-latest"
+      if: ${{ matrix.os }} == "windows-latest"
       uses: ashutoshvarma/setup-ninja@master
       with:
         # ninja version to download. Default: 1.10.0
