@@ -16,15 +16,12 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.8, 3.7, 3.6]
         run-type: [std]
-        test-pth: ["pst_tests.py", "utils_tests.py", "mat_tests.py",
-                   "en_tests.py", "la_tests.py", "pst_from_tests.py",
-                   "da_tests.py", "moouu_tests.py", "full_meal_deal_tests.py",
-                   "plot_tests.py", "pst_tests_2.py"]
-        nclude:
-          - os: ubuntu-latest
-            python-version: 3.8
-            run-type: nb
-            test-path: autotest_notebooks.py
+        test-pth: [""]
+        # include:
+          #- os: ubuntu-latest
+          #  python-version: 3.8
+          #  run-type: nb
+          #  test-path: autotest_notebooks.py
 
     steps:
      # check out repo
@@ -117,12 +114,13 @@ jobs:
       run: |
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Run nosetests
+    - name: "pst tests"
+      env: TEST_SCRIPT="pst_tests.py"
       shell: bash -l {0}
       run: |
         nosetests -v --with-id --nocapture --with-timer \
         --with-coverage --cover-package=pyemu --cover-xml \
-        --cover-xml-file=../coverage.xml -w ./autotest ${{ matrix.test-path }}
+        --cover-xml-file=../coverage.xml -w ./autotest ${{ env.TEST_SCRIPT }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1.0.15
