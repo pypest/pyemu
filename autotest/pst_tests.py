@@ -935,7 +935,7 @@ def ctrl_data_test():
 
     pst2.write(os.path.join("pst","test2.pst"),version=2)
     pst3 = pyemu.Pst(os.path.join("pst", "test2.pst"))
-    
+
 if __name__ == "__main__":
 
     # process_output_files_test()

@@ -292,7 +292,7 @@ class ControlData(object):
                 "value": cast_defaults,
                 "required": required,
                 "format": formats,
-                "passed": False
+                "passed": True
             }
         )
 
@@ -320,7 +320,7 @@ class ControlData(object):
             lines ([`str`]): raw ASCII lines from pest control file
 
         """
-
+        self._df.loc[:,"passed"] = False
         if iskeyword:
             extra = {}
             for line in lines:

@@ -5,7 +5,7 @@ ext = ''
 bin_path = os.path.join("..","..","bin")
 if "linux" in platform.platform().lower():
     bin_path = os.path.join(bin_path,"linux")
-elif "darwin" in platform.platform().lower():
+elif "darwin" in platform.platform().lower() or "macos" in platform.platform().lower():
     bin_path = os.path.join(bin_path,"mac")
 else:
     bin_path = os.path.join(bin_path,"win")
@@ -36,7 +36,7 @@ def freyberg_test():
     bin_path = os.path.join("..", "..", "bin")
     if "linux" in platform.platform().lower():
         bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.platform().lower():
+    elif "darwin" in platform.platform().lower() or "macos" in platform.platform().lower():
         bin_path = os.path.join(bin_path, "mac")
     else:
         bin_path = os.path.join(bin_path, "win")
@@ -340,9 +340,9 @@ def freyberg_diff_obs_test():
 
 
 if __name__ == "__main__":
-    freyberg_diff_obs_test()
+    #freyberg_diff_obs_test()
     freyberg_test()
-    freyberg_kl_pp_compare()
+    #freyberg_kl_pp_compare()
     #import shapefile
     #run_sweep_test()
-    fake_run_test()
+    #fake_run_test()
