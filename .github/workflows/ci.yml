@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest] 
-        python-version: [3.8] # , 3.7, 3.6
+        python-version: [3.8, 3.7, 3.6]
         run-type: [std]
         test-pth: [""]
         # include:
@@ -79,14 +79,7 @@ jobs:
         if [[ ! -d "$HOME/.local/bin" ]]; then
             mkdir -p "$HOME/.local/bin";
         fi
-        # export PATH="$HOME/.local/bin:$PATH"
-        # ln -fs /usr/bin/gfortran-6 "$HOME/.local/bin/gfortran" && gfortran --version
-        # ls -l /usr/bin/gfortran-6
-        # ln -fs /usr/bin/gcc-6 "$HOME/.local/bin/gcc" && gcc --version
-        # ls -l /usr/bin/gcc-6
-        # ln -fs /usr/bin/g++-6 "$HOME/.local/bin/g++" && g++ --version
-        # ls -l /usr/bin/g++-6
-        # export CXX="g++"
+
         git clone -b develop --depth 1 https://github.com/usgs/pestpp
         cd pestpp
         mkdir build && cd build
@@ -104,13 +97,6 @@ jobs:
         find bin -maxdepth 1 -type f -exec cp {} $HOME/.local/bin/. \;
         cp -r bin ../bin
         cd ..
-        # might be able to get away without this line? wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-        # might be able to get away without this line? bash miniconda.sh -b -p $HOME/miniconda
-        # might be able to get away without this line? export PATH="$HOME/miniconda/bin:$PATH"
-        # export PATH="$HOME/pestpp/bin/linux:$PATH"
-        # might be able to get away without this line? conda update --yes conda
-        # - "export DISPLAY=:99.0"
-        # - "sh -e /etc/init.d/xvfb start"
     
     - name: Install Flopy & pyemu?
       shell: bash -l {0}

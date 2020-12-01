@@ -12,13 +12,15 @@ from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
 
 ext = ''
-bin_path = os.path.join("..", "..", "bin")
+bin_path = '' # os.path.join("..", "..", "bin")
 if "linux" in platform.platform().lower():
-    bin_path = os.path.join(bin_path, "linux")
+    pass
+    # bin_path = os.path.join(bin_path, "linux")
 elif "darwin" in platform.platform().lower() or 'macos' in platform.platform().lower():
-    bin_path = os.path.join(bin_path, "mac")
+    pass
+    # bin_path = os.path.join(bin_path, "mac")
 else:
-    bin_path = os.path.join(bin_path, "win")
+    # bin_path = os.path.join(bin_path, "win")
     ext = '.exe'
 
 mf_exe_path = os.path.join(bin_path, "mfnwt")
