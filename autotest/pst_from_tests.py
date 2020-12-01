@@ -12,7 +12,7 @@ from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
 
 ext = ''
-bin_path = '' # os.path.join("..", "..", "bin")
+bin_path = ''  # os.path.join("..", "..", "bin")
 if "linux" in platform.platform().lower():
     pass
     # bin_path = os.path.join(bin_path, "linux")

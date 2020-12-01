@@ -2,13 +2,15 @@ import os
 import platform
 
 ext = ''
-bin_path = os.path.join("..","..","bin")
+bin_path = ''  # os.path.join("..","..","bin")
 if "linux" in platform.platform().lower():
-    bin_path = os.path.join(bin_path,"linux")
-elif "darwin" in platform.platform().lower():
-    bin_path = os.path.join(bin_path,"mac")
+    pass
+    # bin_path = os.path.join(bin_path,"linux")
+elif "darwin" in platform.platform().lower() or 'macos' in platform.platform().lower():
+    pass
+    # bin_path = os.path.join(bin_path,"mac")
 else:
-    bin_path = os.path.join(bin_path,"win")
+    # bin_path = os.path.join(bin_path,"win")
     ext = '.exe'
     
 
@@ -32,15 +34,15 @@ def freyberg_test():
         return
     import pyemu
 
-    ext = ''
-    bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "mac")
-    else:
-        bin_path = os.path.join(bin_path, "win")
-        ext = '.exe'
+    # ext = ''
+    # bin_path = os.path.join("..", "..", "bin")
+    # if "linux" in platform.platform().lower():
+    #     bin_path = os.path.join(bin_path, "linux")
+    # elif "darwin" in platform.platform().lower():
+    #     bin_path = os.path.join(bin_path, "mac")
+    # else:
+    #     bin_path = os.path.join(bin_path, "win")
+    #     ext = '.exe'
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
@@ -157,15 +159,15 @@ def freyberg_kl_pp_compare():
         return
     import pyemu
 
-    ext = ''
-    bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "mac")
-    else:
-        bin_path = os.path.join(bin_path, "win")
-        ext = '.exe'
+    # ext = ''
+    # bin_path = os.path.join("..", "..", "bin")
+    # if "linux" in platform.platform().lower():
+    #     bin_path = os.path.join(bin_path, "linux")
+    # elif "darwin" in platform.platform().lower():
+    #     bin_path = os.path.join(bin_path, "mac")
+    # else:
+    #     bin_path = os.path.join(bin_path, "win")
+    #     ext = '.exe'
 
     org_model_ws_base = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
@@ -241,15 +243,15 @@ def freyberg_diff_obs_test():
         return
     import pyemu
 
-    ext = ''
-    bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "mac")
-    else:
-        bin_path = os.path.join(bin_path, "win")
-        ext = '.exe'
+    # ext = ''
+    # bin_path = os.path.join("..", "..", "bin")
+    # if "linux" in platform.platform().lower():
+    #     bin_path = os.path.join(bin_path, "linux")
+    # elif "darwin" in platform.platform().lower():
+    #     bin_path = os.path.join(bin_path, "mac")
+    # else:
+    #     bin_path = os.path.join(bin_path, "win")
+    #     ext = '.exe'
 
     oorg_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
