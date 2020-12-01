@@ -24,13 +24,10 @@ jobs:
             test-path: autotest_notebooks.py
 
     steps:
+    - uses:  actions/checkout@v2.3.4 
     # - name: Setup Ninja
       # if: ${{ runner.os == 'Windows' }} 
-      # uses: seanmiddleditch/gha-setup-ninja@master
-
-     # check out repo
-    - name: Checkout pyemu repo
-      uses:  actions/checkout@v2.3.4  
+    - uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Cache Miniconda
       uses: actions/cache@v2.1.0
@@ -41,9 +38,12 @@ jobs:
         path: ~/conda_pkgs_dir
         key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.run-type }}-${{ env.CACHE_NUMBER }}-${{ hashFiles('etc/environment.yml') }}
     
-    - name: Get specific version CMake, v3.19
-      if: ${{ runner.os == 'Windows' }} 
-      uses: lukka/get-cmake@latest
+    # - name: Set Windows ENV
+      # if: runner.os == 'Windows'
+      # uses: ilammy/msvc-dev-cmd@latest
+    # - name: Get specific version CMake, v3.19
+    #   if: ${{ runner.os == 'Windows' }} 
+    #   uses: lukka/get-cmake@latest
 
     # Standard python fails on windows without GDAL installation
     # Using custom bash shell ("shell: bash -l {0}") with Miniconda
@@ -90,7 +90,7 @@ jobs:
         cd pestpp
         mkdir build && cd build
         if [[ "$RUNNER_OS" == "Windows" ]]; then
-            cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
+            cmake -GNinja -DCMAKE_BUILD_TYPE=Release ..
             ninja
         else
             cmake -DCMAKE_BUILD_TYPE=Release ..
