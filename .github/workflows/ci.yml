@@ -102,6 +102,7 @@ jobs:
         cd ..
         # do we also need to cp to os specific within .local/bin/? probs...
         find bin -maxdepth 1 -type f -exec cp {} $HOME/.local/bin/. \;
+        cp -r bin ../bin
         cd ..
         # might be able to get away without this line? wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         # might be able to get away without this line? bash miniconda.sh -b -p $HOME/miniconda
