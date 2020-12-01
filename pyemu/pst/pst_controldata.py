@@ -322,6 +322,7 @@ class ControlData(object):
         """
         self._df.loc[:,"passed"] = False
         if iskeyword:
+            self._df.loc[:, "passed"] = True
             extra = {}
             for line in lines:
                 raw = line.strip().split()

@@ -976,4 +976,5 @@ if __name__ == "__main__":
     # sanity_check_test()
     #write_tables_test()
     #pi_helper_test()
-    ctrl_data_test()
+    #ctrl_data_test()
+    new_format_test_2()
