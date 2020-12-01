@@ -40,7 +40,8 @@ jobs:
     
     - name: Set Windows ENV
       if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@latest
+      uses: ilammy/msvc-dev-cmd@v1
+
     # - name: Get specific version CMake, v3.19
     #   if: ${{ runner.os == 'Windows' }} 
     #   uses: lukka/get-cmake@latest
