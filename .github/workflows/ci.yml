@@ -27,9 +27,6 @@ jobs:
     - name: Setup Ninja
       if: ${{ runner.os == 'Windows' }} 
       uses: seanmiddleditch/gha-setup-ninja@master
-      with:
-        # ninja version to download. Default: 1.10.0
-        version: 1.10.0
 
      # check out repo
     - name: Checkout pyemu repo
