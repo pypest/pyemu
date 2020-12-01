@@ -17,11 +17,11 @@ jobs:
         python-version: [3.8] # , 3.7, 3.6
         run-type: [std]
         test-pth: [""]
-        include:
-          - os: ubuntu-latest
-            python-version: 3.8
-            run-type: nb
-            test-path: autotest_notebooks.py
+        # include:
+          # - os: ubuntu-latest
+            # python-version: 3.8
+            # run-type: nb
+            # test-path: autotest_notebooks.py
 
     steps:
     - uses:  actions/checkout@v2.3.4 
@@ -91,7 +91,7 @@ jobs:
         cd pestpp
         mkdir build && cd build
         if [[ "$RUNNER_OS" == "Windows" ]]; then
-            cmake -GNinja -DCMAKE_CXX_COMPILER=cl -DCMAKE_Fortran_COMPILER=cl -DCMAKE_BUILD_TYPE=Release ..
+            cmake -GNinja -DCMAKE_CXX_COMPILER=cl -DDCMAKE_C_COMPILER=cl -DCMAKE_BUILD_TYPE=Release ..
             ninja
         else
             cmake -DCMAKE_BUILD_TYPE=Release ..
@@ -204,7 +204,7 @@ jobs:
     #     --cover-xml-file=../coverage.xml -w ./autotest pst_tests_2.py
 
     # - name: "notebook tests"
-    #   if: matrix.run-type == 'nb'
+    #   if: ${{ runner.os == 'Linux' && matrix.python-version == '3.8' }}
     #   shell: bash -l {0}
     #   run: |
     #     nosetests -v --with-id --nocapture --with-timer \
