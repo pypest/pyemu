@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest] # ubuntu-latest, macos-latest, 
+        os: [windows-latest, ubuntu-latest, macos-latest] 
         python-version: [3.8] # , 3.7, 3.6
         run-type: [std]
         test-pth: [""]
@@ -48,30 +48,30 @@ jobs:
 
     # Standard python fails on windows without GDAL installation
     # Using custom bash shell ("shell: bash -l {0}") with Miniconda
-    # - name: Setup Miniconda
-      # uses: conda-incubator/setup-miniconda@v2.0.0
-      # with:
-        # python-version: ${{ matrix.python-version }}
-        # mamba-version: "*"
-        # channels: conda-forge
-        # auto-update-conda: true
-        # activate-environment: pyemu
-        # use-only-tar-bz2: true
+    - name: Setup Miniconda
+      uses: conda-incubator/setup-miniconda@v2.0.0
+      with:
+        python-version: ${{ matrix.python-version }}
+        mamba-version: "*"
+        channels: conda-forge
+        auto-update-conda: true
+        activate-environment: pyemu
+        use-only-tar-bz2: true
 
-    # - name: Add jupyter and jupytext to notebooks run
-      # if: matrix.run-type == 'nb'
-      # shell: bash -l {0}
-      # run: |
-        # mamba install --name pyemu jupyter jupytext
+    - name: Add jupyter and jupytext to notebooks run
+      if: ${{ runner.os == 'Linux' && matrix.python-version == '3.8' }}
+      shell: bash -l {0}
+      run: |
+        mamba install --name pyemu jupyter jupytext
 
-    # - name: Add packages to pyemu environment using mamba or conda
-      # shell: bash -l {0}
-      # run: |
-        # if [ "$RUNNER_OS" == "Windows" ]; then
-          # conda env update --name pyemu --file etc/environment.yml
-        # else
-          # mamba env update --name pyemu --file etc/environment.yml
-        # fi
+    - name: Add packages to pyemu environment using mamba or conda
+      shell: bash -l {0}
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          conda env update --name pyemu --file etc/environment.yml
+        else
+          mamba env update --name pyemu --file etc/environment.yml
+        fi
     
     - name: PESTPP exe install
       shell: bash -l {0}
@@ -91,10 +91,10 @@ jobs:
         cd pestpp
         mkdir build && cd build
         if [[ "$RUNNER_OS" == "Windows" ]]; then
-            cmake -GNinja -DCMAKE_CXX_COMPILER=cl -DCMAKE_C_COMPILER=cl -DCMAKE_BUILD_TYPE=Release ../../../bin
+            cmake -GNinja -DCMAKE_CXX_COMPILER=cl -DCMAKE_C_COMPILER=cl -DCMAKE_BUILD_TYPE=Release ..
             ninja
         else
-            cmake -DCMAKE_BUILD_TYPE=Release ../../../bin
+            cmake -DCMAKE_BUILD_TYPE=Release ..
             make -j2
         fi
         # cd pestpp/src
@@ -111,109 +111,109 @@ jobs:
         # - "export DISPLAY=:99.0"
         # - "sh -e /etc/init.d/xvfb start"
     
-    # - name: Install Flopy & pyemu?
-    #   shell: bash -l {0}
-    #   run: |
-    #     git clone -b develop --depth 1 https://github.com/modflowpy/flopy.git
-    #     cd flopy
-    #     python setup.py install
-    #     cd ..
-    #     pip install https://github.com/modflowpy/pymake/zipball/master
-    #     python setup.py install
+    - name: Install Flopy & pyemu?
+      shell: bash -l {0}
+      run: |
+        git clone -b develop --depth 1 https://github.com/modflowpy/flopy.git
+        cd flopy
+        python setup.py install
+        cd ..
+        pip install https://github.com/modflowpy/pymake/zipball/master
+        python setup.py install
 
-    # - name: Add executables directory to path
-    #   shell: bash
-    #   run: |
-    #     echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Add executables directory to path
+      shell: bash
+      run: |
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    # - name: "pst tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest pst_tests.py
+    - name: "pst tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest pst_tests.py
 
-    # - name: "utils tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest utils_tests.py
+    - name: "utils tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest utils_tests.py
 
-    # - name: "mat tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest mat_tests.py
+    - name: "mat tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest mat_tests.py
 
-    # - name: "en tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest en_tests.py
+    - name: "en tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest en_tests.py
 
-    # - name: "la tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest la_tests.py
+    - name: "la tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest la_tests.py
 
-    # - name: "PstFrom tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest pst_from_tests.py
+    - name: "PstFrom tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest pst_from_tests.py
 
-    # - name: "da tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest da_tests.py
+    - name: "da tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest da_tests.py
 
-    # - name: "moouu tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest moouu_tests.py       
+    - name: "moouu tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest moouu_tests.py       
 
-    # - name: "full meal deal tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest full_meal_deal_tests.py
+    - name: "full meal deal tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest full_meal_deal_tests.py
  
-    # - name: "plot tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest plot_tests.py
+    - name: "plot tests"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest plot_tests.py
 
-    # - name: "pst tests 2"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest pst_tests_2.py
+    - name: "pst tests 2"
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest pst_tests_2.py
 
-    # - name: "notebook tests"
-    #   if: ${{ runner.os == 'Linux' && matrix.python-version == '3.8' }}
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest autotest_notebooks.py
+    - name: "notebook tests"
+      if: ${{ runner.os == 'Linux' && matrix.python-version == '3.8' }}
+      shell: bash -l {0}
+      run: |
+        nosetests -v --with-id --nocapture --with-timer \
+        --with-coverage --cover-package=pyemu --cover-xml \
+        --cover-xml-file=../coverage.xml -w ./autotest autotest_notebooks.py
     
-    # - name: Upload coverage to Codecov
-    #   uses: codecov/codecov-action@v1.0.15
-    #   with:
-    #     file: ./coverage.xml
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1.0.15
+      with:
+        file: ./coverage.xml
 
 
