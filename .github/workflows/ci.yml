@@ -27,6 +27,8 @@ jobs:
     - name: Setup Ninja
       if: ${{ runner.os == 'Windows' }} 
       uses: seanmiddleditch/gha-setup-ninja@master
+      run: |
+        echo "${GITHUB_WORKSPACE}/ninja-build" >> $GITHUB_PATH
 
      # check out repo
     - name: Checkout pyemu repo
