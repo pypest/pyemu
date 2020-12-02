@@ -62,6 +62,16 @@ class PstFrom(object):
         tpl_subfolder (`str`): option to write template files to a subfolder within ``new_d``.
             Default is False (write template files to ``new_d``).
 
+    Example::
+        pf = PstFrom("path_to_model_files","new_dir_with_pest_stuff",start_datetime="1-1-2020")
+        pf.add_parameters("hk.dat")
+        pf.add_observations("heads.csv")
+        pf.build_pst("pest.pst")
+        pe = pf.draw(100)
+        pe.to_csv("prior.csv")
+        ß
+
+
     """
 
     def __init__(
@@ -142,6 +152,8 @@ class PstFrom(object):
 
     @property
     def parfile_relations(self):
+        """build up a container of parameter file information.  Called
+        programmatically..."""
         if isinstance(self._parfile_relations, list):
             pr = pd.concat(self._parfile_relations, ignore_index=True)
         else:
@@ -263,7 +275,7 @@ class PstFrom(object):
         return i, j
 
     def initialize_spatial_reference(self):
-        """process the spatial reference argument"""
+        """process the spatial reference argument.  Called programmatically"""
         if self._spatial_reference is None:
             self.get_xy = self._generic_get_xy
         elif hasattr(self._spatial_reference, "xcentergrid") and hasattr(
@@ -284,7 +296,7 @@ class PstFrom(object):
         self.spatial_reference = self._spatial_reference
 
     def write_forward_run(self):
-        """write the forward run script"""
+        """write the forward run script.  Called by build_pst()"""
         # update python commands with system style commands
         for alist, ilist in zip(
             [self.pre_py_cmds, self.mod_py_cmds, self.post_py_cmds],
@@ -375,6 +387,11 @@ class PstFrom(object):
         Note:
             This method processes parameters by group names
 
+            For really large numbers of parameters (>30K), this method
+            will cause memory errors.  Luckily, in most cases, users
+            only want this matrix to generate a prior parameter ensemble
+            and the `PstFrom.draw()` is a better choice...
+
         """
         struct_dict = self._pivot_par_struct_dict()
         self.logger.log("building prior covariance matrix")
@@ -420,6 +437,8 @@ class PstFrom(object):
 
         Note:
             This method draws by parameter group
+
+            If you are using grid-style parameters, please use spectral simulation
 
 
         """
@@ -513,7 +532,7 @@ class PstFrom(object):
                 components.
         Note:
             This builds a pest control file from scratch, overwriting anything already
-                in self.pst object and anything already writen to `filename`
+            in self.pst object and anything already writen to `filename`
 
             The new pest control file is assigned an NOPTMAX value of 0
 
@@ -882,15 +901,17 @@ class PstFrom(object):
 
         Note:
             `function_name` is expected to be standalone a function
-                that contains all the imports it needs or these imports
-                should have been added to the forward run script through the
-                `PstFrom.py_imports` list.
+            that contains all the imports it needs or these imports
+            should have been added to the forward run script through the
+            `PstFrom.py_imports` list.
+
             This function adds the `function_name` call to the forward
-                run script (either as a pre or post command). It is up to users
-                 to make sure `function_name` is a valid python function call
-                  that includes the parentheses and requisite arguments
+            run script (either as a pre or post command). It is up to users
+            to make sure `function_name` is a valid python function call
+            that includes the parentheses and requisite arguments
+
             This function expects "def " + `function_name` to be flushed left at the outer
-                most indentation level
+            most indentation level
 
         Example::
 
@@ -982,6 +1003,9 @@ class PstFrom(object):
 
         Returns:
             `Pandas.DataFrame`: dataframe with info for new observations
+
+        Note:
+            This is the main entry for adding observations to the pest interface
 
         """
         # TODO - array style outputs? or expecting post processing to tabular
@@ -1086,7 +1110,7 @@ class PstFrom(object):
     def add_observations_from_ins(
         self, ins_file, out_file=None, pst_path=None, inschek=True
     ):
-        """add new observations to a control file
+        """add new observations to a control file from an existing instruction file
 
         Args:
             ins_file (`str`): instruction file with exclusively new
@@ -1224,7 +1248,8 @@ class PstFrom(object):
     ):
         """
         Add list or array style model input files to PstFrom object.
-        This method
+        This method is the main entry point for adding parameters to the
+        pest interface
 
         Args:
             filenames (`str`): Model input filenames to parameterize
@@ -2158,6 +2183,9 @@ def write_list_tpl(
     Returns:
         `pandas.DataFrame`: dataframe with info for the new parameters
 
+    Note:
+        This function is called by `PstFrom` programmatically
+
     """
     # get dataframe with autogenerated parnames based on `name`, `index_cols`,
     # `use_cols`, `suffix` and `par_type`
@@ -2343,6 +2371,9 @@ def _write_direct_df_tpl(
 
     Returns:
         pandas.DataFrame with paranme and pargroup define for each `use_col`
+
+    Note:
+        This function is called by `PstFrom` programmatically
 
     """
     # TODO much of this duplicates what is in _get_tpl_or_ins_df() -- could posssibly be consolidated
@@ -2745,6 +2776,9 @@ def write_array_tpl(
 
     Returns:
         df (`pandas.DataFrame`): a dataframe with parameter information
+
+    Note:
+        This function is called by `PstFrom` programmatically
 
     """
 
