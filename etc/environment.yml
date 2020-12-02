@@ -8,3 +8,4 @@ dependencies:
   - nose-timer
   - nbsphinx
   - matplotlib
+  - coverage

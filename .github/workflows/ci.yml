@@ -85,10 +85,13 @@ jobs:
         # copy modflow bins to local dir to add to PATH later
         if [ "$RUNNER_OS" == "Windows" ]; then
             d="win"
-        elif [ "$RUNNER_OS" == "Mac" ]; then
+        elif [ "$RUNNER_OS" == "macOS" ]; then
             d="mac"
         elif [ "$RUNNER_OS" == "Linux" ]; then
             d="linux"
+        else
+            d="unexpectedos"
+            exit 1
         fi
         cp -r bin/$d/. "$HOME/.local/bin/"
         git clone -b develop --depth 1 https://github.com/usgs/pestpp
