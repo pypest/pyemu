@@ -125,7 +125,9 @@ def freyberg_test():
     sfodf_c.columns = sfodf_c.columns.str.lower()
     assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
                                     sfrobs_p.columns]).all().all(), (
-        "Mis-match between expected and processed obs values")
+        "Mis-match between expected and processed obs values\n",
+        sfrobs_p.head(),
+        sfodf_c.loc[sfrobs_p.index, sfrobs_p.columns].head())
 
     pf.tmp_files.append(f"{m.name}.sfr.out")
     pf.extra_py_imports.append('flopy')
@@ -2293,7 +2295,8 @@ class TestPstFrom():
 
                     # first delete the model file that was in the template ws
                     model_file = df['model_file'].values[mult2model_row]
-                    assert model_file == dest_file
+                    assert model_file == dest_file, (f"model_file: {model_file} "
+                                                     f"differs from dest_file {dest_file}")
                     os.remove(model_file)
 
                     # pretend that PEST created the input files

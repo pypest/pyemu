@@ -80,10 +80,10 @@ def freyberg_test():
                                          temporal_bc_props=temp_bc_props,
                                          remove_existing=True,
                                          model_exe_name="mfnwt")
-    tmp = mf_exe_name.split(os.sep)
-    tmp = os.path.join(*tmp[1:])+ext
-    assert os.path.exists(tmp),tmp
-    shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
+    # tmp = mf_exe_name.split(os.sep)
+    # tmp = os.path.join(*tmp[1:])+ext
+    # assert os.path.exists(tmp),tmp
+    # shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
     ph.pst.control_data.noptmax = 0
     ph.pst.write(os.path.join(new_model_ws,"test.pst"))
     print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
@@ -325,10 +325,10 @@ def freyberg_diff_obs_test():
 
     ph.write_forward_run()
 
-    tmp = mf_exe_name.split(os.sep)
-    tmp = os.path.join(*tmp[1:])+ext
-    assert os.path.exists(tmp),tmp
-    shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
+    # tmp = mf_exe_name.split(os.sep)
+    # tmp = os.path.join(*tmp[1:])+ext
+    # assert os.path.exists(tmp),tmp
+    # shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
     ph.pst.control_data.noptmax = 0
     ph.pst.write(os.path.join(new_model_ws,"test.pst"))
     print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
