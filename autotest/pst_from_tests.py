@@ -2295,7 +2295,7 @@ class TestPstFrom():
 
                     # first delete the model file that was in the template ws
                     model_file = df['model_file'].values[mult2model_row]
-                    assert model_file == dest_file, (f"model_file: {model_file} "
+                    assert Path(model_file) == Path(dest_file), (f"model_file: {model_file} "
                                                      f"differs from dest_file {dest_file}")
                     os.remove(model_file)
 
@@ -2399,13 +2399,17 @@ def invest():
 
 if __name__ == "__main__":
     #invest()
-    freyberg_test()
+    #freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
-    # mf6_freyberg_da_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
-    # mf6_freyberg_short_direct_test()
+    #mf6_freyberg_short_direct_test()
+    tpf = TestPstFrom()
+    tpf.setup()
+    tpf.test_add_direct_array_parameters()
+
+
 
