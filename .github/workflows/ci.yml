@@ -87,7 +87,7 @@ jobs:
             $d="win"
         elif [ "$RUNNER_OS" == "Mac" ]; then
             $d="mac"
-        elif [ "$RUNNER_OS" == "Mac" ]; then
+        elif [ "$RUNNER_OS" == "Linux" ]; then
             $d="linux"
         cp "bin/$d/". "$HOME/.local/bin/"
         git clone -b develop --depth 1 https://github.com/usgs/pestpp
@@ -129,7 +129,7 @@ jobs:
       run: |
         nosetests -v --with-id --nocapture --with-timer \
         --with-coverage --cover-package=pyemu --cover-xml \
-        --cover-xml-file=../coverage.xml -w ./autotest ${{ martix.test-path }}
+        --cover-xml-file=../coverage.xml -w ./autotest ${{ matrix.test-path }}
 
 
     # - name: "pst tests"
