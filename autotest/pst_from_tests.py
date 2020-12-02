@@ -84,9 +84,9 @@ def freyberg_test():
                       "Processed into tabular form using the lines:\n",
                       "sfo = flopy.utils.SfrFile('freyberg.sfr.out')\n",
                       "sfo.get_dataframe().to_csv('freyberg.sfo.dat')\n"])
-        sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx')
+        sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx',line_terminator='\n')
     sfodf.sort_index(1).to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
-                 index_label='idx')
+                 index_label='idx',line_terminator='\n')
     template_ws = "new_temp"
     # sr0 = m.sr
     sr = pyemu.helpers.SpatialReference.from_namfile(
@@ -142,7 +142,7 @@ def freyberg_test():
          "'Processed into tabular form using the lines:\\n', "
          "'sfo = flopy.utils.SfrFile(`freyberg.sfr.out`)\\n', "
          "'sfo.get_dataframe().to_csv(`freyberg.sfo.dat`)\\n'])",
-         "    sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx')"])
+         "    sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx',line_terminator='\\n')"])
     # csv version of sfr obs
     # sfr outputs to obs
     pf.add_observations('freyberg.sfo.csv', insfile=None,
@@ -2388,7 +2388,17 @@ def test_get_filepath():
         assert result == expected
 
 
+def invest():
+    import os
+    import pyemu
+
+    i = pyemu.pst_utils.InstructionFile(os.path.join("new_temp","freyberg.sfo.dat.ins"))
+    i.read_output_file(os.path.join("new_temp","freyberg.sfo.dat"))
+
+
+
 if __name__ == "__main__":
+    #invest()
     freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
