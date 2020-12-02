@@ -84,9 +84,9 @@ def freyberg_test():
                       "Processed into tabular form using the lines:\n",
                       "sfo = flopy.utils.SfrFile('freyberg.sfr.out')\n",
                       "sfo.get_dataframe().to_csv('freyberg.sfo.dat')\n"])
-        sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx')
+        sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx',line_terminator='\n')
     sfodf.sort_index(1).to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
-                 index_label='idx')
+                 index_label='idx',line_terminator='\n')
     template_ws = "new_temp"
     # sr0 = m.sr
     sr = pyemu.helpers.SpatialReference.from_namfile(
@@ -142,7 +142,7 @@ def freyberg_test():
          "'Processed into tabular form using the lines:\\n', "
          "'sfo = flopy.utils.SfrFile(`freyberg.sfr.out`)\\n', "
          "'sfo.get_dataframe().to_csv(`freyberg.sfo.dat`)\\n'])",
-         "    sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx')"])
+         "    sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx',line_terminator='\\n')"])
     # csv version of sfr obs
     # sfr outputs to obs
     pf.add_observations('freyberg.sfo.csv', insfile=None,
@@ -2295,7 +2295,7 @@ class TestPstFrom():
 
                     # first delete the model file that was in the template ws
                     model_file = df['model_file'].values[mult2model_row]
-                    assert model_file == dest_file, (f"model_file: {model_file} "
+                    assert Path(model_file) == Path(dest_file), (f"model_file: {model_file} "
                                                      f"differs from dest_file {dest_file}")
                     os.remove(model_file)
 
@@ -2388,14 +2388,28 @@ def test_get_filepath():
         assert result == expected
 
 
+def invest():
+    import os
+    import pyemu
+
+    i = pyemu.pst_utils.InstructionFile(os.path.join("new_temp","freyberg.sfo.dat.ins"))
+    i.read_output_file(os.path.join("new_temp","freyberg.sfo.dat"))
+
+
+
 if __name__ == "__main__":
-    freyberg_test()
+    #invest()
+    #freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
-    # mf6_freyberg_da_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
-    # mf6_freyberg_short_direct_test()
+    #mf6_freyberg_short_direct_test()
+    tpf = TestPstFrom()
+    tpf.setup()
+    tpf.test_add_direct_array_parameters()
+
+
 
