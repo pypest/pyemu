@@ -917,14 +917,24 @@ def new_format_path_mechanics_test():
     assert options["sep"] == "w", options
 
 
-def pi_helper_test():
+def ctrl_data_test():
     import os
     import numpy as np
     import pyemu
+    pst = pyemu.Pst(os.path.join("pst","sm.pst"))
+    pst.write(os.path.join("pst","test.pst"))
 
-    pst = pyemu.Pst(os.path.join("pst","zoned_nz_64.pst"))
+    pst2 = pyemu.Pst(os.path.join("pst", "test.pst"))
 
+    #print(pst.control_data._df.passed)
+    #print(pst2.control_data._df.passed)
+    for i in pst.control_data._df.index:
+        if pst.control_data._df.loc[i,"passed"] != pst2.control_data._df.loc[i,"passed"]:
+            print(i)
+    assert np.all(pst.control_data._df.passed == pst2.control_data._df.passed)
 
+    pst2.write(os.path.join("pst","test2.pst"),version=2)
+    pst3 = pyemu.Pst(os.path.join("pst", "test2.pst"))
 
 if __name__ == "__main__":
 
@@ -965,4 +975,6 @@ if __name__ == "__main__":
     # rectify_pgroup_test()
     # sanity_check_test()
     #write_tables_test()
-    pi_helper_test()
+    #pi_helper_test()
+    #ctrl_data_test()
+    new_format_test_2()
