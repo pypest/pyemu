@@ -89,7 +89,7 @@ jobs:
             $d="mac"
         elif [ "$RUNNER_OS" == "Linux" ]; then
             $d="linux"
-        cp "bin/$d/". "$HOME/.local/bin/"
+        cp -r bin/$d/. "$HOME/.local/bin/"
         git clone -b develop --depth 1 https://github.com/usgs/pestpp
         cd pestpp
         mkdir build && cd build
@@ -124,7 +124,7 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         ls $GITHUB_PATH
 
-    - name: "pst tests"
+    - name: ${{ matrix.test-path }}
       shell: bash -l {0}
       run: |
         nosetests -v --with-id --nocapture --with-timer \
