@@ -12,16 +12,22 @@ from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
 
 ext = ''
-bin_path = ''  # os.path.join("..", "..", "bin")
-if "linux" in platform.platform().lower():
-    pass
-    # bin_path = os.path.join(bin_path, "linux")
-elif "darwin" in platform.platform().lower() or 'macos' in platform.platform().lower():
-    pass
-    # bin_path = os.path.join(bin_path, "mac")
+local_bins = False  # change if wanting to test with local binary exes
+if local_bins:
+    bin_path = os.path.join("..", "..", "bin")
+    if "linux" in platform.platform().lower():
+        pass
+        bin_path = os.path.join(bin_path, "linux")
+    elif "darwin" in platform.platform().lower() or 'macos' in platform.platform().lower():
+        pass
+        bin_path = os.path.join(bin_path, "mac")
+    else:
+        bin_path = os.path.join(bin_path, "win")
+        ext = '.exe'
 else:
-    # bin_path = os.path.join(bin_path, "win")
-    ext = '.exe'
+    bin_path = ''
+    if "windows" in platform.platform().lower():
+        ext = '.exe'
 
 mf_exe_path = os.path.join(bin_path, "mfnwt")
 mt_exe_path = os.path.join(bin_path, "mt3dusgs")
