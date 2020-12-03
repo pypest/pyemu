@@ -769,7 +769,7 @@ class ObservationEnsemble(Ensemble):
 
         Note:
             replaces the last realization with the current `ObservationEnsemble.pst.observation_data.obsval` values
-                as a new realization named "base"
+            as a new realization named "base"
 
         """
         if "base" in self.index:

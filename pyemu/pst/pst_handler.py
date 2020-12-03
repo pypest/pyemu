@@ -280,7 +280,7 @@ class Pst(object):
 
         Note:
             if the Pst.__res attribute has not been loaded,
-                this call loads the res dataframe from a file
+            this call loads the res dataframe from a file
 
         """
         if self.__res is not None:
@@ -2560,8 +2560,8 @@ class Pst(object):
 
         Note:
             This method does not check for multiple occurences of the same parameter name(s) in
-                across template files so if you have the same parameter in multiple template files,
-                this is not the method you are looking for
+            across template files so if you have the same parameter in multiple template files,
+            this is not the method you are looking for
 
         Example::
 
@@ -3327,7 +3327,8 @@ class Pst(object):
         """try to add meta data columns to parameter and observation data based on
         item names.  Used with the PstFrom process.
 
-        Note: metadata is identified in key-value pairs that are separated by a colon.
+        Note:
+            metadata is identified in key-value pairs that are separated by a colon.
             each key-value pair is separated from others by underscore
 
         """
