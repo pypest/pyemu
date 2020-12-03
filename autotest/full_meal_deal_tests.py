@@ -318,9 +318,9 @@ def freyberg_diff_obs_test():
 
 
 if __name__ == "__main__":
-    freyberg_diff_obs_test()
+    #freyberg_diff_obs_test()
     freyberg_test()
-    freyberg_kl_pp_compare()
+    #freyberg_kl_pp_compare()
     #import shapefile
     #run_sweep_test()
-    fake_run_test()
+    #fake_run_test()
