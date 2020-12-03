@@ -16,15 +16,41 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest] 
         python-version: [3.8] # , 3.7, 3.6]
         run-type: [std]
-        test-path: ["pst_tests.py", "utils_tests.py", "mat_tests.py",
-                   "en_tests.py", "la_tests.py", "pst_from_tests.py",
-                   "da_tests.py", "moouu_tests.py", "full_meal_deal_tests.py",
-                   "plot_tests.py", "pst_tests_2.py"]
+        test-path: [
+              "pst_tests_2.py",
+              "utils_tests.py", 
+              "pst_from_tests.py", 
+              "pst_tests.py", 
+              "full_meal_deal_tests.py", 
+              "en_tests.py",
+              "la_tests.py", 
+              "plot_tests.py", 
+              "moouu_tests.py", 
+              "mat_tests.py", 
+              "da_tests.py"
+            ]
         include:
           - os: ubuntu-latest
-            python-version: 3.8
+            python-version: [3.8, 3.7]
             run-type: nb
             test-path: autotest_notebooks.py
+        include:
+          - os: [windows-latest, ubuntu-latest]
+            python-version: 3.7
+            run-type: nb
+            test-path: [
+              "pst_tests_2.py",
+              "utils_tests.py", 
+              "pst_from_tests.py", 
+              "pst_tests.py", 
+              "full_meal_deal_tests.py", 
+              "en_tests.py",
+              "la_tests.py", 
+              "plot_tests.py", 
+              "moouu_tests.py", 
+              "mat_tests.py", 
+              "da_tests.py"
+            ]
 
     steps:
     - uses:  actions/checkout@v2.3.4 
