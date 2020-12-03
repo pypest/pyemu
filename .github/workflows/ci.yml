@@ -151,8 +151,7 @@ jobs:
       shell: bash -l {0}
       run: |
         nosetests -v --with-id --nocapture --with-timer \
-        --with-coverage --cover-package=pyemu --cover-xml \
-        --cover-xml-file=../coverage.xml -w ./autotest ${{ matrix.test-path }}
+        --with-coverage --cover-package=pyemu -w ./autotest ${{ matrix.test-path }}
 
     - name: Coveralls Parallel
       uses: coverallsapp/github-action@master
@@ -162,7 +161,7 @@ jobs:
         parallel: true
 
   finish:
-    needs: test
+    needs: pyemuCI
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
