@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest] 
-        python-version: [3.8, 3.7] # , 3.7, 3.6]
+        os: [windows-latest, ubuntu-latest, macos-latest] 
+        python-version: [3.8, 3.7, 3.6] # , 3.7, 3.6]
         run-type: [std]
         test-path: [
               "pst_tests_2.py",
@@ -29,10 +29,16 @@ jobs:
               "mat_tests.py", 
               "da_tests.py"
             ]
-        include:
+        exclude:
           - os: macos-latest
-            python-version: 3.8
-            run-type: mac
+            python-version: 3.7
+          - os: macos-latest
+            python-version: 3.6
+          - os: windows-latest
+            python-version: 3.7
+          - os: windows-latest
+            python-version: 3.6
+        include:
           - os: ubuntu-latest
             python-version: 3.8
             run-type: nb
