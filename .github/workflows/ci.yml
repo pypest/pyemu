@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest] 
-        python-version: [3.8] # , 3.7, 3.6]
+        os: [windows-latest, ubuntu-latest] 
+        python-version: [3.8, 3.7] # , 3.7, 3.6]
         run-type: [std]
         test-path: [
               "pst_tests_2.py",
@@ -31,11 +31,11 @@ jobs:
             ]
         include:
           - os: ubuntu-latest
-            python-version: [3.8, 3.7]
+            python-version: 3.8
             run-type: nb
             test-path: autotest_notebooks.py
-          - os: [windows-latest, ubuntu-latest]
-            python-version: 3.7
+          - os: macos-latest
+            python-version: 3.8
             test-path: [
               "pst_tests_2.py",
               "utils_tests.py", 
