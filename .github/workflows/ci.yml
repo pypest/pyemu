@@ -34,10 +34,8 @@ jobs:
             python-version: [3.8, 3.7]
             run-type: nb
             test-path: autotest_notebooks.py
-        include:
           - os: [windows-latest, ubuntu-latest]
             python-version: 3.7
-            run-type: nb
             test-path: [
               "pst_tests_2.py",
               "utils_tests.py", 
