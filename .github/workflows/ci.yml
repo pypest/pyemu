@@ -153,25 +153,41 @@ jobs:
         nosetests -v --with-id --nocapture --with-timer \
         --with-coverage --cover-package=pyemu -w ./autotest ${{ matrix.test-path }}
 
-    - name: Upload Coveralls
-      run: coveralls 
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_FLAG_NAME: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
-        COVERALLS_PARALLEL: true
+    # - name: Upload Coveralls
+    #   run: |
+    #     coveralls 
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     COVERALLS_FLAG_NAME: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+    #     COVERALLS_PARALLEL: true
 
-  coveralls:
-    name: Finish Coveralls
-    needs: pyemuCI
-    runs-on: ubuntu-latest
-    container: python:3-slim
-    steps: 
-    - name: Finished
-      run: |
-        pip3 install --upgrade coveralls
-        coveralls --finish
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Coveralls
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        parallel: true
+        flag-name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+
+  # coveralls:
+  #   name: Finish Coveralls
+  #   needs: pyemuCI
+  #   runs-on: ubuntu-latest
+  #   container: python:3-slim
+  #   steps: 
+  #   - name: Finished
+  #     run: |
+  #       pip3 install --upgrade coveralls
+  #       coveralls --finish
+  #     env:
+  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  coveralls_finish:
+  needs: pyemuCI
+  runs-on: ubuntu-latest
+  steps:
+  - name: Coveralls Finished
+    uses: AndreMiras/coveralls-python-action@develop
+    with:
+      parallel-finished: true
 
 
 
