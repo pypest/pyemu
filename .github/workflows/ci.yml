@@ -162,10 +162,11 @@ jobs:
     #     COVERALLS_PARALLEL: true
 
     - name: Coveralls
+      if: ${{ runner.os == "Linux"}}
       uses: AndreMiras/coveralls-python-action@develop
       with:
         parallel: true
-        flag-name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+        flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
 
   # coveralls:
   #   name: Finish Coveralls
