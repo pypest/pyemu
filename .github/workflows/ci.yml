@@ -181,13 +181,13 @@ jobs:
   #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   coveralls_finish:
-  needs: pyemuCI
-  runs-on: ubuntu-latest
-  steps:
-  - name: Coveralls Finished
-    uses: AndreMiras/coveralls-python-action@develop
-    with:
-      parallel-finished: true
+    needs: pyemuCI
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        parallel-finished: true
 
 
 
