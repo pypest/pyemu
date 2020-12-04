@@ -151,7 +151,6 @@ jobs:
       shell: bash -l {0}
       run: |
         nosetests -v --with-id --nocapture --with-timer \
-        --cover-xml --cover-xml-file=../coverage.xml \
         --with-coverage --cover-package=pyemu \
         -w ./autotest ${{ matrix.test-path }}
 
