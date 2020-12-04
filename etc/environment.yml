@@ -10,3 +10,4 @@ dependencies:
   - matplotlib
   - coverage
   - coveralls
+  - nose

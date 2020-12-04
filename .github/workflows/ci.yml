@@ -38,11 +38,11 @@ jobs:
             python-version: 3.7
           - os: windows-latest
             python-version: 3.6
-        include:
-          - os: ubuntu-latest
-            python-version: 3.8
-            run-type: nb
-            test-path: autotest_notebooks.py
+        # include:
+          # - os: ubuntu-latest
+            # python-version: 3.8
+            # run-type: nb
+            # test-path: autotest_notebooks.py
 
 
     steps:
