@@ -153,21 +153,25 @@ jobs:
         nosetests -v --with-id --nocapture --with-timer \
         --with-coverage --cover-package=pyemu -w ./autotest ${{ matrix.test-path }}
 
-    - name: Coveralls Parallel
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-        flag-name: run-${{ matrix.test-path }}
-        parallel: true
+    - name: Upload Coveralls
+      run: coveralls 
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_FLAG_NAME: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+        COVERALLS_PARALLEL: true
 
-  finish:
+  coveralls:
+    name: Finish Coveralls
     needs: pyemuCI
     runs-on: ubuntu-latest
-    steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-        parallel-finished: true
+    container: python:3-slim
+    steps: 
+    - name: Finished
+      run: |
+        pip3 install --upgrade coveralls
+        coveralls --finish
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
 
