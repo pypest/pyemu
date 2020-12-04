@@ -145,13 +145,15 @@ jobs:
       shell: bash
       run: |
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-        ls $GITHUB_PATH
+        echo $GITHUB_PATH
 
     - name: ${{ matrix.test-path }}
       shell: bash -l {0}
       run: |
         nosetests -v --with-id --nocapture --with-timer \
-        --with-coverage --cover-package=pyemu -w ./autotest ${{ matrix.test-path }}
+        --cover-xml --cover-xml-file=../coverage.xml \
+        --with-coverage --cover-package=pyemu \
+        -w ./autotest ${{ matrix.test-path }}
 
     # - name: Upload Coveralls
     #   run: |
@@ -162,10 +164,11 @@ jobs:
     #     COVERALLS_PARALLEL: true
 
     - name: Coveralls
-      if: ${{ runner.os == 'Linux'}}
+      if: ${{ runner.os == 'Linux' }}
       uses: AndreMiras/coveralls-python-action@develop
       with:
         parallel: true
+        debug: true
         flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
 
   # coveralls:
@@ -189,6 +192,7 @@ jobs:
       uses: AndreMiras/coveralls-python-action@develop
       with:
         parallel-finished: true
+        debug: true
 
 
 
