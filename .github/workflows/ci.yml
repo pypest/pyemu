@@ -163,7 +163,7 @@ jobs:
     #     COVERALLS_PARALLEL: true
 
     - name: Coveralls
-      if: ${{ runner.os == 'Linux' }}
+      if: ${{ runner.os == 'Linux' && matrix.python-version > 3.6 }}
       uses: AndreMiras/coveralls-python-action@develop
       with:
         parallel: true

@@ -95,10 +95,10 @@ script:
   - export PYTHONPATH=$PYTHONPATH:.
   - nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu $TEST_SCRIPT
 
-after_success:
-  - cd docs
-  - make html
-  - cd ..
-  - coveralls
+# after_success:
+#   - cd docs
+#   - make html
+#   - cd ..
+#   - coveralls
 
 

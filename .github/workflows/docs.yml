@@ -1,0 +1,18 @@
+name: pyemu sphinx docs
+
+on: 
+  schedule:
+    - cron: '0 8 * * *' # run at 8 AM UTC (12 am PST)
+  push:
+  pull_request:
+
+jobs:
+  sphinx:
+    needs: pyemuCI
+    runs-on: windows-latest
+    steps:
+    - name: make docs
+      run: |
+        cd docs
+        make html
+        cd ..
