@@ -150,7 +150,7 @@ jobs:
     - name: ${{ matrix.test-path }}
       shell: bash -l {0}
       run: |
-        nosetests -v --with-id --nocapture --with-timer \
+        coverage run nose -v --with-id --nocapture --with-timer \
         --with-coverage --cover-xml -w ./autotest --cover-package=pyemu \
         ${{ matrix.test-path }}
 
