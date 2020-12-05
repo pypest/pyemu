@@ -216,7 +216,6 @@ jobs:
     steps:
     - uses:  actions/checkout@v2
     - uses: ammaraskar/sphinx-action@master
-    - name: make docs
-      with:
-        docs-folder: "docs/"
+    with:
+      docs-folder: "docs/"
 
