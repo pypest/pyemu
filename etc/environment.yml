@@ -9,3 +9,5 @@ dependencies:
   - nbsphinx
   - matplotlib
   - coverage
+  - coveralls
+  - nose
