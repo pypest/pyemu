@@ -13,16 +13,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest] #, windows-latest, macos-latest] 
-        python-version: [3.8] #, 3.7, 3.6] # , 3.7, 3.6]
+        os: [ubuntu-latest, windows-latest, macos-latest] 
+        python-version: [3.8, 3.7, 3.6] # , 3.7, 3.6]
         run-type: [std]
         test-path: [
-              # "utils_tests.py", 
-              # "pst_tests_2.py",
-              # "pst_from_tests.py", 
-              # "pst_tests.py", 
-              # "en_tests.py",
-              # "full_meal_deal_tests.py", 
+              "utils_tests.py", 
+              "pst_tests_2.py",
+              "pst_from_tests.py", 
+              "pst_tests.py", 
+              "en_tests.py",
+              "full_meal_deal_tests.py", 
               "la_tests.py", 
               "plot_tests.py", 
               "moouu_tests.py", 
@@ -38,11 +38,11 @@ jobs:
             python-version: 3.7
           - os: windows-latest
             python-version: 3.6
-        # include:
-        #   - os: ubuntu-latest
-        #     python-version: 3.8
-        #     run-type: nb
-        #     test-path: autotest_notebooks.py
+        include:
+          - os: ubuntu-latest
+            python-version: 3.8
+            run-type: nb
+            test-path: autotest_notebooks.py
 
 
     steps:
@@ -162,20 +162,20 @@ jobs:
     #     COVERALLS_FLAG_NAME: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
     #     COVERALLS_PARALLEL: true
 
-    # - name: Coveralls
-      # if: ${{ runner.os == 'Linux' }}
-      # uses: AndreMiras/coveralls-python-action@develop
-      # with:
-        # parallel: true
-        # debug: true
-        # flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
-
-    - name: Coveralls Parallel
-      uses: coverallsapp/github-action@master
+    - name: Coveralls
+      if: ${{ runner.os == 'Linux' }}
+      uses: AndreMiras/coveralls-python-action@develop
       with:
-        github-token: ${{ secrets.github_token }}
-        flag-name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
         parallel: true
+        debug: true
+        flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
+
+    # - name: Coveralls Parallel
+    #   uses: coverallsapp/github-action@master
+    #   with:
+    #     github-token: ${{ secrets.github_token }}
+    #     flag-name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+    #     parallel: true
 
   # coveralls:
   #   name: Finish Coveralls
@@ -190,24 +190,24 @@ jobs:
   #     env:
   #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # coveralls_finish:
-  #   needs: pyemuCI
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Coveralls Finished
-  #     uses: AndreMiras/coveralls-python-action@develop
-  #     with:
-  #       parallel-finished: true
-  #       debug: true
-  
-  finish:
+  coveralls_finish:
     needs: pyemuCI
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
-      uses: coverallsapp/github-action@master
+      uses: AndreMiras/coveralls-python-action@develop
       with:
-        github-token: ${{ secrets.github_token }}
         parallel-finished: true
+        debug: true
+  
+  # finish:
+  #   needs: pyemuCI
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Coveralls Finished
+  #     uses: coverallsapp/github-action@master
+  #     with:
+  #       github-token: ${{ secrets.github_token }}
+  #       parallel-finished: true
 
 
