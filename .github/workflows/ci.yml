@@ -151,7 +151,7 @@ jobs:
       shell: bash -l {0}
       run: |
         nosetests -v --with-id --nocapture --with-timer \
-        --with-coverage -w ./autotest --cover-package=pyemu \
+        --with-coverage --cover-xml -w ./autotest --cover-package=pyemu \
         ${{ matrix.test-path }}
 
     # - name: Upload Coveralls
