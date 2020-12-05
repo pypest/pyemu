@@ -210,4 +210,13 @@ jobs:
   #       github-token: ${{ secrets.github_token }}
   #       parallel-finished: true
 
+  sphinx:
+    needs: pyemuCI
+    runs-on: windows-latest
+    steps:
+    - name: make docs
+      run: |
+        cd docs
+        make html
+        cd ..
 
