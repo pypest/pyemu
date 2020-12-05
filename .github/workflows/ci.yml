@@ -13,16 +13,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest] 
+        os: [ubuntu-latest, windows-latest, macos-latest] 
         python-version: [3.8, 3.7, 3.6] # , 3.7, 3.6]
         run-type: [std]
         test-path: [
-              "pst_tests_2.py",
               "utils_tests.py", 
+              "pst_tests_2.py",
               "pst_from_tests.py", 
               "pst_tests.py", 
-              "full_meal_deal_tests.py", 
               "en_tests.py",
+              "full_meal_deal_tests.py", 
               "la_tests.py", 
               "plot_tests.py", 
               "moouu_tests.py", 
@@ -145,104 +145,77 @@ jobs:
       shell: bash
       run: |
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-        ls $GITHUB_PATH
+        echo $GITHUB_PATH
 
     - name: ${{ matrix.test-path }}
       shell: bash -l {0}
       run: |
-        nosetests -v --with-id --nocapture --with-timer \
-        --with-coverage --cover-package=pyemu --cover-xml \
-        --cover-xml-file=../coverage.xml -w ./autotest ${{ matrix.test-path }}
+        coverage run -m nose -v --with-id --nocapture --with-timer \
+        --with-coverage -w ./autotest --cover-package=pyemu \
+        ${{ matrix.test-path }}
 
+    # - name: Upload Coveralls
+    #   run: |
+    #     coveralls 
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     COVERALLS_FLAG_NAME: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+    #     COVERALLS_PARALLEL: true
 
-    # - name: "pst tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest pst_tests.py
-
-    # - name: "utils tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest utils_tests.py
-
-    # - name: "mat tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest mat_tests.py
-
-    # - name: "en tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest en_tests.py
-
-    # - name: "la tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest la_tests.py
-
-    # - name: "PstFrom tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest pst_from_tests.py
-
-    # - name: "da tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest da_tests.py
-
-    # - name: "moouu tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest moouu_tests.py       
-
-    # - name: "full meal deal tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest full_meal_deal_tests.py
- 
-    # - name: "plot tests"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest plot_tests.py
-
-    # - name: "pst tests 2"
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest pst_tests_2.py
-
-    # - name: "notebook tests"
-    #   if: ${{ runner.os == 'Linux' && matrix.python-version == '3.8' }}
-    #   shell: bash -l {0}
-    #   run: |
-    #     nosetests -v --with-id --nocapture --with-timer \
-    #     --with-coverage --cover-package=pyemu --cover-xml \
-    #     --cover-xml-file=../coverage.xml -w ./autotest autotest_notebooks.py
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1.0.15
+    - name: Coveralls
+      if: ${{ runner.os == 'Linux' && matrix.python-version > 3.6 }}
+      uses: AndreMiras/coveralls-python-action@develop
       with:
-        file: ./coverage.xml
+        parallel: true
+        debug: true
+        flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
 
+    # - name: Coveralls Parallel
+    #   uses: coverallsapp/github-action@master
+    #   with:
+    #     github-token: ${{ secrets.github_token }}
+    #     flag-name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+    #     parallel: true
+
+  # coveralls:
+  #   name: Finish Coveralls
+  #   needs: pyemuCI
+  #   runs-on: ubuntu-latest
+  #   container: python:3-slim
+  #   steps: 
+  #   - name: Finished
+  #     run: |
+  #       pip3 install --upgrade coveralls
+  #       coveralls --finish
+  #     env:
+  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  coveralls_finish:
+    needs: pyemuCI
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        parallel-finished: true
+        debug: true
+  
+  # finish:
+  #   needs: pyemuCI
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Coveralls Finished
+  #     uses: coverallsapp/github-action@master
+  #     with:
+  #       github-token: ${{ secrets.github_token }}
+  #       parallel-finished: true
+
+  # sphinx:
+  #   needs: pyemuCI
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses:  actions/checkout@v2
+  #   - uses: ammaraskar/sphinx-action@master
+  #     with:
+  #       docs-folder: "docs/"
 
