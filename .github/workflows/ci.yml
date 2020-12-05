@@ -201,13 +201,13 @@ jobs:
   #       debug: true
   
   finish:
-  needs: pyemuCI
-  runs-on: ubuntu-latest
-  steps:
-  - name: Coveralls Finished
-    uses: coverallsapp/github-action@master
-    with:
-      github-token: ${{ secrets.github_token }}
-      parallel-finished: true
+    needs: pyemuCI
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        parallel-finished: true
 
 
