@@ -38,11 +38,11 @@ jobs:
             python-version: 3.7
           - os: windows-latest
             python-version: 3.6
-        include:
-          - os: ubuntu-latest
-            python-version: 3.8
-            run-type: nb
-            test-path: autotest_notebooks.py
+        # include:
+        #   - os: ubuntu-latest
+        #     python-version: 3.8
+        #     run-type: nb
+        #     test-path: autotest_notebooks.py
 
 
     steps:
@@ -154,13 +154,13 @@ jobs:
         --with-coverage -w ./autotest --cover-package=pyemu \
         ${{ matrix.test-path }}
 
-    - name: Upload Coveralls
-      run: |
-        coveralls 
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_FLAG_NAME: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
-        COVERALLS_PARALLEL: true
+    # - name: Upload Coveralls
+    #   run: |
+    #     coveralls 
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     COVERALLS_FLAG_NAME: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+    #     COVERALLS_PARALLEL: true
 
     # - name: Coveralls
       # if: ${{ runner.os == 'Linux' }}
@@ -170,18 +170,25 @@ jobs:
         # debug: true
         # flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
 
-  coveralls:
-    name: Finish Coveralls
-    needs: pyemuCI
-    runs-on: ubuntu-latest
-    container: python:3-slim
-    steps: 
-    - name: Finished
-      run: |
-        pip3 install --upgrade coveralls
-        coveralls --finish
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Coveralls Parallel
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        flag-name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+        parallel: true
+
+  # coveralls:
+  #   name: Finish Coveralls
+  #   needs: pyemuCI
+  #   runs-on: ubuntu-latest
+  #   container: python:3-slim
+  #   steps: 
+  #   - name: Finished
+  #     run: |
+  #       pip3 install --upgrade coveralls
+  #       coveralls --finish
+  #     env:
+  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # coveralls_finish:
   #   needs: pyemuCI
@@ -192,6 +199,15 @@ jobs:
   #     with:
   #       parallel-finished: true
   #       debug: true
-
+  
+  finish:
+  needs: pyemuCI
+  runs-on: ubuntu-latest
+  steps:
+  - name: Coveralls Finished
+    uses: coverallsapp/github-action@master
+    with:
+      github-token: ${{ secrets.github_token }}
+      parallel-finished: true
 
 
