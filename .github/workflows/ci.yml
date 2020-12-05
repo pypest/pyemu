@@ -17,11 +17,11 @@ jobs:
         python-version: [3.8] #, 3.7, 3.6] # , 3.7, 3.6]
         run-type: [std]
         test-path: [
-              # "utils_tests.py", 
-              # "pst_tests_2.py",
-              # "pst_from_tests.py", 
-              # "pst_tests.py", 
-              # "en_tests.py",
+              "utils_tests.py", 
+              "pst_tests_2.py",
+              "pst_from_tests.py", 
+              "pst_tests.py", 
+              "en_tests.py",
               "full_meal_deal_tests.py", 
               "la_tests.py", 
               "plot_tests.py", 
@@ -38,11 +38,11 @@ jobs:
             python-version: 3.7
           - os: windows-latest
             python-version: 3.6
-        # include:
-          # - os: ubuntu-latest
-            # python-version: 3.8
-            # run-type: nb
-            # test-path: autotest_notebooks.py
+        include:
+          - os: ubuntu-latest
+            python-version: 3.8
+            run-type: nb
+            test-path: autotest_notebooks.py
 
 
     steps:
@@ -151,7 +151,7 @@ jobs:
       shell: bash -l {0}
       run: |
         coverage run -m nose -v --with-id --nocapture --with-timer \
-        --with-coverage --cover-xml -w ./autotest --cover-package=pyemu \
+        --with-coverage -w ./autotest --cover-package=pyemu \
         ${{ matrix.test-path }}
 
     # - name: Upload Coveralls
