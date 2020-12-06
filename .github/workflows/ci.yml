@@ -10,6 +10,7 @@ jobs:
   pyemuCI:
     name: autotests
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -167,7 +168,7 @@ jobs:
       uses: AndreMiras/coveralls-python-action@develop
       with:
         parallel: true
-        debug: true
+        debug: false
         flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
 
     # - name: Coveralls Parallel
