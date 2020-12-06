@@ -1009,6 +1009,14 @@ class PstFrom(object):
         Note:
             This is the main entry for adding observations to the pest interface
 
+        Example::
+
+            # setup observations for the 2nd thru 5th columns of the csv file
+            # using the first column as the index
+            df = pf.add_observations("heads.csv",index_col=0,use_cols=[1,2,3,4],
+                                     ofile_sep=",")
+
+
         """
         # TODO - array style outputs? or expecting post processing to tabular
         if insfile is None:
@@ -1139,7 +1147,7 @@ class PstFrom(object):
         Example::
 
             pst = pyemu.Pst(os.path.join("template", "my.pst"))
-            pst.add_observations(os.path.join("template","new_obs.dat.ins"),
+            pst.add_observations_from_ins(os.path.join("template","new_obs.dat.ins"),
                                  pst_path=".")
             pst.write(os.path.join("template", "my_new.pst")
 
