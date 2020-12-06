@@ -4,13 +4,13 @@ pyEMU
 python modules for model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) uncertainty analyses and data-worth analyses, non-linear uncertainty analyses and interfacing with PEST and PEST++.  pyEMU also has a pure python (pandas and numpy) implementation of ordinary kriging for geostatistical interpolation and support for generating high-dimensional PEST(++) model interfaces, including support for (very) high-dimensional ensemble generation and handling   
 
 Master branch:
-![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=master)
+[![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=master)](https://github.com/pypest/pyemu/actions)
 [![Travis Status](https://travis-ci.org/pypest/pyemu.svg?branch=master)](https://travis-ci.org/pypest/pyemu)
 [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/pypest/pyemu?branch=master&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=master)](https://coveralls.io/github/pypest/pyemu?branch=master)
 
 Develop branch:
-![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=develop)
+[![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=develop)](https://github.com/pypest/pyemu/actions)
 [![Travis Status](https://travis-ci.org/pypest/pyemu.svg?branch=develop)](https://travis-ci.org/pypest/pyemu)
 [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/pypest/pyemu?branch=develop&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/pypest/pyemu?branch=develop)
