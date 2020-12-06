@@ -63,14 +63,13 @@ class PstFrom(object):
             Default is False (write template files to ``new_d``).
 
     Example::
+
         pf = PstFrom("path_to_model_files","new_dir_with_pest_stuff",start_datetime="1-1-2020")
         pf.add_parameters("hk.dat")
         pf.add_observations("heads.csv")
         pf.build_pst("pest.pst")
         pe = pf.draw(100)
         pe.to_csv("prior.csv")
-        ß
-
 
     """
 
@@ -1317,12 +1316,25 @@ class PstFrom(object):
                 Warning: currently comment lines within list-like tabular data
                 will be lost.
             par_style (`str`): either "multiplier" or "direct" where the former setups
-                up a multiplier parameter process against the exsting model input
+                up a multiplier parameter process against the existing model input
                 array and the former setups a template file to write the model
                 input file directly.  Default is "multiplier".
 
         Returns:
             `pandas.DataFrame`: dataframe with info for new parameters
+
+        Example::
+
+            # setup grid-scale direct parameters for an array of numbers
+            df = pf.add_parameters("hk.dat",par_type="grid",par_style="direct")
+            # setup pilot point multiplier parameters for an array of numbers
+            # with a pilot point being set in every 5th active model cell
+            df = pf.add_parameters("recharge.dat",par_type="pilotpoint",pp_space=5,
+                                   zone_array="ibound.dat")
+            # setup a single multiplier parameter for the 4th column
+            # of a column format (list type) file
+            df = pf.add_parameters("wel_list_1.dat",par_type="constant",
+                                   index_cols=[0,1,2],use_cols=[3])
 
         """
         # TODO need more support for temporal pars?
