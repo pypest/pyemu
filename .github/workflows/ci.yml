@@ -113,7 +113,7 @@ jobs:
             exit 1
         fi
         cp -r bin/$d/. "$HOME/.local/bin/"
-        git clone -b develop --depth 1 https://github.com/usgs/pestpp
+        git clone -b master --depth 1 https://github.com/usgs/pestpp
         cd pestpp
         mkdir build && cd build
         if [[ "$RUNNER_OS" == "Windows" ]]; then
