@@ -10,6 +10,7 @@ jobs:
   pyemuCI:
     name: autotests
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -113,7 +114,7 @@ jobs:
             exit 1
         fi
         cp -r bin/$d/. "$HOME/.local/bin/"
-        git clone -b master --depth 1 https://github.com/usgs/pestpp
+        git clone -b develop --depth 1 https://github.com/usgs/pestpp
         cd pestpp
         mkdir build && cd build
         if [[ "$RUNNER_OS" == "Windows" ]]; then
@@ -167,7 +168,7 @@ jobs:
       uses: AndreMiras/coveralls-python-action@develop
       with:
         parallel: true
-        debug: true
+        debug: false
         flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
 
     # - name: Coveralls Parallel
