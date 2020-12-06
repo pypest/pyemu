@@ -62,6 +62,9 @@ class PstFrom(object):
         tpl_subfolder (`str`): option to write template files to a subfolder within ``new_d``.
             Default is False (write template files to ``new_d``).
 
+    Note:
+        This is the way...
+
     Example::
 
         pf = PstFrom("path_to_model_files","new_dir_with_pest_stuff",start_datetime="1-1-2020")
