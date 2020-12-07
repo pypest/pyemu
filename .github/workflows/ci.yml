@@ -141,7 +141,7 @@ jobs:
         # python setup.py install
         # cd ..
         # pip install https://github.com/modflowpy/pymake/zipball/master
-        # python setup.py install
+        python setup.py install
 
     - name: Add executables directory to path
       shell: bash
