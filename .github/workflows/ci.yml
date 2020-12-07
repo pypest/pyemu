@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest] 
+        os: [ubuntu-latest, windows-latest] #, macos-latest] 
         python-version: [3.8, 3.7, 3.6] # , 3.7, 3.6]
         run-type: [std]
         test-path: [
@@ -31,10 +31,10 @@ jobs:
               "da_tests.py"
             ]
         exclude:
-          - os: macos-latest
-            python-version: 3.7
-          - os: macos-latest
-            python-version: 3.6
+          # - os: macos-latest
+            # python-version: 3.7
+          # - os: macos-latest
+            # python-version: 3.6
           - os: windows-latest
             python-version: 3.7
           - os: windows-latest
@@ -47,7 +47,7 @@ jobs:
 
 
     steps:
-    - uses:  actions/checkout@v2.3.4 
+    - uses:  actions/checkout@v2.3.4 # checksout this repo
     # - name: Setup Ninja
       # if: ${{ runner.os == 'Windows' }} 
     - uses: seanmiddleditch/gha-setup-ninja@master
@@ -135,11 +135,12 @@ jobs:
     - name: Install Flopy & pyemu?
       shell: bash -l {0}
       run: |
-        git clone -b develop --depth 1 https://github.com/modflowpy/flopy.git
-        cd flopy
-        python setup.py install
-        cd ..
-        pip install https://github.com/modflowpy/pymake/zipball/master
+        pip install https://github.com/modflowpy/flopy/zipball/develop
+        # git clone -b develop --depth 1 https://github.com/modflowpy/flopy.git
+        # cd flopy
+        # python setup.py install
+        # cd ..
+        # pip install https://github.com/modflowpy/pymake/zipball/master
         python setup.py install
 
     - name: Add executables directory to path
