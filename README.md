@@ -15,8 +15,10 @@ Develop branch:
 [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/pypest/pyemu?branch=develop&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/pypest/pyemu?branch=develop)
 
-Read the docs
+Documentation
 =============
+
+Complete user's guide:
 
 [https://pyemu.readthedocs.io/en/latest/](https://pyemu.readthedocs.io/en/latest/)
 
