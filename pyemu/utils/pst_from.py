@@ -2638,7 +2638,7 @@ def _get_tpl_or_ins_df(
         # order matters for obs
         sidx = []
         for df in dfs:
-            didx = df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1).values
+            didx = df.loc[:, index_cols].values
             aidx = [i for i in didx if i not in sidx]
             sidx.extend(aidx)
 
@@ -2646,26 +2646,28 @@ def _get_tpl_or_ins_df(
     # get some index strings for naming
     if longnames:
         j = "_"
-        fmt = "{0}|{1}"
+        # fmt = "{0}|{1}"
         if isinstance(index_cols[0], str):
             inames = index_cols
         else:
             inames = ["idx{0}".format(i) for i in range(len(index_cols))]
+        # full formatter string
+        fmt = j.join([f"{iname}|{{{i}}}" for i, iname in enumerate(inames)])
     else:
-        fmt = "{1:3}"
+        # fmt = "{1:3}"
         j = ""
         if isinstance(index_cols[0], str):
             inames = index_cols
         else:
             inames = ["{0}".format(i) for i in range(len(index_cols))]
-
+        # full formatter string
+        fmt = j.join([f"{{{i}:3}}" for i, iname in enumerate(inames)])
     if not zero_based:  # only if indices are ints (trying to support strings as par ids)
         df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
             lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x))
 
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
-        lambda x: j.join([fmt.format(iname, xx) for xx, iname in zip(x, inames)])
-    ).str.replace(" ", "")
+        lambda x: fmt.format(*x)).str.replace(" ", "")
     df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "")
     df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":")
 

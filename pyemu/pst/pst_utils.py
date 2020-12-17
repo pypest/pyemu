@@ -591,9 +591,10 @@ def parse_ins_file(ins_file):
         for line in f:
             line = line.lower()
             if marker in line:
-                raw = line.lower().strip().split(marker)
+                raw = line.strip().split(marker)
                 for item in raw[::2]:
-                    obs_names.extend(_parse_ins_string(item))
+                    if len(item) > 1:  # possible speedup
+                        obs_names.extend(_parse_ins_string(item))
             else:
                 obs_names.extend(_parse_ins_string(line.strip()))
     # obs_names = [on.strip().lower() for on in obs_names]
@@ -1148,30 +1149,34 @@ class InstructionFile(object):
             elif len(line) == 0:
                 self.throw_ins_warning("empty line, breaking")
                 break
-            elif line[0].startswith("l"):
-                pass
-            elif line[0].startswith(self._marker):
-                pass
-            elif line[0].startswith("&"):
-                self.throw_ins_error("line continuation not supported")
             else:
-                self.throw_ins_error(
-                    "first token must be line advance ('l'), primary marker, or continuation ('&'),"
-                    + "not: {0}".format(line[0])
-                )
+                c1 = line[0][:1]
+                if c1 == "l":
+                    pass
+                elif c1 == self._marker:
+                    pass
+                elif c1 == "&":
+                    self.throw_ins_error("line continuation not supported")
+                else:
+                    self.throw_ins_error(
+                        "first token must be line advance ('l'), primary marker, or continuation ('&'),"
+                        + "not: {0}".format(line[0])
+                    )
 
             for token in line[1:]:
-                if token.startswith("t"):
+                t1 = token[:1]
+                if t1 == "t":
                     self.throw_ins_error("tab instruction not supported")
-                elif token.startswith(self._marker):
-                    if not token.endswith(self._marker):
+                elif t1 == self._marker:
+                    tn = token[-1:]
+                    if not tn == self._marker:
                         self.throw_ins_error(
                             "unbalanced secondary marker in token '{0}'".format(token)
                         )
 
                 for somarker, eomarker in zip(["!", "[", "("], ["!", "]", ")"]):
                     #
-                    if token[0] == somarker:
+                    if t1 == somarker:
                         ofound = True
                         if eomarker not in token[1:]:
                             self.throw_ins_error(
@@ -1273,10 +1278,11 @@ class InstructionFile(object):
             val_dict.update(self._execute_ins_line(ins_line, ins_lcount))
             # except Exception as e:
             #    raise Exception(str(e))
-        s = pd.Series(val_dict)
-        s.sort_index(inplace=True)
+        df = pd.DataFrame.from_dict(val_dict, orient='index', columns=['obsval'])
+        # s = pd.Series(val_dict)
+        # s.sort_index(inplace=True)
 
-        return pd.DataFrame({"obsval": s}, index=s.index)
+        return df.sort_index()
 
     def _execute_ins_line(self, ins_line, ins_lcount):
         """private method to process output file lines with an instruction line"""
@@ -1290,9 +1296,9 @@ class InstructionFile(object):
             if ii >= len(ins_line):
                 break
             ins = ins_line[ii]
-
+            i1 = ins[:1]
             # primary marker
-            if ii == 0 and ins.startswith(self._marker):
+            if ii == 0 and i1 == self._marker:
                 mstr = ins.replace(self._marker, "")
                 while True:
                     line = self._readline_output()
@@ -1307,7 +1313,7 @@ class InstructionFile(object):
                 cursor_pos = line.index(mstr) + len(mstr)
 
             # line advance
-            elif ins.startswith("l"):
+            elif i1 == "l":
                 try:
                     nlines = int(ins[1:])
                 except Exception as e:
@@ -1323,7 +1329,7 @@ class InstructionFile(object):
                                 nlines, ins, ins_lcount
                             )
                         )
-            elif ins == "w":
+            elif ins == "w":  # whole string comparison
                 raw = line[cursor_pos:].replace(",", " ").split()
                 if line[cursor_pos] in line_seps:
                     raw.insert(0, "")
@@ -1340,10 +1346,10 @@ class InstructionFile(object):
                     raw[1]
                 )
 
-            elif ins.startswith("!"):
+            elif i1 == "!":
                 oname = ins.replace("!", "")
                 # look a head for a sec marker
-                if ii < len(ins_line) - 1 and ins_line[ii + 1].startswith(self._marker):
+                if ii < len(ins_line) - 1 and ins_line[ii + 1] == self._marker:
                     m = ins_line[ii + 1].replace(self._marker, "")
                     if m not in line[cursor_pos:]:
                         self.throw_out_error(
@@ -1372,7 +1378,7 @@ class InstructionFile(object):
                 )
                 all_markers = False
 
-            elif ins.startswith(self._marker):
+            elif i1 == self._marker:
                 m = ins.replace(self._marker, "")
                 if m not in line[cursor_pos:]:
                     if all_markers:
@@ -1422,8 +1428,9 @@ class InstructionFile(object):
                         return
                     yield start
                     start += len(sub)
-
-            midx = list(find_all(line, self._marker))
+            # poss speedup using regex
+            midx = [m.start() for m in re.finditer(self._marker, line)]
+            # midx = list(find_all(line, self._marker))
             midx.append(len(line))
             first = line[: midx[0]].strip()
             tokens = []
