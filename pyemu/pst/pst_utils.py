@@ -591,9 +591,12 @@ def parse_ins_file(ins_file):
         for line in f:
             line = line.lower()
             if marker in line:
+                # this still only returns and obs if "[": "]", "(": ")", "!": "!" in items
                 raw = line.strip().split(marker)
                 for item in raw[::2]:
-                    if len(item) > 1:  # possible speedup
+                    if len(item) > 1:
+                        # possible speedup, only attempting to parse if item
+                        # is more than 1 char
                         obs_names.extend(_parse_ins_string(item))
             else:
                 obs_names.extend(_parse_ins_string(line.strip()))
