@@ -886,7 +886,8 @@ class PstFrom(object):
 
         return self._prefix_count[prefix]
 
-    def add_py_function(self, file_name, call_str, is_pre_cmd=True):
+    def add_py_function(self, file_name, call_str=None, is_pre_cmd=True,
+                        function_name=None):
         """add a python function to the forward run script
 
         Args:
@@ -899,6 +900,7 @@ class PstFrom(object):
                 added to PstFrom.post_py_cmds instead. If passed as `None`,
                 then the function `call_str` is added to the forward run
                 script but is not called.  Default is True.
+            function_name (`str`): DEPRECATED, used `call_str`
         Returns:
             None
 
@@ -927,7 +929,18 @@ class PstFrom(object):
 
 
         """
-
+        if function_name is not None:
+            warnings.warn(
+                "add_py_function(): 'function_name' argument is deprecated, "
+                "use 'call_str' instead", DeprecationWarning
+            )
+            if call_str is None:
+                call_str = function_name
+        if call_str is None:
+            self.logger.lraise(
+                "add_py_function(): No function call string passed in arg "
+                "'call_str'"
+            )
         if not os.path.exists(file_name):
             self.logger.lraise(
                 "add_py_function(): couldnt find python source file '{0}'".format(
@@ -2550,7 +2563,9 @@ def _write_direct_df_tpl(
             if df_ti.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
                 too_long = df_ti.loc[:,use_col].apply(lambda x: len(x)) > 12
                 print(too_long)
-                self.logger.lraise("_write_direct_df_tpl(): couldnt form short par names")
+                raise ValueError(
+                    "_write_direct_df_tpl(): couldnt form short par names"
+                )
 
         direct_tpl_df.loc[:, use_col] = (
             df_ti.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
@@ -2766,7 +2781,9 @@ def _get_tpl_or_ins_df(
             if df_ti.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
                 too_long = df_ti.loc[:,use_col].apply(lambda x: len(x)) > 12
                 print(too_long)
-                self.logger.lraise("_get_tpl_or_ins_df(): couldnt form short par names")
+                raise ValueError(
+                    "_get_tpl_or_ins_df(): couldnt form short par names"
+                )
     return df_ti
 
 
