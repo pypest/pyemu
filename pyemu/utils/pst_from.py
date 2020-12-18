@@ -886,58 +886,76 @@ class PstFrom(object):
 
         return self._prefix_count[prefix]
 
-    def add_py_function(self, file_name, function_name, is_pre_cmd=True):
+    def add_py_function(self, file_name, call_str=None, is_pre_cmd=True,
+                        function_name=None):
         """add a python function to the forward run script
 
         Args:
             file_name (`str`): a python source file
-            function_name (`str`): a python function in
-                `file_name`
-            is_pre_cmd (`bool`): flag to include `function_name` in
-                PstFrom.pre_py_cmds.  If False, `function_name` is
+            call_str (`str`): the call string for python function in
+                `file_name`.
+                `call_str` will be added to the forward run script, as is.
+            is_pre_cmd (`bool`): flag to include `call_str` in
+                PstFrom.pre_py_cmds.  If False, `call_str` is
                 added to PstFrom.post_py_cmds instead. If passed as `None`,
-                then the function `function_name` is added to the forward run
+                then the function `call_str` is added to the forward run
                 script but is not called.  Default is True.
+            function_name (`str`): DEPRECATED, used `call_str`
         Returns:
             None
 
         Note:
-            `function_name` is expected to be standalone a function
+            `call_str` is expected to reference standalone a function
             that contains all the imports it needs or these imports
             should have been added to the forward run script through the
             `PstFrom.py_imports` list.
 
-            This function adds the `function_name` call to the forward
+            This function adds the `call_str` call to the forward
             run script (either as a pre or post command). It is up to users
-            to make sure `function_name` is a valid python function call
+            to make sure `call_str` is a valid python function call
             that includes the parentheses and requisite arguments
 
-            This function expects "def " + `function_name` to be flushed left at the outer
-            most indentation level
+            This function expects "def " + `function_name` to be flushed left
+            at the outer most indentation level
 
         Example::
 
             pf = PstFrom()
-            pf.add_py_function("preprocess.py","mult_well_function()",is_pre_cmd=True)
+            pf.add_py_function(
+                "preprocess.py",
+                "mult_well_function(arg1='userarg')",
+                is_pre_cmd = True
+                )
 
 
         """
-
+        if function_name is not None:
+            warnings.warn(
+                "add_py_function(): 'function_name' argument is deprecated, "
+                "use 'call_str' instead", DeprecationWarning
+            )
+            if call_str is None:
+                call_str = function_name
+        if call_str is None:
+            self.logger.lraise(
+                "add_py_function(): No function call string passed in arg "
+                "'call_str'"
+            )
         if not os.path.exists(file_name):
             self.logger.lraise(
                 "add_py_function(): couldnt find python source file '{0}'".format(
                     file_name
                 )
             )
-        if "(" not in function_name or ")" not in function_name:
+        if "(" not in call_str or ")" not in call_str:
             self.logger.lraise(
-                "add_py_function(): function_name '{0}' missing paretheses".format(
-                    function_name
+                "add_py_function(): call_str '{0}' missing paretheses".format(
+                    call_str
                 )
             )
-
+        function_name = call_str[:call_str.find('(')]  # strip to first occurance of '('
         func_lines = []
-        search_str = "def " + function_name
+        search_str = "def " + function_name + '('
         abet_set = set(string.ascii_uppercase)
         abet_set.update(set(string.ascii_lowercase))
         with open(file_name, "r") as f:
@@ -964,13 +982,13 @@ class PstFrom(object):
 
         self._function_lines_list.append(func_lines)
         if is_pre_cmd is True:
-            self.pre_py_cmds.append(function_name)
+            self.pre_py_cmds.append(call_str)
         elif is_pre_cmd is False:
-            self.post_py_cmds.append(function_name)
+            self.post_py_cmds.append(call_str)
         else:
             self.logger.warn(
                 "add_py_function() command: {0} is not being called directly".format(
-                    function_name
+                    call_str
                 )
             )
 
@@ -2545,7 +2563,9 @@ def _write_direct_df_tpl(
             if df_ti.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
                 too_long = df_ti.loc[:,use_col].apply(lambda x: len(x)) > 12
                 print(too_long)
-                self.logger.lraise("_write_direct_df_tpl(): couldnt form short par names")
+                raise ValueError(
+                    "_write_direct_df_tpl(): couldnt form short par names"
+                )
 
         direct_tpl_df.loc[:, use_col] = (
             df_ti.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
@@ -2761,7 +2781,9 @@ def _get_tpl_or_ins_df(
             if df_ti.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
                 too_long = df_ti.loc[:,use_col].apply(lambda x: len(x)) > 12
                 print(too_long)
-                self.logger.lraise("_get_tpl_or_ins_df(): couldnt form short par names")
+                raise ValueError(
+                    "_get_tpl_or_ins_df(): couldnt form short par names"
+                )
     return df_ti
 
 
