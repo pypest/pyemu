@@ -1386,6 +1386,98 @@ class InstructionFile(object):
                         )
                 cursor_pos = cursor_pos + line[cursor_pos:].index(m) + len(m)
 
+            elif ins.startswith("("):
+                if ")" not in ins:
+                    self.throw_ins_error("unmatched ')'",self._instruction_lcount)
+                oname = ins[1:].split(')')[0].lower()
+                raw = ins.split(')')[1]
+                if ":" not in raw:
+                    self.throw_ins_error("couldnt find ':' in semi-fixed instruction: '{0}'".\
+                        format(ins),lcount=self._instruction_lcount)
+                raw = raw.split(':')
+                try:
+                    s_idx = int(raw[0]) - 1
+                except Exception as e:
+                    self.throw_ins_error("error converting '{0}' to integer in semi-fixed instruction: '{1}'".\
+                                         format(raw[0],ins),lcount=self._instruction_lcount)
+                try:
+                    e_idx = int(raw[1])
+                except Exception as e:
+                    self.throw_ins_error("error converting '{0}' to integer in semi-fixed instruction: '{1}'".\
+                                         format(raw[1],ins),lcount=self._instruction_lcount)
+
+                if len(line) < e_idx:
+                    self.throw_out_error("output line only {0} chars long, semi-fixed ending col {1}".\
+                                         format(len(line),e_idx))
+
+                if cursor_pos > e_idx:
+                    self.throw_out_error("cursor at {0} has already read past semi-fixed ending col {1}".\
+                                         format(cursor_pos,e_idx))
+
+                ss_idx = max(cursor_pos,s_idx)
+                raw = line[ss_idx:].split()
+                rs_idx = line.index(raw[0])
+                if rs_idx > e_idx:
+                    self.throw_out_error("no non-whitespace chars found in semi-fixed observation {0}".\
+                                         format(ins))
+                re_idx = rs_idx + len(raw[0])
+                val_str = line[rs_idx:re_idx]
+                try:
+                    val = float(val_str)
+                except Exception as e:
+                    self.throw_out_error(
+                        "casting string '{0}' to float for instruction '{1}'".format(
+                            val_str, ins
+                        )
+                    )
+
+                if oname != "dum":
+                    val_dict[oname] = val
+                cursor_pos = re_idx
+
+            elif ins.startswith("["):
+                if "]" not in ins:
+                    self.throw_ins_error("unmatched ')'",self._instruction_lcount)
+                oname = ins[1:].split(']')[0].lower()
+                raw = ins.split(']')[1]
+                if ":" not in raw:
+                    self.throw_ins_error("couldnt find ':' in fixed instruction: '{0}'".\
+                        format(ins),lcount=self._instruction_lcount)
+                raw = raw.split(':')
+                try:
+                    s_idx = int(raw[0]) - 1
+                except Exception as e:
+                    self.throw_ins_error("error converting '{0}' to integer in fixed instruction: '{1}'".\
+                                         format(raw[0],ins),lcount=self._instruction_lcount)
+                try:
+                    e_idx = int(raw[1])
+                except Exception as e:
+                    self.throw_ins_error("error converting '{0}' to integer in fixed instruction: '{1}'".\
+                                         format(raw[1],ins),lcount=self._instruction_lcount)
+
+                if len(line) < e_idx:
+                    self.throw_out_error("output line only {0} chars long, fixed ending col {1}".\
+                                         format(len(line),e_idx))
+
+                if cursor_pos > s_idx:
+                    self.throw_out_error("cursor at {0} has already read past fixed starting col {1}".\
+                                         format(cursor_pos,e_idx))
+
+
+                val_str = line[s_idx:e_idx]
+                try:
+                    val = float(val_str)
+                except Exception as e:
+                    self.throw_out_error(
+                        "casting string '{0}' to float for instruction '{1}'".format(
+                            val_str, ins
+                        )
+                    )
+
+                if oname != "dum":
+                    val_dict[oname] = val
+                cursor_pos = e_idx
+
             else:
                 self.throw_out_error(
                     "unrecognized instruction '{0}' on ins file line {1}".format(

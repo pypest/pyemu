@@ -854,14 +854,20 @@ def process_output_files_test():
     out_files = [f.replace(".ins","") for f in ins_files]
     print(ins_files)
 
+    i4 = pst_utils.InstructionFile(ins_files[4])
+    s4 = i4.read_output_file(out_files[4])
+    print(s4)
+    assert s4.loc["h01_03", "obsval"] == 3.481,s4.loc["h01_03", "obsval"]
+    assert s4.loc["h02_10", "obsval"] == 11.1,s4.loc["h02_10", "obsval"]
+
     i4 = pst_utils.InstructionFile(ins_files[3])
     s4 = i4.read_output_file(out_files[3])
     print(s4)
     assert s4.loc["h01_02", "obsval"] == 1.024
     assert s4.loc["h01_10", "obsval"] == 4.498
 
-    i5 = pst_utils.InstructionFile(ins_files[4])
-    s5 = i5.read_output_file(out_files[4])
+    i5 = pst_utils.InstructionFile(ins_files[5])
+    s5 = i5.read_output_file(out_files[5])
     print(s5)
     assert s5.loc["obs3_1","obsval"] == 1962323.838381853
     assert s5.loc["obs3_2","obsval"] == 1012443.579448909
@@ -981,4 +987,6 @@ if __name__ == "__main__":
     #pi_helper_test()
     #ctrl_data_test()
     #new_format_test_2()
-    try_process_ins_test()
+    #try_process_ins_test()
+    #tpl_ins_test()
+    process_output_files_test()
