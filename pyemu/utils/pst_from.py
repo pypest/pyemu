@@ -341,10 +341,10 @@ class PstFrom(object):
             s = "    "
             for tmp_file in self.tmp_files:
                 f.write(s + "try:\n")
-                f.write(s + "   os.remove('{0}')\n".format(tmp_file))
+                f.write(s + "   os.remove(r'{0}')\n".format(tmp_file))
                 f.write(s + "except Exception as e:\n")
                 f.write(
-                    s + "   print('error removing tmp file:{0}')\n".format(tmp_file)
+                    s + "   print(r'error removing tmp file:{0}')\n".format(tmp_file)
                 )
             for line in self.pre_py_cmds:
                 f.write(s + line + "\n")
