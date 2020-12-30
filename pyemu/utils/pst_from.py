@@ -1579,6 +1579,9 @@ class PstFrom(object):
             # Generate tabular type template - also returns par data
             # relative file paths are in file_dict as Path instances (kludgey)
             dfs = [file_dict[Path(filename)] for filename in filenames]
+            get_xy = None
+            if (par_type.startswith("grid") or par_type.startswith("p")) and geostruct is not None:
+                get_xy = self.get_xy
             df = write_list_tpl(
                 filenames,
                 dfs,
@@ -1593,7 +1596,7 @@ class PstFrom(object):
                 longnames=self.longnames,
                 ij_in_idx=ij_in_idx,
                 xy_in_idx=xy_in_idx,
-                get_xy=self.get_xy,
+                get_xy=get_xy,
                 zero_based=self.zero_based,
                 input_filename=in_fileabs,
                 par_style=par_style,
