@@ -545,11 +545,14 @@ def try_process_ins_test():
     ins_file = os.path.join("utils", "BH.mt3d.processed.ins")
     i = pyemu.pst_utils.InstructionFile(ins_file)
     df2 = i.read_output_file(ins_file.replace(".ins",""))
-
+    df2.loc[df2.obsval>1.0e+10,"obsval"] = np.NaN
 
 
     # df1 = pyemu.pst_utils._try_run_inschek(ins_file,ins_file.replace(".ins",""))
     df1 = pd.read_csv(ins_file.replace(".ins", ".obf"), delim_whitespace=True, names=["obsnme", "obsval"], index_col=0)
+    df1.loc[df1.obsval > 1.0e+10, "obsval"] = np.NaN
+    print(df1.max())
+    print(df2.max())
     # df1.index = df1.obsnme
     df1.loc[:, "obsnme"] = df1.index
     df1.index = df1.obsnme
@@ -977,4 +980,5 @@ if __name__ == "__main__":
     #write_tables_test()
     #pi_helper_test()
     #ctrl_data_test()
-    new_format_test_2()
+    #new_format_test_2()
+    try_process_ins_test()
