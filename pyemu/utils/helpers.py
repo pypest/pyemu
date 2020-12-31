@@ -3613,7 +3613,7 @@ def _process_model_file(model_file, df):
         raise Exception("wrong number of org_files for {0}".format(model_file))
     org_arr = np.loadtxt(org_file[0])
 
-    if 'mlt_file' in df_mf.columns:
+    if "mlt_file" in df_mf.columns:
         for mlt in df_mf.mlt_file:
             if pd.isna(mlt):
                 continue
@@ -4006,13 +4006,14 @@ def apply_genericlist_pars(df):
                 # if original model files is not zero based need to add 1
                 add1 = int(mlt.zero_based == False)
                 mlts.index = pd.MultiIndex.from_tuples(
-                    mlts.sidx.apply(lambda x:
-                                    [add1 + int(xx)
-                                     if xx.strip().isdigit()
-                                     else xx.strip('\'\" ')
-                                     for xx in x.strip('()').split(',')
-                                     if xx]),
-                    names=mlt.index_cols
+                    mlts.sidx.apply(
+                        lambda x: [
+                            add1 + int(xx) if xx.strip().isdigit() else xx.strip("'\" ")
+                            for xx in x.strip("()").split(",")
+                            if xx
+                        ]
+                    ),
+                    names=mlt.index_cols,
                 )
                 if mlts.index.nlevels < 2:  # just in case only one index col is used
                     mlts.index = mlts.index.get_level_values(0)
@@ -4333,8 +4334,7 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
     return df
 
 
-def _write_df_tpl(filename, df, sep=",", tpl_marker="~",
-                  headerlines=None, **kwargs):
+def _write_df_tpl(filename, df, sep=",", tpl_marker="~", headerlines=None, **kwargs):
     """function write a pandas dataframe to a template file."""
     if "line_terminator" not in kwargs:
         if "win" in platform.platform().lower():

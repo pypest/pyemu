@@ -292,7 +292,7 @@ class ControlData(object):
                 "value": cast_defaults,
                 "required": required,
                 "format": formats,
-                "passed": True
+                "passed": True,
             }
         )
 
@@ -320,7 +320,7 @@ class ControlData(object):
             lines ([`str`]): raw ASCII lines from pest control file
 
         """
-        self._df.loc[:,"passed"] = False
+        self._df.loc[:, "passed"] = False
         if iskeyword:
             self._df.loc[:, "passed"] = True
             extra = {}
@@ -357,7 +357,7 @@ class ControlData(object):
                                     if t == self._df.loc[nname, "type"]:
                                         self._df.loc[nname, "value"] = v
                                         found = True
-                                        self._df.loc[nname,"passed"] = True
+                                        self._df.loc[nname, "passed"] = True
                                         break
                             if not found:
                                 warnings.warn(
@@ -440,9 +440,9 @@ class ControlData(object):
             pandas.Series:  formatted_values for the control data entries
 
         """
-        #passed_df = self._df.copy()
-        #blank = passed_df.apply(lambda x: x.type==str and x.passed==False,axis=1)
-        #passed_df.loc[blank,"value"] = ""
+        # passed_df = self._df.copy()
+        # blank = passed_df.apply(lambda x: x.type==str and x.passed==False,axis=1)
+        # passed_df.loc[blank,"value"] = ""
         return self._df.apply(lambda x: self.formatters[x["type"]](x["value"]), axis=1)
 
     def write_keyword(self, f):
@@ -459,7 +459,7 @@ class ControlData(object):
         kw = super(ControlData, self).__getattribute__("keyword_accessed")
         f.write("* control data keyword\n")
         for n, v in zip(self._df.name, self.formatted_values):
-            if n not in kw or not self._df.loc[n,"passed"]:
+            if n not in kw or not self._df.loc[n, "passed"]:
                 continue
             f.write("{0:30} {1}\n".format(n, v))
 
@@ -477,6 +477,8 @@ class ControlData(object):
         for line in CONTROL_VARIABLE_LINES:
             [
                 f.write(self.formatted_values[name.replace("[", "").replace("]", "")])
-                for name in line.split() if self._df.loc[name.replace("[", "").replace("]", ""),"passed"]==True
+                for name in line.split()
+                if self._df.loc[name.replace("[", "").replace("]", ""), "passed"]
+                == True
             ]
             f.write("\n")
