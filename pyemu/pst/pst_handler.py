@@ -1990,7 +1990,6 @@ class Pst(object):
             idx = par.loc[par.parval1 < par.parlbnd, "parnme"]
             par.loc[idx, "parval1"] = par.loc[idx, "parlbnd"]
 
-
     def adjust_weights_discrepancy(
         self, resfile=None, original_ceiling=True, bygroups=False
     ):
@@ -2865,7 +2864,13 @@ class Pst(object):
         """
         return plot_utils.pst_helper(self, kind, **kwargs)
 
-    def write_par_summary_table(self, filename=None, group_names=None, sigma_range=4.0, report_in_linear_space=False):
+    def write_par_summary_table(
+        self,
+        filename=None,
+        group_names=None,
+        sigma_range=4.0,
+        report_in_linear_space=False,
+    ):
         """write a stand alone parameter summary latex table or Excel sheet
 
 
@@ -2878,7 +2883,7 @@ class Pst(object):
             sigma_range (`float`): number of standard deviations represented by parameter bounds.  Default
                 is 4.0, implying 95% confidence bounds
             report_in_linear_space (`bool`): flag, if True, that reports all logtransformed values in linear
-                space. This renders standard deviation meaningless, so that column is skipped  
+                space. This renders standard deviation meaningless, so that column is skipped
 
         Returns:
             `pandas.DataFrame`: the summary parameter group dataframe
@@ -2896,9 +2901,17 @@ class Pst(object):
         # cols = ["parval1","parubnd","parlbnd","stdev","partrans","pargp"]
         if report_in_linear_space == True:
             cols = ["pargp", "partrans", "count", "parval1", "parlbnd", "parubnd"]
-            
+
         else:
-            cols = ["pargp", "partrans", "count", "parval1", "parlbnd", "parubnd", "stdev"]
+            cols = [
+                "pargp",
+                "partrans",
+                "count",
+                "parval1",
+                "parlbnd",
+                "parubnd",
+                "stdev",
+            ]
 
         labels = {
             "parval1": "initial value",
@@ -2912,7 +2925,9 @@ class Pst(object):
 
         li = par.partrans == "log"
         if True in li.values and report_in_linear_space == True:
-            print('Warning: because log-transformed values being reported in linear space, stdev NOT reported')
+            print(
+                "Warning: because log-transformed values being reported in linear space, stdev NOT reported"
+            )
 
         if report_in_linear_space == False:
             par.loc[li, "parval1"] = par.parval1.loc[li].apply(np.log10)
@@ -2963,16 +2978,24 @@ class Pst(object):
         if filename is None:
             filename = self.filename.replace(".pst", ".par.tex")
         # if filename indicates an Excel format, try writing to Excel
-        if filename.lower().endswith('xlsx') or filename.lower().endswith('xls'):
+        if filename.lower().endswith("xlsx") or filename.lower().endswith("xls"):
             try:
                 pargp_df.to_excel(filename, index=None)
             except Exception as e:
-                if filename.lower().endswith('xlsx'):
-                    print('could not export {0} in Excel format. Try installing xlrd'.format(filename))
-                elif filename.lower().endswith('xls'):
-                    print('could not export {0} in Excel format. Try installing xlwt'.format(filename))
+                if filename.lower().endswith("xlsx"):
+                    print(
+                        "could not export {0} in Excel format. Try installing xlrd".format(
+                            filename
+                        )
+                    )
+                elif filename.lower().endswith("xls"):
+                    print(
+                        "could not export {0} in Excel format. Try installing xlwt".format(
+                            filename
+                        )
+                    )
                 else:
-                    print('could not export {0} in Excel format.'.format(filename))
+                    print("could not export {0} in Excel format.".format(filename))
 
         else:
             with open(filename, "w") as f:
@@ -3067,17 +3090,24 @@ class Pst(object):
         if filename is None:
             filename = self.filename.replace(".pst", ".obs.tex")
         # if filename indicates an Excel format, try writing to Excel
-        if filename.lower().endswith('xlsx') or filename.lower().endswith('xls'):
+        if filename.lower().endswith("xlsx") or filename.lower().endswith("xls"):
             try:
                 obsg_df.to_excel(filename, index=None)
             except Exception as e:
-                if filename.lower().endswith('xlsx'):
-                    print('could not export {0} in Excel format. Try installing xlrd'.format(filename))
-                elif filename.lower().endswith('xls'):
-                    print('could not export {0} in Excel format. Try installing xlwt'.format(filename))
+                if filename.lower().endswith("xlsx"):
+                    print(
+                        "could not export {0} in Excel format. Try installing xlrd".format(
+                            filename
+                        )
+                    )
+                elif filename.lower().endswith("xls"):
+                    print(
+                        "could not export {0} in Excel format. Try installing xlwt".format(
+                            filename
+                        )
+                    )
                 else:
-                    print('could not export {0} in Excel format.'.format(filename))
-
+                    print("could not export {0} in Excel format.".format(filename))
 
         else:
             with open(filename, "w") as f:
