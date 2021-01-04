@@ -1001,6 +1001,29 @@ class PstFrom(object):
             )
 
     def _process_array_obs(self,out_filename,ins_filename,prefix,ofile_sep,ofile_skip,longnames,zone_array):
+        """private method to setup observations for an array-style file
+
+        Args:
+            out_filename (`str`): the output array file
+            ins_filename (`str`): the instruction file to create
+            prefix (`str`): the prefix to add to the observation names and also to use as the
+                observation group name.
+            ofile_sep (`str`): the separator in the output file.  This is currently just a
+                placeholder arg, only whitespace-delimited files are supported
+            ofile_skip (`int`): number of header and/or comment lines to skip at the
+                top of the output file
+            longnames (`bool`): flag to allow longer observations names
+            zone_array (numpy.ndarray): an integer array used to identify positions to skip in the
+                output array
+
+        Returns:
+            None
+
+        Note:
+
+            This method is called programmatically by `PstFrom.add_observations()`
+
+        """
         if ofile_sep is not None:
             self.logger.lrase("array obs are currently only supported for whitespace delim")
         if not os.path.exists(self.new_d / out_filename):
