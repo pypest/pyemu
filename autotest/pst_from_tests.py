@@ -1323,8 +1323,10 @@ def mf6_freyberg_direct_test():
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
                         use_cols=["GAGE_1","HEADWATER","TAILWATER"],ofile_sep=",")
     # Setup geostruct for spatial pars
-    v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
-    gr_gs = pyemu.geostats.GeoStruct(variograms=v, transform="log")
+    gr_v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=gr_v, transform="log")
+    pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
+    pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
@@ -2497,9 +2499,9 @@ if __name__ == "__main__":
     #invest()
     #freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
+    #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
-    #mf6_freyberg_direct_test()
+    mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()

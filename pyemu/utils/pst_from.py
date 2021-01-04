@@ -460,7 +460,7 @@ class PstFrom(object):
             # (setup through add_parameters)
             for geostruct, par_df_l in struct_dict.items():
                 par_df = pd.concat(par_df_l)  # force to single df
-                if "i" in par_df.columns:  # need 'i' and 'j' for specsim
+                if "i" in par_df.columns and par_df.partype[0] == "grid":  # need 'i' and 'j' for specsim
                     # grid par slicer
                     grd_p = pd.notna(par_df.i)  # & (par_df.partype == 'grid') &
                 else:
