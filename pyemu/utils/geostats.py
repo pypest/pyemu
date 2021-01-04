@@ -1748,7 +1748,7 @@ class Vario2d(object):
 
 
 class ExpVario(Vario2d):
-    """Gaussian variogram derived type
+    """Exponential variogram derived type
 
     Args:
         contribution (float): sill of the variogram
