@@ -3588,7 +3588,7 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     list_pars["lower_bound"] = list_pars.lower_bound.apply(lambda x: literal_eval(x))
     list_pars["upper_bound"] = list_pars.upper_bound.apply(lambda x: literal_eval(x))
     # TODO check use_cols is always present
-    apply_genericlist_pars(list_pars)
+    apply_genericlist_pars(list_pars, chunk_len=chunk_len)
     apply_array_pars(arr_pars, chunk_len=chunk_len)
 
 
@@ -3717,7 +3717,7 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
         )
         remainder = np.array(pp_args)[num_chunk_floor * chunk_len :].tolist()
         chunks = main_chunks + [remainder]
-
+        print("...",len(chunks)," of ",chunk_len," chunks")
         pool = mp.Pool()
         x = [
             pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
@@ -3747,6 +3747,7 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     )  # the list of files broken down into chunks
     remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
     chunks = main_chunks + [remainder]
+    print("...", len(chunks), " of ", chunk_len, " chunks")
     # procs = []
     # for chunk in chunks:  # now only spawn processor for each chunk
     #     p = mp.Process(target=_process_chunk_model_files, args=[chunk, df])
@@ -3928,6 +3929,7 @@ def apply_genericlist_pars(df,chunk_len=50):
     )  # the list of files broken down into chunks
     remainder = uniq[num_chunk_floor * chunk_len:].tolist()  # remaining files
     chunks = main_chunks + [remainder]
+    print("...",len(chunks)," of ",chunk_len," chunks")
     pool = mp.Pool()
     x = [
         pool.apply_async(_process_chunk_list_files, args=(chunk, i, df))
