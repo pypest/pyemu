@@ -1585,15 +1585,15 @@ class Pst(object):
 
         f_out.close()
 
-    def write(self, new_filename, version=1):
+    def write(self, new_filename, version=None):
         """main entry point to write a pest control file.
 
         Args:
             new_filename (`str`): name of the new pest control file
 
             version (`int`): flag for which version of control file to write (must be 1 or 2).
-                if None, uses Pst._version, which set in the constructor and modified
-                during the load
+                if None, uses the number of pars to decide: if number of pars iis greater than 10,000,
+                version 2 is used.
 
         Example::
 
@@ -1607,6 +1607,12 @@ class Pst(object):
             self.control_data.noptmax, self.npar_adj, self.nnz_obs
         )
         print(vstring)
+
+        if version is None:
+            if self.npar > 10000:
+                version = 2
+            else:
+                version = 1
 
         if version == 1:
             return self._write_version1(new_filename=new_filename)
