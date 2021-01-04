@@ -164,11 +164,11 @@ def comments_test():
 
     pst = pyemu.Pst(os.path.join("pst", "comments.pst"))
     pst.with_comments = True
-    pst.write(os.path.join("temp", "comments.pst"))
+    pst.write(os.path.join("temp", "comments.pst"),version=1)
     pst1 = pyemu.Pst(os.path.join("temp", "comments.pst"))
     assert pst1.parameter_data.extra.dropna().shape[0] == pst.parameter_data.extra.dropna().shape[0]
     pst1.with_comments = False
-    pst1.write(os.path.join("temp", "comments.pst"))
+    pst1.write(os.path.join("temp", "comments.pst"),version=1)
     pst2 = pyemu.Pst(os.path.join("temp", "comments.pst"))
     assert pst2.parameter_data.dropna().shape[0] == 0
 
@@ -989,4 +989,5 @@ if __name__ == "__main__":
     #new_format_test_2()
     #try_process_ins_test()
     #tpl_ins_test()
-    process_output_files_test()
+    #process_output_files_test()
+    comments_test()
