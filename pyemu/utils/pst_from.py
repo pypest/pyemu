@@ -444,6 +444,9 @@ class PstFrom(object):
 
         """
         self.logger.log("drawing realizations")
+        if self.pst.npar_adj == 0:
+            self.logger.warn("no adjustable parameters, nothing to draw...")
+            return
         # precondition {geostruct:{group:df}} dict to {geostruct:[par_dfs]}
         struct_dict = self._pivot_par_struct_dict()
         # list for holding grid style groups
@@ -1513,6 +1516,12 @@ class PstFrom(object):
             ult_ubound = self.ult_ubound_fill
         if ult_lbound is None:
             ult_lbound = self.ult_lbound_fill
+
+        if transform.lower().strip() not in ["none","log","fixed"]:
+            self.logger.lraise("unrecognized transform ('{0}'), should be in ['none','log','fixed']".format(transform))
+
+        if transform == "fixed" and geostruct is not None:
+            self.logger.lraise("geostruct is not 'None', cant draw values for fixed pars")
 
         # some checks for direct parameters
         par_style = par_style.lower()

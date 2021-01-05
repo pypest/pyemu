@@ -2462,13 +2462,19 @@ def mf6_freyberg_arr_obs_test():
         lb, ub = bnd[0], bnd[1]
         arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
         for arr_file in arr_files:
-            pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
-                              pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                              geostruct=gr_gs)
+            #pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
+            #                  pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                  geostruct=gr_gs)
+            pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
+                              pargp=arr_file.split('.')[1] + "_cn", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                              transform="fixed")
+            pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
+                              pargp=arr_file.split('.')[1] + "_cn", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                              transform="log")
+
+
             pf.add_observations(arr_file,zone_array=ib)
             arr_dict[arr_file] = np.loadtxt(pf.new_d / arr_file)
-
-
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
@@ -2477,6 +2483,15 @@ def mf6_freyberg_arr_obs_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
+    pe = pf.draw(100,use_specsim=True)
+    cov = pf.build_prior()
+    scnames = set(cov.row_names)
+    print(pst.npar_adj,pst.npar,pe.shape)
+    par = pst.parameter_data
+    fpar = set(par.loc[par.partrans=="fixed","parnme"].tolist())
+    spe = set(list(pe.columns))
+    assert len(fpar.intersection(spe)) == 0,str(fpar.intersection(spe))
+    assert len(fpar.intersection(scnames)) == 0, str(fpar.intersection(scnames))
     pst.try_parse_name_metadata()
     obs = pst.observation_data
     for fname,arr in arr_dict.items():
@@ -2501,11 +2516,11 @@ if __name__ == "__main__":
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
-    mf6_freyberg_direct_test()
+    #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
-    #mf6_freyberg_arr_obs_test()
+    mf6_freyberg_arr_obs_test()
     # tpf = TestPstFrom()
     # tpf.setup()
     # tpf.test_add_direct_array_parameters()
