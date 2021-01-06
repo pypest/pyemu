@@ -444,6 +444,9 @@ class PstFrom(object):
 
         """
         self.logger.log("drawing realizations")
+        if self.pst.npar_adj == 0:
+            self.logger.warn("no adjustable parameters, nothing to draw...")
+            return
         # precondition {geostruct:{group:df}} dict to {geostruct:[par_dfs]}
         struct_dict = self._pivot_par_struct_dict()
         # list for holding grid style groups
@@ -460,7 +463,7 @@ class PstFrom(object):
             # (setup through add_parameters)
             for geostruct, par_df_l in struct_dict.items():
                 par_df = pd.concat(par_df_l)  # force to single df
-                if "i" in par_df.columns:  # need 'i' and 'j' for specsim
+                if "i" in par_df.columns and par_df.partype[0] == "grid":  # need 'i' and 'j' for specsim
                     # grid par slicer
                     grd_p = pd.notna(par_df.i)  # & (par_df.partype == 'grid') &
                 else:
@@ -1000,6 +1003,93 @@ class PstFrom(object):
                 )
             )
 
+    def _process_array_obs(self,out_filename,ins_filename,prefix,ofile_sep,ofile_skip,longnames,zone_array):
+        """private method to setup observations for an array-style file
+
+        Args:
+            out_filename (`str`): the output array file
+            ins_filename (`str`): the instruction file to create
+            prefix (`str`): the prefix to add to the observation names and also to use as the
+                observation group name.
+            ofile_sep (`str`): the separator in the output file.  This is currently just a
+                placeholder arg, only whitespace-delimited files are supported
+            ofile_skip (`int`): number of header and/or comment lines to skip at the
+                top of the output file
+            longnames (`bool`): flag to allow longer observations names
+            zone_array (numpy.ndarray): an integer array used to identify positions to skip in the
+                output array
+
+        Returns:
+            None
+
+        Note:
+
+            This method is called programmatically by `PstFrom.add_observations()`
+
+        """
+        if ofile_sep is not None:
+            self.logger.lrase("array obs are currently only supported for whitespace delim")
+        if not os.path.exists(self.new_d / out_filename):
+            self.logger.lraise("array obs output file '{0}' not found".format(out_filename))
+        if len(prefix) == 0 and self.longnames:
+            prefix = out_filename
+        f_out = open(self.new_d/out_filename,'r')
+        f_ins = open(self.new_d/ins_filename,'w')
+        f_ins.write("pif ~\n")
+        iline = 0
+        if ofile_skip is not None:
+            ofile_skip = int(ofile_skip)
+            f_ins.write("l{0}\n".format(ofile_skip))
+            # read the output file forward
+            for _ in range(ofile_skip):
+                f_out.readline()
+                iline += 1
+        onames,ovals = [],[]
+        iidx = 0
+        for line in f_out:
+            raw = line.split()
+            f_ins.write("l1 ")
+            for jr,r in enumerate(raw):
+
+                try:
+                    fr = float(r)
+                except Exception as e:
+                    self.logger.lraise("array obs error casting: '{0}' on line {1} to a float: {2}".\
+                                       format(r,iline,str(e)))
+
+                zval = None
+                if zone_array is not None:
+                    try:
+                        zval = zone_array[iidx, jr]
+                    except Exception as e:
+                        self.logger.lraise("array obs error getting zone value for i,j {0},{1} in line {2}: {3}". \
+                                           format(iidx, jr, iline, str(e)))
+                    if zval <= 0:
+                        f_ins.write(" !dum! ")
+                        if jr < len(raw) - 1:
+                            f_ins.write(" w ")
+                        continue
+
+                if longnames:
+                    oname = "arrobs_{0}_i:{1}_j:{2}".format(prefix,iidx,jr)
+                    if zval is not None:
+                        oname += "_zone:{0}".format(zval)
+                else:
+                    oname = "{0}_{1}_{2}".format(prefix,iline,jr)
+                    if zval is not None:
+                        z_str = "_{0}".format(zval)
+                        if len(oname) + len(z_str) < 20:
+                            oname += z_str
+                    if len(oname) > 20:
+                        self.logger.lraise("array obs name too long: '{0}'".format(oname))
+                f_ins.write(" !{0}! ".format(oname))
+                if jr < len(raw) - 1:
+                    f_ins.write(" w ")
+            f_ins.write("\n")
+            iline += 1
+            iidx += 1
+
+
     def add_observations(
         self,
         filename,
@@ -1012,12 +1102,13 @@ class PstFrom(object):
         ofile_sep=None,
         rebuild_pst=False,
         obsgp=True,
+        zone_array=None,
     ):
         """
-        Add list style outputs as observation files to PstFrom object
+        Add values in output files as observations to PstFrom object
 
         Args:
-            filename (`str`): path to model output file name to set up
+            filename (`str`): model output file name(s) to set up
                 as observations
             insfile (`str`): desired instructions file filename
             index_cols (`list`-like or `int`): columns to denote are indices for obs
@@ -1028,6 +1119,8 @@ class PstFrom(object):
             ofile_sep (`str`): delimiter in output file
             rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after adding
                 new obs
+            zone_array (`np.ndarray`): array defining spatial limits or zones
+                for array-style observations. Default is None
 
         Returns:
             `Pandas.DataFrame`: dataframe with info for new observations
@@ -1035,12 +1128,24 @@ class PstFrom(object):
         Note:
             This is the main entry for adding observations to the pest interface
 
+            If `index_cols` and `use_cols` are both None, then it is assumed that
+            array-style observations are being requested.  In this case,
+            `filenames` must be only one filename.
+
+            `zone_array` is only used for array-style observations.  Zone values
+            less than or equal to zero are skipped (using the "dum" option)
+
+
         Example::
 
             # setup observations for the 2nd thru 5th columns of the csv file
             # using the first column as the index
             df = pf.add_observations("heads.csv",index_col=0,use_cols=[1,2,3,4],
                                      ofile_sep=",")
+            # add array-style observations, skipping model cells with an ibound
+            # value less than or equal to zero
+            df = pf.add_observations("conce_array.day",index_col=None,use_cols=None,
+                                     zone_array=ibound)
 
 
         """
@@ -1064,7 +1169,32 @@ class PstFrom(object):
             seps=ofile_sep,
             skip_rows=ofile_skip,
         )
-        # load model output file
+        # array style obs
+        if index_cols is None and use_cols is None:
+            if not isinstance(filenames,str):
+                if len(filenames) > 1:
+                    self.logger.lraise("only a single filename can be used for array-style observations")
+                filenames = filenames[0]
+            self.logger.log("adding observations from array output file '{0}'".format(filenames))
+            df_obs = self._process_array_obs(filenames,insfile,prefix,ofile_sep,ofile_skip,self.longnames,zone_array)
+            new_obs = self.add_observations_from_ins(
+                ins_file=insfile, out_file=self.new_d / filename
+            )
+            if prefix is not None:
+                new_obs.loc[:, "obgnme"] = prefix
+            self.logger.log("adding observations from array output file '{0}'".format(filenames))
+            if rebuild_pst:
+                if self.pst is not None:
+                    self.logger.log("Adding obs to control file " "and rewriting pst")
+                    self.build_pst(filename=self.pst.filename, update="obs")
+                else:
+                    self.build_pst(filename=self.pst.filename, update=False)
+                    self.logger.warn(
+                        "pst object not available, " "new control file will be written"
+                    )
+            return new_obs
+
+        # list style obs
         df, storehead = self._load_listtype_file(
             filenames, index_cols, use_cols, fmts, seps, skip_rows
         )
@@ -1386,6 +1516,12 @@ class PstFrom(object):
             ult_ubound = self.ult_ubound_fill
         if ult_lbound is None:
             ult_lbound = self.ult_lbound_fill
+
+        if transform.lower().strip() not in ["none","log","fixed"]:
+            self.logger.lraise("unrecognized transform ('{0}'), should be in ['none','log','fixed']".format(transform))
+
+        if transform == "fixed" and geostruct is not None:
+            self.logger.lraise("geostruct is not 'None', cant draw values for fixed pars")
 
         # some checks for direct parameters
         par_style = par_style.lower()
