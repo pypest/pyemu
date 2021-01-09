@@ -1537,6 +1537,8 @@ class PstFrom(object):
         filenames = [
             get_relative_filepath(self.original_d, filename) for filename in filenames
         ]
+        if len(filenames) == 0:
+            self.logger.lraise("add_parameters(): filenames is empty")
         if par_style == "direct":
             if len(filenames) != 1:
                 self.logger.lraise(
