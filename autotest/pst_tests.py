@@ -945,9 +945,9 @@ def ctrl_data_test():
     pst2.write(os.path.join("pst","test2.pst"),version=2)
     pst3 = pyemu.Pst(os.path.join("pst", "test2.pst"))
 
-if __name__ == "__main__":
 
-    # process_output_files_test()
+if __name__ == "__main__":
+    process_output_files_test()
     # change_limit_test()
     # new_format_test()
     # lt_gt_constraint_names_test()
@@ -991,3 +991,4 @@ if __name__ == "__main__":
     #tpl_ins_test()
     #process_output_files_test()
     comments_test()
+    
