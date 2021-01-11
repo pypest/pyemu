@@ -2405,6 +2405,128 @@ def invest():
     i.read_output_file(os.path.join("new_temp","freyberg.sfo.dat"))
 
 
+def pstfrom_profile():
+    import cProfile
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws,
+                                   check=False, forgive=False,
+                                   exe_name=mf_exe_path)
+    flopy.modflow.ModflowRiv(m, stress_period_data={
+        0: [[0, 0, 0, m.dis.top.array[0, 0], 1.0, m.dis.botm.array[0, 0, 0]],
+            [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
+            [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]]]})
+
+    tmp_model_ws = "temp_pst_from"
+    if os.path.exists(tmp_model_ws):
+        shutil.rmtree(tmp_model_ws)
+    m.external_path = "."
+    m.change_model_ws(tmp_model_ws)
+    m.write_input()
+    print("{0} {1}".format(mf_exe_path, m.name + ".nam"), tmp_model_ws)
+    os_utils.run("{0} {1}".format(mf_exe_path, m.name + ".nam"),
+                 cwd=tmp_model_ws)
+
+    template_ws = "new_temp"
+    # sr0 = m.sr
+    sr = pyemu.helpers.SpatialReference.from_namfile(
+        os.path.join(m.model_ws, m.namefile),
+        delr=m.dis.delr, delc=m.dis.delc)
+    # set up PstFrom object
+    shutil.copy(os.path.join(org_model_ws, 'ucn.csv'),
+                os.path.join(tmp_model_ws, 'ucn.csv'))
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False)
+    # obs
+    pr = cProfile.Profile()
+    pr.enable()
+    pf.add_observations('ucn.csv', insfile=None,
+                        index_cols=['t', 'k', 'i', 'j'],
+                        use_cols=["ucn"], prefix=['ucn'],
+                        ofile_sep=',', obsgp=['ucn'])
+    pr.disable()
+
+    # pars
+    pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
+                      index_cols=[0, 1, 2], use_cols=[3, 5],
+                      par_name_base=["rivstage_grid", "rivbot_grid"],
+                      mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F',
+                      pargp='rivbot')
+    # pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
+    #                   index_cols=[0, 1, 2], use_cols=4)
+    # pf.add_parameters(filenames=["WEL_0000.dat", "WEL_0001.dat"],
+    #                   par_type="grid", index_cols=[0, 1, 2], use_cols=3,
+    #                   par_name_base="welflux_grid",
+    #                   zone_array=m.bas6.ibound.array)
+    # pf.add_parameters(filenames=["WEL_0000.dat"], par_type="constant",
+    #                   index_cols=[0, 1, 2], use_cols=3,
+    #                   par_name_base=["flux_const"])
+    # pf.add_parameters(filenames="rech_1.ref", par_type="grid",
+    #                   zone_array=m.bas6.ibound[0].array,
+    #                   par_name_base="rch_datetime:1-1-1970")
+    # pf.add_parameters(filenames=["rech_1.ref", "rech_2.ref"],
+    #                   par_type="zone", zone_array=m.bas6.ibound[0].array)
+    # pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
+    #                   zone_array=m.bas6.ibound[0].array,
+    #                   par_name_base="rch_datetime:1-1-1970", pp_space=4)
+    # pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
+    #                   zone_array=m.bas6.ibound[0].array,
+    #                   par_name_base="rch_datetime:1-1-1970", pp_space=1,
+    #                   ult_ubound=100, ult_lbound=0.0)
+    #
+    # # add model run command
+    # pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
+    # print(pf.mult_files)
+    # print(pf.org_files)
+    #
+    # # build pest
+    # pst = pf.build_pst('freyberg.pst')
+    #
+    # # check mult files are in pst input files
+    # csv = os.path.join(template_ws, "mult2model_info.csv")
+    # df = pd.read_csv(csv, index_col=0)
+    # pst_input_files = {str(f) for f in pst.input_files}
+    # mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
+    #                             pst_input_files) -
+    #                            set(df.loc[df.pp_file.notna()].mlt_file))
+    # assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
+    #
+    # pst.write_input_files(pst_path=pf.new_d)
+    # # test par mults are working
+    # b_d = os.getcwd()
+    # os.chdir(pf.new_d)
+    # try:
+    #     pyemu.helpers.apply_list_and_array_pars(
+    #         arr_par_file="mult2model_info.csv")
+    # except Exception as e:
+    #     os.chdir(b_d)
+    #     raise Exception(str(e))
+    # os.chdir(b_d)
+    #
+    # pst.control_data.noptmax = 0
+    # pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    # pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    #
+    # res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    # assert os.path.exists(res_file), res_file
+    # pst.set_res(res_file)
+    # print(pst.phi)
+    # assert pst.phi < 1.0e-5, pst.phi
+    pr.print_stats(sort="cumtime")
+
+
 def mf6_freyberg_arr_obs_test():
     import numpy as np
     import pandas as pd
@@ -2509,21 +2631,21 @@ def mf6_freyberg_arr_obs_test():
         assert pval == aval,"{0},{1},{2}".format(fname,pval,aval)
 
 
-
 if __name__ == "__main__":
     #invest()
-    #freyberg_test()
+    # freyberg_test()
     #freyberg_prior_build_test()
-    #mf6_freyberg_test()
+    mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
-    mf6_freyberg_arr_obs_test()
     # tpf = TestPstFrom()
     # tpf.setup()
     # tpf.test_add_direct_array_parameters()
+    #pstfrom_profile()
+    #mf6_freyberg_arr_obs_test()
 
 
 

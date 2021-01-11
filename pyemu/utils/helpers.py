@@ -2343,6 +2343,10 @@ class PstFromFlopyModel(object):
             pp_file = pp_files.iloc[0]
             mlt_df.loc[mlt_df.mlt_file == out_file, "fac_file"] = fac_file
             mlt_df.loc[mlt_df.mlt_file == out_file, "pp_file"] = pp_file
+            mlt_df.loc[mlt_df.mlt_file == out_file, "pp_fill_value"] = 1.0
+            mlt_df.loc[mlt_df.mlt_file == out_file, "pp_lower_limit"] = 1.0e-10
+            mlt_df.loc[mlt_df.mlt_file == out_file, "pp_upper_limit"] = 1.0e+10
+
         self.par_dfs[self.pp_suffix] = pp_df
 
         mlt_df.loc[mlt_df.suffix == self.pp_suffix, "tpl_file"] = np.NaN
@@ -3702,10 +3706,11 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
 
     if "pp_file" in df.columns:
         print("starting fac2real", datetime.now())
-        pp_df = df.loc[df.pp_file.notna(), ["pp_file", "fac_file", "mlt_file"]].rename(
-            columns={"fac_file": "factors_file", "mlt_file": "out_file"}
+        pp_df = df.loc[df.pp_file.notna(), ["pp_file", "fac_file", "mlt_file",
+                                            "pp_fill_value","pp_lower_limit","pp_upper_limit"]].rename(
+            columns={"fac_file": "factors_file", "mlt_file": "out_file",
+                     "pp_fill_value":"fill_value","pp_lower_limit":"lower_lim","pp_upper_limit":"upper_lim"}
         )
-        pp_df.loc[:, "lower_lim"] = 1.0e-10
         # don't need to process all (e.g. if const. mults apply across kper...)
         pp_args = pp_df.drop_duplicates().to_dict("records")
         num_ppargs = len(pp_args)

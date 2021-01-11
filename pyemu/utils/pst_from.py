@@ -1925,7 +1925,7 @@ class PstFrom(object):
                 pp_info_dict = {
                     "pp_data": ok_pp.point_data.loc[:, ["x", "y", "zone"]],
                     "cov": ok_pp.point_cov_df,
-                    "zn_ar": zone_array,
+                    "zn_ar": zone_array
                 }
                 fac_processed = False
                 for facfile, info in self._pp_facs.items():  # check against
@@ -2004,6 +2004,9 @@ class PstFrom(object):
                 assert fac_filename is not None, "missing pilot-point input filename"
                 mult_dict["fac_file"] = os.path.relpath(fac_filename, self.new_d)
                 mult_dict["pp_file"] = pp_filename
+                mult_dict["pp_fill_value"] = 1.0
+                mult_dict["pp_lower_limit"] = 1.0e-10
+                mult_dict["pp_upper_limit"] = 1.0e+10
             relate_parfiles.append(mult_dict)
         relate_pars_df = pd.DataFrame(relate_parfiles)
         # store on self for use in pest build etc
@@ -2802,7 +2805,7 @@ def _get_tpl_or_ins_df(
         # order matters for obs
         sidx = []
         for df in dfs:
-            didx = df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1).values
+            didx = df.loc[:, index_cols].values
             aidx = [i for i in didx if i not in sidx]
             sidx.extend(aidx)
 
@@ -2810,19 +2813,22 @@ def _get_tpl_or_ins_df(
     # get some index strings for naming
     if longnames:
         j = "_"
-        fmt = "{0}|{1}"
+        # fmt = "{0}|{1}"
         if isinstance(index_cols[0], str):
             inames = index_cols
         else:
             inames = ["idx{0}".format(i) for i in range(len(index_cols))]
+        # full formatter string
+        fmt = j.join([f"{iname}|{{{i}}}" for i, iname in enumerate(inames)])
     else:
-        fmt = "{1:3}"
+        # fmt = "{1:3}"
         j = ""
         if isinstance(index_cols[0], str):
             inames = index_cols
         else:
             inames = ["{0}".format(i) for i in range(len(index_cols))]
-
+        # full formatter string
+        fmt = j.join([f"{{{i}:3}}" for i, iname in enumerate(inames)])
     if (
         not zero_based
     ):  # only if indices are ints (trying to support strings as par ids)
@@ -2831,8 +2837,7 @@ def _get_tpl_or_ins_df(
         )
 
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
-        lambda x: j.join([fmt.format(iname, xx) for xx, iname in zip(x, inames)])
-    ).str.replace(" ", "")
+        lambda x: fmt.format(*x)).str.replace(" ", "")
     df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "")
     df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":")
 
