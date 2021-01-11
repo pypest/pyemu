@@ -2412,6 +2412,9 @@ class PstFromFlopyModel(object):
             mlt_df.loc[mlt_df.prefix == prefix, "fac_file"] = os.path.split(fac_file)[
                 -1
             ]
+            mlt_df.loc[mlt_df.prefix == prefix, "pp_fill_value"] = 1.0
+            mlt_df.loc[mlt_df.prefix == prefix, "pp_lower_limit"] = 1.0e-10
+            mlt_df.loc[mlt_df.prefix == prefix, "pp_upper_limit"] = 1.0e+10
 
         print(kl_mlt_df)
         mlt_df.loc[mlt_df.suffix == self.kl_suffix, "tpl_file"] = np.NaN
