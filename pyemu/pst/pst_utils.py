@@ -1405,7 +1405,7 @@ class InstructionFile(object):
                         )
                 cursor_pos = cursor_pos + line[cursor_pos:].index(m) + len(m)
 
-            elif ins.startswith("("):
+            elif i1 == "(":
                 if ")" not in ins:
                     self.throw_ins_error("unmatched ')'", self._instruction_lcount)
                 oname = ins[1:].split(")")[0].lower()
@@ -1473,9 +1473,9 @@ class InstructionFile(object):
                     val_dict[oname] = val
                 cursor_pos = re_idx
 
-            elif ins.startswith("["):
+            elif i1 == "[":
                 if "]" not in ins:
-                    self.throw_ins_error("unmatched ')'", self._instruction_lcount)
+                    self.throw_ins_error("unmatched ']'", self._instruction_lcount)
                 oname = ins[1:].split("]")[0].lower()
                 raw = ins.split("]")[1]
                 if ":" not in raw:
