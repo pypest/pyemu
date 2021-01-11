@@ -1015,7 +1015,7 @@ def csv_to_ins_file(
     prefix_is_str = isinstance(prefix, str)
     vals = df.values.copy()  # wasteful but way faster
     with open(ins_filename, "w") as f:
-        f.write("pif {0}\n".format(marker))
+        f.write(f"pif {marker}\n")
         [f.write("l1\n") for _ in range(head_lines_len)]
         if includes_header:
             f.write("l1\n")  # skip the row (index) label
@@ -1032,8 +1032,8 @@ def csv_to_ins_file(
                         else:
                             nprefix = prefix
                         if longnames:
-                            nname = "{0}_usecol:{1}".format(nprefix, clabel)
-                            oname = "{0}_{1}".format(nname, rlabel)
+                            nname = f"{nprefix}_usecol:{clabel}"
+                            oname = f"{nname}_{rlabel}"
                         else:
                             nname = nprefix + clabel.replace(" ","").replace("_","")
                             oname = nprefix + rlabel.replace(" ","").replace("_","") +\
@@ -1057,19 +1057,19 @@ def csv_to_ins_file(
                                 ngpname = gpname
                         ognames.append(ngpname)  # add to list of group names
                         # start defining string to write in ins
-                        oname = " !{0}!".format(oname)
+                        oname = f" !{oname}!"
                         c_count += 1
                     # else:  # not a requested observation; add spacer
                     if j < clabels_len - 1:
                         if sep == ",":
-                            oname = "{0} {1},{1}".format(oname, marker)
+                            oname = f"{oname} {marker},{marker}"
                         else:
-                            oname = "{0} w".format(oname)
+                            oname = f"{oname} w"
                     if j == 0:
                         # if first col and input file has an index need additional spacer
                         if includes_index:
                             if sep == ",":
-                                f.write(" {0},{0}".format(marker))
+                                f.write(f" {marker},{marker}")
                             else:
                                 f.write(" w")
                     f.write(oname)
@@ -1423,16 +1423,18 @@ class InstructionFile(object):
         line = line.lower()
         if self._marker is not None and self._marker in line:
 
-            def find_all(a_str, sub):
-                start = 0
-                while True:
-                    start = a_str.find(sub, start)
-                    if start == -1:
-                        return
-                    yield start
-                    start += len(sub)
+            # def find_all(a_str, sub):
+            #     start = 0
+            #     while True:
+            #         start = a_str.find(sub, start)
+            #         if start == -1:
+            #             return
+            #         yield start
+            #         start += len(sub)
             # poss speedup using regex
-            midx = [m.start() for m in re.finditer(self._marker, line)]
+            midx = [
+                m.start() for m in re.finditer(re.escape(self._marker), line)
+            ]
             # midx = list(find_all(line, self._marker))
             midx.append(len(line))
             first = line[: midx[0]].strip()
