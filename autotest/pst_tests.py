@@ -164,11 +164,11 @@ def comments_test():
 
     pst = pyemu.Pst(os.path.join("pst", "comments.pst"))
     pst.with_comments = True
-    pst.write(os.path.join("temp", "comments.pst"))
+    pst.write(os.path.join("temp", "comments.pst"),version=1)
     pst1 = pyemu.Pst(os.path.join("temp", "comments.pst"))
     assert pst1.parameter_data.extra.dropna().shape[0] == pst.parameter_data.extra.dropna().shape[0]
     pst1.with_comments = False
-    pst1.write(os.path.join("temp", "comments.pst"))
+    pst1.write(os.path.join("temp", "comments.pst"),version=1)
     pst2 = pyemu.Pst(os.path.join("temp", "comments.pst"))
     assert pst2.parameter_data.dropna().shape[0] == 0
 
@@ -545,11 +545,14 @@ def try_process_ins_test():
     ins_file = os.path.join("utils", "BH.mt3d.processed.ins")
     i = pyemu.pst_utils.InstructionFile(ins_file)
     df2 = i.read_output_file(ins_file.replace(".ins",""))
-
+    df2.loc[df2.obsval>1.0e+10,"obsval"] = np.NaN
 
 
     # df1 = pyemu.pst_utils._try_run_inschek(ins_file,ins_file.replace(".ins",""))
     df1 = pd.read_csv(ins_file.replace(".ins", ".obf"), delim_whitespace=True, names=["obsnme", "obsval"], index_col=0)
+    df1.loc[df1.obsval > 1.0e+10, "obsval"] = np.NaN
+    print(df1.max())
+    print(df2.max())
     # df1.index = df1.obsnme
     df1.loc[:, "obsnme"] = df1.index
     df1.index = df1.obsnme
@@ -851,14 +854,20 @@ def process_output_files_test():
     out_files = [f.replace(".ins","") for f in ins_files]
     print(ins_files)
 
+    i4 = pst_utils.InstructionFile(ins_files[4])
+    s4 = i4.read_output_file(out_files[4])
+    print(s4)
+    assert s4.loc["h01_03", "obsval"] == 3.481,s4.loc["h01_03", "obsval"]
+    assert s4.loc["h02_10", "obsval"] == 11.1,s4.loc["h02_10", "obsval"]
+
     i4 = pst_utils.InstructionFile(ins_files[3])
     s4 = i4.read_output_file(out_files[3])
     print(s4)
     assert s4.loc["h01_02", "obsval"] == 1.024
     assert s4.loc["h01_10", "obsval"] == 4.498
 
-    i5 = pst_utils.InstructionFile(ins_files[4])
-    s5 = i5.read_output_file(out_files[4])
+    i5 = pst_utils.InstructionFile(ins_files[5])
+    s5 = i5.read_output_file(out_files[5])
     print(s5)
     assert s5.loc["obs3_1","obsval"] == 1962323.838381853
     assert s5.loc["obs3_2","obsval"] == 1012443.579448909
@@ -936,9 +945,9 @@ def ctrl_data_test():
     pst2.write(os.path.join("pst","test2.pst"),version=2)
     pst3 = pyemu.Pst(os.path.join("pst", "test2.pst"))
 
-if __name__ == "__main__":
 
-    # process_output_files_test()
+if __name__ == "__main__":
+    process_output_files_test()
     # change_limit_test()
     # new_format_test()
     # lt_gt_constraint_names_test()
@@ -977,4 +986,8 @@ if __name__ == "__main__":
     #write_tables_test()
     #pi_helper_test()
     #ctrl_data_test()
-    new_format_test_2()
+    #new_format_test_2()
+    #try_process_ins_test()
+    #tpl_ins_test()
+    #process_output_files_test()
+    comments_test()

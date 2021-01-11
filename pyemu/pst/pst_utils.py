@@ -453,26 +453,30 @@ def write_input_files(pst, pst_path="."):
     )  # the list of files broken down into chunks
     remainder = pairs[num_chunk_floor * chunk_len :].tolist()  # remaining files
     chunks = main_chunks + [remainder]
-#    procs = []
-#   for chunk in chunks:
-#        # write_to_template(pst.parameter_data.parval1_trans,os.path.join(pst_path,tpl_file),
-#        #                  os.path.join(pst_path,in_file))
-#        p = mp.Process(
-#            target=_write_chunk_to_template,
-#            args=[chunk, pst.parameter_data.parval1_trans, pst_path],
-#        )
-#        p.start()
-#        procs.append(p)
-#    for p in procs:
-#        p.join()
+    #    procs = []
+    #   for chunk in chunks:
+    #        # write_to_template(pst.parameter_data.parval1_trans,os.path.join(pst_path,tpl_file),
+    #        #                  os.path.join(pst_path,in_file))
+    #        p = mp.Process(
+    #            target=_write_chunk_to_template,
+    #            args=[chunk, pst.parameter_data.parval1_trans, pst_path],
+    #        )
+    #        p.start()
+    #        procs.append(p)
+    #    for p in procs:
+    #        p.join()
     pool = mp.Pool()
     x = [
-        pool.apply_async(_write_chunk_to_template, args=(chunk, pst.parameter_data.parval1_trans, pst_path))
+        pool.apply_async(
+            _write_chunk_to_template,
+            args=(chunk, pst.parameter_data.parval1_trans, pst_path),
+        )
         for i, chunk in enumerate(chunks)
     ]
     [xx.get() for xx in x]
     pool.close()
     pool.join()
+
 
 def _write_chunk_to_template(chunk, parvals, pst_path):
     for tpl_file, in_file in chunk:
@@ -1035,13 +1039,19 @@ def csv_to_ins_file(
                             nname = f"{nprefix}_usecol:{clabel}"
                             oname = f"{nname}_{rlabel}"
                         else:
-                            nname = nprefix + clabel.replace(" ","").replace("_","")
-                            oname = nprefix + rlabel.replace(" ","").replace("_","") +\
-                                    clabel.replace(" ","").replace("_","")
+                            nname = nprefix + clabel.replace(" ", "").replace("_", "")
+                            oname = (
+                                nprefix
+                                + rlabel.replace(" ", "").replace("_", "")
+                                + clabel.replace(" ", "").replace("_", "")
+                            )
                             if len(oname) > 20:
-                                raise Exception("csv_to_ins_file(): cant form observation name " + \
-                                                " for prefix '{0}' , row '{1}', col '{2}' in less than 20 chars".
-                                                format(nprefix,rlabel,clabel))
+                                raise Exception(
+                                    "csv_to_ins_file(): cant form observation name "
+                                    + " for prefix '{0}' , row '{1}', col '{2}' in less than 20 chars".format(
+                                        nprefix, rlabel, clabel
+                                    )
+                                )
                         onames.append(oname)  # append list of obs
                         ovals.append(vals[i, j])  # store current obs val
                         # defin group name
@@ -1394,6 +1404,132 @@ class InstructionFile(object):
                             )
                         )
                 cursor_pos = cursor_pos + line[cursor_pos:].index(m) + len(m)
+
+            elif ins.startswith("("):
+                if ")" not in ins:
+                    self.throw_ins_error("unmatched ')'", self._instruction_lcount)
+                oname = ins[1:].split(")")[0].lower()
+                raw = ins.split(")")[1]
+                if ":" not in raw:
+                    self.throw_ins_error(
+                        "couldnt find ':' in semi-fixed instruction: '{0}'".format(ins),
+                        lcount=self._instruction_lcount,
+                    )
+                raw = raw.split(":")
+                try:
+                    s_idx = int(raw[0]) - 1
+                except Exception as e:
+                    self.throw_ins_error(
+                        "error converting '{0}' to integer in semi-fixed instruction: '{1}'".format(
+                            raw[0], ins
+                        ),
+                        lcount=self._instruction_lcount,
+                    )
+                try:
+                    e_idx = int(raw[1])
+                except Exception as e:
+                    self.throw_ins_error(
+                        "error converting '{0}' to integer in semi-fixed instruction: '{1}'".format(
+                            raw[1], ins
+                        ),
+                        lcount=self._instruction_lcount,
+                    )
+
+                if len(line) < e_idx:
+                    self.throw_out_error(
+                        "output line only {0} chars long, semi-fixed ending col {1}".format(
+                            len(line), e_idx
+                        )
+                    )
+
+                if cursor_pos > e_idx:
+                    self.throw_out_error(
+                        "cursor at {0} has already read past semi-fixed ending col {1}".format(
+                            cursor_pos, e_idx
+                        )
+                    )
+
+                ss_idx = max(cursor_pos, s_idx)
+                raw = line[ss_idx:].split()
+                rs_idx = line.index(raw[0])
+                if rs_idx > e_idx:
+                    self.throw_out_error(
+                        "no non-whitespace chars found in semi-fixed observation {0}".format(
+                            ins
+                        )
+                    )
+                re_idx = rs_idx + len(raw[0])
+                val_str = line[rs_idx:re_idx]
+                try:
+                    val = float(val_str)
+                except Exception as e:
+                    self.throw_out_error(
+                        "casting string '{0}' to float for instruction '{1}'".format(
+                            val_str, ins
+                        )
+                    )
+
+                if oname != "dum":
+                    val_dict[oname] = val
+                cursor_pos = re_idx
+
+            elif ins.startswith("["):
+                if "]" not in ins:
+                    self.throw_ins_error("unmatched ')'", self._instruction_lcount)
+                oname = ins[1:].split("]")[0].lower()
+                raw = ins.split("]")[1]
+                if ":" not in raw:
+                    self.throw_ins_error(
+                        "couldnt find ':' in fixed instruction: '{0}'".format(ins),
+                        lcount=self._instruction_lcount,
+                    )
+                raw = raw.split(":")
+                try:
+                    s_idx = int(raw[0]) - 1
+                except Exception as e:
+                    self.throw_ins_error(
+                        "error converting '{0}' to integer in fixed instruction: '{1}'".format(
+                            raw[0], ins
+                        ),
+                        lcount=self._instruction_lcount,
+                    )
+                try:
+                    e_idx = int(raw[1])
+                except Exception as e:
+                    self.throw_ins_error(
+                        "error converting '{0}' to integer in fixed instruction: '{1}'".format(
+                            raw[1], ins
+                        ),
+                        lcount=self._instruction_lcount,
+                    )
+
+                if len(line) < e_idx:
+                    self.throw_out_error(
+                        "output line only {0} chars long, fixed ending col {1}".format(
+                            len(line), e_idx
+                        )
+                    )
+
+                if cursor_pos > s_idx:
+                    self.throw_out_error(
+                        "cursor at {0} has already read past fixed starting col {1}".format(
+                            cursor_pos, e_idx
+                        )
+                    )
+
+                val_str = line[s_idx:e_idx]
+                try:
+                    val = float(val_str)
+                except Exception as e:
+                    self.throw_out_error(
+                        "casting string '{0}' to float for instruction '{1}'".format(
+                            val_str, ins
+                        )
+                    )
+
+                if oname != "dum":
+                    val_dict[oname] = val
+                cursor_pos = e_idx
 
             else:
                 self.throw_out_error(

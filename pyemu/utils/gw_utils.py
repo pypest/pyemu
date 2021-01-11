@@ -373,7 +373,7 @@ def setup_mflist_budget_obs(
     start_datetime="1-1'1970",
     prefix="",
     save_setup_file=False,
-    specify_times=None
+    specify_times=None,
 ):
     """setup observations of budget volume and flux from modflow list file.
 
@@ -413,8 +413,7 @@ def setup_mflist_budget_obs(
 
     """
     flx, vol = apply_mflist_budget_obs(
-        list_filename, flx_filename, vol_filename, start_datetime,
-        times=specify_times
+        list_filename, flx_filename, vol_filename, start_datetime, times=specify_times
     )
     _write_mflist_ins(flx_filename + ".ins", flx, prefix + "flx")
     _write_mflist_ins(vol_filename + ".ins", vol, prefix + "vol")
@@ -432,9 +431,11 @@ def setup_mflist_budget_obs(
     if save_setup_file:
         df.to_csv("_setup_" + os.path.split(list_filename)[-1] + ".csv", index=False)
     if specify_times is not None:
-        np.savetxt(os.path.join(os.path.dirname(flx_filename),
-                                "budget_times.config"),
-                   specify_times, fmt='%s')
+        np.savetxt(
+            os.path.join(os.path.dirname(flx_filename), "budget_times.config"),
+            specify_times,
+            fmt="%s",
+        )
     return df
 
 
@@ -489,13 +490,14 @@ def apply_mflist_budget_obs(
     if times is not None:
         if isinstance(times, str):
             if vol.index.tzinfo:
-                parse_date = {'t': [0]}
+                parse_date = {"t": [0]}
                 names = [None]
             else:
                 parse_date = False
-                names = ['t']
-            times = pd.read_csv(times, header=None, names=names,
-                                parse_dates=parse_date)['t'].values
+                names = ["t"]
+            times = pd.read_csv(
+                times, header=None, names=names, parse_dates=parse_date
+            )["t"].values
         flx = flx.loc[times]
         vol = vol.loc[times]
     flx.to_csv(flx_filename, sep=" ", index_label="datetime", date_format="%Y%m%d")

@@ -3588,7 +3588,7 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     list_pars["lower_bound"] = list_pars.lower_bound.apply(lambda x: literal_eval(x))
     list_pars["upper_bound"] = list_pars.upper_bound.apply(lambda x: literal_eval(x))
     # TODO check use_cols is always present
-    apply_genericlist_pars(list_pars)
+    apply_genericlist_pars(list_pars, chunk_len=chunk_len)
     apply_array_pars(arr_pars, chunk_len=chunk_len)
 
 
@@ -3598,13 +3598,13 @@ def _process_chunk_fac2real(chunk, i):
     print("process", i, " processed ", len(chunk), "fac2real calls")
 
 
-def _process_chunk_model_files(chunk, i, df):
+def _process_chunk_array_files(chunk, i, df):
     for model_file in chunk:
-        _process_model_file(model_file, df)
-    print("process", i, " processed ", len(chunk), "process_model_file calls")
+        _process_array_file(model_file, df)
+    print("process", i, " processed ", len(chunk), "process_array_file calls")
 
 
-def _process_model_file(model_file, df):
+def _process_array_file(model_file, df):
     # find all mults that need to be applied to this array
     df_mf = df.loc[df.model_file == model_file, :]
     results = []
@@ -3613,7 +3613,7 @@ def _process_model_file(model_file, df):
         raise Exception("wrong number of org_files for {0}".format(model_file))
     org_arr = np.loadtxt(org_file[0])
 
-    if 'mlt_file' in df_mf.columns:
+    if "mlt_file" in df_mf.columns:
         for mlt in df_mf.mlt_file:
             if pd.isna(mlt):
                 continue
@@ -3717,7 +3717,7 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
         )
         remainder = np.array(pp_args)[num_chunk_floor * chunk_len :].tolist()
         chunks = main_chunks + [remainder]
-
+        print("...",len(chunks))
         pool = mp.Pool()
         x = [
             pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
@@ -3747,6 +3747,7 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     )  # the list of files broken down into chunks
     remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
     chunks = main_chunks + [remainder]
+    print("...", len(chunks))
     # procs = []
     # for chunk in chunks:  # now only spawn processor for each chunk
     #     p = mp.Process(target=_process_chunk_model_files, args=[chunk, df])
@@ -3757,7 +3758,7 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     #     p.join()
     pool = mp.Pool()
     x = [
-        pool.apply_async(_process_chunk_model_files, args=(chunk, i, df))
+        pool.apply_async(_process_chunk_array_files, args=(chunk, i, df))
         for i, chunk in enumerate(chunks)
     ]
     [xx.get() for xx in x]
@@ -3897,7 +3898,7 @@ def apply_list_pars():
         )
 
 
-def apply_genericlist_pars(df):
+def apply_genericlist_pars(df,chunk_len=50):
     """a function to apply list style mult parameters
 
     Args:
@@ -3912,156 +3913,186 @@ def apply_genericlist_pars(df):
             "use_cols": columns to mults act on,
             "upper_bound": ultimate upper bound for model input file parameter,
             "lower_bound": ultimate lower bound for model input file parameter}
+        chunk_len (`int`): number of chunks for each multiprocessing instance to handle.
+            Default is 50.
 
 
     """
+    print("starting list mlt", datetime.now())
+    uniq = df.model_file.unique()  # unique model input files to be produced
+    num_uniq = len(uniq)  # number of input files to be produced
+    # number of files to send to each processor
+    # lazy plitting the files to be processed into even chunks
+    num_chunk_floor = num_uniq // chunk_len  # number of whole chunks
+    main_chunks = (
+        uniq[: num_chunk_floor * chunk_len].reshape([-1, chunk_len]).tolist()
+    )  # the list of files broken down into chunks
+    remainder = uniq[num_chunk_floor * chunk_len:].tolist()  # remaining files
+    chunks = main_chunks + [remainder]
+    print("...",len(chunks))
+    pool = mp.Pool()
+    x = [
+        pool.apply_async(_process_chunk_list_files, args=(chunk, i, df))
+        for i, chunk in enumerate(chunks)
+    ]
+    [xx.get() for xx in x]
+    pool.close()
+    pool.join()
+    print("finished list mlt", datetime.now())
 
-    uniq = df.model_file.unique()
-    for model_file in uniq:
-        print("processing model file:", model_file)
-        df_mf = df.loc[df.model_file == model_file, :].copy()
-        # read data stored in org (mults act on this)
-        org_file = df_mf.org_file.unique()
-        if org_file.shape[0] != 1:
-            raise Exception("wrong number of org_files for {0}".format(model_file))
-        org_file = org_file[0]
-        print("org file:", org_file)
-        notfree = df_mf.fmt[df_mf.fmt != "free"]
-        if len(notfree) > 1:
+def _process_chunk_list_files(chunk, i, df):
+    for model_file in chunk:
+        _process_list_file(model_file, df)
+    print("process", i, " processed ", len(chunk), "process_list_file calls")
+
+
+def _process_list_file(model_file,df):
+
+    #print("processing model file:", model_file)
+    df_mf = df.loc[df.model_file == model_file, :].copy()
+    # read data stored in org (mults act on this)
+    org_file = df_mf.org_file.unique()
+    if org_file.shape[0] != 1:
+        raise Exception("wrong number of org_files for {0}".format(model_file))
+    org_file = org_file[0]
+    #print("org file:", org_file)
+    notfree = df_mf.fmt[df_mf.fmt != "free"]
+    if len(notfree) > 1:
+        raise Exception(
+            "too many different format specifiers for "
+            "model file: {0}".format(model_file)
+        )
+    elif len(notfree) == 1:
+        fmt = notfree.values[0]
+    else:
+        fmt = df_mf.fmt.values[-1]
+    if fmt == "free":
+        if df_mf.sep.dropna().nunique() > 1:
             raise Exception(
-                "too many different format specifiers for "
+                "too many different sep specifiers for "
                 "model file: {0}".format(model_file)
             )
-        elif len(notfree) == 1:
-            fmt = notfree.values[0]
         else:
-            fmt = df_mf.fmt.values[-1]
-        if fmt == "free":
-            if df_mf.sep.dropna().nunique() > 1:
-                raise Exception(
-                    "too many different sep specifiers for "
-                    "model file: {0}".format(model_file)
-                )
-            else:
-                sep = df_mf.sep.dropna().values[-1]
-        else:
-            sep = None
-        datastrtrow = df_mf.head_rows.values[-1]
-        if fmt.lower() == "free" and sep == " ":
-            delim_whitespace = True
-        if datastrtrow > 0:
-            with open(org_file, "r") as fp:
-                storehead = [next(fp) for _ in range(datastrtrow)]
-        else:
-            storehead = []
-        # work out if headers are used for index_cols
-        # big assumption here that int type index cols will not be written as headers
-        index_col_eg = df_mf.index_cols.iloc[-1][0]
-        if isinstance(index_col_eg, str):
-            # TODO: add test for model file with headers
-            # index_cols can be from header str
-            header = 0
-            hheader = True
-        elif isinstance(index_col_eg, int):
-            # index_cols are column numbers in input file
-            header = None
-            hheader = None
-            # actually do need index cols to be list of strings
-            # to be compatible when the saved original file is read in.
-            df_mf.loc[:, "index_cols"] = df_mf.index_cols.apply(
-                lambda x: [str(i) for i in x]
-            )
+            sep = df_mf.sep.dropna().values[-1]
+    else:
+        sep = None
+    datastrtrow = df_mf.head_rows.values[-1]
+    if fmt.lower() == "free" and sep == " ":
+        delim_whitespace = True
+    if datastrtrow > 0:
+        with open(org_file, "r") as fp:
+            storehead = [next(fp) for _ in range(datastrtrow)]
+    else:
+        storehead = []
+    # work out if headers are used for index_cols
+    # big assumption here that int type index cols will not be written as headers
+    index_col_eg = df_mf.index_cols.iloc[-1][0]
+    if isinstance(index_col_eg, str):
+        # TODO: add test for model file with headers
+        # index_cols can be from header str
+        header = 0
+        hheader = True
+    elif isinstance(index_col_eg, int):
+        # index_cols are column numbers in input file
+        header = None
+        hheader = None
+        # actually do need index cols to be list of strings
+        # to be compatible when the saved original file is read in.
+        df_mf.loc[:, "index_cols"] = df_mf.index_cols.apply(
+            lambda x: [str(i) for i in x]
+        )
 
-        # if writen by PstFrom this should always be comma delim - tidy
-        org_data = pd.read_csv(org_file, skiprows=datastrtrow, header=header)
-        # mult columns will be string type, so to make sure they align
-        org_data.columns = org_data.columns.astype(str)
-        print("org_data columns:", org_data.columns)
-        print("org_data shape:", org_data.shape)
-        new_df = org_data.copy()
-        for mlt in df_mf.itertuples():
+    # if writen by PstFrom this should always be comma delim - tidy
+    org_data = pd.read_csv(org_file, skiprows=datastrtrow, header=header)
+    # mult columns will be string type, so to make sure they align
+    org_data.columns = org_data.columns.astype(str)
+    #print("org_data columns:", org_data.columns)
+    #print("org_data shape:", org_data.shape)
+    new_df = org_data.copy()
+    for mlt in df_mf.itertuples():
 
-            try:
-                new_df = (
-                    new_df.reset_index()
-                    .rename(columns={"index": "oidx"})
-                    .set_index(mlt.index_cols)
-                )
-                new_df = new_df.sort_index()
-            except Exception as e:
-                print(
-                    "error setting mlt index_cols: ",
-                    str(mlt.index_cols),
-                    " for new_df with cols: ",
-                    list(new_df.columns),
-                )
-                raise Exception("error setting mlt index_cols: " + str(e))
-
-            if not hasattr(mlt, "mlt_file") or pd.isna(mlt.mlt_file):
-                print("null mlt file for org_file '" + org_file + "', continuing...")
-            else:
-                mlts = pd.read_csv(mlt.mlt_file)
-                # get mult index to align with org_data,
-                # mult idxs will always be written zero based if int
-                # if original model files is not zero based need to add 1
-                add1 = int(mlt.zero_based == False)
-                mlts.index = pd.MultiIndex.from_tuples(
-                    mlts.sidx.apply(lambda x:
-                                    [add1 + int(xx)
-                                     if xx.strip().isdigit()
-                                     else xx.strip('\'\" ')
-                                     for xx in x.strip('()').split(',')
-                                     if xx]),
-                    names=mlt.index_cols
-                )
-                if mlts.index.nlevels < 2:  # just in case only one index col is used
-                    mlts.index = mlts.index.get_level_values(0)
-                common_idx = (
-                    new_df.index.intersection(mlts.index)
-                    .sort_values()
-                    .drop_duplicates()
-                )
-                mlt_cols = [str(col) for col in mlt.use_cols]
-                new_df.loc[common_idx, mlt_cols] = (
-                    new_df.loc[common_idx, mlt_cols] * mlts.loc[common_idx, mlt_cols]
-                ).values
-            # bring mult index back to columns AND re-order
+        try:
             new_df = (
-                new_df.reset_index().set_index("oidx")[org_data.columns].sort_index()
+                new_df.reset_index()
+                .rename(columns={"index": "oidx"})
+                .set_index(mlt.index_cols)
             )
-        if "upper_bound" in df.columns:
-            ub = df_mf.apply(
-                lambda x: pd.Series(
-                    {str(c): b for c, b in zip(x.use_cols, x.upper_bound)}
+            new_df = new_df.sort_index()
+        except Exception as e:
+            print(
+                "error setting mlt index_cols: ",
+                str(mlt.index_cols),
+                " for new_df with cols: ",
+                list(new_df.columns),
+            )
+            raise Exception("error setting mlt index_cols: " + str(e))
+
+        if not hasattr(mlt, "mlt_file") or pd.isna(mlt.mlt_file):
+            print("null mlt file for org_file '" + org_file + "', continuing...")
+        else:
+            mlts = pd.read_csv(mlt.mlt_file)
+            # get mult index to align with org_data,
+            # mult idxs will always be written zero based if int
+            # if original model files is not zero based need to add 1
+            add1 = int(mlt.zero_based == False)
+            mlts.index = pd.MultiIndex.from_tuples(
+                mlts.sidx.apply(
+                    lambda x: [
+                        add1 + int(xx) if xx.strip().isdigit() else xx.strip("'\" ")
+                        for xx in x.strip("()").split(",")
+                        if xx
+                    ]
                 ),
-                axis=1,
-            ).max()
-            if ub.notnull().any():
-                for col, val in ub.items():
-                    new_df.loc[new_df.loc[:, col] > val, col] = val
-        if "lower_bound" in df.columns:
-            lb = df_mf.apply(
-                lambda x: pd.Series(
-                    {str(c): b for c, b in zip(x.use_cols, x.lower_bound)}
-                ),
-                axis=1,
-            ).min()
-            if lb.notnull().any():
-                for col, val in lb.items():
-                    new_df.loc[new_df.loc[:, col] < val, col] = val
-        with open(model_file, "w") as fo:
-            kwargs = {}
-            if "win" in platform.platform().lower():
-                kwargs = {"line_terminator": "\n"}
-            if len(storehead) != 0:
-                fo.write("\n".join(storehead))
-                fo.flush()
-            if fmt.lower() == "free":
-                new_df.to_csv(
-                    fo, index=False, mode="a", sep=sep, header=hheader, **kwargs
-                )
-            else:
-                np.savetxt(fo, np.atleast_2d(new_df.values), fmt=fmt)
+                names=mlt.index_cols,
+            )
+            if mlts.index.nlevels < 2:  # just in case only one index col is used
+                mlts.index = mlts.index.get_level_values(0)
+            common_idx = (
+                new_df.index.intersection(mlts.index)
+                .sort_values()
+                .drop_duplicates()
+            )
+            mlt_cols = [str(col) for col in mlt.use_cols]
+            new_df.loc[common_idx, mlt_cols] = (
+                new_df.loc[common_idx, mlt_cols] * mlts.loc[common_idx, mlt_cols]
+            ).values
+        # bring mult index back to columns AND re-order
+        new_df = (
+            new_df.reset_index().set_index("oidx")[org_data.columns].sort_index()
+        )
+    if "upper_bound" in df.columns:
+        ub = df_mf.apply(
+            lambda x: pd.Series(
+                {str(c): b for c, b in zip(x.use_cols, x.upper_bound)}
+            ),
+            axis=1,
+        ).max()
+        if ub.notnull().any():
+            for col, val in ub.items():
+                new_df.loc[new_df.loc[:, col] > val, col] = val
+    if "lower_bound" in df.columns:
+        lb = df_mf.apply(
+            lambda x: pd.Series(
+                {str(c): b for c, b in zip(x.use_cols, x.lower_bound)}
+            ),
+            axis=1,
+        ).min()
+        if lb.notnull().any():
+            for col, val in lb.items():
+                new_df.loc[new_df.loc[:, col] < val, col] = val
+    with open(model_file, "w") as fo:
+        kwargs = {}
+        if "win" in platform.platform().lower():
+            kwargs = {"line_terminator": "\n"}
+        if len(storehead) != 0:
+            fo.write("\n".join(storehead))
+            fo.flush()
+        if fmt.lower() == "free":
+            new_df.to_csv(
+                fo, index=False, mode="a", sep=sep, header=hheader, **kwargs
+            )
+        else:
+            np.savetxt(fo, np.atleast_2d(new_df.values), fmt=fmt)
 
 
 def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, longnames=False):
@@ -4333,8 +4364,7 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
     return df
 
 
-def _write_df_tpl(filename, df, sep=",", tpl_marker="~",
-                  headerlines=None, **kwargs):
+def _write_df_tpl(filename, df, sep=",", tpl_marker="~", headerlines=None, **kwargs):
     """function write a pandas dataframe to a template file."""
     if "line_terminator" not in kwargs:
         if "win" in platform.platform().lower():

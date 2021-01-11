@@ -257,7 +257,6 @@ class PstFrom(object):
                             "not specified, assume (i,j) are final two entries in "
                             "index_cols."
                         )
-
                     )
                     self.ijwarned[self.add_pars_callcount] = True
                 # assume i and j are the final two entries in index_cols
@@ -341,10 +340,10 @@ class PstFrom(object):
             s = "    "
             for tmp_file in self.tmp_files:
                 f.write(s + "try:\n")
-                f.write(s + "   os.remove('{0}')\n".format(tmp_file))
+                f.write(s + "   os.remove(r'{0}')\n".format(tmp_file))
                 f.write(s + "except Exception as e:\n")
                 f.write(
-                    s + "   print('error removing tmp file:{0}')\n".format(tmp_file)
+                    s + "   print(r'error removing tmp file:{0}')\n".format(tmp_file)
                 )
             for line in self.pre_py_cmds:
                 f.write(s + line + "\n")
@@ -405,7 +404,7 @@ class PstFrom(object):
             cov = pyemu.Cov.from_parameter_data(self.pst, sigma_range=sigma_range)
 
         if filename is None:
-            filename = self.pst.filename.with_suffix('.prior.cov')
+            filename = self.pst.filename.with_suffix(".prior.cov")
         if fmt != "none":
             self.logger.statement(
                 "saving prior covariance matrix to file {0}".format(filename)
@@ -445,6 +444,9 @@ class PstFrom(object):
 
         """
         self.logger.log("drawing realizations")
+        if self.pst.npar_adj == 0:
+            self.logger.warn("no adjustable parameters, nothing to draw...")
+            return
         # precondition {geostruct:{group:df}} dict to {geostruct:[par_dfs]}
         struct_dict = self._pivot_par_struct_dict()
         # list for holding grid style groups
@@ -461,7 +463,7 @@ class PstFrom(object):
             # (setup through add_parameters)
             for geostruct, par_df_l in struct_dict.items():
                 par_df = pd.concat(par_df_l)  # force to single df
-                if "i" in par_df.columns:  # need 'i' and 'j' for specsim
+                if "i" in par_df.columns and par_df.partype[0] == "grid":  # need 'i' and 'j' for specsim
                     # grid par slicer
                     grd_p = pd.notna(par_df.i)  # & (par_df.partype == 'grid') &
                 else:
@@ -554,10 +556,10 @@ class PstFrom(object):
                     filename = get_filepath(self.new_d, self.pst.filename)
         else:
             if filename is None:
-                filename = Path(self.new_d, self.original_d.name).with_suffix('.pst')
+                filename = Path(self.new_d, self.original_d.name).with_suffix(".pst")
         filename = get_filepath(self.new_d, filename)
 
-        #if os.path.dirname(filename) in ["", "."]:
+        # if os.path.dirname(filename) in ["", "."]:
         #    filename = os.path.join(self.new_d, filename)
 
         if update:
@@ -711,7 +713,7 @@ class PstFrom(object):
             for filename, sep, fmt, skip in zip(filenames, seps, fmts, skip_rows):
                 # cast to pathlib.Path instance
                 # input file path may or may not include original_d
-                #input_filepath = get_filepath(self.original_d, filename)
+                # input_filepath = get_filepath(self.original_d, filename)
                 rel_filepath = get_relative_filepath(self.original_d, filename)
                 dest_filepath = self.new_d / rel_filepath
 
@@ -755,8 +757,8 @@ class PstFrom(object):
                 # write orig version of input file to `org` (e.g.) dir
 
                 # make any subfolders if they don't exist
-                #org_path = Path(self.original_file_d, rel_file_path.parent)
-                #org_path.mkdir(exist_ok=True)
+                # org_path = Path(self.original_file_d, rel_file_path.parent)
+                # org_path.mkdir(exist_ok=True)
 
                 if len(storehead) != 0:
                     kwargs = {}
@@ -798,7 +800,8 @@ class PstFrom(object):
                                 **kwargs
                             )
                 else:
-                    df.to_csv(org_file,
+                    df.to_csv(
+                        org_file,
                         index=False,
                         sep=",",
                         header=hheader,
@@ -875,8 +878,15 @@ class PstFrom(object):
                                 file_dict[fnames[j]].shape,
                             )
                         )
-        return (index_cols, use_cols, file_dict, fmt_dict, sep_dict, skip_dict,
-                storehead)
+        return (
+            index_cols,
+            use_cols,
+            file_dict,
+            fmt_dict,
+            sep_dict,
+            skip_dict,
+            storehead,
+        )
 
     def _next_count(self, prefix):
         if prefix not in self._prefix_count:
@@ -886,8 +896,9 @@ class PstFrom(object):
 
         return self._prefix_count[prefix]
 
-    def add_py_function(self, file_name, call_str=None, is_pre_cmd=True,
-                        function_name=None):
+    def add_py_function(
+        self, file_name, call_str=None, is_pre_cmd=True, function_name=None
+    ):
         """add a python function to the forward run script
 
         Args:
@@ -932,14 +943,14 @@ class PstFrom(object):
         if function_name is not None:
             warnings.warn(
                 "add_py_function(): 'function_name' argument is deprecated, "
-                "use 'call_str' instead", DeprecationWarning
+                "use 'call_str' instead",
+                DeprecationWarning,
             )
             if call_str is None:
                 call_str = function_name
         if call_str is None:
             self.logger.lraise(
-                "add_py_function(): No function call string passed in arg "
-                "'call_str'"
+                "add_py_function(): No function call string passed in arg " "'call_str'"
             )
         if not os.path.exists(file_name):
             self.logger.lraise(
@@ -949,13 +960,13 @@ class PstFrom(object):
             )
         if "(" not in call_str or ")" not in call_str:
             self.logger.lraise(
-                "add_py_function(): call_str '{0}' missing paretheses".format(
-                    call_str
-                )
+                "add_py_function(): call_str '{0}' missing paretheses".format(call_str)
             )
-        function_name = call_str[:call_str.find('(')]  # strip to first occurance of '('
+        function_name = call_str[
+            : call_str.find("(")
+        ]  # strip to first occurance of '('
         func_lines = []
-        search_str = "def " + function_name + '('
+        search_str = "def " + function_name + "("
         abet_set = set(string.ascii_uppercase)
         abet_set.update(set(string.ascii_lowercase))
         with open(file_name, "r") as f:
@@ -992,6 +1003,93 @@ class PstFrom(object):
                 )
             )
 
+    def _process_array_obs(self,out_filename,ins_filename,prefix,ofile_sep,ofile_skip,longnames,zone_array):
+        """private method to setup observations for an array-style file
+
+        Args:
+            out_filename (`str`): the output array file
+            ins_filename (`str`): the instruction file to create
+            prefix (`str`): the prefix to add to the observation names and also to use as the
+                observation group name.
+            ofile_sep (`str`): the separator in the output file.  This is currently just a
+                placeholder arg, only whitespace-delimited files are supported
+            ofile_skip (`int`): number of header and/or comment lines to skip at the
+                top of the output file
+            longnames (`bool`): flag to allow longer observations names
+            zone_array (numpy.ndarray): an integer array used to identify positions to skip in the
+                output array
+
+        Returns:
+            None
+
+        Note:
+
+            This method is called programmatically by `PstFrom.add_observations()`
+
+        """
+        if ofile_sep is not None:
+            self.logger.lrase("array obs are currently only supported for whitespace delim")
+        if not os.path.exists(self.new_d / out_filename):
+            self.logger.lraise("array obs output file '{0}' not found".format(out_filename))
+        if len(prefix) == 0 and self.longnames:
+            prefix = out_filename
+        f_out = open(self.new_d/out_filename,'r')
+        f_ins = open(self.new_d/ins_filename,'w')
+        f_ins.write("pif ~\n")
+        iline = 0
+        if ofile_skip is not None:
+            ofile_skip = int(ofile_skip)
+            f_ins.write("l{0}\n".format(ofile_skip))
+            # read the output file forward
+            for _ in range(ofile_skip):
+                f_out.readline()
+                iline += 1
+        onames,ovals = [],[]
+        iidx = 0
+        for line in f_out:
+            raw = line.split()
+            f_ins.write("l1 ")
+            for jr,r in enumerate(raw):
+
+                try:
+                    fr = float(r)
+                except Exception as e:
+                    self.logger.lraise("array obs error casting: '{0}' on line {1} to a float: {2}".\
+                                       format(r,iline,str(e)))
+
+                zval = None
+                if zone_array is not None:
+                    try:
+                        zval = zone_array[iidx, jr]
+                    except Exception as e:
+                        self.logger.lraise("array obs error getting zone value for i,j {0},{1} in line {2}: {3}". \
+                                           format(iidx, jr, iline, str(e)))
+                    if zval <= 0:
+                        f_ins.write(" !dum! ")
+                        if jr < len(raw) - 1:
+                            f_ins.write(" w ")
+                        continue
+
+                if longnames:
+                    oname = "arrobs_{0}_i:{1}_j:{2}".format(prefix,iidx,jr)
+                    if zval is not None:
+                        oname += "_zone:{0}".format(zval)
+                else:
+                    oname = "{0}_{1}_{2}".format(prefix,iline,jr)
+                    if zval is not None:
+                        z_str = "_{0}".format(zval)
+                        if len(oname) + len(z_str) < 20:
+                            oname += z_str
+                    if len(oname) > 20:
+                        self.logger.lraise("array obs name too long: '{0}'".format(oname))
+                f_ins.write(" !{0}! ".format(oname))
+                if jr < len(raw) - 1:
+                    f_ins.write(" w ")
+            f_ins.write("\n")
+            iline += 1
+            iidx += 1
+
+
     def add_observations(
         self,
         filename,
@@ -1004,12 +1102,13 @@ class PstFrom(object):
         ofile_sep=None,
         rebuild_pst=False,
         obsgp=True,
+        zone_array=None,
     ):
         """
-        Add list style outputs as observation files to PstFrom object
+        Add values in output files as observations to PstFrom object
 
         Args:
-            filename (`str`): path to model output file name to set up
+            filename (`str`): model output file name(s) to set up
                 as observations
             insfile (`str`): desired instructions file filename
             index_cols (`list`-like or `int`): columns to denote are indices for obs
@@ -1020,6 +1119,8 @@ class PstFrom(object):
             ofile_sep (`str`): delimiter in output file
             rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after adding
                 new obs
+            zone_array (`np.ndarray`): array defining spatial limits or zones
+                for array-style observations. Default is None
 
         Returns:
             `Pandas.DataFrame`: dataframe with info for new observations
@@ -1027,12 +1128,24 @@ class PstFrom(object):
         Note:
             This is the main entry for adding observations to the pest interface
 
+            If `index_cols` and `use_cols` are both None, then it is assumed that
+            array-style observations are being requested.  In this case,
+            `filenames` must be only one filename.
+
+            `zone_array` is only used for array-style observations.  Zone values
+            less than or equal to zero are skipped (using the "dum" option)
+
+
         Example::
 
             # setup observations for the 2nd thru 5th columns of the csv file
             # using the first column as the index
             df = pf.add_observations("heads.csv",index_col=0,use_cols=[1,2,3,4],
                                      ofile_sep=",")
+            # add array-style observations, skipping model cells with an ibound
+            # value less than or equal to zero
+            df = pf.add_observations("conce_array.day",index_col=None,use_cols=None,
+                                     zone_array=ibound)
 
 
         """
@@ -1056,7 +1169,32 @@ class PstFrom(object):
             seps=ofile_sep,
             skip_rows=ofile_skip,
         )
-        # load model output file
+        # array style obs
+        if index_cols is None and use_cols is None:
+            if not isinstance(filenames,str):
+                if len(filenames) > 1:
+                    self.logger.lraise("only a single filename can be used for array-style observations")
+                filenames = filenames[0]
+            self.logger.log("adding observations from array output file '{0}'".format(filenames))
+            df_obs = self._process_array_obs(filenames,insfile,prefix,ofile_sep,ofile_skip,self.longnames,zone_array)
+            new_obs = self.add_observations_from_ins(
+                ins_file=insfile, out_file=self.new_d / filename
+            )
+            if prefix is not None:
+                new_obs.loc[:, "obgnme"] = prefix
+            self.logger.log("adding observations from array output file '{0}'".format(filenames))
+            if rebuild_pst:
+                if self.pst is not None:
+                    self.logger.log("Adding obs to control file " "and rewriting pst")
+                    self.build_pst(filename=self.pst.filename, update="obs")
+                else:
+                    self.build_pst(filename=self.pst.filename, update=False)
+                    self.logger.warn(
+                        "pst object not available, " "new control file will be written"
+                    )
+            return new_obs
+
+        # list style obs
         df, storehead = self._load_listtype_file(
             filenames, index_cols, use_cols, fmts, seps, skip_rows
         )
@@ -1272,7 +1410,7 @@ class PstFrom(object):
         rebuild_pst=False,
         alt_inst_str="inst",
         comment_char=None,
-        par_style="multiplier"
+        par_style="multiplier",
     ):
         """
         Add list or array style model input files to PstFrom object.
@@ -1379,6 +1517,12 @@ class PstFrom(object):
         if ult_lbound is None:
             ult_lbound = self.ult_lbound_fill
 
+        if transform.lower().strip() not in ["none","log","fixed"]:
+            self.logger.lraise("unrecognized transform ('{0}'), should be in ['none','log','fixed']".format(transform))
+
+        if transform == "fixed" and geostruct is not None:
+            self.logger.lraise("geostruct is not 'None', cant draw values for fixed pars")
+
         # some checks for direct parameters
         par_style = par_style.lower()
         if par_style not in ["multiplier", "direct"]:
@@ -1390,8 +1534,9 @@ class PstFrom(object):
         if isinstance(filenames, str) or isinstance(filenames, Path):
             filenames = [filenames]
         # data file paths relative to the model_ws
-        filenames = [get_relative_filepath(self.original_d, filename)
-                     for filename in filenames]
+        filenames = [
+            get_relative_filepath(self.original_d, filename) for filename in filenames
+        ]
         if par_style == "direct":
             if len(filenames) != 1:
                 self.logger.lraise(
@@ -1415,9 +1560,9 @@ class PstFrom(object):
             )
         )
         if geostruct is not None:
-            if geostruct.sill != 1.0: #  and par_style != "multiplier": #TODO !=?
+            if geostruct.sill != 1.0:  #  and par_style != "multiplier": #TODO !=?
                 self.logger.warn(
-                    "geostruct sill != 1.0" # for 'multiplier' style parameters"
+                    "geostruct sill != 1.0"  # for 'multiplier' style parameters"
                 )
             if geostruct.transform != transform:
                 self.logger.warn(
@@ -1579,6 +1724,11 @@ class PstFrom(object):
             # Generate tabular type template - also returns par data
             # relative file paths are in file_dict as Path instances (kludgey)
             dfs = [file_dict[Path(filename)] for filename in filenames]
+            get_xy = None
+            if (
+                par_type.startswith("grid") or par_type.startswith("p")
+            ) and geostruct is not None:
+                get_xy = self.get_xy
             df = write_list_tpl(
                 filenames,
                 dfs,
@@ -1593,7 +1743,7 @@ class PstFrom(object):
                 longnames=self.longnames,
                 ij_in_idx=ij_in_idx,
                 xy_in_idx=xy_in_idx,
-                get_xy=self.get_xy,
+                get_xy=get_xy,
                 zero_based=self.zero_based,
                 input_filename=in_fileabs,
                 par_style=par_style,
@@ -1697,7 +1847,7 @@ class PstFrom(object):
                 # par_name_storepp.dat table (in pst ws)
                 in_filepst = pp_filename
                 tpl_filename = self.tpl_d / (pp_filename + ".tpl")
-                #tpl_filename = get_relative_filepath(self.new_d, tpl_filename)
+                # tpl_filename = get_relative_filepath(self.new_d, tpl_filename)
                 if pp_space is None:  # default spacing if not passed
                     self.logger.warn("pp_space is None, using 10...\n")
                     pp_space = 10
@@ -1792,7 +1942,7 @@ class PstFrom(object):
                     # TODO need better way of naming squential fac_files?
                     self.logger.log("calculating factors for pargp={0}".format(pg))
                     fac_filename = self.new_d / "{0}pp.fac".format(par_name_store)
-                    var_filename = fac_filename.with_suffix('.var.dat')
+                    var_filename = fac_filename.with_suffix(".var.dat")
                     self.logger.statement(
                         "saving krige variance file:{0}".format(var_filename)
                     )
@@ -2377,7 +2527,7 @@ def _write_direct_df_tpl(
     xy_in_idx=None,
     zero_based=True,
     gpname=None,
-    headerlines=None
+    headerlines=None,
 ):
 
     """
@@ -2444,7 +2594,8 @@ def _write_direct_df_tpl(
 
     if not zero_based:
         df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
-            lambda x: tuple(xx - 1 if isinstance(xx,int) else xx for xx in x))
+            lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x)
+        )
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
         lambda x: j.join([fmt.format(iname, xx) for xx, iname in zip(x, inames)])
     ).str.replace(" ", "")
@@ -2501,7 +2652,6 @@ def _write_direct_df_tpl(
                 df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
                 if suffix != "":
                     df_ti.loc[:, use_col] += suffix
-
 
             _check_diff(df.loc[:, use_col].values, in_filename)
             df_ti.loc[:, "parval1_{0}".format(use_col)] = df.loc[:, use_col][0]
@@ -2560,12 +2710,10 @@ def _write_direct_df_tpl(
             )
 
         if not longnames:
-            if df_ti.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
-                too_long = df_ti.loc[:,use_col].apply(lambda x: len(x)) > 12
+            if df_ti.loc[:, use_col].apply(lambda x: len(x)).max() > 12:
+                too_long = df_ti.loc[:, use_col].apply(lambda x: len(x)) > 12
                 print(too_long)
-                raise ValueError(
-                    "_write_direct_df_tpl(): couldnt form short par names"
-                )
+                raise ValueError("_write_direct_df_tpl(): couldnt form short par names")
 
         direct_tpl_df.loc[:, use_col] = (
             df_ti.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
@@ -2575,8 +2723,9 @@ def _write_direct_df_tpl(
         header = True
     else:
         header = False
-    pyemu.helpers._write_df_tpl(tpl_filename, direct_tpl_df, index=False,
-                                header=header, headerlines=headerlines)
+    pyemu.helpers._write_df_tpl(
+        tpl_filename, direct_tpl_df, index=False, header=header, headerlines=headerlines
+    )
 
     return df_ti
 
@@ -2677,9 +2826,12 @@ def _get_tpl_or_ins_df(
             inames = ["{0}".format(i) for i in range(len(index_cols))]
         # full formatter string
         fmt = j.join([f"{{{i}:3}}" for i, iname in enumerate(inames)])
-    if not zero_based:  # only if indices are ints (trying to support strings as par ids)
+    if (
+        not zero_based
+    ):  # only if indices are ints (trying to support strings as par ids)
         df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
-            lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x))
+            lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x)
+        )
 
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
         lambda x: fmt.format(*x)).str.replace(" ", "")
@@ -2780,12 +2932,10 @@ def _get_tpl_or_ins_df(
             )
 
         if not longnames:
-            if df_ti.loc[:,use_col].apply(lambda x: len(x)).max() > 12:
-                too_long = df_ti.loc[:,use_col].apply(lambda x: len(x)) > 12
+            if df_ti.loc[:, use_col].apply(lambda x: len(x)).max() > 12:
+                too_long = df_ti.loc[:, use_col].apply(lambda x: len(x)) > 12
                 print(too_long)
-                raise ValueError(
-                    "_get_tpl_or_ins_df(): couldnt form short par names"
-                )
+                raise ValueError("_get_tpl_or_ins_df(): couldnt form short par names")
     return df_ti
 
 

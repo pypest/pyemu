@@ -666,6 +666,7 @@ def mf6_freyberg_test():
                                   ult_lbound=None if ult_lb is None else ult_lb - 1)
 
 
+
     # add SP1 spatially constant, but temporally correlated wel flux pars
     kper = 0
     list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
@@ -1323,8 +1324,10 @@ def mf6_freyberg_direct_test():
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
                         use_cols=["GAGE_1","HEADWATER","TAILWATER"],ofile_sep=",")
     # Setup geostruct for spatial pars
-    v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
-    gr_gs = pyemu.geostats.GeoStruct(variograms=v, transform="log")
+    gr_v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=gr_v, transform="log")
+    pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
+    pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
@@ -2522,6 +2525,111 @@ def pstfrom_profile():
     # assert pst.phi < 1.0e-5, pst.phi
     pr.print_stats(sort="cumtime")
 
+
+def mf6_freyberg_arr_obs_test():
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
+    tmp_model_ws = "temp_pst_from"
+    if os.path.exists(tmp_model_ws):
+        shutil.rmtree(tmp_model_ws)
+    os.mkdir(tmp_model_ws)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
+    # sim.set_all_data_external()
+    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    # sim.set_all_data_external()
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
+
+    # to by pass the issues with flopy
+    # shutil.copytree(org_model_ws,tmp_model_ws)
+    # sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
+    # m = sim.get_model("freyberg6")
+
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+
+    template_ws = "new_temp"
+    # sr0 = m.sr
+    # sr = pyemu.helpers.SpatialReference.from_namfile(
+    #     os.path.join(tmp_model_ws, "freyberg6.nam"),
+    #     delr=m.dis.delr.array, delc=m.dis.delc.array)
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018")
+
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+    rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {"npf_k_": [0.1, 10.]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+    arr_dict = {}
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        for arr_file in arr_files:
+            #pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
+            #                  pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                  geostruct=gr_gs)
+            pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
+                              pargp=arr_file.split('.')[1] + "_cn", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                              transform="fixed")
+            pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
+                              pargp=arr_file.split('.')[1] + "_cn", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                              transform="log")
+
+
+            pf.add_observations(arr_file,zone_array=ib)
+            arr_dict[arr_file] = np.loadtxt(pf.new_d / arr_file)
+
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
+
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+    pe = pf.draw(100,use_specsim=True)
+    cov = pf.build_prior()
+    scnames = set(cov.row_names)
+    print(pst.npar_adj,pst.npar,pe.shape)
+    par = pst.parameter_data
+    fpar = set(par.loc[par.partrans=="fixed","parnme"].tolist())
+    spe = set(list(pe.columns))
+    assert len(fpar.intersection(spe)) == 0,str(fpar.intersection(spe))
+    assert len(fpar.intersection(scnames)) == 0, str(fpar.intersection(scnames))
+    pst.try_parse_name_metadata()
+    obs = pst.observation_data
+    for fname,arr in arr_dict.items():
+
+        fobs = obs.loc[obs.obsnme.str.contains(fname),:]
+        #print(fobs)
+        fobs.loc[:,"i"] = fobs.i.apply(np.int)
+        fobs.loc[:, "j"] = fobs.j.apply(np.int)
+
+        pval = fobs.loc[fobs.apply(lambda x: x.i==3 and x.j==1,axis=1),"obsval"]
+        assert len(pval) == 1
+        pval = pval[0]
+        aval = arr[3,1]
+        print(fname,pval,aval)
+        assert pval == aval,"{0},{1},{2}".format(fname,pval,aval)
+
+
 if __name__ == "__main__":
     #invest()
     # freyberg_test()
@@ -2536,6 +2644,7 @@ if __name__ == "__main__":
     # tpf.setup()
     # tpf.test_add_direct_array_parameters()
     pstfrom_profile()
+    mf6_freyberg_arr_obs_test()
 
 
 
