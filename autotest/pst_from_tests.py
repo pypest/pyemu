@@ -10,7 +10,6 @@ import pyemu
 from pyemu import os_utils
 from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
-import cProfile
 
 ext = ''
 local_bins = False  # change if wanting to test with local binary exes
@@ -2405,7 +2404,9 @@ def invest():
     i = pyemu.pst_utils.InstructionFile(os.path.join("new_temp","freyberg.sfo.dat.ins"))
     i.read_output_file(os.path.join("new_temp","freyberg.sfo.dat"))
 
+
 def pstfrom_profile():
+    import cProfile
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
