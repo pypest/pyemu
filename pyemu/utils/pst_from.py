@@ -1071,11 +1071,11 @@ class PstFrom(object):
                         continue
 
                 if longnames:
-                    oname = "arrobs_{0}_i:{1}_j:{2}".format(prefix,iline,jr)
+                    oname = "arrobs_{0}_i:{1}_j:{2}".format(prefix,iidx,jr)
                     if zval is not None:
                         oname += "_zone:{0}".format(zval)
                 else:
-                    oname = "{0}_{1}_{2}".format(prefix,iline,jr)
+                    oname = "{0}_{1}_{2}".format(prefix,iidx,jr)
                     if zval is not None:
                         z_str = "_{0}".format(zval)
                         if len(oname) + len(z_str) < 20:
