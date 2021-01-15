@@ -719,6 +719,109 @@ def generic_pst(par_names=["par1"], obs_names=["obs1"], addreg=False):
     return new_pst
 
 
+def try_read_input_file_with_tpl(tpl_file,input_file=None):
+    """attempt to read parameter values from an input file using a template file
+        Args:
+            tpl_file (`str`): path and name of a template file
+            input_file (`str`,optional): path and name of existing model
+                input file to process.  If `None`, `tpl_file.replace(".tpl","")`
+                is used.  Default is None.
+
+        Returns:
+            `pandas.DataFrame`: a dataframe of parameter name and values
+            extracted from `input_file`.
+
+        Note:
+            If an exception is raised when reading the input file, the exception
+            is echoed to the screen and `None` is returned.
+
+        Example::
+
+            df = pyemu.pst_utils.try_process_output_file("my.tpl","my.input")
+
+        """
+
+    if input_file is None:
+        input_file = tpl_file.replace(".tpl", "")
+    if not os.path.exists(input_file):
+        return None
+    # read the names first to see what we are dealing with
+    # and also to do some basic error checking
+    parnames = parse_tpl_file(tpl_file)
+    try:
+        df = _read_infile_with_tplfile(tpl_file,input_file)
+    except Exception as e:
+        print("error trying to read input file with tpl file:{0}".format(str(e)))
+        return None
+    return df
+
+def _read_infile_with_tplfile(tpl_file,input_file):
+    """attempt to read parameter values from an input file using a template file,
+    raising heaps of exceptions.
+        Args:
+            tpl_file (`str`): path and name of a template file
+            input_file (`str`): path and name of existing model
+
+        Returns:
+            `pandas.DataFrame`: a dataframe of parameter name and values
+            extracted from `input_file`.
+
+        Note:
+            use try_read_inputfile_with_tpl instead of this one.
+
+        """
+
+    if not os.path.exists(input_file):
+       raise Exception("input file '{0}' not found".format(input_file))
+
+    f_tpl = open(tpl_file,'r')
+    f_in = open(input_file,'r')
+
+    # read the tpl header
+    _, marker = f_tpl.readline().split()
+    itpl,iin = 1,0
+    pnames,pvals = [],[]
+    pdict = {}
+    while True:
+        tpl_line =f_tpl.readline()
+        if tpl_line == "":
+            break
+
+        in_line = f_in.readline()
+        if in_line == "":
+            raise Exception("input file EOF, tpl file line {0}, in file line {1}".format(itpl,iin))
+
+        if marker in tpl_line:
+            idxs = [i for i, ltr in enumerate(tpl_line) if ltr == marker]
+            if len(idxs) % 2 != 0:
+                raise Exception("unbalanced markers on tpl line {0}".format(itpl))
+
+            for s,e in zip(idxs[0:-1:2],idxs[1::2]):
+                tpl_str = tpl_line[s:e]
+                pname = tpl_str.replace(marker,"").strip().lower()
+                if s > len(in_line):
+                    raise Exception("input file EOL line {0}, tpl line {1}, looking for {2}"\
+                                    .format(iin,itpl,tpl_str))
+                in_str = in_line[s:e]
+                try:
+                    v = float(in_str)
+                except Exception as e:
+                    raise Exception("error casting '{0}' to float on in line {1}, tpl line {2} for {3}: {4}".\
+                          format(in_str,iin,itpl,tpl_str,str(e)))
+
+                if pname in pdict:
+                    eval = pdict[pname]
+                    if not np.isclose(eval,v,1.0e-6):
+                        raise Exception("different values {0}:{1} for par {2} on in line {3}".format(v,eval,pname,iin))
+                else:
+                    pnames.append(pname)
+                    pvals.append(v)
+                pdict[pname] = v
+        itpl += 1
+        iin += 1
+    df = pd.DataFrame({"parnme":pnames,"parval1":pvals},index=pnames)
+    return df
+
 def try_process_output_file(ins_file, output_file=None):
     """attempt to process a model output file using a PEST-style instruction file
 

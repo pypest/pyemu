@@ -945,6 +945,17 @@ def ctrl_data_test():
     pst2.write(os.path.join("pst","test2.pst"),version=2)
     pst3 = pyemu.Pst(os.path.join("pst", "test2.pst"))
 
+def read_in_tpl_test():
+    import pyemu
+    tpl_d = "tpl"
+    tpl_files = [os.path.join(tpl_d,f) for f in os.listdir(tpl_d) if f.endswith(".tpl")]
+    df = pyemu.pst_utils.try_read_input_file_with_tpl(os.path.join(tpl_d,"test1.dat.tpl"))
+    print(df)
+    assert df.parval1["p1"] == df.parval1["p2"]
+    assert df.parval1["p3"] == df.parval1["p4"]
+    assert df.parval1["p5"] == df.parval1["p6"]
+    assert df.parval1["p5"] == df.parval1["p7"]
+
 
 if __name__ == "__main__":
     process_output_files_test()
@@ -990,5 +1001,6 @@ if __name__ == "__main__":
     #try_process_ins_test()
     #tpl_ins_test()
     #process_output_files_test()
+    #comments_test()
+    read_in_tpl_test()
     comments_test()
-    

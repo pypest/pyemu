@@ -2452,6 +2452,9 @@ class Pst(object):
         # get the parameter names in the template file
         parnme = pst_utils.parse_tpl_file(template_file)
 
+        parval1 = pst_utils.try_read_input_file_with_tpl(template_file,in_file)
+
+
         # find "new" parameters that are not already in the control file
         new_parnme = [p for p in parnme if p not in self.parameter_data.parnme]
 
@@ -2472,6 +2475,8 @@ class Pst(object):
             )
             new_par_data.loc[new_parnme, "parnme"] = new_parnme
             self.parameter_data = self.parameter_data.append(new_par_data)
+            if parval1 is not None:
+                new_par_data.loc[parval1.parnme,"parval1"] = parval1.parval1
         if in_file is None:
             in_file = template_file.replace(".tpl", "")
         if pst_path is not None:

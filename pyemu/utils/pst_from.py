@@ -1075,7 +1075,7 @@ class PstFrom(object):
                     if zval is not None:
                         oname += "_zone:{0}".format(zval)
                 else:
-                    oname = "{0}_{1}_{2}".format(prefix,iline,jr)
+                    oname = "{0}_{1}_{2}".format(prefix,iidx,jr)
                     if zval is not None:
                         z_str = "_{0}".format(zval)
                         if len(oname) + len(z_str) < 20:
@@ -1537,6 +1537,8 @@ class PstFrom(object):
         filenames = [
             get_relative_filepath(self.original_d, filename) for filename in filenames
         ]
+        if len(filenames) == 0:
+            self.logger.lraise("add_parameters(): filenames is empty")
         if par_style == "direct":
             if len(filenames) != 1:
                 self.logger.lraise(
@@ -1925,7 +1927,7 @@ class PstFrom(object):
                 pp_info_dict = {
                     "pp_data": ok_pp.point_data.loc[:, ["x", "y", "zone"]],
                     "cov": ok_pp.point_cov_df,
-                    "zn_ar": zone_array,
+                    "zn_ar": zone_array
                 }
                 fac_processed = False
                 for facfile, info in self._pp_facs.items():  # check against
@@ -2004,6 +2006,9 @@ class PstFrom(object):
                 assert fac_filename is not None, "missing pilot-point input filename"
                 mult_dict["fac_file"] = os.path.relpath(fac_filename, self.new_d)
                 mult_dict["pp_file"] = pp_filename
+                mult_dict["pp_fill_value"] = 1.0
+                mult_dict["pp_lower_limit"] = 1.0e-10
+                mult_dict["pp_upper_limit"] = 1.0e+10
             relate_parfiles.append(mult_dict)
         relate_pars_df = pd.DataFrame(relate_parfiles)
         # store on self for use in pest build etc

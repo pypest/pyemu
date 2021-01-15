@@ -2635,7 +2635,7 @@ if __name__ == "__main__":
     #invest()
     # freyberg_test()
     #freyberg_prior_build_test()
-    # mf6_freyberg_test()
+    mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
@@ -2644,8 +2644,8 @@ if __name__ == "__main__":
     # tpf = TestPstFrom()
     # tpf.setup()
     # tpf.test_add_direct_array_parameters()
-    pstfrom_profile()
-    mf6_freyberg_arr_obs_test()
+    #pstfrom_profile()
+    #mf6_freyberg_arr_obs_test()
 
 
 
