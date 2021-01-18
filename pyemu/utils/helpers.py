@@ -3725,9 +3725,9 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
         )
         remainder = np.array(pp_args)[num_chunk_floor * chunk_len :].tolist()
         chunks = main_chunks + [remainder]
-        print("...",len(chunks))
+        print("number of chunks to process:",len(chunks))
         if len(chunks) == 1:
-            _process_chunk_fac2real, args=(chunks[0], 0)
+            _process_chunk_fac2real(chunks[0], 0)
         else:
             pool = mp.Pool()
             x = [
@@ -3758,7 +3758,7 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     )  # the list of files broken down into chunks
     remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
     chunks = main_chunks + [remainder]
-    print("...", len(chunks))
+    print("number of chunks to process:", len(chunks))
     if len(chunks) == 1:
         _process_chunk_array_files(chunks[0],0,df)
     # procs = []
@@ -3943,7 +3943,7 @@ def apply_genericlist_pars(df,chunk_len=50):
     )  # the list of files broken down into chunks
     remainder = uniq[num_chunk_floor * chunk_len:].tolist()  # remaining files
     chunks = main_chunks + [remainder]
-    print("...",len(chunks))
+    print("number of chunks to process:",len(chunks))
     if (len(chunks) == 1):
         _process_chunk_list_files(chunks[0],0,df)
     else:
