@@ -62,6 +62,10 @@ class PstFrom(object):
         tpl_subfolder (`str`): option to write template files to a subfolder within ``new_d``.
             Default is False (write template files to ``new_d``).
 
+        chunk_len (`int`): the size of each "chunk" of files to spawn a multiprocessing.Pool member to process.
+            On windows, beware setting this much smaller than 50 because of the overhead associated with
+            spawning the pool.  This value is added to the call to `apply_list_and_array_pars`. Default is 50
+
     Note:
         This is the way...
 
@@ -86,6 +90,7 @@ class PstFrom(object):
         zero_based=True,
         start_datetime=None,
         tpl_subfolder=None,
+        chunk_len=50,
     ):
 
         self.original_d = Path(original_d)
@@ -151,6 +156,7 @@ class PstFrom(object):
         self.direct_org_files = []
         self.ult_ubound_fill = 1.0e30
         self.ult_lbound_fill = -1.0e30
+        self.chunk_len = int(chunk_len)
 
     @property
     def parfile_relations(self):
@@ -589,7 +595,7 @@ class PstFrom(object):
                     self.pre_py_cmds.insert(
                         0,
                         "pyemu.helpers.apply_list_and_array_pars("
-                        "arr_par_file='mult2model_info.csv')",
+                        "arr_par_file='mult2model_info.csv',chunk_len={0})".format(self.chunk_len),
                     )
             else:
                 par_data = pyemu.pst_utils._populate_dataframe(

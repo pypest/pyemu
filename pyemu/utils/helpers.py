@@ -3725,15 +3725,18 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
         )
         remainder = np.array(pp_args)[num_chunk_floor * chunk_len :].tolist()
         chunks = main_chunks + [remainder]
-        print("...",len(chunks))
-        pool = mp.Pool()
-        x = [
-            pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
-            for i, chunk in enumerate(chunks)
-        ]
-        [xx.get() for xx in x]
-        pool.close()
-        pool.join()
+        print("number of chunks to process:",len(chunks))
+        if len(chunks) == 1:
+            _process_chunk_fac2real(chunks[0], 0)
+        else:
+            pool = mp.Pool()
+            x = [
+                pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
+                for i, chunk in enumerate(chunks)
+            ]
+            [xx.get() for xx in x]
+            pool.close()
+            pool.join()
         # procs = []
         # for chunk in chunks:
         #     p = mp.Process(target=_process_chunk_fac2real, args=[chunk])
@@ -3755,7 +3758,9 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     )  # the list of files broken down into chunks
     remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
     chunks = main_chunks + [remainder]
-    print("...", len(chunks))
+    print("number of chunks to process:", len(chunks))
+    if len(chunks) == 1:
+        _process_chunk_array_files(chunks[0],0,df)
     # procs = []
     # for chunk in chunks:  # now only spawn processor for each chunk
     #     p = mp.Process(target=_process_chunk_model_files, args=[chunk, df])
@@ -3764,14 +3769,15 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     # for p in procs:
     #     r = p.get(False)
     #     p.join()
-    pool = mp.Pool()
-    x = [
-        pool.apply_async(_process_chunk_array_files, args=(chunk, i, df))
-        for i, chunk in enumerate(chunks)
-    ]
-    [xx.get() for xx in x]
-    pool.close()
-    pool.join()
+    else:
+        pool = mp.Pool()
+        x = [
+            pool.apply_async(_process_chunk_array_files, args=(chunk, i, df))
+            for i, chunk in enumerate(chunks)
+        ]
+        [xx.get() for xx in x]
+        pool.close()
+        pool.join()
     print("finished arr mlt", datetime.now())
 
 
@@ -3937,15 +3943,18 @@ def apply_genericlist_pars(df,chunk_len=50):
     )  # the list of files broken down into chunks
     remainder = uniq[num_chunk_floor * chunk_len:].tolist()  # remaining files
     chunks = main_chunks + [remainder]
-    print("...",len(chunks))
-    pool = mp.Pool()
-    x = [
-        pool.apply_async(_process_chunk_list_files, args=(chunk, i, df))
-        for i, chunk in enumerate(chunks)
-    ]
-    [xx.get() for xx in x]
-    pool.close()
-    pool.join()
+    print("number of chunks to process:",len(chunks))
+    if (len(chunks) == 1):
+        _process_chunk_list_files(chunks[0],0,df)
+    else:
+        pool = mp.Pool()
+        x = [
+            pool.apply_async(_process_chunk_list_files, args=(chunk, i, df))
+            for i, chunk in enumerate(chunks)
+        ]
+        [xx.get() for xx in x]
+        pool.close()
+        pool.join()
     print("finished list mlt", datetime.now())
 
 def _process_chunk_list_files(chunk, i, df):
