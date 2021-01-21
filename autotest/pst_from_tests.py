@@ -39,7 +39,6 @@ swp_exe_path = os.path.join(bin_path, "pestpp-swp")
 mf_exe_name = os.path.basename(mf_exe_path)
 mf6_exe_name = os.path.basename(mf6_exe_path)
 
-
 def freyberg_test():
     import numpy as np
     import pandas as pd
@@ -2664,8 +2663,8 @@ def mf6_freyberg_arr_obs_and_headerless_test():
 if __name__ == "__main__":
     #invest()
     # freyberg_test()
-    freyberg_prior_build_test()
-    #mf6_freyberg_test()
+    #freyberg_prior_build_test()
+    mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
