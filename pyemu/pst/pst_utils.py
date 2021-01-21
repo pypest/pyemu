@@ -1070,24 +1070,27 @@ def csv_to_ins_file(
         if isinstance(only_rows, str):  # incase it is a single name
             only_rows = [only_rows]
         only_rows = set(only_rows)
-    only_cols = {c.lower() if isinstance(c, str) else c for c in only_cols}
+    only_rows = {r.lower() if isinstance(r, str) else r for r in only_rows}
 
     # process the row labels, handling duplicates
     rlabels = []
     row_visit = {}
     only_rlabels = []
-    for rname in df.index:
-        rname = str(rname).strip().lower()
+    for rname_org in df.index:
+        rname = str(rname_org).strip().lower()
 
         if rname in row_visit:
-            rsuffix = str(int(row_visit[rname] + 1))
+            if longnames:
+                rsuffix = "_"+str(int(row_visit[rname] + 1))
+            else:
+                rsuffix = str(int(row_visit[rname] + 1))
             row_visit[rname] += 1
         else:
             row_visit[rname] = 1
             rsuffix = ""
         rlabel = rname + rsuffix
         rlabels.append(rlabel)
-        if rname in only_rows:
+        if rname in only_rows or rname_org in only_rows:
             only_rlabels.append(rlabel)
     only_rlabels = set(only_rlabels)
 
@@ -1095,19 +1098,27 @@ def csv_to_ins_file(
     clabels = []
     col_visit = {}
     only_clabels = []
-    for cname in df.columns:
-        cname = str(cname).strip().lower()
+    for cname_org in df.columns:
+        cname = str(cname_org).strip().lower()
         if cname in col_visit:
-            csuffix = str(int(col_visit[cname] + 1))
+            if longnames:
+                csuffix = "_"+str(int(col_visit[cname] + 1))
+            else:
+                csuffix = str(int(col_visit[cname] + 1))
             col_visit[cname] += 1
         else:
             col_visit[cname] = 1
             csuffix = ""
         clabel = cname + csuffix
         clabels.append(clabel)
-        if cname in only_cols:
+        if cname in only_cols or cname_org in only_cols:
             only_clabels.append(clabel)
     only_clabels = set(only_clabels)
+    if len(only_clabels) != len(only_cols):
+        print("only_clabels:",only_clabels)
+        print("only_cols:",only_cols)
+        raise Exception("csv_to_ins_file(): len(only_cols) {0} != len(only_clabels) {1}"\
+                        .format(len(only_cols),len(only_clabels)))
 
     if ins_filename is None:
         if not isinstance(csv_filename, str):
