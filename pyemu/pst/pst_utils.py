@@ -1113,11 +1113,9 @@ def csv_to_ins_file(
         if cname in only_cols or cname_org in only_cols:
             only_clabels.append(clabel)
     only_clabels = set(only_clabels)
-    if len(only_clabels) != len(only_cols):
-        print("only_clabels:",only_clabels)
+    if len(only_clabels) == 0:
         print("only_cols:",only_cols)
-        raise Exception("csv_to_ins_file(): len(only_cols) {0} != len(only_clabels) {1}"\
-                        .format(len(only_cols),len(only_clabels)))
+        raise Exception("csv_to_ins_file(): only_clabels is empty")
 
     if ins_filename is None:
         if not isinstance(csv_filename, str):

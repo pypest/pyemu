@@ -1002,5 +1002,6 @@ if __name__ == "__main__":
     #tpl_ins_test()
     #process_output_files_test()
     #comments_test()
-    read_in_tpl_test()
-    comments_test()
+    #read_in_tpl_test()
+    #comments_test()
+    csv_to_ins_test()
