@@ -1136,6 +1136,8 @@ def csv_to_ins_file(
             f.write("l1\n")  # skip the row (index) label
         for i, rlabel in enumerate(rlabels):  # loop over rows
             f.write("l1")
+            if rlabel not in only_rlabels:
+                continue
             c_count = 0
             line = ''
             for j, clabel in enumerate(clabels):  # loop over columns
@@ -1151,8 +1153,8 @@ def csv_to_ins_file(
                             line += " !dum! "
 
 
-                if c_count < only_clabels_len:  # if we haven't yet set up all obs
-                    if rlabel in only_rlabels and clabel in only_clabels:
+                if c_count < only_clabels_len:
+                    if clabel in only_clabels:
                         oname = ""
                         # define obs names
                         if not prefix_is_str:
@@ -1492,11 +1494,12 @@ class InstructionFile(object):
                 try:
                     val = float(val_str)
                 except Exception as e:
-                    self.throw_out_error(
-                        "casting string '{0}' to float for instruction '{1}'".format(
-                            val_str, ins
+                    if oname != "dum":
+                        self.throw_out_error(
+                            "casting string '{0}' to float for instruction '{1}'".format(
+                                val_str, ins
+                            )
                         )
-                    )
 
                 if oname != "dum":
                     val_dict[oname] = val
@@ -1579,11 +1582,12 @@ class InstructionFile(object):
                 try:
                     val = float(val_str)
                 except Exception as e:
-                    self.throw_out_error(
-                        "casting string '{0}' to float for instruction '{1}'".format(
-                            val_str, ins
+                    if oname != "dum":
+                        self.throw_out_error(
+                            "casting string '{0}' to float for instruction '{1}'".format(
+                                val_str, ins
+                            )
                         )
-                    )
 
                 if oname != "dum":
                     val_dict[oname] = val
@@ -1637,11 +1641,12 @@ class InstructionFile(object):
                 try:
                     val = float(val_str)
                 except Exception as e:
-                    self.throw_out_error(
-                        "casting string '{0}' to float for instruction '{1}'".format(
-                            val_str, ins
+                    if oname != "dum":
+                        self.throw_out_error(
+                            "casting string '{0}' to float for instruction '{1}'".format(
+                                val_str, ins
+                            )
                         )
-                    )
 
                 if oname != "dum":
                     val_dict[oname] = val
