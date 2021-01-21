@@ -2528,7 +2528,7 @@ def pstfrom_profile():
     pr.print_stats(sort="cumtime")
 
 
-def mf6_freyberg_arr_obs_test():
+def mf6_freyberg_arr_obs_and_headerless_test():
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -2572,6 +2572,14 @@ def mf6_freyberg_arr_obs_test():
                  longnames=True, spatial_reference=sr,
                  zero_based=False, start_datetime="1-1-2018")
 
+    list_file = "freyberg6.wel_stress_period_data_1.txt"
+    df = pd.read_csv(os.path.join(template_ws,list_file),header=None,delim_whitespace=True)
+    df.loc[:,4] = 4
+    df.loc[:,5] = 5
+    df.to_csv(os.path.join(template_ws,list_file),sep=" ",index=False,header=False)
+    pf.add_observations(list_file, index_cols=[0, 1, 2], use_cols=[3,5], ofile_skip=0, includes_header=False,
+                        prefix="welobs")
+
     v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
     gr_gs = pyemu.geostats.GeoStruct(variograms=v)
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
@@ -2599,10 +2607,14 @@ def mf6_freyberg_arr_obs_test():
             pf.add_observations(arr_file,zone_array=ib)
             arr_dict[arr_file] = np.loadtxt(pf.new_d / arr_file)
 
+
+
     # add model run command
     pf.mod_sys_cmds.append("mf6")
     print(pf.mult_files)
     print(pf.org_files)
+
+
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
@@ -2631,12 +2643,28 @@ def mf6_freyberg_arr_obs_test():
         print(fname,pval,aval)
         assert pval == aval,"{0},{1},{2}".format(fname,pval,aval)
 
+    df = pd.read_csv(os.path.join(template_ws,list_file),header=None,delim_whitespace=True)
+    print(df)
+    wobs = obs.loc[obs.obsnme.str.contains("welobs"),:]
+    print(wobs)
+    fvals = df.iloc[:,3]
+    pvals = wobs.loc[:,"obsval"].iloc[:df.shape[0]]
+    d = fvals.values - pvals.values
+    print(d)
+    assert d.sum() == 0
+    fvals = df.iloc[:, 5]
+    pvals = wobs.loc[:, "obsval"].iloc[df.shape[0]:]
+    d = fvals.values - pvals.values
+    print(d)
+    assert d.sum() == 0
+
+
 
 if __name__ == "__main__":
     #invest()
     # freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
+    #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
@@ -2646,7 +2674,7 @@ if __name__ == "__main__":
     # tpf.setup()
     # tpf.test_add_direct_array_parameters()
     #pstfrom_profile()
-    #mf6_freyberg_arr_obs_test()
+    mf6_freyberg_arr_obs_and_headerless_test()
 
 
 

@@ -1109,6 +1109,7 @@ class PstFrom(object):
         rebuild_pst=False,
         obsgp=True,
         zone_array=None,
+        includes_header=True,
     ):
         """
         Add values in output files as observations to PstFrom object
@@ -1127,6 +1128,8 @@ class PstFrom(object):
                 new obs
             zone_array (`np.ndarray`): array defining spatial limits or zones
                 for array-style observations. Default is None
+            includes_header (`bool`): flag indicating that the list file includes a
+                header row.  Default is True.
 
         Returns:
             `Pandas.DataFrame`: dataframe with info for new observations
@@ -1249,7 +1252,7 @@ class PstFrom(object):
                 only_cols=use_cols,
                 only_rows=use_rows,
                 marker="~",
-                includes_header=True,
+                includes_header=includes_header,
                 includes_index=False,
                 prefix=prefix,
                 longnames=self.longnames,

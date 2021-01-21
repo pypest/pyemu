@@ -1078,7 +1078,6 @@ def csv_to_ins_file(
     only_rlabels = []
     for rname_org in df.index:
         rname = str(rname_org).strip().lower()
-
         if rname in row_visit:
             if longnames:
                 rsuffix = "_"+str(int(row_visit[rname] + 1))
@@ -1140,10 +1139,23 @@ def csv_to_ins_file(
         for i, rlabel in enumerate(rlabels):  # loop over rows
             f.write("l1")
             c_count = 0
+            line = ''
             for j, clabel in enumerate(clabels):  # loop over columns
-                oname = ""
+
+                if j == 0:
+                    # if first col and input file has an index need additional spacer
+                    if includes_index:
+                        if sep == ",":
+                            # f.write(f" {marker},{marker}")
+                            line += f" {marker},{marker}"
+                        else:
+                            # f.write(" !dum!")
+                            line += " !dum! "
+
+
                 if c_count < only_clabels_len:  # if we haven't yet set up all obs
                     if rlabel in only_rlabels and clabel in only_clabels:
+                        oname = ""
                         # define obs names
                         if not prefix_is_str:
                             nprefix = prefix[c_count]
@@ -1182,22 +1194,14 @@ def csv_to_ins_file(
                         ognames.append(ngpname)  # add to list of group names
                         # start defining string to write in ins
                         oname = f" !{oname}!"
+                        line += f" {oname} "
                         c_count += 1
-                    # else:  # not a requested observation; add spacer
-                    if j < clabels_len - 1:
+                    else: # this isnt a row-col to observationalize (nice word!)
                         if sep == ",":
-                            oname = f"{oname} {marker},{marker}"
+                            line += f" {marker},{marker} "
                         else:
-                            oname = f"{oname} w"
-                    if j == 0:
-                        # if first col and input file has an index need additional spacer
-                        if includes_index:
-                            if sep == ",":
-                                f.write(f" {marker},{marker}")
-                            else:
-                                f.write(" w")
-                    f.write(oname)
-            f.write("\n")
+                            line += " !dum! "
+            f.write(line+"\n")
     odf = pd.DataFrame(
         {"obsnme": onames, "obsval": ovals, "obgnme": ognames}, index=onames
     ).dropna(
