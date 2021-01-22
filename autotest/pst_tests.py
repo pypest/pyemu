@@ -400,7 +400,7 @@ def add_obs_test():
         f.write("l1 w  !{0}!\n".format("crap1"))
     with open(out_file, "w") as f:
         f.write("junk1  {0:8.2f} \n".format(oval))
-    pst.add_observations(ins_file, out_file, pst_path="temp")
+    pst.add_observations(ins_file, out_file)
     assert nobs + 1 == pst.nobs
     assert "crap1" in pst.observation_data.obsnme
     assert os.path.join("temp", "crap.out") in pst.output_files, str(pst.output_files)
@@ -968,7 +968,7 @@ if __name__ == "__main__":
     # write_tables_test()
     # res_stats_test()
     # test_write_input_files()
-    #add_obs_test()
+    add_obs_test()
     #add_pars_test()
     # setattr_test()
 
@@ -1004,4 +1004,4 @@ if __name__ == "__main__":
     #comments_test()
     #read_in_tpl_test()
     #comments_test()
-    csv_to_ins_test()
+    #csv_to_ins_test()

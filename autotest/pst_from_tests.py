@@ -2670,11 +2670,12 @@ if __name__ == "__main__":
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
-    # tpf = TestPstFrom()
-    # tpf.setup()
-    # tpf.test_add_direct_array_parameters()
+    tpf = TestPstFrom()
+    tpf.setup()
+    tpf.test_add_direct_array_parameters()
+    tpf.add
     #pstfrom_profile()
-    #mf6_freyberg_arr_obs_and_headerless_test()
+    #mf6_freyberg_arr_obs_and_headerless_test()\
 
 
 

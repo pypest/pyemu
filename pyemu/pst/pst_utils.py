@@ -847,11 +847,11 @@ def try_process_output_file(ins_file, output_file=None):
     if output_file is None:
         output_file = ins_file.replace(".ins", "")
     df = None
-    #try:
-    i = InstructionFile(ins_file)
-    df = i.read_output_file(output_file)
-    #except Exception as e:
-    #    print("error processing instruction/output file pair: {0}".format(str(e)))
+    try:
+        i = InstructionFile(ins_file)
+        df = i.read_output_file(output_file)
+    except Exception as e:
+        print("error processing instruction/output file pair: {0}".format(str(e)))
     return df
 
 
