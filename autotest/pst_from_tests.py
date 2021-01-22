@@ -2662,9 +2662,9 @@ def mf6_freyberg_arr_obs_and_headerless_test():
 
 if __name__ == "__main__":
     #invest()
-    # freyberg_test()
+    freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
+    #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()

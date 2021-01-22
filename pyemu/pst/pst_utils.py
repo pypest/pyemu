@@ -847,11 +847,11 @@ def try_process_output_file(ins_file, output_file=None):
     if output_file is None:
         output_file = ins_file.replace(".ins", "")
     df = None
-    try:
-        i = InstructionFile(ins_file)
-        df = i.read_output_file(output_file)
-    except Exception as e:
-        print("error processing instruction/output file pair: {0}".format(str(e)))
+    #try:
+    i = InstructionFile(ins_file)
+    df = i.read_output_file(output_file)
+    #except Exception as e:
+    #    print("error processing instruction/output file pair: {0}".format(str(e)))
     return df
 
 
@@ -1136,8 +1136,7 @@ def csv_to_ins_file(
             f.write("l1\n")  # skip the row (index) label
         for i, rlabel in enumerate(rlabels):  # loop over rows
             f.write("l1")
-            if rlabel not in only_rlabels:
-                continue
+
             c_count = 0
             line = ''
             for j, clabel in enumerate(clabels):  # loop over columns
@@ -1154,7 +1153,7 @@ def csv_to_ins_file(
 
 
                 if c_count < only_clabels_len:
-                    if clabel in only_clabels:
+                    if clabel in only_clabels and rlabel in only_rlabels:
                         oname = ""
                         # define obs names
                         if not prefix_is_str:
@@ -1195,8 +1194,13 @@ def csv_to_ins_file(
                         # start defining string to write in ins
                         oname = f" !{oname}!"
                         line += f" {oname} "
+                        if j < len(clabels) - 1:
+                            if sep == ",":
+                                line += f" {marker},{marker} "
+                            #else:
+                            #    line += " !dum! "
                         c_count += 1
-                    else: # this isnt a row-col to observationalize (nice word!)
+                    elif j < len(clabels) - 1: # this isnt a row-col to observationalize (nice word!)
                         if sep == ",":
                             line += f" {marker},{marker} "
                         else:
