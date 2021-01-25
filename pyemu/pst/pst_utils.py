@@ -1070,24 +1070,26 @@ def csv_to_ins_file(
         if isinstance(only_rows, str):  # incase it is a single name
             only_rows = [only_rows]
         only_rows = set(only_rows)
-    only_cols = {c.lower() if isinstance(c, str) else c for c in only_cols}
+    only_rows = {r.lower() if isinstance(r, str) else r for r in only_rows}
 
     # process the row labels, handling duplicates
     rlabels = []
     row_visit = {}
     only_rlabels = []
-    for rname in df.index:
-        rname = str(rname).strip().lower()
-
+    for rname_org in df.index:
+        rname = str(rname_org).strip().lower()
         if rname in row_visit:
-            rsuffix = str(int(row_visit[rname] + 1))
+            if longnames:
+                rsuffix = "_"+str(int(row_visit[rname] + 1))
+            else:
+                rsuffix = str(int(row_visit[rname] + 1))
             row_visit[rname] += 1
         else:
             row_visit[rname] = 1
             rsuffix = ""
         rlabel = rname + rsuffix
         rlabels.append(rlabel)
-        if rname in only_rows:
+        if rname in only_rows or rname_org in only_rows:
             only_rlabels.append(rlabel)
     only_rlabels = set(only_rlabels)
 
@@ -1095,19 +1097,25 @@ def csv_to_ins_file(
     clabels = []
     col_visit = {}
     only_clabels = []
-    for cname in df.columns:
-        cname = str(cname).strip().lower()
+    for cname_org in df.columns:
+        cname = str(cname_org).strip().lower()
         if cname in col_visit:
-            csuffix = str(int(col_visit[cname] + 1))
+            if longnames:
+                csuffix = "_"+str(int(col_visit[cname] + 1))
+            else:
+                csuffix = str(int(col_visit[cname] + 1))
             col_visit[cname] += 1
         else:
             col_visit[cname] = 1
             csuffix = ""
         clabel = cname + csuffix
         clabels.append(clabel)
-        if cname in only_cols:
+        if cname in only_cols or cname_org in only_cols:
             only_clabels.append(clabel)
     only_clabels = set(only_clabels)
+    if len(only_clabels) == 0:
+        print("only_cols:",only_cols)
+        raise Exception("csv_to_ins_file(): only_clabels is empty")
 
     if ins_filename is None:
         if not isinstance(csv_filename, str):
@@ -1128,11 +1136,25 @@ def csv_to_ins_file(
             f.write("l1\n")  # skip the row (index) label
         for i, rlabel in enumerate(rlabels):  # loop over rows
             f.write("l1")
+
             c_count = 0
+            line = ''
             for j, clabel in enumerate(clabels):  # loop over columns
-                oname = ""
-                if c_count < only_clabels_len:  # if we haven't yet set up all obs
-                    if rlabel in only_rlabels and clabel in only_clabels:
+
+                if j == 0:
+                    # if first col and input file has an index need additional spacer
+                    if includes_index:
+                        if sep == ",":
+                            # f.write(f" {marker},{marker}")
+                            line += f" {marker},{marker}"
+                        else:
+                            # f.write(" !dum!")
+                            line += " !dum! "
+
+
+                if c_count < only_clabels_len:
+                    if clabel in only_clabels and rlabel in only_rlabels:
+                        oname = ""
                         # define obs names
                         if not prefix_is_str:
                             nprefix = prefix[c_count]
@@ -1171,22 +1193,19 @@ def csv_to_ins_file(
                         ognames.append(ngpname)  # add to list of group names
                         # start defining string to write in ins
                         oname = f" !{oname}!"
-                        c_count += 1
-                    # else:  # not a requested observation; add spacer
-                    if j < clabels_len - 1:
-                        if sep == ",":
-                            oname = f"{oname} {marker},{marker}"
-                        else:
-                            oname = f"{oname} w"
-                    if j == 0:
-                        # if first col and input file has an index need additional spacer
-                        if includes_index:
+                        line += f" {oname} "
+                        if j < len(clabels) - 1:
                             if sep == ",":
-                                f.write(f" {marker},{marker}")
-                            else:
-                                f.write(" w")
-                    f.write(oname)
-            f.write("\n")
+                                line += f" {marker},{marker} "
+                            #else:
+                            #    line += " !dum! "
+                        c_count += 1
+                    elif j < len(clabels) - 1: # this isnt a row-col to observationalize (nice word!)
+                        if sep == ",":
+                            line += f" {marker},{marker} "
+                        else:
+                            line += " !dum! "
+            f.write(line+"\n")
     odf = pd.DataFrame(
         {"obsnme": onames, "obsval": ovals, "obgnme": ognames}, index=onames
     ).dropna(
@@ -1479,11 +1498,12 @@ class InstructionFile(object):
                 try:
                     val = float(val_str)
                 except Exception as e:
-                    self.throw_out_error(
-                        "casting string '{0}' to float for instruction '{1}'".format(
-                            val_str, ins
+                    if oname != "dum":
+                        self.throw_out_error(
+                            "casting string '{0}' to float for instruction '{1}'".format(
+                                val_str, ins
+                            )
                         )
-                    )
 
                 if oname != "dum":
                     val_dict[oname] = val
@@ -1566,11 +1586,12 @@ class InstructionFile(object):
                 try:
                     val = float(val_str)
                 except Exception as e:
-                    self.throw_out_error(
-                        "casting string '{0}' to float for instruction '{1}'".format(
-                            val_str, ins
+                    if oname != "dum":
+                        self.throw_out_error(
+                            "casting string '{0}' to float for instruction '{1}'".format(
+                                val_str, ins
+                            )
                         )
-                    )
 
                 if oname != "dum":
                     val_dict[oname] = val
@@ -1624,11 +1645,12 @@ class InstructionFile(object):
                 try:
                     val = float(val_str)
                 except Exception as e:
-                    self.throw_out_error(
-                        "casting string '{0}' to float for instruction '{1}'".format(
-                            val_str, ins
+                    if oname != "dum":
+                        self.throw_out_error(
+                            "casting string '{0}' to float for instruction '{1}'".format(
+                                val_str, ins
+                            )
                         )
-                    )
 
                 if oname != "dum":
                     val_dict[oname] = val
