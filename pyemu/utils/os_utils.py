@@ -218,7 +218,9 @@ def start_workers(
     else:
         if not os.path.exists(os.path.join(worker_dir, pst_rel_path)):
             raise Exception("pst_rel_path not found from worker_dir")
-    if local:
+    if isinstance(local,str):
+        hostname = local
+    elif local:
         hostname = "localhost"
     else:
         hostname = socket.gethostname()
