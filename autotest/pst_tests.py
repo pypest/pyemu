@@ -962,13 +962,13 @@ if __name__ == "__main__":
     # change_limit_test()
     # new_format_test()
     # lt_gt_constraint_names_test()
-    # csv_to_ins_test()
+    csv_to_ins_test()
 
     # try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
     # test_write_input_files()
-    add_obs_test()
+    #add_obs_test()
     #add_pars_test()
     # setattr_test()
 
