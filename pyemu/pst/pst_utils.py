@@ -1155,7 +1155,7 @@ def csv_to_ins_file(
 
 
                 if c_count < only_clabels_len:
-                    if clabel in only_clabels and rlabel in only_rlabels:
+                    if clabel in only_clabels:# and rlabel in only_rlabels:
                         oname = ""
                         # define obs names
                         if not prefix_is_str:
