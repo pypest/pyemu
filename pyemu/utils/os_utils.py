@@ -165,7 +165,8 @@ def start_workers(
             This option is usually not needed unless you are one of those crazy people who
             spreads files across countless subdirectories.
         local (`bool`, optional): flag for using "localhost" instead of actual hostname/IP address on
-            worker command line. Default is True
+            worker command line. Default is True.  `local` can also be passed as an `str`, in which
+            case `local` is used as the hostname (for example `local="192.168.10.1"`)
         cleanup (`bool`, optional):  flag to remove worker directories once processes exit. Default is
             True.  Set to False for debugging issues
         master_dir (`str`): name of directory for master instance.  If `master_dir`
