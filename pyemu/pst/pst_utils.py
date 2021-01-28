@@ -1136,7 +1136,9 @@ def csv_to_ins_file(
             f.write("l1\n")  # skip the row (index) label
         for i, rlabel in enumerate(rlabels):  # loop over rows
             f.write("l1")
-
+            if (rlabel not in only_rlabels):
+                f.write("\n")
+                continue
             c_count = 0
             line = ''
             for j, clabel in enumerate(clabels):  # loop over columns
@@ -1153,7 +1155,7 @@ def csv_to_ins_file(
 
 
                 if c_count < only_clabels_len:
-                    if clabel in only_clabels and rlabel in only_rlabels:
+                    if clabel in only_clabels:# and rlabel in only_rlabels:
                         oname = ""
                         # define obs names
                         if not prefix_is_str:
