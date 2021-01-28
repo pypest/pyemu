@@ -1757,6 +1757,45 @@ class Matrix(object):
             f.write(name.encode())
         f.close()
 
+    @staticmethod
+    def to_dense(filename,data,close=False):
+        """some hackery
+
+        """
+
+        if isinstance(data,Matrix):
+            row_names = data.row_names
+            col_names = data.col_names
+            arr = data.x
+
+        elif isinstance(data,pd.DataFrame):
+            row_names = data.index.values
+            col_names = data.columns.values
+            arr = data.values
+
+        if isinstance(filename,str):
+            f = open(filename,"wb")
+            header = np.array((0,-len(col_names), -len(col_names)), dtype=Matrix.binary_header_dt)
+            header.tofile(f)
+            slengths = np.array([len(col_name) for col_name in col_names],dtype=Matrix.integer)
+            for i,col_name in enumerate(col_names):
+                slengths[[i]].tofile(f)
+                f.write(col_name.encode())
+        else:
+            f = filename
+        slengths = np.array([len(row_name) for row_name in row_names], dtype=Matrix.integer)
+        for i in range(data.shape[0]):
+            slengths[[i]].tofile(f)
+            f.write(row_names[i].encode())
+            arr[i,:].astype(Matrix.double).tofile(f)
+        if close:
+            f.close()
+        else:
+            return f
+
+
+
+
     def to_binary(self, filename, droptol=None, chunk=None):
         """write a PEST-compatible binary file.  The format is the same
         as the format used to storage a PEST Jacobian matrix
@@ -1841,6 +1880,52 @@ class Matrix(object):
             f.write(name.encode())
 
         f.close()
+
+    @staticmethod
+    def read_dense(filename, forgive=False):
+        """more hackery
+
+        """
+        if not os.path.exists(filename):
+            raise Exception("Matrix.read_dense(): filename '{0}' not found".format(filename))
+        f = open(filename, "rb")
+        # the header datatype
+        itemp1, itemp2, icount = np.fromfile(f, Matrix.binary_header_dt, 1)[0]
+        print(itemp1,itemp2,icount)
+        if itemp1 != 0:
+            raise Exception("Matrix.read_dense() itemp1 != 0")
+        if itemp2 != icount:
+            raise Exception("Matrix.read_dense() itemp2 != icount")
+        ncol = np.abs(itemp2)
+        col_names = []
+        row_names = []
+        data_rows = []
+        for j in range(ncol):
+            slen = np.fromfile(f, Matrix.integer,1)[0]
+            name = (struct.unpack(str(slen) + "s", f.read(slen))[0]
+                    .strip()
+                    .lower()
+                    .decode())
+            col_names.append(name)
+        while True:
+            try:
+                slen = np.fromfile(f, Matrix.integer, 1)[0]
+            except Exception as e:
+                break
+            try:
+                name = (struct.unpack(str(slen) + "s", f.read(slen))[0]
+                       .strip()
+                       .lower()
+                       .decode())
+                row_names.append(name)
+                data_row = np.fromfile(f, Matrix.double, ncol)
+                data_rows.append(data_row)
+            except Exception as e:
+                if forgive:
+                    print("error reading row {0}: {1}".format)
+
+        data_rows = np.array(data_rows)
+        return row_names,col_names,data_rows
 
     @classmethod
     def from_binary(cls, filename):

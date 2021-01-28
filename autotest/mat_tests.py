@@ -479,7 +479,22 @@ def df_tests():
 
 
 
+def dense_mat_format_test():
+    import numpy as np
+    import pyemu
 
+    nrow = 10000
+    ncol = 1000
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    arr = np.random.random((nrow,ncol))
+
+    m = pyemu.Matrix(x=arr,row_names=rnames,col_names=cnames)
+    m.to_dense("dense.bin",data=m,close=True)
+
+    m1 = pyemu.Matrix.read_dense("dense.bin")
 
 
 
@@ -492,7 +507,7 @@ if __name__ == "__main__":
     # load_jco_test()
     # extend_test()
     # pseudo_inv_test()
-    drop_test()
+    #drop_test()
     # get_test()
     # cov_identity_test()
     # hadamard_product_test()
@@ -507,3 +522,4 @@ if __name__ == "__main__":
     # sparse_extend_test()
     # sparse_get_test()
     # sparse_get_sparse_test()
+    dense_mat_format_test()
