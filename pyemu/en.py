@@ -279,7 +279,7 @@ class Ensemble(object):
             filename (`str`): filename containing binary ensemble
 
         Returns:
-            `Ensemble`: the ensembled loaded from the binary file
+            `Ensemble`: the ensemble loaded from the binary file
 
         Example::
 
@@ -288,6 +288,7 @@ class Ensemble(object):
 
 
         """
+
         df = pyemu.Matrix.from_binary(filename).to_dataframe()
         return cls(pst=pst, df=df)
 
@@ -361,7 +362,7 @@ class Ensemble(object):
 
             pst = pyemu.Pst("my.pst")
             oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
-            oe.to_binary("obs.csv")
+            oe.to_binary("obs.jcb")
 
         Note:
             back transforms `ParameterEnsemble` before writing so that
@@ -376,6 +377,34 @@ class Ensemble(object):
         if self._df.isnull().values.any():
             warnings.warn("NaN in ensemble", PyemuWarning)
         pyemu.Matrix.from_dataframe(self._df).to_coo(filename)
+        if retrans:
+            self.transform()
+
+    def to_dense(self, filename):
+        """write `Ensemble` to a dense-format binary file
+
+        Args:
+            filename (`str`): file to write
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
+            oe.to_dense("obs.bin")
+
+        Note:
+            back transforms `ParameterEnsemble` before writing so that
+            values are in arithmatic space
+
+        """
+
+        retrans = False
+        if self.istransformed:
+            self.back_transform()
+            retrans = True
+        if self._df.isnull().values.any():
+            warnings.warn("NaN in ensemble", PyemuWarning)
+        pyemu.Matrix.write_dense(filename,self._df.index.tolist(),self._df.columns.tolist(),self._df.values)
         if retrans:
             self.transform()
 
