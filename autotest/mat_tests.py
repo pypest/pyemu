@@ -484,7 +484,7 @@ def dense_mat_format_test():
     import pyemu
     from datetime import datetime
 
-    nrow = 200
+    nrow = 100
     ncol = 500000
 
     long_str = ""

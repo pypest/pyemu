@@ -591,7 +591,7 @@ def binary_test():
     import numpy as np
     import pandas as pd
     import pyemu
-    npar = 200000
+    npar = 100000
     nobs = 500
     par_names = ["p{0}".format(i) for i in range(npar)]
     obs_names = ["o{0}".format(i) for i in range(nobs)]
