@@ -172,7 +172,9 @@ def freyberg_test():
     assert all([gp in obsnmes for gp in ['qaquifer', 'qout']])
     pf.post_py_cmds.append(
         "sfodf.sort_index(1).to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
-
+    zone_array = np.arange(m.nlay*m.nrow*m.ncol)
+    s = lambda x: "zval_"+str(x)
+    zone_array = np.array([s(x) for x in zone_array]).reshape(m.nlay,m.nrow,m.ncol)
     # pars
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
                       index_cols=[0, 1, 2], use_cols=[3, 5],
@@ -184,7 +186,7 @@ def freyberg_test():
     pf.add_parameters(filenames=["WEL_0000.dat", "WEL_0001.dat"],
                       par_type="grid", index_cols=[0, 1, 2], use_cols=3,
                       par_name_base="welflux_grid",
-                      zone_array=m.bas6.ibound.array)
+                      zone_array=zone_array)
     pf.add_parameters(filenames=["WEL_0000.dat"], par_type="constant",
                       index_cols=[0, 1, 2], use_cols=3,
                       par_name_base=["flux_const"])
@@ -2670,10 +2672,10 @@ if __name__ == "__main__":
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
-    tpf = TestPstFrom()
-    tpf.setup()
-    tpf.test_add_direct_array_parameters()
-    tpf.add
+    #tpf = TestPstFrom()
+    #tpf.setup()
+    #tpf.test_add_direct_array_parameters()
+    #tpf.add
     #pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()\
 
