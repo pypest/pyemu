@@ -586,17 +586,45 @@ def mixed_par_draw_test():
     assert pst.npar == npar
 
 
+def binary_test():
+    from datetime import datetime
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    npar = 100000
+    nobs = 500
+    par_names = ["p{0}".format(i) for i in range(npar)]
+    obs_names = ["o{0}".format(i) for i in range(nobs)]
+    arr = np.random.random((nobs,npar))
+    pst = pyemu.Pst.from_par_obs_names(par_names,obs_names)
+    df = pd.DataFrame(data=arr,columns=par_names,index=obs_names)
+    pe = pyemu.ParameterEnsemble(pst=pst,df=df)
+    s1 = datetime.now()
+    pe.to_dense("par.bin")
+    pe1 = pyemu.ParameterEnsemble.from_binary(pst=pst,filename="par.bin")
+    e1 = datetime.now()
+    d = (pe - pe1).apply(np.abs)
+    print(d.max().max())
+    assert d.max().max() < 1.0e-10
+    s2 = datetime.now()
+    pe.to_binary("par.bin")
+    pe1 = pyemu.ParameterEnsemble.from_binary(pst=pst,filename="par.bin")
+    e2 = datetime.now()
+    print((e1 - s1).total_seconds())
+    print((e2 - s2).total_seconds())
+
+
 if __name__ == "__main__":
-    par_gauss_draw_consistency_test()
-    obs_gauss_draw_consistency_test()
+    #par_gauss_draw_consistency_test()
+    #obs_gauss_draw_consistency_test()
     #phi_vector_test()
     #add_base_test()
     #nz_test()
-    deviations_test()
+    #deviations_test()
     # as_pyemu_matrix_test()
     # dropna_test()
     #enforce_test()
-    pnulpar_test()
+    #pnulpar_test()
     # triangular_draw_test()
     # uniform_draw_test()
     # fill_test()
@@ -604,6 +632,7 @@ if __name__ == "__main__":
     #emp_cov_test()
     #emp_cov_draw_test()
     #mixed_par_draw_test()
+    binary_test()
 
 
 

@@ -479,9 +479,74 @@ def df_tests():
 
 
 
+def dense_mat_format_test():
+    import numpy as np
+    import pyemu
+    from datetime import datetime
+
+    nrow = 100
+    ncol = 500000
+
+    long_str = ""
+    for _ in range(35):
+        long_str += "long"
+    rnames = [long_str+"row_{0}".format(i) for i in range(nrow)]
+    cnames = [long_str+"col_{0}".format(i) for i in range(ncol)]
+
+    arr = np.random.random((nrow,ncol))
+
+    m = pyemu.Matrix(x=arr, row_names=rnames, col_names=cnames)
+    f = m.to_dense("dense.bin", close=True)
+    m1 = pyemu.Matrix.from_binary("dense.bin")
+    print(m1.shape)
+    assert m1.shape == (nrow, ncol)
+    d = np.abs(m.x - m1.x).sum()
+    print(d)
+    assert d < 1.0e-10
+
+    f_in = open("dense.bin", "rb")
+    f_out = open("dense_trunc.bin", "wb")
+    f_out.write(f_in.read(ncol * (len(long_str)) + int(nrow / 2) * ncol * 8))
+    f_in.close()
+    f_out.close()
+    try:
+        m1 = pyemu.Matrix.from_binary("dense_trunc.bin",forgive=False)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    m1 = pyemu.Matrix.from_binary("dense_trunc.bin", forgive=True)
 
 
+    m = pyemu.Matrix(x=arr,row_names=rnames,col_names=cnames)
+    f = m.to_dense("dense.bin",close=False)
+    new_rnames = [r+"new" for r in rnames]
+    m.row_names = new_rnames
+    m.to_dense(f,close=True)
 
+    m1 = pyemu.Matrix.from_binary("dense.bin")
+    print(m1.shape)
+    assert m1.shape == (nrow*2,ncol)
+    arr2 = np.zeros((nrow*2,ncol))
+    arr2[:nrow,:] = arr
+    arr2[nrow:,:] = arr
+    d = np.abs(arr2 - m1.x).sum()
+    print(d)
+    assert d < 1.0e-10,d
+
+    s1 = datetime.now()
+    for _ in range(1):
+        m.to_dense("dense.bin")
+        pyemu.Matrix.read_binary("dense.bin")
+    e1 = datetime.now()
+    s2 = datetime.now()
+    for _ in range(1):
+        m.to_coo("dense.jcb")
+        pyemu.Matrix.read_binary("dense.jcb")
+    e2 = datetime.now()
+    print((e1-s1).total_seconds())
+    print((e2-s2).total_seconds())
 
 if __name__ == "__main__":
     #df_tests()
@@ -492,7 +557,7 @@ if __name__ == "__main__":
     # load_jco_test()
     # extend_test()
     # pseudo_inv_test()
-    drop_test()
+    #drop_test()
     # get_test()
     # cov_identity_test()
     # hadamard_product_test()
@@ -507,3 +572,4 @@ if __name__ == "__main__":
     # sparse_extend_test()
     # sparse_get_test()
     # sparse_get_sparse_test()
+    dense_mat_format_test()
