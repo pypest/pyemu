@@ -187,6 +187,10 @@ def freyberg_test():
                       par_type="grid", index_cols=[0, 1, 2], use_cols=3,
                       par_name_base="welflux_grid",
                       zone_array=zone_array)
+    pf.add_parameters(filenames="WEL_0000.dat",
+                      par_type="grid", index_cols=[0, 1, 2], use_cols=3,
+                      par_name_base="welflux_grid_direct",
+                      zone_array=zone_array,par_style="direct")
     pf.add_parameters(filenames=["WEL_0000.dat"], par_type="constant",
                       index_cols=[0, 1, 2], use_cols=3,
                       par_name_base=["flux_const"])
@@ -215,6 +219,7 @@ def freyberg_test():
     # check mult files are in pst input files
     csv = os.path.join(template_ws, "mult2model_info.csv")
     df = pd.read_csv(csv, index_col=0)
+    df = df.loc[pd.notna(df.mlt_file),:]
     pst_input_files = {str(f) for f in pst.input_files}
     mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
                                 pst_input_files) -
