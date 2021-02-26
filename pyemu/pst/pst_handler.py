@@ -1601,7 +1601,7 @@ class Pst(object):
                 "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
             )
         f_out.write("* model input external\n")
-        io_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(tplfile_data))
+        io_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
         if pst_path is not None:
             io_filename = os.path.join(pst_path, os.path.split(io_filename)[-1])
         self.model_input_data.to_csv(io_filename, index=False)
