@@ -957,12 +957,112 @@ def read_in_tpl_test():
     assert df.parval1["p5"] == df.parval1["p7"]
 
 
+def write2_nan_test():
+    import numpy as np
+    import pyemu
+    import os
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pyemu.helpers.zero_order_tikhonov(pst)
+    pst.prior_information.loc[pst.prior_names[0], "weight"] = np.NaN
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.model_output_data.loc[pst.instruction_files[0], "pest_file"] = np.NaN
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.model_input_data.loc[pst.template_files[0], "pest_file"] = np.NaN
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pst.parameter_data.loc[pst.par_names[0],"parval1"] = np.NaN
+    try:
+        pst.write("test.pst",version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst",version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.parameter_groups.loc[pst.parameter_groups.pargpnme[0], "derinc"] = np.NaN
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.observation_data.loc[pst.obs_names[0], "weight"] = np.NaN
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+
+
+
 if __name__ == "__main__":
-    process_output_files_test()
+    write2_nan_test()
+    #process_output_files_test()
     # change_limit_test()
     # new_format_test()
     # lt_gt_constraint_names_test()
-    csv_to_ins_test()
+    #csv_to_ins_test()
 
     # try_process_ins_test()
     # write_tables_test()
