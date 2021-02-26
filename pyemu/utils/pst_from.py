@@ -1189,7 +1189,9 @@ class PstFrom(object):
             new_obs = self.add_observations_from_ins(
                 ins_file=insfile, out_file=self.new_d / filename
             )
-            if prefix is not None:
+            if obsgp is not None:
+                new_obs.loc[:, "obgnme"] = obsgp
+            elif prefix is not None:
                 new_obs.loc[:, "obgnme"] = prefix
             self.logger.log("adding observations from array output file '{0}'".format(filenames))
             if rebuild_pst:
