@@ -1439,7 +1439,8 @@ class PstFrom(object):
             sigma_range: not yet implemented # TODO
             upper_bound (`float`): PEST parameter upper bound # TODO support different ubound,lbound,transform if multiple use_col
             lower_bound (`float`): PEST parameter lower bound
-            transform (`str`): PEST parameter transformation
+            transform (`str`): PEST parameter transformation.  Must be either "log","none" or "fixed.  The "tied" transform
+                must be used after calling `PstFrom.build_pst()`.
             par_name_base (`str`): basename for parameters that are set up
             index_cols (`list`-like): if not None, will attempt to parameterize
                 expecting a tabular-style model input file. `index_cols`
