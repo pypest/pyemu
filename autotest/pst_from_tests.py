@@ -172,7 +172,9 @@ def freyberg_test():
     assert all([gp in obsnmes for gp in ['qaquifer', 'qout']])
     pf.post_py_cmds.append(
         "sfodf.sort_index(1).to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
-
+    zone_array = np.arange(m.nlay*m.nrow*m.ncol)
+    s = lambda x: "zval_"+str(x)
+    zone_array = np.array([s(x) for x in zone_array]).reshape(m.nlay,m.nrow,m.ncol)
     # pars
     pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
                       index_cols=[0, 1, 2], use_cols=[3, 5],
@@ -184,7 +186,11 @@ def freyberg_test():
     pf.add_parameters(filenames=["WEL_0000.dat", "WEL_0001.dat"],
                       par_type="grid", index_cols=[0, 1, 2], use_cols=3,
                       par_name_base="welflux_grid",
-                      zone_array=m.bas6.ibound.array)
+                      zone_array=zone_array)
+    pf.add_parameters(filenames="WEL_0000.dat",
+                      par_type="grid", index_cols=[0, 1, 2], use_cols=3,
+                      par_name_base="welflux_grid_direct",
+                      zone_array=zone_array,par_style="direct")
     pf.add_parameters(filenames=["WEL_0000.dat"], par_type="constant",
                       index_cols=[0, 1, 2], use_cols=3,
                       par_name_base=["flux_const"])
@@ -213,6 +219,7 @@ def freyberg_test():
     # check mult files are in pst input files
     csv = os.path.join(template_ws, "mult2model_info.csv")
     df = pd.read_csv(csv, index_col=0)
+    df = df.loc[pd.notna(df.mlt_file),:]
     pst_input_files = {str(f) for f in pst.input_files}
     mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
                                 pst_input_files) -
@@ -2670,10 +2677,10 @@ if __name__ == "__main__":
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
-    tpf = TestPstFrom()
-    tpf.setup()
-    tpf.test_add_direct_array_parameters()
-    tpf.add
+    #tpf = TestPstFrom()
+    #tpf.setup()
+    #tpf.test_add_direct_array_parameters()
+    #tpf.add
     #pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()\
 

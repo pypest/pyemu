@@ -1189,7 +1189,9 @@ class PstFrom(object):
             new_obs = self.add_observations_from_ins(
                 ins_file=insfile, out_file=self.new_d / filename
             )
-            if prefix is not None:
+            if obsgp is not None:
+                new_obs.loc[:, "obgnme"] = obsgp
+            elif prefix is not None:
                 new_obs.loc[:, "obgnme"] = prefix
             self.logger.log("adding observations from array output file '{0}'".format(filenames))
             if rebuild_pst:
@@ -1439,7 +1441,8 @@ class PstFrom(object):
             sigma_range: not yet implemented # TODO
             upper_bound (`float`): PEST parameter upper bound # TODO support different ubound,lbound,transform if multiple use_col
             lower_bound (`float`): PEST parameter lower bound
-            transform (`str`): PEST parameter transformation
+            transform (`str`): PEST parameter transformation.  Must be either "log","none" or "fixed.  The "tied" transform
+                must be used after calling `PstFrom.build_pst()`.
             par_name_base (`str`): basename for parameters that are set up
             index_cols (`list`-like): if not None, will attempt to parameterize
                 expecting a tabular-style model input file. `index_cols`

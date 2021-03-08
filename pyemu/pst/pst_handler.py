@@ -1520,24 +1520,64 @@ class Pst(object):
                 v = ",".join([str(vv) for vv in list(v)])
             f_out.write("{0:30} {1}\n".format(k, v))
 
+
+
+        # parameter groups
+        name = "pargp_data"
+        columns = self.pargp_fieldnames
+        if self.parameter_groups.loc[:, columns].isnull().values.any():
+            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+            csv_name = "pst.{0}.nans.csv".format(
+                name.replace(" ", "_").replace("*", "")
+            )
+            self.parameter_groups.to_csv(csv_name)
+            raise Exception(
+                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
+            )
         f_out.write("* parameter groups external\n")
-        pargp_filename = new_filename.lower().replace(".pst", ".pargrp_data.csv")
+        pargp_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
         if pst_path is not None:
             pargp_filename = os.path.join(pst_path, os.path.split(pargp_filename)[-1])
         self.parameter_groups.to_csv(pargp_filename, index=False)
         pargp_filename = os.path.join(pst_rel_path, os.path.split(pargp_filename)[-1])
         f_out.write("{0}\n".format(pargp_filename))
 
+
+        # parameter data
+        name = "par_data"
+        columns = self.par_fieldnames
+        if self.parameter_data.loc[:, columns].isnull().values.any():
+            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+            csv_name = "pst.{0}.nans.csv".format(
+                name.replace(" ", "_").replace("*", "")
+            )
+            self.parameter_data.to_csv(csv_name)
+            raise Exception(
+                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
+            )
         f_out.write("* parameter data external\n")
-        par_filename = new_filename.lower().replace(".pst", ".par_data.csv")
+        par_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
         if pst_path is not None:
             par_filename = os.path.join(pst_path, os.path.split(par_filename)[-1])
         self.parameter_data.to_csv(par_filename, index=False)
         par_filename = os.path.join(pst_rel_path, os.path.split(par_filename)[-1])
         f_out.write("{0}\n".format(par_filename))
 
+
+        # observation data
+        name = "obs_data"
+        columns = self.obs_fieldnames
+        if self.observation_data.loc[:, columns].isnull().values.any():
+            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+            csv_name = "pst.{0}.nans.csv".format(
+                name.replace(" ", "_").replace("*", "")
+            )
+            self.observation_data.to_csv(csv_name)
+            raise Exception(
+                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
+            )
         f_out.write("* observation data external\n")
-        obs_filename = new_filename.lower().replace(".pst", ".obs_data.csv")
+        obs_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
         if pst_path is not None:
             obs_filename = os.path.join(pst_path, os.path.split(obs_filename)[-1])
         self.observation_data.to_csv(obs_filename, index=False)
@@ -1548,35 +1588,62 @@ class Pst(object):
         for mc in self.model_command:
             f_out.write("{0}\n".format(mc))
 
+        # model input
+        name = "tplfile_data"
+        columns = self.model_io_fieldnames
+        if self.model_input_data.loc[:, columns].isnull().values.any():
+            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+            csv_name = "pst.{0}.nans.csv".format(
+                name.replace(" ", "_").replace("*", "")
+            )
+            self.model_input_data.to_csv(csv_name)
+            raise Exception(
+                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
+            )
         f_out.write("* model input external\n")
-        io_filename = new_filename.lower().replace(".pst", ".tplfile_data.csv")
+        io_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
         if pst_path is not None:
             io_filename = os.path.join(pst_path, os.path.split(io_filename)[-1])
-        # pfiles = self.template_files
-        # pfiles.extend(self.instruction_files)
-        # mfiles = self.input_files
-        # mfiles.extend(self.output_files)
-        # io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
-        # io_df.to_csv(io_filename, index=False)
         self.model_input_data.to_csv(io_filename, index=False)
         io_filename = os.path.join(pst_rel_path, os.path.split(io_filename)[-1])
         f_out.write("{0}\n".format(io_filename))
 
+        # model output
+        name = "insfile_data"
+        columns = self.model_io_fieldnames
+        if self.model_output_data.loc[:, columns].isnull().values.any():
+            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+            csv_name = "pst.{0}.nans.csv".format(
+                name.replace(" ", "_").replace("*", "")
+            )
+            self.model_output_data.to_csv(csv_name)
+            raise Exception(
+                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
+            )
         f_out.write("* model output external\n")
-        io_filename = new_filename.lower().replace(".pst", ".insfile_data.csv")
+        io_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
         if pst_path is not None:
             io_filename = os.path.join(pst_path, os.path.split(io_filename)[-1])
-        # pfiles = self.instruction_files
-        # mfiles = self.output_files
-        # io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
-        # io_df.to_csv(io_filename, index=False)
         self.model_output_data.to_csv(io_filename, index=False)
         io_filename = os.path.join(pst_rel_path, os.path.split(io_filename)[-1])
         f_out.write("{0}\n".format(io_filename))
 
+
+        # prior info
         if self.prior_information.shape[0] > 0:
+            name = "pi_data"
+            columns = self.prior_fieldnames
+            if self.prior_information.loc[:, columns].isnull().values.any():
+                # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+                csv_name = "pst.{0}.nans.csv".format(
+                    name.replace(" ", "_").replace("*", "")
+                )
+                self.prior_information.to_csv(csv_name)
+                raise Exception(
+                    "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
+                )
             f_out.write("* prior information external\n")
-            pi_filename = new_filename.lower().replace(".pst", ".pi_data.csv")
+            pi_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
             if pst_path is not None:
                 pi_filename = os.path.join(pst_path, os.path.split(pi_filename)[-1])
             self.prior_information.to_csv(pi_filename, index=False)
@@ -1704,6 +1771,28 @@ class Pst(object):
         for cline in self.model_command:
             f_out.write(cline + "\n")
 
+        name = "tplfile_data"
+        columns = self.model_io_fieldnames
+        if self.model_input_data.loc[:, columns].isnull().values.any():
+            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+            csv_name = "pst.{0}.nans.csv".format(
+                name.replace(" ", "_").replace("*", "")
+            )
+            self.model_input_data.to_csv(csv_name)
+            raise Exception(
+                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
+            )
+        name = "insfile_data"
+        columns = self.model_io_fieldnames
+        if self.model_output_data.loc[:, columns].isnull().values.any():
+            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+            csv_name = "pst.{0}.nans.csv".format(
+                name.replace(" ", "_").replace("*", "")
+            )
+            self.model_output_data.to_csv(csv_name)
+            raise Exception(
+                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
+            )
         f_out.write("* model input/output\n")
         for tplfle, infle in zip(
             self.model_input_data.pest_file, self.model_input_data.model_file
@@ -1715,9 +1804,17 @@ class Pst(object):
             f_out.write("{0} {1}\n".format(insfle, outfle))
 
         if self.nprior > 0:
-            if self.prior_information.isnull().values.any():
-                # print("WARNING: NaNs in prior_information dataframe")
-                warnings.warn("NaNs in prior_information dataframe", PyemuWarning)
+            name = "pi_data"
+            columns = self.prior_fieldnames
+            if self.prior_information.loc[:, columns].isnull().values.any():
+                # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+                csv_name = "pst.{0}.nans.csv".format(
+                    name.replace(" ", "_").replace("*", "")
+                )
+                self.prior_information.to_csv(csv_name)
+                raise Exception(
+                    "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
+                )
             f_out.write("* prior information\n")
             # self.prior_information.index = self.prior_information.pop("pilbl")
             max_eq_len = self.prior_information.equation.apply(lambda x: len(x)).max()

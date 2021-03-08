@@ -1163,7 +1163,10 @@ def csv_to_ins_file(
                         else:
                             nprefix = prefix
                         if longnames:
-                            nname = f"{nprefix}_usecol:{clabel}"
+                            if len(nprefix) > 0:
+                                nname = f"{nprefix}_usecol:{clabel}"
+                            else:
+                                nname = f"usecol:{clabel}"
                             oname = f"{nname}_{rlabel}"
                         else:
                             nname = nprefix + clabel.replace(" ", "").replace("_", "")
