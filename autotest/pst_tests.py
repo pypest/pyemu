@@ -1,7 +1,7 @@
 import os
 import platform
 import shutil
-
+import numpy as np
 if not os.path.exists("temp"):
     os.mkdir("temp")
 
@@ -948,7 +948,6 @@ def ctrl_data_test():
 def read_in_tpl_test():
     import pyemu
     tpl_d = "tpl"
-    tpl_files = [os.path.join(tpl_d,f) for f in os.listdir(tpl_d) if f.endswith(".tpl")]
     df = pyemu.pst_utils.try_read_input_file_with_tpl(os.path.join(tpl_d,"test1.dat.tpl"))
     print(df)
     assert df.parval1["p1"] == df.parval1["p2"]
@@ -956,7 +955,11 @@ def read_in_tpl_test():
     assert df.parval1["p5"] == df.parval1["p6"]
     assert df.parval1["p5"] == df.parval1["p7"]
 
-
+def read_in_tpl_test2():
+    import pyemu
+    tpl_d = "tpl"
+    df = pyemu.pst_utils.try_read_input_file_with_tpl(os.path.join(tpl_d,"test2.dat.tpl"))
+    assert np.isclose(df.loc['par1'].parval1, 8.675309)
 def write2_nan_test():
     import numpy as np
     import pyemu
@@ -1057,7 +1060,8 @@ def write2_nan_test():
 
 
 if __name__ == "__main__":
-    write2_nan_test()
+    
+    #write2_nan_test()
     #process_output_files_test()
     # change_limit_test()
     # new_format_test()
@@ -1103,5 +1107,7 @@ if __name__ == "__main__":
     #process_output_files_test()
     #comments_test()
     #read_in_tpl_test()
+    read_in_tpl_test2()
+    
     #comments_test()
     #csv_to_ins_test()
