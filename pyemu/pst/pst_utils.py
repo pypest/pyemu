@@ -797,12 +797,19 @@ def _read_infile_with_tplfile(tpl_file,input_file):
                 raise Exception("unbalanced markers on tpl line {0}".format(itpl))
 
             for s,e in zip(idxs[0:-1:2],idxs[1::2]):
-                tpl_str = tpl_line[s:e]
+                tpl_str = tpl_line[s:e+1]
                 pname = tpl_str.replace(marker,"").strip().lower()
                 if s > len(in_line):
                     raise Exception("input file EOL line {0}, tpl line {1}, looking for {2}"\
                                     .format(iin,itpl,tpl_str))
-                in_str = in_line[s:e]
+                junk_val = 'Jennyigotunumber8675309'
+                tmp = tpl_line[:s] + " {} ".format(junk_val) + tpl_line[e+1:]
+                if len(tmp.split()) == len(in_line.split()):
+                    # treat this as whitespace delimited
+                    in_str = in_line.split()[tmp.split().index(junk_val)]
+                else:
+                    # or we must assume the params are written using the same spacing as template file
+                    in_str = in_line[s:e+1]
                 try:
                     v = float(in_str)
                 except Exception as e:
