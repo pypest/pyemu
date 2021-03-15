@@ -3912,6 +3912,33 @@ def apply_list_pars():
         )
 
 
+def process_arr_par_summary_stats(arr_par_file="mult2model_info.csv",abs_mask=1.0e+20):
+    df = pd.read_csv(arr_par_file, index_col=0)
+    arr_pars = df.loc[df.index_cols.isna()].copy()
+    model_input_files = df.model_file.unique()
+    model_input_files.sort()
+    records = dict()
+    stat_dict = {"mean":np.nanmean,"stdev":np.nanstd,"median":np.nanmedian}
+    quantiles = [0.05,0.25,0.75,0.95]
+    for stat in stat_dict.keys():
+        records[stat] = []
+    for q in quantiles:
+        records["quantile_{0}".format(q)] = []
+
+    for model_input_file in model_input_files:
+
+        arr = np.loadtxt(model_input_file)
+        arr[np.abs(arr) > abs_mask] = np.nan
+        for stat,func in stat_dict.items():
+            records[stat].append(func(arr))
+        for q in quantiles:
+            records["quantile_{0}".format(q)].append(np.nanquantile(arr,q))
+    #scrub model input files
+    model_input_files = [f.replace(".","_").replace("\\","_").replace("/","_") for f in model_input_files]
+    df = pd.DataFrame(records,index=model_input_files)
+    df.index.name = "model_file"
+    df.to_csv("arr_par_summary.csv")
+
 def apply_genericlist_pars(df,chunk_len=50):
     """a function to apply list style mult parameters
 
