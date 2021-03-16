@@ -1995,7 +1995,7 @@ class PstFrom(object):
         # model input file can be generated
         # (using helpers.apply_list_and_array_pars())
         zone_filename = None
-        if zone_array is not None:
+        if zone_array is not None and zone_array.ndim < 3:
             #zone_filename = tpl_filename.replace(".tpl",".zone")
             zone_filename = Path(str(tpl_filename).replace(".tpl", ".zone"))
             self.logger.statement("saving zone array {0} for tpl file {1}".format(zone_filename,tpl_filename))
