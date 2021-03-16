@@ -1618,8 +1618,6 @@ def mf6_freyberg_varying_idomain():
         a = m.dis.idomain.array[k,:,:].copy()
         print(a)
         ib[k] = a
-    #return
-    #ib[0][:2,:]  = 0
 
     tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
@@ -1644,7 +1642,14 @@ def mf6_freyberg_varying_idomain():
     df = pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
                         prefix="hds", ofile_sep=",")
 
-    # build pest
+
+    pst = pf.build_pst('freyberg.pst')
+    os.chdir(pf.new_d)
+    df = pyemu.helpers.calc_arr_par_summary_stats()
+    os.chdir("..")
+    pf.post_py_cmds.append("pyemu.helpers.calc_arr_par_summary_stats()")
+    pf.add_observations("arr_par_summary.csv",index_cols=["model_file"],use_cols=df.columns.tolist(),
+                        obsgp=["arr_par_summary" for _ in df.columns],prefix=["arr_par_summary" for _ in df.columns])
     pst = pf.build_pst('freyberg.pst')
     pst.control_data.noptmax = 0
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
@@ -1655,6 +1660,12 @@ def mf6_freyberg_varying_idomain():
     pst.set_res(res_file)
     print(pst.phi)
     assert pst.phi < 1.0e-6
+
+
+
+
+
+
 
 
 def xsec_test():
@@ -2669,12 +2680,12 @@ def mf6_freyberg_arr_obs_and_headerless_test():
 
 if __name__ == "__main__":
     #invest()
-    freyberg_test()
+    #freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
-    #mf6_freyberg_varying_idomain()
+    mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
     #tpf = TestPstFrom()

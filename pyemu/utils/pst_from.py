@@ -1994,6 +1994,14 @@ class PstFrom(object):
         # eventually filled by PEST) to actual model files so that actual
         # model input file can be generated
         # (using helpers.apply_list_and_array_pars())
+        zone_filename = None
+        if zone_array is not None:
+            #zone_filename = tpl_filename.replace(".tpl",".zone")
+            zone_filename = Path(str(tpl_filename).replace(".tpl", ".zone"))
+            self.logger.statement("saving zone array {0} for tpl file {1}".format(zone_filename,tpl_filename))
+            np.savetxt(zone_filename,zone_array,fmt="%4d")
+            zone_filename = zone_filename.name
+
         relate_parfiles = []
         for mod_file in file_dict.keys():
             mult_dict = {
@@ -2018,6 +2026,8 @@ class PstFrom(object):
                 mult_dict["pp_fill_value"] = 1.0
                 mult_dict["pp_lower_limit"] = 1.0e-10
                 mult_dict["pp_upper_limit"] = 1.0e+10
+            if zone_filename is not None:
+                mult_dict["zone_file"] = zone_filename
             relate_parfiles.append(mult_dict)
         relate_pars_df = pd.DataFrame(relate_parfiles)
         # store on self for use in pest build etc

@@ -3912,7 +3912,23 @@ def apply_list_pars():
         )
 
 
-def process_arr_par_summary_stats(arr_par_file="mult2model_info.csv",abs_mask=1.0e+20):
+def calc_arr_par_summary_stats(arr_par_file="mult2model_info.csv",abs_mask=1.0e+20):
+    """read and generate summary statistics for the resulting model input arrays from
+    applying array par multipliers
+
+    Args:
+        arr_par_file (`str`): the array multiplier key file.
+        abs_mask (`float`): value above which the abs of values
+            in the model input array is masked
+
+    Returns:
+        pd.DataFrame: dataframe of summary stats for each model_file entry
+
+    Note:
+        this function uses an optional "zone_file" column. If multiple zones
+            files are used, then zone arrays are aggregated to a single array
+
+    """
     df = pd.read_csv(arr_par_file, index_col=0)
     arr_pars = df.loc[df.index_cols.isna()].copy()
     model_input_files = df.model_file.unique()
@@ -3922,22 +3938,55 @@ def process_arr_par_summary_stats(arr_par_file="mult2model_info.csv",abs_mask=1.
     quantiles = [0.05,0.25,0.75,0.95]
     for stat in stat_dict.keys():
         records[stat] = []
+        records[stat+"_org"] = []
+        records[stat + "_dif"] = []
+
     for q in quantiles:
         records["quantile_{0}".format(q)] = []
+        records["quantile_{0}_org".format(q)] = []
+        records["quantile_{0}_dif".format(q)] = []
 
     for model_input_file in model_input_files:
 
         arr = np.loadtxt(model_input_file)
-        arr[np.abs(arr) > abs_mask] = np.nan
+        org_file = df.loc[df.model_file==model_input_file,"org_file"].values
+
+        print(org_file)
+        org_file = org_file[0]
+        org_arr = np.loadtxt(org_file)
+        if "zone_file" in df.columns:
+            zone_file = df.loc[df.model_file == model_input_file,"zone_file"].dropna().unique()
+            if len(zone_file) > 1:
+                zone_arr = np.zeros_like(arr)
+                for zf in zone_file:
+                    za = np.loadtxt(zf)
+                    zone_arr[za!=0] = 1
+            else:
+                zone_arr = np.loadtxt(zone_file[0])
+            arr[zone_arr==0] = np.NaN
+            org_arr[zone_arr==0] = np.NaN
+        else:
+            arr[np.abs(arr) > abs_mask] = np.nan
+            org_arr[np.abs(arr) > abs_mask] = np.nan
         for stat,func in stat_dict.items():
-            records[stat].append(func(arr))
+            v = func(arr)
+            records[stat].append(v)
+            ov = func(org_arr)
+            records[stat+"_org"].append(ov)
+            records[stat+"_dif"].append(v-ov)
         for q in quantiles:
-            records["quantile_{0}".format(q)].append(np.nanquantile(arr,q))
+            v = np.nanquantile(arr,q)
+            ov = np.nanquantile(org_arr,q)
+            records["quantile_{0}".format(q)].append(v)
+            records["quantile_{0}_org".format(q)].append(ov)
+            records["quantile_{0}_dif".format(q)].append(v-ov)
+
     #scrub model input files
     model_input_files = [f.replace(".","_").replace("\\","_").replace("/","_") for f in model_input_files]
     df = pd.DataFrame(records,index=model_input_files)
     df.index.name = "model_file"
     df.to_csv("arr_par_summary.csv")
+    return df
 
 def apply_genericlist_pars(df,chunk_len=50):
     """a function to apply list style mult parameters
