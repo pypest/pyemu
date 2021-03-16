@@ -1619,22 +1619,23 @@ def mf6_freyberg_varying_idomain():
         print(a)
         ib[k] = a
 
-    tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1]}
+    tags = {"npf_k_": [0.1, 10.,0.003,35]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
     print(dts)
     for tag, bnd in tags.items():
         lb, ub = bnd[0], bnd[1]
+        ult_lb = bnd[2]
+        ult_ub = bnd[3]
         arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
 
         for arr_file in arr_files:
 
             # these ult bounds are used later in an assert
-            ult_lb = None
-            ult_ub = None
+
             k = int(arr_file.split(".")[-2].split("layer")[1].split("_")[0]) - 1
             pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1] + "_pp",
                               pargp=arr_file.split('.')[1] + "_pp", upper_bound=ub, lower_bound=lb,
-                              geostruct=gr_gs, zone_array=ib[k])
+                              geostruct=gr_gs, zone_array=ib[k],ult_lbound=ult_lb,ult_ubound=ult_ub)
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
@@ -1661,6 +1662,18 @@ def mf6_freyberg_varying_idomain():
     pst.set_res(res_file)
     print(pst.phi)
     assert pst.phi < 1.0e-6
+
+    pe = pf.draw(10,use_specsim=True)
+    pe.enforce()
+    pst.parameter_data.loc[:,"parval1"] = pe.loc[pe.index[0],pst.par_names]
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+
 
     df = pd.read_csv(os.path.join(pf.new_d,"mult2model_info.csv"), index_col=0)
     arr_pars = df.loc[df.index_cols.isna()].copy()

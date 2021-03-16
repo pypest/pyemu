@@ -3912,15 +3912,12 @@ def apply_list_pars():
         )
 
 
-def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv", abs_mask=1.0e+20):
+def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv"):
     """read and generate summary statistics for the resulting model input arrays from
     applying array par multipliers
 
     Args:
-        arr_par_file (`str`): the array multiplier key file.
-        abs_mask (`float`): value above which the abs of values
-            in the model input array is masked.  The mask is only
-            applied of `zone_file` column is nan and `abs_mask` is not `None`
+        arr_par_file (`str`): the array multiplier key file
 
     Returns:
         pd.DataFrame: dataframe of summary stats for each model_file entry
@@ -3929,13 +3926,17 @@ def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv", abs_mask=1.
         this function uses an optional "zone_file" column. If multiple zones
             files are used, then zone arrays are aggregated to a single array
 
+        "dif" values are original array values minus model input array values
+
     """
     df = pd.read_csv(arr_par_file, index_col=0)
-    arr_pars = df.loc[df.index_cols.isna()].copy()
+    df = df.loc[df.index_cols.isna(),:].copy()
+    if df.shape[0] == 0:
+        return None
     model_input_files = df.model_file.unique()
     model_input_files.sort()
     records = dict()
-    stat_dict = {"mean":np.nanmean,"stdev":np.nanstd,"median":np.nanmedian}
+    stat_dict = {"mean":np.nanmean,"stdev":np.nanstd,"median":np.nanmedian,"min":np.nanmin,"max":np.nanmax}
     quantiles = [0.05,0.25,0.75,0.95]
     for stat in stat_dict.keys():
         records[stat] = []
@@ -3946,13 +3947,17 @@ def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv", abs_mask=1.
         records["quantile_{0}".format(q)] = []
         records["quantile_{0}_org".format(q)] = []
         records["quantile_{0}_dif".format(q)] = []
+    records["upper_bound"] = []
+    records["lower_bound"] = []
+    records["upper_bound_org"] = []
+    records["lower_bound_org"] = []
+    records["upper_bound_dif"] = []
+    records["lower_bound_dif"] = []
 
     for model_input_file in model_input_files:
 
         arr = np.loadtxt(model_input_file)
         org_file = df.loc[df.model_file==model_input_file,"org_file"].values
-
-        #print(org_file)
         org_file = org_file[0]
         org_arr = np.loadtxt(org_file)
         if "zone_file" in df.columns:
@@ -3966,21 +3971,52 @@ def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv", abs_mask=1.
                 zone_arr = np.loadtxt(zone_file[0])
             arr[zone_arr==0] = np.NaN
             org_arr[zone_arr==0] = np.NaN
-        elif abs_mask is not None:
-            arr[np.abs(arr) > abs_mask] = np.nan
-            org_arr[np.abs(arr) > abs_mask] = np.nan
+
         for stat,func in stat_dict.items():
             v = func(arr)
             records[stat].append(v)
             ov = func(org_arr)
             records[stat+"_org"].append(ov)
-            records[stat+"_dif"].append(v-ov)
+            records[stat+"_dif"].append(ov-v)
         for q in quantiles:
             v = np.nanquantile(arr,q)
             ov = np.nanquantile(org_arr,q)
             records["quantile_{0}".format(q)].append(v)
             records["quantile_{0}_org".format(q)].append(ov)
-            records["quantile_{0}_dif".format(q)].append(v-ov)
+            records["quantile_{0}_dif".format(q)].append(ov-v)
+        ub = df.loc[df.model_file==model_input_file,"upper_bound"].max()
+        lb = df.loc[df.model_file == model_input_file, "lower_bound"].min()
+        if pd.isna(ub):
+            records["upper_bound"].append(0)
+            records["upper_bound_org"].append(0)
+            records["upper_bound_dif"].append(0)
+
+        else:
+            iarr = np.zeros_like(arr)
+            iarr[arr==ub] = 1
+            v = iarr.sum()
+            iarr = np.zeros_like(arr)
+            iarr[org_arr == ub] = 1
+            ov = iarr.sum()
+            records["upper_bound"].append(v)
+            records["upper_bound_org"].append(ov)
+            records["upper_bound_dif"].append(ov-v)
+
+        if pd.isna(lb):
+            records["lower_bound"].append(0)
+            records["lower_bound_org"].append(0)
+            records["lower_bound_dif"].append(0)
+
+        else:
+            iarr = np.zeros_like(arr)
+            iarr[arr==lb] = 1
+            v = iarr.sum()
+            iarr = np.zeros_like(arr)
+            iarr[org_arr == lb] = 1
+            ov = iarr.sum()
+            records["lower_bound"].append(v)
+            records["lower_bound_org"].append(ov)
+            records["lower_bound_dif"].append(ov-v)
 
     #scrub model input files
     model_input_files = [f.replace(".","_").replace("\\","_").replace("/","_") for f in model_input_files]
