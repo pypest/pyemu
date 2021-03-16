@@ -3912,14 +3912,15 @@ def apply_list_pars():
         )
 
 
-def calc_arr_par_summary_stats(arr_par_file="mult2model_info.csv",abs_mask=1.0e+20):
+def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv", abs_mask=1.0e+20):
     """read and generate summary statistics for the resulting model input arrays from
     applying array par multipliers
 
     Args:
         arr_par_file (`str`): the array multiplier key file.
         abs_mask (`float`): value above which the abs of values
-            in the model input array is masked
+            in the model input array is masked.  The mask is only
+            applied of `zone_file` column is nan and `abs_mask` is not `None`
 
     Returns:
         pd.DataFrame: dataframe of summary stats for each model_file entry
@@ -3951,7 +3952,7 @@ def calc_arr_par_summary_stats(arr_par_file="mult2model_info.csv",abs_mask=1.0e+
         arr = np.loadtxt(model_input_file)
         org_file = df.loc[df.model_file==model_input_file,"org_file"].values
 
-        print(org_file)
+        #print(org_file)
         org_file = org_file[0]
         org_arr = np.loadtxt(org_file)
         if "zone_file" in df.columns:
@@ -3965,7 +3966,7 @@ def calc_arr_par_summary_stats(arr_par_file="mult2model_info.csv",abs_mask=1.0e+
                 zone_arr = np.loadtxt(zone_file[0])
             arr[zone_arr==0] = np.NaN
             org_arr[zone_arr==0] = np.NaN
-        else:
+        elif abs_mask is not None:
             arr[np.abs(arr) > abs_mask] = np.nan
             org_arr[np.abs(arr) > abs_mask] = np.nan
         for stat,func in stat_dict.items():
@@ -4124,6 +4125,7 @@ def _process_list_file(model_file,df):
             print("null mlt file for org_file '" + org_file + "', continuing...")
         else:
             mlts = pd.read_csv(mlt.mlt_file)
+            # get mult index to align with org_data,
             # get mult index to align with org_data,
             # mult idxs will always be written zero based if int
             # if original model files is not zero based need to add 1

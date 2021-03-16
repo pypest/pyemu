@@ -1643,11 +1643,12 @@ def mf6_freyberg_varying_idomain():
                         prefix="hds", ofile_sep=",")
 
 
-    pst = pf.build_pst('freyberg.pst')
+    #pst = pf.build_pst('freyberg.pst')
+    pf.parfile_relations.to_csv(os.path.join(pf.new_d, "mult2model_info.csv"))
     os.chdir(pf.new_d)
-    df = pyemu.helpers.calc_arr_par_summary_stats()
+    df = pyemu.helpers.calc_array_par_summary_stats()
     os.chdir("..")
-    pf.post_py_cmds.append("pyemu.helpers.calc_arr_par_summary_stats()")
+    pf.post_py_cmds.append("pyemu.helpers.calc_array_par_summary_stats()")
     pf.add_observations("arr_par_summary.csv",index_cols=["model_file"],use_cols=df.columns.tolist(),
                         obsgp=["arr_par_summary" for _ in df.columns],prefix=["arr_par_summary" for _ in df.columns])
     pst = pf.build_pst('freyberg.pst')
@@ -1660,6 +1661,17 @@ def mf6_freyberg_varying_idomain():
     pst.set_res(res_file)
     print(pst.phi)
     assert pst.phi < 1.0e-6
+
+    df = pd.read_csv(os.path.join(pf.new_d,"mult2model_info.csv"), index_col=0)
+    arr_pars = df.loc[df.index_cols.isna()].copy()
+    model_files = arr_pars.model_file.unique()
+    pst.try_parse_name_metadata()
+    for model_file in model_files:
+        arr = np.loadtxt(os.path.join(pf.new_d,model_file))
+        clean_name = model_file.replace(".","_").replace("\\","_").replace("/","_")
+        sim_val = pst.res.loc[pst.res.name.apply(lambda x: clean_name in x ),"modelled"]
+        sim_val = sim_val.loc[sim_val.index.map(lambda x: "mean_model_file" in x)]
+        print(model_file,sim_val,arr.mean())
 
 
 
