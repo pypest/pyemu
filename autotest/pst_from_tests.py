@@ -1618,25 +1618,24 @@ def mf6_freyberg_varying_idomain():
         a = m.dis.idomain.array[k,:,:].copy()
         print(a)
         ib[k] = a
-    #return
-    #ib[0][:2,:]  = 0
 
-    tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1]}
+    tags = {"npf_k_": [0.1, 10.,0.003,35]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
     print(dts)
     for tag, bnd in tags.items():
         lb, ub = bnd[0], bnd[1]
+        ult_lb = bnd[2]
+        ult_ub = bnd[3]
         arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
 
         for arr_file in arr_files:
 
             # these ult bounds are used later in an assert
-            ult_lb = None
-            ult_ub = None
+
             k = int(arr_file.split(".")[-2].split("layer")[1].split("_")[0]) - 1
             pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1] + "_pp",
                               pargp=arr_file.split('.')[1] + "_pp", upper_bound=ub, lower_bound=lb,
-                              geostruct=gr_gs, zone_array=ib[k])
+                              geostruct=gr_gs, zone_array=ib[k],ult_lbound=ult_lb,ult_ubound=ult_ub)
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
@@ -1644,7 +1643,15 @@ def mf6_freyberg_varying_idomain():
     df = pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
                         prefix="hds", ofile_sep=",")
 
-    # build pest
+
+    #pst = pf.build_pst('freyberg.pst')
+    pf.parfile_relations.to_csv(os.path.join(pf.new_d, "mult2model_info.csv"))
+    os.chdir(pf.new_d)
+    df = pyemu.helpers.calc_array_par_summary_stats()
+    os.chdir("..")
+    pf.post_py_cmds.append("pyemu.helpers.calc_array_par_summary_stats()")
+    pf.add_observations("arr_par_summary.csv",index_cols=["model_file"],use_cols=df.columns.tolist(),
+                        obsgp=["arr_par_summary" for _ in df.columns],prefix=["arr_par_summary" for _ in df.columns])
     pst = pf.build_pst('freyberg.pst')
     pst.control_data.noptmax = 0
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
@@ -1655,6 +1662,35 @@ def mf6_freyberg_varying_idomain():
     pst.set_res(res_file)
     print(pst.phi)
     assert pst.phi < 1.0e-6
+
+    pe = pf.draw(10,use_specsim=True)
+    pe.enforce()
+    pst.parameter_data.loc[:,"parval1"] = pe.loc[pe.index[0],pst.par_names]
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+
+
+    df = pd.read_csv(os.path.join(pf.new_d,"mult2model_info.csv"), index_col=0)
+    arr_pars = df.loc[df.index_cols.isna()].copy()
+    model_files = arr_pars.model_file.unique()
+    pst.try_parse_name_metadata()
+    for model_file in model_files:
+        arr = np.loadtxt(os.path.join(pf.new_d,model_file))
+        clean_name = model_file.replace(".","_").replace("\\","_").replace("/","_")
+        sim_val = pst.res.loc[pst.res.name.apply(lambda x: clean_name in x ),"modelled"]
+        sim_val = sim_val.loc[sim_val.index.map(lambda x: "mean_model_file" in x)]
+        print(model_file,sim_val,arr.mean())
+
+
+
+
+
+
 
 
 def xsec_test():
@@ -2669,12 +2705,12 @@ def mf6_freyberg_arr_obs_and_headerless_test():
 
 if __name__ == "__main__":
     #invest()
-    freyberg_test()
+    #freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
-    #mf6_freyberg_varying_idomain()
+    mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
     #tpf = TestPstFrom()
