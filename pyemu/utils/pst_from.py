@@ -2056,7 +2056,7 @@ class PstFrom(object):
         missing = set(par_data_cols) - set(df.columns)
         for field in missing:  # fill missing pst.parameter_data cols with defaults
             df[field] = pyemu.pst_utils.pst_config["par_defaults"][field]
-        df = df.drop_duplicates()  # drop pars that appear multiple times
+        df = df.drop_duplicates(subset="parnme")  # drop pars that appear multiple times
         # df = df.loc[:, par_data_cols]  # just storing pst required cols
         # - need to store more for cov builder (e.g. x,y)
         # TODO - check when self.par_dfs gets used
