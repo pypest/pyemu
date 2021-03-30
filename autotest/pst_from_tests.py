@@ -1444,6 +1444,13 @@ def mf6_freyberg_direct_test():
                       upper_bound=[35,150], lower_bound=[32,50], par_style="direct",
                       transform="none")
 
+    dup_file = "freyberg6.wel_stress_period_data_with_dups.txt"
+    shutil.copy2(os.path.join("utils", dup_file), os.path.join(pf.new_d, dup_file))
+    pf.add_parameters(filenames=dup_file, par_type="grid", par_name_base="dups",
+                      pargp="dups", index_cols=[0, 1, 2], use_cols=[3],
+                      upper_bound=0.0, lower_bound=-500,par_style="direct",
+                      transform="none")
+
     # add model run command
     pf.mod_sys_cmds.append("mf6")
     print(pf.mult_files)
@@ -1844,6 +1851,9 @@ def mf6_freyberg_short_direct_test():
             fw.write("k i j flx \n")
             for line in lines:
                 fw.write(line)
+
+
+
 
     # fl = "freyberg6.wel_stress_period_data_3.txt" # Add extra string col_id
     for fl in list_files[2:4]:
@@ -2709,8 +2719,8 @@ if __name__ == "__main__":
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
-    #mf6_freyberg_direct_test()
-    mf6_freyberg_varying_idomain()
+    mf6_freyberg_direct_test()
+    #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
     #tpf = TestPstFrom()
