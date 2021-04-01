@@ -1862,9 +1862,43 @@ class PstFrom(object):
                 in_filepst = pp_filename
                 tpl_filename = self.tpl_d / (pp_filename + ".tpl")
                 # tpl_filename = get_relative_filepath(self.new_d, tpl_filename)
+                pp_locs = None
                 if pp_space is None:  # default spacing if not passed
                     self.logger.warn("pp_space is None, using 10...\n")
                     pp_space = 10
+                else:
+                    if isinstance(pp_space,float):
+                        pp_space = int(pp_space)
+                    elif isinstance(pp_space,int):
+                        pass
+                    elif isinstance(pp_space,str):
+
+                        if pp_space.lower().strip().endswith(".csv"):
+                            self.logger.statement(
+                                "trying to load pilot point location info from csv file '{0}'".format(self.new_d / pp_space))
+                            pp_locs = pd.read_csv(self.new_d/pp_space)
+
+                        else:
+                            self.logger.statement(
+                                "trying to load pilot point location info from pilot point file '{0}'".format(self.new_d/pp_space))
+                            pp_locs = pyemu.pp_utils.pp_file_to_dataframe(self.new_d/pp_space)
+                    elif isinstance(pp_space,pd.DataFrame):
+                        pp_locs = pp_space
+                    else:
+                        self.logger.lraise("unrecognized 'pp_space' value, should be int, csv file, pp file or dataframe, not '{0}'".format(type(pp_space)))
+                    if pp_locs is not None:
+                        cols = pp_locs.columns.tolist()
+                        if "name" not in cols:
+                            self.logger.lraise("'name' col not found in pp dataframe")
+                        if "x" not in cols:
+                            self.logger.lraise("'x' col not found in pp dataframe")
+                        if "y" not in cols:
+                            self.logger.lraise("'y' col not found in pp dataframe")
+                        if "zone" not in cols:
+                            self.logger.warn("'zone' col not found in pp dataframe, adding generic zone")
+                            pp_locs.loc[:,"zone"] = 1
+
+
                 if geostruct is None:  # need a geostruct for pilotpoints
                     # can use model default, if provided
                     if self.geostruct is None:  # but if no geostruct passed...
@@ -1873,8 +1907,12 @@ class PstFrom(object):
                             "using ExpVario with contribution=1 "
                             "and a=(pp_space*max(delr,delc))"
                         )
-                        # set up a default
-                        pp_dist = pp_space * float(
+                        # set up a default - could probably do something better if pp locs are passed
+                        if not isinstance(pp_space,int):
+                            space = 10
+                        else:
+                            space = pp_space
+                        pp_dist = space * float(
                             max(
                                 spatial_reference.delr.max(),
                                 spatial_reference.delc.max(),
@@ -1907,18 +1945,33 @@ class PstFrom(object):
                             pp_geostruct.transform = transform
                 else:
                     pp_geostruct = geostruct
-                # Set up pilot points
-                df = pyemu.pp_utils.setup_pilotpoints_grid(
-                    sr=spatial_reference,
-                    ibound=zone_array,
-                    use_ibound_zones=use_pp_zones,
-                    prefix_dict=pp_dict,
-                    every_n_cell=pp_space,
-                    pp_dir=self.new_d,
-                    tpl_dir=self.tpl_d,
-                    shapename=str(self.new_d / "{0}.shp".format(par_name_store)),
-                    longnames=self.longnames,
-                )
+
+                if pp_locs is None:
+                    # Set up pilot points
+
+                    df = pyemu.pp_utils.setup_pilotpoints_grid(
+                        sr=spatial_reference,
+                        ibound=zone_array,
+                        use_ibound_zones=use_pp_zones,
+                        prefix_dict=pp_dict,
+                        every_n_cell=pp_space,
+                        pp_dir=self.new_d,
+                        tpl_dir=self.tpl_d,
+                        shapename=str(self.new_d / "{0}.shp".format(par_name_store)),
+                        longnames=self.longnames,
+                    )
+                else:
+                    if isinstance(pp_space,str):
+                        tpl_file = self.tpl_d / Path(Path(pp_space).name+".tpl")
+                    elif len(filenames) == 1:
+                        tpl_file = self.tpl_d / Path(filenames[0].name + ".tpl")
+                    else:
+                        tpl_file = self.tpl_d / Path(par_name_base + "_pp.tpl")
+
+                    df = pyemu.pp_utils.pilot_points_to_tpl(pp_locs,tpl_file,
+                                                       par_name_base,longnames=self.longnames)
+                    df.loc[:,"pargp"] = par_name_base[0]+"_pp"
+
                 df.set_index("parnme", drop=False, inplace=True)
                 # df includes most of the par info for par_dfs and also for
                 # relate_parfiles

@@ -2712,14 +2712,101 @@ def mf6_freyberg_arr_obs_and_headerless_test():
     assert d.sum() == 0
 
 
+def mf6_freyberg_pp_locs_test():
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
+    tmp_model_ws = "temp_pst_from"
+    if os.path.exists(tmp_model_ws):
+        shutil.rmtree(tmp_model_ws)
+    os.mkdir(tmp_model_ws)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
+    # sim.set_all_data_external()
+    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    # sim.set_all_data_external()
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
+
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+
+    template_ws = "new_temp"
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018",
+                 chunk_len=1)
+
+    # pf.post_py_cmds.append("generic_function()")
+    df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
+    pp_gs = pyemu.geostats.GeoStruct(variograms=v)
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
+    #         "rch_recharge": [.5, 1.5]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+
+    pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
+    pp_locs = pp_locs.loc[:,["name","x","y","zone"]]
+
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            pass
+            # pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
+            #                   pargp="rch_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                   geostruct=gr_gs)
+            # for arr_file in arr_files:
+            #     kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+            #     pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
+            #                       pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                       geostruct=rch_temporal_gs,
+            #                       datetime=dts[kper])
+        else:
+            for arr_file in arr_files:
+                pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
+                                  par_name_base=arr_file.split('.')[1] + "_pp",
+                                  pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
+                                  upper_bound=ub, lower_bound=lb,pp_space=pp_locs)
+
+
+
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
+
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+
+    num_reals = 100
+    pe = pf.draw(num_reals, use_specsim=True)
+    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+
 
 if __name__ == "__main__":
+    mf6_freyberg_pp_locs_test()
     #invest()
     #freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
-    mf6_freyberg_direct_test()
+    #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()

@@ -449,10 +449,22 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
 
     if longnames:
         if name_prefix is not None:
-            pp_df.loc[:, "parnme"] = pp_df.apply(
-                lambda x: "{0}_i:{1}_j:{2}".format(name_prefix, int(x.i), int(x.j)),
-                axis=1,
-            )
+            if "i" in pp_df.columns and "j" in pp_df.columns:
+                pp_df.loc[:, "parnme"] = pp_df.apply(
+                    lambda x: "{0}_i:{1}_j:{2}".format(name_prefix, int(x.i), int(x.j)),
+                    axis=1,
+                )
+            elif "x" in pp_df.columns and "y" in pp_df.columns:
+                pp_df.loc[:, "parnme"] = pp_df.apply(
+                    lambda x: "{0}_i:{1}_j:{2}".format(name_prefix, x.x, x.y),
+                    axis=1,
+                )
+            else:
+                pp_df.loc[:,"idx"] = np.arange(pp_df.shape[0])
+                pp_df.loc[:, "parnme"] = pp_df.apply(
+                    lambda x: "{0}_ppidx:{1}".format(name_prefix, x.idx),
+                    axis=1,
+                )
             pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
                 lambda x: "~    {0}    ~".format(x)
             )
