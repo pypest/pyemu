@@ -456,7 +456,7 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
                 )
             elif "x" in pp_df.columns and "y" in pp_df.columns:
                 pp_df.loc[:, "parnme"] = pp_df.apply(
-                    lambda x: "{0}_i:{1}_j:{2}".format(name_prefix, x.x, x.y),
+                    lambda x: "{0}_x:{1}_y:{2}".format(name_prefix, x.x, x.y),
                     axis=1,
                 )
             else:

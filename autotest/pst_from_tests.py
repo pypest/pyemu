@@ -32,7 +32,7 @@ else:
 mf_exe_path = os.path.join(bin_path, "mfnwt")
 mt_exe_path = os.path.join(bin_path, "mt3dusgs")
 mf6_exe_path = os.path.join(bin_path, "mf6")
-pp_exe_path = os.path.join(bin_path, "pestpp")
+pp_exe_path = os.path.join(bin_path, "pestpp-glm")
 ies_exe_path = os.path.join(bin_path, "pestpp-ies")
 swp_exe_path = os.path.join(bin_path, "pestpp-swp")
 
@@ -2794,9 +2794,23 @@ def mf6_freyberg_pp_locs_test():
     # build pest
     pst = pf.build_pst('freyberg.pst')
 
-    num_reals = 100
+    num_reals = 10
     pe = pf.draw(num_reals, use_specsim=True)
     pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+
+    pst.parameter_data.loc[:,"partrans"] = "fixed"
+    pst.parameter_data.loc[::10, "partrans"] = "log"
+    pst.control_data.noptmax = -1
+    pst.write(os.path.join(template_ws,"freyberg.pst"))
+
+    #pyemu.os_utils.run("{0} freyberg.pst".format("pestpp-glm"),cwd=template_ws)
+    pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,worker_root=".",master_dir="master_glm")
+
+    sen_df = pd.read_csv(os.path.join("master_glm","freyberg.isen"),index_col=0).loc[:,pst.adj_par_names]
+    print(sen_df.T)
+    mn = sen_df.values.min()
+    print(mn)
+    assert mn > 0.0
 
 
 if __name__ == "__main__":

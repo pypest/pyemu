@@ -1875,13 +1875,14 @@ class PstFrom(object):
 
                         if pp_space.lower().strip().endswith(".csv"):
                             self.logger.statement(
-                                "trying to load pilot point location info from csv file '{0}'".format(self.new_d / pp_space))
+                                "trying to load pilot point location info from csv file '{0}'".format(self.new_d / Path(pp_space)))
                             pp_locs = pd.read_csv(self.new_d/pp_space)
 
                         else:
                             self.logger.statement(
-                                "trying to load pilot point location info from pilot point file '{0}'".format(self.new_d/pp_space))
+                                "trying to load pilot point location info from pilot point file '{0}'".format(self.new_d/ Path(pp_space)))
                             pp_locs = pyemu.pp_utils.pp_file_to_dataframe(self.new_d/pp_space)
+                        self.logger.statement("pilot points found in file '{0}' will be transferred to '{1}' for parameterization".format(pp_space,pp_filename))
                     elif isinstance(pp_space,pd.DataFrame):
                         pp_locs = pp_space
                     else:
@@ -1897,7 +1898,23 @@ class PstFrom(object):
                         if "zone" not in cols:
                             self.logger.warn("'zone' col not found in pp dataframe, adding generic zone")
                             pp_locs.loc[:,"zone"] = 1
+                        elif zone_array is not None:
+                            # check that all the zones in the pp df are in the zone array
+                            missing = []
+                            for uz in pp_locs.zone.unique():
+                                if int(uz) not in zone_array:
+                                    missing.append(str(uz))
+                            if len(missing) > 0:
+                                self.logger.lraise("the following pp zone values were not found in the zone array: {0}".format(",".join(missing)))
 
+                            for uz in np.unique(zone_array):
+                                if uz < 1:
+                                    continue
+                                if uz not in pp_locs.zone.values:
+
+                                    missing.append(str(uz))
+                            if len(missing) > 0:
+                                self.logger.warn("the following zones don't have any pilot points:{0}".format(",".join(missing)))
 
                 if geostruct is None:  # need a geostruct for pilotpoints
                     # can use model default, if provided
@@ -1961,16 +1978,10 @@ class PstFrom(object):
                         longnames=self.longnames,
                     )
                 else:
-                    if isinstance(pp_space,str):
-                        tpl_file = self.tpl_d / Path(Path(pp_space).name+".tpl")
-                    elif len(filenames) == 1:
-                        tpl_file = self.tpl_d / Path(filenames[0].name + ".tpl")
-                    else:
-                        tpl_file = self.tpl_d / Path(par_name_base + "_pp.tpl")
-
-                    df = pyemu.pp_utils.pilot_points_to_tpl(pp_locs,tpl_file,
-                                                       par_name_base,longnames=self.longnames)
-                    df.loc[:,"pargp"] = par_name_base[0]+"_pp"
+                    df = pyemu.pp_utils.pilot_points_to_tpl(pp_locs,tpl_filename,
+                                                            par_name_base[0],
+                                                            longnames=self.longnames)
+                    df.loc[:,"pargp"] = par_name_base[0]
 
                 df.set_index("parnme", drop=False, inplace=True)
                 # df includes most of the par info for par_dfs and also for
