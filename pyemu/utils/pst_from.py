@@ -1930,6 +1930,13 @@ class PstFrom(object):
                             )
                             pp_locs = pd.read_csv(self.new_d / pp_space)
 
+                        elif pp_space.lower().strip().endswith(".shp"):
+                            self.logger.statement(
+                                "trying to load pilot point location info from shapefile '{0}'".format(
+                                    self.new_d / Path(pp_space)
+                                )
+                            )
+                            pp_locs = pyemu.pp_utils.pilot_points_from_shapefile(str(self.new_d/Path(pp_space)))
                         else:
                             self.logger.statement(
                                 "trying to load pilot point location info from pilot point file '{0}'".format(

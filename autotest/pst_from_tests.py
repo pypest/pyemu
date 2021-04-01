@@ -2760,11 +2760,27 @@ def mf6_freyberg_pp_locs_test():
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
     print(dts)
 
-    pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
-    pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
+    xmn = m.modelgrid.xvertices.min()
+    xmx = m.modelgrid.xvertices.max()
+    ymn = m.modelgrid.yvertices.min()
+    ymx = m.modelgrid.yvertices.max()
+
+    numpp = 20
+    xvals = np.random.uniform(xmn,xmx,numpp)
+    yvals = np.random.uniform(ymn, ymx, numpp)
+    pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
+    pp_locs.loc[:,"zone"] = 1
+    pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
+    pp_locs.loc[:,"parval1"] = 1.0
+
+    pyemu.pp_utils.write_pp_shapfile(pp_locs,os.path.join(template_ws,"pp_locs.shp"))
+    df = pyemu.pp_utils.pilot_points_from_shapefile(os.path.join(template_ws,"pp_locs.shp"))
+
+    #pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
+    #pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
     pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
     pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
-    pp_container = [pp_locs,"pp_file.dat","pp.csv"]
+    pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
 
     for tag, bnd in tags.items():
         lb, ub = bnd[0], bnd[1]
