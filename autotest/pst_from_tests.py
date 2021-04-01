@@ -2761,7 +2761,10 @@ def mf6_freyberg_pp_locs_test():
     print(dts)
 
     pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
-    pp_locs = pp_locs.loc[:,["name","x","y","zone"]]
+    pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
+    pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
+    pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
+    pp_container = [pp_locs,"pp_file.dat","pp.csv"]
 
     for tag, bnd in tags.items():
         lb, ub = bnd[0], bnd[1]
@@ -2778,11 +2781,15 @@ def mf6_freyberg_pp_locs_test():
             #                       geostruct=rch_temporal_gs,
             #                       datetime=dts[kper])
         else:
-            for arr_file in arr_files:
+            for i,arr_file in enumerate(arr_files):
+                if i < len(pp_container):
+                    pp_opt = pp_container[i]
+                else:
+                    pp_opt = pp_locs
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
                                   par_name_base=arr_file.split('.')[1] + "_pp",
                                   pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
-                                  upper_bound=ub, lower_bound=lb,pp_space=pp_locs)
+                                  upper_bound=ub, lower_bound=lb,pp_space=pp_opt)
 
 
 
