@@ -460,7 +460,7 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
                     axis=1,
                 )
             else:
-                pp_df.loc[:,"idx"] = np.arange(pp_df.shape[0])
+                pp_df.loc[:, "idx"] = np.arange(pp_df.shape[0])
                 pp_df.loc[:, "parnme"] = pp_df.apply(
                     lambda x: "{0}_ppidx:{1}".format(name_prefix, x.idx),
                     axis=1,

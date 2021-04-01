@@ -404,7 +404,12 @@ class Ensemble(object):
             retrans = True
         if self._df.isnull().values.any():
             warnings.warn("NaN in ensemble", PyemuWarning)
-        pyemu.Matrix.write_dense(filename,self._df.index.tolist(),self._df.columns.tolist(),self._df.values)
+        pyemu.Matrix.write_dense(
+            filename,
+            self._df.index.tolist(),
+            self._df.columns.tolist(),
+            self._df.values,
+        )
         if retrans:
             self.transform()
 
