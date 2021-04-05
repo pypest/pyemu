@@ -335,13 +335,13 @@ def pp_tpl_to_dataframe(tpl_filename):
 def pilot_points_from_shapefile(shapename):
     """read pilot points from shapefile into a dataframe
 
-        Args:
-            shapename (`str`): the shapefile name to read.
+    Args:
+        shapename (`str`): the shapefile name to read.
 
-        Notes:
-            requires pyshp
+    Notes:
+        requires pyshp
 
-        """
+    """
     try:
         import shapefile
     except Exception as e:
@@ -355,26 +355,25 @@ def pilot_points_from_shapefile(shapename):
     if "name" not in names:
         raise Exception("pilot point shapefile missing 'name' attr")
 
-    data = {name:[] for name in names}
+    data = {name: [] for name in names}
     xvals = []
     yvals = []
 
-    for shape,rec in zip(shp.shapes(),shp.records()):
+    for shape, rec in zip(shp.shapes(), shp.records()):
         pt = shape.points[0]
-        for name,val in zip(names,rec):
+        for name, val in zip(names, rec):
             data[name].append(val)
         xvals.append(pt[0])
         yvals.append(pt[1])
 
     df = pd.DataFrame(data)
-    df.loc[:,"x"] = xvals
-    df.loc[:,"y"] = yvals
+    df.loc[:, "x"] = xvals
+    df.loc[:, "y"] = yvals
     if "parval1" not in df.columns:
         print("adding generic parval1 to pp shapefile dataframe")
-        df.loc[:,"parval1"] = 1.0
+        df.loc[:, "parval1"] = 1.0
 
     return df
-
 
 
 def write_pp_shapfile(pp_df, shapename=None):
