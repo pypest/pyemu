@@ -1503,8 +1503,9 @@ class PstFrom(object):
                 If `int` it is the spacing in rows and cols of where to place pilot points.
                 If `pd.DataFrame`, then this arg is treated as a prefined set of pilot points
                 and in this case, the dataframe must have "name", "x", "y", and optionally "zone" columns.
-                If `str`, then an attempt is made to load a dataframe from a csv file (if `pp_space` ends with ".csv") or
-                from a pilot points file.  If `pp_space` is None, an integer spacing of 10 is used.  Default is None
+                If `str`, then an attempt is made to load a dataframe from a csv file (if `pp_space` ends with ".csv"),
+                 shapefile (if `pp_space` ends with ".shp") or from a pilot points file.  If `pp_space` is None,
+                 an integer spacing of 10 is used.  Default is None
             use_pp_zones (`bool`): a flag to use the greater-than-zero values
                 in the zone_array as pilot point zones.
                 If False, zone_array values greater than zero are treated as a
