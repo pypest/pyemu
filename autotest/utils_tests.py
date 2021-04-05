@@ -1823,7 +1823,6 @@ def maha_pdc_test():
     assert level_1.shape[0] == 0
     assert level_2.shape[0] == 0
 
-<<<<<<< HEAD
 def gsf_reader_test():
     import pyemu
     gsffilename = os.path.join('utils','freyberg.usg.gsf')
@@ -1834,8 +1833,6 @@ def gsf_reader_test():
     assert len(gsf.get_node_data()) == nnodes
 
 
-=======
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
 
 if __name__ == "__main__":
 
@@ -1872,11 +1869,7 @@ if __name__ == "__main__":
     #geostat_prior_builder_test()
     #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
-<<<<<<< HEAD
     # mflist_budget_test()
-=======
-    mflist_budget_test()
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
@@ -1911,9 +1904,5 @@ if __name__ == "__main__":
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
     #ok_grid_invest()
-<<<<<<< HEAD
     # maha_pdc_test()
     gsf_reader_test()
-=======
-    # maha_pdc_test()
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a

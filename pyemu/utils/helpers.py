@@ -20,10 +20,6 @@ import pandas as pd
 
 pd.options.display.max_colwidth = 100
 from ..pyemu_warnings import PyemuWarning
-<<<<<<< HEAD
-=======
-
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
 
 try:
     import flopy
@@ -583,7 +579,6 @@ def kl_setup(
             file to write the reduced basis vectors to.  Default is None (not saved).
         tpl_dir (`str`, optional): the directory to write the resulting
             template files to.  Default is "." (current directory).
-<<<<<<< HEAD
 
     Returns:
         `pandas.DataFrame`: a dataframe of parameter information.
@@ -591,15 +586,6 @@ def kl_setup(
     Note:
         This is the companion function to `helpers.apply_kl()`
 
-=======
-
-    Returns:
-        `pandas.DataFrame`: a dataframe of parameter information.
-
-    Note:
-        This is the companion function to `helpers.apply_kl()`
-
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
     Example::
 
         m = flopy.modflow.Modflow.load("mymodel.nam")
@@ -928,7 +914,6 @@ def simple_tpl_from_pars(parnames, tplfilename="model.input.tpl"):
     with open(tplfilename, "w") as ofp:
         ofp.write("ptf ~\n")
         [ofp.write("~{0:^12}~\n".format(cname)) for cname in parnames]
-<<<<<<< HEAD
 
 
 def simple_ins_from_obs(obsnames, insfilename="model.output.ins"):
@@ -941,20 +926,6 @@ def simple_ins_from_obs(obsnames, insfilename="model.output.ins"):
         insfilename (`str`): the name of the instruction file to
             create. Default is "model.output.ins"
 
-=======
-
-
-def simple_ins_from_obs(obsnames, insfilename="model.output.ins"):
-    """write a simple instruction file that reads the values named
-     in obsnames in order, one per line from a model output file
-
-    Args:
-        obsnames (`str`): list of observation names to put in the
-            new instruction file
-        insfilename (`str`): the name of the instruction file to
-            create. Default is "model.output.ins"
-
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
     Note:
         writes a file `insfilename` with each observation read off
         of a single line
@@ -1130,7 +1101,6 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
             ("o_name_size", np.int64),
         ]
     )
-<<<<<<< HEAD
 
     pst = pyemu.Pst(pst_filename)
     par = pst.parameter_data
@@ -1208,85 +1178,6 @@ def parse_dir_for_io_files(d, prepend_path=False):
         - **[`str`]**: list of instruction files in d
         - **[`str`]**: list of output files in d
 
-=======
-
-    pst = pyemu.Pst(pst_filename)
-    par = pst.parameter_data
-    log_pars = set(par.loc[par.partrans == "log", "parnme"].values)
-    with open(rnj_filename, "rb") as f:
-        header = np.fromfile(f, dtype=header_dtype, count=1)
-
-    try:
-        base_par, base_obs = read_pestpp_runstorage(rnj_filename, irun=0)
-    except:
-        raise Exception("couldn't get base run...")
-    par = par.loc[base_par.index, :]
-    li = base_par.index.map(lambda x: par.loc[x, "partrans"] == "log")
-    base_par.loc[li] = base_par.loc[li].apply(np.log10)
-    jco_cols = {}
-    for irun in range(1, int(header["n_runs"])):
-        par_df, obs_df = read_pestpp_runstorage(rnj_filename, irun=irun)
-        par_df.loc[li] = par_df.loc[li].apply(np.log10)
-        obs_diff = base_obs - obs_df
-        par_diff = base_par - par_df
-        # check only one non-zero element per col(par)
-        if len(par_diff[par_diff.parval1 != 0]) > 1:
-            raise Exception(
-                "more than one par diff - looks like the file wasn't created during jco filling..."
-            )
-        parnme = par_diff[par_diff.parval1 != 0].index[0]
-        parval = par_diff.parval1.loc[parnme]
-
-        # derivatives
-        jco_col = obs_diff / parval
-        # some tracking, checks
-        print("processing par {0}: {1}...".format(irun, parnme))
-        print(
-            "%nzsens: {0}%...".format(
-                (jco_col[abs(jco_col.obsval) > 1e-8].shape[0] / jco_col.shape[0])
-                * 100.0
-            )
-        )
-
-        jco_cols[parnme] = jco_col.obsval
-
-    jco_cols = pd.DataFrame.from_records(
-        data=jco_cols, index=list(obs_diff.index.values)
-    )
-
-    jco_cols = pyemu.Jco.from_dataframe(jco_cols)
-
-    # write # memory considerations important here for very large matrices - break into chunks...
-    # jco_fnam = "{0}".format(filename[:-4]+".jco")
-    # jco_cols.to_binary(filename=jco_fnam, droptol=None, chunk=None)
-
-    return jco_cols
-
-
-def parse_dir_for_io_files(d, prepend_path=False):
-    """find template/input file pairs and instruction file/output file
-    pairs by extension.
-
-    Args:
-        d (`str`): directory to search for interface files
-        prepend_path (`bool`, optional): flag to prepend `d` to each file name.
-            Default is False
-
-    Note:
-        the return values from this function can be passed straight to
-        `pyemu.Pst.from_io_files()` classmethod constructor. Assumes the
-        template file names are <input_file>.tpl and instruction file names
-        are <output_file>.ins.
-
-    Returns:
-        tuple containing
-
-        - **[`str`]**: list of template files in d
-        - **[`str`]**: list of input files in d
-        - **[`str`]**: list of instruction files in d
-        - **[`str`]**: list of output files in d
-
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
     """
 
     files = os.listdir(d)
@@ -1319,13 +1210,8 @@ def pst_from_io_files(
             not None, then any existing path in front of the template or in file is split off
             and pst_path is prepended.  If python is being run in a directory other than where the control
             file will reside, it is useful to pass `pst_path` as `.`.  Default is None
-<<<<<<< HEAD
 
 
-=======
-
-
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
     Returns:
         `Pst`: new control file instance with parameter and observation names
         found in `tpl_files` and `ins_files`, repsectively.
@@ -2142,19 +2028,11 @@ class PstFromFlopyModel(object):
         if len(mlt_dfs) > 0:
             mlt_df = pd.concat(mlt_dfs, ignore_index=True)
             return mlt_df
-<<<<<<< HEAD
 
     def _write_u2d(self, u2d):
         """write a flopy.utils.Util2D instance to an ASCII text file using the
         Util2D filename
 
-=======
-
-    def _write_u2d(self, u2d):
-        """write a flopy.utils.Util2D instance to an ASCII text file using the
-        Util2D filename
-
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
         """
         filename = os.path.split(u2d.filename)[-1]
         np.savetxt(
@@ -2966,19 +2844,11 @@ class PstFromFlopyModel(object):
                 name if formed from the model namfile name.  Default is None.  The control
                 is saved in the `PstFromFlopy.m.model_ws` directory.
         Note:
-<<<<<<< HEAD
 
             calls pyemu.Pst.from_io_files
 
             calls PESTCHEK
 
-=======
-
-            calls pyemu.Pst.from_io_files
-
-            calls PESTCHEK
-
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
         """
         self.logger.statement("changing dir in to {0}".format(self.m.model_ws))
         os.chdir(self.m.model_ws)
@@ -3253,15 +3123,9 @@ class PstFromFlopyModel(object):
         line = "pyemu.helpers.apply_list_pars()\n"
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_pre_lines.append(line)
-<<<<<<< HEAD
 
     def _setup_temporal_list_pars(self):
 
-=======
-
-    def _setup_temporal_list_pars(self):
-
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
         if len(self.temporal_list_props) == 0:
             return
         self.log("processing temporal_list_props")
@@ -3789,27 +3653,8 @@ def _process_array_file(model_file, df):
                 org_arr[org_arr < lb] = lb
 
     np.savetxt(model_file, np.atleast_2d(org_arr), fmt="%15.6E", delimiter="")
-<<<<<<< HEAD
 
 
-def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
-    """a function to apply array-based multipler parameters.
-=======
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
-
-    Args:
-        arr_par (`str` or `pandas.DataFrame`): if type `str`,
-        path to csv file detailing parameter array multipliers.
-            This file can be written by PstFromFlopy.
-        if type `pandas.DataFrame` is Dataframe with columns of
-        ['mlt_file', 'model_file', 'org_file'] and optionally
-        ['pp_file', 'fac_file'].
-        chunk_len (`int`) : the number of files to process per chunk
-            with multiprocessing - applies to both fac2real and process_
-            input_files. Default is 50.
-
-<<<<<<< HEAD
-=======
 def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     """a function to apply array-based multipler parameters.
 
@@ -3824,7 +3669,6 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
             with multiprocessing - applies to both fac2real and process_
             input_files. Default is 50.
 
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
     Note:
         Used to implement the parameterization constructed by
         PstFromFlopyModel during a forward run
@@ -4118,27 +3962,15 @@ def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv"):
         org_arr = np.loadtxt(org_file)
         if "zone_file" in df.columns:
             zone_file = df.loc[df.model_file == model_input_file,"zone_file"].dropna().unique()
-<<<<<<< HEAD
-=======
-            zone_arr = None
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
             if len(zone_file) > 1:
                 zone_arr = np.zeros_like(arr)
                 for zf in zone_file:
                     za = np.loadtxt(zf)
                     zone_arr[za!=0] = 1
-<<<<<<< HEAD
             else:
                 zone_arr = np.loadtxt(zone_file[0])
             arr[zone_arr==0] = np.NaN
             org_arr[zone_arr==0] = np.NaN
-=======
-            elif len(zone_file) == 1:
-                zone_arr = np.loadtxt(zone_file[0])
-            if zone_arr is not None:
-                arr[zone_arr==0] = np.NaN
-                org_arr[zone_arr==0] = np.NaN
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
 
         for stat,func in stat_dict.items():
             v = func(arr)
@@ -6952,7 +6784,6 @@ def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
             noise.
 
     """
-<<<<<<< HEAD
 
     if not isinstance(sim_en, pyemu.ObservationEnsemble):
         raise Exception("'sim_en' must be a " + " pyemu.ObservationEnsemble instance")
@@ -7123,110 +6954,3 @@ class GsfReader():
                 node_coords[int(nid)] += [float(z)]
 
         return node_coords
-=======
-
-    if not isinstance(sim_en, pyemu.ObservationEnsemble):
-        raise Exception("'sim_en' must be a " + " pyemu.ObservationEnsemble instance")
-    if sim_en.pst.nnz_obs < 1:
-        raise Exception(" at least one non-zero weighted obs is needed")
-
-    # process the simulated ensemblet to only have non-zero weighted obs
-    obs = sim_en.pst.observation_data
-    nz_names = sim_en.pst.nnz_obs_names
-    # get the full cov matrix
-    nz_cov_df = sim_en.covariance_matrix().to_dataframe()
-    nnz_en = sim_en.loc[:, nz_names].copy()
-    nz_cov_df = nz_cov_df.loc[nz_names, nz_names]
-    # get some noise realizations
-    nnz_en.reseed()
-    obsmean = obs.loc[nnz_en.columns.values, "obsval"]
-    noise_en = pyemu.ObservationEnsemble.from_gaussian_draw(
-        sim_en.pst, num_reals=sim_en.shape[0]
-    )
-    noise_en -= obsmean  # subtract off the obs val bc we just want the noise
-    noise_en.index = nnz_en.index
-    nnz_en += noise_en
-
-    # obsval_dict = obs.loc[nnz_en.columns.values,"obsval"].to_dict()
-
-    # first calculate the 1-D subspace maha distances
-    print("calculating L-1 maha distances")
-    sim_mean = nnz_en.mean()
-    obs_mean = obs.loc[nnz_en.columns.values, "obsval"]
-    simvar_inv = 1.0 / (nnz_en.std() ** 2)
-    res_mean = sim_mean - obs_mean
-    l1_maha_sq_df = res_mean ** 2 * simvar_inv
-    l1_maha_sq_df = l1_maha_sq_df.loc[l1_maha_sq_df > l1_crit_val]
-    # now calculate the 2-D subspace maha distances
-    print("preparing L-2 maha distance containers")
-    manager = mp.Manager()
-    ns = manager.Namespace()
-    results = manager.dict()
-    mean = manager.dict(res_mean.to_dict())
-    var = manager.dict()
-    cov = manager.dict()
-    var_arr = np.diag(nz_cov_df.values)
-    for i1, o1 in enumerate(nz_names):
-        var[o1] = var_arr[i1]
-
-        cov_vals = nz_cov_df.loc[o1, :].values[i1 + 1 :]
-        ostr_vals = ["{0}_{1}".format(o1, o2) for o2 in nz_names[i1 + 1 :]]
-        cd = {o: c for o, c in zip(ostr_vals, cov_vals)}
-        cov.update(cd)
-    print("starting L-2 maha distance parallel calcs")
-    # pool = mp.Pool(processes=5)
-    with mp.get_context("spawn").Pool() as pool:
-        for i1, o1 in enumerate(nz_names):
-            o2names = [o2 for o2 in nz_names[i1 + 1 :]]
-            rresults = [
-                pool.apply_async(
-                    _l2_maha_worker,
-                    args=(o1, o2names, mean, var, cov, results, l2_crit_val),
-                )
-            ]
-        [r.get() for r in rresults]
-
-        print("closing pool")
-        pool.close()
-
-        print("joining pool")
-        pool.join()
-
-    # print(results)
-    # print(len(results),len(ostr_vals))
-
-    keys = list(results.keys())
-    onames1 = [k.split("|")[0] for k in keys]
-    onames2 = [k.split("|")[1] for k in keys]
-    l2_maha_sq_vals = [results[k] for k in keys]
-    l2_maha_sq_df = pd.DataFrame(
-        {"obsnme_1": onames1, "obsnme_2": onames2, "sq_distance": l2_maha_sq_vals}
-    )
-
-    return l1_maha_sq_df, l2_maha_sq_df
-
-
-def _l2_maha_worker(o1, o2names, mean, var, cov, results, l2_crit_val):
-
-    rresults = {}
-    v1 = var[o1]
-    c = np.zeros((2, 2))
-    c[0, 0] = v1
-    r1 = mean[o1]
-    for o2 in o2names:
-        ostr = "{0}_{1}".format(o1, o2)
-        cv = cov[ostr]
-        v2 = var[o2]
-        c[1, 1] = v2
-        c[0, 1] = cv
-        c[1, 0] = cv
-        c_inv = np.linalg.inv(c)
-
-        r2 = mean[o2]
-        r_vec = np.array([r1, r2])
-        l2_maha_sq_val = np.dot(np.dot(r_vec, c_inv), r_vec.transpose())
-        if l2_maha_sq_val > l2_crit_val:
-            rresults[ostr] = l2_maha_sq_val
-    results.update(rresults)
-    print(o1, "done")
->>>>>>> 4492d4b7db6d5e1146cb4761654d4640e1e4506a
