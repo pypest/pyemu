@@ -1,0 +1,18 @@
+START COVARIANCE_MATRIX
+  file "mat/cov_kx.mat"
+END COVARIANCE_MATRIX
+
+START COVARIANCE_MATRIX
+  file mat/cov_kz.mat
+END COVARIANCE_MATRIX
+
+START COVARIANCE_MATRIX
+  file mat/cov_por.mat
+  variance_multiplier 0.0625
+END COVARIANCE_MATRIX
+
+START STANDARD_DEVIATION
+  mass         0.15
+  enthalpy     0.035
+  heat         0.07
+END STANDARD_DEVIATION

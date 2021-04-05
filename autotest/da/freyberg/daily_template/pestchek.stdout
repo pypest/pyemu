@@ -1,0 +1,13 @@
+ PESTCHEK Version 13.0. Watermark Numerical Computing.
+
+ Errors ----->
+ No errors encountered.
+
+ Warnings ----->
+ NUMLAM is supplied as negative. This will be reset to positive. If Parallel 
+   PEST or BEOPEST is used PARLAM will automatically be set to -9999.
+ NOPTMAX provided as zero. No optimisation iterations will be carried out; 
+   objective function and residuals will be recorded for initial parameter 
+   estimates only.
+ MAXSING in the singular value decomposition section is greater than the 
+   number of adjustable parameters.

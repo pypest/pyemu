@@ -1,0 +1,13 @@
+PEST++ performance logger started at:  2020-02-11 11:49:01
+        ( time = 2020-02-11 11:49:01,  elapsed time = 671us )
+  starting to process control file
+          ( time = 2020-02-11 11:49:01,  elapsed time = 293us )
+  finished processing control file
+          ( time = 2020-02-11 11:49:01,  elapsed time = 1ms )
+    starting to read parameter csv file
+            ( time = 2020-02-11 11:49:01,  elapsed time = 169us )
+    finished reading parameter csv file
+            ( time = 2020-02-11 11:49:12,  elapsed time = 11sec )
+      starting to read parameter csv file
+              ( time = 2020-02-11 11:49:12,  elapsed time = 65us )
+      finished reading parameter csv file

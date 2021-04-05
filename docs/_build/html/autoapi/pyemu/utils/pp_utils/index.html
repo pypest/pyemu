@@ -1,0 +1,411 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyemu.utils.pp_utils &mdash; pyEMU 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> pyEMU
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.pp_utils</span></code></a><ul>
+<li><a class="reference internal" href="#module-contents">Module Contents</a><ul>
+<li><a class="reference internal" href="#functions">Functions</a><ul>
+<li><a class="reference internal" href="#pyemu.utils.pp_utils.max_colwidth">max_colwidth</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pp_utils.PP_FMT">PP_FMT</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pp_utils.PP_NAMES">PP_NAMES</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pp_utils.setup_pilotpoints_grid">setup_pilotpoints_grid</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pp_utils.pp_file_to_dataframe">pp_file_to_dataframe</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pp_utils.pp_tpl_to_dataframe">pp_tpl_to_dataframe</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pp_utils.write_pp_shapfile">write_pp_shapfile</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pp_utils.write_pp_file">write_pp_file</a></li>
+<li><a class="reference internal" href="#pyemu.utils.pp_utils.pilot_points_to_tpl">pilot_points_to_tpl</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">pyEMU</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.pp_utils</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../../_sources/autoapi/pyemu/utils/pp_utils/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pyemu.utils.pp_utils">
+<span id="pyemu-utils-pp-utils"></span><h1><a class="reference internal" href="../../../../pyemu.utils.html#module-pyemu.utils.pp_utils" title="pyemu.utils.pp_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.utils.pp_utils</span></code></a><a class="headerlink" href="#module-pyemu.utils.pp_utils" title="Permalink to this headline">¶</a></h1>
+<p>Pilot point support utilities</p>
+<div class="section" id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.pp_utils.setup_pilotpoints_grid" title="pyemu.utils.pp_utils.setup_pilotpoints_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_pilotpoints_grid</span></code></a>(ml=None, sr=None, ibound=None, prefix_dict=None, every_n_cell=4, ninst=1, use_ibound_zones=False, pp_dir='.', tpl_dir='.', shapename='pp.shp', longnames=False)</p></td>
+<td><p>setup a regularly-spaced (gridded) pilot point parameterization</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.pp_utils.pp_file_to_dataframe" title="pyemu.utils.pp_utils.pp_file_to_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pp_file_to_dataframe</span></code></a>(pp_filename)</p></td>
+<td><p>read a pilot point file to a pandas Dataframe</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.pp_utils.pp_tpl_to_dataframe" title="pyemu.utils.pp_utils.pp_tpl_to_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pp_tpl_to_dataframe</span></code></a>(tpl_filename)</p></td>
+<td><p>read a pilot points template file to a pandas dataframe</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.pp_utils.write_pp_shapfile" title="pyemu.utils.pp_utils.write_pp_shapfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_pp_shapfile</span></code></a>(pp_df, shapename=None)</p></td>
+<td><p>write pilot points dataframe to a shapefile</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.pp_utils.write_pp_file" title="pyemu.utils.pp_utils.write_pp_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_pp_file</span></code></a>(filename, pp_df)</p></td>
+<td><p>write a pilot points dataframe to a pilot points file</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="../../../../pyemu.utils.html#pyemu.utils.pp_utils.pilot_points_to_tpl" title="pyemu.utils.pp_utils.pilot_points_to_tpl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pilot_points_to_tpl</span></code></a>(pp_file, tpl_file=None, name_prefix=None, longnames=False)</p></td>
+<td><p>write a template file for a pilot points file</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py data">
+<dt id="pyemu.utils.pp_utils.max_colwidth">
+<code class="sig-prename descclassname">pyemu.utils.pp_utils.</code><code class="sig-name descname">max_colwidth</code><em class="property"> = 100</em><a class="headerlink" href="#pyemu.utils.pp_utils.max_colwidth" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt id="pyemu.utils.pp_utils.PP_FMT">
+<code class="sig-prename descclassname">pyemu.utils.pp_utils.</code><code class="sig-name descname">PP_FMT</code><a class="headerlink" href="#pyemu.utils.pp_utils.PP_FMT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt id="pyemu.utils.pp_utils.PP_NAMES">
+<code class="sig-prename descclassname">pyemu.utils.pp_utils.</code><code class="sig-name descname">PP_NAMES</code><em class="property"> = ['name', 'x', 'y', 'zone', 'parval1']</em><a class="headerlink" href="#pyemu.utils.pp_utils.PP_NAMES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pp_utils.setup_pilotpoints_grid">
+<code class="sig-prename descclassname">pyemu.utils.pp_utils.</code><code class="sig-name descname">setup_pilotpoints_grid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ml</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sr</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ibound</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">prefix_dict</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">every_n_cell</span><span class="o">=</span><span class="default_value">4</span></em>, <em class="sig-param"><span class="n">ninst</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">use_ibound_zones</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">pp_dir</span><span class="o">=</span><span class="default_value">'.'</span></em>, <em class="sig-param"><span class="n">tpl_dir</span><span class="o">=</span><span class="default_value">'.'</span></em>, <em class="sig-param"><span class="n">shapename</span><span class="o">=</span><span class="default_value">'pp.shp'</span></em>, <em class="sig-param"><span class="n">longnames</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pp_utils.setup_pilotpoints_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup a regularly-spaced (gridded) pilot point parameterization</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ml</strong> (<cite>flopy.mbase</cite>, optional) – a flopy mbase dervied type.  If None, <cite>sr</cite> must not be None.</p></li>
+<li><p><strong>sr</strong> (<cite>flopy.utils.reference.SpatialReference</cite>, optional) – a spatial reference use to
+locate the model grid in space.  If None, <cite>ml</cite> must not be None.  Default is None</p></li>
+<li><p><strong>ibound</strong> (<cite>numpy.ndarray</cite>, optional) – the modflow ibound integer array.  THis is used to
+set pilot points only in active areas. If None and ml is None, then pilot points
+are set in all rows and columns according to <cite>every_n_cell</cite>.  Default is None.</p></li>
+<li><p><strong>prefix_dict</strong> (<cite>dict</cite>) – a dictionary of layer index, pilot point parameter prefix(es) pairs.
+For example : <cite>{0:[“hk,”vk”]}</cite> would setup pilot points with the prefix “hk” and “vk” for
+model layer 1. If None, a generic set of pilot points with
+the “pp” prefix are setup for a generic nrow by ncol grid. Default is None</p></li>
+<li><p><strong>ninst</strong> (<cite>int</cite>) – Number of instances of pilot_points to set up.
+e.g. number of layers. If ml is None and prefix_dict is None,
+this is used to set up default prefix_dict.</p></li>
+<li><p><strong>use_ibound_zones</strong> (<cite>bool</cite>) – a flag to use the greater-than-zero values in the
+ibound as pilot point zones.  If False ,ibound values greater than zero are
+treated as a single zone.  Default is False.</p></li>
+<li><p><strong>pp_dir</strong> (<cite>str</cite>, optional) – directory to write pilot point files to.  Default is ‘.’</p></li>
+<li><p><strong>tpl_dir</strong> (<cite>str</cite>, optional) – directory to write pilot point template file to.  Default is ‘.’</p></li>
+<li><p><strong>shapename</strong> (<cite>str</cite>, optional) – name of shapefile to write that contains pilot
+point information. Default is “pp.shp”</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe summarizing pilot point information (same information
+written to <cite>shapename</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">flopy</span><span class="o">.</span><span class="n">modflow</span><span class="o">.</span><span class="n">Modflow</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;my.nam&quot;</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pp_utils</span><span class="o">.</span><span class="n">setup_pilotpoints_grid</span><span class="p">(</span><span class="n">ml</span><span class="o">=</span><span class="n">m</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pp_utils.pp_file_to_dataframe">
+<code class="sig-prename descclassname">pyemu.utils.pp_utils.</code><code class="sig-name descname">pp_file_to_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pp_filename</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pp_utils.pp_file_to_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a pilot point file to a pandas Dataframe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pp_filename</strong> (<cite>str</cite>) – path and name of an existing pilot point file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with <cite>pp_utils.PP_NAMES</cite> for columns</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pp_utils</span><span class="o">.</span><span class="n">pp_file_to_dataframe</span><span class="p">(</span><span class="s2">&quot;my_pp.dat&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pp_utils.pp_tpl_to_dataframe">
+<code class="sig-prename descclassname">pyemu.utils.pp_utils.</code><code class="sig-name descname">pp_tpl_to_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tpl_filename</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pp_utils.pp_tpl_to_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>read a pilot points template file to a pandas dataframe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>tpl_filename</strong> (<cite>str</cite>) – path and name of an existing pilot points
+template file</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe of pilot point info with “parnme” included</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Use for processing pilot points since the point point file itself may
+have generic “names”.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">pp_utils</span><span class="o">.</span><span class="n">pp_tpl_file_to_dataframe</span><span class="p">(</span><span class="s2">&quot;my_pp.dat.tpl&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pp_utils.write_pp_shapfile">
+<code class="sig-prename descclassname">pyemu.utils.pp_utils.</code><code class="sig-name descname">write_pp_shapfile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pp_df</span></em>, <em class="sig-param"><span class="n">shapename</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pp_utils.write_pp_shapfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>write pilot points dataframe to a shapefile</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pp_df</strong> (<cite>pandas.DataFrame</cite>) – pilot point dataframe (must include “x” and “y”
+columns).  If <cite>pp_df</cite> is a string, it is assumed to be a pilot points file
+and is loaded with <cite>pp_utils.pp_file_to_dataframe</cite>. Can also be a list of
+<cite>pandas.DataFrames</cite> and/or filenames.</p></li>
+<li><p><strong>shapename</strong> (<cite>str</cite>) – the shapefile name to write.  If <cite>None</cite> , <cite>pp_df</cite> must be a string
+and shapefile is saved as <cite>pp_df</cite> +”.shp”</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>requires pyshp</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pp_utils.write_pp_file">
+<code class="sig-prename descclassname">pyemu.utils.pp_utils.</code><code class="sig-name descname">write_pp_file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">pp_df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pp_utils.write_pp_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a pilot points dataframe to a pilot points file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<cite>str</cite>) – pilot points file to write</p></li>
+<li><p><strong>pp_df</strong> (<cite>pandas.DataFrame</cite>) – a dataframe that has
+at least columns “x”,”y”,”zone”, and “value”</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyemu.utils.pp_utils.pilot_points_to_tpl">
+<code class="sig-prename descclassname">pyemu.utils.pp_utils.</code><code class="sig-name descname">pilot_points_to_tpl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pp_file</span></em>, <em class="sig-param"><span class="n">tpl_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">name_prefix</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">longnames</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.utils.pp_utils.pilot_points_to_tpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a template file for a pilot points file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pp_file</strong> – (<cite>str</cite>): existing pilot points file</p></li>
+<li><p><strong>tpl_file</strong> (<cite>str</cite>) – template file name to write.  If None,
+<cite>pp_file`+”.tpl” is used.  Default is `None</cite>.</p></li>
+<li><p><strong>name_prefix</strong> (<cite>str</cite>) – name to prepend to parameter names for each
+pilot point.  For example, if <cite>name_prefix = “hk_”</cite>, then each
+pilot point parameters will be named “hk_0001”,”hk_0002”, etc.
+If None, parameter names from <cite>pp_df.name</cite> are used.
+Default is None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with pilot point information
+(name,x,y,zone,parval1) with the parameter information
+(parnme,tpl_str)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

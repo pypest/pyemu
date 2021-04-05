@@ -1,0 +1,86 @@
+
+PANTHER master listening on socket:0.0.0.0:4005 (IPv4)
+running model 25 times
+
+    waiting for agents to appear...
+
+
+02/11/20 11:49:03->new connection from: localhost:51468
+02/11/20 11:49:03->new connection from: localhost:51469
+02/11/20 11:49:03->new connection from: localhost:51470
+02/11/20 11:49:03->initializing new agent connection from: localhost:51468, number of agents: 3, working dir: /Users/jwhite/Dev/pyemu/autotest/moouu/worker_0
+02/11/20 11:49:03->new connection from: localhost:51471
+02/11/20 11:49:03->initializing new agent connection from: localhost:51469, number of agents: 4, working dir: /Users/jwhite/Dev/pyemu/autotest/moouu/worker_1
+02/11/20 11:49:03->new connection from: localhost:51472
+02/11/20 11:49:03->initializing new agent connection from: localhost:51470, number of agents: 5, working dir: /Users/jwhite/Dev/pyemu/autotest/moouu/worker_2
+02/11/20 11:49:03->new connection from: localhost:51473
+02/11/20 11:49:03->initializing new agent connection from: localhost:51471, number of agents: 6, working dir: /Users/jwhite/Dev/pyemu/autotest/moouu/worker_3
+02/11/20 11:49:03->new connection from: localhost:51474
+02/11/20 11:49:03->initializing new agent connection from: localhost:51472, number of agents: 7, working dir: /Users/jwhite/Dev/pyemu/autotest/moouu/worker_4
+02/11/20 11:49:03->new connection from: localhost:51475
+02/11/20 11:49:03->initializing new agent connection from: localhost:51473, number of agents: 8, working dir: /Users/jwhite/Dev/pyemu/autotest/moouu/worker_5
+02/11/20 11:49:03->initializing new agent connection from: localhost:51474, number of agents: 8, working dir: /Users/jwhite/Dev/pyemu/autotest/moouu/worker_6
+02/11/20 11:49:03->initializing new agent connection from: localhost:51475, number of agents: 8, working dir: /Users/jwhite/Dev/pyemu/autotest/moouu/worker_7
+02/11/20 11:49:03->new agent ready: localhost:51468
+02/11/20 11:49:03->Sending run 0 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_0  (group id:2, run id:0, concurrent runs:1)
+02/11/20 11:49:03->new agent ready: localhost:51469
+02/11/20 11:49:03->Sending run 1 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_1  (group id:2, run id:1, concurrent runs:1)
+02/11/20 11:49:03->new agent ready: localhost:51470
+02/11/20 11:49:03->Sending run 2 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_2  (group id:2, run id:2, concurrent runs:1)
+02/11/20 11:49:03->new agent ready: localhost:51471
+02/11/20 11:49:03->Sending run 3 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_3  (group id:2, run id:3, concurrent runs:1)
+02/11/20 11:49:03->new agent ready: localhost:51472
+02/11/20 11:49:03->Sending run 4 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_4  (group id:2, run id:4, concurrent runs:1)
+02/11/20 11:49:03->new agent ready: localhost:51473
+02/11/20 11:49:03->Sending run 5 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_5  (group id:2, run id:5, concurrent runs:1)
+02/11/20 11:49:03->new agent ready: localhost:51474
+02/11/20 11:49:03->Sending run 6 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_6  (group id:2, run id:6, concurrent runs:1)
+02/11/20 11:49:04->new agent ready: localhost:51475
+02/11/20 11:49:04->Sending run 7 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_7  (group id:2, run id:7, concurrent runs:1)
+02/11/20 11:49:06->run 0 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_0  (run time:0.0372833 min, avg run time:0.0372833 min, group id:2, run id: 0 concurrent:1)
+02/11/20 11:49:06->Sending run 8 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_0  (group id:2, run id:8, concurrent runs:1)
+02/11/20 11:49:06->run 1 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_1  (run time:0.0373667 min, avg run time:0.037325 min, group id:2, run id: 1 concurrent:1)
+02/11/20 11:49:06->Sending run 9 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_1  (group id:2, run id:9, concurrent runs:1)
+02/11/20 11:49:06->run 2 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_2  (run time:0.03735 min, avg run time:0.0373333 min, group id:2, run id: 2 concurrent:1)
+02/11/20 11:49:06->Sending run 10 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_2  (group id:2, run id:10, concurrent runs:1)
+02/11/20 11:49:06->run 3 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_3  (run time:0.0374167 min, avg run time:0.0373542 min, group id:2, run id: 3 concurrent:1)
+02/11/20 11:49:06->Sending run 11 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_3  (group id:2, run id:11, concurrent runs:1)
+02/11/20 11:49:06->run 4 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_4  (run time:0.0374667 min, avg run time:0.0373767 min, group id:2, run id: 4 concurrent:1)
+02/11/20 11:49:06->Sending run 12 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_4  (group id:2, run id:12, concurrent runs:1)
+02/11/20 11:49:06->run 5 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_5  (run time:0.0374 min, avg run time:0.0373806 min, group id:2, run id: 5 concurrent:1)
+02/11/20 11:49:06->Sending run 13 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_5  (group id:2, run id:13, concurrent runs:1)
+02/11/20 11:49:06->run 6 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_6  (run time:0.0372333 min, avg run time:0.0373595 min, group id:2, run id: 6 concurrent:1)
+02/11/20 11:49:06->Sending run 14 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_6  (group id:2, run id:14, concurrent runs:1)
+02/11/20 11:49:06->run 7 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_7  (run time:0.0370667 min, avg run time:0.0373229 min, group id:2, run id: 7 concurrent:1)
+02/11/20 11:49:06->Sending run 15 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_7  (group id:2, run id:15, concurrent runs:1)
+02/11/20 11:49:08->run 8 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_0  (run time:0.0373333 min, avg run time:0.0373292 min, group id:2, run id: 8 concurrent:1)
+02/11/20 11:49:08->Sending run 16 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_0  (group id:2, run id:16, concurrent runs:1)
+02/11/20 11:49:08->run 9 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_1  (run time:0.0373167 min, avg run time:0.0373229 min, group id:2, run id: 9 concurrent:1)
+02/11/20 11:49:08->run 10 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_2  (run time:0.0372333 min, avg run time:0.0373083 min, group id:2, run id: 10 concurrent:1)
+02/11/20 11:49:08->Sending run 17 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_1  (group id:2, run id:17, concurrent runs:1)
+02/11/20 11:49:08->Sending run 18 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_2  (group id:2, run id:18, concurrent runs:1)
+02/11/20 11:49:08->run 11 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_3  (run time:0.0373167 min, avg run time:0.0372958 min, group id:2, run id: 11 concurrent:1)
+02/11/20 11:49:08->Sending run 19 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_3  (group id:2, run id:19, concurrent runs:1)
+02/11/20 11:49:08->run 12 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_4  (run time:0.0373333 min, avg run time:0.0372792 min, group id:2, run id: 12 concurrent:1)
+02/11/20 11:49:08->Sending run 20 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_4  (group id:2, run id:20, concurrent runs:1)
+02/11/20 11:49:08->run 13 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_5  (run time:0.0373167 min, avg run time:0.0372688 min, group id:2, run id: 13 concurrent:1)
+02/11/20 11:49:08->Sending run 21 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_5  (group id:2, run id:21, concurrent runs:1)
+02/11/20 11:49:08->run 14 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_6  (run time:0.0373167 min, avg run time:0.0372792 min, group id:2, run id: 14 concurrent:1)
+02/11/20 11:49:08->Sending run 22 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_6  (group id:2, run id:22, concurrent runs:1)
+02/11/20 11:49:08->run 15 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_7  (run time:0.03715 min, avg run time:0.0372896 min, group id:2, run id: 15 concurrent:1)
+02/11/20 11:49:08->Sending run 23 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_7  (group id:2, run id:23, concurrent runs:1)
+02/11/20 11:49:10->run 16 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_0  (run time:0.0373167 min, avg run time:0.0372875 min, group id:2, run id: 16 concurrent:1)
+02/11/20 11:49:10->Sending run 24 to: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_0  (group id:2, run id:24, concurrent runs:1)
+02/11/20 11:49:10->run 17 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_1  (run time:0.03725 min, avg run time:0.0372792 min, group id:2, run id: 17 concurrent:1)
+02/11/20 11:49:10->run 18 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_2  (run time:0.0372333 min, avg run time:0.0372792 min, group id:2, run id: 18 concurrent:1)
+02/11/20 11:49:10->run 19 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_3  (run time:0.0373167 min, avg run time:0.0372792 min, group id:2, run id: 19 concurrent:1)
+02/11/20 11:49:10->run 20 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_4  (run time:0.0372833 min, avg run time:0.0372729 min, group id:2, run id: 20 concurrent:1)
+02/11/20 11:49:10->run 21 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_5  (run time:0.0372333 min, avg run time:0.0372625 min, group id:2, run id: 21 concurrent:1)
+02/11/20 11:49:10->run 22 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_6  (run time:0.0372667 min, avg run time:0.0372563 min, group id:2, run id: 22 concurrent:1)
+02/11/20 11:49:10->run 23 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_7  (run time:0.0372 min, avg run time:0.0372625 min, group id:2, run id: 23 concurrent:1)
+02/11/20 11:49:12->run 24 received from: localhost$/Users/jwhite/Dev/pyemu/autotest/moouu/worker_0  (run time:0.0372667 min, avg run time:0.0372562 min, group id:2, run id: 24 concurrent:1)
+
+---------------------
+   25 runs complete :  0 runs failed
+
+

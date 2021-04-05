@@ -1,0 +1,9 @@
+0) update setup.py docs2/conf.pygit p to new version and 
+1) checkout master and merge
+1.5) make sure version is updated in setup.py
+2) tag new version in master branch
+2.5) remove any existing dist, build, egg, etc
+3) python setup.py sdist bdist_wheel
+4) twine upload dist/*
+5) update README.md to point to build and coverage status for master
+6) update docs with make html, copy build dir to pyemudocs repo (on gh-pages branch) then push 

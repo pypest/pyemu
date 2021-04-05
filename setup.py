@@ -3,17 +3,17 @@ import sys
 from setuptools import setup
 
 long_description = \
-"""pyemu is a set of python modules for linear-based model-independent uncertainty analyses.
+"""pyemu is a set of python modules for interfacing with PEST and PEST++.
 """ 
 
 setup(name="pyemu",
       description=long_description,
       long_description=long_description,      
-      author="Jeremy White",
-      author_email='jwhite@usgs.gov',
-      url='https://github.com/jtwhite79/pyemu',
-      download_url = 'https://github.com/jtwhite79/pyemu/tarball/0.3',
+      author="Jeremy White, Mike Fienen,Brioch Hemmings",
+      author_email='jtwhite1000@gmail.com,mnfienen@usgs.gov,b.hemmings@gns.cri.nz',
+      url='https://github.com/pypest/pyemu',
+      download_url = 'https://github.com/jtwhite79/pyemu/tarball/1.0.0',
       license='New BSD',
-      platforms='Windows, Mac OS-X',
-      packages = ["pyemu","pyemu.pst","pyemu.utils","pyemu.mat"],
-      version="0.3")
+      platforms='Windows, Mac OS-X, Linux',
+      packages = ["pyemu","pyemu.pst","pyemu.plot","pyemu.utils","pyemu.mat","pyemu.prototypes"],
+      version="1.0.0")

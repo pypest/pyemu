@@ -1,0 +1,64 @@
+pcf
+* control data
+restart estimation
+   11   20     1      0    1
+     2     1   single   point   1   0   0
+ 1e-1   -4.0   0.3  0.03    10	    999
+5.0   5.0   1.0e-3
+0.1  
+-1  .005  4   4  .005   4
+1    1    1
+* singular value decomposition
+1
+11  1.0000000E-06 
+0
+* parameter groups
+k     relative     1.0000E-02   0.000      switch      2.000      parabolic
+* parameter data
+stage   none   factor      1.0       1.00000E-01   3.00000E+00  k      1.0000       0.000        1 
+k_01     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
+k_02     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
+k_03     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
+k_04     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
+k_05     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
+k_06     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
+k_07     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
+k_08     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
+k_09     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
+k_10     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1 
+* observation groups
+head
+* observation data
+h01_01    1.500000E+00 0.0 head
+h01_02    1.700000E+00 0.0 head
+h01_03    1.900000E+00 0.0 head
+h01_04    2.100000E+00 10.0 head
+h01_05    2.300000E+00 0.0 head
+h01_06    2.500000E+00 10.0 head
+h01_07    2.700000E+00 0.0 head
+h01_08    2.900000E+00 0.0 head
+h01_09    3.100000E+00 0.0 head
+h01_10    3.300000E+00 0.0 head
+h02_01    1.500000E+00 0.0 head
+h02_02    1.900000E+00 0.0 head
+h02_03    2.300000E+00 0.0 head
+h02_04    2.700000E+00 0.0 head
+h02_05    3.100000E+00 0.0 head
+h02_06    3.500000E+00 0.0 head
+h02_07    3.900000E+00 0.0 head
+h02_08    4.300000E+00 0.0 head
+h02_09    4.700000E+00 0.0 head
+h02_10    5.100000E+00 0.0 head
+* model command line
+mf2005 10par_xsec.nam
+* model input/output
+k.tpl hk_Layer_1.ref
+strt_Layer_1.tpl strt_Layer_1.ref
+head.ins 10par_xsec.hds
+++# PEST++ optional input
+++# SVD_PACK(PROPACK)
+++ N_ITER_BASE(1)
+++ N_ITER_SUPER(4)
+++ SUPER_EIGTHRES(1.0e-8)
+++ MAX_N_SUPER(10)
+++ AUTO_NORM(4)

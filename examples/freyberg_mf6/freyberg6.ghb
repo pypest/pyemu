@@ -1,0 +1,14 @@
+BEGIN Options
+  PRINT_INPUT
+  PRINT_FLOWS
+  SAVE_FLOWS
+END Options
+
+BEGIN Dimensions
+  MAXBOUND  30
+END Dimensions
+
+BEGIN PERIOD  1
+    OPEN/CLOSE  'freyberg6.ghb_stress_period_data_1.txt'
+END PERIOD  1
+

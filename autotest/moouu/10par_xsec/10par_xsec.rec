@@ -1,0 +1,254 @@
+             pestpp-swp.exe - a parameteric sweep utility
+for PEST(++) datasets 
+
+                 by the PEST++ developement team
+
+
+
+using control file: "10par_xsec.pst"
+
+
+
+version: 4.3.0
+binary compiled on Dec 10 2019 at 16:34:06
+
+using control file: "10par_xsec.pst"
+
+in directory: "/Users/jwhite/Dev/pyemu/autotest/moouu/10par_xsec"
+
+Note: 3 unused lines in pest control file:
+  -->  line number 6: '1e-1   -4.0   0.3  0.03    10	    999' 
+  -->  line number 10: '1    1    1' 
+  -->  line number 12: '1' 
+
+
+binary compiled on Dec 10 2019 at 16:32:51
+
+
+pestmode:- 
+   estimation
+
+Case dimensions:- 
+    Number of parameters = 11
+    Number of adjustable parameters = 11
+    Number of observations = 20
+    Number of prior estimates = 0
+
+PEST Control Information
+    relparmax = 5
+    facparmax = 5
+    facorig = 0.001
+    phiredswh = 0.1
+    noptmax = 20
+    phiredstp = 0.005
+    nphistp = 4
+    nphinored = 4
+    relparstp = 0.005
+    nrelpar = 4
+
+
+    PEST++ OPTIONS: 
+
+...general options (used in multiple tools): 
+svd_pack: redsvd
+lambda_scale_fac: 0.75,1,1.1,
+max_run_fail: 3
+yamr_poll_interval: 1
+parameter_covariance: 
+observation_covariance: 
+hotstart_resfile: 
+overdue_resched_fac: 100
+overdue_giveup_minutes: 1e+30
+condor_submit_file: 
+tie_by_group: 0
+par_sigma_range: 4
+enforce_tied_bounds: 0
+debug_parse_only: 0
+debug_parse_only: 0
+check_tplins: 1
+fill_tpl_zeros: 0
+additional_ins_delimiters: 
+
+...pestpp-glm specific options:
+max_n_super: 1000000
+super_eigthresh: 1e-06
+n_iter_base: 1000000
+n_iter_super: 0
+super_relparmax: 0.1
+max_super_frz_iter: 5
+max_reg_iter: 20
+lambdas: 0.1,1,10,100,1000,
+iteration_summary: 1
+der_forgive: 1
+uncertainty: 1
+forecasts: 
+base_jacobian: 
+glm_num_reals: 0
+jac_scale: 1
+de_f: 0.8
+de_cr: 0.9
+de_pop_size: 40
+de_max_gen: 100
+de_dither_f: 1
+
+...pestpp-swp options:
+sweep_parameter_csv_file: sweep_in.csv
+sweep_output_csv_file: sweep_out.csv
+sweep_chunk: 500
+sweep_forgive: 0
+sweep_base_run: 0
+
+...pestpp-opt options:
+opt_objective_function: 
+opt_coin_log: 1
+opt_skip_final: 0
+opt_std_weights0
+opt_decision_variable_groups: 
+opt_external_variable_groups: 
+opt_constraint_groups: 
+opt_risk: 0.5
+opt_iter_derinc_fac: 1
+opt_direction: 1
+opt_iter_tol: 0.001
+opt_recalc_fosm_every: 1
+opt_include_bnd_pi: 1
+
+...pestpp-ies options:
+ies_parameter_ensemble: 
+ies_observation_ensemble: 
+ies_restart_parameter_ensemble: 
+ies_restart_observation_ensemble: 
+ies_use_approximate_solution: 1
+ies_lambda_mults: 0.1,1,10,
+ies_initial_lambda: -999
+ies_use_approx: 1
+ies_subset_size: 4
+ies_reg_factor: 0
+ies_verbose_level: 0
+ies_use_prior_scaling: 0
+ies_num_reals: 50
+ies_bad_phi: 1e+300
+ies_bad_phi_sigma: 1e+300
+ies_include_base: 1
+ies_use_empirical_prior: 0
+ies_group_draws: 1
+ies_enforce_bounds: 1
+ies_save_binary: 0
+ies_localizer: 
+ies_accept_phi_fac: 1.05
+ies_lambda_inc_fac: 10
+ies_lambda_dec_fac: 0.75
+ies_save_lambda_ensembles: 0
+ies_weights_ensemble: 
+ies_subset_how: RANDOM
+ies_localize_how: PARAMETERS
+ies_num_threads: -1
+ies_debug_fail_subset: 0
+ies_debug_fail_remainder: 0
+ies_debug_bad_phi: 0
+ies_debug_upgrade_only: 0
+ies_debug_high_subset_phi: 0
+ies_debug_high_upgrade_phi: 0
+ies_csv_by_reals: 1
+ies_autoadaloc: 0
+ies_autoadaloc_sigma_dist: 1
+ies_enforce_chglim: 0
+ies_center_on: 
+ies_no_noise: 0
+
+pestpp-sen options: 
+gsa_method: MORRIS
+gsa_morris_pooled_obs: 0
+gsa_morris_obs_sen: 1
+gsa_morris_p: 4
+gsa_morris_r: 4
+gsa_morris_delta: 0.6666
+gsa_sobol_samples: 4
+gsa_sobol_par_dist: norm
+
+
+
+Model command line(s):- 
+    mfnwt 10par_xsec.nam
+
+Model interface files:-
+    template files:
+      k.tpl
+      strt_Layer_1.tpl
+    model input files:
+      hk_Layer_1.ref
+      strt_Layer_1.ref
+
+    instruction files:
+      head.ins
+    model output files:
+      10par_xsec.hds
+
+
+Parameter group information
+NAME            INCREMENT TYPE     DERIVATIVE INCREMENT    INCREMENT LOWER BOUND  FORCE CENTRAL     INCREMENT MULTIPLIER
+k                     RELATIVE                     0.01                        0         SWITCH                        2
+
+
+
+Parameter information
+NAME           TRANSFORMATION        CHANGE LIMIT  INITIAL VALUE    LOWER BOUND    UPPER BOUND          GROUP          SCALE         OFFSET  DERIVATIVE COMMAND
+stage          none                    FACTOR              1              0              2              k              1              0                   1
+k_01           log                     FACTOR            2.5          0.025             25              k              1              0                   1
+k_02           log                     FACTOR            2.5          0.025             25              k              1              0                   1
+k_03           log                     FACTOR            2.5          0.025             25              k              1              0                   1
+k_04           log                     FACTOR            2.5          0.025             25              k              1              0                   1
+k_05           log                     FACTOR            2.5          0.025             25              k              1              0                   1
+k_06           log                     FACTOR            2.5          0.025             25              k              1              0                   1
+k_07           log                     FACTOR            2.5          0.025             25              k              1              0                   1
+k_08           log                     FACTOR            2.5          0.025             25              k              1              0                   1
+k_09           log                     FACTOR            2.5          0.025             25              k              1              0                   1
+k_10           log                     FACTOR            2.5          0.025             25              k              1              0                   1
+
+
+
+Observation information
+NAME                                    VALUE               GROUP              WEIGHT
+h01_01                                    1.5                head                   0
+h01_02                                    1.7                head                   0
+h01_03                                    1.9                head                   0
+h01_04                                    2.1                head                  10
+h01_05                                    2.3                head                   0
+h01_06                                    2.5                head                  10
+h01_07                                    2.7                head                   0
+h01_08                                    2.9                head                   0
+h01_09                                    3.1                head                   0
+h01_10                                    3.3                head                   0
+h02_01                                    1.5                head                   0
+h02_02                                    1.9                head                   0
+h02_03                                    2.3                head                   0
+h02_04                                    2.7                head                   0
+h02_05                                    3.1                head                   0
+h02_06                                    3.5                head                   0
+h02_07                                    3.9                head                   0
+h02_08                                    4.3                head                   0
+h02_09                                    4.7                head                   0
+h02_10                                    5.1                head                   0
+
+
+
+Prior information
+
+   no prior information provided
+
+
+
+PEST SVD Information
+    maxsing = 11
+    eigthresh = 1e-06
+
+
+PEST++ arguments:
+SWEEP_PARAMETER_CSV_FILE = SWEEP_IN.CSV
+
+
+
+    sweep parameter csv file = sweep_in.csv                                      
+    sweep output csv file = sweep_out.csv                                     
+    sweep chunk size = 500       
+    sweep forgive failed runs = 0         

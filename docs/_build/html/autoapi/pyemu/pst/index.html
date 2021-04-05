@@ -1,0 +1,1863 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyemu.pst &mdash; pyEMU 1.0.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> pyEMU
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.pst</span></code></a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#package-contents">Package Contents</a><ul>
+<li><a class="reference internal" href="#classes">Classes</a><ul>
+<li><a class="reference internal" href="#pyemu.pst.ControlData">ControlData</a><ul>
+<li><a class="reference internal" href="#pyemu.pst.ControlData.__setattr__">__setattr__</a></li>
+<li><a class="reference internal" href="#pyemu.pst.ControlData.__getattr__">__getattr__</a></li>
+<li><a class="reference internal" href="#pyemu.pst.ControlData.get_dataframe">get_dataframe</a></li>
+<li><a class="reference internal" href="#pyemu.pst.ControlData._parse_value">_parse_value</a></li>
+<li><a class="reference internal" href="#pyemu.pst.ControlData.parse_values_from_lines">parse_values_from_lines</a></li>
+<li><a class="reference internal" href="#pyemu.pst.ControlData.copy">copy</a></li>
+<li><a class="reference internal" href="#pyemu.pst.ControlData.formatted_values">formatted_values</a></li>
+<li><a class="reference internal" href="#pyemu.pst.ControlData.write_keyword">write_keyword</a></li>
+<li><a class="reference internal" href="#pyemu.pst.ControlData.write">write</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pyemu.pst.Pst">Pst</a><ul>
+<li><a class="reference internal" href="#pyemu.pst.Pst.parameter_data">parameter_data</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.observation_data">observation_data</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.prior_information">prior_information</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.control_data">control_data</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.svd_data">svd_data</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.reg_data">reg_data</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.__setattr__">__setattr__</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.from_par_obs_names">from_par_obs_names</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.phi">phi</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.phi_components">phi_components</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.phi_components_normalized">phi_components_normalized</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.set_res">set_res</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.res">res</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.nprior">nprior</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.nnz_obs">nnz_obs</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.nobs">nobs</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.npar_adj">npar_adj</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.npar">npar</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.forecast_names">forecast_names</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.obs_groups">obs_groups</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.nnz_obs_groups">nnz_obs_groups</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.adj_par_groups">adj_par_groups</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.par_groups">par_groups</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.prior_groups">prior_groups</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.prior_names">prior_names</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.par_names">par_names</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.adj_par_names">adj_par_names</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.obs_names">obs_names</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.nnz_obs_names">nnz_obs_names</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.zero_weight_obs_names">zero_weight_obs_names</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.estimation">estimation</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.tied">tied</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._read_df">_read_df</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._read_line_comments">_read_line_comments</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._read_section_comments">_read_section_comments</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._parse_external_line">_parse_external_line</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._parse_path_agnostic">_parse_path_agnostic</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._cast_df_from_lines">_cast_df_from_lines</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._cast_prior_df_from_lines">_cast_prior_df_from_lines</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._load_version2">_load_version2</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.load">load</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._parse_pestpp_line">_parse_pestpp_line</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._update_control_section">_update_control_section</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.rectify_pgroups">rectify_pgroups</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._parse_pi_par_names">_parse_pi_par_names</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.add_pi_equation">add_pi_equation</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.rectify_pi">rectify_pi</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._write_df">_write_df</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.sanity_checks">sanity_checks</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._write_version2">_write_version2</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.write">write</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._write_version1">_write_version1</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.bounds_report">bounds_report</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.get">get</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.parrep">parrep</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.adjust_weights_discrepancy">adjust_weights_discrepancy</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._adjust_weights_by_phi_components">_adjust_weights_by_phi_components</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.__reset_weights">__reset_weights</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._adjust_weights_by_list">_adjust_weights_by_list</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.adjust_weights">adjust_weights</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.proportional_weights">proportional_weights</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.calculate_pertubations">calculate_pertubations</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.build_increments">build_increments</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.add_transform_columns">add_transform_columns</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.enforce_bounds">enforce_bounds</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.from_io_files">from_io_files</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.add_parameters">add_parameters</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.add_observations">add_observations</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.write_input_files">write_input_files</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.process_output_files">process_output_files</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.get_res_stats">get_res_stats</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._stats_rss">_stats_rss</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._stats_mean">_stats_mean</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._stats_mae">_stats_mae</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._stats_rmse">_stats_rmse</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._stats_nrmse">_stats_nrmse</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.plot">plot</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.write_par_summary_table">write_par_summary_table</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.write_obs_summary_table">write_obs_summary_table</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._is_less_const">_is_less_const</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.less_than_obs_constraints">less_than_obs_constraints</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.less_than_pi_constraints">less_than_pi_constraints</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst._is_greater_const">_is_greater_const</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.greater_than_obs_constraints">greater_than_obs_constraints</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.greater_than_pi_constraints">greater_than_pi_constraints</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.get_par_change_limits">get_par_change_limits</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.get_adj_pars_at_bounds">get_adj_pars_at_bounds</a></li>
+<li><a class="reference internal" href="#pyemu.pst.Pst.try_parse_name_metadata">try_parse_name_metadata</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">pyEMU</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+      <li><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.pst</span></code></li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/autoapi/pyemu/pst/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-pyemu.pst">
+<span id="pyemu-pst"></span><h1><a class="reference internal" href="../../../pyemu.pst.html#module-pyemu.pst" title="pyemu.pst"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.pst</span></code></a><a class="headerlink" href="#module-pyemu.pst" title="Permalink to this headline">¶</a></h1>
+<p>This is the pyemu module for handling PEST control files. It provides functionality
+for reading and writing control files, creating new control files, and manipulating
+all sections of the control file.  The primary object is the Pst…start there.</p>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pst_controldata/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.pst.pst_controldata</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="pst_handler/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.pst.pst_handler</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="pst_utils/index.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pyemu.pst.pst_utils</span></code></a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="package-contents">
+<h2>Package Contents<a class="headerlink" href="#package-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this headline">¶</a></h3>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyemu.pst.ControlData" title="pyemu.pst.ControlData"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ControlData</span></code></a></p></td>
+<td><p>an object that encapsulates the control data section</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyemu.pst.Pst" title="pyemu.pst.Pst"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Pst</span></code></a></p></td>
+<td><p>All things PEST(++) control file</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt id="pyemu.pst.ControlData">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.pst.</code><code class="sig-name descname">ControlData</code><a class="headerlink" href="#pyemu.pst.ControlData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="simple">
+<dt>an object that encapsulates the control data section</dt><dd><p>of the PEST control file</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This class works hard to protect the variables in the control data section.
+It type checks attempts to change values to make sure the type being passed
+matches the expected type of the attribute.</p>
+<dl class="py method">
+<dt id="pyemu.pst.ControlData.__setattr__">
+<code class="sig-name descname">__setattr__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.ControlData.__setattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implement setattr(self, name, value).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.ControlData.__getattr__">
+<code class="sig-name descname">__getattr__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">item</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.ControlData.__getattr__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.ControlData.get_dataframe">
+<em class="property">static </em><code class="sig-name descname">get_dataframe</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.ControlData.get_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a generic (default) control section as a dataframe</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a dataframe of control data information</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.ControlData._parse_value">
+<em class="property">static </em><code class="sig-name descname">_parse_value</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.ControlData._parse_value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.ControlData.parse_values_from_lines">
+<code class="sig-name descname">parse_values_from_lines</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">lines</span></em>, <em class="sig-param"><span class="n">iskeyword</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.ControlData.parse_values_from_lines" title="Permalink to this definition">¶</a></dt>
+<dd><p>cast the string lines for a pest control file into actual inputs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>lines</strong> ([<cite>str</cite>]) – raw ASCII lines from pest control file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.ControlData.copy">
+<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.ControlData.copy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.ControlData.formatted_values">
+<em class="property">property </em><code class="sig-name descname">formatted_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.ControlData.formatted_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>list the entries and current values in the control data section</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>formatted_values for the control data entries</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>pandas.Series</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.ControlData.write_keyword">
+<code class="sig-name descname">write_keyword</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">f</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.ControlData.write_keyword" title="Permalink to this definition">¶</a></dt>
+<dd><p>write the control data entries to an open file handle
+using keyword-style format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>f</strong> (<em>file handle</em>) – open file handle to write to</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>only writes values that have been accessed since instantiation</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.ControlData.write">
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">f</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.ControlData.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>write control data section to a file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>f</strong> (<em>file handle</em>) – open file handle to write to</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyemu.pst.Pst">
+<em class="property">class </em><code class="sig-prename descclassname">pyemu.pst.</code><code class="sig-name descname">Pst</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em>, <em class="sig-param"><span class="n">load</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">resfile</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>All things PEST(++) control file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<cite>str</cite>) – the name of the control file</p></li>
+<li><p><strong>load</strong> (<cite>bool</cite>, optional) – flag to load the control file. Default is True</p></li>
+<li><p><strong>resfile</strong> (<cite>str</cite>, optional) – corresponding residual file.  If <cite>None</cite>, a residual file
+with the control file base name is sought.  Default is <cite>None</cite></p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This class is the primary mechanism for dealing with PEST control files.  Support is provided
+for constructing new control files as well as manipulating existing control files.</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">control_data</span><span class="o">.</span><span class="n">noptmax</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;my_new.pst&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt id="pyemu.pst.Pst.parameter_data">
+<code class="sig-name descname">parameter_data</code><a class="headerlink" href="#pyemu.pst.Pst.parameter_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>‘* parameter data’ information.  Columns are
+standard PEST variable names</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;partrans&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;log&quot;</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;parubnd&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">10.0</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.pst.Pst.observation_data">
+<code class="sig-name descname">observation_data</code><a class="headerlink" href="#pyemu.pst.Pst.observation_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>‘* observation data’ information.  Columns are standard PEST
+variable names</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;obgnme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;obs_group&quot;</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.pst.Pst.prior_information">
+<code class="sig-name descname">prior_information</code><a class="headerlink" href="#pyemu.pst.Pst.prior_information" title="Permalink to this definition">¶</a></dt>
+<dd><p>‘* prior information’ data.  Columns are standard PEST
+variable names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.pst.Pst.control_data">
+<code class="sig-name descname">control_data</code><a class="headerlink" href="#pyemu.pst.Pst.control_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>‘* control data’ information.
+Access with standard PEST variable names</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span><span class="o">.</span><span class="n">control_data</span><span class="o">.</span><span class="n">noptmax</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">control_data</span><span class="o">.</span><span class="n">pestmode</span> <span class="o">=</span> <span class="s2">&quot;estimation&quot;</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../../pyemu.pst.html#pyemu.pst.pst_controldata.ControlData" title="pyemu.pst.pst_controldata.ControlData">pyemu.pst.pst_controldata.ControlData</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.pst.Pst.svd_data">
+<code class="sig-name descname">svd_data</code><a class="headerlink" href="#pyemu.pst.Pst.svd_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>‘* singular value decomposition’ section information.
+Access with standard PEST variable names</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span><span class="o">.</span><span class="n">svd_data</span><span class="o">.</span><span class="n">maxsing</span> <span class="o">=</span> <span class="mi">100</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../../pyemu.pst.html#pyemu.pst.pst_controldata.SvdData" title="pyemu.pst.pst_controldata.SvdData">pyemu.pst.pst_controldata.SvdData</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyemu.pst.Pst.reg_data">
+<code class="sig-name descname">reg_data</code><a class="headerlink" href="#pyemu.pst.Pst.reg_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>‘* regularization’ section information.
+Access with standard PEST variable names.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span><span class="o">.</span><span class="n">reg_data</span><span class="o">.</span><span class="n">phimlim</span> <span class="o">=</span> <span class="mf">1.00</span> <span class="c1">#yeah right!</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../../pyemu.pst.html#pyemu.pst.pst_controldata.RegData" title="pyemu.pst.pst_controldata.RegData">pyemu.pst.pst_controldata.RegData</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.__setattr__">
+<code class="sig-name descname">__setattr__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.__setattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implement setattr(self, name, value).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.from_par_obs_names">
+<em class="property">classmethod </em><code class="sig-name descname">from_par_obs_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">par_names</span><span class="o">=</span><span class="default_value">['par1']</span></em>, <em class="sig-param"><span class="n">obs_names</span><span class="o">=</span><span class="default_value">['obs1']</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.from_par_obs_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>construct a shell <cite>Pst</cite> instance from parameter and observation names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par_names</strong> ([<cite>str</cite>]) – list of parameter names.  Default is [<cite>par1</cite>]</p></li>
+<li><p><strong>obs_names</strong> ([<cite>str</cite>]) – list of observation names.  Default is [<cite>obs1</cite>]</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>While this method works, it does not make template or instruction files.
+Users are encouraged to use <cite>Pst.from_io_files()</cite> for more usefulness</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">par_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;par1&quot;</span><span class="p">,</span><span class="s2">&quot;par2&quot;</span><span class="p">]</span>
+<span class="n">obs_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;obs1&quot;</span><span class="p">,</span><span class="s2">&quot;obs2&quot;</span><span class="p">]</span>
+<span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="o">.</span><span class="n">from_par_obs_names</span><span class="p">(</span><span class="n">par_names</span><span class="p">,</span><span class="n">obs_names</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.phi">
+<em class="property">property </em><code class="sig-name descname">phi</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.phi" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the weighted total objective function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>sum of squared residuals</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>float</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Requires <cite>Pst.res</cite> (the residuals file) to be available</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.phi_components">
+<em class="property">property </em><code class="sig-name descname">phi_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.phi_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the individual components of the total objective function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dictionary of observation group, contribution to total phi</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>dict</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Requires <cite>Pst.res</cite> (the residuals file) to be available</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.phi_components_normalized">
+<em class="property">property </em><code class="sig-name descname">phi_components_normalized</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.phi_components_normalized" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>get the individual components of the total objective function</dt><dd><p>normalized to the total PHI being 1.0</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>dictionary of observation group,
+normalized contribution to total phi</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>dict</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Requires <cite>Pst.res</cite> (the residuals file) to be available</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.set_res">
+<code class="sig-name descname">set_res</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">res</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.set_res" title="Permalink to this definition">¶</a></dt>
+<dd><p>reset the private <cite>Pst.res</cite> attribute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>res</strong> – (<cite>pandas.DataFrame</cite> or <cite>str</cite>): something to use as Pst.res attribute.
+If <cite>res</cite> is <cite>str</cite>, a dataframe is read from file <cite>res</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.res">
+<em class="property">property </em><code class="sig-name descname">res</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.res" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the residuals dataframe attribute</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a dataframe containing the
+residuals information.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt>if the Pst.__res attribute has not been loaded,</dt><dd><p>this call loads the res dataframe from a file</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.nprior">
+<em class="property">property </em><code class="sig-name descname">nprior</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.nprior" title="Permalink to this definition">¶</a></dt>
+<dd><p>number of prior information equations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the number of prior info equations</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>int</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.nnz_obs">
+<em class="property">property </em><code class="sig-name descname">nnz_obs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.nnz_obs" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the number of non-zero weighted observations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the number of non-zeros weighted observations</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>int</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.nobs">
+<em class="property">property </em><code class="sig-name descname">nobs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.nobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the number of observations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the number of observations</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>int</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.npar_adj">
+<em class="property">property </em><code class="sig-name descname">npar_adj</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.npar_adj" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the number of adjustable parameters (not fixed or tied)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the number of adjustable parameters</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>int</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.npar">
+<em class="property">property </em><code class="sig-name descname">npar</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.npar" title="Permalink to this definition">¶</a></dt>
+<dd><p>get number of parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the number of parameters</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>int</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.forecast_names">
+<em class="property">property </em><code class="sig-name descname">forecast_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.forecast_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the forecast names from the pestpp options (if any).
+Returns None if no forecasts are named</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a list of forecast names.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.obs_groups">
+<em class="property">property </em><code class="sig-name descname">obs_groups</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.obs_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the observation groups</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a list of unique observation groups</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.nnz_obs_groups">
+<em class="property">property </em><code class="sig-name descname">nnz_obs_groups</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.nnz_obs_groups" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>get the observation groups that contain at least one non-zero weighted</dt><dd><p>observation</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a list of observation groups that contain at
+least one non-zero weighted observation</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.adj_par_groups">
+<em class="property">property </em><code class="sig-name descname">adj_par_groups</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.adj_par_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the parameter groups with atleast one adjustable parameter</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a list of parameter groups with
+at least one adjustable parameter</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.par_groups">
+<em class="property">property </em><code class="sig-name descname">par_groups</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.par_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the parameter groups</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a list of parameter groups</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.prior_groups">
+<em class="property">property </em><code class="sig-name descname">prior_groups</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.prior_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the prior info groups</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a list of prior information groups</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.prior_names">
+<em class="property">property </em><code class="sig-name descname">prior_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.prior_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the prior information names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a list of prior information names</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.par_names">
+<em class="property">property </em><code class="sig-name descname">par_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.par_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the parameter names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a list of parameter names</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.adj_par_names">
+<em class="property">property </em><code class="sig-name descname">adj_par_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.adj_par_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the adjustable (not fixed or tied) parameter names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>list of adjustable (not fixed or tied)
+parameter names</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.obs_names">
+<em class="property">property </em><code class="sig-name descname">obs_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.obs_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the observation names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a list of observation names</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.nnz_obs_names">
+<em class="property">property </em><code class="sig-name descname">nnz_obs_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.nnz_obs_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the non-zero weight observation names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a list of non-zero weighted observation names</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.zero_weight_obs_names">
+<em class="property">property </em><code class="sig-name descname">zero_weight_obs_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.zero_weight_obs_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the zero-weighted observation names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a list of zero-weighted observation names</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>[<cite>str</cite>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.estimation">
+<em class="property">property </em><code class="sig-name descname">estimation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.estimation" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if the control_data.pestmode is set to estimation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if <cite>control_data.pestmode</cite> is estmation, False otherwise</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>bool</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.tied">
+<em class="property">property </em><code class="sig-name descname">tied</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.tied" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of tied parameter names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a dataframe of tied parameter information.
+Columns of <cite>tied</cite> are <cite>parnme</cite> and <cite>partied</cite>.  Returns <cite>None</cite> if
+no tied parameters are found.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._read_df">
+<em class="property">static </em><code class="sig-name descname">_read_df</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">f</span></em>, <em class="sig-param"><span class="n">nrows</span></em>, <em class="sig-param"><span class="n">names</span></em>, <em class="sig-param"><span class="n">converters</span></em>, <em class="sig-param"><span class="n">defaults</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._read_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>a private method to read part of an open file into a pandas.DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>f</strong> (<cite>file</cite>) – open file handle</p></li>
+<li><p><strong>nrows</strong> (<cite>int</cite>) – number of rows to read</p></li>
+<li><p><strong>names</strong> ([<cite>str</cite>]) – names to set the columns of the dataframe with</p></li>
+<li><p><strong>converters</strong> (<cite>dict</cite>) – dictionary of lambda functions to convert strings
+to numerical format</p></li>
+<li><p><strong>defaults</strong> (<cite>dict</cite>) – dictionary of default values to assign columns.
+Default is None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dataframe of control file section info</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._read_line_comments">
+<code class="sig-name descname">_read_line_comments</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">f</span></em>, <em class="sig-param"><span class="n">forgive</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._read_line_comments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._read_section_comments">
+<code class="sig-name descname">_read_section_comments</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">f</span></em>, <em class="sig-param"><span class="n">forgive</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._read_section_comments" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._parse_external_line">
+<em class="property">static </em><code class="sig-name descname">_parse_external_line</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">line</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">'.'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._parse_external_line" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._parse_path_agnostic">
+<em class="property">static </em><code class="sig-name descname">_parse_path_agnostic</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._parse_path_agnostic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._cast_df_from_lines">
+<em class="property">static </em><code class="sig-name descname">_cast_df_from_lines</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">section</span></em>, <em class="sig-param"><span class="n">lines</span></em>, <em class="sig-param"><span class="n">fieldnames</span></em>, <em class="sig-param"><span class="n">converters</span></em>, <em class="sig-param"><span class="n">defaults</span></em>, <em class="sig-param"><span class="n">alias_map</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">'.'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._cast_df_from_lines" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._cast_prior_df_from_lines">
+<code class="sig-name descname">_cast_prior_df_from_lines</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">section</span></em>, <em class="sig-param"><span class="n">lines</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">'.'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._cast_prior_df_from_lines" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._load_version2">
+<code class="sig-name descname">_load_version2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._load_version2" title="Permalink to this definition">¶</a></dt>
+<dd><p>load a version 2 control file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.load">
+<code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>entry point load the pest control file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> (<cite>str</cite>) – pst filename</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method is called from the <cite>Pst</cite> construtor unless the <cite>load</cite> arg is <cite>False</cite>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._parse_pestpp_line">
+<code class="sig-name descname">_parse_pestpp_line</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">line</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._parse_pestpp_line" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._update_control_section">
+<code class="sig-name descname">_update_control_section</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._update_control_section" title="Permalink to this definition">¶</a></dt>
+<dd><p>private method to synchronize the control section counters with the
+various parts of the control file.  This is usually called during the
+Pst.write() method.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.rectify_pgroups">
+<code class="sig-name descname">rectify_pgroups</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.rectify_pgroups" title="Permalink to this definition">¶</a></dt>
+<dd><p>synchronize parameter groups section with the parameter data section</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method is called during <cite>Pst.write()</cite> to make sure all parameter
+groups named in <cite>* parameter data</cite> are included.  This is so users
+don’t have to manually keep this section up.  This method can also be
+called during control file modifications to see what parameter groups
+are present and prepare for modifying the default values in the <cite>* parameter
+group</cite> section</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;par1&quot;</span><span class="p">,</span><span class="s2">&quot;pargp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;new_group&quot;</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">rectify_groups</span><span class="p">()</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">parameter_groups</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;new_group&quot;</span><span class="p">,</span><span class="s2">&quot;derinc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._parse_pi_par_names">
+<code class="sig-name descname">_parse_pi_par_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._parse_pi_par_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>private method to get the parameter names from prior information
+equations.  Sets a ‘names’ column in Pst.prior_information that is a list
+of parameter names</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.add_pi_equation">
+<code class="sig-name descname">add_pi_equation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">par_names</span></em>, <em class="sig-param"><span class="n">pilbl</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">rhs</span><span class="o">=</span><span class="default_value">0.0</span></em>, <em class="sig-param"><span class="n">weight</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">obs_group</span><span class="o">=</span><span class="default_value">'pi_obgnme'</span></em>, <em class="sig-param"><span class="n">coef_dict</span><span class="o">=</span><span class="default_value">{}</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.add_pi_equation" title="Permalink to this definition">¶</a></dt>
+<dd><p>a helper to construct a new prior information equation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par_names</strong> ([<cite>str</cite>]) – parameter names in the equation</p></li>
+<li><p><strong>pilbl</strong> (<cite>str</cite>) – name to assign the prior information equation.  If None,
+a generic equation name is formed. Default is None</p></li>
+<li><p><strong>rhs</strong> (<cite>float</cite>) – the right-hand side of the pi equation</p></li>
+<li><p><strong>weight</strong> (<cite>float</cite>) – the weight of the equation</p></li>
+<li><p><strong>obs_group</strong> (<cite>str</cite>) – the observation group for the equation. Default is ‘pi_obgnme’</p></li>
+<li><p><strong>coef_dict</strong> (<cite>dict</cite>) – a dictionary of parameter name, coefficient pairs to assign
+leading coefficients for one or more parameters in the equation.
+If a parameter is not listed, 1.0 is used for its coefficients.
+Default is {}</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.rectify_pi">
+<code class="sig-name descname">rectify_pi</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.rectify_pi" title="Permalink to this definition">¶</a></dt>
+<dd><p>rectify the prior information equation with the current state of the
+parameter_data dataframe.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Equations that list fixed, tied or missing parameters
+are removed completely even if adjustable parameters are also
+listed in the equation. This method is called during Pst.write()</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._write_df">
+<code class="sig-name descname">_write_df</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">name</span></em>, <em class="sig-param"><span class="n">f</span></em>, <em class="sig-param"><span class="n">df</span></em>, <em class="sig-param"><span class="n">formatters</span></em>, <em class="sig-param"><span class="n">columns</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._write_df" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.sanity_checks">
+<code class="sig-name descname">sanity_checks</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.sanity_checks" title="Permalink to this definition">¶</a></dt>
+<dd><p>some basic check for strangeness</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>checks for duplicate names, atleast 1 adjustable parameter
+and at least 1 non-zero-weighted observation</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._write_version2">
+<code class="sig-name descname">_write_version2</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">new_filename</span></em>, <em class="sig-param"><span class="n">use_pst_path</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">pst_rel_path</span><span class="o">=</span><span class="default_value">'.'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._write_version2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.write">
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">new_filename</span></em>, <em class="sig-param"><span class="n">version</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>main entry point to write a pest control file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>new_filename</strong> (<cite>str</cite>) – name of the new pest control file</p></li>
+<li><p><strong>version</strong> (<cite>int</cite>) – flag for which version of control file to write (must be 1 or 2).
+if None, uses Pst._version, which set in the constructor and modified
+during the load</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">parrep</span><span class="p">(</span><span class="s2">&quot;my.par&quot;</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">my_new</span><span class="o">.</span><span class="n">pst</span><span class="s2">&quot;)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._write_version1">
+<code class="sig-name descname">_write_version1</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">new_filename</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._write_version1" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a version 1 pest control file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.bounds_report">
+<code class="sig-name descname">bounds_report</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.bounds_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>report how many parameters are at bounds. If ensemble, the base enbsemble member is evaluated</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>iterations</strong> ([<cite>int</cite>]) – a list of iterations for which a bounds report is requested
+If None, all iterations for which <cite>par</cite> files are located are reported. Default
+is None</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>a pandas DataFrame object with rows being parameter groups and columns</dt><dd><p>&lt;iter&gt;_num_at_ub, &lt;iter&gt;_num_at_lb, and &lt;iter&gt;_total_at_bounds
+row 0 is total at bounds, subsequent rows correspond with groups</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>df</cite></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>pst = pyemu.Pst(“my.pst”)
+df = pst.bound_report(iterations=[0,2,3])</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.get">
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">par_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">obs_names</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a new pst object with subset of parameters and/or observations</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par_names</strong> ([<cite>str</cite>]) – a list of parameter names to have in the new Pst instance.
+If None, all parameters are in the new Pst instance. Default
+is None</p></li>
+<li><p><strong>obs_names</strong> ([<cite>str</cite>]) – a list of observation names to have in the new Pst instance.
+If None, all observations are in teh new Pst instance. Default
+is None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a new Pst instance</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>Pst</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>passing <cite>par_names</cite> as <cite>None</cite> and <cite>obs_names</cite> as <cite>None</cite> effectively
+generates a copy of the current <cite>Pst</cite></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.parrep">
+<code class="sig-name descname">parrep</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">parfile</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">enforce_bounds</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.parrep" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>replicates the pest parrep util. replaces the parval1 field in the</dt><dd><p>parameter data section dataframe with values in a PEST parameter file</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>parfile</strong> (<cite>str</cite>, optional) – parameter file to use.  If None, try to find and use
+a parameter file that corresponds to the case name.
+Default is None</p></li>
+<li><p><strong>enforce_bounds</strong> (<cite>bool</cite>, optional) – flag to enforce parameter bounds after parameter values are updated.
+This is useful because PEST and PEST++ round the parameter values in the
+par file, which may cause slight bound violations.  Default is <cite>True</cite></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.adjust_weights_discrepancy">
+<code class="sig-name descname">adjust_weights_discrepancy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">resfile</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">original_ceiling</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">bygroups</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.adjust_weights_discrepancy" title="Permalink to this definition">¶</a></dt>
+<dd><p>adjusts the weights of each non-zero weight observation based
+on the residual in the pest residual file so each observations contribution
+to phi is 1.0 (e.g. Mozorov’s discrepancy principal)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resfile</strong> (<cite>str</cite>) – residual file name.  If None, try to use a residual file
+with the Pst case name.  Default is None</p></li>
+<li><p><strong>original_ceiling</strong> (<cite>bool</cite>) – flag to keep weights from increasing - this is
+generally a good idea. Default is True</p></li>
+<li><p><strong>bygroups</strong> (<cite>bool</cite>) – flag to adjust weights by groups. If False, the weight
+of each non-zero weighted observation is adjusted individually. If True,
+intergroup weighting is preserved (the contribution to each group is used)
+but this may result in some strangeness if some observations in a group have
+a really low phi already.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pst</span><span class="o">.</span><span class="n">phi</span><span class="p">)</span> <span class="c1">#assumes &quot;my.res&quot; is colocated with &quot;my.pst&quot;</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">adjust_weights_discrepancy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pst</span><span class="o">.</span><span class="n">phi</span><span class="p">)</span> <span class="c1"># phi should equal number of non-zero observations</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._adjust_weights_by_phi_components">
+<code class="sig-name descname">_adjust_weights_by_phi_components</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">components</span></em>, <em class="sig-param"><span class="n">original_ceiling</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._adjust_weights_by_phi_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>private method that resets the weights of observations by group to account for
+residual phi components.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>components</strong> (<cite>dict</cite>) – a dictionary of obs group:phi contribution pairs</p></li>
+<li><p><strong>original_ceiling</strong> (<cite>bool</cite>) – flag to keep weights from increasing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.__reset_weights">
+<code class="sig-name descname">__reset_weights</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">target_phis</span></em>, <em class="sig-param"><span class="n">res_idxs</span></em>, <em class="sig-param"><span class="n">obs_idxs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.__reset_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>private method to reset weights based on target phi values
+for each group.  This method should not be called directly</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_phis</strong> (<cite>dict</cite>) – target phi contribution for groups to reweight</p></li>
+<li><p><strong>res_idxs</strong> (<cite>dict</cite>) – the index positions of each group of interest
+in the res dataframe</p></li>
+<li><p><strong>obs_idxs</strong> (<cite>dict</cite>) – the index positions of each group of interest
+in the observation data dataframe</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._adjust_weights_by_list">
+<code class="sig-name descname">_adjust_weights_by_list</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">obslist</span></em>, <em class="sig-param"><span class="n">weight</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._adjust_weights_by_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>a private method to reset the weight for a list of observation names.  Supports the
+data worth analyses in pyemu.Schur class.  This method only adjusts
+observation weights in the current weight is nonzero.  User beware!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obslist</strong> ([<cite>str</cite>]) – list of observation names</p></li>
+<li><p><strong>weight</strong> (<cite>float</cite>) – new weight to assign</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.adjust_weights">
+<code class="sig-name descname">adjust_weights</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">obs_dict</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">obsgrp_dict</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.adjust_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>reset the weights of observations or observation groups to contribute a specified
+amount to the composite objective function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obs_dict</strong> (<cite>dict</cite>, optional) – dictionary of observation name,new contribution pairs</p></li>
+<li><p><strong>obsgrp_dict</strong> (<cite>dict</cite>, optional) – dictionary of obs group name,contribution pairs</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>if all observations in a named obs group have zero weight, they will all be
+assigned a non-zero weight so that the request phi contribution
+can be met.  Similarly, any observations listed in obs_dict with zero
+weight will also be reset. User beware!</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+
+<span class="c1"># adjust a single observation</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">adjust_weights</span><span class="p">(</span><span class="n">obs_dict</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;obs1&quot;</span><span class="p">:</span><span class="mi">10</span><span class="p">})</span>
+
+<span class="c1"># adjust a single observation group</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">adjust_weights</span><span class="p">(</span><span class="n">obsgrp_dict</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;group1&quot;</span><span class="p">:</span><span class="mf">100.0</span><span class="p">})</span>
+
+<span class="c1"># make all non-zero weighted groups have a contribution of 100.0</span>
+<span class="n">balanced_groups</span> <span class="o">=</span> <span class="p">{</span><span class="n">grp</span><span class="p">:</span><span class="mi">100</span> <span class="k">for</span> <span class="n">grp</span> <span class="ow">in</span> <span class="n">pst</span><span class="o">.</span><span class="n">nnz_obs_groups</span><span class="p">}</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">adjust_weights</span><span class="p">(</span><span class="n">obsgrp_dict</span><span class="o">=</span><span class="n">balanced_groups</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.proportional_weights">
+<code class="sig-name descname">proportional_weights</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">fraction_stdev</span><span class="o">=</span><span class="default_value">1.0</span></em>, <em class="sig-param"><span class="n">wmax</span><span class="o">=</span><span class="default_value">100.0</span></em>, <em class="sig-param"><span class="n">leave_zero</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.proportional_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>setup  weights inversely proportional to the observation value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fraction_stdev</strong> (<cite>float</cite>, optional) – the fraction portion of the observation
+val to treat as the standard deviation.  set to 1.0 for
+inversely proportional.  Default is 1.0</p></li>
+<li><p><strong>wmax</strong> (<cite>float</cite>, optional) – maximum weight to allow.  Default is 100.0</p></li>
+<li><p><strong>leave_zero</strong> (<cite>bool</cite>, optional) – flag to leave existing zero weights.
+Default is True</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.calculate_pertubations">
+<code class="sig-name descname">calculate_pertubations</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.calculate_pertubations" title="Permalink to this definition">¶</a></dt>
+<dd><p>experimental method to calculate finite difference parameter
+pertubations.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The pertubation values are added to the
+<cite>Pst.parameter_data</cite> attribute - user beware!</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.build_increments">
+<code class="sig-name descname">build_increments</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.build_increments" title="Permalink to this definition">¶</a></dt>
+<dd><p>experimental method to calculate parameter increments for use
+in the finite difference pertubation calculations</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>user beware!</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.add_transform_columns">
+<code class="sig-name descname">add_transform_columns</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.add_transform_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>add transformed values to the <cite>Pst.parameter_data</cite> attribute</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>adds <cite>parval1_trans</cite>, <cite>parlbnd_trans</cite> and <cite>parubnd_trans</cite> to
+<cite>Pst.parameter_data</cite></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.enforce_bounds">
+<code class="sig-name descname">enforce_bounds</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.enforce_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>enforce bounds violation</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>cheap enforcement of simply bringing violators back in bounds</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.from_io_files">
+<em class="property">classmethod </em><code class="sig-name descname">from_io_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cls</span></em>, <em class="sig-param"><span class="n">tpl_files</span></em>, <em class="sig-param"><span class="n">in_files</span></em>, <em class="sig-param"><span class="n">ins_files</span></em>, <em class="sig-param"><span class="n">out_files</span></em>, <em class="sig-param"><span class="n">pst_filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.from_io_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>create a Pst instance from model interface files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tpl_files</strong> ([<cite>str</cite>]) – list of template file names</p></li>
+<li><p><strong>in_files</strong> ([<cite>str</cite>]) – list of model input file names (pairs with template files)</p></li>
+<li><p><strong>ins_files</strong> ([<cite>str</cite>]) – list of instruction file names</p></li>
+<li><p><strong>out_files</strong> ([<cite>str</cite>]) – list of model output file names (pairs with instruction files)</p></li>
+<li><p><strong>pst_filename</strong> (<cite>str</cite>) – name of control file to write.  If None, no file is written.
+Default is None</p></li>
+<li><p><strong>pst_path</strong> (<em>'str'</em>) – the path from the control file to the IO files.  For example, if the
+control will be in the same directory as the IO files, then <cite>pst_path</cite> should be ‘.’.
+Default is None, which doesnt do any path manipulation on the I/O file names</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>new control file instance with parameter and observation names
+found in <cite>tpl_files</cite> and <cite>ins_files</cite>, repsectively.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>Pst</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>calls <cite>pyemu.helpers.pst_from_io_files()</cite></p>
+<p>Assigns generic values for parameter info.  Tries to use INSCHEK
+to set somewhat meaningful observation values</p>
+<p>all file paths are relatively to where python is running.</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tpl_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;my.tpl&quot;</span><span class="p">]</span>
+<span class="n">in_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;my.in&quot;</span><span class="p">]</span>
+<span class="n">ins_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;my.ins&quot;</span><span class="p">]</span>
+<span class="n">out_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;my.out&quot;</span><span class="p">]</span>
+<span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="o">.</span><span class="n">from_io_files</span><span class="p">(</span><span class="n">tpl_files</span><span class="p">,</span><span class="n">in_files</span><span class="p">,</span><span class="n">ins_files</span><span class="p">,</span><span class="n">out_files</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">control_data</span><span class="o">.</span><span class="n">noptmax</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;my.pst)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.add_parameters">
+<code class="sig-name descname">add_parameters</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">template_file</span></em>, <em class="sig-param"><span class="n">in_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.add_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>add new parameters to an existing control file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>template_file</strong> (<cite>str</cite>) – template file with (possibly) some new parameters</p></li>
+<li><p><strong>in_file</strong> (<cite>str</cite>) – model input file. If None, template_file.replace(‘.tpl’,’’) is used.
+Default is None.</p></li>
+<li><p><strong>pst_path</strong> (<cite>str</cite>) – the path to append to the template_file and in_file in the control file.  If
+not None, then any existing path in front of the template or in file is split off
+and pst_path is prepended.  If python is being run in a directory other than where the control
+file will reside, it is useful to pass <cite>pst_path</cite> as <cite>.</cite>.  Default is None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the data for the new parameters that were added.
+If no new parameters are in the new template file, returns None</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>populates the new parameter information with default values</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span><span class="s2">&quot;my.pst&quot;</span><span class="p">))</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">add_parameters</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span><span class="s2">&quot;new_pars.dat.tpl&quot;</span><span class="p">,</span><span class="n">pst_path</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span><span class="s2">&quot;my_new.pst&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.add_observations">
+<code class="sig-name descname">add_observations</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">ins_file</span></em>, <em class="sig-param"><span class="n">out_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">inschek</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.add_observations" title="Permalink to this definition">¶</a></dt>
+<dd><p>add new observations to a control file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ins_file</strong> (<cite>str</cite>) – instruction file with exclusively new observation names</p></li>
+<li><p><strong>out_file</strong> (<cite>str</cite>) – model output file.  If None, then ins_file.replace(“.ins”,””) is used.
+Default is None</p></li>
+<li><p><strong>pst_path</strong> (<cite>str</cite>) – the path to append to the instruction file and out file in the control file.  If
+not None, then any existing path in front of the template or in file is split off
+and pst_path is prepended.  If python is being run in a directory other than where the control
+file will reside, it is useful to pass <cite>pst_path</cite> as <cite>.</cite>. Default is None</p></li>
+<li><p><strong>inschek</strong> (<cite>bool</cite>) – flag to try to process the existing output file using the <cite>pyemu.InstructionFile</cite>
+class.  If successful, processed outputs are used as obsvals</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the data for the new observations that were added</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>populates the new observation information with default values</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span> <span class="s2">&quot;my.pst&quot;</span><span class="p">))</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">add_observations</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span><span class="s2">&quot;new_obs.dat.ins&quot;</span><span class="p">),</span> <span class="n">pst_path</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;template&quot;</span><span class="p">,</span> <span class="s2">&quot;my_new.pst&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.write_input_files">
+<code class="sig-name descname">write_input_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">'.'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.write_input_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>writes model input files using template files and current <cite>parval1</cite> values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pst_path</strong> (<cite>str</cite>) – the path to where control file and template files reside.
+Default is ‘.’</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>adds “parval1_trans” column to Pst.parameter_data that includes the
+effect of scale and offset</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+
+<span class="c1"># load final parameter values</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">parrep</span><span class="p">(</span><span class="s2">&quot;my.par&quot;</span><span class="p">)</span>
+
+<span class="c1"># write new model input files with final parameter values</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write_input_files</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.process_output_files">
+<code class="sig-name descname">process_output_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">pst_path</span><span class="o">=</span><span class="default_value">'.'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.process_output_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>processing the model output files using the instruction files
+and existing model output files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pst_path</strong> (<cite>str</cite>) – relative path from where python is running to
+where the control file, instruction files and model output files
+are located.  Default is “.” (current python directory)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>model output values</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.Series</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>requires a complete set of model input files at relative path
+from where python is running to <cite>pst_path</cite></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.get_res_stats">
+<code class="sig-name descname">get_res_stats</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">nonzero</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.get_res_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>get some common residual stats by observation group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>nonzero</strong> (<cite>bool</cite>) – calculate stats using only nonzero-weighted observations.  This may seem
+obsvious to most users, but you never know….</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dataframe with columns for groups names and indices of statistic name.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pd.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Stats are derived from the current obsvals, weights and grouping in
+<cite>Pst.observation_data</cite> and the <cite>modelled</cite> values in <cite>Pst.res</cite>.  The
+key here is ‘current’ because if obsval, weights and/or groupings have
+changed in <cite>Pst.observation_data</cite> since the residuals file was generated
+then the current values for <cite>obsval</cite>, <cite>weight</cite> and <cite>group</cite> are used</p>
+<p>the normalized RMSE is normalized against the obsval range (max - min)</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._stats_rss">
+<em class="property">static </em><code class="sig-name descname">_stats_rss</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._stats_rss" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._stats_mean">
+<em class="property">static </em><code class="sig-name descname">_stats_mean</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._stats_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._stats_mae">
+<em class="property">static </em><code class="sig-name descname">_stats_mae</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._stats_mae" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._stats_rmse">
+<em class="property">static </em><code class="sig-name descname">_stats_rmse</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._stats_rmse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._stats_nrmse">
+<em class="property">static </em><code class="sig-name descname">_stats_nrmse</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">df</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._stats_nrmse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.plot">
+<code class="sig-name descname">plot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">kind</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to plot various parts of the control.  This is sweet as!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kind</strong> (<cite>str</cite>) – options are ‘prior’ (prior parameter histograms, ‘1to1’ (line of equality
+and sim vs res), ‘obs_v_sim’ (time series using datetime suffix), ‘phi_pie’
+(pie chart of phi components)</p></li>
+<li><p><strong>kwargs</strong> (<cite>dict</cite>) – optional args for plots that are passed to pyemu plot helpers and ultimately
+to matplotlib</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Depending on ‘kind’ argument, a multipage pdf is written</p>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;1to1&quot;</span><span class="p">)</span> <span class="c1"># requires Pst.res</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;prior&quot;</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;phi_pie&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.write_par_summary_table">
+<code class="sig-name descname">write_par_summary_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">group_names</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">sigma_range</span><span class="o">=</span><span class="default_value">4.0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.write_par_summary_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a stand alone parameter summary latex table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<cite>str</cite>) – latex filename. If None, use &lt;case&gt;.par.tex. If <cite>filename</cite> is “none”, no table
+is writtenDefault is None</p></li>
+<li><p><strong>group_names</strong> (<cite>dict</cite>) – par group names : table names. For example {“w0”:”well stress period 1”}.
+Default is None</p></li>
+<li><p><strong>sigma_range</strong> (<cite>float</cite>) – number of standard deviations represented by parameter bounds.  Default
+is 4.0, implying 95% confidence bounds</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the summary parameter group dataframe</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write_par_summary_table</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;par.tex&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.write_obs_summary_table">
+<code class="sig-name descname">write_obs_summary_table</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">group_names</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.write_obs_summary_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a stand alone observation summary latex table</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<cite>str</cite>) – latex filename. If <cite>filename</cite> is “none”, no table is written.
+If None, use &lt;case&gt;.par.tex. Default is None</p></li>
+<li><p><strong>group_names</strong> (<cite>dict</cite>) – obs group names : table names. For example {“hds”:”simulated groundwater level”}.
+Default is None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the summary observation group dataframe</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;my.pst&quot;</span><span class="p">)</span>
+<span class="n">pst</span><span class="o">.</span><span class="n">write_obs_summary_table</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;obs.tex&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._is_less_const">
+<em class="property">static </em><code class="sig-name descname">_is_less_const</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._is_less_const" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.less_than_obs_constraints">
+<em class="property">property </em><code class="sig-name descname">less_than_obs_constraints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.less_than_obs_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the names of the observations that
+are listed as active less than inequality constraints.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>names of obseravtions that are non-zero weighted less
+than constraints (<cite>obgnme</cite> starts with ‘l_’ or “less”)</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pandas.Series</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Zero-weighted obs are skipped</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.less_than_pi_constraints">
+<em class="property">property </em><code class="sig-name descname">less_than_pi_constraints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.less_than_pi_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the names of the prior information eqs that
+are listed as active less than inequality constraints.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>names of prior information that are non-zero weighted
+less than constraints (<cite>obgnme</cite> starts with “l_” or “less”)</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pandas.Series</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Zero-weighted pi are skipped</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst._is_greater_const">
+<em class="property">static </em><code class="sig-name descname">_is_greater_const</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst._is_greater_const" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.greater_than_obs_constraints">
+<em class="property">property </em><code class="sig-name descname">greater_than_obs_constraints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.greater_than_obs_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the names of the observations that
+are listed as active greater than inequality constraints.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>names obseravtions that are non-zero weighted
+greater than constraints (<cite>obgnme</cite> startsiwth “g_” or “greater”)</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pandas.Series</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Zero-weighted obs are skipped</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.greater_than_pi_constraints">
+<em class="property">property </em><code class="sig-name descname">greater_than_pi_constraints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.greater_than_pi_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the names of the prior information eqs that
+are listed as active greater than inequality constraints.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><cite>pandas.Series</cite> names of prior information that are non-zero weighted
+greater than constraints (<cite>obgnme</cite> startsiwth “g_” or “greater”)</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Zero-weighted pi are skipped</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.get_par_change_limits">
+<code class="sig-name descname">get_par_change_limits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.get_par_change_limits" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate the various parameter change limits used in pest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a copy of <cite>Pst.parameter_data</cite>
+with columns for relative and factor change limits</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><cite>pandas.DataFrame</cite></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>does not yet support absolute parameter change limits!</p>
+<p>Works in control file values space (not log transformed space).  Also
+adds columns for effective upper and lower which account for par bounds and the
+value of parchglim</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.get_adj_pars_at_bounds">
+<code class="sig-name descname">get_adj_pars_at_bounds</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em>, <em class="sig-param"><span class="n">frac_tol</span><span class="o">=</span><span class="default_value">0.01</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.get_adj_pars_at_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>get list of adjustable parameter at/near bounds</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>frac_tol</strong> (<em>'float`</em>) – fractional tolerance of distance to bound.  For upper bound,
+the value <cite>parubnd * (1-frac_tol)</cite> is used, lower bound uses <cite>parlbnd * (1.0 + frac_tol)</cite></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>[`str`]</strong>: list of parameters at/near lower bound</p></li>
+<li><p><strong>[`str`]</strong>: list of parameters at/near upper bound</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple containing</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyemu.pst.Pst.try_parse_name_metadata">
+<code class="sig-name descname">try_parse_name_metadata</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyemu.pst.Pst.try_parse_name_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>try to add meta data columns to parameter and observation data based on
+item names.  Used with the PstFrom process.</p>
+<dl class="simple">
+<dt>Note: metadata is identified in key-value pairs that are separated by a colon.</dt><dd><p>each key-value pair is separated from others by underscore</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -6,7 +6,7 @@ if not os.path.exists("temp"):
 def mat_test():
     import os
     import numpy as np
-    from pyemu.mat import Jco,Cov
+    from pyemu.mat import Jco,Cov,concat
     test_dir = os.path.join("mat")
     if not os.path.exists(test_dir):
         os.mkdir(test_dir)
@@ -46,6 +46,9 @@ def mat_test():
     result = first.T * third * first
     result = first * second
 
+    result = first.T.x * third
+    result = 2.0 * third
+
     newfirst = first.get(col_names="p1")
     result = newfirst * second
     result = second * newfirst.T
@@ -79,6 +82,12 @@ def mat_test():
     first.drop("o4",axis=0)
     assert first.shape == (3,2)
 
+    try:
+        concat([first,third])
+    except:
+        pass
+    else:
+        raise Exception()
 
 def drop_test():
     import numpy as np
@@ -96,6 +105,7 @@ def drop_test():
     t_array = np.atleast_2d(np.array([0,6])).transpose()
     print(first.x,t_array)
     assert np.array_equal(first.x,t_array)
+
 
 def get_test():
     import numpy as np
@@ -142,6 +152,20 @@ def extend_test():
     assert third.x[3,:].sum() == 3
     assert third.x[:,6].sum() == 3
     assert third.x[6,:].sum() == 3
+    try:
+        forth = pyemu.mat.concat([first,third])
+    except:
+        pass
+    else:
+        raise Exception()
+
+    forth = pyemu.Matrix(x=first.x,row_names=first.row_names,col_names=[str(i) for i in range(first.shape[1])])
+    x = pyemu.mat.concat([first,forth])
+    print(x)
+
+    fifth = pyemu.Matrix(x=first.x, row_names=[str(i) for i in range(first.shape[0])], col_names=first.col_names)
+    x = pyemu.mat.concat([first,fifth])
+    print(x)
 
 
 def pseudo_inv_test():
@@ -151,6 +175,18 @@ def pseudo_inv_test():
     print(jco.shape)
     jpi = jco.pseudo_inv(maxsing=1)
     jpi = jco.pseudo_inv(maxsing=19)
+
+    u1,s1,v1 = jco.pseudo_inv_components(2)
+    print(s1.shape)
+    assert s1.shape[0] == 2
+    u2, s2, v2 = jco.pseudo_inv_components(2,truncate=False)
+    assert s2.shape == jco.shape
+
+    d = u1 - u2[:,:2]
+    assert d.x.max() == 0.0
+
+
+
 
 def cov_identity_test():
     import os
@@ -185,9 +221,9 @@ def hadamard_product_test():
     r = pyemu.Matrix(x=np.random.rand(c.shape[0],c.shape[0]),
                      row_names=c.row_names,col_names=c.col_names)
     hp = c.hadamard_product(r)
-    assert hp.x.sum() == np.diagonal(r.x).sum()
+    assert np.abs(hp.x.sum() - np.diagonal(r.x).sum()) < 1.0e-6
     hp = r.hadamard_product(c)
-    assert hp.x.sum() == np.diagonal(r.x).sum()
+    assert np.abs(hp.x.sum() - np.diagonal(r.x).sum()) < 1.0e-6
 
 
 def get_diag_test():
@@ -234,6 +270,7 @@ def cov_replace_test():
     cov1 = pyemu.Cov.from_parameter_data(pst)
     cov2 = pyemu.Cov(x=cov1.x[:3],names=cov1.names[:3],isdiagonal=True) * 3
     cov1.replace(cov2)
+    print(cov1.x[0],cov2.x[0])
     assert cov1.x[0] == cov2.x[0]
 
     cov2 = pyemu.Cov(x=np.ones(cov1.shape) * 2,names=cov1.names[::-1])
@@ -241,16 +278,298 @@ def cov_replace_test():
     cov1.replace(cov2)
     assert cov1.x[-1,-1] == 2.0
 
+
+def cov_scale_offset_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+
+
+    par = pst.parameter_data
+    par.loc[:,"partrans"] = "none"
+    cov1 = pyemu.Cov.from_parameter_data(pst)
+    par.loc[:,"offset"] = 100
+    cov2 = pyemu.Cov.from_parameter_data(pst)
+
+    d = np.abs((cov1.x - cov2.x)).sum()
+    assert d == 0.0,d
+
+    pyemu.Cov.from_parameter_data(pst,scale_offset=False)
+    assert np.abs(cov1.x - cov2.x).sum() == 0.0
+
+
+def from_names_test():
+    import os
+    import pyemu
+
+    rnames = ["row_{0}".format(i) for i in range(20)]
+    cnames = ["col_{0}".format(i) for i in range(40)]
+
+    m = pyemu.Matrix.from_names(rnames,cnames)
+    assert m.shape[0] == len(rnames)
+    assert m.shape[1] == len(cnames)
+
+    pst_name = os.path.join("pst","pest.pst")
+    pst = pyemu.Pst(pst_name)
+    j = pyemu.Jco.from_pst(pst)
+
+    jj = pyemu.Jco.from_pst(pst_name)
+
+    assert j.shape == jj.shape
+
+
+    c = pyemu.Cov.from_names(rnames,cnames)
+    assert type(c) == pyemu.Cov
+
+def from_uncfile_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    cov_full = pyemu.Cov.from_uncfile(os.path.join("mat","param.unc"))
+    cov_kx = pyemu.Cov.from_ascii(os.path.join("mat","cov_kx.mat"))
+    cov_full_kx = cov_full.get(row_names=cov_kx.row_names,col_names=cov_kx.col_names)
+    assert np.abs((cov_kx - cov_full_kx).x).max() == 0.0
+
+
+def copy_test():
+
+    import os
+    import numpy as np
+    import pyemu
+
+    cov_full = pyemu.Cov.from_uncfile(os.path.join("mat", "param.unc"))
+    cov_copy = cov_full.copy()
+    assert np.abs((cov_copy- cov_full).x).max() == 0.0
+    cov_full = cov_full + 2.0
+    #print(cov_full.row_names)
+    assert np.abs((cov_copy - cov_full).x).max() == 2.0,np.abs((cov_copy - cov_full).x).max()
+
+
+
+def indices_test():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 1000
+    ncol = 1000
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    m = pyemu.Matrix.from_names(rnames, cnames)
+    assert m.shape[0] == len(rnames)
+    assert m.shape[1] == len(cnames)
+
+
+    try:
+        m.indices(cnames, 0)
+    except:
+        pass
+    else:
+        raise Exception()
+
+
+
+def coo_tests():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 100
+    ncol = 1000
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow,ncol))
+
+    m = pyemu.Matrix(x=x,row_names=rnames, col_names=cnames)
+    assert m.shape[0] == len(rnames)
+    assert m.shape[1] == len(cnames)
+
+    mname = os.path.join("temp","temp.jcb")
+
+    m.to_coo(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x,mm.x)
+    os.remove(mname)
+
+    m.to_coo(mname,chunk=1)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_coo(mname,chunk=100000)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x,mm.x)
+    os.remove(mname)
+
+    m.to_coo(mname,chunk=1000)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+def df_tests():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    nrow = 5
+    ncol = 5
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    df = pd.DataFrame(data=x,columns=cnames,index=rnames)
+
+    #sub
+    d = m - df
+    assert d.x.max() == 0.0
+
+    d = df - m.x #returns a df
+    #print(d.max())
+
+    # add
+    d = (m + df) - (df * 2)
+    assert d.x.max() == 0.0
+    d = (df * 2) - (m + df).x #returns a df
+
+    # mul
+    d = (m * df.T) - np.dot(m.x,df.T.values)
+    assert d.x.max() == 0.0
+
+    # hadamard
+    d = (m.hadamard_product(df)) - (m.x * df)
+    assert d.x.max() == 0.0
+
+
+
+
+
+def dense_mat_format_test():
+    import numpy as np
+    import pyemu
+    from datetime import datetime
+
+    nrow = 100
+    ncol = 500000
+
+    long_str = ""
+    for _ in range(35):
+        long_str += "long"
+    rnames = [long_str+"row_{0}".format(i) for i in range(nrow)]
+    cnames = [long_str+"col_{0}".format(i) for i in range(ncol)]
+
+    arr = np.random.random((nrow,ncol))
+
+    m = pyemu.Matrix(x=arr, row_names=rnames, col_names=cnames)
+    f = m.to_dense("dense.bin", close=True)
+    m1 = pyemu.Matrix.from_binary("dense.bin")
+    print(m1.shape)
+    assert m1.shape == (nrow, ncol)
+    d = np.abs(m.x - m1.x).sum()
+    print(d)
+    assert d < 1.0e-10
+
+    f_in = open("dense.bin", "rb")
+    f_out = open("dense_trunc.bin", "wb")
+    f_out.write(f_in.read(ncol * (len(long_str)) + int(nrow / 2) * ncol * 8))
+    f_in.close()
+    f_out.close()
+    try:
+        m1 = pyemu.Matrix.from_binary("dense_trunc.bin",forgive=False)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    m1 = pyemu.Matrix.from_binary("dense_trunc.bin", forgive=True)
+
+
+    m = pyemu.Matrix(x=arr,row_names=rnames,col_names=cnames)
+    f = m.to_dense("dense.bin",close=False)
+    new_rnames = [r+"new" for r in rnames]
+    m.row_names = new_rnames
+    m.to_dense(f,close=True)
+
+    m1 = pyemu.Matrix.from_binary("dense.bin")
+    print(m1.shape)
+    assert m1.shape == (nrow*2,ncol)
+    arr2 = np.zeros((nrow*2,ncol))
+    arr2[:nrow,:] = arr
+    arr2[nrow:,:] = arr
+    d = np.abs(arr2 - m1.x).sum()
+    print(d)
+    assert d < 1.0e-10,d
+
+    s1 = datetime.now()
+    for _ in range(1):
+        m.to_dense("dense.bin")
+        pyemu.Matrix.read_binary("dense.bin")
+    e1 = datetime.now()
+    s2 = datetime.now()
+    for _ in range(1):
+        m.to_coo("dense.jcb")
+        pyemu.Matrix.read_binary("dense.jcb")
+    e2 = datetime.now()
+    print((e1-s1).total_seconds())
+    print((e2-s2).total_seconds())
+
 if __name__ == "__main__":
+    #df_tests()
+    # cov_scale_offset_test()
+    #coo_tests()
+    # indices_test()
     #mat_test()
-    #load_jco_test()
-    #extend_test()
-    #pseudo_inv_test()
+    # load_jco_test()
+    # extend_test()
+    # pseudo_inv_test()
     #drop_test()
-    #get_test()
-    #cov_identity_test()
-    #hadamard_product_test()
-    #get_diag_test()
-    #to_pearson_test()
-    #sigma_range_test()
-    cov_replace_test()
+    # get_test()
+    # cov_identity_test()
+    # hadamard_product_test()
+    # get_diag_test()
+    # to_pearson_test()
+    # sigma_range_test()
+    # cov_replace_test()
+    # from_names_test()
+    #from_uncfile_test()
+    # copy_test()
+    # sparse_constructor_test()
+    # sparse_extend_test()
+    # sparse_get_test()
+    # sparse_get_sparse_test()
+    dense_mat_format_test()

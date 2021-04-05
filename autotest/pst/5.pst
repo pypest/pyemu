@@ -19,7 +19,7 @@ pest_svd_rjh11_mean.jco
 * parameter groups
  pargp absolute    0.015  0.0  switch    2.0 parabolic
 * parameter data
-par1         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par1         log  relative   10.000     1.0e-20  10.02  pargp  1.0  -10.000      1
 par2         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
 par3         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
 par4         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1

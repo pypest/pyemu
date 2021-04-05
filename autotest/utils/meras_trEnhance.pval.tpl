@@ -1,78 +1,78 @@
 ptf ~
 #pval template file from pyemu
         75 #NP
-HK_alvm                 ~   HK_alvm           ~ 
-HK_fluv                 ~   HK_fluv           ~ 
-HK_vkbg                 ~   HK_vkbg           ~ 
-HK_clbr                 ~   HK_clbr           ~ 
-HK_cckf                 ~   HK_cckf           ~ 
-HK_ckmn                 ~   HK_ckmn           ~ 
-HK_sprt                 ~   HK_sprt           ~ 
-HK_sprt3_5              ~   HK_sprt3_5        ~ 
-HK_spcl                 ~   HK_spcl           ~ 
-HK_crvr                 ~   HK_crvr           ~ 
-HK_wnth                 ~   HK_wnth           ~ 
-HK_crrz                 ~   HK_crrz           ~ 
-HK_wlcx                 ~   HK_wlcx           ~ 
-HK_flid                 ~   HK_flid           ~ 
-HK_lwaq                 ~   HK_lwaq           ~ 
-HK_odbx                 ~   HK_odbx           ~ 
-VANI_alvm               ~   VANI_alvm         ~ 
-VANI_loss               ~   VANI_loss         ~ 
-VANI_vkbg               ~   VANI_vkbg         ~ 
-VANI_clbr               ~   VANI_clbr         ~ 
-VANI_cckf               ~   VANI_cckf         ~ 
-VANI_ckmn               ~   VANI_ckmn         ~ 
-VANI_sprt1              ~   VANI_sprt1        ~ 
-VANI_sprt2              ~   VANI_sprt2        ~ 
-VANI_sprt3              ~   VANI_sprt3        ~ 
-VANI_spcl               ~   VANI_spcl         ~ 
-VANI_spes               ~   VANI_spes         ~ 
-VANI_crvr               ~   VANI_crvr         ~ 
-VANI_wnth               ~   VANI_wnth         ~ 
-VANI_crrz               ~   VANI_crrz         ~ 
-VANI_wlcx               ~   VANI_wlcx         ~ 
-VANI_flid               ~   VANI_flid         ~ 
-VANI_lwaq               ~   VANI_lwaq         ~ 
-VANI_odbx               ~   VANI_odbx         ~ 
-SS_alvm                 ~   SS_alvm           ~ 
-SS_fluv                 ~   SS_fluv           ~ 
-SS_vkbg                 ~   SS_vkbg           ~ 
-SS_clbr                 ~   SS_clbr           ~ 
-SS_cckf                 ~   SS_cckf           ~ 
-SS_ckmn                 ~   SS_ckmn           ~ 
-SS_sprt                 ~   SS_sprt           ~ 
-SS_sprt5                ~   SS_sprt5          ~ 
-SS_spcl                 ~   SS_spcl           ~ 
-SS_crvr                 ~   SS_crvr           ~ 
-SS_wnth                 ~   SS_wnth           ~ 
-SS_crrz                 ~   SS_crrz           ~ 
-SS_wlcx                 ~   SS_wlcx           ~ 
-SS_flid                 ~   SS_flid           ~ 
-SS_lwaq                 ~   SS_lwaq           ~ 
-SS_odbx                 ~   SS_odbx           ~ 
-SY_alvm                 ~   SY_alvm           ~ 
-SY_alvm106              ~   SY_alvm106        ~ 
-SY_loss                 ~   SY_loss           ~ 
-RCHPILOT                ~   RCHPILOT          ~ 
-mod_mck                 ~   mod_mck           ~ 
-mrdata_1                ~   mrdata_1          ~ 
-union_fault             ~   union_fault       ~ 
-pickens                 ~   pickens           ~ 
-RIVCON                  ~   RIVCON            ~ 
-RIVARK                  ~   RIVARK            ~ 
-RIVMISS                 ~   RIVMISS           ~ 
-RIVOUACH                ~   RIVOUACH          ~ 
-RIVWHT                  ~   RIVWHT            ~ 
-RIVLANG                 ~   RIVLANG           ~ 
-RIVSALIN                ~   RIVSALIN          ~ 
-RIVCACH                 ~   RIVCACH           ~ 
-RIVLOW                  ~   RIVLOW            ~ 
-RIVMEMP                 ~   RIVMEMP           ~ 
-RIVNON                  ~   RIVNON            ~ 
-RIVBAY                  ~   RIVBAY            ~ 
-RIVBART                 ~   RIVBART           ~ 
-RIVMACON                ~   RIVMACON          ~ 
-RIVLEAF                 ~   RIVLEAF           ~ 
-RIVYAZ                  ~   RIVYAZ            ~ 
-RIVSE                   ~   RIVSE             ~
+ HK_alvm                 ~   HK_alvm           ~ 
+ HK_fluv                 ~   HK_fluv           ~ 
+ HK_vkbg                 ~   HK_vkbg           ~ 
+ HK_clbr                 ~   HK_clbr           ~ 
+ HK_cckf                 ~   HK_cckf           ~ 
+ HK_ckmn                 ~   HK_ckmn           ~ 
+ HK_sprt                 ~   HK_sprt           ~ 
+ HK_sprt3_5              ~   HK_sprt3_5        ~ 
+ HK_spcl                 ~   HK_spcl           ~ 
+ HK_crvr                 ~   HK_crvr           ~ 
+ HK_wnth                 ~   HK_wnth           ~ 
+ HK_crrz                 ~   HK_crrz           ~ 
+ HK_wlcx                 ~   HK_wlcx           ~ 
+ HK_flid                 ~   HK_flid           ~ 
+ HK_lwaq                 ~   HK_lwaq           ~ 
+ HK_odbx                 ~   HK_odbx           ~ 
+ VANI_alvm               ~   VANI_alvm         ~ 
+ VANI_loss               ~   VANI_loss         ~ 
+ VANI_vkbg               ~   VANI_vkbg         ~ 
+ VANI_clbr               ~   VANI_clbr         ~ 
+ VANI_cckf               ~   VANI_cckf         ~ 
+ VANI_ckmn               ~   VANI_ckmn         ~ 
+ VANI_sprt1              ~   VANI_sprt1        ~ 
+ VANI_sprt2              ~   VANI_sprt2        ~ 
+ VANI_sprt3              ~   VANI_sprt3        ~ 
+ VANI_spcl               ~   VANI_spcl         ~ 
+ VANI_spes               ~   VANI_spes         ~ 
+ VANI_crvr               ~   VANI_crvr         ~ 
+ VANI_wnth               ~   VANI_wnth         ~ 
+ VANI_crrz               ~   VANI_crrz         ~ 
+ VANI_wlcx               ~   VANI_wlcx         ~ 
+ VANI_flid               ~   VANI_flid         ~ 
+ VANI_lwaq               ~   VANI_lwaq         ~ 
+ VANI_odbx               ~   VANI_odbx         ~ 
+ SS_alvm                 ~   SS_alvm           ~ 
+ SS_fluv                 ~   SS_fluv           ~ 
+ SS_vkbg                 ~   SS_vkbg           ~ 
+ SS_clbr                 ~   SS_clbr           ~ 
+ SS_cckf                 ~   SS_cckf           ~ 
+ SS_ckmn                 ~   SS_ckmn           ~ 
+ SS_sprt                 ~   SS_sprt           ~ 
+ SS_sprt5                ~   SS_sprt5          ~ 
+ SS_spcl                 ~   SS_spcl           ~ 
+ SS_crvr                 ~   SS_crvr           ~ 
+ SS_wnth                 ~   SS_wnth           ~ 
+ SS_crrz                 ~   SS_crrz           ~ 
+ SS_wlcx                 ~   SS_wlcx           ~ 
+ SS_flid                 ~   SS_flid           ~ 
+ SS_lwaq                 ~   SS_lwaq           ~ 
+ SS_odbx                 ~   SS_odbx           ~ 
+ SY_alvm                 ~   SY_alvm           ~ 
+ SY_alvm106              ~   SY_alvm106        ~ 
+ SY_loss                 ~   SY_loss           ~ 
+ RCHPILOT                ~   RCHPILOT          ~ 
+ mod_mck                 ~   mod_mck           ~ 
+ mrdata_1                ~   mrdata_1          ~ 
+ union_fault             ~   union_fault       ~ 
+ pickens                 ~   pickens           ~ 
+ RIVCON                  ~   RIVCON            ~ 
+ RIVARK                  ~   RIVARK            ~ 
+ RIVMISS                 ~   RIVMISS           ~ 
+ RIVOUACH                ~   RIVOUACH          ~ 
+ RIVWHT                  ~   RIVWHT            ~ 
+ RIVLANG                 ~   RIVLANG           ~ 
+ RIVSALIN                ~   RIVSALIN          ~ 
+ RIVCACH                 ~   RIVCACH           ~ 
+ RIVLOW                  ~   RIVLOW            ~ 
+ RIVMEMP                 ~   RIVMEMP           ~ 
+ RIVNON                  ~   RIVNON            ~ 
+ RIVBAY                  ~   RIVBAY            ~ 
+ RIVBART                 ~   RIVBART           ~ 
+ RIVMACON                ~   RIVMACON          ~ 
+ RIVLEAF                 ~   RIVLEAF           ~ 
+ RIVYAZ                  ~   RIVYAZ            ~ 
+ RIVSE                   ~   RIVSE             ~ 

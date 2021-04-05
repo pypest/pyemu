@@ -1,0 +1,27 @@
+pcf version=2
+* control data keyword
+pestmode                                 estimation
+ies_num_reals  100
+ies_par_en "prior.jcb"
+noptmax                                -1
+svdmode                                 1
+maxsing                          10000000
+eigthresh                           1e-06
+eigwrite                                1
+lambdas             1, 2, 10, 999
+debug_parse_only  True
+* control data
+test
+* parameter groups external
+test.pargrp_data.csv
+* parameter data external
+test.par_data.csv
+* observation data external
+test.obs_data.csv
+* model command line
+model_nz_64.bat > slave_log.txt
+* model input external
+test.tplfile_data.csv
+* model output external
+test.insfile_data.csv
+

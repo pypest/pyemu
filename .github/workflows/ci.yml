@@ -1,0 +1,223 @@
+name: pyemu continuous integration
+
+on: 
+  schedule:
+    - cron: '0 8 * * *' # run at 8 AM UTC (12 am PST)
+  push:
+  pull_request:
+
+jobs:
+  pyemuCI:
+    name: autotests
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest] #, macos-latest] 
+        python-version: [3.9, 3.8, 3.7] # , 3.7, 3.6]
+        run-type: [std]
+        test-path: [
+              "utils_tests.py", 
+              "pst_tests_2.py",
+              "pst_from_tests.py", 
+              "pst_tests.py", 
+              "en_tests.py",
+              "full_meal_deal_tests.py", 
+              "la_tests.py", 
+              "plot_tests.py", 
+              "moouu_tests.py", 
+              "mat_tests.py", 
+              "da_tests.py"
+            ]
+        exclude:
+          # - os: macos-latest
+            # python-version: 3.7
+          # - os: macos-latest
+            # python-version: 3.6
+          - os: windows-latest
+            python-version: 3.7
+          - os: windows-latest
+            python-version: 3.9
+        include:
+          - os: ubuntu-latest
+            python-version: 3.8
+            run-type: nb
+            test-path: autotest_notebooks.py
+
+
+    steps:
+    - uses:  actions/checkout@v2.3.4 # checksout this repo
+    # - name: Setup Ninja
+      # if: ${{ runner.os == 'Windows' }} 
+    - uses: seanmiddleditch/gha-setup-ninja@master
+
+    - name: Cache Miniconda
+      uses: actions/cache@v2.1.0
+      env:
+        # Increase this value to reset cache if environment.yml has changed
+        CACHE_NUMBER: 0
+      with:
+        path: ~/conda_pkgs_dir
+        key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.run-type }}-${{ env.CACHE_NUMBER }}-${{ hashFiles('etc/environment.yml') }}
+    
+    - name: Set Windows ENV
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
+    # - name: Get specific version CMake, v3.19
+    #   if: ${{ runner.os == 'Windows' }} 
+    #   uses: lukka/get-cmake@latest
+
+    # Standard python fails on windows without GDAL installation
+    # Using custom bash shell ("shell: bash -l {0}") with Miniconda
+    - name: Setup Miniconda
+      uses: conda-incubator/setup-miniconda@v2.0.0
+      with:
+        python-version: ${{ matrix.python-version }}
+        mamba-version: "*"
+        channels: conda-forge
+        auto-update-conda: true
+        activate-environment: pyemu
+        use-only-tar-bz2: true
+
+    - name: Add jupyter and jupytext to notebooks run
+      if: matrix.run-type == 'nb'
+      shell: bash -l {0}
+      run: |
+        mamba install --name pyemu jupyter jupytext
+
+    - name: Add packages to pyemu environment using mamba or conda
+      shell: bash -l {0}
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          conda env update --name pyemu --file etc/environment.yml
+        else
+          mamba env update --name pyemu --file etc/environment.yml
+        fi
+    
+    - name: PESTPP exe install
+      shell: bash -l {0}
+      run: |
+        if [[ ! -d "$HOME/.local/bin" ]]; then
+            mkdir -p "$HOME/.local/bin";
+        fi
+        # copy modflow bins to local dir to add to PATH later
+        if [ "$RUNNER_OS" == "Windows" ]; then
+            d="win"
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+            d="mac"
+        elif [ "$RUNNER_OS" == "Linux" ]; then
+            d="linux"
+        else
+            d="unexpectedos"
+            exit 1
+        fi
+        cp -r bin/$d/. "$HOME/.local/bin/"
+        git clone -b feat_newtools --depth 1 https://github.com/usgs/pestpp
+        cd pestpp
+        mkdir build && cd build
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+            cmake -GNinja -DCMAKE_CXX_COMPILER=cl -DCMAKE_C_COMPILER=cl -DCMAKE_BUILD_TYPE=Release ..
+            ninja
+        else
+            cmake -DCMAKE_BUILD_TYPE=Release ..
+            make -j2
+        fi
+        # cd pestpp/src
+        # bindir=../../../../bin/linux COMPILER=gcc CXX=g++ FC=gfortran STATIC=no make -j 20 install
+        cd ..
+        # do we also need to cp to os specific within .local/bin/? probs...
+        find bin -maxdepth 1 -type f -exec cp {} $HOME/.local/bin/. \;
+        # cp -r bin ../bin
+        cd ..
+    
+    - name: Install Flopy & pyemu?
+      shell: bash -l {0}
+      run: |
+        pip install https://github.com/modflowpy/flopy/zipball/develop
+        # git clone -b develop --depth 1 https://github.com/modflowpy/flopy.git
+        # cd flopy
+        # python setup.py install
+        # cd ..
+        # pip install https://github.com/modflowpy/pymake/zipball/master
+        python setup.py install
+
+    - name: Add executables directory to path
+      shell: bash
+      run: |
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        echo $GITHUB_PATH
+
+    - name: ${{ matrix.test-path }}
+      shell: bash -l {0}
+      run: |
+        coverage run -m nose -v --with-id --nocapture --with-timer \
+        --with-coverage -w ./autotest --cover-package=pyemu \
+        ${{ matrix.test-path }}
+
+    # - name: Upload Coveralls
+    #   run: |
+    #     coveralls 
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     COVERALLS_FLAG_NAME: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+    #     COVERALLS_PARALLEL: true
+
+    - name: Coveralls
+      if: ${{ runner.os == 'Linux' && matrix.python-version > 3.6 }}
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        parallel: true
+        debug: false
+        flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
+
+    # - name: Coveralls Parallel
+    #   uses: coverallsapp/github-action@master
+    #   with:
+    #     github-token: ${{ secrets.github_token }}
+    #     flag-name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+    #     parallel: true
+
+  # coveralls:
+  #   name: Finish Coveralls
+  #   needs: pyemuCI
+  #   runs-on: ubuntu-latest
+  #   container: python:3-slim
+  #   steps: 
+  #   - name: Finished
+  #     run: |
+  #       pip3 install --upgrade coveralls
+  #       coveralls --finish
+  #     env:
+  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  coveralls_finish:
+    needs: pyemuCI
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        parallel-finished: true
+        debug: true
+  
+  # finish:
+  #   needs: pyemuCI
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Coveralls Finished
+  #     uses: coverallsapp/github-action@master
+  #     with:
+  #       github-token: ${{ secrets.github_token }}
+  #       parallel-finished: true
+
+  # sphinx:
+  #   needs: pyemuCI
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses:  actions/checkout@v2
+  #   - uses: ammaraskar/sphinx-action@master
+  #     with:
+  #       docs-folder: "docs/"
+
