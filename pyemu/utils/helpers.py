@@ -1,4 +1,5 @@
 """High-level functions to help perform complex tasks
+
 """
 
 from __future__ import print_function, division
@@ -35,6 +36,7 @@ def geostatistical_draws(
 ):
     """construct a parameter ensemble from a prior covariance matrix
     implied by geostatistical structure(s) and parameter bounds.
+
     Args:
         pst (`pyemu.Pst`): a control file (or the name of control file).  The
             parameter bounds in `pst` are used to define the variance of each
@@ -52,18 +54,25 @@ def geostatistical_draws(
         scale_offset (`bool`,optional): flag to apply scale and offset to parameter bounds
             when calculating variances - this is passed through to `pyemu.Cov.from_parameter_data()`.
             Default is True.
+
     Returns
         `pyemu.ParameterEnsemble`: the realized parameter ensemble.
+
     Note:
         parameters are realized by parameter group.  The variance of each
         parameter group is used to scale the resulting geostatistical
         covariance matrix Therefore, the sill of the geostatistical structures
         in `struct_dict` should be 1.0
+
+
     Example::
+
         pst = pyemu.Pst("my.pst")
         sd = {"struct.dat":["hkpp.dat.tpl","vka.dat.tpl"]}
         pe = pyemu.helpers.geostatistical_draws(pst,struct_dict=sd}
         pe.to_csv("my_pe.csv")
+
+
     """
 
     if isinstance(pst, str):
@@ -200,6 +209,7 @@ def geostatistical_prior_builder(
 ):
     """construct a full prior covariance matrix using geostastical structures
     and parameter bounds information.
+
     Args:
         pst (`pyemu.Pst`): a control file instance (or the name of control file)
         struct_dict (`dict`): a dict of GeoStruct (or structure file), and list of
@@ -214,20 +224,25 @@ def geostatistical_prior_builder(
         scale_offset (`bool`): a flag to apply scale and offset to parameter upper and lower bounds
             before applying log transform.  Passed to pyemu.Cov.from_parameter_data().  Default
             is False
+
     Returns:
         `pyemu.Cov`: a covariance matrix that includes all adjustable parameters in the control
         file.
+
     Note:
         The covariance of parameters associated with geostatistical structures is defined
         as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
         pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
         sigma_range. Most users will want to sill of the geostruct to sum to 1.0 so that the resulting
         covariance matrices have variance proportional to the parameter bounds. Sounds complicated...
+
     Example::
+
         pst = pyemu.Pst("my.pst")
         sd = {"struct.dat":["hkpp.dat.tpl","vka.dat.tpl"]}
         cov = pyemu.helpers.geostatistical_draws(pst,struct_dict=sd}
         cov.to_binary("prior.jcb")
+
     """
 
     if isinstance(pst, str):
@@ -336,9 +351,11 @@ def geostatistical_prior_builder(
 
 def _rmse(v1, v2):
     """return root mean squared error between v1 and v2
+
     Args:
         v1 (iterable): one vector
         v2 (iterable): another vector
+
     Returns:
         scalar: root mean squared error of v1,v2
     """
@@ -354,12 +371,14 @@ def calc_observation_ensemble_quantiles(
        to a single realization in the ensemble. So, this function finds the minimum weighted squared
        distance to the quantile and labels it in the ensemble. Also indicates which realizations
        correspond to the selected quantiles.
+
     Args:
         ens (pandas DataFrame): DataFrame read from an observation
         pst (pyemy.Pst object) - needed to obtain observation weights
         quantiles (iterable): quantiles ranging from 0-1.0 for which results requested
         subset_obsnames (iterable): list of observation names to include in calculations
         subset_obsgroups (iterable): list of observation groups to include in calculations
+
     Returns:
         ens (pandas DataFrame): same ens object that was input but with quantile realizations
                             appended as new rows labelled with 'q_#' where '#' is the slected quantile
@@ -445,12 +464,14 @@ def calc_observation_ensemble_quantiles(
 
 def calc_rmse_ensemble(ens, pst, bygroups=True, subset_realizations=None):
     """Calculates RMSE (without weights) to quantify fit to observations for ensemble members
+
     Args:
         ens (pandas DataFrame): DataFrame read from an observation
         pst (pyemy.Pst object) - needed to obtain observation weights
         bygroups (Bool): Flag to summarize by groups or not. Defaults to True.
         subset_realizations (iterable, optional): Subset of realizations for which
                 to report RMSE. Defaults to None which returns all realizations.
+
     Returns:
         rmse (pandas DataFrame object): rows are realizations. Columns are groups. Content is RMSE
     """
@@ -541,6 +562,7 @@ def kl_setup(
 ):
     """setup a karhuenen-Loeve based parameterization for a given
     geostatistical structure.
+
     Args:
         num_eig (`int`): the number of basis vectors to retain in the
             reduced basis
@@ -558,14 +580,19 @@ def kl_setup(
             file to write the reduced basis vectors to.  Default is None (not saved).
         tpl_dir (`str`, optional): the directory to write the resulting
             template files to.  Default is "." (current directory).
+
     Returns:
         `pandas.DataFrame`: a dataframe of parameter information.
+
     Note:
         This is the companion function to `helpers.apply_kl()`
+
     Example::
+
         m = flopy.modflow.Modflow.load("mymodel.nam")
         prefixes = ["hk","vka","ss"]
         df = pyemu.helpers.kl_setup(10,m.sr,"struct.dat",prefixes)
+
     """
 
     try:
@@ -673,6 +700,7 @@ def _eigen_basis_to_factor_file(nrow, ncol, basis, factors_file, islog=True):
 def kl_apply(par_file, basis_file, par_to_file_dict, arr_shape):
     """Apply a KL parameterization transform from basis factors to model
     input arrays.
+
     Args:
         par_file (`str`): the csv file to get factor values from.  Must contain
             the following columns: "name", "new_val", "org_val"
@@ -682,9 +710,11 @@ def kl_apply(par_file, basis_file, par_to_file_dict, arr_shape):
             file names.
         arr_shape (tuple): a length 2 tuple of number of rows and columns
             the resulting arrays should have.
+
         Note:
             This is the companion function to kl_setup.
             This function should be called during the forward run
+
     """
     df = pd.read_csv(par_file)
     assert "name" in df.columns
@@ -713,6 +743,7 @@ def kl_apply(par_file, basis_file, par_to_file_dict, arr_shape):
 
 def zero_order_tikhonov(pst, parbounds=True, par_groups=None, reset=True):
     """setup preferred-value regularization in a pest control file.
+
     Args:
         pst (`pyemu.Pst`): the control file instance
         parbounds (`bool`, optional): flag to weight the new prior information
@@ -722,10 +753,13 @@ def zero_order_tikhonov(pst, parbounds=True, par_groups=None, reset=True):
             If None, all adjustable parameters are used. Default is None
         reset (`bool`): a flag to remove any existing prior information equations
             in the control file.  Default is True
+
     Example::
+
         pst = pyemu.Pst("my.pst")
         pyemu.helpers.zero_order_tikhonov(pst)
         pst.write("my_reg.pst")
+
     """
 
     if par_groups is None:
@@ -770,6 +804,7 @@ def _regweight_from_parbound(pst):
     """sets regularization weights from parameter bounds
     which approximates the KL expansion.  Called by
     zero_order_tikhonov().
+
     """
 
     pst.parameter_data.index = pst.parameter_data.parnme
@@ -793,6 +828,8 @@ def _regweight_from_parbound(pst):
 
 def first_order_pearson_tikhonov(pst, cov, reset=True, abs_drop_tol=1.0e-3):
     """setup preferred-difference regularization from a covariance matrix.
+
+
     Args:
         pst (`pyemu.Pst`): the PEST control file
         cov (`pyemu.Cov`): a covariance matrix instance with
@@ -803,14 +840,18 @@ def first_order_pearson_tikhonov(pst, cov, reset=True, abs_drop_tol=1.0e-3):
             are written. If the absolute value of the Pearson CC is less than
             abs_drop_tol, the prior information equation will not be included in
             the control file.
+
     Note:
         The weights on the prior information equations are the Pearson
         correlation coefficients implied by covariance matrix.
+
     Example::
+
         pst = pyemu.Pst("my.pst")
         cov = pyemu.Cov.from_ascii("my.cov")
         pyemu.helpers.first_order_pearson_tikhonov(pst,cov)
         pst.write("my_reg.pst")
+
     """
     assert isinstance(cov, pyemu.Cov)
     print("getting CC matrix")
@@ -860,13 +901,16 @@ def first_order_pearson_tikhonov(pst, cov, reset=True, abs_drop_tol=1.0e-3):
 
 def simple_tpl_from_pars(parnames, tplfilename="model.input.tpl"):
     """Make a simple template file from a list of parameter names.
+
     Args:
         parnames ([`str`]): list of parameter names to put in the
             new template file
         tplfilename (`str`): Name of the template file to create.  Default
             is "model.input.tpl"
+
     Note:
         writes a file `tplfilename` with each parameter name in `parnames` on a line
+
     """
     with open(tplfilename, "w") as ofp:
         ofp.write("ptf ~\n")
@@ -876,14 +920,17 @@ def simple_tpl_from_pars(parnames, tplfilename="model.input.tpl"):
 def simple_ins_from_obs(obsnames, insfilename="model.output.ins"):
     """write a simple instruction file that reads the values named
      in obsnames in order, one per line from a model output file
+
     Args:
         obsnames (`str`): list of observation names to put in the
             new instruction file
         insfilename (`str`): the name of the instruction file to
             create. Default is "model.output.ins"
+
     Note:
         writes a file `insfilename` with each observation read off
         of a single line
+
     """
     with open(insfilename, "w") as ofp:
         ofp.write("pif ~\n")
@@ -894,13 +941,16 @@ def pst_from_parnames_obsnames(
     parnames, obsnames, tplfilename="model.input.tpl", insfilename="model.output.ins"
 ):
     """Creates a Pst object from a list of parameter names and a list of observation names.
+
     Args:
         parnames (`str`): list of parameter names
         obsnames (`str`): list of observation names
         tplfilename (`str`): template filename. Default is  "model.input.tpl"
         insfilename (`str`): instruction filename. Default is "model.output.ins"
+
     Returns:
         `pyemu.Pst`: the generic control file
+
     """
     simple_tpl_from_pars(parnames, tplfilename)
     simple_ins_from_obs(obsnames, insfilename)
@@ -916,16 +966,20 @@ def pst_from_parnames_obsnames(
 def read_pestpp_runstorage(filename, irun=0, with_metadata=False):
     """read pars and obs from a specific run in a pest++ serialized
     run storage file into dataframes.
+
     Args:
         filename (`str`): the name of the run storage file
         irun (`int`): the run id to process. If 'all', then all runs are
             read. Default is 0
         with_metadata (`bool`): flag to return run stats and info txt as well
+
     Returns:
         tuple containing
+
         - **pandas.DataFrame**: parameter information
         - **pandas.DataFrame**: observation information
         - **pandas.DataFrame**: optionally run status and info txt.
+
     """
 
     header_dtype = np.dtype(
@@ -1023,16 +1077,21 @@ def read_pestpp_runstorage(filename, irun=0, with_metadata=False):
 def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
     """read pars and obs from a pest++ serialized run storage
     file (e.g., .rnj) and return jacobian matrix instance
+
     Args:
         rnj_filename (`str`): the name of the run storage file
         pst_filename (`str`): the name of the pst file
+
     Note:
         This can then be passed to Jco.to_binary or Jco.to_coo, etc., to write jco
         file in a subsequent step to avoid memory resource issues associated
         with very large problems.
+
+
     Returns:
         `pyemu.Jco`: a jacobian matrix constructed from the run results and
         pest control file information.
+
     """
 
     header_dtype = np.dtype(
@@ -1100,21 +1159,26 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
 def parse_dir_for_io_files(d, prepend_path=False):
     """find template/input file pairs and instruction file/output file
     pairs by extension.
+
     Args:
         d (`str`): directory to search for interface files
         prepend_path (`bool`, optional): flag to prepend `d` to each file name.
             Default is False
+
     Note:
         the return values from this function can be passed straight to
         `pyemu.Pst.from_io_files()` classmethod constructor. Assumes the
         template file names are <input_file>.tpl and instruction file names
         are <output_file>.ins.
+
     Returns:
         tuple containing
+
         - **[`str`]**: list of template files in d
         - **[`str`]**: list of input files in d
         - **[`str`]**: list of instruction files in d
         - **[`str`]**: list of output files in d
+
     """
 
     files = os.listdir(d)
@@ -1135,6 +1199,7 @@ def pst_from_io_files(
     tpl_files, in_files, ins_files, out_files, pst_filename=None, pst_path=None
 ):
     """create a Pst instance from model interface files.
+
     Args:
         tpl_files ([`str`]): list of template file names
         in_files ([`str`]): list of model input file names (pairs with template files)
@@ -1146,15 +1211,22 @@ def pst_from_io_files(
             not None, then any existing path in front of the template or in file is split off
             and pst_path is prepended.  If python is being run in a directory other than where the control
             file will reside, it is useful to pass `pst_path` as `.`.  Default is None
+
+
     Returns:
         `Pst`: new control file instance with parameter and observation names
         found in `tpl_files` and `ins_files`, repsectively.
+
     Note:
         calls `pyemu.helpers.pst_from_io_files()`
+
         Assigns generic values for parameter info.  Tries to use INSCHEK
         to set somewhat meaningful observation values
+
         all file paths are relatively to where python is running.
+
     Example::
+
         tpl_files = ["my.tpl"]
         in_files = ["my.in"]
         ins_files = ["my.ins"]
@@ -1162,6 +1234,9 @@ def pst_from_io_files(
         pst = pyemu.Pst.from_io_files(tpl_files,in_files,ins_files,out_files)
         pst.control_data.noptmax = 0
         pst.write("my.pst)
+
+
+
     """
     par_names = set()
     if not isinstance(tpl_files, list):
@@ -1251,6 +1326,8 @@ wildass_guess_par_bounds_dict = {
 class PstFromFlopyModel(object):
     """a monster helper class to setup a complex PEST interface around
     an existing MODFLOW-2005-family model.
+
+
     Args:
         model (`flopy.mbase`): a loaded flopy model instance. If model is an str, it is treated as a
             MODFLOW nam file (requires org_model_ws)
@@ -1398,14 +1475,20 @@ class PstFromFlopyModel(object):
             to build the prior parameter covariance matrix
             elements for KL-based parameters.  If None, a generic GeoStruct is created
             using an "a" parameter that is 10 times the max cell size.  Default is None
+
+
     Note:
+
         Setup up multiplier parameters for an existing MODFLOW model.
+
         Does all kinds of coolness like building a
         meaningful prior, assigning somewhat meaningful parameter groups and
         bounds, writes a forward_run.py script with all the calls need to
         implement multiplier parameters, run MODFLOW and post-process.
+
         Works a lot better if TEMPCHEK, INSCHEK and PESTCHEK are available in the
         system path variable
+
     """
 
     def __init__(
@@ -1767,6 +1850,7 @@ class PstFromFlopyModel(object):
     def _setup_mult_dirs(self):
         """setup the directories to use for multiplier parameterization.  Directories
         are make within the PstFromFlopyModel.m.model_ws directory
+
         """
         # setup dirs to hold the original and multiplier model input quantities
         set_dirs = []
@@ -1802,6 +1886,7 @@ class PstFromFlopyModel(object):
         """setup the flopy.mbase instance for use with multipler parameters.
         Changes model_ws, sets external_path and writes new MODFLOW input
         files
+
         """
         split_new_mws = [i for i in os.path.split(new_model_ws) if len(i) > 0]
         if len(split_new_mws) != 1:
@@ -1862,6 +1947,7 @@ class PstFromFlopyModel(object):
     def _prep_mlt_arrays(self):
         """prepare multipler arrays.  Copies existing model input arrays and
         writes generic (ones) multiplier arrays
+
         """
         par_props = [
             self.pp_props,
@@ -1947,6 +2033,7 @@ class PstFromFlopyModel(object):
     def _write_u2d(self, u2d):
         """write a flopy.utils.Util2D instance to an ASCII text file using the
         Util2D filename
+
         """
         filename = os.path.split(u2d.filename)[-1]
         np.savetxt(
@@ -2533,6 +2620,7 @@ class PstFromFlopyModel(object):
     def draw(self, num_reals=100, sigma_range=6, use_specsim=False, scale_offset=True):
 
         """draw from the geostatistically-implied parameter covariance matrix
+
         Args:
             num_reals (`int`): number of realizations to generate. Default is 100
             sigma_range (`float`): number of standard deviations represented by
@@ -2542,12 +2630,16 @@ class PstFromFlopyModel(object):
             scale_offset (`bool`, optional): flag to apply scale and offset to parameter
                 bounds when calculating variances - this is passed through to
                 `pyemu.Cov.from_parameter_data`.  Default is True.
+
         Note:
             operates on parameters by groups to avoid having to construct a very large
             covariance matrix for problems with more the 30K parameters.
+
             uses `helpers.geostatitical_draw()`
+
         Returns:
             `pyemu.ParameterEnsemble`: The realized parameter ensemble
+
         """
 
         self.log("drawing realizations")
@@ -2642,6 +2734,7 @@ class PstFromFlopyModel(object):
         self, fmt="ascii", filename=None, droptol=None, chunk=None, sigma_range=6
     ):
         """build and optionally save the prior parameter covariance matrix.
+
         Args:
             fmt (`str`, optional): the format to save the cov matrix.  Options are "ascii","binary","uncfile", "coo".
                 Default is "ascii".  If "none" (lower case string, not None), then no file is created.
@@ -2653,9 +2746,11 @@ class PstFromFlopyModel(object):
                 is None (no chunking).
             sigma_range (`float`): number of standard deviations represented by the parameter bounds.  Default
                 is 6.
+
         Returns:
             `pyemu.Cov`: the full prior parameter covariance matrix, generated by processing parameters by
             groups
+
         """
 
         fmt = fmt.lower()
@@ -2744,13 +2839,17 @@ class PstFromFlopyModel(object):
     def build_pst(self, filename=None):
         """build the pest control file using the parameters and
         observations.
+
         Args:
             filename (`str`): the filename to save the contorl file to.  If None, the
                 name if formed from the model namfile name.  Default is None.  The control
                 is saved in the `PstFromFlopy.m.model_ws` directory.
         Note:
+
             calls pyemu.Pst.from_io_files
+
             calls PESTCHEK
+
         """
         self.logger.statement("changing dir in to {0}".format(self.m.model_ws))
         os.chdir(self.m.model_ws)
@@ -2857,6 +2956,7 @@ class PstFromFlopyModel(object):
     def _add_external(self):
         """add external (existing) template files and/or instruction files to the
         Pst instance
+
         """
         if self.external_tpl_in_pairs is not None:
             if not isinstance(self.external_tpl_in_pairs, list):
@@ -2903,9 +3003,11 @@ class PstFromFlopyModel(object):
 
     def write_forward_run(self):
         """write the forward run script forward_run.py
+
         Note:
             This method can be called repeatedly, especially after any
             changed to the pre- and/or post-processing routines.
+
         """
         with open(os.path.join(self.m.model_ws, self.forward_run_file), "w") as f:
             f.write(
@@ -2956,6 +3058,7 @@ class PstFromFlopyModel(object):
     def _parse_pakattr(self, pakattr):
         """parse package-iterable pairs from a property or boundary condition
         argument
+
         """
 
         raw = pakattr.lower().split(".")
@@ -3003,6 +3106,7 @@ class PstFromFlopyModel(object):
     def _setup_list_pars(self):
         """main entry point for setting up list multiplier
         parameters
+
         """
         tdf = self._setup_temporal_list_pars()
         sdf = self._setup_spatial_list_pars()
@@ -3294,6 +3398,7 @@ class PstFromFlopyModel(object):
     def _list_helper(self, k, pak, attr, col):
         """helper to setup list multiplier parameters for a given
         k, pak, attr set.
+
         """
         # special case for horrible HFB6 exception
         # if type(pak) == flopy.modflow.mfhfb.ModflowHfb:
@@ -3311,6 +3416,7 @@ class PstFromFlopyModel(object):
         """setup modflow head save file observations for given kper (zero-based
         stress period index) and k (zero-based layer index) pairs using the
         kperk argument.
+
         """
         if self.hds_kperk is None or len(self.hds_kperk) == 0:
             return
@@ -3427,6 +3533,7 @@ class PstFromFlopyModel(object):
     def _setup_water_budget_obs(self):
         """setup observations from the MODFLOW list file for
         volume and flux water buget information
+
         """
         if self.mflist_waterbudget:
             org_listfile = os.path.join(self.org_model_ws, self.m.lst.file_name[0])
@@ -3466,14 +3573,18 @@ class PstFromFlopyModel(object):
 
 def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     """Apply multiplier parameters to list and array style model files
+
     Args:
         arr_par_file (str):
         chunk_len (`int`): the number of files to process per multiprocessing
             chunk in appl_array_pars().  default is 50.
+
     Returns:
+
     Note:
         Used to implement the parameterization constructed by
         PstFrom during a forward run
+
         Should be added to the forward_run.py script
     """
     df = pd.read_csv(arr_par_file, index_col=0)
@@ -3547,6 +3658,7 @@ def _process_array_file(model_file, df):
 
 def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     """a function to apply array-based multipler parameters.
+
     Args:
         arr_par (`str` or `pandas.DataFrame`): if type `str`,
         path to csv file detailing parameter array multipliers.
@@ -3557,16 +3669,20 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
         chunk_len (`int`) : the number of files to process per chunk
             with multiprocessing - applies to both fac2real and process_
             input_files. Default is 50.
+
     Note:
         Used to implement the parameterization constructed by
         PstFromFlopyModel during a forward run
+
         This function should be added to the forward_run.py script but can
         be called on any correctly formatted csv
+
         This function using multiprocessing, spawning one process for each
         model input array (and optionally pp files).  This speeds up
         execution time considerably but means you need to make sure your
         forward run script uses the proper multiprocessing idioms for
         freeze support and main thread handling.
+
     """
     if arr_par_file is not None:
         warnings.warn(
@@ -3668,11 +3784,16 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
 
 def apply_list_pars():
     """a function to apply boundary condition multiplier parameters.
+
     Note:
         Used to implement the parameterization constructed by
         PstFromFlopyModel during a forward run
+
         Requires either "temporal_list_pars.csv" or "spatial_list_pars.csv"
+
         Should be added to the forward_run.py script
+
+
     """
     temp_file = "temporal_list_pars.dat"
     spat_file = "spatial_list_pars.dat"
@@ -3795,14 +3916,19 @@ def apply_list_pars():
 def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv"):
     """read and generate summary statistics for the resulting model input arrays from
     applying array par multipliers
+
     Args:
         arr_par_file (`str`): the array multiplier key file
+
     Returns:
         pd.DataFrame: dataframe of summary stats for each model_file entry
+
     Note:
         this function uses an optional "zone_file" column. If multiple zones
             files are used, then zone arrays are aggregated to a single array
+
         "dif" values are original array values minus model input array values
+
     """
     df = pd.read_csv(arr_par_file, index_col=0)
     df = df.loc[df.index_cols.isna(),:].copy()
@@ -3904,6 +4030,7 @@ def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv"):
 
 def apply_genericlist_pars(df,chunk_len=50):
     """a function to apply list style mult parameters
+
     Args:
         df (pandas.DataFrame): DataFrame that relates files containing
             multipliers to model input file names. Required columns include:
@@ -3918,6 +4045,8 @@ def apply_genericlist_pars(df,chunk_len=50):
             "lower_bound": ultimate lower bound for model input file parameter}
         chunk_len (`int`): number of chunks for each multiprocessing instance to handle.
             Default is 50.
+
+
     """
     print("starting list mlt", datetime.now())
     uniq = df.model_file.unique()  # unique model input files to be produced
@@ -4102,6 +4231,7 @@ def _process_list_file(model_file,df):
 
 def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, longnames=False):
     """write a constant (uniform) template file for a 2-D array
+
     Args:
         name (`str`): the base parameter name
         tpl_file (`str`): the template file to write
@@ -4111,8 +4241,11 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, longnames
             must be passed
         longnames (`bool`): flag to use longer names that exceed 12 chars in length.
             Default is False.
+
     Returns:
         `pandas.DataFrame`: a dataframe with parameter information
+
+
     """
 
     if shape is None and zn_array is None:
@@ -4157,6 +4290,7 @@ def write_grid_tpl(
     longnames=False,
 ):
     """write a grid-based template file for a 2-D array
+
     Args:
         name (`str`): the base parameter name
         tpl_file (`str`): the template file to write - include path
@@ -4169,8 +4303,10 @@ def write_grid_tpl(
             to the parameter names.
         longnames (`bool`): flag to use longer names that exceed 12 chars in length.
             Default is False.
+
     Returns:
         `pandas.DataFrame`: a dataframe with parameter information
+
     """
 
     if shape is None and zn_array is None:
@@ -4226,6 +4362,7 @@ def write_zone_tpl(
     fill_value="1.0",
 ):
     """write a zone-based template file for a 2-D array
+
     Args:
         name (`str`): the base parameter name
         tpl_file (`str`): the template file to write
@@ -4238,8 +4375,10 @@ def write_zone_tpl(
             Default is False.
         fill_value (`str`): value to fill locations where `zn_array` is less than 1.0.
             Default is "1.0".
+
     Returns:
         `pandas.DataFrame`: a dataframe with parameter information
+
     """
 
     if shape is None and zn_array is None:
@@ -4280,6 +4419,7 @@ def write_zone_tpl(
 
 def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
     """build a dataframe of jactest inputs for use with sweep
+
     Args:
         pst (`pyemu.Pst`): existing control file
         num_steps (`int`): number of pertubation steps for each parameter
@@ -4287,9 +4427,11 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
             If None, all adjustable pars are used. Default is None
         forward (`bool`): flag to start with forward pertubations.
             Default is True
+
     Returns:
         `pandas.DataFrame`: the sequence of model runs to evaluate
         for the jactesting.
+
     """
     if isinstance(pst, str):
         pst = pyemu.Pst(pst)
@@ -4394,6 +4536,7 @@ def setup_fake_forward_run(
     pst, new_pst_name, org_cwd=".", bak_suffix="._bak", new_cwd="."
 ):
     """setup a fake forward run for a pst.
+
     Args:
         pst (`pyemu.Pst`): existing control file
         new_pst_name (`str`): new control file to write
@@ -4401,11 +4544,13 @@ def setup_fake_forward_run(
         bak_suffix (`str`, optional): suffix to add to existing
             model output files when making backup copies.
         new_cwd (`str`): new working dir.  Default is ".".
+
     Note:
         The fake forward run simply copies existing backup versions of
         model output files to the outfiles pest(pp) is looking
         for.  This is really a development option for debugging
         PEST++ issues.
+
     """
 
     if new_cwd != org_cwd and not os.path.exists(new_cwd):
@@ -4485,6 +4630,7 @@ def setup_temporal_diff_obs(
     """a helper function to setup difference-in-time observations based on an existing
     set of observations in an instruction file using the observation grouping in the
     control file
+
     Args:
         pst (`pyemu.Pst`): existing control file
         ins_file (`str`): an existing instruction file
@@ -4504,12 +4650,20 @@ def setup_temporal_diff_obs(
             that are being differenced.  This will produce names that are too long for tradtional PEST(_HP).
             Default is True.
         prefix (`str`, optional): prefix to prepend to observation names and group names.  Default is "dif".
+
     Returns:
         tuple containing
+
         - **str**: the forward run command to execute the binary file process during model runs.
+
         - **pandas.DataFrame**: a dataframe of observation information for use in the pest control file
+
     Note:
+
         this is the companion function of `helpers.apply_temporal_diff_obs()`.
+
+
+
     """
     if not os.path.exists(ins_file):
         raise Exception(
@@ -4649,13 +4803,16 @@ def setup_temporal_diff_obs(
 
 def apply_temporal_diff_obs(config_file):
     """process an instruction-output file pair and formulate difference observations.
+
     Args:
         config_file (`str`): configuration file written by `pyemu.helpers.setup_temporal_diff_obs`.
     Returns:
         diff_df (`pandas.DataFrame`) : processed difference observations
     Note:
+
         writes `config_file.replace(".config",".processed")` output file that can be read
         with the instruction file that is created by `pyemu.helpers.setup_temporal_diff_obs()`.
+
         this is the companion function of `helpers.setup_setup_temporal_diff_obs()`.
     """
 
@@ -4721,8 +4878,10 @@ class SpatialReference(object):
     a class to locate a structured model grid in x-y space.
     Lifted wholesale from Flopy, and preserved here...
     ...maybe slighlty over-engineered for here
+
     Parameters
     ----------
+
     delr : numpy ndarray
         the model discretization delr vector
         (An array of spacings along a row)
@@ -4746,45 +4905,62 @@ class SpatialReference(object):
         Enter either xul and yul or xll and yll.
     rotation : float
         the counter-clockwise rotation (in degrees) of the grid
+
     proj4_str: str
         a PROJ4 string that identifies the grid in space. warning: case
         sensitive!
+
     units : string
         Units for the grid.  Must be either feet or meters
+
     epsg : int
         EPSG code that identifies the grid in space. Can be used in lieu of
         proj4. PROJ4 attribute will auto-populate if there is an internet
         connection(via get_proj4 method).
         See https://www.epsg-registry.org/ or spatialreference.org
+
     length_multiplier : float
         multiplier to convert model units to spatial reference units.
         delr and delc above will be multiplied by this value. (default=1.)
+
     Attributes
     ----------
     xedge : ndarray
         array of column edges
+
     yedge : ndarray
         array of row edges
+
     xgrid : ndarray
         numpy meshgrid of xedges
+
     ygrid : ndarray
         numpy meshgrid of yedges
+
     xcenter : ndarray
         array of column centers
+
     ycenter : ndarray
         array of row centers
+
     xcentergrid : ndarray
         numpy meshgrid of column centers
+
     ycentergrid : ndarray
         numpy meshgrid of row centers
+
     vertices : 1D array
         1D array of cell vertices for whole grid in C-style (row-major) order
         (same as np.ravel())
+
+
     Notes
     -----
+
     xul and yul can be explicitly (re)set after SpatialReference
     instantiation, but only before any of the other attributes and methods are
     accessed
+
     """
 
     xul, yul = None, None
@@ -5352,6 +5528,7 @@ class SpatialReference(object):
     ):
         """
         set spatial reference - can be called from model instance
+
         """
         if xul is not None and xll is not None:
             msg = (
@@ -5452,6 +5629,7 @@ class SpatialReference(object):
         Given x and y array-like values calculate the rotation about an
         arbitrary origin and then return the rotated coordinates.  theta is in
         degrees.
+
         """
         # jwhite changed on Oct 11 2016 - rotation is now positive CCW
         # theta = -theta * np.pi / 180.
@@ -5491,7 +5669,9 @@ class SpatialReference(object):
     def get_extent(self):
         """
         Get the extent of the rotated and offset grid
+
         Return (xmin, xmax, ymin, ymax)
+
         """
         x0 = self.xedge[0]
         x1 = self.xedge[-1]
@@ -5520,6 +5700,7 @@ class SpatialReference(object):
     def get_grid_lines(self):
         """
         Get the grid lines as a list
+
         """
         xmin = self.xedge[0]
         xmax = self.xedge[-1]
@@ -5562,6 +5743,7 @@ class SpatialReference(object):
         """
         Return a numpy one-dimensional float array that has the cell center x
         coordinate for every column in the grid in model space - not offset or rotated.
+
         """
         assert self.delr is not None and len(self.delr) > 0, (
             "delr not passed to " "spatial reference object"
@@ -5573,6 +5755,7 @@ class SpatialReference(object):
         """
         Return a numpy one-dimensional float array that has the cell center x
         coordinate for every row in the grid in model space - not offset of rotated.
+
         """
         assert self.delc is not None and len(self.delc) > 0, (
             "delc not passed to " "spatial reference object"
@@ -5586,6 +5769,7 @@ class SpatialReference(object):
         Return a numpy one-dimensional float array that has the cell edge x
         coordinates for every column in the grid in model space - not offset
         or rotated.  Array is of size (ncol + 1)
+
         """
         assert self.delr is not None and len(self.delr) > 0, (
             "delr not passed to " "spatial reference object"
@@ -5598,6 +5782,7 @@ class SpatialReference(object):
         Return a numpy one-dimensional float array that has the cell edge y
         coordinates for every row in the grid in model space - not offset or
         rotated. Array is of size (nrow + 1)
+
         """
         assert self.delc is not None and len(self.delc) > 0, (
             "delc not passed to " "spatial reference object"
@@ -5647,10 +5832,12 @@ class SpatialReference(object):
     def get_ij(self, x, y):
         """Return the row and column of a point or sequence of points
         in real-world coordinates.
+
         Parameters
         ----------
         x : scalar or sequence of x coordinates
         y : scalar or sequence of y coordinates
+
         Returns
         -------
         i : row or sequence of rows (zero-based)
@@ -6578,21 +6765,27 @@ class SpatialReference(object):
 
 def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
     """calculate the 1-D and 2-D mahalanobis distance
+
     Args:
         sim_en (`pyemu.ObservationEnsemble`): a simulated outputs ensemble
         l1_crit_val (`float`): the chi squared critical value for the 1-D
             mahalanobis distance.  Default is 6.4 (p=0.01,df=1)
         l2_crit_val (`float`): the chi squared critical value for the 2-D
             mahalanobis distance.  Default is 9.2 (p=0.01,df=2)
+
     Returns:
+
         tuple containing
+
         - **pandas.DataFrame**: 1-D subspace squared mahalanobis distances
             that exceed the `l1_crit_val` threshold
         - **pandas.DataFrame**: 2-D subspace squared mahalanobis distances
             that exceed the `l2_crit_val` threshold
+
     Note:
         Noise realizations are added to `sim_en` to account for measurement
             noise.
+
     """
 
     if not isinstance(sim_en, pyemu.ObservationEnsemble):
@@ -6699,7 +6892,6 @@ def _l2_maha_worker(o1, o2names, mean, var, cov, results, l2_crit_val):
             rresults[ostr] = l2_maha_sq_val
     results.update(rresults)
     print(o1, "done")
-
 
 class GsfReader():
     '''
