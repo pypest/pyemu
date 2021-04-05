@@ -21,6 +21,7 @@ import pandas as pd
 pd.options.display.max_colwidth = 100
 from ..pyemu_warnings import PyemuWarning
 
+
 try:
     import flopy
 except:
@@ -3981,18 +3982,18 @@ def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv"):
         org_file = org_file[0]
         org_arr = np.loadtxt(org_file)
         if "zone_file" in df.columns:
-            zone_file = (
-                df.loc[df.model_file == model_input_file, "zone_file"].dropna().unique()
-            )
+            zone_file = df.loc[df.model_file == model_input_file,"zone_file"].dropna().unique()
+            zone_arr = None
             if len(zone_file) > 1:
                 zone_arr = np.zeros_like(arr)
                 for zf in zone_file:
                     za = np.loadtxt(zf)
-                    zone_arr[za != 0] = 1
-            else:
+                    zone_arr[za!=0] = 1
+            elif len(zone_file) == 1:
                 zone_arr = np.loadtxt(zone_file[0])
-            arr[zone_arr == 0] = np.NaN
-            org_arr[zone_arr == 0] = np.NaN
+            if zone_arr is not None:
+                arr[zone_arr==0] = np.NaN
+                org_arr[zone_arr==0] = np.NaN
 
         for stat, func in stat_dict.items():
             v = func(arr)
