@@ -226,8 +226,10 @@ class PstFrom(object):
         i, j = self.parse_kij_args(args, kwargs)
         return i, j
 
-    def _dict_get_xy(self,arg):
-        xy = self._spatial_reference.get(tuple(arg),None)
+    def _dict_get_xy(self,arg,**kwargs):
+        if isinstance(arg,list):
+            arg = tuple(arg)
+        xy = self._spatial_reference.get(arg,None)
         if xy is None:
             arg_len = None
             try:
@@ -1899,7 +1901,7 @@ class PstFrom(object):
                         "No spatial reference " "(containing cell spacing) passed."
                     )
                     if self.spatial_reference is not None:
-                        # using global sr on PestFrom object
+                        # using global sr on PstFrom object
                         self.logger.statement(
                             "OK - using spatial reference " "in parent object."
                         )
@@ -1912,20 +1914,23 @@ class PstFrom(object):
                             "Can't set-up pilotpoints"
                         )
                 # check that spatial reference lines up with the original array dimensions
-                for mod_file, ar in file_dict.items():
-                    orgdata = ar.shape
-                    assert orgdata[0] == spatial_reference.nrow, (
-                        "Spatial reference nrow not equal to original data nrow for\n"
-                        + os.path.join(
-                            *os.path.split(self.original_file_d)[1:], mod_file
+                structured = False
+                if not isinstance(spatial_reference,dict):
+                    structured = True
+                    for mod_file, ar in file_dict.items():
+                        orgdata = ar.shape
+                        assert orgdata[0] == spatial_reference.nrow, (
+                            "Spatial reference nrow not equal to original data nrow for\n"
+                            + os.path.join(
+                                *os.path.split(self.original_file_d)[1:], mod_file
+                            )
                         )
-                    )
-                    assert orgdata[1] == spatial_reference.ncol, (
-                        "Spatial reference ncol not equal to original data ncol for\n"
-                        + os.path.join(
-                            *os.path.split(self.original_file_d)[1:], mod_file
+                        assert orgdata[1] == spatial_reference.ncol, (
+                            "Spatial reference ncol not equal to original data ncol for\n"
+                            + os.path.join(
+                                *os.path.split(self.original_file_d)[1:], mod_file
+                            )
                         )
-                    )
                 # (stolen from helpers.PstFromFlopyModel()._pp_prep())
                 # but only settting up one set of pps at a time
                 pp_dict = {0: par_name_base}
@@ -2024,9 +2029,18 @@ class PstFrom(object):
                                     )
                                 )
 
+                if not structured and pp_locs is None:
+                    self.logger.lraise("pilot point type parameters with an unstructured grid requires 'pp_space' "
+                                       "contain explict pilot point information")
+
+
                 if geostruct is None:  # need a geostruct for pilotpoints
+
                     # can use model default, if provided
                     if self.geostruct is None:  # but if no geostruct passed...
+                        if not structured:
+                            self.logger.lraise("pilot point type parameters with an unstructured grid requires an"
+                                               " explicit `geostruct` arg be passed to either PstFrom or add_parameters()")
                         self.logger.warn(
                             "pp_geostruct is None,"
                             "using ExpVario with contribution=1 "
