@@ -32,7 +32,7 @@ else:
 mf_exe_path = os.path.join(bin_path, "mfnwt")
 mt_exe_path = os.path.join(bin_path, "mt3dusgs")
 mf6_exe_path = os.path.join(bin_path, "mf6")
-pp_exe_path = os.path.join(bin_path, "pestpp")
+pp_exe_path = os.path.join(bin_path, "pestpp-glm")
 ies_exe_path = os.path.join(bin_path, "pestpp-ies")
 swp_exe_path = os.path.join(bin_path, "pestpp-swp")
 
@@ -2712,14 +2712,138 @@ def mf6_freyberg_arr_obs_and_headerless_test():
     assert d.sum() == 0
 
 
+def mf6_freyberg_pp_locs_test():
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
+    tmp_model_ws = "temp_pst_from"
+    if os.path.exists(tmp_model_ws):
+        shutil.rmtree(tmp_model_ws)
+    os.mkdir(tmp_model_ws)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
+    # sim.set_all_data_external()
+    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    # sim.set_all_data_external()
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
+
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+
+    template_ws = "new_temp"
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018",
+                 chunk_len=1)
+
+    # pf.post_py_cmds.append("generic_function()")
+    df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
+    pp_gs = pyemu.geostats.GeoStruct(variograms=v)
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
+    #         "rch_recharge": [.5, 1.5]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+
+    xmn = m.modelgrid.xvertices.min()
+    xmx = m.modelgrid.xvertices.max()
+    ymn = m.modelgrid.yvertices.min()
+    ymx = m.modelgrid.yvertices.max()
+
+    numpp = 20
+    xvals = np.random.uniform(xmn,xmx,numpp)
+    yvals = np.random.uniform(ymn, ymx, numpp)
+    pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
+    pp_locs.loc[:,"zone"] = 1
+    pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
+    pp_locs.loc[:,"parval1"] = 1.0
+
+    pyemu.pp_utils.write_pp_shapfile(pp_locs,os.path.join(template_ws,"pp_locs.shp"))
+    df = pyemu.pp_utils.pilot_points_from_shapefile(os.path.join(template_ws,"pp_locs.shp"))
+
+    #pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
+    #pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
+    pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
+    pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
+    pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
+
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            pass
+            # pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
+            #                   pargp="rch_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                   geostruct=gr_gs)
+            # for arr_file in arr_files:
+            #     kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+            #     pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
+            #                       pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                       geostruct=rch_temporal_gs,
+            #                       datetime=dts[kper])
+        else:
+            for i,arr_file in enumerate(arr_files):
+                if i < len(pp_container):
+                    pp_opt = pp_container[i]
+                else:
+                    pp_opt = pp_locs
+                pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
+                                  par_name_base=arr_file.split('.')[1] + "_pp",
+                                  pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
+                                  upper_bound=ub, lower_bound=lb,pp_space=pp_opt)
+
+
+
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
+
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+
+    num_reals = 10
+    pe = pf.draw(num_reals, use_specsim=True)
+    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+
+    pst.parameter_data.loc[:,"partrans"] = "fixed"
+    pst.parameter_data.loc[::10, "partrans"] = "log"
+    pst.control_data.noptmax = -1
+    pst.write(os.path.join(template_ws,"freyberg.pst"))
+
+    #pyemu.os_utils.run("{0} freyberg.pst".format("pestpp-glm"),cwd=template_ws)
+    pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,worker_root=".",master_dir="master_glm")
+
+    sen_df = pd.read_csv(os.path.join("master_glm","freyberg.isen"),index_col=0).loc[:,pst.adj_par_names]
+    print(sen_df.T)
+    mn = sen_df.values.min()
+    print(mn)
+    assert mn > 0.0
+
 
 if __name__ == "__main__":
+    mf6_freyberg_pp_locs_test()
     #invest()
     #freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_shortnames_test()
-    mf6_freyberg_direct_test()
+    #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()

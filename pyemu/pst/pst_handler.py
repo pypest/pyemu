@@ -1520,8 +1520,6 @@ class Pst(object):
                 v = ",".join([str(vv) for vv in list(v)])
             f_out.write("{0:30} {1}\n".format(k, v))
 
-
-
         # parameter groups
         name = "pargp_data"
         columns = self.pargp_fieldnames
@@ -1542,7 +1540,6 @@ class Pst(object):
         pargp_filename = os.path.join(pst_rel_path, os.path.split(pargp_filename)[-1])
         f_out.write("{0}\n".format(pargp_filename))
 
-
         # parameter data
         name = "par_data"
         columns = self.par_fieldnames
@@ -1562,7 +1559,6 @@ class Pst(object):
         self.parameter_data.to_csv(par_filename, index=False)
         par_filename = os.path.join(pst_rel_path, os.path.split(par_filename)[-1])
         f_out.write("{0}\n".format(par_filename))
-
 
         # observation data
         name = "obs_data"
@@ -1627,7 +1623,6 @@ class Pst(object):
         self.model_output_data.to_csv(io_filename, index=False)
         io_filename = os.path.join(pst_rel_path, os.path.split(io_filename)[-1])
         f_out.write("{0}\n".format(io_filename))
-
 
         # prior info
         if self.prior_information.shape[0] > 0:
@@ -2549,8 +2544,7 @@ class Pst(object):
         # get the parameter names in the template file
         parnme = pst_utils.parse_tpl_file(template_file)
 
-        parval1 = pst_utils.try_read_input_file_with_tpl(template_file,in_file)
-
+        parval1 = pst_utils.try_read_input_file_with_tpl(template_file, in_file)
 
         # find "new" parameters that are not already in the control file
         new_parnme = [p for p in parnme if p not in self.parameter_data.parnme]
@@ -2573,7 +2567,7 @@ class Pst(object):
             new_par_data.loc[new_parnme, "parnme"] = new_parnme
             self.parameter_data = self.parameter_data.append(new_par_data)
             if parval1 is not None:
-                new_par_data.loc[parval1.parnme,"parval1"] = parval1.parval1
+                new_par_data.loc[parval1.parnme, "parval1"] = parval1.parval1
         if in_file is None:
             in_file = template_file.replace(".tpl", "")
         if pst_path is not None:

@@ -1757,37 +1757,45 @@ class Matrix(object):
             f.write(name.encode())
         f.close()
 
-    def to_dense(self,filename,close=True):
-        return Matrix.write_dense(filename,row_names=self.row_names,col_names=self.col_names,
-                                  data=self.x,close=close)
+    def to_dense(self, filename, close=True):
+        return Matrix.write_dense(
+            filename,
+            row_names=self.row_names,
+            col_names=self.col_names,
+            data=self.x,
+            close=close,
+        )
 
     @staticmethod
-    def write_dense(filename,row_names,col_names,data,close=False):
-        """some hackery
+    def write_dense(filename, row_names, col_names, data, close=False):
+        """some hackery"""
 
-        """
-
-        if isinstance(filename,str):
-            f = open(filename,"wb")
-            header = np.array((0,-len(col_names), -len(col_names)), dtype=Matrix.binary_header_dt)
+        if isinstance(filename, str):
+            f = open(filename, "wb")
+            header = np.array(
+                (0, -len(col_names), -len(col_names)), dtype=Matrix.binary_header_dt
+            )
             header.tofile(f)
-            slengths = np.array([len(col_name) for col_name in col_names],dtype=Matrix.integer)
+            slengths = np.array(
+                [len(col_name) for col_name in col_names], dtype=Matrix.integer
+            )
             slengths.tofile(f)
-            for i,col_name in enumerate(col_names):
-                #slengths[[i]].tofile(f)
+            for i, col_name in enumerate(col_names):
+                # slengths[[i]].tofile(f)
                 f.write(col_name.encode())
         else:
             f = filename
-        slengths = np.array([len(row_name) for row_name in row_names], dtype=Matrix.integer)
+        slengths = np.array(
+            [len(row_name) for row_name in row_names], dtype=Matrix.integer
+        )
         for i in range(data.shape[0]):
             slengths[[i]].tofile(f)
             f.write(row_names[i].encode())
-            data[i,:].astype(Matrix.double).tofile(f)
+            data[i, :].astype(Matrix.double).tofile(f)
         if close:
             f.close()
         else:
             return f
-
 
     def to_binary(self, filename, droptol=None, chunk=None):
         """write a PEST-compatible binary file.  The format is the same
@@ -1896,14 +1904,16 @@ class Matrix(object):
 
         """
         if not os.path.exists(filename):
-            raise Exception("Matrix.read_dense(): filename '{0}' not found".format(filename))
-        if isinstance(filename,str):
+            raise Exception(
+                "Matrix.read_dense(): filename '{0}' not found".format(filename)
+            )
+        if isinstance(filename, str):
             f = open(filename, "rb")
         else:
             f = filename
         # the header datatype
         itemp1, itemp2, icount = np.fromfile(f, Matrix.binary_header_dt, 1)[0]
-        #print(itemp1,itemp2,icount)
+        # print(itemp1,itemp2,icount)
         if itemp1 != 0:
             raise Exception("Matrix.read_dense() itemp1 != 0")
         if itemp2 != icount:
@@ -1912,15 +1922,14 @@ class Matrix(object):
         col_names = []
         row_names = []
         data_rows = []
-        col_slens = np.fromfile(f,Matrix.integer,ncol)
+        col_slens = np.fromfile(f, Matrix.integer, ncol)
         i = 0
-        #for j in range(ncol):
+        # for j in range(ncol):
         for slen in col_slens:
-            #slen = np.fromfile(f, Matrix.integer,1)[0]
-            name = (struct.unpack(str(slen) + "s", f.read(slen))[0]
-                    .strip()
-                    .lower()
-                    .decode())
+            # slen = np.fromfile(f, Matrix.integer,1)[0]
+            name = (
+                struct.unpack(str(slen) + "s", f.read(slen))[0].strip().lower().decode()
+            )
             col_names.append(name)
         while True:
             try:
@@ -1928,20 +1937,26 @@ class Matrix(object):
             except Exception as e:
                 break
             try:
-                name = (struct.unpack(str(slen) + "s", f.read(slen))[0]
-                       .strip()
-                       .lower()
-                       .decode())
+                name = (
+                    struct.unpack(str(slen) + "s", f.read(slen))[0]
+                    .strip()
+                    .lower()
+                    .decode()
+                )
 
                 data_row = np.fromfile(f, Matrix.double, ncol)
                 if data_row.shape[0] != ncol:
-                    raise Exception("incomplete data in row {0}: {1} vs {2}".format(i,data_row.shape[0],ncol))
+                    raise Exception(
+                        "incomplete data in row {0}: {1} vs {2}".format(
+                            i, data_row.shape[0], ncol
+                        )
+                    )
             except Exception as e:
                 if forgive:
-                    print("error reading row {0}: {1}".format(i,str(e)))
+                    print("error reading row {0}: {1}".format(i, str(e)))
                     break
                 else:
-                    raise Exception("error reading row {0}: {1}".format(i,str(e)))
+                    raise Exception("error reading row {0}: {1}".format(i, str(e)))
             row_names.append(name)
             data_rows.append(data_row)
             i += 1
@@ -1949,7 +1964,7 @@ class Matrix(object):
         data_rows = np.array(data_rows)
         if close:
             f.close()
-        return data_rows,row_names,col_names
+        return data_rows, row_names, col_names
 
     @classmethod
     def from_binary(cls, filename, forgive=False):
@@ -1992,11 +2007,13 @@ class Matrix(object):
 
         """
         if not os.path.exists(filename):
-            raise Exception("Matrix.read_binary_header(): filename '{0}' not found".format(filename))
+            raise Exception(
+                "Matrix.read_binary_header(): filename '{0}' not found".format(filename)
+            )
         f = open(filename, "rb")
         itemp1, itemp2, icount = np.fromfile(f, Matrix.binary_header_dt, 1)[0]
         f.close()
-        return itemp1,itemp2,icount
+        return itemp1, itemp2, icount
 
     @staticmethod
     def read_binary(filename, forgive=False):
@@ -2017,7 +2034,9 @@ class Matrix(object):
 
         """
         if not os.path.exists(filename):
-            raise Exception("Matrix.read_binary(): filename '{0}' not found".format(filename))
+            raise Exception(
+                "Matrix.read_binary(): filename '{0}' not found".format(filename)
+            )
         f = open(filename, "rb")
         itemp1, itemp2, icount = np.fromfile(f, Matrix.binary_header_dt, 1)[0]
         if itemp1 > 0 and itemp2 < 0 and icount < 0:
@@ -2031,7 +2050,7 @@ class Matrix(object):
             return Matrix.from_fortranfile(filename)
         if itemp1 == 0 and itemp2 == icount:
             f.close()
-            return Matrix.read_dense(filename,forgive=forgive)
+            return Matrix.read_dense(filename, forgive=forgive)
 
         ncol, nrow = abs(itemp1), abs(itemp2)
         if itemp1 >= 0:
