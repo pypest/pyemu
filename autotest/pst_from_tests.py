@@ -2836,8 +2836,34 @@ def mf6_freyberg_pp_locs_test():
     assert mn > 0.0
 
 
+def usg_freyberg_test():
+    import numpy as np
+    import pandas as pd
+    import flopy
+    import pyemu
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_usg')
+
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_usg')
+    m = flopy.modflow.Modflow.load("freyberg.usg.nam", model_ws=org_model_ws,
+                                   verbose=True, version="mfusg",
+                                   forgive=False, check=False)
+    m.external_path = "."
+    tmp_model_ws = "temp_pst_from_usg"
+    if os.path.exists(tmp_model_ws):
+        shutil.rmtree(tmp_model_ws)
+    m.change_model_ws(tmp_model_ws, reset_external=True)
+    m.write_input()
+    pyemu.os_utils.run("mfusg freyberg.usg.nam", cwd=tmp_model_ws)
+
+
+
+
 if __name__ == "__main__":
-    mf6_freyberg_pp_locs_test()
+    #mf6_freyberg_pp_locs_test()
     #invest()
     #freyberg_test()
     #freyberg_prior_build_test()
@@ -2853,6 +2879,8 @@ if __name__ == "__main__":
     #tpf.add
     #pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()\
+    #usg_freyberg_test()
+    flip_usg_to_external()
 
 
 
