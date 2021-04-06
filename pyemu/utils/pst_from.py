@@ -2029,6 +2029,9 @@ class PstFrom(object):
                                     )
                                 )
 
+                if not structured and zone_array is not None:
+                    self.logger.lraise("'zone_array' not supported for unstructured grids and pilot points")
+
                 if not structured and pp_locs is None:
                     self.logger.lraise("pilot point type parameters with an unstructured grid requires 'pp_space' "
                                        "contain explict pilot point information")
@@ -2156,13 +2159,23 @@ class PstFrom(object):
                     self._pp_facs[fac_filename] = pp_info_dict
                     # this is slow (esp on windows) so only want to do this
                     # when required
-                    ok_pp.calc_factors_grid(
-                        spatial_reference,
-                        var_filename=var_filename,
-                        zone_array=zone_array,
-                        num_threads=10,
-                    )
-                    ok_pp.to_grid_factors_file(fac_filename)
+                    if structured:
+                        ok_pp.calc_factors_grid(
+                            spatial_reference,
+                            var_filename=var_filename,
+                            zone_array=zone_array,
+                            num_threads=10,
+                        )
+                        ok_pp.to_grid_factors_file(fac_filename)
+                    else:
+                        #put the sr dict info into a df
+                        data = []
+                        for node,(x,y) in spatial_reference.items():
+                            data.append([node,x,y])
+                        node_df = pd.DataFrame(data,columns=["node","x","y"])
+                        ok_pp.calc_factors(df.x, df.y, num_threads=10)
+                        ok_pp.to_grid_factors_file(fac_filename)
+
                     self.logger.log("calculating factors for pargp={0}".format(pg))
             # TODO - other par types - JTW?
             elif par_type == "kl":

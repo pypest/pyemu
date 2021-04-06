@@ -2862,12 +2862,29 @@ def usg_freyberg_test():
     gsf = pyemu.gw_utils.GsfReader(os.path.join(org_model_ws,"freyberg.usg.gsf"))
     sr_dict = gsf.get_node_coordinates(zero_based = True)
     print(sr_dict[3736])
+
+    #gen up some fake pp locs
+    num_pp = 20
+    data = {"name":[],"x":[],"y":[]}
+    visited = set()
+    for i in range(num_pp):
+        while True:
+            idx = np.random.randint(0,4000)
+            if idx  not in visited:
+                break
+        x,y = sr_dict[idx]
+        data["name"].append("pp_{0}".format(i))
+        data["x"].append(x)
+        data["y"].append(y)
+        visited.add(idx)
+    pp_df = pd.DataFrame(data=data,index=data["name"])
+
     v = pyemu.geostats.ExpVario(contribution=1.0,a=500)
     gs = pyemu.geostats.GeoStruct(variograms=v)
     pf = pyemu.utils.PstFrom(tmp_model_ws,"template",longnames=True,remove_existing=True,
                              zero_based=False,spatial_reference=sr_dict)
-    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1")
-    pf.add_parameters("hk_Layer_1.ref", par_type="pilotpoints", par_name_base="hk1")
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_gr")
+    pf.add_parameters("hk_Layer_1.ref", par_type="pilotpoints", par_name_base="hk1_pp",pp_space=pp_df,geostruct=gs)
     wel_files = [f for f in os.listdir(tmp_model_ws) if f.lower().startswith("wel_") and f.lower().endswith(".dat")]
     for wel_file in wel_files:
         pf.add_parameters(wel_file,par_type="grid",par_name_base=wel_file.lower().split('.')[0],index_cols=[0],use_cols=[1],
