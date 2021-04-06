@@ -226,6 +226,26 @@ class PstFrom(object):
         i, j = self.parse_kij_args(args, kwargs)
         return i, j
 
+    def _dict_get_xy(self,arg):
+        xy = self._spatial_reference.get(tuple(arg),None)
+        if xy is None:
+            arg_len = None
+            try:
+                arg_len = len(arg)
+            except Exception as e:
+                self.logger.lraise("Pstfrom._dict_get_xy() error getting xy from arg:'{0}' - no len support".format(arg))
+            if arg_len == 1:
+                xy = self._spatial_reference.get(arg[0],None)
+            elif arg_len == 2 and arg[0] == 0:
+                xy = self._spatial_reference.get(arg[1], None)
+            elif arg_len == 2 and arg[1] == 0:
+                xy = self._spatial_reference.get(arg[0], None)
+            else:
+                self.logger.lraise("Pstfrom._dict_get_xy() error getting xy from arg:'{0}'".format(arg))
+        if xy is None:
+            self.logger.lraise("Pstfrom._dict_get_xy() error getting xy from arg:'{0}' - still None".format(arg))
+        return xy[0],xy[1]
+
     def _flopy_sr_get_xy(self, args, **kwargs):
         i, j = self.parse_kij_args(args, kwargs)
         if all([ij is None for ij in [i, j]]):
@@ -296,6 +316,9 @@ class PstFrom(object):
             self._spatial_reference.xcentergrid = self._spatial_reference.xcellcenters
             self._spatial_reference.ycentergrid = self._spatial_reference.ycellcenters
             self.get_xy = self._flopy_mg_get_xy
+        elif isinstance(self._spatial_reference,dict):
+            self.logger.statement("dictionary-based spatial reference detected...")
+            self.get_xy = self._dict_get_xy
         else:
             self.logger.lraise(
                 "initialize_spatial_reference() error: " "unsupported spatial_reference"

@@ -2859,6 +2859,13 @@ def usg_freyberg_test():
     m.write_input()
     pyemu.os_utils.run("mfusg freyberg.usg.nam", cwd=tmp_model_ws)
 
+    gsf = pyemu.gw_utils.GsfReader(os.path.join(org_model_ws,"freyberg.usg.gsf"))
+    sr_dict = gsf.get_node_coordinates(zero_based = True)
+    print(sr_dict)
+
+    pf = pyemu.utils.PstFrom(tmp_model_ws,"template",longnames=True,remove_existing=True,
+                             zero_based=True,spatial_reference=sr_dict)
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid")
 
 
 
@@ -2879,8 +2886,7 @@ if __name__ == "__main__":
     #tpf.add
     #pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()\
-    #usg_freyberg_test()
-    flip_usg_to_external()
+    usg_freyberg_test()
 
 
 
