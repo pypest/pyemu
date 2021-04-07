@@ -1039,6 +1039,11 @@ def setup_hds_obs(
             hds = flopy.utils.UcnFile(hds_file)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
+    elif text.lower() == "headu":
+        try:
+            hds = flopy.utils.HeadUFile(hds_file, text=text, precision=precision)
+        except Exception as e:
+            raise Exception("error instantiating HeadFile:{0}".format(str(e)))
     else:
         try:
             hds = flopy.utils.HeadFile(hds_file, text=text, precision=precision)
@@ -1066,7 +1071,7 @@ def setup_hds_obs(
         assert kper in kpers, "kper not in hds:{0}".format(kper)
         assert k in range(hds.nlay), "k not in hds:{0}".format(k)
         kstp = last_kstp_from_kper(hds, kper)
-        d = hds.get_data(kstpkper=(kstp, kper))[k, :, :]
+        d = hds.get_data(kstpkper=(kstp, kper))[k]
 
         data["{0}_{1}".format(kper, k)] = d.flatten()
         # data[(kper,k)] = d.flatten()
@@ -1235,6 +1240,8 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e20, precision="single", text="head
 
     if hds_file.lower().endswith("ucn"):
         hds = flopy.utils.UcnFile(hds_file)
+    elif text.lower() == "headu":
+        hds = flopy.utils.HeadUFile(hds_file)
     else:
         hds = flopy.utils.HeadFile(hds_file, precision=precision, text=text)
     kpers = df.kper.unique()
@@ -1244,11 +1251,22 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e20, precision="single", text="head
         data = hds.get_data(kstpkper=(kstp, kper))
         # jwhite 15jan2018 fix for really large values that are getting some
         # trash added to them...
-        data[np.isnan(data)] = 0.0
-        data[data > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
-        data[data < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
-        df_kper = df.loc[df.kper == kper, :]
-        df.loc[df_kper.index, "obsval"] = data[df_kper.k, df_kper.i, df_kper.j]
+        if text.lower() != "headu":
+            data[np.isnan(data)] = 0.0
+            data[data > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
+            data[data < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
+            df_kper = df.loc[df.kper == kper, :]
+            df.loc[df_kper.index, "obsval"] = data[df_kper.k, df_kper.i, df_kper.j]
+        else:
+
+            df_kper = df.loc[df.kper == kper, :]
+            for k,d in enumerate(data):
+                d[np.isnan(d)] = 0.0
+                d[d > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
+                d[d < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
+                df_kperk = df_kper.loc[df_kper.k==k,:]
+                df.loc[df_kperk.index,"obsval"] = d[df_kperk.i]
+
     assert df.dropna().shape[0] == df.shape[0]
     df.loc[:, ["obsnme", "obsval"]].to_csv(out_file, index=False, sep=" ")
     return df
@@ -2892,13 +2910,17 @@ class GsfReader():
 
             node_data.append([int(nid), float(x), float(y), float(z), int(lay), int(numverts), vertidx])
 
-        nodedf = pd.DataFrame(node_data, columns=['Node', 'X', 'Y', 'Z', 'layer', 'numverts', 'vertidx'])
+        nodedf = pd.DataFrame(node_data, columns=['node', 'x', 'y', 'z', 'layer', 'numverts', 'vertidx'])
         return nodedf
 
     def get_node_coordinates(self, zcoord=False, zero_based=False):
         '''
         Args:
-            zcoord: if true, add z coord to coordinates
+            zcoord (`bool`): flag to add z coord to coordinates.  Default is False
+            zero_based (`bool`): flag to subtract one from the node numbers in the returned
+                node_coords dict.  This is needed to support PstFrom.  Default is False
+
+
         Returns:
             node_coords: Dictionary containing x and y coordinates for each node
         '''

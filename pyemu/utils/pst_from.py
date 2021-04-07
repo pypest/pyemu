@@ -2169,11 +2169,12 @@ class PstFrom(object):
                         ok_pp.to_grid_factors_file(fac_filename)
                     else:
                         #put the sr dict info into a df
+                        # but we only want to use the n
                         data = []
                         for node,(x,y) in spatial_reference.items():
                             data.append([node,x,y])
                         node_df = pd.DataFrame(data,columns=["node","x","y"])
-                        ok_pp.calc_factors(df.x, df.y, num_threads=10)
+                        ok_pp.calc_factors(node_df.x, node_df.y, num_threads=10)
                         ok_pp.to_grid_factors_file(fac_filename)
 
                     self.logger.log("calculating factors for pargp={0}".format(pg))
