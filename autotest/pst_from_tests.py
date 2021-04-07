@@ -2990,7 +2990,7 @@ def usg_freyberg_test():
     pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path), cwd=pf.new_d)
 
     pst = pyemu.Pst(os.path.join(pf.new_d, "freyberg.usg.pst"))
-    assert pst.phi < 1.0e-3,pst.phi
+    assert pst.phi > 1.0e-3,pst.phi
 
     for arr_file in ["hk_Layer_1.ref", "hk_Layer_3.ref"]:
         in_arr = np.loadtxt(os.path.join(pf.new_d, arr_file))
