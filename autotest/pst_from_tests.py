@@ -2841,20 +2841,22 @@ def usg_freyberg_test():
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
 
-    org_model_ws = os.path.join('..', 'examples', 'freyberg_usg')
-
+    #path to org model files
     org_model_ws = os.path.join('..', 'examples', 'freyberg_usg')
     # flopy is not liking the rch package in unstruct, so allow it to fail and keep going...
     m = flopy.modflow.Modflow.load("freyberg.usg.nam", model_ws=org_model_ws,
                                    verbose=True, version="mfusg",
                                    forgive=True, check=False)
+    #convert to all open/close
     m.external_path = "."
     tmp_model_ws = "temp_pst_from_usg"
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
+    #change dir and write
     m.change_model_ws(tmp_model_ws, reset_external=True)
     m.write_input()
 
+    #manually copy over the two packages that flopy doesnt like/support
     shutil.copy2(os.path.join(org_model_ws,"freyberg.usg.rch"),os.path.join(tmp_model_ws,"freyberg.usg.rch"))
     shutil.copy2(os.path.join(org_model_ws, "freyberg.usg.gnc"), os.path.join(tmp_model_ws, "freyberg.usg.gnc"))
     nam_file = os.path.join(tmp_model_ws,"freyberg.usg.nam")
@@ -2865,26 +2867,31 @@ def usg_freyberg_test():
         f.write("RCH      31  freyberg.usg.rch\n")
         f.write("GNC       35  freyberg.usg.gnc\n")
 
-
+    #make sure the model runs in the new dir with all external formats
     pyemu.os_utils.run("mfusg freyberg.usg.nam", cwd=tmp_model_ws)
 
     # for usg, we need to do some trickery to support the unstructured by layers concept
+    # this is just for array-based parameters, list-based pars are g2g because they have an index
     gsf = pyemu.gw_utils.GsfReader(os.path.join(org_model_ws,"freyberg.usg.gsf"))
     df = gsf.get_node_data()
     df.loc[:,"xy"] = df.apply(lambda x: (x.x, x.y),axis=1)
     # these need to be zero based since they are with zero-based array indices later...
     df.loc[:,"node"] -= 1
+    # process each layer
     layers = df.layer.unique()
     layers.sort()
     sr_dict_by_layer = {}
     for layer in layers:
         df_lay = df.loc[df.layer==layer,:].copy()
         df_lay.sort_values(by="node")
+        #substract off the min node number so that each layers node dict starts at zero
         df_lay.loc[:,"node"] = df_lay.node - df_lay.node.min()
         print(df_lay)
         srd = {n:xy for n,xy in zip(df_lay.node.values,df_lay.xy.values)}
         sr_dict_by_layer[layer] = srd
+
     #gen up some fake pp locs
+    np.random.seed(pyemu.en.SEED)
     num_pp = 20
     data = {"name":[],"x":[],"y":[]}
     visited = set()
@@ -2905,15 +2912,20 @@ def usg_freyberg_test():
     zone_array[:,200:420] = 2
     zone_array[:, 600:1000] = 3
 
+    # a geostruct that describes spatial continuity for properties
+    # this is used for all props and for both grid and pilot point
+    # pars cause Im lazy...
     v = pyemu.geostats.ExpVario(contribution=1.0,a=500)
     gs = pyemu.geostats.GeoStruct(variograms=v)
+
     # we pass the full listing of node coord info to the constructor for use
     # with list-type parameters
     pf = pyemu.utils.PstFrom(tmp_model_ws,"template",longnames=True,remove_existing=True,
                              zero_based=False,spatial_reference=gsf.get_node_coordinates(zero_based=True))
 
     # we pass layer specific sr dict for each "array" type that is spatially distributed
-    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_gr",geostruct=gs,spatial_reference=sr_dict_by_layer[1],
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_gr",geostruct=gs,
+                      spatial_reference=sr_dict_by_layer[1],
                       upper_bound=2.0,lower_bound=0.5)
     pf.add_parameters("sy_Layer_1.ref", par_type="zone", par_name_base="sy1_zn",zone_array=zone_array,
                       upper_bound=1.5,lower_bound=0.5,ult_ubound=0.35)
@@ -2921,40 +2933,50 @@ def usg_freyberg_test():
     pf.add_parameters("hk_Layer_3.ref", par_type="pilotpoints", par_name_base="hk1_pp",pp_space=pp_df,
                       geostruct=gs,spatial_reference=sr_dict_by_layer[3],
                       upper_bound=2.0,lower_bound=0.5)
+
+    # add a multiplier par for each well for each stress period
     wel_files = [f for f in os.listdir(tmp_model_ws) if f.lower().startswith("wel_") and f.lower().endswith(".dat")]
     for wel_file in wel_files:
         pf.add_parameters(wel_file,par_type="grid",par_name_base=wel_file.lower().split('.')[0],index_cols=[0],use_cols=[1],
                           geostruct=gs,lower_bound=0.5,upper_bound=1.5)
 
+    # add pest "observations" for each active node for each stress period
     hds_runline, df = pyemu.gw_utils.setup_hds_obs(
         os.path.join(pf.new_d, "freyberg.usg.hds"), kperk_pairs=None,
         prefix="hds", include_path=False, text="headu", skip=-1.0e+30)
     pf.add_observations_from_ins(os.path.join(pf.new_d, "freyberg.usg.hds.dat.ins"), pst_path=".")
     pf.post_py_cmds.append(hds_runline)
+
+    # the command the run the model
     pf.mod_sys_cmds.append("mfusg freyberg.usg.nam")
+
+    #build the control file and draw the prior par ensemble
     pf.build_pst()
     pe = pf.draw(num_reals=100)
     pe.enforce()
     pe.to_csv(os.path.join(pf.new_d,"prior.csv"))
 
+    #make sure the prior cov has off diagonals
     cov = pf.build_prior()
     cov = cov.x
     cov[np.abs(cov)>1.0e-7] = 1.0
     assert cov.sum() > pf.pst.npar_adj + 1
 
-
+    # test that the arr hds obs process is working
     os.chdir(pf.new_d)
     pyemu.gw_utils.apply_hds_obs('freyberg.usg.hds', precision='single', text='headu')
     os.chdir("..")
 
-
+    # run the full process once using the initial par values in the control file
+    # since we are using only multipliers, the initial values are all 1's so
+    # the phi should be pretty close to zero
     pf.pst.control_data.noptmax = 0
     pf.pst.write(os.path.join(pf.new_d,"freyberg.usg.pst"),version=2)
     pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path),cwd=pf.new_d)
-
     pst = pyemu.Pst(os.path.join(pf.new_d,"freyberg.usg.pst"))
     assert pst.phi < 1.e-3
 
+    #make sure the processed model input arrays are veru similar to the org arrays (again 1s for mults)
     for arr_file in ["hk_Layer_1.ref","hk_Layer_3.ref"]:
         in_arr = np.loadtxt(os.path.join(pf.new_d,arr_file))
         org_arr = np.loadtxt(os.path.join(pf.new_d,"org",arr_file))
@@ -2962,12 +2984,13 @@ def usg_freyberg_test():
         print(d.sum())
         assert d.sum() < 1.0e-3,arr_file
 
+    # now run a random realization from the prior par en and make sure things have changed
     pst.parameter_data.loc[pe.columns,"parval1"] = pe.iloc[0,:]
     pst.write(os.path.join(pf.new_d, "freyberg.usg.pst"), version=2)
     pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path), cwd=pf.new_d)
 
     pst = pyemu.Pst(os.path.join(pf.new_d, "freyberg.usg.pst"))
-    assert pst.phi > 1.e-3
+    assert np.abs(pst.phi - 97.0301) < 1.0e-3,pst.phi
 
     for arr_file in ["hk_Layer_1.ref", "hk_Layer_3.ref"]:
         in_arr = np.loadtxt(os.path.join(pf.new_d, arr_file))
