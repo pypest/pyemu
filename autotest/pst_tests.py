@@ -975,9 +975,8 @@ def write2_nan_test():
     pst.write("test.pst", version=2)
 
     pst = pyemu.Pst(os.path.join("test.pst"))
-    print(pst.control_data.nphinored)
-    return
-
+    assert pst.control_data.nphinored == 1000
+    
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pyemu.helpers.zero_order_tikhonov(pst)
     pst.prior_information.loc[pst.prior_names[0], "weight"] = np.NaN
