@@ -668,8 +668,6 @@ def new_format_test_2():
     #try:
     for pst_file in pst_files:
         print(pst_file)
-        if "whitespace" not in pst_file:
-            continue
         if os.path.exists("temp_pst"):
             shutil.rmtree("temp_pst")
         os.makedirs("temp_pst")
