@@ -966,6 +966,19 @@ def write2_nan_test():
     import os
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.control_data.nphinored = 1000
+    pst.write("test.pst",version=2)
+
+    pst = pyemu.Pst(os.path.join("test.pst"))
+    print(pst.control_data.nphinored)
+
+    pst.write("test.pst", version=2)
+
+    pst = pyemu.Pst(os.path.join("test.pst"))
+    print(pst.control_data.nphinored)
+    return
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pyemu.helpers.zero_order_tikhonov(pst)
     pst.prior_information.loc[pst.prior_names[0], "weight"] = np.NaN
     try:
@@ -1059,9 +1072,10 @@ def write2_nan_test():
 
 
 
+
 if __name__ == "__main__":
     
-    #write2_nan_test()
+    write2_nan_test()
     #process_output_files_test()
     # change_limit_test()
     # new_format_test()
@@ -1107,7 +1121,7 @@ if __name__ == "__main__":
     #process_output_files_test()
     #comments_test()
     #read_in_tpl_test()
-    read_in_tpl_test2()
+    #read_in_tpl_test2()
     
     #comments_test()
     #csv_to_ins_test()

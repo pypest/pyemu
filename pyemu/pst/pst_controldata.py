@@ -322,7 +322,8 @@ class ControlData(object):
         """
         self._df.loc[:, "passed"] = False
         if iskeyword:
-            self._df.loc[:, "passed"] = True
+            #self._df.loc[:, "passed"] = True
+
             extra = {}
             for line in lines:
                 raw = line.strip().split()
@@ -459,8 +460,11 @@ class ControlData(object):
         kw = super(ControlData, self).__getattribute__("keyword_accessed")
         f.write("* control data keyword\n")
         for n, v in zip(self._df.name, self.formatted_values):
-            if n not in kw or not self._df.loc[n, "passed"]:
-                continue
+            if n not in kw:
+                if n not in self._df.index:
+                    continue
+                elif not self._df.loc[n, "passed"]:
+                    continue
             f.write("{0:30} {1}\n".format(n, v))
 
     def write(self, f):
