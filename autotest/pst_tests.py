@@ -668,7 +668,8 @@ def new_format_test_2():
     #try:
     for pst_file in pst_files:
         print(pst_file)
-
+        if "whitespace" not in pst_file:
+            continue
         if os.path.exists("temp_pst"):
             shutil.rmtree("temp_pst")
         os.makedirs("temp_pst")
@@ -966,7 +967,7 @@ def write2_nan_test():
     import pyemu
     import os
 
-    
+
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.control_data.nphinored = 1000
     pst.write("test.pst",version=2)
@@ -1076,13 +1077,15 @@ def write2_nan_test():
 
 if __name__ == "__main__":
     
-    write2_nan_test()
+    #write2_nan_test()
     #process_output_files_test()
     # change_limit_test()
     # new_format_test()
     # lt_gt_constraint_names_test()
     #csv_to_ins_test()
-
+    #ctrl_data_test()
+    #change_limit_test()
+    new_format_test_2()
     # try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
