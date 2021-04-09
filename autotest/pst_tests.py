@@ -966,9 +966,7 @@ def write2_nan_test():
     import pyemu
     import os
 
-    pst = pyemu.Pst.from_par_obs_names()
-    pst.write("test.pst",version=2)
-    return
+    
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.control_data.nphinored = 1000
     pst.write("test.pst",version=2)
