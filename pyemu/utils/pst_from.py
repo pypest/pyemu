@@ -226,6 +226,28 @@ class PstFrom(object):
         i, j = self.parse_kij_args(args, kwargs)
         return i, j
 
+    def _dict_get_xy(self,arg,**kwargs):
+        if isinstance(arg,list):
+            arg = tuple(arg)
+        xy = self._spatial_reference.get(arg,None)
+        if xy is None:
+            arg_len = None
+            try:
+                arg_len = len(arg)
+            except Exception as e:
+                self.logger.lraise("Pstfrom._dict_get_xy() error getting xy from arg:'{0}' - no len support".format(arg))
+            if arg_len == 1:
+                xy = self._spatial_reference.get(arg[0],None)
+            elif arg_len == 2 and arg[0] == 0:
+                xy = self._spatial_reference.get(arg[1], None)
+            elif arg_len == 2 and arg[1] == 0:
+                xy = self._spatial_reference.get(arg[0], None)
+            else:
+                self.logger.lraise("Pstfrom._dict_get_xy() error getting xy from arg:'{0}'".format(arg))
+        if xy is None:
+            self.logger.lraise("Pstfrom._dict_get_xy() error getting xy from arg:'{0}' - still None".format(arg))
+        return xy[0],xy[1]
+
     def _flopy_sr_get_xy(self, args, **kwargs):
         i, j = self.parse_kij_args(args, kwargs)
         if all([ij is None for ij in [i, j]]):
@@ -296,6 +318,9 @@ class PstFrom(object):
             self._spatial_reference.xcentergrid = self._spatial_reference.xcellcenters
             self._spatial_reference.ycentergrid = self._spatial_reference.ycellcenters
             self.get_xy = self._flopy_mg_get_xy
+        elif isinstance(self._spatial_reference,dict):
+            self.logger.statement("dictionary-based spatial reference detected...")
+            self.get_xy = self._dict_get_xy
         else:
             self.logger.lraise(
                 "initialize_spatial_reference() error: " "unsupported spatial_reference"
@@ -1876,7 +1901,7 @@ class PstFrom(object):
                         "No spatial reference " "(containing cell spacing) passed."
                     )
                     if self.spatial_reference is not None:
-                        # using global sr on PestFrom object
+                        # using global sr on PstFrom object
                         self.logger.statement(
                             "OK - using spatial reference " "in parent object."
                         )
@@ -1889,20 +1914,23 @@ class PstFrom(object):
                             "Can't set-up pilotpoints"
                         )
                 # check that spatial reference lines up with the original array dimensions
-                for mod_file, ar in file_dict.items():
-                    orgdata = ar.shape
-                    assert orgdata[0] == spatial_reference.nrow, (
-                        "Spatial reference nrow not equal to original data nrow for\n"
-                        + os.path.join(
-                            *os.path.split(self.original_file_d)[1:], mod_file
+                structured = False
+                if not isinstance(spatial_reference,dict):
+                    structured = True
+                    for mod_file, ar in file_dict.items():
+                        orgdata = ar.shape
+                        assert orgdata[0] == spatial_reference.nrow, (
+                            "Spatial reference nrow not equal to original data nrow for\n"
+                            + os.path.join(
+                                *os.path.split(self.original_file_d)[1:], mod_file
+                            )
                         )
-                    )
-                    assert orgdata[1] == spatial_reference.ncol, (
-                        "Spatial reference ncol not equal to original data ncol for\n"
-                        + os.path.join(
-                            *os.path.split(self.original_file_d)[1:], mod_file
+                        assert orgdata[1] == spatial_reference.ncol, (
+                            "Spatial reference ncol not equal to original data ncol for\n"
+                            + os.path.join(
+                                *os.path.split(self.original_file_d)[1:], mod_file
+                            )
                         )
-                    )
                 # (stolen from helpers.PstFromFlopyModel()._pp_prep())
                 # but only settting up one set of pps at a time
                 pp_dict = {0: par_name_base}
@@ -2001,9 +2029,21 @@ class PstFrom(object):
                                     )
                                 )
 
+                if not structured and zone_array is not None:
+                    self.logger.lraise("'zone_array' not supported for unstructured grids and pilot points")
+
+                if not structured and pp_locs is None:
+                    self.logger.lraise("pilot point type parameters with an unstructured grid requires 'pp_space' "
+                                       "contain explict pilot point information")
+
+
                 if geostruct is None:  # need a geostruct for pilotpoints
+
                     # can use model default, if provided
                     if self.geostruct is None:  # but if no geostruct passed...
+                        if not structured:
+                            self.logger.lraise("pilot point type parameters with an unstructured grid requires an"
+                                               " explicit `geostruct` arg be passed to either PstFrom or add_parameters()")
                         self.logger.warn(
                             "pp_geostruct is None,"
                             "using ExpVario with contribution=1 "
@@ -2119,13 +2159,24 @@ class PstFrom(object):
                     self._pp_facs[fac_filename] = pp_info_dict
                     # this is slow (esp on windows) so only want to do this
                     # when required
-                    ok_pp.calc_factors_grid(
-                        spatial_reference,
-                        var_filename=var_filename,
-                        zone_array=zone_array,
-                        num_threads=10,
-                    )
-                    ok_pp.to_grid_factors_file(fac_filename)
+                    if structured:
+                        ok_pp.calc_factors_grid(
+                            spatial_reference,
+                            var_filename=var_filename,
+                            zone_array=zone_array,
+                            num_threads=10,
+                        )
+                        ok_pp.to_grid_factors_file(fac_filename)
+                    else:
+                        #put the sr dict info into a df
+                        # but we only want to use the n
+                        data = []
+                        for node,(x,y) in spatial_reference.items():
+                            data.append([node,x,y])
+                        node_df = pd.DataFrame(data,columns=["node","x","y"])
+                        ok_pp.calc_factors(node_df.x, node_df.y, num_threads=10)
+                        ok_pp.to_grid_factors_file(fac_filename)
+
                     self.logger.log("calculating factors for pargp={0}".format(pg))
             # TODO - other par types - JTW?
             elif par_type == "kl":

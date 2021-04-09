@@ -1827,7 +1827,7 @@ def gsf_reader_test():
     import pyemu
     gsffilename = os.path.join('utils','freyberg.usg.gsf')
 
-    gsf = pyemu.helpers.GsfReader(gsffilename)
+    gsf = pyemu.gw_utils.GsfReader(gsffilename)
     nnodes = 4497
 
     assert len(gsf.get_node_data()) == nnodes

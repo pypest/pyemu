@@ -668,7 +668,6 @@ def new_format_test_2():
     #try:
     for pst_file in pst_files:
         print(pst_file)
-
         if os.path.exists("temp_pst"):
             shutil.rmtree("temp_pst")
         os.makedirs("temp_pst")
@@ -960,10 +959,24 @@ def read_in_tpl_test2():
     tpl_d = "tpl"
     df = pyemu.pst_utils.try_read_input_file_with_tpl(os.path.join(tpl_d,"test2.dat.tpl"))
     assert np.isclose(df.loc['par1'].parval1, 8.675309)
+
 def write2_nan_test():
     import numpy as np
     import pyemu
     import os
+
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.control_data.nphinored = 1000
+    pst.write("test.pst",version=2)
+
+    pst = pyemu.Pst(os.path.join("test.pst"))
+    print(pst.control_data.nphinored)
+
+    pst.write("test.pst", version=2)
+
+    pst = pyemu.Pst(os.path.join("test.pst"))
+    assert pst.control_data.nphinored == 1000
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pyemu.helpers.zero_order_tikhonov(pst)
@@ -1059,6 +1072,7 @@ def write2_nan_test():
 
 
 
+
 if __name__ == "__main__":
     
     #write2_nan_test()
@@ -1067,7 +1081,9 @@ if __name__ == "__main__":
     # new_format_test()
     # lt_gt_constraint_names_test()
     #csv_to_ins_test()
-
+    #ctrl_data_test()
+    #change_limit_test()
+    new_format_test_2()
     # try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
@@ -1107,7 +1123,7 @@ if __name__ == "__main__":
     #process_output_files_test()
     #comments_test()
     #read_in_tpl_test()
-    read_in_tpl_test2()
+    #read_in_tpl_test2()
     
     #comments_test()
     #csv_to_ins_test()
