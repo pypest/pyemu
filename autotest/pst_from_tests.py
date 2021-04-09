@@ -3006,6 +3006,7 @@ if __name__ == "__main__":
     #freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
+    mf6_freyberg_da_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
@@ -3017,7 +3018,7 @@ if __name__ == "__main__":
     #tpf.add
     #pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()\
-    usg_freyberg_test()
+    #usg_freyberg_test()
 
 
 

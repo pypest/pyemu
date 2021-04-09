@@ -960,11 +960,15 @@ def read_in_tpl_test2():
     tpl_d = "tpl"
     df = pyemu.pst_utils.try_read_input_file_with_tpl(os.path.join(tpl_d,"test2.dat.tpl"))
     assert np.isclose(df.loc['par1'].parval1, 8.675309)
+
 def write2_nan_test():
     import numpy as np
     import pyemu
     import os
 
+    pst = pyemu.Pst.from_par_obs_names()
+    pst.write("test.pst",version=2)
+    return
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.control_data.nphinored = 1000
     pst.write("test.pst",version=2)
@@ -976,7 +980,7 @@ def write2_nan_test():
 
     pst = pyemu.Pst(os.path.join("test.pst"))
     assert pst.control_data.nphinored == 1000
-    
+
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pyemu.helpers.zero_order_tikhonov(pst)
     pst.prior_information.loc[pst.prior_names[0], "weight"] = np.NaN

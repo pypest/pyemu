@@ -292,7 +292,7 @@ class ControlData(object):
                 "value": cast_defaults,
                 "required": required,
                 "format": formats,
-                "passed": True,
+                "passed": False,
             }
         )
 
