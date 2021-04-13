@@ -1039,6 +1039,11 @@ def setup_hds_obs(
             hds = flopy.utils.UcnFile(hds_file)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
+    elif text.lower() == "headu":
+        try:
+            hds = flopy.utils.HeadUFile(hds_file, text=text, precision=precision)
+        except Exception as e:
+            raise Exception("error instantiating HeadFile:{0}".format(str(e)))
     else:
         try:
             hds = flopy.utils.HeadFile(hds_file, text=text, precision=precision)
@@ -1066,7 +1071,7 @@ def setup_hds_obs(
         assert kper in kpers, "kper not in hds:{0}".format(kper)
         assert k in range(hds.nlay), "k not in hds:{0}".format(k)
         kstp = last_kstp_from_kper(hds, kper)
-        d = hds.get_data(kstpkper=(kstp, kper))[k, :, :]
+        d = hds.get_data(kstpkper=(kstp, kper))[k]
 
         data["{0}_{1}".format(kper, k)] = d.flatten()
         # data[(kper,k)] = d.flatten()
@@ -1235,6 +1240,8 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e20, precision="single", text="head
 
     if hds_file.lower().endswith("ucn"):
         hds = flopy.utils.UcnFile(hds_file)
+    elif text.lower() == "headu":
+        hds = flopy.utils.HeadUFile(hds_file)
     else:
         hds = flopy.utils.HeadFile(hds_file, precision=precision, text=text)
     kpers = df.kper.unique()
@@ -1244,11 +1251,22 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e20, precision="single", text="head
         data = hds.get_data(kstpkper=(kstp, kper))
         # jwhite 15jan2018 fix for really large values that are getting some
         # trash added to them...
-        data[np.isnan(data)] = 0.0
-        data[data > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
-        data[data < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
-        df_kper = df.loc[df.kper == kper, :]
-        df.loc[df_kper.index, "obsval"] = data[df_kper.k, df_kper.i, df_kper.j]
+        if text.lower() != "headu":
+            data[np.isnan(data)] = 0.0
+            data[data > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
+            data[data < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
+            df_kper = df.loc[df.kper == kper, :]
+            df.loc[df_kper.index, "obsval"] = data[df_kper.k, df_kper.i, df_kper.j]
+        else:
+
+            df_kper = df.loc[df.kper == kper, :]
+            for k,d in enumerate(data):
+                d[np.isnan(d)] = 0.0
+                d[d > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
+                d[d < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
+                df_kperk = df_kper.loc[df_kper.k==k,:]
+                df.loc[df_kperk.index,"obsval"] = d[df_kperk.i]
+
     assert df.dropna().shape[0] == df.shape[0]
     df.loc[:, ["obsnme", "obsval"]].to_csv(out_file, index=False, sep=" ")
     return df
@@ -2839,3 +2857,82 @@ def write_hfb_template(m):
     df.loc[:, "parubnd"] = df.parval1.max() * 10.0
     df.loc[:, "parlbnd"] = df.parval1.min() * 0.1
     return tpl_file, df
+
+
+class GsfReader():
+    '''
+    a helper class to read a standard modflow-usg gsf file
+
+    Args:
+        gsffilename (`str`): filename
+
+
+
+    '''
+
+    def __init__(self, gsffilename):
+
+        with open(gsffilename, 'r') as f:
+            self.read_data = f.readlines()
+
+        self.nnode, self.nlay, self.iz, self.ic = [int(n) for n in self.read_data[1].split()]
+
+        self.nvertex = int(self.read_data[2])
+
+    def get_vertex_coordinates(self):
+        '''
+
+
+        Returns:
+            Dictionary containing list of x, y and z coordinates for each vertex
+        '''
+        # vdata = self.read_data[3:self.nvertex+3]
+        vertex_coords = {}
+        for vert in range(self.nvertex):
+            x, y, z = self.read_data[3 + vert].split()
+            vertex_coords[vert + 1] = [float(x), float(y), float(z)]
+        return vertex_coords
+
+    def get_node_data(self):
+        '''
+
+        Returns:
+            nodedf: a pd.DataFrame containing Node information; Node, X, Y, Z, layer, numverts, vertidx
+
+        '''
+
+        node_data = []
+        for node in range(self.nnode):
+            nid, x, y, z, lay, numverts = self.read_data[self.nvertex + 3 + node].split()[:6]
+
+            # vertidx = {'ivertex': [int(n) for n in self.read_data[self.nvertex+3 + node].split()[6:]]}
+            vertidx = [int(n) for n in self.read_data[self.nvertex + 3 + node].split()[6:]]
+
+            node_data.append([int(nid), float(x), float(y), float(z), int(lay), int(numverts), vertidx])
+
+        nodedf = pd.DataFrame(node_data, columns=['node', 'x', 'y', 'z', 'layer', 'numverts', 'vertidx'])
+        return nodedf
+
+    def get_node_coordinates(self, zcoord=False, zero_based=False):
+        '''
+        Args:
+            zcoord (`bool`): flag to add z coord to coordinates.  Default is False
+            zero_based (`bool`): flag to subtract one from the node numbers in the returned
+                node_coords dict.  This is needed to support PstFrom.  Default is False
+
+
+        Returns:
+            node_coords: Dictionary containing x and y coordinates for each node
+        '''
+        node_coords = {}
+        for node in range(self.nnode):
+            nid, x, y, z, lay, numverts = self.read_data[self.nvertex + 3 + node].split()[:6]
+            nid = int(nid)
+            if zero_based:
+                nid -= 1
+            node_coords[nid] = [float(x), float(y)]
+            if zcoord:
+                node_coords[nid] += [float(z)]
+
+        return node_coords
+

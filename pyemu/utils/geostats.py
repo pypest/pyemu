@@ -1446,18 +1446,19 @@ class OrdinaryKrige(object):
     def to_grid_factors_file(
         self, filename, points_file="points.junk", zone_file="zone.junk"
     ):
-        """write a grid-based PEST-style factors file.  This file can be used with
-        the fac2real() method to write an interpolated structured array
+        """write a PEST-style factors file.  This file can be used with
+        the fac2real() method to write an interpolated structured or unstructured array
 
         Args:
             filename (`str`): factor filename
             points_file (`str`): points filename to add to the header of the factors file.
                 This is not used by the fac2real() method.  Default is "points.junk"
             zone_file (`str`): zone filename to add to the header of the factors file.
-                This is notused by the fac2real() method.  Default is "zone.junk"
+                This is not used by the fac2real() method.  Default is "zone.junk"
 
         Note:
-            this method should be called after OrdinaryKirge.calc_factors_grid()
+            this method should be called after OrdinaryKrige.calc_factors_grid() for structured
+            models or after OrdinaryKrige.calc_factors() for unstructured models.
 
         """
         if self.interp_data is None:
@@ -1465,15 +1466,21 @@ class OrdinaryKrige(object):
                 "ok.interp_data is None, must call calc_factors_grid() first"
             )
         if self.spatial_reference is None:
-            raise Exception(
-                "ok.spatial_reference is None, must call calc_factors_grid() first"
-            )
+             #raise Exception(
+             #   "ok.spatial_reference is None, must call calc_factors_grid() first"
+             #)
+            print("OrdinaryKrige.to_grid_factors_file(): spatial_reference attr is None, assuming unstructured grid")
+            nrow = 1
+            ncol = self.interp_data.shape[0]
+        else:
+            nrow = self.spatial_reference.nrow
+            ncol = self.spatial_reference.ncol
         with open(filename, "w") as f:
             f.write(points_file + "\n")
             f.write(zone_file + "\n")
             f.write(
                 "{0} {1}\n".format(
-                    self.spatial_reference.ncol, self.spatial_reference.nrow
+                    ncol, nrow
                 )
             )
             f.write("{0}\n".format(self.point_data.shape[0]))

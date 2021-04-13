@@ -719,27 +719,27 @@ def generic_pst(par_names=["par1"], obs_names=["obs1"], addreg=False):
     return new_pst
 
 
-def try_read_input_file_with_tpl(tpl_file,input_file=None):
+def try_read_input_file_with_tpl(tpl_file, input_file=None):
     """attempt to read parameter values from an input file using a template file
-        Args:
-            tpl_file (`str`): path and name of a template file
-            input_file (`str`,optional): path and name of existing model
-                input file to process.  If `None`, `tpl_file.replace(".tpl","")`
-                is used.  Default is None.
+    Args:
+        tpl_file (`str`): path and name of a template file
+        input_file (`str`,optional): path and name of existing model
+            input file to process.  If `None`, `tpl_file.replace(".tpl","")`
+            is used.  Default is None.
 
-        Returns:
-            `pandas.DataFrame`: a dataframe of parameter name and values
-            extracted from `input_file`.
+    Returns:
+        `pandas.DataFrame`: a dataframe of parameter name and values
+        extracted from `input_file`.
 
-        Note:
-            If an exception is raised when reading the input file, the exception
-            is echoed to the screen and `None` is returned.
+    Note:
+        If an exception is raised when reading the input file, the exception
+        is echoed to the screen and `None` is returned.
 
-        Example::
+    Example::
 
-            df = pyemu.pst_utils.try_process_output_file("my.tpl","my.input")
+        df = pyemu.pst_utils.try_process_output_file("my.tpl","my.input")
 
-        """
+    """
 
     if input_file is None:
         input_file = tpl_file.replace(".tpl", "")
@@ -749,13 +749,14 @@ def try_read_input_file_with_tpl(tpl_file,input_file=None):
     # and also to do some basic error checking
     parnames = parse_tpl_file(tpl_file)
     try:
-        df = _read_infile_with_tplfile(tpl_file,input_file)
+        df = _read_infile_with_tplfile(tpl_file, input_file)
     except Exception as e:
         print("error trying to read input file with tpl file:{0}".format(str(e)))
         return None
     return df
 
-def _read_infile_with_tplfile(tpl_file,input_file):
+
+def _read_infile_with_tplfile(tpl_file, input_file):
     """attempt to read parameter values from an input file using a template file,
     raising heaps of exceptions.
         Args:
@@ -769,58 +770,78 @@ def _read_infile_with_tplfile(tpl_file,input_file):
         Note:
             use try_read_inputfile_with_tpl instead of this one.
 
-        """
+    """
 
     if not os.path.exists(input_file):
-       raise Exception("input file '{0}' not found".format(input_file))
+        raise Exception("input file '{0}' not found".format(input_file))
 
-    f_tpl = open(tpl_file,'r')
-    f_in = open(input_file,'r')
+    f_tpl = open(tpl_file, "r")
+    f_in = open(input_file, "r")
 
     # read the tpl header
     _, marker = f_tpl.readline().split()
-    itpl,iin = 1,0
-    pnames,pvals = [],[]
+    itpl, iin = 1, 0
+    pnames, pvals = [], []
     pdict = {}
     while True:
-        tpl_line =f_tpl.readline()
+        tpl_line = f_tpl.readline()
         if tpl_line == "":
             break
 
         in_line = f_in.readline()
         if in_line == "":
-            raise Exception("input file EOF, tpl file line {0}, in file line {1}".format(itpl,iin))
+            raise Exception(
+                "input file EOF, tpl file line {0}, in file line {1}".format(itpl, iin)
+            )
 
         if marker in tpl_line:
             idxs = [i for i, ltr in enumerate(tpl_line) if ltr == marker]
             if len(idxs) % 2 != 0:
                 raise Exception("unbalanced markers on tpl line {0}".format(itpl))
 
-            for s,e in zip(idxs[0:-1:2],idxs[1::2]):
-                tpl_str = tpl_line[s:e]
-                pname = tpl_str.replace(marker,"").strip().lower()
+            for s, e in zip(idxs[0:-1:2], idxs[1::2]):
+                tpl_str = tpl_line[s : e + 1]
+                pname = tpl_str.replace(marker, "").strip().lower()
                 if s > len(in_line):
-                    raise Exception("input file EOL line {0}, tpl line {1}, looking for {2}"\
-                                    .format(iin,itpl,tpl_str))
-                in_str = in_line[s:e]
+                    raise Exception(
+                        "input file EOL line {0}, tpl line {1}, looking for {2}".format(
+                            iin, itpl, tpl_str
+                        )
+                    )
+                junk_val = "Jennyigotunumber8675309"
+                tmp = tpl_line[:s] + " {} ".format(junk_val) + tpl_line[e + 1 :]
+                if len(tmp.split()) == len(in_line.split()):
+                    # treat this as whitespace delimited
+                    in_str = in_line.split()[tmp.split().index(junk_val)]
+                else:
+                    # or we must assume the params are written using the same spacing as template file
+                    in_str = in_line[s : e + 1]
                 try:
                     v = float(in_str)
                 except Exception as e:
-                    raise Exception("error casting '{0}' to float on in line {1}, tpl line {2} for {3}: {4}".\
-                          format(in_str,iin,itpl,tpl_str,str(e)))
+                    raise Exception(
+                        "error casting '{0}' to float on in line {1}, tpl line {2} for {3}: {4}".format(
+                            in_str, iin, itpl, tpl_str, str(e)
+                        )
+                    )
 
                 if pname in pdict:
                     eval = pdict[pname]
-                    if not np.isclose(eval,v,1.0e-6):
-                        raise Exception("different values {0}:{1} for par {2} on in line {3}".format(v,eval,pname,iin))
+                    if not np.isclose(eval, v, 1.0e-6):
+                        raise Exception(
+                            "different values {0}:{1} for par {2} on in line {3}".format(
+                                v, eval, pname, iin
+                            )
+                        )
                 else:
                     pnames.append(pname)
                     pvals.append(v)
                 pdict[pname] = v
         itpl += 1
         iin += 1
-    df = pd.DataFrame({"parnme":pnames,"parval1":pvals},index=pnames)
+    df = pd.DataFrame({"parnme": pnames, "parval1": pvals}, index=pnames)
     return df
+
 
 def try_process_output_file(ins_file, output_file=None):
     """attempt to process a model output file using a PEST-style instruction file
@@ -1080,7 +1101,7 @@ def csv_to_ins_file(
         rname = str(rname_org).strip().lower()
         if rname in row_visit:
             if longnames:
-                rsuffix = "_"+str(int(row_visit[rname] + 1))
+                rsuffix = "_" + str(int(row_visit[rname] + 1))
             else:
                 rsuffix = str(int(row_visit[rname] + 1))
             row_visit[rname] += 1
@@ -1101,7 +1122,7 @@ def csv_to_ins_file(
         cname = str(cname_org).strip().lower()
         if cname in col_visit:
             if longnames:
-                csuffix = "_"+str(int(col_visit[cname] + 1))
+                csuffix = "_" + str(int(col_visit[cname] + 1))
             else:
                 csuffix = str(int(col_visit[cname] + 1))
             col_visit[cname] += 1
@@ -1114,7 +1135,7 @@ def csv_to_ins_file(
             only_clabels.append(clabel)
     only_clabels = set(only_clabels)
     if len(only_clabels) == 0:
-        print("only_cols:",only_cols)
+        print("only_cols:", only_cols)
         raise Exception("csv_to_ins_file(): only_clabels is empty")
 
     if ins_filename is None:
@@ -1136,9 +1157,11 @@ def csv_to_ins_file(
             f.write("l1\n")  # skip the row (index) label
         for i, rlabel in enumerate(rlabels):  # loop over rows
             f.write("l1")
-
+            if rlabel not in only_rlabels:
+                f.write("\n")
+                continue
             c_count = 0
-            line = ''
+            line = ""
             for j, clabel in enumerate(clabels):  # loop over columns
 
                 if j == 0:
@@ -1151,9 +1174,8 @@ def csv_to_ins_file(
                             # f.write(" !dum!")
                             line += " !dum! "
 
-
                 if c_count < only_clabels_len:
-                    if clabel in only_clabels and rlabel in only_rlabels:
+                    if clabel in only_clabels:  # and rlabel in only_rlabels:
                         oname = ""
                         # define obs names
                         if not prefix_is_str:
@@ -1161,7 +1183,7 @@ def csv_to_ins_file(
                         else:
                             nprefix = prefix
                         if longnames:
-                            if nprefix != "":
+                            if len(nprefix) > 0:
                                 nname = f"{nprefix}_usecol:{clabel}"
                             else:
                                 nname = f"usecol:{clabel}"
@@ -1200,15 +1222,17 @@ def csv_to_ins_file(
                         if j < len(clabels) - 1:
                             if sep == ",":
                                 line += f" {marker},{marker} "
-                            #else:
+                            # else:
                             #    line += " !dum! "
                         c_count += 1
-                    elif j < len(clabels) - 1: # this isnt a row-col to observationalize (nice word!)
+                    elif (
+                        j < len(clabels) - 1
+                    ):  # this isnt a row-col to observationalize (nice word!)
                         if sep == ",":
                             line += f" {marker},{marker} "
                         else:
                             line += " !dum! "
-            f.write(line+"\n")
+            f.write(line + "\n")
     odf = pd.DataFrame(
         {"obsnme": onames, "obsval": ovals, "obgnme": ognames}, index=onames
     ).dropna(
@@ -1416,7 +1440,7 @@ class InstructionFile(object):
             val_dict.update(self._execute_ins_line(ins_line, ins_lcount))
             # except Exception as e:
             #    raise Exception(str(e))
-        df = pd.DataFrame.from_dict(val_dict, orient='index', columns=['obsval'])
+        df = pd.DataFrame.from_dict(val_dict, orient="index", columns=["obsval"])
         # s = pd.Series(val_dict)
         # s.sort_index(inplace=True)
 
@@ -1696,9 +1720,7 @@ class InstructionFile(object):
             #         yield start
             #         start += len(sub)
             # poss speedup using regex
-            midx = [
-                m.start() for m in re.finditer(re.escape(self._marker), line)
-            ]
+            midx = [m.start() for m in re.finditer(re.escape(self._marker), line)]
             # midx = list(find_all(line, self._marker))
             midx.append(len(line))
             first = line[: midx[0]].strip()

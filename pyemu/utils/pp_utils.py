@@ -332,6 +332,50 @@ def pp_tpl_to_dataframe(tpl_filename):
     return df
 
 
+def pilot_points_from_shapefile(shapename):
+    """read pilot points from shapefile into a dataframe
+
+    Args:
+        shapename (`str`): the shapefile name to read.
+
+    Notes:
+        requires pyshp
+
+    """
+    try:
+        import shapefile
+    except Exception as e:
+        raise Exception(
+            "error importing shapefile: {0}, \ntry pip install pyshp...".format(str(e))
+        )
+    shp = shapefile.Reader(shapename)
+    if shp.shapeType != shapefile.POINT:
+        raise Exception("shapefile '{0}' is not POINT type")
+    names = [n[0].lower() for n in shp.fields[1:]]
+    if "name" not in names:
+        raise Exception("pilot point shapefile missing 'name' attr")
+
+    data = {name: [] for name in names}
+    xvals = []
+    yvals = []
+
+    for shape, rec in zip(shp.shapes(), shp.records()):
+        pt = shape.points[0]
+        for name, val in zip(names, rec):
+            data[name].append(val)
+        xvals.append(pt[0])
+        yvals.append(pt[1])
+
+    df = pd.DataFrame(data)
+    df.loc[:, "x"] = xvals
+    df.loc[:, "y"] = yvals
+    if "parval1" not in df.columns:
+        print("adding generic parval1 to pp shapefile dataframe")
+        df.loc[:, "parval1"] = 1.0
+
+    return df
+
+
 def write_pp_shapfile(pp_df, shapename=None):
     """write pilot points dataframe to a shapefile
 
@@ -449,10 +493,22 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
 
     if longnames:
         if name_prefix is not None:
-            pp_df.loc[:, "parnme"] = pp_df.apply(
-                lambda x: "{0}_i:{1}_j:{2}".format(name_prefix, int(x.i), int(x.j)),
-                axis=1,
-            )
+            if "i" in pp_df.columns and "j" in pp_df.columns:
+                pp_df.loc[:, "parnme"] = pp_df.apply(
+                    lambda x: "{0}_i:{1}_j:{2}".format(name_prefix, int(x.i), int(x.j)),
+                    axis=1,
+                )
+            elif "x" in pp_df.columns and "y" in pp_df.columns:
+                pp_df.loc[:, "parnme"] = pp_df.apply(
+                    lambda x: "{0}_x:{1}_y:{2}".format(name_prefix, x.x, x.y),
+                    axis=1,
+                )
+            else:
+                pp_df.loc[:, "idx"] = np.arange(pp_df.shape[0])
+                pp_df.loc[:, "parnme"] = pp_df.apply(
+                    lambda x: "{0}_ppidx:{1}".format(name_prefix, x.idx),
+                    axis=1,
+                )
             pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
                 lambda x: "~    {0}    ~".format(x)
             )

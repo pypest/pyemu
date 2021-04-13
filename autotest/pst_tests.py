@@ -1,7 +1,7 @@
 import os
 import platform
 import shutil
-
+import numpy as np
 if not os.path.exists("temp"):
     os.mkdir("temp")
 
@@ -668,7 +668,6 @@ def new_format_test_2():
     #try:
     for pst_file in pst_files:
         print(pst_file)
-
         if os.path.exists("temp_pst"):
             shutil.rmtree("temp_pst")
         os.makedirs("temp_pst")
@@ -948,7 +947,6 @@ def ctrl_data_test():
 def read_in_tpl_test():
     import pyemu
     tpl_d = "tpl"
-    tpl_files = [os.path.join(tpl_d,f) for f in os.listdir(tpl_d) if f.endswith(".tpl")]
     df = pyemu.pst_utils.try_read_input_file_with_tpl(os.path.join(tpl_d,"test1.dat.tpl"))
     print(df)
     assert df.parval1["p1"] == df.parval1["p2"]
@@ -956,19 +954,141 @@ def read_in_tpl_test():
     assert df.parval1["p5"] == df.parval1["p6"]
     assert df.parval1["p5"] == df.parval1["p7"]
 
+def read_in_tpl_test2():
+    import pyemu
+    tpl_d = "tpl"
+    df = pyemu.pst_utils.try_read_input_file_with_tpl(os.path.join(tpl_d,"test2.dat.tpl"))
+    assert np.isclose(df.loc['par1'].parval1, 8.675309)
+
+def write2_nan_test():
+    import numpy as np
+    import pyemu
+    import os
+
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.control_data.nphinored = 1000
+    pst.write("test.pst",version=2)
+
+    pst = pyemu.Pst(os.path.join("test.pst"))
+    print(pst.control_data.nphinored)
+
+    pst.write("test.pst", version=2)
+
+    pst = pyemu.Pst(os.path.join("test.pst"))
+    assert pst.control_data.nphinored == 1000
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pyemu.helpers.zero_order_tikhonov(pst)
+    pst.prior_information.loc[pst.prior_names[0], "weight"] = np.NaN
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.model_output_data.loc[pst.instruction_files[0], "pest_file"] = np.NaN
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.model_input_data.loc[pst.template_files[0], "pest_file"] = np.NaN
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pst.parameter_data.loc[pst.par_names[0],"parval1"] = np.NaN
+    try:
+        pst.write("test.pst",version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst",version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.parameter_groups.loc[pst.parameter_groups.pargpnme[0], "derinc"] = np.NaN
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.observation_data.loc[pst.obs_names[0], "weight"] = np.NaN
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+
+
+
 
 if __name__ == "__main__":
-    process_output_files_test()
+    
+    #write2_nan_test()
+    #process_output_files_test()
     # change_limit_test()
     # new_format_test()
     # lt_gt_constraint_names_test()
-    # csv_to_ins_test()
-
+    #csv_to_ins_test()
+    #ctrl_data_test()
+    #change_limit_test()
+    new_format_test_2()
     # try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
     # test_write_input_files()
-    add_obs_test()
+    #add_obs_test()
     #add_pars_test()
     # setattr_test()
 
@@ -1003,5 +1123,7 @@ if __name__ == "__main__":
     #process_output_files_test()
     #comments_test()
     #read_in_tpl_test()
+    #read_in_tpl_test2()
+    
     #comments_test()
     #csv_to_ins_test()
