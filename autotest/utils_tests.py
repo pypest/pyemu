@@ -1832,6 +1832,45 @@ def gsf_reader_test():
 
     assert len(gsf.get_node_data()) == nnodes
 
+def conditional_prior_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    prior_var = 1.0
+    cond_var = 0.5
+    v = pyemu.geostats.ExpVario(contribution=prior_var,a=5.0)
+    gs = pyemu.geostats.GeoStruct(variograms=v,transform="none")
+    x = np.arange(100)
+    y = np.zeros_like(x)
+    names = ["n{0}".format(i) for i in range(x.shape[0])]
+    cov = gs.covariance_matrix(x,y,names)
+    know_dict = {n:cond_var for n in [cov.col_names[int(x.shape[0]/2)],cov.col_names[int(3*x.shape[0]/4)]]}
+    #know_dict = {cov.col_names[]:0.0001,cov.col_names[3]:0.0025}
+    cond_cov = pyemu.helpers._condition_on_par_knowledge(cov,know_dict)
+    i = int(x.shape[0] / 2)
+    print(cov.x[i,i],cond_cov.x[i,i])
+    print(np.diag(cov.x).min(), np.diag(cond_cov.x).min())
+    print(prior_var,cond_var)
+
+
+    # import matplotlib.pyplot as plt
+    # fig,axes = plt.subplots(1,3,figsize=(15,5))
+    # thres = 0.001
+    # x1 = cov.to_pearson().x.copy()
+    # x1[np.abs(x1) < thres] = np.nan
+    # x2 = cond_cov.to_pearson().x.copy()
+    # x2[np.abs(x2) < thres] = np.nan
+    #
+    # axes[0].imshow(x1,vmin=0.0,vmax=1.0)
+    # axes[1].imshow(x2,vmin=0.0,vmax=1.0)
+    # axes[2].plot(np.diag(cov.x),"0.5",label="prior diag")
+    # axes[2].plot(np.diag(cond_cov.x), "b",label="post diag")
+    # axes[0].set_title("prior CC matrix, variance {0}".format(prior_var),loc="left")
+    # axes[1].set_title("post CC matrix, conditional variance {0}".format(cond_var), loc="left")
+    # axes[2].set_title("prior vs posterior diagonals", loc="left")
+    #
+    # plt.show()
 
 
 if __name__ == "__main__":
@@ -1866,10 +1905,10 @@ if __name__ == "__main__":
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    #geostat_prior_builder_test()
+    conditional_prior_invest()
     #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
-    # mflist_budget_test()
+    #mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
@@ -1905,4 +1944,4 @@ if __name__ == "__main__":
     # ppk2fac_verf_test()
     #ok_grid_invest()
     # maha_pdc_test()
-    gsf_reader_test()
+    #gsf_reader_test()
