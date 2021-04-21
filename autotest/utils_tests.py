@@ -702,10 +702,8 @@ def geostat_prior_builder_test():
     tpl_file = os.path.join("utils", "pp_locs.tpl")
     str_file = os.path.join("utils", "structure.dat")
 
-
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file})
     d1 = np.diag(cov.x)
-
 
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
@@ -1872,6 +1870,66 @@ def conditional_prior_test():
     #
     # plt.show()
 
+def geostat_prior_builder_test2():
+    import os
+    import numpy as np
+    import pyemu
+    pst_file = os.path.join("pst","pest.pst")
+    pst = pyemu.Pst(pst_file)
+
+    tpl_file = os.path.join("utils", "pp_locs.tpl")
+    df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file).iloc[:200,:]
+    df.loc[:,"x"] = np.arange(df.shape[0])
+    df.loc[:,"y"] = 0.0
+    print(df)
+    v = pyemu.geostats.ExpVario(1.0,10.0)
+    gs = pyemu.geostats.GeoStruct(variograms=v)
+
+    # get a cov here where all pars in the same group have the same bounds so same variance
+    cov1 = pyemu.helpers.geostatistical_prior_builder(pst,{gs:df})
+    
+    par = pst.parameter_data
+    #give some pars narrower bounds to induce a lower variance 
+    par.loc[pst.par_names[10:40], "parubnd"] = par.loc[pst.par_names[10:40], "parval1"] * 1.5
+    par.loc[pst.par_names[10:40], "parlbnd"] = par.loc[pst.par_names[10:40], "parval1"] * 0.5
+    
+    # get a diagonal bounds-based cov
+    cov = pyemu.Cov.from_parameter_data(pst=pst)
+    d = cov.x
+    dd = {n:v for n,v in zip(cov.row_names,d)}
+    know_dict = {n:dd[n] for n in pst.par_names[10:40]}
+    #calc the conditional cov just for testing
+    cov3 = pyemu.helpers._condition_on_par_knowledge(cov1,know_dict)    
+    
+    #this one should include the variance scaling
+    cov2 = pyemu.helpers.geostatistical_prior_builder(pst, {gs: df})
+
+    x1 = cov1.x.copy()
+    x1[np.abs(cov1.to_pearson().x)<0.001] = np.NaN
+    x2 = cov2.x.copy()
+    x2[np.abs(cov2.to_pearson().x) < 0.001] = np.NaN
+    x3 = cov3.x.copy()
+    x3[np.abs(cov3.to_pearson().x) < 0.001] = np.NaN
+
+    # even tho we scaled cov2, the resulting corr coef matrix should be the same as cov1
+    d = np.abs(cov1.to_pearson().x - cov2.to_pearson().x)
+    print(d.max())
+    assert d.max() < 1.0e-6
+    
+    #check that variances in cov2 match the diagonal bounds-based cov
+    dd = np.diag(cov2.x)
+    d = np.abs(cov.x.flatten() - dd)
+    print(d.max())
+    assert d.max() < 1.0e-6
+
+    # import matplotlib.pyplot as plt
+    # fig,axes = plt.subplots(1,3,figsize=(15,5))
+    # axes[0].imshow(x1[:200,:200],cmap="jet")
+    # axes[1].imshow(x2[:200, :200], cmap="jet")
+    # cb = axes[2].imshow(d[:200, :200], cmap="jet")
+    # plt.colorbar(cb,ax=axes[2])
+    # plt.show()
+
 
 if __name__ == "__main__":
 
@@ -1905,7 +1963,8 @@ if __name__ == "__main__":
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    conditional_prior_invest()
+    #conditional_prior_invest()
+    geostat_prior_builder_test2()
     #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     #mflist_budget_test()

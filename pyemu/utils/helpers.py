@@ -169,14 +169,17 @@ def geostatistical_draws(
 
                 if verbose:
                     print("getting diag var cov", df_zone.shape[0])
-                # tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
-                tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
-
+                
+                #tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
                 if verbose:
                     print("scaling full cov by diag var cov")
-                # cov.x *= tpl_var
-                for i in range(cov.shape[0]):
-                    cov.x[i, :] *= tpl_var
+                
+                # for i in range(cov.shape[0]):
+                #     cov.x[i, :] *= tpl_var
+                for i,name in enumerate(cov.row_names):
+                    cov.x[:,i] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, :] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, i] = full_cov_dict[name]
                 # no fixed values here
                 pe = pyemu.ParameterEnsemble.from_gaussian_draw(
                     pst=pst, cov=cov, num_reals=num_reals, by_groups=False, fill=False
@@ -322,15 +325,17 @@ def geostatistical_prior_builder(
                 # find the variance in the diagonal cov
                 if verbose:
                     print("getting diag var cov", df_zone.shape[0])
-                # tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
-                tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
-                # if np.std(tpl_var) > 1.0e-6:
-                #    warnings.warn("pars have different ranges" +\
-                #                  " , using max range as variance for all pars")
-                # tpl_var = tpl_var.max()
+
+                #tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
+
                 if verbose:
                     print("scaling full cov by diag var cov")
-                cov *= tpl_var
+
+                #cov *= tpl_var
+                for i,name in enumerate(cov.row_names):
+                    cov.x[:,i] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, :] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, i] = full_cov_dict[name]
                 if verbose:
                     print("test for inversion")
                 try:
