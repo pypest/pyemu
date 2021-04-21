@@ -1937,7 +1937,7 @@ def geostat_prior_builder_test2():
     print(ed.max())
     assert ed.max() < 1.0e-1
 
-    import matplotlib.pyplot as plt
+    #import matplotlib.pyplot as plt
     # fig,ax = plt.subplots(1,1)
     # ax.plot(ed)
     # axt = plt.twinx(ax)
@@ -1948,11 +1948,11 @@ def geostat_prior_builder_test2():
     # ax.set_xticklabels(pst.par_names[10:100],rotation=90)
     # plt.show()
     #
-    fig,axes = plt.subplots(1,3,figsize=(15,5))
-    axes[0].imshow(x1[:200,:200],cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
-    axes[1].imshow(x2[:200, :200], cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
-    axes[2].imshow(ex2[:200, :200], cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
-    plt.show()
+    #fig,axes = plt.subplots(1,3,figsize=(15,5))
+    #axes[0].imshow(x1[:200,:200],cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
+    #axes[1].imshow(x2[:200, :200], cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
+    #axes[2].imshow(ex2[:200, :200], cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
+    #plt.show()
 
 
 if __name__ == "__main__":
