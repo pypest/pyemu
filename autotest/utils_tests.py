@@ -1890,10 +1890,10 @@ def geostat_prior_builder_test2():
     
     par = pst.parameter_data
     #give some pars narrower bounds to induce a lower variance 
-    par.loc[pst.par_names[10:40], "parubnd"] = par.loc[pst.par_names[10:40], "parval1"] * 1.5
-    par.loc[pst.par_names[10:40], "parlbnd"] = par.loc[pst.par_names[10:40], "parval1"] * 0.5
-    par.loc[pst.par_names[40:100], "parubnd"] *= 100
-    par.loc[pst.par_names[40:100], "parlbnd"] *= .01
+    #par.loc[pst.par_names[10:40], "parubnd"] = par.loc[pst.par_names[10:40], "parval1"] * 1.5
+    #par.loc[pst.par_names[10:40], "parlbnd"] = par.loc[pst.par_names[10:40], "parval1"] * 0.5
+    par.loc[pst.par_names[10:100], "parubnd"] *= np.random.random(90) * 5
+    par.loc[pst.par_names[10:100], "parlbnd"] *= np.random.random(90) * 0.5
     
     
     # get a diagonal bounds-based cov
@@ -1937,7 +1937,7 @@ def geostat_prior_builder_test2():
     print(ed.max())
     assert ed.max() < 1.0e-1
 
-    # import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
     # fig,ax = plt.subplots(1,1)
     # ax.plot(ed)
     # axt = plt.twinx(ax)
@@ -1948,11 +1948,11 @@ def geostat_prior_builder_test2():
     # ax.set_xticklabels(pst.par_names[10:100],rotation=90)
     # plt.show()
     #
-    # fig,axes = plt.subplots(1,3,figsize=(15,5))
-    # axes[0].imshow(x1[:200,:200],cmap="jet")
-    # axes[1].imshow(x2[:200, :200], cmap="jet")
-    # axes[2].imshow(ex2[:200, :200], cmap="jet")
-    # plt.show()
+    fig,axes = plt.subplots(1,3,figsize=(15,5))
+    axes[0].imshow(x1[:200,:200],cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
+    axes[1].imshow(x2[:200, :200], cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
+    axes[2].imshow(ex2[:200, :200], cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
+    plt.show()
 
 
 if __name__ == "__main__":

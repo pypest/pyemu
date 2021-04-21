@@ -2847,6 +2847,9 @@ def usg_freyberg_test():
     m = flopy.modflow.Modflow.load("freyberg.usg.nam", model_ws=org_model_ws,
                                    verbose=True, version="mfusg",
                                    forgive=True, check=False)
+
+
+
     #convert to all open/close
     m.external_path = "."
     tmp_model_ws = "temp_pst_from_usg"
@@ -2952,15 +2955,29 @@ def usg_freyberg_test():
 
     #build the control file and draw the prior par ensemble
     pf.build_pst()
+    pst = pf.pst
+    par = pst.parameter_data
+    gr_hk_pars = par.loc[par.parnme.str.contains("hk1_gr"),"parnme"]
+    pf.pst.parameter_data.loc[gr_hk_pars,"parubnd"] = np.random.random(gr_hk_pars.shape[0]) * 5
+    pf.pst.parameter_data.loc[gr_hk_pars, "parlbnd"] = np.random.random(gr_hk_pars.shape[0]) * 0.2
     pe = pf.draw(num_reals=100)
     pe.enforce()
     pe.to_csv(os.path.join(pf.new_d,"prior.csv"))
-
+    cov = pf.build_prior(filename=None)
     #make sure the prior cov has off diagonals
-    cov = pf.build_prior()
-    cov = cov.x
-    cov[np.abs(cov)>1.0e-7] = 1.0
-    assert cov.sum() > pf.pst.npar_adj + 1
+    cov = pf.build_prior(sigma_range=6)
+    covx = cov.x.copy()
+    covx[np.abs(covx)>1.0e-7] = 1.0
+    assert covx.sum() > pf.pst.npar_adj + 1
+    dcov = pyemu.Cov.from_parameter_data(pf.pst,sigma_range=6)
+    dcov = dcov.get(cov.row_names)
+    diag = np.diag(cov.x)
+    diff = np.abs(diag.flatten() - dcov.x.flatten())
+    print(diag)
+    print(dcov.x)
+    print(diff)
+    print(diff.max())
+    assert diff.max() < 1.0e-6
 
     # test that the arr hds obs process is working
     os.chdir(pf.new_d)
@@ -3003,7 +3020,7 @@ def usg_freyberg_test():
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
     #invest()
-    freyberg_test()
+    #freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_da_test()
@@ -3018,7 +3035,7 @@ if __name__ == "__main__":
     #tpf.add
     #pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()\
-    #usg_freyberg_test()
+    usg_freyberg_test()
 
 
 
