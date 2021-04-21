@@ -191,7 +191,7 @@ def freyberg_test():
     pf.add_parameters(filenames="WEL_0000.dat",
                       par_type="grid", index_cols=[0, 1, 2], use_cols=3,
                       par_name_base="welflux_grid_direct",
-                      zone_array=zone_array,par_style="direct")
+                      zone_array=zone_array,par_style="direct",transform="none")
     pf.add_parameters(filenames=["WEL_0000.dat"], par_type="constant",
                       index_cols=[0, 1, 2], use_cols=3,
                       par_name_base=["flux_const"])
@@ -3003,10 +3003,10 @@ def usg_freyberg_test():
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
     #invest()
-    #freyberg_test()
+    freyberg_test()
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
-    mf6_freyberg_da_test()
+    #mf6_freyberg_da_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
