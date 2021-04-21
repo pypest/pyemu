@@ -177,6 +177,7 @@ def geostatistical_draws(
                 # for i in range(cov.shape[0]):
                 #     cov.x[i, :] *= tpl_var
                 for i,name in enumerate(cov.row_names):
+                    #print(name,full_cov_dict[name])
                     cov.x[:,i] *= np.sqrt(full_cov_dict[name])
                     cov.x[i, :] *= np.sqrt(full_cov_dict[name])
                     cov.x[i, i] = full_cov_dict[name]
@@ -184,7 +185,6 @@ def geostatistical_draws(
                 pe = pyemu.ParameterEnsemble.from_gaussian_draw(
                     pst=pst, cov=cov, num_reals=num_reals, by_groups=False, fill=False
                 )
-                # df = pe.iloc[:,:]
                 par_ens.append(pe._df)
                 pars_in_cov.update(set(pe.columns))
 

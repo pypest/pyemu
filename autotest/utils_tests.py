@@ -1892,22 +1892,31 @@ def geostat_prior_builder_test2():
     #give some pars narrower bounds to induce a lower variance 
     par.loc[pst.par_names[10:40], "parubnd"] = par.loc[pst.par_names[10:40], "parval1"] * 1.5
     par.loc[pst.par_names[10:40], "parlbnd"] = par.loc[pst.par_names[10:40], "parval1"] * 0.5
+    par.loc[pst.par_names[40:100], "parubnd"] *= 100
+    par.loc[pst.par_names[40:100], "parlbnd"] *= .01
+    
     
     # get a diagonal bounds-based cov
     cov = pyemu.Cov.from_parameter_data(pst=pst)
     d = cov.x
-    dd = {n:v for n,v in zip(cov.row_names,d)}
-    know_dict = {n:dd[n] for n in pst.par_names[10:40]}
+    var_dict = {n:v for n,v in zip(cov.row_names,d)}
+    know_dict = {n:var_dict[n] for n in pst.par_names[10:100]}
     #calc the conditional cov just for testing
     cov3 = pyemu.helpers._condition_on_par_knowledge(cov1,know_dict)    
     
     #this one should include the variance scaling
     cov2 = pyemu.helpers.geostatistical_prior_builder(pst, {gs: df})
 
+    pe = pyemu.helpers.geostatistical_draws(pst, {gs: df}, 100000)
+    pe = pe.loc[:,pst.par_names]
+    ecov2 = pe.covariance_matrix()
+
     x1 = cov1.x.copy()
     x1[np.abs(cov1.to_pearson().x)<0.001] = np.NaN
     x2 = cov2.x.copy()
     x2[np.abs(cov2.to_pearson().x) < 0.001] = np.NaN
+    ex2 = ecov2.x.copy()
+    ex2[np.abs(ecov2.to_pearson().x) < 0.001] = np.NaN
     x3 = cov3.x.copy()
     x3[np.abs(cov3.to_pearson().x) < 0.001] = np.NaN
 
@@ -1922,12 +1931,27 @@ def geostat_prior_builder_test2():
     print(d.max())
     assert d.max() < 1.0e-6
 
+    # check that empirical variances in cov2 match the diagonal bounds-based cov
+    edd = np.diag(ecov2.x)
+    ed = np.abs(cov.x.flatten()[10:100] - edd[10:100])
+    print(ed.max())
+    assert ed.max() < 1.0e-1
+
     # import matplotlib.pyplot as plt
+    # fig,ax = plt.subplots(1,1)
+    # ax.plot(ed)
+    # axt = plt.twinx(ax)
+    # axt.plot(dd[10:100],"0.5")
+    # axt.plot(edd[10:100], "m")
+    # axt.plot(cov.x.flatten()[10:100],"b--")
+    # ax.set_xticks(np.arange(ed.shape[0]))
+    # ax.set_xticklabels(pst.par_names[10:100],rotation=90)
+    # plt.show()
+    #
     # fig,axes = plt.subplots(1,3,figsize=(15,5))
     # axes[0].imshow(x1[:200,:200],cmap="jet")
     # axes[1].imshow(x2[:200, :200], cmap="jet")
-    # cb = axes[2].imshow(d[:200, :200], cmap="jet")
-    # plt.colorbar(cb,ax=axes[2])
+    # axes[2].imshow(ex2[:200, :200], cmap="jet")
     # plt.show()
 
 
