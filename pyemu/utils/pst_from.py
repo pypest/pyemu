@@ -1168,7 +1168,10 @@ class PstFrom(object):
                 as observations
             insfile (`str`): desired instructions file filename
             index_cols (`list`-like or `int`): columns to denote are indices for obs
-            use_cols (`list`-like or `int`): columns to set up as obs
+            use_cols (`list`-like or `int`): columns to set up as obs. If None,
+                and `index_cols` is not None (i.e list-syle obs assumed),
+                observations will be set up for all columns in `filename` that
+                are not in `index_cols`.
             use_rows (`list`-like or `int`): select only specific row of file for obs
             prefix (`str`): prefix for obsnmes
             ofile_skip (`int`): number of lines to skip in model output file
