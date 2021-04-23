@@ -1227,7 +1227,7 @@ class PstFrom(object):
             seps=ofile_sep,
             skip_rows=ofile_skip,
         )
-        # array style obs
+        # array style obs, if both index_cols and use_cols are None (default)
         if index_cols is None and use_cols is None:
             if not isinstance(filenames, str):
                 if len(filenames) > 1:
@@ -1269,9 +1269,22 @@ class PstFrom(object):
             return new_obs
 
         # list style obs
+        # -- will end up here if either of index_cols or use_cols is not None
         df, storehead = self._load_listtype_file(
             filenames, index_cols, use_cols, fmts, seps, skip_rows
         )
+        # rectify df?
+        # if iloc[0] are strings and index_cols are ints,
+        # can we assume that there were infact column headers?
+        if (all(isinstance(c, str) for c in df.iloc[0])
+                and all(isinstance(a, int) for a in index_cols)):
+            index_cols = df.iloc[0][index_cols].to_list()  # redefine index_cols
+            if use_cols is not None:
+                use_cols = df.iloc[0][use_cols].to_list()  # redefine use_cols
+            df = df.rename(columns=df.iloc[0]).drop(0).reset_index(drop=True).apply(pd.to_numeric)
+        # select all non index cols if use_cols is None
+        if use_cols is None:
+            use_cols = df.columns.drop(index_cols).tolist()
         # Currently just passing through comments in header (i.e. before the table data)
         lenhead = 0
         stkeys = np.array(
@@ -1307,6 +1320,7 @@ class PstFrom(object):
                     use_rows = [use_rows]
                 use_rows = [r for r in use_rows if r <= len(df)]
                 use_rows = df.iloc[use_rows].idx_str.unique()
+
             # construct ins_file from df
             ncol = len(use_cols)
 
@@ -2356,40 +2370,55 @@ class PstFrom(object):
         if isinstance(skip, list):
             assert len(skip) == 1
             skip = skip[0]
-        if isinstance(index_cols[0], str) and isinstance(use_cols[0], str):
+
+        # trying to use use_cols and index_cols to work out whether to
+        # read header from csv.
+        # either use_cols or index_cols could still be None
+        # -- case of both being None should already have been caught
+        # but index_cols could still be None...
+
+        check_args = [a for a in [index_cols, use_cols] if a is not None]
+        # `a` should be list if it is not None
+        if all(isinstance(a[0], str) for a in check_args):
             # index_cols can be from header str
             header = 0  # will need to read a header
-        elif isinstance(index_cols[0], int) and isinstance(use_cols[0], int):
+        elif all(isinstance(a[0], int) for a in check_args):
             # index_cols are column numbers in input file
             header = None
         else:
-            self.logger.lraise(
-                "unrecognized type for index_cols or use_cols "
-                "should be str or int and both should be of the "
-                "same type, not {0} or {1}".format(
-                    str(type(index_cols[0])), str(type(use_cols[0]))
+            if len(check_args) > 1:
+                #  implies neither are None but they either both are not str,int
+                #  or are different
+                self.logger.lraise(
+                    "unrecognized type for index_cols or use_cols "
+                    "should be str or int and both should be of the "
+                    "same type, not {0} or {1}".format(*[
+                        str(type(a[0])) for a in check_args
+                    ])
                 )
-            )
-        itype = type(index_cols)
-        utype = type(use_cols)
-        if itype != utype:
-            self.logger.lraise(
-                "index_cols type '{0} != use_cols "
-                "type '{1}'".format(str(itype), str(utype))
-            )
+            else:
+                # implies not correct type
+                self.logger.lraise(
+                    "unrecognized type for either index_cols or use_cols "
+                    "should be str or int, not {0}".format(
+                        type(check_args[0][0])
+                    )
+                )
 
-        si = set(index_cols)
-        su = set(use_cols)
+        # checking no overlap between index_cols and use_cols
+        if len(check_args) > 1:
+            si = set(index_cols)
+            su = set(use_cols)
 
-        i = si.intersection(su)
-        if len(i) > 0:
-            self.logger.lraise(
-                "use_cols also listed in " "index_cols: {0}".format(str(i))
-            )
+            i = si.intersection(su)
+            if len(i) > 0:
+                self.logger.lraise(
+                    "use_cols also listed in " "index_cols: {0}".format(str(i))
+                )
 
         file_path = self.new_d / filename
         if not os.path.exists(file_path):
-            self.logger.lraise("par filename '{0}' not found " "".format(file_path))
+            self.logger.lraise("par/obs filename '{0}' not found " "".format(file_path))
         self.logger.log("reading list {0}".format(file_path))
         if fmt.lower() == "free":
             if sep is None:
@@ -2449,16 +2478,16 @@ class PstFrom(object):
                 "".format(file_path, str(missing))
             )
         # ensure requested use_cols are in input file
-        for use_col in use_cols:
-            if use_col not in df.columns:
-                missing.append(use_cols)
+        if use_cols is not None:
+            for use_col in use_cols:
+                if use_col not in df.columns:
+                    missing.append(use_cols)
         if len(missing) > 0:
             self.logger.lraise(
                 "the following use_cols were not found "
                 "in file '{0}':{1}"
                 "".format(file_path, str(missing))
             )
-
         return df, storehead
 
     def _prep_arg_list_lengths(
@@ -2541,6 +2570,7 @@ class PstFrom(object):
         if index_cols is not None:
             if not isinstance(index_cols, list):
                 index_cols = [index_cols]
+        if use_cols is not None:
             if not isinstance(use_cols, list):
                 use_cols = [use_cols]
         return filenames, fmts, seps, skip_rows, index_cols, use_cols
