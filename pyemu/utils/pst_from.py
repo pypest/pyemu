@@ -1165,7 +1165,9 @@ class PstFrom(object):
 
         Args:
             filename (`str`): model output file name(s) to set up
-                as observations
+                as observations. By default filename should give relative
+                loction from top level of pest template directory
+                (`new_d` as passed to `PstFrom()`).
             insfile (`str`): desired instructions file filename
             index_cols (`list`-like or `int`): columns to denote are indices for obs
             use_cols (`list`-like or `int`): columns to set up as obs. If None,
@@ -1210,7 +1212,6 @@ class PstFrom(object):
 
 
         """
-        # TODO - array style outputs? or expecting post processing to tabular
         if insfile is None:
             insfile = "{0}.ins".format(filename)
         self.logger.log("adding observations from tabular output file")
@@ -1241,6 +1242,7 @@ class PstFrom(object):
             self.logger.log(
                 "adding observations from array output file '{0}'".format(filenames)
             )
+            # Read file and construct and instructions file for array style obs
             df_obs = self._process_array_obs(
                 filenames,
                 insfile,
@@ -1250,8 +1252,9 @@ class PstFrom(object):
                 self.longnames,
                 zone_array,
             )
+            # Setup array style obs from the constructed instruction file
             new_obs = self.add_observations_from_ins(
-                ins_file=insfile, out_file=self.new_d / filename
+                ins_file=self.new_d / insfile, out_file=self.new_d / filename
             )
             if obsgp is not None:
                 new_obs.loc[:, "obgnme"] = obsgp
@@ -1300,8 +1303,8 @@ class PstFrom(object):
             self.logger.log(
                 "building insfile for tabular output file {0}" "".format(filename)
             )
+            # build instruction file constructor dataframe
             df_temp = _get_tpl_or_ins_df(
-                filename,
                 df,
                 prefix,
                 typ="obs",
@@ -1326,9 +1329,8 @@ class PstFrom(object):
 
             # construct ins_file from df
             ncol = len(use_cols)
-
             obsgp = _check_var_len(obsgp, ncol, fill=True)
-            df_ins = pyemu.pst_utils.csv_to_ins_file(
+            df_ins = pyemu.pst_utils.csv_to_ins_file(  # write insfile
                 df.set_index("idx_str"),
                 ins_filename=self.new_d / insfile,
                 only_cols=use_cols,
@@ -1346,7 +1348,7 @@ class PstFrom(object):
                 "building insfile for tabular output file {0}" "".format(filename)
             )
             new_obs = self.add_observations_from_ins(
-                ins_file=insfile, out_file=self.new_d / filename
+                ins_file=self.new_d / insfile, out_file=self.new_d / filename
             )
             if "obgnme" in df_ins.columns:
                 new_obs.loc[:, "obgnme"] = df_ins.loc[new_obs.index, "obgnme"]
@@ -1358,10 +1360,13 @@ class PstFrom(object):
                 self.logger.log("Adding obs to control file " "and rewriting pst")
                 self.build_pst(filename=self.pst.filename, update="obs")
             else:
-                self.build_pst(filename=self.pst.filename, update=False)
+                pstname = Path(self.new_d, self.original_d.name)
                 self.logger.warn(
-                    "pst object not available, " "new control file will be written"
+                    "pst object not available, " 
+                    f"new control file will be written with filename {pstname}"
                 )
+                self.build_pst(filename=None, update=False)
+
         return new_obs
 
     def add_observations_from_ins(
@@ -1371,12 +1376,17 @@ class PstFrom(object):
 
         Args:
             ins_file (`str`): instruction file with exclusively new
-               observation names
+               observation names. N.B. if `ins_file` just contains base
+               filename string (i.e. no directory name), the path to PEST
+               directory will be automatically appended.
             out_file (`str`): model output file.  If None, then
-               ins_file.replace(".ins","") is used. Default is None
+               ins_file.replace(".ins","") is used. Default is None.
+               If `out_file` just contains base filename string
+               (i.e. no directory name), the path to PEST directory will be
+               automatically appended.
             pst_path (`str`): the path to append to the instruction file and
                out file in the control file.  If not None, then any existing
-               path in front of the template or in file is split off and
+               path in front of the template or ins file is split off and
                pst_path is prepended.  If python is being run in a directory
                other than where the control file will reside, it is useful
                to pass `pst_path` as `.`. Default is None
@@ -1401,18 +1411,24 @@ class PstFrom(object):
         """
         # lifted almost completely from `Pst().add_observation()`
         if os.path.dirname(ins_file) in ["", "."]:
+            # if insfile is passed as just a filename,
+            # append pest directory name
             ins_file = self.new_d / ins_file
-            pst_path = "."
+            pst_path = "."  # reset and new assumed pst_path
+        # else:
+            # assuming that passed insfile is the full path to file from current location
         if not os.path.exists(ins_file):
             self.logger.lraise(
                 "ins file not found: {0}, {1}" "".format(os.getcwd(), ins_file)
             )
         if out_file is None:
             out_file = str(ins_file).replace(".ins", "")
+        elif os.path.dirname(out_file) in ["", "."]:
+            out_file = self.new_d / out_file
         if ins_file == out_file:
             self.logger.lraise("ins_file == out_file, doh!")
 
-        # get the parameter names in the template file
+        # get the obs names in the instructions file
         self.logger.log(
             "adding observation from instruction file '{0}'".format(ins_file)
         )
@@ -1448,11 +1464,13 @@ class PstFrom(object):
         )
         new_obs_data.loc[new_obsnme, "obsnme"] = new_obsnme
         new_obs_data.index = new_obsnme
-        # cwd = '.'
+
+        # need path relative to where control file
+        ins_file_pstrel = Path(ins_file).relative_to(self.new_d)
+        out_file_pstrel = Path(out_file).relative_to(self.new_d)
         if pst_path is not None:
-            # cwd = os.path.join(*os.path.split(ins_file)[:-1])
-            ins_file_pstrel = os.path.join(pst_path, os.path.split(ins_file)[-1])
-            out_file_pstrel = os.path.join(pst_path, os.path.split(out_file)[-1])
+            ins_file_pstrel = pst_path / ins_file_pstrel
+            out_file_pstrel = pst_path / out_file_pstrel
         self.ins_filenames.append(ins_file_pstrel)
         self.output_filenames.append(out_file_pstrel)
         # add to temporary files to be removed at start of forward run
@@ -1637,7 +1655,7 @@ class PstFrom(object):
             )
         if isinstance(filenames, str) or isinstance(filenames, Path):
             filenames = [filenames]
-        # data file paths relative to the model_ws
+        # data file paths relative to the pest parent directory
         filenames = [
             get_relative_filepath(self.original_d, filename) for filename in filenames
         ]
@@ -2363,7 +2381,7 @@ class PstFrom(object):
     ):
         if isinstance(filename, list):
             assert len(filename) == 1
-            filename = filename[0]
+            filename = filename[0]  # should only ever be one passed
         if isinstance(fmt, list):
             assert len(fmt) == 1
             fmt = fmt[0]
@@ -2668,7 +2686,6 @@ def write_list_tpl(
         )
     else:
         df_tpl = _get_tpl_or_ins_df(
-            filenames,
             dfs,
             name,
             index_cols,
@@ -2998,7 +3015,6 @@ def _write_direct_df_tpl(
 
 
 def _get_tpl_or_ins_df(
-    filenames,
     dfs,
     name,
     index_cols,
