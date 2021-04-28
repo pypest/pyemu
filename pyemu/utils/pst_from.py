@@ -2132,6 +2132,7 @@ class PstFrom(object):
                     "pp_data": ok_pp.point_data.loc[:, ["x", "y", "zone"]],
                     "cov": ok_pp.point_cov_df,
                     "zn_ar": zone_array,
+                    "sr": spatial_reference,
                 }
                 fac_processed = False
                 for facfile, info in self._pp_facs.items():  # check against
@@ -2141,6 +2142,13 @@ class PstFrom(object):
                         and info["cov"].equals(pp_info_dict["cov"])
                         and np.array_equal(info["zn_ar"], pp_info_dict["zn_ar"])
                     ):
+                        if type(info["sr"]) == type(spatial_reference):
+                            if isinstance(spatial_reference,dict):
+                                if len(info["sr"]) != len(spatial_reference):
+                                    continue
+                        else:
+                            continue
+
                         fac_processed = True  # don't need to re-calc same factors
                         fac_filename = facfile  # relate to existing fac file
                         break
