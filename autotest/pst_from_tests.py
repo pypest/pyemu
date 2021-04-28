@@ -12,7 +12,7 @@ from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
 
 ext = ''
-local_bins = False  # change if wanting to test with local binary exes
+local_bins = True  # change if wanting to test with local binary exes
 if local_bins:
     bin_path = os.path.join("..", "..", "bin")
     if "linux" in platform.platform().lower():
@@ -3066,10 +3066,10 @@ def mf6_subdir_test():
     sd = "sub_dir"
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
-    os.path.join(tmp_model_ws, sd)
+    tmp2_ws = os.path.join(tmp_model_ws, sd)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.simulation_data.mfpath.set_sim_path(os.path.join(tmp_model_ws, sd))
+    sim.simulation_data.mfpath.set_sim_path(tmp2_ws)
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
@@ -3080,7 +3080,7 @@ def mf6_subdir_test():
         exe = mf6_exe_path  # bit of flexibility for local/server run
     else:
         exe = os.path.join('..', mf6_exe_path)
-        os_utils.run("{0} ".format(exe), cwd=os.path.join(tmp_model_ws, sd))
+        os_utils.run("{0} ".format(exe), cwd=tmp2_ws)
     template_ws = "new_temp"
     # sr0 = m.sr
     # sr = pyemu.helpers.SpatialReference.from_namfile(
@@ -3118,7 +3118,7 @@ def mf6_subdir_test():
     pf.add_py_function("pst_from_tests.py","another_generic_function(some_arg)",is_pre_cmd=None)
 
     # pf.post_py_cmds.append("generic_function()")
-    df = pd.read_csv(os.path.join(tmp_model_ws, sd, "sfr.csv"), index_col=0)
+    df = pd.read_csv(os.path.join(template_ws, sd, "sfr.csv"), index_col=0)
     pf.add_observations(os.path.join(sd, "sfr.csv"), index_cols="time", use_cols=list(df.columns.values))
     pf.add_observations(os.path.join(sd, "freyberg6.npf_k_layer1.txt"),
                         zone_array=m.dis.idomain.array[0])
