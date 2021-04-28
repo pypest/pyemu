@@ -1,5 +1,6 @@
 name: pyemu
 channels:
+  - conda-forge
   - defaults
 dependencies:  
   - numpy 
