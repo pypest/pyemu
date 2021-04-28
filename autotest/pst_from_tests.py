@@ -3080,7 +3080,7 @@ def mf6_subdir_test():
         exe = mf6_exe_path  # bit of flexibility for local/server run
     else:
         exe = os.path.join('..', mf6_exe_path)
-        os_utils.run("{0} ".format(exe), cwd=tmp2_ws)
+    os_utils.run("{0} ".format(exe), cwd=tmp2_ws)
     template_ws = "new_temp"
     # sr0 = m.sr
     # sr = pyemu.helpers.SpatialReference.from_namfile(
@@ -3100,10 +3100,8 @@ def mf6_subdir_test():
     #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
     # call generic once so that the output file exists
-    # bd = os.getcwd()
-    # os.chdir(os.path.join(template_ws, sd))
     df = generic_function(os.path.join(template_ws, sd))
-    # os.chdir(bd)
+
     # add the values in generic to the ctl file
     pf.add_observations(
         os.path.join(sd, "generic.csv"),
