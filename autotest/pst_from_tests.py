@@ -3076,8 +3076,11 @@ def mf6_subdir_test():
     sim.write_simulation()
 
     # SETUP pest stuff...
-    os_utils.run("{0} ".format(os.path.join('..', mf6_exe_path)),
-                 cwd=os.path.join(tmp_model_ws, sd))
+    if bin_path == '':
+        exe = mf6_exe_path  # bit of flexibility for local/server run
+    else:
+        exe = os.path.join('..', mf6_exe_path)
+        os_utils.run("{0} ".format(exe), cwd=os.path.join(tmp_model_ws, sd))
     template_ws = "new_temp"
     # sr0 = m.sr
     # sr = pyemu.helpers.SpatialReference.from_namfile(
