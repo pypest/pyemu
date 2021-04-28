@@ -9,6 +9,7 @@ dependencies:
   - nose-timer
   - nbsphinx
   - matplotlib
+  - pillow
   - coverage
   - coveralls
   - nose
