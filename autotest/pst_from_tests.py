@@ -3100,10 +3100,10 @@ def mf6_subdir_test():
     #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
     # call generic once so that the output file exists
-    os.chdir(os.path.join(template_ws, sd))
-    df = generic_function()
-    os.chdir("..")
-    os.chdir("..")
+    # bd = os.getcwd()
+    # os.chdir(os.path.join(template_ws, sd))
+    df = generic_function(os.path.join(template_ws, sd))
+    # os.chdir(bd)
     # add the values in generic to the ctl file
     pf.add_observations(
         os.path.join(sd, "generic.csv"),
