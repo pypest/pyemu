@@ -3046,6 +3046,12 @@ def mf6_add_various_obs_test():
 
     # blind obs add
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols=0)
+    pf.add_observations("heads.csv", index_cols=0, obsgp='hds')
+    pf.add_observations("freyberg6.npf_k_layer1.txt",
+                        obsgp='hk1', zone_array=m.dis.idomain.array[0])
+    pf.add_observations("freyberg6.npf_k_layer2.txt",
+                        zone_array=m.dis.idomain.array[0],
+                        prefix='lay2k')
     # TODO more variations on the theme
     pst = pf.build_pst('freyberg.pst')
 
