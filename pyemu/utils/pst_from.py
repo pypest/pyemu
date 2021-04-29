@@ -1156,7 +1156,7 @@ class PstFrom(object):
         ofile_skip=None,
         ofile_sep=None,
         rebuild_pst=False,
-        obsgp=True,
+        obsgp=None,
         zone_array=None,
         includes_header=True,
     ):
@@ -1180,6 +1180,7 @@ class PstFrom(object):
             ofile_sep (`str`): delimiter in output file
             rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after adding
                 new obs
+            obsgp ():
             zone_array (`np.ndarray`): array defining spatial limits or zones
                 for array-style observations. Default is None
             includes_header (`bool`): flag indicating that the list file includes a
@@ -1212,7 +1213,8 @@ class PstFrom(object):
 
 
         """
-        if insfile is None:
+        use_cols_psd = copy.copy(use_cols)  # store passed use_cols argument
+        if insfile is None: # setup instruction file name
             insfile = "{0}.ins".format(filename)
         self.logger.log("adding observations from tabular output file")
         # precondition arguments
@@ -1242,8 +1244,8 @@ class PstFrom(object):
             self.logger.log(
                 "adding observations from array output file '{0}'".format(filenames)
             )
-            # Read file and construct and instructions file for array style obs
-            df_obs = self._process_array_obs(
+            # Setup obs for array style output, build and write instruction file
+            self._process_array_obs(
                 filenames,
                 insfile,
                 prefix,
@@ -1252,7 +1254,7 @@ class PstFrom(object):
                 self.longnames,
                 zone_array,
             )
-            # Setup array style obs from the constructed instruction file
+            # Add obs from ins file written by _process_array_obs()
             new_obs = self.add_observations_from_ins(
                 ins_file=self.new_d / insfile, out_file=self.new_d / filename
             )
@@ -1288,7 +1290,7 @@ class PstFrom(object):
             if use_cols is not None:
                 use_cols = df.iloc[0][use_cols].to_list()  # redefine use_cols
             df = df.rename(columns=df.iloc[0]).drop(0).reset_index(drop=True).apply(pd.to_numeric)
-        # select all non index cols if use_cols is None
+        # Select all non index cols if use_cols is None
         if use_cols is None:
             use_cols = df.columns.drop(index_cols).tolist()
         # Currently just passing through comments in header (i.e. before the table data)
@@ -1303,7 +1305,7 @@ class PstFrom(object):
             self.logger.log(
                 "building insfile for tabular output file {0}" "".format(filename)
             )
-            # build instruction file constructor dataframe
+            # Build dataframe from output file df for use in insfile
             df_temp = _get_tpl_or_ins_df(
                 df,
                 prefix,
@@ -1313,6 +1315,7 @@ class PstFrom(object):
                 longnames=self.longnames,
             )
             df.loc[:, "idx_str"] = df_temp.idx_strs
+            # Select only certain rows if requested
             if use_rows is not None:
                 if isinstance(use_rows, str):
                     if use_rows not in df.idx_str:
@@ -1327,10 +1330,27 @@ class PstFrom(object):
                 use_rows = [r for r in use_rows if r <= len(df)]
                 use_rows = df.iloc[use_rows].idx_str.unique()
 
-            # construct ins_file from df
+            # Construct ins_file from df
+            # first rectify group name with number of columns
             ncol = len(use_cols)
-            obsgp = _check_var_len(obsgp, ncol, fill=True)
-            df_ins = pyemu.pst_utils.csv_to_ins_file(  # write insfile
+            fill = True  # default fill=True means that the groupname will be
+                         # derived from the base of the observation name
+            # if passed group name is a string or list with len < ncol
+            # and passed use_cols was None or of len > len(obsgp)
+            if obsgp is not None:
+                if use_cols_psd is None:  # no use_cols defined (all are setup)
+                    if len([obsgp] if isinstance(obsgp, str) else obsgp) == 1:
+                        # only 1 group provided, assume passed obsgp applys
+                        # to all use_cols
+                        fill = 'first'
+                    else:
+                        # many obs groups passed, assume last will fill if < ncol
+                        fill = 'last'
+                # else fill will be set to True (base of obs name will be used)
+            else:
+                obsgp = True  # will use base of col
+            obsgp = _check_var_len(obsgp, ncol, fill=fill)
+            df_ins = pyemu.pst_utils.csv_to_ins_file(
                 df.set_index("idx_str"),
                 ins_filename=self.new_d / insfile,
                 only_cols=use_cols,
@@ -3127,8 +3147,8 @@ def _get_tpl_or_ins_df(
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(lambda x: fmt.format(*x)).str.replace(
         " ", ""
     )
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "")
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":")
+    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "", regex=False)
+    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":", regex=False)
 
     if get_xy is not None:
         if xy_in_idx is not None:
