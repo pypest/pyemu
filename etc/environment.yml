@@ -1,10 +1,10 @@
 name: pyemu
 channels:
-  - defaults
+  - conda-forge
 dependencies:  
+  - pyshp
   - numpy 
   - pandas 
-  - pyshp
   - nose-timer
   - nbsphinx
   - matplotlib

@@ -14,8 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest] #, macos-latest] 
-        python-version: [3.9, 3.8, 3.7] # , 3.7, 3.6]
+        os: [ubuntu-latest, windows-latest] # , macos-latest] 
+        python-version: [3.7, 3.8, 3.9] # , 3.7, 3.6]
         run-type: [std]
         test-path: [
               "utils_tests.py", 
@@ -31,15 +31,11 @@ jobs:
               "da_tests.py"
             ]
         exclude:
-          # - os: macos-latest
-            # python-version: 3.7
-          # - os: macos-latest
-            # python-version: 3.6
-          - os: windows-latest
+          - os: windows-latest 
             python-version: 3.7
-          - os: windows-latest
-            python-version: 3.9
-        include:
+          - os: windows-latest 
+            python-version: 3.9 
+        include: 
           - os: ubuntu-latest
             python-version: 3.8
             run-type: nb
@@ -47,15 +43,15 @@ jobs:
 
 
     steps:
-    - uses:  actions/checkout@v2.3.4 # checksout this repo
+    - uses:  actions/checkout@v2 # checksout this repo
     # - name: Setup Ninja
       # if: ${{ runner.os == 'Windows' }} 
     - uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Cache Miniconda
-      uses: actions/cache@v2.1.0
+      uses: actions/cache@v2
       env:
-        # Increase this value to reset cache if environment.yml has changed
+        # Increase this value to reset cache if etc/environment.yml has not changed
         CACHE_NUMBER: 0
       with:
         path: ~/conda_pkgs_dir
@@ -72,29 +68,40 @@ jobs:
     # Standard python fails on windows without GDAL installation
     # Using custom bash shell ("shell: bash -l {0}") with Miniconda
     - name: Setup Miniconda
-      uses: conda-incubator/setup-miniconda@v2.0.0
+      uses: conda-incubator/setup-miniconda@v2
       with:
+        miniforge-version: latest
+        # miniconda-version: "latest"
         python-version: ${{ matrix.python-version }}
-        mamba-version: "*"
-        channels: conda-forge
-        auto-update-conda: true
+        # mamba-version: "*"
+        # channels: conda-forge
+        miniforge-variant: Mambaforge
+        # auto-update-conda: true
         activate-environment: pyemu
-        use-only-tar-bz2: true
+        use-mamba: true
+        # environment-file: etc/environment.yml
+        # use-only-tar-bz2: true
 
     - name: Add jupyter and jupytext to notebooks run
       if: matrix.run-type == 'nb'
       shell: bash -l {0}
       run: |
         mamba install --name pyemu jupyter jupytext
+        # conda install --name pyemu jupyter jupytext
 
-    - name: Add packages to pyemu environment using mamba or conda
+    - name: Add packages to pyemu environment using conda
+      if: ${{ matrix.python-version < 3.8 }}
+      # if: ${{ runner.os == 'Windows' || matrix.python-version < 3.8 }}
       shell: bash -l {0}
       run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
           conda env update --name pyemu --file etc/environment.yml
-        else
+    
+    - name: Add packages to pyemu environment using mamba
+      # if: ${{ runner.os != 'Windows' && matrix.python-version >= 3.8 }}
+      if: ${{ matrix.python-version >= 3.8 }}
+      shell: bash -l {0}
+      run: |
           mamba env update --name pyemu --file etc/environment.yml
-        fi
     
     - name: PESTPP exe install
       shell: bash -l {0}
@@ -142,6 +149,7 @@ jobs:
         # cd ..
         # pip install https://github.com/modflowpy/pymake/zipball/master
         python setup.py install
+        conda list
 
     - name: Add executables directory to path
       shell: bash
