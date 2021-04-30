@@ -1080,7 +1080,7 @@ class PstFrom(object):
                 "array obs output file '{0}' not found".format(out_filename)
             )
         if len(prefix) == 0 and self.longnames:
-            prefix = out_filename
+            prefix = Path(out_filename).stem
         f_out = open(self.new_d / out_filename, "r")
         f_ins = open(self.new_d / ins_filename, "w")
         f_ins.write("pif ~\n")
