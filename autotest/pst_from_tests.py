@@ -12,7 +12,7 @@ from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
 
 ext = ''
-local_bins = False  # change if wanting to test with local binary exes
+local_bins = True  # change if wanting to test with local binary exes
 if local_bins:
     bin_path = os.path.join("..", "..", "bin")
     if "linux" in platform.platform().lower():
@@ -2680,10 +2680,9 @@ def mf6_freyberg_arr_obs_and_headerless_test():
     obs = pst.observation_data
     for fname,arr in arr_dict.items():
 
-        fobs = obs.loc[obs.obsnme.str.contains(fname),:]
+        fobs = obs.loc[obs.obsnme.str.contains(Path(fname).stem), :]
         #print(fobs)
-        fobs.loc[:,"i"] = fobs.i.apply(np.int)
-        fobs.loc[:, "j"] = fobs.j.apply(np.int)
+        fobs = fobs.astype({c: int for c in ['i', 'j']})
 
         pval = fobs.loc[fobs.apply(lambda x: x.i==3 and x.j==1,axis=1),"obsval"]
         assert len(pval) == 1
@@ -3052,6 +3051,8 @@ def mf6_add_various_obs_test():
     pf.add_observations("freyberg6.npf_k_layer2.txt",
                         zone_array=m.dis.idomain.array[0],
                         prefix='lay2k')
+    pf.add_observations("freyberg6.npf_k_layer3.txt",
+                        zone_array=m.dis.idomain.array[0])
     # TODO more variations on the theme
     pst = pf.build_pst('freyberg.pst')
 
@@ -3385,7 +3386,7 @@ if __name__ == "__main__":
     #tpf.test_add_direct_array_parameters()
     #tpf.add
     #pstfrom_profile()
-    #mf6_freyberg_arr_obs_and_headerless_test()\
+    mf6_freyberg_arr_obs_and_headerless_test()
     # usg_freyberg_test()
 
 
