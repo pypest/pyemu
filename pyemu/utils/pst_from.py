@@ -1178,7 +1178,16 @@ class PstFrom(object):
             ofile_sep (`str`): delimiter in output file
             rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after adding
                 new obs
-            obsgp ():
+            obsgp (`str` of `list`-like): observation group name(s). If type
+                `str` (or list of len == 1) and `use_cols` is None (i.e. all
+                non-index cols are to  be set up as obs), the same group name
+                will be mapped to all obs in call. If None the obs group name
+                will be derived from the base of the constructed observation
+                name. If passed as `list` (and len(`list`) = `n` > 1), the
+                entries in obsgp will be interpreted to explicitly define the
+                grouped for the first `n` cols in `use_cols`, any remaining
+                columns will default to None and the base of the observation
+                name will be used. Default is None.
             zone_array (`np.ndarray`): array defining spatial limits or zones
                 for array-style observations. Default is None
             includes_header (`bool`): flag indicating that the list file includes a
