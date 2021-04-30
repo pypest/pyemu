@@ -12,7 +12,7 @@ from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
 
 ext = ''
-local_bins = True  # change if wanting to test with local binary exes
+local_bins = False  # change if wanting to test with local binary exes
 if local_bins:
     bin_path = os.path.join("..", "..", "bin")
     if "linux" in platform.platform().lower():
