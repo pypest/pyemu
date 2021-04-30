@@ -1269,6 +1269,8 @@ class PstFrom(object):
                 new_obs.loc[:, "obgnme"] = obsgp
             elif prefix is not None:
                 new_obs.loc[:, "obgnme"] = prefix
+            else:
+                new_obs.loc[:, "obgnme"] = "obgnme"
             self.logger.log(
                 "adding observations from array output file '{0}'".format(filenames)
             )
