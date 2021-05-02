@@ -3386,7 +3386,7 @@ if __name__ == "__main__":
     #tpf.test_add_direct_array_parameters()
     #tpf.add
     #pstfrom_profile()
-    mf6_freyberg_arr_obs_and_headerless_test()
+    # mf6_freyberg_arr_obs_and_headerless_test()
     # usg_freyberg_test()
 
 

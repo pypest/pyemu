@@ -1267,12 +1267,13 @@ class PstFrom(object):
             new_obs = self.add_observations_from_ins(
                 ins_file=self.new_d / insfile, out_file=self.new_d / filename
             )
-            if obsgp is not None:
+            # Try to add an observation group name -- should default to `obgnme`
+            # TODO: note list style default to base of obs name, here array default to `obgnme`
+            if obsgp is not None:  # if a group name is passed
                 new_obs.loc[:, "obgnme"] = obsgp
-            elif prefix is not None:
+            elif prefix is not None and len(prefix) != 0:  # if prefix is passed
                 new_obs.loc[:, "obgnme"] = prefix
-            else:
-                new_obs.loc[:, "obgnme"] = "obgnme"
+            # else will default to `obgnme`
             self.logger.log(
                 "adding observations from array output file '{0}'".format(filenames)
             )
