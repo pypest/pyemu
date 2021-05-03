@@ -1156,7 +1156,7 @@ class PstFrom(object):
         ofile_skip=None,
         ofile_sep=None,
         rebuild_pst=False,
-        obsgp=True,
+        obsgp=None,
         zone_array=None,
         includes_header=True,
     ):
@@ -1168,13 +1168,26 @@ class PstFrom(object):
                 as observations
             insfile (`str`): desired instructions file filename
             index_cols (`list`-like or `int`): columns to denote are indices for obs
-            use_cols (`list`-like or `int`): columns to set up as obs
+            use_cols (`list`-like or `int`): columns to set up as obs. If None,
+                and `index_cols` is not None (i.e list-syle obs assumed),
+                observations will be set up for all columns in `filename` that
+                are not in `index_cols`.
             use_rows (`list`-like or `int`): select only specific row of file for obs
             prefix (`str`): prefix for obsnmes
             ofile_skip (`int`): number of lines to skip in model output file
             ofile_sep (`str`): delimiter in output file
             rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after adding
                 new obs
+            obsgp (`str` of `list`-like): observation group name(s). If type
+                `str` (or list of len == 1) and `use_cols` is None (i.e. all
+                non-index cols are to  be set up as obs), the same group name
+                will be mapped to all obs in call. If None the obs group name
+                will be derived from the base of the constructed observation
+                name. If passed as `list` (and len(`list`) = `n` > 1), the
+                entries in obsgp will be interpreted to explicitly define the
+                grouped for the first `n` cols in `use_cols`, any remaining
+                columns will default to None and the base of the observation
+                name will be used. Default is None.
             zone_array (`np.ndarray`): array defining spatial limits or zones
                 for array-style observations. Default is None
             includes_header (`bool`): flag indicating that the list file includes a
@@ -1207,8 +1220,8 @@ class PstFrom(object):
 
 
         """
-        # TODO - array style outputs? or expecting post processing to tabular
-        if insfile is None:
+        use_cols_psd = copy.copy(use_cols)  # store passed use_cols argument
+        if insfile is None: # setup instruction file name
             insfile = "{0}.ins".format(filename)
         self.logger.log("adding observations from tabular output file")
         # precondition arguments
@@ -1227,7 +1240,7 @@ class PstFrom(object):
             seps=ofile_sep,
             skip_rows=ofile_skip,
         )
-        # array style obs
+        # array style obs, if both index_cols and use_cols are None (default)
         if index_cols is None and use_cols is None:
             if not isinstance(filenames, str):
                 if len(filenames) > 1:
@@ -1238,7 +1251,8 @@ class PstFrom(object):
             self.logger.log(
                 "adding observations from array output file '{0}'".format(filenames)
             )
-            df_obs = self._process_array_obs(
+            # Setup obs for array style output, build and write instruction file
+            self._process_array_obs(
                 filenames,
                 insfile,
                 prefix,
@@ -1247,6 +1261,7 @@ class PstFrom(object):
                 self.longnames,
                 zone_array,
             )
+            # Add obs from inss file written by _process_array_obs()
             new_obs = self.add_observations_from_ins(
                 ins_file=insfile, out_file=self.new_d / filename
             )
@@ -1254,6 +1269,8 @@ class PstFrom(object):
                 new_obs.loc[:, "obgnme"] = obsgp
             elif prefix is not None:
                 new_obs.loc[:, "obgnme"] = prefix
+            else:
+                new_obs.loc[:, "obgnme"] = "obgnme"
             self.logger.log(
                 "adding observations from array output file '{0}'".format(filenames)
             )
@@ -1269,9 +1286,22 @@ class PstFrom(object):
             return new_obs
 
         # list style obs
+        # -- will end up here if either of index_cols or use_cols is not None
         df, storehead = self._load_listtype_file(
             filenames, index_cols, use_cols, fmts, seps, skip_rows
         )
+        # rectify df?
+        # if iloc[0] are strings and index_cols are ints,
+        # can we assume that there were infact column headers?
+        if (all(isinstance(c, str) for c in df.iloc[0])
+                and all(isinstance(a, int) for a in index_cols)):
+            index_cols = df.iloc[0][index_cols].to_list()  # redefine index_cols
+            if use_cols is not None:
+                use_cols = df.iloc[0][use_cols].to_list()  # redefine use_cols
+            df = df.rename(columns=df.iloc[0]).drop(0).reset_index(drop=True).apply(pd.to_numeric)
+        # Select all non index cols if use_cols is None
+        if use_cols is None:
+            use_cols = df.columns.drop(index_cols).tolist()
         # Currently just passing through comments in header (i.e. before the table data)
         lenhead = 0
         stkeys = np.array(
@@ -1284,8 +1314,8 @@ class PstFrom(object):
             self.logger.log(
                 "building insfile for tabular output file {0}" "".format(filename)
             )
+            # Build dataframe from output file df for use in insfile
             df_temp = _get_tpl_or_ins_df(
-                filename,
                 df,
                 prefix,
                 typ="obs",
@@ -1294,6 +1324,7 @@ class PstFrom(object):
                 longnames=self.longnames,
             )
             df.loc[:, "idx_str"] = df_temp.idx_strs
+            # Select only certain rows if requested
             if use_rows is not None:
                 if isinstance(use_rows, str):
                     if use_rows not in df.idx_str:
@@ -1307,10 +1338,27 @@ class PstFrom(object):
                     use_rows = [use_rows]
                 use_rows = [r for r in use_rows if r <= len(df)]
                 use_rows = df.iloc[use_rows].idx_str.unique()
-            # construct ins_file from df
-            ncol = len(use_cols)
 
-            obsgp = _check_var_len(obsgp, ncol, fill=True)
+            # Construct ins_file from df
+            # first rectify group name with number of columns
+            ncol = len(use_cols)
+            fill = True  # default fill=True means that the groupname will be
+                         # derived from the base of the observation name
+            # if passed group name is a string or list with len < ncol
+            # and passed use_cols was None or of len > len(obsgp)
+            if obsgp is not None:
+                if use_cols_psd is None:  # no use_cols defined (all are setup)
+                    if len([obsgp] if isinstance(obsgp, str) else obsgp) == 1:
+                        # only 1 group provided, assume passed obsgp applys
+                        # to all use_cols
+                        fill = 'first'
+                    else:
+                        # many obs groups passed, assume last will fill if < ncol
+                        fill = 'last'
+                # else fill will be set to True (base of obs name will be used)
+            else:
+                obsgp = True  # will use base of col
+            obsgp = _check_var_len(obsgp, ncol, fill=fill)
             df_ins = pyemu.pst_utils.csv_to_ins_file(
                 df.set_index("idx_str"),
                 ins_filename=self.new_d / insfile,
@@ -2364,40 +2412,55 @@ class PstFrom(object):
         if isinstance(skip, list):
             assert len(skip) == 1
             skip = skip[0]
-        if isinstance(index_cols[0], str) and isinstance(use_cols[0], str):
+
+        # trying to use use_cols and index_cols to work out whether to
+        # read header from csv.
+        # either use_cols or index_cols could still be None
+        # -- case of both being None should already have been caught
+        # but index_cols could still be None...
+
+        check_args = [a for a in [index_cols, use_cols] if a is not None]
+        # `a` should be list if it is not None
+        if all(isinstance(a[0], str) for a in check_args):
             # index_cols can be from header str
             header = 0  # will need to read a header
-        elif isinstance(index_cols[0], int) and isinstance(use_cols[0], int):
+        elif all(isinstance(a[0], int) for a in check_args):
             # index_cols are column numbers in input file
             header = None
         else:
-            self.logger.lraise(
-                "unrecognized type for index_cols or use_cols "
-                "should be str or int and both should be of the "
-                "same type, not {0} or {1}".format(
-                    str(type(index_cols[0])), str(type(use_cols[0]))
+            if len(check_args) > 1:
+                #  implies neither are None but they either both are not str,int
+                #  or are different
+                self.logger.lraise(
+                    "unrecognized type for index_cols or use_cols "
+                    "should be str or int and both should be of the "
+                    "same type, not {0} or {1}".format(*[
+                        str(type(a[0])) for a in check_args
+                    ])
                 )
-            )
-        itype = type(index_cols)
-        utype = type(use_cols)
-        if itype != utype:
-            self.logger.lraise(
-                "index_cols type '{0} != use_cols "
-                "type '{1}'".format(str(itype), str(utype))
-            )
+            else:
+                # implies not correct type
+                self.logger.lraise(
+                    "unrecognized type for either index_cols or use_cols "
+                    "should be str or int, not {0}".format(
+                        type(check_args[0][0])
+                    )
+                )
 
-        si = set(index_cols)
-        su = set(use_cols)
+        # checking no overlap between index_cols and use_cols
+        if len(check_args) > 1:
+            si = set(index_cols)
+            su = set(use_cols)
 
-        i = si.intersection(su)
-        if len(i) > 0:
-            self.logger.lraise(
-                "use_cols also listed in " "index_cols: {0}".format(str(i))
-            )
+            i = si.intersection(su)
+            if len(i) > 0:
+                self.logger.lraise(
+                    "use_cols also listed in " "index_cols: {0}".format(str(i))
+                )
 
         file_path = self.new_d / filename
         if not os.path.exists(file_path):
-            self.logger.lraise("par filename '{0}' not found " "".format(file_path))
+            self.logger.lraise("par/obs filename '{0}' not found " "".format(file_path))
         self.logger.log("reading list {0}".format(file_path))
         if fmt.lower() == "free":
             if sep is None:
@@ -2457,16 +2520,16 @@ class PstFrom(object):
                 "".format(file_path, str(missing))
             )
         # ensure requested use_cols are in input file
-        for use_col in use_cols:
-            if use_col not in df.columns:
-                missing.append(use_cols)
+        if use_cols is not None:
+            for use_col in use_cols:
+                if use_col not in df.columns:
+                    missing.append(use_cols)
         if len(missing) > 0:
             self.logger.lraise(
                 "the following use_cols were not found "
                 "in file '{0}':{1}"
                 "".format(file_path, str(missing))
             )
-
         return df, storehead
 
     def _prep_arg_list_lengths(
@@ -2549,6 +2612,7 @@ class PstFrom(object):
         if index_cols is not None:
             if not isinstance(index_cols, list):
                 index_cols = [index_cols]
+        if use_cols is not None:
             if not isinstance(use_cols, list):
                 use_cols = [use_cols]
         return filenames, fmts, seps, skip_rows, index_cols, use_cols
@@ -2643,7 +2707,6 @@ def write_list_tpl(
         )
     else:
         df_tpl = _get_tpl_or_ins_df(
-            filenames,
             dfs,
             name,
             index_cols,
@@ -2973,7 +3036,6 @@ def _write_direct_df_tpl(
 
 
 def _get_tpl_or_ins_df(
-    filenames,
     dfs,
     name,
     index_cols,
@@ -3078,8 +3140,8 @@ def _get_tpl_or_ins_df(
     df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(lambda x: fmt.format(*x)).str.replace(
         " ", ""
     )
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "")
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":")
+    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "", regex=False)
+    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":", regex=False)
 
     if get_xy is not None:
         if xy_in_idx is not None:

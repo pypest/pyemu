@@ -1695,7 +1695,6 @@ def mf6_freyberg_varying_idomain():
         print(model_file,sim_val,arr.mean())
 
 
-
 def xsec_test():
     import numpy as np
     import pandas as pd
@@ -1745,6 +1744,7 @@ def xsec_test():
     pst = pyemu.Pst(os.path.join(t_d,"pest.pst"))
     print(pst.phi)
     assert pst.phi < 1.0e-7
+
 
 def mf6_freyberg_short_direct_test():
 
@@ -2680,10 +2680,9 @@ def mf6_freyberg_arr_obs_and_headerless_test():
     obs = pst.observation_data
     for fname,arr in arr_dict.items():
 
-        fobs = obs.loc[obs.obsnme.str.contains(fname),:]
+        fobs = obs.loc[obs.obsnme.str.contains(Path(fname).stem), :]
         #print(fobs)
-        fobs.loc[:,"i"] = fobs.i.apply(np.int)
-        fobs.loc[:, "j"] = fobs.j.apply(np.int)
+        fobs = fobs.astype({c: int for c in ['i', 'j']})
 
         pval = fobs.loc[fobs.apply(lambda x: x.i==3 and x.j==1,axis=1),"obsval"]
         assert len(pval) == 1
@@ -3017,6 +3016,46 @@ def usg_freyberg_test():
         assert d.sum() > 1.0e-3, arr_file
 
 
+def mf6_add_various_obs_test():
+    import flopy
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
+    tmp_model_ws = "temp_pst_from"
+    if os.path.exists(tmp_model_ws):
+        shutil.rmtree(tmp_model_ws)
+    os.mkdir(tmp_model_ws)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
+    # sim.set_all_data_external()
+    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    # sim.set_all_data_external()
+    m = sim.get_model("freyberg6")
+    # sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
+
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+
+    template_ws = "new_temp"
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018",
+                 chunk_len=1)
+
+    # blind obs add
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols=0)
+    pf.add_observations("heads.csv", index_cols=0, obsgp='hds')
+    pf.add_observations("freyberg6.npf_k_layer1.txt",
+                        obsgp='hk1', zone_array=m.dis.idomain.array[0])
+    pf.add_observations("freyberg6.npf_k_layer2.txt",
+                        zone_array=m.dis.idomain.array[0],
+                        prefix='lay2k')
+    pf.add_observations("freyberg6.npf_k_layer3.txt",
+                        zone_array=m.dis.idomain.array[0])
+    # TODO more variations on the theme
+    pst = pf.build_pst('freyberg.pst')
+
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
     #invest()
@@ -3024,18 +3063,19 @@ if __name__ == "__main__":
     #freyberg_prior_build_test()
     #mf6_freyberg_test()
     #mf6_freyberg_da_test()
-    #mf6_freyberg_shortnames_test()
+    # mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
+    mf6_add_various_obs_test()
     #tpf = TestPstFrom()
     #tpf.setup()
     #tpf.test_add_direct_array_parameters()
     #tpf.add
     #pstfrom_profile()
-    #mf6_freyberg_arr_obs_and_headerless_test()\
-    usg_freyberg_test()
+    mf6_freyberg_arr_obs_and_headerless_test()
+    # usg_freyberg_test()
 
 
 
