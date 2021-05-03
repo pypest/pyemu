@@ -1263,6 +1263,7 @@ class PstFrom(object):
                 self.longnames,
                 zone_array,
             )
+            
             # Add obs from ins file written by _process_array_obs()
             new_obs = self.add_observations_from_ins(
                 ins_file=self.new_d / insfile, out_file=self.new_d / filename
