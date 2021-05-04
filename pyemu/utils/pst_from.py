@@ -1302,7 +1302,7 @@ class PstFrom(object):
             index_cols = df.iloc[0][index_cols].to_list()  # redefine index_cols
             if use_cols is not None:
                 use_cols = df.iloc[0][use_cols].to_list()  # redefine use_cols
-            df = df.rename(columns=df.iloc[0]).drop(0).reset_index(drop=True).apply(pd.to_numeric)
+            df = df.rename(columns=df.iloc[0].to_dict()).drop(0).reset_index(drop=True).apply(pd.to_numeric, errors='ignore')
         # Select all non index cols if use_cols is None
         if use_cols is None:
             use_cols = df.columns.drop(index_cols).tolist()
@@ -2524,7 +2524,8 @@ class PstFrom(object):
                     if line.strip().startswith(c_char)
                 }
         df = pd.read_csv(
-            file_path, comment=c_char, sep=sep, skiprows=skip, header=header
+            file_path, comment=c_char, sep=sep, skiprows=skip, header=header,
+            low_memory=False
         )
         self.logger.log("reading list {0}".format(file_path))
         # ensure that column ids from index_col is in input file

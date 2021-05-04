@@ -613,7 +613,7 @@ def _parse_ins_string(string):
     istart_markers = set(["[", "(", "!"])
     marker_dict = {"[": "]", "(": ")", "!": "!"}
     # iend_markers = set(["]",")","!"])
-
+    setdum = {"dum", "DUM"}
     obs_names = []
     slen = len(string)
     idx = 0
@@ -629,9 +629,9 @@ def _parse_ins_string(string):
             # print(string[idx+1:])
             # print(string[idx+1:].index(em))
             # print(string[idx+1:].index(em)+idx+1)
-            eidx = min(slen, string[idx + 1 :].index(em) + idx + 1)
-            obs_name = string[idx + 1 : eidx]
-            if obs_name.lower() != "dum":
+            eidx = min(slen, string.find(em, idx + 1))
+            obs_name = string[idx + 1: eidx]
+            if obs_name not in setdum:
                 obs_names.append(obs_name)
             idx = eidx + 1
         else:
@@ -1454,8 +1454,9 @@ class InstructionFile(object):
         ii = 0
         all_markers = True
         line_seps = set([",", " ", "\t"])
+        linelen = len(ins_line)
         while True:
-            if ii >= len(ins_line):
+            if ii >= linelen:
                 break
             ins = ins_line[ii]
             i1 = ins[:1]
@@ -1464,6 +1465,7 @@ class InstructionFile(object):
                 mstr = ins.replace(self._marker, "")
                 while True:
                     line = self._readline_output()
+                    rline = line.replace(',', ' ')
                     if line is None:
                         self.throw_out_error(
                             "EOF when trying to find primary marker '{0}' from instruction file line {1}".format(
@@ -1485,6 +1487,7 @@ class InstructionFile(object):
                     )
                 for i in range(nlines):
                     line = self._readline_output()
+                    rline = line.replace(',', ' ')
                     if line is None:
                         self.throw_out_error(
                             "EOF when trying to read {0} lines for line advance instruction '{1}', from instruction file line number {2}".format(
@@ -1492,7 +1495,8 @@ class InstructionFile(object):
                             )
                         )
             elif ins == "w":  # whole string comparison
-                raw = line[cursor_pos:].replace(",", " ").split()
+                raw = rline[cursor_pos:].split(None, 2)
+                # raw = line[cursor_pos:].replace(",", " ").split()  # TODO: SLOW FOR LONG STRINGS!
                 if line[cursor_pos] in line_seps:
                     raw.insert(0, "")
                 if len(raw) == 1:
@@ -1502,26 +1506,31 @@ class InstructionFile(object):
                         )
                     )
                 # step over current value
-                cursor_pos = cursor_pos + line[cursor_pos:].replace(",", " ").index(" ")
+                cursor_pos = rline.find(' ', cursor_pos) # cursor_pos + line[cursor_pos:].replace(",", " ").index(" ")  # TODO: SLOW FOR LONG STRINGS!
                 # now find position of next entry
-                cursor_pos = cursor_pos + line[cursor_pos:].replace(",", " ").index(
-                    raw[1]
-                )
+                cursor_pos = rline.find(raw[1], cursor_pos)  # cursor_pos + line[cursor_pos:].replace(",", " ").index(  # TODO: SLOW FOR LONG STRINGS!
+                   # raw[1]
+               # )
 
             elif i1 == "!":
                 oname = ins.replace("!", "")
-                # look a head for a sec marker
-                if ii < len(ins_line) - 1 and ins_line[ii + 1] == self._marker:
+                # look a head for a second/closing marker
+                if ii < linelen - 1 and ins_line[ii + 1] == self._marker:
                     m = ins_line[ii + 1].replace(self._marker, "")
-                    if m not in line[cursor_pos:]:
+                    es = line.find(m, cursor_pos)
+                    if es == -1:  # m not in rest of line
                         self.throw_out_error(
-                            "secondary marker '{0}' not found from cursor_pos {2}".format(
+                            "secondary marker '{0}' not found from cursor_pos {1}".format(
                                 m, cursor_pos
                             )
                         )
-                    val_str = line[cursor_pos:].split(m)[0]
+                    val_str = line[cursor_pos:es+1]  # .split(m, 1)[0]  # TODO SLOW
                 else:
-                    val_str = line[cursor_pos:].replace(",", " ").split()[0]
+                    es = rline.find(' ', cursor_pos)
+                    if es == -1 or es == cursor_pos:
+                        val_str = rline[cursor_pos:].split(None, 1)[0]
+                    else:
+                        val_str = rline[cursor_pos: es+1]  # .replace(",", " ").split(None, 1)[0]  # TODO SLOW
                 try:
                     val = float(val_str)
                 except Exception as e:
@@ -1534,31 +1543,31 @@ class InstructionFile(object):
 
                 if oname != "dum":
                     val_dict[oname] = val
-                ipos = line[cursor_pos:].index(val_str.strip())
+                ipos = line.find(val_str.strip(), cursor_pos) # ].index(val_str.strip())  # TODO SLOW
                 # val_len = len(val_str)
-                cursor_pos = (
-                    cursor_pos + line[cursor_pos:].index(val_str.strip()) + len(val_str)
-                )
+                cursor_pos = ipos + len(val_str)
                 all_markers = False
 
             elif i1 == self._marker:
                 m = ins.replace(self._marker, "")
-                if m not in line[cursor_pos:]:
+                es = line.find(m, cursor_pos)
+                if es == -1:  # m not in rest of line
                     if all_markers:
                         ii = 0
                         continue
                     else:
                         self.throw_out_error(
-                            "secondary marker '{0}' not found from cursor_pos {2}".format(
+                            "secondary marker '{0}' not found from "
+                            "cursor_pos {1}".format(
                                 m, cursor_pos
                             )
                         )
-                cursor_pos = cursor_pos + line[cursor_pos:].index(m) + len(m)
+                cursor_pos = line.find(m, cursor_pos) + len(m)
 
             elif i1 == "(":
                 if ")" not in ins:
                     self.throw_ins_error("unmatched ')'", self._instruction_lcount)
-                oname = ins[1:].split(")")[0].lower()
+                oname = ins[1:].split(")", 1)[0].lower()
                 raw = ins.split(")")[1]
                 if ":" not in raw:
                     self.throw_ins_error(
@@ -1627,7 +1636,7 @@ class InstructionFile(object):
             elif i1 == "[":
                 if "]" not in ins:
                     self.throw_ins_error("unmatched ']'", self._instruction_lcount)
-                oname = ins[1:].split("]")[0].lower()
+                oname = ins[1:].split("]", 1)[0].lower()
                 raw = ins.split("]")[1]
                 if ":" not in raw:
                     self.throw_ins_error(
