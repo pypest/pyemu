@@ -3045,7 +3045,8 @@ def mf6_add_various_obs_test():
                  chunk_len=1)
 
     # blind obs add
-    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols='time',
+                        ofile_sep=',')
     pf.add_observations("heads.csv", index_cols=0, obsgp='hds')
     pf.add_observations("freyberg6.npf_k_layer1.txt",
                         obsgp='hk1', zone_array=m.dis.idomain.array[0])

@@ -1225,7 +1225,8 @@ class PstFrom(object):
         use_cols_psd = copy.copy(use_cols)  # store passed use_cols argument
         if insfile is None: # setup instruction file name
             insfile = "{0}.ins".format(filename)
-        self.logger.log("adding observations from tabular output file")
+        self.logger.log("adding observations from output file "
+                        "{0}".format(filename))
         # precondition arguments
         (
             filenames,
@@ -1290,6 +1291,8 @@ class PstFrom(object):
             return new_obs
 
         # list style obs
+        self.logger.log("adding observations from tabular output file "
+                        "'{0}'".format(filenames))
         # -- will end up here if either of index_cols or use_cols is not None
         df, storehead = self._load_listtype_file(
             filenames, index_cols, use_cols, fmts, seps, skip_rows
@@ -1387,7 +1390,8 @@ class PstFrom(object):
                 new_obs.loc[:, "obgnme"] = df_ins.loc[new_obs.index, "obgnme"]
             new_obs_l.append(new_obs)
         new_obs = pd.concat(new_obs_l)
-        self.logger.log("adding observations from tabular output file")
+        self.logger.log("adding observations from tabular output file "
+                        "'{0}'".format(filenames))
         if rebuild_pst:
             if self.pst is not None:
                 self.logger.log("Adding obs to control file " "and rewriting pst")
