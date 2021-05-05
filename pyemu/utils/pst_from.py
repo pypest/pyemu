@@ -941,7 +941,7 @@ class PstFrom(object):
             call_str (`str`): the call string for python function in
                 `file_name`.
                 `call_str` will be added to the forward run script, as is.
-            is_pre_cmd (`bool`): flag to include `call_str` in
+            is_pre_cmd (`bool` or `None`): flag to include `call_str` in
                 PstFrom.pre_py_cmds.  If False, `call_str` is
                 added to PstFrom.post_py_cmds instead. If passed as `None`,
                 then the function `call_str` is added to the forward run
