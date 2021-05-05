@@ -2356,7 +2356,7 @@ class PstFrom(object):
         else:
             gp_dict = {g: [d] for g, d in df.groupby("covgp")}
         # df_list = [d for g, d in df.groupby('pargp')]
-        if geostruct is not None:
+        if geostruct is not None and par_type.lower() not in ["constant","zone"]:
             # relating pars to geostruct....
             if geostruct not in self.par_struct_dict.keys():
                 # add new geostruct
