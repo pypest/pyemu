@@ -1455,6 +1455,7 @@ class InstructionFile(object):
         all_markers = True
         line_seps = set([",", " ", "\t"])
         n_ins = len(ins_line)  # number of instructions on line
+        maxsearch = 500  # maximum number of characters to search when slicing line
         while True:
             if ii >= n_ins:
                 break
@@ -1507,8 +1508,7 @@ class InstructionFile(object):
                 # (to support comma sep strings)
                 rline = line.replace(',', ' ')
             elif ins == "w":  # whole string comparison
-                raw = rline[cursor_pos:].split(None, 2)  # TODO: maybe sslow for long strings
-                # raw = line[cursor_pos:].replace(",", " ").split()  # TO#DO: SLOW FOR LONG STRINGS!
+                raw = rline[cursor_pos:cursor_pos+maxsearch].split(None, 2)  # TODO: maybe slow for long strings -- hopefuly maxsearch helps
                 if line[cursor_pos] in line_seps:
                     raw.insert(0, "")
                 if len(raw) == 1:
@@ -1518,9 +1518,9 @@ class InstructionFile(object):
                         )
                     )
                 # step over current value
-                cursor_pos = rline.find(' ', cursor_pos) # cursor_pos + line[cursor_pos:].replace(",", " ").index(" ")  # TO#DO: SLOW FOR LONG STRINGS!
+                cursor_pos = rline.find(' ', cursor_pos)
                 # now find position of next entry
-                cursor_pos = rline.find(raw[1], cursor_pos)  # cursor_pos + line[cursor_pos:].replace(",", " ").index(  # TO#DO: SLOW FOR LONG STRINGS!
+                cursor_pos = rline.find(raw[1], cursor_pos)
                    # raw[1]
                # )
 
@@ -1539,7 +1539,7 @@ class InstructionFile(object):
                             )
                         )
                     # read to closing marker
-                    val_str = line[cursor_pos:es]  # .split(m, 1)[0]  # TO#DO SLOW
+                    val_str = line[cursor_pos: es]
                 else:
                     # find next space in (r)line -- signifies end of entry
                     es = rline.find(' ', cursor_pos)
@@ -1548,10 +1548,12 @@ class InstructionFile(object):
                         # use old fashioned split to get value
                         # -- this will happen if there are leading blanks before
                         # vals in output file (e.g. formatted)
-                        val_str = rline[cursor_pos:].split(None, 1)[0]
+                        val_str = rline[
+                                  cursor_pos: cursor_pos+maxsearch
+                                  ].split(None, 1)[0]
                     else:
                         # read val (constrained slice is faster for big strings)
-                        val_str = rline[cursor_pos: es]  # .replace(",", " ").split(None, 1)[0]  # TO#DO SLOW
+                        val_str = rline[cursor_pos: es]
                 try:
                     val = float(val_str)
                 except Exception as e:
@@ -1564,7 +1566,7 @@ class InstructionFile(object):
 
                 if oname != "dum":
                     val_dict[oname] = val
-                ipos = line.find(val_str.strip(), cursor_pos) # ].index(val_str.strip())  # TODO SLOW
+                ipos = line.find(val_str.strip(), cursor_pos)
                 # val_len = len(val_str)
                 cursor_pos = ipos + len(val_str)  # update cursor
                 all_markers = False
@@ -1631,7 +1633,7 @@ class InstructionFile(object):
                     )
 
                 ss_idx = max(cursor_pos, s_idx)
-                raw = line[ss_idx:].split(None, 1)  # slpitting only 1 might be margin faster
+                raw = line[ss_idx: ss_idx+maxsearch].split(None, 1)  # slpitting only 1 might be margin faster
                 rs_idx = line.index(raw[0])
                 if rs_idx > e_idx:
                     self.throw_out_error(
@@ -1759,8 +1761,8 @@ class InstructionFile(object):
             if len(first) > 0:
                 tokens.append(first)
             for idx in range(1, len(midx) - 1, 2):
-                mstr = line[midx[idx - 1] : midx[idx] + 1]
-                ostr = line[midx[idx] + 1 : midx[idx + 1]]
+                mstr = line[midx[idx - 1]: midx[idx] + 1]
+                ostr = line[midx[idx] + 1: midx[idx + 1]]
                 tokens.append(mstr)
                 tokens.extend(ostr.split())
         else:

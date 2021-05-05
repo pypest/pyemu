@@ -3018,7 +3018,6 @@ def usg_freyberg_test():
 
 def mf6_add_various_obs_test():
     import flopy
-    # import cProfile
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = "temp_pst_from"
     if os.path.exists(tmp_model_ws):
@@ -3056,17 +3055,27 @@ def mf6_add_various_obs_test():
     pf.add_observations("freyberg6.npf_k_layer3.txt",
                         zone_array=m.dis.idomain.array[0])
 
-    df = pd.DataFrame(np.random.random([10, 20000]),
-                      columns=[hex(c) for c in range(20000)])
-    df.index.name = 'time'
-    df.to_csv(os.path.join(template_ws, 'bigobseg.csv'))
-    # pr = cProfile.Profile()
-    # pr.enable()
-    pf.add_observations('bigobseg.csv', index_cols=0)
-    # pr.disable()
+    _add_big_obsffile(pf, profile=True, nchar=50000)
+
     # TODO more variations on the theme
     pst = pf.build_pst('freyberg.pst')
-    # pr.print_stats(sort="cumtime")
+
+
+def _add_big_obsffile(pf, profile=False, nchar=50000):
+    df = pd.DataFrame(np.random.random([10, nchar]),
+                      columns=[hex(c) for c in range(nchar)])
+    df.index.name = 'time'
+    df.to_csv(os.path.join(pf.new_d, 'bigobseg.csv'))
+
+    if profile:
+        import cProfile
+        pr = cProfile.Profile()
+        pr.enable()
+        pf.add_observations('bigobseg.csv', index_cols='time')
+        pr.disable()
+        pr.print_stats(sort="cumtime")
+    else:
+        pf.add_observations('bigobseg.csv', index_cols='time')
 
 
 def mf6_subdir_test():
