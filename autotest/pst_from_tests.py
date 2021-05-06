@@ -673,6 +673,12 @@ def mf6_freyberg_test():
                                   ult_ubound=None if ult_ub is None else ult_ub - 1,
                                   ult_lbound=None if ult_lb is None else ult_lb - 1)
 
+                # use a slightly lower ult bound here
+                pf.add_parameters(filenames=arr_file, par_type="constant",
+                                  par_name_base=arr_file.split('.')[1] + "_cn",
+                                  pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
+                                  upper_bound=ub, lower_bound=lb,geostruct=gr_gs)
+
 
 
     # add SP1 spatially constant, but temporally correlated wel flux pars
@@ -3373,7 +3379,7 @@ if __name__ == "__main__":
     #invest()
     #freyberg_test()
     #freyberg_prior_build_test()
-    #mf6_freyberg_test()
+    mf6_freyberg_test()
     #mf6_freyberg_da_test()
     # mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
@@ -3381,13 +3387,13 @@ if __name__ == "__main__":
     #xsec_test()
     #mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
-    mf6_subdir_test()
+    #mf6_subdir_test()
     #tpf = TestPstFrom()
     #tpf.setup()
     #tpf.test_add_direct_array_parameters()
     #tpf.add
     #pstfrom_profile()
-    mf6_freyberg_arr_obs_and_headerless_test()
+    #mf6_freyberg_arr_obs_and_headerless_test()
     # usg_freyberg_test()
 
 
