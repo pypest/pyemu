@@ -941,7 +941,7 @@ class PstFrom(object):
             call_str (`str`): the call string for python function in
                 `file_name`.
                 `call_str` will be added to the forward run script, as is.
-            is_pre_cmd (`bool`): flag to include `call_str` in
+            is_pre_cmd (`bool` or `None`): flag to include `call_str` in
                 PstFrom.pre_py_cmds.  If False, `call_str` is
                 added to PstFrom.post_py_cmds instead. If passed as `None`,
                 then the function `call_str` is added to the forward run
@@ -1225,7 +1225,8 @@ class PstFrom(object):
         use_cols_psd = copy.copy(use_cols)  # store passed use_cols argument
         if insfile is None: # setup instruction file name
             insfile = "{0}.ins".format(filename)
-        self.logger.log("adding observations from tabular output file")
+        self.logger.log("adding observations from output file "
+                        "{0}".format(filename))
         # precondition arguments
         (
             filenames,
@@ -1290,6 +1291,8 @@ class PstFrom(object):
             return new_obs
 
         # list style obs
+        self.logger.log("adding observations from tabular output file "
+                        "'{0}'".format(filenames))
         # -- will end up here if either of index_cols or use_cols is not None
         df, storehead = self._load_listtype_file(
             filenames, index_cols, use_cols, fmts, seps, skip_rows
@@ -1302,7 +1305,7 @@ class PstFrom(object):
             index_cols = df.iloc[0][index_cols].to_list()  # redefine index_cols
             if use_cols is not None:
                 use_cols = df.iloc[0][use_cols].to_list()  # redefine use_cols
-            df = df.rename(columns=df.iloc[0]).drop(0).reset_index(drop=True).apply(pd.to_numeric)
+            df = df.rename(columns=df.iloc[0].to_dict()).drop(0).reset_index(drop=True).apply(pd.to_numeric, errors='ignore')
         # Select all non index cols if use_cols is None
         if use_cols is None:
             use_cols = df.columns.drop(index_cols).tolist()
@@ -1387,7 +1390,8 @@ class PstFrom(object):
                 new_obs.loc[:, "obgnme"] = df_ins.loc[new_obs.index, "obgnme"]
             new_obs_l.append(new_obs)
         new_obs = pd.concat(new_obs_l)
-        self.logger.log("adding observations from tabular output file")
+        self.logger.log("adding observations from tabular output file "
+                        "'{0}'".format(filenames))
         if rebuild_pst:
             if self.pst is not None:
                 self.logger.log("Adding obs to control file " "and rewriting pst")
@@ -2524,7 +2528,8 @@ class PstFrom(object):
                     if line.strip().startswith(c_char)
                 }
         df = pd.read_csv(
-            file_path, comment=c_char, sep=sep, skiprows=skip, header=header
+            file_path, comment=c_char, sep=sep, skiprows=skip, header=header,
+            low_memory=False
         )
         self.logger.log("reading list {0}".format(file_path))
         # ensure that column ids from index_col is in input file

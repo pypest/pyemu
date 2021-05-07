@@ -3050,7 +3050,8 @@ def mf6_add_various_obs_test():
                  chunk_len=1)
 
     # blind obs add
-    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols='time',
+                        ofile_sep=',')
     pf.add_observations("heads.csv", index_cols=0, obsgp='hds')
     pf.add_observations("freyberg6.npf_k_layer1.txt",
                         obsgp='hk1', zone_array=m.dis.idomain.array[0])
@@ -3059,8 +3060,49 @@ def mf6_add_various_obs_test():
                         prefix='lay2k')
     pf.add_observations("freyberg6.npf_k_layer3.txt",
                         zone_array=m.dis.idomain.array[0])
+
+    linelen = 10000
+    _add_big_obsffile(pf, profile=True, nchar=linelen)
+
     # TODO more variations on the theme
-    pst = pf.build_pst('freyberg.pst')
+    # add single par so we can run
+    pf.add_parameters(["freyberg6.npf_k_layer1.txt",
+                       "freyberg6.npf_k_layer2.txt",
+                       "freyberg6.npf_k_layer3.txt"],
+                      index_cols=[0, 1, 2], use_cols=[3], par_type='constant')
+    pf.mod_sys_cmds.append("mf6")
+    pf.add_py_function(
+        'pst_from_tests.py',
+        f"_add_big_obsffile('.', profile=False, nchar={linelen})",
+        is_pre_cmd=False)
+    pst = pf.build_pst('freyberg.pst', version=2)
+    # pst.write(os.path.join(pf.new_d, "freyberg.usg.pst"), version=2)
+    pyemu.os_utils.run("{0} {1}".format(ies_exe_path, pst.filename.name),
+                       cwd=pf.new_d)
+
+
+def _add_big_obsffile(pf, profile=False, nchar=50000):
+    if isinstance(pf, str):
+        pstfrom_add = False
+        wd = pf
+    else:
+        pstfrom_add = True
+        wd = pf.new_d
+    df = pd.DataFrame(np.random.random([10, nchar]),
+                      columns=[hex(c) for c in range(nchar)])
+    df.index.name = 'time'
+    df.to_csv(os.path.join(wd, 'bigobseg.csv'))
+
+    if pstfrom_add:
+        if profile:
+            import cProfile
+            pr = cProfile.Profile()
+            pr.enable()
+            pf.add_observations('bigobseg.csv', index_cols='time')
+            pr.disable()
+            pr.print_stats(sort="cumtime")
+        else:
+            pf.add_observations('bigobseg.csv', index_cols='time')
 
 
 def mf6_subdir_test():
@@ -3386,8 +3428,8 @@ if __name__ == "__main__":
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
-    # mf6_add_various_obs_test()
-    #mf6_subdir_test()
+    mf6_add_various_obs_test()
+    # mf6_subdir_test()
     #tpf = TestPstFrom()
     #tpf.setup()
     #tpf.test_add_direct_array_parameters()

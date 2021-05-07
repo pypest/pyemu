@@ -613,7 +613,7 @@ def _parse_ins_string(string):
     istart_markers = set(["[", "(", "!"])
     marker_dict = {"[": "]", "(": ")", "!": "!"}
     # iend_markers = set(["]",")","!"])
-
+    setdum = {"dum", "DUM"}
     obs_names = []
     slen = len(string)
     idx = 0
@@ -629,9 +629,9 @@ def _parse_ins_string(string):
             # print(string[idx+1:])
             # print(string[idx+1:].index(em))
             # print(string[idx+1:].index(em)+idx+1)
-            eidx = min(slen, string[idx + 1 :].index(em) + idx + 1)
-            obs_name = string[idx + 1 : eidx]
-            if obs_name.lower() != "dum":
+            eidx = min(slen, string.find(em, idx + 1))
+            obs_name = string[idx + 1: eidx]
+            if obs_name not in setdum:
                 obs_names.append(obs_name)
             idx = eidx + 1
         else:
@@ -1448,51 +1448,67 @@ class InstructionFile(object):
 
     def _execute_ins_line(self, ins_line, ins_lcount):
         """private method to process output file lines with an instruction line"""
-        cursor_pos = 0
-        val_dict = {}
+        cursor_pos = 0  # starting cursor position
+        val_dict = {}  # storage dict for obsname: obsval pairs in line
         # for ii,ins in enumerate(ins_line):
-        ii = 0
+        ii = 0  # counter over instruction entries
         all_markers = True
         line_seps = set([",", " ", "\t"])
+        n_ins = len(ins_line)  # number of instructions on line
+        maxsearch = 500  # maximum number of characters to search when slicing line
         while True:
-            if ii >= len(ins_line):
+            if ii >= n_ins:
                 break
-            ins = ins_line[ii]
-            i1 = ins[:1]
+            ins = ins_line[ii]  # extract instruction
+            i1 = ins[:1]  # first char in instruction
             # primary marker
             if ii == 0 and i1 == self._marker:
+                # if first and instruction starts with primary marker
+                # search for presence of primary marker e.g. ~start~
                 mstr = ins.replace(self._marker, "")
                 while True:
-                    line = self._readline_output()
+                    # loop over lines until primary marker is found
+                    line = self._readline_output()  # read line from output
                     if line is None:
                         self.throw_out_error(
-                            "EOF when trying to find primary marker '{0}' from instruction file line {1}".format(
+                            "EOF when trying to find primary marker '{0}' from "
+                            "instruction file line {1}".format(
                                 mstr, ins_lcount
                             )
                         )
-                    if mstr in line:
+                    if mstr in line:  # when marker is found break and update
+                        # cursor position in current line
                         break
+                # copy a version of line commas replaced
+                # (to support comma sep strings)
+                rline = line.replace(',', ' ')
                 cursor_pos = line.index(mstr) + len(mstr)
 
             # line advance
-            elif i1 == "l":
+            elif i1 == "l":  # if start of instruction is line advance
                 try:
-                    nlines = int(ins[1:])
+                    nlines = int(ins[1:])  # try and get advance number
                 except Exception as e:
                     self.throw_ins_error(
-                        "casting line advance to int for instruction '{0}'".format(ins),
+                        "casting line advance to int for "
+                        "instruction '{0}'".format(ins),
                         ins_lcount,
                     )
                 for i in range(nlines):
                     line = self._readline_output()
                     if line is None:
                         self.throw_out_error(
-                            "EOF when trying to read {0} lines for line advance instruction '{1}', from instruction file line number {2}".format(
+                            "EOF when trying to read {0} lines for line "
+                            "advance instruction '{1}', from instruction "
+                            "file line number {2}".format(
                                 nlines, ins, ins_lcount
                             )
                         )
+                # copy a version of line commas replaced
+                # (to support comma sep strings)
+                rline = line.replace(',', ' ')
             elif ins == "w":  # whole string comparison
-                raw = line[cursor_pos:].replace(",", " ").split()
+                raw = rline[cursor_pos:cursor_pos+maxsearch].split(None, 2)  # TODO: maybe slow for long strings -- hopefuly maxsearch helps
                 if line[cursor_pos] in line_seps:
                     raw.insert(0, "")
                 if len(raw) == 1:
@@ -1502,26 +1518,42 @@ class InstructionFile(object):
                         )
                     )
                 # step over current value
-                cursor_pos = cursor_pos + line[cursor_pos:].replace(",", " ").index(" ")
+                cursor_pos = rline.find(' ', cursor_pos)
                 # now find position of next entry
-                cursor_pos = cursor_pos + line[cursor_pos:].replace(",", " ").index(
-                    raw[1]
-                )
+                cursor_pos = rline.find(raw[1], cursor_pos)
+                   # raw[1]
+               # )
 
-            elif i1 == "!":
+            elif i1 == "!":  # indicates obs instruction folows
                 oname = ins.replace("!", "")
-                # look a head for a sec marker
-                if ii < len(ins_line) - 1 and ins_line[ii + 1] == self._marker:
+                # look a head for a second/closing marker
+                if ii < n_ins - 1 and ins_line[ii + 1] == self._marker:
+                    # if penultimate instruction and last instruction is
+                    # primary marker, look for that marker in line
                     m = ins_line[ii + 1].replace(self._marker, "")
-                    if m not in line[cursor_pos:]:
+                    es = line.find(m, cursor_pos)
+                    if es == -1:  # m not in rest of line
                         self.throw_out_error(
-                            "secondary marker '{0}' not found from cursor_pos {2}".format(
+                            "secondary marker '{0}' not found from cursor_pos {1}".format(
                                 m, cursor_pos
                             )
                         )
-                    val_str = line[cursor_pos:].split(m)[0]
+                    # read to closing marker
+                    val_str = line[cursor_pos: es]
                 else:
-                    val_str = line[cursor_pos:].replace(",", " ").split()[0]
+                    # find next space in (r)line -- signifies end of entry
+                    es = rline.find(' ', cursor_pos)
+                    if es == -1 or es == cursor_pos:
+                        # if no space or current position is space
+                        # use old fashioned split to get value
+                        # -- this will happen if there are leading blanks before
+                        # vals in output file (e.g. formatted)
+                        val_str = rline[
+                                  cursor_pos: cursor_pos+maxsearch
+                                  ].split(None, 1)[0]
+                    else:
+                        # read val (constrained slice is faster for big strings)
+                        val_str = rline[cursor_pos: es]
                 try:
                     val = float(val_str)
                 except Exception as e:
@@ -1534,31 +1566,32 @@ class InstructionFile(object):
 
                 if oname != "dum":
                     val_dict[oname] = val
-                ipos = line[cursor_pos:].index(val_str.strip())
+                ipos = line.find(val_str.strip(), cursor_pos)
                 # val_len = len(val_str)
-                cursor_pos = (
-                    cursor_pos + line[cursor_pos:].index(val_str.strip()) + len(val_str)
-                )
+                cursor_pos = ipos + len(val_str)  # update cursor
                 all_markers = False
 
             elif i1 == self._marker:
-                m = ins.replace(self._marker, "")
-                if m not in line[cursor_pos:]:
+                m = ins.replace(self._marker, "")  # extract just primary marker
+                # find position of primary marker in line
+                es = line.find(m, cursor_pos)
+                if es == -1:  # m not in rest of line
                     if all_markers:
                         ii = 0
                         continue
                     else:
                         self.throw_out_error(
-                            "secondary marker '{0}' not found from cursor_pos {2}".format(
+                            "secondary marker '{0}' not found from "
+                            "cursor_pos {1}".format(
                                 m, cursor_pos
                             )
                         )
-                cursor_pos = cursor_pos + line[cursor_pos:].index(m) + len(m)
+                cursor_pos = es + len(m)
 
             elif i1 == "(":
                 if ")" not in ins:
                     self.throw_ins_error("unmatched ')'", self._instruction_lcount)
-                oname = ins[1:].split(")")[0].lower()
+                oname = ins[1:].split(")", 1)[0].lower()
                 raw = ins.split(")")[1]
                 if ":" not in raw:
                     self.throw_ins_error(
@@ -1600,7 +1633,7 @@ class InstructionFile(object):
                     )
 
                 ss_idx = max(cursor_pos, s_idx)
-                raw = line[ss_idx:].split()
+                raw = line[ss_idx: ss_idx+maxsearch].split(None, 1)  # slpitting only 1 might be margin faster
                 rs_idx = line.index(raw[0])
                 if rs_idx > e_idx:
                     self.throw_out_error(
@@ -1627,7 +1660,7 @@ class InstructionFile(object):
             elif i1 == "[":
                 if "]" not in ins:
                     self.throw_ins_error("unmatched ']'", self._instruction_lcount)
-                oname = ins[1:].split("]")[0].lower()
+                oname = ins[1:].split("]", 1)[0].lower()
                 raw = ins.split("]")[1]
                 if ":" not in raw:
                     self.throw_ins_error(
@@ -1728,8 +1761,8 @@ class InstructionFile(object):
             if len(first) > 0:
                 tokens.append(first)
             for idx in range(1, len(midx) - 1, 2):
-                mstr = line[midx[idx - 1] : midx[idx] + 1]
-                ostr = line[midx[idx] + 1 : midx[idx + 1]]
+                mstr = line[midx[idx - 1]: midx[idx] + 1]
+                ostr = line[midx[idx] + 1: midx[idx + 1]]
                 tokens.append(mstr)
                 tokens.extend(ostr.split())
         else:
