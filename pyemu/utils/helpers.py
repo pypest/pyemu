@@ -4354,7 +4354,7 @@ def write_grid_tpl(
                             pname += "_x:{0:10.2E}_y:{1:10.2E}".format(
                                 spatial_reference.xcentergrid[i, j],
                                 spatial_reference.ycentergrid[i, j],
-                            )
+                            ).replace(" ","")
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                         if len(pname) > 12:
