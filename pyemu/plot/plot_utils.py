@@ -1405,18 +1405,19 @@ def ensemble_res_1to1(
                 ex = en_g.max()
                 en = en_g.min()
                 #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
-                ax.fill_between(obs_gg.obsval,en,ex,facecolor=c,alpha=0.2,
+                ax.fill_between(obs_gg.obsval, en, ex, facecolor=c, alpha=0.2,
                                 zorder=2)
         #ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
         omn = []
         omx = []
-        for c,en in ensembles.items():
-            en_g = en.loc[:,obs_g.obsnme]
+        for c, en in ensembles.items():
+            en_g = en.loc[:, obs_g.obsnme]
             ex = en_g.max()
             en = en_g.min()
             omn.append(en)
             omx.append(ex)
-            [ax.plot([ov,ov],[een,eex],color=c, zorder=1) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
+            [ax.plot([ov, ov], [een, eex], color=c, zorder=1)
+             for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
 
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()
@@ -1438,14 +1439,18 @@ def ensemble_res_1to1(
                 mx = obx + (0.5 * rng)
             else:
                 mx = obx * 1.1
-        ax.plot([mn,mx],[mn,mx],'k--',lw=1.0, zorder=3)
-        xlim = (mn,mx)
-        ax.set_xlim(mn,mx)
-        ax.set_ylim(mn,mx)
+        ax.plot([mn, mx], [mn, mx], "k--", lw=1.0, zorder=3)
+        xlim = (mn, mx)
+        ax.set_xlim(mn, mx)
+        ax.set_ylim(mn, mx)
 
         if mx > 1.0e5:
-            ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%1.0e"))
-            ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%1.0e"))
+            ax.xaxis.set_major_formatter(
+                matplotlib.ticker.FormatStrFormatter("%1.0e")
+            )
+            ax.yaxis.set_major_formatter(
+                matplotlib.ticker.FormatStrFormatter("%1.0e")
+            )
         ax.grid()
 
         ax.set_xlabel("observed", labelpad=0.1)
@@ -1469,16 +1474,18 @@ def ensemble_res_1to1(
                 ex = en_g.max()
                 en = en_g.min()
                 #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
-                ax.fill_between(obs_gg.obsval,en,ex,facecolor=c,alpha=0.2, zorder=2)
+                ax.fill_between(obs_gg.obsval, en, ex, facecolor=c, alpha=0.2,
+                                zorder=2)
         omn = []
         omx = []
-        for c,en in ensembles.items():
-            en_g = en.loc[:,obs_g.obsnme].subtract(obs_g.obsval,axis=1)
+        for c, en in ensembles.items():
+            en_g = en.loc[:, obs_g.obsnme].subtract(obs_g.obsval,axis=1)
             ex = en_g.max()
             en = en_g.min()
             omn.append(en)
             omx.append(ex)
-            [ax.plot([ov,ov],[een,eex],color=c, zorder=1) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
+            [ax.plot([ov, ov],[een, eex], color=c, zorder=1)
+             for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
 
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()
@@ -1501,8 +1508,8 @@ def ensemble_res_1to1(
         if obs_g.shape[0] == 1:
             mx *= 1.1
         ax.set_ylim(-mx, mx)
-        #show a zero residuals line
-        ax.plot(xlim, [0,0], 'k--', lw=1.0, zorder=3)
+        # show a zero residuals line
+        ax.plot(xlim, [0, 0], "k--", lw=1.0, zorder=3)
 
         ax.set_xlim(xlim)
         ax.set_ylabel("residual", labelpad=0.1)

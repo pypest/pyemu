@@ -175,6 +175,7 @@ def ensemble_1to1_test():
 
     pyemu.plot_utils.res_phi_pie(pst=pst,ensemble=oe1)
     pyemu.plot_utils.res_1to1(pst=pst, ensemble=oe1)
+    test=None
 
 def ensemble_summary_test():
     try:
