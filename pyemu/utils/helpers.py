@@ -169,19 +169,22 @@ def geostatistical_draws(
 
                 if verbose:
                     print("getting diag var cov", df_zone.shape[0])
-                # tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
-                tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
-
+                
+                #tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
                 if verbose:
                     print("scaling full cov by diag var cov")
-                # cov.x *= tpl_var
-                for i in range(cov.shape[0]):
-                    cov.x[i, :] *= tpl_var
+                
+                # for i in range(cov.shape[0]):
+                #     cov.x[i, :] *= tpl_var
+                for i,name in enumerate(cov.row_names):
+                    #print(name,full_cov_dict[name])
+                    cov.x[:,i] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, :] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, i] = full_cov_dict[name]
                 # no fixed values here
                 pe = pyemu.ParameterEnsemble.from_gaussian_draw(
                     pst=pst, cov=cov, num_reals=num_reals, by_groups=False, fill=False
                 )
-                # df = pe.iloc[:,:]
                 par_ens.append(pe._df)
                 pars_in_cov.update(set(pe.columns))
 
@@ -322,15 +325,17 @@ def geostatistical_prior_builder(
                 # find the variance in the diagonal cov
                 if verbose:
                     print("getting diag var cov", df_zone.shape[0])
-                # tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
-                tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
-                # if np.std(tpl_var) > 1.0e-6:
-                #    warnings.warn("pars have different ranges" +\
-                #                  " , using max range as variance for all pars")
-                # tpl_var = tpl_var.max()
+
+                #tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
+
                 if verbose:
                     print("scaling full cov by diag var cov")
-                cov *= tpl_var
+
+                #cov *= tpl_var
+                for i,name in enumerate(cov.row_names):
+                    cov.x[:,i] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, :] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, i] = full_cov_dict[name]
                 if verbose:
                     print("test for inversion")
                 try:
@@ -511,43 +516,49 @@ def calc_rmse_ensemble(ens, pst, bygroups=True, subset_realizations=None):
     return rmse
 
 
-def _condition_on_par_knowledge(cov, par_knowledge_dict):
-    """experimental function to include conditional prior information
-    for one or more parameters in a full covariance matrix
+def _condition_on_par_knowledge(cov, var_knowledge_dict):
+    """experimental function to condition a covariance matrix with the variances of new information.
+
+    Args:
+        cov (`pyemu.Cov`): prior covariance matrix
+        var_knowledge_dict (`dict`): a dictionary of covariance entries and variances
+
+    Returns:
+        cov (`pyemu.Cov`): the conditional covariance matrix
+
     """
 
     missing = []
-    for parnme in par_knowledge_dict.keys():
-        if parnme not in cov.row_names:
-            missing.append(parnme)
+    for name in var_knowledge_dict.keys():
+        if name not in cov.row_names:
+            missing.append(name)
     if len(missing):
         raise Exception(
-            "par knowledge dict parameters not found: {0}".format(",".join(missing))
+            "var knowledge dict entries not found: {0}".format(",".join(missing))
         )
-    # build the selection matrix and sigma epsilon
-    # sel = pyemu.Cov(x=np.identity(cov.shape[0]),names=cov.row_names)
-    sel = cov.zero2d
-    sel = cov.to_pearson()
-    new_cov_diag = pyemu.Cov(x=np.diag(cov.as_2d.diagonal()), names=cov.row_names)
-    # new_cov_diag = cov.zero2d
+    if cov.isdiagonal:
+        raise Exception("_condition_on_par_knowledge(): cov is diagonal, simply update the par variances")
+    know_names = list(var_knowledge_dict.keys())
+    know_names.sort()
+    know_cross_cov = cov.get(cov.row_names,know_names)
 
-    for parnme, var in par_knowledge_dict.items():
-        idx = cov.row_names.index(parnme)
-        # sel.x[idx,:] = 1.0
-        # sel.x[idx,idx] = var
-        new_cov_diag.x[idx, idx] = var  # cov.x[idx,idx]
-    new_cov_diag = sel * new_cov_diag * sel.T
+    know_cov = cov.get(know_names,know_names)
+    # add the par knowledge to the diagonal of know_cov
+    for i,name in enumerate(know_names):
+        know_cov.x[i,i] += var_knowledge_dict[name]
 
-    for _ in range(2):
-        for parnme, var in par_knowledge_dict.items():
-            idx = cov.row_names.index(parnme)
-            # sel.x[idx,:] = 1.0
-            # sel.x[idx,idx] = var
-            new_cov_diag.x[idx, idx] = var  # cov.x[idx,idx]
-        new_cov_diag = sel * new_cov_diag * sel.T
+    # kalman gain
+    k_gain = know_cross_cov * know_cov.inv
+    #selection matrix
+    h = k_gain.zero2d.T
+    know_dict = {n:i for i,n in enumerate(know_names)}
+    for i,name in enumerate(cov.row_names):
+        if name in know_dict:
+            h.x[know_dict[name],i] = 1.0
 
-    print(new_cov_diag)
-    return new_cov_diag
+    prod = k_gain * h
+    conditional_cov = (prod.identity - prod) * cov
+    return conditional_cov
 
 
 def kl_setup(
@@ -4338,12 +4349,12 @@ def write_grid_tpl(
                     pname = " 1.0 "
                 else:
                     if longnames:
-                        pname = "{0}_i:{0}_j:{1}_{2}".format(name, i, j, suffix)
+                        pname = "{0}_i:{1}_j:{2}_{3}".format(name, i, j, suffix)
                         if spatial_reference is not None:
                             pname += "_x:{0:10.2E}_y:{1:10.2E}".format(
                                 spatial_reference.xcentergrid[i, j],
                                 spatial_reference.ycentergrid[i, j],
-                            )
+                            ).replace(" ","")
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                         if len(pname) > 12:

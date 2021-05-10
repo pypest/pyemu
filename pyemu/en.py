@@ -8,7 +8,7 @@ import pyemu
 from .pyemu_warnings import PyemuWarning
 
 SEED = 358183147  # from random.org on 5 Dec 2016
-
+np.random.seed(SEED)
 
 class Loc(object):
     """thin wrapper around `pandas.DataFrame.loc` to make sure returned type

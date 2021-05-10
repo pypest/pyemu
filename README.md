@@ -5,14 +5,10 @@ python modules for model-independent FOSM (first-order, second-moment) (a.k.a li
 
 Master branch:
 [![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=master)](https://github.com/pypest/pyemu/actions)
-[![Travis Status](https://travis-ci.org/pypest/pyemu.svg?branch=master)](https://travis-ci.org/pypest/pyemu)
-[![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/pypest/pyemu?branch=master&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=master)](https://coveralls.io/github/pypest/pyemu?branch=master)
 
 Develop branch:
 [![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=develop)](https://github.com/pypest/pyemu/actions)
-[![Travis Status](https://travis-ci.org/pypest/pyemu.svg?branch=develop)](https://travis-ci.org/pypest/pyemu)
-[![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/pypest/pyemu?branch=develop&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/pypest/pyemu?branch=develop)
 
 Documentation
@@ -46,11 +42,9 @@ pyEMU also includes lots of functionality for dealing with PEST(++) datasets, su
 * preferred differencing prior information equations where the weights are based on the Pearson correlation coefficient
 * verification-based tests based on results from several PEST utilities
 
-Version 0.9 includes
+Version 1.1 includes the `PstFrom` setup class to support generating PEST(++) interfaces in the 100,000 to 1,000,000 parameter range with all the bells and whistles.  A publication documenting the `PstFrom` class can be found here:
 
-* refactored `Ensemble` classes designed to function more efficiently when sampling from multivariate Gaussian distributions
-* improved documentation!
-* more enhancements to the `PstFromFlopyModel` setup class to support generating PEST(++) interfaces in the 100,000 to 1,000,000 parameter range.
+[https://doi.org/10.1016/j.envsoft.2021.105022]{https://doi.org/10.1016/j.envsoft.2021.105022}
 
 A publication documenting pyEMU and an example application can be found here:
 
@@ -60,43 +54,19 @@ A publication documenting pyEMU and an example application can be found here:
 Funding
 =======
 
-pyEMU was originally developed with support from the U.S Geological Survey. The New Zealand Strategic Science Investment Fund as part of GNS Science’s (https://www.gns.cri.nz/) Groundwater Research Programme has also funded contributions 2018-present.
+pyEMU was originally developed with support from the U.S Geological Survey. The New Zealand Strategic Science Investment Fund as part of GNS Science’s (https://www.gns.cri.nz/) Groundwater Research Programme has also funded contributions 2018-present.  Intera, Inc. has also provided funding for pyEMU development and support
 
 Examples
 ========
 
-Several example ipython notebooks are provided to demostrate typical workflows for FOSM parameter and forecast uncertainty analysis as well as techniques to investigate parameter contributions to forecast uncertainty and observation data worth. Example models include the Henry saltwater intrusion problem (Henry 1964) and the model of Freyberg (1988)
+Several example ipython notebooks are provided to demonstrate typical workflows for FOSM parameter and forecast uncertainty analysis as well as techniques to investigate parameter contributions to forecast uncertainty and observation data worth. Example models include the Henry saltwater intrusion problem (Henry 1964) and the model of Freyberg (1988)
 
-Links
-=====
+Related Links
+=============
 
 [https://github.com/usgs/pestpp](https://github.com/usgs/pestpp)
 
 [PEST - http://www.pesthomepage.org/](http://www.pesthomepage.org/)
-
-
-
-References
-==========
-
-Doherty, J., 2010a, PEST, Model-independent parameter estimation—User manual (5th ed., with slight additions):
-Brisbane, Australia, Watermark Numerical Computing.
-
-Doherty, J., 2010b, Addendum to the PEST manual: Brisbane, Australia, Watermark Numerical Computing.
-
-Doherty, J.E., Hunt, R.J., and Tonkin, M.J., 2010, Approaches to highly parameterized inversion: A guide to using PEST for model-parameter and predictive-uncertainty analysis: U.S. Geological Survey Scientific Investigations Report 2010–5211, 71 p., available at http://pubs.usgs.gov/sir/2010/5211.
-
-Freyberg, D. L. (1988). An exercise in ground-water model calibration and prediction. Ground Water, 26 , 350{360.
-
-Henry, H.R., 1964, Effects of dispersion on salt encroachment in coastal aquifers: U.S. Geological Survey Water-Supply Paper 1613-C, p. C71-C84.
-
-Langevin, C.D., Thorne, D.T., Jr., Dausman, A.M., Sukop, M.C., and Guo, Weixing, 2008, SEAWAT Version 4: A Computer Program for Simulation of Multi-Species Solute and Heat Transport: U.S. Geological Survey Techniques and Methods Book 6, Chapter A22, 39 p.
-
-Tonkin, M., & Doherty, J. (2009). Calibration-constrained monte carlo analysis of highly parameterized models using subspace techniques. Water Resources Research, 45 .
-
-Welter, D.E., Doherty, J.E., Hunt, R.J., Muffels, C.T., Tonkin, M.J., and Schreüder, W.A., 2012, Approaches in highly parameterized inversion—PEST++, a Parameter ESTimation code optimized for large environmental models: U.S. Geological Survey Techniques and Methods, book 7, section C5, 47 p., available at http://pubs.usgs.gov/tm/tm7c5.
-
-Welter, D.E., White, J.T., Hunt, R.J., and Doherty, J.E., 2015, Approaches in highly parameterized inversion— PEST++ Version 3, a Parameter ESTimation and uncertainty analysis software suite optimized for large environmental models: U.S. Geological Survey Techniques and Methods, book 7, chap. C12, 54 p., http://dx.doi.org/10.3133/tm7C12.
 
 
 How to get started with pyEMU
@@ -106,6 +76,6 @@ pyEMU is available through pyPI:
 
 `>>>pip install pyemu`
 
-pyEMU needs `numpy` and `pandas`.  For plotting, `matplotloib` and `flopy` to take advantage of the auto interface construction
+pyEMU needs `numpy` and `pandas`.  For plotting, `matplotloib`, `pyshp`, and `flopy` to take advantage of the auto interface construction
 
 

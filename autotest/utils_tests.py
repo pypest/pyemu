@@ -702,10 +702,8 @@ def geostat_prior_builder_test():
     tpl_file = os.path.join("utils", "pp_locs.tpl")
     str_file = os.path.join("utils", "structure.dat")
 
-
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file})
     d1 = np.diag(cov.x)
-
 
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
@@ -1832,6 +1830,129 @@ def gsf_reader_test():
 
     assert len(gsf.get_node_data()) == nnodes
 
+def conditional_prior_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    prior_var = 1.0
+    cond_var = 0.5
+    v = pyemu.geostats.ExpVario(contribution=prior_var,a=5.0)
+    gs = pyemu.geostats.GeoStruct(variograms=v,transform="none")
+    x = np.arange(100)
+    y = np.zeros_like(x)
+    names = ["n{0}".format(i) for i in range(x.shape[0])]
+    cov = gs.covariance_matrix(x,y,names)
+    know_dict = {n:cond_var for n in [cov.col_names[int(x.shape[0]/2)],cov.col_names[int(3*x.shape[0]/4)]]}
+    #know_dict = {cov.col_names[]:0.0001,cov.col_names[3]:0.0025}
+    cond_cov = pyemu.helpers._condition_on_par_knowledge(cov,know_dict)
+    i = int(x.shape[0] / 2)
+    print(cov.x[i,i],cond_cov.x[i,i])
+    print(np.diag(cov.x).min(), np.diag(cond_cov.x).min())
+    print(prior_var,cond_var)
+
+
+    # import matplotlib.pyplot as plt
+    # fig,axes = plt.subplots(1,3,figsize=(15,5))
+    # thres = 0.001
+    # x1 = cov.to_pearson().x.copy()
+    # x1[np.abs(x1) < thres] = np.nan
+    # x2 = cond_cov.to_pearson().x.copy()
+    # x2[np.abs(x2) < thres] = np.nan
+    #
+    # axes[0].imshow(x1,vmin=0.0,vmax=1.0)
+    # axes[1].imshow(x2,vmin=0.0,vmax=1.0)
+    # axes[2].plot(np.diag(cov.x),"0.5",label="prior diag")
+    # axes[2].plot(np.diag(cond_cov.x), "b",label="post diag")
+    # axes[0].set_title("prior CC matrix, variance {0}".format(prior_var),loc="left")
+    # axes[1].set_title("post CC matrix, conditional variance {0}".format(cond_var), loc="left")
+    # axes[2].set_title("prior vs posterior diagonals", loc="left")
+    #
+    # plt.show()
+
+def geostat_prior_builder_test2():
+    import os
+    import numpy as np
+    import pyemu
+    pst_file = os.path.join("pst","pest.pst")
+    pst = pyemu.Pst(pst_file)
+
+    tpl_file = os.path.join("utils", "pp_locs.tpl")
+    df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file).iloc[:200,:]
+    df.loc[:,"x"] = np.arange(df.shape[0])
+    df.loc[:,"y"] = 0.0
+    print(df)
+    v = pyemu.geostats.ExpVario(1.0,10.0)
+    gs = pyemu.geostats.GeoStruct(variograms=v)
+
+    # get a cov here where all pars in the same group have the same bounds so same variance
+    cov1 = pyemu.helpers.geostatistical_prior_builder(pst,{gs:df})
+    
+    par = pst.parameter_data
+    #give some pars narrower bounds to induce a lower variance 
+    #par.loc[pst.par_names[10:40], "parubnd"] = par.loc[pst.par_names[10:40], "parval1"] * 1.5
+    #par.loc[pst.par_names[10:40], "parlbnd"] = par.loc[pst.par_names[10:40], "parval1"] * 0.5
+    par.loc[pst.par_names[10:100], "parubnd"] *= np.random.random(90) * 5
+    par.loc[pst.par_names[10:100], "parlbnd"] *= np.random.random(90) * 0.5
+    
+    
+    # get a diagonal bounds-based cov
+    cov = pyemu.Cov.from_parameter_data(pst=pst)
+    d = cov.x
+    var_dict = {n:v for n,v in zip(cov.row_names,d)}
+    know_dict = {n:var_dict[n] for n in pst.par_names[10:100]}
+    #calc the conditional cov just for testing
+    cov3 = pyemu.helpers._condition_on_par_knowledge(cov1,know_dict)    
+    
+    #this one should include the variance scaling
+    cov2 = pyemu.helpers.geostatistical_prior_builder(pst, {gs: df})
+
+    pe = pyemu.helpers.geostatistical_draws(pst, {gs: df}, 100000)
+    pe = pe.loc[:,pst.par_names]
+    ecov2 = pe.covariance_matrix()
+
+    x1 = cov1.x.copy()
+    x1[np.abs(cov1.to_pearson().x)<0.001] = np.NaN
+    x2 = cov2.x.copy()
+    x2[np.abs(cov2.to_pearson().x) < 0.001] = np.NaN
+    ex2 = ecov2.x.copy()
+    ex2[np.abs(ecov2.to_pearson().x) < 0.001] = np.NaN
+    x3 = cov3.x.copy()
+    x3[np.abs(cov3.to_pearson().x) < 0.001] = np.NaN
+
+    # even tho we scaled cov2, the resulting corr coef matrix should be the same as cov1
+    d = np.abs(cov1.to_pearson().x - cov2.to_pearson().x)
+    print(d.max())
+    assert d.max() < 1.0e-6
+    
+    #check that variances in cov2 match the diagonal bounds-based cov
+    dd = np.diag(cov2.x)
+    d = np.abs(cov.x.flatten() - dd)
+    print(d.max())
+    assert d.max() < 1.0e-6
+
+    # check that empirical variances in cov2 match the diagonal bounds-based cov
+    edd = np.diag(ecov2.x)
+    ed = np.abs(cov.x.flatten()[10:100] - edd[10:100])
+    print(ed.max())
+    assert ed.max() < 1.0e-1
+
+    #import matplotlib.pyplot as plt
+    # fig,ax = plt.subplots(1,1)
+    # ax.plot(ed)
+    # axt = plt.twinx(ax)
+    # axt.plot(dd[10:100],"0.5")
+    # axt.plot(edd[10:100], "m")
+    # axt.plot(cov.x.flatten()[10:100],"b--")
+    # ax.set_xticks(np.arange(ed.shape[0]))
+    # ax.set_xticklabels(pst.par_names[10:100],rotation=90)
+    # plt.show()
+    #
+    #fig,axes = plt.subplots(1,3,figsize=(15,5))
+    #axes[0].imshow(x1[:200,:200],cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
+    #axes[1].imshow(x2[:200, :200], cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
+    #axes[2].imshow(ex2[:200, :200], cmap="jet",vmax=np.nanmax(x2[:200,:200]),vmin=np.nanmin(x2[:200,:200]))
+    #plt.show()
 
 
 if __name__ == "__main__":
@@ -1866,10 +1987,11 @@ if __name__ == "__main__":
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    #geostat_prior_builder_test()
+    #conditional_prior_invest()
+    geostat_prior_builder_test2()
     #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
-    # mflist_budget_test()
+    #mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
@@ -1905,4 +2027,4 @@ if __name__ == "__main__":
     # ppk2fac_verf_test()
     #ok_grid_invest()
     # maha_pdc_test()
-    gsf_reader_test()
+    #gsf_reader_test()
