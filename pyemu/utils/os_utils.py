@@ -29,14 +29,14 @@ os.environ["PATH"] += os.pathsep + bin_path
 
 def _istextfile(filename, blocksize=512):
     """
-        Function found from:
-        https://eli.thegreenplace.net/2011/10/19/perls-guess-if-file-is-text-or-binary-implemented-in-python
-        Returns True if file is most likely a text file
-        Returns False if file is most likely a binary file
-        Uses heuristics to guess whether the given file is text or binary,
-        by reading a single block of bytes from the file.
-        If more than 30% of the chars in the block are non-text, or there
-        are NUL ('\x00') bytes in the block, assume this is a binary file.
+    Function found from:
+    https://eli.thegreenplace.net/2011/10/19/perls-guess-if-file-is-text-or-binary-implemented-in-python
+    Returns True if file is most likely a text file
+    Returns False if file is most likely a binary file
+    Uses heuristics to guess whether the given file is text or binary,
+    by reading a single block of bytes from the file.
+    If more than 30% of the chars in the block are non-text, or there
+    are NUL ('\x00') bytes in the block, assume this is a binary file.
     """
 
     import sys
@@ -72,7 +72,7 @@ def _remove_readonly(func, path, excinfo):
 
 
 def run(cmd_str, cwd=".", verbose=False):
-    """ an OS agnostic function to execute a command line
+    """an OS agnostic function to execute a command line
 
     Args:
         cmd_str (`str`): the str to execute with `os.system()`
@@ -146,7 +146,7 @@ def start_workers(
     silent_master=False,
     reuse_master=False,
 ):
-    """ start a group of pest(++) workers on the local machine
+    """start a group of pest(++) workers on the local machine
 
     Args:
         worker_dir (`str`): the path to a complete set of input files need by PEST(++).
@@ -165,7 +165,8 @@ def start_workers(
             This option is usually not needed unless you are one of those crazy people who
             spreads files across countless subdirectories.
         local (`bool`, optional): flag for using "localhost" instead of actual hostname/IP address on
-            worker command line. Default is True
+            worker command line. Default is True.  `local` can also be passed as an `str`, in which
+            case `local` is used as the hostname (for example `local="192.168.10.1"`)
         cleanup (`bool`, optional):  flag to remove worker directories once processes exit. Default is
             True.  Set to False for debugging issues
         master_dir (`str`): name of directory for master instance.  If `master_dir`
@@ -218,7 +219,9 @@ def start_workers(
     else:
         if not os.path.exists(os.path.join(worker_dir, pst_rel_path)):
             raise Exception("pst_rel_path not found from worker_dir")
-    if local:
+    if isinstance(local, str):
+        hostname = local
+    elif local:
         hostname = "localhost"
     else:
         hostname = socket.gethostname()

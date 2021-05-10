@@ -1,6 +1,7 @@
 [run]
 source = pyemu
 parallel = True
+relative_files = True
 omit =
     */python?.?/*
     */lib-python/?.?/*.py

@@ -1,0 +1,13 @@
+name: pyemu
+channels:
+  - conda-forge
+dependencies:  
+  - pyshp
+  - numpy 
+  - pandas 
+  - nose-timer
+  - nbsphinx
+  - matplotlib
+  - coverage
+  - coveralls
+  - nose

@@ -1,7 +1,7 @@
 import os
 import platform
 import shutil
-
+import numpy as np
 if not os.path.exists("temp"):
     os.mkdir("temp")
 
@@ -95,6 +95,9 @@ def pst_manip_test():
     pst = Pst(new_path)
     pst.svd_data.maxsing = 1
     pst.write(new_path)
+    pst = Pst(new_path)
+    pst.write(new_path,version=2)
+    pst = Pst(new_path)
 
 
 def load_test():
@@ -109,6 +112,8 @@ def load_test():
     exceptions = []
     load_fails = []
     for pst_file in pst_files:
+        if "pest_tied_tester" not in pst_file:
+            continue
         if pst_file.endswith(".pst") and not "comments" in pst_file and \
                 not "missing" in pst_file:
             print(pst_file)
@@ -132,6 +137,21 @@ def load_test():
             except Exception as e:
                 exceptions.append(pst_file + " reload fail: " + str(e))
                 continue
+            print(out_name)
+            # p.write(out_name)
+            try:
+                p.write(out_name,version=2)
+            except Exception as e:
+                exceptions.append(pst_file + " v2 write fail: " + str(e))
+                continue
+
+            p = Pst(out_name)
+            try:
+                p = Pst(out_name)
+            except Exception as e:
+                exceptions.append(pst_file + " v2 reload fail: " + str(e))
+                continue
+
 
     # with open("load_fails.txt",'w') as f:
     #    [f.write(pst_file+'\n') for pst_file in load_fails]
@@ -144,11 +164,11 @@ def comments_test():
 
     pst = pyemu.Pst(os.path.join("pst", "comments.pst"))
     pst.with_comments = True
-    pst.write(os.path.join("temp", "comments.pst"))
+    pst.write(os.path.join("temp", "comments.pst"),version=1)
     pst1 = pyemu.Pst(os.path.join("temp", "comments.pst"))
     assert pst1.parameter_data.extra.dropna().shape[0] == pst.parameter_data.extra.dropna().shape[0]
     pst1.with_comments = False
-    pst1.write(os.path.join("temp", "comments.pst"))
+    pst1.write(os.path.join("temp", "comments.pst"),version=1)
     pst2 = pyemu.Pst(os.path.join("temp", "comments.pst"))
     assert pst2.parameter_data.dropna().shape[0] == 0
 
@@ -337,11 +357,32 @@ def add_pars_test():
         f.write("ptf ~\n")
         f.write("  ~junk1   ~\n")
         f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
+    print(pst.npar)
     pst.add_parameters(tpl_file, "crap.in", pst_path="temp")
     assert npar + 1 == pst.npar
     assert "junk1" in pst.parameter_data.parnme
     assert os.path.join("temp", "crap.in") in pst.input_files
     assert os.path.join("temp", "crap.in.tpl") in pst.template_files
+
+    pyemu.helpers.zero_order_tikhonov(pst)
+    nprior,npar = pst.nprior,pst.npar
+    pst.parameter_data.loc[pst.par_names[0], "partrans"] = "tied"
+    pst.parameter_data.loc[pst.par_names[0], "partied"] = "junk1"
+    try:
+        pst.drop_parameters(tpl_file,"temp")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst.parameter_data.loc[pst.par_names[0], "partrans"] = "log"
+    pst.drop_parameters(tpl_file, "temp")
+    print(pst.npar,npar)
+    print(pst.nprior,nprior)
+    print(pst.par_names)
+    assert pst.npar == npar - 2
+    assert pst.nprior == nprior - 2
+
 
 
 def add_obs_test():
@@ -359,12 +400,16 @@ def add_obs_test():
         f.write("l1 w  !{0}!\n".format("crap1"))
     with open(out_file, "w") as f:
         f.write("junk1  {0:8.2f} \n".format(oval))
-    pst.add_observations(ins_file, out_file, pst_path="temp")
+    pst.add_observations(ins_file, out_file)
     assert nobs + 1 == pst.nobs
     assert "crap1" in pst.observation_data.obsnme
     assert os.path.join("temp", "crap.out") in pst.output_files, str(pst.output_files)
     assert os.path.join("temp", "crap.out.ins") in pst.instruction_files
     print(pst.observation_data.loc["crap1", "obsval"], oval)
+    nobs = pst.nobs
+    pst.drop_observations(ins_file,pst_path="temp")
+    assert pst.nobs == nobs - 1
+    assert ins_file not in pst.model_output_data.pest_file.to_list()
 
 
 def test_write_input_files():
@@ -425,6 +470,10 @@ def write_tables_test():
     group_names = {"w0": "wells t"}
     pst.write_par_summary_table(group_names=group_names)
     pst.write_obs_summary_table(group_names={"calhead": "calibration heads"})
+    pst.write_par_summary_table(filename='testpar.xlsx', group_names=group_names)
+    pst.write_par_summary_table(filename='testpar2.xlsx', group_names=group_names, report_in_linear_space=True)   
+    pst.write_obs_summary_table(filename = 'testobs.xlsx', group_names={"calhead": "calibration heads"})
+    
 
 def test_e_clean():
     import os
@@ -496,11 +545,14 @@ def try_process_ins_test():
     ins_file = os.path.join("utils", "BH.mt3d.processed.ins")
     i = pyemu.pst_utils.InstructionFile(ins_file)
     df2 = i.read_output_file(ins_file.replace(".ins",""))
-
+    df2.loc[df2.obsval>1.0e+10,"obsval"] = np.NaN
 
 
     # df1 = pyemu.pst_utils._try_run_inschek(ins_file,ins_file.replace(".ins",""))
     df1 = pd.read_csv(ins_file.replace(".ins", ".obf"), delim_whitespace=True, names=["obsnme", "obsval"], index_col=0)
+    df1.loc[df1.obsval > 1.0e+10, "obsval"] = np.NaN
+    print(df1.max())
+    print(df2.max())
     # df1.index = df1.obsnme
     df1.loc[:, "obsnme"] = df1.index
     df1.index = df1.obsnme
@@ -616,7 +668,6 @@ def new_format_test_2():
     #try:
     for pst_file in pst_files:
         print(pst_file)
-
         if os.path.exists("temp_pst"):
             shutil.rmtree("temp_pst")
         os.makedirs("temp_pst")
@@ -802,14 +853,20 @@ def process_output_files_test():
     out_files = [f.replace(".ins","") for f in ins_files]
     print(ins_files)
 
+    i4 = pst_utils.InstructionFile(ins_files[4])
+    s4 = i4.read_output_file(out_files[4])
+    print(s4)
+    assert s4.loc["h01_03", "obsval"] == 3.481,s4.loc["h01_03", "obsval"]
+    assert s4.loc["h02_10", "obsval"] == 11.1,s4.loc["h02_10", "obsval"]
+
     i4 = pst_utils.InstructionFile(ins_files[3])
     s4 = i4.read_output_file(out_files[3])
     print(s4)
     assert s4.loc["h01_02", "obsval"] == 1.024
     assert s4.loc["h01_10", "obsval"] == 4.498
 
-    i5 = pst_utils.InstructionFile(ins_files[4])
-    s5 = i5.read_output_file(out_files[4])
+    i5 = pst_utils.InstructionFile(ins_files[5])
+    s5 = i5.read_output_file(out_files[5])
     print(s5)
     assert s5.loc["obs3_1","obsval"] == 1962323.838381853
     assert s5.loc["obs3_2","obsval"] == 1012443.579448909
@@ -868,29 +925,173 @@ def new_format_path_mechanics_test():
     assert options["sep"] == "w", options
 
 
-if __name__ == "__main__":
+def ctrl_data_test():
+    import os
+    import numpy as np
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","sm.pst"))
+    pst.write(os.path.join("pst","test.pst"))
 
+    pst2 = pyemu.Pst(os.path.join("pst", "test.pst"))
+
+    #print(pst.control_data._df.passed)
+    #print(pst2.control_data._df.passed)
+    for i in pst.control_data._df.index:
+        if pst.control_data._df.loc[i,"passed"] != pst2.control_data._df.loc[i,"passed"]:
+            print(i)
+    assert np.all(pst.control_data._df.passed == pst2.control_data._df.passed)
+
+    pst2.write(os.path.join("pst","test2.pst"),version=2)
+    pst3 = pyemu.Pst(os.path.join("pst", "test2.pst"))
+
+def read_in_tpl_test():
+    import pyemu
+    tpl_d = "tpl"
+    df = pyemu.pst_utils.try_read_input_file_with_tpl(os.path.join(tpl_d,"test1.dat.tpl"))
+    print(df)
+    assert df.parval1["p1"] == df.parval1["p2"]
+    assert df.parval1["p3"] == df.parval1["p4"]
+    assert df.parval1["p5"] == df.parval1["p6"]
+    assert df.parval1["p5"] == df.parval1["p7"]
+
+def read_in_tpl_test2():
+    import pyemu
+    tpl_d = "tpl"
+    df = pyemu.pst_utils.try_read_input_file_with_tpl(os.path.join(tpl_d,"test2.dat.tpl"))
+    assert np.isclose(df.loc['par1'].parval1, 8.675309)
+
+def write2_nan_test():
+    import numpy as np
+    import pyemu
+    import os
+
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.control_data.nphinored = 1000
+    pst.write("test.pst",version=2)
+
+    pst = pyemu.Pst(os.path.join("test.pst"))
+    print(pst.control_data.nphinored)
+
+    pst.write("test.pst", version=2)
+
+    pst = pyemu.Pst(os.path.join("test.pst"))
+    assert pst.control_data.nphinored == 1000
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pyemu.helpers.zero_order_tikhonov(pst)
+    pst.prior_information.loc[pst.prior_names[0], "weight"] = np.NaN
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.model_output_data.loc[pst.instruction_files[0], "pest_file"] = np.NaN
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.model_input_data.loc[pst.template_files[0], "pest_file"] = np.NaN
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pst.parameter_data.loc[pst.par_names[0],"parval1"] = np.NaN
+    try:
+        pst.write("test.pst",version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst",version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.parameter_groups.loc[pst.parameter_groups.pargpnme[0], "derinc"] = np.NaN
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.observation_data.loc[pst.obs_names[0], "weight"] = np.NaN
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+
+
+
+
+if __name__ == "__main__":
+    
+    #write2_nan_test()
     #process_output_files_test()
-    #change_limit_test()
-    #new_format_test()
-    #lt_gt_constraint_names_test()
+    # change_limit_test()
+    # new_format_test()
+    # lt_gt_constraint_names_test()
     #csv_to_ins_test()
-    #pst_from_flopy_geo_draw_test()
-    #pst_from_flopy_specsim_draw_test()
-    try_process_ins_test()
+    #ctrl_data_test()
+    #change_limit_test()
+    new_format_test_2()
+    # try_process_ins_test()
     # write_tables_test()
-    #res_stats_test()
+    # res_stats_test()
     # test_write_input_files()
-    # add_obs_test()
-    # add_pars_test()
+    #add_obs_test()
+    #add_pars_test()
     # setattr_test()
-    # run_array_pars()
-    #from_flopy_zone_pars()
-    #from_flopy_pp_test()
-    # from_flopy()
-    # add_obs_test()
-    #from_flopy_kl_test()
-    #from_flopy_reachinput()
+
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
@@ -898,19 +1099,31 @@ if __name__ == "__main__":
     # regul_rectify_test()
     # derivative_increment_tests()
     # tied_test()
-    # smp_test()
-    # smp_dateparser_test()
-    # pst_manip_test()
-    # tpl_ins_test()
-    # comments_test()
-    # test_e_clean()
+
+    #pst_manip_test()
+    #tpl_ins_test()
+    #comments_test()
+    #test_e_clean()
     # load_test()
-    #res_test()
-    # smp_test()
-    #from_io_with_inschek_test()
-    #pestpp_args_test()
+    # res_test()
+    #
+    # from_io_with_inschek_test()
+    # pestpp_args_test()
     # reweight_test()
     # reweight_res_test()
     # run_test()
     # rectify_pgroup_test()
     # sanity_check_test()
+    #write_tables_test()
+    #pi_helper_test()
+    #ctrl_data_test()
+    #new_format_test_2()
+    #try_process_ins_test()
+    #tpl_ins_test()
+    #process_output_files_test()
+    #comments_test()
+    #read_in_tpl_test()
+    #read_in_tpl_test2()
+    
+    #comments_test()
+    #csv_to_ins_test()

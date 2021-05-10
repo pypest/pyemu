@@ -99,6 +99,6 @@ after_success:
   - cd docs
   - make html
   - cd ..
-  - coveralls
+#   - coveralls
 
 

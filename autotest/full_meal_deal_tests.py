@@ -2,14 +2,22 @@ import os
 import platform
 
 ext = ''
-bin_path = os.path.join("..","..","bin")
-if "linux" in platform.platform().lower():
-    bin_path = os.path.join(bin_path,"linux")
-elif "darwin" in platform.platform().lower():
-    bin_path = os.path.join(bin_path,"mac")
+local_bins = False  # change if wanting to test with local binary exes
+if local_bins:
+    bin_path = os.path.join("..", "..", "bin")
+    if "linux" in platform.platform().lower():
+        pass
+        bin_path = os.path.join(bin_path, "linux")
+    elif "darwin" in platform.platform().lower() or 'macos' in platform.platform().lower():
+        pass
+        bin_path = os.path.join(bin_path, "mac")
+    else:
+        bin_path = os.path.join(bin_path, "win")
+        ext = '.exe'
 else:
-    bin_path = os.path.join(bin_path,"win")
-    ext = '.exe'
+    bin_path = ''
+    if "windows" in platform.platform().lower():
+        ext = '.exe'
     
 
 mf_exe_name = os.path.join(bin_path,"mfnwt")
@@ -31,16 +39,6 @@ def freyberg_test():
     except Exception as e:
         return
     import pyemu
-
-    ext = ''
-    bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "mac")
-    else:
-        bin_path = os.path.join(bin_path, "win")
-        ext = '.exe'
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
@@ -78,10 +76,10 @@ def freyberg_test():
                                          temporal_bc_props=temp_bc_props,
                                          remove_existing=True,
                                          model_exe_name="mfnwt")
-    tmp = mf_exe_name.split(os.sep)
-    tmp = os.path.join(*tmp[1:])+ext
-    assert os.path.exists(tmp),tmp
-    shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
+    # tmp = mf_exe_name.split(os.sep)
+    # tmp = os.path.join(*tmp[1:])+ext
+    # assert os.path.exists(tmp),tmp
+    # shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
     ph.pst.control_data.noptmax = 0
     ph.pst.write(os.path.join(new_model_ws,"test.pst"))
     print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
@@ -157,16 +155,6 @@ def freyberg_kl_pp_compare():
         return
     import pyemu
 
-    ext = ''
-    bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "mac")
-    else:
-        bin_path = os.path.join(bin_path, "win")
-        ext = '.exe'
-
     org_model_ws_base = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws_base, check=False, forgive=False,
@@ -241,16 +229,6 @@ def freyberg_diff_obs_test():
         return
     import pyemu
 
-    ext = ''
-    bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.platform().lower():
-        bin_path = os.path.join(bin_path, "mac")
-    else:
-        bin_path = os.path.join(bin_path, "win")
-        ext = '.exe'
-
     oorg_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=oorg_model_ws, check=False,forgive=False,
@@ -323,10 +301,10 @@ def freyberg_diff_obs_test():
 
     ph.write_forward_run()
 
-    tmp = mf_exe_name.split(os.sep)
-    tmp = os.path.join(*tmp[1:])+ext
-    assert os.path.exists(tmp),tmp
-    shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
+    # tmp = mf_exe_name.split(os.sep)
+    # tmp = os.path.join(*tmp[1:])+ext
+    # assert os.path.exists(tmp),tmp
+    # shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
     ph.pst.control_data.noptmax = 0
     ph.pst.write(os.path.join(new_model_ws,"test.pst"))
     print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
@@ -340,9 +318,9 @@ def freyberg_diff_obs_test():
 
 
 if __name__ == "__main__":
-    freyberg_diff_obs_test()
+    #freyberg_diff_obs_test()
     freyberg_test()
-    freyberg_kl_pp_compare()
+    #freyberg_kl_pp_compare()
     #import shapefile
     #run_sweep_test()
-    fake_run_test()
+    #fake_run_test()

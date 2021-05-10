@@ -1,0 +1,4 @@
+numpy>=1.9
+pandas>=0.18.1
+pyshp
+autoapi

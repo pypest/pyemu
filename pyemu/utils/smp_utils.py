@@ -103,7 +103,7 @@ def dataframe_to_smp(
     value_format="{0:15.6E}",
     max_name_len=12,
 ):
-    """ write a dataframe as an smp file
+    """write a dataframe as an smp file
 
     Args:
         dataframe (`pandas.DataFrame`): the dataframe to write to an SMP
@@ -157,8 +157,7 @@ def dataframe_to_smp(
 
 
 def _date_parser(items):
-    """ datetime parser to help load smp files
-    """
+    """datetime parser to help load smp files"""
     try:
         dt = datetime.strptime(items, "%d/%m/%Y %H:%M:%S")
     except Exception as e:
@@ -173,7 +172,7 @@ def _date_parser(items):
 
 
 def smp_to_dataframe(smp_filename, datetime_format=None):
-    """ load an smp file into a pandas dataframe
+    """load an smp file into a pandas dataframe
 
     Args:
         smp_filename (`str`): path and nane of existing smp filename to load
