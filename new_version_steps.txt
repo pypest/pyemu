@@ -4,6 +4,5 @@
 2) tag new version in master branch
 2.5) remove any existing dist, build, egg, etc
 3) python setup.py sdist bdist_wheel
-4) twine upload dist/*
+4) twine upload dist/* (pip install twine, not conda)
 5) update README.md to point to build and coverage status for master
-6) update docs with make html, copy build dir to pyemudocs repo (on gh-pages branch) then push 
