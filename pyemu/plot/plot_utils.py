@@ -1362,17 +1362,17 @@ def ensemble_res_1to1(
     ax_count = 0
     for g, names in grouper.items():
         logger.log("plotting 1to1 for {0}".format(g))
-
+        # control file observation for group
         obs_g = obs.loc[names, :]
-
         logger.statement("using control file obsvals to calculate residuals")
+        # normally only look a non-zero weighted obs
         if "include_zero" not in kwargs or kwargs["include_zero"] is False:
             obs_g = obs_g.loc[obs_g.weight > 0, :]
         if obs_g.shape[0] == 0:
             logger.statement("no non-zero obs for group '{0}'".format(g))
             logger.log("plotting 1to1 for {0}".format(g))
             continue
-
+        # if the first axis in page
         if ax_count % (nr * nc) == 0:
             if ax_count > 0:
                 plt.tight_layout()
@@ -1382,36 +1382,40 @@ def ensemble_res_1to1(
             fig = plt.figure(figsize=figsize)
             axes = _get_page_axes()
             ax_count = 0
-
         ax = axes[ax_count]
-        obx = obs_g.obsval.max()
-        obn = obs_g.obsval.min()
+
+        # min and max for actual observations (xaxis) from control file
+        obx = obs_g.obsval.max()  # original base obsval max
+        obn = obs_g.obsval.min()  # original base obsval min
         if base_ensemble is None:
+            # if obs not defined by obs+noise ensemble,
+            # use min and max for obsval from control file
             bx = obx
             bn = obn
         else:
-            ben = base_ensemble["r"]
-            ben = ben.loc[:, ben.columns.intersection(names)]
-            bn = ben.min().min()
-            bx = ben.max().max()
-        #if obs_g.shape[0] == 1:
-
-        #ax.axis('square')
-        if base_ensemble is not None:
+            # if obs defined by obs+noise use obs+noise min and max
+            # ben = base_ensemble["r"]
+            # ben = ben.loc[:, ben.columns.intersection(names)]
+            bn = 1e32  # ben.min().min()
+            bx = -1e32  # ben.max().max()
             obs_gg = obs_g.sort_values(by="obsval")
-
             for c, en in base_ensemble.items():
                 en_g = en.loc[:, obs_gg.obsnme]
                 ex = en_g.max()
                 en = en_g.min()
+                # update y min and max for obs+noise ensembles
+                bn = np.min([en.min(), bn])
+                bx = np.max([ex.max(), bx])
                 #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
                 ax.fill_between(obs_gg.obsval, en, ex, facecolor=c, alpha=0.2,
                                 zorder=2)
         #ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+        # collector for mins and max
         omn = []
         omx = []
         for c, en in ensembles.items():
             en_g = en.loc[:, obs_g.obsnme]
+            # output mins and maxs
             ex = en_g.max()
             en = en_g.min()
             omn.append(en)
@@ -1421,24 +1425,23 @@ def ensemble_res_1to1(
 
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()
-        # focus on obs(plus noise)
-        # need to make sure all obs are captured
+        # focus on obs(+noise)
+        # need to make sure all obsval are captured (obn, obx)
         # but helpful if not zoomed out too far
-        rng = obx-obn
-        if omn < bn:
-            mn = bn
+        rng = bx-bn
+        mpnt = rng/2
+        if omn < bn:  # if the output ensemble mins extend below obs+noise
+            mn = bn - 0.01 * rng  # focus on obs+noise? -- will capture obsval
+        elif 1.1 * (mpnt-bn) <= mpnt-omn:  # if min of output en is close to obs+noise
+            mn = mpnt - (1.1 * (mpnt-omn))  # expand from model output a bit
         else:
-            if 0.1 * obn > 0.5 * rng:
-                mn = obn - (0.5 * rng)
-            else:
-                mn = obn * 0.9
-        if omx > bx:
-            mx = bx
+            mn = omn - 0.02 * (omx-omn)  # focus on model output
+        if omx > bx:  # if the output ensemble max is above the obs+noise max
+            mx = bx + 0.01 * rng   # focus on the obs+noise max
+        elif 1.1 * (bx-mpnt) <= omx-mpnt:  # if max of output en is close to obs_nois
+            mx = mpnt + (1.1 * (omx - mpnt))  # expand from model output a bit
         else:
-            if 0.1 * obx > 0.5 * rng:
-                mx = obx + (0.5 * rng)
-            else:
-                mx = obx * 1.1
+            mx = omx + 0.02 * (omx-omn)  # focus on model output
         ax.plot([mn, mx], [mn, mx], "k--", lw=1.0, zorder=3)
         xlim = (mn, mx)
         ax.set_xlim(mn, mx)
@@ -1462,17 +1465,22 @@ def ensemble_res_1to1(
             loc="left",
         )
 
+        # Residual (RHS plot)
         ax_count += 1
         ax = axes[ax_count]
         # ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
 
         if base_ensemble is not None:
             obs_gg = obs_g.sort_values(by="obsval")
-
+            bn = 1e32  # ben.min().min()
+            bx = -1e32  # ben.max().max()
             for c, en in base_ensemble.items():
                 en_g = en.loc[:, obs_gg.obsnme].subtract(obs_gg.obsval)
                 ex = en_g.max()
                 en = en_g.min()
+                # update y min and max for obs+noise ensembles
+                bn = np.min([en.min(), bn])
+                bx = np.max([ex.max(), bx])
                 #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
                 ax.fill_between(obs_gg.obsval, en, ex, facecolor=c, alpha=0.2,
                                 zorder=2)
@@ -1490,7 +1498,7 @@ def ensemble_res_1to1(
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()
         # always focus on outputs
-        # -> if obs(plus noise) is broader, focus on sim out
+        # -> if obs(+ noise) is broader, focus on sim out
         mn = omn
         mx = omx
         ax.set_ylim(mn, mx)
@@ -1504,9 +1512,11 @@ def ensemble_res_1to1(
         #             [ax.plot([ov, ov], [een, eex], color=c, alpha=0.3) for ov, een, eex in
         #              zip(obs_g.obsval.values, en.values, ex.values)]
         ylim = ax.get_ylim()
-        mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
+        mx = max(np.abs(ylim[0]), np.abs(ylim[1]))  # ensure symmetric about y=0
         if obs_g.shape[0] == 1:
             mx *= 1.1
+        else:
+            mx *= 1.02
         ax.set_ylim(-mx, mx)
         # show a zero residuals line
         ax.plot(xlim, [0, 0], "k--", lw=1.0, zorder=3)
