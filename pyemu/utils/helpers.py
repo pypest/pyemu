@@ -4349,12 +4349,12 @@ def write_grid_tpl(
                     pname = " 1.0 "
                 else:
                     if longnames:
-                        pname = "{0}_i:{0}_j:{1}_{2}".format(name, i, j, suffix)
+                        pname = "{0}_i:{1}_j:{2}_{3}".format(name, i, j, suffix)
                         if spatial_reference is not None:
                             pname += "_x:{0:10.2E}_y:{1:10.2E}".format(
                                 spatial_reference.xcentergrid[i, j],
                                 spatial_reference.ycentergrid[i, j],
-                            )
+                            ).replace(" ","")
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                         if len(pname) > 12:
