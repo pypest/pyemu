@@ -522,6 +522,7 @@ def pst_from_flopy_geo_draw_test():
 
 def from_flopy_pp_test():
     import numpy as np
+    import pandas as pd
     try:
         import flopy
     except:
@@ -547,6 +548,23 @@ def from_flopy_pp_test():
                                              use_pp_zones=False,
                                             build_prior=False)
 
+    b_d = os.getcwd()
+    os.chdir(new_model_ws)
+    try:
+        pyemu.helpers.apply_array_pars()
+    except Exception as e:
+        os.chdir(b_d)
+        raise (str(e))
+    os.chdir(b_d)
+
+
+    mlt_dir = os.path.join(new_model_ws,"arr_mlt")
+    for f in os.listdir(mlt_dir):
+        arr = np.loadtxt(os.path.join(mlt_dir,f))
+        assert np.all(arr==1)
+    df = pd.read_csv(os.path.join(new_model_ws, "arr_pars.csv"), index_col=0)
+    assert np.all(df.pp_fill_value.values == 1)
+
     new_model_ws = "temp_pst_from_flopy"
     props = ["upw.ss","upw.hk","upw.vka"]
     pp_props = []
@@ -562,6 +580,7 @@ def from_flopy_pp_test():
                                              pp_space=4,
                                              use_pp_zones=False,
                                              build_prior=True)
+
 
 
 def pst_from_flopy_specsim_draw_test():
@@ -662,50 +681,20 @@ def at_bounds_test():
     assert len(lb) == 1
     assert len(ub) == 1
 
+
+
 if __name__ == "__main__":
 
-    # at_bounds_test()
-    #process_output_files_test()
-    #change_limit_test()
-    #new_format_test()
-    #lt_gt_constraint_names_test()
-    #csv_to_ins_test()
+    #at_bounds_test()
+
     #pst_from_flopy_geo_draw_test()
     #pst_from_flopy_specsim_draw_test()
-    #try_process_ins_test()
-    # write_tables_test()
-    #res_stats_test()
-    # test_write_input_files()
-    # add_obs_test()
-    # add_pars_test()
-    # setattr_test()
     # run_array_pars()
     # from_flopy_zone_pars()
-    from_flopy_pp_test()
+    #from_flopy_pp_test()
     # from_flopy()
-    # add_obs_test()
-    #from_flopy_kl_test()
+
+    from_flopy_kl_test()
     #from_flopy_reachinput()
-    # add_pi_test()
-    # regdata_test()
-    # nnz_groups_test()
-    #adj_group_test()
-    # regul_rectify_test()
-    # derivative_increment_tests()
-    # tied_test()
-    # smp_test()
-    # smp_dateparser_test()
-    # pst_manip_test()
-    # tpl_ins_test()
-    # comments_test()
-    # test_e_clean()
-    # load_test()
-    # res_test()
-    # smp_test()
-    #from_io_with_inschek_test()
-    #pestpp_args_test()
-    # reweight_test()
-    # reweight_res_test()
-    # run_test()
-    # rectify_pgroup_test()
-    # sanity_check_test()
+
+

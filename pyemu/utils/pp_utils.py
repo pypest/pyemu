@@ -35,7 +35,7 @@ def setup_pilotpoints_grid(
     shapename="pp.shp",
     longnames=False,
 ):
-    """ setup a regularly-spaced (gridded) pilot point parameterization
+    """setup a regularly-spaced (gridded) pilot point parameterization
 
     Args:
         ml (`flopy.mbase`, optional): a flopy mbase dervied type.  If None, `sr` must not be None.
@@ -48,8 +48,8 @@ def setup_pilotpoints_grid(
             For example : `{0:["hk,"vk"]}` would setup pilot points with the prefix "hk" and "vk" for
             model layer 1. If None, a generic set of pilot points with
             the "pp" prefix are setup for a generic nrow by ncol grid. Default is None
-        ninst (`int`): Number of instances of pilot_points to set up. 
-            e.g. number of layers. If ml is None and prefix_dict is None, 
+        ninst (`int`): Number of instances of pilot_points to set up.
+            e.g. number of layers. If ml is None and prefix_dict is None,
             this is used to set up default prefix_dict.
         use_ibound_zones (`bool`): a flag to use the greater-than-zero values in the
             ibound as pilot point zones.  If False ,ibound values greater than zero are
@@ -165,7 +165,7 @@ def setup_pilotpoints_grid(
             for i in range(start, ib.shape[0] - start, every_n_cell):
                 for j in range(start, ib.shape[1] - start, every_n_cell):
                     # skip if this is an inactive cell
-                    if ib[i, j] == 0:
+                    if ib[i, j] <= 0:  # this will account for MF6 style ibound as well
                         continue
 
                     # get the attributes we need
@@ -269,7 +269,7 @@ def setup_pilotpoints_grid(
 
 
 def pp_file_to_dataframe(pp_filename):
-    """ read a pilot point file to a pandas Dataframe
+    """read a pilot point file to a pandas Dataframe
 
     Args:
         pp_filename (`str`): path and name of an existing pilot point file
@@ -295,7 +295,7 @@ def pp_file_to_dataframe(pp_filename):
 
 
 def pp_tpl_to_dataframe(tpl_filename):
-    """ read a pilot points template file to a pandas dataframe
+    """read a pilot points template file to a pandas dataframe
 
     Args:
         tpl_filename (`str`): path and name of an existing pilot points
@@ -328,6 +328,50 @@ def pp_tpl_to_dataframe(tpl_filename):
     )
     df.loc[:, "name"] = df.name.apply(str).apply(str.lower)
     df["parnme"] = [i.split(marker)[1].strip() for i in inlines]
+
+    return df
+
+
+def pilot_points_from_shapefile(shapename):
+    """read pilot points from shapefile into a dataframe
+
+    Args:
+        shapename (`str`): the shapefile name to read.
+
+    Notes:
+        requires pyshp
+
+    """
+    try:
+        import shapefile
+    except Exception as e:
+        raise Exception(
+            "error importing shapefile: {0}, \ntry pip install pyshp...".format(str(e))
+        )
+    shp = shapefile.Reader(shapename)
+    if shp.shapeType != shapefile.POINT:
+        raise Exception("shapefile '{0}' is not POINT type")
+    names = [n[0].lower() for n in shp.fields[1:]]
+    if "name" not in names:
+        raise Exception("pilot point shapefile missing 'name' attr")
+
+    data = {name: [] for name in names}
+    xvals = []
+    yvals = []
+
+    for shape, rec in zip(shp.shapes(), shp.records()):
+        pt = shape.points[0]
+        for name, val in zip(names, rec):
+            data[name].append(val)
+        xvals.append(pt[0])
+        yvals.append(pt[1])
+
+    df = pd.DataFrame(data)
+    df.loc[:, "x"] = xvals
+    df.loc[:, "y"] = yvals
+    if "parval1" not in df.columns:
+        print("adding generic parval1 to pp shapefile dataframe")
+        df.loc[:, "parval1"] = 1.0
 
     return df
 
@@ -449,10 +493,22 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
 
     if longnames:
         if name_prefix is not None:
-            pp_df.loc[:, "parnme"] = pp_df.apply(
-                lambda x: "{0}_i:{1}_j:{2}".format(name_prefix, int(x.i), int(x.j)),
-                axis=1,
-            )
+            if "i" in pp_df.columns and "j" in pp_df.columns:
+                pp_df.loc[:, "parnme"] = pp_df.apply(
+                    lambda x: "{0}_i:{1}_j:{2}".format(name_prefix, int(x.i), int(x.j)),
+                    axis=1,
+                )
+            elif "x" in pp_df.columns and "y" in pp_df.columns:
+                pp_df.loc[:, "parnme"] = pp_df.apply(
+                    lambda x: "{0}_x:{1}_y:{2}".format(name_prefix, x.x, x.y),
+                    axis=1,
+                )
+            else:
+                pp_df.loc[:, "idx"] = np.arange(pp_df.shape[0])
+                pp_df.loc[:, "parnme"] = pp_df.apply(
+                    lambda x: "{0}_ppidx:{1}".format(name_prefix, x.idx),
+                    axis=1,
+                )
             pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
                 lambda x: "~    {0}    ~".format(x)
             )
@@ -490,7 +546,7 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
                 too_long.append(name)
         if len(too_long) > 0:
             raise Exception(
-                "the following parameter names are too long:" ",".join(too_long)
+                "the following parameter names are too long:" + ",".join(too_long)
             )
         tpl_entries = ["~    {0}    ~".format(name) for name in names]
         pp_df.loc[:, "tpl"] = tpl_entries

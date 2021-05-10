@@ -9,8 +9,7 @@ from .ensemble_method import EnsembleMethod
 
 
 class ParetoObjFunc(object):
-    """multiobjective function calculator.
-    """
+    """multiobjective function calculator."""
 
     def __init__(self, pst, obj_function_dict, logger):
 

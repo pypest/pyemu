@@ -88,7 +88,7 @@ class GeoStruct(object):
         return True
 
     def to_struct_file(self, f):
-        """ write a PEST-style structure file
+        """write a PEST-style structure file
 
         Args:
             f (`str`): file to write the GeoStruct information in to.  Can
@@ -185,7 +185,7 @@ class GeoStruct(object):
         return cov
 
     def covariance_points(self, x0, y0, xother, yother):
-        """ Get the covariance between point (x0,y0) and the points
+        """Get the covariance between point (x0,y0) and the points
         contained in xother, yother.
 
         Args:
@@ -208,7 +208,7 @@ class GeoStruct(object):
 
     @property
     def sill(self):
-        """ get the sill of the `GeoStruct`
+        """get the sill of the `GeoStruct`
 
         Returns:
             `float`: the sill of the (nested) `GeoStruct`, including
@@ -221,7 +221,7 @@ class GeoStruct(object):
         return sill
 
     def plot(self, **kwargs):
-        """ make a cheap plot of the `GeoStruct`
+        """make a cheap plot of the `GeoStruct`
 
         Args:
             **kwargs : (dict)
@@ -265,7 +265,7 @@ class GeoStruct(object):
         return ax
 
     def __str__(self):
-        """ the `str` representation of the `GeoStruct`
+        """the `str` representation of the `GeoStruct`
 
         Returns:
             `str`: the string representation of the GeoStruct
@@ -483,6 +483,8 @@ class SpecSim2d(object):
             raise Exception(
                 "SpecSim2D grid_par_ensemble_helper() error: only a single variogram can be used..."
             )
+        gr_df.loc[:, "i"] = gr_df.i.apply(np.int)
+        gr_df.loc[:, "j"] = gr_df.j.apply(np.int)
 
         # scale the total contrib
         org_var = self.geostruct.variograms[0].contribution
@@ -570,7 +572,7 @@ class SpecSim2d(object):
         R_factor=1.0,
     ):
 
-        """ Generate a conditional, correlated random field using the Spec2dSim
+        """Generate a conditional, correlated random field using the Spec2dSim
             object, a set of observation points, and a factors file.
 
             The conditional field is made by generating an unconditional correlated random
@@ -702,7 +704,7 @@ class SpecSim2d(object):
 
 
 class OrdinaryKrige(object):
-    """ Ordinary Kriging using Pandas and Numpy.
+    """Ordinary Kriging using Pandas and Numpy.
 
     Args:
         geostruct (`GeoStruct`): a pyemu.geostats.GeoStruct to use for the kriging
@@ -778,7 +780,7 @@ class OrdinaryKrige(object):
         #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
 
     def check_point_data_dist(self, rectify=False):
-        """ check for point_data entries that are closer than
+        """check for point_data entries that are closer than
         EPSILON distance - this will cause a singular kriging matrix.
 
         Args:
@@ -839,7 +841,7 @@ class OrdinaryKrige(object):
         forgive=False,
         num_threads=1,
     ):
-        """ calculate kriging factors (weights) for a structured grid.
+        """calculate kriging factors (weights) for a structured grid.
 
         Args:
             spatial_reference (`flopy.utils.reference.SpatialReference`): a spatial
@@ -1024,7 +1026,7 @@ class OrdinaryKrige(object):
         forgive=False,
         num_threads=1,
     ):
-        """ calculate ordinary kriging factors (weights) for the points
+        """calculate ordinary kriging factors (weights) for the points
         represented by arguments x and y
 
         Args:
@@ -1446,18 +1448,19 @@ class OrdinaryKrige(object):
     def to_grid_factors_file(
         self, filename, points_file="points.junk", zone_file="zone.junk"
     ):
-        """ write a grid-based PEST-style factors file.  This file can be used with
-        the fac2real() method to write an interpolated structured array
+        """write a PEST-style factors file.  This file can be used with
+        the fac2real() method to write an interpolated structured or unstructured array
 
         Args:
             filename (`str`): factor filename
             points_file (`str`): points filename to add to the header of the factors file.
                 This is not used by the fac2real() method.  Default is "points.junk"
             zone_file (`str`): zone filename to add to the header of the factors file.
-                This is notused by the fac2real() method.  Default is "zone.junk"
+                This is not used by the fac2real() method.  Default is "zone.junk"
 
         Note:
-            this method should be called after OrdinaryKirge.calc_factors_grid()
+            this method should be called after OrdinaryKrige.calc_factors_grid() for structured
+            models or after OrdinaryKrige.calc_factors() for unstructured models.
 
         """
         if self.interp_data is None:
@@ -1465,15 +1468,21 @@ class OrdinaryKrige(object):
                 "ok.interp_data is None, must call calc_factors_grid() first"
             )
         if self.spatial_reference is None:
-            raise Exception(
-                "ok.spatial_reference is None, must call calc_factors_grid() first"
-            )
+             #raise Exception(
+             #   "ok.spatial_reference is None, must call calc_factors_grid() first"
+             #)
+            print("OrdinaryKrige.to_grid_factors_file(): spatial_reference attr is None, assuming unstructured grid")
+            nrow = 1
+            ncol = self.interp_data.shape[0]
+        else:
+            nrow = self.spatial_reference.nrow
+            ncol = self.spatial_reference.ncol
         with open(filename, "w") as f:
             f.write(points_file + "\n")
             f.write(zone_file + "\n")
             f.write(
                 "{0} {1}\n".format(
-                    self.spatial_reference.ncol, self.spatial_reference.nrow
+                    ncol, nrow
                 )
             )
             f.write("{0}\n".format(self.point_data.shape[0]))
@@ -1538,7 +1547,7 @@ class Vario2d(object):
         return True
 
     def to_struct_file(self, f):
-        """ write the `Vario2d` to a PEST-style structure file
+        """write the `Vario2d` to a PEST-style structure file
 
         Args:
             f (`str`): filename to write to.  `f` can also be an open
@@ -1556,7 +1565,7 @@ class Vario2d(object):
 
     @property
     def bearing_rads(self):
-        """ get the bearing of the Vario2d in radians
+        """get the bearing of the Vario2d in radians
 
         Returns:
             `float`: the Vario2d bearing in radians
@@ -1565,7 +1574,7 @@ class Vario2d(object):
 
     @property
     def rotation_coefs(self):
-        """ get the rotation coefficents in radians
+        """get the rotation coefficents in radians
 
         Returns:
             [`float`]: the rotation coefficients implied by `Vario2d.bearing`
@@ -1580,7 +1589,7 @@ class Vario2d(object):
         ]
 
     def inv_h(self, h):
-        """ the inverse of the h_function.  Used for plotting
+        """the inverse of the h_function.  Used for plotting
 
         Args:
             h (`float`): the value of h_function to invert
@@ -1592,7 +1601,7 @@ class Vario2d(object):
         return self.contribution - self._h_function(h)
 
     def plot(self, **kwargs):
-        """ get a cheap plot of the Vario2d
+        """get a cheap plot of the Vario2d
 
         Args:
             **kwargs (`dict`): keyword arguments to use for plotting
@@ -1684,7 +1693,7 @@ class Vario2d(object):
         return c
 
     def _apply_rotation(self, dx, dy):
-        """ private method to rotate points
+        """private method to rotate points
         according to Vario2d.bearing and Vario2d.anisotropy
 
 
@@ -1697,7 +1706,7 @@ class Vario2d(object):
         return dxx, dyy
 
     def covariance_points(self, x0, y0, xother, yother):
-        """ get the covariance between base point (x0,y0) and
+        """get the covariance between base point (x0,y0) and
         other points xother,yother implied by `Vario2d`
 
         Args:
@@ -1719,7 +1728,7 @@ class Vario2d(object):
         return self._h_function(h)
 
     def covariance(self, pt0, pt1):
-        """ get the covarince between two points implied by Vario2d
+        """get the covarince between two points implied by Vario2d
 
         Args:
             pt0 : ([`float`]): first point x and y
@@ -1736,7 +1745,7 @@ class Vario2d(object):
         return self.covariance_matrix(x, y, names=names).x[0, 1]
 
     def __str__(self):
-        """ get the str representation of Vario2d
+        """get the str representation of Vario2d
 
         Returns:
             `str`: string rep
@@ -1748,7 +1757,7 @@ class Vario2d(object):
 
 
 class ExpVario(Vario2d):
-    """Gaussian variogram derived type
+    """Exponential variogram derived type
 
     Args:
         contribution (float): sill of the variogram
@@ -1772,8 +1781,7 @@ class ExpVario(Vario2d):
         self.vartype = 2
 
     def _h_function(self, h):
-        """ private method exponential variogram "h" function
-        """
+        """private method exponential variogram "h" function"""
         return self.contribution * np.exp(-1.0 * h / self.a)
 
 
@@ -1804,9 +1812,7 @@ class GauVario(Vario2d):
         self.vartype = 3
 
     def _h_function(self, h):
-        """ private method for the gaussian variogram "h" function
-
-        """
+        """private method for the gaussian variogram "h" function"""
 
         hh = -1.0 * (h * h) / (self.a * self.a)
         return self.contribution * np.exp(hh)
@@ -1815,17 +1821,17 @@ class GauVario(Vario2d):
 class SphVario(Vario2d):
     """Spherical variogram derived type
 
-   Args:
-        contribution (float): sill of the variogram
-        a (`float`): (practical) range of correlation
-        anisotropy (`float`, optional): Anisotropy ratio. Default is 1.0
-        bearing : (`float`, optional): angle in degrees East of North corresponding
-            to anisotropy ellipse. Default is 0.0
-        name (`str`, optinoal): name of the variogram.  Default is "var1"
+    Args:
+         contribution (float): sill of the variogram
+         a (`float`): (practical) range of correlation
+         anisotropy (`float`, optional): Anisotropy ratio. Default is 1.0
+         bearing : (`float`, optional): angle in degrees East of North corresponding
+             to anisotropy ellipse. Default is 0.0
+         name (`str`, optinoal): name of the variogram.  Default is "var1"
 
-    Example::
+     Example::
 
-        v = pyemu.utils.geostats.SphVario(a=1000,contribution=1.0)
+         v = pyemu.utils.geostats.SphVario(a=1000,contribution=1.0)
 
     """
 
@@ -1836,9 +1842,7 @@ class SphVario(Vario2d):
         self.vartype = 1
 
     def _h_function(self, h):
-        """ private method for the spherical variogram "h" function
-
-        """
+        """private method for the spherical variogram "h" function"""
 
         hh = h / self.a
         h = self.contribution * (1.0 - (hh * (1.5 - (0.5 * hh * hh))))
@@ -1926,10 +1930,7 @@ def read_struct_file(struct_file, return_type=GeoStruct):
 
 
 def _read_variogram(f):
-    """Function to instantiate a Vario2d from a PEST-style structure file
-
-
-    """
+    """Function to instantiate a Vario2d from a PEST-style structure file"""
 
     line = ""
     vartype = None
@@ -1959,10 +1960,7 @@ def _read_variogram(f):
 
 
 def _read_structure_attributes(f):
-    """ function to read information from a PEST-style structure file
-
-
-    """
+    """function to read information from a PEST-style structure file"""
 
     line = ""
     variogram_info = {}
@@ -1994,7 +1992,7 @@ def _read_structure_attributes(f):
 
 
 def read_sgems_variogram_xml(xml_file, return_type=GeoStruct):
-    """ function to read an SGEMS-type variogram XML file into
+    """function to read an SGEMS-type variogram XML file into
     a `GeoStruct`
 
     Args:
@@ -2079,7 +2077,7 @@ def read_sgems_variogram_xml(xml_file, return_type=GeoStruct):
 
 
 def gslib_2_dataframe(filename, attr_name=None, x_idx=0, y_idx=1):
-    """ function to read a GSLIB point data file into a pandas.DataFrame
+    """function to read a GSLIB point data file into a pandas.DataFrame
 
     Args:
         filename (`str`): GSLIB file
@@ -2142,7 +2140,7 @@ def gslib_2_dataframe(filename, attr_name=None, x_idx=0, y_idx=1):
 
 
 def load_sgems_exp_var(filename):
-    """ read an SGEM experimental variogram into a sequence of
+    """read an SGEM experimental variogram into a sequence of
     pandas.DataFrames
 
     Args:
@@ -2297,8 +2295,7 @@ def fac2real(
 
 
 def _parse_factor_line(line):
-    """ function to parse a factor file line.  Used by fac2real()
-    """
+    """function to parse a factor file line.  Used by fac2real()"""
 
     raw = line.strip().split()
     inode, itrans, nfac = [int(i) for i in raw[:3]]

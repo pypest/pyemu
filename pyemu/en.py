@@ -8,7 +8,7 @@ import pyemu
 from .pyemu_warnings import PyemuWarning
 
 SEED = 358183147  # from random.org on 5 Dec 2016
-
+np.random.seed(SEED)
 
 class Loc(object):
     """thin wrapper around `pandas.DataFrame.loc` to make sure returned type
@@ -272,14 +272,14 @@ class Ensemble(object):
 
     @classmethod
     def from_binary(cls, pst, filename):
-        """ create an `Ensemble` from a PEST-style binary file
+        """create an `Ensemble` from a PEST-style binary file
 
         Args:
             pst (`pyemu.Pst`): a control file instance
             filename (`str`): filename containing binary ensemble
 
         Returns:
-            `Ensemble`: the ensembled loaded from the binary file
+            `Ensemble`: the ensemble loaded from the binary file
 
         Example::
 
@@ -288,6 +288,7 @@ class Ensemble(object):
 
 
         """
+
         df = pyemu.Matrix.from_binary(filename).to_dataframe()
         return cls(pst=pst, df=df)
 
@@ -361,7 +362,7 @@ class Ensemble(object):
 
             pst = pyemu.Pst("my.pst")
             oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
-            oe.to_binary("obs.csv")
+            oe.to_binary("obs.jcb")
 
         Note:
             back transforms `ParameterEnsemble` before writing so that
@@ -376,6 +377,39 @@ class Ensemble(object):
         if self._df.isnull().values.any():
             warnings.warn("NaN in ensemble", PyemuWarning)
         pyemu.Matrix.from_dataframe(self._df).to_coo(filename)
+        if retrans:
+            self.transform()
+
+    def to_dense(self, filename):
+        """write `Ensemble` to a dense-format binary file
+
+        Args:
+            filename (`str`): file to write
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
+            oe.to_dense("obs.bin")
+
+        Note:
+            back transforms `ParameterEnsemble` before writing so that
+            values are in arithmatic space
+
+        """
+
+        retrans = False
+        if self.istransformed:
+            self.back_transform()
+            retrans = True
+        if self._df.isnull().values.any():
+            warnings.warn("NaN in ensemble", PyemuWarning)
+        pyemu.Matrix.write_dense(
+            filename,
+            self._df.index.tolist(),
+            self._df.columns.tolist(),
+            self._df.values,
+        )
         if retrans:
             self.transform()
 
@@ -769,7 +803,7 @@ class ObservationEnsemble(Ensemble):
 
         Note:
             replaces the last realization with the current `ObservationEnsemble.pst.observation_data.obsval` values
-                as a new realization named "base"
+            as a new realization named "base"
 
         """
         if "base" in self.index:
@@ -964,7 +998,7 @@ class ParameterEnsemble(Ensemble):
 
     @classmethod
     def from_uniform_draw(cls, pst, num_reals, fill=True):
-        """ generate a `ParameterEnsemble` from a (multivariate) (log) uniform
+        """generate a `ParameterEnsemble` from a (multivariate) (log) uniform
         distribution
 
         Args:
@@ -1169,7 +1203,7 @@ class ParameterEnsemble(Ensemble):
 
     @classmethod
     def from_parfiles(cls, pst, parfile_names, real_names=None):
-        """ create a parameter ensemble from PEST-style parameter value files.
+        """create a parameter ensemble from PEST-style parameter value files.
         Accepts parfiles with less than the parameters in the control
         (get NaNs in the ensemble) or extra parameters in the
         parfiles (get dropped)
@@ -1312,7 +1346,7 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def ubnd(self):
-        """ the upper bound vector while respecting current log transform status
+        """the upper bound vector while respecting current log transform status
 
         Returns:
             `pandas.Series`: (log-transformed) upper parameter bounds listed in
@@ -1328,7 +1362,7 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def lbnd(self):
-        """ the lower bound vector while respecting current log transform status
+        """the lower bound vector while respecting current log transform status
 
         Returns:
             `pandas.Series`: (log-transformed) lower parameter bounds listed in
@@ -1344,7 +1378,7 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def log_indexer(self):
-        """ boolean indexer for log transform
+        """boolean indexer for log transform
 
         Returns:
             `numpy.ndarray(bool)`: boolean array indicating which parameters are log
@@ -1356,7 +1390,7 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def fixed_indexer(self):
-        """ boolean indexer for non-adjustable parameters
+        """boolean indexer for non-adjustable parameters
 
         Returns:
             `numpy.ndarray(bool)`: boolean array indicating which parameters have
@@ -1371,7 +1405,7 @@ class ParameterEnsemble(Ensemble):
     def project(
         self, projection_matrix, center_on=None, log=None, enforce_bounds="reset"
     ):
-        """ project the ensemble using the null-space Monte Carlo method
+        """project the ensemble using the null-space Monte Carlo method
 
         Args:
             projection_matrix (`pyemu.Matrix`): null-space projection operator.
@@ -1444,7 +1478,7 @@ class ParameterEnsemble(Ensemble):
         return new_en
 
     def enforce(self, how="reset", bound_tol=0.0):
-        """ entry point for bounds enforcement.  This gets called for the
+        """entry point for bounds enforcement.  This gets called for the
         draw method(s), so users shouldn't need to call this
 
         Args:
@@ -1544,7 +1578,7 @@ class ParameterEnsemble(Ensemble):
             self.transform()
 
     def _enforce_drop(self, bound_tol):
-        """ enforce parameter bounds on the ensemble by dropping
+        """enforce parameter bounds on the ensemble by dropping
         violating realizations
 
         Note:

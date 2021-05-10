@@ -165,7 +165,7 @@ def modflow_hydmod_to_instruction_file(hydmod_file, ins_file=None):
 
 
 def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
-    """ read a binary hydmod file and return a dataframe of the results
+    """read a binary hydmod file and return a dataframe of the results
 
     Args:
         hydmod_file (`str`): The path and name of the existing modflow hydmod binary file
@@ -223,7 +223,7 @@ def setup_mtlist_budget_obs(
     sw_prefix="sw",
     save_setup_file=False,
 ):
-    """ setup observations of gw (and optionally sw) mass budgets from mt3dusgs list file.
+    """setup observations of gw (and optionally sw) mass budgets from mt3dusgs list file.
 
     Args:
         list_filename (`str`): path and name of existing modflow list file
@@ -260,7 +260,7 @@ def setup_mtlist_budget_obs(
 
         This is the companion function of `gw_utils.apply_mtlist_budget_obs()`.
 
-        """
+    """
     gw, sw = apply_mtlist_budget_obs(
         list_filename, gw_filename, sw_filename, start_datetime
     )
@@ -289,9 +289,7 @@ def setup_mtlist_budget_obs(
 
 
 def _write_mtlist_ins(ins_filename, df, prefix):
-    """ write an instruction file for a MT3D-USGS list file
-
-    """
+    """write an instruction file for a MT3D-USGS list file"""
     try:
         dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
     except:
@@ -317,7 +315,7 @@ def apply_mtlist_budget_obs(
     sw_filename="mtlist_sw.dat",
     start_datetime="1-1-1970",
 ):
-    """ process an MT3D-USGS list file to extract mass budget entries.
+    """process an MT3D-USGS list file to extract mass budget entries.
 
     Args:
         list_filename (`str`): the path and name of an existing MT3D-USGS list file
@@ -375,8 +373,9 @@ def setup_mflist_budget_obs(
     start_datetime="1-1'1970",
     prefix="",
     save_setup_file=False,
+    specify_times=None,
 ):
-    """ setup observations of budget volume and flux from modflow list file.
+    """setup observations of budget volume and flux from modflow list file.
 
     Args:
         list_filename (`str`): path and name of the existing modflow list file
@@ -390,6 +389,15 @@ def setup_mflist_budget_obs(
             processing more than one list file as part of the forward run process. Default is ''.
         save_setup_file (`bool`): a flag to save "_setup_"+ `list_filename` +".csv" file that contains useful
             control file information
+        specify_times (`np.ndarray`-like, optional): An array of times to
+             extract from the budget dataframes returned by the flopy
+             MfListBudget(list_filename).get_dataframe() method. This can be
+             useful to ensure consistent observation times for PEST.
+             Array needs to be alignable with index of dataframe
+             return by flopy method, care should be take to ensure that
+             this is the case. If passed will be written to
+             "budget_times.config" file as strings to be read by the companion
+             `apply_mflist_budget_obs()` method at run time.
 
     Returns:
         **pandas.DataFrame**: a dataframe with information for constructing a control file.
@@ -405,7 +413,7 @@ def setup_mflist_budget_obs(
 
     """
     flx, vol = apply_mflist_budget_obs(
-        list_filename, flx_filename, vol_filename, start_datetime
+        list_filename, flx_filename, vol_filename, start_datetime, times=specify_times
     )
     _write_mflist_ins(flx_filename + ".ins", flx, prefix + "flx")
     _write_mflist_ins(vol_filename + ".ins", vol, prefix + "vol")
@@ -422,7 +430,12 @@ def setup_mflist_budget_obs(
     df.loc[:, "obsnme"] = df.index.values
     if save_setup_file:
         df.to_csv("_setup_" + os.path.split(list_filename)[-1] + ".csv", index=False)
-
+    if specify_times is not None:
+        np.savetxt(
+            os.path.join(os.path.dirname(flx_filename), "budget_times.config"),
+            specify_times,
+            fmt="%s",
+        )
     return df
 
 
@@ -431,31 +444,41 @@ def apply_mflist_budget_obs(
     flx_filename="flux.dat",
     vol_filename="vol.dat",
     start_datetime="1-1-1970",
+    times=None,
 ):
-    """ process a MODFLOW list file to extract flux and volume water budget entries.
+    """process a MODFLOW list file to extract flux and volume water budget
+       entries.
 
-   Args:
-        list_filename (`str`): path and name of the existing modflow list file
-        flx_filename (`str`, optional): output filename that will contain the budget flux
-            observations. Default is "flux.dat"
-        vol_filename (`str`, optional): output filename that will contain the budget volume
-            observations.  Default is "vol.dat"
-        start_datetime (`str`, optional): a string that can be parsed into a pandas.TimeStamp.
-            This is used to give budget observations meaningful names.  Default is "1-1-1970".
-        prefix (`str`, optional): a prefix to add to the water budget observations.  Useful if
-            processing more than one list file as part of the forward run process. Default is ''.
-        save_setup_file (`bool`): a flag to save _setup_<list_filename>.csv file that contains useful
-            control file information
+    Args:
+         list_filename (`str`): path and name of the existing modflow list file
+         flx_filename (`str`, optional): output filename that will contain the
+             budget flux observations. Default is "flux.dat"
+         vol_filename (`str`, optional): output filename that will contain the
+             budget volume observations.  Default is "vol.dat"
+         start_datetime (`str`, optional): a string that can be parsed into a
+             pandas.TimeStamp. This is used to give budget observations
+             meaningful names.  Default is "1-1-1970".
+         times (`np.ndarray`-like or `str`, optional): An array of times to
+             extract from the budget dataframes returned by the flopy
+             MfListBudget(list_filename).get_dataframe() method. This can be
+             useful to ensure consistent observation times for PEST.
+             If type `str`, will assume `times=filename` and attempt to read
+             single vector (no header or index) from file, parsing datetime
+             using pandas. Array needs to be alignable with index of dataframe
+             return by flopy method, care should be take to ensure that
+             this is the case. If setup with `setup_mflist_budget_obs()`
+             specifying `specify_times` argument `times` should be set to
+             "budget_times.config".
 
-    Note:
-        this is the companion function of `gw_utils.setup_mflist_budget_obs()`.
+     Note:
+         this is the companion function of `gw_utils.setup_mflist_budget_obs()`.
 
-    Returns:
-        tuple containing
+     Returns:
+         tuple containing
 
 
-        - **pandas.DataFrame**: a dataframe with flux budget information
-        - **pandas.DataFrame**: a dataframe with cumulative budget information
+         - **pandas.DataFrame**: a dataframe with flux budget information
+         - **pandas.DataFrame**: a dataframe with cumulative budget information
 
     """
     try:
@@ -464,15 +487,26 @@ def apply_mflist_budget_obs(
         raise Exception("error import flopy: {0}".format(str(e)))
     mlf = flopy.utils.MfListBudget(list_filename)
     flx, vol = mlf.get_dataframes(start_datetime=start_datetime, diff=True)
+    if times is not None:
+        if isinstance(times, str):
+            if vol.index.tzinfo:
+                parse_date = {"t": [0]}
+                names = [None]
+            else:
+                parse_date = False
+                names = ["t"]
+            times = pd.read_csv(
+                times, header=None, names=names, parse_dates=parse_date
+            )["t"].values
+        flx = flx.loc[times]
+        vol = vol.loc[times]
     flx.to_csv(flx_filename, sep=" ", index_label="datetime", date_format="%Y%m%d")
     vol.to_csv(vol_filename, sep=" ", index_label="datetime", date_format="%Y%m%d")
     return flx, vol
 
 
 def _write_mflist_ins(ins_filename, df, prefix):
-    """ write an instruction file for a MODFLOW list file
-
-    """
+    """write an instruction file for a MODFLOW list file"""
 
     dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
     with open(ins_filename, "w") as f:
@@ -1005,6 +1039,11 @@ def setup_hds_obs(
             hds = flopy.utils.UcnFile(hds_file)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
+    elif text.lower() == "headu":
+        try:
+            hds = flopy.utils.HeadUFile(hds_file, text=text, precision=precision)
+        except Exception as e:
+            raise Exception("error instantiating HeadFile:{0}".format(str(e)))
     else:
         try:
             hds = flopy.utils.HeadFile(hds_file, text=text, precision=precision)
@@ -1032,7 +1071,7 @@ def setup_hds_obs(
         assert kper in kpers, "kper not in hds:{0}".format(kper)
         assert k in range(hds.nlay), "k not in hds:{0}".format(k)
         kstp = last_kstp_from_kper(hds, kper)
-        d = hds.get_data(kstpkper=(kstp, kper))[k, :, :]
+        d = hds.get_data(kstpkper=(kstp, kper))[k]
 
         data["{0}_{1}".format(kper, k)] = d.flatten()
         # data[(kper,k)] = d.flatten()
@@ -1130,15 +1169,17 @@ def setup_hds_obs(
     df.to_csv(setup_file)
     if not include_path:
         hds_file = os.path.split(hds_file)[-1]
-    fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}',precision='{1}',text='{2}')\n".format(
-        hds_file, precision, text
+    fwd_run_line = (
+        "pyemu.gw_utils.apply_hds_obs('{0}',precision='{1}',text='{2}')\n".format(
+            hds_file, precision, text
+        )
     )
     df.index = df.obsnme
     return fwd_run_line, df
 
 
 def last_kstp_from_kper(hds, kper):
-    """ function to find the last time step (kstp) for a
+    """function to find the last time step (kstp) for a
     give stress period (kper) in a modflow head save file.
 
     Args:
@@ -1163,7 +1204,7 @@ def last_kstp_from_kper(hds, kper):
 
 
 def apply_hds_obs(hds_file, inact_abs_val=1.0e20, precision="single", text="head"):
-    """ process a modflow head save file.  A companion function to
+    """process a modflow head save file.  A companion function to
     `gw_utils.setup_hds_obs()` that is called during the forward run process
 
     Args:
@@ -1199,6 +1240,8 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e20, precision="single", text="head
 
     if hds_file.lower().endswith("ucn"):
         hds = flopy.utils.UcnFile(hds_file)
+    elif text.lower() == "headu":
+        hds = flopy.utils.HeadUFile(hds_file)
     else:
         hds = flopy.utils.HeadFile(hds_file, precision=precision, text=text)
     kpers = df.kper.unique()
@@ -1208,11 +1251,22 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e20, precision="single", text="head
         data = hds.get_data(kstpkper=(kstp, kper))
         # jwhite 15jan2018 fix for really large values that are getting some
         # trash added to them...
-        data[np.isnan(data)] = 0.0
-        data[data > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
-        data[data < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
-        df_kper = df.loc[df.kper == kper, :]
-        df.loc[df_kper.index, "obsval"] = data[df_kper.k, df_kper.i, df_kper.j]
+        if text.lower() != "headu":
+            data[np.isnan(data)] = 0.0
+            data[data > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
+            data[data < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
+            df_kper = df.loc[df.kper == kper, :]
+            df.loc[df_kper.index, "obsval"] = data[df_kper.k, df_kper.i, df_kper.j]
+        else:
+
+            df_kper = df.loc[df.kper == kper, :]
+            for k,d in enumerate(data):
+                d[np.isnan(d)] = 0.0
+                d[d > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
+                d[d < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
+                df_kperk = df_kper.loc[df_kper.k==k,:]
+                df.loc[df_kperk.index,"obsval"] = d[df_kperk.i]
+
     assert df.dropna().shape[0] == df.shape[0]
     df.loc[:, ["obsnme", "obsval"]].to_csv(out_file, index=False, sep=" ")
     return df
@@ -1341,8 +1395,9 @@ def apply_sft_obs():
         if not "node" in c:
             df.loc[:, c] = df.loc[:, c].apply(try_cast)
         # print(df.loc[df.loc[:,c].apply(lambda x : type(x) == str),:])
-        df.loc[df.loc[:, c].apply(lambda x: x < 1e-30), c] = 0.0
-        df.loc[df.loc[:, c] > 1e30, c] = 1.0e30
+        if df.dtypes[c] == float:
+            df.loc[df.loc[:, c] < 1e-30, c] = 0.0
+            df.loc[df.loc[:, c] > 1e30, c] = 1.0e30
     df.loc[:, "sfr_node"] = df.sfr_node.apply(np.int)
 
     df.to_csv(sft_file + ".processed", sep=" ", index=False)
@@ -2047,9 +2102,10 @@ def load_sfr_out(sfr_out_file, selection=None):
             selection == "all"
         ), "If string passed as selection only 'all' allowed: " "{}".format(selection)
     else:
-        assert isinstance(selection, pd.DataFrame), (
-            "'selection needs to be pandas Dataframe. "
-            "Type {} passed.".format(type(selection))
+        assert isinstance(
+            selection, pd.DataFrame
+        ), "'selection needs to be pandas Dataframe. " "Type {} passed.".format(
+            type(selection)
         )
         assert np.all(
             [sr in selection.columns for sr in ["segment", "reach"]]
@@ -2573,7 +2629,7 @@ def apply_gage_obs(return_obs_file=False):
 
 
 def apply_hfb_pars(par_file="hfb6_pars.csv"):
-    """ a function to apply HFB multiplier parameters.
+    """a function to apply HFB multiplier parameters.
 
     Args:
         par_file (`str`): the HFB parameter info file.
@@ -2723,16 +2779,16 @@ def write_hfb_zone_multipliers_template(m):
 def write_hfb_template(m):
     """write a template file for an hfb (yuck!)
 
-   Args:
-        m (`flopy.modflow.Modflow`): a model instance with an HFB package
+    Args:
+         m (`flopy.modflow.Modflow`): a model instance with an HFB package
 
-    Returns:
-        tuple containing
+     Returns:
+         tuple containing
 
-        - **str**: name of the template file that was created
+         - **str**: name of the template file that was created
 
-        - **pandas.DataFrame**: a dataframe with use control file info for the
-          HFB parameters
+         - **pandas.DataFrame**: a dataframe with use control file info for the
+           HFB parameters
 
     """
 
@@ -2801,3 +2857,82 @@ def write_hfb_template(m):
     df.loc[:, "parubnd"] = df.parval1.max() * 10.0
     df.loc[:, "parlbnd"] = df.parval1.min() * 0.1
     return tpl_file, df
+
+
+class GsfReader():
+    '''
+    a helper class to read a standard modflow-usg gsf file
+
+    Args:
+        gsffilename (`str`): filename
+
+
+
+    '''
+
+    def __init__(self, gsffilename):
+
+        with open(gsffilename, 'r') as f:
+            self.read_data = f.readlines()
+
+        self.nnode, self.nlay, self.iz, self.ic = [int(n) for n in self.read_data[1].split()]
+
+        self.nvertex = int(self.read_data[2])
+
+    def get_vertex_coordinates(self):
+        '''
+
+
+        Returns:
+            Dictionary containing list of x, y and z coordinates for each vertex
+        '''
+        # vdata = self.read_data[3:self.nvertex+3]
+        vertex_coords = {}
+        for vert in range(self.nvertex):
+            x, y, z = self.read_data[3 + vert].split()
+            vertex_coords[vert + 1] = [float(x), float(y), float(z)]
+        return vertex_coords
+
+    def get_node_data(self):
+        '''
+
+        Returns:
+            nodedf: a pd.DataFrame containing Node information; Node, X, Y, Z, layer, numverts, vertidx
+
+        '''
+
+        node_data = []
+        for node in range(self.nnode):
+            nid, x, y, z, lay, numverts = self.read_data[self.nvertex + 3 + node].split()[:6]
+
+            # vertidx = {'ivertex': [int(n) for n in self.read_data[self.nvertex+3 + node].split()[6:]]}
+            vertidx = [int(n) for n in self.read_data[self.nvertex + 3 + node].split()[6:]]
+
+            node_data.append([int(nid), float(x), float(y), float(z), int(lay), int(numverts), vertidx])
+
+        nodedf = pd.DataFrame(node_data, columns=['node', 'x', 'y', 'z', 'layer', 'numverts', 'vertidx'])
+        return nodedf
+
+    def get_node_coordinates(self, zcoord=False, zero_based=False):
+        '''
+        Args:
+            zcoord (`bool`): flag to add z coord to coordinates.  Default is False
+            zero_based (`bool`): flag to subtract one from the node numbers in the returned
+                node_coords dict.  This is needed to support PstFrom.  Default is False
+
+
+        Returns:
+            node_coords: Dictionary containing x and y coordinates for each node
+        '''
+        node_coords = {}
+        for node in range(self.nnode):
+            nid, x, y, z, lay, numverts = self.read_data[self.nvertex + 3 + node].split()[:6]
+            nid = int(nid)
+            if zero_based:
+                nid -= 1
+            node_coords[nid] = [float(x), float(y)]
+            if zcoord:
+                node_coords[nid] += [float(z)]
+
+        return node_coords
+

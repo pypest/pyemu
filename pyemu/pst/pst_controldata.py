@@ -61,7 +61,7 @@ REG_DEFAULT_LINES = """   1.0e-10    1.05e-10  0.1  nomemsave
 
 
 class RegData(object):
-    """ an object that encapsulates the regularization section
+    """an object that encapsulates the regularization section
     of the PEST control file
 
     """
@@ -81,7 +81,7 @@ class RegData(object):
         self.should_write = ["phimlim", "phimaccept", "fracphim", "wfinit"]
 
     def write(self, f):
-        """ write the regularization section to an open
+        """write the regularization section to an open
         file handle
 
         Args:
@@ -134,20 +134,20 @@ class SvdData(object):
         self.eigwrite = kwargs.pop("eigwrite", 1)
 
     def write_keyword(self, f):
-        """ write an SVD section to a file handle using
+        """write an SVD section to a file handle using
         keyword-style format
 
                 Args:
                     f (`file handle`): open file handle for writing
 
-                """
+        """
         f.write("{0:30} {1:>10}\n".format("svdmode", self.svdmode))
         f.write("{0:30} {1:>10}\n".format("maxsing", self.maxsing))
         f.write("{0:30} {1:>10}\n".format("eigthresh", self.eigthresh))
         f.write("{0:30} {1:>10}\n".format("eigwrite", self.eigwrite))
 
     def write(self, f):
-        """ write an SVD section to a file handle
+        """write an SVD section to a file handle
 
         Args:
             f (`file handle`): open file handle for writing
@@ -159,7 +159,7 @@ class SvdData(object):
         f.write("{0}\n".format(self.eigwrite))
 
     def parse_values_from_lines(self, lines):
-        """ parse values from lines of the SVD section of
+        """parse values from lines of the SVD section of
         a PEST control file
 
         Args:
@@ -167,9 +167,10 @@ class SvdData(object):
 
 
         """
-        assert len(lines) == 3, (
-            "SvdData.parse_values_from_lines: expected "
-            + "3 lines, not {0}".format(len(lines))
+        assert (
+            len(lines) == 3
+        ), "SvdData.parse_values_from_lines: expected " + "3 lines, not {0}".format(
+            len(lines)
         )
         try:
             self.svdmode = int(lines[0].strip().split()[0])
@@ -193,12 +194,13 @@ class SvdData(object):
         #     self.eigwrite = int(lines[2].strip())
         # except Exception as e:
         #     raise Exception("SvdData.parse_values_from_lines: error parsing" + \
+
         #                     " eigwrite from line {0}: {1} \n".format(lines[2],str(e)))
         self.eigwrite = lines[2].strip()
 
 
 class ControlData(object):
-    """ an object that encapsulates the control data section
+    """an object that encapsulates the control data section
      of the PEST control file
 
     Notes:
@@ -240,6 +242,7 @@ class ControlData(object):
         counters = ["npar", "nobs", "npargp", "nobsgp", "nprior", "ntplfle", "ninsfle"]
         super(ControlData, self).__setattr__("counters", counters)
         # self.keyword_accessed = ["pestmode","noptmax"]
+        super(ControlData, self).__setattr__("passed_options", {})
 
     def __setattr__(self, key, value):
         if key == "_df":
@@ -259,8 +262,8 @@ class ControlData(object):
 
     @staticmethod
     def get_dataframe():
-        """ get a generic (default) control section as a dataframe
-        
+        """get a generic (default) control section as a dataframe
+
         Returns:
 
             `pandas.DataFrame`: a dataframe of control data information
@@ -289,6 +292,7 @@ class ControlData(object):
                 "value": cast_defaults,
                 "required": required,
                 "format": formats,
+                "passed": False,
             }
         )
 
@@ -310,14 +314,16 @@ class ControlData(object):
         return v, t, f
 
     def parse_values_from_lines(self, lines, iskeyword=False):
-        """ cast the string lines for a pest control file into actual inputs
+        """cast the string lines for a pest control file into actual inputs
 
         Args:
             lines ([`str`]): raw ASCII lines from pest control file
 
         """
-
+        self._df.loc[:, "passed"] = False
         if iskeyword:
+            #self._df.loc[:, "passed"] = True
+
             extra = {}
             for line in lines:
                 raw = line.strip().split()
@@ -336,6 +342,7 @@ class ControlData(object):
                         # if a float was expected and int return, not a problem
                         if t == np.int32 and self._df.loc[name, "type"] == np.float64:
                             self._df.loc[name, "value"] = np.float64(v)
+                            self._df.loc[name, "passed"] = True
 
                         # if this is a required input, throw
                         elif self._df.loc[name, "required"]:
@@ -351,6 +358,7 @@ class ControlData(object):
                                     if t == self._df.loc[nname, "type"]:
                                         self._df.loc[nname, "value"] = v
                                         found = True
+                                        self._df.loc[nname, "passed"] = True
                                         break
                             if not found:
                                 warnings.warn(
@@ -364,11 +372,13 @@ class ControlData(object):
 
                     else:
                         self._df.loc[name, "value"] = v
+                        self._df.loc[name, "passed"] = True
             return extra
 
-        assert len(lines) == len(CONTROL_VARIABLE_LINES), (
-            "ControlData error: len of lines not equal to "
-            + str(len(CONTROL_VARIABLE_LINES))
+        assert len(lines) == len(
+            CONTROL_VARIABLE_LINES
+        ), "ControlData error: len of lines not equal to " + str(
+            len(CONTROL_VARIABLE_LINES)
         )
 
         for iline, line in enumerate(lines):
@@ -376,6 +386,7 @@ class ControlData(object):
             names = CONTROL_VARIABLE_LINES[iline].strip().split()
             for name, val in zip(names, vals):
                 v, t, f = self._parse_value(val)
+
                 name = name.replace("[", "").replace("]", "")
 
                 # if the parsed values type isn't right
@@ -384,6 +395,7 @@ class ControlData(object):
                     # if a float was expected and int return, not a problem
                     if t == np.int32 and self._df.loc[name, "type"] == np.float64:
                         self._df.loc[name, "value"] = np.float64(v)
+                        #self._df.loc[name, "passed"] = True
 
                     # if this is a required input, throw
                     elif self._df.loc[name, "required"]:
@@ -399,6 +411,7 @@ class ControlData(object):
                                 if t == self._df.loc[nname, "type"]:
                                     self._df.loc[nname, "value"] = v
                                     found = True
+                                    #self._df.loc[nname, "passed"] = True
                                     break
                         if not found:
                             warnings.warn(
@@ -412,6 +425,8 @@ class ControlData(object):
 
                 else:
                     self._df.loc[name, "value"] = v
+                    #self._df.loc[name, "passed"] = True
+
         return {}
 
     def copy(self):
@@ -421,16 +436,19 @@ class ControlData(object):
 
     @property
     def formatted_values(self):
-        """ list the entries and current values in the control data section
+        """list the entries and current values in the control data section
 
         Returns:
             pandas.Series:  formatted_values for the control data entries
 
         """
+        # passed_df = self._df.copy()
+        # blank = passed_df.apply(lambda x: x.type==str and x.passed==False,axis=1)
+        # passed_df.loc[blank,"value"] = ""
         return self._df.apply(lambda x: self.formatters[x["type"]](x["value"]), axis=1)
 
     def write_keyword(self, f):
-        """ write the control data entries to an open file handle
+        """write the control data entries to an open file handle
         using keyword-style format.
 
         Args:
@@ -444,12 +462,15 @@ class ControlData(object):
         f.write("* control data keyword\n")
         for n, v in zip(self._df.name, self.formatted_values):
             if n not in kw:
-                continue
+                if n not in self._df.index:
+                    continue
+                elif not self._df.loc[n, "passed"]:
+                    continue
             f.write("{0:30} {1}\n".format(n, v))
 
     def write(self, f):
-        """ write control data section to a file
-        
+        """write control data section to a file
+
         Args:
             f (file handle): open file handle to write to
 
@@ -462,5 +483,7 @@ class ControlData(object):
             [
                 f.write(self.formatted_values[name.replace("[", "").replace("]", "")])
                 for name in line.split()
+                if self._df.loc[name.replace("[", "").replace("]", ""), "passed"]
+                == True or self._df.loc[name.replace("[", "").replace("]", ""), "required"] == True
             ]
             f.write("\n")

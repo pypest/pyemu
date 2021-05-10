@@ -4,19 +4,21 @@ pyEMU
 python modules for model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) uncertainty analyses and data-worth analyses, non-linear uncertainty analyses and interfacing with PEST and PEST++.  pyEMU also has a pure python (pandas and numpy) implementation of ordinary kriging for geostatistical interpolation and support for generating high-dimensional PEST(++) model interfaces, including support for (very) high-dimensional ensemble generation and handling   
 
 Master branch:
+[![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=master)](https://github.com/pypest/pyemu/actions)
 [![Travis Status](https://travis-ci.org/pypest/pyemu.svg?branch=master)](https://travis-ci.org/pypest/pyemu)
 [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/pypest/pyemu?branch=master&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=master)](https://coveralls.io/github/pypest/pyemu?branch=master)
 
 Develop branch:
-[![Travis Status](https://travis-ci.org/pypest/pyemu.svg?branch=develop)](https://travis-ci.org/pypest/pyemu)
-[![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/pypest/pyemu?branch=develop&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
+[![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=develop)](https://github.com/pypest/pyemu/actions)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/pypest/pyemu?branch=develop)
 
-Read the docs
+Documentation
 =============
 
-[https://pypest.github.io/pyemudoc/](https://pypest.github.io/pyemudoc)
+Complete user's guide:
+
+[https://pyemu.readthedocs.io/en/latest/](https://pyemu.readthedocs.io/en/latest/)
 
 The pyEMU documentation is being treated as a first-class citizen!  Also see the example notebooks in the repo.
 
@@ -51,6 +53,7 @@ Version 0.9 includes
 A publication documenting pyEMU and an example application can be found here:
 
 [http://dx.doi.org/10.1016/j.envsoft.2016.08.017](http://dx.doi.org/10.1016/j.envsoft.2016.08.017)
+
 
 Funding
 =======

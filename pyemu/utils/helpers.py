@@ -21,6 +21,7 @@ import pandas as pd
 pd.options.display.max_colwidth = 100
 from ..pyemu_warnings import PyemuWarning
 
+
 try:
     import flopy
 except:
@@ -168,19 +169,22 @@ def geostatistical_draws(
 
                 if verbose:
                     print("getting diag var cov", df_zone.shape[0])
-                # tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
-                tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
-
+                
+                #tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
                 if verbose:
                     print("scaling full cov by diag var cov")
-                # cov.x *= tpl_var
-                for i in range(cov.shape[0]):
-                    cov.x[i, :] *= tpl_var
+                
+                # for i in range(cov.shape[0]):
+                #     cov.x[i, :] *= tpl_var
+                for i,name in enumerate(cov.row_names):
+                    #print(name,full_cov_dict[name])
+                    cov.x[:,i] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, :] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, i] = full_cov_dict[name]
                 # no fixed values here
                 pe = pyemu.ParameterEnsemble.from_gaussian_draw(
                     pst=pst, cov=cov, num_reals=num_reals, by_groups=False, fill=False
                 )
-                # df = pe.iloc[:,:]
                 par_ens.append(pe._df)
                 pars_in_cov.update(set(pe.columns))
 
@@ -321,15 +325,17 @@ def geostatistical_prior_builder(
                 # find the variance in the diagonal cov
                 if verbose:
                     print("getting diag var cov", df_zone.shape[0])
-                # tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
-                tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
-                # if np.std(tpl_var) > 1.0e-6:
-                #    warnings.warn("pars have different ranges" +\
-                #                  " , using max range as variance for all pars")
-                # tpl_var = tpl_var.max()
+
+                #tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
+
                 if verbose:
                     print("scaling full cov by diag var cov")
-                cov *= tpl_var
+
+                #cov *= tpl_var
+                for i,name in enumerate(cov.row_names):
+                    cov.x[:,i] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, :] *= np.sqrt(full_cov_dict[name])
+                    cov.x[i, i] = full_cov_dict[name]
                 if verbose:
                     print("test for inversion")
                 try:
@@ -367,17 +373,17 @@ def calc_observation_ensemble_quantiles(
 ):
     """Given an observation ensemble, and requested quantiles, this function calculates the requested
        quantile point-by-point in the ensemble. This resulting set of values does not, however, correspond
-       to a single realization in the ensemble. So, this function finds the minimum weighted squared 
+       to a single realization in the ensemble. So, this function finds the minimum weighted squared
        distance to the quantile and labels it in the ensemble. Also indicates which realizations
        correspond to the selected quantiles.
 
     Args:
-        ens (pandas DataFrame): DataFrame read from an observation 
+        ens (pandas DataFrame): DataFrame read from an observation
         pst (pyemy.Pst object) - needed to obtain observation weights
         quantiles (iterable): quantiles ranging from 0-1.0 for which results requested
         subset_obsnames (iterable): list of observation names to include in calculations
         subset_obsgroups (iterable): list of observation groups to include in calculations
-        
+
     Returns:
         ens (pandas DataFrame): same ens object that was input but with quantile realizations
                             appended as new rows labelled with 'q_#' where '#' is the slected quantile
@@ -465,12 +471,12 @@ def calc_rmse_ensemble(ens, pst, bygroups=True, subset_realizations=None):
     """Calculates RMSE (without weights) to quantify fit to observations for ensemble members
 
     Args:
-        ens (pandas DataFrame): DataFrame read from an observation 
+        ens (pandas DataFrame): DataFrame read from an observation
         pst (pyemy.Pst object) - needed to obtain observation weights
         bygroups (Bool): Flag to summarize by groups or not. Defaults to True.
         subset_realizations (iterable, optional): Subset of realizations for which
                 to report RMSE. Defaults to None which returns all realizations.
-                
+
     Returns:
         rmse (pandas DataFrame object): rows are realizations. Columns are groups. Content is RMSE
     """
@@ -510,43 +516,49 @@ def calc_rmse_ensemble(ens, pst, bygroups=True, subset_realizations=None):
     return rmse
 
 
-def _condition_on_par_knowledge(cov, par_knowledge_dict):
-    """  experimental function to include conditional prior information
-    for one or more parameters in a full covariance matrix
+def _condition_on_par_knowledge(cov, var_knowledge_dict):
+    """experimental function to condition a covariance matrix with the variances of new information.
+
+    Args:
+        cov (`pyemu.Cov`): prior covariance matrix
+        var_knowledge_dict (`dict`): a dictionary of covariance entries and variances
+
+    Returns:
+        cov (`pyemu.Cov`): the conditional covariance matrix
+
     """
 
     missing = []
-    for parnme in par_knowledge_dict.keys():
-        if parnme not in cov.row_names:
-            missing.append(parnme)
+    for name in var_knowledge_dict.keys():
+        if name not in cov.row_names:
+            missing.append(name)
     if len(missing):
         raise Exception(
-            "par knowledge dict parameters not found: {0}".format(",".join(missing))
+            "var knowledge dict entries not found: {0}".format(",".join(missing))
         )
-    # build the selection matrix and sigma epsilon
-    # sel = pyemu.Cov(x=np.identity(cov.shape[0]),names=cov.row_names)
-    sel = cov.zero2d
-    sel = cov.to_pearson()
-    new_cov_diag = pyemu.Cov(x=np.diag(cov.as_2d.diagonal()), names=cov.row_names)
-    # new_cov_diag = cov.zero2d
+    if cov.isdiagonal:
+        raise Exception("_condition_on_par_knowledge(): cov is diagonal, simply update the par variances")
+    know_names = list(var_knowledge_dict.keys())
+    know_names.sort()
+    know_cross_cov = cov.get(cov.row_names,know_names)
 
-    for parnme, var in par_knowledge_dict.items():
-        idx = cov.row_names.index(parnme)
-        # sel.x[idx,:] = 1.0
-        # sel.x[idx,idx] = var
-        new_cov_diag.x[idx, idx] = var  # cov.x[idx,idx]
-    new_cov_diag = sel * new_cov_diag * sel.T
+    know_cov = cov.get(know_names,know_names)
+    # add the par knowledge to the diagonal of know_cov
+    for i,name in enumerate(know_names):
+        know_cov.x[i,i] += var_knowledge_dict[name]
 
-    for _ in range(2):
-        for parnme, var in par_knowledge_dict.items():
-            idx = cov.row_names.index(parnme)
-            # sel.x[idx,:] = 1.0
-            # sel.x[idx,idx] = var
-            new_cov_diag.x[idx, idx] = var  # cov.x[idx,idx]
-        new_cov_diag = sel * new_cov_diag * sel.T
+    # kalman gain
+    k_gain = know_cross_cov * know_cov.inv
+    #selection matrix
+    h = k_gain.zero2d.T
+    know_dict = {n:i for i,n in enumerate(know_names)}
+    for i,name in enumerate(cov.row_names):
+        if name in know_dict:
+            h.x[know_dict[name],i] = 1.0
 
-    print(new_cov_diag)
-    return new_cov_diag
+    prod = k_gain * h
+    conditional_cov = (prod.identity - prod) * cov
+    return conditional_cov
 
 
 def kl_setup(
@@ -697,7 +709,7 @@ def _eigen_basis_to_factor_file(nrow, ncol, basis, factors_file, islog=True):
 
 
 def kl_apply(par_file, basis_file, par_to_file_dict, arr_shape):
-    """ Apply a KL parameterization transform from basis factors to model
+    """Apply a KL parameterization transform from basis factors to model
     input arrays.
 
     Args:
@@ -1074,7 +1086,7 @@ def read_pestpp_runstorage(filename, irun=0, with_metadata=False):
 
 
 def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
-    """ read pars and obs from a pest++ serialized run storage
+    """read pars and obs from a pest++ serialized run storage
     file (e.g., .rnj) and return jacobian matrix instance
 
     Args:
@@ -1156,7 +1168,7 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
 
 
 def parse_dir_for_io_files(d, prepend_path=False):
-    """ find template/input file pairs and instruction file/output file
+    """find template/input file pairs and instruction file/output file
     pairs by extension.
 
     Args:
@@ -1197,7 +1209,7 @@ def parse_dir_for_io_files(d, prepend_path=False):
 def pst_from_io_files(
     tpl_files, in_files, ins_files, out_files, pst_filename=None, pst_path=None
 ):
-    """ create a Pst instance from model interface files.
+    """create a Pst instance from model interface files.
 
     Args:
         tpl_files ([`str`]): list of template file names
@@ -1267,31 +1279,41 @@ def pst_from_io_files(
     if "window" in platform.platform().lower() and pst_path == ".":
         pst_path = ""
 
-    new_pst.instruction_files = ins_files
-    new_pst.output_files = out_files
+    # new_pst.instruction_files = ins_files
+    # new_pst.output_files = out_files
+    new_pst.model_output_data = pd.DataFrame(
+        {"pest_file": ins_files, "model_file": out_files}, index=ins_files
+    )
 
     # try to run inschek to find the observtion values
+    # do this here with full paths to files
     pyemu.pst_utils.try_process_output_pst(new_pst)
-    if pst_path is None:
-        new_pst.template_files = tpl_files
-        new_pst.input_files = in_files
-    else:
-        new_pst.template_files = [
+
+    if pst_path is not None:
+        tpl_files = [
             os.path.join(pst_path, os.path.split(tpl_file)[-1])
             for tpl_file in tpl_files
         ]
-        new_pst.input_files = [
+        in_files = [
             os.path.join(pst_path, os.path.split(in_file)[-1]) for in_file in in_files
         ]
         # now set the true path location to instruction files and output files
-        new_pst.instruction_files = [
+        ins_files = [
             os.path.join(pst_path, os.path.split(ins_file)[-1])
             for ins_file in ins_files
         ]
-        new_pst.output_files = [
+        out_files = [
             os.path.join(pst_path, os.path.split(out_file)[-1])
             for out_file in out_files
         ]
+
+    new_pst.model_input_data = pd.DataFrame(
+        {"pest_file": tpl_files, "model_file": in_files}, index=tpl_files
+    )
+
+    new_pst.model_output_data = pd.DataFrame(
+        {"pest_file": ins_files, "model_file": out_files}, index=ins_files
+    )
 
     new_pst.try_parse_name_metadata()
     if pst_filename:
@@ -1313,7 +1335,7 @@ wildass_guess_par_bounds_dict = {
 
 
 class PstFromFlopyModel(object):
-    """ a monster helper class to setup a complex PEST interface around
+    """a monster helper class to setup a complex PEST interface around
     an existing MODFLOW-2005-family model.
 
 
@@ -1827,9 +1849,7 @@ class PstFromFlopyModel(object):
             warnings.warn("No sfr parameters have been set up!", PyemuWarning)
 
     def _setup_hfb_pars(self):
-        """setup non-mult parameters for hfb (yuck!)
-
-        """
+        """setup non-mult parameters for hfb (yuck!)"""
         if self.m.hfb6 is None:
             self.logger.lraise("couldn't find hfb pak")
         tpl_file, df = pyemu.gw_utils.write_hfb_template(self.m)
@@ -1839,7 +1859,7 @@ class PstFromFlopyModel(object):
         self.par_dfs["hfb"] = df
 
     def _setup_mult_dirs(self):
-        """ setup the directories to use for multiplier parameterization.  Directories
+        """setup the directories to use for multiplier parameterization.  Directories
         are make within the PstFromFlopyModel.m.model_ws directory
 
         """
@@ -1874,7 +1894,7 @@ class PstFromFlopyModel(object):
             self.log("setting up '{0}' dir".format(d))
 
     def _setup_model(self, model, org_model_ws, new_model_ws):
-        """ setup the flopy.mbase instance for use with multipler parameters.
+        """setup the flopy.mbase instance for use with multipler parameters.
         Changes model_ws, sets external_path and writes new MODFLOW input
         files
 
@@ -1925,9 +1945,7 @@ class PstFromFlopyModel(object):
         self.log("writing new modflow input files")
 
     def _get_count(self, name):
-        """ get the latest counter for a certain parameter type.
-
-        """
+        """get the latest counter for a certain parameter type."""
         if name not in self.mlt_counter:
             self.mlt_counter[name] = 1
             c = 0
@@ -1938,7 +1956,7 @@ class PstFromFlopyModel(object):
         return c
 
     def _prep_mlt_arrays(self):
-        """  prepare multipler arrays.  Copies existing model input arrays and
+        """prepare multipler arrays.  Copies existing model input arrays and
         writes generic (ones) multiplier arrays
 
         """
@@ -2024,7 +2042,7 @@ class PstFromFlopyModel(object):
             return mlt_df
 
     def _write_u2d(self, u2d):
-        """ write a flopy.utils.Util2D instance to an ASCII text file using the
+        """write a flopy.utils.Util2D instance to an ASCII text file using the
         Util2D filename
 
         """
@@ -2037,9 +2055,7 @@ class PstFromFlopyModel(object):
         return filename
 
     def _write_const_tpl(self, name, tpl_file, zn_array):
-        """ write a template file a for a constant (uniform) multiplier parameter
-
-        """
+        """write a template file a for a constant (uniform) multiplier parameter"""
         parnme = []
         with open(os.path.join(self.m.model_ws, tpl_file), "w") as f:
             f.write("ptf ~\n")
@@ -2064,9 +2080,7 @@ class PstFromFlopyModel(object):
         return df
 
     def _write_grid_tpl(self, name, tpl_file, zn_array):
-        """ write a template file a for grid-based multiplier parameters
-
-        """
+        """write a template file a for grid-based multiplier parameters"""
         parnme, x, y = [], [], []
         with open(os.path.join(self.m.model_ws, tpl_file), "w") as f:
             f.write("ptf ~\n")
@@ -2092,9 +2106,7 @@ class PstFromFlopyModel(object):
         return df
 
     def _grid_prep(self):
-        """ prepare grid-based parameterizations
-
-        """
+        """prepare grid-based parameterizations"""
         if len(self.grid_props) == 0:
             return
 
@@ -2112,10 +2124,7 @@ class PstFromFlopyModel(object):
             )
 
     def _pp_prep(self, mlt_df):
-        """ prepare pilot point based parameterization
-
-
-        """
+        """prepare pilot point based parameterization"""
         if len(self.pp_props) == 0:
             return
         if self.pp_space is None:
@@ -2346,14 +2355,16 @@ class PstFromFlopyModel(object):
             pp_file = pp_files.iloc[0]
             mlt_df.loc[mlt_df.mlt_file == out_file, "fac_file"] = fac_file
             mlt_df.loc[mlt_df.mlt_file == out_file, "pp_file"] = pp_file
+            mlt_df.loc[mlt_df.mlt_file == out_file, "pp_fill_value"] = 1.0
+            mlt_df.loc[mlt_df.mlt_file == out_file, "pp_lower_limit"] = 1.0e-10
+            mlt_df.loc[mlt_df.mlt_file == out_file, "pp_upper_limit"] = 1.0e10
+
         self.par_dfs[self.pp_suffix] = pp_df
 
         mlt_df.loc[mlt_df.suffix == self.pp_suffix, "tpl_file"] = np.NaN
 
     def _kl_prep(self, mlt_df):
-        """ prepare KL based parameterizations
-
-        """
+        """prepare KL based parameterizations"""
         if len(self.kl_props) == 0:
             return
 
@@ -2413,6 +2424,9 @@ class PstFromFlopyModel(object):
             mlt_df.loc[mlt_df.prefix == prefix, "fac_file"] = os.path.split(fac_file)[
                 -1
             ]
+            mlt_df.loc[mlt_df.prefix == prefix, "pp_fill_value"] = 1.0
+            mlt_df.loc[mlt_df.prefix == prefix, "pp_lower_limit"] = 1.0e-10
+            mlt_df.loc[mlt_df.prefix == prefix, "pp_upper_limit"] = 1.0e10
 
         print(kl_mlt_df)
         mlt_df.loc[mlt_df.suffix == self.kl_suffix, "tpl_file"] = np.NaN
@@ -2420,9 +2434,7 @@ class PstFromFlopyModel(object):
         # calc factors for each layer
 
     def _setup_array_pars(self):
-        """ main entry point for setting up array multipler parameters
-
-        """
+        """main entry point for setting up array multipler parameters"""
         mlt_df = self._prep_mlt_arrays()
         if mlt_df is None:
             return
@@ -2593,9 +2605,7 @@ class PstFromFlopyModel(object):
         self.frun_pre_lines.append(line)
 
     def _setup_observations(self):
-        """ main entry point for setting up observations
-
-        """
+        """main entry point for setting up observations"""
         obs_methods = [
             self._setup_water_budget_obs,
             self._setup_hyd,
@@ -2620,7 +2630,7 @@ class PstFromFlopyModel(object):
 
     def draw(self, num_reals=100, sigma_range=6, use_specsim=False, scale_offset=True):
 
-        """ draw from the geostatistically-implied parameter covariance matrix
+        """draw from the geostatistically-implied parameter covariance matrix
 
         Args:
             num_reals (`int`): number of realizations to generate. Default is 100
@@ -2734,7 +2744,7 @@ class PstFromFlopyModel(object):
     def build_prior(
         self, fmt="ascii", filename=None, droptol=None, chunk=None, sigma_range=6
     ):
-        """ build and optionally save the prior parameter covariance matrix.
+        """build and optionally save the prior parameter covariance matrix.
 
         Args:
             fmt (`str`, optional): the format to save the cov matrix.  Options are "ascii","binary","uncfile", "coo".
@@ -2838,7 +2848,7 @@ class PstFromFlopyModel(object):
         return cov
 
     def build_pst(self, filename=None):
-        """ build the pest control file using the parameters and
+        """build the pest control file using the parameters and
         observations.
 
         Args:
@@ -2955,7 +2965,7 @@ class PstFromFlopyModel(object):
         self.log("running pestchek on {0}".format(self.pst_name))
 
     def _add_external(self):
-        """ add external (existing) template files and/or instruction files to the
+        """add external (existing) template files and/or instruction files to the
         Pst instance
 
         """
@@ -3003,7 +3013,7 @@ class PstFromFlopyModel(object):
                     self.logger.warn("obs listed in {0} will have generic values")
 
     def write_forward_run(self):
-        """ write the forward run script forward_run.py
+        """write the forward run script forward_run.py
 
         Note:
             This method can be called repeatedly, especially after any
@@ -3039,8 +3049,7 @@ class PstFromFlopyModel(object):
             f.write("    mp.freeze_support()\n    main()\n\n")
 
     def _parse_k(self, k, vals):
-        """ parse the iterable from a property or boundary condition argument
-        """
+        """parse the iterable from a property or boundary condition argument"""
         try:
             k = int(k)
         except:
@@ -3058,7 +3067,7 @@ class PstFromFlopyModel(object):
             return k_vals
 
     def _parse_pakattr(self, pakattr):
-        """ parse package-iterable pairs from a property or boundary condition
+        """parse package-iterable pairs from a property or boundary condition
         argument
 
         """
@@ -3106,10 +3115,10 @@ class PstFromFlopyModel(object):
             self.logger.lraise("unrecognized attr:{0}".format(attrname))
 
     def _setup_list_pars(self):
-        """ main entry point for setting up list multiplier
-                parameters
+        """main entry point for setting up list multiplier
+        parameters
 
-                """
+        """
         tdf = self._setup_temporal_list_pars()
         sdf = self._setup_spatial_list_pars()
         if tdf is None and sdf is None:
@@ -3398,7 +3407,7 @@ class PstFromFlopyModel(object):
         return True
 
     def _list_helper(self, k, pak, attr, col):
-        """ helper to setup list multiplier parameters for a given
+        """helper to setup list multiplier parameters for a given
         k, pak, attr set.
 
         """
@@ -3415,7 +3424,7 @@ class PstFromFlopyModel(object):
         return filename_model
 
     def _setup_hds(self):
-        """ setup modflow head save file observations for given kper (zero-based
+        """setup modflow head save file observations for given kper (zero-based
         stress period index) and k (zero-based layer index) pairs using the
         kperk argument.
 
@@ -3466,9 +3475,7 @@ class PstFromFlopyModel(object):
         self.tmp_files.append(hds_file)
 
     def _setup_smp(self):
-        """ setup observations from PEST-style SMP file pairs
-
-        """
+        """setup observations from PEST-style SMP file pairs"""
         if self.obssim_smp_pairs is None:
             return
         if len(self.obssim_smp_pairs) == 2:
@@ -3487,8 +3494,7 @@ class PstFromFlopyModel(object):
             pyemu.smp_utils.smp_to_ins(new_sim_smp)
 
     def _setup_hob(self):
-        """ setup observations from the MODFLOW HOB package
-        """
+        """setup observations from the MODFLOW HOB package"""
 
         if self.m.hob is None:
             return
@@ -3511,8 +3517,7 @@ class PstFromFlopyModel(object):
         self.tmp_files.append(os.path.split(hob_out_fname))
 
     def _setup_hyd(self):
-        """ setup observations from the MODFLOW HYDMOD package
-        """
+        """setup observations from the MODFLOW HYDMOD package"""
         if self.m.hyd is None:
             return
         if self.mfhyd:
@@ -3537,7 +3542,7 @@ class PstFromFlopyModel(object):
             self.tmp_files.append(os.path.split(new_hyd_out)[-1])
 
     def _setup_water_budget_obs(self):
-        """ setup observations from the MODFLOW list file for
+        """setup observations from the MODFLOW list file for
         volume and flux water buget information
 
         """
@@ -3578,15 +3583,15 @@ class PstFromFlopyModel(object):
 
 
 def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
-    """ Apply multiplier parameters to list and array style model files
-    
+    """Apply multiplier parameters to list and array style model files
+
     Args:
         arr_par_file (str):
         chunk_len (`int`): the number of files to process per multiprocessing
             chunk in appl_array_pars().  default is 50.
 
     Returns:
-        
+
     Note:
         Used to implement the parameterization constructed by
         PstFrom during a forward run
@@ -3602,7 +3607,7 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     list_pars["lower_bound"] = list_pars.lower_bound.apply(lambda x: literal_eval(x))
     list_pars["upper_bound"] = list_pars.upper_bound.apply(lambda x: literal_eval(x))
     # TODO check use_cols is always present
-    apply_genericlist_pars(list_pars)
+    apply_genericlist_pars(list_pars, chunk_len=chunk_len)
     apply_array_pars(arr_pars, chunk_len=chunk_len)
 
 
@@ -3612,13 +3617,13 @@ def _process_chunk_fac2real(chunk, i):
     print("process", i, " processed ", len(chunk), "fac2real calls")
 
 
-def _process_chunk_model_files(chunk, i, df):
+def _process_chunk_array_files(chunk, i, df):
     for model_file in chunk:
-        _process_model_file(model_file, df)
-    print("process", i, " processed ", len(chunk), "process_model_file calls")
+        _process_array_file(model_file, df)
+    print("process", i, " processed ", len(chunk), "process_array_file calls")
 
 
-def _process_model_file(model_file, df):
+def _process_array_file(model_file, df):
     # find all mults that need to be applied to this array
     df_mf = df.loc[df.model_file == model_file, :]
     results = []
@@ -3627,49 +3632,50 @@ def _process_model_file(model_file, df):
         raise Exception("wrong number of org_files for {0}".format(model_file))
     org_arr = np.loadtxt(org_file[0])
 
-    for mlt in df_mf.mlt_file:
-        if pd.isna(mlt):
-            continue
-        mlt_data = np.loadtxt(mlt)
-        if org_arr.shape != mlt_data.shape:
-            raise Exception(
-                "shape of org file {}:{} differs from mlt file {}:{}".format(
-                    org_file, org_arr.shape, mlt, mlt_data.shape
+    if "mlt_file" in df_mf.columns:
+        for mlt in df_mf.mlt_file:
+            if pd.isna(mlt):
+                continue
+            mlt_data = np.loadtxt(mlt)
+            if org_arr.shape != mlt_data.shape:
+                raise Exception(
+                    "shape of org file {}:{} differs from mlt file {}:{}".format(
+                        org_file, org_arr.shape, mlt, mlt_data.shape
+                    )
                 )
-            )
-        org_arr *= np.loadtxt(mlt)
-    if "upper_bound" in df.columns:
-        ub_vals = df_mf.upper_bound.value_counts().dropna().to_dict()
-        if len(ub_vals) == 0:
-            pass
-        elif len(ub_vals) > 1:
-            print(ub_vals)
-            raise Exception("different upper bound values for {0}".format(org_file))
-        else:
-            ub = float(list(ub_vals.keys())[0])
-            org_arr[org_arr > ub] = ub
-    if "lower_bound" in df.columns:
-        lb_vals = df_mf.lower_bound.value_counts().dropna().to_dict()
-        if len(lb_vals) == 0:
-            pass
-        elif len(lb_vals) > 1:
-            raise Exception("different lower bound values for {0}".format(org_file))
-        else:
-            lb = float(list(lb_vals.keys())[0])
-            org_arr[org_arr < lb] = lb
+            org_arr *= np.loadtxt(mlt)
+        if "upper_bound" in df.columns:
+            ub_vals = df_mf.upper_bound.value_counts().dropna().to_dict()
+            if len(ub_vals) == 0:
+                pass
+            elif len(ub_vals) > 1:
+                print(ub_vals)
+                raise Exception("different upper bound values for {0}".format(org_file))
+            else:
+                ub = float(list(ub_vals.keys())[0])
+                org_arr[org_arr > ub] = ub
+        if "lower_bound" in df.columns:
+            lb_vals = df_mf.lower_bound.value_counts().dropna().to_dict()
+            if len(lb_vals) == 0:
+                pass
+            elif len(lb_vals) > 1:
+                raise Exception("different lower bound values for {0}".format(org_file))
+            else:
+                lb = float(list(lb_vals.keys())[0])
+                org_arr[org_arr < lb] = lb
 
     np.savetxt(model_file, np.atleast_2d(org_arr), fmt="%15.6E", delimiter="")
 
 
 def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
-    """ a function to apply array-based multipler parameters.
+    """a function to apply array-based multipler parameters.
 
     Args:
-        arr_par (`str` or `pandas.DataFrame`): if type `str`, 
+        arr_par (`str` or `pandas.DataFrame`): if type `str`,
         path to csv file detailing parameter array multipliers.
             This file can be written by PstFromFlopy.
-        if type `pandas.DataFrame` is Dataframe with columns of 
-        ['mlt_file', 'model_file', 'org_file'] and optionally 
+        if type `pandas.DataFrame` is Dataframe with columns of
+        ['mlt_file', 'model_file', 'org_file'] and optionally
         ['pp_file', 'fac_file'].
         chunk_len (`int`) : the number of files to process per chunk
             with multiprocessing - applies to both fac2real and process_
@@ -3715,10 +3721,25 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
 
     if "pp_file" in df.columns:
         print("starting fac2real", datetime.now())
-        pp_df = df.loc[df.pp_file.notna(), ["pp_file", "fac_file", "mlt_file"]].rename(
-            columns={"fac_file": "factors_file", "mlt_file": "out_file"}
+        pp_df = df.loc[
+            df.pp_file.notna(),
+            [
+                "pp_file",
+                "fac_file",
+                "mlt_file",
+                "pp_fill_value",
+                "pp_lower_limit",
+                "pp_upper_limit",
+            ],
+        ].rename(
+            columns={
+                "fac_file": "factors_file",
+                "mlt_file": "out_file",
+                "pp_fill_value": "fill_value",
+                "pp_lower_limit": "lower_lim",
+                "pp_upper_limit": "upper_lim",
+            }
         )
-        pp_df.loc[:, "lower_lim"] = 1.0e-10
         # don't need to process all (e.g. if const. mults apply across kper...)
         pp_args = pp_df.drop_duplicates().to_dict("records")
         num_ppargs = len(pp_args)
@@ -3730,15 +3751,18 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
         )
         remainder = np.array(pp_args)[num_chunk_floor * chunk_len :].tolist()
         chunks = main_chunks + [remainder]
-
-        pool = mp.Pool()
-        x = [
-            pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
-            for i, chunk in enumerate(chunks)
-        ]
-        [xx.get() for xx in x]
-        pool.close()
-        pool.join()
+        print("number of chunks to process:", len(chunks))
+        if len(chunks) == 1:
+            _process_chunk_fac2real(chunks[0], 0)
+        else:
+            pool = mp.Pool()
+            x = [
+                pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
+                for i, chunk in enumerate(chunks)
+            ]
+            [xx.get() for xx in x]
+            pool.close()
+            pool.join()
         # procs = []
         # for chunk in chunks:
         #     p = mp.Process(target=_process_chunk_fac2real, args=[chunk])
@@ -3760,6 +3784,9 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     )  # the list of files broken down into chunks
     remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
     chunks = main_chunks + [remainder]
+    print("number of chunks to process:", len(chunks))
+    if len(chunks) == 1:
+        _process_chunk_array_files(chunks[0], 0, df)
     # procs = []
     # for chunk in chunks:  # now only spawn processor for each chunk
     #     p = mp.Process(target=_process_chunk_model_files, args=[chunk, df])
@@ -3768,19 +3795,20 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     # for p in procs:
     #     r = p.get(False)
     #     p.join()
-    pool = mp.Pool()
-    x = [
-        pool.apply_async(_process_chunk_model_files, args=(chunk, i, df))
-        for i, chunk in enumerate(chunks)
-    ]
-    [xx.get() for xx in x]
-    pool.close()
-    pool.join()
+    else:
+        pool = mp.Pool()
+        x = [
+            pool.apply_async(_process_chunk_array_files, args=(chunk, i, df))
+            for i, chunk in enumerate(chunks)
+        ]
+        [xx.get() for xx in x]
+        pool.close()
+        pool.join()
     print("finished arr mlt", datetime.now())
 
 
 def apply_list_pars():
-    """ a function to apply boundary condition multiplier parameters.
+    """a function to apply boundary condition multiplier parameters.
 
     Note:
         Used to implement the parameterization constructed by
@@ -3910,13 +3938,138 @@ def apply_list_pars():
         )
 
 
-def apply_genericlist_pars(df):
-    """ a function to apply list style mult parameters
-    
+def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv"):
+    """read and generate summary statistics for the resulting model input arrays from
+    applying array par multipliers
+
+    Args:
+        arr_par_file (`str`): the array multiplier key file
+
+    Returns:
+        pd.DataFrame: dataframe of summary stats for each model_file entry
+
+    Note:
+        this function uses an optional "zone_file" column. If multiple zones
+            files are used, then zone arrays are aggregated to a single array
+
+        "dif" values are original array values minus model input array values
+
+    """
+    df = pd.read_csv(arr_par_file, index_col=0)
+    df = df.loc[df.index_cols.isna(), :].copy()
+    if df.shape[0] == 0:
+        return None
+    model_input_files = df.model_file.unique()
+    model_input_files.sort()
+    records = dict()
+    stat_dict = {
+        "mean": np.nanmean,
+        "stdev": np.nanstd,
+        "median": np.nanmedian,
+        "min": np.nanmin,
+        "max": np.nanmax,
+    }
+    quantiles = [0.05, 0.25, 0.75, 0.95]
+    for stat in stat_dict.keys():
+        records[stat] = []
+        records[stat + "_org"] = []
+        records[stat + "_dif"] = []
+
+    for q in quantiles:
+        records["quantile_{0}".format(q)] = []
+        records["quantile_{0}_org".format(q)] = []
+        records["quantile_{0}_dif".format(q)] = []
+    records["upper_bound"] = []
+    records["lower_bound"] = []
+    records["upper_bound_org"] = []
+    records["lower_bound_org"] = []
+    records["upper_bound_dif"] = []
+    records["lower_bound_dif"] = []
+
+    for model_input_file in model_input_files:
+
+        arr = np.loadtxt(model_input_file)
+        org_file = df.loc[df.model_file == model_input_file, "org_file"].values
+        org_file = org_file[0]
+        org_arr = np.loadtxt(org_file)
+        if "zone_file" in df.columns:
+            zone_file = df.loc[df.model_file == model_input_file,"zone_file"].dropna().unique()
+            zone_arr = None
+            if len(zone_file) > 1:
+                zone_arr = np.zeros_like(arr)
+                for zf in zone_file:
+                    za = np.loadtxt(zf)
+                    zone_arr[za!=0] = 1
+            elif len(zone_file) == 1:
+                zone_arr = np.loadtxt(zone_file[0])
+            if zone_arr is not None:
+                arr[zone_arr==0] = np.NaN
+                org_arr[zone_arr==0] = np.NaN
+
+        for stat, func in stat_dict.items():
+            v = func(arr)
+            records[stat].append(v)
+            ov = func(org_arr)
+            records[stat + "_org"].append(ov)
+            records[stat + "_dif"].append(ov - v)
+        for q in quantiles:
+            v = np.nanquantile(arr, q)
+            ov = np.nanquantile(org_arr, q)
+            records["quantile_{0}".format(q)].append(v)
+            records["quantile_{0}_org".format(q)].append(ov)
+            records["quantile_{0}_dif".format(q)].append(ov - v)
+        ub = df.loc[df.model_file == model_input_file, "upper_bound"].max()
+        lb = df.loc[df.model_file == model_input_file, "lower_bound"].min()
+        if pd.isna(ub):
+            records["upper_bound"].append(0)
+            records["upper_bound_org"].append(0)
+            records["upper_bound_dif"].append(0)
+
+        else:
+            iarr = np.zeros_like(arr)
+            iarr[arr == ub] = 1
+            v = iarr.sum()
+            iarr = np.zeros_like(arr)
+            iarr[org_arr == ub] = 1
+            ov = iarr.sum()
+            records["upper_bound"].append(v)
+            records["upper_bound_org"].append(ov)
+            records["upper_bound_dif"].append(ov - v)
+
+        if pd.isna(lb):
+            records["lower_bound"].append(0)
+            records["lower_bound_org"].append(0)
+            records["lower_bound_dif"].append(0)
+
+        else:
+            iarr = np.zeros_like(arr)
+            iarr[arr == lb] = 1
+            v = iarr.sum()
+            iarr = np.zeros_like(arr)
+            iarr[org_arr == lb] = 1
+            ov = iarr.sum()
+            records["lower_bound"].append(v)
+            records["lower_bound_org"].append(ov)
+            records["lower_bound_dif"].append(ov - v)
+
+    # scrub model input files
+    model_input_files = [
+        f.replace(".", "_").replace("\\", "_").replace("/", "_")
+        for f in model_input_files
+    ]
+    df = pd.DataFrame(records, index=model_input_files)
+    df.index.name = "model_file"
+    df.to_csv("arr_par_summary.csv")
+    return df
+
+
+def apply_genericlist_pars(df, chunk_len=50):
+    """a function to apply list style mult parameters
+
     Args:
         df (pandas.DataFrame): DataFrame that relates files containing
             multipliers to model input file names. Required columns include:
-            {"model_file": file name of resulatant model input file, 
+            {"model_file": file name of resulatant model input file,
             "org_file": file name of original file that multipliers act on,
             "fmt": format specifier for model input file (currently on 'free' supported),
             "sep": separator for model input file if 'free' formatted,
@@ -3925,154 +4078,185 @@ def apply_genericlist_pars(df):
             "use_cols": columns to mults act on,
             "upper_bound": ultimate upper bound for model input file parameter,
             "lower_bound": ultimate lower bound for model input file parameter}
-        
+        chunk_len (`int`): number of chunks for each multiprocessing instance to handle.
+            Default is 50.
+
 
     """
+    print("starting list mlt", datetime.now())
+    uniq = df.model_file.unique()  # unique model input files to be produced
+    num_uniq = len(uniq)  # number of input files to be produced
+    # number of files to send to each processor
+    # lazy plitting the files to be processed into even chunks
+    num_chunk_floor = num_uniq // chunk_len  # number of whole chunks
+    main_chunks = (
+        uniq[: num_chunk_floor * chunk_len].reshape([-1, chunk_len]).tolist()
+    )  # the list of files broken down into chunks
+    remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
+    chunks = main_chunks + [remainder]
+    print("number of chunks to process:", len(chunks))
+    if len(chunks) == 1:
+        _process_chunk_list_files(chunks[0], 0, df)
+    else:
+        pool = mp.Pool()
+        x = [
+            pool.apply_async(_process_chunk_list_files, args=(chunk, i, df))
+            for i, chunk in enumerate(chunks)
+        ]
+        [xx.get() for xx in x]
+        pool.close()
+        pool.join()
+    print("finished list mlt", datetime.now())
 
-    uniq = df.model_file.unique()
-    for model_file in uniq:
-        print("processing model file:", model_file)
-        df_mf = df.loc[df.model_file == model_file, :].copy()
-        # read data stored in org (mults act on this)
-        org_file = df_mf.org_file.unique()
-        if org_file.shape[0] != 1:
-            raise Exception("wrong number of org_files for {0}".format(model_file))
-        org_file = org_file[0]
-        print("org file:", org_file)
-        notfree = df_mf.fmt[df_mf.fmt != "free"]
-        if len(notfree) > 1:
+
+def _process_chunk_list_files(chunk, i, df):
+    for model_file in chunk:
+        _process_list_file(model_file, df)
+    print("process", i, " processed ", len(chunk), "process_list_file calls")
+
+
+def _process_list_file(model_file, df):
+
+    # print("processing model file:", model_file)
+    df_mf = df.loc[df.model_file == model_file, :].copy()
+    # read data stored in org (mults act on this)
+    org_file = df_mf.org_file.unique()
+    if org_file.shape[0] != 1:
+        raise Exception("wrong number of org_files for {0}".format(model_file))
+    org_file = org_file[0]
+    # print("org file:", org_file)
+    notfree = df_mf.fmt[df_mf.fmt != "free"]
+    if len(notfree) > 1:
+        raise Exception(
+            "too many different format specifiers for "
+            "model file: {0}".format(model_file)
+        )
+    elif len(notfree) == 1:
+        fmt = notfree.values[0]
+    else:
+        fmt = df_mf.fmt.values[-1]
+    if fmt == "free":
+        if df_mf.sep.dropna().nunique() > 1:
             raise Exception(
-                "too many different format specifiers for "
+                "too many different sep specifiers for "
                 "model file: {0}".format(model_file)
             )
-        elif len(notfree) == 1:
-            fmt = notfree.values[0]
         else:
-            fmt = df_mf.fmt.values[-1]
-        if fmt == "free":
-            if df_mf.sep.dropna().nunique() > 1:
-                raise Exception(
-                    "too many different sep specifiers for "
-                    "model file: {0}".format(model_file)
-                )
-            else:
-                sep = df_mf.sep.dropna().values[-1]
-        else:
-            sep = None
-        datastrtrow = df_mf.head_rows.values[-1]
-        if fmt.lower() == "free" and sep == " ":
-            delim_whitespace = True
-        if datastrtrow > 0:
-            with open(org_file, "r") as fp:
-                storehead = [next(fp) for _ in range(datastrtrow)]
-        else:
-            storehead = []
-        # work out if headers are used for index_cols
-        index_col_eg = df_mf.index_cols.iloc[-1][0]
-        if isinstance(index_col_eg, str):
-            # TODO: add test for model file with headers
-            # index_cols can be from header str
-            header = 0
-            hheader = True
-        elif isinstance(index_col_eg, int):
-            # index_cols are column numbers in input file
-            header = None
-            hheader = None
-            # actually do need index cols to be list of strings
-            # to be compatible when the saved original file is read in.
-            df_mf.loc[:, "index_cols"] = df_mf.index_cols.apply(
-                lambda x: [str(i) for i in x]
-            )
+            sep = df_mf.sep.dropna().values[-1]
+    else:
+        sep = None
+    datastrtrow = df_mf.head_rows.values[-1]
+    if fmt.lower() == "free" and sep == " ":
+        delim_whitespace = True
+    if datastrtrow > 0:
+        with open(org_file, "r") as fp:
+            storehead = [next(fp) for _ in range(datastrtrow)]
+    else:
+        storehead = []
+    # work out if headers are used for index_cols
+    # big assumption here that int type index cols will not be written as headers
+    index_col_eg = df_mf.index_cols.iloc[-1][0]
+    if isinstance(index_col_eg, str):
+        # TODO: add test for model file with headers
+        # index_cols can be from header str
+        header = 0
+        hheader = True
+    elif isinstance(index_col_eg, int):
+        # index_cols are column numbers in input file
+        header = None
+        hheader = None
+        # actually do need index cols to be list of strings
+        # to be compatible when the saved original file is read in.
+        df_mf.loc[:, "index_cols"] = df_mf.index_cols.apply(
+            lambda x: [str(i) for i in x]
+        )
 
-        # if writen by PstFrom this should always be comma delim - tidy
-        org_data = pd.read_csv(org_file, skiprows=datastrtrow, header=header)
-        # mult columns will be string type, so to make sure they align
-        org_data.columns = org_data.columns.astype(str)
-        print("org_data columns:", org_data.columns)
-        print("org_data shape:", org_data.shape)
-        new_df = org_data.copy()
-        for mlt in df_mf.itertuples():
+    # if writen by PstFrom this should always be comma delim - tidy
+    org_data = pd.read_csv(org_file, skiprows=datastrtrow, header=header)
+    # mult columns will be string type, so to make sure they align
+    org_data.columns = org_data.columns.astype(str)
+    # print("org_data columns:", org_data.columns)
+    # print("org_data shape:", org_data.shape)
+    new_df = org_data.copy()
+    for mlt in df_mf.itertuples():
 
-            try:
-                new_df = (
-                    new_df.reset_index()
-                    .rename(columns={"index": "oidx"})
-                    .set_index(mlt.index_cols)
-                )
-                new_df = new_df.sort_index()
-            except Exception as e:
-                print(
-                    "error setting mlt index_cols: ",
-                    str(mlt.index_cols),
-                    " for new_df with cols: ",
-                    list(new_df.columns),
-                )
-                raise Exception("error setting mlt index_cols: " + str(e))
-
-            if not hasattr(mlt, "mlt_file") or pd.isna(mlt.mlt_file):
-                print("null mlt file for org_file '" + org_file + "', continuing...")
-            else:
-                mlts = pd.read_csv(mlt.mlt_file)
-                # get mult index to align with org_data,
-                # mult idxs will always be written zero based
-                # if original model files is not zero based need to add 1
-                add1 = int(mlt.zero_based == False)
-                mlts.index = pd.MultiIndex.from_tuples(
-                    mlts.sidx.apply(lambda x: tuple(add1 + np.array(literal_eval(x)))),
-                    names=mlt.index_cols,
-                )
-                if mlts.index.nlevels < 2:  # just in case only one index col is used
-                    mlts.index = mlts.index.get_level_values(0)
-                common_idx = (
-                    new_df.index.intersection(mlts.index)
-                    .sort_values()
-                    .drop_duplicates()
-                )
-                mlt_cols = [str(col) for col in mlt.use_cols]
-                new_df.loc[common_idx, mlt_cols] = (
-                    new_df.loc[common_idx, mlt_cols] * mlts.loc[common_idx, mlt_cols]
-                ).values
-            # bring mult index back to columns AND re-order
+        try:
             new_df = (
-                new_df.reset_index().set_index("oidx")[org_data.columns].sort_index()
+                new_df.reset_index()
+                .rename(columns={"index": "oidx"})
+                .set_index(mlt.index_cols)
             )
-        if "upper_bound" in df.columns:
-            ub = df_mf.apply(
-                lambda x: pd.Series(
-                    {str(c): b for c, b in zip(x.use_cols, x.upper_bound)}
+            new_df = new_df.sort_index()
+        except Exception as e:
+            print(
+                "error setting mlt index_cols: ",
+                str(mlt.index_cols),
+                " for new_df with cols: ",
+                list(new_df.columns),
+            )
+            raise Exception("error setting mlt index_cols: " + str(e))
+
+        if not hasattr(mlt, "mlt_file") or pd.isna(mlt.mlt_file):
+            print("null mlt file for org_file '" + org_file + "', continuing...")
+        else:
+            mlts = pd.read_csv(mlt.mlt_file)
+            # get mult index to align with org_data,
+            # get mult index to align with org_data,
+            # mult idxs will always be written zero based if int
+            # if original model files is not zero based need to add 1
+            add1 = int(mlt.zero_based == False)
+            mlts.index = pd.MultiIndex.from_tuples(
+                mlts.sidx.apply(
+                    lambda x: [
+                        add1 + int(xx) if xx.strip().isdigit() else xx.strip("'\" ")
+                        for xx in x.strip("()").split(",")
+                        if xx
+                    ]
                 ),
-                axis=1,
-            ).max()
-            if ub.notnull().any():
-                for col, val in ub.items():
-                    new_df.loc[new_df.loc[:, col] > val, col] = val
-        if "lower_bound" in df.columns:
-            lb = df_mf.apply(
-                lambda x: pd.Series(
-                    {str(c): b for c, b in zip(x.use_cols, x.lower_bound)}
-                ),
-                axis=1,
-            ).min()
-            if lb.notnull().any():
-                for col, val in lb.items():
-                    new_df.loc[new_df.loc[:, col] < val, col] = val
-        with open(model_file, "w") as fo:
-            kwargs = {}
-            if "win" in platform.platform().lower():
-                kwargs = {"line_terminator": "\n"}
-            if len(storehead) != 0:
-                fo.write("\n".join(storehead))
-                fo.flush()
-            if fmt.lower() == "free":
-                new_df.to_csv(
-                    fo, index=False, mode="a", sep=sep, header=hheader, **kwargs
-                )
-            else:
-                np.savetxt(fo, np.atleast_2d(new_df.values), fmt=fmt)
+                names=mlt.index_cols,
+            )
+            if mlts.index.nlevels < 2:  # just in case only one index col is used
+                mlts.index = mlts.index.get_level_values(0)
+            common_idx = (
+                new_df.index.intersection(mlts.index).sort_values().drop_duplicates()
+            )
+            mlt_cols = [str(col) for col in mlt.use_cols]
+            new_df.loc[common_idx, mlt_cols] = (
+                new_df.loc[common_idx, mlt_cols] * mlts.loc[common_idx, mlt_cols]
+            ).values
+        # bring mult index back to columns AND re-order
+        new_df = new_df.reset_index().set_index("oidx")[org_data.columns].sort_index()
+    if "upper_bound" in df.columns:
+        ub = df_mf.apply(
+            lambda x: pd.Series({str(c): b for c, b in zip(x.use_cols, x.upper_bound)}),
+            axis=1,
+        ).max()
+        if ub.notnull().any():
+            for col, val in ub.items():
+                new_df.loc[new_df.loc[:, col] > val, col] = val
+    if "lower_bound" in df.columns:
+        lb = df_mf.apply(
+            lambda x: pd.Series({str(c): b for c, b in zip(x.use_cols, x.lower_bound)}),
+            axis=1,
+        ).min()
+        if lb.notnull().any():
+            for col, val in lb.items():
+                new_df.loc[new_df.loc[:, col] < val, col] = val
+    with open(model_file, "w") as fo:
+        kwargs = {}
+        if "win" in platform.platform().lower():
+            kwargs = {"line_terminator": "\n"}
+        if len(storehead) != 0:
+            fo.write("\n".join(storehead))
+            fo.flush()
+        if fmt.lower() == "free":
+            new_df.to_csv(fo, index=False, mode="a", sep=sep, header=hheader, **kwargs)
+        else:
+            np.savetxt(fo, np.atleast_2d(new_df.values), fmt=fmt)
 
 
 def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, longnames=False):
-    """ write a constant (uniform) template file for a 2-D array
+    """write a constant (uniform) template file for a 2-D array
 
     Args:
         name (`str`): the base parameter name
@@ -4131,7 +4315,7 @@ def write_grid_tpl(
     spatial_reference=None,
     longnames=False,
 ):
-    """ write a grid-based template file for a 2-D array
+    """write a grid-based template file for a 2-D array
 
     Args:
         name (`str`): the base parameter name
@@ -4165,12 +4349,12 @@ def write_grid_tpl(
                     pname = " 1.0 "
                 else:
                     if longnames:
-                        pname = "{0}_i:{0}_j:{1}_{2}".format(name, i, j, suffix)
+                        pname = "{0}_i:{1}_j:{2}_{3}".format(name, i, j, suffix)
                         if spatial_reference is not None:
                             pname += "_x:{0:10.2E}_y:{1:10.2E}".format(
                                 spatial_reference.xcentergrid[i, j],
                                 spatial_reference.ycentergrid[i, j],
-                            )
+                            ).replace(" ","")
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                         if len(pname) > 12:
@@ -4203,7 +4387,7 @@ def write_zone_tpl(
     longnames=False,
     fill_value="1.0",
 ):
-    """ write a zone-based template file for a 2-D array
+    """write a zone-based template file for a 2-D array
 
     Args:
         name (`str`): the base parameter name
@@ -4260,7 +4444,7 @@ def write_zone_tpl(
 
 
 def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
-    """ build a dataframe of jactest inputs for use with sweep
+    """build a dataframe of jactest inputs for use with sweep
 
     Args:
         pst (`pyemu.Pst`): existing control file
@@ -4340,17 +4524,38 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
     return df
 
 
-def _write_df_tpl(filename, df, sep=",", tpl_marker="~", **kwargs):
-    """function write a pandas dataframe to a template file.
-
-    """
+def _write_df_tpl(filename, df, sep=",", tpl_marker="~", headerlines=None, **kwargs):
+    """function write a pandas dataframe to a template file."""
     if "line_terminator" not in kwargs:
         if "win" in platform.platform().lower():
             kwargs["line_terminator"] = "\n"
     with open(filename, "w") as f:
         f.write("ptf {0}\n".format(tpl_marker))
         f.flush()
+        if headerlines is not None:
+            _add_headerlines(f, headerlines)
         df.to_csv(f, sep=sep, mode="a", **kwargs)
+
+
+def _add_headerlines(f, headerlines):
+    lc = 0
+    for key in sorted(headerlines.keys()):
+        if key > lc:
+            lc += 1
+            continue
+            # TODO if we want to preserve mid-table comments,
+            #  these lines might help - will also need to
+            #  pass comment_char through so it can be
+            #  used by the apply methods
+            # to = key - lc
+            # df.iloc[fr:to].to_csv(
+            #     fp, sep=',', mode='a', header=hheader, # todo - presence of header may cause an issue with this
+            #     **kwargs)
+            # lc += to - fr
+            # fr = to
+        f.write(headerlines[key])
+        f.flush()
+        lc += 1
 
 
 def setup_fake_forward_run(
@@ -4448,7 +4653,7 @@ def setup_temporal_diff_obs(
     long_names=True,
     prefix="dif",
 ):
-    """ a helper function to setup difference-in-time observations based on an existing
+    """a helper function to setup difference-in-time observations based on an existing
     set of observations in an instruction file using the observation grouping in the
     control file
 
@@ -4625,16 +4830,16 @@ def setup_temporal_diff_obs(
 def apply_temporal_diff_obs(config_file):
     """process an instruction-output file pair and formulate difference observations.
 
-        Args:
-            config_file (`str`): configuration file written by `pyemu.helpers.setup_temporal_diff_obs`.
-        Returns:
-            diff_df (`pandas.DataFrame`) : processed difference observations
-        Note:
+    Args:
+        config_file (`str`): configuration file written by `pyemu.helpers.setup_temporal_diff_obs`.
+    Returns:
+        diff_df (`pandas.DataFrame`) : processed difference observations
+    Note:
 
-            writes `config_file.replace(".config",".processed")` output file that can be read
-            with the instruction file that is created by `pyemu.helpers.setup_temporal_diff_obs()`.
+        writes `config_file.replace(".config",".processed")` output file that can be read
+        with the instruction file that is created by `pyemu.helpers.setup_temporal_diff_obs()`.
 
-            this is the companion function of `helpers.setup_setup_temporal_diff_obs()`.
+        this is the companion function of `helpers.setup_setup_temporal_diff_obs()`.
     """
 
     if not os.path.exists(config_file):
@@ -4697,7 +4902,7 @@ srefhttp = "https://spatialreference.org"
 class SpatialReference(object):
     """
     a class to locate a structured model grid in x-y space.
-    Lifted wholesale from Flopy, and preserved here... 
+    Lifted wholesale from Flopy, and preserved here...
     ...maybe slighlty over-engineered for here
 
     Parameters
@@ -5613,8 +5818,7 @@ class SpatialReference(object):
         return yedge
 
     def write_gridspec(self, filename):
-        """ write a PEST-style grid specification file
-        """
+        """write a PEST-style grid specification file"""
         f = open(filename, "w")
         f.write("{0:10d} {1:10d}\n".format(self.delc.shape[0], self.delr.shape[0]))
         f.write(
@@ -6586,7 +6790,7 @@ class SpatialReference(object):
 
 
 def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
-    """ calculate the 1-D and 2-D mahalanobis distance
+    """calculate the 1-D and 2-D mahalanobis distance
 
     Args:
         sim_en (`pyemu.ObservationEnsemble`): a simulated outputs ensemble
@@ -6714,3 +6918,4 @@ def _l2_maha_worker(o1, o2names, mean, var, cov, results, l2_crit_val):
             rresults[ostr] = l2_maha_sq_val
     results.update(rresults)
     print(o1, "done")
+
