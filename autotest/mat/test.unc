@@ -1,4 +1,4 @@
 START COVARIANCE_MATRIX
- file mat/cov.mat
+ file cov.mat
  variance_multiplier    1.000000E+00
 END COVARIANCE_MATRIX
