@@ -2218,22 +2218,27 @@ class Matrix(object):
         Args:
             filename (`str`): filename to write to
         icode (`int`, optional): PEST-style info code for matrix style.
-            Default is 2
+            Default is 2.
 
         """
+        if icode == -1:
+            if not self.isdiagonal:
+                raise Exception("Matrix.to_ascii(): error: icode supplied as -1 for non-diagonal matrix")
+            if self.shape[0] != self.shape[1]:
+                raise Exception("Matrix.to_ascii(): error: icode supplied as -1 for non-square matrix")
         nrow, ncol = self.shape
         f_out = open(filename, "w")
         f_out.write(" {0:7.0f} {1:7.0f} {2:7.0f}\n".format(nrow, ncol, icode))
         f_out.close()
         f_out = open(filename, "ab")
-        if self.isdiagonal:
+        if self.isdiagonal and icode != -1:
             x = np.diag(self.__x[:, 0])
         else:
             x = self.__x
         np.savetxt(f_out, x, fmt="%15.7E", delimiter="")
         f_out.close()
         f_out = open(filename, "a")
-        if icode == 1:
+        if icode == 1 or icode == -1:
             f_out.write("* row and column names\n")
             for r in self.row_names:
                 f_out.write(r + "\n")
@@ -2286,6 +2291,7 @@ class Matrix(object):
         f = open(filename, "r")
         raw = f.readline().strip().split()
         nrow, ncol = int(raw[0]), int(raw[1])
+        icode = int(raw[2])
         # x = np.fromfile(f, dtype=self.double, count=nrow * ncol, sep=' ')
         # this painfully slow and ugly read is needed to catch the
         # fortran floating points that have 3-digit exponents,
@@ -2315,13 +2321,20 @@ class Matrix(object):
                             + " to float"
                         )
                 count += 1
-                if count == (nrow * ncol):
+                if icode != -1 and count == (nrow * ncol):
                     break
-            if count == (nrow * ncol):
+                elif icode == -1 and count == nrow:
+                    break
+            if icode != -1 and count == (nrow * ncol):
+                break
+            elif icode == -1 and count == nrow:
                 break
 
         x = np.array(x, dtype=Matrix.double)
-        x.resize(nrow, ncol)
+        if icode != -1:
+            x.resize(nrow, ncol)
+        else:
+            x = np.diag(x)
         line = f.readline().strip().lower()
         if not line.startswith("*"):
             raise Exception(
@@ -2747,7 +2760,7 @@ class Cov(Matrix):
         # self.isdiagonal = False
 
     def to_uncfile(
-        self, unc_file, covmat_file="cov.mat", var_mult=1.0, include_path=True
+        self, unc_file, covmat_file="cov.mat", var_mult=1.0, include_path=False
     ):
         """write a PEST-compatible uncertainty file
 
@@ -2758,6 +2771,8 @@ class Cov(Matrix):
                 form of the uncertainty file is written.  Exception raised if `covmat_file` is `None`
                 and not `Cov.isdiagonal`
             var_mult (`float`): variance multiplier for the covmat_file entry
+            include_path (`bool`): flag to include the path of `unc_file` in the name of `covmat_file`.
+                Default is False - not sure why you would ever make this True...
 
         Example::
 
@@ -2780,7 +2795,11 @@ class Cov(Matrix):
             f.write(" variance_multiplier {0:15.6E}\n".format(var_mult))
             f.write("END COVARIANCE_MATRIX\n")
             f.close()
-            self.to_ascii(covmat_file, icode=1)
+            if include_path:
+                self.to_ascii(covmat_file, icode=1)
+            else:
+                self.to_ascii(os.path.join(os.path.dirname(unc_file),os.path.split(covmat_file)[-1]), icode=1)
+
         else:
             if self.isdiagonal:
                 f = open(unc_file, "w")
@@ -2944,11 +2963,13 @@ class Cov(Matrix):
         return cls(x=x, names=names, isdiagonal=True)
 
     @classmethod
-    def from_uncfile(cls, filename):
+    def from_uncfile(cls, filename,pst=None):
         """instaniates a `Cov` from a PEST-compatible uncertainty file
 
         Args:
             filename (`str`):  uncertainty file name
+            pst ('pyemu.Pst`): a control file instance.  this is needed if
+                "first_parameter" and "last_parameter" keywords.  Default is None
 
         Returns:
             `Cov`: `Cov` instance from uncertainty file
@@ -2958,6 +2979,10 @@ class Cov(Matrix):
             cov = pyemu.Cov.from_uncfile("my.unc")
 
         """
+
+        if pst is not None:
+            if isinstance(pst,str):
+                pst = Pst(pst)
 
         nentries = Cov._get_uncfile_dimensions(filename)
         x = np.zeros((nentries, nentries))
@@ -2972,6 +2997,9 @@ class Cov(Matrix):
                 break
             line = line.strip()
             if "start" in line:
+                if "pest_control_file" in line:
+                    raise Exception("Cov.from_uncfile() error: 'pest_control_file' block not supported")
+
                 if "standard_deviation" in line:
                     std_mult = 1.0
                     while True:
@@ -2998,18 +3026,31 @@ class Cov(Matrix):
                 elif "covariance_matrix" in line:
                     isdiagonal = False
                     var = 1.0
+                    first_par = None
+                    last_par = None
                     while True:
                         line2 = f.readline().strip().lower()
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith("file"):
-                            filename = (
+                            mat_filename = os.path.join(os.path.dirname(filename),
                                 line2.split()[1].replace("'", "").replace('"', "")
                             )
-                            cov = Matrix.from_ascii(filename)
+                            cov = Matrix.from_ascii(mat_filename)
 
                         elif line2.startswith("variance_multiplier"):
                             var = float(line2.split()[1])
+                        elif line2.startswith("first_parameter"):
+                            if pst is None:
+                                raise Exception(
+                                    "Cov.from_uncfile(): 'first_parameter' usage requires the 'pst' arg to be passed")
+                            first_par = line2.split()[1]
+                        elif line2.startswith("last_parameter"):
+                            if pst is None:
+                                raise Exception(
+                                    "Cov.from_uncfile(): 'last_parameter' usage requires the 'pst' arg to be passed")
+                            last_par = line2.split()[1]
+
                         else:
                             raise Exception(
                                 "Cov.from_uncfile(): "
@@ -3019,6 +3060,22 @@ class Cov(Matrix):
                             )
                     if var != 1.0:
                         cov *= var
+                    if first_par is not None:
+                        if last_par is None:
+                            raise Exception("'first_par' found but 'last_par' not found")
+                        if first_par not in pst.par_names:
+                            raise Exception("'first_par' {0} not found in pst.par_names".format(first_par))
+                        if last_par not in pst.par_names:
+                            raise Exception("'last_par' {0} not found in pst.par_names".format(last_par))
+                        names = pst.parameter_data.loc[first_par:last_par,"parnme"].tolist()
+                        if len(names) != cov.shape[0]:
+                            print(names)
+                            print(len(names), cov.shape)
+                            raise Exception("the number of par names between 'first_par' and "
+                                            "'last_par' != elements in the cov matrix {0}".format(mat_filename))
+                        cov.row_names = names
+                        cov.col_names = names
+
                     for name in cov.row_names:
                         if name in row_names:
                             raise Exception(
@@ -3062,16 +3119,23 @@ class Cov(Matrix):
                 elif "covariance_matrix" in line:
                     while True:
                         line2 = f.readline().strip().lower()
+                        if line2 == "":
+                            raise Exception("EOF while looking for 'end' block")
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith("file"):
-                            filename = (
+                            mat_filename = os.path.join(os.path.dirname(filename),
                                 line2.split()[1].replace("'", "").replace('"', "")
                             )
-                            cov = Matrix.from_ascii(filename)
+                            cov = Matrix.from_ascii(mat_filename)
                             nentries += len(cov.row_names)
                         elif line2.startswith("variance_multiplier"):
                             pass
+                        elif line2.startswith("first_parameter"):
+                            pass
+                        elif line2.startswith("last_parameter"):
+                            pass
+
                         else:
                             raise Exception(
                                 "Cov.get_uncfile_dimensions(): "
