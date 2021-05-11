@@ -328,7 +328,9 @@ def from_uncfile_test():
     import numpy as np
     import pyemu
 
-    cov_full = pyemu.Cov.from_uncfile(os.path.join("mat","param.unc"))
+    cov_full = pyemu.Cov.from_uncfile(os.path.join("mat", "param_path.unc"))
+
+    #cov_full = pyemu.Cov.from_uncfile(os.path.join("mat","param.unc"))
     cov_kx = pyemu.Cov.from_ascii(os.path.join("mat","cov_kx.mat"))
     cov_full_kx = cov_full.get(row_names=cov_kx.row_names,col_names=cov_kx.col_names)
     assert np.abs((cov_kx - cov_full_kx).x).max() == 0.0
@@ -566,10 +568,10 @@ if __name__ == "__main__":
     # sigma_range_test()
     # cov_replace_test()
     # from_names_test()
-    #from_uncfile_test()
+    from_uncfile_test()
     # copy_test()
     # sparse_constructor_test()
     # sparse_extend_test()
     # sparse_get_test()
     # sparse_get_sparse_test()
-    dense_mat_format_test()
+    #dense_mat_format_test()

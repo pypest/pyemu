@@ -3003,10 +3003,10 @@ class Cov(Matrix):
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith("file"):
-                            filename = (
+                            mat_filename = os.path.join(os.path.dirname(filename),
                                 line2.split()[1].replace("'", "").replace('"', "")
                             )
-                            cov = Matrix.from_ascii(filename)
+                            cov = Matrix.from_ascii(mat_filename)
 
                         elif line2.startswith("variance_multiplier"):
                             var = float(line2.split()[1])
@@ -3065,10 +3065,10 @@ class Cov(Matrix):
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith("file"):
-                            filename = (
+                            mat_filename = os.path.join(os.path.dirname(filename),
                                 line2.split()[1].replace("'", "").replace('"', "")
                             )
-                            cov = Matrix.from_ascii(filename)
+                            cov = Matrix.from_ascii(mat_filename)
                             nentries += len(cov.row_names)
                         elif line2.startswith("variance_multiplier"):
                             pass
