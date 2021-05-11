@@ -163,6 +163,9 @@ def ensemble_1to1_test():
     pst.observation_data.loc[pst.nnz_obs_names, "weight"] /= 100.0
     oe_base = pyemu.ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
 
+    pst.observation_data.loc[pst.nnz_obs_names, "weight"] *= 1000.0
+    oe_base2 = pyemu.ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+
     print(oe1.loc[:,pst.nnz_obs_names].std())
     print(oe2.loc[:,pst.nnz_obs_names].std())
 
@@ -172,9 +175,12 @@ def ensemble_1to1_test():
 
     pyemu.plot_utils.ensemble_res_1to1({"0.5": oe1, "b": oe2}, pst, filename=os.path.join("temp", "e1to1_noise.pdf"),
                                        base_ensemble=oe_base)
+    pyemu.plot_utils.ensemble_res_1to1({"0.5": oe1, "b": oe2}, pst, filename=os.path.join("temp", "e1to1_noise2.pdf"),
+                                       base_ensemble=oe_base2)
 
     pyemu.plot_utils.res_phi_pie(pst=pst,ensemble=oe1)
     pyemu.plot_utils.res_1to1(pst=pst, ensemble=oe1)
+    test=None
 
 def ensemble_summary_test():
     try:
