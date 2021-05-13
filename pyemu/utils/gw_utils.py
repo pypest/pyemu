@@ -619,12 +619,12 @@ def setup_hds_timeseries(
                 )
     elif bin_file.lower().endswith(".ucn"):
         try:
-            bf = flopy.utils.UcnFile(bin_file)
+            bf = flopy.utils.UcnFile(bin_file,precision=precision)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            bf = flopy.utils.HeadFile(bin_file)
+            bf = flopy.utils.HeadFile(bin_file,precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
