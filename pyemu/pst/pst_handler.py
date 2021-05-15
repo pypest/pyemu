@@ -3596,7 +3596,6 @@ class Pst(object):
             This works with PstFrom style long names
 
             This method is called programmtically during `Pst.load()`
-            
 
         """
         par = self.parameter_data

@@ -2101,12 +2101,25 @@ class PstFrom(object):
                                     )
                                 )
 
-                if not structured and zone_array is not None:
-                    self.logger.lraise("'zone_array' not supported for unstructured grids and pilot points")
+
 
                 if not structured and pp_locs is None:
                     self.logger.lraise("pilot point type parameters with an unstructured grid requires 'pp_space' "
                                        "contain explict pilot point information")
+
+
+                if not structured and zone_array is not None:
+                    #self.logger.lraise("'zone_array' not supported for unstructured grids and pilot points")
+                    if "zone" not in pp_locs.columns:
+                        self.logger.lraise("'zone' not found in pp info dataframe and 'zone_array' passed")
+                    uvals = np.unique(zone_array)
+                    zvals = set([int(z) for z in pp_locs.zone.tolist()])
+                    missing = []
+                    for uval in uvals:
+                        if int(uval) not in zvals and int(uval) != 0:
+                            missing.append(str(int(uval)))
+                    if len(missing) > 0:
+                        self.logger.warn("the following values in the zone array were not found in the pp info: {0}".format(",".join(missing)))
 
 
                 if geostruct is None:  # need a geostruct for pilotpoints
@@ -2225,7 +2238,7 @@ class PstFrom(object):
                         fac_filename = facfile  # relate to existing fac file
                         break
                 if not fac_processed:
-                    # TODO need better way of naming squential fac_files?
+                    # TODO need better way of naming sequential fac_files?
                     self.logger.log("calculating factors for pargp={0}".format(pg))
                     fac_filename = self.new_d / "{0}pp.fac".format(par_name_store)
                     var_filename = fac_filename.with_suffix(".var.dat")
@@ -2250,12 +2263,30 @@ class PstFrom(object):
                     else:
                         #put the sr dict info into a df
                         # but we only want to use the n
-                        data = []
-                        for node,(x,y) in spatial_reference.items():
-                            data.append([node,x,y])
-                        node_df = pd.DataFrame(data,columns=["node","x","y"])
-                        ok_pp.calc_factors(node_df.x, node_df.y, num_threads=10)
-                        ok_pp.to_grid_factors_file(fac_filename)
+                        if zone_array is not None:
+                            for zone in np.unique(zone_array):
+                                if int(zone) == 0:
+                                    continue
+
+                                data = []
+                                for node, (x, y) in spatial_reference.items():
+                                    if zone_array[0,node] == zone:
+                                        data.append([node, x, y])
+                                    #else:
+                                    #    data.append([node,np.NaN,np.NaN])
+                                if len(data) == 0:
+                                    continue
+                                node_df = pd.DataFrame(data, columns=["node", "x", "y"])
+                                ok_pp.calc_factors(node_df.x, node_df.y, num_threads=1, pt_zone=zone)
+                            ok_pp.to_grid_factors_file(fac_filename)
+
+                        else:
+                            data = []
+                            for node,(x,y) in spatial_reference.items():
+                                data.append([node,x,y])
+                            node_df = pd.DataFrame(data,columns=["node","x","y"])
+                            ok_pp.calc_factors(node_df.x, node_df.y, num_threads=10)
+                            ok_pp.to_grid_factors_file(fac_filename)
 
                     self.logger.log("calculating factors for pargp={0}".format(pg))
             # TODO - other par types - JTW?
