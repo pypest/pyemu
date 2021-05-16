@@ -161,6 +161,14 @@ def gaussian_distribution(mean, stdev, num_pts=50):
         - **numpy.ndarray**: the x-values of the distribution
         - **numpy.ndarray**: the y-values of the distribution
 
+    Example::
+
+        mean,std = 1.0, 2.0
+        x,y = pyemu.plot.gaussian_distribution(mean,std)
+        plt.fill_between(x,0,y)
+        plt.show()
+
+
     """
     xstart = mean - (4.0 * stdev)
     xend = mean + (4.0 * stdev)
@@ -183,6 +191,16 @@ def pst_helper(pst, kind=None, **kwargs):
     Returns:
         varies: usually a combination of `matplotlib.figure` (s) and/or
         `matplotlib.axis` (s)
+
+    Example::
+
+        pst = pyemu.Pst("pest.pst") #assumes pest.res or pest.rei is found
+        pst.plot(kind="1to1")
+        plt.show()
+        pst.plot(kind="phipie")
+        plt.show()
+        pst.plot(kind="prior")
+        plt.show()
 
     """
 
@@ -684,6 +702,12 @@ def pst_prior(pst, logger=None, filename=None, **kwargs):
     Returns:
         [`matplotlib.Figure`]: a list of figures created.
 
+    Example::
+
+        pst = pyemu.Pst("pest.pst")
+        pyemu.pst_utils.pst_prior(pst)
+        plt.show()
+
     """
     if logger is None:
         logger = Logger("Default_Loggger.log", echo=False)
@@ -858,10 +882,21 @@ def ensemble_helper(
 
     Example::
 
+        # plot prior and posterior par ensembles
         pst = pyemu.Pst("my.pst")
         prior = pyemu.ParameterEnsemble.from_binary(pst=pst, filename="prior.jcb")
         post = pyemu.ParameterEnsemble.from_binary(pst=pst, filename="my.3.par.jcb")
         pyemu.plot_utils.ensemble_helper(ensemble={"0.5":prior, "b":post},filename="ensemble.pdf")
+
+        #plot prior and posterior simulated equivalents to observations with obs noise and obs vals
+        pst = pyemu.Pst("my.pst")
+        prior = pyemu.ObservationEnsemble.from_binary(pst=pst, filename="my.0.obs.jcb")
+        post = pyemu.ObservationEnsemble.from_binary(pst=pst, filename="my.3.obs.jcb")
+        noise = pyemu.ObservationEnsemble.from_binary(pst=pst, filename="my.obs+noise.jcb")
+        pyemu.plot_utils.ensemble_helper(ensemble={"0.5":prior, "b":post,"r":noise},
+                                         filename="ensemble.pdf",
+                                         deter_vals=pst.observation_data.obsval.to_dict())
+
 
     """
     logger = pyemu.Logger("ensemble_helper.log")
@@ -1081,6 +1116,15 @@ def ensemble_change_summary(
         [`matplotlib.Figure`]: a list of figures.  Returns None is
         `filename` is not None
 
+    Example::
+
+        pst = pyemu.Pst("my.pst")
+        prior = pyemu.ParameterEnsemble.from_binary(pst=pst, filename="prior.jcb")
+        post = pyemu.ParameterEnsemble.from_binary(pst=pst, filename="my.3.par.jcb")
+        pyemu.plot_utils.ensemble_change_summary(prior,post)
+        plt.show()
+
+
     """
     if logger is None:
         logger = Logger("Default_Loggger.log", echo=False)
@@ -1245,6 +1289,9 @@ def ensemble_change_summary(
 
 
 def _process_ensemble_arg(ensemble, facecolor, logger):
+    """private method to work out ensemble plot args
+
+    """
     ensembles = {}
     if isinstance(ensemble, pd.DataFrame) or isinstance(ensemble, pyemu.Ensemble):
         if not isinstance(facecolor, str):
@@ -1312,7 +1359,7 @@ def ensemble_res_1to1(
     base_ensemble=None,
     **kwargs
 ):
-    """helper function to plot ensemble 1-to-1 plots sbowing the simulated range
+    """helper function to plot ensemble 1-to-1 plots showing the simulated range
 
     Args:
         ensemble (varies):  the ensemble argument can be a pandas.DataFrame or derived type or a str, which
@@ -1324,6 +1371,19 @@ def ensemble_res_1to1(
             without saving.  Default is None.
         base_ensemble (`varies`): an optional ensemble argument for the observations + noise ensemble.
             This will be plotted as a transparent red bar on the 1to1 plot.
+
+    Note:
+
+        the vertical bar on each plot the min-max range
+
+    Example::
+
+
+        pst = pyemu.Pst("my.pst")
+        prior = pyemu.ObservationEnsemble.from_binary(pst=pst, filename="my.0.obs.jcb")
+        post = pyemu.ObservationEnsemble.from_binary(pst=pst, filename="my.3.obs.jcb")
+        pyemu.plot_utils.ensemble_res_1to1(ensemble={"0.5":prior, "b":post})
+        plt.show()
 
     """
     if logger is None:
