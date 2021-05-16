@@ -619,12 +619,12 @@ def setup_hds_timeseries(
                 )
     elif bin_file.lower().endswith(".ucn"):
         try:
-            bf = flopy.utils.UcnFile(bin_file,precision=precision)
+            bf = flopy.utils.UcnFile(bin_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            bf = flopy.utils.HeadFile(bin_file,precision=precision)
+            bf = flopy.utils.HeadFile(bin_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
@@ -1260,12 +1260,12 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e20, precision="single", text="head
         else:
 
             df_kper = df.loc[df.kper == kper, :]
-            for k,d in enumerate(data):
+            for k, d in enumerate(data):
                 d[np.isnan(d)] = 0.0
                 d[d > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
                 d[d < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
-                df_kperk = df_kper.loc[df_kper.k==k,:]
-                df.loc[df_kperk.index,"obsval"] = d[df_kperk.i]
+                df_kperk = df_kper.loc[df_kper.k == k, :]
+                df.loc[df_kperk.index, "obsval"] = d[df_kperk.i]
 
     assert df.dropna().shape[0] == df.shape[0]
     df.loc[:, ["obsnme", "obsval"]].to_csv(out_file, index=False, sep=" ")
@@ -2859,8 +2859,8 @@ def write_hfb_template(m):
     return tpl_file, df
 
 
-class GsfReader():
-    '''
+class GsfReader:
+    """
     a helper class to read a standard modflow-usg gsf file
 
     Args:
@@ -2868,24 +2868,26 @@ class GsfReader():
 
 
 
-    '''
+    """
 
     def __init__(self, gsffilename):
 
-        with open(gsffilename, 'r') as f:
+        with open(gsffilename, "r") as f:
             self.read_data = f.readlines()
 
-        self.nnode, self.nlay, self.iz, self.ic = [int(n) for n in self.read_data[1].split()]
+        self.nnode, self.nlay, self.iz, self.ic = [
+            int(n) for n in self.read_data[1].split()
+        ]
 
         self.nvertex = int(self.read_data[2])
 
     def get_vertex_coordinates(self):
-        '''
+        """
 
 
         Returns:
             Dictionary containing list of x, y and z coordinates for each vertex
-        '''
+        """
         # vdata = self.read_data[3:self.nvertex+3]
         vertex_coords = {}
         for vert in range(self.nvertex):
@@ -2894,27 +2896,43 @@ class GsfReader():
         return vertex_coords
 
     def get_node_data(self):
-        '''
+        """
 
         Returns:
             nodedf: a pd.DataFrame containing Node information; Node, X, Y, Z, layer, numverts, vertidx
 
-        '''
+        """
 
         node_data = []
         for node in range(self.nnode):
-            nid, x, y, z, lay, numverts = self.read_data[self.nvertex + 3 + node].split()[:6]
+            nid, x, y, z, lay, numverts = self.read_data[
+                self.nvertex + 3 + node
+            ].split()[:6]
 
             # vertidx = {'ivertex': [int(n) for n in self.read_data[self.nvertex+3 + node].split()[6:]]}
-            vertidx = [int(n) for n in self.read_data[self.nvertex + 3 + node].split()[6:]]
+            vertidx = [
+                int(n) for n in self.read_data[self.nvertex + 3 + node].split()[6:]
+            ]
 
-            node_data.append([int(nid), float(x), float(y), float(z), int(lay), int(numverts), vertidx])
+            node_data.append(
+                [
+                    int(nid),
+                    float(x),
+                    float(y),
+                    float(z),
+                    int(lay),
+                    int(numverts),
+                    vertidx,
+                ]
+            )
 
-        nodedf = pd.DataFrame(node_data, columns=['node', 'x', 'y', 'z', 'layer', 'numverts', 'vertidx'])
+        nodedf = pd.DataFrame(
+            node_data, columns=["node", "x", "y", "z", "layer", "numverts", "vertidx"]
+        )
         return nodedf
 
     def get_node_coordinates(self, zcoord=False, zero_based=False):
-        '''
+        """
         Args:
             zcoord (`bool`): flag to add z coord to coordinates.  Default is False
             zero_based (`bool`): flag to subtract one from the node numbers in the returned
@@ -2923,10 +2941,12 @@ class GsfReader():
 
         Returns:
             node_coords: Dictionary containing x and y coordinates for each node
-        '''
+        """
         node_coords = {}
         for node in range(self.nnode):
-            nid, x, y, z, lay, numverts = self.read_data[self.nvertex + 3 + node].split()[:6]
+            nid, x, y, z, lay, numverts = self.read_data[
+                self.nvertex + 3 + node
+            ].split()[:6]
             nid = int(nid)
             if zero_based:
                 nid -= 1
@@ -2935,4 +2955,3 @@ class GsfReader():
                 node_coords[nid] += [float(z)]
 
         return node_coords
-

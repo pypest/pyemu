@@ -169,16 +169,16 @@ def geostatistical_draws(
 
                 if verbose:
                     print("getting diag var cov", df_zone.shape[0])
-                
-                #tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
+
+                # tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
                 if verbose:
                     print("scaling full cov by diag var cov")
-                
+
                 # for i in range(cov.shape[0]):
                 #     cov.x[i, :] *= tpl_var
-                for i,name in enumerate(cov.row_names):
-                    #print(name,full_cov_dict[name])
-                    cov.x[:,i] *= np.sqrt(full_cov_dict[name])
+                for i, name in enumerate(cov.row_names):
+                    # print(name,full_cov_dict[name])
+                    cov.x[:, i] *= np.sqrt(full_cov_dict[name])
                     cov.x[i, :] *= np.sqrt(full_cov_dict[name])
                     cov.x[i, i] = full_cov_dict[name]
                 # no fixed values here
@@ -326,14 +326,14 @@ def geostatistical_prior_builder(
                 if verbose:
                     print("getting diag var cov", df_zone.shape[0])
 
-                #tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
+                # tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
 
                 if verbose:
                     print("scaling full cov by diag var cov")
 
-                #cov *= tpl_var
-                for i,name in enumerate(cov.row_names):
-                    cov.x[:,i] *= np.sqrt(full_cov_dict[name])
+                # cov *= tpl_var
+                for i, name in enumerate(cov.row_names):
+                    cov.x[:, i] *= np.sqrt(full_cov_dict[name])
                     cov.x[i, :] *= np.sqrt(full_cov_dict[name])
                     cov.x[i, i] = full_cov_dict[name]
                 if verbose:
@@ -537,24 +537,26 @@ def _condition_on_par_knowledge(cov, var_knowledge_dict):
             "var knowledge dict entries not found: {0}".format(",".join(missing))
         )
     if cov.isdiagonal:
-        raise Exception("_condition_on_par_knowledge(): cov is diagonal, simply update the par variances")
+        raise Exception(
+            "_condition_on_par_knowledge(): cov is diagonal, simply update the par variances"
+        )
     know_names = list(var_knowledge_dict.keys())
     know_names.sort()
-    know_cross_cov = cov.get(cov.row_names,know_names)
+    know_cross_cov = cov.get(cov.row_names, know_names)
 
-    know_cov = cov.get(know_names,know_names)
+    know_cov = cov.get(know_names, know_names)
     # add the par knowledge to the diagonal of know_cov
-    for i,name in enumerate(know_names):
-        know_cov.x[i,i] += var_knowledge_dict[name]
+    for i, name in enumerate(know_names):
+        know_cov.x[i, i] += var_knowledge_dict[name]
 
     # kalman gain
     k_gain = know_cross_cov * know_cov.inv
-    #selection matrix
+    # selection matrix
     h = k_gain.zero2d.T
-    know_dict = {n:i for i,n in enumerate(know_names)}
-    for i,name in enumerate(cov.row_names):
+    know_dict = {n: i for i, n in enumerate(know_names)}
+    for i, name in enumerate(cov.row_names):
         if name in know_dict:
-            h.x[know_dict[name],i] = 1.0
+            h.x[know_dict[name], i] = 1.0
 
     prod = k_gain * h
     conditional_cov = (prod.identity - prod) * cov
@@ -3993,18 +3995,20 @@ def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv"):
         org_file = org_file[0]
         org_arr = np.loadtxt(org_file)
         if "zone_file" in df.columns:
-            zone_file = df.loc[df.model_file == model_input_file,"zone_file"].dropna().unique()
+            zone_file = (
+                df.loc[df.model_file == model_input_file, "zone_file"].dropna().unique()
+            )
             zone_arr = None
             if len(zone_file) > 1:
                 zone_arr = np.zeros_like(arr)
                 for zf in zone_file:
                     za = np.loadtxt(zf)
-                    zone_arr[za!=0] = 1
+                    zone_arr[za != 0] = 1
             elif len(zone_file) == 1:
                 zone_arr = np.loadtxt(zone_file[0])
             if zone_arr is not None:
-                arr[zone_arr==0] = np.NaN
-                org_arr[zone_arr==0] = np.NaN
+                arr[zone_arr == 0] = np.NaN
+                org_arr[zone_arr == 0] = np.NaN
 
         for stat, func in stat_dict.items():
             v = func(arr)
@@ -4354,7 +4358,7 @@ def write_grid_tpl(
                             pname += "_x:{0:10.2E}_y:{1:10.2E}".format(
                                 spatial_reference.xcentergrid[i, j],
                                 spatial_reference.ycentergrid[i, j],
-                            ).replace(" ","")
+                            ).replace(" ", "")
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                         if len(pname) > 12:
@@ -6918,4 +6922,3 @@ def _l2_maha_worker(o1, o2names, mean, var, cov, results, l2_crit_val):
             rresults[ostr] = l2_maha_sq_val
     results.update(rresults)
     print(o1, "done")
-

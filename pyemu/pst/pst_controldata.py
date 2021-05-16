@@ -322,7 +322,7 @@ class ControlData(object):
         """
         self._df.loc[:, "passed"] = False
         if iskeyword:
-            #self._df.loc[:, "passed"] = True
+            # self._df.loc[:, "passed"] = True
 
             extra = {}
             for line in lines:
@@ -395,7 +395,7 @@ class ControlData(object):
                     # if a float was expected and int return, not a problem
                     if t == np.int32 and self._df.loc[name, "type"] == np.float64:
                         self._df.loc[name, "value"] = np.float64(v)
-                        #self._df.loc[name, "passed"] = True
+                        # self._df.loc[name, "passed"] = True
 
                     # if this is a required input, throw
                     elif self._df.loc[name, "required"]:
@@ -411,7 +411,7 @@ class ControlData(object):
                                 if t == self._df.loc[nname, "type"]:
                                     self._df.loc[nname, "value"] = v
                                     found = True
-                                    #self._df.loc[nname, "passed"] = True
+                                    # self._df.loc[nname, "passed"] = True
                                     break
                         if not found:
                             warnings.warn(
@@ -425,7 +425,7 @@ class ControlData(object):
 
                 else:
                     self._df.loc[name, "value"] = v
-                    #self._df.loc[name, "passed"] = True
+                    # self._df.loc[name, "passed"] = True
 
         return {}
 
@@ -484,6 +484,8 @@ class ControlData(object):
                 f.write(self.formatted_values[name.replace("[", "").replace("]", "")])
                 for name in line.split()
                 if self._df.loc[name.replace("[", "").replace("]", ""), "passed"]
-                == True or self._df.loc[name.replace("[", "").replace("]", ""), "required"] == True
+                == True
+                or self._df.loc[name.replace("[", "").replace("]", ""), "required"]
+                == True
             ]
             f.write("\n")

@@ -1025,6 +1025,7 @@ class OrdinaryKrige(object):
         pt_zone=None,
         forgive=False,
         num_threads=1,
+        idx_vals=None,
     ):
         """calculate ordinary kriging factors (weights) for the points
         represented by arguments x and y
@@ -1052,6 +1053,8 @@ class OrdinaryKrige(object):
                 is raised for failed matrix inversion.
             num_threads (`int`): number of multiprocessing workers to use to try to speed up
                 kriging in python.  Default is 1.
+            idx_vals (iterable of `int`): optional index values to use in the interpolation dataframe.  This is
+                used to set the proper node number in the factors file for unstructured grids.
 
         Returns:
             `pandas.DataFrame`: a dataframe with information summarizing the ordinary kriging
@@ -1071,6 +1074,7 @@ class OrdinaryKrige(object):
                 verbose,
                 pt_zone,
                 forgive,
+                idx_vals,
             )
         else:
             return self._calc_factors_mp(
@@ -1083,6 +1087,7 @@ class OrdinaryKrige(object):
                 pt_zone,
                 forgive,
                 num_threads,
+                idx_vals,
             )
 
     def _calc_factors_org(
@@ -1095,12 +1100,17 @@ class OrdinaryKrige(object):
         verbose=False,
         pt_zone=None,
         forgive=False,
+        idx_vals=None,
     ):
 
         assert len(x) == len(y)
+        if idx_vals is not None and len(idx_vals) != len(x):
+            raise Exception("len(idx_vals) != len(x)")
         # find the point data to use for each interp point
         sqradius = search_radius ** 2
         df = pd.DataFrame(data={"x": x, "y": y})
+        if idx_vals is not None:
+            df.index = [int(i) for i in idx_vals]
         inames, idist, ifacts, err_var = [], [], [], []
         sill = self.geostruct.sill
         if pt_zone is None:
@@ -1252,11 +1262,16 @@ class OrdinaryKrige(object):
         pt_zone=None,
         forgive=False,
         num_threads=1,
+        idx_vals=None,
     ):
-
-        assert len(x) == len(y)
         start_loop = datetime.now()
+        assert len(x) == len(y)
+        if idx_vals is not None and len(idx_vals) != len(x):
+            raise Exception("len(idx_vals) != len(x)")
+        # find the point data to use for each interp point
         df = pd.DataFrame(data={"x": x, "y": y})
+        if idx_vals is not None:
+            df.index = [int(i) for i in idx_vals]
         print("starting interp point loop for {0} points".format(df.shape[0]))
         with mp.Manager() as manager:
 
@@ -1446,7 +1461,7 @@ class OrdinaryKrige(object):
             #     print("...took {0}".format(td))
 
     def to_grid_factors_file(
-        self, filename, points_file="points.junk", zone_file="zone.junk"
+        self, filename, points_file="points.junk", zone_file="zone.junk", ncol=None
     ):
         """write a PEST-style factors file.  This file can be used with
         the fac2real() method to write an interpolated structured or unstructured array
@@ -1458,6 +1473,10 @@ class OrdinaryKrige(object):
             zone_file (`str`): zone filename to add to the header of the factors file.
                 This is not used by the fac2real() method.  Default is "zone.junk"
 
+            ncol (`int`) column value to write to factors file.  This is normally determined
+                from the spatial reference and should only be passed for unstructured grids -
+                it should be equalt to the number of nodes in the current property file. Default is None.
+
         Note:
             this method should be called after OrdinaryKrige.calc_factors_grid() for structured
             models or after OrdinaryKrige.calc_factors() for unstructured models.
@@ -1468,23 +1487,21 @@ class OrdinaryKrige(object):
                 "ok.interp_data is None, must call calc_factors_grid() first"
             )
         if self.spatial_reference is None:
-             #raise Exception(
-             #   "ok.spatial_reference is None, must call calc_factors_grid() first"
-             #)
-            print("OrdinaryKrige.to_grid_factors_file(): spatial_reference attr is None, assuming unstructured grid")
+            print(
+                "OrdinaryKrige.to_grid_factors_file(): spatial_reference attr is None, assuming unstructured grid"
+            )
+            if ncol is None:
+                raise Exception("'ncol' arg must be passed for unstructured grids")
             nrow = 1
-            ncol = self.interp_data.shape[0]
+            if ncol < self.interp_data.shape[0]:
+                raise Exception("something is wrong")
         else:
             nrow = self.spatial_reference.nrow
             ncol = self.spatial_reference.ncol
         with open(filename, "w") as f:
             f.write(points_file + "\n")
             f.write(zone_file + "\n")
-            f.write(
-                "{0} {1}\n".format(
-                    ncol, nrow
-                )
-            )
+            f.write("{0} {1}\n".format(ncol, nrow))
             f.write("{0}\n".format(self.point_data.shape[0]))
             [f.write("{0}\n".format(name)) for name in self.point_data.name]
             t = 0

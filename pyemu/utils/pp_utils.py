@@ -509,6 +509,10 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
                     lambda x: "{0}_ppidx:{1}".format(name_prefix, x.idx),
                     axis=1,
                 )
+            if "zone" in pp_df.columns:
+                pp_df.loc[:, "parnme"] = pp_df.apply(
+                    lambda x: x.parnme + "_zone:{0}".format(x.zone), axis=1
+                )
             pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
                 lambda x: "~    {0}    ~".format(x)
             )

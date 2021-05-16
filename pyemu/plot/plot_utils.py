@@ -1406,10 +1406,9 @@ def ensemble_res_1to1(
                 # update y min and max for obs+noise ensembles
                 bn = np.min([en.min(), bn])
                 bx = np.max([ex.max(), bx])
-                #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
-                ax.fill_between(obs_gg.obsval, en, ex, facecolor=c, alpha=0.2,
-                                zorder=2)
-        #ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+                # [ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
+                ax.fill_between(obs_gg.obsval, en, ex, facecolor=c, alpha=0.2, zorder=2)
+        # ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
         # collector for mins and max
         omn = []
         omx = []
@@ -1420,40 +1419,42 @@ def ensemble_res_1to1(
             en = en_g.min()
             omn.append(en)
             omx.append(ex)
-            [ax.plot([ov, ov], [een, eex], color=c, zorder=1)
-             for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
+            [
+                ax.plot([ov, ov], [een, eex], color=c, zorder=1)
+                for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)
+            ]
 
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()
         # focus on obs(+noise)
         # need to make sure all obsval are captured (obn, obx)
         # but helpful if not zoomed out too far
-        rng = bx-bn
-        mpnt = rng/2
+        rng = bx - bn
+        mpnt = rng / 2
         if omn < bn:  # if the output ensemble mins extend below obs+noise
             mn = bn - 0.01 * rng  # focus on obs+noise? -- will capture obsval
-        elif 1.1 * (mpnt-bn) <= mpnt-omn:  # if min of output en is close to obs+noise
-            mn = mpnt - (1.1 * (mpnt-omn))  # expand from model output a bit
+        elif (
+            1.1 * (mpnt - bn) <= mpnt - omn
+        ):  # if min of output en is close to obs+noise
+            mn = mpnt - (1.1 * (mpnt - omn))  # expand from model output a bit
         else:
-            mn = omn - 0.02 * (omx-omn)  # focus on model output
+            mn = omn - 0.02 * (omx - omn)  # focus on model output
         if omx > bx:  # if the output ensemble max is above the obs+noise max
-            mx = bx + 0.01 * rng   # focus on the obs+noise max
-        elif 1.1 * (bx-mpnt) <= omx-mpnt:  # if max of output en is close to obs_nois
+            mx = bx + 0.01 * rng  # focus on the obs+noise max
+        elif (
+            1.1 * (bx - mpnt) <= omx - mpnt
+        ):  # if max of output en is close to obs_nois
             mx = mpnt + (1.1 * (omx - mpnt))  # expand from model output a bit
         else:
-            mx = omx + 0.02 * (omx-omn)  # focus on model output
+            mx = omx + 0.02 * (omx - omn)  # focus on model output
         ax.plot([mn, mx], [mn, mx], "k--", lw=1.0, zorder=3)
         xlim = (mn, mx)
         ax.set_xlim(mn, mx)
         ax.set_ylim(mn, mx)
 
         if mx > 1.0e5:
-            ax.xaxis.set_major_formatter(
-                matplotlib.ticker.FormatStrFormatter("%1.0e")
-            )
-            ax.yaxis.set_major_formatter(
-                matplotlib.ticker.FormatStrFormatter("%1.0e")
-            )
+            ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%1.0e"))
+            ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter("%1.0e"))
         ax.grid()
 
         ax.set_xlabel("observed", labelpad=0.1)
@@ -1481,19 +1482,20 @@ def ensemble_res_1to1(
                 # update y min and max for obs+noise ensembles
                 bn = np.min([en.min(), bn])
                 bx = np.max([ex.max(), bx])
-                #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
-                ax.fill_between(obs_gg.obsval, en, ex, facecolor=c, alpha=0.2,
-                                zorder=2)
+                # [ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
+                ax.fill_between(obs_gg.obsval, en, ex, facecolor=c, alpha=0.2, zorder=2)
         omn = []
         omx = []
         for c, en in ensembles.items():
-            en_g = en.loc[:, obs_g.obsnme].subtract(obs_g.obsval,axis=1)
+            en_g = en.loc[:, obs_g.obsnme].subtract(obs_g.obsval, axis=1)
             ex = en_g.max()
             en = en_g.min()
             omn.append(en)
             omx.append(ex)
-            [ax.plot([ov, ov],[een, eex], color=c, zorder=1)
-             for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
+            [
+                ax.plot([ov, ov], [een, eex], color=c, zorder=1)
+                for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)
+            ]
 
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()

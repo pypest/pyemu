@@ -737,10 +737,7 @@ class Pst(object):
         return df
 
     def _read_line_comments(self, f, forgive):
-        """private method to read comment lines from a control file
-
-
-        """
+        """private method to read comment lines from a control file"""
         comments = []
         while True:
             org_line = f.readline()
@@ -763,9 +760,7 @@ class Pst(object):
         return org_line.strip(), comments
 
     def _read_section_comments(self, f, forgive):
-        """private method to read comments from a section of the control file
-
-        """
+        """private method to read comments from a section of the control file"""
         lines = []
         section_comments = []
         while True:
@@ -781,9 +776,7 @@ class Pst(object):
 
     @staticmethod
     def _parse_external_line(line, pst_path="."):
-        """private method to parse a file for external file info
-
-        """
+        """private method to parse a file for external file info"""
         raw = line.strip().split()
         existing_path, filename = Pst._parse_path_agnostic(raw[0])
         if pst_path is not None:
@@ -804,8 +797,7 @@ class Pst(object):
 
     @staticmethod
     def _parse_path_agnostic(filename):
-        """private method to parse a file path for any os sep
-        """
+        """private method to parse a file path for any os sep"""
         filename = filename.replace("\\", os.sep).replace("/", os.sep)
         return os.path.split(filename)
 
@@ -813,9 +805,7 @@ class Pst(object):
     def _cast_df_from_lines(
         section, lines, fieldnames, converters, defaults, alias_map={}, pst_path="."
     ):
-        """private method to cast a pandas dataframe from raw control file lines
-
-        """
+        """private method to cast a pandas dataframe from raw control file lines"""
         # raw = lines[0].strip().split()
         # if raw[0].lower() == "external":
         if section.lower().strip().split()[-1] == "external":
@@ -884,8 +874,7 @@ class Pst(object):
         return df
 
     def _cast_prior_df_from_lines(self, section, lines, pst_path="."):
-        """private method to cast prior information lines to a dataframe
-        """
+        """private method to cast prior information lines to a dataframe"""
         if pst_path == ".":
             pst_path = ""
         if section.strip().split()[-1].lower() == "external":
@@ -951,9 +940,7 @@ class Pst(object):
             self.prior_information.loc[:, "extra"] = extra
 
     def _load_version2(self, filename):
-        """private method to load a version 2 control file
-
-        """
+        """private method to load a version 2 control file"""
         self.lcount = 0
         self.comments = {}
         self.prior_information = self.null_prior
@@ -1467,8 +1454,7 @@ class Pst(object):
         self.prior_information = self.prior_information.loc[keep_idx, :]
 
     def _write_df(self, name, f, df, formatters, columns):
-        """private method to write a dataframe to a control file
-        """
+        """private method to write a dataframe to a control file"""
         if name.startswith("*"):
             f.write(name + "\n")
         if self.with_comments:
@@ -1550,8 +1536,7 @@ class Pst(object):
         # print("noptmax: {0}".format(self.control_data.noptmax))
 
     def _write_version2(self, new_filename, use_pst_path=True, pst_rel_path="."):
-        """private method to write a version 2 control file
-        """
+        """private method to write a version 2 control file"""
         pst_path = None
         new_filename = str(new_filename)  # ensure convert to str
         if use_pst_path:
@@ -1753,8 +1738,7 @@ class Pst(object):
             )
 
     def _write_version1(self, new_filename):
-        """private method to write a version 1 pest control file
-        """
+        """private method to write a version 1 pest control file"""
         self.new_filename = new_filename
         self.rectify_pgroups()
         self.rectify_pi()

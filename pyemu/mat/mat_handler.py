@@ -2223,9 +2223,13 @@ class Matrix(object):
         """
         if icode == -1:
             if not self.isdiagonal:
-                raise Exception("Matrix.to_ascii(): error: icode supplied as -1 for non-diagonal matrix")
+                raise Exception(
+                    "Matrix.to_ascii(): error: icode supplied as -1 for non-diagonal matrix"
+                )
             if self.shape[0] != self.shape[1]:
-                raise Exception("Matrix.to_ascii(): error: icode supplied as -1 for non-square matrix")
+                raise Exception(
+                    "Matrix.to_ascii(): error: icode supplied as -1 for non-square matrix"
+                )
         nrow, ncol = self.shape
         f_out = open(filename, "w")
         f_out.write(" {0:7.0f} {1:7.0f} {2:7.0f}\n".format(nrow, ncol, icode))
@@ -2798,7 +2802,12 @@ class Cov(Matrix):
             if include_path:
                 self.to_ascii(covmat_file, icode=1)
             else:
-                self.to_ascii(os.path.join(os.path.dirname(unc_file),os.path.split(covmat_file)[-1]), icode=1)
+                self.to_ascii(
+                    os.path.join(
+                        os.path.dirname(unc_file), os.path.split(covmat_file)[-1]
+                    ),
+                    icode=1,
+                )
 
         else:
             if self.isdiagonal:
@@ -2963,7 +2972,7 @@ class Cov(Matrix):
         return cls(x=x, names=names, isdiagonal=True)
 
     @classmethod
-    def from_uncfile(cls, filename,pst=None):
+    def from_uncfile(cls, filename, pst=None):
         """instaniates a `Cov` from a PEST-compatible uncertainty file
 
         Args:
@@ -2981,7 +2990,7 @@ class Cov(Matrix):
         """
 
         if pst is not None:
-            if isinstance(pst,str):
+            if isinstance(pst, str):
                 pst = Pst(pst)
 
         nentries = Cov._get_uncfile_dimensions(filename)
@@ -2998,7 +3007,9 @@ class Cov(Matrix):
             line = line.strip()
             if "start" in line:
                 if "pest_control_file" in line:
-                    raise Exception("Cov.from_uncfile() error: 'pest_control_file' block not supported")
+                    raise Exception(
+                        "Cov.from_uncfile() error: 'pest_control_file' block not supported"
+                    )
 
                 if "standard_deviation" in line:
                     std_mult = 1.0
@@ -3033,8 +3044,9 @@ class Cov(Matrix):
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith("file"):
-                            mat_filename = os.path.join(os.path.dirname(filename),
-                                line2.split()[1].replace("'", "").replace('"', "")
+                            mat_filename = os.path.join(
+                                os.path.dirname(filename),
+                                line2.split()[1].replace("'", "").replace('"', ""),
                             )
                             cov = Matrix.from_ascii(mat_filename)
 
@@ -3043,12 +3055,14 @@ class Cov(Matrix):
                         elif line2.startswith("first_parameter"):
                             if pst is None:
                                 raise Exception(
-                                    "Cov.from_uncfile(): 'first_parameter' usage requires the 'pst' arg to be passed")
+                                    "Cov.from_uncfile(): 'first_parameter' usage requires the 'pst' arg to be passed"
+                                )
                             first_par = line2.split()[1]
                         elif line2.startswith("last_parameter"):
                             if pst is None:
                                 raise Exception(
-                                    "Cov.from_uncfile(): 'last_parameter' usage requires the 'pst' arg to be passed")
+                                    "Cov.from_uncfile(): 'last_parameter' usage requires the 'pst' arg to be passed"
+                                )
                             last_par = line2.split()[1]
 
                         else:
@@ -3062,17 +3076,33 @@ class Cov(Matrix):
                         cov *= var
                     if first_par is not None:
                         if last_par is None:
-                            raise Exception("'first_par' found but 'last_par' not found")
+                            raise Exception(
+                                "'first_par' found but 'last_par' not found"
+                            )
                         if first_par not in pst.par_names:
-                            raise Exception("'first_par' {0} not found in pst.par_names".format(first_par))
+                            raise Exception(
+                                "'first_par' {0} not found in pst.par_names".format(
+                                    first_par
+                                )
+                            )
                         if last_par not in pst.par_names:
-                            raise Exception("'last_par' {0} not found in pst.par_names".format(last_par))
-                        names = pst.parameter_data.loc[first_par:last_par,"parnme"].tolist()
+                            raise Exception(
+                                "'last_par' {0} not found in pst.par_names".format(
+                                    last_par
+                                )
+                            )
+                        names = pst.parameter_data.loc[
+                            first_par:last_par, "parnme"
+                        ].tolist()
                         if len(names) != cov.shape[0]:
                             print(names)
                             print(len(names), cov.shape)
-                            raise Exception("the number of par names between 'first_par' and "
-                                            "'last_par' != elements in the cov matrix {0}".format(mat_filename))
+                            raise Exception(
+                                "the number of par names between 'first_par' and "
+                                "'last_par' != elements in the cov matrix {0}".format(
+                                    mat_filename
+                                )
+                            )
                         cov.row_names = names
                         cov.col_names = names
 
@@ -3124,8 +3154,9 @@ class Cov(Matrix):
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith("file"):
-                            mat_filename = os.path.join(os.path.dirname(filename),
-                                line2.split()[1].replace("'", "").replace('"', "")
+                            mat_filename = os.path.join(
+                                os.path.dirname(filename),
+                                line2.split()[1].replace("'", "").replace('"', ""),
                             )
                             cov = Matrix.from_ascii(mat_filename)
                             nentries += len(cov.row_names)
