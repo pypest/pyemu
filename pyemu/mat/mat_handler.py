@@ -151,6 +151,13 @@ class Matrix(object):
         mat = pyemu.Matrix(x=data,row_names=row_names,col_names=col_names)
         mat.to_binary("mat.jco")
 
+        # load an existing jacobian matrix
+        jco = pyemu.Jco.from_binary("pest.jco")
+        # form an observation noise covariance matrix from weights
+        obscov = pyemu.Cov.from_observation_data(pst)
+        # form the normal matrix, aligning rows and cols on-the-fly
+        xtqx = jco * obscov.inv * jco.T
+
 
     Note:
         this class makes heavy use of property decorators to encapsulate
@@ -233,7 +240,13 @@ class Matrix(object):
 
         Args:
             x (`numpy.ndarray`): the new numeric data
-            copy (`bool`): flag to make a copy of 'x'. Defaule is True
+            copy (`bool`): flag to make a copy of 'x'. Default is True
+
+        Returns:
+            None
+
+        Note:
+            operates in place
 
         """
         if x.shape != self.shape:
@@ -302,7 +315,12 @@ class Matrix(object):
                 ints = elementwise self raised to power
 
         Returns:
-            `Matrix`: a new Matrix object
+            `Matrix`: a new Matrix object raised to the power `power`
+
+        Example::
+
+            cov = pyemu.Cov.from_uncfile("my.unc")
+            sqcov = cov**2
 
         """
         if power < 0:
@@ -346,7 +364,15 @@ class Matrix(object):
             if `Matrix` and other (if applicable) have `autoalign` set to `True`,
             both `Matrix` and `other` are aligned based on row and column names.
             If names are not common between the two, this may result in a smaller
-            returned `Matrix`
+            returned `Matrix`.  If no names are shared, an exception is raised
+
+        Example::
+
+            jco1 = pyemu.Jco.from_binary("pest.1.jcb")
+            jco2 = pyemu.Jco.from_binary("pest.2.jcb")
+            diff = jco1 - jco2
+
+
         """
 
         if np.isscalar(other):
@@ -437,7 +463,7 @@ class Matrix(object):
                     )
 
     def __add__(self, other):
-        """Overload of numpy.ndarray.__add__().  Tries to speedup by checking for
+        """Overload of numpy.ndarray.__add__() - elementwise addition.  Tries to speedup by checking for
             scalars of diagonal matrices on either side of operator
 
         Args:
@@ -450,7 +476,16 @@ class Matrix(object):
             if `Matrix` and other (if applicable) have `autoalign` set to `True`,
             both `Matrix` and `other` are aligned based on row and column names.
             If names are not common between the two, this may result in a smaller
-            returned `Matrix`
+            returned `Matrix`.  If no names are shared, an exception is raised.
+            The addition of a scalar does not expand non-zero elements.
+
+        Example::
+
+            m1 = pyemu.Cov.from_parameter_data(pst)
+            m1_plus_on1 = m1 + 1.0 #add 1.0 to all non-zero elements
+            m2 = m1.copy()
+            m2_plus_m1 = m1 + m2
+
 
         """
         if np.isscalar(other):
@@ -550,7 +585,14 @@ class Matrix(object):
             if `Matrix` and other (if applicable) have `autoalign` set to `True`,
             both `Matrix` and `other` are aligned based on row and column names.
             If names are not common between the two, this may result in a smaller
-            returned `Matrix`
+            returned `Matrix`.  If not common elements are shared, an excetion is raised
+
+
+        Example::
+
+            cov = pyemu.Cov.from_parameter_data(pst)
+            cov2 = cov * 10
+            cov3 = cov * cov2
 
         """
         if np.isscalar(other):
@@ -644,7 +686,16 @@ class Matrix(object):
             if `Matrix` and other (if applicable) have `autoalign` set to `True`,
             both `Matrix` and `other` are aligned based on row and column names.
             If names are not common between the two, this may result in a smaller
-            returned `Matrix`
+            returned `Matrix`.  If not common elements are found, an exception is raised
+
+        Example::
+
+            jco = pyemu.Jco.from_binary("pest.jcb")
+            cov = pyemu.Cov.from_parmaeter_data(pst)
+            # get the forecast prior covariance matrix
+            forecast_cov = jco.get(pst.forecast_names).T * cov * jco.get(pst.forecast_names)
+
+
         """
 
         if isinstance(other, pd.DataFrame):
@@ -754,7 +805,13 @@ class Matrix(object):
             if `Matrix` and other (if applicable) have `autoalign` set to `True`,
             both `Matrix` and `other` are aligned based on row and column names.
             If names are not common between the two, this may result in a smaller
-            returned `Matrix`
+            returned `Matrix`.  If not common elements are found, an exception is raised
+
+        Example::
+
+            # multiply by a scalar
+            jco = pyemu.Jco.from_binary("pest.jcb")
+            jco_times_10 = 10 * jco
 
         """
 
@@ -964,6 +1021,13 @@ class Matrix(object):
         Returns:
             `numpy.ndarray` : numpy.ndarray
 
+        Exmaple::
+
+            # A diagonal cov
+            cov = pyemu.Cov.from_parameter_data
+            x2d = cov.as_2d # a numpy 2d array
+            print(cov.shape,cov.x.shape,x2d.shape)
+
         """
         if not self.isdiagonal:
             return self.x
@@ -976,6 +1040,13 @@ class Matrix(object):
 
         Returns:
             `Martrix`: non-diagonal form of `Matrix`
+
+        Exmaple::
+
+            # A diagonal cov
+            cov = pyemu.Cov.from_parameter_data
+            cov2d = cov.as_2d # a numpy 2d array
+            print(cov.shape,cov.x.shape,cov2d.shape,cov2d.x.shape)
 
         """
         if not self.isdiagonal:
@@ -993,6 +1064,12 @@ class Matrix(object):
 
         Returns:
             `int`: length of 2 tuple
+
+        Exmaple::
+
+            jco = pyemu.Jco.from_binary("pest.jcb")
+            shape = jco.shape
+            nrow,ncol = shape #unpack to ints
 
         """
         if self.__x is not None:
@@ -1030,6 +1107,17 @@ class Matrix(object):
         Returns:
             `Matrix`: transpose of `Matrix`
 
+        Note:
+            returns a copy of self
+
+            A syntatic-sugar overload of Matrix.transpose()
+
+        Example::
+
+            jcb = pyemu.Jco.from_binary("pest.jcb")
+            jcbt = jcb.T
+
+
         """
         return self.transpose
 
@@ -1039,6 +1127,11 @@ class Matrix(object):
 
         Returns:
             `Matrix`: transpose of `Matrix`
+
+        Example::
+
+            jcb = pyemu.Jco.from_binary("pest.jcb")
+            jcbt = jcb.T
 
         """
         if not self.isdiagonal:
@@ -1122,6 +1215,12 @@ class Matrix(object):
             `int`: the index of the singular value whos ratio with the
             first singular value is less than or equal to `eigthresh`
 
+
+        Example::
+
+            jco = pyemu.Jco.from_binary("pest.jco")
+            max_sing = pyemu.Matrix.get_maxsing_from_s(jco.s,eigthresh=pst.svd_data.eigthresh)
+
         """
         sthresh = s.flatten() / s[0]
         ising = 0
@@ -1151,6 +1250,11 @@ class Matrix(object):
             this method calls the static method `Matrix.get_maxsing_from_s()`
             with `Matrix.s.x`
 
+        Example::
+
+            jco = pyemu.Jco.from_binary("pest.jco")
+            max_sing = jco.get_maxsing(eigthresh=pst.svd_data.eigthresh)
+
         """
 
         return Matrix.get_maxsing_from_s(self.s.x, eigthresh=eigthresh)
@@ -1177,8 +1281,8 @@ class Matrix(object):
         Example::
 
             mat = pyemu.Matrix.from_binary("my.jco")
-            u,s,v = mat.pseudo_inv_components(maxsing=10)
-            resolution_matrix = v * v.T
+            u1,s1,v1 = mat.pseudo_inv_components(maxsing=10)
+            resolution_matrix = v1 * v1.T
             resolution_matrix.to_ascii("resol.mat")
 
         """
@@ -1218,6 +1322,12 @@ class Matrix(object):
 
         Returns:
               `Matrix`: the truncated-SVD pseudo inverse of `Matrix` (V_1 * s_1^-1 * U^T)
+
+        Example::
+
+            jco = pyemu.Jco.from_binary("pest.jcb")
+            jco_psinv = jco.pseudo_inv(pst.svd_data.maxsing,pst.svd_data.eigthresh)
+            jco_psinv.to_binary("pseudo_inv.jcb")
         """
         if maxsing is None:
             maxsing = self.get_maxsing(eigthresh=eigthresh)
@@ -1238,6 +1348,12 @@ class Matrix(object):
 
         Note:
             uses `numpy.sqrt`
+
+        Example::
+
+            cov = pyemu.Cov.from_uncfile("my.unc")
+            sqcov = cov.sqrt
+            sqcov.to_uncfile("sqrt_cov.unc")
 
 
         """
@@ -1273,6 +1389,11 @@ class Matrix(object):
             `Matrix`: full singular value matrix.  Shape is `(max(Matrix.shape),max(Matrix.shape))`
             with zeros along the diagonal from `min(Matrix.shape)` to `max(Matrix.shape)`
 
+        Example::
+
+            jco = pyemu.Jco.from_binary("pest.jcb")
+            jco.full_s.to_ascii("full_sing_val_matrix.mat")
+
         """
         x = np.zeros((self.shape), dtype=np.float32)
 
@@ -1293,6 +1414,14 @@ class Matrix(object):
         Returns:
             `Matrix`: singular value matrix.  shape is `(min(Matrix.shape),min(Matrix.shape))`
 
+        Example::
+
+            # plot the singular spectrum of the jacobian
+            import matplotlib.pyplot as plt
+            jco = pyemu.Jco.from_binary("pest.jcb")
+            plt.plot(jco.s.x)
+            plt.show()
+
         """
         if self.__s is None:
             self.__set_svd()
@@ -1304,6 +1433,12 @@ class Matrix(object):
 
         Returns:
             `Matrix`: left singular vectors.  Shape is `(Matrix.shape[0], Matrix.shape[0])`
+
+        Example::
+
+            jco = pyemu.Jco.from_binary("pest.jcb")
+            jco.u.to_binary("u.jcb")
+
 
         """
         if self.__u is None:
@@ -1317,6 +1452,11 @@ class Matrix(object):
         Returns:
             `Matrix`: right singular vectors.  Shape is `(Matrix.shape[1], Matrix.shape[1])`
 
+        Example::
+
+            jco = pyemu.Jco.from_binary("pest.jcb")
+            jco.v.to_binary("v.jcb")
+
         """
         if self.__v is None:
             self.__set_svd()
@@ -1328,6 +1468,12 @@ class Matrix(object):
 
         Returns:
             `Matrix`: `Matrix of zeros`
+
+        Example::
+
+            jco = pyemu.Jco.from_binary("pest.jcb")
+            zero_jco = jco.zero2d
+
 
         """
         return type(self)(
@@ -1421,6 +1567,19 @@ class Matrix(object):
             names (['str']): names in `Matrix.row_names` and\or `Matrix.col_names`
             axis (`int`, optional): the axis to reorder. if None, reorder both axes
 
+        Note:
+              Works in place.
+              Is called programmatically during linear algebra operations
+
+        Example::
+
+            # load a jco that has more obs (rows) than non-zero weighted obs
+            # in the control file
+            jco = pyemu.Jco.from_binary("pest.jcb")
+            # get an obs noise cov matrix
+            obscov = pyemu.Cov.from_observation_data(pst)
+            jco.align(obscov.row_names,axis=0)
+
         """
         if not isinstance(names, list):
             names = [names]
@@ -1483,6 +1642,15 @@ class Matrix(object):
 
         Returns:
             `Matrix`: a new `Matrix`
+
+        Example::
+            # load a jco that has more obs (rows) than non-zero weighted obs
+            # in the control file
+            jco = pyemu.Jco.from_binary("pest.jcb")
+            # get an obs noise cov matrix
+            obscov = pyemu.Cov.from_observation_data(pst)
+            nnz_jco = jco.get(row_names = obscov.row_names)
+
 
         """
         if row_names is None and col_names is None:
@@ -1643,9 +1811,13 @@ class Matrix(object):
             col_names (['str'], optional): col_names to extract. If `None`,
                 all col_names are retained.
 
-
         Returns:
             `Matrix`: the extract sub-matrix defined by `row_names` and/or `col_names`
+
+        Example::
+
+            cov = pyemu.Cov.from_parameter_data(pst)
+            hk_cov = cov.extract(row_names=["hk1","hk2","hk3"])
 
         """
         if row_names is None and col_names is None:
@@ -1662,6 +1834,13 @@ class Matrix(object):
 
         Returns:
             `Matrix`: vector-shaped `Matrix` instance of the diagonal of this `Matrix`
+
+        Example::
+
+            cov = pyemu.Cov.from_unc_file("my.unc")
+            cov_diag = cov.get_diagonal_vector()
+            print(cov_diag.col_names)
+
         """
         if self.shape[0] != self.shape[1]:
             raise Exception("not diagonal")
@@ -1688,6 +1867,11 @@ class Matrix(object):
             chunk (`int`): number of elements to write in a single pass.
                 Default is `None`, which writes the entire numeric part of the
                 `Matrix` at once. This is faster but requires more memory.
+
+        Note:
+            This method is needed when the number of dimensions times 2 is larger
+            than the max value for a 32-bit integer.  happens!
+            This method is used by pyemu.Ensemble.to_binary()
 
         """
         if self.isdiagonal:
@@ -1758,6 +1942,20 @@ class Matrix(object):
         f.close()
 
     def to_dense(self, filename, close=True):
+        """experimental new dense matrix storage format to support faster I/O with ensembles
+
+        Args:
+            filename (`str`): the filename to save to
+            close (`bool`): flag to close the filehandle after saving
+
+        Returns:
+            f (`file`): the file handle.  Only returned if `close` is False
+
+        Note:
+            calls Matrix.write_dense()
+
+
+        """
         return Matrix.write_dense(
             filename,
             row_names=self.row_names,
@@ -1768,7 +1966,19 @@ class Matrix(object):
 
     @staticmethod
     def write_dense(filename, row_names, col_names, data, close=False):
-        """some hackery"""
+        """experimental new dense matrix storage format to support faster I/O with ensembles
+
+        Args:
+            filename (`str` or `file`): the file to write to
+            row_names ([`str`]): row names of the matrix
+            col_names ([`str`]): col names of the matrix
+            data (`np.ndarray`): matrix elements
+            close (`bool`): flag to close the file after writing
+
+        Returns:
+            f (`file`): the file handle.  Only returned if `close` is False
+
+        """
 
         if isinstance(filename, str):
             f = open(filename, "wb")
@@ -1884,7 +2094,7 @@ class Matrix(object):
 
     @staticmethod
     def read_dense(filename, forgive=False, close=True):
-        """read a dense format binary file.
+        """read a dense-format binary file.
 
         Args:
             filename (`str`): the filename or the open filehandle
@@ -2217,8 +2427,13 @@ class Matrix(object):
 
         Args:
             filename (`str`): filename to write to
-        icode (`int`, optional): PEST-style info code for matrix style.
-            Default is 2.
+            icode (`int`, optional): PEST-style info code for matrix style.
+                Default is 2.
+        Note:
+            if `icode` == -1, a 1-d  vector is written that represents a diagonal matrix.  An
+            exception is raised if `icode` == -1 and `isdiagonal` is False
+
+
 
         """
         if icode == -1:
@@ -2429,8 +2644,16 @@ class Matrix(object):
             random (`bool`): flag for contents of the trash matrix.
                 If True, fill with random numbers, if False, fill with zeros
                 Default is False
+
         Returns:
             `Matrix`: the new Matrix instance
+
+        Example::
+
+            row_names = ["row_1","row_2"]
+            col_names = ["col_1,"col_2"]
+            m = pyemu.Matrix.from_names(row_names,col_names)
+
 
         """
         if random:
@@ -2456,6 +2679,10 @@ class Matrix(object):
         Returns:
             `pandas.DataFrame`: a dataframe derived from `Matrix`
 
+        Note:
+            if `self.isdiagonal` is True, the full matrix is used to fill
+            the dataframe - lots of zeros.
+
         """
         if self.isdiagonal:
             x = np.diag(self.__x[:, 0])
@@ -2464,14 +2691,23 @@ class Matrix(object):
         return pd.DataFrame(data=x, index=self.row_names, columns=self.col_names)
 
     def extend(self, other):
-        """extend `Matrix` with the elements of other.
+        """extend `Matrix` with the elements of other, returning a new matrix.
 
         Args:
         other (`Matrix`):  the Matrix to extend self by
-        inplace (`bool`): inplace = True not implemented
 
         Returns:
             `Matrix`: new, extended `Matrix`
+
+        Note:
+            No row or column names can be shared between self and other
+
+        Example::
+
+            jco1 = pyemu.Jco.from_binary("pest_history.jco")
+            jco2 = pyemu.Jco.from_binary("pest_forecast.jco")
+
+            jco_ext = jco1.extend(jco2)
 
 
         """
@@ -2567,7 +2803,7 @@ class Jco(Matrix):
 
     @classmethod
     def from_pst(cls, pst, random=False):
-        """construct a new empty Jco from a control file filled
+        """construct a new empty Jco from a control file optionally filled
         with trash
 
         Args:
@@ -2655,6 +2891,9 @@ class Cov(Matrix):
         Returns:
             `Cov`: new `Cov` instance with identity matrix
 
+        Note:
+            the returned identity matrix has the same row-col names as self
+
         """
         if self.__identity is None:
             self.__identity = Cov(
@@ -2666,7 +2905,7 @@ class Cov(Matrix):
 
     @property
     def zero(self):
-        """get an instance of `Cov` with all zeros
+        """get a diagonal instance of `Cov` with all zeros on the diagonal
 
         Returns:
             `Cov`: new `Cov` instance with zeros
@@ -2690,6 +2929,14 @@ class Cov(Matrix):
 
         Returns:
             `Cov`: new conditional `Cov` that assumes `conditioning_elements` have become known
+
+        Example::
+
+            prior_cov = pyemu.Cov.from_parameter_data(pst)
+            now_known_pars = pst.adj_par_names[:5]
+            post_cov = prior_cov.condition_on(now_known_pars)
+
+
         """
         if not isinstance(conditioning_elements, list):
             conditioning_elements = [conditioning_elements]
@@ -2730,7 +2977,7 @@ class Cov(Matrix):
             `Cov`: the Cov to replace elements in this `Cov` with
 
         Note:
-            operates in place
+            operates in place.  Other must have the same row-col names as self
 
         """
         if not isinstance(other, Cov):
@@ -3192,6 +3439,9 @@ class Cov(Matrix):
         Returns:
             `Cov`: new identity matrix `Cov` with shape of `other`
 
+        Note:
+            the returned identity cov matrix is treated as non-diagonal
+
         """
         if other.shape[0] != other.shape[1]:
             raise Exception("not square")
@@ -3205,6 +3455,15 @@ class Cov(Matrix):
         Returns:
             `Matrix`: A `Matrix` of correlation coefs.  Return type is `Matrix`
             on purpose so that it is clear the returned instance is not a Cov
+
+        Example::
+
+            # plot the posterior parameter correlation matrix
+            import matplotlib.pyplot as plt
+            cov = pyemu.Cov.from_ascii("pest.post.cov")
+            cc = cov.to_pearson()
+            cc.x[cc.x==1.0] = np.NaN
+            plt.imshow(cc)
 
         """
         std_dict = (
