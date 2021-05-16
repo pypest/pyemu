@@ -2905,7 +2905,7 @@ def usg_freyberg_test():
 
     zone_array_k2 = np.ones((1, len(sr_dict_by_layer[3])))
     zone_array_k2[:, 200:420] = 2
-    zone_array_k2[:, 600:1000] = 3
+    zone_array_k2[:, 500:1000:3] = 3
     zone_array_k2[:,:100] = 0
 
     #gen up some fake pp locs
@@ -2924,6 +2924,15 @@ def usg_freyberg_test():
         data["y"].append(y)
         data["zone"].append(zone_array_k2[0,idx])
         visited.add(idx)
+    # harded coded to get a zone 3 pp
+    idx = 500
+    assert zone_array_k2[0,idx] == 3,zone_array_k2[0,idx]
+
+    x, y = sr_dict_by_layer[1][idx]
+    data["name"].append("pp_{0}".format(i+1))
+    data["x"].append(x)
+    data["y"].append(y)
+    data["zone"].append(zone_array_k2[0, idx])
     pp_df = pd.DataFrame(data=data,index=data["name"])
 
     # a geostruct that describes spatial continuity for properties
@@ -3030,6 +3039,7 @@ def usg_freyberg_test():
         print(d.sum())
         assert d.sum() > 1.0e-3, arr_file
 
+    # check that the pilot point process is respecting the zone array
     par = pst.parameter_data
     pp_par = par.loc[par.parnme.str.contains("pp"),:]
     pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.apply(np.float)
@@ -3037,7 +3047,12 @@ def usg_freyberg_test():
     pst.write(os.path.join(pf.new_d,"freyberg.usg.pst"),version=2)
     #pst.write_input_files(pf.new_d)
     pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path), cwd=pf.new_d)
-
+    arr = np.loadtxt(os.path.join(pf.new_d,"mult","hk3_pp_inst0_pilotpoints.csv"))
+    arr[zone_array_k2[0,:]==0] = 0
+    d = np.abs(arr - zone_array_k2)
+    print(d)
+    print(d.sum())
+    assert d.sum() == 0.0,d.sum()
 
 def mf6_add_various_obs_test():
     import flopy
