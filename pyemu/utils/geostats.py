@@ -53,6 +53,12 @@ class GeoStruct(object):
 
         v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)
         gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)
+        gs.plot()
+        # get a covariance matrix implied by the geostruct for three points
+        px = [0,1000,2000]
+        py = [0,0,0]
+        pnames ["p1","p2","p3"]
+        cov = gs.covariance_matrix(px,py,names=pnames)
 
     """
 
@@ -78,6 +84,16 @@ class GeoStruct(object):
         return self.name > other.name
 
     def same_as_other(self, other):
+        """compared to geostructs for similar attributes
+
+        Args:
+            other (`pyemu.geostats.Geostruct`): the other one
+
+        Returns:
+            same (`bool`): True is the `other` and `self` have the same characteristics
+
+
+        """
         if self.nugget != other.nugget:
             return False
         if len(self.variograms) != len(other.variograms):
@@ -177,6 +193,14 @@ class GeoStruct(object):
             `float`: the covariance between pt0 and pt1 implied
             by the GeoStruct
 
+        Example::
+
+            p1 = [0,0]
+            p2 = [1,1]
+            v = pyemu.geostats.ExpVario(a=0.1,contribution=1.0)
+            gs = pyemu.geostats.Geostruct(variograms=v)
+            c = gs.covariance(p1,p2)
+
         """
         # raise Exception()
         cov = self.nugget
@@ -198,6 +222,16 @@ class GeoStruct(object):
             `numpy.ndarray`: a 1-D array of covariance between point x0,y0 and the
             points contained in xother, yother.  len(cov) = len(xother) =
             len(yother)
+
+        Example::
+
+            x0,y0 = 1,1
+            xother = [2,3,4,5]
+            yother = [2,3,4,5]
+            v = pyemu.geostats.ExpVario(a=0.1,contribution=1.0)
+            gs = pyemu.geostats.Geostruct(variograms=v)
+            c = gs.covariance_points(x0,y0,xother,yother)
+
 
         """
 
@@ -234,6 +268,12 @@ class GeoStruct(object):
             "individuals" (plot each variogram on a separate axis),
             "legend" (add a legend to the plot(s)).  All other kwargs
             are passed to matplotlib.pyplot.plot()
+
+        Example::
+
+            v = pyemu.geostats.ExpVario(a=0.1,contribution=1.0)
+            gs = pyemu.geostats.Geostruct(variograms=v)
+            gs.plot()
 
         """
         #
@@ -342,7 +382,6 @@ class SpecSim2d(object):
             `initialize()` prepares for simulation by undertaking
             the fast FFT on the wave number matrix and should be called
             if the `SpecSim2d.geostruct` is changed.
-
             This method is called by the constructor.
 
 
@@ -421,7 +460,7 @@ class SpecSim2d(object):
             is (num_reals,self.dely.shape[0],self.delx.shape[0])
         Note:
             log transformation is respected and the returned `reals` array is
-            in arithmatic space
+            in linear space
 
         """
         reals = []
@@ -446,8 +485,8 @@ class SpecSim2d(object):
     def grid_par_ensemble_helper(
         self, pst, gr_df, num_reals, sigma_range=6, logger=None
     ):
-        """wrapper around `SpecSim2d.draw()` designed to support `pyemu.PstFromFlopy`
-            grid-based parameters
+        """wrapper around `SpecSim2d.draw()` designed to support `PstFromFlopy`
+        and `PstFrom` grid-based parameters
 
         Args:
             pst (`pyemu.Pst`): a control file instance
@@ -876,15 +915,12 @@ class OrdinaryKrige(object):
 
         Note:
             this method calls OrdinaryKrige.calc_factors()
-
             this method is the main entry point for grid-based kriging factor generation
 
 
         Example::
 
             import flopy
-
-            import pyemu
             v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)
             gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)
             pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")
@@ -1059,6 +1095,23 @@ class OrdinaryKrige(object):
         Note:
             this method calls either `OrdinaryKrige.calc_factors_org()` or
             `OrdinaryKrige.calc_factors_mp()` depending on the value of `num_threads`
+
+        Example::
+
+            v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)
+            gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)
+            pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")
+            ok = pyemu.utils.geostats.OrdinaryKrige(gs,pp_df)
+            x = np.arange(100)
+            y = np.ones_like(x)
+            zone_array = y.copy()
+            zone_array[:zone_array.shape[0]/2] = 2
+            # only calc factors for the points in zone 1
+            ok.calc_factors(x,y,pt_zone=1)
+            ok.to_grid_factors_file("zone_1.fac",ncol=x.shape[0])
+
+
+
         """
         if num_threads == 1:
             return self._calc_factors_org(
@@ -1471,7 +1524,8 @@ class OrdinaryKrige(object):
 
             ncol (`int`) column value to write to factors file.  This is normally determined
                 from the spatial reference and should only be passed for unstructured grids -
-                it should be equalt to the number of nodes in the current property file. Default is None.
+                it should be equal to the number of nodes in the current property file. Default is None.
+                Required for unstructured grid models.
 
         Note:
             this method should be called after OrdinaryKrige.calc_factors_grid() for structured
