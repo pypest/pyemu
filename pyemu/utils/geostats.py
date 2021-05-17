@@ -1030,6 +1030,7 @@ class OrdinaryKrige(object):
             self.point_data.loc[pt_names, "x"],
             self.point_data.loc[pt_names, "y"],
         )
+
         return interp_cov
 
     def _form(self, pt_names, point_cov, interp_cov):
