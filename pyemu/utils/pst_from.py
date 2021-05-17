@@ -280,7 +280,7 @@ class PstFrom(object):
             return (self._spatial_ref_xarray[i, j], self._spatial_ref_yarray[i, j])
 
     def parse_kij_args(self, args, kwargs):
-        """parse args into kij indices"""
+        """parse args into kij indices.  Called programmatically"""
         if len(args) >= 2:
             ij_id = None
             if "ij_id" in kwargs:
@@ -472,7 +472,8 @@ class PstFrom(object):
             use_specsim (`bool`): flag to use spectral simulation for grid-scale pars (highly recommended).
                 Default is False
             scale_offset (`bool`): flag to apply scale and offset to parameter bounds before calculating prior variance.
-                Dfault is True
+                Dfault is True.  If you are using non-default scale and/or offset and you get an exception during
+                draw, try changing this value to False.
 
         Returns:
             `pyemu.ParameterEnsemble`: a prior parameter ensemble
@@ -480,8 +481,7 @@ class PstFrom(object):
         Note:
             This method draws by parameter group
 
-            If you are using grid-style parameters, please use spectral simulation
-
+            If you are using grid-style parameters, please use spectral simulation (`use_specsim=True`)
 
         """
         self.logger.log("drawing realizations")
@@ -573,10 +573,11 @@ class PstFrom(object):
                 ,the orginal directory name from which the forward model
                 was extracted.  Default is None.
                 The control file is saved in the `PstFrom.new_d` directory.
-            update (bool) or (str): flag to add to existing Pst object and
+            update (`bool`) or (str): flag to add to existing Pst object and
                 rewrite. If string {'pars', 'obs'} just update respective
                 components of Pst. Default is False - build from PstFrom
                 components.
+            version (`int`): control file version to write, Default is 1
         Note:
             This builds a pest control file from scratch, overwriting anything already
             in self.pst object and anything already writen to `filename`
@@ -977,11 +978,13 @@ class PstFrom(object):
         Example::
 
             pf = PstFrom()
-            pf.add_py_function(
-                "preprocess.py",
-                "mult_well_function(arg1='userarg')",
-                is_pre_cmd = True
-                )
+            # add the function "mult_well_function" from the script file "preprocess.py" as a
+            # command to run before the model is run
+            pf.add_py_function("preprocess.py",
+                               "mult_well_function(arg1='userarg')",
+                               is_pre_cmd = True)
+            # add the post processor function "made_it_good" from the script file "post_processors.py"
+            pf.add_py_function("post_processors.py","make_it_good(()",is_pre_cmd=False)
 
 
         """
@@ -1077,7 +1080,6 @@ class PstFrom(object):
             None
 
         Note:
-
             This method is called programmatically by `PstFrom.add_observations()`
 
         """
@@ -1227,7 +1229,7 @@ class PstFrom(object):
                                      ofile_sep=",")
             # add array-style observations, skipping model cells with an ibound
             # value less than or equal to zero
-            df = pf.add_observations("conce_array.day",index_col=None,use_cols=None,
+            df = pf.add_observations("conce_array.dat,index_col=None,use_cols=None,
                                      zone_array=ibound)
 
 
@@ -1457,10 +1459,9 @@ class PstFrom(object):
 
         Example::
 
-            pst = pyemu.Pst(os.path.join("template", "my.pst"))
-            pst.add_observations_from_ins(os.path.join("template","new_obs.dat.ins"),
+            pf = pyemu.PstFrom("temp","template")
+            pf.add_observations_from_ins(os.path.join("template","new_obs.dat.ins"),
                                  pst_path=".")
-            pst.write(os.path.join("template", "my_new.pst")
 
         """
         # lifted almost completely from `Pst().add_observation()`
