@@ -1655,7 +1655,6 @@ def ok_grid_invest():
     diff = (kf.err_var - kf2.err_var).apply(np.abs).sum()
     assert diff < 1.0e-10
 
-
 def specsim_test():
     try:
         import flopy
