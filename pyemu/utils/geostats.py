@@ -789,14 +789,10 @@ class OrdinaryKrige(object):
             )
             ux_std = point_data.groupby(point_data.name).std()["x"]
             if ux_std.max() > 0.0:
-                raise Exception(
-                    "duplicate point_info entries with different x values"
-                )
+                raise Exception("duplicate point_info entries with different x values")
             uy_std = point_data.groupby(point_data.name).std()["y"]
             if uy_std.max() > 0.0:
-                raise Exception(
-                    "duplicate point_info entries with different y values"
-                )
+                raise Exception("duplicate point_info entries with different y values")
 
             self.point_data = point_data.drop_duplicates(subset=["name"])
         else:

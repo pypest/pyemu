@@ -5902,7 +5902,6 @@ class SpatialReference(object):
         self._vertices = self.get_vertices(ii, jj)
 
 
-
 def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
     """calculate the 1-D and 2-D mahalanobis distance between simulated
     ensemble and observed values.  Used for detecting prior-data conflict

@@ -1289,9 +1289,7 @@ def ensemble_change_summary(
 
 
 def _process_ensemble_arg(ensemble, facecolor, logger):
-    """private method to work out ensemble plot args
-
-    """
+    """private method to work out ensemble plot args"""
     ensembles = {}
     if isinstance(ensemble, pd.DataFrame) or isinstance(ensemble, pyemu.Ensemble):
         if not isinstance(facecolor, str):
