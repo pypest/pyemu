@@ -1630,7 +1630,7 @@ def ok_grid_invest():
     import numpy as np
     import pandas as pd
     import pyemu
-    nrow,ncol = 50,50
+    nrow,ncol = 200,200
     delr = np.ones((ncol)) * 1.0/float(ncol)
     delc = np.ones((nrow)) * 1.0/float(nrow)
 
@@ -1649,12 +1649,11 @@ def ok_grid_invest():
     str_file = os.path.join("utils","struct_test.dat")
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
     ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
-    kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("temp","test_var.ref"),minpts_interp=1)
+    kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("temp","test_var.ref"),minpts_interp=1,num_threads=1)
     kf2 = ok.calc_factors_grid(sr, verbose=False, var_filename=os.path.join("temp", "test_var.ref"), minpts_interp=1,num_threads=10)
     ok.to_grid_factors_file(os.path.join("temp","test.fac"))
     diff = (kf.err_var - kf2.err_var).apply(np.abs).sum()
     assert diff < 1.0e-10
-
 
 def specsim_test():
     try:
@@ -1988,7 +1987,7 @@ if __name__ == "__main__":
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
     #conditional_prior_invest()
-    geostat_prior_builder_test2()
+    #geostat_prior_builder_test2()
     #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     #mflist_budget_test()
@@ -2025,6 +2024,6 @@ if __name__ == "__main__":
     # ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
-    #ok_grid_invest()
+    ok_grid_invest()
     # maha_pdc_test()
     #gsf_reader_test()

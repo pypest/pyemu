@@ -183,14 +183,15 @@ def start_workers(
             process started in it by this function.
 
     Notes:
-        if all workers (and optionally master) exit gracefully, then the worker
-            dirs will be removed unless `cleanup` is False
+        If all workers (and optionally master) exit gracefully, then the worker
+        dirs will be removed unless `cleanup` is False
 
     Example::
 
         # start 10 workers using the directory "template" as the base case and
         # also start a master instance in a directory "master".
-        pyemu.helpers.start_workers("template","pestpp-ies","pest.pst",10,master_dir="master")
+        pyemu.helpers.start_workers("template","pestpp-ies","pest.pst",10,master_dir="master",
+                                    worker_root=".")
 
     """
 

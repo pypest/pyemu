@@ -2898,10 +2898,20 @@ def usg_freyberg_test():
         srd = {n:xy for n,xy in zip(df_lay.node.values,df_lay.xy.values)}
         sr_dict_by_layer[layer] = srd
 
+    # gen up a fake zone array
+    zone_array_k0 = np.ones((1, len(sr_dict_by_layer[1])))
+    zone_array_k0[:, 200:420] = 2
+    zone_array_k0[:, 600:1000] = 3
+
+    zone_array_k2 = np.ones((1, len(sr_dict_by_layer[3])))
+    zone_array_k2[:, 200:420] = 2
+    zone_array_k2[:, 500:1000:3] = 3
+    zone_array_k2[:,:100] = 0
+
     #gen up some fake pp locs
     np.random.seed(pyemu.en.SEED)
     num_pp = 20
-    data = {"name":[],"x":[],"y":[]}
+    data = {"name":[],"x":[],"y":[],"zone":[]}
     visited = set()
     for i in range(num_pp):
         while True:
@@ -2912,13 +2922,18 @@ def usg_freyberg_test():
         data["name"].append("pp_{0}".format(i))
         data["x"].append(x)
         data["y"].append(y)
+        data["zone"].append(zone_array_k2[0,idx])
         visited.add(idx)
-    pp_df = pd.DataFrame(data=data,index=data["name"])
+    # harded coded to get a zone 3 pp
+    idx = 500
+    assert zone_array_k2[0,idx] == 3,zone_array_k2[0,idx]
 
-    #gen up a fake zone array
-    zone_array = np.zeros((1,len(sr_dict_by_layer[2])))
-    zone_array[:,200:420] = 2
-    zone_array[:, 600:1000] = 3
+    x, y = sr_dict_by_layer[1][idx]
+    data["name"].append("pp_{0}".format(i+1))
+    data["x"].append(x)
+    data["y"].append(y)
+    data["zone"].append(zone_array_k2[0, idx])
+    pp_df = pd.DataFrame(data=data,index=data["name"])
 
     # a geostruct that describes spatial continuity for properties
     # this is used for all props and for both grid and pilot point
@@ -2931,16 +2946,18 @@ def usg_freyberg_test():
     pf = pyemu.utils.PstFrom(tmp_model_ws,"template",longnames=True,remove_existing=True,
                              zero_based=False,spatial_reference=gsf.get_node_coordinates(zero_based=True))
 
+    pf.add_parameters("hk_Layer_3.ref", par_type="pilotpoints", par_name_base="hk3_pp", pp_space=pp_df,
+                      geostruct=gs, spatial_reference=sr_dict_by_layer[3],
+                      upper_bound=2.0, lower_bound=0.5, zone_array=zone_array_k2)
+
     # we pass layer specific sr dict for each "array" type that is spatially distributed
     pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_gr",geostruct=gs,
                       spatial_reference=sr_dict_by_layer[1],
                       upper_bound=2.0,lower_bound=0.5)
-    pf.add_parameters("sy_Layer_1.ref", par_type="zone", par_name_base="sy1_zn",zone_array=zone_array,
+    pf.add_parameters("sy_Layer_1.ref", par_type="zone", par_name_base="sy1_zn",zone_array=zone_array_k0,
                       upper_bound=1.5,lower_bound=0.5,ult_ubound=0.35)
 
-    pf.add_parameters("hk_Layer_3.ref", par_type="pilotpoints", par_name_base="hk1_pp",pp_space=pp_df,
-                      geostruct=gs,spatial_reference=sr_dict_by_layer[3],
-                      upper_bound=2.0,lower_bound=0.5)
+
 
     # add a multiplier par for each well for each stress period
     wel_files = [f for f in os.listdir(tmp_model_ws) if f.lower().startswith("wel_") and f.lower().endswith(".dat")]
@@ -2962,6 +2979,7 @@ def usg_freyberg_test():
     pf.build_pst()
     pst = pf.pst
     par = pst.parameter_data
+
     gr_hk_pars = par.loc[par.parnme.str.contains("hk1_gr"),"parnme"]
     pf.pst.parameter_data.loc[gr_hk_pars,"parubnd"] = np.random.random(gr_hk_pars.shape[0]) * 5
     pf.pst.parameter_data.loc[gr_hk_pars, "parlbnd"] = np.random.random(gr_hk_pars.shape[0]) * 0.2
@@ -3021,6 +3039,20 @@ def usg_freyberg_test():
         print(d.sum())
         assert d.sum() > 1.0e-3, arr_file
 
+    # check that the pilot point process is respecting the zone array
+    par = pst.parameter_data
+    pp_par = par.loc[par.parnme.str.contains("pp"),:]
+    pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.apply(np.float)
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(pf.new_d,"freyberg.usg.pst"),version=2)
+    #pst.write_input_files(pf.new_d)
+    pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path), cwd=pf.new_d)
+    arr = np.loadtxt(os.path.join(pf.new_d,"mult","hk3_pp_inst0_pilotpoints.csv"))
+    arr[zone_array_k2[0,:]==0] = 0
+    d = np.abs(arr - zone_array_k2)
+    print(d)
+    print(d.sum())
+    assert d.sum() == 0.0,d.sum()
 
 def mf6_add_various_obs_test():
     import flopy
@@ -3421,14 +3453,14 @@ if __name__ == "__main__":
     #invest()
     #freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
+    #mf6_freyberg_test()
     #mf6_freyberg_da_test()
     # mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
-    mf6_add_various_obs_test()
+    #mf6_add_various_obs_test()
     # mf6_subdir_test()
     #tpf = TestPstFrom()
     #tpf.setup()
@@ -3436,7 +3468,7 @@ if __name__ == "__main__":
     #tpf.add
     #pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
-    # usg_freyberg_test()
+    usg_freyberg_test()
 
 
 

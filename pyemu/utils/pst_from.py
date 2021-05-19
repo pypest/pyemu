@@ -226,27 +226,37 @@ class PstFrom(object):
         i, j = self.parse_kij_args(args, kwargs)
         return i, j
 
-    def _dict_get_xy(self,arg,**kwargs):
-        if isinstance(arg,list):
+    def _dict_get_xy(self, arg, **kwargs):
+        if isinstance(arg, list):
             arg = tuple(arg)
-        xy = self._spatial_reference.get(arg,None)
+        xy = self._spatial_reference.get(arg, None)
         if xy is None:
             arg_len = None
             try:
                 arg_len = len(arg)
             except Exception as e:
-                self.logger.lraise("Pstfrom._dict_get_xy() error getting xy from arg:'{0}' - no len support".format(arg))
+                self.logger.lraise(
+                    "Pstfrom._dict_get_xy() error getting xy from arg:'{0}' - no len support".format(
+                        arg
+                    )
+                )
             if arg_len == 1:
-                xy = self._spatial_reference.get(arg[0],None)
+                xy = self._spatial_reference.get(arg[0], None)
             elif arg_len == 2 and arg[0] == 0:
                 xy = self._spatial_reference.get(arg[1], None)
             elif arg_len == 2 and arg[1] == 0:
                 xy = self._spatial_reference.get(arg[0], None)
             else:
-                self.logger.lraise("Pstfrom._dict_get_xy() error getting xy from arg:'{0}'".format(arg))
+                self.logger.lraise(
+                    "Pstfrom._dict_get_xy() error getting xy from arg:'{0}'".format(arg)
+                )
         if xy is None:
-            self.logger.lraise("Pstfrom._dict_get_xy() error getting xy from arg:'{0}' - still None".format(arg))
-        return xy[0],xy[1]
+            self.logger.lraise(
+                "Pstfrom._dict_get_xy() error getting xy from arg:'{0}' - still None".format(
+                    arg
+                )
+            )
+        return xy[0], xy[1]
 
     def _flopy_sr_get_xy(self, args, **kwargs):
         i, j = self.parse_kij_args(args, kwargs)
@@ -270,7 +280,7 @@ class PstFrom(object):
             return (self._spatial_ref_xarray[i, j], self._spatial_ref_yarray[i, j])
 
     def parse_kij_args(self, args, kwargs):
-        """parse args into kij indices"""
+        """parse args into kij indices.  Called programmatically"""
         if len(args) >= 2:
             ij_id = None
             if "ij_id" in kwargs:
@@ -318,7 +328,7 @@ class PstFrom(object):
             self._spatial_reference.xcentergrid = self._spatial_reference.xcellcenters
             self._spatial_reference.ycentergrid = self._spatial_reference.ycellcenters
             self.get_xy = self._flopy_mg_get_xy
-        elif isinstance(self._spatial_reference,dict):
+        elif isinstance(self._spatial_reference, dict):
             self.logger.statement("dictionary-based spatial reference detected...")
             self.get_xy = self._dict_get_xy
         else:
@@ -462,7 +472,8 @@ class PstFrom(object):
             use_specsim (`bool`): flag to use spectral simulation for grid-scale pars (highly recommended).
                 Default is False
             scale_offset (`bool`): flag to apply scale and offset to parameter bounds before calculating prior variance.
-                Dfault is True
+                Dfault is True.  If you are using non-default scale and/or offset and you get an exception during
+                draw, try changing this value to False.
 
         Returns:
             `pyemu.ParameterEnsemble`: a prior parameter ensemble
@@ -470,8 +481,7 @@ class PstFrom(object):
         Note:
             This method draws by parameter group
 
-            If you are using grid-style parameters, please use spectral simulation
-
+            If you are using grid-style parameters, please use spectral simulation (`use_specsim=True`)
 
         """
         self.logger.log("drawing realizations")
@@ -563,10 +573,11 @@ class PstFrom(object):
                 ,the orginal directory name from which the forward model
                 was extracted.  Default is None.
                 The control file is saved in the `PstFrom.new_d` directory.
-            update (bool) or (str): flag to add to existing Pst object and
+            update (`bool`) or (str): flag to add to existing Pst object and
                 rewrite. If string {'pars', 'obs'} just update respective
                 components of Pst. Default is False - build from PstFrom
                 components.
+            version (`int`): control file version to write, Default is 1
         Note:
             This builds a pest control file from scratch, overwriting anything already
             in self.pst object and anything already writen to `filename`
@@ -967,11 +978,13 @@ class PstFrom(object):
         Example::
 
             pf = PstFrom()
-            pf.add_py_function(
-                "preprocess.py",
-                "mult_well_function(arg1='userarg')",
-                is_pre_cmd = True
-                )
+            # add the function "mult_well_function" from the script file "preprocess.py" as a
+            # command to run before the model is run
+            pf.add_py_function("preprocess.py",
+                               "mult_well_function(arg1='userarg')",
+                               is_pre_cmd = True)
+            # add the post processor function "made_it_good" from the script file "post_processors.py"
+            pf.add_py_function("post_processors.py","make_it_good(()",is_pre_cmd=False)
 
 
         """
@@ -1067,7 +1080,6 @@ class PstFrom(object):
             None
 
         Note:
-
             This method is called programmatically by `PstFrom.add_observations()`
 
         """
@@ -1217,16 +1229,15 @@ class PstFrom(object):
                                      ofile_sep=",")
             # add array-style observations, skipping model cells with an ibound
             # value less than or equal to zero
-            df = pf.add_observations("conce_array.day",index_col=None,use_cols=None,
+            df = pf.add_observations("conce_array.dat,index_col=None,use_cols=None,
                                      zone_array=ibound)
 
 
         """
         use_cols_psd = copy.copy(use_cols)  # store passed use_cols argument
-        if insfile is None: # setup instruction file name
+        if insfile is None:  # setup instruction file name
             insfile = "{0}.ins".format(filename)
-        self.logger.log("adding observations from output file "
-                        "{0}".format(filename))
+        self.logger.log("adding observations from output file " "{0}".format(filename))
         # precondition arguments
         (
             filenames,
@@ -1264,7 +1275,7 @@ class PstFrom(object):
                 self.longnames,
                 zone_array,
             )
-            
+
             # Add obs from ins file written by _process_array_obs()
             new_obs = self.add_observations_from_ins(
                 ins_file=self.new_d / insfile, out_file=self.new_d / filename
@@ -1291,8 +1302,9 @@ class PstFrom(object):
             return new_obs
 
         # list style obs
-        self.logger.log("adding observations from tabular output file "
-                        "'{0}'".format(filenames))
+        self.logger.log(
+            "adding observations from tabular output file " "'{0}'".format(filenames)
+        )
         # -- will end up here if either of index_cols or use_cols is not None
         df, storehead = self._load_listtype_file(
             filenames, index_cols, use_cols, fmts, seps, skip_rows
@@ -1300,12 +1312,18 @@ class PstFrom(object):
         # rectify df?
         # if iloc[0] are strings and index_cols are ints,
         # can we assume that there were infact column headers?
-        if (all(isinstance(c, str) for c in df.iloc[0])
-                and all(isinstance(a, int) for a in index_cols)):
+        if all(isinstance(c, str) for c in df.iloc[0]) and all(
+            isinstance(a, int) for a in index_cols
+        ):
             index_cols = df.iloc[0][index_cols].to_list()  # redefine index_cols
             if use_cols is not None:
                 use_cols = df.iloc[0][use_cols].to_list()  # redefine use_cols
-            df = df.rename(columns=df.iloc[0].to_dict()).drop(0).reset_index(drop=True).apply(pd.to_numeric, errors='ignore')
+            df = (
+                df.rename(columns=df.iloc[0].to_dict())
+                .drop(0)
+                .reset_index(drop=True)
+                .apply(pd.to_numeric, errors="ignore")
+            )
         # Select all non index cols if use_cols is None
         if use_cols is None:
             use_cols = df.columns.drop(index_cols).tolist()
@@ -1350,7 +1368,7 @@ class PstFrom(object):
             # first rectify group name with number of columns
             ncol = len(use_cols)
             fill = True  # default fill=True means that the groupname will be
-                         # derived from the base of the observation name
+            # derived from the base of the observation name
             # if passed group name is a string or list with len < ncol
             # and passed use_cols was None or of len > len(obsgp)
             if obsgp is not None:
@@ -1358,10 +1376,10 @@ class PstFrom(object):
                     if len([obsgp] if isinstance(obsgp, str) else obsgp) == 1:
                         # only 1 group provided, assume passed obsgp applys
                         # to all use_cols
-                        fill = 'first'
+                        fill = "first"
                     else:
                         # many obs groups passed, assume last will fill if < ncol
-                        fill = 'last'
+                        fill = "last"
                 # else fill will be set to True (base of obs name will be used)
             else:
                 obsgp = True  # will use base of col
@@ -1390,8 +1408,9 @@ class PstFrom(object):
                 new_obs.loc[:, "obgnme"] = df_ins.loc[new_obs.index, "obgnme"]
             new_obs_l.append(new_obs)
         new_obs = pd.concat(new_obs_l)
-        self.logger.log("adding observations from tabular output file "
-                        "'{0}'".format(filenames))
+        self.logger.log(
+            "adding observations from tabular output file " "'{0}'".format(filenames)
+        )
         if rebuild_pst:
             if self.pst is not None:
                 self.logger.log("Adding obs to control file " "and rewriting pst")
@@ -1399,7 +1418,7 @@ class PstFrom(object):
             else:
                 pstname = Path(self.new_d, self.original_d.name)
                 self.logger.warn(
-                    "pst object not available, " 
+                    "pst object not available, "
                     f"new control file will be written with filename {pstname}"
                 )
                 self.build_pst(filename=None, update=False)
@@ -1440,10 +1459,9 @@ class PstFrom(object):
 
         Example::
 
-            pst = pyemu.Pst(os.path.join("template", "my.pst"))
-            pst.add_observations_from_ins(os.path.join("template","new_obs.dat.ins"),
+            pf = pyemu.PstFrom("temp","template")
+            pf.add_observations_from_ins(os.path.join("template","new_obs.dat.ins"),
                                  pst_path=".")
-            pst.write(os.path.join("template", "my_new.pst")
 
         """
         # lifted almost completely from `Pst().add_observation()`
@@ -1453,7 +1471,7 @@ class PstFrom(object):
             ins_file = self.new_d / ins_file
             pst_path = "."  # reset and new assumed pst_path
         # else:
-            # assuming that passed insfile is the full path to file from current location
+        # assuming that passed insfile is the full path to file from current location
         if not os.path.exists(ins_file):
             self.logger.lraise(
                 "ins file not found: {0}, {1}" "".format(os.getcwd(), ins_file)
@@ -1987,7 +2005,7 @@ class PstFrom(object):
                         )
                 # check that spatial reference lines up with the original array dimensions
                 structured = False
-                if not isinstance(spatial_reference,dict):
+                if not isinstance(spatial_reference, dict):
                     structured = True
                     for mod_file, ar in file_dict.items():
                         orgdata = ar.shape
@@ -2101,21 +2119,40 @@ class PstFrom(object):
                                     )
                                 )
 
-                if not structured and zone_array is not None:
-                    self.logger.lraise("'zone_array' not supported for unstructured grids and pilot points")
-
                 if not structured and pp_locs is None:
-                    self.logger.lraise("pilot point type parameters with an unstructured grid requires 'pp_space' "
-                                       "contain explict pilot point information")
+                    self.logger.lraise(
+                        "pilot point type parameters with an unstructured grid requires 'pp_space' "
+                        "contain explict pilot point information"
+                    )
 
+                if not structured and zone_array is not None:
+                    # self.logger.lraise("'zone_array' not supported for unstructured grids and pilot points")
+                    if "zone" not in pp_locs.columns:
+                        self.logger.lraise(
+                            "'zone' not found in pp info dataframe and 'zone_array' passed"
+                        )
+                    uvals = np.unique(zone_array)
+                    zvals = set([int(z) for z in pp_locs.zone.tolist()])
+                    missing = []
+                    for uval in uvals:
+                        if int(uval) not in zvals and int(uval) != 0:
+                            missing.append(str(int(uval)))
+                    if len(missing) > 0:
+                        self.logger.warn(
+                            "the following values in the zone array were not found in the pp info: {0}".format(
+                                ",".join(missing)
+                            )
+                        )
 
                 if geostruct is None:  # need a geostruct for pilotpoints
 
                     # can use model default, if provided
                     if self.geostruct is None:  # but if no geostruct passed...
                         if not structured:
-                            self.logger.lraise("pilot point type parameters with an unstructured grid requires an"
-                                               " explicit `geostruct` arg be passed to either PstFrom or add_parameters()")
+                            self.logger.lraise(
+                                "pilot point type parameters with an unstructured grid requires an"
+                                " explicit `geostruct` arg be passed to either PstFrom or add_parameters()"
+                            )
                         self.logger.warn(
                             "pp_geostruct is None,"
                             "using ExpVario with contribution=1 "
@@ -2215,7 +2252,7 @@ class PstFrom(object):
                         and np.array_equal(info["zn_ar"], pp_info_dict["zn_ar"])
                     ):
                         if type(info["sr"]) == type(spatial_reference):
-                            if isinstance(spatial_reference,dict):
+                            if isinstance(spatial_reference, dict):
                                 if len(info["sr"]) != len(spatial_reference):
                                     continue
                         else:
@@ -2225,7 +2262,7 @@ class PstFrom(object):
                         fac_filename = facfile  # relate to existing fac file
                         break
                 if not fac_processed:
-                    # TODO need better way of naming squential fac_files?
+                    # TODO need better way of naming sequential fac_files?
                     self.logger.log("calculating factors for pargp={0}".format(pg))
                     fac_filename = self.new_d / "{0}pp.fac".format(par_name_store)
                     var_filename = fac_filename.with_suffix(".var.dat")
@@ -2248,14 +2285,39 @@ class PstFrom(object):
                         )
                         ok_pp.to_grid_factors_file(fac_filename)
                     else:
-                        #put the sr dict info into a df
+                        # put the sr dict info into a df
                         # but we only want to use the n
-                        data = []
-                        for node,(x,y) in spatial_reference.items():
-                            data.append([node,x,y])
-                        node_df = pd.DataFrame(data,columns=["node","x","y"])
-                        ok_pp.calc_factors(node_df.x, node_df.y, num_threads=10)
-                        ok_pp.to_grid_factors_file(fac_filename)
+                        if zone_array is not None:
+                            for zone in np.unique(zone_array):
+                                if int(zone) == 0:
+                                    continue
+
+                                data = []
+                                for node, (x, y) in spatial_reference.items():
+                                    if zone_array[0, node] == zone:
+                                        data.append([node, x, y])
+                                if len(data) == 0:
+                                    continue
+                                node_df = pd.DataFrame(data, columns=["node", "x", "y"])
+                                ok_pp.calc_factors(
+                                    node_df.x,
+                                    node_df.y,
+                                    num_threads=1,
+                                    pt_zone=zone,
+                                    idx_vals=node_df.node.apply(np.int),
+                                )
+                            ok_pp.to_grid_factors_file(
+                                fac_filename, ncol=len(spatial_reference)
+                            )
+                        else:
+                            data = []
+                            for node, (x, y) in spatial_reference.items():
+                                data.append([node, x, y])
+                            node_df = pd.DataFrame(data, columns=["node", "x", "y"])
+                            ok_pp.calc_factors(node_df.x, node_df.y, num_threads=10)
+                            ok_pp.to_grid_factors_file(
+                                fac_filename, ncol=node_df.shape[0]
+                            )
 
                     self.logger.log("calculating factors for pargp={0}".format(pg))
             # TODO - other par types - JTW?
@@ -2360,7 +2422,9 @@ class PstFrom(object):
         else:
             gp_dict = {g: [d] for g, d in df.groupby("covgp")}
         # df_list = [d for g, d in df.groupby('pargp')]
-        if geostruct is not None and (par_type.lower() not in ["constant","zone"] or datetime is not None):
+        if geostruct is not None and (
+            par_type.lower() not in ["constant", "zone"] or datetime is not None
+        ):
             # relating pars to geostruct....
             if geostruct not in self.par_struct_dict.keys():
                 # add new geostruct
@@ -2458,17 +2522,15 @@ class PstFrom(object):
                 self.logger.lraise(
                     "unrecognized type for index_cols or use_cols "
                     "should be str or int and both should be of the "
-                    "same type, not {0} or {1}".format(*[
-                        str(type(a[0])) for a in check_args
-                    ])
+                    "same type, not {0} or {1}".format(
+                        *[str(type(a[0])) for a in check_args]
+                    )
                 )
             else:
                 # implies not correct type
                 self.logger.lraise(
                     "unrecognized type for either index_cols or use_cols "
-                    "should be str or int, not {0}".format(
-                        type(check_args[0][0])
-                    )
+                    "should be str or int, not {0}".format(type(check_args[0][0]))
                 )
 
         # checking no overlap between index_cols and use_cols
@@ -2528,8 +2590,12 @@ class PstFrom(object):
                     if line.strip().startswith(c_char)
                 }
         df = pd.read_csv(
-            file_path, comment=c_char, sep=sep, skiprows=skip, header=header,
-            low_memory=False
+            file_path,
+            comment=c_char,
+            sep=sep,
+            skiprows=skip,
+            header=header,
+            low_memory=False,
         )
         self.logger.log("reading list {0}".format(file_path))
         # ensure that column ids from index_col is in input file

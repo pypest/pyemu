@@ -252,9 +252,9 @@ def setup_mtlist_budget_obs(
 
     Note:
         writes an instruction file and also a _setup_.csv to use when constructing a pest
-            control file
+        control file
 
-        the instruction files are named `out_filename` +".ins"
+        The instruction files are named `out_filename` +".ins"
 
         It is recommended to use the default value for `gw_filename` or `sw_filename`.
 
@@ -334,7 +334,7 @@ def apply_mtlist_budget_obs(
           If the SFT process is not active, this returned value is `None`.
 
     Note:
-        this is the companion function of `gw_utils.setup_mtlist_budget_obs()`.
+        This is the companion function of `gw_utils.setup_mtlist_budget_obs()`.
     """
     try:
         import flopy
@@ -471,11 +471,10 @@ def apply_mflist_budget_obs(
              "budget_times.config".
 
      Note:
-         this is the companion function of `gw_utils.setup_mflist_budget_obs()`.
+         This is the companion function of `gw_utils.setup_mflist_budget_obs()`.
 
      Returns:
          tuple containing
-
 
          - **pandas.DataFrame**: a dataframe with flux budget information
          - **pandas.DataFrame**: a dataframe with cumulative budget information
@@ -564,13 +563,12 @@ def setup_hds_timeseries(
         - **pandas.DataFrame**: a dataframe of observation information for use in the pest control file
 
     Note:
-
         This function writes hds_timeseries.config that must be in the same
         dir where `apply_hds_timeseries()` is called during the forward run
 
         Assumes model time units are days
 
-        this is the companion function of `gw_utils.apply_hds_timeseries()`.
+        This is the companion function of `gw_utils.apply_hds_timeseries()`.
 
     """
 
@@ -619,12 +617,12 @@ def setup_hds_timeseries(
                 )
     elif bin_file.lower().endswith(".ucn"):
         try:
-            bf = flopy.utils.UcnFile(bin_file)
+            bf = flopy.utils.UcnFile(bin_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            bf = flopy.utils.HeadFile(bin_file)
+            bf = flopy.utils.HeadFile(bin_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
@@ -755,7 +753,7 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
             inactive value processing happens.  Default is `None`.
 
     Note:
-        this is the companion function of `gw_utils.setup_hds_timeseries()`.
+        This is the companion function of `gw_utils.setup_hds_timeseries()`.
 
     """
     import flopy
@@ -859,6 +857,7 @@ def _setup_postprocess_hds_timeseries(
     hds_file, df, config_file, prefix=None, model=None
 ):
     """Dirty function to setup post processing concentrations in inactive/dry cells"""
+
     warnings.warn(
         "Setting up post processing of hds or ucn timeseries obs. "
         "Prepending 'pp' to obs name may cause length to exceed 20 chars",
@@ -1025,7 +1024,6 @@ def setup_hds_obs(
 
         This is the companion function to `gw_utils.apply_hds_obs()`.
 
-
     """
     try:
         import flopy
@@ -1184,7 +1182,6 @@ def last_kstp_from_kper(hds, kper):
 
     Args:
         hds (`flopy.utils.HeadFile`): head save file
-
         kper (`int`): the zero-index stress period number
 
     Returns:
@@ -1260,12 +1257,12 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e20, precision="single", text="head
         else:
 
             df_kper = df.loc[df.kper == kper, :]
-            for k,d in enumerate(data):
+            for k, d in enumerate(data):
                 d[np.isnan(d)] = 0.0
                 d[d > np.abs(inact_abs_val)] = np.abs(inact_abs_val)
                 d[d < -np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
-                df_kperk = df_kper.loc[df_kper.k==k,:]
-                df.loc[df_kperk.index,"obsval"] = d[df_kperk.i]
+                df_kperk = df_kper.loc[df_kper.k == k, :]
+                df.loc[df_kperk.index, "obsval"] = d[df_kperk.i]
 
     assert df.dropna().shape[0] == df.shape[0]
     df.loc[:, ["obsnme", "obsval"]].to_csv(out_file, index=False, sep=" ")
@@ -1287,12 +1284,12 @@ def setup_sft_obs(sft_file, ins_file=None, start_datetime=None, times=None, ncom
             found in the file are used. Default is None.
         ncomp (`int`): number of components in transport model. Default is 1.
 
-    Note:
-        this is the companion function to `gw_utils.apply_sft_obs()`.
-
     Returns:
         **pandas.DataFrame**: a dataframe with observation names and values for the sft simulated
         concentrations.
+
+    Note:
+        This is the companion function to `gw_utils.apply_sft_obs()`.
 
     """
 
@@ -1370,7 +1367,7 @@ def apply_sft_obs():
         **pandas.DataFrame**: a dataframe of extracted simulated outputs
 
     Note:
-        this is the companion function to `gw_utils.setup_sft_obs()`.
+        This is the companion function to `gw_utils.setup_sft_obs()`.
 
     """
     # this is for dealing with the missing 'e' problem
@@ -1424,16 +1421,14 @@ def setup_sfr_seg_parameters(
         **pandas.DataFrame**: a dataframe with useful parameter setup information
 
     Note:
-         This function handles the standard input case, not all the cryptic SFR options.  Loads the
-            dis, bas, and sfr files with flopy using model_ws.
+        This function handles the standard input case, not all the cryptic SFR options.  Loads the
+        dis, bas, and sfr files with flopy using model_ws.
 
         This is the companion function to `gw_utils.apply_sfr_seg_parameters()` .
-
         The number (and numbering) of segment data entries must consistent across
-            all stress periods.
+        all stress periods.
 
         Writes `nam_file` +"_backup_.sfr" as the backup of the original sfr file
-
         Skips values = 0.0 since multipliers don't work for these
 
     """
@@ -1672,10 +1667,9 @@ def setup_sfr_reach_parameters(nam_file, model_ws=".", par_cols=["strhc1"]):
         Similar to `gw_utils.setup_sfr_seg_parameters()`, method will apply params to sfr reachdata
 
         Can load the dis, bas, and sfr files with flopy using model_ws. Or can pass a model object
-            (SFR loading can be slow)
+        (SFR loading can be slow)
 
         This is the companion function of `gw_utils.apply_sfr_reach_parameters()`
-
         Skips values = 0.0 since multipliers don't work for these
 
     """
@@ -1799,9 +1793,9 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
         **flopy.modflow.ModflowSfr**: the modified SFR package instance
 
     Note:
-        expects "sfr_seg_pars.config" to exist
+        Expects "sfr_seg_pars.config" to exist
 
-        expects `nam_file` +"_backup_.sfr" to exist
+        Expects `nam_file` +"_backup_.sfr" to exist
 
 
 
@@ -1896,9 +1890,9 @@ def apply_sfr_parameters(seg_pars=True, reach_pars=False):
         **flopy.modflow.ModflowSfr**: the modified SFR package instance
 
     Note:
-        expects "sfr_seg_pars.config" to exist
+        Expects "sfr_seg_pars.config" to exist
 
-        expects `nam_file` +"_backup_.sfr" to exist
+        Expects `nam_file` +"_backup_.sfr" to exist
 
 
     """
@@ -2034,15 +2028,18 @@ def setup_sfr_obs(
 def apply_sfr_obs():
     """apply the sfr observation process
 
-    Note:
-        This is the companion function of `gw_utils.setup_sfr_obs()`.
-
-        requires `sfr_obs.config`.
-
-        Writes `sfr_out_file`+".processed", where `sfr_out_file` is defined in "sfr_obs.config"
+    Args:
+        None
 
     Returns:
         **pandas.DataFrame**: a dataframe of aggregrated sfr segment aquifer and outflow
+
+    Note:
+        This is the companion function of `gw_utils.setup_sfr_obs()`.
+
+        Requires `sfr_obs.config`.
+
+        Writes `sfr_out_file`+".processed", where `sfr_out_file` is defined in "sfr_obs.config"
     """
     assert os.path.exists("sfr_obs.config")
     df_key = pd.read_csv("sfr_obs.config", index_col=0)
@@ -2081,12 +2078,12 @@ def load_sfr_out(sfr_out_file, selection=None):
         selection (`pandas.DataFrame`): a dataframe of `reach` and `segment` pairs to
             load.  If `None`, all reach-segment pairs are loaded.  Default is `None`.
 
-    Note:
-        aggregates flow to aquifer for segments and returns and flow out at
-        downstream end of segment.
-
     Returns:
         **dict**: dictionary of {kper:`pandas.DataFrame`} of SFR output.
+
+    Note:
+        Aggregates flow to aquifer for segments and returns and flow out at
+        downstream end of segment.
 
     """
     assert os.path.exists(sfr_out_file), "couldn't find sfr out file {0}".format(
@@ -2357,6 +2354,9 @@ def setup_sfr_reach_obs(
 def apply_sfr_reach_obs():
     """apply the sfr reach observation process.
 
+    Returns:
+        `pd.DataFrame`: a dataframe of sfr aquifer and outflow ad segment,reach locations
+
     Note:
         This is the companion function of `gw_utils.setup_sfr_reach_obs()`.
 
@@ -2364,9 +2364,6 @@ def apply_sfr_reach_obs():
 
         Writes <sfr_out_file>.processed, where <sfr_out_file> is defined in
         "sfr_reach_obs.config"
-
-    Returns:
-        `pd.DataFrame`: a dataframe of sfr aquifer and outflow ad segment,reach locations
 
     """
     assert os.path.exists("sfr_reach_obs.config")
@@ -2419,7 +2416,7 @@ def modflow_sfr_gag_to_instruction_file(
         - **str**: file name of processed gage output for all times
 
     Note:
-        sets up observations for gage outputs only for the Flow column.
+        Sets up observations for gage outputs only for the Flow column.
 
         If `parse_namefile` is true, only text up to first '.' is used as the gage_num
 
@@ -2495,7 +2492,7 @@ def setup_gage_obs(gage_file, ins_file=None, start_datetime=None, times=None):
 
 
     Note:
-         setups up observations for gage outputs (all columns).
+         Setups up observations for gage outputs (all columns).
 
          This is the companion function of `gw_utils.apply_gage_obs()`
     """
@@ -2859,8 +2856,8 @@ def write_hfb_template(m):
     return tpl_file, df
 
 
-class GsfReader():
-    '''
+class GsfReader:
+    """
     a helper class to read a standard modflow-usg gsf file
 
     Args:
@@ -2868,24 +2865,26 @@ class GsfReader():
 
 
 
-    '''
+    """
 
     def __init__(self, gsffilename):
 
-        with open(gsffilename, 'r') as f:
+        with open(gsffilename, "r") as f:
             self.read_data = f.readlines()
 
-        self.nnode, self.nlay, self.iz, self.ic = [int(n) for n in self.read_data[1].split()]
+        self.nnode, self.nlay, self.iz, self.ic = [
+            int(n) for n in self.read_data[1].split()
+        ]
 
         self.nvertex = int(self.read_data[2])
 
     def get_vertex_coordinates(self):
-        '''
+        """
 
 
         Returns:
             Dictionary containing list of x, y and z coordinates for each vertex
-        '''
+        """
         # vdata = self.read_data[3:self.nvertex+3]
         vertex_coords = {}
         for vert in range(self.nvertex):
@@ -2894,27 +2893,43 @@ class GsfReader():
         return vertex_coords
 
     def get_node_data(self):
-        '''
+        """
 
         Returns:
             nodedf: a pd.DataFrame containing Node information; Node, X, Y, Z, layer, numverts, vertidx
 
-        '''
+        """
 
         node_data = []
         for node in range(self.nnode):
-            nid, x, y, z, lay, numverts = self.read_data[self.nvertex + 3 + node].split()[:6]
+            nid, x, y, z, lay, numverts = self.read_data[
+                self.nvertex + 3 + node
+            ].split()[:6]
 
             # vertidx = {'ivertex': [int(n) for n in self.read_data[self.nvertex+3 + node].split()[6:]]}
-            vertidx = [int(n) for n in self.read_data[self.nvertex + 3 + node].split()[6:]]
+            vertidx = [
+                int(n) for n in self.read_data[self.nvertex + 3 + node].split()[6:]
+            ]
 
-            node_data.append([int(nid), float(x), float(y), float(z), int(lay), int(numverts), vertidx])
+            node_data.append(
+                [
+                    int(nid),
+                    float(x),
+                    float(y),
+                    float(z),
+                    int(lay),
+                    int(numverts),
+                    vertidx,
+                ]
+            )
 
-        nodedf = pd.DataFrame(node_data, columns=['node', 'x', 'y', 'z', 'layer', 'numverts', 'vertidx'])
+        nodedf = pd.DataFrame(
+            node_data, columns=["node", "x", "y", "z", "layer", "numverts", "vertidx"]
+        )
         return nodedf
 
     def get_node_coordinates(self, zcoord=False, zero_based=False):
-        '''
+        """
         Args:
             zcoord (`bool`): flag to add z coord to coordinates.  Default is False
             zero_based (`bool`): flag to subtract one from the node numbers in the returned
@@ -2923,10 +2938,12 @@ class GsfReader():
 
         Returns:
             node_coords: Dictionary containing x and y coordinates for each node
-        '''
+        """
         node_coords = {}
         for node in range(self.nnode):
-            nid, x, y, z, lay, numverts = self.read_data[self.nvertex + 3 + node].split()[:6]
+            nid, x, y, z, lay, numverts = self.read_data[
+                self.nvertex + 3 + node
+            ].split()[:6]
             nid = int(nid)
             if zero_based:
                 nid -= 1
@@ -2935,4 +2952,3 @@ class GsfReader():
                 node_coords[nid] += [float(z)]
 
         return node_coords
-

@@ -282,6 +282,11 @@ class Pst(object):
             if the Pst.__res attribute has not been loaded,
             this call loads the res dataframe from a file
 
+        Example::
+
+            # print the observed and simulated values for non-zero weighted obs
+            print(pst.res.loc[pst.nnz_obs_names,["modelled","measured"]])
+
         """
         if self.__res is not None:
             return self.__res
@@ -567,10 +572,15 @@ class Pst(object):
     @property
     def template_files(self):
         """list of template file names
+
         Returns:
             `[str]`: a list of template file names, extracted from
                 `Pst.model_input_data.pest_file`.  Returns `None` if this
                 attribute is `None`
+
+        Note:
+            Use `Pst.model_input_data` to access the template-input file information for writing/modification
+
         """
         if (
             self.model_input_data is not None
@@ -583,10 +593,15 @@ class Pst(object):
     @property
     def input_files(self):
         """list of model input file names
+
         Returns:
             `[str]`: a list of model input file names, extracted from
                 `Pst.model_input_data.model_file`.  Returns `None` if this
                 attribute is `None`
+
+        Note:
+            Use `Pst.model_input_data` to access the template-input file information for writing/modification
+
         """
         if (
             self.model_input_data is not None
@@ -602,7 +617,11 @@ class Pst(object):
         Returns:
             `[str]`: a list of instruction file names, extracted from
                 `Pst.model_output_data.pest_file`.  Returns `None` if this
-                attribute is `None`
+                 attribute is `None`
+
+        Note:
+            Use `Pst.model_output_data` to access the instruction-output file information for writing/modification
+
         """
         if (
             self.model_output_data is not None
@@ -619,6 +638,10 @@ class Pst(object):
             `[str]`: a list of model output file names, extracted from
                 `Pst.model_output_data.model_file`.  Returns `None` if this
                 attribute is `None`
+
+        Note:
+            Use `Pst.model_output_data` to access the instruction-output file information for writing/modification
+
         """
         if (
             self.model_output_data is not None
@@ -714,6 +737,7 @@ class Pst(object):
         return df
 
     def _read_line_comments(self, f, forgive):
+        """private method to read comment lines from a control file"""
         comments = []
         while True:
             org_line = f.readline()
@@ -736,6 +760,7 @@ class Pst(object):
         return org_line.strip(), comments
 
     def _read_section_comments(self, f, forgive):
+        """private method to read comments from a section of the control file"""
         lines = []
         section_comments = []
         while True:
@@ -751,6 +776,7 @@ class Pst(object):
 
     @staticmethod
     def _parse_external_line(line, pst_path="."):
+        """private method to parse a file for external file info"""
         raw = line.strip().split()
         existing_path, filename = Pst._parse_path_agnostic(raw[0])
         if pst_path is not None:
@@ -771,6 +797,7 @@ class Pst(object):
 
     @staticmethod
     def _parse_path_agnostic(filename):
+        """private method to parse a file path for any os sep"""
         filename = filename.replace("\\", os.sep).replace("/", os.sep)
         return os.path.split(filename)
 
@@ -778,6 +805,7 @@ class Pst(object):
     def _cast_df_from_lines(
         section, lines, fieldnames, converters, defaults, alias_map={}, pst_path="."
     ):
+        """private method to cast a pandas dataframe from raw control file lines"""
         # raw = lines[0].strip().split()
         # if raw[0].lower() == "external":
         if section.lower().strip().split()[-1] == "external":
@@ -846,7 +874,7 @@ class Pst(object):
         return df
 
     def _cast_prior_df_from_lines(self, section, lines, pst_path="."):
-
+        """private method to cast prior information lines to a dataframe"""
         if pst_path == ".":
             pst_path = ""
         if section.strip().split()[-1].lower() == "external":
@@ -912,7 +940,7 @@ class Pst(object):
             self.prior_information.loc[:, "extra"] = extra
 
     def _load_version2(self, filename):
-        """load a version 2 control file"""
+        """private method to load a version 2 control file"""
         self.lcount = 0
         self.comments = {}
         self.prior_information = self.null_prior
@@ -1163,6 +1191,8 @@ class Pst(object):
         Note:
             This method is called from the `Pst` construtor unless the `load` arg is `False`.
 
+
+
         """
         if not os.path.exists(filename):
             raise Exception("couldn't find control file {0}".format(filename))
@@ -1349,6 +1379,16 @@ class Pst(object):
                 If a parameter is not listed, 1.0 is used for its coefficients.
                 Default is {}
 
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            # add a pi equation for the first adjustable parameter
+            pst.add_pi_equation(pst.adj_par_names[0],pilbl="pi1",rhs=1.0)
+            # add a pi equation for 1.5 times the 2nd and 3 times the 3rd adj pars to sum together to 2.0
+            names = pst.adj_par_names[[1,2]]
+            pst.add_pi_equation(names,coef_dict={names[0]:1.5,names[1]:3})
+
+
         """
         if pilbl is None:
             pilbl = "pilbl_{0}".format(self.__pi_count)
@@ -1414,6 +1454,7 @@ class Pst(object):
         self.prior_information = self.prior_information.loc[keep_idx, :]
 
     def _write_df(self, name, f, df, formatters, columns):
+        """private method to write a dataframe to a control file"""
         if name.startswith("*"):
             f.write(name + "\n")
         if self.with_comments:
@@ -1461,6 +1502,14 @@ class Pst(object):
             checks for duplicate names, atleast 1 adjustable parameter
             and at least 1 non-zero-weighted observation
 
+            Not nearly as comprehensive as pestchek
+
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            pst.sanity_checks()
+
+
         """
 
         dups = self.parameter_data.parnme.value_counts()
@@ -1487,6 +1536,7 @@ class Pst(object):
         # print("noptmax: {0}".format(self.control_data.noptmax))
 
     def _write_version2(self, new_filename, use_pst_path=True, pst_rel_path="."):
+        """private method to write a version 2 control file"""
         pst_path = None
         new_filename = str(new_filename)  # ensure convert to str
         if use_pst_path:
@@ -1662,6 +1712,8 @@ class Pst(object):
             pst = pyemu.Pst("my.pst")
             pst.parrep("my.par")
             pst.write(my_new.pst")
+            #write a version 2 control file
+            pst.write("my_new_v2.pst",version=2)
 
         """
 
@@ -1686,7 +1738,7 @@ class Pst(object):
             )
 
     def _write_version1(self, new_filename):
-        """write a version 1 pest control file"""
+        """private method to write a version 1 pest control file"""
         self.new_filename = new_filename
         self.rectify_pgroups()
         self.rectify_pi()
@@ -2004,6 +2056,13 @@ class Pst(object):
             passing `par_names` as `None` and `obs_names` as `None` effectively
             generates a copy of the current `Pst`
 
+            Does not modify model i/o files - this is just a method for performing pyemu operations
+
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            new_pst = pst.get(pst.adj_par_names[0],pst.obs_names[:10])
+
         """
 
         # if par_names is None and obs_names is None:
@@ -2070,6 +2129,13 @@ class Pst(object):
             enforce_bounds (`bool`, optional): flag to enforce parameter bounds after parameter values are updated.
                 This is useful because PEST and PEST++ round the parameter values in the
                 par file, which may cause slight bound violations.  Default is `True`
+
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            pst.parrep("pest.1.base.par")
+            pst.control_data.noptmax = 0
+            pst.write("pest_1.pst")
 
         """
         if parfile is None:
@@ -2313,6 +2379,13 @@ class Pst(object):
             leave_zero (`bool`, optional): flag to leave existing zero weights.
                 Default is True
 
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            # set the weights of the observations to 20% of the observed value
+            pst.proportional_weights(fraction_stdev=0.2,wmax=10)
+            pst.write("pest_propo.pst")
+
         """
         new_weights = []
         for oval, ow in zip(self.observation_data.obsval, self.observation_data.weight):
@@ -2420,6 +2493,13 @@ class Pst(object):
             `Pst.parameter_data`
 
 
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            pst.add_transform_columns()
+            print(pst.parameter_data.parval1_trans
+
+
         """
         for col in ["parval1", "parlbnd", "parubnd", "increment"]:
             if col not in self.parameter_data.columns:
@@ -2438,6 +2518,15 @@ class Pst(object):
 
         Note:
             cheap enforcement of simply bringing violators back in bounds
+
+
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            pst.parrep("random.par")
+            pst.enforce_bounds()
+            pst.write("pest_rando.pst")
+
 
         """
         too_big = (
@@ -2852,6 +2941,12 @@ class Pst(object):
             requires a complete set of model input files at relative path
             from where python is running to `pst_path`
 
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            obsvals = pst.process_output_files()
+            print(obsvals)
+
         """
         return pst_utils.process_output_files(self, pst_path)
 
@@ -2873,6 +2968,13 @@ class Pst(object):
             then the current values for `obsval`, `weight` and `group` are used
 
             the normalized RMSE is normalized against the obsval range (max - min)
+
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            stats_df = pst.get_res_stats()
+            print(stats_df.loc["mae",:])
+
 
         """
         res = self.res.copy()
@@ -3261,7 +3363,7 @@ class Pst(object):
     @property
     def less_than_obs_constraints(self):
         """get the names of the observations that
-        are listed as active less than inequality constraints.
+        are listed as active (non-zero weight) less than inequality constraints.
 
         Returns:
             `pandas.Series`: names of obseravtions that are non-zero weighted less
@@ -3284,7 +3386,7 @@ class Pst(object):
     @property
     def less_than_pi_constraints(self):
         """get the names of the prior information eqs that
-        are listed as active less than inequality constraints.
+        are listed as active (non-zero weight) less than inequality constraints.
 
         Returns:
             `pandas.Series`: names of prior information that are non-zero weighted
@@ -3312,7 +3414,7 @@ class Pst(object):
     @property
     def greater_than_obs_constraints(self):
         """get the names of the observations that
-        are listed as active greater than inequality constraints.
+        are listed as active (non-zero weight) greater than inequality constraints.
 
         Returns:
             `pandas.Series`: names obseravtions that are non-zero weighted
@@ -3335,7 +3437,7 @@ class Pst(object):
     @property
     def greater_than_pi_constraints(self):
         """get the names of the prior information eqs that
-        are listed as active greater than inequality constraints.
+        are listed as active (non-zero weight) greater than inequality constraints.
 
         Returns:
             `pandas.Series` names of prior information that are non-zero weighted
@@ -3370,6 +3472,12 @@ class Pst(object):
             Works in control file values space (not log transformed space).  Also
             adds columns for effective upper and lower which account for par bounds and the
             value of parchglim
+
+        example::
+
+            pst = pyemu.Pst("pest.pst")
+            df = pst.get_par_change_limits()
+            print(df.chg_lower)
 
         """
         par = self.parameter_data
@@ -3441,6 +3549,12 @@ class Pst(object):
             - **[`str`]**: list of parameters at/near lower bound
             - **[`str`]**: list of parameters at/near upper bound
 
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            at_lb,at_ub = pst.get_adj_pars_at_bounds()
+            print("pars at lower bound",at_lb)
+
         """
 
         par = self.parameter_data.loc[self.adj_par_names, :].copy()
@@ -3462,6 +3576,10 @@ class Pst(object):
         Note:
             metadata is identified in key-value pairs that are separated by a colon.
             each key-value pair is separated from others by underscore
+
+            This works with PstFrom style long names
+
+            This method is called programmtically during `Pst.load()`
 
         """
         par = self.parameter_data

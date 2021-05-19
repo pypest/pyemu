@@ -53,6 +53,12 @@ class GeoStruct(object):
 
         v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)
         gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)
+        gs.plot()
+        # get a covariance matrix implied by the geostruct for three points
+        px = [0,1000,2000]
+        py = [0,0,0]
+        pnames ["p1","p2","p3"]
+        cov = gs.covariance_matrix(px,py,names=pnames)
 
     """
 
@@ -78,6 +84,16 @@ class GeoStruct(object):
         return self.name > other.name
 
     def same_as_other(self, other):
+        """compared to geostructs for similar attributes
+
+        Args:
+            other (`pyemu.geostats.Geostruct`): the other one
+
+        Returns:
+            same (`bool`): True is the `other` and `self` have the same characteristics
+
+
+        """
         if self.nugget != other.nugget:
             return False
         if len(self.variograms) != len(other.variograms):
@@ -177,6 +193,14 @@ class GeoStruct(object):
             `float`: the covariance between pt0 and pt1 implied
             by the GeoStruct
 
+        Example::
+
+            p1 = [0,0]
+            p2 = [1,1]
+            v = pyemu.geostats.ExpVario(a=0.1,contribution=1.0)
+            gs = pyemu.geostats.Geostruct(variograms=v)
+            c = gs.covariance(p1,p2)
+
         """
         # raise Exception()
         cov = self.nugget
@@ -198,6 +222,16 @@ class GeoStruct(object):
             `numpy.ndarray`: a 1-D array of covariance between point x0,y0 and the
             points contained in xother, yother.  len(cov) = len(xother) =
             len(yother)
+
+        Example::
+
+            x0,y0 = 1,1
+            xother = [2,3,4,5]
+            yother = [2,3,4,5]
+            v = pyemu.geostats.ExpVario(a=0.1,contribution=1.0)
+            gs = pyemu.geostats.Geostruct(variograms=v)
+            c = gs.covariance_points(x0,y0,xother,yother)
+
 
         """
 
@@ -234,6 +268,12 @@ class GeoStruct(object):
             "individuals" (plot each variogram on a separate axis),
             "legend" (add a legend to the plot(s)).  All other kwargs
             are passed to matplotlib.pyplot.plot()
+
+        Example::
+
+            v = pyemu.geostats.ExpVario(a=0.1,contribution=1.0)
+            gs = pyemu.geostats.Geostruct(variograms=v)
+            gs.plot()
 
         """
         #
@@ -342,7 +382,6 @@ class SpecSim2d(object):
             `initialize()` prepares for simulation by undertaking
             the fast FFT on the wave number matrix and should be called
             if the `SpecSim2d.geostruct` is changed.
-
             This method is called by the constructor.
 
 
@@ -421,7 +460,7 @@ class SpecSim2d(object):
             is (num_reals,self.dely.shape[0],self.delx.shape[0])
         Note:
             log transformation is respected and the returned `reals` array is
-            in arithmatic space
+            in linear space
 
         """
         reals = []
@@ -446,8 +485,8 @@ class SpecSim2d(object):
     def grid_par_ensemble_helper(
         self, pst, gr_df, num_reals, sigma_range=6, logger=None
     ):
-        """wrapper around `SpecSim2d.draw()` designed to support `pyemu.PstFromFlopy`
-            grid-based parameters
+        """wrapper around `SpecSim2d.draw()` designed to support `PstFromFlopy`
+        and `PstFrom` grid-based parameters
 
         Args:
             pst (`pyemu.Pst`): a control file instance
@@ -750,18 +789,10 @@ class OrdinaryKrige(object):
             )
             ux_std = point_data.groupby(point_data.name).std()["x"]
             if ux_std.max() > 0.0:
-                raise Exception(
-                    "duplicate point_info entries with name {0} have different x values".format(
-                        uname
-                    )
-                )
+                raise Exception("duplicate point_info entries with different x values")
             uy_std = point_data.groupby(point_data.name).std()["y"]
             if uy_std.max() > 0.0:
-                raise Exception(
-                    "duplicate point_info entries with name {0} have different y values".format(
-                        uname
-                    )
-                )
+                raise Exception("duplicate point_info entries with different y values")
 
             self.point_data = point_data.drop_duplicates(subset=["name"])
         else:
@@ -880,15 +911,12 @@ class OrdinaryKrige(object):
 
         Note:
             this method calls OrdinaryKrige.calc_factors()
-
             this method is the main entry point for grid-based kriging factor generation
 
 
         Example::
 
             import flopy
-
-            import pyemu
             v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)
             gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)
             pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")
@@ -998,6 +1026,7 @@ class OrdinaryKrige(object):
             self.point_data.loc[pt_names, "x"],
             self.point_data.loc[pt_names, "y"],
         )
+
         return interp_cov
 
     def _form(self, pt_names, point_cov, interp_cov):
@@ -1025,6 +1054,7 @@ class OrdinaryKrige(object):
         pt_zone=None,
         forgive=False,
         num_threads=1,
+        idx_vals=None,
     ):
         """calculate ordinary kriging factors (weights) for the points
         represented by arguments x and y
@@ -1052,6 +1082,8 @@ class OrdinaryKrige(object):
                 is raised for failed matrix inversion.
             num_threads (`int`): number of multiprocessing workers to use to try to speed up
                 kriging in python.  Default is 1.
+            idx_vals (iterable of `int`): optional index values to use in the interpolation dataframe.  This is
+                used to set the proper node number in the factors file for unstructured grids.
 
         Returns:
             `pandas.DataFrame`: a dataframe with information summarizing the ordinary kriging
@@ -1060,6 +1092,23 @@ class OrdinaryKrige(object):
         Note:
             this method calls either `OrdinaryKrige.calc_factors_org()` or
             `OrdinaryKrige.calc_factors_mp()` depending on the value of `num_threads`
+
+        Example::
+
+            v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)
+            gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)
+            pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")
+            ok = pyemu.utils.geostats.OrdinaryKrige(gs,pp_df)
+            x = np.arange(100)
+            y = np.ones_like(x)
+            zone_array = y.copy()
+            zone_array[:zone_array.shape[0]/2] = 2
+            # only calc factors for the points in zone 1
+            ok.calc_factors(x,y,pt_zone=1)
+            ok.to_grid_factors_file("zone_1.fac",ncol=x.shape[0])
+
+
+
         """
         if num_threads == 1:
             return self._calc_factors_org(
@@ -1071,6 +1120,7 @@ class OrdinaryKrige(object):
                 verbose,
                 pt_zone,
                 forgive,
+                idx_vals,
             )
         else:
             return self._calc_factors_mp(
@@ -1083,6 +1133,7 @@ class OrdinaryKrige(object):
                 pt_zone,
                 forgive,
                 num_threads,
+                idx_vals,
             )
 
     def _calc_factors_org(
@@ -1095,12 +1146,17 @@ class OrdinaryKrige(object):
         verbose=False,
         pt_zone=None,
         forgive=False,
+        idx_vals=None,
     ):
 
         assert len(x) == len(y)
+        if idx_vals is not None and len(idx_vals) != len(x):
+            raise Exception("len(idx_vals) != len(x)")
         # find the point data to use for each interp point
         sqradius = search_radius ** 2
         df = pd.DataFrame(data={"x": x, "y": y})
+        if idx_vals is not None:
+            df.index = [int(i) for i in idx_vals]
         inames, idist, ifacts, err_var = [], [], [], []
         sill = self.geostruct.sill
         if pt_zone is None:
@@ -1252,11 +1308,16 @@ class OrdinaryKrige(object):
         pt_zone=None,
         forgive=False,
         num_threads=1,
+        idx_vals=None,
     ):
-
-        assert len(x) == len(y)
         start_loop = datetime.now()
+        assert len(x) == len(y)
+        if idx_vals is not None and len(idx_vals) != len(x):
+            raise Exception("len(idx_vals) != len(x)")
+        # find the point data to use for each interp point
         df = pd.DataFrame(data={"x": x, "y": y})
+        if idx_vals is not None:
+            df.index = [int(i) for i in idx_vals]
         print("starting interp point loop for {0} points".format(df.shape[0]))
         with mp.Manager() as manager:
 
@@ -1446,7 +1507,7 @@ class OrdinaryKrige(object):
             #     print("...took {0}".format(td))
 
     def to_grid_factors_file(
-        self, filename, points_file="points.junk", zone_file="zone.junk"
+        self, filename, points_file="points.junk", zone_file="zone.junk", ncol=None
     ):
         """write a PEST-style factors file.  This file can be used with
         the fac2real() method to write an interpolated structured or unstructured array
@@ -1458,6 +1519,11 @@ class OrdinaryKrige(object):
             zone_file (`str`): zone filename to add to the header of the factors file.
                 This is not used by the fac2real() method.  Default is "zone.junk"
 
+            ncol (`int`) column value to write to factors file.  This is normally determined
+                from the spatial reference and should only be passed for unstructured grids -
+                it should be equal to the number of nodes in the current property file. Default is None.
+                Required for unstructured grid models.
+
         Note:
             this method should be called after OrdinaryKrige.calc_factors_grid() for structured
             models or after OrdinaryKrige.calc_factors() for unstructured models.
@@ -1468,23 +1534,21 @@ class OrdinaryKrige(object):
                 "ok.interp_data is None, must call calc_factors_grid() first"
             )
         if self.spatial_reference is None:
-             #raise Exception(
-             #   "ok.spatial_reference is None, must call calc_factors_grid() first"
-             #)
-            print("OrdinaryKrige.to_grid_factors_file(): spatial_reference attr is None, assuming unstructured grid")
+            print(
+                "OrdinaryKrige.to_grid_factors_file(): spatial_reference attr is None, assuming unstructured grid"
+            )
+            if ncol is None:
+                raise Exception("'ncol' arg must be passed for unstructured grids")
             nrow = 1
-            ncol = self.interp_data.shape[0]
+            if ncol < self.interp_data.shape[0]:
+                raise Exception("something is wrong")
         else:
             nrow = self.spatial_reference.nrow
             ncol = self.spatial_reference.ncol
         with open(filename, "w") as f:
             f.write(points_file + "\n")
             f.write(zone_file + "\n")
-            f.write(
-                "{0} {1}\n".format(
-                    ncol, nrow
-                )
-            )
+            f.write("{0} {1}\n".format(ncol, nrow))
             f.write("{0}\n".format(self.point_data.shape[0]))
             [f.write("{0}\n".format(name)) for name in self.point_data.name]
             t = 0
