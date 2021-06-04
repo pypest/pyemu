@@ -1758,7 +1758,8 @@ class InstructionFile(object):
             first = line[: midx[0]].strip()
             tokens = []
             if len(first) > 0:
-                tokens.append(first)
+                #tokens.append(first)
+                tokens.extend([f.strip() for f in first.split()])
             for idx in range(1, len(midx) - 1, 2):
                 mstr = line[midx[idx - 1] : midx[idx] + 1]
                 ostr = line[midx[idx] + 1 : midx[idx + 1]]
