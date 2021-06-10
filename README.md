@@ -44,7 +44,7 @@ pyEMU also includes lots of functionality for dealing with PEST(++) datasets, su
 
 Version 1.1 includes the `PstFrom` setup class to support generating PEST(++) interfaces in the 100,000 to 1,000,000 parameter range with all the bells and whistles.  A publication documenting the `PstFrom` class can be found here:
 
-[https://doi.org/10.1016/j.envsoft.2021.105022]{https://doi.org/10.1016/j.envsoft.2021.105022}
+[https://doi.org/10.1016/j.envsoft.2021.105022](https://doi.org/10.1016/j.envsoft.2021.105022)
 
 A publication documenting pyEMU and an example application can be found here:
 
