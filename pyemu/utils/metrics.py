@@ -56,7 +56,7 @@ def _MSE(mod, obs):
     Returns:
         MSE: Mean Squared Error
     '''
-    return np.mean(np.sum((obs-mod)**2))
+    return np.mean((obs-mod)**2)
 
 def _RMSE(mod, obs):
     '''
