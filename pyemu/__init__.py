@@ -24,6 +24,7 @@ from .utils import (
     pp_utils,
     os_utils,
     smp_utils,
+    metrics
 )
 from .plot import plot_utils
 from .logger import Logger
@@ -52,5 +53,6 @@ __all__ = [
     "os_utils",
     "smp_utils",
     "plot_utils",
+    "metrics"
 ]
 # del get_versions
