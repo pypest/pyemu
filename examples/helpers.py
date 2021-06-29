@@ -1,4 +1,5 @@
 import os
+import pyemu
 
 def process_model_outputs():
 	import numpy as np
@@ -18,7 +19,7 @@ def write_ins_file(d):
 		for i in range(arr.shape[0]):
 			f.write("l1 !sobs_{0}!\n".format(i))
 
-	import pyemu
+	
 	i = pyemu.pst_utils.InstructionFile(os.path.join(d,"special_outputs.dat.ins"))
 	df = i.read_output_file("special_outputs.dat")
 	
