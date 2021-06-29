@@ -466,7 +466,8 @@ def  kl_test():
     factors_file = os.path.join("temp","factors.dat")
     num_eig = 100
     prefixes = ["hk1"]
-    df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=ml.sr,
+    sr = pyemu.helpers.SpatialReference(delc=ml.dis.delc.array,delr=ml.dis.delr.array)
+    df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=sr,
                                              struct=str_file,
                                              factors_file=factors_file,
                                              basis_file=basis_file,
@@ -2025,7 +2026,8 @@ if __name__ == "__main__":
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
     #ok_grid_invest()
-    ok_grid_test()
-    ok_grid_zone_test()
+    #ok_grid_test()
+    #ok_grid_zone_test()
     # maha_pdc_test()
     #gsf_reader_test()
+    kl_test()
