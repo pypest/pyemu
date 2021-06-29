@@ -476,7 +476,9 @@ def calc_observation_ensemble_quantiles(
 
 
 def calc_rmse_ensemble(ens, pst, bygroups=True, subset_realizations=None):
-    """Calculates RMSE (without weights) to quantify fit to observations for ensemble members
+    """
+    DEPRECATED -->please see pyemu.utils.metrics.calc_metric_ensemble() 
+    Calculates RMSE (without weights) to quantify fit to observations for ensemble members
 
     Args:
         ens (pandas DataFrame): DataFrame read from an observation
@@ -489,39 +491,7 @@ def calc_rmse_ensemble(ens, pst, bygroups=True, subset_realizations=None):
         **pandas.DataFrame**: rows are realizations. Columns are groups. Content is RMSE
     """
 
-    # TODO: handle zero weights due to PDC
-
-    # make sure subset_realizations is a list
-    if not isinstance(subset_realizations, list) and subset_realizations is not None:
-        subset_realizations = list(subset_realizations)
-
-    if "real_name" in ens.columns:
-        ens.set_index("real_name")
-    if not isinstance(pst, pyemu.Pst):
-        raise Exception("pst object must be of type pyemu.Pst")
-
-    # get the observation data
-    obs = pst.observation_data.copy()
-
-    # confirm that the indices and observations line up
-    if False in np.unique(ens.columns == obs.index):
-        raise Exception("ens and pst observation names do not align")
-
-    rmse = pd.DataFrame(index=ens.index)
-    if subset_realizations is not None:
-        rmse = rmse.loc[subset_realizations]
-
-    # calculate the rmse total first
-    rmse["total"] = [_rmse(ens.loc[i], obs.obsval) for i in rmse.index]
-
-    # if bygroups, do the groups as columns
-    if bygroups is True:
-        for cg in obs.obgnme.unique():
-            cnames = obs.loc[obs.obgnme == cg].obsnme
-            rmse[cg] = [
-                _rmse(ens.loc[i][cnames], obs.loc[cnames].obsval) for i in rmse.index
-            ]
-    return rmse
+    raise Exception('this is deprecated-->please see pyemu.utils.metrics.calc_metric_ensemble()')
 
 
 def _condition_on_par_knowledge(cov, var_knowledge_dict):
