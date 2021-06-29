@@ -5,6 +5,7 @@ import re
 import copy
 import warnings
 import numpy as np
+from numpy.lib.type_check import real_if_close
 import pandas as pd
 
 pd.options.display.max_colwidth = 100
@@ -2118,18 +2119,26 @@ class Pst(object):
 
         return new_pst
 
-    def parrep(self, parfile=None, enforce_bounds=True):
+    def parrep(self, parfile=None, enforce_bounds=True, real_name=None, noptmax=0):
         """replicates the pest parrep util. replaces the parval1 field in the
-            parameter data section dataframe with values in a PEST parameter file
+            parameter data section dataframe with values in a PEST parameter file 
+            or a single realization from an ensemble parameter csv file
 
         Args:
             parfile (`str`, optional): parameter file to use.  If None, try to find and use
                 a parameter file that corresponds to the case name.
+                If parfile has extension '.par' a single realization parameter file is used
+                If parfile has extention '.csv' an ensemble parameter file is used which invokes real_name
                 Default is None
             enforce_bounds (`bool`, optional): flag to enforce parameter bounds after parameter values are updated.
                 This is useful because PEST and PEST++ round the parameter values in the
                 par file, which may cause slight bound violations.  Default is `True`
-
+            real_name (`str` or `int`, optional): name of the ensemble realization to use for updating the 
+                parval1 value in the parameter data section dataframe. If None, try using "base". If "base"
+                not present, use the real_name with smallest index number. 
+                Ignored if parfile is of the PEST parameter file format (e.g. not en ensemble)
+            noptmax (`int`, optional): Value with which to update the pst.control_data.noptmax value
+                Default is 0.
         Example::
 
             pst = pyemu.Pst("pest.pst")
@@ -2140,19 +2149,42 @@ class Pst(object):
         """
         if parfile is None:
             parfile = self.filename.replace(".pst", ".par")
-        par_df = pst_utils.read_parfile(parfile)
-        self.parameter_data.index = self.parameter_data.parnme
-        par_df.index = par_df.parnme
-        self.parameter_data.parval1 = par_df.parval1
-        self.parameter_data.scale = par_df.scale
-        self.parameter_data.offset = par_df.offset
+        # first handle the case of a single parameter realization in a PAR file
+        if parfile.lower().endswith('.par'):
+            print('Updating parameter values from {0}'.format(parfile))
+            par_df = pst_utils.read_parfile(parfile)
+            self.parameter_data.index = self.parameter_data.parnme
+            par_df.index = par_df.parnme
+            self.parameter_data.parval1 = par_df.parval1
+            self.parameter_data.scale = par_df.scale
+            self.parameter_data.offset = par_df.offset
+            
+        # next handle ensemble case
+        elif parfile.lower().endswith('.csv'):
+            parens = pd.read_csv(parfile, index_col = 0)
+            # cast the parens.index to string to be sure indexing is cool
+            parens.index = [str(i).lower() for i in parens.index]
+            # handle None case (potentially) for real_name
+            if real_name is None:
+                if 'base' in parens.index:
+                    real_name = 'base'
+                else:
+                    real_name = str(min([int(i) for i in parens.index]))
+            # cast the real_name to string to be sure indexing is cool
+            real_name = str(real_name)
 
+            # now update with a little pandas trickery
+            print("updating parval1 using realization:'{}' from ensemble file {}".format(real_name, parfile))
+            self.parameter_data.parval1 = parens.T.loc[self.parameter_data.parnme][real_name]
+            
         if enforce_bounds:
             par = self.parameter_data
             idx = par.loc[par.parval1 > par.parubnd, "parnme"]
             par.loc[idx, "parval1"] = par.loc[idx, "parubnd"]
             idx = par.loc[par.parval1 < par.parlbnd, "parnme"]
             par.loc[idx, "parval1"] = par.loc[idx, "parlbnd"]
+        print ('parrep: updating noptmax to {}'.format(int(noptmax)))
+        self.control_data.noptmax = int(noptmax)
 
     def adjust_weights_discrepancy(
         self, resfile=None, original_ceiling=True, bygroups=False
