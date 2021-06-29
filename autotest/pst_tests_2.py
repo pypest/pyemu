@@ -488,6 +488,7 @@ def parrep_test():
     # get cheeky and reverse the column names to test updating
     parens.columns = parens.columns.sort_values(ascending = False)
     parens.to_csv('fake.par.0.csv')
+    
     parens.drop('base').to_csv('fake.par.0.nobase.csv')
     # and make a fake pst file
     pst = pyemu.pst_utils.generic_pst(par_names=parnames)
@@ -495,6 +496,7 @@ def parrep_test():
     pst.parameter_data['parlbnd'] = 0.01
     pst.parameter_data['parubnd'] = 100.01
     
+    pyemu.ParameterEnsemble(pst=pst,df=parens).to_binary('fake_parens.jcb')
     # test the parfile style
     pst.parrep('fake.par')
     assert pst.parameter_data.parval1[0] == pst.parameter_data.parlbnd[0]
@@ -519,8 +521,9 @@ def parrep_test():
     parens = parens[parens.columns.sort_values()]
     assert np.allclose(pst.parameter_data.parval1.values[:-1],parens.T[3].values[:-1],atol=0.0001)
 
-    
-    j=2
+    pst.parrep('fake_parens.jcb', real_name=3)
+    # confirm binary format works as csv did
+    assert np.allclose(pst.parameter_data.parval1.values[:-1],parens.T[3].values[:-1],atol=0.0001)
 
 def pst_from_flopy_geo_draw_test():
     import shutil

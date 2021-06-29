@@ -2129,6 +2129,7 @@ class Pst(object):
                 a parameter file that corresponds to the case name.
                 If parfile has extension '.par' a single realization parameter file is used
                 If parfile has extention '.csv' an ensemble parameter file is used which invokes real_name
+                If parfile has extention '.jcb' a binary ensemble parameter file is used which invokes real_name
                 Default is None
             enforce_bounds (`bool`, optional): flag to enforce parameter bounds after parameter values are updated.
                 This is useful because PEST and PEST++ round the parameter values in the
@@ -2147,6 +2148,8 @@ class Pst(object):
             pst.write("pest_1.pst")
 
         """
+
+
         if parfile is None:
             parfile = self.filename.replace(".pst", ".par")
         # first handle the case of a single parameter realization in a PAR file
@@ -2160,8 +2163,11 @@ class Pst(object):
             self.parameter_data.offset = par_df.offset
             
         # next handle ensemble case
-        elif parfile.lower().endswith('.csv'):
-            parens = pd.read_csv(parfile, index_col = 0)
+        if parfile.lower().endswith('.csv') or parfile.lower().endswith('.jcb'):
+            if parfile.lower().endswith('.csv'):
+                parens = pd.read_csv(parfile, index_col = 0)
+            elif parfile.lower().endswith('.jcb'):
+                parens = pyemu.ParameterEnsemble.from_binary(pst=self,filename=parfile)._df
             # cast the parens.index to string to be sure indexing is cool
             parens.index = [str(i).lower() for i in parens.index]
             # handle None case (potentially) for real_name
@@ -2175,8 +2181,8 @@ class Pst(object):
 
             # now update with a little pandas trickery
             print("updating parval1 using realization:'{}' from ensemble file {}".format(real_name, parfile))
-            self.parameter_data.parval1 = parens.T.loc[self.parameter_data.parnme][real_name]
-            
+            self.parameter_data.parval1 = parens.loc[real_name].T.loc[self.parameter_data.parnme]
+                
         if enforce_bounds:
             par = self.parameter_data
             idx = par.loc[par.parval1 > par.parubnd, "parnme"]
