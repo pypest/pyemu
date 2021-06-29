@@ -44,6 +44,7 @@ def freyberg_test():
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False,forgive=False,
                                    exe_name=mf_exe_name)
+    setattr(m,"sr",pyemu.helpers.SpatialReference(delc=m.dis.delc.array,delr=m.dis.delr.array))
     org_model_ws = "temp"
 
     m.change_model_ws(org_model_ws)
@@ -64,7 +65,7 @@ def freyberg_test():
     temp_bc_props = [["wel.flux",kper] for kper in range(m.nper)]
     spat_bc_props= [["wel.flux",2]]
 
-    ph = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
+    ph = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,org_model_ws,
                                          const_props=props,
                                          zone_props=props,
                                          kl_props=props,
@@ -319,8 +320,8 @@ def freyberg_diff_obs_test():
 
 if __name__ == "__main__":
     #freyberg_diff_obs_test()
-    #freyberg_test()
+    freyberg_test()
     #freyberg_kl_pp_compare()
     #import shapefile
     #run_sweep_test()
-    fake_run_test()
+    #fake_run_test()
