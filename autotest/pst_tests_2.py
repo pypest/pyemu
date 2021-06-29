@@ -28,7 +28,7 @@ def from_flopy_kl_test():
     org_model_ws = "temp"
     m.change_model_ws(org_model_ws)
     m.write_input()
-
+    setattr(m,"sr",pyemu.helpers.SpatialReference(delc=m.dis.delc.array,delr=m.dis.delr.array))
     new_model_ws = "temp_pst_from_flopy"
 
     hds_kperk = []
@@ -38,7 +38,7 @@ def from_flopy_kl_test():
     temp_list_props = [["wel.flux", None]]
     spat_list_props = [["riv.cond", 0], ["riv.stage", 0]]
     kl_props = [["upw.hk", 0], ["upw.vka", 0], ["rch.rech", 0]]
-    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+    ph = pyemu.helpers.PstFromFlopyModel(m, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          kl_props=kl_props,
                                          remove_existing=True,
