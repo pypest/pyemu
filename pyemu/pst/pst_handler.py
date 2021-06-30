@@ -2119,7 +2119,7 @@ class Pst(object):
 
         return new_pst
 
-    def parrep(self, parfile=None, enforce_bounds=True, real_name=None, noptmax=0):
+    def parrep(self, parfile=None, enforce_bounds=True, real_name=None, noptmax=0, binary_ens_file=False):
         """replicates the pest parrep util. replaces the parval1 field in the
             parameter data section dataframe with values in a PEST parameter file 
             or a single realization from an ensemble parameter csv file
@@ -2140,6 +2140,7 @@ class Pst(object):
                 Ignored if parfile is of the PEST parameter file format (e.g. not en ensemble)
             noptmax (`int`, optional): Value with which to update the pst.control_data.noptmax value
                 Default is 0.
+            binary_ens_file (`bool`): If True, use binary format to load ensemble file, else assume it's a CSV file
         Example::
 
             pst = pyemu.Pst("pest.pst")
@@ -2163,10 +2164,12 @@ class Pst(object):
             self.parameter_data.offset = par_df.offset
             
         # next handle ensemble case
-        if parfile.lower().endswith('.csv') or parfile.lower().endswith('.jcb'):
+        if parfile.lower()[-4:] in ['.jcb','.bin']:
+            binary_ens_file=True
+        if parfile.lower()[-4:] in ['.jcb','.bin', '.csv'] :
             if parfile.lower().endswith('.csv'):
                 parens = pd.read_csv(parfile, index_col = 0)
-            elif parfile.lower().endswith('.jcb'):
+            if binary_ens_file == True:
                 parens = pyemu.ParameterEnsemble.from_binary(pst=self,filename=parfile)._df
             # cast the parens.index to string to be sure indexing is cool
             parens.index = [str(i).lower() for i in parens.index]

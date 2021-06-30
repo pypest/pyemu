@@ -521,9 +521,9 @@ def parrep_test():
     parens = parens[parens.columns.sort_values()]
     assert np.allclose(pst.parameter_data.parval1.values[:-1],parens.T[3].values[:-1],atol=0.0001)
 
-    pst.parrep('fake_parens.jcb', real_name=3)
+    pst.parrep('fake_parens.jcb', real_name=2)
     # confirm binary format works as csv did
-    assert np.allclose(pst.parameter_data.parval1.values[:-1],parens.T[3].values[:-1],atol=0.0001)
+    assert np.allclose(pst.parameter_data.parval1.values[:-1],parens.T[2].values[:-1],atol=0.0001)
 
 def pst_from_flopy_geo_draw_test():
     import shutil
