@@ -590,7 +590,7 @@ def kl_setup(
         import flopy
     except Exception as e:
         raise Exception("error import flopy: {0}".format(str(e)))
-    assert isinstance(sr, flopy.utils.SpatialReference)
+    assert isinstance(sr, pyemu.helpers.SpatialReference)
     # for name,array in array_dict.items():
     #     assert isinstance(array,np.ndarray)
     #     assert array.shape[0] == sr.nrow

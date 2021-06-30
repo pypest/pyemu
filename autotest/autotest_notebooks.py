@@ -25,7 +25,6 @@ os.mkdir(testdir)
 def get_notebooks():
     return [f for f in os.listdir(nbdir) if f.endswith('.ipynb') and not "notest" in f]
 
-
 def run_notebook(fn):
     #pth = os.path.join(nbdir, fn)
     pth = fn
@@ -49,6 +48,7 @@ def test_notebooks():
         yield run_notebook, fn
 
 if __name__ == '__main__':
+    shutil.copy2(os.path.join("..","examples","helpers.py"),"helpers.py")
     files = get_notebooks()
     for fn in files:
         run_notebook(fn)
