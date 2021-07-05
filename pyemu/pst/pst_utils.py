@@ -1,9 +1,6 @@
-"""This module contains helpers and default values that support
-the pyemu.Pst object.
-"""
+"""Various PEST(++) control file peripheral operations"""
 from __future__ import print_function, division
-import os, sys
-import stat
+import os
 import warnings
 import multiprocessing as mp
 import re
@@ -223,7 +220,7 @@ pst_config["pestpp_options"] = {}
 
 
 def read_resfile(resfile):
-        """load a residual file into a pandas.DataFrame
+    """load a PEST-style residual file into a pandas.DataFrame
 
     Args:
          resfile (`str`): path and name of an existing residual file
@@ -262,19 +259,27 @@ def read_resfile(resfile):
 
 
 def res_from_en(pst, enfile):
-    """load observation ensemble file for residual into a pandas.DataFrame
+    """load ensemble results from PESTPP-IES into a PEST-style
+    residuals `pandas.DataFrame`
 
-        Parameters
-        ----------
-        obsen : str or ensemble
-            observation ensemble file name
-            or ensemble observations
+    Args:
+        enfile (`str`): CSV-format ensemble file name
 
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
+    Returns:
+        `pandas.DataFrame`: a dataframe with the same columns as a
+        residual dataframe (a la `pst_utils.read_resfile()`)
 
-        """
+    Note:
+        If a "base" realization is found in the ensemble, it is used
+        as the "modelled" column in the residuals dataframe.  Otherwise,
+        the mean of the ensemble is used as "modelled"
+
+    Example::
+
+        df = pyemu.pst_utils.res_from_en("my.0.obs.csv")
+        df.residual.plot(kind="hist")
+
+    """
     converters = {"name": str_con, "group": str_con}
     obs = pst.observation_data
     if isinstance(enfile, str):
@@ -299,16 +304,18 @@ def res_from_en(pst, enfile):
 
 
 def read_parfile(parfile):
-    """load a pest-compatible .par file into a pandas.DataFrame
+    """load a PEST-style parameter value file into a pandas.DataFrame
 
-    Parameters
-    ----------
-    parfile : str
-        pest parameter file name
+    Args:
+        parfile (`str`): path and name of existing parameter file
 
-    Returns
-    -------
-    pandas.DataFrame : pandas.DataFrame
+    Returns:
+        `pandas.DataFrame`: a dataframe with columns of "parnme", "parval1",
+        "scale" and "offset"
+
+    Example::
+
+        df = pyemu.pst_utils.read_parfile("my.par1")
 
     """
     if not os.path.exists(parfile):
@@ -323,16 +330,19 @@ def read_parfile(parfile):
     par_df.index = par_df.parnme
     return par_df
 
-def write_parfile(df, parfile):
-    """ write a pest parameter file from a dataframe
 
-    Parameters
-    ----------
-    df : (pandas.DataFrame)
-        dataframe with column names that correspond to the entries
-        in the parameter data section of a pest control file
-    parfile : str
-        name of the parameter file to write
+def write_parfile(df, parfile):
+    """write a PEST-style parameter file from a dataframe
+
+    Args:
+        df (`pandas.DataFrame`): a dataframe with column names
+            that correspond to the entries in the parameter data
+            section of the pest control file
+        parfile (`str`): name of the parameter file to write
+
+    Example::
+
+        pyemu.pst_utils.write_parfile(pst.parameter_data,"my.par")
 
     """
     columns = ["parnme", "parval1", "scale", "offset"]
@@ -362,6 +372,7 @@ def write_parfile(df, parfile):
             + "\n"
         )
 
+
 def parse_tpl_file(tpl_file):
     """parse a PEST-style template file to get the parameter names
 
@@ -371,15 +382,9 @@ def parse_tpl_file(tpl_file):
     Returns:
         [`str`] : list of parameter names found in `tpl_file`
 
-    Parameters
-    ----------
-    tpl_file : str
-        template file name
+    Example::
 
-    Returns
-    -------
-    par_names : list
-        list of parameter names
+        par_names = pyemu.pst_utils.parse_tpl_file("my.tpl")
 
     """
     par_names = set()
@@ -421,10 +426,20 @@ def parse_tpl_file(tpl_file):
 def write_input_files(pst, pst_path="."):
     """write parameter values to model input files
 
-    Parameters
-    ----------
-    pst : (pyemu.Pst)
-        a Pst instance
+    Args:
+        pst (`pyemu.Pst`): a Pst instance
+        pst_path (`str`): the path to where the control file and template
+            files reside.  Default is '.'.
+
+    Note:
+
+        This function uses template files with the current parameter \
+        values (stored in `pst.parameter_data.parval1`).
+
+        This function uses multiprocessing - one process per template file
+
+        This is a simple implementation of what PEST does.  It does not
+        handle all the special cases, just a basic function...user beware
 
 
     """
@@ -483,14 +498,8 @@ def write_to_template(parvals, tpl_file, in_file):
 
     Examples::
 
-    Parameters
-    ----------
-    parvals : dict or pandas.Series
-        a way to look up parameter values using parameter names
-    tpl_file : str
-        template file
-    in_file : str
-        input file
+        pyemu.pst_utils.write_to_template(par.parameter_data.parval1,
+                                          "my.tpl","my.input")
 
     """
     f_in = open(in_file, "w")
@@ -544,18 +553,6 @@ def _get_marker_indices(marker, line):
     """method to find the start and end parameter markers
     on a template file line.  Used by write_to_template()
 
-    Parameters
-    ----------
-    marker : str
-        template file marker char
-    line : str
-        template file line
-
-    Returns
-    -------
-    indices : list
-        list of start and end indices (zero based)
-
     """
     indices = [i for i, ltr in enumerate(line) if ltr == marker]
     start = indices[0:-1:2]
@@ -565,16 +562,21 @@ def _get_marker_indices(marker, line):
 
 
 def parse_ins_file(ins_file):
-    """parse a pest instruction file to get observation names
+    """parse a PEST-style instruction file to get observation names
 
-    Parameters
-    ----------
-    ins_file : str
-        instruction file name
+    Args:
+        ins_file (`str`): path and name of an existing instruction file
 
-    Returns
-    -------
-    list of observation names
+    Returns:
+        [`str`]: a list of observation names found in `ins_file`
+
+    Note:
+        This is a basic function for parsing instruction files to
+        look for observation names.
+
+    Example::
+
+        obs_names = pyemu.pst_utils.parse_ins_file("my.ins")
 
     """
 
@@ -641,9 +643,8 @@ def _parse_ins_string(string):
 def _populate_dataframe(index, columns, default_dict, dtype):
     """helper function to populate a generic Pst dataframe attribute.
 
-    Returns
-    -------
-    new_df : pandas.DataFrame
+    Note:
+        This function is called as part of constructing a generic Pst instance
 
     """
     new_df = pd.DataFrame(index=index, columns=columns)
@@ -665,16 +666,16 @@ def generic_pst(par_names=["par1"], obs_names=["obs1"], addreg=False):
         addreg (`bool`): flag to add zero-order Tikhonov prior information
             equations to the new control file
 
-    Parameters
-    ----------
-    par_names : (list)
-        parameter names to setup
-    obs_names : (list)
-        observation names to setup
+    Returns:
+        `pyemu.Pst`: a new control file instance. This instance does not have
+        all the info needed to run, but is a placeholder that can then be
+        filled in later.
 
-    Returns
-    -------
-    new_pst : pyemu.Pst
+    Example::
+
+        par_names = ["par1","par2"]
+        obs_names = ["obs1","obs2"]
+        pst = pyemu.pst_utils.generic_pst(par_names,obs_names]
 
     """
     if not isinstance(par_names, list):
@@ -879,24 +880,21 @@ def try_process_output_file(ins_file, output_file=None):
 def try_process_output_pst(pst):
     """attempt to process each instruction file, model output
     file pair in a `pyemu.Pst`.
-"""
 
-    warnings.warn("pst_from_io_files has moved to pyemu.helpers and is also "+\
-                  "now avaiable as a Pst class method (Pst.from_io_files())",PyemuWarning)
-    from pyemu import helpers
-    return helpers.pst_from_io_files(tpl_files=tpl_files,in_files=in_files,
-                              ins_files=ins_files,out_files=out_files,
-                              pst_filename=pst_filename)
+    Args:
+        pst (`pyemu.Pst`): a control file instance
 
+    Returns:
+        `pandas.DataFrame`: a dataframe of observation names and simulated outputs
+        extracted from model output files.
 
-def try_run_inschek(pst):
-    """ attempt to run INSCHEK for each instruction file, model output
-    file pair in a pyemu.Pst.  If the run is successful, the INSCHEK written
-    .obf file is used to populate the pst.observation_data.obsval attribute
+    Note:
+        This function first tries to process the output files using the
+        InstructionFile class,  If that failes, then it tries to run
+        INSCHEK. If an instructionfile is processed successfully,
+        the extract simulated values are used to populate the
+        `pst.observation_data.obsval` attribute.
 
-    Parameters
-    ----------
-    pst : (pyemu.Pst)
 
     """
     for ins_file, out_file in zip(pst.instruction_files, pst.output_files):
@@ -936,15 +934,15 @@ def _try_run_inschek(ins_file, out_file, cwd="."):
 def get_phi_comps_from_recfile(recfile):
     """read the phi components from a record file by iteration
 
-    Parameters
-    ----------
-    recfile : str
-        pest record file name
+    Args:
+        recfile (`str`): pest record file name
 
-    Returns
-    -------
-    iters : dict
-        nested dictionary of iteration number, {group,contribution}
+    Returns:
+        `dict`:  nested dictionary of iteration number, {group,contribution}
+
+    Note:
+        It is really poor form to use the record file in this way.  Please only
+        use this as a last resort!
 
     """
     iiter = 1
@@ -974,31 +972,20 @@ def get_phi_comps_from_recfile(recfile):
     return iters
 
 
-def del_rw(action, name, exc):
-    os.chmod(name, stat.S_IWRITE)
-    os.remove(name)
-
-def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_root="..",
-                 port=4004,rel_path=None):
-
-
-    warnings.warn("deprecation warning:start_workers() has moved to the utils.helpers module",PyemuWarning)
-    from pyemu.utils import start_workers
-    start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=num_workers,worker_root=worker_root,
-                 port=port,rel_path=rel_path)
-
 def res_from_obseravtion_data(observation_data):
-    """create a generic residual dataframe filled with np.NaN for
+    """create a PEST-style residual dataframe filled with np.NaN for
     missing information
 
-    Parameters
-    ----------
-    observation_data : pandas.DataFrame
-        pyemu.Pst.observation_data
+    Args:
+        observation_data (`pandas.DataFrame`): the "* observation data"
+            `pandas.DataFrame` from `pyemu.Pst.observation_data`
 
-    Returns
-    -------
-    res_df : pandas.DataFrame
+    Returns:
+        `pandas.DataFrame`: a dataframe with the same columns as the
+        residual dataframe ("name","group","measured","modelled",
+        "residual","weight").
+
+
 
     """
     res_df = observation_data.copy()
@@ -1014,17 +1001,10 @@ def clean_missing_exponent(pst_filename, clean_filename="clean.pst"):
     """fixes the issue where some terrible fortran program may have
     written a floating point format without the 'e' - like 1.0-3, really?!
 
-    Parameters
-    ----------
-    pst_filename : str
-        the pest control file
-    clean_filename : str
-        the new pest control file to write. Default is "clean.pst"
-
-    Returns
-    -------
-    None
-
+    Args:
+        pst_filename (`str`): the pest control file
+        clean_filename (`str`, optional):  the new pest control file to write.
+            Default is "clean.pst"
 
     """
     lines = []
@@ -1086,6 +1066,8 @@ def csv_to_ins_file(
     Note:
         resulting observation names in `ins_filename` are a combiation of index and
         header values.
+
+
     """
     # process the csv_filename in case it is a dataframe
     if isinstance(csv_filename, str):
@@ -1259,17 +1241,19 @@ def csv_to_ins_file(
     )  # dropna to keep consistent after adding obgnme
     return odf
 
+
 class InstructionFile(object):
     """class for handling instruction files.
 
-    Parameters
-    ----------
-        ins_filename : str
-            instruction file name
-        pst : pyemu.Pst
-            optional Pst instance - used for checking that instruction file is
-            compatible with the control
+    Args:
+        ins_filename (`str`): path and name of an existing instruction file
+        pst (`pyemu.Pst`, optional): Pst instance - used for checking that instruction file is
+            compatible with the control file (e.g. no duplicates)
 
+    Example::
+
+        i = InstructionFile("my.ins")
+        df = i.read_output_file("my.output")
 
     """
 
@@ -1297,14 +1281,11 @@ class InstructionFile(object):
         return self._found_oname_set
 
     def read_ins_file(self):
-        """read the instruction and do some minimal error checking
+        """read the instruction and do some minimal error checking.
 
-        Parameters
-        ----------
-            None
-        Returns
-        -------
-            None
+        Note:
+
+            This is called by the constructor
 
         """
         self._instruction_lines = []
@@ -1393,12 +1374,9 @@ class InstructionFile(object):
     def throw_ins_warning(self, message, lcount=None):
         """throw a verbose PyemuWarning
 
-        Parameters
-        ----------
-            message : str
-
-            lcount : int
-                optional line number.  If None, self._ins_linecount is used
+        Args:
+            message (`str`): the warning message
+            lcount (`int`, optional): warning line number.  If None, self._ins_linecount is used
 
         """
         if lcount is None:
@@ -1413,12 +1391,9 @@ class InstructionFile(object):
     def throw_ins_error(self, message, lcount=None):
         """throw a verbose instruction file error
 
-        Parameters
-        ----------
-            message : str
-
-            lcount : int
-                optional line number.  If None, self._ins_linecount is used
+        Args:
+            message (`str`): the error message
+            lcount (`int`, optional): error line number.  If None, self._ins_linecount is used
         """
         if lcount is None:
             lcount = self._ins_linecount
@@ -1431,13 +1406,11 @@ class InstructionFile(object):
     def throw_out_error(self, message, lcount=None):
         """throw a verbose output file error
 
-                Parameters
-                ----------
-                    message : str
+        Args:
+            message (`str`): the error message
+            lcount (`int`, optional): error line number.  If None, self._ins_linecount is used
 
-                    lcount : int
-                        optional line number.  If None, self._ins_linecount is used
-                """
+        """
         if lcount is None:
             lcount = self._out_linecount
         raise Exception(
@@ -1449,14 +1422,13 @@ class InstructionFile(object):
     def read_output_file(self, output_file):
         """process a model output file using  `InstructionFile.instruction_set`
 
-        Parameters
-        ----------
-            output_file : str
-                the output file name
+        Args:
+            output_file (`str`): path and name of existing output file
 
-        Returns
-        -------
-            pd.DataFrame : a dataframe with obsnme index and obsval values
+        Returns:
+
+            `pd.DataFrame`: a dataframe with observation names and simulated values
+            extracted from `output_file`
 
 
         """
@@ -1755,12 +1727,6 @@ class InstructionFile(object):
     def _readline_ins(self):
         """consolidate private method to read the next instruction file line.  Casts to lower and splits
         on whitespace
-
-        Returns
-        -------
-            list(str)
-
-
         """
         if self._ins_filehandle is None:
             if not os.path.exists(self._ins_filename):
@@ -1818,6 +1784,7 @@ class InstructionFile(object):
         self._last_line = line
         return line.lower()
 
+
 def process_output_files(pst, pst_path="."):
     """helper function to process output files using the
       InstructionFile class
@@ -1836,6 +1803,8 @@ def process_output_files(pst, pst_path="."):
 
          pst = pyemu.Pst("my.pst")
          df = pyemu.pst_utils.process_output_files(pst)
+
+
     """
     if not isinstance(pst, pyemu.Pst):
         raise Exception(

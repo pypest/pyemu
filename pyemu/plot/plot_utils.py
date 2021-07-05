@@ -329,7 +329,7 @@ def res_1to1(
         try:
             res = pst.res
         except:
-            logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
+            logger.lraise("res_phi_pie: pst.res is None, couldn't find residuals file")
 
     obs = pst.observation_data
 
@@ -633,6 +633,7 @@ def res_phi_pie(pst, logger=None, **kwargs):
             res = pst.res
         except:
             logger.lraise("res_phi_pie: pst.res is None, couldn't find residuals file")
+
     obs = pst.observation_data
     phi = pst.phi
     phi_comps = pst.phi_components
@@ -807,7 +808,7 @@ def pst_prior(pst, logger=None, filename=None, **kwargs):
             loc="left",
         )
 
-        ax.set_ylabel("count",labelpad=0.1)
+        ax.set_yticks([])
         if islog:
             ax.set_xlabel("$log_{10}$ parameter value", labelpad=0.1)
         else:
@@ -1233,6 +1234,7 @@ def ensemble_change_summary(
         mn_g.hist(ax=ax, facecolor=facecolor, alpha=0.5, edgecolor=None, bins=bins)
         # mx = max(mn_g.max(), mn_g.min(),np.abs(mn_g.max()),np.abs(mn_g.min())) * 1.2
         # ax.set_xlim(-mx,mx)
+
         # std_g.hist(ax=ax,facecolor='b',alpha=0.5,edgecolor=None)
 
         # ax.set_xlim(xlim)
@@ -1252,7 +1254,7 @@ def ensemble_change_summary(
         # std_g.hist(ax=ax,facecolor='b',alpha=0.5,edgecolor=None)
 
         # ax.set_xlim(xlim)
-        ax.set_ylabel("count",labelpad=0.1)
+        ax.set_yticklabels([])
         ax.set_xlabel("sigma percent reduction", labelpad=0.1)
         ax.set_title(
             "{0}) sigma change group:{1}, {2} entries\nmax:{3:10G}, min:{4:10G}".format(
