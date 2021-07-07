@@ -767,7 +767,7 @@ class PstFrom(object):
                 org_file = self.original_file_d / rel_filepath.name
 
                 self.logger.log("loading list {0}".format(dest_filepath))
-                df, storehead = self._load_listtype_file(
+                df, storehead, _ = self._load_listtype_file(
                     rel_filepath, index_cols, use_cols, fmt, sep, skip, c_char
                 )
                 # Currently just passing through comments in header (i.e. before the table data)
@@ -1189,7 +1189,9 @@ class PstFrom(object):
             use_rows (`list`-like or `int`): select only specific row of file for obs
             prefix (`str`): prefix for obsnmes
             ofile_skip (`int`): number of lines to skip in model output file
-            ofile_sep (`str`): delimiter in output file
+            ofile_sep (`str`): delimiter in output file.
+                If `None`, the delimiter is eventually governed by the file
+                extension (`,` for .csv).
             rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after adding
                 new obs
             obsgp (`str` of `list`-like): observation group name(s). If type
@@ -1306,9 +1308,13 @@ class PstFrom(object):
             "adding observations from tabular output file " "'{0}'".format(filenames)
         )
         # -- will end up here if either of index_cols or use_cols is not None
-        df, storehead = self._load_listtype_file(
+        df, storehead, inssep = self._load_listtype_file(
             filenames, index_cols, use_cols, fmts, seps, skip_rows
         )
+        if inssep != ',':
+            inssep = seps
+        else:
+            inssep = [inssep]
         # rectify df?
         # if iloc[0] are strings and index_cols are ints,
         # can we assume that there were infact column headers?
@@ -1335,7 +1341,7 @@ class PstFrom(object):
         if stkeys.size > 0 and stkeys.min() == 0:
             lenhead += 1 + np.sum(np.diff(stkeys) == 1)
         new_obs_l = []
-        for filename, sep in zip(filenames, seps):  # should only ever be one but hey...
+        for filename, sep in zip(filenames, inssep):  # should only ever be one but hey...
             self.logger.log(
                 "building insfile for tabular output file {0}" "".format(filename)
             )
@@ -2621,7 +2627,7 @@ class PstFrom(object):
                 "in file '{0}':{1}"
                 "".format(file_path, str(missing))
             )
-        return df, storehead
+        return df, storehead, sep
 
     def _prep_arg_list_lengths(
         self,
