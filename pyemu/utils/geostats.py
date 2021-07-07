@@ -960,6 +960,7 @@ class OrdinaryKrige(object):
             )
 
             if var_filename is not None:
+
                 arr = df.err_var.values.reshape(x.shape)
                 np.savetxt(var_filename, arr, fmt="%15.6E")
 
@@ -1000,6 +1001,8 @@ class OrdinaryKrige(object):
 
                 dfs.append(df)
                 if var_filename is not None:
+                    #a = np.array([float(str(i)) for i in df.err_var],dtype=np.float).reshape(x.shape)
+                    #a = df.err_var.values.reshape(x.shape)
                     a = df.err_var.values.reshape(x.shape)
                     na_idx = np.isfinite(a)
                     arr[na_idx] = a[na_idx]
@@ -1332,7 +1335,7 @@ class OrdinaryKrige(object):
                 idist.append([])
                 inames.append([])
                 ifacts.append([])
-                err_var.append(np.NaN)
+                err_var.append([np.NaN])
             lock = mp.Lock()
             procs = []
             for i in range(num_threads):
@@ -1362,10 +1365,11 @@ class OrdinaryKrige(object):
             for p in procs:
                 p.join()
 
-            df["idist"] = idist
-            df["inames"] = inames
-            df["ifacts"] = ifacts
-            df["err_var"] = err_var
+            df["idist"] = [i[0] for i in idist]
+            df["inames"] = [i[0] for i in inames]
+            df["ifacts"] = [i[0] for i in ifacts]
+
+            df["err_var"] = [float(e[0]) if not isinstance(e[0],list) else float(e[0][0]) for e in err_var]
         if pt_zone is None:
             self.interp_data = df
         else:
@@ -1425,6 +1429,10 @@ class OrdinaryKrige(object):
                 # ifacts.append([])
                 # err_var.append(np.NaN)
                 # err_var.insert(idx,np.NaN)
+                ifacts[idx] = [[]]
+                idist[idx] = [[]]
+                inames[idx] = [[]]
+                err_var[idx] = [np.NaN]
                 continue
 
             #  calc dist from this interp point to all point data...slow
@@ -1438,7 +1446,10 @@ class OrdinaryKrige(object):
                 # idist.append([])
                 # ifacts.append([])
                 # err_var.append(sill)
-                err_var[idx] = sill
+                ifacts[idx] = [[]]
+                idist[idx] = [[]]
+                inames[idx] = [[]]
+                err_var[idx] = [sill]
                 continue
 
             # only the maxpts_interp points
@@ -1447,13 +1458,13 @@ class OrdinaryKrige(object):
             # if one of the points is super close, just use it and skip
             if dist.min() <= epsilon:
                 # ifacts.append([1.0])
-                ifacts[idx] = [1.0]
+                ifacts[idx] = [[1.0]]
                 # idist.append([epsilon])
-                idist[idx] = [epsilon]
+                idist[idx] = [[epsilon]]
                 # inames.append([dist.idxmin()])
-                inames[idx] = [dist.idxmin()]
+                inames[idx] = [[dist.idxmin()]]
                 # err_var.append(geostruct.nugget)
-                err_var[idx] = geostruct.nugget
+                err_var[idx] = [[geostruct.nugget]]
                 continue
 
             # vextract the point-to-point covariance matrix
@@ -1491,17 +1502,15 @@ class OrdinaryKrige(object):
             assert len(facs) - 1 == len(dist)
 
             # err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
-            err_var[idx] = float(
-                sill + facs[-1] - sum([f * c for f, c in zip(facs[:-1], interp_cov)])
-            )
+            err_var[idx] = [float(sill + facs[-1] - sum([f * c for f, c in zip(facs[:-1], interp_cov)]))]
             # inames.append(pt_names)
-            inames[idx] = pt_names
+            inames[idx] = [list(pt_names)]
 
             # idist.append(dist.values)
-            idist[idx] = dist.values
+            idist[idx] = [list(dist.values)]
 
             # ifacts.append(facs[:-1,0])
-            ifacts[idx] = facs[:-1, 0]
+            ifacts[idx] = [list(facs[:-1, 0])]
             # if verbose == 2:
             #     td = (datetime.now()-start).total_seconds()
             #     print("...took {0}".format(td))

@@ -579,7 +579,7 @@ def ok_grid_zone_test():
     zone_array[0,0] = 2
     kf = ok.calc_factors_grid(sr,verbose=False,
                               var_filename=os.path.join("temp","test_var.ref"),
-                              minpts_interp=1,zone_array=zone_array)
+                              minpts_interp=1,zone_array=zone_array,num_threads=2)
     ok.to_grid_factors_file(os.path.join("temp","test.fac"))
 
 
@@ -2023,11 +2023,11 @@ if __name__ == "__main__":
     # add_pi_obj_func_test()
     # ok_test()
     # ok_grid_test()
-    # ok_grid_zone_test()
+    ok_grid_zone_test()
     # ppk2fac_verf_test()
     #ok_grid_invest()
     #ok_grid_test()
     #ok_grid_zone_test()
     # maha_pdc_test()
     #gsf_reader_test()
-    kl_test()
+    #kl_test()

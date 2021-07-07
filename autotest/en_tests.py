@@ -143,7 +143,7 @@ def phi_vector_test():
     pv = oe1.phi_vector
 
     for real in oe1.index:
-        pst.res.loc[oe1.columns,"modelled"] = oe1.loc[real,:]
+        pst.res.loc[oe1.columns,"modelled"] = oe1.loc[real,:].values
         d = np.abs(pst.phi - pv.loc[real])
         assert d < 1.0e-10
 
@@ -617,7 +617,7 @@ def binary_test():
 if __name__ == "__main__":
     #par_gauss_draw_consistency_test()
     #obs_gauss_draw_consistency_test()
-    #phi_vector_test()
+    phi_vector_test()
     #add_base_test()
     #nz_test()
     #deviations_test()
@@ -632,7 +632,7 @@ if __name__ == "__main__":
     #emp_cov_test()
     #emp_cov_draw_test()
     #mixed_par_draw_test()
-    binary_test()
+    #binary_test()
 
 
 
