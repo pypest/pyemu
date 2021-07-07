@@ -1004,7 +1004,7 @@ class OrdinaryKrige(object):
                     #a = np.array([float(str(i)) for i in df.err_var],dtype=np.float).reshape(x.shape)
                     #a = df.err_var.values.reshape(x.shape)
                     a = df.err_var.values.reshape(x.shape)
-                    na_idx = ~np.isnan(a)
+                    na_idx = np.isfinite(a)
                     arr[na_idx] = a[na_idx]
             if self.interp_data is None or self.interp_data.dropna().shape[0] == 0:
                 raise Exception("no interpolation took place...something is wrong")
