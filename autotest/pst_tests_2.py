@@ -741,6 +741,31 @@ def at_bounds_test():
     assert len(ub) == 1
 
 
+def ineq_phi_test():
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    org_phi = pst.phi
+    #print(pst.res.loc[pst.nnz_obs_names,"residual"])
+    pst.observation_data.loc[pst.nnz_obs_names, "obsval"] = pst.res.loc[pst.nnz_obs_names,"modelled"] - 1
+    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "g_test"
+    assert pst.phi < 1.0e-6
+    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "greater_test"
+    assert pst.phi < 1.0e-6
+    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "<@"
+    assert pst.phi < 1.0e-6
+
+
+    pst.observation_data.loc[pst.nnz_obs_names, "obsval"] = pst.res.loc[pst.nnz_obs_names, "modelled"] + 1
+    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "l_test"
+    assert pst.phi < 1.0e-6
+    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "less_"
+    assert pst.phi < 1.0e-6
+    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = ">@"
+    assert pst.phi < 1.0e-6
+
+    #pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "l_test"
+    #print(org_phi, pst.phi)
+
 
 if __name__ == "__main__":
 
@@ -751,9 +776,10 @@ if __name__ == "__main__":
     # run_array_pars()
     # from_flopy_zone_pars()
     #from_flopy_pp_test()
-    # from_flopy()
-    parrep_test()
+    from_flopy()
+    #parrep_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()
+    #ineq_phi_test()
 
 

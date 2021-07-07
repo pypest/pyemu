@@ -2983,7 +2983,7 @@ def usg_freyberg_test():
                       upper_bound=2.0, lower_bound=0.5, zone_array=zone_array_k2)
 
     # we pass layer specific sr dict for each "array" type that is spatially distributed
-    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_gr",geostruct=gs,
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_Gr",geostruct=gs,
                       spatial_reference=sr_dict_by_layer[1],
                       upper_bound=2.0,lower_bound=0.5)
     pf.add_parameters("sy_Layer_1.ref", par_type="zone", par_name_base="sy1_zn",zone_array=zone_array_k0,
@@ -3057,7 +3057,7 @@ def usg_freyberg_test():
         assert d.sum() < 1.0e-3,arr_file
 
     # now run a random realization from the prior par en and make sure things have changed
-    pst.parameter_data.loc[pe.columns,"parval1"] = pe.iloc[0,:]
+    pst.parameter_data.loc[pe.columns,"parval1"] = pe.iloc[0,:].values
     pst.write(os.path.join(pf.new_d, "freyberg.usg.pst"), version=2)
     pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path), cwd=pf.new_d)
 
@@ -3492,7 +3492,7 @@ if __name__ == "__main__":
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
-    #mf6_add_various_obs_test()
+   # mf6_add_various_obs_test()
     # mf6_subdir_test()
     #tpf = TestPstFrom()
     #tpf.setup()

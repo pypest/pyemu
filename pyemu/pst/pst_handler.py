@@ -202,9 +202,14 @@ class Pst(object):
                 raise Exception("'modelled' not in res df columns for group " + og)
             # components[og] = np.sum((og_res_df["residual"] *
             #                          og_df["weight"]) ** 2)
+            mod_vals = og_res_df.loc[og_df.obsnme, "modelled"]
+            if og.lower().startswith("g_") or og.lower().startswith("greater_") or og.lower().startswith("<@"):
+                mod_vals.loc[mod_vals >= og_df.loc[:, "obsval"]] = og_df.loc[:, "obsval"]
+            elif og.lower().startswith("l_") or og.lower().startswith("less_") or og.lower().startswith(">@"):
+                mod_vals.loc[mod_vals <= og_df.loc[:, "obsval"]] = og_df.loc[:, "obsval"]
             components[og] = np.sum(
                 (
-                    (og_df.loc[:, "obsval"] - og_res_df.loc[og_df.obsnme, "modelled"])
+                    (og_df.loc[:, "obsval"] - mod_vals)
                     * og_df.loc[:, "weight"]
                 )
                 ** 2
@@ -223,7 +228,7 @@ class Pst(object):
                 og_res_df.index = og_res_df.name
                 og_df = self.prior_information.loc[ogroups[og], :]
                 og_df.index = og_df.pilbl
-                og_res_df = og_res_df.loc[og_df.index, :]
+                og_res_df = og_res_df.loc[og_df.index, :].copy()
                 if og_df.shape[0] != og_res_df.shape[0]:
                     raise Exception(
                         " Pst.phi_components error: group residual dataframe row length"
@@ -232,6 +237,12 @@ class Pst(object):
                         + " vs. "
                         + str(og_res_df.shape)
                     )
+                if og.lower().startswith("g_") or og.lower().startswith("greater_") or og.lower().startswith("<@"):
+                    gidx = og_res_df.loc[:,"residual"] >= 0
+                    og_res_df.loc[gidx,"residual"] = 0
+                elif og.lower().startswith("l_") or og.lower().startswith("less_") or og.lower().startswith(">@"):
+                    lidx = og_res_df.loc[:, "residual"] <= 0
+                    og_res_df.loc[lidx, "residual"] = 0
                 components[og] = np.sum((og_res_df["residual"] * og_df["weight"]) ** 2)
 
         return components
