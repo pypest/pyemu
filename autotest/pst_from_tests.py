@@ -654,6 +654,10 @@ def mf6_freyberg_test():
     df = generic_function()
     os.chdir("..")
     # add the values in generic to the ctl file
+    f, fdf = _gen_dummy_obs_file(pf.new_d, sep=' ')
+    pf.add_observations(f, index_cols='idx', use_cols='yes')
+    pf.add_py_function('pst_from_tests.py', "_gen_dummy_obs_file(sep=' ')",
+                       is_pre_cmd=False)
     pf.add_observations("generic.csv",insfile="generic.csv.ins",index_cols=["datetime","index_2"],use_cols=["simval1","simval2"])
     # add the function call to make generic to the forward run script
     pf.add_py_function("pst_from_tests.py","generic_function()",is_pre_cmd=False)
@@ -3485,7 +3489,7 @@ if __name__ == "__main__":
     #invest()
     freyberg_test()
     #freyberg_prior_build_test()
-    #mf6_freyberg_test()
+    mf6_freyberg_test()
     #mf6_freyberg_da_test()
     # mf6_freyberg_shortnames_test()
     # mf6_freyberg_direct_test()
