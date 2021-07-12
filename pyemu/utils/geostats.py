@@ -1021,6 +1021,39 @@ class OrdinaryKrige(object):
         dist = dist.loc[dist <= sqradius]
         return dist
 
+    def _remove_neg_factors(self):
+        """
+        private function to remove negative kriging factors and 
+        renormalize remaining positive factors following the 
+        method of Deutsch (1996): 
+        https://doi.org/10.1016/0098-3004(96)00005-2
+        
+               
+        """
+        newd, newn,newf = [],[],[],
+        for d,n,f in zip(self.interp_data.idist.values, 
+                        self.interp_data.inames.values, 
+                        self.interp_data.ifacts.values):
+            # if the factor list is empty, no changes are made
+            # if the factor list has only one value, it is 1.0 so no changes
+            # if more than one factor, remove negatives and renormalize
+            if len(f) > 1:
+                # only keep dist, names, and factors of factor > 0
+                d = np.array(d)
+                n = np.array(n)
+                f = np.array(f)
+                d=d[f>0]
+                n=n[f>0]
+                f=f[f>0]  
+                f /= f.sum() # renormalize to sum to unity
+            newd.append(d)
+            newn.append(n)
+            newf.append(f)
+        # update the interp_data dataframe
+        self.interp_data.idist = newd
+        self.interp_data.inames = newn
+        self.interp_data.ifacts = newf
+
     def _cov_points(self, ix, iy, pt_names):
         """private: get covariance between points"""
         interp_cov = self.geostruct.covariance_points(
@@ -1058,6 +1091,7 @@ class OrdinaryKrige(object):
         forgive=False,
         num_threads=1,
         idx_vals=None,
+        remove_negative_factors=True
     ):
         """calculate ordinary kriging factors (weights) for the points
         represented by arguments x and y
@@ -1087,7 +1121,8 @@ class OrdinaryKrige(object):
                 kriging in python.  Default is 1.
             idx_vals (iterable of `int`): optional index values to use in the interpolation dataframe.  This is
                 used to set the proper node number in the factors file for unstructured grids.
-
+            remove_negative_factors (`bool`): option to remove negative Kriging factors, following the method of
+                Deutsch (1996) https://doi.org/10.1016/0098-3004(96)00005-2. Default is True
         Returns:
             `pandas.DataFrame`: a dataframe with information summarizing the ordinary kriging
             process for each interpolation points
@@ -1124,6 +1159,7 @@ class OrdinaryKrige(object):
                 pt_zone,
                 forgive,
                 idx_vals,
+                remove_negative_factors
             )
         else:
             return self._calc_factors_mp(
@@ -1137,6 +1173,7 @@ class OrdinaryKrige(object):
                 forgive,
                 num_threads,
                 idx_vals,
+                remove_negative_factors
             )
 
     def _calc_factors_org(
@@ -1150,6 +1187,7 @@ class OrdinaryKrige(object):
         pt_zone=None,
         forgive=False,
         idx_vals=None,
+        remove_negative_factors=True
     ):
 
         assert len(x) == len(y)
@@ -1289,6 +1327,7 @@ class OrdinaryKrige(object):
         df["inames"] = inames
         df["ifacts"] = ifacts
         df["err_var"] = err_var
+
         if pt_zone is None:
             self.interp_data = df
         else:
@@ -1296,6 +1335,9 @@ class OrdinaryKrige(object):
                 self.interp_data = df
             else:
                 self.interp_data = self.interp_data.append(df)
+        # correct for negative kriging factors, if requested
+        if remove_negative_factors == True:
+            self._remove_neg_factors()
         td = (datetime.now() - start_loop).total_seconds()
         print("took {0} seconds".format(td))
         return df
@@ -1312,6 +1354,7 @@ class OrdinaryKrige(object):
         forgive=False,
         num_threads=1,
         idx_vals=None,
+        remove_negative_factors=True
     ):
         start_loop = datetime.now()
         assert len(x) == len(y)
@@ -1370,6 +1413,7 @@ class OrdinaryKrige(object):
             df["ifacts"] = [i[0] for i in ifacts]
 
             df["err_var"] = [float(e[0]) if not isinstance(e[0],list) else float(e[0][0]) for e in err_var]
+
         if pt_zone is None:
             self.interp_data = df
         else:
@@ -1377,6 +1421,9 @@ class OrdinaryKrige(object):
                 self.interp_data = df
             else:
                 self.interp_data = self.interp_data.append(df)
+        # correct for negative kriging factors, if requested
+        if remove_negative_factors == True:
+            self._remove_neg_factors()
         td = (datetime.now() - start_loop).total_seconds()
         print("took {0} seconds".format(td))
         return df

@@ -498,6 +498,7 @@ def ok_test():
     import os
     import pandas as pd
     import pyemu
+    import numpy as np
     str_file = os.path.join("utils","struct_test.dat")
     pts_data = pd.DataFrame({"x":[1.0,2.0,3.0],"y":[0.,0.,0.],"name":["p1","p2","p3"]})
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
@@ -510,6 +511,29 @@ def ok_test():
         assert kf.loc[i,"ifacts"][0] == 1.0
         assert sum(kf.loc[i,"ifacts"]) == 1.0
     print(kf)
+
+    # evaluate the negative factor correction
+    # set up some points with a cluster far from a single points - this triggers some negative factors for testing
+    pts_data = pd.DataFrame({"x":[1.0,1.0,1.0,1.0,2.0,3.0, 3500.0],"y":[0.,0.1,-0.1,0.001,0.,0.,0.],"name":["p1","p2","p3","p4","p5","p6","p7"]})     
+    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
+    # evaluate factors with and without negative correction
+    kf2_nocorr = ok.calc_factors([1000.0],[0.],remove_negative_factors=False)
+    kf2_corr = ok.calc_factors([1000.0],[0.])
+    
+    print(kf2_nocorr)
+    print(kf2_corr)
+    # do some checking here
+    # do all the factors sum to unity with and without correction?
+    assert np.isclose(kf2_nocorr.iloc[0].ifacts.sum(), 1,atol=1e-6)
+    assert np.isclose(kf2_corr.iloc[0].ifacts.sum(), 1,atol=1e-6)
+    
+    # are the corrected factors still reasonably close to the uncorrected positive values?
+    fcorr = kf2_corr.iloc[0].ifacts
+    fnocorr = kf2_nocorr.iloc[0].ifacts
+    np.allclose(fcorr,fnocorr[fnocorr>0], atol=1e-2)
+
+
+
 
 def ok_grid_test():
 
@@ -2021,9 +2045,9 @@ if __name__ == "__main__":
     # struct_file_test()
     # covariance_matrix_test()
     # add_pi_obj_func_test()
-    # ok_test()
+    ok_test()
     # ok_grid_test()
-    ok_grid_zone_test()
+    # ok_grid_zone_test()
     # ppk2fac_verf_test()
     #ok_grid_invest()
     #ok_grid_test()
