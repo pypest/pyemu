@@ -1041,14 +1041,14 @@ class OrdinaryKrige(object):
                 # only keep dist, names, and factors of factor > 0
                 d = np.array(d)
                 n = np.array(n)
-                f = np.arary(f)
+                f = np.array(f)
                 d=d[f>0]
                 n=n[f>0]
                 f=f[f>0]  
                 f /= f.sum() # renormalize to sum to unity
-            newd.append(list(d))
-            newn.append(list(n))
-            newf.append(list(f))
+            newd.append(d)
+            newn.append(n)
+            newf.append(f)
         # update the interp_data dataframe
         self.interp_data.idist = newd
         self.interp_data.inames = newn
