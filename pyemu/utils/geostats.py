@@ -1021,7 +1021,7 @@ class OrdinaryKrige(object):
         dist = dist.loc[dist <= sqradius]
         return dist
 
-    def _remove_neg_factors(self, df):
+    def _remove_neg_factors(self):
         """
         private function to remove negative kriging factors and 
         renormalize remaining positive factors following the 
@@ -1031,26 +1031,28 @@ class OrdinaryKrige(object):
                
         """
         newd, newn,newf = [],[],[],
-        for d,n,f in zip(df.idist.values, 
-                        df.inames.values, 
-                        df.ifacts.values):
+        for d,n,f in zip(self.interp_data.idist.values, 
+                        self.interp_data.inames.values, 
+                        self.interp_data.ifacts.values):
             # if the factor list is empty, no changes are made
             # if the factor list has only one value, it is 1.0 so no changes
             # if more than one factor, remove negatives and renormalize
             if len(f) > 1:
                 # only keep dist, names, and factors of factor > 0
+                d = np.array(d)
+                n = np.array(n)
+                f = np.arary(f)
                 d=d[f>0]
                 n=n[f>0]
                 f=f[f>0]  
                 f /= f.sum() # renormalize to sum to unity
-            newd.append(d)
-            newn.append(n)
-            newf.append(f)
+            newd.append(list(d))
+            newn.append(list(n))
+            newf.append(list(f))
         # update the interp_data dataframe
-        df.idist = newd
-        df.inames = newn
-        df.ifacts = newf
-        return df
+        self.interp_data.idist = newd
+        self.interp_data.inames = newn
+        self.interp_data.ifacts = newf
 
     def _cov_points(self, ix, iy, pt_names):
         """private: get covariance between points"""
@@ -1326,9 +1328,6 @@ class OrdinaryKrige(object):
         df["ifacts"] = ifacts
         df["err_var"] = err_var
 
-        # correct for negative kriging factors, if requested
-        if remove_negative_factors == True:
-            df = self._remove_neg_factors(df)
         if pt_zone is None:
             self.interp_data = df
         else:
@@ -1336,6 +1335,9 @@ class OrdinaryKrige(object):
                 self.interp_data = df
             else:
                 self.interp_data = self.interp_data.append(df)
+        # correct for negative kriging factors, if requested
+        if remove_negative_factors == True:
+            self._remove_neg_factors()
         td = (datetime.now() - start_loop).total_seconds()
         print("took {0} seconds".format(td))
         return df
@@ -1412,10 +1414,6 @@ class OrdinaryKrige(object):
 
             df["err_var"] = [float(e[0]) if not isinstance(e[0],list) else float(e[0][0]) for e in err_var]
 
-        # correct for negative kriging factors, if requested
-        if remove_negative_factors == True:
-            df = self._remove_neg_factors(df)
-
         if pt_zone is None:
             self.interp_data = df
         else:
@@ -1423,6 +1421,9 @@ class OrdinaryKrige(object):
                 self.interp_data = df
             else:
                 self.interp_data = self.interp_data.append(df)
+        # correct for negative kriging factors, if requested
+        if remove_negative_factors == True:
+            self._remove_neg_factors()
         td = (datetime.now() - start_loop).total_seconds()
         print("took {0} seconds".format(td))
         return df
