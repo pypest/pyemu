@@ -1090,7 +1090,17 @@ def mf6_freyberg_shortnames_test():
         pf.add_parameters(filenames=list_file,par_type="constant",par_name_base="w{0}".format(kper),
                           pargp="wel_{0}".format(kper),index_cols=[0,1,2],use_cols=[3],
                           upper_bound=1.5,lower_bound=0.5)
-
+    za = np.ones((3,40,20))
+    df = pd.read_csv(os.path.join(m.model_ws, list_file),
+                     delim_whitespace=True, header=None) - 1
+    za[tuple(df.loc[0:2, [0, 1, 2]].values.T)] = [2,3,4]
+    pdf = pf.add_parameters(filenames=list_file, par_type="zone",
+                            par_name_base="w{0}".format(kper),
+                            pargp="wz_{0}".format(kper), index_cols=[0, 1, 2],
+                            use_cols=[3],
+                            upper_bound=1.5, lower_bound=0.5,
+                            zone_array=za)
+    assert len(pdf) == 4
     pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="rhk",
                       pargp="sfr_rhk", index_cols=[0, 1, 2, 3], use_cols=[9], upper_bound=10., lower_bound=0.1,
                       par_type="grid")
@@ -3487,11 +3497,11 @@ def mf6_subdir_test():
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
     #invest()
-    freyberg_test()
+    # freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
+    # mf6_freyberg_test()
     #mf6_freyberg_da_test()
-    # mf6_freyberg_shortnames_test()
+    mf6_freyberg_shortnames_test()
     # mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
