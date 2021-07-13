@@ -1591,7 +1591,7 @@ class PstFrom(object):
             filenames (`str`): Model input filenames to parameterize
             par_type (`str`): One of `grid` - for every element, `constant` - for single
                 parameter applied to every element, `zone` - for zone-based
-                parameterization (only for array-style) or `pilotpoint` - for
+                parameterization or `pilotpoint` - for
                 pilot-point base parameterization of array style input files.
                 Note `kl` not yet implemented # TODO
             zone_array (`np.ndarray`): array defining spatial limits or zones
@@ -2490,6 +2490,7 @@ class PstFrom(object):
                 self.logger.warn(
                     "pst object not available, " "new control file will be written"
                 )
+        return df
 
     def _load_listtype_file(
         self, filename, index_cols, use_cols, fmt=None, sep=None, skip=None, c_char=None
@@ -3071,6 +3072,10 @@ def _write_direct_df_tpl(
                 if suffix != "":
                     df_ti.loc[:, use_col] += "_{0}".format(suffix)
             else:
+                if zone_array is not None:
+                    df_ti.loc[:, use_col] += df_ti.zval.apply(
+                        lambda x: "z{0}".format(int(x))
+                    )
                 df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
                 if suffix != "":
                     df_ti.loc[:, use_col] += suffix
@@ -3304,6 +3309,10 @@ def _get_tpl_or_ins_df(
                     df_ti.loc[:, use_col] += "_{0}".format(suffix)
             else:
                 df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                if zone_array is not None:
+                    df_ti.loc[:, use_col] += df_ti.zval.apply(
+                        lambda x: "z{0}".format(int(x))
+                    )
                 if suffix != "":
                     df_ti.loc[:, use_col] += suffix
 
