@@ -235,6 +235,7 @@ def calc_metric_ensemble(ens, pst, metric='all', bygroups=True, subset_realizati
         pst (pyemu.Pst object):  needed to obtain observation values and weights
         metric (list of str): metric to calculate (PBIAS, RMSE, MSE, NSE, MAE, NRMSE_SD, 
             NRMSE_MEAN, NRMSE_IQ, NRMSE_MAXMIN) case insensitive
+            Defaults to 'all' which calculates all available metrics
         bygroups (Bool): Flag to summarize by groups or not. Defaults to True.
         subset_realizations (iterable, optional): Subset of realizations for which
                 to report metric. Defaults to None which returns all realizations.
