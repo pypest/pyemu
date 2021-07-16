@@ -74,6 +74,7 @@ def _NRMSE_SD(mod, obs):
     '''
     Calculate the Normalized Root Mean Squared Error
     normalized by observation standard deviation
+    https://www.marinedatascience.co/blog/2019/01/07/normalizing-the-rmse/
     Args:
         obs: numpy array of observed values
         mod: numpy array of modeled values
@@ -87,6 +88,7 @@ def _NRMSE_MEAN(mod, obs):
     '''
     Calculate the Normalized Root Mean Squared Error
     normalized by observation mean
+    https://www.marinedatascience.co/blog/2019/01/07/normalizing-the-rmse/
     Args:
         obs: numpy array of observed values
         mod: numpy array of modeled values
@@ -100,6 +102,7 @@ def _NRMSE_IQ(mod, obs):
     '''
     Calculate the Normalized Root Mean Squared Error
     normalized by observation interquartile range
+    https://www.marinedatascience.co/blog/2019/01/07/normalizing-the-rmse/
     Args:
         obs: numpy array of observed values
         mod: numpy array of modeled values
@@ -113,6 +116,7 @@ def _NRMSE_MAXMIN(mod, obs):
     '''
     Calculate the Normalized Root Mean Squared Error
     normalized by observation max - min
+    https://www.marinedatascience.co/blog/2019/01/07/normalizing-the-rmse/
     Args:
         obs: numpy array of observed values
         mod: numpy array of modeled values
