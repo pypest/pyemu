@@ -70,6 +70,58 @@ def _RMSE(mod, obs):
     '''
     return np.sqrt(_MSE(obs,mod))
 
+def _NRMSE_SD(mod, obs):
+    '''
+    Calculate the Normalized Root Mean Squared Error
+    normalized by observation standard deviation
+    Args:
+        obs: numpy array of observed values
+        mod: numpy array of modeled values
+
+    Returns:
+        NRMSE_SD: Root Mean Squared Error normalized by observation standard deviation
+    '''
+    return _RMSE(mod, obs) / np.std(obs)
+
+def _NRMSE_MEAN(mod, obs):
+    '''
+    Calculate the Normalized Root Mean Squared Error
+    normalized by observation mean
+    Args:
+        obs: numpy array of observed values
+        mod: numpy array of modeled values
+
+    Returns:
+        NRMSE_SD: Root Mean Squared Error normalized by observation mean
+    '''
+    return _RMSE(mod, obs) / np.mean(obs)
+
+def _NRMSE_IQ(mod, obs):
+    '''
+    Calculate the Normalized Root Mean Squared Error
+    normalized by observation interquartile range
+    Args:
+        obs: numpy array of observed values
+        mod: numpy array of modeled values
+
+    Returns:
+        NRMSE_SD: Root Mean Squared Error normalized by observation interquartile range
+    '''
+    return _RMSE(mod, obs) / (np.percentile(obs, 75) - np.percentile(obs,25))
+
+def _NRMSE_MAXMIN(mod, obs):
+    '''
+    Calculate the Normalized Root Mean Squared Error
+    normalized by observation max - min
+    Args:
+        obs: numpy array of observed values
+        mod: numpy array of modeled values
+
+    Returns:
+        NRMSE_SD: Root Mean Squared Error normalized by observation max - min
+    '''
+    return _RMSE(mod, obs) / (np.max(obs) - np.min(obs))
+
 def _PBIAS(mod, obs):
     '''
     Calculate the percent bias
@@ -112,14 +164,20 @@ ALLMETRICS = {'pbias':_PBIAS,
                 'nse':_NSE,
                 'nnse':_NNSE,
                 'mae':_MAE,
-                'kge':_KGE}
+                'kge':_KGE,
+                'nrmse_sd': _NRMSE_SD,
+                'nrmse_mean': _NRMSE_MEAN,
+                'nrmse_iq': _NRMSE_IQ,
+                'nrmse_maxmin': _NRMSE_MAXMIN
+                }
 
 def calc_metric_res(res, metric='all', bygroups=True, drop_zero_weight=True):
     """Calculates unweighted metrics to quantify fit to observations for residuals
 
     Args:
         res (pandas DataFrame or filename): DataFrame read from a residuals file or filename 
-        metric (list of str): metric to calculate (PBIAS, RMSE, MSE, NSE, MAE) case insensitive
+        metric (list of str): metric to calculate (PBIAS, RMSE, MSE, NSE, MAE, NRMSE_SD, 
+            NRMSE_MEAN, NRMSE_IQ, NRMSE_MAXMIN) case insensitive
             Defaults to 'all' which calculates all available metrics
         bygroups (Bool): Flag to summarize by groups or not. Defaults to True.
         drop_zero_weight (Bool): flag to exclude zero-weighted observations
@@ -154,7 +212,7 @@ def calc_metric_res(res, metric='all', bygroups=True, drop_zero_weight=True):
 
     ret_df = pd.DataFrame(index=['single_realization'])
 
-    # calculate the rmse total first
+    # calculate the matrics
     for cm in metric:
         f = ALLMETRICS[cm.lower()]
         ret_df["{}_total".format(cm.upper())] = [f(res.modelled, res.measured) for i in ret_df.index]
@@ -171,8 +229,8 @@ def calc_metric_ensemble(ens, pst, metric='all', bygroups=True, subset_realizati
     Args:
         ens (pandas DataFrame): DataFrame read from an observation
         pst (pyemu.Pst object):  needed to obtain observation values and weights
-        metric (list of str): metric to calculate (PBIAS, RMSE, MSE, NSE, MAE) case insensitive
-            Defaults to 'all' which calculates all available metrics
+        metric (list of str): metric to calculate (PBIAS, RMSE, MSE, NSE, MAE, NRMSE_SD, 
+            NRMSE_MEAN, NRMSE_IQ, NRMSE_MAXMIN) case insensitive
         bygroups (Bool): Flag to summarize by groups or not. Defaults to True.
         subset_realizations (iterable, optional): Subset of realizations for which
                 to report metric. Defaults to None which returns all realizations.
