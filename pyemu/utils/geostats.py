@@ -522,8 +522,8 @@ class SpecSim2d(object):
             raise Exception(
                 "SpecSim2D grid_par_ensemble_helper() error: only a single variogram can be used..."
             )
-        gr_df.loc[:, "i"] = gr_df.i.apply(np.int)
-        gr_df.loc[:, "j"] = gr_df.j.apply(np.int)
+        gr_df.loc[:, "i"] = gr_df.i.apply(np.int64)
+        gr_df.loc[:, "j"] = gr_df.j.apply(np.int64)
 
         # scale the total contrib
         org_var = self.geostruct.variograms[0].contribution
@@ -1001,7 +1001,7 @@ class OrdinaryKrige(object):
 
                 dfs.append(df)
                 if var_filename is not None:
-                    #a = np.array([float(str(i)) for i in df.err_var],dtype=np.float).reshape(x.shape)
+                    #a = np.array([float(str(i)) for i in df.err_var],dtype=np.float64).reshape(x.shape)
                     #a = df.err_var.values.reshape(x.shape)
                     a = df.err_var.values.reshape(x.shape)
                     na_idx = np.isfinite(a)
@@ -2371,7 +2371,7 @@ def fac2real(
             + ",".join(list(diff))
         )
 
-    arr = np.zeros((nrow, ncol), dtype=np.float) + fill_value
+    arr = np.zeros((nrow, ncol), dtype=np.float64) + fill_value
     pp_dict = {int(name): val for name, val in zip(pp_data.index, pp_data.parval1)}
     try:
         pp_dict_log = {

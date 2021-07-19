@@ -1615,7 +1615,7 @@ def mf6_freyberg_varying_idomain():
 
     #sim = None
     ib_file = os.path.join(tmp_model_ws,"freyberg6.dis_idomain_layer1.txt")
-    arr = np.loadtxt(ib_file,dtype=np.int)
+    arr = np.loadtxt(ib_file,dtype=np.int64)
 
     arr[:2,:14] = 0
     np.savetxt(ib_file,arr,fmt="%2d")
@@ -3088,7 +3088,7 @@ def usg_freyberg_test():
     # check that the pilot point process is respecting the zone array
     par = pst.parameter_data
     pp_par = par.loc[par.parnme.str.contains("pp"),:]
-    pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.apply(np.float)
+    pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.apply(np.float64)
     pst.control_data.noptmax = 0
     pst.write(os.path.join(pf.new_d,"freyberg.usg.pst"),version=2)
     #pst.write_input_files(pf.new_d)

@@ -1047,7 +1047,7 @@ def read_pestpp_runstorage(filename, irun=0, with_metadata=False):
 
     def _read_run(irun):
         f.seek(run_start + (irun * run_size))
-        r_status = np.fromfile(f, dtype=np.int8, count=1)
+        r_status = np.fromfile(f, dtype=np.int648, count=1)
         info_txt = struct.unpack("41s", f.read(41))[0].strip().lower().decode()
         par_vals = np.fromfile(f, dtype=np.float64, count=len(par_names) + 1)[1:]
         obs_vals = np.fromfile(f, dtype=np.float64, count=len(obs_names) + 1)[:-1]
@@ -3188,7 +3188,7 @@ class PstFromFlopyModel(object):
         df.loc[:, "datetime"] = df.kper.apply(lambda x: dts[x])
         df.loc[:, "timedelta"] = df.kper.apply(lambda x: tds[x])
         df.loc[:, "val"] = 1.0
-        # df.loc[:,"kper"] = df.kper.apply(np.int)
+        # df.loc[:,"kper"] = df.kper.apply(np.int64)
         # df.loc[:,"parnme"] = df.apply(lambda x: "{0}{1}_{2:03d}".format(x.pak,x.col,x.kper),axis=1)
         df.loc[:, "tpl_str"] = df.parnme.apply(lambda x: "~   {0}   ~".format(x))
         df.loc[:, "list_org"] = self.list_org
