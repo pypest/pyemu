@@ -2911,14 +2911,14 @@ def usg_freyberg_test():
     m.write_input()
 
     #manually copy over the two packages that flopy doesnt like/support
-    shutil.copy2(os.path.join(org_model_ws,"freyberg.usg.rch"),os.path.join(tmp_model_ws,"freyberg.usg.rch"))
+    #shutil.copy2(os.path.join(org_model_ws,"freyberg.usg.rch"),os.path.join(tmp_model_ws,"freyberg.usg.rch"))
     shutil.copy2(os.path.join(org_model_ws, "freyberg.usg.gnc"), os.path.join(tmp_model_ws, "freyberg.usg.gnc"))
     nam_file = os.path.join(tmp_model_ws,"freyberg.usg.nam")
     nam_lines = open(nam_file,'r').readlines()
     with open(nam_file,'w') as f:
         for line in nam_lines:
             f.write(line)
-        f.write("RCH      31  freyberg.usg.rch\n")
+        #f.write("RCH      31  freyberg.usg.rch\n")
         f.write("GNC       35  freyberg.usg.gnc\n")
 
     #make sure the model runs in the new dir with all external formats
@@ -3501,7 +3501,7 @@ if __name__ == "__main__":
     #freyberg_prior_build_test()
     # mf6_freyberg_test()
     #mf6_freyberg_da_test()
-    mf6_freyberg_shortnames_test()
+    #mf6_freyberg_shortnames_test()
     # mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
@@ -3514,7 +3514,7 @@ if __name__ == "__main__":
     #tpf.add
     #pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
-    # usg_freyberg_test()
+    usg_freyberg_test()
 
 
 
