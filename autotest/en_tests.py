@@ -89,7 +89,7 @@ def par_gauss_draw_consistency_test():
         pe.to_binary("test.jcb")
         pe = pyemu.ParameterEnsemble.from_binary(pst=pst, filename="test.jcb")
         pe.transform()
-        pe._df.index = pe.index.map(np.int)
+        pe._df.index = pe.index.map(np.int64)
         d = (pe - pe_org).apply(np.abs)
         assert d.max().max() < 1.0e-10, d.max().sort_values(ascending=False)
 
@@ -127,7 +127,7 @@ def obs_gauss_draw_consistency_test():
 
         oe.to_binary("test.jcb")
         oe = pyemu.ObservationEnsemble.from_binary(pst=pst, filename="test.jcb")
-        oe._df.index = oe.index.map(np.int)
+        oe._df.index = oe.index.map(np.int64)
         d = (oe - oe_org).apply(np.abs)
         assert d.max().max() < 1.0e-10, d.max().sort_values(ascending=False)
 

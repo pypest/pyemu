@@ -3188,7 +3188,7 @@ class PstFromFlopyModel(object):
         df.loc[:, "datetime"] = df.kper.apply(lambda x: dts[x])
         df.loc[:, "timedelta"] = df.kper.apply(lambda x: tds[x])
         df.loc[:, "val"] = 1.0
-        # df.loc[:,"kper"] = df.kper.apply(np.int)
+        # df.loc[:,"kper"] = df.kper.apply(np.int64)
         # df.loc[:,"parnme"] = df.apply(lambda x: "{0}{1}_{2:03d}".format(x.pak,x.col,x.kper),axis=1)
         df.loc[:, "tpl_str"] = df.parnme.apply(lambda x: "~   {0}   ~".format(x))
         df.loc[:, "list_org"] = self.list_org

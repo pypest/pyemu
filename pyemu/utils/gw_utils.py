@@ -1395,7 +1395,7 @@ def apply_sft_obs():
         if df.dtypes[c] == float:
             df.loc[df.loc[:, c] < 1e-30, c] = 0.0
             df.loc[df.loc[:, c] > 1e30, c] = 1.0e30
-    df.loc[:, "sfr_node"] = df.sfr_node.apply(np.int)
+    df.loc[:, "sfr_node"] = df.sfr_node.apply(np.int64)
 
     df.to_csv(sft_file + ".processed", sep=" ", index=False)
     return df
@@ -2047,7 +2047,7 @@ def apply_sfr_obs():
     assert df_key.iloc[0, 0] == "sfr_out_file", df_key.iloc[0, :]
     sfr_out_file = df_key.iloc[0, 1]
     df_key = df_key.iloc[1:, :]
-    df_key.loc[:, "segment"] = df_key.segment.apply(np.int)
+    df_key.loc[:, "segment"] = df_key.segment.apply(np.int64)
     df_key.index = df_key.segment
     seg_group_dict = df_key.groupby(df_key.obs_base).groups
 
@@ -2129,10 +2129,10 @@ def load_sfr_out(sfr_out_file, selection=None):
                     dlines.append(draw)
                 df = pd.DataFrame(data=np.array(dlines)).iloc[:, [3, 4, 6, 7]]
                 df.columns = ["segment", "reach", "flaqx", "flout"]
-                df["segment"] = df.segment.astype(np.int)
-                df["reach"] = df.reach.astype(np.int)
-                df["flaqx"] = df.flaqx.astype(np.float)
-                df["flout"] = df.flout.astype(np.float)
+                df["segment"] = df.segment.astype(np.int64)
+                df["reach"] = df.reach.astype(np.int64)
+                df["flaqx"] = df.flaqx.astype(np.float64)
+                df["flout"] = df.flout.astype(np.float64)
                 df.index = [
                     "{0:03d}_{1:03d}".format(s, r)
                     for s, r in np.array([df.segment.values, df.reach.values]).T
@@ -2372,8 +2372,8 @@ def apply_sfr_reach_obs():
     assert df_key.iloc[0, 0] == "sfr_out_file", df_key.iloc[0, :]
     sfr_out_file = df_key.iloc[0].reach
     df_key = df_key.iloc[1:, :].copy()
-    df_key.loc[:, "segment"] = df_key.segment.apply(np.int)
-    df_key.loc[:, "reach"] = df_key.reach.apply(np.int)
+    df_key.loc[:, "segment"] = df_key.segment.apply(np.int64)
+    df_key.loc[:, "reach"] = df_key.reach.apply(np.int64)
     df_key = df_key.set_index("obs_base")
 
     sfr_kper = load_sfr_out(sfr_out_file, df_key)
@@ -2672,8 +2672,8 @@ def apply_hfb_pars(par_file="hfb6_pars.csv"):
     hfb_org.hydchr *= hfb_mults.hydchr
 
     for cn in names[:-1]:
-        hfb_mults[cn] = hfb_mults[cn].astype(np.int)
-        hfb_org[cn] = hfb_org[cn].astype(np.int)
+        hfb_mults[cn] = hfb_mults[cn].astype(np.int64)
+        hfb_org[cn] = hfb_org[cn].astype(np.int64)
     # write the results
     with open(hfb_pars.model_file.values[0], "w", newline="") as ofp:
         [ofp.write("{0}\n".format(line.strip())) for line in header]
@@ -2729,7 +2729,7 @@ def write_hfb_zone_multipliers_template(m):
         hfb_file, skiprows=skiprows, delim_whitespace=True, names=names
     ).dropna()
     for cn in names[:-1]:
-        hfb_in[cn] = hfb_in[cn].astype(np.int)
+        hfb_in[cn] = hfb_in[cn].astype(np.int64)
 
     # set up a multiplier for each unique conductivity value
     unique_cond = hfb_in.hydchr.unique()

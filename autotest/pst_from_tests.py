@@ -1615,7 +1615,7 @@ def mf6_freyberg_varying_idomain():
 
     #sim = None
     ib_file = os.path.join(tmp_model_ws,"freyberg6.dis_idomain_layer1.txt")
-    arr = np.loadtxt(ib_file,dtype=np.int)
+    arr = np.loadtxt(ib_file,dtype=np.int64)
 
     arr[:2,:14] = 0
     np.savetxt(ib_file,arr,fmt="%2d")
@@ -2911,14 +2911,14 @@ def usg_freyberg_test():
     m.write_input()
 
     #manually copy over the two packages that flopy doesnt like/support
-    shutil.copy2(os.path.join(org_model_ws,"freyberg.usg.rch"),os.path.join(tmp_model_ws,"freyberg.usg.rch"))
+    #shutil.copy2(os.path.join(org_model_ws,"freyberg.usg.rch"),os.path.join(tmp_model_ws,"freyberg.usg.rch"))
     shutil.copy2(os.path.join(org_model_ws, "freyberg.usg.gnc"), os.path.join(tmp_model_ws, "freyberg.usg.gnc"))
     nam_file = os.path.join(tmp_model_ws,"freyberg.usg.nam")
     nam_lines = open(nam_file,'r').readlines()
     with open(nam_file,'w') as f:
         for line in nam_lines:
             f.write(line)
-        f.write("RCH      31  freyberg.usg.rch\n")
+        #f.write("RCH      31  freyberg.usg.rch\n")
         f.write("GNC       35  freyberg.usg.gnc\n")
 
     #make sure the model runs in the new dir with all external formats
@@ -3088,7 +3088,7 @@ def usg_freyberg_test():
     # check that the pilot point process is respecting the zone array
     par = pst.parameter_data
     pp_par = par.loc[par.parnme.str.contains("pp"),:]
-    pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.apply(np.float)
+    pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.apply(np.float64)
     pst.control_data.noptmax = 0
     pst.write(os.path.join(pf.new_d,"freyberg.usg.pst"),version=2)
     #pst.write_input_files(pf.new_d)
@@ -3501,7 +3501,7 @@ if __name__ == "__main__":
     #freyberg_prior_build_test()
     # mf6_freyberg_test()
     #mf6_freyberg_da_test()
-    mf6_freyberg_shortnames_test()
+    #mf6_freyberg_shortnames_test()
     # mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
@@ -3514,7 +3514,7 @@ if __name__ == "__main__":
     #tpf.add
     #pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
-    # usg_freyberg_test()
+    usg_freyberg_test()
 
 
 

@@ -2310,7 +2310,7 @@ class PstFrom(object):
                                     node_df.y,
                                     num_threads=1,
                                     pt_zone=zone,
-                                    idx_vals=node_df.node.apply(np.int),
+                                    idx_vals=node_df.node.apply(np.int64),
                                 )
                             ok_pp.to_grid_factors_file(
                                 fac_filename, ncol=len(spatial_reference)
@@ -2610,7 +2610,7 @@ class PstFrom(object):
         for index_col in index_cols:
             if index_col not in df.columns:
                 missing.append(index_col)
-            # df.loc[:, index_col] = df.loc[:, index_col].astype(np.int) # TODO int? why?
+            # df.loc[:, index_col] = df.loc[:, index_col].astype(np.int64) # TODO int? why?
         if len(missing) > 0:
             self.logger.lraise(
                 "the following index_cols were not "
