@@ -53,7 +53,7 @@ pst_config["par_dtype"] = np.dtype(
         ("pargp", "U20"),
         ("scale", np.float64),
         ("offset", np.float64),
-        ("dercom", np.int),
+        ("dercom", np.int64),
     ]
 )
 pst_config["par_fieldnames"] = (
@@ -83,11 +83,11 @@ pst_config["par_alias_map"] = {
 pst_config["par_converters"] = {
     "parnme": str_con,
     "pargp": str_con,
-    "parval1": np.float,
-    "parubnd": np.float,
-    "parlbnd": np.float,
-    "scale": np.float,
-    "offset": np.float,
+    "parval1": np.float64,
+    "parubnd": np.float64,
+    "parlbnd": np.float64,
+    "scale": np.float64,
+    "offset": np.float64,
 }
 pst_config["par_defaults"] = {
     "parnme": "dum",
@@ -140,11 +140,11 @@ pst_config["pargp_converters"] = {
     "pargpnme": str_con,
     "inctyp": str_con,
     "dermethd": str_con,
-    "derinc": np.float,
-    "derinclb": np.float,
+    "derinc": np.float64,
+    "derinclb": np.float64,
     "splitaction": str_con,
     "forcen": str_con,
-    "derincmul": np.float,
+    "derincmul": np.float64,
 }
 pst_config["pargp_defaults"] = {
     "pargpnme": "pargp",
@@ -179,8 +179,8 @@ pst_config["obs_format"] = {
 pst_config["obs_converters"] = {
     "obsnme": str_con,
     "obgnme": str_con,
-    "weight": np.float,
-    "obsval": np.float,
+    "weight": np.float64,
+    "obsval": np.float64,
 }
 pst_config["obs_defaults"] = {
     "obsnme": "dum",

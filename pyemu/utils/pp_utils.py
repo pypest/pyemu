@@ -225,7 +225,7 @@ def setup_pilotpoints_grid(
 
     par_info = pd.concat(par_info)
     for field in ["k", "i", "j"]:
-        par_info.loc[:, field] = par_info.loc[:, field].apply(np.int)
+        par_info.loc[:, field] = par_info.loc[:, field].apply(np.int64)
     for key, default in pst_config["par_defaults"].items():
         if key in par_info.columns:
             continue
