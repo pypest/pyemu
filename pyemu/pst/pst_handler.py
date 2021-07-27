@@ -1420,7 +1420,7 @@ class Pst(object):
         if len(fixed) > 0:
             raise Exception(
                 "Pst.add_pi_equation(): the following pars "
-                + " were are fixed/tied: {0}".format(",".join(missing))
+                + " were are fixed/tied: {0}".format(",".join(fixed))
             )
         eqs_str = ""
         sign = ""
