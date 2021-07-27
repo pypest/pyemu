@@ -3509,10 +3509,10 @@ class PstFromFlopyModel(object):
             return
         hob_out_unit = self.m.hob.iuhobsv
         new_hob_out_fname = os.path.join(
-            self.m.model_ws, self.m.get_output_attribute(unit=hob_out_unit)
+            self.m.model_ws, self.m.get_output_attribute(unit=hob_out_unit, attr='fname')
         )
         org_hob_out_fname = os.path.join(
-            self.org_model_ws, self.m.get_output_attribute(unit=hob_out_unit)
+            self.org_model_ws, self.m.get_output_attribute(unit=hob_out_unit, attr='fname')
         )
 
         if not os.path.exists(org_hob_out_fname):
@@ -3523,7 +3523,7 @@ class PstFromFlopyModel(object):
         shutil.copy2(org_hob_out_fname, new_hob_out_fname)
         hob_df = pyemu.gw_utils.modflow_hob_to_instruction_file(new_hob_out_fname)
         self.obs_dfs["hob"] = hob_df
-        self.tmp_files.append(os.path.split(hob_out_fname))
+        self.tmp_files.append(os.path.split(new_hob_out_fname)[-1])
 
     def _setup_hyd(self):
         """setup observations from the MODFLOW HYDMOD package"""
