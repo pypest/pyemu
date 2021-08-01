@@ -3146,8 +3146,7 @@ def mf6_add_various_obs_test():
     # add single par so we can run
     pf.add_parameters(["freyberg6.npf_k_layer1.txt",
                        "freyberg6.npf_k_layer2.txt",
-                       "freyberg6.npf_k_layer3.txt"],
-                      index_cols=[0, 1, 2], use_cols=[3], par_type='constant')
+                       "freyberg6.npf_k_layer3.txt"],par_type='constant')
     pf.mod_sys_cmds.append("mf6")
     pf.add_py_function(
         'pst_from_tests.py',
@@ -3506,7 +3505,7 @@ if __name__ == "__main__":
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
-   # mf6_add_various_obs_test()
+    mf6_add_various_obs_test()
     # mf6_subdir_test()
     #tpf = TestPstFrom()
     #tpf.setup()
@@ -3514,7 +3513,7 @@ if __name__ == "__main__":
     #tpf.add
     #pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
-    usg_freyberg_test()
+    #usg_freyberg_test()
 
 
 
