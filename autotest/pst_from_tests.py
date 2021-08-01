@@ -3112,7 +3112,7 @@ def mf6_add_various_obs_test():
     sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
-    # sim.set_all_data_external(check_data=False)
+    sim.set_all_data_external(check_data=False)
     sim.write_simulation()
 
     # SETUP pest stuff...
