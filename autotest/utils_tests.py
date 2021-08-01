@@ -763,6 +763,7 @@ def geostat_prior_builder_test():
 def geostat_draws_test():
     import os
     import numpy as np
+    import pandas as pd
     import pyemu
     pst_file = os.path.join("pst","pest.pst")
     pst = pyemu.Pst(pst_file)
@@ -770,14 +771,18 @@ def geostat_draws_test():
     tpl_file = os.path.join("utils", "pp_locs.tpl")
     str_file = os.path.join("utils", "structure.dat")
 
+    #make a df with one entry
+    df_one = pd.DataFrame({"parnme":"mult1","x":-999,"y":-9999,"zone":-9999},index=["mult1"])
 
-    pe = pyemu.helpers.geostatistical_draws(pst_file,{str_file:tpl_file})
+
+    pe = pyemu.helpers.geostatistical_draws(pst_file,{str_file:tpl_file,str_file:df_one})
     assert (pe.shape == pe.dropna().shape)
 
     pst.parameter_data.loc[pst.par_names[1:10], "partrans"] = "tied"
     pst.parameter_data.loc[pst.par_names[1:10], "partied"] = pst.par_names[0]
     pe = pyemu.helpers.geostatistical_draws(pst, {str_file: tpl_file})
     assert (pe.shape == pe.dropna().shape)
+    assert "mult1" in pe.columns
 
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
@@ -2013,7 +2018,7 @@ if __name__ == "__main__":
     # #linearuniversal_krige_test()
     #conditional_prior_invest()
     #geostat_prior_builder_test2()
-    #geostat_draws_test()
+    geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     #mflist_budget_test()
     #mtlist_budget_test()
