@@ -2984,46 +2984,14 @@ def _write_direct_df_tpl(
     sidx.extend(didx)
 
     df_ti = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
-    # get some index strings for naming
-    if longnames:
-        j = "_"
-        fmt = "{0}|{1}"
-        if isinstance(index_cols[0], str):
-            inames = index_cols
-        else:
-            inames = ["idx{0}".format(i) for i in range(len(index_cols))]
-    else:
-        fmt = "{1:3}"
-        j = ""
-        if isinstance(index_cols[0], str):
-            inames = index_cols
-        else:
-            inames = ["{0}".format(i) for i in range(len(index_cols))]
-
-    if not zero_based:
-        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
-            lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x)
-        )
-    df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
-        lambda x: j.join([fmt.format(iname, xx) for xx, iname in zip(x, inames)])
-    ).str.replace(" ", "")
-
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "")
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":")
-
-    if get_xy is not None:
-        if xy_in_idx is not None:
-            # x and y already in index cols
-            df_ti[["x", "y"]] = pd.DataFrame(df_ti.sidx.to_list()).iloc[:, xy_in_idx]
-        else:
-            df_ti.loc[:, "xy"] = df_ti.sidx.apply(get_xy, ij_id=ij_in_idx)
-            df_ti.loc[:, "x"] = df_ti.xy.apply(lambda x: x[0])
-            df_ti.loc[:, "y"] = df_ti.xy.apply(lambda x: x[1])
-
-    if use_cols is None:
-        use_cols = [c for c in df_ti.columns if c not in index_cols]
+    inames, fmt = _get_index_strfmt(index_cols, longnames)
+    df_ti = _get_index_strings(df_ti, fmt, zero_based)
+    df_ti = _getxy_from_idx(df_ti, get_xy, xy_in_idx, ij_in_idx)
 
     direct_tpl_df = df.copy()
+    # TODO: consolidate this with the method in _get_tpl_or_ins_df()
+    if use_cols is None:
+        use_cols = [c for c in df_ti.columns if c not in index_cols]
     for iuc, use_col in enumerate(use_cols):
         if not isinstance(name, str):
             nname = name[iuc]
@@ -3142,6 +3110,58 @@ def _write_direct_df_tpl(
     return df_ti
 
 
+def _get_index_strfmt(index_cols, longnames):
+    # get some index strings for naming
+    if longnames:
+        j = "_"
+        # fmt = "{0}|{1}"
+        if isinstance(index_cols[0], str):
+            inames = index_cols
+        else:
+            inames = ["idx{0}".format(i) for i in range(len(index_cols))]
+        # full formatter string
+        fmt = j.join([f"{iname}|{{{i}}}" for i, iname in enumerate(inames)])
+    else:
+        # fmt = "{1:3}"
+        j = ""
+        if isinstance(index_cols[0], str):
+            inames = index_cols
+        else:
+            inames = ["{0}".format(i) for i in range(len(index_cols))]
+        # full formatter string
+        fmt = j.join([f"{{{i}:3}}" for i, iname in enumerate(inames)])
+    return inames, fmt
+
+
+def _get_index_strings(df, fmt, zero_based):
+    if not zero_based:
+        # only if indices are ints (trying to support strings as par ids)
+        df.loc[:, "sidx"] = df.sidx.apply(
+            lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x)
+        )
+
+    df.loc[:, "idx_strs"] = df.sidx.apply(
+        lambda x: fmt.format(*x)).str.replace(" ", "")
+    df.loc[:, "idx_strs"] = df.idx_strs.str.replace(":", "",
+                                                    regex=False).str.lower()
+    df.loc[:, "idx_strs"] = df.idx_strs.str.replace("|", ":",
+                                                    regex=False)
+    return df
+
+
+def _getxy_from_idx(df, get_xy, xy_in_idx, ij_in_idx):
+    if get_xy is None:
+        return df
+    if xy_in_idx is not None:
+        df[["x", "y"]] = pd.DataFrame(df_ti.sidx.to_list()).iloc[:, xy_in_idx]
+        return df
+
+    df.loc[:, "xy"] = df.sidx.apply(get_xy, ij_id=ij_in_idx)
+    df.loc[:, "x"] = df.xy.apply(lambda x: x[0])
+    df.loc[:, "y"] = df.xy.apply(lambda x: x[1])
+    return df
+
+
 def _get_tpl_or_ins_df(
     dfs,
     name,
@@ -3218,46 +3238,9 @@ def _get_tpl_or_ins_df(
             sidx.extend(aidx)
 
     df_ti = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
-    # get some index strings for naming
-    if longnames:
-        j = "_"
-        # fmt = "{0}|{1}"
-        if isinstance(index_cols[0], str):
-            inames = index_cols
-        else:
-            inames = ["idx{0}".format(i) for i in range(len(index_cols))]
-        # full formatter string
-        fmt = j.join([f"{iname}|{{{i}}}" for i, iname in enumerate(inames)])
-    else:
-        # fmt = "{1:3}"
-        j = ""
-        if isinstance(index_cols[0], str):
-            inames = index_cols
-        else:
-            inames = ["{0}".format(i) for i in range(len(index_cols))]
-        # full formatter string
-        fmt = j.join([f"{{{i}:3}}" for i, iname in enumerate(inames)])
-    if (
-        not zero_based
-    ):  # only if indices are ints (trying to support strings as par ids)
-        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
-            lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x)
-        )
-
-    df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(lambda x: fmt.format(*x)).str.replace(
-        " ", ""
-    )
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "", regex=False)
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":", regex=False)
-
-    if get_xy is not None:
-        if xy_in_idx is not None:
-            # x and y already in index cols
-            df_ti[["x", "y"]] = pd.DataFrame(df_ti.sidx.to_list()).iloc[:, xy_in_idx]
-        else:
-            df_ti.loc[:, "xy"] = df_ti.sidx.apply(get_xy, ij_id=ij_in_idx)
-            df_ti.loc[:, "x"] = df_ti.xy.apply(lambda x: x[0])
-            df_ti.loc[:, "y"] = df_ti.xy.apply(lambda x: x[1])
+    inames, fmt = _get_index_strfmt(index_cols, longnames)
+    df_ti = _get_index_strings(df_ti, fmt, zero_based)
+    df_ti = _getxy_from_idx(df_ti, get_xy, xy_in_idx, ij_in_idx)
 
     if typ == "obs":
         return df_ti  #################### RETURN if OBS
@@ -3266,7 +3249,6 @@ def _get_tpl_or_ins_df(
         use_cols = [c for c in df_ti.columns if c not in index_cols]
         # if direct, we have more to deal with...
     for iuc, use_col in enumerate(use_cols):
-
         if not isinstance(name, str):
             nname = name[iuc]
             # if zone type, find the zones for each index position
