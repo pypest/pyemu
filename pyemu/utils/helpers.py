@@ -122,6 +122,8 @@ def geostatistical_draws(
                     df = pd.read_csv(item)
             else:
                 df = item
+            if df.shape[0] < 2:
+                continue
             if "pargp" in df.columns:
                 if verbose:
                     print("working on pargroups {0}".format(df.pargp.unique().tolist()))
