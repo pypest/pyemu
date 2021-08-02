@@ -886,7 +886,7 @@ class PstFrom(object):
                 else:
                     # TODO - or not?
                     raise NotImplementedError(
-                        "Only free format array " "par files currently supported"
+                        "Only free format array par files currently supported"
                     )
                 # file path relative to model workspace
                 rel_filepath = input_filena.relative_to(self.original_d)
@@ -1575,6 +1575,7 @@ class PstFrom(object):
         datetime=None,
         mfile_fmt="free",
         mfile_skip=None,
+        mfile_sep=None,
         ult_ubound=None,
         ult_lbound=None,
         rebuild_pst=False,
@@ -1645,6 +1646,9 @@ class PstFrom(object):
             mfile_skip (`int` or `str`): header in model input file to skip
                 when reading and reapply when writing. Can optionally be `str` in which case `mf_skip` will be treated
                 as a `comment_char`.
+            mfile_sep (`str`): separator/delimiter in model input file.
+                If None, separator will be interpretted from file name extension.
+                `.csv` is assumed to be comma separator. Default is None
             ult_ubound (`float`): Ultimate upper bound for model input
                 parameter once all mults are applied - ensure physical model par vals. If not passed,
                 it is set to 1.0e+30
@@ -1807,6 +1811,7 @@ class PstFrom(object):
             fmts=mfile_fmt,
             skip_rows=mfile_skip,
             c_char=comment_char,
+            seps=mfile_sep
         )
         if datetime is not None:  # convert and check datetime
             # TODO: something needed here to allow a different relative point.
