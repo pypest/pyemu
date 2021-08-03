@@ -41,12 +41,16 @@ mf_exe_name = os.path.basename(mf_exe_path)
 mf6_exe_name = os.path.basename(mf6_exe_path)
 
 
-def _gen_dummy_obs_file(ws='.', sep=','):
+def _gen_dummy_obs_file(ws='.', sep=',', ext=None):
     import pandas as pd
-    if sep == ',':
-        fnme = 'somefakeobs.csv'
+    ffn = "somefakeobs"
+    if ext is None:
+        if sep == ',':
+            fnme = f'{ffn}.csv'
+        else:
+            fnme = f'{ffn}.dat'
     else:
-        fnme = 'somefakeobs.dat'
+        fnme = f'{ffn}.{ext}'
     text = pyemu.__doc__.split(' ', 100)
     t = []
     c = 15
@@ -673,6 +677,13 @@ def mf6_freyberg_test():
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0,a=60))
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
+    ft, ftd = _gen_dummy_obs_file(pf.new_d, sep=',', ext='txt')
+    pf.add_parameters(filenames=f, par_type="grid", mfile_skip=1, index_cols=0,
+                      use_cols=[2], par_name_base="tmp",
+                      pargp="tmp")
+    pf.add_parameters(filenames=ft, par_type="grid", mfile_skip=1, index_cols=0,
+                      use_cols=[1, 2], par_name_base=["tmp2_1", "tmp2_2"],
+                      pargp="tmp2", mfile_sep=',')
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
     print(dts)
@@ -3498,14 +3509,14 @@ if __name__ == "__main__":
     #invest()
     # freyberg_test()
     #freyberg_prior_build_test()
-    # mf6_freyberg_test()
+    mf6_freyberg_test()
     #mf6_freyberg_da_test()
     #mf6_freyberg_shortnames_test()
-    # mf6_freyberg_direct_test()
+    mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     #xsec_test()
     #mf6_freyberg_short_direct_test()
-    mf6_add_various_obs_test()
+    # mf6_add_various_obs_test()
     # mf6_subdir_test()
     #tpf = TestPstFrom()
     #tpf.setup()
