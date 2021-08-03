@@ -3162,8 +3162,8 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
                     fmtr += suffix
             if zone_array is not None:
                 df.loc[:, use_col] = df.apply(
-                    lambda x: fmtr.format(nname, use_col, x.zval, x.idx_strs,
-                                          axis=1)
+                    lambda x: fmtr.format(nname, use_col, x.zval, x.idx_strs),
+                    axis=1
                 )
             else:
                 df.loc[:, use_col] = df.idx_strs.apply(
