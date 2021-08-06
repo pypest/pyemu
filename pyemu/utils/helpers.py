@@ -4136,7 +4136,11 @@ def apply_genericlist_pars(df, chunk_len=50):
 
 def _process_chunk_list_files(chunk, i, df):
     for model_file in chunk:
-        _process_list_file(model_file, df)
+        try:
+            _process_list_file(model_file, df)
+        except Exception as e:
+            f"{e}: Issue processing model file {model_file}"
+            raise e
     print("process", i, " processed ", len(chunk), "process_list_file calls")
 
 
