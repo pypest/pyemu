@@ -645,7 +645,7 @@ def mf6_freyberg_test():
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
                  remove_existing=True,
                  longnames=True, spatial_reference=sr,
-                 zero_based=False,start_datetime="1-1-2018",
+                 zero_based=False, start_datetime="1-1-2018",
                  chunk_len=1)
     # obs
     #   using tabular style model output
@@ -683,7 +683,7 @@ def mf6_freyberg_test():
                       pargp="tmp")
     pf.add_parameters(filenames=ft, par_type="grid", mfile_skip=1, index_cols=0,
                       use_cols=[1, 2], par_name_base=["tmp2_1", "tmp2_2"],
-                      pargp="tmp2", mfile_sep=',')
+                      pargp="tmp2", mfile_sep=',', par_style='direct')
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
     print(dts)
@@ -902,7 +902,7 @@ def mf6_freyberg_test():
     csv = os.path.join(template_ws, "mult2model_info.csv")
     df = pd.read_csv(csv, index_col=0)
     pst_input_files = {str(f) for f in pst.input_files}
-    mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
+    mults_not_linked_to_pst = ((set(df.mlt_file.dropna().unique()) -
                                 pst_input_files) -
                                set(df.loc[df.pp_file.notna()].mlt_file))
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
@@ -3505,26 +3505,26 @@ def mf6_subdir_test():
 
 
 if __name__ == "__main__":
-    #mf6_freyberg_pp_locs_test()
-    #invest()
-    freyberg_test()
-    #freyberg_prior_build_test()
-    # mf6_freyberg_test()
-    #mf6_freyberg_da_test()
-    #mf6_freyberg_shortnames_test()
+    # mf6_freyberg_pp_locs_test()
+    # invest()
+    # freyberg_test()
+    # freyberg_prior_build_test()
+    mf6_freyberg_test()
+    # mf6_freyberg_da_test()
+    # mf6_freyberg_shortnames_test()
     # mf6_freyberg_direct_test()
-    #mf6_freyberg_varying_idomain()
-    #xsec_test()
-    #mf6_freyberg_short_direct_test()
+    # mf6_freyberg_varying_idomain()
+    # xsec_test()
+    # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
-    #tpf = TestPstFrom()
-    #tpf.setup()
-    #tpf.test_add_direct_array_parameters()
-    #tpf.add
-    #pstfrom_profile()
-    #mf6_freyberg_arr_obs_and_headerless_test()
-    #usg_freyberg_test()
+    # tpf = TestPstFrom()
+    # tpf.setup()
+    # tpf.test_add_direct_array_parameters()
+    # tpf.add
+    # # pstfrom_profile()
+    # mf6_freyberg_arr_obs_and_headerless_test()
+    # usg_freyberg_test()
 
 
 

@@ -1692,11 +1692,6 @@ class PstFrom(object):
         #  is not contained in model parameter file - e.g. no i,j columns
         self.add_pars_callcount += 1
         self.ijwarned[self.add_pars_callcount] = False
-        # this keeps denormal values for creeping into the model input arrays
-        if ult_ubound is None:
-            ult_ubound = self.ult_ubound_fill
-        if ult_lbound is None:
-            ult_lbound = self.ult_lbound_fill
 
         if transform.lower().strip() not in ["none", "log", "fixed"]:
             self.logger.lraise(
@@ -1888,6 +1883,17 @@ class PstFrom(object):
             in_filepst = in_fileabs.relative_to(self.new_d)
             tpl_filename = self.tpl_d / (filenames[0].name + ".tpl")
 
+        # this keeps denormal values for creeping into the model input arrays
+        ubfill = None
+        lbfill = None
+        if ult_ubound is None:
+            # no ultimate bounds are passed default to class set bounds
+            ult_ubound = self.ult_ubound_fill
+            ubfill = "first"  # will fill for all use_cols
+        if ult_lbound is None:
+            ult_lbound = self.ult_lbound_fill
+            lbfill = "first"
+
         pp_filename = None  # setup placeholder variables
         fac_filename = None
 
@@ -1895,8 +1901,8 @@ class PstFrom(object):
         if index_cols is not None:  # Assume list/tabular type input files
             # ensure inputs are provided for all required cols
             ncol = len(use_cols)
-            ult_lbound = _check_var_len(ult_lbound, ncol)
-            ult_ubound = _check_var_len(ult_ubound, ncol)
+            ult_lbound = _check_var_len(ult_lbound, ncol, fill=ubfill)
+            ult_ubound = _check_var_len(ult_ubound, ncol, fill=lbfill)
             pargp = _check_var_len(pargp, ncol)
             lower_bound = _check_var_len(lower_bound, ncol, fill="first")
             upper_bound = _check_var_len(upper_bound, ncol, fill="first")
@@ -3046,7 +3052,7 @@ def _getxy_from_idx(df, get_xy, xy_in_idx, ij_in_idx):
     if get_xy is None:
         return df
     if xy_in_idx is not None:
-        df[["x", "y"]] = pd.DataFrame(df_ti.sidx.to_list()).iloc[:, xy_in_idx]
+        df[["x", "y"]] = pd.DataFrame(df.sidx.to_list()).iloc[:, xy_in_idx]
         return df
 
     df.loc[:, "xy"] = df.sidx.apply(get_xy, ij_id=ij_in_idx)
