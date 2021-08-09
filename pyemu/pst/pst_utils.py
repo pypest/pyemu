@@ -252,7 +252,7 @@ def read_resfile(resfile):
         if "name" in line.lower():
             header = line.lower().strip().split()
             break
-    res_df = pd.read_csv(f, header=None, names=header, sep="\s+", converters=converters)
+    res_df = pd.read_csv(f, header=None, names=header, sep=r"\s+", converters=converters)
     res_df.index = res_df.name
     f.close()
     return res_df
@@ -325,7 +325,7 @@ def read_parfile(parfile):
     f = open(parfile, "r")
     header = f.readline()
     par_df = pd.read_csv(
-        f, header=None, names=["parnme", "parval1", "scale", "offset"], sep="\s+"
+        f, header=None, names=["parnme", "parval1", "scale", "offset"], sep=r"\s+"
     )
     par_df.index = par_df.parnme
     return par_df

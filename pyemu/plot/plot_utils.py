@@ -273,7 +273,7 @@ def phi_progress(pst, logger=None, filename=None, **kwargs):
         ax = plt.subplot(1, 1, 1)
     ax.plot(df.model_runs_completed, df.total_phi, marker=".")
     ax.set_xlabel("model runs")
-    ax.set_ylabel("$\phi$")
+    ax.set_ylabel(r"$\phi$")
     ax.grid()
     if filename is not None:
         plt.savefig(filename)
@@ -1695,7 +1695,7 @@ def plot_jac_test(
 
     # use the index created by build_jac_test_csv to get a column of parameter names
     # and increments, then we can plot derivative vs. increment for each parameter
-    extr_df = pd.Series(jacobian.index.values).str.extract("(.+)(_\d+$)", expand=True)
+    extr_df = pd.Series(jacobian.index.values).str.extract(r"(.+)(_\d+$)", expand=True)
     extr_df[1] = pd.to_numeric(extr_df[1].str.replace("_", "")) + 1
     extr_df.rename(columns={0: "parameter", 1: "increment"}, inplace=True)
     extr_df.index = jacobian.index
