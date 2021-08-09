@@ -3503,7 +3503,6 @@ def mf6_subdir_test():
     # assert np.abs(float(df.upper_bound.min()) - 30.) < 1.0e-6,df.upper_bound.min()
     # assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
 
-
 if __name__ == "__main__":
     # mf6_freyberg_pp_locs_test()
     # invest()

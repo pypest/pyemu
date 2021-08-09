@@ -472,12 +472,21 @@ class Ensemble(object):
 
                 for grp_name, names in grouper.items():
                     print("drawing from group", grp_name)
-                    idxs = [mv_map[name] for name in names]
-                    snv = np.random.randn(num_reals, len(names))
-                    cov_grp = cov.get(names)
-                    if len(names) == 1:
+                    # reorder names to be in cov matrix order
+                    #cnames = names
+                    cnames = []
+                    snames = set(names)
+                    for n in cov.names:
+                        if n in snames:
+                            cnames.append(n)
+                    names = None
+                    snames = None
+                    idxs = [mv_map[name] for name in cnames]
+                    snv = np.random.randn(num_reals, len(cnames))
+                    cov_grp = cov.get(cnames)
+                    if len(cnames) == 1:
                         std = np.sqrt(cov_grp.x)
-                        reals[:, idxs] = mean_values.loc[names].values[0] + (snv * std)
+                        reals[:, idxs] = mean_values.loc[cnames].values[0] + (snv * std)
                     else:
                         if factor == "eigen":
                             try:
@@ -497,7 +506,7 @@ class Ensemble(object):
                             a, i = Ensemble._get_svd_projection_matrix(cov_grp.as_2d)
                             snv[:, i:] = 0.0
                         # process each realization
-                        group_mean_values = mean_values.loc[names]
+                        group_mean_values = mean_values.loc[cnames]
                         for i in range(num_reals):
                             reals[i, idxs] = group_mean_values + np.dot(a, snv[i, :])
 
@@ -512,7 +521,6 @@ class Ensemble(object):
                 idxs = [mv_map[name] for name in cov.row_names]
                 for i in range(num_reals):
                     reals[i, idxs] = cov_mean_values + np.dot(a, snv[i, :])
-
         df = pd.DataFrame(reals, columns=mean_values.index.values)
         df.dropna(inplace=True, axis=1)
         return df
@@ -880,12 +888,12 @@ class ParameterEnsemble(Ensemble):
                 that can be passed to `pyemu.Cov.from_parameter_data`).
             num_reals (`int`): number of stochastic realizations to generate.  Default
                 is 100
-            by_groups (`bool`): flag to generate realzations be parameter group.  This
+            by_groups (`bool`): flag to generate realizations be parameter group.  This
                 assumes no correlation (covariates) between parameter groups.  For large
                 numbers of parameters, this help prevent memories but is slower.
             fill (`bool`): flag to fill in fixed and/or tied parameters with control file
                 values.  Default is True.
-            factor (`str`): how to factorize `cov` to form the projectin matrix.  Can
+            factor (`str`): how to factorize `cov` to form the projection matrix.  Can
                 be "eigen" or "svd". The "eigen" option is default and is faster.  But
                 for (nearly) singular cov matrices (such as those generated empirically
                 from ensembles), "svd" is the only way.  Ignored for diagonal `cov`.
