@@ -2568,7 +2568,7 @@ class PstFrom(object):
         self.logger.log("reading list {0}".format(file_path))
         if fmt.lower() == "free":
             if sep is None:
-                sep = "\s+"
+                sep = r"\s+"
                 if Path(filename).suffix == ".csv":
                     sep = ","
         else:
@@ -2580,7 +2580,7 @@ class PstFrom(object):
             )
             self.logger.warn("1) Assuming safe to read as whitespace " "delim.")
             self.logger.warn("2) Desired format string will still " "be passed through")
-            sep = "\s+"
+            sep = r"\s+"
         try:
             # read each input file
             if skip > 0 or c_char is not None:
