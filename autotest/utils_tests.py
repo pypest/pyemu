@@ -1984,8 +1984,42 @@ def geostat_prior_builder_test2():
     #plt.show()
 
 
+def temporal_draw_invest():
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    import matplotlib.pyplot as plt
+    from datetime import datetime
+    v = pyemu.geostats.ExpVario(contribution=1.0,a=500)
+    gs = pyemu.geostats.GeoStruct(variograms=v)
+
+    t = np.arange(0,1000)
+    y = np.zeros_like(t)
+    names = ["p{0}".format(i) for i in range(t.shape[0])]
+    df = pd.DataFrame({"parnme":names,"x":t,"y":y})
+
+    pst = pyemu.Pst.from_par_obs_names(names,names)
+    #pst.parameter_data.loc[:,"parlbnd"] = 0.5
+    #pst.parameter_data.loc[:, "parubnd"] = 1.5
+
+    cov = gs.covariance_matrix(x=t,y=y,names=names)
+    #plt.imshow(cov.x)
+    #plt.show()
+    s = datetime.now()
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=10)
+
+    e = datetime.now()
+    print("took",(e-s).total_seconds())
+    ecov = pe.loc[:,names].covariance_matrix()
+    #plt.imshow(ecov.x)
+    #plt.show()
+    plt.plot(pe.loc[pe.index[0]])
+    plt.show()
+
+
 if __name__ == "__main__":
 
+    temporal_draw_invest()
     #run_test()
     #specsim_test()
     #aniso_invest()
@@ -2018,7 +2052,7 @@ if __name__ == "__main__":
     # #linearuniversal_krige_test()
     #conditional_prior_invest()
     #geostat_prior_builder_test2()
-    geostat_draws_test()
+    #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     #mflist_budget_test()
     #mtlist_budget_test()
@@ -2050,7 +2084,7 @@ if __name__ == "__main__":
     # struct_file_test()
     # covariance_matrix_test()
     # add_pi_obj_func_test()
-    ok_test()
+    #ok_test()
     # ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
