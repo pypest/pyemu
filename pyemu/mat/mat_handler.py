@@ -1564,7 +1564,7 @@ class Matrix(object):
         """reorder `Matrix` by names in place.  If axis is None, reorder both indices
 
         Args:
-            names (['str']): names in `Matrix.row_names` and\or `Matrix.col_names`
+            names (['str']): names in `Matrix.row_names` and or `Matrix.col_names`
             axis (`int`, optional): the axis to reorder. if None, reorder both axes
 
         Note:

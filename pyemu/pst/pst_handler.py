@@ -3418,8 +3418,8 @@ class Pst(object):
         are listed as active (non-zero weight) less than inequality constraints.
 
         Returns:
-            `pandas.Series`: names of obseravtions that are non-zero weighted less
-            than constraints (`obgnme` starts with 'l\_' or "less")
+            `pandas.Series`: names of observations that are non-zero weighted less
+            than constraints (`obgnme` starts with 'l_' or "less")
 
         Note:
              Zero-weighted obs are skipped
@@ -3442,7 +3442,7 @@ class Pst(object):
 
         Returns:
             `pandas.Series`: names of prior information that are non-zero weighted
-            less than constraints (`obgnme` starts with "l\_" or "less")
+            less than constraints (`obgnme` starts with "l_" or "less")
 
         Note:
             Zero-weighted pi are skipped
@@ -3470,7 +3470,7 @@ class Pst(object):
 
         Returns:
             `pandas.Series`: names obseravtions that are non-zero weighted
-            greater than constraints (`obgnme` startsiwth "g\_" or "greater")
+            greater than constraints (`obgnme` startsiwth "g_" or "greater")
 
         Note:
             Zero-weighted obs are skipped
@@ -3493,7 +3493,7 @@ class Pst(object):
 
         Returns:
             `pandas.Series` names of prior information that are non-zero weighted
-            greater than constraints (`obgnme` startsiwth "g\_" or "greater")
+            greater than constraints (`obgnme` startsiwth "g_" or "greater")
 
 
         Note:

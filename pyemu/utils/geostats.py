@@ -301,7 +301,7 @@ class GeoStruct(object):
         if legend:
             ax.legend()
         ax.set_xlabel("distance")
-        ax.set_ylabel("$\gamma$")
+        ax.set_ylabel(r"$\gamma$")
         return ax
 
     def __str__(self):
@@ -1744,7 +1744,7 @@ class Vario2d(object):
         x = np.linspace(0, self.a * 3, 100)
         y = self.inv_h(x)
         ax.set_xlabel("distance")
-        ax.set_ylabel("$\gamma$")
+        ax.set_ylabel(r"$\gamma$")
         ax.plot(x, y, **kwargs)
         return ax
 
