@@ -317,7 +317,7 @@ def setup_pp_test():
                                                      every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp","test_unrot.shp"))
     ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
-    ok.calc_factors_grid(ml.sr)
+    ok.calc_factors_grid(sr)
 
 
 
