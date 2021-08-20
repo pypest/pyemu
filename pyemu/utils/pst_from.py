@@ -1828,7 +1828,7 @@ class PstFrom(object):
         if isinstance(par_name_base, str):
             par_name_base = [par_name_base]
         # if `use_cols` is passed check number of base names is the same as cols
-        if len(par_name_base) == 1:
+        if use_cols is None and len(par_name_base) == 1:
             pass
         elif use_cols is not None and len(par_name_base) == len(use_cols):
             pass
