@@ -886,7 +886,7 @@ class PstFrom(object):
                 else:
                     # TODO - or not?
                     raise NotImplementedError(
-                        "Only free format array " "par files currently supported"
+                        "Only free format array par files currently supported"
                     )
                 # file path relative to model workspace
                 rel_filepath = input_filena.relative_to(self.original_d)
@@ -1575,6 +1575,7 @@ class PstFrom(object):
         datetime=None,
         mfile_fmt="free",
         mfile_skip=None,
+        mfile_sep=None,
         ult_ubound=None,
         ult_lbound=None,
         rebuild_pst=False,
@@ -1645,6 +1646,9 @@ class PstFrom(object):
             mfile_skip (`int` or `str`): header in model input file to skip
                 when reading and reapply when writing. Can optionally be `str` in which case `mf_skip` will be treated
                 as a `comment_char`.
+            mfile_sep (`str`): separator/delimiter in model input file.
+                If None, separator will be interpretted from file name extension.
+                `.csv` is assumed to be comma separator. Default is None
             ult_ubound (`float`): Ultimate upper bound for model input
                 parameter once all mults are applied - ensure physical model par vals. If not passed,
                 it is set to 1.0e+30
@@ -1688,11 +1692,6 @@ class PstFrom(object):
         #  is not contained in model parameter file - e.g. no i,j columns
         self.add_pars_callcount += 1
         self.ijwarned[self.add_pars_callcount] = False
-        # this keeps denormal values for creeping into the model input arrays
-        if ult_ubound is None:
-            ult_ubound = self.ult_ubound_fill
-        if ult_lbound is None:
-            ult_lbound = self.ult_lbound_fill
 
         if transform.lower().strip() not in ["none", "log", "fixed"]:
             self.logger.lraise(
@@ -1807,6 +1806,7 @@ class PstFrom(object):
             fmts=mfile_fmt,
             skip_rows=mfile_skip,
             c_char=comment_char,
+            seps=mfile_sep
         )
         if datetime is not None:  # convert and check datetime
             # TODO: something needed here to allow a different relative point.
@@ -1828,7 +1828,7 @@ class PstFrom(object):
         if isinstance(par_name_base, str):
             par_name_base = [par_name_base]
         # if `use_cols` is passed check number of base names is the same as cols
-        if len(par_name_base) == 1:
+        if use_cols is None and len(par_name_base) == 1:
             pass
         elif use_cols is not None and len(par_name_base) == len(use_cols):
             pass
@@ -1883,6 +1883,17 @@ class PstFrom(object):
             in_filepst = in_fileabs.relative_to(self.new_d)
             tpl_filename = self.tpl_d / (filenames[0].name + ".tpl")
 
+        # this keeps denormal values for creeping into the model input arrays
+        ubfill = None
+        lbfill = None
+        if ult_ubound is None:
+            # no ultimate bounds are passed default to class set bounds
+            ult_ubound = self.ult_ubound_fill
+            ubfill = "first"  # will fill for all use_cols
+        if ult_lbound is None:
+            ult_lbound = self.ult_lbound_fill
+            lbfill = "first"
+
         pp_filename = None  # setup placeholder variables
         fac_filename = None
 
@@ -1890,8 +1901,8 @@ class PstFrom(object):
         if index_cols is not None:  # Assume list/tabular type input files
             # ensure inputs are provided for all required cols
             ncol = len(use_cols)
-            ult_lbound = _check_var_len(ult_lbound, ncol)
-            ult_ubound = _check_var_len(ult_ubound, ncol)
+            ult_lbound = _check_var_len(ult_lbound, ncol, fill=ubfill)
+            ult_ubound = _check_var_len(ult_ubound, ncol, fill=lbfill)
             pargp = _check_var_len(pargp, ncol)
             lower_bound = _check_var_len(lower_bound, ncol, fill="first")
             upper_bound = _check_var_len(upper_bound, ncol, fill="first")
@@ -2557,7 +2568,7 @@ class PstFrom(object):
         self.logger.log("reading list {0}".format(file_path))
         if fmt.lower() == "free":
             if sep is None:
-                sep = "\s+"
+                sep = r"\s+"
                 if Path(filename).suffix == ".csv":
                     sep = ","
         else:
@@ -2569,7 +2580,7 @@ class PstFrom(object):
             )
             self.logger.warn("1) Assuming safe to read as whitespace " "delim.")
             self.logger.warn("2) Desired format string will still " "be passed through")
-            sep = "\s+"
+            sep = r"\s+"
         try:
             # read each input file
             if skip > 0 or c_char is not None:
@@ -2979,52 +2990,94 @@ def _write_direct_df_tpl(
     sidx.extend(didx)
 
     df_ti = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
+    inames, fmt = _get_index_strfmt(index_cols, longnames)
+    df_ti = _get_index_strings(df_ti, fmt, zero_based)
+    df_ti = _getxy_from_idx(df_ti, get_xy, xy_in_idx, ij_in_idx)
+
+    df_ti, direct_tpl_df = _build_parnames(
+        df_ti, typ, zone_array, index_cols, use_cols,
+        name, gpname, suffix, longnames,
+        direct=True, init_df=df, init_fname=in_filename
+    )
+    if isinstance(direct_tpl_df.columns[0], str):
+        header = True
+    else:
+        header = False
+    pyemu.helpers._write_df_tpl(
+        tpl_filename, direct_tpl_df, index=False, header=header, headerlines=headerlines
+    )
+    return df_ti
+
+
+def _get_index_strfmt(index_cols, longnames):
     # get some index strings for naming
     if longnames:
         j = "_"
-        fmt = "{0}|{1}"
+        # fmt = "{0}|{1}"
         if isinstance(index_cols[0], str):
             inames = index_cols
         else:
             inames = ["idx{0}".format(i) for i in range(len(index_cols))]
+        # full formatter string
+        fmt = j.join([f"{iname}|{{{i}}}" for i, iname in enumerate(inames)])
     else:
-        fmt = "{1:3}"
+        # fmt = "{1:3}"
         j = ""
         if isinstance(index_cols[0], str):
             inames = index_cols
         else:
             inames = ["{0}".format(i) for i in range(len(index_cols))]
+        # full formatter string
+        fmt = j.join([f"{{{i}:3}}" for i, iname in enumerate(inames)])
+    return inames, fmt
 
+
+def _get_index_strings(df, fmt, zero_based):
     if not zero_based:
-        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
+        # only if indices are ints (trying to support strings as par ids)
+        df.loc[:, "sidx"] = df.sidx.apply(
             lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x)
         )
-    df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(
-        lambda x: j.join([fmt.format(iname, xx) for xx, iname in zip(x, inames)])
-    ).str.replace(" ", "")
 
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "")
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":")
+    df.loc[:, "idx_strs"] = df.sidx.apply(
+        lambda x: fmt.format(*x)).str.replace(" ", "")
+    df.loc[:, "idx_strs"] = df.idx_strs.str.replace(":", "",
+                                                    regex=False).str.lower()
+    df.loc[:, "idx_strs"] = df.idx_strs.str.replace("|", ":",
+                                                    regex=False)
+    return df
 
-    if get_xy is not None:
-        if xy_in_idx is not None:
-            # x and y already in index cols
-            df_ti[["x", "y"]] = pd.DataFrame(df_ti.sidx.to_list()).iloc[:, xy_in_idx]
-        else:
-            df_ti.loc[:, "xy"] = df_ti.sidx.apply(get_xy, ij_id=ij_in_idx)
-            df_ti.loc[:, "x"] = df_ti.xy.apply(lambda x: x[0])
-            df_ti.loc[:, "y"] = df_ti.xy.apply(lambda x: x[1])
 
+def _getxy_from_idx(df, get_xy, xy_in_idx, ij_in_idx):
+    if get_xy is None:
+        return df
+    if xy_in_idx is not None:
+        df[["x", "y"]] = pd.DataFrame(df.sidx.to_list()).iloc[:, xy_in_idx]
+        return df
+
+    df.loc[:, "xy"] = df.sidx.apply(get_xy, ij_id=ij_in_idx)
+    df.loc[:, "x"] = df.xy.apply(lambda x: x[0])
+    df.loc[:, "y"] = df.xy.apply(lambda x: x[1])
+    return df
+
+
+def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
+                    gpname, suffix, longnames, direct=False, init_df=None,
+                    init_fname=None):
+    if direct:
+        assert init_df is not None
+        direct_tpl_df = init_df.copy()
+        if typ == 'constant':
+            assert init_fname is not None
     if use_cols is None:
-        use_cols = [c for c in df_ti.columns if c not in index_cols]
-
-    direct_tpl_df = df.copy()
+        use_cols = [c for c in df.columns if c not in index_cols]
+        # if direct, we have more to deal with...
     for iuc, use_col in enumerate(use_cols):
-        if not isinstance(name, str):
-            nname = name[iuc]
+        if not isinstance(basename, str):
+            nname = basename[iuc]
             # if zone type, find the zones for each index position
         else:
-            nname = name
+            nname = basename
         if zone_array is not None and typ in ["zone", "grid"]:
             if zone_array.ndim != len(index_cols):
                 raise Exception(
@@ -3033,7 +3086,7 @@ def _write_direct_df_tpl(
                     "({0}) != len(index_cols)({1})"
                     "".format(zone_array.ndim, len(index_cols))
                 )
-            df_ti.loc[:, "zval"] = df_ti.sidx.apply(lambda x: zone_array[x])
+            df.loc[:, "zval"] = df.sidx.apply(lambda x: zone_array[x])
 
         if gpname is None or gpname[iuc] is None:
             ngpname = nname
@@ -3042,72 +3095,88 @@ def _write_direct_df_tpl(
                 ngpname = gpname[iuc]
             else:
                 ngpname = gpname
-        df_ti.loc[:, "pargp{}".format(use_col)] = ngpname
+        df.loc[:, "pargp{}".format(use_col)] = ngpname
+        df.loc[:, "parval1_{0}".format(use_col)] = 1.0
         if typ == "constant":
             # one par for entire use_col column
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_usecol:{1}_{2}".format(
-                    nname, use_col, "direct"
-                )
+                fmtr = "{0}_usecol:{1}"
+                if direct:
+                    fmtr += "_direct"
                 if suffix != "":
-                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
+                    fmtr += f"_{suffix}"
             else:
-                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                fmtr = "{0}{1}"
                 if suffix != "":
-                    df_ti.loc[:, use_col] += suffix
-
-            _check_diff(df.loc[:, use_col].values, in_filename)
-            df_ti.loc[:, "parval1_{0}".format(use_col)] = df.loc[:, use_col][0]
-
+                    fmtr += suffix
+            df.loc[:, use_col] = fmtr.format(nname, use_col)
+            if direct:
+                _check_diff(init_df.loc[:, use_col].values, init_fname)
+                df.loc[:, "parval1_{0}".format(use_col)] = init_df.loc[:, use_col][0]
         elif typ == "zone":
             # one par for each zone
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_usecol:{1}_{2}".format(
-                    nname, use_col, "direct"
-                )
-                if zone_array is not None:
-                    df_ti.loc[:, use_col] += df_ti.zval.apply(
-                        lambda x: "_zone:{0}".format(x)
+                fmtr = "{0}_usecol:{1}"
+                if direct:
+                    # todo
+                    raise NotImplementedError(
+                        "list-based direct zone-type parameters not implemented"
                     )
+                    fmtr += "_direct"
+                if zone_array is not None:
+                    fmtr += "_zone:{2}"
+                    # df.loc[:, use_col] += df.zval.apply(
+                    #     lambda x: "_zone:{0}".format(x)
+                    # )
                 if suffix != "":
-                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
+                    fmtr += f"_{suffix}"
+                    # df.loc[:, use_col] += "_{0}".format(suffix)
             else:
+                fmtr = "{0}{1}"
                 if zone_array is not None:
-                    df_ti.loc[:, use_col] += df_ti.zval.apply(
-                        lambda x: "z{0}".format(int(x))
-                    )
-                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
+                    fmtr += "z{2}"
                 if suffix != "":
-                    df_ti.loc[:, use_col] += suffix
-
-            # todo check that values are constant within zones and
-            #  assign parval1
-            raise NotImplementedError(
-                "list-based direct zone-type parameters not implemented"
-            )
+                    fmtr += suffix
+            if zone_array is not None:
+                df.loc[:, use_col] = df.zval.apply(
+                    lambda x: fmtr.format(nname, use_col, x)
+                )
+            else:
+                df.loc[:, use_col] = fmtr.format(nname, use_col)
+            # todo:  Direct pars:
+            #  check that values are constant within zones and assign parval1
 
         elif typ == "grid":
             # one par for each index
             if longnames:
-                df_ti.loc[:, use_col] = "{0}_usecol:{1}_{2}".format(
-                    nname, use_col, "direct"
-                )
+                fmtr = "{0}_usecol:{1}"
+                if direct:
+                    fmtr += "_direct"
                 if zone_array is not None:
-                    df_ti.loc[:, use_col] += df_ti.zval.apply(
-                        lambda x: "_zone:{0}".format(x)
-                    )
-                df_ti.loc[:, use_col] += "_" + df_ti.idx_strs
+                    fmtr += "_zone:{2}_{3}"
+                else:
+                    fmtr += "_{2}"
                 if suffix != "":
-                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
-
+                    fmtr += f"_{suffix}"
             else:
-                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
-                df_ti.loc[:, use_col] += df_ti.idx_strs
+                fmtr = "{0}{1}"
+                if zone_array is not None:
+                    fmtr += "z{2}_{3}"
+                else:
+                    fmtr += "{2}"
                 if suffix != "":
-                    df_ti.loc[:, use_col] += suffix
-
-            df_ti.loc[:, "parval1_{0}".format(use_col)] = df.loc[:, use_col].values
-
+                    fmtr += suffix
+            if zone_array is not None:
+                df.loc[:, use_col] = df.apply(
+                    lambda x: fmtr.format(nname, use_col, x.zval, x.idx_strs),
+                    axis=1
+                )
+            else:
+                df.loc[:, use_col] = df.idx_strs.apply(
+                    lambda x: fmtr.format(nname, use_col, x)
+                )
+            if direct:
+                df.loc[:, f"parval1_{use_col}"] = init_df.loc[:, use_col].values
         else:
             raise Exception(
                 "get_tpl_or_ins_df() error: "
@@ -3117,24 +3186,18 @@ def _write_direct_df_tpl(
             )
 
         if not longnames:
-            if df_ti.loc[:, use_col].apply(lambda x: len(x)).max() > 12:
-                too_long = df_ti.loc[:, use_col].apply(lambda x: len(x)) > 12
+            if df.loc[:, use_col].apply(lambda x: len(x)).max() > 12:
+                too_long = df.loc[:, use_col].apply(lambda x: len(x)) > 12
                 print(too_long)
-                raise ValueError("_write_direct_df_tpl(): couldnt form short par names")
-
-        direct_tpl_df.loc[:, use_col] = (
-            df_ti.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
-        )
-    # nasty assumption to distiguish if we need to write headers
-    if isinstance(direct_tpl_df.columns[0], str):
-        header = True
-    else:
-        header = False
-    pyemu.helpers._write_df_tpl(
-        tpl_filename, direct_tpl_df, index=False, header=header, headerlines=headerlines
-    )
-
-    return df_ti
+                raise ValueError("_get_tpl_or_ins_df(): "
+                                 "couldn't form short par names")
+        if direct:
+            direct_tpl_df.loc[:, use_col] = (
+                df.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
+            )
+    if direct:
+        return df, direct_tpl_df
+    return df
 
 
 def _get_tpl_or_ins_df(
@@ -3213,140 +3276,14 @@ def _get_tpl_or_ins_df(
             sidx.extend(aidx)
 
     df_ti = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
-    # get some index strings for naming
-    if longnames:
-        j = "_"
-        # fmt = "{0}|{1}"
-        if isinstance(index_cols[0], str):
-            inames = index_cols
-        else:
-            inames = ["idx{0}".format(i) for i in range(len(index_cols))]
-        # full formatter string
-        fmt = j.join([f"{iname}|{{{i}}}" for i, iname in enumerate(inames)])
-    else:
-        # fmt = "{1:3}"
-        j = ""
-        if isinstance(index_cols[0], str):
-            inames = index_cols
-        else:
-            inames = ["{0}".format(i) for i in range(len(index_cols))]
-        # full formatter string
-        fmt = j.join([f"{{{i}:3}}" for i, iname in enumerate(inames)])
-    if (
-        not zero_based
-    ):  # only if indices are ints (trying to support strings as par ids)
-        df_ti.loc[:, "sidx"] = df_ti.sidx.apply(
-            lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x)
-        )
-
-    df_ti.loc[:, "idx_strs"] = df_ti.sidx.apply(lambda x: fmt.format(*x)).str.replace(
-        " ", ""
-    )
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace(":", "", regex=False)
-    df_ti.loc[:, "idx_strs"] = df_ti.idx_strs.str.replace("|", ":", regex=False)
-
-    if get_xy is not None:
-        if xy_in_idx is not None:
-            # x and y already in index cols
-            df_ti[["x", "y"]] = pd.DataFrame(df_ti.sidx.to_list()).iloc[:, xy_in_idx]
-        else:
-            df_ti.loc[:, "xy"] = df_ti.sidx.apply(get_xy, ij_id=ij_in_idx)
-            df_ti.loc[:, "x"] = df_ti.xy.apply(lambda x: x[0])
-            df_ti.loc[:, "y"] = df_ti.xy.apply(lambda x: x[1])
+    inames, fmt = _get_index_strfmt(index_cols, longnames)
+    df_ti = _get_index_strings(df_ti, fmt, zero_based)
+    df_ti = _getxy_from_idx(df_ti, get_xy, xy_in_idx, ij_in_idx)
 
     if typ == "obs":
         return df_ti  #################### RETURN if OBS
-
-    if use_cols is None:
-        use_cols = [c for c in df_ti.columns if c not in index_cols]
-        # if direct, we have more to deal with...
-    for iuc, use_col in enumerate(use_cols):
-
-        if not isinstance(name, str):
-            nname = name[iuc]
-            # if zone type, find the zones for each index position
-        else:
-            nname = name
-        if zone_array is not None and typ in ["zone", "grid"]:
-            if zone_array.ndim != len(index_cols):
-                raise Exception(
-                    "get_tpl_or_ins_df() error: "
-                    "zone_array.ndim "
-                    "({0}) != len(index_cols)({1})"
-                    "".format(zone_array.ndim, len(index_cols))
-                )
-            df_ti.loc[:, "zval"] = df_ti.sidx.apply(lambda x: zone_array[x])
-
-        if gpname is None or gpname[iuc] is None:
-            ngpname = nname
-        else:
-            if not isinstance(gpname, str):
-                ngpname = gpname[iuc]
-            else:
-                ngpname = gpname
-        df_ti.loc[:, "pargp{}".format(use_col)] = ngpname
-        df_ti.loc[:, "parval1_{0}".format(use_col)] = 1.0
-        if typ == "constant":
-            # one par for entire use_col column
-            if longnames:
-                df_ti.loc[:, use_col] = "{0}_usecol:{1}".format(nname, use_col)
-                if suffix != "":
-                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
-            else:
-                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
-                if suffix != "":
-                    df_ti.loc[:, use_col] += suffix
-
-        elif typ == "zone":
-            # one par for each zone
-            if longnames:
-                df_ti.loc[:, use_col] = "{0}_usecol:{1}".format(nname, use_col)
-                if zone_array is not None:
-                    df_ti.loc[:, use_col] += df_ti.zval.apply(
-                        lambda x: "_zone:{0}".format(x)
-                    )
-                if suffix != "":
-                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
-            else:
-                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
-                if zone_array is not None:
-                    df_ti.loc[:, use_col] += df_ti.zval.apply(
-                        lambda x: "z{0}".format(int(x))
-                    )
-                if suffix != "":
-                    df_ti.loc[:, use_col] += suffix
-
-        elif typ == "grid":
-            # one par for each index
-            if longnames:
-                df_ti.loc[:, use_col] = "{0}_usecol:{1}".format(nname, use_col)
-                if zone_array is not None:
-                    df_ti.loc[:, use_col] += df_ti.zval.apply(
-                        lambda x: "_zone:{0}".format(x)
-                    )
-                df_ti.loc[:, use_col] += "_" + df_ti.idx_strs
-                if suffix != "":
-                    df_ti.loc[:, use_col] += "_{0}".format(suffix)
-
-            else:
-                df_ti.loc[:, use_col] = "{0}{1}".format(nname, use_col)
-                df_ti.loc[:, use_col] += df_ti.idx_strs
-                if suffix != "":
-                    df_ti.loc[:, use_col] += suffix
-
-        else:
-            raise Exception(
-                "get_tpl_or_ins_df() error: "
-                "unrecognized 'typ', if not 'obs', "
-                "should be 'constant','zone', "
-                "or 'grid', not '{0}'".format(typ)
-            )
-
-        if not longnames:
-            if df_ti.loc[:, use_col].apply(lambda x: len(x)).max() > 12:
-                too_long = df_ti.loc[:, use_col].apply(lambda x: len(x)) > 12
-                print(too_long)
-                raise ValueError("_get_tpl_or_ins_df(): couldnt form short par names")
+    df_ti = _build_parnames(df_ti, typ, zone_array, index_cols, use_cols,
+                            name, gpname, suffix, longnames)
     return df_ti
 
 

@@ -317,7 +317,7 @@ def setup_pp_test():
                                                      every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp","test_unrot.shp"))
     ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
-    ok.calc_factors_grid(ml.sr)
+    ok.calc_factors_grid(sr)
 
 
 
@@ -763,6 +763,7 @@ def geostat_prior_builder_test():
 def geostat_draws_test():
     import os
     import numpy as np
+    import pandas as pd
     import pyemu
     pst_file = os.path.join("pst","pest.pst")
     pst = pyemu.Pst(pst_file)
@@ -770,14 +771,18 @@ def geostat_draws_test():
     tpl_file = os.path.join("utils", "pp_locs.tpl")
     str_file = os.path.join("utils", "structure.dat")
 
+    #make a df with one entry
+    df_one = pd.DataFrame({"parnme":"mult1","x":-999,"y":-9999,"zone":-9999},index=["mult1"])
 
-    pe = pyemu.helpers.geostatistical_draws(pst_file,{str_file:tpl_file})
+
+    pe = pyemu.helpers.geostatistical_draws(pst_file,{str_file:tpl_file,str_file:df_one})
     assert (pe.shape == pe.dropna().shape)
 
     pst.parameter_data.loc[pst.par_names[1:10], "partrans"] = "tied"
     pst.parameter_data.loc[pst.par_names[1:10], "partied"] = pst.par_names[0]
     pe = pyemu.helpers.geostatistical_draws(pst, {str_file: tpl_file})
     assert (pe.shape == pe.dropna().shape)
+    assert "mult1" in pe.columns
 
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
@@ -1979,8 +1984,42 @@ def geostat_prior_builder_test2():
     #plt.show()
 
 
+def temporal_draw_invest():
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    import matplotlib.pyplot as plt
+    from datetime import datetime
+    v = pyemu.geostats.ExpVario(contribution=1.0,a=500)
+    gs = pyemu.geostats.GeoStruct(variograms=v)
+
+    t = np.arange(0,1000)
+    y = np.zeros_like(t)
+    names = ["p{0}".format(i) for i in range(t.shape[0])]
+    df = pd.DataFrame({"parnme":names,"x":t,"y":y})
+
+    pst = pyemu.Pst.from_par_obs_names(names,names)
+    #pst.parameter_data.loc[:,"parlbnd"] = 0.5
+    #pst.parameter_data.loc[:, "parubnd"] = 1.5
+
+    cov = gs.covariance_matrix(x=t,y=y,names=names)
+    #plt.imshow(cov.x)
+    #plt.show()
+    s = datetime.now()
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=10)
+
+    e = datetime.now()
+    print("took",(e-s).total_seconds())
+    ecov = pe.loc[:,names].covariance_matrix()
+    #plt.imshow(ecov.x)
+    #plt.show()
+    plt.plot(pe.loc[pe.index[0]])
+    plt.show()
+
+
 if __name__ == "__main__":
 
+    temporal_draw_invest()
     #run_test()
     #specsim_test()
     #aniso_invest()
@@ -2045,7 +2084,7 @@ if __name__ == "__main__":
     # struct_file_test()
     # covariance_matrix_test()
     # add_pi_obj_func_test()
-    ok_test()
+    #ok_test()
     # ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()

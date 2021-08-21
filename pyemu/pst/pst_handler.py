@@ -3418,8 +3418,8 @@ class Pst(object):
         are listed as active (non-zero weight) less than inequality constraints.
 
         Returns:
-            `pandas.Series`: names of obseravtions that are non-zero weighted less
-            than constraints (`obgnme` starts with 'l\_' or "less")
+            `pandas.Series`: names of observations that are non-zero weighted less
+            than constraints (`obgnme` starts with 'l_' or "less")
 
         Note:
              Zero-weighted obs are skipped
@@ -3442,7 +3442,7 @@ class Pst(object):
 
         Returns:
             `pandas.Series`: names of prior information that are non-zero weighted
-            less than constraints (`obgnme` starts with "l\_" or "less")
+            less than constraints (`obgnme` starts with "l_" or "less")
 
         Note:
             Zero-weighted pi are skipped
@@ -3470,7 +3470,7 @@ class Pst(object):
 
         Returns:
             `pandas.Series`: names obseravtions that are non-zero weighted
-            greater than constraints (`obgnme` startsiwth "g\_" or "greater")
+            greater than constraints (`obgnme` startsiwth "g_" or "greater")
 
         Note:
             Zero-weighted obs are skipped
@@ -3493,7 +3493,7 @@ class Pst(object):
 
         Returns:
             `pandas.Series` names of prior information that are non-zero weighted
-            greater than constraints (`obgnme` startsiwth "g\_" or "greater")
+            greater than constraints (`obgnme` startsiwth "g_" or "greater")
 
 
         Note:
@@ -3659,3 +3659,96 @@ class Pst(object):
                     df.loc[:, uk] = meta_dict.apply(lambda x: x.get(uk, np.NaN))
             except Exception as e:
                 print("error parsing metadata from '{0}', continuing".format(name))
+
+    def rename_parameters(self,name_dict,pst_path="."):
+        """rename parameters in the control and template files
+
+        Args:
+            name_dict (`dict`): mapping of current to new names.
+            pst_path (str): the path to the control file from where python
+                is running.  Default is "." (python is running in the
+                same directory as the control file)
+
+        Note:
+            no attempt is made to maintain the length of the marker strings
+            in the template files, so if your model is sensitive
+            to changes in spacing in the template file(s), this
+            is not a method for you
+
+            This does a lot of string compare, so its gonna be slow as...
+
+         Example::
+
+            pst = pyemu.Pst(os.path.join("template","pest.pst"))
+            name_dict = {"par1":"par1_better_name"}
+            pst.rename_parameters(name_dict,pst_path="template")
+
+
+
+        """
+
+        missing = set(name_dict.keys()) - set(self.par_names)
+        if len(missing) > 0:
+            raise Exception("Pst.rename_parameters(): the following parameters in 'name_dict'"+
+                            " are not in the control file:\n{0}".format(",".join(missing)))
+
+        par = self.parameter_data
+        par.loc[:,"parnme"] = par.parnme.apply(lambda x: name_dict.get(x,x))
+        par.index = par.parnme.values
+
+        for tpl_file in self.model_input_data.pest_file:
+            sys_tpl_file = os.path.join(pst_path,tpl_file.replace("/",os.path.sep).replace("\\",os.path.sep))
+            if not os.path.exists(sys_tpl_file):
+                warnings.warn("template file '{0}' not found, continuing...",PyemuWarning)
+                continue
+            lines = open(sys_tpl_file,'r').readlines()
+            with open(sys_tpl_file,'w') as f:
+                for line in lines:
+                    for old,new in name_dict.items():
+                        if old in line:
+                            line = line.replace(old,new)
+                    f.write(line)
+
+    def rename_observations(self, name_dict, pst_path="."):
+        """rename observations in the control and instruction files
+
+        Args:
+            name_dict (`dict`): mapping of current to new names.
+            pst_path (str): the path to the control file from where python
+                is running.  Default is "." (python is running in the
+                same directory as the control file)
+
+        Note:
+            This does a lot of string compare, so its gonna be slow as...
+
+         Example::
+
+            pst = pyemu.Pst(os.path.join("template","pest.pst"))
+            name_dict = {"obs1":"obs1_better_name"}
+            pst.rename_observations(name_dict,pst_path="template")
+
+
+
+        """
+
+        missing = set(name_dict.keys()) - set(self.obs_names)
+        if len(missing) > 0:
+            raise Exception("Pst.rename_observations(): the following observations in 'name_dict'" +
+                            " are not in the control file:\n{0}".format(",".join(missing)))
+
+        obs = self.onbservation_data
+        obs.loc[:, "obsnme"] = obs.obsnme.apply(lambda x: name_dict.get(x, x))
+        obs.index = obs.parnme.values
+
+        for ins_file in self.model_output_data.pest_file:
+            sys_ins_file = os.path.join(pst_path, ins_file.replace("/", os.path.sep).replace("\\", os.path.sep))
+            if not os.path.exists(sys_ins_file):
+                warnings.warn("instruction file '{0}' not found, continuing...", PyemuWarning)
+                continue
+            lines = open(sys_ins_file, 'r').readlines()
+            with open(sys_ins_file, 'w') as f:
+                for line in lines:
+                    for old, new in name_dict.items():
+                        if old in line:
+                            line = line.replace(old, new)
+                    f.write(line)

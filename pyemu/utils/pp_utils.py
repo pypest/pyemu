@@ -76,7 +76,15 @@ def setup_pilotpoints_grid(
         except Exception as e:
             raise ImportError("error importing flopy: {0}".format(str(e)))
         assert isinstance(ml, flopy.modflow.Modflow)
-        sr = ml.sr
+        try:
+            sr = ml.sr
+        except AttributeError:
+            from pyemu.utils.helpers import SpatialReference
+            sr = SpatialReference.from_namfile(
+                os.path.join(ml.model_ws, ml.namefile),
+                delr=ml.modelgrid.delr,
+                delc=ml.modelgrid.delc
+            )
         if ibound is None:
             ibound = ml.bas6.ibound.array
             # build a generic prefix_dict
