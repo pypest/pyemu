@@ -2798,8 +2798,12 @@ def write_hfb_template(m):
     f_tpl.write("ptf ~\n")
     parnme, parval1, xs, ys = [], [], [], []
     iis, jjs, kks = [], [], []
-    xc = m.sr.xcentergrid
-    yc = m.sr.ycentergrid
+    try:
+        xc = m.sr.xcentergrid
+        yc = m.sr.ycentergrid
+    except AttributeError:
+        xc = m.modelgrid.xcellcenters
+        yc = m.modelgrid.ycellcenters
 
     while True:
         line = f_in.readline()

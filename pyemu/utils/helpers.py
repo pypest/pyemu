@@ -1556,6 +1556,16 @@ class PstFromFlopyModel(object):
         kl_num_eig=100,
         kl_geostruct=None,
     ):
+        dep_warn = (
+            "\n`PstFromFlopyModel()` method is getting old and may not"
+            "be kept in sync with changes to Flopy and MODFLOW.\n"
+            "Perhaps consider looking at `pyemu.utils.PstFrom()`,"
+            "which is (aiming to be) much more general,"
+            "forward model independent, and generally kicks ass.\n"
+            "Checkout: https://www.sciencedirect.com/science/article/abs/pii/S1364815221000657?via%3Dihub\n"
+            "and https://github.com/pypest/pyemu_pestpp_workflow for more info."
+        )
+        warnings.warn(dep_warn, DeprecationWarning)
 
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
@@ -1777,7 +1787,7 @@ class PstFromFlopyModel(object):
                 )
             )
         self.log("saving intermediate _setup_<> dfs into {0}".format(self.m.model_ws))
-
+        warnings.warn(dep_warn, DeprecationWarning)
         self.logger.statement("all done")
 
     def _setup_sfr_obs(self):
@@ -1935,7 +1945,15 @@ class PstFromFlopyModel(object):
             self.m = model
             self.org_model_ws = str(self.m.model_ws)
             self.new_model_ws = new_model_ws
-
+        try:
+            self.sr = self.m.sr
+        except AttributeError:  # if sr doesnt exist anymore!
+            # assume that we have switched to model grid
+            self.sr = SpatialReference.from_namfile(
+                os.path.join(self.org_model_ws, self.m.namefile),
+                delr=self.m.modelgrid.delr,
+                delc=self.m.modelgrid.delc
+            )
         self.log("updating model attributes")
         self.m.array_free_format = True
         self.m.free_format_input = True
@@ -2107,8 +2125,8 @@ class PstFromFlopyModel(object):
                             )
                         parnme.append(pname)
                         pname = " ~     {0}   ~ ".format(pname)
-                        x.append(self.m.sr.xcentergrid[i, j])
-                        y.append(self.m.sr.ycentergrid[i, j])
+                        x.append(self.sr.xcentergrid[i, j])
+                        y.append(self.sr.ycentergrid[i, j])
                     f.write(pname)
                 f.write("\n")
         df = pd.DataFrame({"parnme": parnme, "x": x, "y": y}, index=parnme)
@@ -2298,7 +2316,7 @@ class PstFromFlopyModel(object):
                     )
                     ok_pp = pyemu.geostats.OrdinaryKrige(self.pp_geostruct, pp_df_k)
                     ok_pp.calc_factors_grid(
-                        self.m.sr,
+                        self.sr,
                         var_filename=var_file,
                         zone_array=ib_k,
                         num_threads=10,
@@ -2413,7 +2431,7 @@ class PstFromFlopyModel(object):
 
         kl_df = kl_setup(
             self.kl_num_eig,
-            self.m.sr,
+            self.sr,
             self.kl_geostruct,
             kl_prefix,
             factors_file=fac_file,
@@ -2496,7 +2514,7 @@ class PstFromFlopyModel(object):
                         self.cn_suffix,
                         self.m.bas6.ibound[layer].array,
                         (self.m.nrow, self.m.ncol),
-                        self.m.sr,
+                        self.sr,
                     )
                 except Exception as e:
                     self.logger.lraise(
@@ -2514,7 +2532,7 @@ class PstFromFlopyModel(object):
                         self.gr_suffix,
                         self.m.bas6.ibound[layer].array,
                         (self.m.nrow, self.m.ncol),
-                        self.m.sr,
+                        self.sr,
                     )
                 except Exception as e:
                     self.logger.lraise(
@@ -2550,7 +2568,7 @@ class PstFromFlopyModel(object):
                         self.zn_suffix,
                         k_zone_dict[layer],
                         (self.m.nrow, self.m.ncol),
-                        self.m.sr,
+                        self.sr,
                     )
                 except Exception as e:
                     self.logger.lraise(
@@ -3355,10 +3373,10 @@ class PstFromFlopyModel(object):
             parnme, pargp = [], []
             # if pak != 'hfb6':
             x = df.apply(
-                lambda x: self.m.sr.xcentergrid[int(x.i), int(x.j)], axis=1
+                lambda x: self.sr.xcentergrid[int(x.i), int(x.j)], axis=1
             ).values
             y = df.apply(
-                lambda x: self.m.sr.ycentergrid[int(x.i), int(x.j)], axis=1
+                lambda x: self.sr.ycentergrid[int(x.i), int(x.j)], axis=1
             ).values
             # else:
             #     # note -- for HFB6, only row and col for node 1
