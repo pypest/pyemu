@@ -3736,9 +3736,9 @@ class Pst(object):
             raise Exception("Pst.rename_observations(): the following observations in 'name_dict'" +
                             " are not in the control file:\n{0}".format(",".join(missing)))
 
-        obs = self.onbservation_data
+        obs = self.observation_data
         obs.loc[:, "obsnme"] = obs.obsnme.apply(lambda x: name_dict.get(x, x))
-        obs.index = obs.parnme.values
+        obs.index = obs.obsnme.values
 
         for ins_file in self.model_output_data.pest_file:
             sys_ins_file = os.path.join(pst_path, ins_file.replace("/", os.path.sep).replace("\\", os.path.sep))
