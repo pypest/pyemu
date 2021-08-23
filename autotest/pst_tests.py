@@ -1078,10 +1078,20 @@ def rename_pars_test():
         shutil.rmtree(new_d)
     shutil.copytree(org_d,new_d)
     pst = pyemu.Pst(os.path.join(new_d,"pest.pst"))
-
+    pyemu.helpers.zero_order_tikhonov(pst)
     name_dict = {"mult1":"first_multiplier","kr01c01":"hk_r:1_c:1"}
-    print(pst.par_names)
+    #print(pst.par_names)
     pst.rename_parameters(name_dict,pst_path=new_d)
+
+    found = []
+    for eq in pst.prior_information.equation:
+        for old,new in name_dict.items():
+            if old in eq:
+                raise Exception(old)
+            elif new in eq:
+                found.append(new)
+    assert len(found) == len(name_dict)
+
     snames = set(pst.par_names)
     for old,new in name_dict.items():
         assert old not in snames
@@ -1212,5 +1222,5 @@ if __name__ == "__main__":
     #comments_test()
     #csv_to_ins_test()
 
-    #rename_pars_test()
-    rename_obs_test()
+    rename_pars_test()
+    #rename_obs_test()

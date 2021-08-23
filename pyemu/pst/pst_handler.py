@@ -3696,6 +3696,12 @@ class Pst(object):
         par.loc[:,"parnme"] = par.parnme.apply(lambda x: name_dict.get(x,x))
         par.index = par.parnme.values
 
+        for idx,eq in zip(self.prior_information.index,self.prior_information.equation):
+            for old,new in name_dict.items():
+                eq = eq.replace(old,new)
+            self.prior_information.loc[idx,"equation"] = eq
+
+
         for tpl_file in self.model_input_data.pest_file:
             sys_tpl_file = os.path.join(pst_path,tpl_file.replace("/",os.path.sep).replace("\\",os.path.sep))
             if not os.path.exists(sys_tpl_file):
