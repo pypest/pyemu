@@ -183,7 +183,6 @@ def tied_test():
     print(pst.tied)
     pst.write(os.path.join("temp", "pest_tied_tester_1.pst"))
 
-
     par = pst.parameter_data
     par.loc[pst.par_names[::3], "partrans"] = "tied"
     try:
@@ -193,7 +192,7 @@ def tied_test():
     else:
         raise Exception()
     par.loc[pst.par_names[::3], "partied"] = pst.par_names[0]
-
+    return
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     print(pst.tied)
     par = pst.parameter_data
@@ -210,6 +209,8 @@ def tied_test():
     par.loc[pst.par_names[2], "partied"] = "junk"
     pst.write(os.path.join("temp", "test.pst"))
     pst = pyemu.Pst(os.path.join("temp", "test.pst"))
+
+
 
 
 def derivative_increment_tests():
@@ -1222,5 +1223,7 @@ if __name__ == "__main__":
     #comments_test()
     #csv_to_ins_test()
 
-    rename_pars_test()
+    #rename_pars_test()
     #rename_obs_test()
+
+    tied_test()

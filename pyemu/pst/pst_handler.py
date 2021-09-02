@@ -1545,6 +1545,22 @@ class Pst(object):
         if self.nnz_obs == 0:
             warnings.warn("no non-zero weight obs", PyemuWarning)
 
+        if len(self.tied) > 0:
+            sadj = set(self.adj_par_names)
+            spar = set(self.par_names)
+
+            tpar_dict = self.parameter_data.partied.to_dict()
+
+            for tpar,ptied in tpar_dict.items():
+                if pd.isna(ptied):
+                    continue
+                if tpar == ptied:
+                    warnings.warn("tied parameter '{0}' tied to itself")
+                elif ptied not in spar:
+                    warnings.warn("tied parameter '{0}' tied to unknown parameter '{1}'".format(tpar,ptied))
+                elif ptied not in sadj:
+                    warnings.warn("tied parameter '{0}' tied to non-adjustable parameter '{1}'".format(tpar,ptied))
+
         # print("noptmax: {0}".format(self.control_data.noptmax))
 
     def _write_version2(self, new_filename, use_pst_path=True, pst_rel_path="."):
