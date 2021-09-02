@@ -571,7 +571,37 @@ def sanity_check_test():
     import pyemu
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.parameter_data.loc[:, "parnme"] = "crap"
+
+    try:
+        pst.write(os.path.join("temp", "test.pst"))
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.observation_data.loc[:, "obsnme"] = "crap"
+    try:
+        pst.write(os.path.join("temp", "test.pst"))
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.parameter_data.loc[:, "partrans"] = "tied"
+    pst.parameter_data.loc[:,"partied"] = pst.parameter_data.loc[:,"parnme"]
+    try:
+        pst.write(os.path.join("temp", "test.pst"))
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.parameter_data.loc[:, "partrans"] = "tied"
+    pst.parameter_data.loc[:, "partied"] = pst.par_names[0]
+    pst.parameter_data.loc[pst.par_names[0], "partrans"] = "fixed"
     try:
         pst.write(os.path.join("temp", "test.pst"))
     except:
@@ -1212,8 +1242,8 @@ if __name__ == "__main__":
     # reweight_res_test()
     # run_test()
     # rectify_pgroup_test()
-    #sanity_check_test()
-    change_limit_test()
+    sanity_check_test()
+    #change_limit_test()
     #write_tables_test()
     #pi_helper_test()
     #ctrl_data_test()
