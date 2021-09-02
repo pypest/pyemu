@@ -1545,7 +1545,7 @@ class Pst(object):
         if self.nnz_obs == 0:
             warnings.warn("no non-zero weight obs", PyemuWarning)
 
-        if len(self.tied) > 0:
+        if self.tied is not None and len(self.tied) > 0:
             sadj = set(self.adj_par_names)
             spar = set(self.par_names)
 
