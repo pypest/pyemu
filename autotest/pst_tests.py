@@ -572,8 +572,12 @@ def sanity_check_test():
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.parameter_data.loc[:, "parnme"] = "crap"
     pst.observation_data.loc[:, "obsnme"] = "crap"
-
-    pst.write(os.path.join("temp", "test.pst"))
+    try:
+        pst.write(os.path.join("temp", "test.pst"))
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
 
 
 
@@ -1208,7 +1212,8 @@ if __name__ == "__main__":
     # reweight_res_test()
     # run_test()
     # rectify_pgroup_test()
-    # sanity_check_test()
+    #sanity_check_test()
+    change_limit_test()
     #write_tables_test()
     #pi_helper_test()
     #ctrl_data_test()
@@ -1226,4 +1231,4 @@ if __name__ == "__main__":
     #rename_pars_test()
     #rename_obs_test()
 
-    tied_test()
+    #tied_test()
