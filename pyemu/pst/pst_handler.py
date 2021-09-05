@@ -1420,7 +1420,7 @@ class Pst(object):
         if len(fixed) > 0:
             raise Exception(
                 "Pst.add_pi_equation(): the following pars "
-                + " were are fixed/tied: {0}".format(",".join(missing))
+                + " were are fixed/tied: {0}".format(",".join(fixed))
             )
         eqs_str = ""
         sign = ""
@@ -1507,8 +1507,12 @@ class Pst(object):
                 + "\n"
             )
 
-    def sanity_checks(self):
+    def sanity_checks(self, forgive=False):
         """some basic check for strangeness
+
+        Args:
+            forgive (`bool`): flag to forgive (warn) for issues.  Default is False
+
 
         Note:
             checks for duplicate names, atleast 1 adjustable parameter
@@ -1527,23 +1531,57 @@ class Pst(object):
         dups = self.parameter_data.parnme.value_counts()
         dups = dups.loc[dups > 1]
         if dups.shape[0] > 0:
-            warnings.warn(
-                "duplicate parameter names: {0}".format(",".join(list(dups.index))),
-                PyemuWarning,
-            )
+            if forgive:
+                warnings.warn(
+                    "duplicate parameter names: {0}".format(",".join(list(dups.index))),
+                    PyemuWarning,
+                )
+            else:
+                raise Exception("Pst.sanity_check() error: duplicate parameter names: {0}".format(",".join(list(dups.index))))
+
         dups = self.observation_data.obsnme.value_counts()
         dups = dups.loc[dups > 1]
         if dups.shape[0] > 0:
-            warnings.warn(
-                "duplicate observation names: {0}".format(",".join(list(dups.index))),
-                PyemuWarning,
-            )
+            if forgive:
+                warnings.warn(
+                    "duplicate observation names: {0}".format(",".join(list(dups.index))),
+                    PyemuWarning,
+                )
+            else:
+                raise Exception(
+                    "Pst.sanity_check() error: duplicate observation names: {0}".format(",".join(list(dups.index))))
 
         if self.npar_adj == 0:
             warnings.warn("no adjustable pars", PyemuWarning)
 
         if self.nnz_obs == 0:
             warnings.warn("no non-zero weight obs", PyemuWarning)
+
+        if self.tied is not None and len(self.tied) > 0:
+            sadj = set(self.adj_par_names)
+            spar = set(self.par_names)
+
+            tpar_dict = self.parameter_data.partied.to_dict()
+
+            for tpar,ptied in tpar_dict.items():
+                if pd.isna(ptied):
+                    continue
+                if tpar == ptied:
+                    if forgive:
+                        warnings.warn("tied parameter '{0}' tied to itself".format(tpar),PyemuWarning)
+                    else:
+                        raise Exception("Pst.sanity_check() error: tied parameter '{0}' tied to itself".format(tpar))
+                elif ptied not in spar:
+                    if forgive:
+                        warnings.warn("tied parameter '{0}' tied to unknown parameter '{1}'".format(tpar,ptied),PyemuWarning)
+                    else:
+                        raise Exception("Pst.sanity_check() error: tied parameter '{0}' tied to unknown parameter '{1}'".format(tpar,ptied))
+                elif ptied not in sadj:
+                    if forgive:
+                        warnings.warn("tied parameter '{0}' tied to non-adjustable parameter '{1}'".format(tpar,ptied),PyemuWarning)
+                    else:
+                        raise Exception("Pst.sanity_check() error: tied parameter '{0}' tied to non-adjustable parameter '{1}'".format(tpar,ptied))
+
 
         # print("noptmax: {0}".format(self.control_data.noptmax))
 
@@ -3696,6 +3734,12 @@ class Pst(object):
         par.loc[:,"parnme"] = par.parnme.apply(lambda x: name_dict.get(x,x))
         par.index = par.parnme.values
 
+        for idx,eq in zip(self.prior_information.index,self.prior_information.equation):
+            for old,new in name_dict.items():
+                eq = eq.replace(old,new)
+            self.prior_information.loc[idx,"equation"] = eq
+
+
         for tpl_file in self.model_input_data.pest_file:
             sys_tpl_file = os.path.join(pst_path,tpl_file.replace("/",os.path.sep).replace("\\",os.path.sep))
             if not os.path.exists(sys_tpl_file):
@@ -3736,9 +3780,9 @@ class Pst(object):
             raise Exception("Pst.rename_observations(): the following observations in 'name_dict'" +
                             " are not in the control file:\n{0}".format(",".join(missing)))
 
-        obs = self.onbservation_data
+        obs = self.observation_data
         obs.loc[:, "obsnme"] = obs.obsnme.apply(lambda x: name_dict.get(x, x))
-        obs.index = obs.parnme.values
+        obs.index = obs.obsnme.values
 
         for ins_file in self.model_output_data.pest_file:
             sys_ins_file = os.path.join(pst_path, ins_file.replace("/", os.path.sep).replace("\\", os.path.sep))

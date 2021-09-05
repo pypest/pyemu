@@ -183,7 +183,6 @@ def tied_test():
     print(pst.tied)
     pst.write(os.path.join("temp", "pest_tied_tester_1.pst"))
 
-
     par = pst.parameter_data
     par.loc[pst.par_names[::3], "partrans"] = "tied"
     try:
@@ -193,7 +192,7 @@ def tied_test():
     else:
         raise Exception()
     par.loc[pst.par_names[::3], "partied"] = pst.par_names[0]
-
+    return
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     print(pst.tied)
     par = pst.parameter_data
@@ -210,6 +209,8 @@ def tied_test():
     par.loc[pst.par_names[2], "partied"] = "junk"
     pst.write(os.path.join("temp", "test.pst"))
     pst = pyemu.Pst(os.path.join("temp", "test.pst"))
+
+
 
 
 def derivative_increment_tests():
@@ -570,9 +571,43 @@ def sanity_check_test():
     import pyemu
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.parameter_data.loc[:, "parnme"] = "crap"
-    pst.observation_data.loc[:, "obsnme"] = "crap"
 
-    pst.write(os.path.join("temp", "test.pst"))
+    try:
+        pst.write(os.path.join("temp", "test.pst"))
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.observation_data.loc[:, "obsnme"] = "crap"
+    try:
+        pst.write(os.path.join("temp", "test.pst"))
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.parameter_data.loc[:, "partrans"] = "tied"
+    pst.parameter_data.loc[:,"partied"] = pst.parameter_data.loc[:,"parnme"]
+    try:
+        pst.write(os.path.join("temp", "test.pst"))
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.parameter_data.loc[:, "partrans"] = "tied"
+    pst.parameter_data.loc[:, "partied"] = pst.par_names[0]
+    pst.parameter_data.loc[pst.par_names[0], "partrans"] = "fixed"
+    try:
+        pst.write(os.path.join("temp", "test.pst"))
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
 
 
 
@@ -1078,10 +1113,20 @@ def rename_pars_test():
         shutil.rmtree(new_d)
     shutil.copytree(org_d,new_d)
     pst = pyemu.Pst(os.path.join(new_d,"pest.pst"))
-
+    pyemu.helpers.zero_order_tikhonov(pst)
     name_dict = {"mult1":"first_multiplier","kr01c01":"hk_r:1_c:1"}
-    print(pst.par_names)
+    #print(pst.par_names)
     pst.rename_parameters(name_dict,pst_path=new_d)
+
+    found = []
+    for eq in pst.prior_information.equation:
+        for old,new in name_dict.items():
+            if old in eq:
+                raise Exception(old)
+            elif new in eq:
+                found.append(new)
+    assert len(found) == len(name_dict)
+
     snames = set(pst.par_names)
     for old,new in name_dict.items():
         assert old not in snames
@@ -1197,11 +1242,12 @@ if __name__ == "__main__":
     # reweight_res_test()
     # run_test()
     # rectify_pgroup_test()
-    # sanity_check_test()
+    #sanity_check_test()
+    #change_limit_test()
     #write_tables_test()
     #pi_helper_test()
     #ctrl_data_test()
-    #new_format_test_2()
+    new_format_test_2()
     #try_process_ins_test()
     #tpl_ins_test()
     #process_output_files_test()
@@ -1213,4 +1259,6 @@ if __name__ == "__main__":
     #csv_to_ins_test()
 
     #rename_pars_test()
-    rename_obs_test()
+    #rename_obs_test()
+
+    #tied_test()
