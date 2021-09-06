@@ -1507,8 +1507,12 @@ class Pst(object):
                 + "\n"
             )
 
-    def sanity_checks(self):
+    def sanity_checks(self, forgive=False):
         """some basic check for strangeness
+
+        Args:
+            forgive (`bool`): flag to forgive (warn) for issues.  Default is False
+
 
         Note:
             checks for duplicate names, atleast 1 adjustable parameter
@@ -1527,23 +1531,57 @@ class Pst(object):
         dups = self.parameter_data.parnme.value_counts()
         dups = dups.loc[dups > 1]
         if dups.shape[0] > 0:
-            warnings.warn(
-                "duplicate parameter names: {0}".format(",".join(list(dups.index))),
-                PyemuWarning,
-            )
+            if forgive:
+                warnings.warn(
+                    "duplicate parameter names: {0}".format(",".join(list(dups.index))),
+                    PyemuWarning,
+                )
+            else:
+                raise Exception("Pst.sanity_check() error: duplicate parameter names: {0}".format(",".join(list(dups.index))))
+
         dups = self.observation_data.obsnme.value_counts()
         dups = dups.loc[dups > 1]
         if dups.shape[0] > 0:
-            warnings.warn(
-                "duplicate observation names: {0}".format(",".join(list(dups.index))),
-                PyemuWarning,
-            )
+            if forgive:
+                warnings.warn(
+                    "duplicate observation names: {0}".format(",".join(list(dups.index))),
+                    PyemuWarning,
+                )
+            else:
+                raise Exception(
+                    "Pst.sanity_check() error: duplicate observation names: {0}".format(",".join(list(dups.index))))
 
         if self.npar_adj == 0:
             warnings.warn("no adjustable pars", PyemuWarning)
 
         if self.nnz_obs == 0:
             warnings.warn("no non-zero weight obs", PyemuWarning)
+
+        if self.tied is not None and len(self.tied) > 0:
+            sadj = set(self.adj_par_names)
+            spar = set(self.par_names)
+
+            tpar_dict = self.parameter_data.partied.to_dict()
+
+            for tpar,ptied in tpar_dict.items():
+                if pd.isna(ptied):
+                    continue
+                if tpar == ptied:
+                    if forgive:
+                        warnings.warn("tied parameter '{0}' tied to itself".format(tpar),PyemuWarning)
+                    else:
+                        raise Exception("Pst.sanity_check() error: tied parameter '{0}' tied to itself".format(tpar))
+                elif ptied not in spar:
+                    if forgive:
+                        warnings.warn("tied parameter '{0}' tied to unknown parameter '{1}'".format(tpar,ptied),PyemuWarning)
+                    else:
+                        raise Exception("Pst.sanity_check() error: tied parameter '{0}' tied to unknown parameter '{1}'".format(tpar,ptied))
+                elif ptied not in sadj:
+                    if forgive:
+                        warnings.warn("tied parameter '{0}' tied to non-adjustable parameter '{1}'".format(tpar,ptied),PyemuWarning)
+                    else:
+                        raise Exception("Pst.sanity_check() error: tied parameter '{0}' tied to non-adjustable parameter '{1}'".format(tpar,ptied))
+
 
         # print("noptmax: {0}".format(self.control_data.noptmax))
 
