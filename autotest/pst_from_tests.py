@@ -718,7 +718,7 @@ def mf6_freyberg_test():
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
                                   pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,
                                   ult_ubound=None if ult_ub is None else ult_ub - 1,
-                                  ult_lbound=None if ult_lb is None else ult_lb - 1)
+                                  ult_lbound=None if ult_lb is None else ult_lb - 1,geostruct=gr_gs)
 
                 # use a slightly lower ult bound here
                 pf.add_parameters(filenames=arr_file, par_type="constant",
