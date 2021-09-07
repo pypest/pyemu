@@ -1258,7 +1258,5 @@ if __name__ == "__main__":
     #comments_test()
     #csv_to_ins_test()
 
-    #rename_pars_test()
+    rename_pars_test()
     #rename_obs_test()
-
-    #tied_test()
