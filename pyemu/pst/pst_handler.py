@@ -1791,7 +1791,9 @@ class Pst(object):
     def _rectify_parchglim(self):
         """private method to just fix the parchglim vs cross zero issue"""
         par = self.parameter_data
-        need_fixing = par.loc[par.apply(lambda x: x.parubnd > 0 and x.parlbnd <= 0,axis=1),"parnme"]
+        need_fixing = par.loc[par.parubnd > 0,:].copy()
+        need_fixing = need_fixing.loc[par.parlbnd <= 0, "parnme"]
+
         self.parameter_data.loc[need_fixing,"parchglim"] = "relative"
 
     def _write_version1(self, new_filename):
