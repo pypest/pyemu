@@ -123,6 +123,17 @@ def setup_pilotpoints_grid(
                 "from 'sr':{0}:{1}".format(str(e0), str(e1))
             )
     start = int(float(every_n_cell) / 2.0)
+    
+    # fix for x-section models
+    if xcentergrid.shape[0]==1 :
+        start_row = 0
+    else : 
+        start_row = start
+
+    if xcentergrid.shape[1]==1 :
+        start_col = 0
+    else : 
+        start_col = start
 
     # check prefix_dict
     keys = list(prefix_dict.keys())
@@ -170,8 +181,8 @@ def setup_pilotpoints_grid(
             if k not in prefix_dict.keys():
                 continue
             # cycle through rows and cols
-            for i in range(start, ib.shape[0] - start, every_n_cell):
-                for j in range(start, ib.shape[1] - start, every_n_cell):
+            for i in range(start_row, ib.shape[0] - start_row, every_n_cell):
+                for j in range(start_col, ib.shape[1] - start_col, every_n_cell):
                     # skip if this is an inactive cell
                     if ib[i, j] <= 0:  # this will account for MF6 style ibound as well
                         continue
