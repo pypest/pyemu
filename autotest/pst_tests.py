@@ -1261,4 +1261,3 @@ if __name__ == "__main__":
     rename_pars_test()
     #rename_obs_test()
 
-    #tied_test()
