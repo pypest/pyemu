@@ -1638,8 +1638,6 @@ def mf6_freyberg_direct_test():
     print(org_ghb.stage)
     print(d)
     assert d.sum() == 0.0, d.sum()
-    
-
 
 
 

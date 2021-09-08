@@ -3657,6 +3657,8 @@ def _process_chunk_array_files(chunk, i, df):
 
 
 def _process_array_file(model_file, df):
+    if "operator" not in df.columns:
+        df.loc[:,"operator"] = "*"
     # find all mults that need to be applied to this array
     df_mf = df.loc[df.model_file == model_file, :]
     results = []
