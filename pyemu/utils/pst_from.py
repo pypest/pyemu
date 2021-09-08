@@ -1580,6 +1580,8 @@ class PstFrom(object):
         alt_inst_str="inst",
         comment_char=None,
         par_style="multiplier",
+        operator="*",
+        initial_value=None
     ):
         """
         Add list or array style model input files to PstFrom object.
@@ -1665,7 +1667,11 @@ class PstFrom(object):
                 up a multiplier parameter process against the existing model input
                 array and the former setups a template file to write the model
                 input file directly.  Default is "multiplier".
-
+            operator (`str`): The arithmetic operation to use for the parameters.
+                Can be either "*" for multiplicative or "+" for additive action.
+                Only applies for `par_style` = "multiplier".
+            initial_value (`float`): the value to set for the `parval1` value in the control file
+                Default is 1.0
         Returns:
             `pandas.DataFrame`: dataframe with info for new parameters
 
@@ -1697,11 +1703,19 @@ class PstFrom(object):
                     transform
                 )
             )
-
         if transform == "fixed" and geostruct is not None:
             self.logger.lraise(
                 "geostruct is not 'None', cant draw values for fixed pars"
             )
+
+        if operator not in ["*","+"]:
+            self.logger.lraise("unrecognized operator ('{0}'), should be in ['*','+']".format(operator))
+        if initial_value is None:
+            if operator == "*":
+                initial_value = 1.0
+            else:
+                initial_value = 0.0
+                lower_bound = -1.0e+10
 
         # some checks for direct parameters
         par_style = par_style.lower()
@@ -1941,7 +1955,8 @@ class PstFrom(object):
                 zero_based=self.zero_based,
                 input_filename=in_fileabs,
                 par_style=par_style,
-                headerlines=headerlines,  # only needed for direct pars
+                headerlines=headerlines,
+                fill_value=initial_value
             )
             assert (
                 np.mod(len(df), len(use_cols)) == 0.0
@@ -2381,6 +2396,7 @@ class PstFrom(object):
                 "head_rows": skip_dict[mod_file],
                 "upper_bound": ult_ubound,
                 "lower_bound": ult_lbound,
+                "operator":operator
             }
             if par_style == "multiplier":
                 mult_dict["mlt_file"] = Path(self.mult_file_d.name, mlt_filename)
@@ -2744,6 +2760,7 @@ def write_list_tpl(
     input_filename=None,
     par_style="multiplier",
     headerlines=None,
+    fill_value=1.0
 ):
     """Write template files for a list style input.
 
@@ -2783,6 +2800,9 @@ def write_list_tpl(
             If False 1 with be subtracted from `index_cols`.
         input_filename (`str`): Path to input file (paired with tpl file)
         par_style (`str`): either 'direct' or 'multiplier'
+        headerlines ([`str`]): optional header lines in the original model file, used for
+            direct style parameters
+        operator (`str`): either '*' or '+'
 
     Returns:
         `pandas.DataFrame`: dataframe with info for the new parameters
@@ -2827,6 +2847,7 @@ def write_list_tpl(
             ij_in_idx=ij_in_idx,
             xy_in_idx=xy_in_idx,
             zero_based=zero_based,
+            par_fill_value=fill_value
         )
 
     for col in use_cols:  # corellations flagged using pargp
@@ -2915,7 +2936,7 @@ def write_list_tpl(
 
         if input_filename is not None:
             df_in = df_tpl.copy()
-            df_in.loc[:, use_cols] = 1.0
+            df_in.loc[:, use_cols] = fill_value
             df_in.to_csv(input_filename)
     df_par.loc[:, "tpl_filename"] = tpl_filename
     df_par.loc[:, "input_filename"] = input_filename
@@ -3061,7 +3082,7 @@ def _getxy_from_idx(df, get_xy, xy_in_idx, ij_in_idx):
 
 def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
                     gpname, suffix, longnames, direct=False, init_df=None,
-                    init_fname=None):
+                    init_fname=None,fill_value=1.0):
     if direct:
         assert init_df is not None
         direct_tpl_df = init_df.copy()
@@ -3094,7 +3115,7 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
             else:
                 ngpname = gpname
         df.loc[:, "pargp{}".format(use_col)] = ngpname
-        df.loc[:, "parval1_{0}".format(use_col)] = 1.0
+        df.loc[:, "parval1_{0}".format(use_col)] = fill_value
         if typ == "constant":
             # one par for entire use_col column
             if longnames:
@@ -3212,6 +3233,7 @@ def _get_tpl_or_ins_df(
     xy_in_idx=None,
     zero_based=True,
     gpname=None,
+    par_fill_value=1.0
 ):
     """
     Private method to auto-generate parameter or obs names from tabular
@@ -3245,6 +3267,7 @@ def _get_tpl_or_ins_df(
         zero_based (`boolean`): IMPORTANT - pass as False if `index_cols`
             are NOT zero-based indicies (e.g. MODFLOW row/cols).
             If False 1 with be subtracted from `index_cols`.=
+        par_fill_value (float): value to use as `parval1`,Default is 1.0
 
     Returns:
         if `typ`==`obs`: pandas.DataFrame with index strings for setting up obs
@@ -3281,7 +3304,7 @@ def _get_tpl_or_ins_df(
     if typ == "obs":
         return df_ti  #################### RETURN if OBS
     df_ti = _build_parnames(df_ti, typ, zone_array, index_cols, use_cols,
-                            name, gpname, suffix, longnames)
+                            name, gpname, suffix, longnames,fill_value=par_fill_value)
     return df_ti
 
 
