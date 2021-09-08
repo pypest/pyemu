@@ -1522,8 +1522,8 @@ def mf6_freyberg_direct_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
-   # cov = pf.build_prior(fmt="non")
-    #cov.to_coo("prior.jcb")
+    cov = pf.build_prior(fmt="non")
+    cov.to_coo("prior.jcb")
     pst.try_parse_name_metadata()
     df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
     pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
