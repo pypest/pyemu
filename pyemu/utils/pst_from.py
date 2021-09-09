@@ -1662,8 +1662,8 @@ class PstFrom(object):
                 This is not additive with `mfile_skip` option.
                 Warning: currently comment lines within list-like tabular data
                 will be lost.
-            par_style (`str`): either "m"/"mult"/"multiplier", "a"/"add"/"adden", or "d"/"direct" where the former setups
-                up a multiplier and adden parameters process against the existing model input
+            par_style (`str`): either "m"/"mult"/"multiplier", "a"/"add"/"addend", or "d"/"direct" where the former setups
+                up a multiplier and addend parameters process against the existing model input
                 array and the former setups a template file to write the model
                 input file directly.  Default is "multiplier".
 
@@ -1711,7 +1711,7 @@ class PstFrom(object):
             par_style = par_style[0]
         if par_style not in ["m", "d", "a"]:
             self.logger.lraise(
-                "add_parameters(): unrecognized 'style': {0}, should be either 'm'/'multiplier', 'a'/'adder' or 'd'/'direct'".format(
+                "add_parameters(): unrecognized 'style': {0}, should be either 'm'/'mult'/'multiplier', 'a'/'add'/'addend' or 'd'/'direct'".format(
                     par_style
                 )
             )
