@@ -1392,11 +1392,11 @@ def mf6_freyberg_direct_test():
 
 
     ghb_files = [f for f in os.listdir(template_ws) if ".ghb_stress" in f and f.endswith("txt")]
-    pf.add_parameters(ghb_files,par_type="grid",par_style="multiplier",use_cols=3,par_name_base="ghbstage",
-                      pargp="ghbstage",index_cols=[0,1,2],operator="+",transform="none",lower_bound=-5,upper_bound=5)
+    pf.add_parameters(ghb_files,par_type="grid",par_style="add",use_cols=3,par_name_base="ghbstage",
+                      pargp="ghbstage",index_cols=[0,1,2],transform="none",lower_bound=-5,upper_bound=5)
 
     pf.add_parameters(ghb_files, par_type="grid", par_style="multiplier", use_cols=3, par_name_base="mltstage",
-                      pargp="ghbstage", index_cols=[0, 1, 2], operator="*", transform="log", lower_bound=0.5,
+                      pargp="ghbstage", index_cols=[0, 1, 2], transform="log", lower_bound=0.5,
                       upper_bound=1.5)
 
     # Add stream flow observation
@@ -1645,7 +1645,7 @@ def mf6_freyberg_direct_test():
     # check that the model results are consistent
     par = pst.parameter_data
     rch_par = par.loc[par.parnme.apply(
-        lambda x: "rch_gr" in x and "direct" in x), "parnme"]
+        lambda x: "d_rch_gr" in x ), "parnme"]
     wel_par = par.loc[par.parnme.apply(
         lambda x: "wel_grid" in x and "direct" in x), "parnme"]
     par.loc[rch_par,"parval1"] = par.loc[rch_par, "parlbnd"]
