@@ -1580,6 +1580,7 @@ class PstFrom(object):
         alt_inst_str="inst",
         comment_char=None,
         par_style="multiplier",
+        initial_value=None
     ):
         """
         Add list or array style model input files to PstFrom object.
@@ -1661,11 +1662,13 @@ class PstFrom(object):
                 This is not additive with `mfile_skip` option.
                 Warning: currently comment lines within list-like tabular data
                 will be lost.
-            par_style (`str`): either "multiplier" or "direct" where the former setups
-                up a multiplier parameter process against the existing model input
+            par_style (`str`): either "m"/"mult"/"multiplier", "a"/"add"/"addend", or "d"/"direct" where the former setups
+                up a multiplier and addend parameters process against the existing model input
                 array and the former setups a template file to write the model
                 input file directly.  Default is "multiplier".
 
+            initial_value (`float`): the value to set for the `parval1` value in the control file
+                Default is 1.0
         Returns:
             `pandas.DataFrame`: dataframe with info for new parameters
 
@@ -1697,7 +1700,6 @@ class PstFrom(object):
                     transform
                 )
             )
-
         if transform == "fixed" and geostruct is not None:
             self.logger.lraise(
                 "geostruct is not 'None', cant draw values for fixed pars"
@@ -1705,12 +1707,23 @@ class PstFrom(object):
 
         # some checks for direct parameters
         par_style = par_style.lower()
-        if par_style not in ["multiplier", "direct"]:
+        if len(par_style) > 1:
+            par_style = par_style[0]
+        if par_style not in ["m", "d", "a"]:
             self.logger.lraise(
-                "add_parameters(): unrecognized 'style': {0}, should be either 'multiplier' or 'direct'".format(
+                "add_parameters(): unrecognized 'style': {0}, should be either 'm'/'mult'/'multiplier', 'a'/'add'/'addend' or 'd'/'direct'".format(
                     par_style
                 )
             )
+
+        if initial_value is None:
+            if par_style == "m":
+                initial_value = 1.0
+            elif par_style == 'a':
+                initial_value = 0.0
+                lower_bound = -1.0e+10
+
+
         if isinstance(filenames, str) or isinstance(filenames, Path):
             filenames = [filenames]
         # data file paths relative to the pest parent directory
@@ -1719,7 +1732,7 @@ class PstFrom(object):
         ]
         if len(filenames) == 0:
             self.logger.lraise("add_parameters(): filenames is empty")
-        if par_style == "direct":
+        if par_style == "d":
             if len(filenames) != 1:
                 self.logger.lraise(
                     "add_parameters(): 'filenames' arg for 'direct' style must contain "
@@ -1865,7 +1878,7 @@ class PstFrom(object):
         par_name_store = par_name_base[0].replace(":", "")  # for os filename
 
         # Define requisite filenames
-        if par_style == "multiplier":
+        if par_style in  ["m","a"]:
             mlt_filename = "{0}_{1}.csv".format(par_name_store, par_type)
             # pst input file (for tpl->in pair) is multfile (in mult dir)
             in_fileabs = self.mult_file_d / mlt_filename
@@ -1941,7 +1954,8 @@ class PstFrom(object):
                 zero_based=self.zero_based,
                 input_filename=in_fileabs,
                 par_style=par_style,
-                headerlines=headerlines,  # only needed for direct pars
+                headerlines=headerlines,
+                fill_value=initial_value
             )
             assert (
                 np.mod(len(df), len(use_cols)) == 0.0
@@ -1993,7 +2007,7 @@ class PstFrom(object):
                 "pilot-point",
                 "pilot-points",
             }:
-                if par_style == "direct":
+                if par_style == "d":
                     self.logger.lraise(
                         "pilot points not supported for 'direct' par_style"
                     )
@@ -2381,8 +2395,9 @@ class PstFrom(object):
                 "head_rows": skip_dict[mod_file],
                 "upper_bound": ult_ubound,
                 "lower_bound": ult_lbound,
+                "operator":par_style
             }
-            if par_style == "multiplier":
+            if par_style in ["m","a"]:
                 mult_dict["mlt_file"] = Path(self.mult_file_d.name, mlt_filename)
 
             if pp_filename is not None:
@@ -2742,8 +2757,9 @@ def write_list_tpl(
     xy_in_idx=None,
     zero_based=True,
     input_filename=None,
-    par_style="multiplier",
+    par_style="m",
     headerlines=None,
+    fill_value=1.0
 ):
     """Write template files for a list style input.
 
@@ -2782,8 +2798,9 @@ def write_list_tpl(
             are NOT zero-based indicies (e.g. MODFLOW row/cols).
             If False 1 with be subtracted from `index_cols`.
         input_filename (`str`): Path to input file (paired with tpl file)
-        par_style (`str`): either 'direct' or 'multiplier'
-
+        par_style (`str`): either 'd','a', or 'm'
+        headerlines ([`str`]): optional header lines in the original model file, used for
+            direct style parameters
     Returns:
         `pandas.DataFrame`: dataframe with info for the new parameters
 
@@ -2793,7 +2810,7 @@ def write_list_tpl(
     """
     # get dataframe with autogenerated parnames based on `name`, `index_cols`,
     # `use_cols`, `suffix` and `par_type`
-    if par_style == "direct":
+    if par_style == "d":
         df_tpl = _write_direct_df_tpl(
             filenames[0],
             tpl_filename,
@@ -2827,6 +2844,7 @@ def write_list_tpl(
             ij_in_idx=ij_in_idx,
             xy_in_idx=xy_in_idx,
             zero_based=zero_based,
+            par_fill_value=fill_value
         )
 
     for col in use_cols:  # corellations flagged using pargp
@@ -2908,14 +2926,14 @@ def write_list_tpl(
         df_tpl.loc[:, use_col] = df_tpl.loc[:, use_col].apply(
             lambda x: "~  {0}  ~".format(x)
         )
-    if par_style == "multiplier":
+    if par_style in ["m","a"]:
         pyemu.helpers._write_df_tpl(
             filename=tpl_filename, df=df_tpl, sep=",", tpl_marker="~"
         )
 
         if input_filename is not None:
             df_in = df_tpl.copy()
-            df_in.loc[:, use_cols] = 1.0
+            df_in.loc[:, use_cols] = fill_value
             df_in.to_csv(input_filename)
     df_par.loc[:, "tpl_filename"] = tpl_filename
     df_par.loc[:, "input_filename"] = input_filename
@@ -3061,7 +3079,7 @@ def _getxy_from_idx(df, get_xy, xy_in_idx, ij_in_idx):
 
 def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
                     gpname, suffix, longnames, direct=False, init_df=None,
-                    init_fname=None):
+                    init_fname=None,fill_value=1.0):
     if direct:
         assert init_df is not None
         direct_tpl_df = init_df.copy()
@@ -3094,7 +3112,7 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
             else:
                 ngpname = gpname
         df.loc[:, "pargp{}".format(use_col)] = ngpname
-        df.loc[:, "parval1_{0}".format(use_col)] = 1.0
+        df.loc[:, "parval1_{0}".format(use_col)] = fill_value
         if typ == "constant":
             # one par for entire use_col column
             if longnames:
@@ -3212,6 +3230,7 @@ def _get_tpl_or_ins_df(
     xy_in_idx=None,
     zero_based=True,
     gpname=None,
+    par_fill_value=1.0
 ):
     """
     Private method to auto-generate parameter or obs names from tabular
@@ -3245,6 +3264,7 @@ def _get_tpl_or_ins_df(
         zero_based (`boolean`): IMPORTANT - pass as False if `index_cols`
             are NOT zero-based indicies (e.g. MODFLOW row/cols).
             If False 1 with be subtracted from `index_cols`.=
+        par_fill_value (float): value to use as `parval1`,Default is 1.0
 
     Returns:
         if `typ`==`obs`: pandas.DataFrame with index strings for setting up obs
@@ -3281,7 +3301,7 @@ def _get_tpl_or_ins_df(
     if typ == "obs":
         return df_ti  #################### RETURN if OBS
     df_ti = _build_parnames(df_ti, typ, zone_array, index_cols, use_cols,
-                            name, gpname, suffix, longnames)
+                            name, gpname, suffix, longnames,fill_value=par_fill_value)
     return df_ti
 
 
@@ -3297,7 +3317,7 @@ def write_array_tpl(
     fill_value=1.0,
     get_xy=None,
     input_filename=None,
-    par_style="multiplier",
+    par_style="m",
 ):
     """
     write a template file for a 2D array.
@@ -3315,7 +3335,7 @@ def write_array_tpl(
         fill_value:
         get_xy:
         input_filename:
-        par_style (`str`): either 'direct' or 'multiplier'
+        par_style (`str`): either 'd','a', or 'm'
 
     Returns:
         df (`pandas.DataFrame`): a dataframe with parameter information
@@ -3343,7 +3363,7 @@ def write_array_tpl(
         )
 
     par_style = par_style.lower()
-    if par_style == "direct":
+    if par_style == "d":
         if not os.path.exists(input_filename):
             raise Exception(
                 "write_grid_tpl() error: couldn't find input file "
@@ -3363,12 +3383,14 @@ def write_array_tpl(
                 zone_org_arr = org_arr.copy()
                 zone_org_arr[zone_array != zval] = np.NaN
                 _check_diff(zone_org_arr, input_filename, zval)
-    elif par_style == "multiplier":
+    elif par_style == "m":
         org_arr = np.ones(shape)
+    elif par_style == "a":
+        org_arr = np.zeros(shape)
     else:
         raise Exception(
             "write_grid_tpl() error: unrecognized 'par_style' {0} ".format(par_style)
-            + "should be 'direct' or 'multiplier'"
+            + "should be 'd','a', or 'm'"
         )
 
     def constant_namer(i, j):
@@ -3464,7 +3486,10 @@ def write_array_tpl(
     df.loc[:, "tpl_filename"] = tpl_filename
     df.loc[:, "input_filename"] = input_filename
     if input_filename is not None:
-        arr = np.ones(shape)
+        if par_style in ['m','d']:
+            arr = np.ones(shape)
+        elif par_style == 'a':
+            arr = np.zeros(shape)
         np.savetxt(input_filename, arr, fmt="%2.1f")
 
     return df

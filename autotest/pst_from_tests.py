@@ -1390,6 +1390,15 @@ def mf6_freyberg_direct_test():
     # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
     #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
+
+    ghb_files = [f for f in os.listdir(template_ws) if ".ghb_stress" in f and f.endswith("txt")]
+    pf.add_parameters(ghb_files,par_type="grid",par_style="add",use_cols=3,par_name_base="ghbstage",
+                      pargp="ghbstage",index_cols=[0,1,2],transform="none",lower_bound=-5,upper_bound=5)
+
+    pf.add_parameters(ghb_files, par_type="grid", par_style="multiplier", use_cols=3, par_name_base="mltstage",
+                      pargp="ghbstage", index_cols=[0, 1, 2], transform="log", lower_bound=0.5,
+                      upper_bound=1.5)
+
     # Add stream flow observation
     # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
@@ -1570,12 +1579,73 @@ def mf6_freyberg_direct_test():
     print(pst.phi)
     assert pst.phi < 0.1, pst.phi
 
+    org_ghb = pd.read_csv(os.path.join(pf.new_d,"org","freyberg6.ghb_stress_period_data_1.txt"),
+                          header=None,names=["l","r","c","stage","cond"])
+    new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
+                          delim_whitespace=True,
+                          header=None, names=["l", "r", "c", "stage", "cond"])
+    d = org_ghb.stage - new_ghb.stage
+    print(d)
+    assert d.sum() == 0,d.sum()
+
+
+    # test the additive ghb stage pars
+    par = pst.parameter_data
+    par.loc[par.parnme.str.contains("ghbstage_inst:0"),"parval1"] = 3.0
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    org_ghb = pd.read_csv(os.path.join(pf.new_d, "org", "freyberg6.ghb_stress_period_data_1.txt"),
+                          header=None, names=["l", "r", "c", "stage", "cond"])
+    new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
+                          delim_whitespace=True,
+                          header=None, names=["l", "r", "c", "stage", "cond"])
+    d = (org_ghb.stage - new_ghb.stage).apply(np.abs)
+    print(d)
+    assert d.mean() == 3.0, d.mean()
+
+
+
+    # check that the interaction between the direct ghb stage par and the additive ghb stage pars
+    # is working
+    par.loc[par.parnme.str.contains("ghb_stage"),"parval1"] -= 3.0
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    org_ghb = pd.read_csv(os.path.join(tmp_model_ws,"freyberg6.ghb_stress_period_data_1.txt"),
+                          header=None, names=["l", "r", "c", "stage", "cond"],delim_whitespace=True)
+    new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
+                          delim_whitespace=True,
+                          header=None, names=["l", "r", "c", "stage", "cond"])
+    d = org_ghb.stage - new_ghb.stage
+    print(new_ghb.stage)
+    print(org_ghb.stage)
+    print(d)
+    assert d.sum() == 0.0, d.sum()
+
+
+    # check the interaction with multiplicative ghb stage, direct ghb stage and additive ghb stage
+    par.loc[par.parnme.str.contains("mltstage"), "parval1"] = 1.1
+    #par.loc[par.parnme.str.contains("ghbstage_inst:0"), "parval1"] = 0.0
+    #par.loc[par.parnme.str.contains("ghb_stage"), "parval1"] += 3.0
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    org_ghb = pd.read_csv(os.path.join(tmp_model_ws, "freyberg6.ghb_stress_period_data_1.txt"),
+                          header=None, names=["l", "r", "c", "stage", "cond"], delim_whitespace=True)
+    new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
+                          delim_whitespace=True,
+                          header=None, names=["l", "r", "c", "stage", "cond"])
+    d = (org_ghb.stage * 1.1) - new_ghb.stage
+    print(new_ghb.stage)
+    print(org_ghb.stage)
+    print(d)
+    assert d.sum() == 0.0, d.sum()
+
+
 
     # turn direct recharge to min and direct wel to min and
     # check that the model results are consistent
     par = pst.parameter_data
     rch_par = par.loc[par.parnme.apply(
-        lambda x: "rch_gr" in x and "direct" in x), "parnme"]
+        lambda x: "d_rch_gr" in x ), "parnme"]
     wel_par = par.loc[par.parnme.apply(
         lambda x: "wel_grid" in x and "direct" in x), "parnme"]
     par.loc[rch_par,"parval1"] = par.loc[rch_par, "parlbnd"]
@@ -3508,10 +3578,10 @@ if __name__ == "__main__":
     # invest()
     # freyberg_test()
     # freyberg_prior_build_test()
-    mf6_freyberg_test()
+    #mf6_freyberg_test()
     # mf6_freyberg_da_test()
     # mf6_freyberg_shortnames_test()
-    # mf6_freyberg_direct_test()
+    mf6_freyberg_direct_test()
     # mf6_freyberg_varying_idomain()
     # xsec_test()
     # mf6_freyberg_short_direct_test()

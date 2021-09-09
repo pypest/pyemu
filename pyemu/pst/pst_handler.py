@@ -1597,6 +1597,7 @@ class Pst(object):
         self.new_filename = new_filename
         self.rectify_pgroups()
         self.rectify_pi()
+        self._rectify_parchglim()
         self._update_control_section()
         self.sanity_checks()
 
@@ -1787,12 +1788,21 @@ class Pst(object):
                 "Pst.write() error: version must be 1 or 2, not '{0}'".format(version)
             )
 
+    def _rectify_parchglim(self):
+        """private method to just fix the parchglim vs cross zero issue"""
+        par = self.parameter_data
+        need_fixing = par.loc[par.parubnd > 0,:].copy()
+        need_fixing = need_fixing.loc[par.parlbnd <= 0, "parnme"]
+
+        self.parameter_data.loc[need_fixing,"parchglim"] = "relative"
+
     def _write_version1(self, new_filename):
         """private method to write a version 1 pest control file"""
         self.new_filename = new_filename
         self.rectify_pgroups()
         self.rectify_pi()
         self._update_control_section()
+        self._rectify_parchglim()
         self.sanity_checks()
 
         f_out = open(new_filename, "w")
