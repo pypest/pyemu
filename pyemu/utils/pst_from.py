@@ -1723,6 +1723,17 @@ class PstFrom(object):
                 initial_value = 0.0
                 lower_bound = -1.0e+10
 
+        if transform.lower == "log":
+            if upper_bound <= 0:
+                self.logger.lraise(
+                    "transform is 'log' but bound_bound <= 0 for filenames {0}".format(",".join(filenames)))
+            if initial_value <= 0:
+                self.logger.lraise(
+                    "transform is 'log' but initial_value <= 0 for filenames {0}".format(",".join(filenames)))
+
+            if lower_bound <=0:
+                self.logger.lraise("transform is 'log' but lower_bound <= 0 for filenames {0}".format(",".join(filenames)))
+
 
         if isinstance(filenames, str) or isinstance(filenames, Path):
             filenames = [filenames]
