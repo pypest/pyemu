@@ -361,6 +361,6 @@ def start_workers(
                     worker_dirs.pop(worker_dirs.index(d))  # if successfully removed
                 except Exception as e:
                     warnings.warn(
-                        "unable to remove slavr dir{0}:{1}".format(d, str(e)),
+                        "unable to remove worker dir{0}:{1}".format(d, str(e)),
                         PyemuWarning,
                     )
