@@ -816,7 +816,7 @@ def mf6_freyberg_test():
     # quick check of write and apply method
     pars = pst.parameter_data
     # set reach 1 hk to 100
-    sfr_pars = pars.loc[pars.parnme.str.startswith('name:sfr')].index
+    sfr_pars = pars.loc[pars.parnme.str.startswith('pname:sfr')].index
     pars.loc[sfr_pars, 'parval1'] = np.random.random(len(sfr_pars)) * 10
 
     sfr_pars = pars.loc[sfr_pars].copy()
@@ -1646,9 +1646,9 @@ def mf6_freyberg_direct_test():
     # check that the model results are consistent
     par = pst.parameter_data
     rch_par = par.loc[par.parnme.apply(
-        lambda x: "name:rch_gr" in x and "ptype:gr_pstyle:d" in x ), "parnme"]
+        lambda x: "pname:rch_gr" in x and "ptype:gr_pstyle:d" in x ), "parnme"]
     wel_par = par.loc[par.parnme.apply(
-        lambda x: "name:wel_grid" in x and "ptype:gr_usecol:3_pstyle:d" in x), "parnme"]
+        lambda x: "pname:wel_grid" in x and "ptype:gr_usecol:3_pstyle:d" in x), "parnme"]
     par.loc[rch_par,"parval1"] = par.loc[rch_par, "parlbnd"]
     # this should set wells to zero since they are negative values in the control file
     par.loc[wel_par,"parval1"] = par.loc[wel_par, "parubnd"]
@@ -3579,11 +3579,12 @@ if __name__ == "__main__":
     # invest()
     #freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
-    # mf6_freyberg_da_test()
-    # mf6_freyberg_shortnames_test()
+    #mf6_freyberg_test()
+    #$mf6_freyberg_da_test()
+    #mf6_freyberg_shortnames_test()
+
     #mf6_freyberg_direct_test()
-    # mf6_freyberg_varying_idomain()
+    #mf6_freyberg_varying_idomain()
     # xsec_test()
     # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
@@ -3591,10 +3592,10 @@ if __name__ == "__main__":
     # tpf = TestPstFrom()
     # tpf.setup()
     # tpf.test_add_direct_array_parameters()
-    # tpf.add
+
     # # pstfrom_profile()
-    # mf6_freyberg_arr_obs_and_headerless_test()
-    # usg_freyberg_test()
+    mf6_freyberg_arr_obs_and_headerless_test()
+    usg_freyberg_test()
 
 
 

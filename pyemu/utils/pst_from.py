@@ -2067,7 +2067,7 @@ class PstFrom(object):
                 # but only settting up one set of pps at a time
                 pnb = par_name_base[0]
                 if self.longnames:
-                    pnb = "name:{1}_ptype:pp_pstyle:{0}".format(par_style,pnb)
+                    pnb = "pname:{1}_ptype:pp_pstyle:{0}".format(par_style,pnb)
                 pp_dict = {0: pnb}
                 pp_filename = "{0}pp.dat".format(par_name_store)
                 # pst inputfile (for tpl->in pair) is
@@ -3136,7 +3136,7 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
         if typ == "constant":
             # one par for entire use_col column
             if longnames:
-                fmtr = "name:{0}_ptype:cn_usecol:{1}"
+                fmtr = "pname:{0}_ptype:cn_usecol:{1}"
                 fmtr += "_pstyle:{0}".format(par_style)
                 if suffix != "":
                     fmtr += f"_{suffix}"
@@ -3151,7 +3151,7 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
         elif typ == "zone":
             # one par for each zone
             if longnames:
-                fmtr = "name:{0}_ptype:zn_usecol:{1}"
+                fmtr = "pname:{0}_ptype:zn_usecol:{1}"
                 if par_style == "d":
                     # todo
                     raise NotImplementedError(
@@ -3186,7 +3186,7 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
         elif typ == "grid":
             # one par for each index
             if longnames:
-                fmtr = "name:{0}_ptype:gr_usecol:{1}"
+                fmtr = "pname:{0}_ptype:gr_usecol:{1}"
                 fmtr += "_pstyle:{0}".format(par_style)
                 if zone_array is not None:
                     fmtr += "_zone:{2}_{3}"
@@ -3417,7 +3417,7 @@ def write_array_tpl(
 
     def constant_namer(i, j):
         if longnames:
-            pname = "name:{1}_ptype:cn_pstyle:{0}".format(par_style, name)
+            pname = "pname:{1}_ptype:cn_pstyle:{0}".format(par_style, name)
             if suffix != "":
                 pname += "_{0}".format(suffix)
         else:
@@ -3431,7 +3431,7 @@ def write_array_tpl(
         if zone_array is not None:
             zval = zone_array[i, j]
         if longnames:
-            pname = "name:{1}_ptype:zn_pstyle:{0}_zone:{2}".format(par_style, name, zval)
+            pname = "pname:{1}_ptype:zn_pstyle:{0}_zone:{2}".format(par_style, name, zval)
             if suffix != "":
                 pname += "_{0}".format(suffix)
         else:
@@ -3442,7 +3442,7 @@ def write_array_tpl(
 
     def grid_namer(i, j):
         if longnames:
-            pname = "name:{1}_ptype:gr_pstyle:{0}_i:{2}_j:{3}".format(par_style, name, i, j)
+            pname = "pname:{1}_ptype:gr_pstyle:{0}_i:{2}_j:{3}".format(par_style, name, i, j)
             if get_xy is not None:
                 pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy([i, j]))
             if zone_array is not None:
