@@ -1392,6 +1392,9 @@ class PstFrom(object):
             else:
                 obsgp = True  # will use base of col
             obsgp = _check_var_len(obsgp, ncol, fill=fill)
+            nprefix = prefix
+            if len(nprefix) == 0:
+                nprefix = filenames[0]
             df_ins = pyemu.pst_utils.csv_to_ins_file(
                 df.set_index("idx_str"),
                 ins_filename=self.new_d / insfile,
@@ -1400,7 +1403,7 @@ class PstFrom(object):
                 marker="~",
                 includes_header=includes_header,
                 includes_index=False,
-                prefix="oname:{0}_otype:lst".format(prefix),
+                prefix="oname:{0}_otype:lst".format(nprefix),
                 longnames=self.longnames,
                 head_lines_len=lenhead,
                 sep=sep,
@@ -1987,6 +1990,8 @@ class PstFrom(object):
             self.logger.log(
                 "writing array-based template file '{0}'".format(tpl_filename)
             )
+            if pargp is None:
+                pargp = par_name_base[0]
             shp = file_dict[list(file_dict.keys())[0]].shape
             # ARRAY constant, zones or grid (cell-by-cell)
             if par_type in {"constant", "zone", "grid"}:
@@ -2268,7 +2273,7 @@ class PstFrom(object):
                         pnb,
                         longnames=self.longnames,
                     )
-                    df.loc[:, "pargp"] = par_name_base[0]
+                df.loc[:, "pargp"] = pargp
 
                 df.set_index("parnme", drop=False, inplace=True)
                 # df includes most of the par info for par_dfs and also for
