@@ -157,9 +157,11 @@ def freyberg_test():
                         ofile_skip=4, ofile_sep=' ', use_rows=np.arange(0, 50))
     # check obs set up
     sfrobs = pf.obs_dfs[-1].copy()
-    sfrobs[['usecol'] + sfr_idx] = sfrobs.obsnme.apply(
+    sfrobs[["oname","otype",'usecol'] + sfr_idx] = sfrobs.obsnme.apply(
         lambda x: pd.Series(
             dict([s.split(':') for s in x.split('_') if ':' in s])))
+    sfrobs.pop("oname")
+    sfrobs.pop("otype")
     sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
     sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
                                   columns=['usecol'], values='obsval')
@@ -194,9 +196,11 @@ def freyberg_test():
                         use_rows=np.arange(50, 101))
     # check obs set up
     sfrobs = pf.obs_dfs[-1].copy()
-    sfrobs[['usecol'] + sfr_idx] = sfrobs.obsnme.apply(
+    sfrobs[['oname','otype','usecol'] + sfr_idx] = sfrobs.obsnme.apply(
         lambda x: pd.Series(
             dict([s.split(':') for s in x.split('_') if ':' in s])))
+    sfrobs.pop("oname")
+    sfrobs.pop("otype")
     sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
     sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
                                   columns=['usecol'], values='obsval')
@@ -3575,7 +3579,7 @@ def mf6_subdir_test():
     # assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
 
 if __name__ == "__main__":
-    mf6_freyberg_pp_locs_test()
+    #mf6_freyberg_pp_locs_test()
     # invest()
     #freyberg_test()
     #freyberg_prior_build_test()
@@ -3583,7 +3587,7 @@ if __name__ == "__main__":
     #$mf6_freyberg_da_test()
     #mf6_freyberg_shortnames_test()
 
-    #mf6_freyberg_direct_test()
+    mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     # xsec_test()
     # mf6_freyberg_short_direct_test()

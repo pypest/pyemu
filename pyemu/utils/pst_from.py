@@ -1393,8 +1393,11 @@ class PstFrom(object):
                 obsgp = True  # will use base of col
             obsgp = _check_var_len(obsgp, ncol, fill=fill)
             nprefix = prefix
-            if len(nprefix) == 0:
-                nprefix = filenames[0]
+
+            if self.longnames:
+                if len(nprefix) == 0:
+                    nprefix = filenames[0]
+                nprefix = "oname:{0}_otype:lst".format(nprefix)
             df_ins = pyemu.pst_utils.csv_to_ins_file(
                 df.set_index("idx_str"),
                 ins_filename=self.new_d / insfile,
@@ -1403,7 +1406,7 @@ class PstFrom(object):
                 marker="~",
                 includes_header=includes_header,
                 includes_index=False,
-                prefix="oname:{0}_otype:lst".format(nprefix),
+                prefix=nprefix,
                 longnames=self.longnames,
                 head_lines_len=lenhead,
                 sep=sep,
