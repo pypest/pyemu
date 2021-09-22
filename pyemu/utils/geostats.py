@@ -1365,20 +1365,20 @@ class OrdinaryKrige(object):
         if idx_vals is not None:
             df.index = [int(i) for i in idx_vals]
         print("starting interp point loop for {0} points".format(df.shape[0]))
+        # ensure same order as point data and just pass array
+        point_cov_data = self.point_cov_df.loc[self.point_data.name,
+                                               self.point_data.name].values
+        point_pairs = [(i, xx, yy) for i, (xx, yy) in enumerate(zip(x, y))]
+        idist = [[] for _ in x]
+        inames = [[] for _ in x]
+        ifacts = [[] for _ in x]
+        err_var = [np.NaN] * len(x)
         with mp.Manager() as manager:
-
-            point_pairs = manager.list()
-            idist = manager.list()
-            inames = manager.list()
-            ifacts = manager.list()
-            err_var = manager.list()
-            # start = mp.Value('d',0)
-            for i, (xx, yy) in enumerate(zip(x, y)):
-                point_pairs.append((i, xx, yy))
-                idist.append([])
-                inames.append([])
-                ifacts.append([])
-                err_var.append([np.NaN])
+            point_pairs = manager.list(point_pairs)
+            idist = manager.list(idist)
+            inames = manager.list(inames)
+            ifacts = manager.list(ifacts)
+            err_var = manager.list(err_var)
             lock = mp.Lock()
             procs = []
             for i in range(num_threads):
@@ -1392,7 +1392,7 @@ class OrdinaryKrige(object):
                         idist,
                         ifacts,
                         err_var,
-                        self.point_cov_df.loc[self.point_data.name, self.point_data.name].values,  # ensure same order as point data and just pass array
+                        point_cov_data,
                         self.geostruct,
                         EPSILON,
                         search_radius,
