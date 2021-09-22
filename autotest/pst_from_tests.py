@@ -3575,7 +3575,7 @@ def mf6_subdir_test():
     # assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
 
 if __name__ == "__main__":
-    #mf6_freyberg_pp_locs_test()
+    mf6_freyberg_pp_locs_test()
     # invest()
     #freyberg_test()
     #freyberg_prior_build_test()
@@ -3594,8 +3594,8 @@ if __name__ == "__main__":
     # tpf.test_add_direct_array_parameters()
 
     # # pstfrom_profile()
-    mf6_freyberg_arr_obs_and_headerless_test()
-    usg_freyberg_test()
+    #mf6_freyberg_arr_obs_and_headerless_test()
+    #usg_freyberg_test()
 
 
 
