@@ -1137,7 +1137,7 @@ class PstFrom(object):
                         continue
 
                 if longnames:
-                    oname = "arrobs_{0}_i:{1}_j:{2}".format(prefix, iidx, jr)
+                    oname = "oname:{0}_otype:arr_i:{1}_j:{2}".format(prefix, iidx, jr)
                     if zval is not None:
                         oname += "_zone:{0}".format(zval)
                 else:
@@ -1288,6 +1288,8 @@ class PstFrom(object):
                 new_obs.loc[:, "obgnme"] = obsgp
             elif prefix is not None and len(prefix) != 0:  # if prefix is passed
                 new_obs.loc[:, "obgnme"] = prefix
+            elif self.longnames:
+                new_obs.loc[:, "obgnme"] = "oname:{0}_otype:arr".format(filenames)
             # else will default to `obgnme`
             self.logger.log(
                 "adding observations from array output file '{0}'".format(filenames)
@@ -1398,7 +1400,7 @@ class PstFrom(object):
                 marker="~",
                 includes_header=includes_header,
                 includes_index=False,
-                prefix=prefix,
+                prefix="oname:{0}_otype:lst".format(prefix),
                 longnames=self.longnames,
                 head_lines_len=lenhead,
                 sep=sep,
@@ -3502,8 +3504,8 @@ def write_array_tpl(
             df.loc[:, "y"] = yy
     if gpname is None:
         gpname = name
-    df.loc[:, "pargp"] = "{0}_{1}_{2}".format(
-        gpname, suffix.replace("_", ""), par_style
+    df.loc[:, "pargp"] = "{0}_{1}".format(
+        gpname, suffix.replace("_", "")
     ).rstrip("_")
     df.loc[:, "tpl_filename"] = tpl_filename
     df.loc[:, "input_filename"] = input_filename
