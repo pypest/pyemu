@@ -577,8 +577,6 @@ def pst_from_flopy_geo_draw_test():
     assert diff_sd.apply(np.abs).max() < 0.1
 
 
-
-
 def from_flopy_pp_test():
     import numpy as np
     import pandas as pd
@@ -775,8 +773,8 @@ if __name__ == "__main__":
     #pst_from_flopy_specsim_draw_test()
     # run_array_pars()
     # from_flopy_zone_pars()
-    #from_flopy_pp_test()
-    from_flopy()
+    from_flopy_pp_test()
+    # from_flopy()
     #parrep_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()
