@@ -272,9 +272,9 @@ def setup_pilotpoints_grid(
         for name, dtype in par_info.dtypes.iteritems():
             if dtype == object:
                 shp.field(name=name, fieldType="C", size=50)
-            elif dtype in [int, np.int, np.int64, np.int32]:
+            elif dtype in [int, np.int64, np.int32]:
                 shp.field(name=name, fieldType="N", size=50, decimal=0)
-            elif dtype in [float, np.float, np.float32, np.float64]:
+            elif dtype in [float, np.float32, np.float64]:
                 shp.field(name=name, fieldType="N", size=50, decimal=10)
             else:
                 raise Exception(
@@ -446,7 +446,7 @@ def write_pp_shapfile(pp_df, shapename=None):
             shp.field(name=name, fieldType="C", size=50)
         elif dtype in [int, np.int, np.int64, np.int32]:
             shp.field(name=name, fieldType="N", size=50, decimal=0)
-        elif dtype in [float, np.float, np.float32, np.float32]:
+        elif dtype in [float, np.float32, np.float32]:
             shp.field(name=name, fieldType="N", size=50, decimal=8)
         else:
             raise Exception(
