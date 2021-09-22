@@ -816,15 +816,16 @@ def mf6_freyberg_test():
     # quick check of write and apply method
     pars = pst.parameter_data
     # set reach 1 hk to 100
-    sfr_pars = pars.loc[pars.parnme.str.startswith('sfr')].index
+    sfr_pars = pars.loc[pars.parnme.str.startswith('name:sfr')].index
     pars.loc[sfr_pars, 'parval1'] = np.random.random(len(sfr_pars)) * 10
 
     sfr_pars = pars.loc[sfr_pars].copy()
-    sfr_pars[['inst', 'usecol', '#rno']] = sfr_pars.parnme.apply(
+    print(sfr_pars)
+    sfr_pars[["name",'inst',"ptype", 'usecol',"pstyle", '#rno']] = sfr_pars.parnme.apply(
         lambda x: pd.DataFrame([s.split(':') for s in x.split('_')
                                 if ':' in s]).set_index(0)[1])
 
-    sfr_pars['#rno'] = sfr_pars['#rno'] .astype(int)
+    sfr_pars['#rno'] = sfr_pars['#rno'].astype(int)
     os.chdir(pf.new_d)
     pst.write_input_files()
     try:
@@ -3576,9 +3577,9 @@ def mf6_subdir_test():
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
     # invest()
-    freyberg_test()
-    # freyberg_prior_build_test()
-    #mf6_freyberg_test()
+    #freyberg_test()
+    #freyberg_prior_build_test()
+    mf6_freyberg_test()
     # mf6_freyberg_da_test()
     # mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
