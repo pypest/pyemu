@@ -2065,11 +2065,15 @@ class PstFrom(object):
                         )
                 # (stolen from helpers.PstFromFlopyModel()._pp_prep())
                 # but only settting up one set of pps at a time
-                pp_dict = {0: par_name_base}
+                pnb = par_name_base[0]
+                if self.longnames:
+                    pnb = "name:{1}_ptype:pp_pstyle:{0}".format(par_style,pnb)
+                pp_dict = {0: pnb}
                 pp_filename = "{0}pp.dat".format(par_name_store)
                 # pst inputfile (for tpl->in pair) is
                 # par_name_storepp.dat table (in pst ws)
                 in_filepst = pp_filename
+                pp_filename_dict = {pnb:in_filepst}
                 tpl_filename = self.tpl_d / (pp_filename + ".tpl")
                 # tpl_filename = get_relative_filepath(self.new_d, tpl_filename)
                 pp_locs = None
@@ -2252,12 +2256,14 @@ class PstFrom(object):
                         tpl_dir=self.tpl_d,
                         shapename=str(self.new_d / "{0}.shp".format(par_name_store)),
                         longnames=self.longnames,
+                        pp_filename_dict=pp_filename_dict
                     )
                 else:
+
                     df = pyemu.pp_utils.pilot_points_to_tpl(
                         pp_locs,
                         tpl_filename,
-                        par_name_base[0],
+                        pnb,
                         longnames=self.longnames,
                     )
                     df.loc[:, "pargp"] = par_name_base[0]

@@ -3574,14 +3574,14 @@ def mf6_subdir_test():
     # assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
 
 if __name__ == "__main__":
-    # mf6_freyberg_pp_locs_test()
+    #mf6_freyberg_pp_locs_test()
     # invest()
-    # freyberg_test()
+    freyberg_test()
     # freyberg_prior_build_test()
     #mf6_freyberg_test()
     # mf6_freyberg_da_test()
     # mf6_freyberg_shortnames_test()
-    mf6_freyberg_direct_test()
+    #mf6_freyberg_direct_test()
     # mf6_freyberg_varying_idomain()
     # xsec_test()
     # mf6_freyberg_short_direct_test()
