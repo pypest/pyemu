@@ -65,6 +65,7 @@ class PstFrom(object):
         chunk_len (`int`): the size of each "chunk" of files to spawn a multiprocessing.Pool member to process.
             On windows, beware setting this much smaller than 50 because of the overhead associated with
             spawning the pool.  This value is added to the call to `apply_list_and_array_pars`. Default is 50
+        echo (`bool`): flag to echo logger messages to the screen.  Default is True
 
     Note:
         This is the way...
@@ -91,6 +92,7 @@ class PstFrom(object):
         start_datetime=None,
         tpl_subfolder=None,
         chunk_len=50,
+        echo=True,
     ):
 
         self.original_d = Path(original_d)
@@ -137,7 +139,7 @@ class PstFrom(object):
         self.ins_filenames, self.output_filenames = [], []
 
         self.longnames = bool(longnames)
-        self.logger = pyemu.Logger("PstFrom.log", echo=True)
+        self.logger = pyemu.Logger("PstFrom.log", echo=echo)
 
         self.logger.statement("starting PstFrom process")
 
@@ -1082,7 +1084,7 @@ class PstFrom(object):
 
         """
         if ofile_sep is not None:
-            self.logger.lrase(
+            self.logger.lraise(
                 "array obs are currently only supported for whitespace delim"
             )
         if not os.path.exists(self.new_d / out_filename):
@@ -1889,7 +1891,7 @@ class PstFrom(object):
         par_name_store = par_name_base[0].replace(":", "")  # for os filename
 
         # Define requisite filenames
-        if par_style in  ["m","a"]:
+        if par_style in ["m","a"]:
             mlt_filename = "{0}_{1}.csv".format(par_name_store, par_type)
             # pst input file (for tpl->in pair) is multfile (in mult dir)
             in_fileabs = self.mult_file_d / mlt_filename
@@ -2855,7 +2857,8 @@ def write_list_tpl(
             ij_in_idx=ij_in_idx,
             xy_in_idx=xy_in_idx,
             zero_based=zero_based,
-            par_fill_value=fill_value
+            par_fill_value=fill_value,
+            par_style=par_style
         )
 
     for col in use_cols:  # corellations flagged using pargp
@@ -3024,7 +3027,7 @@ def _write_direct_df_tpl(
     df_ti, direct_tpl_df = _build_parnames(
         df_ti, typ, zone_array, index_cols, use_cols,
         name, gpname, suffix, longnames,
-        direct=True, init_df=df, init_fname=in_filename
+        par_style="d", init_df=df, init_fname=in_filename
     )
     if isinstance(direct_tpl_df.columns[0], str):
         header = True
@@ -3089,9 +3092,9 @@ def _getxy_from_idx(df, get_xy, xy_in_idx, ij_in_idx):
 
 
 def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
-                    gpname, suffix, longnames, direct=False, init_df=None,
+                    gpname, suffix, longnames, par_style, init_df=None,
                     init_fname=None,fill_value=1.0):
-    if direct:
+    if par_style == "d":
         assert init_df is not None
         direct_tpl_df = init_df.copy()
         if typ == 'constant':
@@ -3127,9 +3130,8 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
         if typ == "constant":
             # one par for entire use_col column
             if longnames:
-                fmtr = "{0}_usecol:{1}"
-                if direct:
-                    fmtr += "_direct"
+                fmtr = "name:{0}_ptype:cn_usecol:{1}"
+                fmtr += "_pstyle:{0}".format(par_style)
                 if suffix != "":
                     fmtr += f"_{suffix}"
             else:
@@ -3137,19 +3139,21 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
                 if suffix != "":
                     fmtr += suffix
             df.loc[:, use_col] = fmtr.format(nname, use_col)
-            if direct:
+            if par_style == "d":
                 _check_diff(init_df.loc[:, use_col].values, init_fname)
                 df.loc[:, "parval1_{0}".format(use_col)] = init_df.loc[:, use_col][0]
         elif typ == "zone":
             # one par for each zone
             if longnames:
-                fmtr = "{0}_usecol:{1}"
-                if direct:
+                fmtr = "name:{0}_ptype:zn_usecol:{1}"
+                if par_style == "d":
                     # todo
                     raise NotImplementedError(
                         "list-based direct zone-type parameters not implemented"
                     )
-                    fmtr += "_direct"
+                    fmtr += "_pstyle:d"
+                else:
+                    fmtr += "_pstyle:m"
                 if zone_array is not None:
                     fmtr += "_zone:{2}"
                     # df.loc[:, use_col] += df.zval.apply(
@@ -3176,9 +3180,8 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
         elif typ == "grid":
             # one par for each index
             if longnames:
-                fmtr = "{0}_usecol:{1}"
-                if direct:
-                    fmtr += "_direct"
+                fmtr = "name:{0}_ptype:gr_usecol:{1}"
+                fmtr += "_pstyle:{0}".format(par_style)
                 if zone_array is not None:
                     fmtr += "_zone:{2}_{3}"
                 else:
@@ -3202,7 +3205,7 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
                 df.loc[:, use_col] = df.idx_strs.apply(
                     lambda x: fmtr.format(nname, use_col, x)
                 )
-            if direct:
+            if par_style == "d":
                 df.loc[:, f"parval1_{use_col}"] = init_df.loc[:, use_col].values
         else:
             raise Exception(
@@ -3218,11 +3221,11 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
                 print(too_long)
                 raise ValueError("_get_tpl_or_ins_df(): "
                                  "couldn't form short par names")
-        if direct:
+        if par_style == "d":
             direct_tpl_df.loc[:, use_col] = (
                 df.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
             )
-    if direct:
+    if par_style == "d":
         return df, direct_tpl_df
     return df
 
@@ -3241,7 +3244,8 @@ def _get_tpl_or_ins_df(
     xy_in_idx=None,
     zero_based=True,
     gpname=None,
-    par_fill_value=1.0
+    par_fill_value=1.0,
+    par_style="m"
 ):
     """
     Private method to auto-generate parameter or obs names from tabular
@@ -3312,7 +3316,8 @@ def _get_tpl_or_ins_df(
     if typ == "obs":
         return df_ti  #################### RETURN if OBS
     df_ti = _build_parnames(df_ti, typ, zone_array, index_cols, use_cols,
-                            name, gpname, suffix, longnames,fill_value=par_fill_value)
+                            name, gpname, suffix, longnames,par_style,
+                            fill_value=par_fill_value)
     return df_ti
 
 
@@ -3406,7 +3411,7 @@ def write_array_tpl(
 
     def constant_namer(i, j):
         if longnames:
-            pname = "{0}_const_{1}".format(par_style, name)
+            pname = "name:{1}_ptype:cn_pstyle:{0}".format(par_style, name)
             if suffix != "":
                 pname += "_{0}".format(suffix)
         else:
@@ -3420,7 +3425,7 @@ def write_array_tpl(
         if zone_array is not None:
             zval = zone_array[i, j]
         if longnames:
-            pname = "{0}_{1}_zone:{2}".format(par_style, name, zval)
+            pname = "name:{1}_ptype:zn_pstyle:{0}_zone:{2}".format(par_style, name, zval)
             if suffix != "":
                 pname += "_{0}".format(suffix)
         else:
@@ -3431,7 +3436,7 @@ def write_array_tpl(
 
     def grid_namer(i, j):
         if longnames:
-            pname = "{0}_{1}_i:{2}_j:{3}".format(par_style, name, i, j)
+            pname = "name:{1}_ptype:gr_pstyle:{0}_i:{2}_j:{3}".format(par_style, name, i, j)
             if get_xy is not None:
                 pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy([i, j]))
             if zone_array is not None:

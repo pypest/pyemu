@@ -1531,6 +1531,7 @@ def mf6_freyberg_direct_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
+    return
     cov = pf.build_prior(fmt="non")
     cov.to_coo("prior.jcb")
     pst.try_parse_name_metadata()
