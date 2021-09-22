@@ -1482,10 +1482,14 @@ class OrdinaryKrige(object):
                 err_var[idx] = [np.NaN]
                 continue
 
-            #  calc dist from this interp point to all point data...slow
-            dist = pd.Series((ptx_array - ix) ** 2 + (pty_array - iy) ** 2, ptnames)
-            dist.sort_values(inplace=True)
-            dist = dist.loc[dist <= sqradius]
+            # can we just use a numpy approach...?
+            dist = (ptx_array - ix) ** 2 + (pty_array - iy) ** 2
+            sortorder = np.argsort(dist)
+            dist = dist[sortorder]
+            pt_names = ptnames[sortorder]
+            trunc = dist <= sqradius
+            dist = dist[trunc]
+            pt_names = pt_names[trunc]
 
             # if too few points were found, skip
             if len(dist) < minpts_interp:
@@ -1499,17 +1503,17 @@ class OrdinaryKrige(object):
                 err_var[idx] = [sill]
                 continue
 
-            # only the maxpts_interp points
-            dist = dist.iloc[:maxpts_interp].apply(np.sqrt)
-            pt_names = dist.index.values
+            dist = np.sqrt(dist[: maxpts_interp])
+            pt_names = pt_names[: maxpts_interp]
+
             # if one of the points is super close, just use it and skip
-            if dist.min() <= epsilon:
+            if dist[0] <= epsilon:
                 # ifacts.append([1.0])
                 ifacts[idx] = [[1.0]]
                 # idist.append([epsilon])
                 idist[idx] = [[epsilon]]
                 # inames.append([dist.idxmin()])
-                inames[idx] = [[dist.idxmin()]]
+                inames[idx] = [[pt_names[0]]]
                 # err_var.append(geostruct.nugget)
                 err_var[idx] = [[geostruct.nugget]]
                 continue
@@ -1548,15 +1552,9 @@ class OrdinaryKrige(object):
 
             assert len(facs) - 1 == len(dist)
 
-            # err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
             err_var[idx] = [float(sill + facs[-1] - sum([f * c for f, c in zip(facs[:-1], interp_cov)]))]
-            # inames.append(pt_names)
-            inames[idx] = [list(pt_names)]
-
-            # idist.append(dist.values)
-            idist[idx] = [list(dist.values)]
-
-            # ifacts.append(facs[:-1,0])
+            inames[idx] = [pt_names.tolist()]
+            idist[idx] = [dist.tolist()]
             ifacts[idx] = [list(facs[:-1, 0])]
             # if verbose == 2:
             #     td = (datetime.now()-start).total_seconds()
