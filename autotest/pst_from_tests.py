@@ -1531,7 +1531,6 @@ def mf6_freyberg_direct_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
-    return
     cov = pf.build_prior(fmt="non")
     cov.to_coo("prior.jcb")
     pst.try_parse_name_metadata()
@@ -1646,9 +1645,9 @@ def mf6_freyberg_direct_test():
     # check that the model results are consistent
     par = pst.parameter_data
     rch_par = par.loc[par.parnme.apply(
-        lambda x: "d_rch_gr" in x ), "parnme"]
+        lambda x: "name:rch_gr" in x and "ptype:gr_pstyle:d" in x ), "parnme"]
     wel_par = par.loc[par.parnme.apply(
-        lambda x: "wel_grid" in x and "direct" in x), "parnme"]
+        lambda x: "name:wel_grid" in x and "ptype:gr_usecol:3_pstyle:d" in x), "parnme"]
     par.loc[rch_par,"parval1"] = par.loc[rch_par, "parlbnd"]
     # this should set wells to zero since they are negative values in the control file
     par.loc[wel_par,"parval1"] = par.loc[wel_par, "parubnd"]
