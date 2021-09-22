@@ -34,6 +34,7 @@ def setup_pilotpoints_grid(
     tpl_dir=".",
     shapename="pp.shp",
     longnames=False,
+    pp_filename_dict = {}
 ):
     """setup a regularly-spaced (gridded) pilot point parameterization
 
@@ -58,6 +59,10 @@ def setup_pilotpoints_grid(
         tpl_dir (`str`, optional): directory to write pilot point template file to.  Default is '.'
         shapename (`str`, optional): name of shapefile to write that contains pilot
             point information. Default is "pp.shp"
+        longnames (`bool`): flag to use parameter names longer than 12 chars.  Default is False
+        pp_filename_dict (`dict`): optional dict of prefix-pp filename pairs.  prefix values must
+            match the values in `prefix_dict`.  If None, then pp filenames are based on the
+            key values in `prefix_dict`.  Default is None
 
     Returns:
         `pandas.DataFrame`: a dataframe summarizing pilot point information (same information
@@ -223,7 +228,10 @@ def setup_pilotpoints_grid(
                         ~np.any([prefix.startswith(p) for p in ibound.keys()])
                         and par == "general_zn"
                     ):
-                        base_filename = "{0}pp.dat".format(prefix.replace(":", ""))
+                        if prefix in pp_filename_dict.keys():
+                            base_filename = pp_filename_dict[prefix].replace(":", "")
+                        else:
+                            base_filename = "{0}pp.dat".format(prefix.replace(":", ""))
                         pp_filename = os.path.join(pp_dir, base_filename)
                         # write the base pilot point file
                         write_pp_file(pp_filename, pp_df)
@@ -231,8 +239,7 @@ def setup_pilotpoints_grid(
                         tpl_filename = os.path.join(tpl_dir, base_filename + ".tpl")
                         # write the tpl file
                         pilot_points_to_tpl(
-                            pp_df, tpl_filename, name_prefix=prefix, longnames=longnames
-                        )
+                            pp_df, tpl_filename, name_prefix=prefix, longnames=longnames)
                         pp_df.loc[:, "tpl_filename"] = tpl_filename
                         pp_df.loc[:, "pp_filename"] = pp_filename
                         pp_df.loc[:, "pargp"] = prefix
@@ -493,6 +500,8 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
             pilot point parameters will be named "hk_0001","hk_0002", etc.
             If None, parameter names from `pp_df.name` are used.
             Default is None.
+        longnames (`bool`): flag to use parameter names longer than 12 chars.
+            Default is False
 
     Returns:
         `pandas.DataFrame`: a dataframe with pilot point information
@@ -525,7 +534,7 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
                 )
             elif "x" in pp_df.columns and "y" in pp_df.columns:
                 pp_df.loc[:, "parnme"] = pp_df.apply(
-                    lambda x: "{0}_x:{1}_y:{2}".format(name_prefix, x.x, x.y),
+                    lambda x: "{0}_x:{1:0.2f}_y:{2:0.2f}".format(name_prefix, x.x, x.y),
                     axis=1,
                 )
             else:
