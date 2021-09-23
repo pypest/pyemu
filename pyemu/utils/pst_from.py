@@ -1731,7 +1731,8 @@ class PstFrom(object):
                 initial_value = 1.0
             elif par_style == 'a':
                 initial_value = 0.0
-                lower_bound = -1.0e+10
+                if lower_bound >= 0.0:
+                    lower_bound = -1. * upper_bound
 
         if transform.lower == "log":
             if upper_bound <= 0:
