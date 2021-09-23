@@ -3629,6 +3629,9 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
         by `PstFrom.build_pst()`
     """
     df = pd.read_csv(arr_par_file, index_col=0)
+    if "operator" not in df.columns:
+        df.loc[:,"operator"] = "m"
+    df.loc[pd.isna(df.operator),"operator"] = "m"
     arr_pars = df.loc[df.index_cols.isna()].copy()
     list_pars = df.loc[df.index_cols.notna()].copy()
     # extract lists from string in input df
@@ -3654,6 +3657,8 @@ def _process_chunk_array_files(chunk, i, df):
 
 
 def _process_array_file(model_file, df):
+    if "operator" not in df.columns:
+        df.loc[:,"operator"] = "m"
     # find all mults that need to be applied to this array
     df_mf = df.loc[df.model_file == model_file, :]
     results = []
@@ -3663,7 +3668,7 @@ def _process_array_file(model_file, df):
     org_arr = np.loadtxt(org_file[0])
 
     if "mlt_file" in df_mf.columns:
-        for mlt in df_mf.mlt_file:
+        for mlt,operator in zip(df_mf.mlt_file,df_mf.operator):
             if pd.isna(mlt):
                 continue
             mlt_data = np.loadtxt(mlt)
@@ -3673,7 +3678,12 @@ def _process_array_file(model_file, df):
                         org_file, org_arr.shape, mlt, mlt_data.shape
                     )
                 )
-            org_arr *= np.loadtxt(mlt)
+            if operator == "*" or operator.lower()[0] == "m":
+                org_arr *= mlt_data
+            elif operator == "+" or operator.lower()[0] == "a":
+                org_arr += mlt_data
+            else:
+                raise Exception("unrecognized operator '{0}' for mlt file '{1}'".format(operator,mlt))
         if "upper_bound" in df.columns:
             ub_vals = df_mf.upper_bound.value_counts().dropna().to_dict()
             if len(ub_vals) == 0:
@@ -4268,9 +4278,17 @@ def _process_list_file(model_file, df):
                 new_df.index.intersection(mlts.index).sort_values().drop_duplicates()
             )
             mlt_cols = [str(col) for col in mlt.use_cols]
-            new_df.loc[common_idx, mlt_cols] = (
-                new_df.loc[common_idx, mlt_cols] * mlts.loc[common_idx, mlt_cols]
-            ).values
+            operator = mlt.operator
+            if operator == "*" or operator.lower()[0] == "m":
+                new_df.loc[common_idx, mlt_cols] = (
+                    new_df.loc[common_idx, mlt_cols] * mlts.loc[common_idx, mlt_cols]
+                ).values
+            elif operator == "+" or operator.lower()[0] == "a":
+                new_df.loc[common_idx, mlt_cols] = (
+                        new_df.loc[common_idx, mlt_cols] + mlts.loc[common_idx, mlt_cols]
+                ).values
+            else:
+                raise Exception("unsupported operator '{0}' for mlt file '{1}'".format(operator,mlt.mlt_file))
         # bring mult index back to columns AND re-order
         new_df = new_df.reset_index().set_index("oidx")[org_data.columns].sort_index()
     if "upper_bound" in df.columns:
