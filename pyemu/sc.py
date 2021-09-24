@@ -3,6 +3,7 @@ linearized form of Bayes equation known as the Schur compliment
 """
 
 from __future__ import print_function, division
+from os import name
 import numpy as np
 import pandas as pd
 from pyemu.la import LinearAnalysis
@@ -528,7 +529,7 @@ class Schur(LinearAnalysis):
         )
 
     def get_added_obs_importance(
-        self, obslist_dict=None, base_obslist=None, reset_zero_weight=False
+        self, obslist_dict=None, base_obslist=None, reset_zero_weight=1.0
     ):
         """A dataworth method to analyze the posterior uncertainty as a result of gathering
          some additional observations
@@ -546,12 +547,10 @@ class Schur(LinearAnalysis):
                 be to pass this argument as `pyemu.Schur.pst.nnz_obs_names` so that existing,
                 non-zero-weighted observations are accounted for in evaluating the worth of
                 new yet-to-be-collected observations.
-            reset_zero_weight (`bool`, optional)
-                a flag to reset observations with zero weight in either
-                `obslist_dict` or `base_obslist`. If `reset_zero_weights`
-                passed as a `float`,then that value will be assigned to
-                zero weight obs.  Otherwise, zero-weight obs will be given a
-                weight of 1.0.  Default is `False`.
+            reset_zero_weight (`float`, optional)
+                a flag to reset observations with zero weight in `obslist_dict` 
+                If `reset_zero_weights` passed as 0.0, no weights adjustments are made.
+                Default is 1.0.
 
         Returns:
             `pandas.DataFrame`: a dataframe with row labels (index) of `obslist_dict.keys()` and
@@ -566,10 +565,11 @@ class Schur(LinearAnalysis):
             represents the worth of the potential new observation(s) being tested.
 
         Note:
-            Observations listed in `obslist_dict` and `base_obslist` with zero
-            weights are not included in the analysis unless `reset_zero_weight` is `True` or a float
-            greater than zero.  In most cases, users will want to reset zero-weighted observations as part
-            dataworth testing process.
+            Observations listed in `base_obslist` is required to only include observations
+            with weight not equal to zero. If zero-weighted observations are in `base_obslist` an exception will 
+            be thrown.  In most cases, users will want to reset zero-weighted observations as part
+            dataworth testing process. If `reset_zero_weights` == 0, no weights adjustments will be made - this is 
+            most appropriate if different weights are assigned to the added observation values in `Schur.pst`
 
         Example::
 
@@ -577,7 +577,7 @@ class Schur(LinearAnalysis):
             obslist_dict = {"hds":["head1","head2"],"flux":["flux1","flux2"]}
             df = sc.get_added_obs_importance(obslist_dict=obslist_dict,
                                              base_obslist=sc.pst.nnz_obs_names,
-                                             reset_zero_weight=True)
+                                             reset_zero_weight=1.0)
 
         """
 
@@ -586,22 +586,19 @@ class Schur(LinearAnalysis):
                 obslist_dict = dict(zip(obslist_dict, obslist_dict))
 
         reset = False
-        if reset_zero_weight is not False:
+        if reset_zero_weight >= 0:
             if not self.obscov.isdiagonal:
                 raise NotImplementedError(
                     "cannot reset weights for non-" + "diagonal obscov"
                 )
             reset = True
-            try:
-                weight = float(reset_zero_weight)
-            except:
-                weight = 1.0
-            self.logger.statement("resetting zero weights to {0}".format(weight))
-            # make copies of the original obscov and pst
-            # org_obscov = self.obscov.get(self.obscov.row_names)
+            weight = reset_zero_weight
             org_obscov = self.obscov.copy()
             org_pst = self.pst.get()
-
+            self.logger.statement("resetting zero weights in obslist_dict to {0}".format(weight))
+        else:
+            self.logger.statement("not resetting zero weights in obslist_dict")
+            
         obs = self.pst.observation_data
         obs.index = obs.obsnme
 
@@ -612,14 +609,8 @@ class Schur(LinearAnalysis):
                 for name in self.pst.zero_weight_obs_names
                 if name in self.jco.row_names and name in self.obscov.row_names
             ]
-            obs.loc[onames, "weight"] = weight
 
-        # if needed reset the zero-weight obs in base_obslist
-        if base_obslist is not None and reset:
-            # check for zero
-            self.log("resetting zero weight obs in base_obslist")
-            self.pst._adjust_weights_by_list(base_obslist, weight)
-            self.log("resetting zero weight obs in base_obslist")
+            obs.loc[onames, "weight"] = weight
 
         if base_obslist is None:
             base_obslist = []
@@ -629,6 +620,21 @@ class Schur(LinearAnalysis):
                     "Schur.get_added_obs)_importance: base_obslist must be"
                     + " type 'list', not {0}".format(str(type(base_obslist)))
                 )
+
+        # ensure that no base observations have zero weight
+        if base_obslist is not None:
+            zero_basenames = [name
+                    for name in self.pst.zero_weight_obs_names
+                    if name in base_obslist
+            ]
+            if len(zero_basenames) > 0:
+                raise Exception(
+                    "Observations in baseobs_list must have"
+                    + "nonzero weight. The following observations"
+                    + "violate that condition: "
+                    + ','.join(zero_basenames) 
+                )
+
         # if needed reset the zero-weight obs in obslist_dict
         if obslist_dict is not None and reset:
             z_obs = []
@@ -647,6 +653,8 @@ class Schur(LinearAnalysis):
             self.log("resetting zero weight obs in obslist_dict")
             self.pst._adjust_weights_by_list(z_obs, weight)
             self.log("resetting zero weight obs in obslist_dict")
+
+
 
         # for a comprehensive obslist_dict
         if obslist_dict is None and reset:
@@ -725,7 +733,7 @@ class Schur(LinearAnalysis):
 
         return df
 
-    def get_removed_obs_importance(self, obslist_dict=None, reset_zero_weight=False):
+    def get_removed_obs_importance(self, obslist_dict=None, reset_zero_weight=None):
         """A dataworth method to analyze the posterior uncertainty as a result of losing
          some existing observations
 
@@ -734,12 +742,7 @@ class Schur(LinearAnalysis):
                 that are to be treated as lost.  key values become
                 row labels in returned dataframe. If `None`, then every zero-weighted
                 observation is tested sequentially. Default is `None`
-            reset_zero_weight (`bool`, optional)
-                a flag to reset observations with zero weight in either
-                `obslist_dict` or `base_obslist`. If `reset_zero_weights`
-                passed as a `float`,then that value will be assigned to
-                zero weight obs.  Otherwise, zero-weight obs will be given a
-                weight of 1.0.  Default is `False`.
+            reset_zero_weight DEPRECATED
 
         Returns:
             `pandas.DataFrame`: A dataframe with index of obslist_dict.keys() and columns
@@ -751,16 +754,14 @@ class Schur(LinearAnalysis):
             either not change or increase as a result of losing existing observations.  The magnitude
             of the increase represents the worth of the existing observation(s) being tested.
 
-        Note:
-            Observations listed in `obslist_dict` and `base_obslist` with zero
-            weights are not included in the analysis unless `reset_zero_weight` is `True` or a float
-            greater than zero.  In most cases, users will want to reset zero-weighted observations as part
-            dataworth testing process.
+            Note:
+            All observations that may be evaluated as removed must have non-zero weight
+
 
         Example::
 
             sc = pyemu.Schur("my.jco")
-            df = sc.get_removed_obs_importance(reset_zero_weight=True)
+            df = sc.get_removed_obs_importance()
 
         """
 
@@ -768,56 +769,46 @@ class Schur(LinearAnalysis):
             if type(obslist_dict) == list:
                 obslist_dict = dict(zip(obslist_dict, obslist_dict))
 
-        elif reset_zero_weight is False and self.pst.nnz_obs == 0:
+        elif self.pst.nnz_obs == 0:
             raise Exception(
                 "not resetting weights and there are no non-zero weight obs to remove"
             )
 
-        reset = False
-        if reset_zero_weight is not False:
-            if not self.obscov.isdiagonal:
-                raise NotImplementedError(
-                    "cannot reset weights for non-" + "diagonal obscov"
-                )
-            reset = True
-            try:
-                weight = float(reset_zero_weight)
-            except:
-                weight = 1.0
-            self.logger.statement("resetting zero weights to {0}".format(weight))
-            # make copies of the original obscov and pst
-            org_obscov = self.obscov.get(self.obscov.row_names)
-            org_pst = self.pst.get()
+        if reset_zero_weight is not None:
+            self.log("Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
+            + "This value is ignored")
+            print("Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
+            + "This value is ignored")
+        obs = self.pst.observation_data
+        obs.index = obs.obsnme
+
+        # ensure that no base observations have zero weight
+        base_obslist = [name
+                for name in self.pst.observation_data.index
+                if name not in obslist_dict.keys()
+        ]
+        zero_basenames = [name
+                for name in self.pst.zero_weight_obs_names
+                if name in base_obslist
+        ]
+        if len(zero_basenames) > 0:
+            raise Exception(
+                "Observations in baseobs_list must have"
+                + "nonzero weight. The following observations"
+                + "violate that condition: "
+                + ','.join(zero_basenames) 
+            )
+
 
         self.log("calculating importance of observations")
-        if reset and obslist_dict is None:
-            obs = self.pst.observation_data
-            onames = [
-                name
-                for name in self.pst.zero_weight_obs_names
-                if name in self.jco.row_names and name in self.obscov.row_names
-            ]
-            obs.loc[onames, "weight"] = weight
 
         if obslist_dict is None:
             obslist_dict = dict(zip(self.pst.nnz_obs_names, self.pst.nnz_obs_names))
-
-        elif reset:
-            self.pst.observation_data.index = self.pst.observation_data.obsnme
-            for name, obslist in obslist_dict.items():
-                self.log("resetting weights in obs in group {0}".format(name))
-                self.pst._adjust_weights_by_list(obslist, weight)
-                self.log("resetting weights in obs in group {0}".format(name))
 
         for case, obslist in obslist_dict.items():
             if not isinstance(obslist, list):
                 obslist = [obslist]
             obslist_dict[case] = obslist
-
-        if reset:
-            self.log("resetting self.obscov")
-            self.reset_obscov(self.pst)
-            self.log("resetting self.obscov")
 
         results = {}
         names = ["base"]
@@ -882,7 +873,7 @@ class Schur(LinearAnalysis):
 
             sc = pyemu.Schur("my.jco")
             obsgrp_dict = sc.get_obs_group_dict()
-            df = sc.get_removed_obs_importance(obsgrp_dict=obsgrp_dict, reset_zero_weight=True)
+            df = sc.get_removed_obs_importance(obsgrp_dict=obsgrp_dict)
 
         """
         obsgrp_dict = {}
@@ -894,17 +885,13 @@ class Schur(LinearAnalysis):
             obsgrp_dict[grp] = list(obs.loc[idxs, "obsnme"])
         return obsgrp_dict
 
-    def get_removed_obs_group_importance(self, reset_zero_weight=False):
+    def get_removed_obs_group_importance(self, reset_zero_weight=None):
         """A dataworth method to analyze the posterior uncertainty as a result of losing
          existing observations, tested by observation groups
 
         Args:
-            reset_zero_weight (`bool`, optional)
-                a flag to reset observations with zero weight in either
-                `obslist_dict` or `base_obslist`. If `reset_zero_weights`
-                passed as a `float`,then that value will be assigned to
-                zero weight obs.  Otherwise, zero-weight obs will be given a
-                weight of 1.0.  Default is `False`.
+            reset_zero_weight DEPRECATED
+
 
         Returns:
             `pandas.DataFrame`: A dataframe with index of observation group names and columns
@@ -916,32 +903,30 @@ class Schur(LinearAnalysis):
             either not change or increase as a result of losing existing observations.  The magnitude
             of the increase represents the worth of the existing observation(s) in each group being tested.
 
-        Note:
-            Observations in `Schur.pst` with zero weights are not included in the analysis unless
-            `reset_zero_weight` is `True` or a float greater than zero.  In most cases, users
-            will want to reset zero-weighted observations as part dataworth testing process.
-
         Example::
 
             sc = pyemu.Schur("my.jco")
-            df = sc.get_removed_obs_group_importance(reset_zero_weight=True)
+            df = sc.get_removed_obs_group_importance()
 
         """
+        if reset_zero_weight is not None:
+            self.log("Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
+            + "This value is ignored")
+            print("Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
+            + "This value is ignored")
         return self.get_removed_obs_importance(
-            self.get_obs_group_dict(), reset_zero_weight=reset_zero_weight
+            self.get_obs_group_dict()
         )
 
-    def get_added_obs_group_importance(self, reset_zero_weight=False):
+    def get_added_obs_group_importance(self, reset_zero_weight=1.0):
         """A dataworth method to analyze the posterior uncertainty as a result of gaining
          existing observations, tested by observation groups
 
         Args:
-            reset_zero_weight (`bool`, optional)
-                a flag to reset observations with zero weight in either
-                `obslist_dict` or `base_obslist`. If `reset_zero_weights`
-                passed as a `float`,then that value will be assigned to
-                zero weight obs.  Otherwise, zero-weight obs will be given a
-                weight of 1.0.  Default is `False`.
+            reset_zero_weight (`float`, optional)
+                a flag to reset observations with zero weight in `obslist_dict` 
+                If `reset_zero_weights` passed as 0.0, no weights adjustments are made.
+                Default is 1.0.
 
         Returns:
             `pandas.DataFrame`: A dataframe with index of observation group names and columns
@@ -956,13 +941,13 @@ class Schur(LinearAnalysis):
 
         Note:
             Observations in `Schur.pst` with zero weights are not included in the analysis unless
-            `reset_zero_weight` is `True` or a float greater than zero.  In most cases, users
+            `reset_zero_weight` is a float greater than zero.  In most cases, users
             will want to reset zero-weighted observations as part dataworth testing process.
 
         Example::
 
             sc = pyemu.Schur("my.jco")
-            df = sc.get_added_obs_group_importance(reset_zero_weight=True)
+            df = sc.get_added_obs_group_importance(reset_zero_weight=1.0)
 
         """
         return self.get_added_obs_importance(
@@ -975,7 +960,7 @@ class Schur(LinearAnalysis):
         niter=3,
         obslist_dict=None,
         base_obslist=None,
-        reset_zero_weight=False,
+        reset_zero_weight=1.0,
     ):
         """find the most important observation(s) by sequentially evaluating
         the importance of the observations in `obslist_dict`.
@@ -998,12 +983,10 @@ class Schur(LinearAnalysis):
                 be to pass this argument as `pyemu.Schur.pst.nnz_obs_names` so that existing,
                 non-zero-weighted observations are accounted for in evaluating the worth of
                 new yet-to-be-collected observations.
-            reset_zero_weight (`bool`, optional)
-                a flag to reset observations with zero weight in either
-                `obslist_dict` or `base_obslist`. If `reset_zero_weights`
-                passed as a `float`,then that value will be assigned to
-                zero weight obs.  Otherwise, zero-weight obs will be given a
-                weight of 1.0.  Default is `False`.
+            reset_zero_weight (`float`, optional)
+                a flag to reset observations with zero weight in `obslist_dict` 
+                If `reset_zero_weights` passed as 0.0, no weights adjustments are made.
+                Default is 1.0.
 
         Returns:
             `pandas.DataFrame`: a dataFrame with columns of `obslist_dict` key for each iteration
