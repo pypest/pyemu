@@ -166,7 +166,7 @@ def dataworth_test():
     oname = "or00c00_0"
     names = {"test":oname}
     added = sc.get_added_obs_importance(base_obslist=base_obs,
-                                      obslist_dict=names,reset_zero_weight=True)
+                                      obslist_dict=names)
     removed = sc.get_removed_obs_importance(obslist_dict=names)
     print("removed",removed)
     print("added",added)
@@ -432,9 +432,9 @@ if __name__ == "__main__":
     #par_contrib_speed_test()
     # schur_test()
     #par_contrib_test()
-    #dataworth_test()
-    #dataworth_next_test()
-    schur_test_nonpest()
+    dataworth_test()
+    dataworth_next_test()
+    #schur_test_nonpest()
     #la_test_io()
     #errvar_test_nonpest()
     #errvar_test()
