@@ -782,6 +782,9 @@ class Schur(LinearAnalysis):
         obs = self.pst.observation_data
         obs.index = obs.obsnme
 
+        if obslist_dict is None:
+            obslist_dict = dict(zip(self.pst.nnz_obs_names, self.pst.nnz_obs_names))
+            
         # ensure that no base observations have zero weight
         base_obslist = [name
                 for name in self.pst.observation_data.index
@@ -802,8 +805,7 @@ class Schur(LinearAnalysis):
 
         self.log("calculating importance of observations")
 
-        if obslist_dict is None:
-            obslist_dict = dict(zip(self.pst.nnz_obs_names, self.pst.nnz_obs_names))
+
 
         for case, obslist in obslist_dict.items():
             if not isinstance(obslist, list):
