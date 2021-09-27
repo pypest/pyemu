@@ -183,8 +183,9 @@ def dataworth_test():
         assert diff < 0.01,"{0},{1},{2}".format(fname,removed.loc["test",fname],added.loc["base",fname])
 
     names = {"test1":oname,"test2":["or00c00_1","or00c00_2"]}
+    scm.pst.observation_data.loc[oname, "weight"] = 0.0
     scm.next_most_important_added_obs(forecast="travel_time",obslist_dict=names,
-                                     base_obslist=sc.pst.nnz_obs_names,reset_zero_weight=0.0)
+                                     base_obslist=scm.pst.nnz_obs_names,reset_zero_weight=1.0)
 
 
 def dataworth_next_test():
@@ -441,9 +442,9 @@ if __name__ == "__main__":
     #par_contrib_speed_test()
     #schur_test()
     #par_contrib_test()
-    #dataworth_test()
+    dataworth_test()
     #dataworth_next_test()
-    schur_test_nonpest()
+    #schur_test_nonpest()
     #la_test_io()
     #errvar_test_nonpest()
     #errvar_test()
