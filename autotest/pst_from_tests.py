@@ -802,7 +802,9 @@ def mf6_freyberg_test():
         pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
                           pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
                           upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
-
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base=f"wel_grid_{kper}",
+                      pargp=f"wel_{kper}_v2", index_cols=[0, 1, 2], use_cols=[3], use_rows=[1],
+                      upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
     # test non spatial idx in list like
     pf.add_parameters(filenames="freyberg6.sfr_packagedata_test.txt", par_name_base="sfr_rhk",
                       pargp="sfr_rhk", index_cols=['#rno'], use_cols=['rhk'], upper_bound=10.,
@@ -866,7 +868,7 @@ def mf6_freyberg_test():
     os.chdir(pf.new_d)
     try:
         pyemu.helpers.apply_list_and_array_pars(
-            arr_par_file="mult2model_info.csv",chunk_len=1)
+            arr_par_file="mult2model_info.csv", chunk_len=1)
     except Exception as e:
         os.chdir(b_d)
         raise Exception(str(e))
@@ -1514,7 +1516,7 @@ def mf6_freyberg_direct_test():
                       index_cols=[0, 1, 2, 3],  # or... {'well': 0, 'k': 1, 'i': 2, 'j': 3},
                       use_cols=4, upper_bound=10, lower_bound=-10,
                       geostruct=gr_gs, par_style="direct", transform="none",
-                      mfile_skip=1)
+                      mfile_skip=1, use_rows=[3, 4])
 
     list_file = "freyberg6.ghb_stress_period_data_1.txt"
     pf.add_parameters(filenames=list_file, par_type="constant", par_name_base=["ghb_stage","ghb_cond"],
@@ -3583,7 +3585,7 @@ if __name__ == "__main__":
     # invest()
     #freyberg_test()
     #freyberg_prior_build_test()
-    #mf6_freyberg_test()
+    # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
     #mf6_freyberg_shortnames_test()
 

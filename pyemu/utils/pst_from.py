@@ -1574,6 +1574,7 @@ class PstFrom(object):
         par_name_base="p",
         index_cols=None,
         use_cols=None,
+        use_rows=None,
         pargp=None,
         pp_space=10,
         use_pp_zones=False,
@@ -1626,6 +1627,7 @@ class PstFrom(object):
                 model rows and columns to be identified and processed to x,y.
             use_cols (`list`-like or `int`): for tabular-style model input file,
                 defines the columns to be parameterised
+            use_rows (`list`-like or `int`):
             pargp (`str`): Parameter group to assign pars to. This is PESTs
                 pargp but is also used to gather correlated parameters set up
                 using multiple `add_parameters()` calls (e.g. temporal pars)
@@ -1967,6 +1969,7 @@ class PstFrom(object):
                 suffix="",
                 index_cols=index_cols,
                 use_cols=use_cols,
+                use_rows=use_rows,
                 zone_array=zone_array,
                 gpname=pargp,
                 longnames=self.longnames,
@@ -1977,7 +1980,8 @@ class PstFrom(object):
                 input_filename=in_fileabs,
                 par_style=par_style,
                 headerlines=headerlines,
-                fill_value=initial_value
+                fill_value=initial_value,
+                logger=self.logger
             )
             assert (
                 np.mod(len(df), len(use_cols)) == 0.0
@@ -2778,6 +2782,7 @@ def write_list_tpl(
     index_cols,
     par_type,
     use_cols=None,
+    use_rows=None,
     suffix="",
     zone_array=None,
     gpname=None,
@@ -2789,7 +2794,8 @@ def write_list_tpl(
     input_filename=None,
     par_style="m",
     headerlines=None,
-    fill_value=1.0
+    fill_value=1.0,
+    logger=None
 ):
     """Write template files for a list style input.
 
@@ -2812,6 +2818,7 @@ def write_list_tpl(
             (from `index_cols`) for each `use_cols`.
         use_cols (`list`): Columns in tabular input file to paramerterise.
             If None, pars are set up for all columns apart from index cols.
+        use_rows (`list`):
         suffix (`str`): Optional par name suffix
         zone_array (`np.ndarray`): Array defining zone divisions.
             If not None and `par_type` is `grid` or `zone` it is expected that
@@ -2849,6 +2856,7 @@ def write_list_tpl(
             index_cols,
             par_type,
             use_cols=use_cols,
+            use_rows=use_rows,
             suffix=suffix,
             gpname=gpname,
             zone_array=zone_array,
@@ -2877,7 +2885,13 @@ def write_list_tpl(
             par_fill_value=fill_value,
             par_style=par_style
         )
-
+        if use_rows is None:
+            use_rows = df_tpl.index
+        else:
+            use_rows = _get_use_rows(df_tpl, use_rows, zero_based,
+                                     tpl_filename, logger=logger)
+        df_tpl = df_tpl.loc[use_rows, :] # direct pars done in direct function
+        # can we just slice df_tpl here
     for col in use_cols:  # corellations flagged using pargp
         df_tpl["covgp{0}".format(col)] = df_tpl.loc[:, "pargp{0}".format(col)].values
     # needs modifying if colocated pars in same group
@@ -2899,12 +2913,14 @@ def write_list_tpl(
                     # then parse_kij assumes that i is at idx[-2] and j at idx[-1]
                     third_d.pop()  # pops -1
                     third_d.pop()  # pops -2
-                PyemuWarning(
-                    "Coincidently located pars in list-like file, "
-                    "attempting to separate pars based on `index_cols` "
-                    "passed - using index_col[{0}] for third dimension"
-                    "".format(third_d[-1])
-                )
+                msg = ("Coincidently located pars in list-like file, "
+                       "attempting to separate pars based on `index_cols` "
+                       f"passed - using index_col[{third_d[-1]}] "
+                       f"for third dimension")
+                if logger is not None:
+                    logger.warn(msg)
+                else:
+                    PyemuWarning(msg)
                 for col in use_cols:
                     df_tpl["covgp{0}".format(col)] = df_tpl.loc[
                         :, "covgp{0}".format(col)
@@ -2913,13 +2929,17 @@ def write_list_tpl(
                         "_cov",
                     )
             else:
-                PyemuWarning(
+                msg = (
                     "Coincidently located pars in list-like file. "
                     "Likely to cause issues building par cov or "
                     "drawing par ensemble. Can be resolved by passing "
                     "an additional `index_col` as a basis for "
                     "splitting colocated correlations (e.g. Layer)"
                 )
+                if logger is not None:
+                    logger.warn(msg)
+                else:
+                    PyemuWarning(msg)
     # pull out par details where multiple `use_cols` are requested
     parnme = list(df_tpl.loc[:, use_cols].values.flatten())
     pargp = list(
@@ -2973,22 +2993,24 @@ def write_list_tpl(
 
 
 def _write_direct_df_tpl(
-    in_filename,
-    tpl_filename,
-    df,
-    name,
-    index_cols,
-    typ,
-    use_cols=None,
-    suffix="",
-    zone_array=None,
-    longnames=False,
-    get_xy=None,
-    ij_in_idx=None,
-    xy_in_idx=None,
-    zero_based=True,
-    gpname=None,
-    headerlines=None,
+        in_filename,
+        tpl_filename,
+        df,
+        name,
+        index_cols,
+        typ,
+        use_cols=None,
+        use_rows=None,
+        suffix="",
+        zone_array=None,
+        longnames=False,
+        get_xy=None,
+        ij_in_idx=None,
+        xy_in_idx=None,
+        zero_based=True,
+        gpname=None,
+        headerlines=None,
+        logger=None
 ):
 
     """
@@ -3033,7 +3055,7 @@ def _write_direct_df_tpl(
 
     sidx = []
 
-    didx = df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1)
+    didx = df.loc[:, index_cols].apply(tuple, axis=1)
     sidx.extend(didx)
 
     df_ti = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
@@ -3046,15 +3068,82 @@ def _write_direct_df_tpl(
         name, gpname, suffix, longnames,
         par_style="d", init_df=df, init_fname=in_filename
     )
+    if use_rows is None:
+        use_rows = df_ti.index
+    else:
+        use_rows = _get_use_rows(df_ti, use_rows, zero_based, tpl_filename,
+                                 logger=logger)
+    df_ti = df_ti.loc[use_rows]
+    not_rows = ~direct_tpl_df.index.isin(use_rows)
+    direct_tpl_df.loc[not_rows] = df.loc[not_rows, direct_tpl_df.columns]
     if isinstance(direct_tpl_df.columns[0], str):
         header = True
     else:
         header = False
     pyemu.helpers._write_df_tpl(
-        tpl_filename, direct_tpl_df, index=False, header=header, headerlines=headerlines
+        tpl_filename, direct_tpl_df, index=False, header=header,
+        headerlines=headerlines
     )
     return df_ti
 
+
+def _get_use_rows(df, use_rows, zero_based, fnme, logger=None):
+    """
+    private function to get use_rows index within df based on passed use_rows
+    option, which could be in various forms...
+    Args:
+        df:
+        use_rows:
+
+    Returns:
+
+    """
+    if (isinstance(use_rows, str) or
+            isinstance(use_rows, tuple) or
+            isinstance(use_rows, int)):
+        # we only 1 use_row but best in a list
+        use_rows = [use_rows]
+    if not zero_based:  # assume passed indicies are 1 based
+        try:  # try and slice df_tpl assuming tuple of index ids passed
+            # adjust possible passed tuple.
+            use_rows = [tuple(np.array(r) - 1)
+                        if not isinstance(r, str) else r
+                        for r in use_rows]
+            # will error if use rows is just ints
+        except TypeError:
+            msg = "write_list_tpl: Assuming passed use_rows are zero-based ints!"
+            if logger is not None:
+                logger.statement(msg)
+            else:
+                PyemuWarning(msg)
+            # dont need to do anything if in because should be zero-based
+    orig_use_rows = use_rows
+    use_rows = set(use_rows)
+    sel = (df.sidx.isin(use_rows) | df.idx_strs.isin(use_rows))
+    if not sel.any():  # use_rows must be ints
+        inidx = list(use_rows.intersection(df.index))
+        missing = use_rows.difference(df.index)
+        use_rows = df.iloc[inidx].index.unique()
+    else:
+        missing = set(use_rows).difference(df.sidx, df.idx_strs)
+        use_rows = df.loc[sel].index.unique()
+    if len(missing) > 0:
+        msg = ("write_list_tpl: Requested rows missing from parameter file,\n"
+               f"    rows: {missing}, file: {fnme}")
+        if logger is not None:
+            logger.warn(msg)
+        else:
+            PyemuWarning(msg)
+    if len(use_rows) == 0:
+        msg = ("write_list_tpl: None of request rows found in parameter file,\n"
+               f"    rows: {orig_use_rows}, file: {fnme}. "
+               "Will set up pars for all rows")
+        if logger is not None:
+            logger.warn(msg)
+        else:
+            PyemuWarning(msg)
+        use_rows = df.index
+    return use_rows
 
 def _get_index_strfmt(index_cols, longnames):
     # get some index strings for naming
