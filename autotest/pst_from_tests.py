@@ -1461,7 +1461,7 @@ def mf6_freyberg_direct_test():
                 fw.write(line)
 
     # fl = "freyberg6.wel_stress_period_data_3.txt" # Add extra string col_id
-    for fl in list_files[2:4]:
+    for fl in list_files[2:7]:
         with open(os.path.join(template_ws, fl), 'r') as fr:
             lines = [line for line in fr]
         with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
@@ -1516,7 +1516,7 @@ def mf6_freyberg_direct_test():
                       index_cols=[0, 1, 2, 3],  # or... {'well': 0, 'k': 1, 'i': 2, 'j': 3},
                       use_cols=4, upper_bound=10, lower_bound=-10,
                       geostruct=gr_gs, par_style="direct", transform="none",
-                      mfile_skip=1, use_rows=[3, 4])
+                      mfile_skip=1)
 
     list_file = "freyberg6.ghb_stress_period_data_1.txt"
     pf.add_parameters(filenames=list_file, par_type="constant", par_name_base=["ghb_stage","ghb_cond"],
@@ -1531,6 +1531,35 @@ def mf6_freyberg_direct_test():
                       upper_bound=0.0, lower_bound=-500,par_style="direct",
                       transform="none")
 
+    list_file = "new_freyberg6.wel_stress_period_data_5.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell5_k', 'nwell5_q'],
+                      pargp='nwell5',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0, use_rows=[3, 4])
+
+    list_file = "new_freyberg6.wel_stress_period_data_6.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell6_k', 'nwell6_q'],
+                      pargp='nwell6',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0, use_rows=[(3, 21, 15), (3, 30, 7)])
+    # use_rows should match so all should be setup 2 cols 6 rows
+    assert len(pf.par_dfs[-1]) == 2*6 # should be
+    list_file = "new_freyberg6.wel_stress_period_data_7.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell6_k', 'nwell6_q'],
+                      pargp='nwell6',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0,
+                      use_rows=[('well2', 21, 15), ('well4', 30, 7)])
+    assert len(pf.par_dfs[-1]) == 2 * 2  # should be
     # add model run command
     pf.mod_sys_cmds.append("mf6")
     print(pf.mult_files)
@@ -1563,7 +1592,7 @@ def mf6_freyberg_direct_test():
         n_df = pd.read_csv(f, sep="\s+")
         o_df = pd.read_csv(f.strip('new_'), sep="\s+", header=None)
         o_df.columns = ['k', 'i', 'j', 'flux']
-        assert n_df.loc[:, o_df.columns].eq(o_df).all().all(), (
+        assert np.isclose(n_df.loc[:, o_df.columns], o_df).all(), (
             "Something broke with alternative style model files"
         )
     os.chdir(b_d)
@@ -3585,7 +3614,7 @@ if __name__ == "__main__":
     # invest()
     #freyberg_test()
     #freyberg_prior_build_test()
-    # mf6_freyberg_test()
+    mf6_freyberg_test()
     #$mf6_freyberg_da_test()
     #mf6_freyberg_shortnames_test()
 
