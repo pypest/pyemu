@@ -937,7 +937,7 @@ def simple_ins_from_obs(obsnames, insfilename="model.output.ins"):
     """
     with open(insfilename, "w") as ofp:
         ofp.write("pif ~\n")
-        [ofp.write("!{0}!\n".format(cob)) for cob in obsnames]
+        [ofp.write("l1 !{0}!\n".format(cob)) for cob in obsnames]
 
 
 def pst_from_parnames_obsnames(
