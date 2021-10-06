@@ -58,6 +58,10 @@ def res_and_ens_test():
     o=np.array(range(100))
     assert fcns['nse'](m,o) == 1.0
     assert fcns['rmse'](m,o) == 0.0
+    assert fcns['nrmse_sd'](m,o) == 0.0
+    assert fcns['nrmse_mean'](m,o) == 0.0
+    assert fcns['nrmse_iq'](m,o) == 0.0
+    assert fcns['nrmse_maxmin'](m,o) == 0.0
     assert fcns['mse'](m,o) == 0.0
     assert fcns['mae'](m,o) == 0.0
     assert fcns['pbias'](m,o) == 0.0

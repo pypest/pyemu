@@ -42,7 +42,7 @@ def schur_test_nonpest():
         raise Exception("should have failed")
 
     print(s.get_par_contribution({"group1":["p1","p3"]}))
-
+    print(s.get_added_obs_importance({"group1": ["o1", "o3"]},reset_zero_weight=0.0))
     print(s.get_removed_obs_importance({"group1":["o1","o3"]}))
 
     forecasts = Matrix(x=np.random.random((1,npar)),row_names=[forecasts],col_names=pnames)
@@ -155,28 +155,37 @@ def errvar_test():
 def dataworth_test():
     import os
     import numpy as np
-    from pyemu import Schur
+    from pyemu import Schur,Cov
     w_dir = os.path.join("..","verification","Freyberg")
     forecasts = ["travel_time","sw_gw_0","sw_gw_1"]
     sc = Schur(jco=os.path.join(w_dir,"freyberg.jcb"),forecasts=forecasts,verbose=True)
-    sc.pst.observation_data.index = sc.pst.observation_data.obsnme
+    #sc.pst.observation_data.loc[sc.pst.nnz_obs_names[3:],"weight"] = 0.0
     base_obs = sc.pst.nnz_obs_names
     zw_names = [name for name in sc.pst.zero_weight_obs_names if name not in forecasts ]
+
     #print(sc.get_removed_obs_importance(obslist_dict={"test":zw_names}))
     oname = "or00c00_0"
+
     names = {"test":oname}
     added = sc.get_added_obs_importance(base_obslist=base_obs,
-                                      obslist_dict=names,reset_zero_weight=True)
+                                      obslist_dict=names,reset_zero_weight=1.0)
+    sc.pst.observation_data.loc[oname,"weight"] = 1.0
+    #sc.reset_obscov()
+    cov = Cov.from_observation_data(sc.pst)
+    scm = Schur(jco=os.path.join(w_dir, "freyberg.jcb"), forecasts=forecasts, verbose=True,
+                obscov=cov)
+    scm.pst.observation_data.loc[oname, "weight"] = 1.0
     removed = sc.get_removed_obs_importance(obslist_dict=names)
-    print("removed",removed)
-    print("added",added)
     for fname in forecasts:
         diff = np.abs(removed.loc["test",fname] - added.loc["base",fname])
+        print("add,{0},{1},{2}".format(fname, added.loc["test", fname], added.loc["base", fname]))
+        print("rem,{0},{1},{2}".format(fname, removed.loc["test", fname], removed.loc["base", fname]))
         assert diff < 0.01,"{0},{1},{2}".format(fname,removed.loc["test",fname],added.loc["base",fname])
 
     names = {"test1":oname,"test2":["or00c00_1","or00c00_2"]}
-    sc.next_most_important_added_obs(forecast="travel_time",obslist_dict=names,
-                                     base_obslist=sc.pst.nnz_obs_names)
+    scm.pst.observation_data.loc[oname, "weight"] = 0.0
+    scm.next_most_important_added_obs(forecast="travel_time",obslist_dict=names,
+                                     base_obslist=scm.pst.nnz_obs_names,reset_zero_weight=1.0)
 
 
 def dataworth_next_test():
@@ -189,7 +198,8 @@ def dataworth_next_test():
     sc = Schur(jco=os.path.join(w_dir,"freyberg.jcb"),forecasts=forecasts,verbose=True)
     next_test = sc.next_most_important_added_obs(forecast="sw_gw_0",
                                            base_obslist=sc.pst.nnz_obs_names,
-                                           obslist_dict={"test":sc.pst.nnz_obs_names})
+                                           obslist_dict={"test":sc.pst.nnz_obs_names},reset_zero_weight=0.0)
+
     # the returned dataframe should only have one row since the 'base' case
     # should be the same as the 'test' case
     assert next_test.shape[0] == 1
@@ -213,8 +223,8 @@ def dataworth_next_test():
                                                  reset_zero_weight=1.0,
                                                  niter=4)
     print(next_test)
-    print(imp_df.sort_index())
-    assert next_test.shape[0] == 4
+    #print(imp_df.sort_index())
+    assert next_test.shape[0] == 4,next_test.shape
 
 
 def par_contrib_speed_test():
@@ -430,11 +440,11 @@ if __name__ == "__main__":
     #forecast_pestpp_load_test()
     #map_test()
     #par_contrib_speed_test()
-    # schur_test()
+    #schur_test()
     #par_contrib_test()
-    #dataworth_test()
+    dataworth_test()
     #dataworth_next_test()
-    schur_test_nonpest()
+    #schur_test_nonpest()
     #la_test_io()
     #errvar_test_nonpest()
     #errvar_test()

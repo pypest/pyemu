@@ -351,8 +351,8 @@ def geostatistical_prior_builder(
                     df_zone.to_csv("prior_builder_crash.csv")
                     raise Exception("error inverting cov {0}".format(cov.row_names[:3]))
 
-                    if verbose:
-                        print("replace in full cov")
+                if verbose:
+                    print("replace in full cov")
                 full_cov.replace(cov)
                 # d = np.diag(full_cov.x)
                 # idx = np.argwhere(d==0.0)
@@ -3635,10 +3635,10 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     arr_pars = df.loc[df.index_cols.isna()].copy()
     list_pars = df.loc[df.index_cols.notna()].copy()
     # extract lists from string in input df
-    list_pars["index_cols"] = list_pars.index_cols.apply(lambda x: literal_eval(x))
-    list_pars["use_cols"] = list_pars.use_cols.apply(lambda x: literal_eval(x))
-    list_pars["lower_bound"] = list_pars.lower_bound.apply(lambda x: literal_eval(x))
-    list_pars["upper_bound"] = list_pars.upper_bound.apply(lambda x: literal_eval(x))
+    list_pars["index_cols"] = list_pars.index_cols.apply(literal_eval)
+    list_pars["use_cols"] = list_pars.use_cols.apply(literal_eval)
+    list_pars["lower_bound"] = list_pars.lower_bound.apply(literal_eval)
+    list_pars["upper_bound"] = list_pars.upper_bound.apply(literal_eval)
     # TODO check use_cols is always present
     apply_genericlist_pars(list_pars, chunk_len=chunk_len)
     apply_array_pars(arr_pars, chunk_len=chunk_len)
@@ -4145,7 +4145,7 @@ def apply_genericlist_pars(df, chunk_len=50):
     main_chunks = (
         uniq[: num_chunk_floor * chunk_len].reshape([-1, chunk_len]).tolist()
     )  # the list of files broken down into chunks
-    remainder = uniq[num_chunk_floor * chunk_len :].tolist()  # remaining files
+    remainder = uniq[num_chunk_floor * chunk_len:].tolist()  # remaining files
     chunks = main_chunks + [remainder]
     print("number of chunks to process:", len(chunks))
     if len(chunks) == 1:
@@ -4280,13 +4280,9 @@ def _process_list_file(model_file, df):
             mlt_cols = [str(col) for col in mlt.use_cols]
             operator = mlt.operator
             if operator == "*" or operator.lower()[0] == "m":
-                new_df.loc[common_idx, mlt_cols] = (
-                    new_df.loc[common_idx, mlt_cols] * mlts.loc[common_idx, mlt_cols]
-                ).values
+                new_df.loc[common_idx, mlt_cols] *= mlts.loc[common_idx, mlt_cols]
             elif operator == "+" or operator.lower()[0] == "a":
-                new_df.loc[common_idx, mlt_cols] = (
-                        new_df.loc[common_idx, mlt_cols] + mlts.loc[common_idx, mlt_cols]
-                ).values
+                new_df.loc[common_idx, mlt_cols] += mlts.loc[common_idx, mlt_cols]
             else:
                 raise Exception("unsupported operator '{0}' for mlt file '{1}'".format(operator,mlt.mlt_file))
         # bring mult index back to columns AND re-order
