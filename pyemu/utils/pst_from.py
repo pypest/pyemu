@@ -1736,11 +1736,13 @@ class PstFrom(object):
                 initial_value = 1.0
             elif par_style == 'a':
                 initial_value = 0.0
+            elif par_style == 'd':
+                initial_value = 1.0 #?
 
         if upper_bound is None:
             upper_bound = 1.0e+10
 
-        if transform.lower == "log":
+        if transform.lower() == "log":
             if upper_bound <= 0:
                 self.logger.lraise(
                     "transform is 'log' but bound_bound <= 0 for filenames {0}".format(",".join(filenames)))
