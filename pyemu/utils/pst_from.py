@@ -1760,9 +1760,9 @@ class PstFrom(object):
 
         if lower_bound >= upper_bound:
             self.logger.lraise("lower_bound {0} >= upper_bound {1}".format(lower_bound,upper_bound))
-        if lower_bound > initial_value:
+        if par_style != "d" and lower_bound > initial_value:
             self.logger.lraise("lower_bound {0} > initial_value {1}".format(lower_bound,initial_value))
-        if upper_bound < initial_value:
+        if par_style != "d" and upper_bound < initial_value:
             self.logger.lraise("upper_bound {0} < initial_value {1}".format(upper_bound,initial_value))
 
 
