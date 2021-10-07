@@ -1557,8 +1557,8 @@ class PstFrom(object):
         zone_array=None,
         dist_type="gaussian",
         sigma_range=4.0,
-        upper_bound=1.0e10,
-        lower_bound=1.0e-10,
+        upper_bound=None,
+        lower_bound=None,
         transform="log",
         par_name_base="p",
         index_cols=None,
@@ -1598,8 +1598,9 @@ class PstFrom(object):
                 for parameterization.
             dist_type: not yet implemented # TODO
             sigma_range: not yet implemented # TODO
-            upper_bound (`float`): PEST parameter upper bound # TODO support different ubound,lbound,transform if multiple use_col
-            lower_bound (`float`): PEST parameter lower bound
+            upper_bound (`float`): PEST parameter upper bound.  If `None`, then 1.0e+10 is used.  Default is `None` #
+            lower_bound (`float`): PEST parameter lower bound.  If `None` and `transform` is "log", then 1.0e-10 is used.
+                Otherwise, if `None`, -1.0e+10 is used.  Default is `None`
             transform (`str`): PEST parameter transformation.  Must be either "log","none" or "fixed.  The "tied" transform
                 must be used after calling `PstFrom.build_pst()`.
             par_name_base (`str` or `list`-like): basename for parameters that
@@ -1735,8 +1736,9 @@ class PstFrom(object):
                 initial_value = 1.0
             elif par_style == 'a':
                 initial_value = 0.0
-                if lower_bound >= 0.0:
-                    lower_bound = -1. * upper_bound
+
+        if upper_bound is None:
+            upper_bound = 1.0e+10
 
         if transform.lower == "log":
             if upper_bound <= 0:
@@ -1746,9 +1748,13 @@ class PstFrom(object):
                 self.logger.lraise(
                     "transform is 'log' but initial_value <= 0 for filenames {0}".format(",".join(filenames)))
 
-            if lower_bound <=0:
+            if lower_bound is None:
+                lower_bound = 1.0e-10
+            elif lower_bound <=0:
                 self.logger.lraise("transform is 'log' but lower_bound <= 0 for filenames {0}".format(",".join(filenames)))
 
+        if lower_bound is None:
+            lower_bound = -1.0e+10
 
         if isinstance(filenames, str) or isinstance(filenames, Path):
             filenames = [filenames]
