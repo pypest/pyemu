@@ -1550,6 +1550,7 @@ class PstFrom(object):
         )
         return new_obs_data
 
+
     def add_parameters(
         self,
         filenames,
@@ -1742,28 +1743,11 @@ class PstFrom(object):
         if upper_bound is None:
             upper_bound = 1.0e+10
 
-        if transform.lower() == "log":
-            if upper_bound <= 0:
-                self.logger.lraise(
-                    "transform is 'log' but bound_bound <= 0 for filenames {0}".format(",".join(filenames)))
-            if initial_value <= 0:
-                self.logger.lraise(
-                    "transform is 'log' but initial_value <= 0 for filenames {0}".format(",".join(filenames)))
-
-            if lower_bound is None:
-                lower_bound = 1.0e-10
-            elif lower_bound <=0:
-                self.logger.lraise("transform is 'log' but lower_bound <= 0 for filenames {0}".format(",".join(filenames)))
-
         if lower_bound is None:
-            lower_bound = -1.0e+10
-
-        if lower_bound >= upper_bound:
-            self.logger.lraise("lower_bound {0} >= upper_bound {1}".format(lower_bound,upper_bound))
-        if par_style != "d" and lower_bound > initial_value:
-            self.logger.lraise("lower_bound {0} > initial_value {1}".format(lower_bound,initial_value))
-        if par_style != "d" and upper_bound < initial_value:
-            self.logger.lraise("upper_bound {0} < initial_value {1}".format(upper_bound,initial_value))
+            if transform.lower() == "log":
+                lower_bound = 1.0e-10
+            else:
+                lower_bound = -1.0e+10
 
 
         if isinstance(filenames, str) or isinstance(filenames, Path):
