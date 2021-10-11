@@ -3012,11 +3012,8 @@ def usg_freyberg_test():
     #path to org model files
     org_model_ws = os.path.join('..', 'examples', 'freyberg_usg')
     # flopy is not liking the rch package in unstruct, so allow it to fail and keep going...
-    m = flopy.modflow.Modflow.load("freyberg.usg.nam", model_ws=org_model_ws,
-                                   verbose=True, version="mfusg",
-                                   forgive=True, check=False)
-
-
+    m = flopy.mfusg.MfUsg.load("freyberg.usg.nam", model_ws=org_model_ws,
+                               verbose=True, forgive=True, check=False)
 
     #convert to all open/close
     m.external_path = "."
@@ -3027,16 +3024,7 @@ def usg_freyberg_test():
     m.change_model_ws(tmp_model_ws, reset_external=True)
     m.write_input()
 
-    #manually copy over the two packages that flopy doesnt like/support
-    #shutil.copy2(os.path.join(org_model_ws,"freyberg.usg.rch"),os.path.join(tmp_model_ws,"freyberg.usg.rch"))
-    shutil.copy2(os.path.join(org_model_ws, "freyberg.usg.gnc"), os.path.join(tmp_model_ws, "freyberg.usg.gnc"))
     nam_file = os.path.join(tmp_model_ws,"freyberg.usg.nam")
-    nam_lines = open(nam_file,'r').readlines()
-    with open(nam_file,'w') as f:
-        for line in nam_lines:
-            f.write(line)
-        #f.write("RCH      31  freyberg.usg.rch\n")
-        f.write("GNC       35  freyberg.usg.gnc\n")
 
     #make sure the model runs in the new dir with all external formats
     pyemu.os_utils.run("mfusg freyberg.usg.nam", cwd=tmp_model_ws)
