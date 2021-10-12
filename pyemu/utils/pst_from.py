@@ -683,9 +683,7 @@ class PstFrom(object):
         if not os.path.exists(self.original_d):
             self.logger.lraise(f"original_d '{self.original_d}' not found")
         if not os.path.isdir(self.original_d):
-            self.logger.lraise(
-                f"original_d '{self.original_d}' is not a directory"
-            )
+            self.logger.lraise(f"original_d '{self.original_d}' is not a directory")
         if self.new_d.exists():
             if self.remove_existing:
                 self.logger.log(f"removing existing new_d '{self.new_d}'")
@@ -694,8 +692,7 @@ class PstFrom(object):
                 self.logger.log(f"removing existing new_d '{self.new_d}'")
             else:
                 self.logger.lraise(
-                    f"new_d '{self.new_d}' already exists "
-                    "- use remove_existing=True"
+                    f"new_d '{self.new_d}' already exists " "- use remove_existing=True"
                 )
 
         self.logger.log(
@@ -708,16 +705,12 @@ class PstFrom(object):
 
         self.original_file_d = self.new_d / "org"
         if self.original_file_d.exists():
-            self.logger.lraise(
-                f"'org' subdir already exists in new_d '{self.new_d}'"
-            )
+            self.logger.lraise(f"'org' subdir already exists in new_d '{self.new_d}'")
         self.original_file_d.mkdir(exist_ok=True)
 
         self.mult_file_d = self.new_d / "mult"
         if self.mult_file_d.exists():
-            self.logger.lraise(
-                f"'mult' subdir already exists in new_d '{self.new_d}'"
-            )
+            self.logger.lraise(f"'mult' subdir already exists in new_d '{self.new_d}'")
         self.mult_file_d.mkdir(exist_ok=True)
 
         self.tpl_d.mkdir(exist_ok=True)
@@ -886,9 +879,7 @@ class PstFrom(object):
                 dest_filepath = self.new_d / rel_filepath
                 self.logger.log(f"loading array {dest_filepath}")
                 if not dest_filepath.exists():
-                    self.logger.lraise(
-                        f"par filename '{dest_filepath}' not found "
-                    )
+                    self.logger.lraise(f"par filename '{dest_filepath}' not found ")
                 # read array type input file
                 arr = np.loadtxt(dest_filepath, delimiter=sep, ndmin=2)
                 self.logger.log(f"loading array {dest_filepath}")
@@ -1302,7 +1293,7 @@ class PstFrom(object):
         df, storehead, inssep = self._load_listtype_file(
             filenames, index_cols, use_cols, fmts, seps, skip_rows
         )
-        if inssep != ',':
+        if inssep != ",":
             inssep = seps
         else:
             inssep = [inssep]
@@ -1332,7 +1323,9 @@ class PstFrom(object):
         if stkeys.size > 0 and stkeys.min() == 0:
             lenhead += 1 + np.sum(np.diff(stkeys) == 1)
         new_obs_l = []
-        for filename, sep in zip(filenames, inssep):  # should only ever be one but hey...
+        for filename, sep in zip(
+            filenames, inssep
+        ):  # should only ever be one but hey...
             self.logger.log(
                 "building insfile for tabular output file {0}" "".format(filename)
             )
@@ -1550,7 +1543,6 @@ class PstFrom(object):
         )
         return new_obs_data
 
-
     def add_parameters(
         self,
         filenames,
@@ -1581,7 +1573,7 @@ class PstFrom(object):
         alt_inst_str="inst",
         comment_char=None,
         par_style="multiplier",
-        initial_value=None
+        initial_value=None,
     ):
         """
         Add list or array style model input files to PstFrom object.
@@ -1735,20 +1727,19 @@ class PstFrom(object):
         if initial_value is None:
             if par_style == "m":
                 initial_value = 1.0
-            elif par_style == 'a':
+            elif par_style == "a":
                 initial_value = 0.0
-            elif par_style == 'd':
-                initial_value = 1.0 #?
+            elif par_style == "d":
+                initial_value = 1.0  # ?
 
         if upper_bound is None:
-            upper_bound = 1.0e+10
+            upper_bound = 1.0e10
 
         if lower_bound is None:
             if transform.lower() == "log":
                 lower_bound = 1.0e-10
             else:
-                lower_bound = -1.0e+10
-
+                lower_bound = -1.0e10
 
         if isinstance(filenames, str) or isinstance(filenames, Path):
             filenames = [filenames]
@@ -1787,9 +1778,7 @@ class PstFrom(object):
                 self.logger.warn(
                     "0) Inconsistency between " "geostruct transform and partrans."
                 )
-                self.logger.warn(
-                    f"1) Setting geostruct transform to " "{transform}"
-                )
+                self.logger.warn(f"1) Setting geostruct transform to " "{transform}")
                 if geostruct not in self.par_struct_dict.keys():
                     # safe to just reset transform
                     geostruct.transform = transform
@@ -1841,7 +1830,7 @@ class PstFrom(object):
             fmts=mfile_fmt,
             skip_rows=mfile_skip,
             c_char=comment_char,
-            seps=mfile_sep
+            seps=mfile_sep,
         )
         if datetime is not None:  # convert and check datetime
             # TODO: something needed here to allow a different relative point.
@@ -1901,7 +1890,7 @@ class PstFrom(object):
         par_name_store = par_name_base[0].replace(":", "")  # for os filename
 
         # Define requisite filenames
-        if par_style in ["m","a"]:
+        if par_style in ["m", "a"]:
             mlt_filename = "{0}_{1}.csv".format(par_name_store, par_type)
             # pst input file (for tpl->in pair) is multfile (in mult dir)
             in_fileabs = self.mult_file_d / mlt_filename
@@ -1980,7 +1969,7 @@ class PstFrom(object):
                 par_style=par_style,
                 headerlines=headerlines,
                 fill_value=initial_value,
-                logger=self.logger
+                logger=self.logger,
             )
             assert (
                 np.mod(len(df), len(use_cols)) == 0.0
@@ -2081,13 +2070,13 @@ class PstFrom(object):
                 # but only settting up one set of pps at a time
                 pnb = par_name_base[0]
                 if self.longnames:
-                    pnb = "pname:{1}_ptype:pp_pstyle:{0}".format(par_style,pnb)
+                    pnb = "pname:{1}_ptype:pp_pstyle:{0}".format(par_style, pnb)
                 pp_dict = {0: pnb}
                 pp_filename = "{0}pp.dat".format(par_name_store)
                 # pst inputfile (for tpl->in pair) is
                 # par_name_storepp.dat table (in pst ws)
                 in_filepst = pp_filename
-                pp_filename_dict = {pnb:in_filepst}
+                pp_filename_dict = {pnb: in_filepst}
                 tpl_filename = self.tpl_d / (pp_filename + ".tpl")
                 # tpl_filename = get_relative_filepath(self.new_d, tpl_filename)
                 pp_locs = None
@@ -2270,7 +2259,7 @@ class PstFrom(object):
                         tpl_dir=self.tpl_d,
                         shapename=str(self.new_d / "{0}.shp".format(par_name_store)),
                         longnames=self.longnames,
-                        pp_filename_dict=pp_filename_dict
+                        pp_filename_dict=pp_filename_dict,
                     )
                 else:
 
@@ -2428,9 +2417,9 @@ class PstFrom(object):
                 "head_rows": skip_dict[mod_file],
                 "upper_bound": ult_ubound,
                 "lower_bound": ult_lbound,
-                "operator":par_style
+                "operator": par_style,
             }
-            if par_style in ["m","a"]:
+            if par_style in ["m", "a"]:
                 mult_dict["mlt_file"] = Path(self.mult_file_d.name, mlt_filename)
 
             if pp_filename is not None:
@@ -2604,9 +2593,7 @@ class PstFrom(object):
 
             i = si.intersection(su)
             if len(i) > 0:
-                self.logger.lraise(
-                    f"use_cols also listed in index_cols: {str(i)}"
-                )
+                self.logger.lraise(f"use_cols also listed in index_cols: {str(i)}")
 
         file_path = self.new_d / filename
         if not os.path.exists(file_path):
@@ -2795,7 +2782,7 @@ def write_list_tpl(
     par_style="m",
     headerlines=None,
     fill_value=1.0,
-    logger=None
+    logger=None,
 ):
     """Write template files for a list style input.
 
@@ -2876,7 +2863,7 @@ def write_list_tpl(
             xy_in_idx=xy_in_idx,
             zero_based=zero_based,
             headerlines=headerlines,
-            logger=logger
+            logger=logger,
         )
     else:
         df_tpl = _get_tpl_or_ins_df(
@@ -2894,14 +2881,15 @@ def write_list_tpl(
             xy_in_idx=xy_in_idx,
             zero_based=zero_based,
             par_fill_value=fill_value,
-            par_style=par_style
+            par_style=par_style,
         )
         if use_rows is None:
             use_rows = df_tpl.index
         else:
-            use_rows = _get_use_rows(df_tpl, use_rows, zero_based,
-                                     tpl_filename, logger=logger)
-        df_tpl = df_tpl.loc[use_rows, :] # direct pars done in direct function
+            use_rows = _get_use_rows(
+                df_tpl, use_rows, zero_based, tpl_filename, logger=logger
+            )
+        df_tpl = df_tpl.loc[use_rows, :]  # direct pars done in direct function
         # can we just slice df_tpl here
     for col in use_cols:  # corellations flagged using pargp
         df_tpl["covgp{0}".format(col)] = df_tpl.loc[:, "pargp{0}".format(col)].values
@@ -2924,10 +2912,12 @@ def write_list_tpl(
                     # then parse_kij assumes that i is at idx[-2] and j at idx[-1]
                     third_d.pop()  # pops -1
                     third_d.pop()  # pops -2
-                msg = ("Coincidently located pars in list-style file, "
-                       "attempting to separate pars based on `index_cols` "
-                       f"passed - using index_col[{third_d[-1]}] "
-                       f"for third dimension")
+                msg = (
+                    "Coincidently located pars in list-style file, "
+                    "attempting to separate pars based on `index_cols` "
+                    f"passed - using index_col[{third_d[-1]}] "
+                    f"for third dimension"
+                )
                 if logger is not None:
                     logger.warn(msg)
                 else:
@@ -2988,7 +2978,7 @@ def write_list_tpl(
         df_tpl.loc[:, use_col] = df_tpl.loc[:, use_col].apply(
             lambda x: "~  {0}  ~".format(x)
         )
-    if par_style in ["m","a"]:
+    if par_style in ["m", "a"]:
         pyemu.helpers._write_df_tpl(
             filename=tpl_filename, df=df_tpl, sep=",", tpl_marker="~"
         )
@@ -3004,24 +2994,24 @@ def write_list_tpl(
 
 
 def _write_direct_df_tpl(
-        in_filename,
-        tpl_filename,
-        df,
-        name,
-        index_cols,
-        typ,
-        use_cols=None,
-        use_rows=None,
-        suffix="",
-        zone_array=None,
-        longnames=False,
-        get_xy=None,
-        ij_in_idx=None,
-        xy_in_idx=None,
-        zero_based=True,
-        gpname=None,
-        headerlines=None,
-        logger=None
+    in_filename,
+    tpl_filename,
+    df,
+    name,
+    index_cols,
+    typ,
+    use_cols=None,
+    use_rows=None,
+    suffix="",
+    zone_array=None,
+    longnames=False,
+    get_xy=None,
+    ij_in_idx=None,
+    xy_in_idx=None,
+    zero_based=True,
+    gpname=None,
+    headerlines=None,
+    logger=None,
 ):
 
     """
@@ -3075,15 +3065,25 @@ def _write_direct_df_tpl(
     df_ti = _getxy_from_idx(df_ti, get_xy, xy_in_idx, ij_in_idx)
 
     df_ti, direct_tpl_df = _build_parnames(
-        df_ti, typ, zone_array, index_cols, use_cols,
-        name, gpname, suffix, longnames,
-        par_style="d", init_df=df, init_fname=in_filename
+        df_ti,
+        typ,
+        zone_array,
+        index_cols,
+        use_cols,
+        name,
+        gpname,
+        suffix,
+        longnames,
+        par_style="d",
+        init_df=df,
+        init_fname=in_filename,
     )
     if use_rows is None:
         use_rows = df_ti.index
     else:
-        use_rows = _get_use_rows(df_ti, use_rows, zero_based, tpl_filename,
-                                 logger=logger)
+        use_rows = _get_use_rows(
+            df_ti, use_rows, zero_based, tpl_filename, logger=logger
+        )
     df_ti = df_ti.loc[use_rows]
     not_rows = ~direct_tpl_df.index.isin(use_rows)
     direct_tpl_df.loc[not_rows] = df.loc[not_rows, direct_tpl_df.columns]
@@ -3092,8 +3092,7 @@ def _write_direct_df_tpl(
     else:
         header = False
     pyemu.helpers._write_df_tpl(
-        tpl_filename, direct_tpl_df, index=False, header=header,
-        headerlines=headerlines
+        tpl_filename, direct_tpl_df, index=False, header=header, headerlines=headerlines
     )
     return df_ti
 
@@ -3109,17 +3108,22 @@ def _get_use_rows(df, use_rows, zero_based, fnme, logger=None):
     Returns:
 
     """
-    if (isinstance(use_rows, str) or
-            isinstance(use_rows, tuple) or
-            isinstance(use_rows, int)):
+    if (
+        isinstance(use_rows, str)
+        or isinstance(use_rows, tuple)
+        or isinstance(use_rows, int)
+    ):
         # we only 1 use_row but best in a list
         use_rows = [use_rows]
     if not zero_based:  # assume passed indicies are 1 based
         try:  # try and slice df_tpl assuming tuple of index ids passed
             # adjust possible passed tuple.
-            use_rows = [tuple([i - 1 if isinstance(i, int) else i for i in r])
-                        if not isinstance(r, str) else r
-                        for r in use_rows]
+            use_rows = [
+                tuple([i - 1 if isinstance(i, int) else i for i in r])
+                if not isinstance(r, str)
+                else r
+                for r in use_rows
+            ]
             # will error if use rows is just ints
         except TypeError:
             msg = "write_list_tpl: Assuming passed use_rows are zero-based ints!"
@@ -3130,7 +3134,7 @@ def _get_use_rows(df, use_rows, zero_based, fnme, logger=None):
             # dont need to do anything if in because should be zero-based
     orig_use_rows = use_rows
     use_rows = set(use_rows)
-    sel = (df.sidx.isin(use_rows) | df.idx_strs.isin(use_rows))
+    sel = df.sidx.isin(use_rows) | df.idx_strs.isin(use_rows)
     if not sel.any():  # use_rows must be ints
         inidx = list(use_rows.intersection(df.index))
         missing = use_rows.difference(df.index)
@@ -3139,22 +3143,27 @@ def _get_use_rows(df, use_rows, zero_based, fnme, logger=None):
         missing = set(use_rows).difference(df.sidx, df.idx_strs)
         use_rows = df.loc[sel].index.unique()
     if len(missing) > 0:
-        msg = ("write_list_tpl: Requested rows missing from parameter file, "
-               f"rows: {missing}, file: {fnme}.")
+        msg = (
+            "write_list_tpl: Requested rows missing from parameter file, "
+            f"rows: {missing}, file: {fnme}."
+        )
         if logger is not None:
             logger.warn(msg)
         else:
             warnings.warn(msg, PyemuWarning)
     if len(use_rows) == 0:
-        msg = ("write_list_tpl: None of request rows found in parameter file, "
-               f"rows: {orig_use_rows}, file: {fnme}. "
-               "Will set up pars for all rows.")
+        msg = (
+            "write_list_tpl: None of request rows found in parameter file, "
+            f"rows: {orig_use_rows}, file: {fnme}. "
+            "Will set up pars for all rows."
+        )
         if logger is not None:
             logger.warn(msg)
         else:
             warnings.warn(msg, PyemuWarning)
         use_rows = df.index
     return use_rows
+
 
 def _get_index_strfmt(index_cols, longnames):
     # get some index strings for naming
@@ -3186,12 +3195,9 @@ def _get_index_strings(df, fmt, zero_based):
             lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x)
         )
 
-    df.loc[:, "idx_strs"] = df.sidx.apply(
-        lambda x: fmt.format(*x)).str.replace(" ", "")
-    df.loc[:, "idx_strs"] = df.idx_strs.str.replace(":", "",
-                                                    regex=False).str.lower()
-    df.loc[:, "idx_strs"] = df.idx_strs.str.replace("|", ":",
-                                                    regex=False)
+    df.loc[:, "idx_strs"] = df.sidx.apply(lambda x: fmt.format(*x)).str.replace(" ", "")
+    df.loc[:, "idx_strs"] = df.idx_strs.str.replace(":", "", regex=False).str.lower()
+    df.loc[:, "idx_strs"] = df.idx_strs.str.replace("|", ":", regex=False)
     return df
 
 
@@ -3208,13 +3214,25 @@ def _getxy_from_idx(df, get_xy, xy_in_idx, ij_in_idx):
     return df
 
 
-def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
-                    gpname, suffix, longnames, par_style, init_df=None,
-                    init_fname=None,fill_value=1.0):
+def _build_parnames(
+    df,
+    typ,
+    zone_array,
+    index_cols,
+    use_cols,
+    basename,
+    gpname,
+    suffix,
+    longnames,
+    par_style,
+    init_df=None,
+    init_fname=None,
+    fill_value=1.0,
+):
     if par_style == "d":
         assert init_df is not None
         direct_tpl_df = init_df.copy()
-        if typ == 'constant':
+        if typ == "constant":
             assert init_fname is not None
     if use_cols is None:
         use_cols = [c for c in df.columns if c not in index_cols]
@@ -3315,8 +3333,7 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
                     fmtr += suffix
             if zone_array is not None:
                 df.loc[:, use_col] = df.apply(
-                    lambda x: fmtr.format(nname, use_col, x.zval, x.idx_strs),
-                    axis=1
+                    lambda x: fmtr.format(nname, use_col, x.zval, x.idx_strs), axis=1
                 )
             else:
                 df.loc[:, use_col] = df.idx_strs.apply(
@@ -3336,8 +3353,9 @@ def _build_parnames(df, typ, zone_array, index_cols, use_cols, basename,
             if df.loc[:, use_col].apply(lambda x: len(x)).max() > 12:
                 too_long = df.loc[:, use_col].apply(lambda x: len(x)) > 12
                 print(too_long)
-                raise ValueError("_get_tpl_or_ins_df(): "
-                                 "couldn't form short par names")
+                raise ValueError(
+                    "_get_tpl_or_ins_df(): " "couldn't form short par names"
+                )
         if par_style == "d":
             direct_tpl_df.loc[:, use_col] = (
                 df.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
@@ -3362,7 +3380,7 @@ def _get_tpl_or_ins_df(
     zero_based=True,
     gpname=None,
     par_fill_value=1.0,
-    par_style="m"
+    par_style="m",
 ):
     """
     Private method to auto-generate parameter or obs names from tabular
@@ -3432,9 +3450,19 @@ def _get_tpl_or_ins_df(
 
     if typ == "obs":
         return df_ti  #################### RETURN if OBS
-    df_ti = _build_parnames(df_ti, typ, zone_array, index_cols, use_cols,
-                            name, gpname, suffix, longnames,par_style,
-                            fill_value=par_fill_value)
+    df_ti = _build_parnames(
+        df_ti,
+        typ,
+        zone_array,
+        index_cols,
+        use_cols,
+        name,
+        gpname,
+        suffix,
+        longnames,
+        par_style,
+        fill_value=par_fill_value,
+    )
     return df_ti
 
 
@@ -3542,7 +3570,9 @@ def write_array_tpl(
         if zone_array is not None:
             zval = zone_array[i, j]
         if longnames:
-            pname = "pname:{1}_ptype:zn_pstyle:{0}_zone:{2}".format(par_style, name, zval)
+            pname = "pname:{1}_ptype:zn_pstyle:{0}_zone:{2}".format(
+                par_style, name, zval
+            )
             if suffix != "":
                 pname += "_{0}".format(suffix)
         else:
@@ -3553,7 +3583,9 @@ def write_array_tpl(
 
     def grid_namer(i, j):
         if longnames:
-            pname = "pname:{1}_ptype:gr_pstyle:{0}_i:{2}_j:{3}".format(par_style, name, i, j)
+            pname = "pname:{1}_ptype:gr_pstyle:{0}_i:{2}_j:{3}".format(
+                par_style, name, i, j
+            )
             if get_xy is not None:
                 pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy([i, j]))
             if zone_array is not None:
@@ -3613,15 +3645,13 @@ def write_array_tpl(
             df.loc[:, "y"] = yy
     if gpname is None:
         gpname = name
-    df.loc[:, "pargp"] = "{0}_{1}".format(
-        gpname, suffix.replace("_", "")
-    ).rstrip("_")
+    df.loc[:, "pargp"] = "{0}_{1}".format(gpname, suffix.replace("_", "")).rstrip("_")
     df.loc[:, "tpl_filename"] = tpl_filename
     df.loc[:, "input_filename"] = input_filename
     if input_filename is not None:
-        if par_style in ['m','d']:
+        if par_style in ["m", "d"]:
             arr = np.ones(shape)
-        elif par_style == 'a':
+        elif par_style == "a":
             arr = np.zeros(shape)
         np.savetxt(input_filename, arr, fmt="%2.1f")
 
