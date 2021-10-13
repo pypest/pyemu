@@ -802,7 +802,9 @@ def mf6_freyberg_test():
         pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
                           pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
                           upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
-
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base=f"wel_grid_{kper}",
+                      pargp=f"wel_{kper}_v2", index_cols=[0, 1, 2], use_cols=[3], use_rows=[1],
+                      upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
     # test non spatial idx in list like
     pf.add_parameters(filenames="freyberg6.sfr_packagedata_test.txt", par_name_base="sfr_rhk",
                       pargp="sfr_rhk", index_cols=['#rno'], use_cols=['rhk'], upper_bound=10.,
@@ -866,7 +868,7 @@ def mf6_freyberg_test():
     os.chdir(pf.new_d)
     try:
         pyemu.helpers.apply_list_and_array_pars(
-            arr_par_file="mult2model_info.csv",chunk_len=1)
+            arr_par_file="mult2model_info.csv", chunk_len=1)
     except Exception as e:
         os.chdir(b_d)
         raise Exception(str(e))
@@ -1459,7 +1461,7 @@ def mf6_freyberg_direct_test():
                 fw.write(line)
 
     # fl = "freyberg6.wel_stress_period_data_3.txt" # Add extra string col_id
-    for fl in list_files[2:4]:
+    for fl in list_files[2:7]:
         with open(os.path.join(template_ws, fl), 'r') as fr:
             lines = [line for line in fr]
         with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
@@ -1529,6 +1531,35 @@ def mf6_freyberg_direct_test():
                       upper_bound=0.0, lower_bound=-500,par_style="direct",
                       transform="none")
 
+    list_file = "new_freyberg6.wel_stress_period_data_5.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell5_k', 'nwell5_q'],
+                      pargp='nwell5',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0, use_rows=[3, 4])
+
+    list_file = "new_freyberg6.wel_stress_period_data_6.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell6_k', 'nwell6_q'],
+                      pargp='nwell6',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0, use_rows=[(3, 21, 15), (3, 30, 7)])
+    # use_rows should match so all should be setup 2 cols 6 rows
+    assert len(pf.par_dfs[-1]) == 2*6 # should be
+    list_file = "new_freyberg6.wel_stress_period_data_7.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell6_k', 'nwell6_q'],
+                      pargp='nwell6',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0,
+                      use_rows=[('well2', 21, 15), ('well4', 30, 7)])
+    assert len(pf.par_dfs[-1]) == 2 * 2  # should be
     # add model run command
     pf.mod_sys_cmds.append("mf6")
     print(pf.mult_files)
@@ -1561,7 +1592,7 @@ def mf6_freyberg_direct_test():
         n_df = pd.read_csv(f, sep="\s+")
         o_df = pd.read_csv(f.strip('new_'), sep="\s+", header=None)
         o_df.columns = ['k', 'i', 'j', 'flux']
-        assert n_df.loc[:, o_df.columns].eq(o_df).all().all(), (
+        assert np.isclose(n_df.loc[:, o_df.columns], o_df).all(), (
             "Something broke with alternative style model files"
         )
     os.chdir(b_d)
@@ -2981,11 +3012,8 @@ def usg_freyberg_test():
     #path to org model files
     org_model_ws = os.path.join('..', 'examples', 'freyberg_usg')
     # flopy is not liking the rch package in unstruct, so allow it to fail and keep going...
-    m = flopy.modflow.Modflow.load("freyberg.usg.nam", model_ws=org_model_ws,
-                                   verbose=True, version="mfusg",
-                                   forgive=True, check=False)
-
-
+    m = flopy.mfusg.MfUsg.load("freyberg.usg.nam", model_ws=org_model_ws,
+                               verbose=True, forgive=True, check=False)
 
     #convert to all open/close
     m.external_path = "."
@@ -2996,16 +3024,7 @@ def usg_freyberg_test():
     m.change_model_ws(tmp_model_ws, reset_external=True)
     m.write_input()
 
-    #manually copy over the two packages that flopy doesnt like/support
-    #shutil.copy2(os.path.join(org_model_ws,"freyberg.usg.rch"),os.path.join(tmp_model_ws,"freyberg.usg.rch"))
-    shutil.copy2(os.path.join(org_model_ws, "freyberg.usg.gnc"), os.path.join(tmp_model_ws, "freyberg.usg.gnc"))
     nam_file = os.path.join(tmp_model_ws,"freyberg.usg.nam")
-    nam_lines = open(nam_file,'r').readlines()
-    with open(nam_file,'w') as f:
-        for line in nam_lines:
-            f.write(line)
-        #f.write("RCH      31  freyberg.usg.rch\n")
-        f.write("GNC       35  freyberg.usg.gnc\n")
 
     #make sure the model runs in the new dir with all external formats
     pyemu.os_utils.run("mfusg freyberg.usg.nam", cwd=tmp_model_ws)
@@ -3583,11 +3602,11 @@ if __name__ == "__main__":
     # invest()
     #freyberg_test()
     #freyberg_prior_build_test()
-    #mf6_freyberg_test()
+    mf6_freyberg_test()
     #$mf6_freyberg_da_test()
     #mf6_freyberg_shortnames_test()
 
-    mf6_freyberg_direct_test()
+    #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     # xsec_test()
     # mf6_freyberg_short_direct_test()

@@ -548,7 +548,7 @@ class Schur(LinearAnalysis):
                 non-zero-weighted observations are accounted for in evaluating the worth of
                 new yet-to-be-collected observations.
             reset_zero_weight (`float`, optional)
-                a flag to reset observations with zero weight in `obslist_dict` 
+                a flag to reset observations with zero weight in `obslist_dict`
                 If `reset_zero_weights` passed as 0.0, no weights adjustments are made.
                 Default is 1.0.
 
@@ -566,9 +566,9 @@ class Schur(LinearAnalysis):
 
         Note:
             Observations listed in `base_obslist` is required to only include observations
-            with weight not equal to zero. If zero-weighted observations are in `base_obslist` an exception will 
+            with weight not equal to zero. If zero-weighted observations are in `base_obslist` an exception will
             be thrown.  In most cases, users will want to reset zero-weighted observations as part
-            dataworth testing process. If `reset_zero_weights` == 0, no weights adjustments will be made - this is 
+            dataworth testing process. If `reset_zero_weights` == 0, no weights adjustments will be made - this is
             most appropriate if different weights are assigned to the added observation values in `Schur.pst`
 
         Example::
@@ -599,13 +599,17 @@ class Schur(LinearAnalysis):
             try:
                 org_pst = self.pst.get()
             except:
-                raise Exception("'reset_zero_weight' > 0 only supported when pst is available")
-            self.logger.statement("resetting zero weights in obslist_dict to {0}".format(weight))
+                raise Exception(
+                    "'reset_zero_weight' > 0 only supported when pst is available"
+                )
+            self.logger.statement(
+                "resetting zero weights in obslist_dict to {0}".format(weight)
+            )
         else:
             self.logger.statement("not resetting zero weights in obslist_dict")
-            
-        #obs = self.pst.observation_data
-        #obs.index = obs.obsnme
+
+        # obs = self.pst.observation_data
+        # obs.index = obs.obsnme
 
         # if we don't care about grouping obs, then just reset all weights at once
         if base_obslist is None and obslist_dict is None and reset:
@@ -633,16 +637,17 @@ class Schur(LinearAnalysis):
             except:
                 pass
             else:
-                zero_basenames = [name
-                        for name in self.pst.zero_weight_obs_names
-                        if name in base_obslist
+                zero_basenames = [
+                    name
+                    for name in self.pst.zero_weight_obs_names
+                    if name in base_obslist
                 ]
                 if len(zero_basenames) > 0:
                     raise Exception(
                         "Observations in baseobs_list must have "
                         + "nonzero weight. The following observations "
                         + "violate that condition: "
-                        + ','.join(zero_basenames)
+                        + ",".join(zero_basenames)
                     )
 
         # if needed reset the zero-weight obs in obslist_dict
@@ -663,8 +668,6 @@ class Schur(LinearAnalysis):
             self.log("resetting zero weight obs in obslist_dict")
             self.pst._adjust_weights_by_list(z_obs, weight)
             self.log("resetting zero weight obs in obslist_dict")
-
-
 
         # for a comprehensive obslist_dict
         if obslist_dict is None and reset:
@@ -780,8 +783,8 @@ class Schur(LinearAnalysis):
             if type(obslist_dict) == list:
                 obslist_dict = dict(zip(obslist_dict, obslist_dict))
             base_obslist = []
-            for key,names in obslist_dict.items():
-                if isinstance(names,str):
+            for key, names in obslist_dict.items():
+                if isinstance(names, str):
                     names = [names]
                 base_obslist.extend(names)
             # dedup
@@ -792,10 +795,11 @@ class Schur(LinearAnalysis):
                 # dedup again
                 base_obslist = list(set(base_obslist))
                 sbase_obslist = set(base_obslist)
-                zero_basenames = [name
-                                  for name in self.pst.zero_weight_obs_names
-                                  if name in sbase_obslist
-                                  ]
+                zero_basenames = [
+                    name
+                    for name in self.pst.zero_weight_obs_names
+                    if name in sbase_obslist
+                ]
             except:
                 pass
             if len(zero_basenames) > 0:
@@ -803,30 +807,35 @@ class Schur(LinearAnalysis):
                     "Observations in baseobs_list must have "
                     + "nonzero weight. The following observations "
                     + "violate that condition: "
-                    + ','.join(zero_basenames)
+                    + ",".join(zero_basenames)
                 )
-
 
         else:
             try:
                 self.pst
             except Exception as e:
-                raise Exception("'obslist_dict' not passed and self.pst is not available")
+                raise Exception(
+                    "'obslist_dict' not passed and self.pst is not available"
+                )
 
             if self.pst.nnz_obs == 0:
                 raise Exception(
-                    "not resetting weights and there are no non-zero weight obs to remove")
+                    "not resetting weights and there are no non-zero weight obs to remove"
+                )
             obslist_dict = dict(zip(self.pst.nnz_obs_names, self.pst.nnz_obs_names))
             base_obslist = self.pst.nnz_obs_names
 
-
         if reset_zero_weight is not None:
-            self.log("Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
-            + "This value is ignored")
-            print("Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
-            + "This value is ignored")
-        #obs = self.pst.observation_data
-        #obs.index = obs.obsnme
+            self.log(
+                "Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
+                + "This value is ignored"
+            )
+            print(
+                "Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
+                + "This value is ignored"
+            )
+        # obs = self.pst.observation_data
+        # obs.index = obs.obsnme
 
         self.log("calculating importance of observations")
         org_obscov = self.obscov.copy()
@@ -838,7 +847,7 @@ class Schur(LinearAnalysis):
 
         cases = list(obslist_dict.keys())
         cases.sort()
-        #for case, obslist in obslist_dict.items():
+        # for case, obslist in obslist_dict.items():
         for case in cases:
             obslist = obslist_dict[case]
 
@@ -851,7 +860,7 @@ class Schur(LinearAnalysis):
         for forecast, pt in self.posterior_forecast.items():
             results[forecast] = [pt]
         base_obslist.sort()
-        #for case_name, obslist in obslist_dict.items():
+        # for case_name, obslist in obslist_dict.items():
         for case_name in cases:
             obslist = obslist_dict[case_name]
             if not isinstance(obslist, list):
@@ -893,7 +902,7 @@ class Schur(LinearAnalysis):
             "calculating importance of observations by removing: " + str(obslist) + "\n"
         )
 
-        #if reset:
+        # if reset:
         self.reset_obscov(org_obscov)
         if org_pst is not None:
             self.reset_pst(org_pst)
@@ -950,13 +959,15 @@ class Schur(LinearAnalysis):
 
         """
         if reset_zero_weight is not None:
-            self.log("Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
-            + "This value is ignored")
-            print("Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
-            + "This value is ignored")
-        return self.get_removed_obs_importance(
-            self.get_obs_group_dict()
-        )
+            self.log(
+                "Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
+                + "This value is ignored"
+            )
+            print(
+                "Deprecation Warning: reset_zero_weight supplied to get_removed_obs_importance. "
+                + "This value is ignored"
+            )
+        return self.get_removed_obs_importance(self.get_obs_group_dict())
 
     def get_added_obs_group_importance(self, reset_zero_weight=1.0):
         """A dataworth method to analyze the posterior uncertainty as a result of gaining
@@ -964,7 +975,7 @@ class Schur(LinearAnalysis):
 
         Args:
             reset_zero_weight (`float`, optional)
-                a flag to reset observations with zero weight in `obslist_dict` 
+                a flag to reset observations with zero weight in `obslist_dict`
                 If `reset_zero_weights` passed as 0.0, no weights adjustments are made.
                 Default is 1.0.
 
@@ -1024,7 +1035,7 @@ class Schur(LinearAnalysis):
                 non-zero-weighted observations are accounted for in evaluating the worth of
                 new yet-to-be-collected observations.
             reset_zero_weight (`float`, optional)
-                a flag to reset observations with zero weight in `obslist_dict` 
+                a flag to reset observations with zero weight in `obslist_dict`
                 If `reset_zero_weights` passed as 0.0, no weights adjustments are made.
                 Default is 1.0.
 
@@ -1113,7 +1124,7 @@ class Schur(LinearAnalysis):
             if reset_zero_weight > 0.0:
                 snames = set(self.pst.nnz_obs_names)
                 reset_names = [o for o in onames if o not in snames]
-                self.pst.observation_data.loc[reset_names,"weight"] = reset_zero_weight
+                self.pst.observation_data.loc[reset_names, "weight"] = reset_zero_weight
         columns = [
             "best_obs",
             forecast + "_variance",
