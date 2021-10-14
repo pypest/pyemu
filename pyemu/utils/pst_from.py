@@ -2355,7 +2355,7 @@ class PstFrom(object):
                                     node_df.y,
                                     num_threads=1,
                                     pt_zone=zone,
-                                    idx_vals=node_df.node.apply(np.int64),
+                                    idx_vals=node_df.node.astype(int),
                                 )
                             ok_pp.to_grid_factors_file(
                                 fac_filename, ncol=len(spatial_reference)
@@ -3587,7 +3587,8 @@ def write_array_tpl(
                 par_style, name, i, j
             )
             if get_xy is not None:
-                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy([i, j]))
+                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(
+                    *get_xy([i, j], ij_id=[0, 1]))
             if zone_array is not None:
                 pname += "_zone:{0}".format(zone_array[i, j])
             if suffix != "":
@@ -3622,7 +3623,7 @@ def write_array_tpl(
                     pname = " {0} ".format(fill_value)
                 else:
                     if get_xy is not None:
-                        x, y = get_xy([i, j])
+                        x, y = get_xy([i, j], ij_id=[0, 1])
                         xx.append(x)
                         yy.append(y)
                     ii.append(i)

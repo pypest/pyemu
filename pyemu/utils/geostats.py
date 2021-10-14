@@ -982,13 +982,15 @@ class OrdinaryKrige(object):
                         PyemuWarning,
                     )
                     continue
-                xzone, yzone = x.copy(), y.copy()
-                xzone[zone_array != pt_data_zone] = np.NaN
-                yzone[zone_array != pt_data_zone] = np.NaN
+                # cutting list of cell positions to just in zone
+                xzone = x[zone_array == pt_data_zone].copy()
+                yzone = y[zone_array == pt_data_zone].copy()
+                # xzone[zone_array != pt_data_zone] = np.NaN
+                # yzone[zone_array != pt_data_zone] = np.NaN
 
                 df = self.calc_factors(
-                    xzone.ravel()[~np.isnan(xzone.ravel())],
-                    yzone.ravel()[~np.isnan(yzone.ravel())],
+                    xzone,
+                    yzone,
                     minpts_interp=minpts_interp,
                     maxpts_interp=maxpts_interp,
                     search_radius=search_radius,
@@ -1161,8 +1163,16 @@ class OrdinaryKrige(object):
 
 
         """
-        # trunc to just deal with locations in zones
-        # can do this up to as same between org and mp method
+        # can do this up here, as same between org and mp method
+        assert len(x) == len(y)
+        if idx_vals is not None and len(idx_vals) != len(x):
+            raise Exception("len(idx_vals) != len(x)")
+        # find the point data to use for each interp point
+        df = pd.DataFrame(data={"x": x, "y": y})
+        if idx_vals is not None:
+            df.index = [int(i) for i in idx_vals]
+        # now can just pass df (contains x and y)
+        # trunc to just deal with pp locations in zones
         pt_data = self.point_data
         if pt_zone is None:
             ptx_array = self.point_data.x.values
@@ -1173,13 +1183,6 @@ class OrdinaryKrige(object):
             pty_array = pt_data.loc[pt_data.zone == pt_zone, "y"].values
             ptnames = pt_data.loc[pt_data.zone == pt_zone, "name"].values
             # pt_data = pt_data.loc[ptnames]
-        assert len(ptx_array) == len(pty_array)
-        if idx_vals is not None and len(idx_vals) != len(ptx_array):
-            raise Exception("len(idx_vals) != len(x)")
-        # find the point data to use for each interp point
-        df = pd.DataFrame(data={"x": x, "y": y})
-        if idx_vals is not None:
-            df.index = [int(i) for i in idx_vals]
         if num_threads == 1:
             return self._calc_factors_org(
                 df,
@@ -1472,15 +1475,6 @@ class OrdinaryKrige(object):
         lock,
     ):
         sill = geostruct.sill
-        # if pt_zone is None:
-        #     ptx_array = point_data.x.values
-        #     pty_array = point_data.y.values
-        #     ptnames = point_data.name.values
-        # else:
-        #     pt_data = point_data
-        #     ptx_array = pt_data.loc[pt_data.zone == pt_zone, "x"].values
-        #     pty_array = pt_data.loc[pt_data.zone == pt_zone, "y"].values
-        #     ptnames = pt_data.loc[pt_data.zone == pt_zone, "name"].values
         while True:
             if len(point_pairs) == 0:
                 return
