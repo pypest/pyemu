@@ -960,7 +960,6 @@ class OrdinaryKrige(object):
             )
 
             if var_filename is not None:
-
                 arr = df.err_var.values.reshape(x.shape)
                 np.savetxt(var_filename, arr, fmt="%15.6E")
 
@@ -988,8 +987,8 @@ class OrdinaryKrige(object):
                 yzone[zone_array != pt_data_zone] = np.NaN
 
                 df = self.calc_factors(
-                    xzone.ravel(),
-                    yzone.ravel(),
+                    xzone.ravel()[~np.isnan(xzone.ravel())],
+                    yzone.ravel()[~np.isnan(yzone.ravel())],
                     minpts_interp=minpts_interp,
                     maxpts_interp=maxpts_interp,
                     search_radius=search_radius,
@@ -1003,13 +1002,16 @@ class OrdinaryKrige(object):
                 if var_filename is not None:
                     #a = np.array([float(str(i)) for i in df.err_var],dtype=np.float64).reshape(x.shape)
                     #a = df.err_var.values.reshape(x.shape)
-                    fulldf = pd.DataFrame(
-                        np.vstack([x[zone_array != pt_data_zone],
-                                   y[zone_array != pt_data_zone]]).T,
-                        columns=['x', 'y']
-                    )
-                    a = df.err_var.values.reshape(x.shape)
-                    na_idx = np.isfinite(a)
+                    # rebuild full df so we can build array, as per
+                    fulldf = pd.DataFrame(data={"x": x.ravel(), "y": y.ravel()})
+                    fulldf[['idist', 'inames', 'ifacts', 'err_var']] = np.array(
+                        [[[], [], [], np.nan]] * len(fulldf),
+                        dtype=object)
+                    fulldf = fulldf.set_index(['x', 'y'])
+                    fulldf.loc[df.set_index(['x', 'y']).index] = df.set_index(['x', 'y'])
+                    fulldf = fulldf.reset_index()
+                    a = fulldf.err_var.values.reshape(x.shape)
+                    na_idx = np.isfinite(a.astype(float))
                     arr[na_idx] = a[na_idx]
             if self.interp_data is None or self.interp_data.dropna().shape[0] == 0:
                 raise Exception("no interpolation took place...something is wrong")
@@ -1160,6 +1162,7 @@ class OrdinaryKrige(object):
 
         """
         # trunc to just deal with locations in zones
+        # can do this up to as same between org and mp method
         pt_data = self.point_data
         if pt_zone is None:
             ptx_array = self.point_data.x.values
@@ -1169,12 +1172,12 @@ class OrdinaryKrige(object):
             ptx_array = pt_data.loc[pt_data.zone == pt_zone, "x"].values
             pty_array = pt_data.loc[pt_data.zone == pt_zone, "y"].values
             ptnames = pt_data.loc[pt_data.zone == pt_zone, "name"].values
-            pt_data = pt_data.loc[ptnames]
+            # pt_data = pt_data.loc[ptnames]
         assert len(ptx_array) == len(pty_array)
         if idx_vals is not None and len(idx_vals) != len(ptx_array):
             raise Exception("len(idx_vals) != len(x)")
         # find the point data to use for each interp point
-        df = pd.DataFrame(data={"x": ptx_array, "y": pty_array})
+        df = pd.DataFrame(data={"x": x, "y": y})
         if idx_vals is not None:
             df.index = [int(i) for i in idx_vals]
         if num_threads == 1:
@@ -1210,8 +1213,8 @@ class OrdinaryKrige(object):
     def _calc_factors_org(
         self,
         df,
-        x,
-        y,
+        ptx_array,
+        pty_array,
         ptnames,
         minpts_interp=1,
         maxpts_interp=20,
@@ -1247,14 +1250,15 @@ class OrdinaryKrige(object):
                 print("processing interp point:{0} of {1}".format(idx, df.shape[0]))
             if verbose == 2:
                 start = datetime.now()
-                print("calc ipoint dist...",end='')
+                print("calc ipoint dist...", end='')
 
             #  calc dist from this interp point to all point data...slow
             # dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
             # dist.sort_values(inplace=True)
             # dist = dist.loc[dist <= sqradius]
             # def _dist_calcs(self, ix, iy, ptx_array, pty_array, ptnames, sqradius):
-            dist = self._dist_calcs(ix, iy, x, y, ptnames, sqradius)
+            dist = self._dist_calcs(ix, iy, ptx_array, pty_array, ptnames,
+                                    sqradius)
 
             # if too few points were found, skip
             if len(dist) < minpts_interp:
@@ -1367,8 +1371,8 @@ class OrdinaryKrige(object):
     def _calc_factors_mp(
         self,
         df,
-        x,
-        y,
+        ptx_array,
+        pty_array,
         ptnames,
         minpts_interp=1,
         maxpts_interp=20,
@@ -1386,11 +1390,11 @@ class OrdinaryKrige(object):
         # ptnames = ptd.name
         # point_data = self.point_data.loc[self.point_data.zone == pt_zone]
         point_cov_data = self.point_cov_df.loc[ptnames, ptnames].values
-        point_pairs = [(i, xx, yy) for i, (xx, yy) in enumerate(zip(x, y))]
-        idist = [[] for _ in x]
-        inames = [[] for _ in x]
-        ifacts = [[] for _ in x]
-        err_var = [np.NaN] * len(x)
+        point_pairs = [(i, xx, yy) for i, (xx, yy) in enumerate(zip(df.x, df.y))]
+        idist = [[] for _ in df.x]
+        inames = [[] for _ in df.x]
+        ifacts = [[] for _ in df.x]
+        err_var = [np.NaN] * len(df.x)
         with mp.Manager() as manager:
             point_pairs = manager.list(point_pairs)
             idist = manager.list(idist)
@@ -1404,8 +1408,8 @@ class OrdinaryKrige(object):
                 p = mp.Process(
                     target=OrdinaryKrige._worker,
                     args=(
-                        x,
-                        y,
+                        ptx_array,
+                        pty_array,
                         ptnames,
                         point_pairs,
                         inames,
@@ -1415,7 +1419,7 @@ class OrdinaryKrige(object):
                         point_cov_data,
                         self.geostruct,
                         EPSILON,
-                        search_radius,
+                        sqradius,
                         minpts_interp,
                         maxpts_interp,
                         lock,
