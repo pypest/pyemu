@@ -1638,7 +1638,8 @@ class PstFrom(object):
             use_pp_zones (`bool`): a flag to use the greater-than-zero values
                 in the zone_array as pilot point zones.
                 If False, zone_array values greater than zero are treated as a
-                single zone.  This argument is only used if `pp_space` is None or `int`. Default is False.
+                single zone.  This argument is only used if `pp_space` is None
+                or `int`. Default is False.
             num_eig_kl: TODO - impliment with KL pars
             spatial_reference (`pyemu.helpers.SpatialReference`): If different
                 spatial reference required for pilotpoint setup.
@@ -2084,9 +2085,9 @@ class PstFrom(object):
                     self.logger.warn("pp_space is None, using 10...\n")
                     pp_space = 10
                 else:
-                    if not use_pp_zones:
+                    if not use_pp_zones and (isinstance(pp_space, int)):
                         # if not using pp zones will set up pp for just one
-                        # zone (all non zero)
+                        # zone (all non zero) -- for active domain...
                         zone_array[zone_array > 0] = 1  # so can set all
                         # gt-zero to 1
                     if isinstance(pp_space, float):

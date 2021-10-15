@@ -3114,9 +3114,11 @@ def usg_freyberg_test():
     pf = pyemu.utils.PstFrom(tmp_model_ws,"template",longnames=True,remove_existing=True,
                              zero_based=False,spatial_reference=gsf.get_node_coordinates(zero_based=True))
 
-    pf.add_parameters("hk_Layer_3.ref", par_type="pilotpoints", par_name_base="hk3_pp", pp_space=pp_df,
+    pf.add_parameters("hk_Layer_3.ref", par_type="pilotpoints",
+                      par_name_base="hk3_pp", pp_space=pp_df,
                       geostruct=gs, spatial_reference=sr_dict_by_layer[3],
-                      upper_bound=2.0, lower_bound=0.5, zone_array=zone_array_k2)
+                      upper_bound=2.0, lower_bound=0.5,
+                      zone_array=zone_array_k2)
 
     # we pass layer specific sr dict for each "array" type that is spatially distributed
     pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_Gr",geostruct=gs,
@@ -3619,7 +3621,7 @@ if __name__ == "__main__":
     # invest()
     # freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
+    # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
     #mf6_freyberg_shortnames_test()
 
@@ -3629,13 +3631,13 @@ if __name__ == "__main__":
     # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
-    tpf = TestPstFrom()
-    tpf.setup()
+    # tpf = TestPstFrom()
+    # tpf.setup()
     # tpf.test_add_direct_array_parameters()
-    tpf.test_add_array_parameters_pps_grid()
+    # tpf.test_add_array_parameters_pps_grid()
     # # pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
-    #usg_freyberg_test()
+    usg_freyberg_test()
 
 
 

@@ -1435,10 +1435,9 @@ class OrdinaryKrige(object):
             for p in procs:
                 p.join()
 
-            df[["idist", "inames", "ifacts"]] = np.array(
-                [(s[0], n[0], f[0])
-                 for s, n, f in zip(idist, inames, ifacts)],
-                dtype=object)
+            df[["idist", "inames", "ifacts"]] = pd.DataFrame(
+                [[s[0], n[0], f[0]] for s, n, f in zip(idist, inames, ifacts)],
+                columns=["idist", "inames", "ifacts"], index=df.index)
 
             df["err_var"] = [
                 float(e[0]) if not isinstance(e[0], list) else float(e[0][0])
