@@ -691,8 +691,8 @@ def mf6_freyberg_test():
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
     print(dts)
-    for tag,bnd in tags.items():
-        lb,ub = bnd[0],bnd[1]
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
         arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
         if "rch" in tag:
             pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
@@ -705,7 +705,6 @@ def mf6_freyberg_test():
                                   datetime=dts[kper])
         else:
             for arr_file in arr_files:
-
                 # these ult bounds are used later in an assert
                 # and also are used so that the initial input array files
                 # are preserved
@@ -727,10 +726,8 @@ def mf6_freyberg_test():
                 # use a slightly lower ult bound here
                 pf.add_parameters(filenames=arr_file, par_type="constant",
                                   par_name_base=arr_file.split('.')[1] + "_cn",
-                                  pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
+                                  pargp=arr_file.split('.')[1] + "_cn", zone_array=ib,
                                   upper_bound=ub, lower_bound=lb,geostruct=gr_gs)
-
-
 
     # add SP1 spatially constant, but temporally correlated wel flux pars
     kper = 0
@@ -833,6 +830,9 @@ def mf6_freyberg_test():
 
     sfr_pars['#rno'] = sfr_pars['#rno'].astype(int)
     os.chdir(pf.new_d)
+    dummymult = 4.
+    pars = pst.parameter_data
+    pst.parameter_data.loc[pars.index.str.contains('_pp'), 'parval1'] = dummymult
     pst.write_input_files()
     try:
         pyemu.helpers.apply_list_and_array_pars()
@@ -841,6 +841,23 @@ def mf6_freyberg_test():
         raise e
     os.chdir('..')
     # verify apply
+    multinfo = pd.read_csv(os.path.join(pf.new_d, "mult2model_info.csv"),
+                           index_col=0)
+    ppmultinfo = multinfo.dropna(subset=['pp_file'])
+    for mfile in ppmultinfo.model_file.unique():
+        subinfo = ppmultinfo.loc[ppmultinfo.model_file == mfile]
+        assert subinfo.org_file.nunique() == 1
+        org = np.loadtxt(os.path.join(pf.new_d, subinfo.org_file.values[0]))
+        m = dummymult ** len(subinfo)
+        check = org * m
+        check[ib == 0] = org[ib == 0]
+        ult_u = subinfo.upper_bound.astype(float).values[0]
+        ult_l = subinfo.lower_bound.astype(float).values[0]
+        check[check < ult_l] = ult_l
+        check[check > ult_u] = ult_u
+        result = np.loadtxt(os.path.join(pf.new_d, mfile))
+        assert np.isclose(check, result).all(), (f"Problem with par apply for "
+                                                 f"{mfile}")
     df = pd.read_csv(os.path.join(
         pf.new_d, "freyberg6.sfr_packagedata_test.txt"),
         delim_whitespace=True, index_col=0)
@@ -3600,7 +3617,7 @@ def mf6_subdir_test():
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
     # invest()
-    #freyberg_test()
+    # freyberg_test()
     #freyberg_prior_build_test()
     mf6_freyberg_test()
     #$mf6_freyberg_da_test()
@@ -3612,10 +3629,10 @@ if __name__ == "__main__":
     # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
-    # tpf = TestPstFrom()
-    # tpf.setup()
+    tpf = TestPstFrom()
+    tpf.setup()
     # tpf.test_add_direct_array_parameters()
-
+    tpf.test_add_array_parameters_pps_grid()
     # # pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test()

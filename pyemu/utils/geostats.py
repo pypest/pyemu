@@ -985,12 +985,16 @@ class OrdinaryKrige(object):
                 # cutting list of cell positions to just in zone
                 xzone = x[zone_array == pt_data_zone].copy()
                 yzone = y[zone_array == pt_data_zone].copy()
+                idx = np.arange(
+                    len(zone_array.ravel())
+                )[(zone_array == pt_data_zone).ravel()]
                 # xzone[zone_array != pt_data_zone] = np.NaN
                 # yzone[zone_array != pt_data_zone] = np.NaN
 
                 df = self.calc_factors(
                     xzone,
                     yzone,
+                    idx_vals=idx,  # need to pass if xzone,yzone is not all x,y
                     minpts_interp=minpts_interp,
                     maxpts_interp=maxpts_interp,
                     search_radius=search_radius,
@@ -1002,8 +1006,6 @@ class OrdinaryKrige(object):
 
                 dfs.append(df)
                 if var_filename is not None:
-                    #a = np.array([float(str(i)) for i in df.err_var],dtype=np.float64).reshape(x.shape)
-                    #a = df.err_var.values.reshape(x.shape)
                     # rebuild full df so we can build array, as per
                     fulldf = pd.DataFrame(data={"x": x.ravel(), "y": y.ravel()})
                     fulldf[['idist', 'inames', 'ifacts', 'err_var']] = np.array(
@@ -1170,7 +1172,7 @@ class OrdinaryKrige(object):
         # find the point data to use for each interp point
         df = pd.DataFrame(data={"x": x, "y": y})
         if idx_vals is not None:
-            df.index = [int(i) for i in idx_vals]
+            df.index = np.array(idx_vals).astype(int)
         # now can just pass df (contains x and y)
         # trunc to just deal with pp locations in zones
         pt_data = self.point_data
@@ -1394,9 +1396,9 @@ class OrdinaryKrige(object):
         # point_data = self.point_data.loc[self.point_data.zone == pt_zone]
         point_cov_data = self.point_cov_df.loc[ptnames, ptnames].values
         point_pairs = [(i, xx, yy) for i, (xx, yy) in enumerate(zip(df.x, df.y))]
-        idist = [[] for _ in df.x]
-        inames = [[] for _ in df.x]
-        ifacts = [[] for _ in df.x]
+        idist = [[]] * len(df.x)
+        inames = [[]] * len(df.x)
+        ifacts = [[]] * len(df.x)
         err_var = [np.NaN] * len(df.x)
         with mp.Manager() as manager:
             point_pairs = manager.list(point_pairs)
@@ -1433,9 +1435,10 @@ class OrdinaryKrige(object):
             for p in procs:
                 p.join()
 
-            df["idist"] = [i[0] for i in idist]
-            df["inames"] = [i[0] for i in inames]
-            df["ifacts"] = [i[0] for i in ifacts]
+            df[["idist", "inames", "ifacts"]] = np.array(
+                [(s[0], n[0], f[0])
+                 for s, n, f in zip(idist, inames, ifacts)],
+                dtype=object)
 
             df["err_var"] = [
                 float(e[0]) if not isinstance(e[0], list) else float(e[0][0])
