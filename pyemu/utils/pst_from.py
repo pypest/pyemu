@@ -2084,6 +2084,11 @@ class PstFrom(object):
                     self.logger.warn("pp_space is None, using 10...\n")
                     pp_space = 10
                 else:
+                    if not use_pp_zones:
+                        # if not using pp zones will set up pp for just one
+                        # zone (all non zero)
+                        zone_array[zone_array > 0] = 1  # so can set all
+                        # gt-zero to 1
                     if isinstance(pp_space, float):
                         pp_space = int(pp_space)
                     elif isinstance(pp_space, int):
