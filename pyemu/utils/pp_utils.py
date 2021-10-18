@@ -210,7 +210,7 @@ def setup_pilotpoints_grid(
                             "name": name,
                             "x": x,
                             "y": y,
-                            "zone": zone,
+                            "zone": zone, # if use_ibound_zones is False this will always be 1
                             "parval1": parval1,
                             "k": k,
                             "i": i,

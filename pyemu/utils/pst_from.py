@@ -1638,7 +1638,8 @@ class PstFrom(object):
             use_pp_zones (`bool`): a flag to use the greater-than-zero values
                 in the zone_array as pilot point zones.
                 If False, zone_array values greater than zero are treated as a
-                single zone.  This argument is only used if `pp_space` is None or `int`. Default is False.
+                single zone.  This argument is only used if `pp_space` is None
+                or `int`. Default is False.
             num_eig_kl: TODO - impliment with KL pars
             spatial_reference (`pyemu.helpers.SpatialReference`): If different
                 spatial reference required for pilotpoint setup.
@@ -2084,6 +2085,11 @@ class PstFrom(object):
                     self.logger.warn("pp_space is None, using 10...\n")
                     pp_space = 10
                 else:
+                    if not use_pp_zones and (isinstance(pp_space, int)):
+                        # if not using pp zones will set up pp for just one
+                        # zone (all non zero) -- for active domain...
+                        zone_array[zone_array > 0] = 1  # so can set all
+                        # gt-zero to 1
                     if isinstance(pp_space, float):
                         pp_space = int(pp_space)
                     elif isinstance(pp_space, int):
@@ -2355,7 +2361,7 @@ class PstFrom(object):
                                     node_df.y,
                                     num_threads=1,
                                     pt_zone=zone,
-                                    idx_vals=node_df.node.apply(np.int64),
+                                    idx_vals=node_df.node.astype(int),
                                 )
                             ok_pp.to_grid_factors_file(
                                 fac_filename, ncol=len(spatial_reference)
@@ -3587,7 +3593,8 @@ def write_array_tpl(
                 par_style, name, i, j
             )
             if get_xy is not None:
-                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy([i, j]))
+                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(
+                    *get_xy([i, j], ij_id=[0, 1]))
             if zone_array is not None:
                 pname += "_zone:{0}".format(zone_array[i, j])
             if suffix != "":
@@ -3622,7 +3629,7 @@ def write_array_tpl(
                     pname = " {0} ".format(fill_value)
                 else:
                     if get_xy is not None:
-                        x, y = get_xy([i, j])
+                        x, y = get_xy([i, j], ij_id=[0, 1])
                         xx.append(x)
                         yy.append(y)
                     ii.append(i)
