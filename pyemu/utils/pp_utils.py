@@ -34,7 +34,7 @@ def setup_pilotpoints_grid(
     tpl_dir=".",
     shapename="pp.shp",
     longnames=False,
-    pp_filename_dict = {}
+    pp_filename_dict={},
 ):
     """setup a regularly-spaced (gridded) pilot point parameterization
 
@@ -85,10 +85,11 @@ def setup_pilotpoints_grid(
             sr = ml.sr
         except AttributeError:
             from pyemu.utils.helpers import SpatialReference
+
             sr = SpatialReference.from_namfile(
                 os.path.join(ml.model_ws, ml.namefile),
                 delr=ml.modelgrid.delr,
-                delc=ml.modelgrid.delc
+                delc=ml.modelgrid.delc,
             )
         if ibound is None:
             ibound = ml.bas6.ibound.array
@@ -128,16 +129,16 @@ def setup_pilotpoints_grid(
                 "from 'sr':{0}:{1}".format(str(e0), str(e1))
             )
     start = int(float(every_n_cell) / 2.0)
-    
+
     # fix for x-section models
-    if xcentergrid.shape[0]==1 :
+    if xcentergrid.shape[0] == 1:
         start_row = 0
-    else : 
+    else:
         start_row = start
 
-    if xcentergrid.shape[1]==1 :
+    if xcentergrid.shape[1] == 1:
         start_col = 0
-    else : 
+    else:
         start_col = start
 
     # check prefix_dict
@@ -209,7 +210,7 @@ def setup_pilotpoints_grid(
                             "name": name,
                             "x": x,
                             "y": y,
-                            "zone": zone,
+                            "zone": zone, # if use_ibound_zones is False this will always be 1
                             "parval1": parval1,
                             "k": k,
                             "i": i,
@@ -239,7 +240,8 @@ def setup_pilotpoints_grid(
                         tpl_filename = os.path.join(tpl_dir, base_filename + ".tpl")
                         # write the tpl file
                         pilot_points_to_tpl(
-                            pp_df, tpl_filename, name_prefix=prefix, longnames=longnames)
+                            pp_df, tpl_filename, name_prefix=prefix, longnames=longnames
+                        )
                         pp_df.loc[:, "tpl_filename"] = tpl_filename
                         pp_df.loc[:, "pp_filename"] = pp_filename
                         pp_df.loc[:, "pargp"] = prefix

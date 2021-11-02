@@ -473,7 +473,7 @@ class Ensemble(object):
                 for grp_name, names in grouper.items():
                     print("drawing from group", grp_name)
                     # reorder names to be in cov matrix order
-                    #cnames = names
+                    # cnames = names
                     cnames = []
                     snames = set(names)
                     for n in cov.names:

@@ -252,7 +252,9 @@ def read_resfile(resfile):
         if "name" in line.lower():
             header = line.lower().strip().split()
             break
-    res_df = pd.read_csv(f, header=None, names=header, sep=r"\s+", converters=converters)
+    res_df = pd.read_csv(
+        f, header=None, names=header, sep=r"\s+", converters=converters
+    )
     res_df.index = res_df.name
     f.close()
     return res_df
@@ -1758,7 +1760,7 @@ class InstructionFile(object):
             first = line[: midx[0]].strip()
             tokens = []
             if len(first) > 0:
-                #tokens.append(first)
+                # tokens.append(first)
                 tokens.extend([f.strip() for f in first.split()])
             for idx in range(1, len(midx) - 1, 2):
                 mstr = line[midx[idx - 1] : midx[idx] + 1]

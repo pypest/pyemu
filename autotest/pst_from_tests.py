@@ -691,8 +691,8 @@ def mf6_freyberg_test():
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
     print(dts)
-    for tag,bnd in tags.items():
-        lb,ub = bnd[0],bnd[1]
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
         arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
         if "rch" in tag:
             pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
@@ -705,7 +705,6 @@ def mf6_freyberg_test():
                                   datetime=dts[kper])
         else:
             for arr_file in arr_files:
-
                 # these ult bounds are used later in an assert
                 # and also are used so that the initial input array files
                 # are preserved
@@ -727,10 +726,8 @@ def mf6_freyberg_test():
                 # use a slightly lower ult bound here
                 pf.add_parameters(filenames=arr_file, par_type="constant",
                                   par_name_base=arr_file.split('.')[1] + "_cn",
-                                  pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
+                                  pargp=arr_file.split('.')[1] + "_cn", zone_array=ib,
                                   upper_bound=ub, lower_bound=lb,geostruct=gr_gs)
-
-
 
     # add SP1 spatially constant, but temporally correlated wel flux pars
     kper = 0
@@ -802,7 +799,9 @@ def mf6_freyberg_test():
         pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
                           pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
                           upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
-
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base=f"wel_grid_{kper}",
+                      pargp=f"wel_{kper}_v2", index_cols=[0, 1, 2], use_cols=[3], use_rows=[1],
+                      upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
     # test non spatial idx in list like
     pf.add_parameters(filenames="freyberg6.sfr_packagedata_test.txt", par_name_base="sfr_rhk",
                       pargp="sfr_rhk", index_cols=['#rno'], use_cols=['rhk'], upper_bound=10.,
@@ -831,6 +830,9 @@ def mf6_freyberg_test():
 
     sfr_pars['#rno'] = sfr_pars['#rno'].astype(int)
     os.chdir(pf.new_d)
+    dummymult = 4.
+    pars = pst.parameter_data
+    pst.parameter_data.loc[pars.index.str.contains('_pp'), 'parval1'] = dummymult
     pst.write_input_files()
     try:
         pyemu.helpers.apply_list_and_array_pars()
@@ -839,6 +841,23 @@ def mf6_freyberg_test():
         raise e
     os.chdir('..')
     # verify apply
+    multinfo = pd.read_csv(os.path.join(pf.new_d, "mult2model_info.csv"),
+                           index_col=0)
+    ppmultinfo = multinfo.dropna(subset=['pp_file'])
+    for mfile in ppmultinfo.model_file.unique():
+        subinfo = ppmultinfo.loc[ppmultinfo.model_file == mfile]
+        assert subinfo.org_file.nunique() == 1
+        org = np.loadtxt(os.path.join(pf.new_d, subinfo.org_file.values[0]))
+        m = dummymult ** len(subinfo)
+        check = org * m
+        check[ib == 0] = org[ib == 0]
+        ult_u = subinfo.upper_bound.astype(float).values[0]
+        ult_l = subinfo.lower_bound.astype(float).values[0]
+        check[check < ult_l] = ult_l
+        check[check > ult_u] = ult_u
+        result = np.loadtxt(os.path.join(pf.new_d, mfile))
+        assert np.isclose(check, result).all(), (f"Problem with par apply for "
+                                                 f"{mfile}")
     df = pd.read_csv(os.path.join(
         pf.new_d, "freyberg6.sfr_packagedata_test.txt"),
         delim_whitespace=True, index_col=0)
@@ -866,7 +885,7 @@ def mf6_freyberg_test():
     os.chdir(pf.new_d)
     try:
         pyemu.helpers.apply_list_and_array_pars(
-            arr_par_file="mult2model_info.csv",chunk_len=1)
+            arr_par_file="mult2model_info.csv", chunk_len=1)
     except Exception as e:
         os.chdir(b_d)
         raise Exception(str(e))
@@ -1459,7 +1478,7 @@ def mf6_freyberg_direct_test():
                 fw.write(line)
 
     # fl = "freyberg6.wel_stress_period_data_3.txt" # Add extra string col_id
-    for fl in list_files[2:4]:
+    for fl in list_files[2:7]:
         with open(os.path.join(template_ws, fl), 'r') as fr:
             lines = [line for line in fr]
         with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
@@ -1529,6 +1548,35 @@ def mf6_freyberg_direct_test():
                       upper_bound=0.0, lower_bound=-500,par_style="direct",
                       transform="none")
 
+    list_file = "new_freyberg6.wel_stress_period_data_5.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell5_k', 'nwell5_q'],
+                      pargp='nwell5',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0, use_rows=[3, 4])
+
+    list_file = "new_freyberg6.wel_stress_period_data_6.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell6_k', 'nwell6_q'],
+                      pargp='nwell6',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0, use_rows=[(3, 21, 15), (3, 30, 7)])
+    # use_rows should match so all should be setup 2 cols 6 rows
+    assert len(pf.par_dfs[-1]) == 2*6 # should be
+    list_file = "new_freyberg6.wel_stress_period_data_7.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell6_k', 'nwell6_q'],
+                      pargp='nwell6',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0,
+                      use_rows=[('well2', 21, 15), ('well4', 30, 7)])
+    assert len(pf.par_dfs[-1]) == 2 * 2  # should be
     # add model run command
     pf.mod_sys_cmds.append("mf6")
     print(pf.mult_files)
@@ -1561,7 +1609,7 @@ def mf6_freyberg_direct_test():
         n_df = pd.read_csv(f, sep="\s+")
         o_df = pd.read_csv(f.strip('new_'), sep="\s+", header=None)
         o_df.columns = ['k', 'i', 'j', 'flux']
-        assert n_df.loc[:, o_df.columns].eq(o_df).all().all(), (
+        assert np.isclose(n_df.loc[:, o_df.columns], o_df).all(), (
             "Something broke with alternative style model files"
         )
     os.chdir(b_d)
@@ -2981,11 +3029,8 @@ def usg_freyberg_test():
     #path to org model files
     org_model_ws = os.path.join('..', 'examples', 'freyberg_usg')
     # flopy is not liking the rch package in unstruct, so allow it to fail and keep going...
-    m = flopy.modflow.Modflow.load("freyberg.usg.nam", model_ws=org_model_ws,
-                                   verbose=True, version="mfusg",
-                                   forgive=True, check=False)
-
-
+    m = flopy.mfusg.MfUsg.load("freyberg.usg.nam", model_ws=org_model_ws,
+                               verbose=True, forgive=True, check=False)
 
     #convert to all open/close
     m.external_path = "."
@@ -2996,16 +3041,7 @@ def usg_freyberg_test():
     m.change_model_ws(tmp_model_ws, reset_external=True)
     m.write_input()
 
-    #manually copy over the two packages that flopy doesnt like/support
-    #shutil.copy2(os.path.join(org_model_ws,"freyberg.usg.rch"),os.path.join(tmp_model_ws,"freyberg.usg.rch"))
-    shutil.copy2(os.path.join(org_model_ws, "freyberg.usg.gnc"), os.path.join(tmp_model_ws, "freyberg.usg.gnc"))
     nam_file = os.path.join(tmp_model_ws,"freyberg.usg.nam")
-    nam_lines = open(nam_file,'r').readlines()
-    with open(nam_file,'w') as f:
-        for line in nam_lines:
-            f.write(line)
-        #f.write("RCH      31  freyberg.usg.rch\n")
-        f.write("GNC       35  freyberg.usg.gnc\n")
 
     #make sure the model runs in the new dir with all external formats
     pyemu.os_utils.run("mfusg freyberg.usg.nam", cwd=tmp_model_ws)
@@ -3078,9 +3114,11 @@ def usg_freyberg_test():
     pf = pyemu.utils.PstFrom(tmp_model_ws,"template",longnames=True,remove_existing=True,
                              zero_based=False,spatial_reference=gsf.get_node_coordinates(zero_based=True))
 
-    pf.add_parameters("hk_Layer_3.ref", par_type="pilotpoints", par_name_base="hk3_pp", pp_space=pp_df,
+    pf.add_parameters("hk_Layer_3.ref", par_type="pilotpoints",
+                      par_name_base="hk3_pp", pp_space=pp_df,
                       geostruct=gs, spatial_reference=sr_dict_by_layer[3],
-                      upper_bound=2.0, lower_bound=0.5, zone_array=zone_array_k2)
+                      upper_bound=2.0, lower_bound=0.5,
+                      zone_array=zone_array_k2)
 
     # we pass layer specific sr dict for each "array" type that is spatially distributed
     pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_Gr",geostruct=gs,
@@ -3581,13 +3619,13 @@ def mf6_subdir_test():
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
     # invest()
-    #freyberg_test()
+    # freyberg_test()
     #freyberg_prior_build_test()
-    #mf6_freyberg_test()
+    # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
     #mf6_freyberg_shortnames_test()
 
-    mf6_freyberg_direct_test()
+    #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     # xsec_test()
     # mf6_freyberg_short_direct_test()
@@ -3596,10 +3634,10 @@ if __name__ == "__main__":
     # tpf = TestPstFrom()
     # tpf.setup()
     # tpf.test_add_direct_array_parameters()
-
+    # tpf.test_add_array_parameters_pps_grid()
     # # pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
-    #usg_freyberg_test()
+    usg_freyberg_test()
 
 
 

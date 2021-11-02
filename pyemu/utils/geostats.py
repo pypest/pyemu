@@ -960,7 +960,6 @@ class OrdinaryKrige(object):
             )
 
             if var_filename is not None:
-
                 arr = df.err_var.values.reshape(x.shape)
                 np.savetxt(var_filename, arr, fmt="%15.6E")
 
@@ -983,13 +982,19 @@ class OrdinaryKrige(object):
                         PyemuWarning,
                     )
                     continue
-                xzone, yzone = x.copy(), y.copy()
-                xzone[zone_array != pt_data_zone] = np.NaN
-                yzone[zone_array != pt_data_zone] = np.NaN
+                # cutting list of cell positions to just in zone
+                xzone = x[zone_array == pt_data_zone].copy()
+                yzone = y[zone_array == pt_data_zone].copy()
+                idx = np.arange(
+                    len(zone_array.ravel())
+                )[(zone_array == pt_data_zone).ravel()]
+                # xzone[zone_array != pt_data_zone] = np.NaN
+                # yzone[zone_array != pt_data_zone] = np.NaN
 
                 df = self.calc_factors(
-                    xzone.ravel(),
-                    yzone.ravel(),
+                    xzone,
+                    yzone,
+                    idx_vals=idx,  # need to pass if xzone,yzone is not all x,y
                     minpts_interp=minpts_interp,
                     maxpts_interp=maxpts_interp,
                     search_radius=search_radius,
@@ -1001,10 +1006,16 @@ class OrdinaryKrige(object):
 
                 dfs.append(df)
                 if var_filename is not None:
-                    #a = np.array([float(str(i)) for i in df.err_var],dtype=np.float64).reshape(x.shape)
-                    #a = df.err_var.values.reshape(x.shape)
-                    a = df.err_var.values.reshape(x.shape)
-                    na_idx = np.isfinite(a)
+                    # rebuild full df so we can build array, as per
+                    fulldf = pd.DataFrame(data={"x": x.ravel(), "y": y.ravel()})
+                    fulldf[['idist', 'inames', 'ifacts', 'err_var']] = np.array(
+                        [[[], [], [], np.nan]] * len(fulldf),
+                        dtype=object)
+                    fulldf = fulldf.set_index(['x', 'y'])
+                    fulldf.loc[df.set_index(['x', 'y']).index] = df.set_index(['x', 'y'])
+                    fulldf = fulldf.reset_index()
+                    a = fulldf.err_var.values.reshape(x.shape)
+                    na_idx = np.isfinite(a.astype(float))
                     arr[na_idx] = a[na_idx]
             if self.interp_data is None or self.interp_data.dropna().shape[0] == 0:
                 raise Exception("no interpolation took place...something is wrong")
@@ -1023,17 +1034,23 @@ class OrdinaryKrige(object):
 
     def _remove_neg_factors(self):
         """
-        private function to remove negative kriging factors and 
-        renormalize remaining positive factors following the 
-        method of Deutsch (1996): 
+        private function to remove negative kriging factors and
+        renormalize remaining positive factors following the
+        method of Deutsch (1996):
         https://doi.org/10.1016/0098-3004(96)00005-2
-        
-               
+
+
         """
-        newd, newn,newf = [],[],[],
-        for d,n,f in zip(self.interp_data.idist.values, 
-                        self.interp_data.inames.values, 
-                        self.interp_data.ifacts.values):
+        newd, newn, newf = (
+            [],
+            [],
+            [],
+        )
+        for d, n, f in zip(
+            self.interp_data.idist.values,
+            self.interp_data.inames.values,
+            self.interp_data.ifacts.values,
+        ):
             # if the factor list is empty, no changes are made
             # if the factor list has only one value, it is 1.0 so no changes
             # if more than one factor, remove negatives and renormalize
@@ -1042,10 +1059,10 @@ class OrdinaryKrige(object):
                 d = np.array(d)
                 n = np.array(n)
                 f = np.array(f)
-                d=d[f>0]
-                n=n[f>0]
-                f=f[f>0]  
-                f /= f.sum() # renormalize to sum to unity
+                d = d[f > 0]
+                n = n[f > 0]
+                f = f[f > 0]
+                f /= f.sum()  # renormalize to sum to unity
             newd.append(d)
             newn.append(n)
             newf.append(f)
@@ -1091,7 +1108,7 @@ class OrdinaryKrige(object):
         forgive=False,
         num_threads=1,
         idx_vals=None,
-        remove_negative_factors=True
+        remove_negative_factors=True,
     ):
         """calculate ordinary kriging factors (weights) for the points
         represented by arguments x and y
@@ -1148,23 +1165,46 @@ class OrdinaryKrige(object):
 
 
         """
+        # can do this up here, as same between org and mp method
+        assert len(x) == len(y)
+        if idx_vals is not None and len(idx_vals) != len(x):
+            raise Exception("len(idx_vals) != len(x)")
+        # find the point data to use for each interp point
+        df = pd.DataFrame(data={"x": x, "y": y})
+        if idx_vals is not None:
+            df.index = np.array(idx_vals).astype(int)
+        # now can just pass df (contains x and y)
+        # trunc to just deal with pp locations in zones
+        pt_data = self.point_data
+        if pt_zone is None:
+            ptx_array = self.point_data.x.values
+            pty_array = self.point_data.y.values
+            ptnames = self.point_data.name.values
+        else:
+            ptx_array = pt_data.loc[pt_data.zone == pt_zone, "x"].values
+            pty_array = pt_data.loc[pt_data.zone == pt_zone, "y"].values
+            ptnames = pt_data.loc[pt_data.zone == pt_zone, "name"].values
+            # pt_data = pt_data.loc[ptnames]
         if num_threads == 1:
             return self._calc_factors_org(
-                x,
-                y,
+                df,
+                ptx_array,
+                pty_array,
+                ptnames,
                 minpts_interp,
                 maxpts_interp,
                 search_radius,
                 verbose,
                 pt_zone,
                 forgive,
-                idx_vals,
-                remove_negative_factors
+                remove_negative_factors,
             )
         else:
             return self._calc_factors_mp(
-                x,
-                y,
+                df,
+                ptx_array,
+                pty_array,
+                ptnames,
                 minpts_interp,
                 maxpts_interp,
                 search_radius,
@@ -1172,45 +1212,35 @@ class OrdinaryKrige(object):
                 pt_zone,
                 forgive,
                 num_threads,
-                idx_vals,
-                remove_negative_factors
+                remove_negative_factors,
             )
 
     def _calc_factors_org(
         self,
-        x,
-        y,
+        df,
+        ptx_array,
+        pty_array,
+        ptnames,
         minpts_interp=1,
         maxpts_interp=20,
         search_radius=1.0e10,
         verbose=False,
         pt_zone=None,
         forgive=False,
-        idx_vals=None,
-        remove_negative_factors=True
+        remove_negative_factors=True,
     ):
-
-        assert len(x) == len(y)
-        if idx_vals is not None and len(idx_vals) != len(x):
-            raise Exception("len(idx_vals) != len(x)")
-        # find the point data to use for each interp point
-        sqradius = search_radius ** 2
-        df = pd.DataFrame(data={"x": x, "y": y})
-        if idx_vals is not None:
-            df.index = [int(i) for i in idx_vals]
+        # assert len(x) == len(y)
+        # if idx_vals is not None and len(idx_vals) != len(x):
+        #     raise Exception("len(idx_vals) != len(x)")
+        #
+        # df = pd.DataFrame(data={"x": x, "y": y})
+        # if idx_vals is not None:
+        #     df.index = [int(i) for i in idx_vals]
         inames, idist, ifacts, err_var = [], [], [], []
         sill = self.geostruct.sill
-        if pt_zone is None:
-            ptx_array = self.point_data.x.values
-            pty_array = self.point_data.y.values
-            ptnames = self.point_data.name.values
-        else:
-            pt_data = self.point_data
-            ptx_array = pt_data.loc[pt_data.zone == pt_zone, "x"].values
-            pty_array = pt_data.loc[pt_data.zone == pt_zone, "y"].values
-            ptnames = pt_data.loc[pt_data.zone == pt_zone, "name"].values
-        # if verbose:
-
+        # ptnames = ptd.name.values
+        # find the point data to use for each interp point
+        sqradius = search_radius ** 2
         print("starting interp point loop for {0} points".format(df.shape[0]))
         start_loop = datetime.now()
         for idx, (ix, iy) in enumerate(zip(df.x, df.y)):
@@ -1223,16 +1253,17 @@ class OrdinaryKrige(object):
             if verbose:
                 istart = datetime.now()
                 print("processing interp point:{0} of {1}".format(idx, df.shape[0]))
-            # if verbose == 2:
-            #     start = datetime.now()
-            #     print("calc ipoint dist...",end='')
+            if verbose == 2:
+                start = datetime.now()
+                print("calc ipoint dist...", end='')
 
             #  calc dist from this interp point to all point data...slow
             # dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
             # dist.sort_values(inplace=True)
             # dist = dist.loc[dist <= sqradius]
             # def _dist_calcs(self, ix, iy, ptx_array, pty_array, ptnames, sqradius):
-            dist = self._dist_calcs(ix, iy, ptx_array, pty_array, ptnames, sqradius)
+            dist = self._dist_calcs(ix, iy, ptx_array, pty_array, ptnames,
+                                    sqradius)
 
             # if too few points were found, skip
             if len(dist) < minpts_interp:
@@ -1344,8 +1375,10 @@ class OrdinaryKrige(object):
 
     def _calc_factors_mp(
         self,
-        x,
-        y,
+        df,
+        ptx_array,
+        pty_array,
+        ptnames,
         minpts_interp=1,
         maxpts_interp=20,
         search_radius=1.0e10,
@@ -1353,26 +1386,20 @@ class OrdinaryKrige(object):
         pt_zone=None,
         forgive=False,
         num_threads=1,
-        idx_vals=None,
-        remove_negative_factors=True
+        remove_negative_factors=True,
     ):
-        start_loop = datetime.now()
-        assert len(x) == len(y)
-        if idx_vals is not None and len(idx_vals) != len(x):
-            raise Exception("len(idx_vals) != len(x)")
-        # find the point data to use for each interp point
-        df = pd.DataFrame(data={"x": x, "y": y})
-        if idx_vals is not None:
-            df.index = [int(i) for i in idx_vals]
+        sqradius = search_radius ** 2
         print("starting interp point loop for {0} points".format(df.shape[0]))
+        start_loop = datetime.now()
         # ensure same order as point data and just pass array
-        point_cov_data = self.point_cov_df.loc[self.point_data.name,
-                                               self.point_data.name].values
-        point_pairs = [(i, xx, yy) for i, (xx, yy) in enumerate(zip(x, y))]
-        idist = [[] for _ in x]
-        inames = [[] for _ in x]
-        ifacts = [[] for _ in x]
-        err_var = [np.NaN] * len(x)
+        # ptnames = ptd.name
+        # point_data = self.point_data.loc[self.point_data.zone == pt_zone]
+        point_cov_data = self.point_cov_df.loc[ptnames, ptnames].values
+        point_pairs = [(i, xx, yy) for i, (xx, yy) in enumerate(zip(df.x, df.y))]
+        idist = [[]] * len(df.x)
+        inames = [[]] * len(df.x)
+        ifacts = [[]] * len(df.x)
+        err_var = [np.NaN] * len(df.x)
         with mp.Manager() as manager:
             point_pairs = manager.list(point_pairs)
             idist = manager.list(idist)
@@ -1386,7 +1413,9 @@ class OrdinaryKrige(object):
                 p = mp.Process(
                     target=OrdinaryKrige._worker,
                     args=(
-                        self.point_data,
+                        ptx_array,
+                        pty_array,
+                        ptnames,
                         point_pairs,
                         inames,
                         idist,
@@ -1395,8 +1424,7 @@ class OrdinaryKrige(object):
                         point_cov_data,
                         self.geostruct,
                         EPSILON,
-                        search_radius,
-                        pt_zone,
+                        sqradius,
                         minpts_interp,
                         maxpts_interp,
                         lock,
@@ -1407,11 +1435,14 @@ class OrdinaryKrige(object):
             for p in procs:
                 p.join()
 
-            df["idist"] = [i[0] for i in idist]
-            df["inames"] = [i[0] for i in inames]
-            df["ifacts"] = [i[0] for i in ifacts]
+            df[["idist", "inames", "ifacts"]] = pd.DataFrame(
+                [[s[0], n[0], f[0]] for s, n, f in zip(idist, inames, ifacts)],
+                columns=["idist", "inames", "ifacts"], index=df.index)
 
-            df["err_var"] = [float(e[0]) if not isinstance(e[0],list) else float(e[0][0]) for e in err_var]
+            df["err_var"] = [
+                float(e[0]) if not isinstance(e[0], list) else float(e[0][0])
+                for e in err_var
+            ]
 
         if pt_zone is None:
             self.interp_data = df
@@ -1429,7 +1460,9 @@ class OrdinaryKrige(object):
 
     @staticmethod
     def _worker(
-        point_data,
+        ptx_array,
+        pty_array,
+        ptnames,
         point_pairs,
         inames,
         idist,
@@ -1438,25 +1471,12 @@ class OrdinaryKrige(object):
         full_point_cov,
         geostruct,
         epsilon,
-        search_radius,
-        pt_zone,
+        sqradius,
         minpts_interp,
         maxpts_interp,
         lock,
     ):
-        # find the point data to use for each interp point
-        sqradius = search_radius ** 2
-
         sill = geostruct.sill
-        if pt_zone is None:
-            ptx_array = point_data.x.values
-            pty_array = point_data.y.values
-            ptnames = point_data.name.values
-        else:
-            pt_data = point_data
-            ptx_array = pt_data.loc[pt_data.zone == pt_zone, "x"].values
-            pty_array = pt_data.loc[pt_data.zone == pt_zone, "y"].values
-            ptnames = pt_data.loc[pt_data.zone == pt_zone, "name"].values
         while True:
             if len(point_pairs) == 0:
                 return
@@ -1495,9 +1515,9 @@ class OrdinaryKrige(object):
                 continue
 
             # only the maxpts_interp points
-            dist = np.sqrt(dist[: maxpts_interp])
-            pt_names = pt_names[: maxpts_interp]
-            sortorder = sortorder[: maxpts_interp]
+            dist = np.sqrt(dist[:maxpts_interp])
+            pt_names = pt_names[:maxpts_interp]
+            sortorder = sortorder[:maxpts_interp]
 
             # if one of the points is super close, just use it and skip
             if dist[0] <= epsilon:
@@ -1535,7 +1555,13 @@ class OrdinaryKrige(object):
 
             assert len(facs) - 1 == len(dist)
 
-            err_var[idx] = [float(sill + facs[-1] - sum([f * c for f, c in zip(facs[:-1], interp_cov)]))]
+            err_var[idx] = [
+                float(
+                    sill
+                    + facs[-1]
+                    - sum([f * c for f, c in zip(facs[:-1], interp_cov)])
+                )
+            ]
             inames[idx] = [pt_names.tolist()]
             idist[idx] = [dist.tolist()]
             ifacts[idx] = [facs[:-1, 0].tolist()]

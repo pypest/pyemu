@@ -203,16 +203,24 @@ class Pst(object):
             # components[og] = np.sum((og_res_df["residual"] *
             #                          og_df["weight"]) ** 2)
             mod_vals = og_res_df.loc[og_df.obsnme, "modelled"]
-            if og.lower().startswith("g_") or og.lower().startswith("greater_") or og.lower().startswith("<@"):
-                mod_vals.loc[mod_vals >= og_df.loc[:, "obsval"]] = og_df.loc[:, "obsval"]
-            elif og.lower().startswith("l_") or og.lower().startswith("less_") or og.lower().startswith(">@"):
-                mod_vals.loc[mod_vals <= og_df.loc[:, "obsval"]] = og_df.loc[:, "obsval"]
+            if (
+                og.lower().startswith("g_")
+                or og.lower().startswith("greater_")
+                or og.lower().startswith("<@")
+            ):
+                mod_vals.loc[mod_vals >= og_df.loc[:, "obsval"]] = og_df.loc[
+                    :, "obsval"
+                ]
+            elif (
+                og.lower().startswith("l_")
+                or og.lower().startswith("less_")
+                or og.lower().startswith(">@")
+            ):
+                mod_vals.loc[mod_vals <= og_df.loc[:, "obsval"]] = og_df.loc[
+                    :, "obsval"
+                ]
             components[og] = np.sum(
-                (
-                    (og_df.loc[:, "obsval"] - mod_vals)
-                    * og_df.loc[:, "weight"]
-                )
-                ** 2
+                ((og_df.loc[:, "obsval"] - mod_vals) * og_df.loc[:, "weight"]) ** 2
             )
         if (
             not self.control_data.pestmode.startswith("reg")
@@ -237,10 +245,18 @@ class Pst(object):
                         + " vs. "
                         + str(og_res_df.shape)
                     )
-                if og.lower().startswith("g_") or og.lower().startswith("greater_") or og.lower().startswith("<@"):
-                    gidx = og_res_df.loc[:,"residual"] >= 0
-                    og_res_df.loc[gidx,"residual"] = 0
-                elif og.lower().startswith("l_") or og.lower().startswith("less_") or og.lower().startswith(">@"):
+                if (
+                    og.lower().startswith("g_")
+                    or og.lower().startswith("greater_")
+                    or og.lower().startswith("<@")
+                ):
+                    gidx = og_res_df.loc[:, "residual"] >= 0
+                    og_res_df.loc[gidx, "residual"] = 0
+                elif (
+                    og.lower().startswith("l_")
+                    or og.lower().startswith("less_")
+                    or og.lower().startswith(">@")
+                ):
                     lidx = og_res_df.loc[:, "residual"] <= 0
                     og_res_df.loc[lidx, "residual"] = 0
                 components[og] = np.sum((og_res_df["residual"] * og_df["weight"]) ** 2)
@@ -1537,19 +1553,28 @@ class Pst(object):
                     PyemuWarning,
                 )
             else:
-                raise Exception("Pst.sanity_check() error: duplicate parameter names: {0}".format(",".join(list(dups.index))))
+                raise Exception(
+                    "Pst.sanity_check() error: duplicate parameter names: {0}".format(
+                        ",".join(list(dups.index))
+                    )
+                )
 
         dups = self.observation_data.obsnme.value_counts()
         dups = dups.loc[dups > 1]
         if dups.shape[0] > 0:
             if forgive:
                 warnings.warn(
-                    "duplicate observation names: {0}".format(",".join(list(dups.index))),
+                    "duplicate observation names: {0}".format(
+                        ",".join(list(dups.index))
+                    ),
                     PyemuWarning,
                 )
             else:
                 raise Exception(
-                    "Pst.sanity_check() error: duplicate observation names: {0}".format(",".join(list(dups.index))))
+                    "Pst.sanity_check() error: duplicate observation names: {0}".format(
+                        ",".join(list(dups.index))
+                    )
+                )
 
         if self.npar_adj == 0:
             warnings.warn("no adjustable pars", PyemuWarning)
@@ -1563,25 +1588,49 @@ class Pst(object):
 
             tpar_dict = self.parameter_data.partied.to_dict()
 
-            for tpar,ptied in tpar_dict.items():
+            for tpar, ptied in tpar_dict.items():
                 if pd.isna(ptied):
                     continue
                 if tpar == ptied:
                     if forgive:
-                        warnings.warn("tied parameter '{0}' tied to itself".format(tpar),PyemuWarning)
+                        warnings.warn(
+                            "tied parameter '{0}' tied to itself".format(tpar),
+                            PyemuWarning,
+                        )
                     else:
-                        raise Exception("Pst.sanity_check() error: tied parameter '{0}' tied to itself".format(tpar))
+                        raise Exception(
+                            "Pst.sanity_check() error: tied parameter '{0}' tied to itself".format(
+                                tpar
+                            )
+                        )
                 elif ptied not in spar:
                     if forgive:
-                        warnings.warn("tied parameter '{0}' tied to unknown parameter '{1}'".format(tpar,ptied),PyemuWarning)
+                        warnings.warn(
+                            "tied parameter '{0}' tied to unknown parameter '{1}'".format(
+                                tpar, ptied
+                            ),
+                            PyemuWarning,
+                        )
                     else:
-                        raise Exception("Pst.sanity_check() error: tied parameter '{0}' tied to unknown parameter '{1}'".format(tpar,ptied))
+                        raise Exception(
+                            "Pst.sanity_check() error: tied parameter '{0}' tied to unknown parameter '{1}'".format(
+                                tpar, ptied
+                            )
+                        )
                 elif ptied not in sadj:
                     if forgive:
-                        warnings.warn("tied parameter '{0}' tied to non-adjustable parameter '{1}'".format(tpar,ptied),PyemuWarning)
+                        warnings.warn(
+                            "tied parameter '{0}' tied to non-adjustable parameter '{1}'".format(
+                                tpar, ptied
+                            ),
+                            PyemuWarning,
+                        )
                     else:
-                        raise Exception("Pst.sanity_check() error: tied parameter '{0}' tied to non-adjustable parameter '{1}'".format(tpar,ptied))
-
+                        raise Exception(
+                            "Pst.sanity_check() error: tied parameter '{0}' tied to non-adjustable parameter '{1}'".format(
+                                tpar, ptied
+                            )
+                        )
 
         # print("noptmax: {0}".format(self.control_data.noptmax))
 
@@ -1791,10 +1840,10 @@ class Pst(object):
     def _rectify_parchglim(self):
         """private method to just fix the parchglim vs cross zero issue"""
         par = self.parameter_data
-        need_fixing = par.loc[par.parubnd > 0,:].copy()
+        need_fixing = par.loc[par.parubnd > 0, :].copy()
         need_fixing = need_fixing.loc[par.parlbnd <= 0, "parnme"]
 
-        self.parameter_data.loc[need_fixing,"parchglim"] = "relative"
+        self.parameter_data.loc[need_fixing, "parchglim"] = "relative"
 
     def _write_version1(self, new_filename):
         """private method to write a version 1 pest control file"""
@@ -2178,9 +2227,16 @@ class Pst(object):
 
         return new_pst
 
-    def parrep(self, parfile=None, enforce_bounds=True, real_name=None, noptmax=0, binary_ens_file=False):
+    def parrep(
+        self,
+        parfile=None,
+        enforce_bounds=True,
+        real_name=None,
+        noptmax=0,
+        binary_ens_file=False,
+    ):
         """replicates the pest parrep util. replaces the parval1 field in the
-            parameter data section dataframe with values in a PEST parameter file 
+            parameter data section dataframe with values in a PEST parameter file
             or a single realization from an ensemble parameter csv file
 
         Args:
@@ -2193,9 +2249,9 @@ class Pst(object):
             enforce_bounds (`bool`, optional): flag to enforce parameter bounds after parameter values are updated.
                 This is useful because PEST and PEST++ round the parameter values in the
                 par file, which may cause slight bound violations.  Default is `True`
-            real_name (`str` or `int`, optional): name of the ensemble realization to use for updating the 
+            real_name (`str` or `int`, optional): name of the ensemble realization to use for updating the
                 parval1 value in the parameter data section dataframe. If None, try using "base". If "base"
-                not present, use the real_name with smallest index number. 
+                not present, use the real_name with smallest index number.
                 Ignored if parfile is of the PEST parameter file format (e.g. not en ensemble)
             noptmax (`int`, optional): Value with which to update the pst.control_data.noptmax value
                 Default is 0.
@@ -2209,49 +2265,56 @@ class Pst(object):
 
         """
 
-
         if parfile is None:
             parfile = self.filename.replace(".pst", ".par")
         # first handle the case of a single parameter realization in a PAR file
-        if parfile.lower().endswith('.par'):
-            print('Updating parameter values from {0}'.format(parfile))
+        if parfile.lower().endswith(".par"):
+            print("Updating parameter values from {0}".format(parfile))
             par_df = pst_utils.read_parfile(parfile)
             self.parameter_data.index = self.parameter_data.parnme
             par_df.index = par_df.parnme
             self.parameter_data.parval1 = par_df.parval1
             self.parameter_data.scale = par_df.scale
             self.parameter_data.offset = par_df.offset
-            
+
         # next handle ensemble case
-        if parfile.lower()[-4:] in ['.jcb','.bin']:
-            binary_ens_file=True
-        if parfile.lower()[-4:] in ['.jcb','.bin', '.csv'] :
-            if parfile.lower().endswith('.csv'):
-                parens = pd.read_csv(parfile, index_col = 0)
+        if parfile.lower()[-4:] in [".jcb", ".bin"]:
+            binary_ens_file = True
+        if parfile.lower()[-4:] in [".jcb", ".bin", ".csv"]:
+            if parfile.lower().endswith(".csv"):
+                parens = pd.read_csv(parfile, index_col=0)
             if binary_ens_file == True:
-                parens = pyemu.ParameterEnsemble.from_binary(pst=self,filename=parfile)._df
+                parens = pyemu.ParameterEnsemble.from_binary(
+                    pst=self, filename=parfile
+                )._df
             # cast the parens.index to string to be sure indexing is cool
             parens.index = [str(i).lower() for i in parens.index]
             # handle None case (potentially) for real_name
             if real_name is None:
-                if 'base' in parens.index:
-                    real_name = 'base'
+                if "base" in parens.index:
+                    real_name = "base"
                 else:
                     real_name = str(min([int(i) for i in parens.index]))
             # cast the real_name to string to be sure indexing is cool
             real_name = str(real_name)
 
             # now update with a little pandas trickery
-            print("updating parval1 using realization:'{}' from ensemble file {}".format(real_name, parfile))
-            self.parameter_data.parval1 = parens.loc[real_name].T.loc[self.parameter_data.parnme]
-                
+            print(
+                "updating parval1 using realization:'{}' from ensemble file {}".format(
+                    real_name, parfile
+                )
+            )
+            self.parameter_data.parval1 = parens.loc[real_name].T.loc[
+                self.parameter_data.parnme
+            ]
+
         if enforce_bounds:
             par = self.parameter_data
             idx = par.loc[par.parval1 > par.parubnd, "parnme"]
             par.loc[idx, "parval1"] = par.loc[idx, "parubnd"]
             idx = par.loc[par.parval1 < par.parlbnd, "parnme"]
             par.loc[idx, "parval1"] = par.loc[idx, "parlbnd"]
-        print ('parrep: updating noptmax to {}'.format(int(noptmax)))
+        print("parrep: updating noptmax to {}".format(int(noptmax)))
         self.control_data.noptmax = int(noptmax)
 
     def adjust_weights_discrepancy(
@@ -3708,7 +3771,7 @@ class Pst(object):
             except Exception as e:
                 print("error parsing metadata from '{0}', continuing".format(name))
 
-    def rename_parameters(self,name_dict,pst_path="."):
+    def rename_parameters(self, name_dict, pst_path="."):
         """rename parameters in the control and template files
 
         Args:
@@ -3737,30 +3800,37 @@ class Pst(object):
 
         missing = set(name_dict.keys()) - set(self.par_names)
         if len(missing) > 0:
-            raise Exception("Pst.rename_parameters(): the following parameters in 'name_dict'"+
-                            " are not in the control file:\n{0}".format(",".join(missing)))
+            raise Exception(
+                "Pst.rename_parameters(): the following parameters in 'name_dict'"
+                + " are not in the control file:\n{0}".format(",".join(missing))
+            )
 
         par = self.parameter_data
-        par.loc[:,"parnme"] = par.parnme.apply(lambda x: name_dict.get(x,x))
+        par.loc[:, "parnme"] = par.parnme.apply(lambda x: name_dict.get(x, x))
         par.index = par.parnme.values
 
-        for idx,eq in zip(self.prior_information.index,self.prior_information.equation):
-            for old,new in name_dict.items():
-                eq = eq.replace(old,new)
-            self.prior_information.loc[idx,"equation"] = eq
-
+        for idx, eq in zip(
+            self.prior_information.index, self.prior_information.equation
+        ):
+            for old, new in name_dict.items():
+                eq = eq.replace(old, new)
+            self.prior_information.loc[idx, "equation"] = eq
 
         for tpl_file in self.model_input_data.pest_file:
-            sys_tpl_file = os.path.join(pst_path,tpl_file.replace("/",os.path.sep).replace("\\",os.path.sep))
+            sys_tpl_file = os.path.join(
+                pst_path, tpl_file.replace("/", os.path.sep).replace("\\", os.path.sep)
+            )
             if not os.path.exists(sys_tpl_file):
-                warnings.warn("template file '{0}' not found, continuing...",PyemuWarning)
+                warnings.warn(
+                    "template file '{0}' not found, continuing...", PyemuWarning
+                )
                 continue
-            lines = open(sys_tpl_file,'r').readlines()
-            with open(sys_tpl_file,'w') as f:
+            lines = open(sys_tpl_file, "r").readlines()
+            with open(sys_tpl_file, "w") as f:
                 for line in lines:
-                    for old,new in name_dict.items():
+                    for old, new in name_dict.items():
                         if old in line:
-                            line = line.replace(old,new)
+                            line = line.replace(old, new)
                     f.write(line)
 
     def rename_observations(self, name_dict, pst_path="."):
@@ -3787,20 +3857,26 @@ class Pst(object):
 
         missing = set(name_dict.keys()) - set(self.obs_names)
         if len(missing) > 0:
-            raise Exception("Pst.rename_observations(): the following observations in 'name_dict'" +
-                            " are not in the control file:\n{0}".format(",".join(missing)))
+            raise Exception(
+                "Pst.rename_observations(): the following observations in 'name_dict'"
+                + " are not in the control file:\n{0}".format(",".join(missing))
+            )
 
         obs = self.observation_data
         obs.loc[:, "obsnme"] = obs.obsnme.apply(lambda x: name_dict.get(x, x))
         obs.index = obs.obsnme.values
 
         for ins_file in self.model_output_data.pest_file:
-            sys_ins_file = os.path.join(pst_path, ins_file.replace("/", os.path.sep).replace("\\", os.path.sep))
+            sys_ins_file = os.path.join(
+                pst_path, ins_file.replace("/", os.path.sep).replace("\\", os.path.sep)
+            )
             if not os.path.exists(sys_ins_file):
-                warnings.warn("instruction file '{0}' not found, continuing...", PyemuWarning)
+                warnings.warn(
+                    "instruction file '{0}' not found, continuing...", PyemuWarning
+                )
                 continue
-            lines = open(sys_ins_file, 'r').readlines()
-            with open(sys_ins_file, 'w') as f:
+            lines = open(sys_ins_file, "r").readlines()
+            with open(sys_ins_file, "w") as f:
                 for line in lines:
                     for old, new in name_dict.items():
                         if old in line:
