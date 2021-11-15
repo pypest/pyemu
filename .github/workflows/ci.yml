@@ -146,7 +146,7 @@ jobs:
         pip install https://github.com/modflowpy/flopy/zipball/develop
         # git clone -b develop --depth 1 https://github.com/modflowpy/flopy.git
         # cd flopy
-        # python setup.py install
+        # pip install ./pyemu
         # cd ..
         # pip install https://github.com/modflowpy/pymake/zipball/master
         python setup.py install
