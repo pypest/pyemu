@@ -148,7 +148,7 @@ jobs:
         # cd flopy
         # cd ..
         # pip install https://github.com/modflowpy/pymake/zipball/master
-        pip install . --use-feature=in-tree-build
+        pip install .
         conda list
 
     - name: Add executables directory to path
