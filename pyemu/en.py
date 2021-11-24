@@ -10,6 +10,7 @@ from .pyemu_warnings import PyemuWarning
 SEED = 358183147  # from random.org on 5 Dec 2016
 np.random.seed(SEED)
 
+
 class Loc(object):
     """thin wrapper around `pandas.DataFrame.loc` to make sure returned type
     is `Ensemble` (instead of `pandas.DataFrame)`
@@ -131,6 +132,9 @@ class Ensemble(object):
         Note:
             reseeds using the pyemu.en.SEED global variable
 
+            The pyemu.en.SEED value is set as the numpy.random.seed on import, so
+            make sure you know what you are doing if you call this method...
+
         """
         np.random.seed(SEED)
 
@@ -141,7 +145,7 @@ class Ensemble(object):
             `Ensemble`: copy of this `Ensemble`
 
         Note:
-            copies both `Ensemble.pst` and `Ensemble._df`
+            copies both `Ensemble.pst` and `Ensemble._df`: can be expensive
 
         """
         return type(self)(
@@ -173,7 +177,7 @@ class Ensemble(object):
             Parameter transform is only related to log_{10} and does not
             include the effects of `scale` and/or `offset`
 
-            `Ensemble.transform() is only provided for inhertance purposes.
+            `Ensemble.transform() is only provided for inheritance purposes.
             It only changes the `Ensemble._transformed` flag
 
         """
@@ -191,7 +195,7 @@ class Ensemble(object):
             Parameter transform is only related to log_{10} and does not
             include the effects of `scale` and/or `offset`
 
-            `Ensemble.back_transform() is only provided for inhertance purposes.
+            `Ensemble.back_transform() is only provided for inheritance purposes.
             It only changes the `Ensemble._transformed` flag
 
         """
@@ -339,7 +343,7 @@ class Ensemble(object):
 
         Note:
             back transforms `ParameterEnsemble` before writing so that
-            values are in arithmatic space
+            values are in arithmetic space
 
         """
         retrans = False
@@ -366,7 +370,7 @@ class Ensemble(object):
 
         Note:
             back transforms `ParameterEnsemble` before writing so that
-            values are in arithmatic space
+            values are in arithmetic space
 
         """
 
@@ -468,12 +472,21 @@ class Ensemble(object):
 
                 for grp_name, names in grouper.items():
                     print("drawing from group", grp_name)
-                    idxs = [mv_map[name] for name in names]
-                    snv = np.random.randn(num_reals, len(names))
-                    cov_grp = cov.get(names)
-                    if len(names) == 1:
+                    # reorder names to be in cov matrix order
+                    # cnames = names
+                    cnames = []
+                    snames = set(names)
+                    for n in cov.names:
+                        if n in snames:
+                            cnames.append(n)
+                    names = None
+                    snames = None
+                    idxs = [mv_map[name] for name in cnames]
+                    snv = np.random.randn(num_reals, len(cnames))
+                    cov_grp = cov.get(cnames)
+                    if len(cnames) == 1:
                         std = np.sqrt(cov_grp.x)
-                        reals[:, idxs] = mean_values.loc[names].values[0] + (snv * std)
+                        reals[:, idxs] = mean_values.loc[cnames].values[0] + (snv * std)
                     else:
                         if factor == "eigen":
                             try:
@@ -493,7 +506,7 @@ class Ensemble(object):
                             a, i = Ensemble._get_svd_projection_matrix(cov_grp.as_2d)
                             snv[:, i:] = 0.0
                         # process each realization
-                        group_mean_values = mean_values.loc[names]
+                        group_mean_values = mean_values.loc[cnames]
                         for i in range(num_reals):
                             reals[i, idxs] = group_mean_values + np.dot(a, snv[i, :])
 
@@ -508,7 +521,6 @@ class Ensemble(object):
                 idxs = [mv_map[name] for name in cov.row_names]
                 for i in range(num_reals):
                     reals[i, idxs] = cov_mean_values + np.dot(a, snv[i, :])
-
         df = pd.DataFrame(reals, columns=mean_values.index.values)
         df.dropna(inplace=True, axis=1)
         return df
@@ -582,9 +594,17 @@ class Ensemble(object):
             realized values for each column
 
             `center_on=None` yields the classic ensemble smoother/ensemble Kalman
-            filter deviations
+            filter deviations from the mean vector
 
             Deviations respect log-transformation status.
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
+            oe.add_base()
+            oe_dev = oe.get_deviations(center_on="base")
+            oe.to_csv("obs_base_devs.csv")
 
         """
 
@@ -619,11 +639,9 @@ class Ensemble(object):
 
         Example::
 
-            pst = pyemu.Pst("my.pst")
-            oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
-            oe.add_base()
-            oe_dev = oe.get_deviations(center_on="base")
-            oe.to_csv("obs_base_devs.csv")
+            oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst=pst,num_reals=100)
+            dev_mat = oe.get_deviations().as_pyemu_matrix(typ=pyemu.Cov)
+            obscov = dev_mat.T * dev_mat
 
         """
         if typ is None:
@@ -805,6 +823,8 @@ class ObservationEnsemble(Ensemble):
             replaces the last realization with the current `ObservationEnsemble.pst.observation_data.obsval` values
             as a new realization named "base"
 
+            the PEST++ enemble tools will add this realization also if you dont wanna fool with it here...
+
         """
         if "base" in self.index:
             raise Exception("'base' already in ensemble")
@@ -868,12 +888,12 @@ class ParameterEnsemble(Ensemble):
                 that can be passed to `pyemu.Cov.from_parameter_data`).
             num_reals (`int`): number of stochastic realizations to generate.  Default
                 is 100
-            by_groups (`bool`): flag to generate realzations be parameter group.  This
+            by_groups (`bool`): flag to generate realizations be parameter group.  This
                 assumes no correlation (covariates) between parameter groups.  For large
                 numbers of parameters, this help prevent memories but is slower.
             fill (`bool`): flag to fill in fixed and/or tied parameters with control file
                 values.  Default is True.
-            factor (`str`): how to factorize `cov` to form the projectin matrix.  Can
+            factor (`str`): how to factorize `cov` to form the projection matrix.  Can
                 be "eigen" or "svd". The "eigen" option is default and is faster.  But
                 for (nearly) singular cov matrices (such as those generated empirically
                 from ensembles), "svd" is the only way.  Ignored for diagonal `cov`.
@@ -899,11 +919,11 @@ class ParameterEnsemble(Ensemble):
 
             pst = pyemu.Pst("my.pst")
             # the easiest way - just relying on weights in pst
-            oe1 = pyemu.ParameterEnsemble.from_gaussian_draw(pst)
+            pe1 = pyemu.ParameterEnsemble.from_gaussian_draw(pst)
 
             # generate the cov explicitly with a sigma_range
             cov = pyemu.Cov.from_parameter_data(pst,sigma_range=6)
-            oe2 = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov=cov)
+            [e2 = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov=cov)
 
         """
         if cov is None:
@@ -1092,6 +1112,14 @@ class ParameterEnsemble(Ensemble):
                 Default is `False`.
             fill (`bool`): flag to fill in fixed and/or tied parameters with control file
                 values.  Default is True.
+
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            # uniform for the fist 10 pars
+            how_dict = {p:"uniform" for p in pst.adj_par_names[:10]}
+            pe = pyemu.ParameterEnsemble(pst,how_dict=how_dict)
+            pe.to_csv("my_mixed_pe.csv")
 
         """
 
@@ -1322,6 +1350,8 @@ class ParameterEnsemble(Ensemble):
             replaces the last realization with the current `ParameterEnsemble.pst.parameter_data.parval1` values
             as a new realization named "base"
 
+            The PEST++ ensemble tools will add this realization also if you dont wanna fool with it here...
+
         """
         if "base" in self.index:
             raise Exception("'base' realization already in ensemble")
@@ -1478,18 +1508,21 @@ class ParameterEnsemble(Ensemble):
         return new_en
 
     def enforce(self, how="reset", bound_tol=0.0):
-        """entry point for bounds enforcement.  This gets called for the
-        draw method(s), so users shouldn't need to call this
+        """entry point for bounds enforcement.
 
         Args:
             enforce_bounds (`str`): can be 'reset' to reset offending values or 'drop' to drop
-                offending realizations
+                offending realizations.  Default is "reset"
+
+        Note:
+            In very high dimensions, the "drop" and "scale" `how` types will result in either very few realizations
+            or very short realizations.
 
         Example::
 
             pst = pyemu.Pst("my.pst")
             pe = pyemu.ParameterEnsemble.from_gaussian_draw()
-            pe.enforce(how="scale)
+            pe.enforce(how="scale")
             pe.to_csv("par.csv")
 
 

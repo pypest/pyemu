@@ -317,7 +317,7 @@ def setup_pp_test():
                                                      every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp","test_unrot.shp"))
     ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
-    ok.calc_factors_grid(ml.sr)
+    ok.calc_factors_grid(sr)
 
 
 
@@ -466,7 +466,8 @@ def  kl_test():
     factors_file = os.path.join("temp","factors.dat")
     num_eig = 100
     prefixes = ["hk1"]
-    df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=ml.sr,
+    sr = pyemu.helpers.SpatialReference(delc=ml.dis.delc.array,delr=ml.dis.delr.array)
+    df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=sr,
                                              struct=str_file,
                                              factors_file=factors_file,
                                              basis_file=basis_file,
@@ -497,6 +498,7 @@ def ok_test():
     import os
     import pandas as pd
     import pyemu
+    import numpy as np
     str_file = os.path.join("utils","struct_test.dat")
     pts_data = pd.DataFrame({"x":[1.0,2.0,3.0],"y":[0.,0.,0.],"name":["p1","p2","p3"]})
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
@@ -509,6 +511,29 @@ def ok_test():
         assert kf.loc[i,"ifacts"][0] == 1.0
         assert sum(kf.loc[i,"ifacts"]) == 1.0
     print(kf)
+
+    # evaluate the negative factor correction
+    # set up some points with a cluster far from a single points - this triggers some negative factors for testing
+    pts_data = pd.DataFrame({"x":[1.0,1.0,1.0,1.0,2.0,3.0, 3500.0],"y":[0.,0.1,-0.1,0.001,0.,0.,0.],"name":["p1","p2","p3","p4","p5","p6","p7"]})     
+    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
+    # evaluate factors with and without negative correction
+    kf2_nocorr = ok.calc_factors([1000.0],[0.],remove_negative_factors=False)
+    kf2_corr = ok.calc_factors([1000.0],[0.])
+    
+    print(kf2_nocorr)
+    print(kf2_corr)
+    # do some checking here
+    # do all the factors sum to unity with and without correction?
+    assert np.isclose(kf2_nocorr.iloc[0].ifacts.sum(), 1,atol=1e-6)
+    assert np.isclose(kf2_corr.iloc[0].ifacts.sum(), 1,atol=1e-6)
+    
+    # are the corrected factors still reasonably close to the uncorrected positive values?
+    fcorr = kf2_corr.iloc[0].ifacts
+    fnocorr = kf2_nocorr.iloc[0].ifacts
+    np.allclose(fcorr,fnocorr[fnocorr>0], atol=1e-2)
+
+
+
 
 def ok_grid_test():
 
@@ -533,7 +558,7 @@ def ok_grid_test():
     pts_data = pts_data.loc[:,["x","y","name"]]
 
 
-    sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
+    sr = pyemu.helpers.SpatialReference(delr=delr,delc=delc)
     pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
     pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
     str_file = os.path.join("utils","struct_test.dat")
@@ -565,7 +590,7 @@ def ok_grid_zone_test():
     pts_data = pts_data.loc[:,["x","y","name"]]
 
 
-    sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
+    sr = pyemu.helpers.SpatialReference(delr=delr,delc=delc)
     pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
     pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
     pts_data.loc[:,"zone"] = 1
@@ -578,7 +603,7 @@ def ok_grid_zone_test():
     zone_array[0,0] = 2
     kf = ok.calc_factors_grid(sr,verbose=False,
                               var_filename=os.path.join("temp","test_var.ref"),
-                              minpts_interp=1,zone_array=zone_array)
+                              minpts_interp=1,zone_array=zone_array,num_threads=2)
     ok.to_grid_factors_file(os.path.join("temp","test.fac"))
 
 
@@ -596,7 +621,7 @@ def ppk2fac_verf_test():
     str_file = os.path.join(ws,"structure.complex.dat")
     ppk2fac_facfile = os.path.join(ws,"ppk2fac_fac.dat")
     pyemu_facfile = os.path.join("temp","pyemu_facfile.dat")
-    sr = flopy.utils.SpatialReference.from_gridspec(gspc_file)
+    sr = pyemu.helpers.SpatialReference.from_gridspec(gspc_file)
     ok = pyemu.utils.OrdinaryKrige(str_file,pp_file)
     ok.calc_factors_grid(sr,maxpts_interp=10)
     ok.to_grid_factors_file(pyemu_facfile)
@@ -738,6 +763,7 @@ def geostat_prior_builder_test():
 def geostat_draws_test():
     import os
     import numpy as np
+    import pandas as pd
     import pyemu
     pst_file = os.path.join("pst","pest.pst")
     pst = pyemu.Pst(pst_file)
@@ -745,14 +771,18 @@ def geostat_draws_test():
     tpl_file = os.path.join("utils", "pp_locs.tpl")
     str_file = os.path.join("utils", "structure.dat")
 
+    #make a df with one entry
+    df_one = pd.DataFrame({"parnme":"mult1","x":-999,"y":-9999,"zone":-9999},index=["mult1"])
 
-    pe = pyemu.helpers.geostatistical_draws(pst_file,{str_file:tpl_file})
+
+    pe = pyemu.helpers.geostatistical_draws(pst_file,{str_file:tpl_file,str_file:df_one})
     assert (pe.shape == pe.dropna().shape)
 
     pst.parameter_data.loc[pst.par_names[1:10], "partrans"] = "tied"
     pst.parameter_data.loc[pst.par_names[1:10], "partied"] = pst.par_names[0]
     pe = pyemu.helpers.geostatistical_draws(pst, {str_file: tpl_file})
     assert (pe.shape == pe.dropna().shape)
+    assert "mult1" in pe.columns
 
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
@@ -1630,7 +1660,7 @@ def ok_grid_invest():
     import numpy as np
     import pandas as pd
     import pyemu
-    nrow,ncol = 50,50
+    nrow,ncol = 200,200
     delr = np.ones((ncol)) * 1.0/float(ncol)
     delc = np.ones((nrow)) * 1.0/float(nrow)
 
@@ -1649,12 +1679,11 @@ def ok_grid_invest():
     str_file = os.path.join("utils","struct_test.dat")
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
     ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
-    kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("temp","test_var.ref"),minpts_interp=1)
+    kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("temp","test_var.ref"),minpts_interp=1,num_threads=1)
     kf2 = ok.calc_factors_grid(sr, verbose=False, var_filename=os.path.join("temp", "test_var.ref"), minpts_interp=1,num_threads=10)
     ok.to_grid_factors_file(os.path.join("temp","test.fac"))
     diff = (kf.err_var - kf2.err_var).apply(np.abs).sum()
     assert diff < 1.0e-10
-
 
 def specsim_test():
     try:
@@ -1955,8 +1984,42 @@ def geostat_prior_builder_test2():
     #plt.show()
 
 
+def temporal_draw_invest():
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    import matplotlib.pyplot as plt
+    from datetime import datetime
+    v = pyemu.geostats.ExpVario(contribution=1.0,a=500)
+    gs = pyemu.geostats.GeoStruct(variograms=v)
+
+    t = np.arange(0,1000)
+    y = np.zeros_like(t)
+    names = ["p{0}".format(i) for i in range(t.shape[0])]
+    df = pd.DataFrame({"parnme":names,"x":t,"y":y})
+
+    pst = pyemu.Pst.from_par_obs_names(names,names)
+    #pst.parameter_data.loc[:,"parlbnd"] = 0.5
+    #pst.parameter_data.loc[:, "parubnd"] = 1.5
+
+    cov = gs.covariance_matrix(x=t,y=y,names=names)
+    #plt.imshow(cov.x)
+    #plt.show()
+    s = datetime.now()
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=10)
+
+    e = datetime.now()
+    print("took",(e-s).total_seconds())
+    ecov = pe.loc[:,names].covariance_matrix()
+    #plt.imshow(ecov.x)
+    #plt.show()
+    plt.plot(pe.loc[pe.index[0]])
+    plt.show()
+
+
 if __name__ == "__main__":
 
+    temporal_draw_invest()
     #run_test()
     #specsim_test()
     #aniso_invest()
@@ -1988,7 +2051,7 @@ if __name__ == "__main__":
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
     #conditional_prior_invest()
-    geostat_prior_builder_test2()
+    #geostat_prior_builder_test2()
     #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     #mflist_budget_test()
@@ -2021,10 +2084,13 @@ if __name__ == "__main__":
     # struct_file_test()
     # covariance_matrix_test()
     # add_pi_obj_func_test()
-    # ok_test()
+    #ok_test()
     # ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
     #ok_grid_invest()
+    #ok_grid_test()
+    #ok_grid_zone_test()
     # maha_pdc_test()
     #gsf_reader_test()
+    #kl_test()

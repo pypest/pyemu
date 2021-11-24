@@ -328,10 +328,39 @@ def from_uncfile_test():
     import numpy as np
     import pyemu
 
-    cov_full = pyemu.Cov.from_uncfile(os.path.join("mat","param.unc"))
+    cov_full = pyemu.Cov.from_uncfile(os.path.join("mat", "param_path.unc"))
+
+    #cov_full = pyemu.Cov.from_uncfile(os.path.join("mat","param.unc"))
     cov_kx = pyemu.Cov.from_ascii(os.path.join("mat","cov_kx.mat"))
     cov_full_kx = cov_full.get(row_names=cov_kx.row_names,col_names=cov_kx.col_names)
     assert np.abs((cov_kx - cov_full_kx).x).max() == 0.0
+
+
+
+
+def icode_minus_one_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    c1 = pyemu.Cov.from_parameter_data(pst)
+    n1 = os.path.join("mat","test.cov")
+    c1.to_ascii(n1,icode=-1)
+    c2 = pyemu.Cov.from_ascii(n1)
+    d = c1 - c2
+    print(d.x.max())
+    assert d.x.max() == 0,d.x.max()
+
+    c3 = pyemu.Cov.from_ascii(os.path.join("mat","cov_kx.mat"))
+    try:
+        c3.to_ascii(n1,icode=-1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+
 
 
 def copy_test():
@@ -340,7 +369,7 @@ def copy_test():
     import numpy as np
     import pyemu
 
-    cov_full = pyemu.Cov.from_uncfile(os.path.join("mat", "param.unc"))
+    cov_full = pyemu.Cov.from_uncfile(os.path.join("mat", "param_path.unc"))
     cov_copy = cov_full.copy()
     assert np.abs((cov_copy- cov_full).x).max() == 0.0
     cov_full = cov_full + 2.0
@@ -548,12 +577,96 @@ def dense_mat_format_test():
     print((e1-s1).total_seconds())
     print((e2-s2).total_seconds())
 
+
+def from_uncfile_firstlast_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    c1 = pyemu.Cov.from_parameter_data(pst)
+    unc_file = os.path.join("mat","fistlast.unc")
+    cov_file = "firstlast.cov"
+    c1.to_uncfile(unc_file,covmat_file=cov_file)
+    c2 = pyemu.Cov.from_uncfile(unc_file,pst=pst)
+    lines = open(unc_file,'r').readlines()
+    with open(unc_file,'w') as f:
+        for line in lines[:-1]:
+            f.write(line)
+        f.write("first_parameter {0}\n".format(pst.par_names[0]))
+        f.write("last_parameters {0}\n".format(pst.par_names[-1]))
+        f.write(lines[-1])
+    try:
+        c2 = pyemu.Cov.from_uncfile(unc_file)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    c2 = pyemu.Cov.from_uncfile(unc_file,os.path.join("pst", "pest.pst"))
+    with open(unc_file,'w') as f:
+        for line in lines[:-1]:
+            f.write(line)
+        f.write("first_parameter {0}\n".format("junk1"))
+        f.write("last_parameters {0}\n".format(pst.par_names[-1]))
+        f.write(lines[-1])
+    try:
+        c2 = pyemu.Cov.from_uncfile(unc_file)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    c1.to_uncfile(unc_file,covmat_file=cov_file)
+    lines = open(unc_file, 'r').readlines()
+    with open(unc_file, 'w') as f:
+        for line in lines[:-1]:
+            f.write(line)
+        f.write("first_parameter {0}\n".format(pst.par_names[0]))
+        f.write("last_parameters {0}\n".format("junk2"))
+        f.write(lines[-1])
+    try:
+        c2 = pyemu.Cov.from_uncfile(unc_file)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    c1.to_uncfile(unc_file, covmat_file=cov_file)
+    lines = open(unc_file, 'r').readlines()
+    with open(unc_file, 'w') as f:
+        for line in lines[:-1]:
+            f.write(line)
+        f.write("first_parameter {0}\n".format(pst.par_names[0]))
+        f.write("last_parameters {0}\n".format(pst.par_names[-2]))
+        f.write(lines[-1])
+    try:
+        c2 = pyemu.Cov.from_uncfile(unc_file)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    c1.to_uncfile(unc_file, covmat_file=cov_file)
+    lines = open(unc_file, 'r').readlines()
+    with open(unc_file, 'w') as f:
+        for line in lines[:-1]:
+            f.write(line)
+        f.write("first_parameter {0}\n".format(pst.par_names[0]))
+        f.write("last_parameters {0}\n".format(pst.par_names[-2]))
+        f.write(lines[-1])
+    try:
+        c2 = pyemu.Cov.from_uncfile(unc_file)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
 if __name__ == "__main__":
     #df_tests()
     # cov_scale_offset_test()
     #coo_tests()
     # indices_test()
-    #mat_test()
+    #  mat_test()
     # load_jco_test()
     # extend_test()
     # pseudo_inv_test()
@@ -566,10 +679,12 @@ if __name__ == "__main__":
     # sigma_range_test()
     # cov_replace_test()
     # from_names_test()
-    #from_uncfile_test()
+    # from_uncfile_test()
     # copy_test()
     # sparse_constructor_test()
     # sparse_extend_test()
     # sparse_get_test()
     # sparse_get_sparse_test()
-    dense_mat_format_test()
+    #dense_mat_format_test()
+    #icode_minus_one_test()
+    from_uncfile_firstlast_test()

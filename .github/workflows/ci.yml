@@ -26,6 +26,7 @@ jobs:
               "full_meal_deal_tests.py", 
               "la_tests.py", 
               "plot_tests.py", 
+              "metrics_tests.py",
               "moouu_tests.py", 
               "mat_tests.py", 
               "da_tests.py"
@@ -121,7 +122,7 @@ jobs:
             exit 1
         fi
         cp -r bin/$d/. "$HOME/.local/bin/"
-        git clone -b feat_newtools --depth 1 https://github.com/usgs/pestpp
+        git clone -b develop --depth 1 https://github.com/usgs/pestpp
         cd pestpp
         mkdir build && cd build
         if [[ "$RUNNER_OS" == "Windows" ]]; then
@@ -145,10 +146,9 @@ jobs:
         pip install https://github.com/modflowpy/flopy/zipball/develop
         # git clone -b develop --depth 1 https://github.com/modflowpy/flopy.git
         # cd flopy
-        # python setup.py install
         # cd ..
         # pip install https://github.com/modflowpy/pymake/zipball/master
-        python setup.py install
+        pip install .
         conda list
 
     - name: Add executables directory to path

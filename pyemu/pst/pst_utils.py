@@ -53,7 +53,7 @@ pst_config["par_dtype"] = np.dtype(
         ("pargp", "U20"),
         ("scale", np.float64),
         ("offset", np.float64),
-        ("dercom", np.int),
+        ("dercom", np.int64),
     ]
 )
 pst_config["par_fieldnames"] = (
@@ -83,11 +83,11 @@ pst_config["par_alias_map"] = {
 pst_config["par_converters"] = {
     "parnme": str_con,
     "pargp": str_con,
-    "parval1": np.float,
-    "parubnd": np.float,
-    "parlbnd": np.float,
-    "scale": np.float,
-    "offset": np.float,
+    "parval1": np.float64,
+    "parubnd": np.float64,
+    "parlbnd": np.float64,
+    "scale": np.float64,
+    "offset": np.float64,
 }
 pst_config["par_defaults"] = {
     "parnme": "dum",
@@ -140,11 +140,11 @@ pst_config["pargp_converters"] = {
     "pargpnme": str_con,
     "inctyp": str_con,
     "dermethd": str_con,
-    "derinc": np.float,
-    "derinclb": np.float,
+    "derinc": np.float64,
+    "derinclb": np.float64,
     "splitaction": str_con,
     "forcen": str_con,
-    "derincmul": np.float,
+    "derincmul": np.float64,
 }
 pst_config["pargp_defaults"] = {
     "pargpnme": "pargp",
@@ -179,8 +179,8 @@ pst_config["obs_format"] = {
 pst_config["obs_converters"] = {
     "obsnme": str_con,
     "obgnme": str_con,
-    "weight": np.float,
-    "obsval": np.float,
+    "weight": np.float64,
+    "obsval": np.float64,
 }
 pst_config["obs_defaults"] = {
     "obsnme": "dum",
@@ -252,7 +252,9 @@ def read_resfile(resfile):
         if "name" in line.lower():
             header = line.lower().strip().split()
             break
-    res_df = pd.read_csv(f, header=None, names=header, sep="\s+", converters=converters)
+    res_df = pd.read_csv(
+        f, header=None, names=header, sep=r"\s+", converters=converters
+    )
     res_df.index = res_df.name
     f.close()
     return res_df
@@ -325,7 +327,7 @@ def read_parfile(parfile):
     f = open(parfile, "r")
     header = f.readline()
     par_df = pd.read_csv(
-        f, header=None, names=["parnme", "parval1", "scale", "offset"], sep="\s+"
+        f, header=None, names=["parnme", "parval1", "scale", "offset"], sep=r"\s+"
     )
     par_df.index = par_df.parnme
     return par_df
@@ -440,6 +442,7 @@ def write_input_files(pst, pst_path="."):
 
         This is a simple implementation of what PEST does.  It does not
         handle all the special cases, just a basic function...user beware
+
 
     """
     par = pst.parameter_data
@@ -630,7 +633,7 @@ def _parse_ins_string(string):
             # print(string[idx+1:].index(em))
             # print(string[idx+1:].index(em)+idx+1)
             eidx = min(slen, string.find(em, idx + 1))
-            obs_name = string[idx + 1: eidx]
+            obs_name = string[idx + 1 : eidx]
             if obs_name not in setdum:
                 obs_names.append(obs_name)
             idx = eidx + 1
@@ -868,8 +871,8 @@ def try_process_output_file(ins_file, output_file=None):
     if output_file is None:
         output_file = ins_file.replace(".ins", "")
     df = None
+    i = InstructionFile(ins_file)
     try:
-        i = InstructionFile(ins_file)
         df = i.read_output_file(output_file)
     except Exception as e:
         print("error processing instruction/output file pair: {0}".format(str(e)))
@@ -1472,16 +1475,14 @@ class InstructionFile(object):
                     if line is None:
                         self.throw_out_error(
                             "EOF when trying to find primary marker '{0}' from "
-                            "instruction file line {1}".format(
-                                mstr, ins_lcount
-                            )
+                            "instruction file line {1}".format(mstr, ins_lcount)
                         )
                     if mstr in line:  # when marker is found break and update
                         # cursor position in current line
                         break
                 # copy a version of line commas replaced
                 # (to support comma sep strings)
-                rline = line.replace(',', ' ')
+                rline = line.replace(",", " ")
                 cursor_pos = line.index(mstr) + len(mstr)
 
             # line advance
@@ -1500,15 +1501,15 @@ class InstructionFile(object):
                         self.throw_out_error(
                             "EOF when trying to read {0} lines for line "
                             "advance instruction '{1}', from instruction "
-                            "file line number {2}".format(
-                                nlines, ins, ins_lcount
-                            )
+                            "file line number {2}".format(nlines, ins, ins_lcount)
                         )
                 # copy a version of line commas replaced
                 # (to support comma sep strings)
-                rline = line.replace(',', ' ')
+                rline = line.replace(",", " ")
             elif ins == "w":  # whole string comparison
-                raw = rline[cursor_pos:cursor_pos+maxsearch].split(None, 2)  # TODO: maybe slow for long strings -- hopefuly maxsearch helps
+                raw = rline[cursor_pos : cursor_pos + maxsearch].split(
+                    None, 2
+                )  # TODO: maybe slow for long strings -- hopefuly maxsearch helps
                 if line[cursor_pos] in line_seps:
                     raw.insert(0, "")
                 if len(raw) == 1:
@@ -1518,11 +1519,11 @@ class InstructionFile(object):
                         )
                     )
                 # step over current value
-                cursor_pos = rline.find(' ', cursor_pos)
+                cursor_pos = rline.find(" ", cursor_pos)
                 # now find position of next entry
                 cursor_pos = rline.find(raw[1], cursor_pos)
-                   # raw[1]
-               # )
+                # raw[1]
+            # )
 
             elif i1 == "!":  # indicates obs instruction folows
                 oname = ins.replace("!", "")
@@ -1539,21 +1540,21 @@ class InstructionFile(object):
                             )
                         )
                     # read to closing marker
-                    val_str = line[cursor_pos: es]
+                    val_str = line[cursor_pos:es]
                 else:
                     # find next space in (r)line -- signifies end of entry
-                    es = rline.find(' ', cursor_pos)
+                    es = rline.find(" ", cursor_pos)
                     if es == -1 or es == cursor_pos:
                         # if no space or current position is space
                         # use old fashioned split to get value
                         # -- this will happen if there are leading blanks before
                         # vals in output file (e.g. formatted)
-                        val_str = rline[
-                                  cursor_pos: cursor_pos+maxsearch
-                                  ].split(None, 1)[0]
+                        val_str = rline[cursor_pos : cursor_pos + maxsearch].split(
+                            None, 1
+                        )[0]
                     else:
                         # read val (constrained slice is faster for big strings)
-                        val_str = rline[cursor_pos: es]
+                        val_str = rline[cursor_pos:es]
                 try:
                     val = float(val_str)
                 except Exception as e:
@@ -1582,9 +1583,7 @@ class InstructionFile(object):
                     else:
                         self.throw_out_error(
                             "secondary marker '{0}' not found from "
-                            "cursor_pos {1}".format(
-                                m, cursor_pos
-                            )
+                            "cursor_pos {1}".format(m, cursor_pos)
                         )
                 cursor_pos = es + len(m)
 
@@ -1633,7 +1632,9 @@ class InstructionFile(object):
                     )
 
                 ss_idx = max(cursor_pos, s_idx)
-                raw = line[ss_idx: ss_idx+maxsearch].split(None, 1)  # slpitting only 1 might be margin faster
+                raw = line[ss_idx : ss_idx + maxsearch].split(
+                    None, 1
+                )  # slpitting only 1 might be margin faster
                 rs_idx = line.index(raw[0])
                 if rs_idx > e_idx:
                     self.throw_out_error(
@@ -1759,10 +1760,11 @@ class InstructionFile(object):
             first = line[: midx[0]].strip()
             tokens = []
             if len(first) > 0:
-                tokens.append(first)
+                # tokens.append(first)
+                tokens.extend([f.strip() for f in first.split()])
             for idx in range(1, len(midx) - 1, 2):
-                mstr = line[midx[idx - 1]: midx[idx] + 1]
-                ostr = line[midx[idx] + 1: midx[idx + 1]]
+                mstr = line[midx[idx - 1] : midx[idx] + 1]
+                ostr = line[midx[idx] + 1 : midx[idx + 1]]
                 tokens.append(mstr)
                 tokens.extend(ostr.split())
         else:

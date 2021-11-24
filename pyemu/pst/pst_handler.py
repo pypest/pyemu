@@ -5,6 +5,7 @@ import re
 import copy
 import warnings
 import numpy as np
+from numpy.lib.type_check import real_if_close
 import pandas as pd
 
 pd.options.display.max_colwidth = 100
@@ -201,12 +202,25 @@ class Pst(object):
                 raise Exception("'modelled' not in res df columns for group " + og)
             # components[og] = np.sum((og_res_df["residual"] *
             #                          og_df["weight"]) ** 2)
+            mod_vals = og_res_df.loc[og_df.obsnme, "modelled"]
+            if (
+                og.lower().startswith("g_")
+                or og.lower().startswith("greater_")
+                or og.lower().startswith("<@")
+            ):
+                mod_vals.loc[mod_vals >= og_df.loc[:, "obsval"]] = og_df.loc[
+                    :, "obsval"
+                ]
+            elif (
+                og.lower().startswith("l_")
+                or og.lower().startswith("less_")
+                or og.lower().startswith(">@")
+            ):
+                mod_vals.loc[mod_vals <= og_df.loc[:, "obsval"]] = og_df.loc[
+                    :, "obsval"
+                ]
             components[og] = np.sum(
-                (
-                    (og_df.loc[:, "obsval"] - og_res_df.loc[og_df.obsnme, "modelled"])
-                    * og_df.loc[:, "weight"]
-                )
-                ** 2
+                ((og_df.loc[:, "obsval"] - mod_vals) * og_df.loc[:, "weight"]) ** 2
             )
         if (
             not self.control_data.pestmode.startswith("reg")
@@ -222,7 +236,7 @@ class Pst(object):
                 og_res_df.index = og_res_df.name
                 og_df = self.prior_information.loc[ogroups[og], :]
                 og_df.index = og_df.pilbl
-                og_res_df = og_res_df.loc[og_df.index, :]
+                og_res_df = og_res_df.loc[og_df.index, :].copy()
                 if og_df.shape[0] != og_res_df.shape[0]:
                     raise Exception(
                         " Pst.phi_components error: group residual dataframe row length"
@@ -231,6 +245,20 @@ class Pst(object):
                         + " vs. "
                         + str(og_res_df.shape)
                     )
+                if (
+                    og.lower().startswith("g_")
+                    or og.lower().startswith("greater_")
+                    or og.lower().startswith("<@")
+                ):
+                    gidx = og_res_df.loc[:, "residual"] >= 0
+                    og_res_df.loc[gidx, "residual"] = 0
+                elif (
+                    og.lower().startswith("l_")
+                    or og.lower().startswith("less_")
+                    or og.lower().startswith(">@")
+                ):
+                    lidx = og_res_df.loc[:, "residual"] <= 0
+                    og_res_df.loc[lidx, "residual"] = 0
                 components[og] = np.sum((og_res_df["residual"] * og_df["weight"]) ** 2)
 
         return components
@@ -281,6 +309,11 @@ class Pst(object):
         Note:
             if the Pst.__res attribute has not been loaded,
             this call loads the res dataframe from a file
+
+        Example::
+
+            # print the observed and simulated values for non-zero weighted obs
+            print(pst.res.loc[pst.nnz_obs_names,["modelled","measured"]])
 
         """
         if self.__res is not None:
@@ -567,10 +600,15 @@ class Pst(object):
     @property
     def template_files(self):
         """list of template file names
+
         Returns:
             `[str]`: a list of template file names, extracted from
                 `Pst.model_input_data.pest_file`.  Returns `None` if this
                 attribute is `None`
+
+        Note:
+            Use `Pst.model_input_data` to access the template-input file information for writing/modification
+
         """
         if (
             self.model_input_data is not None
@@ -583,10 +621,15 @@ class Pst(object):
     @property
     def input_files(self):
         """list of model input file names
+
         Returns:
             `[str]`: a list of model input file names, extracted from
                 `Pst.model_input_data.model_file`.  Returns `None` if this
                 attribute is `None`
+
+        Note:
+            Use `Pst.model_input_data` to access the template-input file information for writing/modification
+
         """
         if (
             self.model_input_data is not None
@@ -602,7 +645,11 @@ class Pst(object):
         Returns:
             `[str]`: a list of instruction file names, extracted from
                 `Pst.model_output_data.pest_file`.  Returns `None` if this
-                attribute is `None`
+                 attribute is `None`
+
+        Note:
+            Use `Pst.model_output_data` to access the instruction-output file information for writing/modification
+
         """
         if (
             self.model_output_data is not None
@@ -619,6 +666,10 @@ class Pst(object):
             `[str]`: a list of model output file names, extracted from
                 `Pst.model_output_data.model_file`.  Returns `None` if this
                 attribute is `None`
+
+        Note:
+            Use `Pst.model_output_data` to access the instruction-output file information for writing/modification
+
         """
         if (
             self.model_output_data is not None
@@ -714,6 +765,7 @@ class Pst(object):
         return df
 
     def _read_line_comments(self, f, forgive):
+        """private method to read comment lines from a control file"""
         comments = []
         while True:
             org_line = f.readline()
@@ -736,6 +788,7 @@ class Pst(object):
         return org_line.strip(), comments
 
     def _read_section_comments(self, f, forgive):
+        """private method to read comments from a section of the control file"""
         lines = []
         section_comments = []
         while True:
@@ -751,6 +804,7 @@ class Pst(object):
 
     @staticmethod
     def _parse_external_line(line, pst_path="."):
+        """private method to parse a file for external file info"""
         raw = line.strip().split()
         existing_path, filename = Pst._parse_path_agnostic(raw[0])
         if pst_path is not None:
@@ -771,6 +825,7 @@ class Pst(object):
 
     @staticmethod
     def _parse_path_agnostic(filename):
+        """private method to parse a file path for any os sep"""
         filename = filename.replace("\\", os.sep).replace("/", os.sep)
         return os.path.split(filename)
 
@@ -778,6 +833,7 @@ class Pst(object):
     def _cast_df_from_lines(
         section, lines, fieldnames, converters, defaults, alias_map={}, pst_path="."
     ):
+        """private method to cast a pandas dataframe from raw control file lines"""
         # raw = lines[0].strip().split()
         # if raw[0].lower() == "external":
         if section.lower().strip().split()[-1] == "external":
@@ -846,7 +902,7 @@ class Pst(object):
         return df
 
     def _cast_prior_df_from_lines(self, section, lines, pst_path="."):
-
+        """private method to cast prior information lines to a dataframe"""
         if pst_path == ".":
             pst_path = ""
         if section.strip().split()[-1].lower() == "external":
@@ -912,7 +968,7 @@ class Pst(object):
             self.prior_information.loc[:, "extra"] = extra
 
     def _load_version2(self, filename):
-        """load a version 2 control file"""
+        """private method to load a version 2 control file"""
         self.lcount = 0
         self.comments = {}
         self.prior_information = self.null_prior
@@ -1163,6 +1219,8 @@ class Pst(object):
         Note:
             This method is called from the `Pst` construtor unless the `load` arg is `False`.
 
+
+
         """
         if not os.path.exists(filename):
             raise Exception("couldn't find control file {0}".format(filename))
@@ -1349,6 +1407,16 @@ class Pst(object):
                 If a parameter is not listed, 1.0 is used for its coefficients.
                 Default is {}
 
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            # add a pi equation for the first adjustable parameter
+            pst.add_pi_equation(pst.adj_par_names[0],pilbl="pi1",rhs=1.0)
+            # add a pi equation for 1.5 times the 2nd and 3 times the 3rd adj pars to sum together to 2.0
+            names = pst.adj_par_names[[1,2]]
+            pst.add_pi_equation(names,coef_dict={names[0]:1.5,names[1]:3})
+
+
         """
         if pilbl is None:
             pilbl = "pilbl_{0}".format(self.__pi_count)
@@ -1368,7 +1436,7 @@ class Pst(object):
         if len(fixed) > 0:
             raise Exception(
                 "Pst.add_pi_equation(): the following pars "
-                + " were are fixed/tied: {0}".format(",".join(missing))
+                + " were are fixed/tied: {0}".format(",".join(fixed))
             )
         eqs_str = ""
         sign = ""
@@ -1414,6 +1482,7 @@ class Pst(object):
         self.prior_information = self.prior_information.loc[keep_idx, :]
 
     def _write_df(self, name, f, df, formatters, columns):
+        """private method to write a dataframe to a control file"""
         if name.startswith("*"):
             f.write(name + "\n")
         if self.with_comments:
@@ -1454,29 +1523,58 @@ class Pst(object):
                 + "\n"
             )
 
-    def sanity_checks(self):
+    def sanity_checks(self, forgive=False):
         """some basic check for strangeness
+
+        Args:
+            forgive (`bool`): flag to forgive (warn) for issues.  Default is False
+
 
         Note:
             checks for duplicate names, atleast 1 adjustable parameter
             and at least 1 non-zero-weighted observation
+
+            Not nearly as comprehensive as pestchek
+
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            pst.sanity_checks()
+
 
         """
 
         dups = self.parameter_data.parnme.value_counts()
         dups = dups.loc[dups > 1]
         if dups.shape[0] > 0:
-            warnings.warn(
-                "duplicate parameter names: {0}".format(",".join(list(dups.index))),
-                PyemuWarning,
-            )
+            if forgive:
+                warnings.warn(
+                    "duplicate parameter names: {0}".format(",".join(list(dups.index))),
+                    PyemuWarning,
+                )
+            else:
+                raise Exception(
+                    "Pst.sanity_check() error: duplicate parameter names: {0}".format(
+                        ",".join(list(dups.index))
+                    )
+                )
+
         dups = self.observation_data.obsnme.value_counts()
         dups = dups.loc[dups > 1]
         if dups.shape[0] > 0:
-            warnings.warn(
-                "duplicate observation names: {0}".format(",".join(list(dups.index))),
-                PyemuWarning,
-            )
+            if forgive:
+                warnings.warn(
+                    "duplicate observation names: {0}".format(
+                        ",".join(list(dups.index))
+                    ),
+                    PyemuWarning,
+                )
+            else:
+                raise Exception(
+                    "Pst.sanity_check() error: duplicate observation names: {0}".format(
+                        ",".join(list(dups.index))
+                    )
+                )
 
         if self.npar_adj == 0:
             warnings.warn("no adjustable pars", PyemuWarning)
@@ -1484,9 +1582,60 @@ class Pst(object):
         if self.nnz_obs == 0:
             warnings.warn("no non-zero weight obs", PyemuWarning)
 
+        if self.tied is not None and len(self.tied) > 0:
+            sadj = set(self.adj_par_names)
+            spar = set(self.par_names)
+
+            tpar_dict = self.parameter_data.partied.to_dict()
+
+            for tpar, ptied in tpar_dict.items():
+                if pd.isna(ptied):
+                    continue
+                if tpar == ptied:
+                    if forgive:
+                        warnings.warn(
+                            "tied parameter '{0}' tied to itself".format(tpar),
+                            PyemuWarning,
+                        )
+                    else:
+                        raise Exception(
+                            "Pst.sanity_check() error: tied parameter '{0}' tied to itself".format(
+                                tpar
+                            )
+                        )
+                elif ptied not in spar:
+                    if forgive:
+                        warnings.warn(
+                            "tied parameter '{0}' tied to unknown parameter '{1}'".format(
+                                tpar, ptied
+                            ),
+                            PyemuWarning,
+                        )
+                    else:
+                        raise Exception(
+                            "Pst.sanity_check() error: tied parameter '{0}' tied to unknown parameter '{1}'".format(
+                                tpar, ptied
+                            )
+                        )
+                elif ptied not in sadj:
+                    if forgive:
+                        warnings.warn(
+                            "tied parameter '{0}' tied to non-adjustable parameter '{1}'".format(
+                                tpar, ptied
+                            ),
+                            PyemuWarning,
+                        )
+                    else:
+                        raise Exception(
+                            "Pst.sanity_check() error: tied parameter '{0}' tied to non-adjustable parameter '{1}'".format(
+                                tpar, ptied
+                            )
+                        )
+
         # print("noptmax: {0}".format(self.control_data.noptmax))
 
     def _write_version2(self, new_filename, use_pst_path=True, pst_rel_path="."):
+        """private method to write a version 2 control file"""
         pst_path = None
         new_filename = str(new_filename)  # ensure convert to str
         if use_pst_path:
@@ -1497,6 +1646,7 @@ class Pst(object):
         self.new_filename = new_filename
         self.rectify_pgroups()
         self.rectify_pi()
+        self._rectify_parchglim()
         self._update_control_section()
         self.sanity_checks()
 
@@ -1662,6 +1812,8 @@ class Pst(object):
             pst = pyemu.Pst("my.pst")
             pst.parrep("my.par")
             pst.write(my_new.pst")
+            #write a version 2 control file
+            pst.write("my_new_v2.pst",version=2)
 
         """
 
@@ -1685,12 +1837,21 @@ class Pst(object):
                 "Pst.write() error: version must be 1 or 2, not '{0}'".format(version)
             )
 
+    def _rectify_parchglim(self):
+        """private method to just fix the parchglim vs cross zero issue"""
+        par = self.parameter_data
+        need_fixing = par.loc[par.parubnd > 0, :].copy()
+        need_fixing = need_fixing.loc[par.parlbnd <= 0, "parnme"]
+
+        self.parameter_data.loc[need_fixing, "parchglim"] = "relative"
+
     def _write_version1(self, new_filename):
-        """write a version 1 pest control file"""
+        """private method to write a version 1 pest control file"""
         self.new_filename = new_filename
         self.rectify_pgroups()
         self.rectify_pi()
         self._update_control_section()
+        self._rectify_parchglim()
         self.sanity_checks()
 
         f_out = open(new_filename, "w")
@@ -2004,6 +2165,13 @@ class Pst(object):
             passing `par_names` as `None` and `obs_names` as `None` effectively
             generates a copy of the current `Pst`
 
+            Does not modify model i/o files - this is just a method for performing pyemu operations
+
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            new_pst = pst.get(pst.adj_par_names[0],pst.obs_names[:10])
+
         """
 
         # if par_names is None and obs_names is None:
@@ -2059,27 +2227,86 @@ class Pst(object):
 
         return new_pst
 
-    def parrep(self, parfile=None, enforce_bounds=True):
+    def parrep(
+        self,
+        parfile=None,
+        enforce_bounds=True,
+        real_name=None,
+        noptmax=0,
+        binary_ens_file=False,
+    ):
         """replicates the pest parrep util. replaces the parval1 field in the
             parameter data section dataframe with values in a PEST parameter file
+            or a single realization from an ensemble parameter csv file
 
         Args:
             parfile (`str`, optional): parameter file to use.  If None, try to find and use
                 a parameter file that corresponds to the case name.
+                If parfile has extension '.par' a single realization parameter file is used
+                If parfile has extention '.csv' an ensemble parameter file is used which invokes real_name
+                If parfile has extention '.jcb' a binary ensemble parameter file is used which invokes real_name
                 Default is None
             enforce_bounds (`bool`, optional): flag to enforce parameter bounds after parameter values are updated.
                 This is useful because PEST and PEST++ round the parameter values in the
                 par file, which may cause slight bound violations.  Default is `True`
+            real_name (`str` or `int`, optional): name of the ensemble realization to use for updating the
+                parval1 value in the parameter data section dataframe. If None, try using "base". If "base"
+                not present, use the real_name with smallest index number.
+                Ignored if parfile is of the PEST parameter file format (e.g. not en ensemble)
+            noptmax (`int`, optional): Value with which to update the pst.control_data.noptmax value
+                Default is 0.
+            binary_ens_file (`bool`): If True, use binary format to load ensemble file, else assume it's a CSV file
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            pst.parrep("pest.1.base.par")
+            pst.control_data.noptmax = 0
+            pst.write("pest_1.pst")
 
         """
+
         if parfile is None:
             parfile = self.filename.replace(".pst", ".par")
-        par_df = pst_utils.read_parfile(parfile)
-        self.parameter_data.index = self.parameter_data.parnme
-        par_df.index = par_df.parnme
-        self.parameter_data.parval1 = par_df.parval1
-        self.parameter_data.scale = par_df.scale
-        self.parameter_data.offset = par_df.offset
+        # first handle the case of a single parameter realization in a PAR file
+        if parfile.lower().endswith(".par"):
+            print("Updating parameter values from {0}".format(parfile))
+            par_df = pst_utils.read_parfile(parfile)
+            self.parameter_data.index = self.parameter_data.parnme
+            par_df.index = par_df.parnme
+            self.parameter_data.parval1 = par_df.parval1
+            self.parameter_data.scale = par_df.scale
+            self.parameter_data.offset = par_df.offset
+
+        # next handle ensemble case
+        if parfile.lower()[-4:] in [".jcb", ".bin"]:
+            binary_ens_file = True
+        if parfile.lower()[-4:] in [".jcb", ".bin", ".csv"]:
+            if parfile.lower().endswith(".csv"):
+                parens = pd.read_csv(parfile, index_col=0)
+            if binary_ens_file == True:
+                parens = pyemu.ParameterEnsemble.from_binary(
+                    pst=self, filename=parfile
+                )._df
+            # cast the parens.index to string to be sure indexing is cool
+            parens.index = [str(i).lower() for i in parens.index]
+            # handle None case (potentially) for real_name
+            if real_name is None:
+                if "base" in parens.index:
+                    real_name = "base"
+                else:
+                    real_name = str(min([int(i) for i in parens.index]))
+            # cast the real_name to string to be sure indexing is cool
+            real_name = str(real_name)
+
+            # now update with a little pandas trickery
+            print(
+                "updating parval1 using realization:'{}' from ensemble file {}".format(
+                    real_name, parfile
+                )
+            )
+            self.parameter_data.parval1 = parens.loc[real_name].T.loc[
+                self.parameter_data.parnme
+            ]
 
         if enforce_bounds:
             par = self.parameter_data
@@ -2087,6 +2314,8 @@ class Pst(object):
             par.loc[idx, "parval1"] = par.loc[idx, "parubnd"]
             idx = par.loc[par.parval1 < par.parlbnd, "parnme"]
             par.loc[idx, "parval1"] = par.loc[idx, "parlbnd"]
+        print("parrep: updating noptmax to {}".format(int(noptmax)))
+        self.control_data.noptmax = int(noptmax)
 
     def adjust_weights_discrepancy(
         self, resfile=None, original_ceiling=True, bygroups=False
@@ -2313,6 +2542,13 @@ class Pst(object):
             leave_zero (`bool`, optional): flag to leave existing zero weights.
                 Default is True
 
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            # set the weights of the observations to 20% of the observed value
+            pst.proportional_weights(fraction_stdev=0.2,wmax=10)
+            pst.write("pest_propo.pst")
+
         """
         new_weights = []
         for oval, ow in zip(self.observation_data.obsval, self.observation_data.weight):
@@ -2420,6 +2656,13 @@ class Pst(object):
             `Pst.parameter_data`
 
 
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            pst.add_transform_columns()
+            print(pst.parameter_data.parval1_trans
+
+
         """
         for col in ["parval1", "parlbnd", "parubnd", "increment"]:
             if col not in self.parameter_data.columns:
@@ -2438,6 +2681,15 @@ class Pst(object):
 
         Note:
             cheap enforcement of simply bringing violators back in bounds
+
+
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            pst.parrep("random.par")
+            pst.enforce_bounds()
+            pst.write("pest_rando.pst")
+
 
         """
         too_big = (
@@ -2852,6 +3104,12 @@ class Pst(object):
             requires a complete set of model input files at relative path
             from where python is running to `pst_path`
 
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            obsvals = pst.process_output_files()
+            print(obsvals)
+
         """
         return pst_utils.process_output_files(self, pst_path)
 
@@ -2873,6 +3131,13 @@ class Pst(object):
             then the current values for `obsval`, `weight` and `group` are used
 
             the normalized RMSE is normalized against the obsval range (max - min)
+
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            stats_df = pst.get_res_stats()
+            print(stats_df.loc["mae",:])
+
 
         """
         res = self.res.copy()
@@ -3261,11 +3526,11 @@ class Pst(object):
     @property
     def less_than_obs_constraints(self):
         """get the names of the observations that
-        are listed as active less than inequality constraints.
+        are listed as active (non-zero weight) less than inequality constraints.
 
         Returns:
-            `pandas.Series`: names of obseravtions that are non-zero weighted less
-            than constraints (`obgnme` starts with 'l\_' or "less")
+            `pandas.Series`: names of observations that are non-zero weighted less
+            than constraints (`obgnme` starts with 'l_' or "less")
 
         Note:
              Zero-weighted obs are skipped
@@ -3284,11 +3549,11 @@ class Pst(object):
     @property
     def less_than_pi_constraints(self):
         """get the names of the prior information eqs that
-        are listed as active less than inequality constraints.
+        are listed as active (non-zero weight) less than inequality constraints.
 
         Returns:
             `pandas.Series`: names of prior information that are non-zero weighted
-            less than constraints (`obgnme` starts with "l\_" or "less")
+            less than constraints (`obgnme` starts with "l_" or "less")
 
         Note:
             Zero-weighted pi are skipped
@@ -3312,11 +3577,11 @@ class Pst(object):
     @property
     def greater_than_obs_constraints(self):
         """get the names of the observations that
-        are listed as active greater than inequality constraints.
+        are listed as active (non-zero weight) greater than inequality constraints.
 
         Returns:
             `pandas.Series`: names obseravtions that are non-zero weighted
-            greater than constraints (`obgnme` startsiwth "g\_" or "greater")
+            greater than constraints (`obgnme` startsiwth "g_" or "greater")
 
         Note:
             Zero-weighted obs are skipped
@@ -3335,11 +3600,11 @@ class Pst(object):
     @property
     def greater_than_pi_constraints(self):
         """get the names of the prior information eqs that
-        are listed as active greater than inequality constraints.
+        are listed as active (non-zero weight) greater than inequality constraints.
 
         Returns:
             `pandas.Series` names of prior information that are non-zero weighted
-            greater than constraints (`obgnme` startsiwth "g\_" or "greater")
+            greater than constraints (`obgnme` startsiwth "g_" or "greater")
 
 
         Note:
@@ -3370,6 +3635,12 @@ class Pst(object):
             Works in control file values space (not log transformed space).  Also
             adds columns for effective upper and lower which account for par bounds and the
             value of parchglim
+
+        example::
+
+            pst = pyemu.Pst("pest.pst")
+            df = pst.get_par_change_limits()
+            print(df.chg_lower)
 
         """
         par = self.parameter_data
@@ -3441,6 +3712,12 @@ class Pst(object):
             - **[`str`]**: list of parameters at/near lower bound
             - **[`str`]**: list of parameters at/near upper bound
 
+        Example::
+
+            pst = pyemu.Pst("pest.pst")
+            at_lb,at_ub = pst.get_adj_pars_at_bounds()
+            print("pars at lower bound",at_lb)
+
         """
 
         par = self.parameter_data.loc[self.adj_par_names, :].copy()
@@ -3462,6 +3739,10 @@ class Pst(object):
         Note:
             metadata is identified in key-value pairs that are separated by a colon.
             each key-value pair is separated from others by underscore
+
+            This works with PstFrom style long names
+
+            This method is called programmtically during `Pst.load()`
 
         """
         par = self.parameter_data
@@ -3489,3 +3770,115 @@ class Pst(object):
                     df.loc[:, uk] = meta_dict.apply(lambda x: x.get(uk, np.NaN))
             except Exception as e:
                 print("error parsing metadata from '{0}', continuing".format(name))
+
+    def rename_parameters(self, name_dict, pst_path="."):
+        """rename parameters in the control and template files
+
+        Args:
+            name_dict (`dict`): mapping of current to new names.
+            pst_path (str): the path to the control file from where python
+                is running.  Default is "." (python is running in the
+                same directory as the control file)
+
+        Note:
+            no attempt is made to maintain the length of the marker strings
+            in the template files, so if your model is sensitive
+            to changes in spacing in the template file(s), this
+            is not a method for you
+
+            This does a lot of string compare, so its gonna be slow as...
+
+         Example::
+
+            pst = pyemu.Pst(os.path.join("template","pest.pst"))
+            name_dict = {"par1":"par1_better_name"}
+            pst.rename_parameters(name_dict,pst_path="template")
+
+
+
+        """
+
+        missing = set(name_dict.keys()) - set(self.par_names)
+        if len(missing) > 0:
+            raise Exception(
+                "Pst.rename_parameters(): the following parameters in 'name_dict'"
+                + " are not in the control file:\n{0}".format(",".join(missing))
+            )
+
+        par = self.parameter_data
+        par.loc[:, "parnme"] = par.parnme.apply(lambda x: name_dict.get(x, x))
+        par.index = par.parnme.values
+
+        for idx, eq in zip(
+            self.prior_information.index, self.prior_information.equation
+        ):
+            for old, new in name_dict.items():
+                eq = eq.replace(old, new)
+            self.prior_information.loc[idx, "equation"] = eq
+
+        for tpl_file in self.model_input_data.pest_file:
+            sys_tpl_file = os.path.join(
+                pst_path, tpl_file.replace("/", os.path.sep).replace("\\", os.path.sep)
+            )
+            if not os.path.exists(sys_tpl_file):
+                warnings.warn(
+                    "template file '{0}' not found, continuing...", PyemuWarning
+                )
+                continue
+            lines = open(sys_tpl_file, "r").readlines()
+            with open(sys_tpl_file, "w") as f:
+                for line in lines:
+                    for old, new in name_dict.items():
+                        if old in line:
+                            line = line.replace(old, new)
+                    f.write(line)
+
+    def rename_observations(self, name_dict, pst_path="."):
+        """rename observations in the control and instruction files
+
+        Args:
+            name_dict (`dict`): mapping of current to new names.
+            pst_path (str): the path to the control file from where python
+                is running.  Default is "." (python is running in the
+                same directory as the control file)
+
+        Note:
+            This does a lot of string compare, so its gonna be slow as...
+
+         Example::
+
+            pst = pyemu.Pst(os.path.join("template","pest.pst"))
+            name_dict = {"obs1":"obs1_better_name"}
+            pst.rename_observations(name_dict,pst_path="template")
+
+
+
+        """
+
+        missing = set(name_dict.keys()) - set(self.obs_names)
+        if len(missing) > 0:
+            raise Exception(
+                "Pst.rename_observations(): the following observations in 'name_dict'"
+                + " are not in the control file:\n{0}".format(",".join(missing))
+            )
+
+        obs = self.observation_data
+        obs.loc[:, "obsnme"] = obs.obsnme.apply(lambda x: name_dict.get(x, x))
+        obs.index = obs.obsnme.values
+
+        for ins_file in self.model_output_data.pest_file:
+            sys_ins_file = os.path.join(
+                pst_path, ins_file.replace("/", os.path.sep).replace("\\", os.path.sep)
+            )
+            if not os.path.exists(sys_ins_file):
+                warnings.warn(
+                    "instruction file '{0}' not found, continuing...", PyemuWarning
+                )
+                continue
+            lines = open(sys_ins_file, "r").readlines()
+            with open(sys_ins_file, "w") as f:
+                for line in lines:
+                    for old, new in name_dict.items():
+                        if old in line:
+                            line = line.replace(old, new)
+                    f.write(line)
