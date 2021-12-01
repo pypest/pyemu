@@ -2,9 +2,7 @@ import sys
 #from distutils.core import setup
 from setuptools import setup
 
-long_description = \
-"""pyemu is a set of python modules for interfacing with PEST and PEST++.
-""" 
+long_description = "pyemu is a set of python modules for interfacing with PEST and PEST++. "
 
 setup(name="pyemu",
       description=long_description,
