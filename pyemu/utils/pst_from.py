@@ -688,8 +688,8 @@ class PstFrom(object):
             if self.remove_existing:
                 self.logger.log(f"removing existing new_d '{self.new_d}'")
                 shutil.rmtree(self.new_d)
-                time.sleep(0.0001)
                 self.logger.log(f"removing existing new_d '{self.new_d}'")
+                time.sleep(1)  # sleep longer for window locking issues
             else:
                 self.logger.lraise(
                     f"new_d '{self.new_d}' already exists " "- use remove_existing=True"
@@ -1615,7 +1615,7 @@ class PstFrom(object):
                 defines the columns to be parameterised
             use_rows (`list` of `int` or `tuple`): Setup parameters for
                 only specific rows in list-style model input file.
-                If list of `int` -- assumed to be a row index selction (zero-based).
+                If list of `int` -- assumed to be a row index selection (zero-based).
                 If list of `tuple` -- assumed to be selection based `index_cols` values.
                     e.g. [(3,5,6)] would attempt to set parameters where the
                     model file values for 3 `index_cols` are 3,5,6.
@@ -2910,10 +2910,10 @@ def write_list_tpl(
                 third_d = index_cols.copy()
                 if xy_in_idx is not None:
                     for idx in xy_in_idx:
-                        third_d.pop(idx)
+                        third_d.remove(index_cols[idx])
                 elif ij_in_idx is not None:
                     for idx in ij_in_idx:
-                        third_d.pop(idx)
+                        third_d.remove(index_cols[idx])
                 else:  # if xy_in_idx and ij_in_idx ar None
                     # then parse_kij assumes that i is at idx[-2] and j at idx[-1]
                     third_d.pop()  # pops -1
@@ -3439,6 +3439,7 @@ def _get_tpl_or_ins_df(
     if typ != "obs":
         sidx = set()
         for df in dfs:
+            # looses ordering
             didx = set(df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1))
             sidx.update(didx)
     else:
