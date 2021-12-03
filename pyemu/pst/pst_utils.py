@@ -468,7 +468,7 @@ def write_input_files(pst, pst_path="."):
     #        procs.append(p)
     #    for p in procs:
     #        p.join()
-    pool = mp.Pool()
+    pool = mp.Pool(processes=min(mp.cpu_count(), len(chunks), 60))
     x = [
         pool.apply_async(
             _write_chunk_to_template,
