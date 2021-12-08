@@ -345,6 +345,7 @@ def start_workers(
         else:
             master_p.wait()
             time.sleep(1.5)  # a few cycles to let the workers end gracefully
+
         # kill any remaining workers
         for p in procs:
             p.kill()
@@ -364,3 +365,7 @@ def start_workers(
                         "unable to remove worker dir{0}:{1}".format(d, str(e)),
                         PyemuWarning,
                     )
+
+    ret_val = master_p.returncode
+    if ret_val != 0:
+        raise Exception("start_workers() master returned non-zero: {0}".format(ret_val))
