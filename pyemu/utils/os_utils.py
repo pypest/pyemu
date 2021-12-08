@@ -365,7 +365,7 @@ def start_workers(
                         "unable to remove worker dir{0}:{1}".format(d, str(e)),
                         PyemuWarning,
                     )
-
-    ret_val = master_p.returncode
-    if ret_val != 0:
-        raise Exception("start_workers() master returned non-zero: {0}".format(ret_val))
+    if master_dir is not None:
+        ret_val = master_p.returncode
+        if ret_val != 0:
+            raise Exception("start_workers() master returned non-zero: {0}".format(ret_val))
