@@ -1061,6 +1061,7 @@ class Pst(object):
                     self.obs_fieldnames,
                     self.obs_converters,
                     self.obs_defaults,
+                    alias_map=self.obs_alias_map,
                     pst_path=pst_path,
                 )
                 self.observation_data.index = self.observation_data.obsnme
