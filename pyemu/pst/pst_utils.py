@@ -1036,7 +1036,6 @@ def csv_to_ins_file(
     includes_header=True,
     includes_index=True,
     prefix="",
-    longnames=False,
     head_lines_len=0,
     sep=",",
     gpname=False,
@@ -1103,10 +1102,10 @@ def csv_to_ins_file(
     for rname_org in df.index:
         rname = str(rname_org).strip().lower()
         if rname in row_visit:
-            if longnames:
-                rsuffix = "_" + str(int(row_visit[rname] + 1))
-            else:
-                rsuffix = str(int(row_visit[rname] + 1))
+            # if longnames:
+            rsuffix = "_" + str(int(row_visit[rname] + 1))
+            # else:
+            #     rsuffix = str(int(row_visit[rname] + 1))
             row_visit[rname] += 1
         else:
             row_visit[rname] = 1
@@ -1124,10 +1123,10 @@ def csv_to_ins_file(
     for cname_org in df.columns:
         cname = str(cname_org).strip().lower()
         if cname in col_visit:
-            if longnames:
-                csuffix = "_" + str(int(col_visit[cname] + 1))
-            else:
-                csuffix = str(int(col_visit[cname] + 1))
+            # if longnames:
+            csuffix = "_" + str(int(col_visit[cname] + 1))
+            # else:
+            #     csuffix = str(int(col_visit[cname] + 1))
             col_visit[cname] += 1
         else:
             col_visit[cname] = 1
@@ -1185,26 +1184,26 @@ def csv_to_ins_file(
                             nprefix = prefix[c_count]
                         else:
                             nprefix = prefix
-                        if longnames:
-                            if len(nprefix) > 0:
-                                nname = f"{nprefix}_usecol:{clabel}"
-                            else:
-                                nname = f"usecol:{clabel}"
-                            oname = f"{nname}_{rlabel}"
+                        # if longnames:
+                        if len(nprefix) > 0:
+                            nname = f"{nprefix}_usecol:{clabel}"
                         else:
-                            nname = nprefix + clabel.replace(" ", "").replace("_", "")
-                            oname = (
-                                nprefix
-                                + rlabel.replace(" ", "").replace("_", "")
-                                + clabel.replace(" ", "").replace("_", "")
-                            )
-                            if len(oname) > 20:
-                                raise Exception(
-                                    "csv_to_ins_file(): cant form observation name "
-                                    + " for prefix '{0}' , row '{1}', col '{2}' in less than 20 chars".format(
-                                        nprefix, rlabel, clabel
-                                    )
-                                )
+                            nname = f"usecol:{clabel}"
+                        oname = f"{nname}_{rlabel}"
+                        # else:
+                        #     nname = nprefix + clabel.replace(" ", "").replace("_", "")
+                        #     oname = (
+                        #         nprefix
+                        #         + rlabel.replace(" ", "").replace("_", "")
+                        #         + clabel.replace(" ", "").replace("_", "")
+                        #     )
+                        #     if len(oname) > 20:
+                        #         raise Exception(
+                        #             "csv_to_ins_file(): cant form observation name "
+                        #             + " for prefix '{0}' , row '{1}', col '{2}' in less than 20 chars".format(
+                        #                 nprefix, rlabel, clabel
+                        #             )
+                        #         )
                         onames.append(oname)  # append list of obs
                         ovals.append(vals[i, j])  # store current obs val
                         # defin group name

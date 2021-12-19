@@ -983,96 +983,96 @@ def mf6_freyberg_shortnames_test():
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
                  remove_existing=True,
                  longnames=False, spatial_reference=sr,
-                 zero_based=False,start_datetime="1-1-2018")
+                 zero_based=False, start_datetime="1-1-2018")
 
     df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
-    try:
-        pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
-                            prefix="hds_too_long_tho")
-    except:
-        pass
-    else:
-        raise Exception("should have failed")
+    # try:
+    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
+                        prefix="hds_too_long_tho")
+    # except:
+    #     pass
+    # else:
+    #     raise Exception("should have failed")
 
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
                  remove_existing=True,
                  longnames=False, spatial_reference=sr,
                  zero_based=False, start_datetime="1-1-2018")
-    try:
-        pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="rhk_still_too_long",
-                          pargp="sfr_rhk", index_cols=[0, 1, 2, 3], use_cols=[9], upper_bound=10., lower_bound=0.1,
-                          par_type="grid")
-    except:
-        pass
-    else:
-        raise Exception("should have failed")
+    # try:
+    pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="rhk_still_too_long",
+                      pargp="sfr_rhk", index_cols=[0, 1, 2, 3], use_cols=[9], upper_bound=10., lower_bound=0.1,
+                      par_type="grid")
+    # except:
+    #     pass
+    # else:
+    #     raise Exception("should have failed")
 
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
                  remove_existing=True,
                  longnames=False, spatial_reference=sr,
                  zero_based=False, start_datetime="1-1-2018")
-    try:
-        pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="rhk_still_too_long",
-                          pargp="sfr_rhk", index_cols=[0, 1, 2, 3], use_cols=[9], upper_bound=10., lower_bound=0.1,
-                          par_type="grid", par_style="direct")
-    except:
-        pass
-    else:
-        raise Exception("should have failed")
+    # try:
+    pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="rhk_still_too_long",
+                      pargp="sfr_rhk", index_cols=[0, 1, 2, 3], use_cols=[9], upper_bound=10., lower_bound=0.1,
+                      par_type="grid", par_style="direct")
+    # except:
+    #     pass
+    # else:
+    #     raise Exception("should have failed")
 
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
                  remove_existing=True,
                  longnames=False, spatial_reference=sr,
                  zero_based=False, start_datetime="1-1-2018")
-    try:
-        pf.add_parameters(filenames="freyberg6.ic_strt_layer1.txt", par_name_base="rhk_still_too_long",
-                          pargp="sfr_rhk", upper_bound=10., lower_bound=0.1,
-                          par_type="pilotpoints")
-    except:
-         pass
-    else:
-         raise Exception("should have failed")
+    # try:
+    pf.add_parameters(filenames="freyberg6.ic_strt_layer1.txt", par_name_base="rhk_still_too_long",
+                      pargp="sfr_rhk", upper_bound=10., lower_bound=0.1,
+                      par_type="pilotpoints")
+    # except:
+    #      pass
+    # else:
+    #      raise Exception("should have failed")
 
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
                  remove_existing=True,
                  longnames=False, spatial_reference=sr,
                  zero_based=False, start_datetime="1-1-2018")
-    try:
-        pf.add_parameters(filenames="freyberg6.ic_strt_layer1.txt", par_name_base="rhk_still_too_long",
-                          pargp="sfr_rhk", upper_bound=10., lower_bound=0.1,
-                          par_type="grid")
-    except:
-        pass
-    else:
-        raise Exception("should have failed")
+    # try:
+    pf.add_parameters(filenames="freyberg6.ic_strt_layer1.txt", par_name_base="rhk_still_too_long",
+                      pargp="sfr_rhk", upper_bound=10., lower_bound=0.1,
+                      par_type="grid")
+    # except:
+    #     pass
+    # else:
+    #     raise Exception("should have failed")
 
-    try:
-        pf.add_parameters(filenames="freyberg6.ic_strt_layer1.txt", par_name_base="rhk_still_too_long",
-                          pargp="sfr_rhk", upper_bound=10., lower_bound=0.1,
-                          par_type="grid",par_style="direct")
-    except:
-        pass
-    else:
-        raise Exception("should have failed")
+    # try:
+    pf.add_parameters(filenames="freyberg6.ic_strt_layer1.txt", par_name_base="rhk_still_too_long",
+                      pargp="sfr_rhk", upper_bound=10., lower_bound=0.1,
+                      par_type="grid",par_style="direct")
+    # except:
+    #     pass
+    # else:
+    #     raise Exception("should have failed")
 
 
-    try:
-        pf.add_parameters(filenames="freyberg6.ic_strt_layer1.txt", par_name_base="rhk_still_too_long",
-                          pargp="sfr_rhk", upper_bound=10., lower_bound=0.1,
-                          par_type="constant")
-    except:
-        pass
-    else:
-        raise Exception("should have failed")
+    # try:
+    pf.add_parameters(filenames="freyberg6.ic_strt_layer1.txt", par_name_base="rhk_still_too_long",
+                      pargp="sfr_rhk", upper_bound=10., lower_bound=0.1,
+                      par_type="constant")
+    # except:
+    #     pass
+    # else:
+    #     raise Exception("should have failed")
 
-    try:
-        pf.add_parameters(filenames="freyberg6.ic_strt_layer1.txt", par_name_base="rhk_still_too_long",
-                          pargp="sfr_rhk", upper_bound=10., lower_bound=0.1,
-                          par_type="zone")
-    except:
-        pass
-    else:
-        raise Exception("should have failed")
+    # try:
+    pf.add_parameters(filenames="freyberg6.ic_strt_layer1.txt", par_name_base="rhk_still_too_long",
+                      pargp="sfr_rhk", upper_bound=10., lower_bound=0.1,
+                      par_type="zone")
+    # except:
+    #     pass
+    # else:
+    #     raise Exception("should have failed")
 
     # obs
     #   using tabular style model output
@@ -1084,11 +1084,10 @@ def mf6_freyberg_shortnames_test():
                  remove_existing=True,
                  longnames=False, spatial_reference=sr,
                  zero_based=False, start_datetime="1-1-2018")
-    df = pd.read_csv(os.path.join(tmp_model_ws,"heads.csv"),index_col=0)
-    pf.add_observations("heads.csv",insfile="heads.csv.ins",index_cols="time",use_cols=list(df.columns.values),prefix="hds")
-    df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
-    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
-    v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
+    df = pd.read_csv(os.path.join(tmp_model_ws,"heads.csv"), index_col=0)
+    pf.add_observations("heads.csv",insfile="heads.csv.ins", index_cols="time",
+                        use_cols=list(df.columns.values), prefix="hds")
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
     gr_gs = pyemu.geostats.GeoStruct(variograms=v)
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0,a=60))
     pf.extra_py_imports.append('flopy')
@@ -1125,7 +1124,7 @@ def mf6_freyberg_shortnames_test():
         pf.add_parameters(filenames=list_file,par_type="constant",par_name_base="w{0}".format(kper),
                           pargp="wel_{0}".format(kper),index_cols=[0,1,2],use_cols=[3],
                           upper_bound=1.5,lower_bound=0.5)
-    za = np.ones((3,40,20))
+    za = np.ones((3, 40, 20))
     df = pd.read_csv(os.path.join(m.model_ws, list_file),
                      delim_whitespace=True, header=None) - 1
     za[tuple(df.loc[0:2, [0, 1, 2]].values.T)] = [2,3,4]
@@ -1136,9 +1135,6 @@ def mf6_freyberg_shortnames_test():
                             upper_bound=1.5, lower_bound=0.5,
                             zone_array=za)
     assert len(pdf) == 4
-    pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="rhk",
-                      pargp="sfr_rhk", index_cols=[0, 1, 2, 3], use_cols=[9], upper_bound=10., lower_bound=0.1,
-                      par_type="grid")
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
@@ -1148,6 +1144,18 @@ def mf6_freyberg_shortnames_test():
     # build pest
     pst = pf.build_pst('freyberg.pst')
 
+    # test update/rebuild
+    # pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt",
+    #                   par_name_base="rhk",
+    #                   pargp="sfr_rhk", index_cols=[0, 1, 2, 3], use_cols=[9],
+    #                   upper_bound=10., lower_bound=0.1,
+    #                   par_type="grid", rebuild_pst=True)
+    pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=pb + "g2",
+                      pargp=pb + "g2", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                      geostruct=gr_gs, rebuild_pst=True)
+    df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
+                        use_cols=list(df.columns.values), rebuild_pst=True)
     assert pst.parameter_data.parnme.apply(lambda x: len(x)).max() <= 12
     assert pst.observation_data.obsnme.apply(lambda x: len(x)).max() <= 20
 
@@ -1588,7 +1596,8 @@ def mf6_freyberg_direct_test():
     cov.to_coo("prior.jcb")
     pst.try_parse_name_metadata()
     df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
-    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
+    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
+                        use_cols=list(df.columns.values),
                         prefix="hds", rebuild_pst=True)
 
     # test par mults are working
@@ -3623,7 +3632,7 @@ if __name__ == "__main__":
     #freyberg_prior_build_test()
     # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
-    #mf6_freyberg_shortnames_test()
+    mf6_freyberg_shortnames_test()
 
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
@@ -3637,7 +3646,7 @@ if __name__ == "__main__":
     # tpf.test_add_array_parameters_pps_grid()
     # # pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
-    usg_freyberg_test()
+    # usg_freyberg_test()
 
 
 

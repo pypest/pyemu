@@ -33,7 +33,6 @@ def setup_pilotpoints_grid(
     pp_dir=".",
     tpl_dir=".",
     shapename="pp.shp",
-    longnames=False,
     pp_filename_dict={},
 ):
     """setup a regularly-spaced (gridded) pilot point parameterization
@@ -240,7 +239,7 @@ def setup_pilotpoints_grid(
                         tpl_filename = os.path.join(tpl_dir, base_filename + ".tpl")
                         # write the tpl file
                         pilot_points_to_tpl(
-                            pp_df, tpl_filename, name_prefix=prefix, longnames=longnames
+                            pp_df, tpl_filename, name_prefix=prefix,
                         )
                         pp_df.loc[:, "tpl_filename"] = tpl_filename
                         pp_df.loc[:, "pp_filename"] = pp_filename
@@ -490,7 +489,7 @@ def write_pp_file(filename, pp_df):
         )
 
 
-def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=False):
+def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None):
     """write a template file for a pilot points file
 
     Args:
@@ -502,8 +501,6 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
             pilot point parameters will be named "hk_0001","hk_0002", etc.
             If None, parameter names from `pp_df.name` are used.
             Default is None.
-        longnames (`bool`): flag to use parameter names longer than 12 chars.
-            Default is False
 
     Returns:
         `pandas.DataFrame`: a dataframe with pilot point information
@@ -527,82 +524,82 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None, longnames=Fals
     if tpl_file is None:
         tpl_file = pp_file + ".tpl"
 
-    if longnames:
-        if name_prefix is not None:
-            if "i" in pp_df.columns and "j" in pp_df.columns:
-                pp_df.loc[:, "parnme"] = pp_df.apply(
-                    lambda x: "{0}_i:{1}_j:{2}".format(name_prefix, int(x.i), int(x.j)),
-                    axis=1,
-                )
-            elif "x" in pp_df.columns and "y" in pp_df.columns:
-                pp_df.loc[:, "parnme"] = pp_df.apply(
-                    lambda x: "{0}_x:{1:0.2f}_y:{2:0.2f}".format(name_prefix, x.x, x.y),
-                    axis=1,
-                )
-            else:
-                pp_df.loc[:, "idx"] = np.arange(pp_df.shape[0])
-                pp_df.loc[:, "parnme"] = pp_df.apply(
-                    lambda x: "{0}_ppidx:{1}".format(name_prefix, x.idx),
-                    axis=1,
-                )
-            if "zone" in pp_df.columns:
-                pp_df.loc[:, "parnme"] = pp_df.apply(
-                    lambda x: x.parnme + "_zone:{0}".format(x.zone), axis=1
-                )
-            pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
-                lambda x: "~    {0}    ~".format(x)
+    # if longnames:
+    if name_prefix is not None:
+        if "i" in pp_df.columns and "j" in pp_df.columns:
+            pp_df.loc[:, "parnme"] = pp_df.apply(
+                lambda x: "{0}_i:{1}_j:{2}".format(name_prefix, int(x.i), int(x.j)),
+                axis=1,
+            )
+        elif "x" in pp_df.columns and "y" in pp_df.columns:
+            pp_df.loc[:, "parnme"] = pp_df.apply(
+                lambda x: "{0}_x:{1:0.2f}_y:{2:0.2f}".format(name_prefix, x.x, x.y),
+                axis=1,
             )
         else:
-            names = pp_df.name.copy()
-            pp_df.loc[:, "parnme"] = pp_df.name
-            pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
-                lambda x: "~    {0}    ~".format(x)
+            pp_df.loc[:, "idx"] = np.arange(pp_df.shape[0])
+            pp_df.loc[:, "parnme"] = pp_df.apply(
+                lambda x: "{0}_ppidx:{1}".format(name_prefix, x.idx),
+                axis=1,
             )
-        _write_df_tpl(
-            tpl_file,
-            pp_df.loc[:, ["name", "x", "y", "zone", "tpl"]],
-            sep=" ",
-            index_label="index",
-            header=False,
-            index=False,
-            quotechar=" ",
-            quoting=2,
+        if "zone" in pp_df.columns:
+            pp_df.loc[:, "parnme"] = pp_df.apply(
+                lambda x: x.parnme + "_zone:{0}".format(x.zone), axis=1
+            )
+        pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
+            lambda x: "~    {0}    ~".format(x)
         )
     else:
-        if name_prefix is not None:
-            digits = str(len(str(pp_df.shape[0])))
-            fmt = "{0:0" + digits + "d}"
-            if len(name_prefix) + 1 + int(digits) > 12:
-                warnings.warn("name_prefix too long for parameter names", PyemuWarning)
-            names = [
-                "{0}_{1}".format(name_prefix, fmt.format(i))
-                for i in range(pp_df.shape[0])
-            ]
-        else:
-            names = pp_df.name.copy()
-        too_long = []
-        for name in names:
-            if len(name) > 12:
-                too_long.append(name)
-        if len(too_long) > 0:
-            raise Exception(
-                "the following parameter names are too long:" + ",".join(too_long)
-            )
-        tpl_entries = ["~    {0}    ~".format(name) for name in names]
-        pp_df.loc[:, "tpl"] = tpl_entries
-        pp_df.loc[:, "parnme"] = names
-        f_tpl = open(tpl_file, "w")
-        f_tpl.write("ptf ~\n")
-        f_tpl.write(
-            pp_df.to_string(
-                col_space=0,
-                columns=["name", "x", "y", "zone", "tpl"],
-                formatters=PP_FMT,
-                justify="left",
-                header=False,
-                index=False,
-            )
-            + "\n"
+        names = pp_df.name.copy()
+        pp_df.loc[:, "parnme"] = pp_df.name
+        pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
+            lambda x: "~    {0}    ~".format(x)
         )
+    _write_df_tpl(
+        tpl_file,
+        pp_df.loc[:, ["name", "x", "y", "zone", "tpl"]],
+        sep=" ",
+        index_label="index",
+        header=False,
+        index=False,
+        quotechar=" ",
+        quoting=2,
+    )
+    # else:
+    #     if name_prefix is not None:
+    #         digits = str(len(str(pp_df.shape[0])))
+    #         fmt = "{0:0" + digits + "d}"
+    #         if len(name_prefix) + 1 + int(digits) > 12:
+    #             warnings.warn("name_prefix too long for parameter names", PyemuWarning)
+    #         names = [
+    #             "{0}_{1}".format(name_prefix, fmt.format(i))
+    #             for i in range(pp_df.shape[0])
+    #         ]
+    #     else:
+    #         names = pp_df.name.copy()
+    #     too_long = []
+    #     for name in names:
+    #         if len(name) > 12:
+    #             too_long.append(name)
+    #     if len(too_long) > 0:
+    #         raise Exception(
+    #             "the following parameter names are too long:" + ",".join(too_long)
+    #         )
+    #     tpl_entries = ["~    {0}    ~".format(name) for name in names]
+    #     pp_df.loc[:, "tpl"] = tpl_entries
+    #     pp_df.loc[:, "parnme"] = names
+    #     f_tpl = open(tpl_file, "w")
+    #     f_tpl.write("ptf ~\n")
+    #     f_tpl.write(
+    #         pp_df.to_string(
+    #             col_space=0,
+    #             columns=["name", "x", "y", "zone", "tpl"],
+    #             formatters=PP_FMT,
+    #             justify="left",
+    #             header=False,
+    #             index=False,
+    #         )
+    #         + "\n"
+    #     )
 
     return pp_df

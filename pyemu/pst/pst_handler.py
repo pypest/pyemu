@@ -3819,7 +3819,8 @@ class Pst(object):
 
         for tpl_file in self.model_input_data.pest_file:
             sys_tpl_file = os.path.join(
-                pst_path, tpl_file.replace("/", os.path.sep).replace("\\", os.path.sep)
+                pst_path,
+                str(tpl_file).replace("/", os.path.sep).replace("\\", os.path.sep)
             )
             if not os.path.exists(sys_tpl_file):
                 warnings.warn(
@@ -3869,7 +3870,7 @@ class Pst(object):
 
         for ins_file in self.model_output_data.pest_file:
             sys_ins_file = os.path.join(
-                pst_path, ins_file.replace("/", os.path.sep).replace("\\", os.path.sep)
+                pst_path, str(ins_file).replace("/", os.path.sep).replace("\\", os.path.sep)
             )
             if not os.path.exists(sys_ins_file):
                 warnings.warn(
