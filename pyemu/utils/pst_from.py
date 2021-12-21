@@ -1189,7 +1189,7 @@ class PstFrom(object):
             self.logger.lraise(
                 "array obs output file '{0}' not found".format(out_filename)
             )
-        if len(prefix) == 0:  # and self.longnames:
+        if len(prefix) == 0:
             prefix = Path(out_filename).stem
         f_out = open(self.new_d / out_filename, "r")
         f_ins = open(self.new_d / ins_filename, "w")
@@ -1234,20 +1234,9 @@ class PstFrom(object):
                             f_ins.write(" w ")
                         continue
 
-                # if longnames:
                 oname = "oname:{0}_otype:arr_i:{1}_j:{2}".format(prefix, iidx, jr)
                 if zval is not None:
                     oname += "_zone:{0}".format(zval)
-                # else:
-                #     oname = "{0}_{1}_{2}".format(prefix, iidx, jr)
-                #     if zval is not None:
-                #         z_str = "_{0}".format(zval)
-                #         if len(oname) + len(z_str) < 20:
-                #             oname += z_str
-                #     if len(oname) > 20:
-                #         self.logger.lraise(
-                #             "array obs name too long: '{0}'".format(oname)
-                #         )
                 f_ins.write(" !{0}! ".format(oname))
                 if jr < len(raw) - 1:
                     f_ins.write(" w ")
@@ -1492,7 +1481,6 @@ class PstFrom(object):
             obsgp = _check_var_len(obsgp, ncol, fill=fill)
             nprefix = prefix
 
-            # if self.longnames:
             if len(nprefix) == 0:
                 nprefix = filenames[0]
             nprefix = "oname:{0}_otype:lst".format(nprefix)
@@ -1987,12 +1975,8 @@ class PstFrom(object):
                 pargp = pargp.lower()
         par_name_base = [pnb.lower() for pnb in par_name_base]
 
-        # if self.longnames:  # allow par names to be long... fine for pestpp
         fmt = "_{0}".format(alt_inst_str) + ":{0}"
         chk_prefix = "_{0}".format(alt_inst_str)  # add `instance` identifier
-        # else:
-        #     fmt = "{0}"  # may not be so well supported
-        #     chk_prefix = ""
         # increment name base if already passed
         for i in range(len(par_name_base)):
             par_name_base[i] += fmt.format(
@@ -2184,7 +2168,6 @@ class PstFrom(object):
                 # (stolen from helpers.PstFromFlopyModel()._pp_prep())
                 # but only settting up one set of pps at a time
                 pnb = par_name_base[0]
-                # if self.longnames:
                 pnb = "pname:{1}_ptype:pp_pstyle:{0}".format(par_style, pnb)
                 pp_dict = {0: pnb}
                 pp_filename = "{0}pp.dat".format(par_name_store)
@@ -3080,14 +3063,6 @@ def write_list_tpl(
         df_par["x"], df_par["y"] = np.concatenate(
             df_tpl.apply(lambda r: [[r.x, r.y] for _ in use_cols], axis=1).values
         ).T
-    # if not longnames:
-    #     too_long = df_par.loc[df_par.parnme.apply(lambda x: len(x) > 12), "parnme"]
-    #     if too_long.shape[0] > 0:
-    #         raise Exception(
-    #             "write_list_tpl() error: the following parameter "
-    #             "names are too long:{0}"
-    #             "".format(",".join(list(too_long)))
-    #         )
     for use_col in use_cols:
         df_tpl.loc[:, use_col] = df_tpl.loc[:, use_col].apply(
             lambda x: "~  {0}  ~".format(x)
@@ -3372,7 +3347,6 @@ def _build_parnames(
         df.loc[:, "parval1_{0}".format(use_col)] = fill_value
         if typ == "constant":
             # one par for entire use_col column
-            # if longnames:
             fmtr = "pname:{0}_ptype:cn_usecol:{1}"
             fmtr += "_pstyle:{0}".format(par_style)
             if suffix != "":
@@ -3387,7 +3361,6 @@ def _build_parnames(
                 df.loc[:, "parval1_{0}".format(use_col)] = init_df.loc[:, use_col][0]
         elif typ == "zone":
             # one par for each zone
-            # if longnames:
             fmtr = "pname:{0}_ptype:zn_usecol:{1}"
             if par_style == "d":
                 # todo
@@ -3422,7 +3395,6 @@ def _build_parnames(
 
         elif typ == "grid":
             # one par for each index
-            # if longnames:
             fmtr = "pname:{0}_ptype:gr_usecol:{1}"
             fmtr += "_pstyle:{0}".format(par_style)
             if zone_array is not None:
@@ -3431,14 +3403,6 @@ def _build_parnames(
                 fmtr += "_{2}"
             if suffix != "":
                 fmtr += f"_{suffix}"
-            # else:
-            #     fmtr = "{0}{1}"
-            #     if zone_array is not None:
-            #         fmtr += "z{2}_{3}"
-            #     else:
-            #         fmtr += "{2}"
-            #     if suffix != "":
-            #         fmtr += suffix
             if zone_array is not None:
                 df.loc[:, use_col] = df.apply(
                     lambda x: fmtr.format(nname, use_col, x.zval, x.idx_strs), axis=1
@@ -3457,13 +3421,6 @@ def _build_parnames(
                 "or 'grid', not '{0}'".format(typ)
             )
 
-        # if not longnames:
-        #     if df.loc[:, use_col].apply(lambda x: len(x)).max() > 12:
-        #         too_long = df.loc[:, use_col].apply(lambda x: len(x)) > 12
-        #         print(too_long)
-        #         raise ValueError(
-        #             "_get_tpl_or_ins_df(): " "couldn't form short par names"
-        #         )
         if par_style == "d":
             direct_tpl_df.loc[:, use_col] = (
                 df.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
@@ -3658,34 +3615,23 @@ def write_array_tpl(
         )
 
     def constant_namer(i, j):
-        # if longnames:
         pname = "pname:{1}_ptype:cn_pstyle:{0}".format(par_style, name)
         if suffix != "":
             pname += "_{0}".format(suffix)
-        # else:
-        #     pname = "{1}{2}".format(par_style[0], name, suffix)
-        #     if len(pname) > 12:
-        #         raise Exception("constant par name too long:" "{0}".format(pname))
         return pname
 
     def zone_namer(i, j):
         zval = 1
         if zone_array is not None:
             zval = zone_array[i, j]
-        # if longnames:
         pname = "pname:{1}_ptype:zn_pstyle:{0}_zone:{2}".format(
             par_style, name, zval
         )
         if suffix != "":
             pname += "_{0}".format(suffix)
-        # else:
-        #     pname = "{1}_zn{2}".format(par_style[0], name, zval)
-        #     if len(pname) > 12:
-        #         raise Exception("zone par name too long:{0}".format(pname))
         return pname
 
     def grid_namer(i, j):
-        # if longnames:
         pname = "pname:{1}_ptype:gr_pstyle:{0}_i:{2}_j:{3}".format(
             par_style, name, i, j
         )
@@ -3696,10 +3642,6 @@ def write_array_tpl(
             pname += "_zone:{0}".format(zone_array[i, j])
         if suffix != "":
             pname += "_{0}".format(suffix)
-        # else:
-        #     pname = "{1}{2:03d}{3:03d}".format(par_style[0], name, i, j)
-        #     if len(pname) > 12:
-        #         raise Exception("grid pname too long:{0}".format(pname))
         return pname
 
     if par_type == "constant":
