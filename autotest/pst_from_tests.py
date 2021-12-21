@@ -1175,13 +1175,14 @@ def mf6_freyberg_shortnames_test():
         os.chdir(b_d)
         raise Exception(str(e))
     os.chdir(b_d)
-
+    pst.try_parse_name_metadata()
     pst.control_data.noptmax = 0
     pst.pestpp_options["additional_ins_delimiters"] = ","
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
+    pst = pyemu.Pst(os.path.join(pf.new_d, "freyberg.pst"))
     res_file = os.path.join(pf.new_d, "freyberg.base.rei")
     assert os.path.exists(res_file), res_file
     pst.set_res(res_file)
@@ -3625,6 +3626,7 @@ def mf6_subdir_test():
     # assert np.abs(float(df.upper_bound.min()) - 30.) < 1.0e-6,df.upper_bound.min()
     # assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
 
+
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
     # invest()
@@ -3632,12 +3634,12 @@ if __name__ == "__main__":
     #freyberg_prior_build_test()
     # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
-    mf6_freyberg_shortnames_test()
+    # mf6_freyberg_shortnames_test()
 
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     # xsec_test()
-    # mf6_freyberg_short_direct_test()
+    mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
     # tpf = TestPstFrom()

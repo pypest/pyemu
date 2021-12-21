@@ -657,7 +657,29 @@ class PstFrom(object):
                 par_data = pyemu.pst_utils._populate_dataframe(
                     [], pst.par_fieldnames, pst.par_defaults, pst.par_dtype
                 )
-            pst.parameter_data = par_data
+            # set parameter data
+            # some pre conditioning to support rentry here is more add_par
+            # calls are made with update/rebuild pst
+            shtmx = 0
+            gshtmx = 0
+            if pst.parameter_data is not None:
+                # copy existing par data (incase it has been edited)
+                par_data_orig = pst.parameter_data.copy()
+                if "longname" in par_data_orig.columns:
+                    # Support existing long names mapping
+                    par_data_orig = par_data_orig.set_index(
+                        "longname")
+                    # starting point for updated mapping
+                    shtmx = par_data_orig.parnme.str.strip('p').astype(int).max() + 1
+                    gshtmx = par_data_orig.pargp.str.strip('pg').astype(int).max() + 1
+                # index of new pars (might need this later)
+                new_par_data = par_data.index.difference(par_data_orig.index)
+            else:
+                new_par_data = slice(None)
+            # build or update par data
+            pst.parameter_data = pd.concat(
+                [pst.parameter_data,
+                 par_data.loc[new_par_data]], axis=0)
             # pst.template_files = self.tpl_filenames
             # pst.input_files = self.input_filenames
             pst.model_input_data = pd.DataFrame(
@@ -666,19 +688,36 @@ class PstFrom(object):
             )
             # rename pars and obs in case short names are desired
             if not self.longnames:
+                # pull out again for shorthand access
                 par_data = pst.parameter_data
-                par_data['longname'] = par_data.parnme
-                par_data["shortname"] = ['p' + str(i)
-                                         for i in range(len(par_data))]
-                parmap = par_data["shortname"].to_dict()
+                # new pars will not be mapped start this mapping
+                npd = par_data.loc[new_par_data]
+                par_data.loc[npd.index, 'longname'] = npd.parnme
+                # get short names (using existing names as index starting point)
+                par_data.loc[npd.index, "shortname"] = [
+                    'p' + str(i) for i in range(shtmx, shtmx+len(npd))
+                ]
+                # set to dict
+                parmap = par_data.loc[npd.index, "shortname"].to_dict()
+                # rename parnames and propagate to tpls etc.
                 pst.rename_parameters(parmap, pst_path=self.new_d)
+                # rename in struct dicts
                 self._rename_par_struct_dict(parmap)
-                # par_data = par_data.reset_index(drop=True)
-                # par_data["parnme"] = 'p' + par_data.index.astype(str)
-                # par_data = par_data.set_index("parnme", drop=False)
+                # save whole shortname-longname mapping (will over write previous)
                 par_data.set_index("shortname")["longname"].to_csv(
                     filename.with_name('parlongname.map'))
+                npd.index = npd.index.map(parmap)
 
+                # build group mapping df
+                pargpmap = pd.DataFrame(npd.pargp.unique(),
+                                        columns=['longname'])
+                # shortnames from using previous a starting point (if existing)
+                pargpmap["shortname"] = "pg" + (pargpmap.index+gshtmx).astype(str)
+                pargpmap_dict = pargpmap.set_index('longname').shortname.to_dict()
+                par_data.loc[npd.index, "pglong"] = npd.pargp
+                par_data.loc[npd.index, 'pargp'] = npd.pargp.map(pargpmap_dict)
+                par_data.groupby('pargp').pglong.first().to_csv(
+                    filename.with_name('pglongname.map'))
         if "obs" in update.keys() or not uupdate:
             if len(self.obs_dfs) > 0:
                 obs_data = pd.concat(self.obs_dfs).loc[:, obs_data_cols]
@@ -688,8 +727,29 @@ class PstFrom(object):
                 )
                 obs_data.loc[:, "obsnme"] = []
                 obs_data.index = []
-            obs_data.sort_index(inplace=True)
-            pst.observation_data = obs_data
+            # set observation data
+            # some pre conditioning to support rentry here is more add_obs
+            # calls are made with update/rebuild pst
+            shtmx = 0
+            gshtmx = 0
+            if pst.observation_data is not None:
+                # copy existing obs data (incase it has been edited)
+                obs_data_orig = pst.observation_data.copy()
+                if "longname" in obs_data_orig.columns:
+                    # Support existing long names mapping
+                    obs_data_orig = obs_data_orig.set_index(
+                        "longname")
+                    # starting point for updated mapping
+                    shtmx = obs_data_orig.obsnme.str.strip('ob').astype(int).max() + 1
+                    gshtmx = obs_data_orig.obgnme.str.strip('obg').astype(int).max() + 1
+                # index of new obs (might need this later)
+                new_obs_data = obs_data.index.difference(obs_data_orig.index)
+            else:
+                new_obs_data = slice(None)
+            # build or update obs data
+            pst.observation_data = pd.concat(
+                [pst.observation_data,
+                 obs_data.loc[new_obs_data]], axis=0)
             # pst.instruction_files = self.ins_filenames
             # pst.output_files = self.output_filenames
             pst.model_output_data = pd.DataFrame(
@@ -698,17 +758,34 @@ class PstFrom(object):
             )
             # rename pars and obs in case short names are desired
             if not self.longnames:
+                # pull out again for shorthand access
                 obs_data = pst.observation_data
-                obs_data['longname'] = obs_data.obsnme
-                obs_data["shortname"] = ['o' + str(i)
-                                         for i in range(len(obs_data))]
-                obsmap = obs_data["shortname"]
+                # new obs will not be mapped so start this mapping
+                nod = obs_data.loc[new_obs_data]
+                obs_data.loc[nod.index, "longname"] = nod.obsnme
+                # get short names (using existing names as index starting point)
+                obs_data.loc[nod.index, "shortname"] = [
+                    'ob' + str(i) for i in range(shtmx, shtmx+len(nod))
+                ]
+                obsmap = obs_data.loc[nod.index, "shortname"]
+                # rename obsnames and propagate to ins files
                 pst.rename_observations(obsmap.to_dict(), pst_path=self.new_d)
-                # par_data = par_data.reset_index(drop=True)
-                # par_data["parnme"] = 'p' + par_data.index.astype(str)
-                # par_data = par_data.set_index("parnme", drop=False)
                 obs_data.set_index("shortname")["longname"].to_csv(
                     filename.with_name('obslongname.map'))
+                nod.index = nod.index.map(obsmap)
+
+                # build group mapping df
+                obgpmap = pd.DataFrame(nod.obgnme.unique(),
+                                       columns=['longname'])
+                # shortnames from using previous a starting point (if existing)
+                obgpmap["shortname"] = "obg" + (obgpmap.index+gshtmx).astype(str)
+                obgpmap_dict = obgpmap.set_index('longname').shortname.to_dict()
+                obs_data.loc[nod.index, "oglong"] = nod.obgnme
+                obs_data.loc[nod.index, 'obgnme'] = nod.obgnme.map(obgpmap_dict)
+                obs_data.groupby('obgnme').oglong.first().to_csv(
+                    filename.with_name('oglongname.map'))
+
+            obs_data.sort_index(inplace=True)  #TODO
 
         if not uupdate:
             pst.model_command = self.mod_command
