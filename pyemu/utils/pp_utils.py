@@ -58,7 +58,6 @@ def setup_pilotpoints_grid(
         tpl_dir (`str`, optional): directory to write pilot point template file to.  Default is '.'
         shapename (`str`, optional): name of shapefile to write that contains pilot
             point information. Default is "pp.shp"
-        longnames (`bool`): flag to use parameter names longer than 12 chars.  Default is False
         pp_filename_dict (`dict`): optional dict of prefix-pp filename pairs.  prefix values must
             match the values in `prefix_dict`.  If None, then pp filenames are based on the
             key values in `prefix_dict`.  Default is None
@@ -509,7 +508,7 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None):
 
     Example::
 
-        pyemu.pp_utils.pilot_points_to_tpl("my_pps.dat",name_prefix="my_pps",longnames=True)
+        pyemu.pp_utils.pilot_points_to_tpl("my_pps.dat",name_prefix="my_pps")
 
 
     """
@@ -524,7 +523,6 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None):
     if tpl_file is None:
         tpl_file = pp_file + ".tpl"
 
-    # if longnames:
     if name_prefix is not None:
         if "i" in pp_df.columns and "j" in pp_df.columns:
             pp_df.loc[:, "parnme"] = pp_df.apply(
@@ -565,41 +563,5 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None):
         quotechar=" ",
         quoting=2,
     )
-    # else:
-    #     if name_prefix is not None:
-    #         digits = str(len(str(pp_df.shape[0])))
-    #         fmt = "{0:0" + digits + "d}"
-    #         if len(name_prefix) + 1 + int(digits) > 12:
-    #             warnings.warn("name_prefix too long for parameter names", PyemuWarning)
-    #         names = [
-    #             "{0}_{1}".format(name_prefix, fmt.format(i))
-    #             for i in range(pp_df.shape[0])
-    #         ]
-    #     else:
-    #         names = pp_df.name.copy()
-    #     too_long = []
-    #     for name in names:
-    #         if len(name) > 12:
-    #             too_long.append(name)
-    #     if len(too_long) > 0:
-    #         raise Exception(
-    #             "the following parameter names are too long:" + ",".join(too_long)
-    #         )
-    #     tpl_entries = ["~    {0}    ~".format(name) for name in names]
-    #     pp_df.loc[:, "tpl"] = tpl_entries
-    #     pp_df.loc[:, "parnme"] = names
-    #     f_tpl = open(tpl_file, "w")
-    #     f_tpl.write("ptf ~\n")
-    #     f_tpl.write(
-    #         pp_df.to_string(
-    #             col_space=0,
-    #             columns=["name", "x", "y", "zone", "tpl"],
-    #             formatters=PP_FMT,
-    #             justify="left",
-    #             header=False,
-    #             index=False,
-    #         )
-    #         + "\n"
-    #     )
 
     return pp_df
