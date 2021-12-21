@@ -3839,6 +3839,8 @@ class Pst(object):
                 eq = eq.replace(old, new)
             self.prior_information.loc[idx, "equation"] = eq
 
+        # pad for putting to tpl
+        name_dict = {k: v.center(12) for k, v in name_dict.items()}
         for tpl_file in self.model_input_data.pest_file:
             sys_tpl_file = os.path.join(
                 pst_path,

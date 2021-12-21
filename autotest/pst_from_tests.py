@@ -1998,8 +1998,13 @@ def mf6_freyberg_short_direct_test():
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
-    tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
-            "rch_recharge": [.5, 1.5]}
+    tags = {
+        "npf_k_": [0.1, 10.],
+        "npf_k33_": [.1, 10],
+        "sto_ss": [.1, 10],
+        "sto_sy": [.9, 1.1],
+        "rch_recharge": [.5, 1.5]
+    }
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
     print(dts)
     # setup from array style pars
@@ -2070,7 +2075,7 @@ def mf6_freyberg_short_direct_test():
                           pargp="wel_{0}_direct".format(kper), index_cols=[0, 1, 2], use_cols=[3],
                           upper_bound=0.0, lower_bound=-1000, geostruct=gr_gs, par_style="direct",
                           transform="none")
-    # Adding dummy list pars with different file structures
+    # # Adding dummy list pars with different file structures
     list_file = "new_freyberg6.wel_stress_period_data_1.txt"  # with a header
     pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nw',
                       pargp='nwell_mult', index_cols=['k', 'i', 'j'], use_cols='flx',
@@ -2122,7 +2127,8 @@ def mf6_freyberg_short_direct_test():
     cov.to_coo("prior.jcb")
     pst.try_parse_name_metadata()
     df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
-    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
+    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
+                        use_cols=list(df.columns.values),
                         prefix="hds", rebuild_pst=True)
 
     # test par mults are working
@@ -2172,13 +2178,16 @@ def mf6_freyberg_short_direct_test():
     # turn direct recharge to min and direct wel to min and
     # check that the model results are consistent
     par = pst.parameter_data
-    rch_par = par.loc[par.pargp.apply(
-        lambda x: "rch_gr" in x and "direct" in x), "parnme"]
-    wel_par = par.loc[par.pargp.apply(
-        lambda x: "wel_" in x and "direct" in x), "parnme"]
-    par.loc[rch_par,"parval1"] = par.loc[rch_par, "parlbnd"]
+    rch_par = par.loc[(par.pname == 'rch') &
+                      (par.ptype == 'gr') &
+                      (par.pstyle == 'd'),
+                      "parnme"]
+    wel_par = par.loc[(par.pname.str.contains('wel')) &
+                      (par.pstyle == 'd'),
+                      "parnme"]
+    par.loc[rch_par, "parval1"] = par.loc[rch_par, "parlbnd"]
     # this should set wells to zero since they are negative values in the control file
-    par.loc[wel_par,"parval1"] = par.loc[wel_par, "parubnd"]
+    par.loc[wel_par, "parval1"] = par.loc[wel_par, "parubnd"]
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
     lst = flopy.utils.Mf6ListBudget(os.path.join(pf.new_d, "freyberg6.lst"))
@@ -2791,7 +2800,7 @@ def mf6_freyberg_arr_obs_and_headerless_test():
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(tmp_model_ws)
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
