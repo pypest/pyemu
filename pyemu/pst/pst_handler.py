@@ -1250,13 +1250,20 @@ class Pst(object):
         from pathlib import Path
         d = Path(self.filename).parent
         for df, fnme in ((self.parameter_data, "parlongname.map"),
-                         (self.observation_data, "obslongname.map"),
-                         (self.parameter_groups, "pglongname.map")):
+                         (self.observation_data, "obslongname.map")):
             try:
                 mapr = pd.read_csv(Path(d, fnme), index_col=0)['longname']
                 df['longname'] = df.index.map(mapr.to_dict())
             except Exception:
                 pass
+        if hasattr(self, "parameter_groups"):
+            df, fnme = (self.parameter_groups, "pglongname.map")
+            try:
+                mapr = pd.read_csv(Path(d, fnme), index_col=0)['longname']
+                df['longname'] = df.index.map(mapr.to_dict())
+            except Exception:
+                pass
+
 
     def _parse_pestpp_line(self, line):
         # args = line.replace('++','').strip().split()
