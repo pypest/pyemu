@@ -411,6 +411,18 @@ class PstFrom(object):
             struct_dict[gs] = par_dfs
         return struct_dict
 
+    def _rename_par_struct_dict(self, mapdict):
+        for gs, gps in self.par_struct_dict.items():
+            df_dict = {}
+            for k, li in gps.items():
+                tdf = []
+                for df in li:
+                    df.parnme.update(mapdict)
+                    df = df.rename(index=mapdict)
+                    tdf.append(df)
+                df_dict[k] = tdf
+            self.par_struct_dict[gs] = df_dict
+
     def build_prior(
         self, fmt="ascii", filename=None, droptol=None, chunk=None, sigma_range=6
     ):
@@ -620,6 +632,10 @@ class PstFrom(object):
             uupdate = False
             pst = pyemu.Pst(filename, load=False)
 
+        # TODO should this be under an if:? incase updating and prior info has been set
+        pst.prior_information = pst.null_prior.merge(pd.DataFrame(
+            data=[], columns=pst.prior_fieldnames))
+
         if "pars" in update.keys() or not uupdate:
             if len(self.par_dfs) > 0:
                 # parameter data from object
@@ -641,14 +657,67 @@ class PstFrom(object):
                 par_data = pyemu.pst_utils._populate_dataframe(
                     [], pst.par_fieldnames, pst.par_defaults, pst.par_dtype
                 )
-            pst.parameter_data = par_data
+            # set parameter data
+            # some pre conditioning to support rentry here is more add_par
+            # calls are made with update/rebuild pst
+            shtmx = 0
+            gshtmx = 0
+            if pst.parameter_data is not None:
+                # copy existing par data (incase it has been edited)
+                par_data_orig = pst.parameter_data.copy()
+                if "longname" in par_data_orig.columns:
+                    # Support existing long names mapping
+                    par_data_orig = par_data_orig.set_index(
+                        "longname")
+                    # starting point for updated mapping
+                    shtmx = par_data_orig.parnme.str.strip('p').astype(int).max() + 1
+                    gshtmx = par_data_orig.pargp.str.strip('pg').astype(int).max() + 1
+                # index of new pars (might need this later)
+                new_par_data = par_data.index.difference(par_data_orig.index)
+            else:
+                new_par_data = slice(None)
+            # build or update par data
+            pst.parameter_data = pd.concat(
+                [pst.parameter_data,
+                 par_data.loc[new_par_data]], axis=0)
             # pst.template_files = self.tpl_filenames
             # pst.input_files = self.input_filenames
             pst.model_input_data = pd.DataFrame(
                 {"pest_file": self.tpl_filenames, "model_file": self.input_filenames},
                 index=self.tpl_filenames,
             )
+            # rename pars and obs in case short names are desired
+            if not self.longnames:
+                # pull out again for shorthand access
+                par_data = pst.parameter_data
+                # new pars will not be mapped start this mapping
+                npd = par_data.loc[new_par_data]
+                par_data.loc[npd.index, 'longname'] = npd.parnme
+                # get short names (using existing names as index starting point)
+                par_data.loc[npd.index, "shortname"] = [
+                    'p' + str(i) for i in range(shtmx, shtmx+len(npd))
+                ]
+                # set to dict
+                parmap = par_data.loc[npd.index, "shortname"].to_dict()
+                # rename parnames and propagate to tpls etc.
+                pst.rename_parameters(parmap, pst_path=self.new_d)
+                # rename in struct dicts
+                self._rename_par_struct_dict(parmap)
+                # save whole shortname-longname mapping (will over write previous)
+                par_data.set_index("shortname")["longname"].to_csv(
+                    filename.with_name('parlongname.map'))
+                npd.index = npd.index.map(parmap)
 
+                # build group mapping df
+                pargpmap = pd.DataFrame(npd.pargp.unique(),
+                                        columns=['longname'])
+                # shortnames from using previous a starting point (if existing)
+                pargpmap["shortname"] = "pg" + (pargpmap.index+gshtmx).astype(str)
+                pargpmap_dict = pargpmap.set_index('longname').shortname.to_dict()
+                par_data.loc[npd.index, "pglong"] = npd.pargp
+                par_data.loc[npd.index, 'pargp'] = npd.pargp.map(pargpmap_dict)
+                par_data.groupby('pargp').pglong.first().to_csv(
+                    filename.with_name('pglongname.map'))
         if "obs" in update.keys() or not uupdate:
             if len(self.obs_dfs) > 0:
                 obs_data = pd.concat(self.obs_dfs).loc[:, obs_data_cols]
@@ -658,18 +727,69 @@ class PstFrom(object):
                 )
                 obs_data.loc[:, "obsnme"] = []
                 obs_data.index = []
-            obs_data.sort_index(inplace=True)
-            pst.observation_data = obs_data
+            # set observation data
+            # some pre conditioning to support rentry here is more add_obs
+            # calls are made with update/rebuild pst
+            shtmx = 0
+            gshtmx = 0
+            if pst.observation_data is not None:
+                # copy existing obs data (incase it has been edited)
+                obs_data_orig = pst.observation_data.copy()
+                if "longname" in obs_data_orig.columns:
+                    # Support existing long names mapping
+                    obs_data_orig = obs_data_orig.set_index(
+                        "longname")
+                    # starting point for updated mapping
+                    shtmx = obs_data_orig.obsnme.str.strip('ob').astype(int).max() + 1
+                    gshtmx = obs_data_orig.obgnme.str.strip('obg').astype(int).max() + 1
+                # index of new obs (might need this later)
+                new_obs_data = obs_data.index.difference(obs_data_orig.index)
+            else:
+                new_obs_data = slice(None)
+            # build or update obs data
+            pst.observation_data = pd.concat(
+                [pst.observation_data,
+                 obs_data.loc[new_obs_data]], axis=0)
             # pst.instruction_files = self.ins_filenames
             # pst.output_files = self.output_filenames
             pst.model_output_data = pd.DataFrame(
                 {"pest_file": self.ins_filenames, "model_file": self.output_filenames},
                 index=self.ins_filenames,
             )
+            # rename pars and obs in case short names are desired
+            if not self.longnames:
+                # pull out again for shorthand access
+                obs_data = pst.observation_data
+                # new obs will not be mapped so start this mapping
+                nod = obs_data.loc[new_obs_data]
+                obs_data.loc[nod.index, "longname"] = nod.obsnme
+                # get short names (using existing names as index starting point)
+                obs_data.loc[nod.index, "shortname"] = [
+                    'ob' + str(i) for i in range(shtmx, shtmx+len(nod))
+                ]
+                obsmap = obs_data.loc[nod.index, "shortname"]
+                # rename obsnames and propagate to ins files
+                pst.rename_observations(obsmap.to_dict(), pst_path=self.new_d)
+                obs_data.set_index("shortname")["longname"].to_csv(
+                    filename.with_name('obslongname.map'))
+                nod.index = nod.index.map(obsmap)
+
+                # build group mapping df
+                obgpmap = pd.DataFrame(nod.obgnme.unique(),
+                                       columns=['longname'])
+                # shortnames from using previous a starting point (if existing)
+                obgpmap["shortname"] = "obg" + (obgpmap.index+gshtmx).astype(str)
+                obgpmap_dict = obgpmap.set_index('longname').shortname.to_dict()
+                obs_data.loc[nod.index, "oglong"] = nod.obgnme
+                obs_data.loc[nod.index, 'obgnme'] = nod.obgnme.map(obgpmap_dict)
+                obs_data.groupby('obgnme').oglong.first().to_csv(
+                    filename.with_name('oglongname.map'))
+
+            obs_data.sort_index(inplace=True)  #TODO
+
         if not uupdate:
             pst.model_command = self.mod_command
 
-        pst.prior_information = pst.null_prior
         pst.control_data.noptmax = 0
         self.pst = pst
 
@@ -1038,7 +1158,6 @@ class PstFrom(object):
         prefix,
         ofile_sep,
         ofile_skip,
-        longnames,
         zone_array,
     ):
         """private method to setup observations for an array-style file
@@ -1052,7 +1171,6 @@ class PstFrom(object):
                 placeholder arg, only whitespace-delimited files are supported
             ofile_skip (`int`): number of header and/or comment lines to skip at the
                 top of the output file
-            longnames (`bool`): flag to allow longer observations names
             zone_array (numpy.ndarray): an integer array used to identify positions to skip in the
                 output array
 
@@ -1071,7 +1189,7 @@ class PstFrom(object):
             self.logger.lraise(
                 "array obs output file '{0}' not found".format(out_filename)
             )
-        if len(prefix) == 0 and self.longnames:
+        if len(prefix) == 0:
             prefix = Path(out_filename).stem
         f_out = open(self.new_d / out_filename, "r")
         f_ins = open(self.new_d / ins_filename, "w")
@@ -1116,20 +1234,9 @@ class PstFrom(object):
                             f_ins.write(" w ")
                         continue
 
-                if longnames:
-                    oname = "oname:{0}_otype:arr_i:{1}_j:{2}".format(prefix, iidx, jr)
-                    if zval is not None:
-                        oname += "_zone:{0}".format(zval)
-                else:
-                    oname = "{0}_{1}_{2}".format(prefix, iidx, jr)
-                    if zval is not None:
-                        z_str = "_{0}".format(zval)
-                        if len(oname) + len(z_str) < 20:
-                            oname += z_str
-                    if len(oname) > 20:
-                        self.logger.lraise(
-                            "array obs name too long: '{0}'".format(oname)
-                        )
+                oname = "oname:{0}_otype:arr_i:{1}_j:{2}".format(prefix, iidx, jr)
+                if zval is not None:
+                    oname += "_zone:{0}".format(zval)
                 f_ins.write(" !{0}! ".format(oname))
                 if jr < len(raw) - 1:
                     f_ins.write(" w ")
@@ -1254,7 +1361,6 @@ class PstFrom(object):
                 prefix,
                 ofile_sep,
                 ofile_skip,
-                self.longnames,
                 zone_array,
             )
 
@@ -1268,7 +1374,7 @@ class PstFrom(object):
                 new_obs.loc[:, "obgnme"] = obsgp
             elif prefix is not None and len(prefix) != 0:  # if prefix is passed
                 new_obs.loc[:, "obgnme"] = prefix
-            elif self.longnames:
+            else:
                 new_obs.loc[:, "obgnme"] = "oname:{0}_otype:arr".format(filenames)
             # else will default to `obgnme`
             self.logger.log(
@@ -1336,7 +1442,6 @@ class PstFrom(object):
                 typ="obs",
                 index_cols=index_cols,
                 use_cols=use_cols,
-                longnames=self.longnames,
             )
             df.loc[:, "idx_str"] = df_temp.idx_strs
             # Select only certain rows if requested
@@ -1376,10 +1481,9 @@ class PstFrom(object):
             obsgp = _check_var_len(obsgp, ncol, fill=fill)
             nprefix = prefix
 
-            if self.longnames:
-                if len(nprefix) == 0:
-                    nprefix = filenames[0]
-                nprefix = "oname:{0}_otype:lst".format(nprefix)
+            if len(nprefix) == 0:
+                nprefix = filenames[0]
+            nprefix = "oname:{0}_otype:lst".format(nprefix)
             df_ins = pyemu.pst_utils.csv_to_ins_file(
                 df.set_index("idx_str"),
                 ins_filename=self.new_d / insfile,
@@ -1389,7 +1493,6 @@ class PstFrom(object):
                 includes_header=includes_header,
                 includes_index=False,
                 prefix=nprefix,
-                longnames=self.longnames,
                 head_lines_len=lenhead,
                 sep=sep,
                 gpname=obsgp,
@@ -1872,12 +1975,8 @@ class PstFrom(object):
                 pargp = pargp.lower()
         par_name_base = [pnb.lower() for pnb in par_name_base]
 
-        if self.longnames:  # allow par names to be long... fine for pestpp
-            fmt = "_{0}".format(alt_inst_str) + ":{0}"
-            chk_prefix = "_{0}".format(alt_inst_str)  # add `instance` identifier
-        else:
-            fmt = "{0}"  # may not be so well supported
-            chk_prefix = ""
+        fmt = "_{0}".format(alt_inst_str) + ":{0}"
+        chk_prefix = "_{0}".format(alt_inst_str)  # add `instance` identifier
         # increment name base if already passed
         for i in range(len(par_name_base)):
             par_name_base[i] += fmt.format(
@@ -1961,7 +2060,6 @@ class PstFrom(object):
                 use_rows=use_rows,
                 zone_array=zone_array,
                 gpname=pargp,
-                longnames=self.longnames,
                 ij_in_idx=ij_in_idx,
                 xy_in_idx=xy_in_idx,
                 get_xy=get_xy,
@@ -2004,7 +2102,6 @@ class PstFrom(object):
                     par_type=par_type,
                     zone_array=zone_array,
                     shape=shp,
-                    longnames=self.longnames,
                     get_xy=self.get_xy,
                     fill_value=1.0,
                     gpname=pargp,
@@ -2023,6 +2120,7 @@ class PstFrom(object):
                 "pilot_point",
                 "pilot-point",
                 "pilot-points",
+                "pp"
             }:
                 if par_style == "d":
                     self.logger.lraise(
@@ -2070,8 +2168,7 @@ class PstFrom(object):
                 # (stolen from helpers.PstFromFlopyModel()._pp_prep())
                 # but only settting up one set of pps at a time
                 pnb = par_name_base[0]
-                if self.longnames:
-                    pnb = "pname:{1}_ptype:pp_pstyle:{0}".format(par_style, pnb)
+                pnb = "pname:{1}_ptype:pp_pstyle:{0}".format(par_style, pnb)
                 pp_dict = {0: pnb}
                 pp_filename = "{0}pp.dat".format(par_name_store)
                 # pst inputfile (for tpl->in pair) is
@@ -2088,7 +2185,8 @@ class PstFrom(object):
                     if not use_pp_zones and (isinstance(pp_space, int)):
                         # if not using pp zones will set up pp for just one
                         # zone (all non zero) -- for active domain...
-                        zone_array[zone_array > 0] = 1  # so can set all
+                        if zone_array is not None:
+                            zone_array[zone_array > 0] = 1  # so can set all
                         # gt-zero to 1
                     if isinstance(pp_space, float):
                         pp_space = int(pp_space)
@@ -2264,7 +2362,6 @@ class PstFrom(object):
                         pp_dir=self.new_d,
                         tpl_dir=self.tpl_d,
                         shapename=str(self.new_d / "{0}.shp".format(par_name_store)),
-                        longnames=self.longnames,
                         pp_filename_dict=pp_filename_dict,
                     )
                 else:
@@ -2273,7 +2370,6 @@ class PstFrom(object):
                         pp_locs,
                         tpl_filename,
                         pnb,
-                        longnames=self.longnames,
                     )
                 df.loc[:, "pargp"] = pargp
 
@@ -2779,7 +2875,6 @@ def write_list_tpl(
     suffix="",
     zone_array=None,
     gpname=None,
-    longnames=False,
     get_xy=None,
     ij_in_idx=None,
     xy_in_idx=None,
@@ -2828,8 +2923,6 @@ def write_list_tpl(
             `index_cols` provide the indicies for
             querying `zone_array`. Therefore, array dimension should equal
             `len(index_cols)`.
-        longnames (`boolean`): Specify is pars will be specified without the
-            12 char restriction - recommended if using Pest++.
         get_xy (`pyemu.PstFrom` method): Can be specified to get real-world xy
             from `index_cols` passed (to assist correlation definition)
         ij_in_idx (`list` or `array`): defining which `index_cols` contain i,j
@@ -2863,7 +2956,6 @@ def write_list_tpl(
             suffix=suffix,
             gpname=gpname,
             zone_array=zone_array,
-            longnames=longnames,
             get_xy=get_xy,
             ij_in_idx=ij_in_idx,
             xy_in_idx=xy_in_idx,
@@ -2881,7 +2973,6 @@ def write_list_tpl(
             suffix=suffix,
             gpname=gpname,
             zone_array=zone_array,
-            longnames=longnames,
             get_xy=get_xy,
             ij_in_idx=ij_in_idx,
             xy_in_idx=xy_in_idx,
@@ -2972,14 +3063,6 @@ def write_list_tpl(
         df_par["x"], df_par["y"] = np.concatenate(
             df_tpl.apply(lambda r: [[r.x, r.y] for _ in use_cols], axis=1).values
         ).T
-    if not longnames:
-        too_long = df_par.loc[df_par.parnme.apply(lambda x: len(x) > 12), "parnme"]
-        if too_long.shape[0] > 0:
-            raise Exception(
-                "write_list_tpl() error: the following parameter "
-                "names are too long:{0}"
-                "".format(",".join(list(too_long)))
-            )
     for use_col in use_cols:
         df_tpl.loc[:, use_col] = df_tpl.loc[:, use_col].apply(
             lambda x: "~  {0}  ~".format(x)
@@ -3010,7 +3093,6 @@ def _write_direct_df_tpl(
     use_rows=None,
     suffix="",
     zone_array=None,
-    longnames=False,
     get_xy=None,
     ij_in_idx=None,
     xy_in_idx=None,
@@ -3040,8 +3122,6 @@ def _write_direct_df_tpl(
             If not None and `par_type` is `grid` or `zone` it is expected that
             `index_cols` provide the indicies for querying `zone_array`.
             Therefore, array dimension should equal `len(index_cols)`.
-        longnames (`boolean`): Specify is obs/pars will be specified without the
-            20/12 char restriction - recommended if using Pest++.
         get_xy (`pyemu.PstFrom` method): Can be specified to get real-world xy
             from `index_cols` passed (to include in obs/par name)
         ij_in_idx (`list` or `array`): defining which `index_cols` contain i,j
@@ -3066,7 +3146,7 @@ def _write_direct_df_tpl(
     sidx.extend(didx)
 
     df_ti = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
-    inames, fmt = _get_index_strfmt(index_cols, longnames)
+    inames, fmt = _get_index_strfmt(index_cols)
     df_ti = _get_index_strings(df_ti, fmt, zero_based)
     df_ti = _getxy_from_idx(df_ti, get_xy, xy_in_idx, ij_in_idx)
 
@@ -3079,7 +3159,6 @@ def _write_direct_df_tpl(
         name,
         gpname,
         suffix,
-        longnames,
         par_style="d",
         init_df=df,
         init_fname=in_filename,
@@ -3171,26 +3250,25 @@ def _get_use_rows(df, use_rows, zero_based, fnme, logger=None):
     return use_rows
 
 
-def _get_index_strfmt(index_cols, longnames):
+def _get_index_strfmt(index_cols):
     # get some index strings for naming
-    if longnames:
-        j = "_"
-        # fmt = "{0}|{1}"
-        if isinstance(index_cols[0], str):
-            inames = index_cols
-        else:
-            inames = ["idx{0}".format(i) for i in range(len(index_cols))]
-        # full formatter string
-        fmt = j.join([f"{iname}|{{{i}}}" for i, iname in enumerate(inames)])
+    j = "_"
+    # fmt = "{0}|{1}"
+    if isinstance(index_cols[0], str):
+        inames = index_cols
     else:
-        # fmt = "{1:3}"
-        j = ""
-        if isinstance(index_cols[0], str):
-            inames = index_cols
-        else:
-            inames = ["{0}".format(i) for i in range(len(index_cols))]
-        # full formatter string
-        fmt = j.join([f"{{{i}:3}}" for i, iname in enumerate(inames)])
+        inames = ["idx{0}".format(i) for i in range(len(index_cols))]
+    # full formatter string
+    fmt = j.join([f"{iname}|{{{i}}}" for i, iname in enumerate(inames)])
+    # else:
+    #     # fmt = "{1:3}"
+    #     j = ""
+    #     if isinstance(index_cols[0], str):
+    #         inames = index_cols
+    #     else:
+    #         inames = ["{0}".format(i) for i in range(len(index_cols))]
+    #     # full formatter string
+    #     fmt = j.join([f"{{{i}:3}}" for i, iname in enumerate(inames)])
     return inames, fmt
 
 
@@ -3229,7 +3307,6 @@ def _build_parnames(
     basename,
     gpname,
     suffix,
-    longnames,
     par_style,
     init_df=None,
     init_fname=None,
@@ -3270,45 +3347,43 @@ def _build_parnames(
         df.loc[:, "parval1_{0}".format(use_col)] = fill_value
         if typ == "constant":
             # one par for entire use_col column
-            if longnames:
-                fmtr = "pname:{0}_ptype:cn_usecol:{1}"
-                fmtr += "_pstyle:{0}".format(par_style)
-                if suffix != "":
-                    fmtr += f"_{suffix}"
-            else:
-                fmtr = "{0}{1}"
-                if suffix != "":
-                    fmtr += suffix
+            fmtr = "pname:{0}_ptype:cn_usecol:{1}"
+            fmtr += "_pstyle:{0}".format(par_style)
+            if suffix != "":
+                fmtr += f"_{suffix}"
+            # else:
+            #     fmtr = "{0}{1}"
+            #     if suffix != "":
+            #         fmtr += suffix
             df.loc[:, use_col] = fmtr.format(nname, use_col)
             if par_style == "d":
                 _check_diff(init_df.loc[:, use_col].values, init_fname)
                 df.loc[:, "parval1_{0}".format(use_col)] = init_df.loc[:, use_col][0]
         elif typ == "zone":
             # one par for each zone
-            if longnames:
-                fmtr = "pname:{0}_ptype:zn_usecol:{1}"
-                if par_style == "d":
-                    # todo
-                    raise NotImplementedError(
-                        "list-style direct zone-type parameters not implemented"
-                    )
-                    fmtr += "_pstyle:d"
-                else:
-                    fmtr += "_pstyle:m"
-                if zone_array is not None:
-                    fmtr += "_zone:{2}"
-                    # df.loc[:, use_col] += df.zval.apply(
-                    #     lambda x: "_zone:{0}".format(x)
-                    # )
-                if suffix != "":
-                    fmtr += f"_{suffix}"
-                    # df.loc[:, use_col] += "_{0}".format(suffix)
+            fmtr = "pname:{0}_ptype:zn_usecol:{1}"
+            if par_style == "d":
+                # todo
+                raise NotImplementedError(
+                    "list-style direct zone-type parameters not implemented"
+                )
+                fmtr += "_pstyle:d"
             else:
-                fmtr = "{0}{1}"
-                if zone_array is not None:
-                    fmtr += "z{2}"
-                if suffix != "":
-                    fmtr += suffix
+                fmtr += "_pstyle:m"
+            if zone_array is not None:
+                fmtr += "_zone:{2}"
+                # df.loc[:, use_col] += df.zval.apply(
+                #     lambda x: "_zone:{0}".format(x)
+                # )
+            if suffix != "":
+                fmtr += f"_{suffix}"
+                # df.loc[:, use_col] += "_{0}".format(suffix)
+            # else:
+            #     fmtr = "{0}{1}"
+            #     if zone_array is not None:
+            #         fmtr += "z{2}"
+            #     if suffix != "":
+            #         fmtr += suffix
             if zone_array is not None:
                 df.loc[:, use_col] = df.zval.apply(
                     lambda x: fmtr.format(nname, use_col, x)
@@ -3320,23 +3395,14 @@ def _build_parnames(
 
         elif typ == "grid":
             # one par for each index
-            if longnames:
-                fmtr = "pname:{0}_ptype:gr_usecol:{1}"
-                fmtr += "_pstyle:{0}".format(par_style)
-                if zone_array is not None:
-                    fmtr += "_zone:{2}_{3}"
-                else:
-                    fmtr += "_{2}"
-                if suffix != "":
-                    fmtr += f"_{suffix}"
+            fmtr = "pname:{0}_ptype:gr_usecol:{1}"
+            fmtr += "_pstyle:{0}".format(par_style)
+            if zone_array is not None:
+                fmtr += "_zone:{2}_{3}"
             else:
-                fmtr = "{0}{1}"
-                if zone_array is not None:
-                    fmtr += "z{2}_{3}"
-                else:
-                    fmtr += "{2}"
-                if suffix != "":
-                    fmtr += suffix
+                fmtr += "_{2}"
+            if suffix != "":
+                fmtr += f"_{suffix}"
             if zone_array is not None:
                 df.loc[:, use_col] = df.apply(
                     lambda x: fmtr.format(nname, use_col, x.zval, x.idx_strs), axis=1
@@ -3355,13 +3421,6 @@ def _build_parnames(
                 "or 'grid', not '{0}'".format(typ)
             )
 
-        if not longnames:
-            if df.loc[:, use_col].apply(lambda x: len(x)).max() > 12:
-                too_long = df.loc[:, use_col].apply(lambda x: len(x)) > 12
-                print(too_long)
-                raise ValueError(
-                    "_get_tpl_or_ins_df(): " "couldn't form short par names"
-                )
         if par_style == "d":
             direct_tpl_df.loc[:, use_col] = (
                 df.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
@@ -3379,7 +3438,6 @@ def _get_tpl_or_ins_df(
     use_cols=None,
     suffix="",
     zone_array=None,
-    longnames=False,
     get_xy=None,
     ij_in_idx=None,
     xy_in_idx=None,
@@ -3411,8 +3469,6 @@ def _get_tpl_or_ins_df(
             If not None and `par_type` is `grid` or `zone` it is expected that
             `index_cols` provide the indicies for querying `zone_array`.
             Therefore, array dimension should equal `len(index_cols)`.
-        longnames (`boolean`): Specify is obs/pars will be specified without the
-            20/12 char restriction - recommended if using Pest++.
         get_xy (`pyemu.PstFrom` method): Can be specified to get real-world xy
             from `index_cols` passed (to include in obs/par name)
         ij_in_idx (`list` or `array`): defining which `index_cols` contain i,j
@@ -3451,7 +3507,7 @@ def _get_tpl_or_ins_df(
             sidx.extend(aidx)
 
     df_ti = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
-    inames, fmt = _get_index_strfmt(index_cols, longnames)
+    inames, fmt = _get_index_strfmt(index_cols)
     df_ti = _get_index_strings(df_ti, fmt, zero_based)
     df_ti = _getxy_from_idx(df_ti, get_xy, xy_in_idx, ij_in_idx)
 
@@ -3466,7 +3522,6 @@ def _get_tpl_or_ins_df(
         name,
         gpname,
         suffix,
-        longnames,
         par_style,
         fill_value=par_fill_value,
     )
@@ -3481,7 +3536,6 @@ def write_array_tpl(
     zone_array=None,
     gpname=None,
     shape=None,
-    longnames=False,
     fill_value=1.0,
     get_xy=None,
     input_filename=None,
@@ -3499,7 +3553,6 @@ def write_array_tpl(
             not parameterized and are assigned a value of fill_value. Default is None.
         gpname (`str`): pargp filed in dataframe
         shape (`tuple`): dimensions of array to write
-        longnames (`bool`): Use parnames > 12 char
         fill_value:
         get_xy:
         input_filename:
@@ -3562,48 +3615,33 @@ def write_array_tpl(
         )
 
     def constant_namer(i, j):
-        if longnames:
-            pname = "pname:{1}_ptype:cn_pstyle:{0}".format(par_style, name)
-            if suffix != "":
-                pname += "_{0}".format(suffix)
-        else:
-            pname = "{1}{2}".format(par_style[0], name, suffix)
-            if len(pname) > 12:
-                raise Exception("constant par name too long:" "{0}".format(pname))
+        pname = "pname:{1}_ptype:cn_pstyle:{0}".format(par_style, name)
+        if suffix != "":
+            pname += "_{0}".format(suffix)
         return pname
 
     def zone_namer(i, j):
         zval = 1
         if zone_array is not None:
             zval = zone_array[i, j]
-        if longnames:
-            pname = "pname:{1}_ptype:zn_pstyle:{0}_zone:{2}".format(
-                par_style, name, zval
-            )
-            if suffix != "":
-                pname += "_{0}".format(suffix)
-        else:
-            pname = "{1}_zn{2}".format(par_style[0], name, zval)
-            if len(pname) > 12:
-                raise Exception("zone par name too long:{0}".format(pname))
+        pname = "pname:{1}_ptype:zn_pstyle:{0}_zone:{2}".format(
+            par_style, name, zval
+        )
+        if suffix != "":
+            pname += "_{0}".format(suffix)
         return pname
 
     def grid_namer(i, j):
-        if longnames:
-            pname = "pname:{1}_ptype:gr_pstyle:{0}_i:{2}_j:{3}".format(
-                par_style, name, i, j
-            )
-            if get_xy is not None:
-                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(
-                    *get_xy([i, j], ij_id=[0, 1]))
-            if zone_array is not None:
-                pname += "_zone:{0}".format(zone_array[i, j])
-            if suffix != "":
-                pname += "_{0}".format(suffix)
-        else:
-            pname = "{1}{2:03d}{3:03d}".format(par_style[0], name, i, j)
-            if len(pname) > 12:
-                raise Exception("grid pname too long:{0}".format(pname))
+        pname = "pname:{1}_ptype:gr_pstyle:{0}_i:{2}_j:{3}".format(
+            par_style, name, i, j
+        )
+        if get_xy is not None:
+            pname += "_x:{0:0.2f}_y:{1:0.2f}".format(
+                *get_xy([i, j], ij_id=[0, 1]))
+        if zone_array is not None:
+            pname += "_zone:{0}".format(zone_array[i, j])
+        if suffix != "":
+            pname += "_{0}".format(suffix)
         return pname
 
     if par_type == "constant":
