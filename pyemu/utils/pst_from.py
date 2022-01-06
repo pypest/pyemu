@@ -2088,6 +2088,9 @@ class PstFrom(object):
                     if not use_pp_zones and (isinstance(pp_space, int)):
                         # if not using pp zones will set up pp for just one
                         # zone (all non zero) -- for active domain...
+                        if zone_array is None:
+                            nr, nc = file_dict[list(file_dict.keys())[0]].shape
+                            zone_array = np.ones((nr,nc))                        
                         zone_array[zone_array > 0] = 1  # so can set all
                         # gt-zero to 1
                     if isinstance(pp_space, float):
