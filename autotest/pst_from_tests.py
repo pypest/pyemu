@@ -247,6 +247,10 @@ def freyberg_test():
                       zone_array=m.bas6.ibound[0].array,
                       par_name_base="rch_datetime:1-1-1970", pp_space=1,
                       ult_ubound=100, ult_lbound=0.0)
+    pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
+                      par_name_base="rch_datetime:1-1-1970", pp_space=1,
+                      ult_ubound=100, ult_lbound=0.0)
+                      
 
     # add model run command
     pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
@@ -3545,7 +3549,7 @@ def mf6_subdir_test():
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
     # invest()
-    # freyberg_test()
+    freyberg_test()
     #freyberg_prior_build_test()
     # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
@@ -3563,7 +3567,7 @@ if __name__ == "__main__":
     # tpf.test_add_array_parameters_pps_grid()
     # # pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
-    # usg_freyberg_test()
+    #usg_freyberg_test()
 
 
 
