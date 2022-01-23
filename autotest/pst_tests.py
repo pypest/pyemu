@@ -185,6 +185,8 @@ def tied_test():
 
     par = pst.parameter_data
     par.loc[pst.par_names[::3], "partrans"] = "tied"
+    par.loc[:,"partied"] = "none"
+    #pst.write(os.path.join("temp", "pest_tied_tester_1.pst"))
     try:
         pst.write(os.path.join("temp", "pest_tied_tester_1.pst"))
     except:
@@ -192,23 +194,34 @@ def tied_test():
     else:
         raise Exception()
     par.loc[pst.par_names[::3], "partied"] = pst.par_names[0]
-    return
+
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     print(pst.tied)
     par = pst.parameter_data
     par.loc[pst.par_names[2], "partrans"] = "tied"
     print(pst.tied)
     par.loc[pst.par_names[2], "partied"] = "junk1"
-    pst.write(os.path.join("temp", "test.pst"))
-    pst = pyemu.Pst(os.path.join("temp", "test.pst"))
+    try:
+        pst.write(os.path.join("temp", "test.pst"))
+    except:
+        pass
+    else:
+        raise Exception()
+    #pst = pyemu.Pst(os.path.join("temp", "test.pst"))
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     print(pst.tied)
     par = pst.parameter_data
     par.loc[pst.par_names[2], "partrans"] = "tied"
     par.loc[pst.par_names[2], "partied"] = "junk"
-    pst.write(os.path.join("temp", "test.pst"))
-    pst = pyemu.Pst(os.path.join("temp", "test.pst"))
+    try:
+
+        pst.write(os.path.join("temp", "test.pst"))
+    except:
+        pass
+    else:
+        raise Exception()
+    #pst = pyemu.Pst(os.path.join("temp", "test.pst"))
 
 
 
@@ -1247,13 +1260,14 @@ if __name__ == "__main__":
     #write_tables_test()
     #pi_helper_test()
     #ctrl_data_test()
-    new_format_test_2()
+    #new_format_test_2()
     #try_process_ins_test()
     #tpl_ins_test()
     #process_output_files_test()
     #comments_test()
     #read_in_tpl_test()
     #read_in_tpl_test2()
+    tied_test()
     
     #comments_test()
     #csv_to_ins_test()
