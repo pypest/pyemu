@@ -119,6 +119,7 @@ class PstFrom(object):
         self.org_files = []
 
         self.par_dfs = []
+        self.unique_parnmes = set()  # set of unique parameters added so far through add_parameters method
         self.obs_dfs = []
         self.py_run_file = "forward_run.py"
         self.mod_command = "python {0}".format(self.py_run_file)
@@ -1666,7 +1667,9 @@ class PstFrom(object):
             rebuild_pst (`bool`): (Re)Construct PstFrom.pst object after adding
                 new parameters
             alt_inst_str (`str`): Alternative to default `inst` string in
-                parameter names
+                parameter names. Specify ``None`` or ``""`` to exclude the instance
+                information from parameter names. For example, if parameters
+                that apply to more than one input/template file are desired.
             comment_char (`str`): option to skip comment lines in model file.
                 This is not additive with `mfile_skip` option.
                 Warning: currently comment lines within list-style tabular data
@@ -1872,23 +1875,42 @@ class PstFrom(object):
                 pargp = pargp.lower()
         par_name_base = [pnb.lower() for pnb in par_name_base]
 
+        #if alt_inst_str is not None and len(alt_inst_str) > 0:
         if self.longnames:  # allow par names to be long... fine for pestpp
             fmt = "_{0}".format(alt_inst_str) + ":{0}"
             chk_prefix = "_{0}".format(alt_inst_str)  # add `instance` identifier
         else:
             fmt = "{0}"  # may not be so well supported
             chk_prefix = ""
+        
         # increment name base if already passed
         for i in range(len(par_name_base)):
-            par_name_base[i] += fmt.format(
-                self._next_count(par_name_base[i] + chk_prefix)
-            )
+            # multiplier file name will be taken first par group, if passed
+            # (the same multipliers will apply to all pars passed in this call)
+            # Remove `:` for filenames
+            # multiplier file needs instance number 
+            # regardless of whether instance is to be included 
+            # in the parameter names
+            if i == 0:
+                inst = self._next_count(par_name_base[i] +\
+                                        chk_prefix)
+                par_name_store = (par_name_base[0] + 
+                                  fmt.format(inst)).replace(":", "")
+                # if instance is to be included in the parameter names
+                # add the instance suffix to the parameter name base
+                if alt_inst_str is not None and len(alt_inst_str) > 0:
+                    par_name_base[0] += fmt.format(inst)
+            # if instance is to be included in the parameter names
+            # add the instance suffix to the parameter name base
+            elif alt_inst_str is not None and len(alt_inst_str) > 0:
+                par_name_base[i] += fmt.format(
+                    self._next_count(par_name_base[i] + chk_prefix)
+                )
 
         # multiplier file name will be taken first par group, if passed
         # (the same multipliers will apply to all pars passed in this call)
         # Remove `:` for filenames
-
-        par_name_store = par_name_base[0].replace(":", "")  # for os filename
+        #par_name_store = par_name_base[0].replace(":", "")  # for os filename
 
         # Define requisite filenames
         if par_style in ["m", "a"]:
@@ -2472,7 +2494,13 @@ class PstFrom(object):
         # TODO - check when self.par_dfs gets used
         #  if constructing struct_dict here....
         #  - possibly not necessary to store
+        # only add pardata for new parameters
+        # some parameters might already be in a par_df if they occur
+        # in more than one instance (layer, for example)
+        new_parnmes = set(df['parnme']).difference(self.unique_parnmes)
+        df = df.loc[df['parnme'].isin(new_parnmes)].copy()
         self.par_dfs.append(df)
+        self.unique_parnmes.update(new_parnmes)
         # pivot df to list of df per par group in this call
         # (all groups will be related to same geostruct)
         # TODO maybe use different marker to denote a relationship between pars
