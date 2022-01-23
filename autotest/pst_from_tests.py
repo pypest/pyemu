@@ -2506,6 +2506,7 @@ class TestPstFrom():
         for file in array_file_input:
             shutil.copy(self.array_file, Path(self.dest_ws, file))
 
+        # single 2D zone array applied to each file in filesnames
         self.pf.add_parameters(filenames=array_file_input, par_type='zone',
                                zone_array=self.zone_array,
                                par_name_base=tag,  # basename for parameters that are set up
@@ -2539,6 +2540,73 @@ class TestPstFrom():
 
         # revert to original wd
         os.chdir(self.original_wd)
+
+    def test_add_array_parameters_alt_inst_str_none_m(self):
+        """Given a list of text file arrays, test setting up
+        array parameters that can extend across multiple files,
+        but have a different multiplier file for each text array.
+        For example, if the same zones are present in each layer of a model, 
+        but have different configurations in each layer
+        (such that a different zone array is needed for each layer).
+        
+        Test alt_inst_str=None and par_style="multiplier"
+        
+        TODO: switch to pytest so that we could simply use one function 
+        for this with multiple parameters
+        """
+        tag = 'r'
+        array_file_input = ['external/r0.dat',
+                            'external/r1.dat',
+                            'external/r2.dat']
+        for file in array_file_input:
+            shutil.copy(self.array_file, Path(self.dest_ws, file))
+        for array_file in array_file_input:
+            self.pf.add_parameters(filenames=array_file, par_type='zone',
+                                    par_style="multiplier",
+                                    zone_array=self.zone_array,
+                                    par_name_base=tag,  # basename for parameters that are set up
+                                    pargp=f'{tag}_zone',  # Parameter group to assign pars to.
+                                    alt_inst_str=None
+                                    )
+        pst = self.pf.build_pst()
+        # the parameter data section should have
+        # only 2 parameters, for zones 1 and 2
+        parzones = sorted(pst.parameter_data.zone.astype(float).astype(int).tolist())
+        assert parzones == [1, 2]
+        assert len(pst.template_files) == 3
+        assert len(self.pf.mult_files) == 3
+        
+    def test_add_array_parameters_alt_inst_str_0_d(self):
+        """Given a list of text file arrays, test setting up
+        array parameters that can extend across multiple files,
+        but have a different multiplier file for each text array.
+        For example, if the same zones are present in each layer of a model, 
+        but have different configurations in each layer
+        (such that a different zone array is needed for each layer).
+        
+        Test alt_inst_str="" and par_style="direct"
+        """
+        tag = 'r'
+        array_file_input = ['external/r0.dat',
+                            'external/r1.dat',
+                            'external/r2.dat']
+        for file in array_file_input:
+            shutil.copy(self.array_file, Path(self.dest_ws, file))
+        # test both None and "" for alt_inst_str
+        for array_file in array_file_input:
+            self.pf.add_parameters(filenames=array_file, par_type='zone',
+                                    par_style="direct",
+                                    zone_array=self.zone_array,
+                                    par_name_base=tag,  # basename for parameters that are set up
+                                    pargp=f'{tag}_zone',  # Parameter group to assign pars to.
+                                    alt_inst_str=""
+                                    )
+        pst = self.pf.build_pst()
+        # the parameter data section should have
+        # only 2 parameters, for zones 1 and 2
+        parzones = sorted(pst.parameter_data.zone.astype(float).astype(int).tolist())
+        assert parzones == [1, 2]
+        assert len(pst.template_files) == 3
 
     @classmethod
     def teardown(cls):
@@ -3561,10 +3629,12 @@ if __name__ == "__main__":
     mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
-    # tpf = TestPstFrom()
-    # tpf.setup()
-    # tpf.test_add_direct_array_parameters()
-    # tpf.test_add_array_parameters_pps_grid()
+    tpf = TestPstFrom()
+    tpf.setup()
+    #tpf.test_add_array_parameters_to_file_list()
+    #tpf.test_add_array_parameters_alt_inst_str_none_m()
+    #tpf.test_add_array_parameters_alt_inst_str_0_d()
+    tpf.test_add_array_parameters_pps_grid()
     # # pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test()
