@@ -1,0 +1,9 @@
+pest_file model_file
+Entrees/PEST_Template_files/T_porosite_mat.txt Entrees/E_porosite_mat.txt 
+Entrees/PEST_Template_files/T_porosite_fract.txt Entrees/E_porosite_fract.txt 
+Entrees/PEST_Template_files/T_permeabilite_mat.txt Entrees/E_permeabilite_mat.txt 
+Entrees/PEST_Template_files/T_permeabilite_fract.txt Entrees/E_permeabilite_fract.txt 
+Entrees/PEST_Template_files/T_permeabilite_liaison.txt Entrees/E_permeabilite_liaison.txt 
+Entrees/PEST_Template_files/T_emmag_mat.txt Entrees/E_emmag_mat.txt 
+Entrees/PEST_Template_files/T_emmag_fract.txt Entrees/E_emmag_fract.txt
+Entrees/PEST_Template_files/T_flux_depression.txt Entrees/E_flux_depression.txt 

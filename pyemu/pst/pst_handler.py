@@ -1061,6 +1061,7 @@ class Pst(object):
                     self.obs_fieldnames,
                     self.obs_converters,
                     self.obs_defaults,
+                    alias_map=self.obs_alias_map,
                     pst_path=pst_path,
                 )
                 self.observation_data.index = self.observation_data.obsnme
@@ -1242,7 +1243,27 @@ class Pst(object):
             )
 
         self._load_version2(filename)
+        self._try_load_longnames()
         self.try_parse_name_metadata()
+
+    def _try_load_longnames(self):
+        from pathlib import Path
+        d = Path(self.filename).parent
+        for df, fnme in ((self.parameter_data, "parlongname.map"),
+                         (self.observation_data, "obslongname.map")):
+            try:
+                mapr = pd.read_csv(Path(d, fnme), index_col=0)['longname']
+                df['longname'] = df.index.map(mapr.to_dict())
+            except Exception:
+                pass
+        if hasattr(self, "parameter_groups"):
+            df, fnme = (self.parameter_groups, "pglongname.map")
+            try:
+                mapr = pd.read_csv(Path(d, fnme), index_col=0)['longname']
+                df['longname'] = df.index.map(mapr.to_dict())
+            except Exception:
+                pass
+
 
     def _parse_pestpp_line(self, line):
         # args = line.replace('++','').strip().split()
@@ -3750,8 +3771,17 @@ class Pst(object):
         par_cols = pst_utils.pst_config["par_fieldnames"]
         obs_cols = pst_utils.pst_config["obs_fieldnames"]
 
+        if "longname" in par.columns:
+            partg = "longname"
+        else:
+            partg = "parnme"
+        if "longname" in obs.columns:
+            obstg = "longname"
+        else:
+            obstg = "obsnme"
+
         for df, name, fieldnames in zip(
-            [par, obs], ["parnme", "obsnme"], [par_cols, obs_cols]
+            [par, obs], [partg, obstg], [par_cols, obs_cols]
         ):
             try:
                 meta_dict = df.loc[:, name].apply(
@@ -3816,9 +3846,12 @@ class Pst(object):
                 eq = eq.replace(old, new)
             self.prior_information.loc[idx, "equation"] = eq
 
+        # pad for putting to tpl
+        name_dict = {k: v.center(12) for k, v in name_dict.items()}
         for tpl_file in self.model_input_data.pest_file:
             sys_tpl_file = os.path.join(
-                pst_path, tpl_file.replace("/", os.path.sep).replace("\\", os.path.sep)
+                pst_path,
+                str(tpl_file).replace("/", os.path.sep).replace("\\", os.path.sep)
             )
             if not os.path.exists(sys_tpl_file):
                 warnings.warn(
@@ -3868,7 +3901,7 @@ class Pst(object):
 
         for ins_file in self.model_output_data.pest_file:
             sys_ins_file = os.path.join(
-                pst_path, ins_file.replace("/", os.path.sep).replace("\\", os.path.sep)
+                pst_path, str(ins_file).replace("/", os.path.sep).replace("\\", os.path.sep)
             )
             if not os.path.exists(sys_ins_file):
                 warnings.warn(

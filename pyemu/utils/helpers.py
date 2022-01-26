@@ -3803,7 +3803,7 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
         if len(chunks) == 1:
             _process_chunk_fac2real(chunks[0], 0)
         else:
-            pool = mp.Pool()
+            pool = mp.Pool(processes=min(mp.cpu_count(), len(chunks), 60))
             x = [
                 pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
                 for i, chunk in enumerate(chunks)
@@ -3844,7 +3844,7 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     #     r = p.get(False)
     #     p.join()
     else:
-        pool = mp.Pool()
+        pool = mp.Pool(processes=min(mp.cpu_count(), len(chunks), 60))
         x = [
             pool.apply_async(_process_chunk_array_files, args=(chunk, i, df))
             for i, chunk in enumerate(chunks)
@@ -4159,7 +4159,7 @@ def apply_genericlist_pars(df, chunk_len=50):
     if len(chunks) == 1:
         _process_chunk_list_files(chunks[0], 0, df)
     else:
-        pool = mp.Pool()
+        pool = mp.Pool(processes=min(mp.cpu_count(), len(chunks), 60))
         x = [
             pool.apply_async(_process_chunk_list_files, args=(chunk, i, df))
             for i, chunk in enumerate(chunks)
@@ -5998,7 +5998,8 @@ def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
         cov.update(cd)
     print("starting L-2 maha distance parallel calcs")
     # pool = mp.Pool(processes=5)
-    with mp.get_context("spawn").Pool() as pool:
+    with mp.get_context("spawn").Pool(
+            processes=min(mp.cpu_count(), 60)) as pool:
         for i1, o1 in enumerate(nz_names):
             o2names = [o2 for o2 in nz_names[i1 + 1 :]]
             rresults = [

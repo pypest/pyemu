@@ -1,0 +1,2 @@
+name transform change_limit value lower_bound upper_bound group scale offset dercom partied
+por_m01675 tied relative 0.12 0.005 0.35 por_m 1.0 0.0 1 por_m00001

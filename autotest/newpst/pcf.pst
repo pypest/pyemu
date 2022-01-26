@@ -1,0 +1,36 @@
+pcf 
+* control data keyword
+pestmode estimation 
+relparmax 10.0
+facparmax 10.0
+facorig 0.001 
+noptmax 20
+phiredstp 0.005
+nphistp 3
+nphinored 3
+relparstp 0.005
+#GLM options
+uncertainty 0
+opt_recalc_fosm_every 1
+# ++ arguments
+ies_num_reals 100
+overdue_resched_fac 2
+* parameter data external
+emm_m.txt sep w
+emm_f.txt sep w
+por_f.txt sep w
+por_m.txt sep w
+por_m_tied.txt sep w
+per_m.txt sep w
+per_f.txt sep w
+per_l.txt sep w
+flux_depression.txt sep w
+* observation data external
+O_f_piez_FP007.txt sep w
+* model command line 
+./Launch_Metis.sh 
+* model input external
+model_input.txt sep w
+* model output external
+model_output.txt sep w
+
