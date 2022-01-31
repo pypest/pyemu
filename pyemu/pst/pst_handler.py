@@ -8,7 +8,9 @@ import numpy as np
 from numpy.lib.type_check import real_if_close
 import pandas as pd
 
+
 pd.options.display.max_colwidth = 100
+pd.options.mode.use_inf_as_na = True
 import pyemu
 from ..pyemu_warnings import PyemuWarning
 from pyemu.pst.pst_controldata import ControlData, SvdData, RegData

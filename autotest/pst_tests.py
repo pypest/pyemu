@@ -1012,7 +1012,27 @@ def write2_nan_test():
     import numpy as np
     import pyemu
     import os
+    import pandas
 
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0e+1000
+    try:
+        pst.write("test.pst", version=2)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pst.write("test.pst", version=1)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0e-1000
+    assert pst.observation_data.loc[pst.obs_names[0], "weight"] == 0.0
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.control_data.nphinored = 1000
@@ -1041,6 +1061,8 @@ def write2_nan_test():
         pass
     else:
         raise Exception("should have failed")
+
+
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.model_output_data.loc[pst.instruction_files[0], "pest_file"] = np.NaN
@@ -1217,7 +1239,7 @@ def rename_obs_test():
 
 if __name__ == "__main__":
     
-    #write2_nan_test()
+    write2_nan_test()
     #process_output_files_test()
     # change_limit_test()
     # new_format_test()
@@ -1267,8 +1289,8 @@ if __name__ == "__main__":
     #comments_test()
     #read_in_tpl_test()
     #read_in_tpl_test2()
-    tied_test()
-    
+    #tied_test()
+
     #comments_test()
     #csv_to_ins_test()
 
