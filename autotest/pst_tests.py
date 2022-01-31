@@ -1033,7 +1033,7 @@ def write2_nan_test():
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0e-1000
     assert pst.observation_data.loc[pst.obs_names[0], "weight"] == 0.0
-   
+
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.control_data.nphinored = 1000
     pst.write("test.pst",version=2)
