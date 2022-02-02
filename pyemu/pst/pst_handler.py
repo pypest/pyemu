@@ -1345,8 +1345,9 @@ class Pst(object):
             defaults = copy.copy(pst_utils.pst_config["pargp_defaults"])
             for grp in need_groups:
                 defaults["pargpnme"] = grp
-                self.parameter_groups = self.parameter_groups.append(
-                    defaults, ignore_index=True
+                self.parameter_groups = pd.concat(
+                    [self.parameter_groups, pd.DataFrame([defaults])],
+                    ignore_index=True
                 )
 
         # now drop any left over groups that aren't needed

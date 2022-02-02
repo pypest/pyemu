@@ -122,8 +122,8 @@ def freyberg_test():
                       "Processed into tabular form using the lines:\n",
                       "sfo = flopy.utils.SfrFile('freyberg.sfr.out')\n",
                       "sfo.get_dataframe().to_csv('freyberg.sfo.dat')\n"])
-        sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx',line_terminator='\n')
-    sfodf.sort_index(1).to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
+        sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx',line_terminator='\n')
+    sfodf.sort_index(axis=1).to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
                  index_label='idx',line_terminator='\n')
     template_ws = "new_temp"
     # sr0 = m.sr
@@ -186,7 +186,7 @@ def freyberg_test():
          "'Processed into tabular form using the lines:\\n', "
          "'sfo = flopy.utils.SfrFile(`freyberg.sfr.out`)\\n', "
          "'sfo.get_dataframe().to_csv(`freyberg.sfo.dat`)\\n'])",
-         "    sfodf.sort_index(1).to_csv(fp, sep=' ', index_label='idx',line_terminator='\\n')"])
+         "    sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx',line_terminator='\\n')"])
     # csv version of sfr obs
     # sfr outputs to obs
     pf.add_observations('freyberg.sfo.csv', insfile=None,
@@ -212,7 +212,7 @@ def freyberg_test():
     obsnmes = pd.concat([df.obgnme for df in pf.obs_dfs]).unique()
     assert all([gp in obsnmes for gp in ['qaquifer', 'qout']])
     pf.post_py_cmds.append(
-        "sfodf.sort_index(1).to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
+        "sfodf.sort_index(axis=1).to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
     zone_array = np.arange(m.nlay*m.nrow*m.ncol)
     s = lambda x: "zval_"+str(x)
     zone_array = np.array([s(x) for x in zone_array]).reshape(m.nlay,m.nrow,m.ncol)
@@ -573,7 +573,7 @@ def mf6_freyberg_test():
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(tmp_model_ws)
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
@@ -964,7 +964,7 @@ def mf6_freyberg_shortnames_test():
     # os.mkdir(tmp_model_ws)
     # sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # # sim.set_all_data_external()
-    # sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    # sim.set_sim_path(tmp_model_ws)
     # # sim.set_all_data_external()
     # m = sim.get_model("freyberg6")
     # sim.set_all_data_external()
@@ -1306,7 +1306,7 @@ def mf6_freyberg_direct_test():
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(tmp_model_ws)
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external()
@@ -1661,7 +1661,7 @@ def mf6_freyberg_varying_idomain():
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(tmp_model_ws)
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
@@ -1871,7 +1871,7 @@ def mf6_freyberg_short_direct_test():
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(tmp_model_ws)
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external()
@@ -2908,7 +2908,7 @@ def mf6_freyberg_pp_locs_test():
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(tmp_model_ws)
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
@@ -3230,7 +3230,7 @@ def mf6_add_various_obs_test():
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.simulation_data.mfpath.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(tmp_model_ws)
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
@@ -3322,7 +3322,7 @@ def mf6_subdir_test():
     tmp2_ws = os.path.join(tmp_model_ws, sd)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.simulation_data.mfpath.set_sim_path(tmp2_ws)
+    sim.set_sim_path(tmp2_ws)
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
@@ -3617,24 +3617,24 @@ def mf6_subdir_test():
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
     # invest()
-    freyberg_test()
+    # freyberg_test()
     #freyberg_prior_build_test()
-    # mf6_freyberg_test()
+    mf6_freyberg_test()
     #$mf6_freyberg_da_test()
     # mf6_freyberg_shortnames_test()
 
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     # xsec_test()
-    mf6_freyberg_short_direct_test()
+    # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
-    tpf = TestPstFrom()
-    tpf.setup()
+    # tpf = TestPstFrom()
+    # tpf.setup()
     #tpf.test_add_array_parameters_to_file_list()
     #tpf.test_add_array_parameters_alt_inst_str_none_m()
     #tpf.test_add_array_parameters_alt_inst_str_0_d()
-    tpf.test_add_array_parameters_pps_grid()
+    # tpf.test_add_array_parameters_pps_grid()
     # # pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test()
