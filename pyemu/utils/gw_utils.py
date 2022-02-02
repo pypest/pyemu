@@ -279,7 +279,7 @@ def setup_mtlist_budget_obs(
         df_sw = try_process_output_file(sw_ins, sw_filename)
         if df_sw is None:
             raise Exception("error processing surface water instruction file")
-        df_gw = df_gw.append(df_sw)
+        df_gw = pd.concat([df_gw, df_sw])
         df_gw.loc[:, "obsnme"] = df_gw.index.values
     if save_setup_file:
         df_gw.to_csv("_setup_" + os.path.split(list_filename)[-1] + ".csv", index=False)
