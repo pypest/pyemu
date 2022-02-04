@@ -3393,9 +3393,12 @@ class Pst(object):
                 f.write(preamble)
                 f.write("\\begin{center}\nParameter Summary\n\\end{center}\n")
                 f.write("\\begin{center}\n\\begin{landscape}\n")
-                f.write(pargp_df.style.hide(axis='index').to_latex(
-                    None, environment='longtable')
-                )
+                try:
+                    f.write(pargp_df.style.hide(axis='index').to_latex(
+                        None, environment='longtable')
+                    )
+                except (TypeError, AttributeError) as e:
+                    pargp_df.to_latex(index=False, longtable=True)
                 f.write("\\end{landscape}\n")
                 f.write("\\end{center}\n")
                 f.write("\\end{document}\n")
@@ -3510,9 +3513,12 @@ class Pst(object):
                 f.write("\\begin{center}\nObservation Summary\n\\end{center}\n")
                 f.write("\\begin{center}\n\\begin{landscape}\n")
                 f.write("\\setlength{\\LTleft}{-4.0cm}\n")
-                f.write(obsg_df.style.hide(axis='index').to_latex(
-                    None, environment='longtable')
-                )
+                try:
+                    f.write(obsg_df.style.hide(axis='index').to_latex(
+                        None, environment='longtable')
+                    )
+                except (TypeError, AttributeError) as e:
+                    obsg_df.to_latex(index=False, longtable=True)
                 f.write("\\end{landscape}\n")
                 f.write("\\end{center}\n")
                 f.write("\\end{document}\n")
