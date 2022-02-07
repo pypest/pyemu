@@ -1345,8 +1345,9 @@ class Pst(object):
             defaults = copy.copy(pst_utils.pst_config["pargp_defaults"])
             for grp in need_groups:
                 defaults["pargpnme"] = grp
-                self.parameter_groups = self.parameter_groups.append(
-                    defaults, ignore_index=True
+                self.parameter_groups = pd.concat(
+                    [self.parameter_groups, pd.DataFrame([defaults])],
+                    ignore_index=True
                 )
 
         # now drop any left over groups that aren't needed
@@ -2840,7 +2841,7 @@ class Pst(object):
                 pst_utils.pst_config["par_dtype"],
             )
             new_par_data.loc[new_parnme, "parnme"] = new_parnme
-            self.parameter_data = self.parameter_data.append(new_par_data)
+            self.parameter_data = pd.concat([self.parameter_data, new_par_data])
             if parval1 is not None:
                 new_par_data.loc[parval1.parnme, "parval1"] = parval1.parval1
         if in_file is None:
@@ -3062,7 +3063,7 @@ class Pst(object):
         )
         new_obs_data.loc[obsnme, "obsnme"] = obsnme
         new_obs_data.index = obsnme
-        self.observation_data = self.observation_data.append(new_obs_data)
+        self.observation_data = pd.concat([self.observation_data, new_obs_data])
         cwd = "."
         if pst_path is not None:
             cwd = os.path.join(*os.path.split(ins_file)[:-1])
@@ -3392,7 +3393,12 @@ class Pst(object):
                 f.write(preamble)
                 f.write("\\begin{center}\nParameter Summary\n\\end{center}\n")
                 f.write("\\begin{center}\n\\begin{landscape}\n")
-                pargp_df.to_latex(f, index=False, longtable=True)
+                try:
+                    f.write(pargp_df.style.hide(axis='index').to_latex(
+                        None, environment='longtable')
+                    )
+                except (TypeError, AttributeError) as e:
+                    pargp_df.to_latex(index=False, longtable=True)
                 f.write("\\end{landscape}\n")
                 f.write("\\end{center}\n")
                 f.write("\\end{document}\n")
@@ -3507,7 +3513,12 @@ class Pst(object):
                 f.write("\\begin{center}\nObservation Summary\n\\end{center}\n")
                 f.write("\\begin{center}\n\\begin{landscape}\n")
                 f.write("\\setlength{\\LTleft}{-4.0cm}\n")
-                obsg_df.to_latex(f, index=False, longtable=True)
+                try:
+                    f.write(obsg_df.style.hide(axis='index').to_latex(
+                        None, environment='longtable')
+                    )
+                except (TypeError, AttributeError) as e:
+                    obsg_df.to_latex(index=False, longtable=True)
                 f.write("\\end{landscape}\n")
                 f.write("\\end{center}\n")
                 f.write("\\end{document}\n")

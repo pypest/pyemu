@@ -1239,7 +1239,7 @@ def rename_obs_test():
 
 if __name__ == "__main__":
     
-    write2_nan_test()
+    # write2_nan_test()
     #process_output_files_test()
     # change_limit_test()
     # new_format_test()
@@ -1279,7 +1279,7 @@ if __name__ == "__main__":
     # rectify_pgroup_test()
     #sanity_check_test()
     #change_limit_test()
-    #write_tables_test()
+    write_tables_test()
     #pi_helper_test()
     #ctrl_data_test()
     #new_format_test_2()
@@ -1289,7 +1289,7 @@ if __name__ == "__main__":
     #comments_test()
     #read_in_tpl_test()
     #read_in_tpl_test2()
-    #tied_test()
+    # tied_test()
 
     #comments_test()
     #csv_to_ins_test()
