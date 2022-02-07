@@ -598,6 +598,10 @@ class PstFrom(object):
             The new pest control file is assigned an NOPTMAX value of 0
 
         """
+        # import cProfile
+        # pd.set_option('display.max_rows', 500)
+        # pd.set_option('display.max_columns', 500)
+        # pd.set_option('display.width', 1000)
 
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         obs_data_cols = pyemu.pst_utils.pst_config["obs_fieldnames"]
@@ -689,19 +693,22 @@ class PstFrom(object):
             )
             # rename pars and obs in case short names are desired
             if not self.longnames:
+                self.logger.log("Converting parameters to shortnames")
                 # pull out again for shorthand access
                 par_data = pst.parameter_data
-                # new pars will not be mapped start this mapping
+                # new pars will not be mapped, start this mapping
                 npd = par_data.loc[new_par_data]
                 par_data.loc[npd.index, 'longname'] = npd.parnme
                 # get short names (using existing names as index starting point)
                 par_data.loc[npd.index, "shortname"] = [
-                    'p' + str(i) for i in range(shtmx, shtmx+len(npd))
+                    'p' + f"{i}" for i in range(shtmx, shtmx+len(npd))
                 ]
                 # set to dict
                 parmap = par_data.loc[npd.index, "shortname"].to_dict()
                 # rename parnames and propagate to tpls etc.
+                self.logger.log("Renaming parameters for shortnames")
                 pst.rename_parameters(parmap, pst_path=self.new_d)
+                self.logger.log("Renaming parameters for shortnames")
                 # rename in struct dicts
                 self._rename_par_struct_dict(parmap)
                 # save whole shortname-longname mapping (will over write previous)
@@ -719,6 +726,7 @@ class PstFrom(object):
                 par_data.loc[npd.index, 'pargp'] = npd.pargp.map(pargpmap_dict)
                 par_data.groupby('pargp').pglong.first().to_csv(
                     filename.with_name('pglongname.map'))
+                self.logger.log("Converting parameters to shortnames")
         if "obs" in update.keys() or not uupdate:
             if len(self.obs_dfs) > 0:
                 obs_data = pd.concat(self.obs_dfs).loc[:, obs_data_cols]
@@ -759,6 +767,9 @@ class PstFrom(object):
             )
             # rename pars and obs in case short names are desired
             if not self.longnames:
+                # pr = cProfile.Profile()
+                # pr.enable()
+                self.logger.log("Converting observations to shortnames")
                 # pull out again for shorthand access
                 obs_data = pst.observation_data
                 # new obs will not be mapped so start this mapping
@@ -766,11 +777,13 @@ class PstFrom(object):
                 obs_data.loc[nod.index, "longname"] = nod.obsnme
                 # get short names (using existing names as index starting point)
                 obs_data.loc[nod.index, "shortname"] = [
-                    'ob' + str(i) for i in range(shtmx, shtmx+len(nod))
+                    'ob' + f"{i}" for i in range(shtmx, shtmx+len(nod))
                 ]
-                obsmap = obs_data.loc[nod.index, "shortname"]
+                obsmap = obs_data.loc[nod.index, "shortname"].to_dict()
                 # rename obsnames and propagate to ins files
-                pst.rename_observations(obsmap.to_dict(), pst_path=self.new_d)
+                self.logger.log("Renaming observations for shortnames")
+                pst.rename_observations(obsmap, pst_path=self.new_d)
+                self.logger.log("Renaming observations for shortnames")
                 obs_data.set_index("shortname")["longname"].to_csv(
                     filename.with_name('obslongname.map'))
                 nod.index = nod.index.map(obsmap)
@@ -785,8 +798,10 @@ class PstFrom(object):
                 obs_data.loc[nod.index, 'obgnme'] = nod.obgnme.map(obgpmap_dict)
                 obs_data.groupby('obgnme').oglong.first().to_csv(
                     filename.with_name('oglongname.map'))
-
-            obs_data.sort_index(inplace=True)  #TODO
+                self.logger.log("Converting observations to shortnames")
+                # pr.disable()
+                # pr.print_stats(sort="cumtime")
+            # obs_data.sort_index(inplace=True)  #TODO
 
         if not uupdate:
             pst.model_command = self.mod_command
