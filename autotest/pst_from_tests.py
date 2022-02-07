@@ -1007,7 +1007,8 @@ def mf6_freyberg_shortnames_test():
     print(dts)
     for tag,bnd in tags.items():
         lb,ub = bnd[0],bnd[1]
-        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        arr_files = [f for f in os.listdir(tmp_model_ws)
+                     if tag in f and f.endswith(".txt")]
         if "rch" in tag:
             pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rg",
                               pargp="rg", zone_array=ib, upper_bound=ub, lower_bound=lb,
@@ -1026,8 +1027,8 @@ def mf6_freyberg_shortnames_test():
                                   geostruct=gr_gs)
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=pb+"p",
                                   pargp=pb+"p", zone_array=ib,upper_bound=ub,lower_bound=lb,)
-
-
+        for arr_file in arr_files:
+            pf.add_observations(arr_file)
     list_files = [f for f in os.listdir(tmp_model_ws) if "wel_stress_period_data" in f]
     for list_file in list_files:
         kper = list_file.split(".")[1].split('_')[-1]
@@ -1053,7 +1054,27 @@ def mf6_freyberg_shortnames_test():
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
+    obs = set(pst.observation_data.obsnme)
+    obsin = set()
+    for ins in pst.instruction_files:
+        with open(os.path.join(pf.new_d, ins), "rt") as f:
+            text = f.read()
+            for ob in obs:
+                if f"!{ob}!" in text:
+                    obsin.add(ob)
+        obs = obs - obsin
+    assert len(obs) == 0, f"{len(obs)} obs not found in insfiles: {obs}"
 
+    par = set(pst.parameter_data.parnme)
+    parin = set()
+    for tpl in pst.template_files:
+        with open(os.path.join(pf.new_d, tpl), "rt") as f:
+            text = f.read()
+            for p in par:
+                if f"{p} " in text:
+                    parin.add(p)
+        par = par - parin
+    assert len(par) == 0, f"{len(par)} pars not found in tplfiles: {par}"
     # test update/rebuild
     pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt",
                       par_name_base="rhk",
@@ -1066,6 +1087,28 @@ def mf6_freyberg_shortnames_test():
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
                         use_cols=list(df.columns.values), rebuild_pst=True)
+    obs = set(pst.observation_data.obsnme)
+    obsin = set()
+    for ins in pst.instruction_files:
+        with open(os.path.join(pf.new_d, ins), "rt") as f:
+            text = f.read()
+            for ob in obs:
+                if f"!{ob}!" in text:
+                    obsin.add(ob)
+            obs = obs - obsin
+    assert len(obs) == 0, f"{len(obs)} obs not found in insfiles: {obs}"
+
+    par = set(pst.parameter_data.parnme)
+    parin = set()
+    for tpl in pst.template_files:
+        with open(os.path.join(pf.new_d, tpl), "rt") as f:
+            text = f.read()
+            for p in par:
+                if f"{p} " in text:
+                    parin.add(p)
+        par = par - parin
+    assert len(par) == 0, f"{len(par)} pars not found in tplfiles: {par}"
+
     assert pst.parameter_data.parnme.apply(lambda x: len(x)).max() <= 12
     assert pst.observation_data.obsnme.apply(lambda x: len(x)).max() <= 20
 
@@ -3619,9 +3662,9 @@ if __name__ == "__main__":
     # invest()
     # freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
+    # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
-    # mf6_freyberg_shortnames_test()
+    mf6_freyberg_shortnames_test()
 
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
