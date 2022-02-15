@@ -3815,6 +3815,7 @@ class Pst(object):
                 print("error parsing metadata from '{0}', continuing".format(name))
 
     def rename_parameters(self, name_dict, pst_path="."):
+        from multiprocessing import Pool
         """rename parameters in the control and template files
 
         Args:
@@ -3861,6 +3862,8 @@ class Pst(object):
 
         # pad for putting to tpl
         name_dict = {k: v.center(12) for k, v in name_dict.items()}
+        res = []
+        pool = Pool(processes=min(os.cpu_count()-1, 60))
         for tpl_file in self.model_input_data.pest_file:
             sys_tpl_file = os.path.join(
                 pst_path,
@@ -3871,15 +3874,14 @@ class Pst(object):
                     "template file '{0}' not found, continuing...", PyemuWarning
                 )
                 continue
-            lines = open(sys_tpl_file, "r").readlines()
-            with open(sys_tpl_file, "w") as f:
-                for line in lines:
-                    for old, new in name_dict.items():
-                        if old in line:
-                            line = line.replace(old, new)
-                    f.write(line)
+            res.append(pool.apply_async(_multiprocess_obspar_rename,
+                                        args=(sys_tpl_file, name_dict)))
+        [x.get() for x in res]
+        pool.close()
+        pool.join()
 
     def rename_observations(self, name_dict, pst_path="."):
+        from multiprocessing import Pool
         """rename observations in the control and instruction files
 
         Args:
@@ -3912,6 +3914,8 @@ class Pst(object):
         obs.loc[:, "obsnme"] = obs.obsnme.apply(lambda x: name_dict.get(x, x))
         obs.index = obs.obsnme.values
 
+        pool = Pool(processes=min(os.cpu_count()-1, 60))
+        res = []
         for ins_file in self.model_output_data.pest_file:
             sys_ins_file = os.path.join(
                 pst_path, str(ins_file).replace("/", os.path.sep).replace("\\", os.path.sep)
@@ -3921,10 +3925,17 @@ class Pst(object):
                     "instruction file '{0}' not found, continuing...", PyemuWarning
                 )
                 continue
-            lines = open(sys_ins_file, "r").readlines()
-            with open(sys_ins_file, "w") as f:
-                for line in lines:
-                    for old, new in name_dict.items():
-                        if old in line:
-                            line = line.replace(old, new)
-                    f.write(line)
+            res.append(pool.apply_async(_multiprocess_obspar_rename,
+                                        args=(sys_ins_file, name_dict)))
+        [x.get() for x in res]
+        pool.close()
+        pool.join()
+
+
+def _multiprocess_obspar_rename(sys_file, map_dict):
+    with open(sys_file, "rt") as f:
+        x = f.read()
+    with open(sys_file, "wt") as f:
+        for old in sorted(map_dict, key=len, reverse=True):
+            x = x.replace(old, map_dict[old])
+        f.write(x)
