@@ -2453,12 +2453,18 @@ class Pst(object):
             # actual_phi = ((self.res.loc[res_idxs[item], "residual"] *
             #               self.observation_data.loc
             #               [obs_idxs[item], "weight"])**2).sum()
+            tmpobs = obs.loc[obs_idxs[item]]
+            res = (
+                    tmpobs.obsval
+                    - res.loc[res_idxs[item], "modelled"]
+            )
+            og = tmpobs.obgnme
+            res.loc[og.str.startwith(("g_", "greater_", "<@")) & res >= 0] = 0
+            res.loc[og.str.startwith(("l_", "less_", ">@")) & res <= 0] = 0
+
             actual_phi = (
                 (
-                    (
-                        obs.loc[obs_idxs[item], "obsval"]
-                        - res.loc[res_idxs[item], "modelled"]
-                    )
+                    res
                     * self.observation_data.loc[obs_idxs[item], "weight"]
                 )
                 ** 2

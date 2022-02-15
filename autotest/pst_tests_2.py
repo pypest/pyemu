@@ -751,7 +751,12 @@ def ineq_phi_test():
     assert pst.phi < 1.0e-6
     pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "<@"
     assert pst.phi < 1.0e-6
-
+    phi_comps = pst.phi_components
+    assert all([v < 1e-6 for v in phi_comps.values()])
+    new_phi_comps = {k: 10000000 for k in phi_comps.keys()}
+    pst.adjust_weights(obsgrp_dict=new_phi_comps)
+    assert pst.phi < 1.0e-6
+    assert all([v < 1e-6 for v in phi_comps.values()])
 
     pst.observation_data.loc[pst.nnz_obs_names, "obsval"] = pst.res.loc[pst.nnz_obs_names, "modelled"] + 1
     pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "l_test"
@@ -760,6 +765,10 @@ def ineq_phi_test():
     assert pst.phi < 1.0e-6
     pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = ">@"
     assert pst.phi < 1.0e-6
+    new_phi_comps = {k: 10000000 for k in phi_comps.keys()}
+    pst.adjust_weights(obsgrp_dict=new_phi_comps)
+    assert pst.phi < 1.0e-6
+    assert all([v < 1e-6 for v in phi_comps.values()])
 
     #pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "l_test"
     #print(org_phi, pst.phi)
@@ -773,12 +782,12 @@ if __name__ == "__main__":
     #pst_from_flopy_specsim_draw_test()
     # run_array_pars()
     # from_flopy_zone_pars()
-    from_flopy_pp_test()
+    # from_flopy_pp_test()
     # from_flopy()
     #parrep_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()
-    #ineq_phi_test()
+    ineq_phi_test()
 
 
 
