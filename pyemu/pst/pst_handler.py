@@ -2454,24 +2454,28 @@ class Pst(object):
             #               self.observation_data.loc
             #               [obs_idxs[item], "weight"])**2).sum()
             tmpobs = obs.loc[obs_idxs[item]]
-            res = (
+            resid = (
                     tmpobs.obsval
                     - res.loc[res_idxs[item], "modelled"]
-            )
+            ).loc[tmpobs.index]
             og = tmpobs.obgnme
-            res.loc[og.str.startwith(("g_", "greater_", "<@")) & res >= 0] = 0
-            res.loc[og.str.startwith(("l_", "less_", ">@")) & res <= 0] = 0
+            resid.loc[
+                (og.str.startswith(("g_", "greater_", "<@"))) &
+                (resid <= 0)] = 0
+            resid.loc[
+                (og.str.startswith(("l_", "less_", ">@"))) &
+                (resid >= 0)] = 0
 
-            actual_phi = (
+            actual_phi = np.sum(
                 (
-                    res
-                    * self.observation_data.loc[obs_idxs[item], "weight"]
+                    resid
+                    * obs.loc[obs_idxs[item], "weight"]
                 )
                 ** 2
-            ).sum()
+            )
             if actual_phi > 0.0:
                 weight_mult = np.sqrt(target_phis[item] / actual_phi)
-                self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
+                obs.loc[obs_idxs[item], "weight"] *= weight_mult
             else:
                 (
                     "Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(
