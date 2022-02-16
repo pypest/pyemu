@@ -2375,7 +2375,19 @@ class Pst(object):
             self._adjust_weights_by_phi_components(phi_comps, original_ceiling)
         else:
             obs = self.observation_data.loc[self.nnz_obs_names, :]
-            swr = (self.res.loc[self.nnz_obs_names, :].residual * obs.weight) ** 2
+            ######################
+            # TODO doe we want this? "Phi should equal nnz"
+            #  or should phi equal the number of of contributing obs?
+            res = self.res.loc[self.nnz_obs_names, :].residual
+            og = obs.obgnme
+            res.loc[
+                (og.str.startswith(("g_", "greater_", "<@"))) &
+                (res <= 0)] = 0
+            res.loc[
+                (og.str.startswith(("l_", "less_", ">@"))) &
+                (res >= 0)] = 0
+            ########################
+            swr = (res * obs.weight) ** 2
             factors = (1.0 / swr).apply(np.sqrt)
             if original_ceiling:
                 factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)

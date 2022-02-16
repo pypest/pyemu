@@ -780,7 +780,7 @@ def ineq_phi_test():
     for s in ["l_test", "less_test", ">@"]:
         pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = s
         assert pst.phi < 1.0e-6
-        
+
     #pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "l_test"
     #print(org_phi, pst.phi)
 
