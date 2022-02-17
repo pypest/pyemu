@@ -2375,7 +2375,16 @@ class Pst(object):
             self._adjust_weights_by_phi_components(phi_comps, original_ceiling)
         else:
             obs = self.observation_data.loc[self.nnz_obs_names, :]
-            swr = (self.res.loc[self.nnz_obs_names, :].residual * obs.weight) ** 2
+            # "Phi should equal nnz - nnzobs that satisfy inequ"
+            res = self.res.loc[self.nnz_obs_names, :].residual
+            og = obs.obgnme
+            res.loc[
+                (og.str.startswith(("g_", "greater_", "<@"))) &
+                (res <= 0)] = 0
+            res.loc[
+                (og.str.startswith(("l_", "less_", ">@"))) &
+                (res >= 0)] = 0
+            swr = (res * obs.weight) ** 2
             factors = (1.0 / swr).apply(np.sqrt)
             if original_ceiling:
                 factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
@@ -2453,19 +2462,29 @@ class Pst(object):
             # actual_phi = ((self.res.loc[res_idxs[item], "residual"] *
             #               self.observation_data.loc
             #               [obs_idxs[item], "weight"])**2).sum()
-            actual_phi = (
+            tmpobs = obs.loc[obs_idxs[item]]
+            resid = (
+                    tmpobs.obsval
+                    - res.loc[res_idxs[item], "modelled"]
+            ).loc[tmpobs.index]
+            og = tmpobs.obgnme
+            resid.loc[
+                (og.str.startswith(("g_", "greater_", "<@"))) &
+                (resid <= 0)] = 0
+            resid.loc[
+                (og.str.startswith(("l_", "less_", ">@"))) &
+                (resid >= 0)] = 0
+
+            actual_phi = np.sum(
                 (
-                    (
-                        obs.loc[obs_idxs[item], "obsval"]
-                        - res.loc[res_idxs[item], "modelled"]
-                    )
-                    * self.observation_data.loc[obs_idxs[item], "weight"]
+                    resid
+                    * obs.loc[obs_idxs[item], "weight"]
                 )
                 ** 2
-            ).sum()
+            )
             if actual_phi > 0.0:
                 weight_mult = np.sqrt(target_phis[item] / actual_phi)
-                self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
+                obs.loc[obs_idxs[item], "weight"] *= weight_mult
             else:
                 (
                     "Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(

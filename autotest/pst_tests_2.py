@@ -741,25 +741,45 @@ def at_bounds_test():
 
 def ineq_phi_test():
     import pyemu
+    import numpy as np
+
+    def _check_adjust(cf, compgp, new, reset):
+        cf.res.loc[pst.nnz_obs_names, "group"] = compgp
+        cf.adjust_weights(obsgrp_dict={compgp: new})
+        assert np.isclose(cf.phi_components[compgp], new)
+        cf.adjust_weights(obsgrp_dict={compgp: reset})
+        assert np.isclose(cf.phi_components[compgp], reset)
+
     pst = pyemu.Pst(os.path.join("pst","pest.pst"))
-    org_phi = pst.phi
+    phi_comp=pst.phi_components
     #print(pst.res.loc[pst.nnz_obs_names,"residual"])
-    pst.observation_data.loc[pst.nnz_obs_names, "obsval"] = pst.res.loc[pst.nnz_obs_names,"modelled"] - 1
-    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "g_test"
-    assert pst.phi < 1.0e-6
-    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "greater_test"
-    assert pst.phi < 1.0e-6
-    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "<@"
-    assert pst.phi < 1.0e-6
+    res = pst.res
+    swrgt = ((res.loc[res.residual > 0, 'residual'] *
+              res.loc[res.residual > 0, 'weight'])**2).sum()
+    swrlt = ((res.loc[res.residual < 0, 'residual'] *
+              res.loc[res.residual < 0, 'weight'])**2).sum()
+    for s in ["g_test", "greater_test", "<@"]:
+        pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = s
+        assert np.isclose(pst.phi_components[s], swrgt)
+        _check_adjust(pst, s, 1000, swrgt)
+    for s in ["l_test", "less_test", ">@"]:
+        pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = s
+        assert np.isclose(pst.phi_components[s], swrlt)
+        _check_adjust(pst, s, 1000, swrlt)
 
+    pst.observation_data.loc[
+        pst.nnz_obs_names, "obsval"
+    ] = pst.res.loc[pst.nnz_obs_names,"modelled"] - 1
+    for s in ["g_test", "greater_test", "<@"]:
+        pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = s
+        assert pst.phi < 1.0e-6
 
-    pst.observation_data.loc[pst.nnz_obs_names, "obsval"] = pst.res.loc[pst.nnz_obs_names, "modelled"] + 1
-    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "l_test"
-    assert pst.phi < 1.0e-6
-    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "less_"
-    assert pst.phi < 1.0e-6
-    pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = ">@"
-    assert pst.phi < 1.0e-6
+    pst.observation_data.loc[
+        pst.nnz_obs_names, "obsval"
+    ] = pst.res.loc[pst.nnz_obs_names, "modelled"] + 1
+    for s in ["l_test", "less_test", ">@"]:
+        pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = s
+        assert pst.phi < 1.0e-6
 
     #pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "l_test"
     #print(org_phi, pst.phi)
@@ -773,12 +793,12 @@ if __name__ == "__main__":
     #pst_from_flopy_specsim_draw_test()
     # run_array_pars()
     # from_flopy_zone_pars()
-    from_flopy_pp_test()
+    # from_flopy_pp_test()
     # from_flopy()
     #parrep_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()
-    #ineq_phi_test()
+    ineq_phi_test()
 
 
 
