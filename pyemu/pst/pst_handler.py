@@ -2374,9 +2374,10 @@ class Pst(object):
             phi_comps = self.phi_components
             self._adjust_weights_by_phi_components(phi_comps, original_ceiling)
         else:
-            obs = self.observation_data.loc[self.nnz_obs_names, :]
+            names = self.nnz_obs_names
+            obs = self.observation_data.loc[names, :]
             # "Phi should equal nnz - nnzobs that satisfy inequ"
-            res = self.res.loc[self.nnz_obs_names, :].residual
+            res = self.res.loc[names, :].residual
             og = obs.obgnme
             res.loc[
                 (og.str.startswith(("g_", "greater_", "<@"))) &
@@ -2388,7 +2389,9 @@ class Pst(object):
             factors = (1.0 / swr).apply(np.sqrt)
             if original_ceiling:
                 factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
-            self.observation_data.loc[self.nnz_obs_names, "weight"] *= factors
+
+            w = self.observation_data.weight
+            w.loc[names] *= factors.values
 
     def _adjust_weights_by_phi_components(self, components, original_ceiling):
         """private method that resets the weights of observations by group to account for
