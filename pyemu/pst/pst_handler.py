@@ -8,7 +8,9 @@ import numpy as np
 from numpy.lib.type_check import real_if_close
 import pandas as pd
 
+
 pd.options.display.max_colwidth = 100
+pd.options.mode.use_inf_as_na = True
 import pyemu
 from ..pyemu_warnings import PyemuWarning
 from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
@@ -1343,8 +1345,9 @@ class Pst(object):
             defaults = copy.copy(pst_utils.pst_config["pargp_defaults"])
             for grp in need_groups:
                 defaults["pargpnme"] = grp
-                self.parameter_groups = self.parameter_groups.append(
-                    defaults, ignore_index=True
+                self.parameter_groups = pd.concat(
+                    [self.parameter_groups, pd.DataFrame([defaults])],
+                    ignore_index=True
                 )
 
         # now drop any left over groups that aren't needed
@@ -2371,12 +2374,24 @@ class Pst(object):
             phi_comps = self.phi_components
             self._adjust_weights_by_phi_components(phi_comps, original_ceiling)
         else:
-            obs = self.observation_data.loc[self.nnz_obs_names, :]
-            swr = (self.res.loc[self.nnz_obs_names, :].residual * obs.weight) ** 2
+            names = self.nnz_obs_names
+            obs = self.observation_data.loc[names, :]
+            # "Phi should equal nnz - nnzobs that satisfy inequ"
+            res = self.res.loc[names, :].residual
+            og = obs.obgnme
+            res.loc[
+                (og.str.startswith(("g_", "greater_", "<@"))) &
+                (res <= 0)] = 0
+            res.loc[
+                (og.str.startswith(("l_", "less_", ">@"))) &
+                (res >= 0)] = 0
+            swr = (res * obs.weight) ** 2
             factors = (1.0 / swr).apply(np.sqrt)
             if original_ceiling:
                 factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
-            self.observation_data.loc[self.nnz_obs_names, "weight"] *= factors
+
+            w = self.observation_data.weight
+            w.loc[names] *= factors.values
 
     def _adjust_weights_by_phi_components(self, components, original_ceiling):
         """private method that resets the weights of observations by group to account for
@@ -2450,19 +2465,29 @@ class Pst(object):
             # actual_phi = ((self.res.loc[res_idxs[item], "residual"] *
             #               self.observation_data.loc
             #               [obs_idxs[item], "weight"])**2).sum()
-            actual_phi = (
+            tmpobs = obs.loc[obs_idxs[item]]
+            resid = (
+                    tmpobs.obsval
+                    - res.loc[res_idxs[item], "modelled"]
+            ).loc[tmpobs.index]
+            og = tmpobs.obgnme
+            resid.loc[
+                (og.str.startswith(("g_", "greater_", "<@"))) &
+                (resid <= 0)] = 0
+            resid.loc[
+                (og.str.startswith(("l_", "less_", ">@"))) &
+                (resid >= 0)] = 0
+
+            actual_phi = np.sum(
                 (
-                    (
-                        obs.loc[obs_idxs[item], "obsval"]
-                        - res.loc[res_idxs[item], "modelled"]
-                    )
-                    * self.observation_data.loc[obs_idxs[item], "weight"]
+                    resid
+                    * obs.loc[obs_idxs[item], "weight"]
                 )
                 ** 2
-            ).sum()
+            )
             if actual_phi > 0.0:
                 weight_mult = np.sqrt(target_phis[item] / actual_phi)
-                self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
+                obs.loc[obs_idxs[item], "weight"] *= weight_mult
             else:
                 (
                     "Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(
@@ -2838,7 +2863,7 @@ class Pst(object):
                 pst_utils.pst_config["par_dtype"],
             )
             new_par_data.loc[new_parnme, "parnme"] = new_parnme
-            self.parameter_data = self.parameter_data.append(new_par_data)
+            self.parameter_data = pd.concat([self.parameter_data, new_par_data])
             if parval1 is not None:
                 new_par_data.loc[parval1.parnme, "parval1"] = parval1.parval1
         if in_file is None:
@@ -3060,7 +3085,7 @@ class Pst(object):
         )
         new_obs_data.loc[obsnme, "obsnme"] = obsnme
         new_obs_data.index = obsnme
-        self.observation_data = self.observation_data.append(new_obs_data)
+        self.observation_data = pd.concat([self.observation_data, new_obs_data])
         cwd = "."
         if pst_path is not None:
             cwd = os.path.join(*os.path.split(ins_file)[:-1])
@@ -3390,7 +3415,12 @@ class Pst(object):
                 f.write(preamble)
                 f.write("\\begin{center}\nParameter Summary\n\\end{center}\n")
                 f.write("\\begin{center}\n\\begin{landscape}\n")
-                pargp_df.to_latex(f, index=False, longtable=True)
+                try:
+                    f.write(pargp_df.style.hide(axis='index').to_latex(
+                        None, environment='longtable')
+                    )
+                except (TypeError, AttributeError) as e:
+                    pargp_df.to_latex(index=False, longtable=True)
                 f.write("\\end{landscape}\n")
                 f.write("\\end{center}\n")
                 f.write("\\end{document}\n")
@@ -3505,7 +3535,12 @@ class Pst(object):
                 f.write("\\begin{center}\nObservation Summary\n\\end{center}\n")
                 f.write("\\begin{center}\n\\begin{landscape}\n")
                 f.write("\\setlength{\\LTleft}{-4.0cm}\n")
-                obsg_df.to_latex(f, index=False, longtable=True)
+                try:
+                    f.write(obsg_df.style.hide(axis='index').to_latex(
+                        None, environment='longtable')
+                    )
+                except (TypeError, AttributeError) as e:
+                    obsg_df.to_latex(index=False, longtable=True)
                 f.write("\\end{landscape}\n")
                 f.write("\\end{center}\n")
                 f.write("\\end{document}\n")
@@ -3802,6 +3837,7 @@ class Pst(object):
                 print("error parsing metadata from '{0}', continuing".format(name))
 
     def rename_parameters(self, name_dict, pst_path="."):
+        from multiprocessing import Pool
         """rename parameters in the control and template files
 
         Args:
@@ -3848,6 +3884,8 @@ class Pst(object):
 
         # pad for putting to tpl
         name_dict = {k: v.center(12) for k, v in name_dict.items()}
+        res = []
+        pool = Pool(processes=min(os.cpu_count()-1, 60))
         for tpl_file in self.model_input_data.pest_file:
             sys_tpl_file = os.path.join(
                 pst_path,
@@ -3858,15 +3896,14 @@ class Pst(object):
                     "template file '{0}' not found, continuing...", PyemuWarning
                 )
                 continue
-            lines = open(sys_tpl_file, "r").readlines()
-            with open(sys_tpl_file, "w") as f:
-                for line in lines:
-                    for old, new in name_dict.items():
-                        if old in line:
-                            line = line.replace(old, new)
-                    f.write(line)
+            res.append(pool.apply_async(_multiprocess_obspar_rename,
+                                        args=(sys_tpl_file, name_dict)))
+        [x.get() for x in res]
+        pool.close()
+        pool.join()
 
     def rename_observations(self, name_dict, pst_path="."):
+        from multiprocessing import Pool
         """rename observations in the control and instruction files
 
         Args:
@@ -3899,6 +3936,8 @@ class Pst(object):
         obs.loc[:, "obsnme"] = obs.obsnme.apply(lambda x: name_dict.get(x, x))
         obs.index = obs.obsnme.values
 
+        pool = Pool(processes=min(os.cpu_count()-1, 60))
+        res = []
         for ins_file in self.model_output_data.pest_file:
             sys_ins_file = os.path.join(
                 pst_path, str(ins_file).replace("/", os.path.sep).replace("\\", os.path.sep)
@@ -3908,10 +3947,17 @@ class Pst(object):
                     "instruction file '{0}' not found, continuing...", PyemuWarning
                 )
                 continue
-            lines = open(sys_ins_file, "r").readlines()
-            with open(sys_ins_file, "w") as f:
-                for line in lines:
-                    for old, new in name_dict.items():
-                        if old in line:
-                            line = line.replace(old, new)
-                    f.write(line)
+            res.append(pool.apply_async(_multiprocess_obspar_rename,
+                                        args=(sys_ins_file, name_dict)))
+        [x.get() for x in res]
+        pool.close()
+        pool.join()
+
+
+def _multiprocess_obspar_rename(sys_file, map_dict):
+    with open(sys_file, "rt") as f:
+        x = f.read()
+    with open(sys_file, "wt") as f:
+        for old in sorted(map_dict, key=len, reverse=True):
+            x = x.replace(old, map_dict[old])
+        f.write(x)

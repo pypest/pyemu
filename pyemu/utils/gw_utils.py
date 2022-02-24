@@ -279,7 +279,7 @@ def setup_mtlist_budget_obs(
         df_sw = try_process_output_file(sw_ins, sw_filename)
         if df_sw is None:
             raise Exception("error processing surface water instruction file")
-        df_gw = df_gw.append(df_sw)
+        df_gw = pd.concat([df_gw, df_sw])
         df_gw.loc[:, "obsnme"] = df_gw.index.values
     if save_setup_file:
         df_gw.to_csv("_setup_" + os.path.split(list_filename)[-1] + ".csv", index=False)
@@ -426,7 +426,7 @@ def setup_mflist_budget_obs(
     if df2 is None:
         raise Exception("error processing volume instruction file")
 
-    df = df.append(df2)
+    df = pd.concat([df, df2])
     df.loc[:, "obsnme"] = df.index.values
     if save_setup_file:
         df.to_csv("_setup_" + os.path.split(list_filename)[-1] + ".csv", index=False)
@@ -1506,8 +1506,7 @@ def setup_sfr_seg_parameters(
         else:
             seg_data.loc[:, par_col] = (
                 seg_data_all_kper.loc[:, (slice(None), par_col)]
-                .abs()
-                .max(level=1, axis=1)
+                    .abs().groupby(level=1, axis=1).max()
             )
     if len(missing) > 0:
         warnings.warn(
@@ -1615,7 +1614,7 @@ def setup_sfr_seg_parameters(
         if not tmp_df.empty:
             tmp_df.loc[:, "org_value"] = 1.0
             tmp_df.loc[:, "tpl_str"] = tmp_tpl_str
-            df = df.append(tmp_df[df.columns])
+            df = pd.concat([df, tmp_df[df.columns]])
     if df.empty:
         warnings.warn(
             "No sfr segment parameters have been set up, "
