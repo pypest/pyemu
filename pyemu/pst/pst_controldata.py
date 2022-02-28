@@ -425,7 +425,7 @@ class ControlData(object):
 
                 else:
                     self._df.loc[name, "value"] = v
-                    # self._df.loc[name, "passed"] = True
+                    self._df.loc[name, "passed"] = True
 
         return {}
 
