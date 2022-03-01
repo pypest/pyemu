@@ -825,7 +825,6 @@ class PstFrom(object):
                 self.logger.log(f"removing existing new_d '{self.new_d}'")
                 shutil.rmtree(self.new_d)
                 self.logger.log(f"removing existing new_d '{self.new_d}'")
-                time.sleep(1)  # sleep longer for window locking issues
             else:
                 self.logger.lraise(
                     f"new_d '{self.new_d}' already exists " "- use remove_existing=True"
@@ -834,7 +833,12 @@ class PstFrom(object):
         self.logger.log(
             f"copying original_d '{self.original_d}' to new_d '{self.new_d}'"
         )
-        shutil.copytree(self.original_d, self.new_d)
+        try:
+            shutil.copytree(self.original_d, self.new_d)
+        except PermissionError:
+            time.sleep(3)  # pause for windows locking issues
+            # and try again
+            shutil.copytree(self.original_d, self.new_d)
         self.logger.log(
             f"copying original_d '{self.original_d}' to new_d '{self.new_d}'"
         )
