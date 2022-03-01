@@ -425,7 +425,7 @@ class ControlData(object):
 
                 else:
                     self._df.loc[name, "value"] = v
-                    # self._df.loc[name, "passed"] = True
+                    self._df.loc[name, "passed"] = True
 
         return {}
 
@@ -459,14 +459,25 @@ class ControlData(object):
 
         """
         kw = super(ControlData, self).__getattribute__("keyword_accessed")
+        kw = [kkw for kkw in kw if kkw != "numcom"]
+        default_df = self.get_dataframe()
+        default_df.index = default_df.name.values
+        default_values = default_df.value.to_dict()
+        dimen_vars = CONTROL_VARIABLE_LINES[1].split()
+        dimen_vars.extend(CONTROL_VARIABLE_LINES[2].split())
+        dimen_vars = set(dimen_vars)
         f.write("* control data keyword\n")
         for n, v in zip(self._df.name, self.formatted_values):
-            if n not in kw:
+            if n.replace("[","").replace("]","") not in kw:
                 if n not in self._df.index:
                     continue
-                elif not self._df.loc[n, "passed"]:
+                if not self._df.loc[n, "passed"]:
                     continue
-            f.write("{0:30} {1}\n".format(n, v))
+                if self._df.loc[n,"value"] == default_values.get(n,self._df.loc[n,"value"]):
+                    continue
+            if n.replace("[","").replace("]","") in dimen_vars:
+                continue
+            f.write("{0:30} {1}\n".format(n.replace("[","").replace("]",""), v))
 
     def write(self, f):
         """write control data section to a file
