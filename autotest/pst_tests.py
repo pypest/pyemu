@@ -1248,7 +1248,7 @@ def pst_ctl_opt_args_test():
 
     pst3 = pyemu.Pst("test2.pst")
     #print(pst3.control_data.numcom)
-    assert pst.control_data.numcom == pst3.control_data.numcom
+    assert pst.control_data.numcom != pst3.control_data.numcom
 
 
 

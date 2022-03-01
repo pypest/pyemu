@@ -459,6 +459,7 @@ class ControlData(object):
 
         """
         kw = super(ControlData, self).__getattribute__("keyword_accessed")
+        kw = [kkw for kkw in kw if kkw != "numcom"]
         default_df = self.get_dataframe()
         default_df.index = default_df.name.values
         default_values = default_df.value.to_dict()
@@ -474,8 +475,8 @@ class ControlData(object):
                     continue
                 if self._df.loc[n,"value"] == default_values.get(n,self._df.loc[n,"value"]):
                     continue
-                if n.replace("[","").replace("]","") in dimen_vars:
-                    continue
+            if n.replace("[","").replace("]","") in dimen_vars:
+                continue
             f.write("{0:30} {1}\n".format(n.replace("[","").replace("]",""), v))
 
     def write(self, f):
