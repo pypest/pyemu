@@ -1233,6 +1233,22 @@ def rename_obs_test():
 
 
 
+def pst_ctl_opt_args_test():
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pestpp_old.pst"))
+    for i in range(10):
+        pst.model_command.append("test{0}".format(i))
+    pst.write("test.pst")
+
+    pst2 = pyemu.Pst("test.pst")
+
+    assert pst.control_data.numcom == pst2.control_data.numcom
+
+    pst2.write("test2.pst",version=2)
+
+    pst3 = pyemu.Pst("test2.pst")
+    #print(pst3.control_data.numcom)
+    assert pst.control_data.numcom == pst3.control_data.numcom
 
 
 
@@ -1242,7 +1258,7 @@ if __name__ == "__main__":
     # write2_nan_test()
     #process_output_files_test()
     # change_limit_test()
-    # new_format_test()
+    #new_format_test()
     # lt_gt_constraint_names_test()
     #csv_to_ins_test()
     #ctrl_data_test()
@@ -1279,7 +1295,7 @@ if __name__ == "__main__":
     # rectify_pgroup_test()
     #sanity_check_test()
     #change_limit_test()
-    write_tables_test()
+    #write_tables_test()
     #pi_helper_test()
     #ctrl_data_test()
     #new_format_test_2()
@@ -1296,4 +1312,5 @@ if __name__ == "__main__":
 
     #rename_pars_test()
     #rename_obs_test()
+    pst_ctl_opt_args_test()
 
