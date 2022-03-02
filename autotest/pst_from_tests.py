@@ -12,7 +12,7 @@ from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
 
 ext = ''
-local_bins = False  # change if wanting to test with local binary exes
+local_bins = True  # change if wanting to test with local binary exes
 if local_bins:
     bin_path = os.path.join("..", "..", "bin")
     if "linux" in platform.platform().lower():
@@ -3658,13 +3658,13 @@ def mf6_subdir_test():
 
 
 if __name__ == "__main__":
-    #mf6_freyberg_pp_locs_test()
+    mf6_freyberg_pp_locs_test()
     # invest()
     # freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
+    # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
-    mf6_freyberg_shortnames_test()
+    # mf6_freyberg_shortnames_test()
 
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
