@@ -10,7 +10,6 @@ import warnings
 import socket
 import time
 from datetime import datetime
-import pandas as pd
 from ..pyemu_warnings import PyemuWarning
 
 ext = ""
@@ -131,6 +130,35 @@ def run(cmd_str, cwd=".", verbose=False):
             raise Exception("run() returned non-zero: {0}".format(estat))
 
 
+def _try_remove_existing(d, forgive=False):
+    try:
+        shutil.rmtree(d, onerror=_remove_readonly)  # , onerror=del_rw)
+    except Exception as e:
+        if not forgive:
+            raise Exception(
+                f"unable to remove existing dir: {d}\n{e}"
+            )
+        else:
+            warnings.warn(
+                f"unable to remove worker dir: {d}\n{e}",
+                PyemuWarning,
+            )
+
+
+def _try_copy_dir(o_d, n_d):
+    try:
+        shutil.copytree(o_d, n_d)
+    except PermissionError:
+        time.sleep(3) # pause for windows locking issues
+        try:
+            shutil.copytree(o_d, n_d)
+        except Exception as e:
+            raise Exception(
+                f"unable to copy files from base dir: "
+                f"{o_d}, to new dir: {n_d}\n{e}"
+            )
+
+
 def start_workers(
     worker_dir,
     exe_rel_path,
@@ -240,23 +268,9 @@ def start_workers(
 
     if master_dir is not None:
         if master_dir != "." and os.path.exists(master_dir) and not reuse_master:
-            try:
-                shutil.rmtree(master_dir, onerror=_remove_readonly)  # , onerror=del_rw)
-            except Exception as e:
-                raise Exception(
-                    "unable to remove existing master dir:"
-                    + "{0}\n{1}".format(master_dir, str(e))
-                )
+            _try_remove_existing(master_dir)
         if master_dir != "." and not reuse_master:
-            try:
-                shutil.copytree(worker_dir, master_dir)
-            except Exception as e:
-                raise Exception(
-                    "unable to copy files from base worker dir: "
-                    + "{0} to master dir: {1}\n{2}".format(
-                        worker_dir, master_dir, str(e)
-                    )
-                )
+            _try_copy_dir(worker_dir, master_dir)
 
         args = [exe_rel_path, pst_rel_path, "/h", ":{0}".format(port)]
         if rel_path is not None:
@@ -282,24 +296,8 @@ def start_workers(
     for i in range(num_workers):
         new_worker_dir = os.path.join(worker_root, "worker_{0}".format(i))
         if os.path.exists(new_worker_dir):
-            try:
-                shutil.rmtree(
-                    new_worker_dir, onerror=_remove_readonly
-                )  # , onerror=del_rw)
-            except Exception as e:
-                raise Exception(
-                    "unable to remove existing worker dir:"
-                    + "{0}\n{1}".format(new_worker_dir, str(e))
-                )
-        try:
-            shutil.copytree(worker_dir, new_worker_dir)
-        except Exception as e:
-            raise Exception(
-                "unable to copy files from worker dir: "
-                + "{0} to new worker dir: {1}\n{2}".format(
-                    worker_dir, new_worker_dir, str(e)
-                )
-            )
+            _try_remove_existing(new_worker_dir)
+        _try_copy_dir(worker_dir, new_worker_dir)
         try:
             if exe_verf:
                 # if rel_path is not None:
@@ -357,14 +355,7 @@ def start_workers(
         while len(worker_dirs) > 0 and cleanit < 100000:  # arbitrary 100000 limit
             cleanit = cleanit + 1
             for d in worker_dirs:
-                try:
-                    shutil.rmtree(d, onerror=_remove_readonly)
-                    worker_dirs.pop(worker_dirs.index(d))  # if successfully removed
-                except Exception as e:
-                    warnings.warn(
-                        "unable to remove worker dir{0}:{1}".format(d, str(e)),
-                        PyemuWarning,
-                    )
+                _try_remove_existing(d, forgive=True)
     if master_dir is not None:
         ret_val = master_p.returncode
         if ret_val != 0:

@@ -2,14 +2,12 @@ from __future__ import print_function, division
 import os
 from pathlib import Path
 from datetime import datetime
-import shutil
 import inspect
 import warnings
 import platform
 import numpy as np
 import pandas as pd
 import pyemu
-import time
 from ..pyemu_warnings import PyemuWarning
 import copy
 import string
@@ -823,7 +821,7 @@ class PstFrom(object):
         if self.new_d.exists():
             if self.remove_existing:
                 self.logger.log(f"removing existing new_d '{self.new_d}'")
-                shutil.rmtree(self.new_d)
+                pyemu.os_utils._try_remove_existing(self.new_d)
                 self.logger.log(f"removing existing new_d '{self.new_d}'")
             else:
                 self.logger.lraise(
@@ -833,12 +831,7 @@ class PstFrom(object):
         self.logger.log(
             f"copying original_d '{self.original_d}' to new_d '{self.new_d}'"
         )
-        try:
-            shutil.copytree(self.original_d, self.new_d)
-        except PermissionError:
-            time.sleep(3)  # pause for windows locking issues
-            # and try again
-            shutil.copytree(self.original_d, self.new_d)
+        pyemu.os_utils._try_copy_dir(self.original_d, self.new_d)
         self.logger.log(
             f"copying original_d '{self.original_d}' to new_d '{self.new_d}'"
         )
