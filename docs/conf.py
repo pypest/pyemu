@@ -22,7 +22,7 @@ sys.path.append(os.path.join(".."))
 project = 'pyEMU'
 copyright = '2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others'
 author = 'Jeremy White, Mike Fienen, Brioch Hemmings, and others'
-release = "1.0.0"
+release = "1.2.0"
 
 # -- General configuration ---------------------------------------------------
 
