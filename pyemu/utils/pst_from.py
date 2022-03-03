@@ -1887,6 +1887,7 @@ class PstFrom(object):
             f"{[str(f) for f in filenames]}"
         )
         if geostruct is not None:
+            self.logger.log("using geostruct:",str(geostruct))
             if geostruct.sill != 1.0:  #  and par_style != "multiplier": #TODO !=?
                 self.logger.warn(
                     "geostruct sill != 1.0"  # for 'multiplier' style parameters"
