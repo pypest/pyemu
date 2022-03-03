@@ -3658,13 +3658,13 @@ def mf6_subdir_test():
 
 
 if __name__ == "__main__":
-    #mf6_freyberg_pp_locs_test()
+    mf6_freyberg_pp_locs_test()
     # invest()
     # freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
+    # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
-    mf6_freyberg_shortnames_test()
+    # mf6_freyberg_shortnames_test()
 
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()

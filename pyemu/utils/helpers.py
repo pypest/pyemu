@@ -11,7 +11,6 @@ import platform
 import struct
 import shutil
 import copy
-import time
 from ast import literal_eval
 import traceback
 import sys
@@ -1910,7 +1909,7 @@ class PstFromFlopyModel(object):
             self.log("setting up '{0}' dir".format(d))
             if os.path.exists(d):
                 if self.remove_existing:
-                    shutil.rmtree(d, onerror=remove_readonly)
+                    pyemu.os_utils._try_remove_existing(d)
                 else:
                     raise Exception("dir '{0}' already exists".format(d))
             os.mkdir(d)
@@ -1966,8 +1965,7 @@ class PstFromFlopyModel(object):
                 self.logger.lraise("'new_model_ws' already exists")
             else:
                 self.logger.warn("removing existing 'new_model_ws")
-                shutil.rmtree(new_model_ws, onerror=pyemu.os_utils._remove_readonly)
-                time.sleep(1)
+                pyemu.os_utils._try_remove_existing(new_model_ws)
         self.m.change_model_ws(new_model_ws, reset_external=True)
         self.m.exe_name = self.m.exe_name.replace(".exe", "")
         self.m.exe = self.m.version
