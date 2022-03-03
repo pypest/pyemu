@@ -47,6 +47,14 @@ ICOV ICOR IEIG [IRES] [JCOSAVE] [VERBOSEREC] [JCOSAVEITN] [REISAVEITN] [PARSAVEI
     "\n"
 )
 
+CONTROL_VARIABLES_UNUSED = """RSTFLE NPAR NOBS NPARGP NPRIOR NOBSGP [MAXCOMPDIM] 
+NTPLFLE NINSFLE PRECIS DPOINT [NUMCOM] [JACFILE] [MESSFILE] [OBSREREF]
+RLAMBDA1 RLAMFAC PHIRATSUF PHIREDLAM NUMLAM [JACUPDATE] [LAMFORGIVE] FACORIG [IBOUNDSTICK] [UPVECBEND]
+PHIREDSWH [NOPTSWITCH] [SPLITSWH] [DOAUI] [DOSENREUSE] [BOUNDSCALE] [PHISTOPTHRESH] [LASTRUN] [PHIABANDON]
+ICOV ICOR IEIG [IRES] [JCOSAVE] [VERBOSEREC] [JCOSAVEITN] [REISAVEITN] [PARSAVEITN] [PARSAVERUN]""".lower().split(
+    "\n"
+)
+
 REG_VARIABLE_LINES = """PHIMLIM PHIMACCEPT [FRACPHIM] [MEMSAVE]
 WFINIT WFMIN WFMAX [LINREG] [REGCONTINUE]
 WFFAC WFTOL IREGADJ [NOPTREGADJ REGWEIGHTRAT [REGSINGTHRESH]]""".lower().split(
@@ -466,6 +474,9 @@ class ControlData(object):
         dimen_vars = CONTROL_VARIABLE_LINES[1].split()
         dimen_vars.extend(CONTROL_VARIABLE_LINES[2].split())
         dimen_vars = set(dimen_vars)
+        unused = CONTROL_VARIABLES_UNUSED[0].split()
+        [unused.extend(line.split()) for line in CONTROL_VARIABLES_UNUSED[1:]]
+        unused = [i.lower().replace("[","").replace("]","") for i in unused]
         f.write("* control data keyword\n")
         for n, v in zip(self._df.name, self.formatted_values):
             if n.replace("[","").replace("]","") not in kw:
@@ -476,6 +487,8 @@ class ControlData(object):
                 if self._df.loc[n,"value"] == default_values.get(n,self._df.loc[n,"value"]):
                     continue
             if n.replace("[","").replace("]","") in dimen_vars:
+                continue
+            if n.replace("[", "").replace("]", "") in unused:
                 continue
             f.write("{0:30} {1}\n".format(n.replace("[","").replace("]",""), v))
 
