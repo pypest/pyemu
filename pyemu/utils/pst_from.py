@@ -1733,12 +1733,10 @@ class PstFrom(object):
                 only specific rows in list-style model input file.
                 If list of `int` -- assumed to be a row index selection (zero-based).
                 If list of `tuple` -- assumed to be selection based `index_cols` values.
-                    e.g. [(3,5,6)] would attempt to set parameters where the
-                    model file values for 3 `index_cols` are 3,5,6.
-                    N.B. values in tuple are actual model file entry values.
-                If no rows in the model input file match `use_rows`, parameters
-                will be set up for all rows.
-                Only valid/effective if index_cols is not None.
+                e.g. [(3,5,6)] would attempt to set parameters where the model file
+                values for 3 `index_cols` are 3,5,6. N.B. values in tuple are actual
+                model file entry values. If no rows in the model input file match `use_rows`, parameters
+                will be set up for all rows. Only valid/effective if index_cols is not None.
                 Default is None -- setup parameters for all rows.
             pargp (`str`): Parameter group to assign pars to. This is PESTs
                 pargp but is also used to gather correlated parameters set up
@@ -1749,8 +1747,8 @@ class PstFrom(object):
                 If `pd.DataFrame`, then this arg is treated as a prefined set of pilot points
                 and in this case, the dataframe must have "name", "x", "y", and optionally "zone" columns.
                 If `str`, then an attempt is made to load a dataframe from a csv file (if `pp_space` ends with ".csv"),
-                 shapefile (if `pp_space` ends with ".shp") or from a pilot points file.  If `pp_space` is None,
-                 an integer spacing of 10 is used.  Default is None
+                shapefile (if `pp_space` ends with ".shp") or from a pilot points file.  If `pp_space` is None,
+                an integer spacing of 10 is used.  Default is None
             use_pp_zones (`bool`): a flag to use the greater-than-zero values
                 in the zone_array as pilot point zones.
                 If False, zone_array values greater than zero are treated as a
@@ -1765,7 +1763,7 @@ class PstFrom(object):
                 geostruct for pilot-points and par covariance.
             datetime (`str`): optional %Y%m%d string or datetime object for
                 setting up temporally correlated pars. Where datetime is passed
-                 correlation axis for pars will be set to timedelta.
+                correlation axis for pars will be set to timedelta.
             mfile_fmt (`str`): format of model input file - this will be preserved
             mfile_skip (`int` or `str`): header in model input file to skip
                 when reading and reapply when writing. Can optionally be `str` in which case `mf_skip` will be treated
@@ -1889,6 +1887,7 @@ class PstFrom(object):
             f"{[str(f) for f in filenames]}"
         )
         if geostruct is not None:
+            self.logger.log("using geostruct:{0}".format(str(geostruct)))
             if geostruct.sill != 1.0:  #  and par_style != "multiplier": #TODO !=?
                 self.logger.warn(
                     "geostruct sill != 1.0"  # for 'multiplier' style parameters"
