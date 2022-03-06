@@ -43,7 +43,8 @@ jobs:
             test-path: autotest_notebooks.py
           - os: windows-2019
             python-version: 3.8
-            test-path: pst_from_test.py
+            run-type: std
+            test-path: pst_from_tests.py
 
 
     steps:
