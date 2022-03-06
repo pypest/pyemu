@@ -41,6 +41,9 @@ jobs:
             python-version: 3.8
             run-type: nb
             test-path: autotest_notebooks.py
+          - os: windows-2019
+            python-version: 3.8
+            test-path: pst_from_test.py
 
 
     steps:
