@@ -1235,6 +1235,14 @@ def rename_obs_test():
 
 def pst_ctl_opt_args_test():
     import pyemu
+    pst = pyemu.Pst.from_par_obs_names()
+    print(pst.control_data.numcom)
+    pst.write("test3.pst")
+
+    lines = open("test3.pst",'r').readlines()
+    assert lines[3].strip()[-1] == "1"
+
+
     pst = pyemu.Pst(os.path.join("pst","pestpp_old.pst"))
     for i in range(10):
         pst.model_command.append("test{0}".format(i))
@@ -1249,6 +1257,9 @@ def pst_ctl_opt_args_test():
     pst3 = pyemu.Pst("test2.pst")
     #print(pst3.control_data.numcom)
     assert pst.control_data.numcom != pst3.control_data.numcom
+
+
+
 
 
 

@@ -511,5 +511,6 @@ class ControlData(object):
                 == True
                 or self._df.loc[name.replace("[", "").replace("]", ""), "required"]
                 == True
+                or name.replace("[", "").replace("]", "") in self.keyword_accessed
             ]
             f.write("\n")
