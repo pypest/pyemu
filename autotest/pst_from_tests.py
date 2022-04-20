@@ -1401,6 +1401,7 @@ def mf6_freyberg_direct_test():
             "rch_recharge": [.5, 1.5]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
     print(dts)
+    #ib = m.dis.idomain.array[0,:,:]
     # setup from array style pars
     for tag, bnd in tags.items():
         lb, ub = bnd[0], bnd[1]
@@ -3658,7 +3659,7 @@ def mf6_subdir_test():
 
 
 if __name__ == "__main__":
-    mf6_freyberg_pp_locs_test()
+    #mf6_freyberg_pp_locs_test()
     # invest()
     # freyberg_test()
     #freyberg_prior_build_test()
@@ -3666,7 +3667,7 @@ if __name__ == "__main__":
     #$mf6_freyberg_da_test()
     # mf6_freyberg_shortnames_test()
 
-    #mf6_freyberg_direct_test()
+    mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     # xsec_test()
     # mf6_freyberg_short_direct_test()
