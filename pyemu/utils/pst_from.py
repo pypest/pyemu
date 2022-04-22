@@ -505,6 +505,7 @@ class PstFrom(object):
         struct_dict = self._pivot_par_struct_dict()
         # list for holding grid style groups
         gr_pe_l = []
+        subset = self.pst.parameter_data.index
         if use_specsim:
             if not pyemu.geostats.SpecSim2d.grid_is_regular(
                 self.spatial_reference.delr, self.spatial_reference.delc
@@ -555,6 +556,8 @@ class PstFrom(object):
                             # needed if none specsim pars are linked to same geostruct
                             if not p_df.index.isin(gr_df.index).all():
                                 struct_dict[geostruct].append(p_df)
+                            else:
+                                subset = subset.difference(p_df.index)
             self.logger.log("spectral simulation for grid-scale pars")
         # draw remaining pars based on their geostruct
         self.logger.log("Drawing non-specsim pars")
@@ -564,6 +567,7 @@ class PstFrom(object):
             num_reals=num_reals,
             sigma_range=sigma_range,
             scale_offset=scale_offset,
+            subset=subset
         )
         self.logger.log("Drawing non-specsim pars")
         if len(gr_pe_l) > 0:
