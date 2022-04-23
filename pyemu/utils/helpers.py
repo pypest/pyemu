@@ -154,7 +154,7 @@ def geostatistical_draws(
             aset = set(pst.adj_par_names)
             for zone in zones:
                 df_zone = df.loc[df.zone == zone, :].copy()
-                df_zone = df_zone.loc[~df_zone.parnme.isin(aset), :]
+                df_zone = df_zone.loc[df_zone.parnme.isin(aset), :]
                 if df_zone.shape[0] == 0:
                     warnings.warn(
                         "all parameters in zone {0} tied and/or fixed, skipping...".format(

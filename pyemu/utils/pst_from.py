@@ -1,8 +1,6 @@
 from __future__ import print_function, division
 import os
 from pathlib import Path
-from datetime import datetime
-import inspect
 import warnings
 import platform
 import numpy as np
@@ -405,7 +403,7 @@ class PstFrom(object):
                 df = pd.concat(l)
                 if "timedelta" in df.columns:
                     df.loc[:, "y"] = 0  #
-                    df.loc[:, "x"] = df.timedelta.apply(lambda x: x.days)
+                    df.loc[:, "x"] = df.timedelta.dt.days
                 par_dfs.append(df)
             struct_dict[gs] = par_dfs
         return struct_dict
@@ -572,8 +570,10 @@ class PstFrom(object):
         self.logger.log("Drawing non-specsim pars")
         if len(gr_pe_l) > 0:
             gr_par_pe = pd.concat(gr_pe_l, axis=1)
-            pe.loc[:, gr_par_pe.columns] = gr_par_pe.values
-        # par_ens = pyemu.ParameterEnsemble(pst=self.pst, df=pe)
+            exist = gr_par_pe.columns.intersection(pe.columns)
+            pe = pe._df.drop(exist, axis=1)
+            pe = pd.concat([pe, gr_par_pe], axis=1)
+            pe = pyemu.ParameterEnsemble(pst=self.pst, df=pe)
         self.logger.log("drawing realizations")
         return pe
 
