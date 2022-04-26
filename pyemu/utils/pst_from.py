@@ -599,7 +599,10 @@ class PstFrom(object):
                 rewrite. If string {'pars', 'obs'} just update respective
                 components of Pst. Default is False - build from PstFrom
                 components.
-            version (`int`): control file version to write, Default is 1
+            version (`int`): control file version to write, Default is 1.
+                If None, option to not write pst to file at pst_build() call --
+                handy when control file is huge pst object will be modified
+                again before running.
         Note:
             This builds a pest control file from scratch, overwriting anything already
             in self.pst object and anything already writen to `filename`
@@ -817,8 +820,8 @@ class PstFrom(object):
 
         pst.control_data.noptmax = 0
         self.pst = pst
-
-        self.pst.write(filename, version=version)
+        if version is not None:
+            self.pst.write(filename, version=version)
         self.write_forward_run()
         pst.try_parse_name_metadata()
         return pst
