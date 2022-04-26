@@ -504,6 +504,7 @@ class PstFrom(object):
         # list for holding grid style groups
         gr_pe_l = []
         subset = self.pst.parameter_data.index
+        gr_par_pe = None
         if use_specsim:
             if not pyemu.geostats.SpecSim2d.grid_is_regular(
                 self.spatial_reference.delr, self.spatial_reference.delc
@@ -556,24 +557,30 @@ class PstFrom(object):
                                 struct_dict[geostruct].append(p_df)
                             else:
                                 subset = subset.difference(p_df.index)
+            if len(gr_pe_l) > 0:
+                gr_par_pe = pd.concat(gr_pe_l, axis=1)
             self.logger.log("spectral simulation for grid-scale pars")
         # draw remaining pars based on their geostruct
-        self.logger.log("Drawing non-specsim pars")
-        pe = pyemu.helpers.geostatistical_draws(
-            self.pst,
-            struct_dict=struct_dict,
-            num_reals=num_reals,
-            sigma_range=sigma_range,
-            scale_offset=scale_offset,
-            subset=subset
-        )
-        self.logger.log("Drawing non-specsim pars")
-        if len(gr_pe_l) > 0:
-            gr_par_pe = pd.concat(gr_pe_l, axis=1)
-            exist = gr_par_pe.columns.intersection(pe.columns)
-            pe = pe._df.drop(exist, axis=1)
-            pe = pd.concat([pe, gr_par_pe], axis=1)
-            pe = pyemu.ParameterEnsemble(pst=self.pst, df=pe)
+        if not subset.empty:
+            self.logger.log(f"Drawing {len(subset)} non-specsim pars")
+            pe = pyemu.helpers.geostatistical_draws(
+                self.pst,
+                struct_dict=struct_dict,
+                num_reals=num_reals,
+                sigma_range=sigma_range,
+                scale_offset=scale_offset,
+                subset=subset
+            )
+            self.logger.log(f"Drawing {len(subset)} non-specsim pars")
+            if gr_par_pe is not None:
+                self.logger.log(f"Joining specsim and non-specsim pars")
+                exist = gr_par_pe.columns.intersection(pe.columns)
+                pe = pe._df.drop(exist, axis=1)  # specsim par take precedence
+                pe = pd.concat([pe, gr_par_pe], axis=1)
+                pe = pyemu.ParameterEnsemble(pst=self.pst, df=pe)
+                self.logger.log(f"Joining specsim and non-specsim pars")
+        else:
+            pe = pyemu.ParameterEnsemble(pst=self.pst, df=gr_par_pe)
         self.logger.log("drawing realizations")
         return pe
 

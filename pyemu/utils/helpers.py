@@ -84,7 +84,13 @@ def geostatistical_draws(
     )
     if verbose:
         print("building diagonal cov")
-
+    if subset is not None:
+        if subset.empty or subset.intersection(pst.par_names).empty:
+            warnings.warn(
+                "Empty subset passed to draw method, or no intersecting pars "
+                "with pst...\nwill draw full cov", PyemuWarning
+            )
+            subset = None
     full_cov = pyemu.Cov.from_parameter_data(
         pst, sigma_range=sigma_range, scale_offset=scale_offset,
         subset=subset

@@ -3183,6 +3183,13 @@ class Cov(Matrix):
 
         """
         if subset is not None:
+            missing = subset.difference(pst.par_names)
+            if not missing.empty:
+                warnings.warn(
+                    f"{len(missing)} parameter names not present in Pst:\n"
+                    f"{missing}", PyemuWarning
+                )
+                subset = subset.intersection(pst.par_names)
             par_dat = pst.parameter_data.loc[subset, :]
         else:
             par_dat = pst.parameter_data
