@@ -522,8 +522,7 @@ class SpecSim2d(object):
             raise Exception(
                 "SpecSim2D grid_par_ensemble_helper() error: only a single variogram can be used..."
             )
-        gr_df.loc[:, "i"] = gr_df.i.apply(np.int64)
-        gr_df.loc[:, "j"] = gr_df.j.apply(np.int64)
+        gr_df.loc[:, ["i", "j"]] = gr_df[["i", "j"]].astype(int)
 
         # scale the total contrib
         org_var = self.geostruct.variograms[0].contribution

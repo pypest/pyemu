@@ -31,7 +31,8 @@ from pyemu.utils.os_utils import run, start_workers
 
 
 def geostatistical_draws(
-    pst, struct_dict, num_reals=100, sigma_range=4, verbose=True, scale_offset=True
+    pst, struct_dict, num_reals=100, sigma_range=4, verbose=True,
+        scale_offset=True, subset=None
 ):
     """construct a parameter ensemble from a prior covariance matrix
     implied by geostatistical structure(s) and parameter bounds.
@@ -53,6 +54,8 @@ def geostatistical_draws(
         scale_offset (`bool`,optional): flag to apply scale and offset to parameter bounds
             when calculating variances - this is passed through to `pyemu.Cov.from_parameter_data()`.
             Default is True.
+        subset (`array-like`, optional): list, array, set or pandas index defining subset of paramters
+            for draw.
 
     Returns
         **pyemu.ParameterEnsemble**: the realized parameter ensemble.
@@ -81,9 +84,16 @@ def geostatistical_draws(
     )
     if verbose:
         print("building diagonal cov")
-
+    if subset is not None:
+        if subset.empty or subset.intersection(pst.par_names).empty:
+            warnings.warn(
+                "Empty subset passed to draw method, or no intersecting pars "
+                "with pst...\nwill draw full cov", PyemuWarning
+            )
+            subset = None
     full_cov = pyemu.Cov.from_parameter_data(
-        pst, sigma_range=sigma_range, scale_offset=scale_offset
+        pst, sigma_range=sigma_range, scale_offset=scale_offset,
+        subset=subset
     )
     full_cov_dict = {n: float(v) for n, v in zip(full_cov.col_names, full_cov.x)}
 
@@ -129,14 +139,14 @@ def geostatistical_draws(
             for req in ["x", "y", "parnme"]:
                 if req not in df.columns:
                     raise Exception("{0} is not in the columns".format(req))
-            missing = df.loc[df.parnme.apply(lambda x: x not in par.parnme), "parnme"]
+            missing = df.loc[~df.parnme.isin(par.parnme), "parnme"]
             if len(missing) > 0:
                 warnings.warn(
                     "the following parameters are not "
                     + "in the control file: {0}".format(",".join(missing)),
                     PyemuWarning,
                 )
-                df = df.loc[df.parnme.apply(lambda x: x not in missing)]
+                df = df.loc[~df.parnme.isin(missing)]
             if df.shape[0] == 0:
                 warnings.warn(
                     "geostatistical_draws(): empty parameter df at position {0} items for geostruct {1}, skipping...".format(
@@ -150,7 +160,7 @@ def geostatistical_draws(
             aset = set(pst.adj_par_names)
             for zone in zones:
                 df_zone = df.loc[df.zone == zone, :].copy()
-                df_zone = df_zone.loc[df_zone.parnme.apply(lambda x: x in aset), :]
+                df_zone = df_zone.loc[df_zone.parnme.isin(aset), :]
                 if df_zone.shape[0] == 0:
                     warnings.warn(
                         "all parameters in zone {0} tied and/or fixed, skipping...".format(

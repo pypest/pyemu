@@ -3158,7 +3158,8 @@ class Cov(Matrix):
         return Cov.from_parameter_data(new_pst, sigma_range, scale_offset)
 
     @classmethod
-    def from_parameter_data(cls, pst, sigma_range=4.0, scale_offset=True):
+    def from_parameter_data(cls, pst, sigma_range=4.0, scale_offset=True,
+                            subset=None):
         """Instantiates a `Cov` from a pest control file parameter data section using
         parameter bounds as a proxy for uncertainty.
 
@@ -3172,6 +3173,7 @@ class Cov(Matrix):
             scale_offset (`bool`): flag to apply scale and offset to parameter upper and lower
                 bounds before calculating varaince. In some cases, not applying scale and
                 offset can result in undefined (log) variance.  Default is True.
+            subset (`list`-like, optional): Subset of parameters to draw
 
         Returns:
             `Cov`: diagonal parameter `Cov` matrix created from parameter bounds
@@ -3180,11 +3182,22 @@ class Cov(Matrix):
             Calls `Cov.from_parameter_data()`
 
         """
-        npar = pst.npar_adj
+        if subset is not None:
+            missing = subset.difference(pst.par_names)
+            if not missing.empty:
+                warnings.warn(
+                    f"{len(missing)} parameter names not present in Pst:\n"
+                    f"{missing}", PyemuWarning
+                )
+                subset = subset.intersection(pst.par_names)
+            par_dat = pst.parameter_data.loc[subset, :]
+        else:
+            par_dat = pst.parameter_data
+        npar = (~par_dat.partrans.isin(["fixed", "tied"])).sum()
         x = np.zeros((npar, 1))
         names = []
         idx = 0
-        for i, row in pst.parameter_data.iterrows():
+        for i, row in par_dat.iterrows():
             t = row["partrans"]
             if t in ["fixed", "tied"]:
                 continue

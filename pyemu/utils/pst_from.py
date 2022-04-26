@@ -1,8 +1,6 @@
 from __future__ import print_function, division
 import os
 from pathlib import Path
-from datetime import datetime
-import inspect
 import warnings
 import platform
 import numpy as np
@@ -405,7 +403,7 @@ class PstFrom(object):
                 df = pd.concat(l)
                 if "timedelta" in df.columns:
                     df.loc[:, "y"] = 0  #
-                    df.loc[:, "x"] = df.timedelta.apply(lambda x: x.days)
+                    df.loc[:, "x"] = df.timedelta.dt.days
                 par_dfs.append(df)
             struct_dict[gs] = par_dfs
         return struct_dict
@@ -505,6 +503,8 @@ class PstFrom(object):
         struct_dict = self._pivot_par_struct_dict()
         # list for holding grid style groups
         gr_pe_l = []
+        subset = self.pst.parameter_data.index
+        gr_par_pe = None
         if use_specsim:
             if not pyemu.geostats.SpecSim2d.grid_is_regular(
                 self.spatial_reference.delr, self.spatial_reference.delc
@@ -555,21 +555,32 @@ class PstFrom(object):
                             # needed if none specsim pars are linked to same geostruct
                             if not p_df.index.isin(gr_df.index).all():
                                 struct_dict[geostruct].append(p_df)
+                            else:
+                                subset = subset.difference(p_df.index)
+            if len(gr_pe_l) > 0:
+                gr_par_pe = pd.concat(gr_pe_l, axis=1)
             self.logger.log("spectral simulation for grid-scale pars")
         # draw remaining pars based on their geostruct
-        self.logger.log("Drawing non-specsim pars")
-        pe = pyemu.helpers.geostatistical_draws(
-            self.pst,
-            struct_dict=struct_dict,
-            num_reals=num_reals,
-            sigma_range=sigma_range,
-            scale_offset=scale_offset,
-        )
-        self.logger.log("Drawing non-specsim pars")
-        if len(gr_pe_l) > 0:
-            gr_par_pe = pd.concat(gr_pe_l, axis=1)
-            pe.loc[:, gr_par_pe.columns] = gr_par_pe.values
-        # par_ens = pyemu.ParameterEnsemble(pst=self.pst, df=pe)
+        if not subset.empty:
+            self.logger.log(f"Drawing {len(subset)} non-specsim pars")
+            pe = pyemu.helpers.geostatistical_draws(
+                self.pst,
+                struct_dict=struct_dict,
+                num_reals=num_reals,
+                sigma_range=sigma_range,
+                scale_offset=scale_offset,
+                subset=subset
+            )
+            self.logger.log(f"Drawing {len(subset)} non-specsim pars")
+            if gr_par_pe is not None:
+                self.logger.log(f"Joining specsim and non-specsim pars")
+                exist = gr_par_pe.columns.intersection(pe.columns)
+                pe = pe._df.drop(exist, axis=1)  # specsim par take precedence
+                pe = pd.concat([pe, gr_par_pe], axis=1)
+                pe = pyemu.ParameterEnsemble(pst=self.pst, df=pe)
+                self.logger.log(f"Joining specsim and non-specsim pars")
+        else:
+            pe = pyemu.ParameterEnsemble(pst=self.pst, df=gr_par_pe)
         self.logger.log("drawing realizations")
         return pe
 
@@ -588,7 +599,10 @@ class PstFrom(object):
                 rewrite. If string {'pars', 'obs'} just update respective
                 components of Pst. Default is False - build from PstFrom
                 components.
-            version (`int`): control file version to write, Default is 1
+            version (`int`): control file version to write, Default is 1.
+                If None, option to not write pst to file at pst_build() call --
+                handy when control file is huge pst object will be modified
+                again before running.
         Note:
             This builds a pest control file from scratch, overwriting anything already
             in self.pst object and anything already writen to `filename`
@@ -806,8 +820,8 @@ class PstFrom(object):
 
         pst.control_data.noptmax = 0
         self.pst = pst
-
-        self.pst.write(filename, version=version)
+        if version is not None:
+            self.pst.write(filename, version=version)
         self.write_forward_run()
         pst.try_parse_name_metadata()
         return pst
@@ -1523,10 +1537,12 @@ class PstFrom(object):
         self.logger.log(
             "adding observations from tabular output file " "'{0}'".format(filenames)
         )
+        self.logger.log("adding observations from output file " "{0}".format(filename))
         if rebuild_pst:
             if self.pst is not None:
                 self.logger.log("Adding obs to control file " "and rewriting pst")
                 self.build_pst(filename=self.pst.filename, update="obs")
+                self.logger.log("Adding obs to control file " "and rewriting pst")
             else:
                 pstname = Path(self.new_d, self.original_d.name)
                 self.logger.warn(
