@@ -1534,10 +1534,12 @@ class PstFrom(object):
         self.logger.log(
             "adding observations from tabular output file " "'{0}'".format(filenames)
         )
+        self.logger.log("adding observations from output file " "{0}".format(filename))
         if rebuild_pst:
             if self.pst is not None:
                 self.logger.log("Adding obs to control file " "and rewriting pst")
                 self.build_pst(filename=self.pst.filename, update="obs")
+                self.logger.log("Adding obs to control file " "and rewriting pst")
             else:
                 pstname = Path(self.new_d, self.original_d.name)
                 self.logger.warn(
