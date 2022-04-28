@@ -1,0 +1,87 @@
+pcf
+* control data
+# RSTFLE PESTMODE
+restart regularisation
+
+# NPAR  NOBS  NPARGP  NPRIOR  NOBSGP [MAXCOMPDIM][DERZEROLIM]
+     5      5       1     5       2
+
+# NTPLFLE NINSFLE    PRECIS   DPOINT [NUMCOM JACFILE MESSFILE] [OBSREREF]
+        1       1    single    point  1  0  0
+
+# RLAMBDA1 RLAMFAC PHIRATSUF PHIREDLAM NUMLAM [JACUPDATE] [LAMFORGIVE] [DERFORGIVE]
+        20      -3       0.3      0.01      7        999   lamforgive derforgive   UPTESTMIN=20
+
+# RELPARMAX FACPARMAX FACORIG [IBOUNDSTICK UPVECBEND] [ABSPARMAX]
+         10        10   0.001
+
+# PHIREDSWH [NOPTSWITCH] [SPLITSWH] [DOAUI] [DOSENREUSE] [BOUNDSCALE]
+       0.03            4              noaui
+
+# NOPTMAX PHIREDSTP NPHISTP NPHINORED RELPARSTP NRELPAR [PHISTOPTHRESH] [LASTRUN] [PHIABANDON]
+       25      0.01       3         3      0.01       3
+
+# ICOV ICOR IEIG [IRES] [JCOSAVE] [VERBOSEREC] [JCOSAVEITN] [REISAVEITN] [PARSAVEITN] [PARSAVERUN]
+     0    0    0   JCOSAVEITN REISAVEITN PARSAVEITN
+
+* singular value decomposition
+  1
+  5  5.000000e-007
+  0
+
+* parameter groups
+#PARGPNME INCTYP         DERINC          DERINCLB  FORCEN  DERINCMUL      DERMTHD    [SPLITTHRESH SPLITRELDIFF SPLITACTION]
+kh        relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+
+
+* parameter data
+#parnme partrans parchglim  parval1  parlbnd     parubnd  pargp   scale offset  dercom
+kh_000	log	factor	0.1	0.001	10000	kh	1.0	0.0	1
+kh_001	log	factor	0.1	0.001	10000	kh	1.0	0.0	1
+kh_002	log	factor	0.1	0.001	10000	kh	1.0	0.0	1
+kh_003	log	factor	0.1	0.001	10000	kh	1.0	0.0	1
+kh_004	log	factor	0.1	0.001	10000	kh	1.0	0.0	1
+kh_005	log	factor	0.1	0.001	10000	kh	1.0	0.0	1
+
+
+* observation groups
+ho
+regul_kh
+
+
+* observation data
+OW0			0.845		1.0		ho
+OW1			0.847		1.0		ho
+OW2			0.851		1.0		ho
+OW3			0.843		1.0		ho
+OW4			0.815		1.0		ho
+OW5			0.822		1.0		ho
+
+
+* model command line
+run_pest_model.bat
+
+
+* model input/output
+pest_tf_pp_kh.tpl          plproc_pp_kh.bco
+pest_if_heads.ins          trg_heads.sim
+
+
+* prior information
+kh_000        1.0 * log(kh_000) =  -1.000000      1.0 regul_kh
+kh_001        1.0 * log(kh_001) =  -1.000000      1.0 regul_kh
+kh_002        1.0 * log(kh_002) =  -1.000000      1.0 regul_kh
+kh_003        1.0 * log(kh_003) =  -1.000000      1.0 regul_kh
+kh_004        1.0 * log(kh_004) =  -1.000000      1.0 regul_kh
+kh_005        1.0 * log(kh_005) =  -1.000000      1.0 regul_kh
+
+
+* regularisation
+#PHIMLIM        PHIMACCEPT 	   [FRACPHIM] [MEMSAVE]
+1.0000E-10      1.0500000E-10  0.1000000    
+
+#WFINIT     WFMIN     WFMAX  [LINREG] [REGCONTINUE]
+1.0         1.0e-10   1.0e10
+
+# WFFAC    WFTOL    IREGADJ [NOPTREGADJ REGWEIGHTRAT [REGSINGTHRESH]]
+1.3        1.0e-2   1

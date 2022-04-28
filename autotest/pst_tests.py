@@ -1259,6 +1259,11 @@ def pst_ctl_opt_args_test():
     assert pst.control_data.numcom != pst3.control_data.numcom
 
 
+def invest():
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","comments_pesthp.pst"))
+    pst.write(os.path.join("newpst","comments_pesthp.pst"))
+    
 
 
 
@@ -1323,5 +1328,6 @@ if __name__ == "__main__":
 
     #rename_pars_test()
     #rename_obs_test()
-    pst_ctl_opt_args_test()
+    #pst_ctl_opt_args_test()
+    invest()
 
