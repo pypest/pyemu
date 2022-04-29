@@ -331,11 +331,13 @@ class SpecSim2d(object):
 
     Example::
 
-        v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)
+        v = pyemu.utils.geostats.ExpVario(a=100,contribution=1.0)
         gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)
-        delx,dely = np.arange(100), np.arrange(100)
+        delx,dely = np.ones(150), np.ones(50)
         ss = pyemu.utils.geostats.SpecSim2d(delx,dely,gs)
-        arrays = ss.draw(num_reals=100)
+        arr = np.squeeze(ss.draw_arrays(num_reals=1))*.05 + .08
+        plt.imshow(arr)
+        plt.colorbar(shrink=.40)
 
     """
 
