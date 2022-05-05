@@ -3,6 +3,8 @@ import os
 import glob
 import re
 import copy
+import shutil
+import time
 import warnings
 import numpy as np
 from numpy.lib.type_check import real_if_close
@@ -3836,8 +3838,7 @@ class Pst(object):
             except Exception as e:
                 print("error parsing metadata from '{0}', continuing".format(name))
 
-    def rename_parameters(self, name_dict, pst_path="."):
-        from multiprocessing import Pool
+    def rename_parameters(self, name_dict, pst_path=".", tplmap=None):
         """rename parameters in the control and template files
 
         Args:
@@ -3884,26 +3885,12 @@ class Pst(object):
 
         # pad for putting to tpl
         name_dict = {k: v.center(12) for k, v in name_dict.items()}
-        res = []
-        pool = Pool(processes=min(os.cpu_count()-1, 60))
-        for tpl_file in self.model_input_data.pest_file:
-            sys_tpl_file = os.path.join(
-                pst_path,
-                str(tpl_file).replace("/", os.path.sep).replace("\\", os.path.sep)
-            )
-            if not os.path.exists(sys_tpl_file):
-                warnings.warn(
-                    "template file '{0}' not found, continuing...", PyemuWarning
-                )
-                continue
-            res.append(pool.apply_async(_multiprocess_obspar_rename,
-                                        args=(sys_tpl_file, name_dict)))
-        [x.get() for x in res]
-        pool.close()
-        pool.join()
+        filelist = self.model_input_data.pest_file
+        _replace_str_in_files(filelist, name_dict, file_obsparmap=tplmap,
+                              pst_path=pst_path)
 
-    def rename_observations(self, name_dict, pst_path="."):
-        from multiprocessing import Pool
+
+    def rename_observations(self, name_dict, pst_path=".", insmap=None):
         """rename observations in the control and instruction files
 
         Args:
@@ -3935,29 +3922,113 @@ class Pst(object):
         obs = self.observation_data
         obs.loc[:, "obsnme"] = obs.obsnme.apply(lambda x: name_dict.get(x, x))
         obs.index = obs.obsnme.values
+        _replace_str_in_files(self.model_output_data.pest_file, name_dict,
+                              file_obsparmap=insmap, pst_path=pst_path)
 
-        pool = Pool(processes=min(os.cpu_count()-1, 60))
+
+def _replace_str_in_files(filelist, name_dict, file_obsparmap=None, pst_path='.'):
+    import multiprocessing as mp
+    with mp.get_context("spawn").Pool(
+            processes=min(os.cpu_count()-1, 60)) as pool:
         res = []
-        for ins_file in self.model_output_data.pest_file:
-            sys_ins_file = os.path.join(
-                pst_path, str(ins_file).replace("/", os.path.sep).replace("\\", os.path.sep)
+        for fname in filelist:
+            sys_fname = os.path.join(
+                pst_path,
+                str(fname).replace("/", os.path.sep).replace("\\", os.path.sep)
             )
-            if not os.path.exists(sys_ins_file):
+            if not os.path.exists(sys_fname):
                 warnings.warn(
-                    "instruction file '{0}' not found, continuing...", PyemuWarning
+                    "template/instruction file '{0}' not found, continuing...",
+                    PyemuWarning
                 )
                 continue
+            if file_obsparmap is not None:
+                if sys_fname not in file_obsparmap.keys():
+                    continue
+                sub_name_dict = {v: name_dict[v]
+                                 for v in file_obsparmap[sys_fname]}
+                rex = None
+            else:
+                sub_name_dict = name_dict
+                trie = pyemu.helpers.Trie()
+                [trie.add(onme) for onme in name_dict.keys()]
+                rex = re.compile(trie.pattern())
+            # _multiprocess_obspar_rename(sys_fname, sub_name_dict, rex)
             res.append(pool.apply_async(_multiprocess_obspar_rename,
-                                        args=(sys_ins_file, name_dict)))
-        [x.get() for x in res]
+                                        args=(sys_fname, sub_name_dict, rex)))
+        [r.get for r in res]
         pool.close()
         pool.join()
 
 
-def _multiprocess_obspar_rename(sys_file, map_dict):
+def _multiprocess_obspar_rename(sys_file, map_dict, rex=None):
+    print(f"    find/replace long->short in {sys_file}")
+    t0 = time.time()
+    _multiprocess_obspar_rename_v3(sys_file, map_dict, rex=rex)
+    # with open(sys_file, "rt") as f:
+    #     nl = len(f.readlines())
+    # np = len(map_dict)
+    # if rex is None:
+    #     if np > 1e6:  # regex compile might be the major slowdown
+    #         _multiprocess_obspar_rename_v0(sys_file, map_dict)
+    #     elif nl > 100:  # favour line by line to conserve mem
+    #         _multiprocess_obspar_rename_v2(sys_file, map_dict, rex)
+    #     else: # read and replace whole file
+    #         _multiprocess_obspar_rename_v1(sys_file, map_dict, rex)
+    # else:
+    #     if nl > 100:  # favour line by line to conserve mem
+    #         _multiprocess_obspar_rename_v2(sys_file, map_dict, rex)
+    #     else:  # read and replace whole file
+    #         _multiprocess_obspar_rename_v1(sys_file, map_dict, rex)
+    shutil.copy(sys_file+".tmp", sys_file)
+    os.remove(sys_file+".tmp")
+    print(f"    find/replace long->short in {sys_file}... "
+          f"took {time.time()-t0: .2f} s")
+
+
+# def _multiprocess_obspar_rename_v0(sys_file, map_dict):
+#     # memory intensive when file is big
+#     # slow when file is big & when map_dict is long
+#     # although maybe less slow than v1 and v2 when map_dict is the same across
+#     # files - unless rex is precompiled outside mp call
+#     with open(sys_file, "rt") as f:
+#         x = f.read()
+#     with open(sys_file+".tmp", "wt") as f:
+#         for old in sorted(map_dict.keys(), key=len, reverse=True):
+#             x = x.replace(old, map_dict[old])
+#         f.write(x)
+
+
+# def _multiprocess_obspar_rename_v1(sys_file, map_dict, rex=None):
+#     # memory intensive as whole file is read into memory
+#     # maybe faster than v2 when file is big but map_dict is relativly small
+#     # but look out for memory
+#     if rex is None:
+#         rex = re.compile("|".join(
+#             map(re.escape, sorted(map_dict.keys(), key=len, reverse=True))))
+#     with open(sys_file, "rt") as f:
+#         x = f.read()
+#     with open(sys_file+".tmp", "wt") as f:
+#         f.write(rex.sub(lambda s: map_dict[s.group()], x))
+
+
+# def _multiprocess_obspar_rename_v2(sys_file, map_dict, rex=None):
+#     # line by line
+#     if rex is None:
+#         rex = re.compile("|".join(
+#             map(re.escape, sorted(map_dict.keys(), key=len, reverse=True))))
+#     with open(sys_file, "rt") as f, open(sys_file+'.tmp', 'w') as fo:
+#         for line in f:
+#             fo.write(rex.sub(lambda s: map_dict[s.group()], line))
+
+
+def _multiprocess_obspar_rename_v3(sys_file, map_dict, rex=None):
+    # build a trie for rapid regex interaction,
+    if rex is None:
+        trie = pyemu.helpers.Trie()
+        _ = [trie.add(word) for word in map_dict.keys()]
+        rex = re.compile(trie.pattern())
     with open(sys_file, "rt") as f:
         x = f.read()
-    with open(sys_file, "wt") as f:
-        for old in sorted(map_dict, key=len, reverse=True):
-            x = x.replace(old, map_dict[old])
-        f.write(x)
+    with open(sys_file + ".tmp", "wt") as f:
+        f.write(rex.sub(lambda s: map_dict[s.group()], x))
