@@ -326,4 +326,6 @@ def calc_metric_ensemble(
                 ret_df["{}_{}".format(cm.upper(), cg)] = [
                     f(ens.loc[i][cnames], obs.loc[cnames].obsval) for i in ret_df.index
                 ]
+        ret_df = ret_df.copy()
+
     return ret_df
