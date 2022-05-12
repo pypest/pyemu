@@ -134,6 +134,7 @@ class PstFrom(object):
 
         self.tpl_filenames, self.input_filenames = [], []
         self.ins_filenames, self.output_filenames = [], []
+        self.insfile_obsmap = {}
 
         self.longnames = bool(longnames)
         self.logger = pyemu.Logger("PstFrom.log", echo=echo)
@@ -610,10 +611,10 @@ class PstFrom(object):
             The new pest control file is assigned an NOPTMAX value of 0
 
         """
-        # import cProfile
-        # pd.set_option('display.max_rows', 500)
-        # pd.set_option('display.max_columns', 500)
-        # pd.set_option('display.width', 1000)
+        import cProfile
+        pd.set_option('display.max_rows', 500)
+        pd.set_option('display.max_columns', 500)
+        pd.set_option('display.width', 1000)
 
         par_data_cols = pyemu.pst_utils.pst_config["par_fieldnames"]
         obs_data_cols = pyemu.pst_utils.pst_config["obs_fieldnames"]
@@ -656,7 +657,8 @@ class PstFrom(object):
         if "pars" in update.keys() or not uupdate:
             if len(self.par_dfs) > 0:
                 # parameter data from object
-                par_data = pd.concat(self.par_dfs).loc[:, par_data_cols]
+                full_par_dat = pd.concat(self.par_dfs)
+                par_data = full_par_dat.loc[:, par_data_cols]
                 # info relating parameter multiplier files to model input files
                 parfile_relations = self.parfile_relations
                 parfile_relations.to_csv(self.new_d / "mult2model_info.csv")
@@ -717,9 +719,19 @@ class PstFrom(object):
                 ]
                 # set to dict
                 parmap = par_data.loc[npd.index, "shortname"].to_dict()
+                # get shortlist of pars for each tpl
+                tpl_shortlist = full_par_dat.loc[npd.index].groupby(
+                    'tpl_filename').parnme.groups
+                tpl_shortlist = {str(k): v.to_list()
+                                 for k, v in tpl_shortlist.items()}
                 # rename parnames and propagate to tpls etc.
                 self.logger.log("Renaming parameters for shortnames")
-                pst.rename_parameters(parmap, pst_path=self.new_d)
+                # pr = cProfile.Profile()
+                # pr.enable()
+                pst.rename_parameters(parmap,
+                                      pst_path=self.new_d,
+                                      tplmap=tpl_shortlist)
+                # pr.disable()
                 self.logger.log("Renaming parameters for shortnames")
                 # rename in struct dicts
                 self._rename_par_struct_dict(parmap)
@@ -741,7 +753,8 @@ class PstFrom(object):
                 self.logger.log("Converting parameters to shortnames")
         if "obs" in update.keys() or not uupdate:
             if len(self.obs_dfs) > 0:
-                obs_data = pd.concat(self.obs_dfs).loc[:, obs_data_cols]
+                full_obs_data = pd.concat(self.obs_dfs)
+                obs_data = full_obs_data.loc[:, obs_data_cols]
             else:
                 obs_data = pyemu.pst_utils._populate_dataframe(
                     [], pst.obs_fieldnames, pst.obs_defaults, pst.obs_dtype
@@ -779,8 +792,6 @@ class PstFrom(object):
             )
             # rename pars and obs in case short names are desired
             if not self.longnames:
-                # pr = cProfile.Profile()
-                # pr.enable()
                 self.logger.log("Converting observations to shortnames")
                 # pull out again for shorthand access
                 obs_data = pst.observation_data
@@ -792,10 +803,18 @@ class PstFrom(object):
                     'ob' + f"{i}" for i in range(shtmx, shtmx+len(nod))
                 ]
                 obsmap = obs_data.loc[nod.index, "shortname"].to_dict()
+                insmap = {str(Path(self.new_d, k)): v
+                          for k, v in self.insfile_obsmap.items()
+                          if len(nod.index.intersection(v))>0}
                 # rename obsnames and propagate to ins files
+                # pr2 = cProfile.Profile()
+                # pr2.enable()
                 self.logger.log("Renaming observations for shortnames")
-                pst.rename_observations(obsmap, pst_path=self.new_d)
+                pst.rename_observations(obsmap,
+                                        pst_path=self.new_d,
+                                        insmap=insmap)
                 self.logger.log("Renaming observations for shortnames")
+                # pr2.disable()
                 obs_data.set_index("shortname")["longname"].to_csv(
                     filename.with_name('obslongname.map'))
                 nod.index = nod.index.map(obsmap)
@@ -824,6 +843,8 @@ class PstFrom(object):
             self.pst.write(filename, version=version)
         self.write_forward_run()
         pst.try_parse_name_metadata()
+        # pr.print_stats(sort="cumtime")
+        # pr2.print_stats(sort="cumtime")
         return pst
 
     def _setup_dirs(self):
@@ -1407,136 +1428,127 @@ class PstFrom(object):
             self.logger.log(
                 "adding observations from array output file '{0}'".format(filenames)
             )
-            if rebuild_pst:
-                if self.pst is not None:
-                    self.logger.log("Adding obs to control file " "and rewriting pst")
-                    self.build_pst(filename=self.pst.filename, update="obs")
-                else:
-                    self.build_pst(filename=self.pst.filename, update=False)
-                    self.logger.warn(
-                        "pst object not available, " "new control file will be written"
-                    )
-            return new_obs
-
-        # list style obs
-        self.logger.log(
-            "adding observations from tabular output file " "'{0}'".format(filenames)
-        )
-        # -- will end up here if either of index_cols or use_cols is not None
-        df, storehead, inssep = self._load_listtype_file(
-            filenames, index_cols, use_cols, fmts, seps, skip_rows
-        )
-        if inssep != ",":
-            inssep = seps
         else:
-            inssep = [inssep]
-        # rectify df?
-        # if iloc[0] are strings and index_cols are ints,
-        # can we assume that there were infact column headers?
-        if all(isinstance(c, str) for c in df.iloc[0]) and all(
-            isinstance(a, int) for a in index_cols
-        ):
-            index_cols = df.iloc[0][index_cols].to_list()  # redefine index_cols
-            if use_cols is not None:
-                use_cols = df.iloc[0][use_cols].to_list()  # redefine use_cols
-            df = (
-                df.rename(columns=df.iloc[0].to_dict())
-                .drop(0)
-                .reset_index(drop=True)
-                .apply(pd.to_numeric, errors="ignore")
-            )
-        # Select all non index cols if use_cols is None
-        if use_cols is None:
-            use_cols = df.columns.drop(index_cols).tolist()
-        # Currently just passing through comments in header (i.e. before the table data)
-        lenhead = 0
-        stkeys = np.array(
-            sorted(storehead.keys())
-        )  # comments line numbers as sorted array
-        if stkeys.size > 0 and stkeys.min() == 0:
-            lenhead += 1 + np.sum(np.diff(stkeys) == 1)
-        new_obs_l = []
-        for filename, sep in zip(
-            filenames, inssep
-        ):  # should only ever be one but hey...
+            # list style obs
             self.logger.log(
-                "building insfile for tabular output file {0}" "".format(filename)
+                "adding observations from tabular output file " "'{0}'".format(filenames)
             )
-            # Build dataframe from output file df for use in insfile
-            df_temp = _get_tpl_or_ins_df(
-                df,
-                prefix,
-                typ="obs",
-                index_cols=index_cols,
-                use_cols=use_cols,
+            # -- will end up here if either of index_cols or use_cols is not None
+            df, storehead, inssep = self._load_listtype_file(
+                filenames, index_cols, use_cols, fmts, seps, skip_rows
             )
-            df.loc[:, "idx_str"] = df_temp.idx_strs
-            # Select only certain rows if requested
-            if use_rows is not None:
-                if isinstance(use_rows, str):
-                    if use_rows not in df.idx_str:
-                        self.logger.warn(
-                            "can't find {0} in generated observation idx_str. "
-                            "setting up obs for all rows instead"
-                            "".format(use_rows)
-                        )
-                        use_rows = None
-                elif isinstance(use_rows, int):
-                    use_rows = [use_rows]
-                use_rows = [r for r in use_rows if r <= len(df)]
-                use_rows = df.iloc[use_rows].idx_str.unique()
-
-            # Construct ins_file from df
-            # first rectify group name with number of columns
-            ncol = len(use_cols)
-            fill = True  # default fill=True means that the groupname will be
-            # derived from the base of the observation name
-            # if passed group name is a string or list with len < ncol
-            # and passed use_cols was None or of len > len(obsgp)
-            if obsgp is not None:
-                if use_cols_psd is None:  # no use_cols defined (all are setup)
-                    if len([obsgp] if isinstance(obsgp, str) else obsgp) == 1:
-                        # only 1 group provided, assume passed obsgp applys
-                        # to all use_cols
-                        fill = "first"
-                    else:
-                        # many obs groups passed, assume last will fill if < ncol
-                        fill = "last"
-                # else fill will be set to True (base of obs name will be used)
+            if inssep != ",":
+                inssep = seps
             else:
-                obsgp = True  # will use base of col
-            obsgp = _check_var_len(obsgp, ncol, fill=fill)
-            nprefix = prefix
+                inssep = [inssep]
+            # rectify df?
+            # if iloc[0] are strings and index_cols are ints,
+            # can we assume that there were infact column headers?
+            if all(isinstance(c, str) for c in df.iloc[0]) and all(
+                isinstance(a, int) for a in index_cols
+            ):
+                index_cols = df.iloc[0][index_cols].to_list()  # redefine index_cols
+                if use_cols is not None:
+                    use_cols = df.iloc[0][use_cols].to_list()  # redefine use_cols
+                df = (
+                    df.rename(columns=df.iloc[0].to_dict())
+                    .drop(0)
+                    .reset_index(drop=True)
+                    .apply(pd.to_numeric, errors="ignore")
+                )
+            # Select all non index cols if use_cols is None
+            if use_cols is None:
+                use_cols = df.columns.drop(index_cols).tolist()
+            # Currently just passing through comments in header (i.e. before the table data)
+            lenhead = 0
+            stkeys = np.array(
+                sorted(storehead.keys())
+            )  # comments line numbers as sorted array
+            if stkeys.size > 0 and stkeys.min() == 0:
+                lenhead += 1 + np.sum(np.diff(stkeys) == 1)
+            new_obs_l = []
+            for filename, sep in zip(
+                filenames, inssep
+            ):  # should only ever be one but hey...
+                self.logger.log(
+                    "building insfile for tabular output file {0}" "".format(filename)
+                )
+                # Build dataframe from output file df for use in insfile
+                df_temp = _get_tpl_or_ins_df(
+                    df,
+                    prefix,
+                    typ="obs",
+                    index_cols=index_cols,
+                    use_cols=use_cols,
+                )
+                df.loc[:, "idx_str"] = df_temp.idx_strs
+                # Select only certain rows if requested
+                if use_rows is not None:
+                    if isinstance(use_rows, str):
+                        if use_rows not in df.idx_str:
+                            self.logger.warn(
+                                "can't find {0} in generated observation idx_str. "
+                                "setting up obs for all rows instead"
+                                "".format(use_rows)
+                            )
+                            use_rows = None
+                    elif isinstance(use_rows, int):
+                        use_rows = [use_rows]
+                    use_rows = [r for r in use_rows if r <= len(df)]
+                    use_rows = df.iloc[use_rows].idx_str.unique()
 
-            if len(nprefix) == 0:
-                nprefix = filenames[0]
-            nprefix = "oname:{0}_otype:lst".format(nprefix)
-            df_ins = pyemu.pst_utils.csv_to_ins_file(
-                df.set_index("idx_str"),
-                ins_filename=self.new_d / insfile,
-                only_cols=use_cols,
-                only_rows=use_rows,
-                marker="~",
-                includes_header=includes_header,
-                includes_index=False,
-                prefix=nprefix,
-                head_lines_len=lenhead,
-                sep=sep,
-                gpname=obsgp,
-            )
+                # Construct ins_file from df
+                # first rectify group name with number of columns
+                ncol = len(use_cols)
+                fill = True  # default fill=True means that the groupname will be
+                # derived from the base of the observation name
+                # if passed group name is a string or list with len < ncol
+                # and passed use_cols was None or of len > len(obsgp)
+                if obsgp is not None:
+                    if use_cols_psd is None:  # no use_cols defined (all are setup)
+                        if len([obsgp] if isinstance(obsgp, str) else obsgp) == 1:
+                            # only 1 group provided, assume passed obsgp applys
+                            # to all use_cols
+                            fill = "first"
+                        else:
+                            # many obs groups passed, assume last will fill if < ncol
+                            fill = "last"
+                    # else fill will be set to True (base of obs name will be used)
+                else:
+                    obsgp = True  # will use base of col
+                obsgp = _check_var_len(obsgp, ncol, fill=fill)
+                nprefix = prefix
+
+                if len(nprefix) == 0:
+                    nprefix = filenames[0]
+                nprefix = "oname:{0}_otype:lst".format(nprefix)
+                df_ins = pyemu.pst_utils.csv_to_ins_file(
+                    df.set_index("idx_str"),
+                    ins_filename=self.new_d / insfile,
+                    only_cols=use_cols,
+                    only_rows=use_rows,
+                    marker="~",
+                    includes_header=includes_header,
+                    includes_index=False,
+                    prefix=nprefix,
+                    head_lines_len=lenhead,
+                    sep=sep,
+                    gpname=obsgp,
+                )
+                self.logger.log(
+                    "building insfile for tabular output file {0}" "".format(filename)
+                )
+                new_obs = self.add_observations_from_ins(
+                    ins_file=self.new_d / insfile, out_file=self.new_d / filename
+                )
+                if "obgnme" in df_ins.columns:
+                    new_obs.loc[:, "obgnme"] = df_ins.loc[new_obs.index, "obgnme"]
+                new_obs_l.append(new_obs)
+            new_obs = pd.concat(new_obs_l)
             self.logger.log(
-                "building insfile for tabular output file {0}" "".format(filename)
+                "adding observations from tabular output file " "'{0}'".format(filenames)
             )
-            new_obs = self.add_observations_from_ins(
-                ins_file=self.new_d / insfile, out_file=self.new_d / filename
-            )
-            if "obgnme" in df_ins.columns:
-                new_obs.loc[:, "obgnme"] = df_ins.loc[new_obs.index, "obgnme"]
-            new_obs_l.append(new_obs)
-        new_obs = pd.concat(new_obs_l)
-        self.logger.log(
-            "adding observations from tabular output file " "'{0}'".format(filenames)
-        )
+        self.insfile_obsmap[insfile] = new_obs.obsnme.to_list()
         self.logger.log("adding observations from output file " "{0}".format(filename))
         if rebuild_pst:
             if self.pst is not None:
