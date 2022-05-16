@@ -774,8 +774,8 @@ class PstFrom(object):
                     obs_data_orig = obs_data_orig.set_index(
                         "longname")
                     # starting point for updated mapping
-                    shtmx = obs_data_orig.obsnme.str.strip('ob').astype(int).max() + 1
-                    gshtmx = obs_data_orig.obgnme.str.strip('obg').astype(int).max() + 1
+                    shtmx = obs_data_orig.obsnme.str.lstrip('ob').astype(int).max() + 1
+                    gshtmx = obs_data_orig.obgnme.str.lstrip('l_obg').astype(int).max() + 1
                 # index of new obs (might need this later)
                 new_obs_data = obs_data.index.difference(obs_data_orig.index)
             else:
@@ -824,6 +824,10 @@ class PstFrom(object):
                                        columns=['longname'])
                 # shortnames from using previous a starting point (if existing)
                 obgpmap["shortname"] = "obg" + (obgpmap.index+gshtmx).astype(str)
+                ltobs = obgpmap.longname.str.startswith(("l_", "less_", ">@"))
+                obgpmap.loc[ltobs, "shortname"] = "l_" + obgpmap.loc[ltobs, "shortname"]
+                gtobs = obgpmap.longname.str.startswith(("g_", "greater_", "<@"))
+                obgpmap.loc[gtobs, "shortname"] = "g_" + obgpmap.loc[gtobs, "shortname"]
                 obgpmap_dict = obgpmap.set_index('longname').shortname.to_dict()
                 obs_data.loc[nod.index, "oglong"] = nod.obgnme
                 obs_data.loc[nod.index, 'obgnme'] = nod.obgnme.map(obgpmap_dict)
