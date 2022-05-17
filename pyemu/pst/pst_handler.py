@@ -147,6 +147,13 @@ class Pst(object):
         """
         return pst_utils.generic_pst(par_names=par_names, obs_names=obs_names)
 
+    @staticmethod
+    def get_constraint_tags(ltgt='lt'):
+        if ltgt == 'lt':
+            return "l_", "less", ">@"
+        else:
+            return "g_", "greater", "<@"
+
     @property
     def phi(self):
         """get the weighted total objective function.
@@ -207,19 +214,11 @@ class Pst(object):
             # components[og] = np.sum((og_res_df["residual"] *
             #                          og_df["weight"]) ** 2)
             mod_vals = og_res_df.loc[og_df.obsnme, "modelled"]
-            if (
-                og.lower().startswith("g_")
-                or og.lower().startswith("greater_")
-                or og.lower().startswith("<@")
-            ):
+            if og.lower().startswith(self.get_constraint_tags('gt')):
                 mod_vals.loc[mod_vals >= og_df.loc[:, "obsval"]] = og_df.loc[
                     :, "obsval"
                 ]
-            elif (
-                og.lower().startswith("l_")
-                or og.lower().startswith("less_")
-                or og.lower().startswith(">@")
-            ):
+            elif og.lower().startswith(self.get_constraint_tags('lt')):
                 mod_vals.loc[mod_vals <= og_df.loc[:, "obsval"]] = og_df.loc[
                     :, "obsval"
                 ]
@@ -249,18 +248,10 @@ class Pst(object):
                         + " vs. "
                         + str(og_res_df.shape)
                     )
-                if (
-                    og.lower().startswith("g_")
-                    or og.lower().startswith("greater_")
-                    or og.lower().startswith("<@")
-                ):
+                if og.lower().startswith(self.get_constraint_tags('gt')):
                     gidx = og_res_df.loc[:, "residual"] >= 0
                     og_res_df.loc[gidx, "residual"] = 0
-                elif (
-                    og.lower().startswith("l_")
-                    or og.lower().startswith("less_")
-                    or og.lower().startswith(">@")
-                ):
+                elif og.lower().startswith(self.get_constraint_tags('lt')):
                     lidx = og_res_df.loc[:, "residual"] <= 0
                     og_res_df.loc[lidx, "residual"] = 0
                 components[og] = np.sum((og_res_df["residual"] * og_df["weight"]) ** 2)
@@ -2382,10 +2373,10 @@ class Pst(object):
             res = self.res.loc[names, :].residual
             og = obs.obgnme
             res.loc[
-                (og.str.startswith(("g_", "greater_", "<@"))) &
+                (og.str.startswith(self.get_constraint_tags('gt'))) &
                 (res <= 0)] = 0
             res.loc[
-                (og.str.startswith(("l_", "less_", ">@"))) &
+                (og.str.startswith(self.get_constraint_tags('lt'))) &
                 (res >= 0)] = 0
             swr = (res * obs.weight) ** 2
             factors = (1.0 / swr).apply(np.sqrt)
@@ -2474,10 +2465,10 @@ class Pst(object):
             ).loc[tmpobs.index]
             og = tmpobs.obgnme
             resid.loc[
-                (og.str.startswith(("g_", "greater_", "<@"))) &
+                (og.str.startswith(self.get_constraint_tags('gt'))) &
                 (resid <= 0)] = 0
             resid.loc[
-                (og.str.startswith(("l_", "less_", ">@"))) &
+                (og.str.startswith(self.get_constraint_tags('lt'))) &
                 (resid >= 0)] = 0
 
             actual_phi = np.sum(
@@ -3576,10 +3567,10 @@ class Pst(object):
     #     print("executing {0} in dir {1}".format(cmd_line, cwd))
     #     pyemu.utils.os_utils.run(cmd_line,cwd=cwd)
 
-    @staticmethod
-    def _is_less_const(name):
-        constraint_tags = ["l_", "less"]
-        return True in [True for c in constraint_tags if name.startswith(c)]
+    # @staticmethod
+    # def _is_less_const(name):
+    #     constraint_tags = ["l_", "less"]
+    #     return True in [True for c in constraint_tags if name.startswith(c)]
 
     @property
     def less_than_obs_constraints(self):
@@ -3594,13 +3585,10 @@ class Pst(object):
              Zero-weighted obs are skipped
 
         """
-
         obs = self.observation_data
         lt_obs = obs.loc[
-            obs.apply(
-                lambda x: self._is_less_const(x.obgnme) and x.weight != 0.0, axis=1
-            ),
-            "obsnme",
+            obs.obgnme.str.startswith(self.get_constraint_tags('lt')) &
+            (obs.weight != 0.0), "obsnme"
         ]
         return lt_obs
 
@@ -3620,17 +3608,15 @@ class Pst(object):
 
         pi = self.prior_information
         lt_pi = pi.loc[
-            pi.apply(
-                lambda x: self._is_less_const(x.obgnme) and x.weight != 0.0, axis=1
-            ),
-            "pilbl",
+            pi.obgnme.str.startswith(self.get_constraint_tags('lt')) &
+            (pi.weight != 0.0), "pilbl"
         ]
         return lt_pi
 
-    @staticmethod
-    def _is_greater_const(name):
-        constraint_tags = ["g_", "greater"]
-        return True in [True for c in constraint_tags if name.startswith(c)]
+    # @staticmethod
+    # def _is_greater_const(name):
+    #     constraint_tags = ["g_", "greater"]
+    #     return True in [True for c in constraint_tags if name.startswith(c)]
 
     @property
     def greater_than_obs_constraints(self):
@@ -3648,10 +3634,8 @@ class Pst(object):
 
         obs = self.observation_data
         gt_obs = obs.loc[
-            obs.apply(
-                lambda x: self._is_greater_const(x.obgnme) and x.weight != 0.0, axis=1
-            ),
-            "obsnme",
+            obs.obgnme.str.startswith(self.get_constraint_tags('gt')) &
+            (obs.weight != 0.0), "obsnme"
         ]
         return gt_obs
 
@@ -3672,11 +3656,9 @@ class Pst(object):
 
         pi = self.prior_information
         gt_pi = pi.loc[
-            pi.apply(
-                lambda x: self._is_greater_const(x.obgnme) and x.weight != 0.0, axis=1
-            ),
-            "pilbl",
-        ]
+            pi.obgnme.str.startswith(self.get_constraint_tags('gt')) &
+            (pi.weight != 0.0),
+            "pilbl"]
         return gt_pi
 
     def get_par_change_limits(self):
