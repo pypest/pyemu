@@ -65,6 +65,10 @@ def res_and_ens_test():
     assert fcns['mse'](m,o) == 0.0
     assert fcns['mae'](m,o) == 0.0
     assert fcns['pbias'](m,o) == 0.0
+    assert fcns['bias'](m,o) == 0.0
+    assert fcns['relative_bias'](m,o) == 0.0
+    assert fcns['standard_error'](m,o) == 0.0
+    assert fcns['volumetric_efficiency'](m,o) == 1.0
     assert fcns['kge'](m,o) == 1.0
     
 if __name__ == "__main__":

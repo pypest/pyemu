@@ -48,6 +48,42 @@ def _MAE(mod, obs):
     """
     return np.mean(np.abs(obs - mod))
 
+def _STANDARD_ERROR(mod, obs):
+    """
+    Calculate Standard Error as defined in TSPROC manual
+    https://pubs.usgs.gov/tm/tm7c7/pdf/TM7_C7_112712.pdf
+
+    Args:
+        obs: numpy array of observed values
+        mod: numpy array of modeled values
+    """
+    return np.sqrt(np.sum((mod-obs)**2)/(len(obs)-1))
+
+def _RELATIVE_STANDARD_ERROR(mod, obs):
+    """
+    Calculate Relative Standard Error as defined in TSPROC manual
+    https://pubs.usgs.gov/tm/tm7c7/pdf/TM7_C7_112712.pdf
+
+    Args:
+        obs: numpy array of observed values
+        mod: numpy array of modeled values
+    """
+    return _STANDARD_ERROR(mod, obs) / np.sqrt(np.sum((obs-np.nanmean(obs))**2)/(len(obs)-1))
+
+
+
+    
+
+def _VOLUMETRIC_EFFICIENCY(mod, obs):
+    """
+    Calculate Volumetric Efficiency as defined in TSPROC manual
+    https://pubs.usgs.gov/tm/tm7c7/pdf/TM7_C7_112712.pdf
+
+    Args:
+        obs: numpy array of observed values
+        mod: numpy array of modeled values
+    """
+    return 1 - ((np.sum(np.abs(mod-obs)))/(np.sum(obs)))
 
 def _MSE(mod, obs):
     """
@@ -147,6 +183,27 @@ def _PBIAS(mod, obs):
     """
     return 100 * ((np.sum(mod - obs)) / (np.sum(obs)))
 
+def _BIAS(mod, obs):
+    """
+    Calculate Bias as defined in TSPROC manual
+    https://pubs.usgs.gov/tm/tm7c7/pdf/TM7_C7_112712.pdf
+
+    Args:
+        obs: numpy array of observed values
+        mod: numpy array of modeled values
+    """
+    return ((np.sum(mod - obs)) / (np.sum(obs)))/len(obs)
+
+def _RELATIVE_BIAS(mod, obs):
+    """
+    Calculate Relative Bias as defined in TSPROC manual
+    https://pubs.usgs.gov/tm/tm7c7/pdf/TM7_C7_112712.pdf
+
+    Args:
+        obs: numpy array of observed values
+        mod: numpy array of modeled values
+    """
+    return _BIAS(mod, obs) / np.nanmean(obs)
 
 def _KGE(mod, obs):
     """
@@ -174,6 +231,8 @@ def _KGE(mod, obs):
 # available metrics to calculate
 ALLMETRICS = {
     "pbias": _PBIAS,
+    "bias": _BIAS,
+    "relative_bias": _RELATIVE_BIAS,
     "rmse": _RMSE,
     "mse": _MSE,
     "nse": _NSE,
@@ -184,6 +243,10 @@ ALLMETRICS = {
     "nrmse_mean": _NRMSE_MEAN,
     "nrmse_iq": _NRMSE_IQ,
     "nrmse_maxmin": _NRMSE_MAXMIN,
+    "standard_error": _STANDARD_ERROR,
+    "volumetric_efficiency": _VOLUMETRIC_EFFICIENCY,
+    "relative_standard_error": _RELATIVE_STANDARD_ERROR
+
 }
 
 
