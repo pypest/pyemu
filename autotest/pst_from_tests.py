@@ -3817,8 +3817,8 @@ if __name__ == "__main__":
     #freyberg_prior_build_test()
     # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
-    shortname_conversion_test()
-    mf6_freyberg_shortnames_test()
+    #shortname_conversion_test()
+    #mf6_freyberg_shortnames_test()
     # mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     # xsec_test()
@@ -3833,7 +3833,7 @@ if __name__ == "__main__":
     # tpf.test_add_array_parameters_pps_grid()
     # # pstfrom_profile()
     #mf6_freyberg_arr_obs_and_headerless_test()
-    #usg_freyberg_test()
+    usg_freyberg_test()
 
 
 

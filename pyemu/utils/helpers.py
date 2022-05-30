@@ -3704,6 +3704,10 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     if "operator" not in df.columns:
         df.loc[:, "operator"] = "m"
     df.loc[pd.isna(df.operator), "operator"] = "m"
+    file_cols = df.columns.values[df.columns.str.contains("file")]
+    for file_col in file_cols:
+        df.loc[:,file_col] = df.loc[:,file_col].apply(lambda x: os.path.join(*x.replace("\\","/").split("/")) if isinstance(x,str) else x)
+    df.to_csv("test.csv")
     arr_pars = df.loc[df.index_cols.isna()].copy()
     list_pars = df.loc[df.index_cols.notna()].copy()
     # extract lists from string in input df
@@ -3711,6 +3715,7 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     list_pars["use_cols"] = list_pars.use_cols.apply(literal_eval)
     list_pars["lower_bound"] = list_pars.lower_bound.apply(literal_eval)
     list_pars["upper_bound"] = list_pars.upper_bound.apply(literal_eval)
+
     # TODO check use_cols is always present
     apply_genericlist_pars(list_pars, chunk_len=chunk_len)
     apply_array_pars(arr_pars, chunk_len=chunk_len)
