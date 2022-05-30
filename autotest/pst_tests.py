@@ -1301,7 +1301,7 @@ if __name__ == "__main__":
     #comments_test()
     #test_e_clean()
     # load_test()
-    # res_test()
+    res_test()
     #
     # from_io_with_inschek_test()
     # pestpp_args_test()
@@ -1330,4 +1330,5 @@ if __name__ == "__main__":
     #rename_obs_test()
     #pst_ctl_opt_args_test()
     invest()
+    # pst_ctl_opt_args_test()
 
