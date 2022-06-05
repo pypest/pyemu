@@ -276,7 +276,7 @@ class Pst(object):
         phi = self.phi
         comps = self.phi_components
         norm = {i: c / phi for i, c in comps.items()}
-        print(phi, comps, norm)
+        #print(phi, comps, norm)
 
         return norm
 
