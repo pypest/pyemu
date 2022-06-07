@@ -1240,6 +1240,12 @@ class Pst(object):
         self._load_version2(filename)
         self._try_load_longnames()
         self.try_parse_name_metadata()
+        self._reset_file_paths_os()
+
+    def _reset_file_paths_os(self):
+        for df in [self.model_output_data,self.model_input_data]:
+            for col in ["pest_file","model_file"]:
+                df.loc[:,col] = df.loc[:,col].apply(lambda x: os.path.sep.join(x.replace("\\","/").split("/")))
 
     def _try_load_longnames(self):
         from pathlib import Path
