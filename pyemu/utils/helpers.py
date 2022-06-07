@@ -4088,6 +4088,10 @@ def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv"):
     df = df.loc[df.index_cols.isna(), :].copy()
     if df.shape[0] == 0:
         return None
+    file_cols = df.columns.values[df.columns.str.contains("file")]
+    for file_col in file_cols:
+        df.loc[:, file_col] = df.loc[:, file_col].apply(
+            lambda x: os.path.join(*x.replace("\\", "/").split("/")) if isinstance(x, str) else x)
     model_input_files = df.model_file.unique()
     model_input_files.sort()
     records = dict()

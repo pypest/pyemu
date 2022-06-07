@@ -69,8 +69,8 @@ class Pst(object):
         """pandas.DataFrame:  '* prior information' data.  Columns are standard PEST
         variable names"""
 
-        self.model_input_data = pst_utils.pst_config["null_model_io"]
-        self.model_output_data = pst_utils.pst_config["null_model_io"]
+        self.model_input_data = pst_utils.pst_config["null_model_io"].copy()
+        self.model_output_data = pst_utils.pst_config["null_model_io"].copy()
 
         self.filename = filename
         self.resfile = resfile
