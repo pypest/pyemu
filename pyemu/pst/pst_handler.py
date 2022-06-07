@@ -2864,6 +2864,7 @@ class Pst(object):
             new_par_data.loc[new_parnme, "parnme"] = new_parnme
             self.parameter_data = pd.concat([self.parameter_data, new_par_data])
             if parval1 is not None:
+                parval1 = parval1.loc[new_par_data.parnme]
                 new_par_data.loc[parval1.parnme, "parval1"] = parval1.parval1
         if in_file is None:
             in_file = template_file.replace(".tpl", "")
