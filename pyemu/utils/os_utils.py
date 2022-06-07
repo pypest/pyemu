@@ -354,16 +354,16 @@ def start_workers(
         p.wait()
     if cleanup:
         cleanit = 0
-        removed = len(worker_dirs)
-        while removed > 0:  # arbitrary 100000 limit
+        removed = set()
+        while len(removed) < len(worker_dirs):  # arbitrary 100000 limit
             cleanit = cleanit + 1
             for d in worker_dirs:
                 if os.path.exists(d):
                     success = _try_remove_existing(d, forgive=True)
                     if success:
-                        removed -= 1
+                        removed.update(d)
                 else:
-                    removed -= 1
+                    removed.update(d)
             if cleanit > 100:
                 break
 
