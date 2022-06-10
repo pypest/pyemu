@@ -133,6 +133,7 @@ def run(cmd_str, cwd=".", verbose=False):
 def _try_remove_existing(d, forgive=False):
     try:
         shutil.rmtree(d, onerror=_remove_readonly)  # , onerror=del_rw)
+        return True
     except Exception as e:
         if not forgive:
             raise Exception(
@@ -143,6 +144,7 @@ def _try_remove_existing(d, forgive=False):
                 f"unable to remove worker dir: {d}\n{e}",
                 PyemuWarning,
             )
+        return False
 
 
 def _try_copy_dir(o_d, n_d):
@@ -352,10 +354,20 @@ def start_workers(
         p.wait()
     if cleanup:
         cleanit = 0
-        while len(worker_dirs) > 0 and cleanit < 100000:  # arbitrary 100000 limit
+        removed = set()
+        while len(removed) < len(worker_dirs):  # arbitrary 100000 limit
             cleanit = cleanit + 1
             for d in worker_dirs:
-                _try_remove_existing(d, forgive=True)
+                if os.path.exists(d):
+                    success = _try_remove_existing(d, forgive=True)
+                    if success:
+                        removed.update(d)
+                else:
+                    removed.update(d)
+            if cleanit > 100:
+                break
+
+
     if master_dir is not None:
         ret_val = master_p.returncode
         if ret_val != 0:

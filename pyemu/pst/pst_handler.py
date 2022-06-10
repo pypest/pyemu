@@ -69,8 +69,8 @@ class Pst(object):
         """pandas.DataFrame:  '* prior information' data.  Columns are standard PEST
         variable names"""
 
-        self.model_input_data = pst_utils.pst_config["null_model_io"]
-        self.model_output_data = pst_utils.pst_config["null_model_io"]
+        self.model_input_data = pst_utils.pst_config["null_model_io"].copy()
+        self.model_output_data = pst_utils.pst_config["null_model_io"].copy()
 
         self.filename = filename
         self.resfile = resfile
@@ -1240,6 +1240,12 @@ class Pst(object):
         self._load_version2(filename)
         self._try_load_longnames()
         self.try_parse_name_metadata()
+        self._reset_file_paths_os()
+
+    def _reset_file_paths_os(self):
+        for df in [self.model_output_data,self.model_input_data]:
+            for col in ["pest_file","model_file"]:
+                df.loc[:,col] = df.loc[:,col].apply(lambda x: os.path.sep.join(x.replace("\\","/").split("/")))
 
     def _try_load_longnames(self):
         from pathlib import Path
@@ -2858,6 +2864,7 @@ class Pst(object):
             new_par_data.loc[new_parnme, "parnme"] = new_parnme
             self.parameter_data = pd.concat([self.parameter_data, new_par_data])
             if parval1 is not None:
+                parval1 = parval1.loc[new_par_data.parnme]
                 new_par_data.loc[parval1.parnme, "parval1"] = parval1.parval1
         if in_file is None:
             in_file = template_file.replace(".tpl", "")

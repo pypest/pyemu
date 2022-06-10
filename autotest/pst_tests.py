@@ -1274,7 +1274,7 @@ if __name__ == "__main__":
     # write2_nan_test()
     #process_output_files_test()
     # change_limit_test()
-    #new_format_test()
+    new_format_test()
     # lt_gt_constraint_names_test()
     #csv_to_ins_test()
     #ctrl_data_test()
@@ -1301,7 +1301,7 @@ if __name__ == "__main__":
     #comments_test()
     #test_e_clean()
     # load_test()
-    res_test()
+    #res_test()
     #
     # from_io_with_inschek_test()
     # pestpp_args_test()
@@ -1329,6 +1329,6 @@ if __name__ == "__main__":
     #rename_pars_test()
     #rename_obs_test()
     #pst_ctl_opt_args_test()
-    invest()
+    #invest()
     # pst_ctl_opt_args_test()
 
