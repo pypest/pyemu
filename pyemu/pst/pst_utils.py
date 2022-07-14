@@ -253,8 +253,12 @@ def read_resfile(resfile):
             header = line.lower().strip().split()
             break
     res_df = pd.read_csv(
-        f, header=None, names=header, sep=r"\s+", converters=converters
+        f, header=None, names=header, sep=r"\s+", converters=converters, 
+        usecols=header #on_bad_lines='skip'
     )
+    # strip the "Cov.", "Mat." and "na" strings that PEST records in the *.res file; make float
+    float_cols = [x for x in res_df.columns if x not in ['name','group']]
+    res_df[float_cols] = res_df[float_cols].replace(['Cov.', 'Mat.', 'na'], np.nan).astype(float)
     res_df.index = res_df.name
     f.close()
     return res_df

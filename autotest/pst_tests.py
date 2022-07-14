@@ -46,6 +46,17 @@ def tpl_ins_test():
                                 pst_filename=os.path.join("temp", "test.pst"))
     return
 
+def res_covreg_test():
+    import os
+    import numpy as np
+    from pyemu import Pst, pst_utils
+    # test Pst.res with cov mat regularization
+    pst_dir = os.path.join("pst")
+
+    p = Pst(os.path.join(pst_dir, "pest_regulcov.pst"))
+    assert "regulp" in p.res.group.unique()
+    assert 1 - p.phi / ((p.res.residual * p.res.weight)**2).sum() < 1.0e-6
+    
 
 def res_test():
     import os
