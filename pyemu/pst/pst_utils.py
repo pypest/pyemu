@@ -1464,7 +1464,8 @@ class InstructionFile(object):
                         break
                 # copy a version of line commas replaced
                 # (to support comma sep strings)
-                rline = line.replace(",", " ")
+                rline = line.replace(",", " ").replace("\t","")
+
                 cursor_pos = line.index(mstr) + len(mstr)
 
             # line advance
