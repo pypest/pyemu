@@ -1027,8 +1027,11 @@ class PstFrom(object):
                 np.savetxt(self.original_file_d / rel_filepath.name, arr)
                 file_dict[rel_filepath] = arr
                 fmt_dict[rel_filepath] = fmt
-                sep_dict[rel_filepath] = sep
                 skip_dict[rel_filepath] = skip
+                if sep == 'w':
+                    sep_dict[rel_filepath] = ' '
+                else:
+                    sep_dict[rel_filepath] = sep
             # check for compatibility
             fnames = list(file_dict.keys())
             for i in range(len(fnames)):
