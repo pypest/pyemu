@@ -2841,14 +2841,24 @@ class PstFrom(object):
                     for lp, line in enumerate(fp)
                     if line.strip().startswith(c_char)
                 }
-        df = pd.read_csv(
-            file_path,
-            comment=c_char,
-            sep=sep,
-            skiprows=skip,
-            header=header,
-            low_memory=False,
-        )
+        if sep == 'w':
+            df = pd.read_csv(
+                file_path,
+                comment=c_char,
+                delim_whitespace=True,
+                skiprows=skip,
+                header=header,
+                low_memory=False,
+            )
+        else:
+            df = pd.read_csv(
+                file_path,
+                comment=c_char,
+                sep=sep,
+                skiprows=skip,
+                header=header,
+                low_memory=False,
+            )
         self.logger.log(f"reading list-style file: {file_path}")
         # ensure that column ids from index_col is in input file
         missing = []
