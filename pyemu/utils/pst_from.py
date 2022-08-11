@@ -1001,39 +1001,21 @@ class PstFrom(object):
                             fp.flush()
                             lc += 1
                         if lc < len(df):
-                            if sep == 'w':
-                                df.iloc[fr:].to_csv(
-                                    fp,
-                                    delim_whitespace=True,
-                                    mode="a",
-                                    header=hheader,
-                                    index=False,
-                                    **kwargs,
-                                )
-                            else:
-                                df.iloc[fr:].to_csv(
-                                    fp,
-                                    sep=",",
-                                    mode="a",
-                                    header=hheader,
-                                    index=False,
-                                    **kwargs,
-                                )
+                            df.iloc[fr:].to_csv(
+                                fp,
+                                sep=",",
+                                mode="a",
+                                header=hheader,
+                                index=False,
+                                **kwargs,
+                            )
                 else:
-                    if sep == 'w':
-                        df.to_csv(
-                            org_file,
-                            index=False,
-                            delim_whitespace=True,
-                            header=hheader,
-                        )
-                    else:
-                        df.to_csv(
-                            org_file,
-                            index=False,
-                            sep=",",
-                            header=hheader,
-                        )
+                    df.to_csv(
+                        org_file,
+                        index=False,
+                        sep=",",
+                        header=hheader,
+                    )
                 file_dict[rel_filepath] = df
                 fmt_dict[rel_filepath] = fmt
                 skip_dict[rel_filepath] = skip
