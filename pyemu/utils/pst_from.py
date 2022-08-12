@@ -1019,7 +1019,7 @@ class PstFrom(object):
                 file_dict[rel_filepath] = df
                 fmt_dict[rel_filepath] = fmt
                 skip_dict[rel_filepath] = skip
-                if sep == 'w':
+                if sep == '\s+':
                     sep_dict[rel_filepath] = ' '
                 else:
                     sep_dict[rel_filepath] = sep
@@ -1070,7 +1070,7 @@ class PstFrom(object):
                 file_dict[rel_filepath] = arr
                 fmt_dict[rel_filepath] = fmt
                 skip_dict[rel_filepath] = skip
-                if sep == 'w':
+                if sep == '\s+':
                     sep_dict[rel_filepath] = ' '
                 else:
                     sep_dict[rel_filepath] = sep
@@ -1811,7 +1811,7 @@ class PstFrom(object):
                 as a `comment_char`.
             mfile_sep (`str`): separator/delimiter in model input file.
                 If None, separator will be interpretted from file name extension.
-                `.csv` is assumed to be comma separator. Pass 'w' for delim_whitespace. Default is None
+                `.csv` is assumed to be comma separator. Pass '\s+' for whitespace. Default is None
             ult_ubound (`float`): Ultimate upper bound for model input
                 parameter once all mults are applied - ensure physical model par vals. If not passed,
                 it is set to 1.0e+30
@@ -2823,24 +2823,14 @@ class PstFrom(object):
                     for lp, line in enumerate(fp)
                     if line.strip().startswith(c_char)
                 }
-        if sep == 'w':
-            df = pd.read_csv(
-                file_path,
-                comment=c_char,
-                delim_whitespace=True,
-                skiprows=skip,
-                header=header,
-                low_memory=False,
-            )
-        else:
-            df = pd.read_csv(
-                file_path,
-                comment=c_char,
-                sep=sep,
-                skiprows=skip,
-                header=header,
-                low_memory=False,
-            )
+        df = pd.read_csv(
+            file_path,
+            comment=c_char,
+            sep=sep,
+            skiprows=skip,
+            header=header,
+            low_memory=False,
+        )
         self.logger.log(f"reading list-style file: {file_path}")
         # ensure that column ids from index_col is in input file
         missing = []
