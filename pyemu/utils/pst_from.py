@@ -1121,10 +1121,11 @@ class PstFrom(object):
             `call_str` is expected to reference standalone a function
             that contains all the imports it needs or these imports
             should have been added to the forward run script through the
-            `PstFrom.py_imports` list.
+            `PstFrom.extra_py_imports` list.
 
             This function adds the `call_str` call to the forward
-            run script (either as a pre or post command). It is up to users
+            run script (either as a pre or post command or function not 
+            directly called by main). It is up to users
             to make sure `call_str` is a valid python function call
             that includes the parentheses and requisite arguments
 
@@ -1140,7 +1141,10 @@ class PstFrom(object):
                                "mult_well_function(arg1='userarg')",
                                is_pre_cmd = True)
             # add the post processor function "made_it_good" from the script file "post_processors.py"
-            pf.add_py_function("post_processors.py","make_it_good(()",is_pre_cmd=False)
+            pf.add_py_function("post_processors.py","make_it_good()",is_pre_cmd=False)
+            # add the function "another_func" from the script file "utils.py" as a
+            # function not called by main
+            pf.add_py_function("utils.py","another_func()",is_pre_cmd=None)
 
 
         """
