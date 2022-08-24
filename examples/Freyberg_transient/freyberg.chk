@@ -1,2 +1,0 @@
-type,package,k,i,j,value,desc
-Warning,OC,0,0,0,0.000000,action(s) defined in OC stress_period_data ignored as they are not part the stress periods defined by DIS
