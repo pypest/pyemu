@@ -6,6 +6,7 @@ Several forms of uncertainty analyses are support including FOSM-based
 analyses (pyemu.Schur and pyemu.ErrVar), data worth analyses and
 high-dimensional ensemble generation.
 """
+__version__ = "1.3.dev0"
 
 from .la import LinearAnalysis
 from .sc import Schur
@@ -31,9 +32,6 @@ from .logger import Logger
 
 from .prototypes import *
 
-from ._version import get_versions
-
-__version__ = get_versions()["version"]
 __all__ = [
     "LinearAnalysis",
     "Schur",
@@ -55,4 +53,3 @@ __all__ = [
     "plot_utils",
     "metrics",
 ]
-# del get_versions

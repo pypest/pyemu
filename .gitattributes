@@ -4,5 +4,4 @@ dist/* linguist-vendored=true
 doc/* linguist-vendored=true
 build/* linguist-vendored=true
 misc/* linguist-vendored=true
-verification/* linguist-vendored=truepyemu/_version.py export-subst
-pyemu/_version.py export-subst
+verification/* linguist-vendored=true
