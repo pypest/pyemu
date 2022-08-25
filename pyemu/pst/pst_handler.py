@@ -2574,8 +2574,8 @@ class Pst(object):
             for grp in obsgrp_dict.keys():
                 if obs.loc[obs.obgnme == grp, "weight"].sum() == 0.0:
                     obs.loc[obs.obgnme == grp, "weight"] = 1.0
-            self.res.group = obs.obgnme.values 
-            self.res.weight = obs.weight.values 
+            self.res.loc[obs.index, 'group'] = obs.obgnme.values
+            self.res.loc[obs.index, 'weight'] = obs.weight.values 
             res_groups = self.res.groupby("group").groups
             obs_groups = self.observation_data.groupby("obgnme").groups
             self.__reset_weights(obsgrp_dict, res_groups, obs_groups)
