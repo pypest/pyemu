@@ -5999,6 +5999,59 @@ class SpatialReference(object):
         self._vertices = self.get_vertices(ii, jj)
 
 
+def maha_based_pdc(sim_en):
+    """prototype following Alfonso and Oliver 2019
+
+    """
+    groups = sim_en.pst.nnz_obs_groups
+    obs = sim_en.pst.observation_data
+    z_scores = {}
+    dm_xs = {}
+    p_vals = {}
+    for group in groups:
+        nzobs = obs.loc[obs.obgnme==group,:]
+        nzobs = nzobs.loc[nzobs.weight > 0,:].copy()
+        nzsim_en = sim_en._df.loc[:,nzobs.obsnme].copy()
+        ne,nx = nzsim_en.shape
+        ns = ne - 1
+        delta = 2.0/(float(ns) + 2.)
+        v = nzsim_en.var(axis=0).mean()
+        x = nzsim_en.values.copy()
+        z = nzobs.obsval.values.copy()
+        dm_x,dm_z = [],[]
+        for ireal in range(ne):
+            x_s = x.copy()
+            x_s = np.delete(x_s,(ireal),axis=0)
+            first = delta * v * (((ns -1)/(1-delta))*np.eye(ns))
+            a_s = first + np.dot(x_s, x_s.T)
+            lower = np.linalg.cholesky(a_s)
+            lower = np.linalg.inv(lower)
+            mu_hat = x_s.mean(axis=0)
+            dm_x.append(_maha(delta,v,x_s,x[ireal,:] - mu_hat,lower))
+            dm_z.append(_maha(delta,v,x_s,z - mu_hat,lower))
+        dm_x = np.array(dm_x)
+        dm_z = np.array(dm_z)
+        mu_x = np.median(dm_x)
+        mu_z = np.median(dm_z)
+        mad = np.median(np.abs(dm_x - mu_x))
+        sigma_x = 1.4826 * mad
+        z_score = np.abs(mu_z - mu_x) / sigma_x
+        z_scores[group] = z_score
+        dm_x.sort()
+        dm_xs[group] = dm_x
+        p = np.argmin(np.abs(dm_x - mu_z))/dm_x.shape[0]
+        p_vals[group] = 1 - p
+    return pd.Series(z_scores),pd.Series(p_vals),pd.DataFrame(dm_xs)
+
+def _maha(delta,v,x,z,lower_inv):
+
+    d_m = np.dot(z.transpose(),z)
+    first = np.dot(np.dot(lower_inv,x),z)
+    first = np.dot(first.transpose(),first)
+    d_m = (1.0/(delta * v)) * (d_m - first)
+    return d_m
+
+
 def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
     """calculate the 1-D and 2-D mahalanobis distance between simulated
     ensemble and observed values.  Used for detecting prior-data conflict

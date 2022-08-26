@@ -2013,13 +2013,42 @@ def temporal_draw_invest():
     ecov = pe.loc[:,names].covariance_matrix()
     #plt.imshow(ecov.x)
     #plt.show()
-    plt.plot(pe.loc[pe.index[0]])
+    #plt.plot(pe.loc[pe.index[0]])
+    #plt.show()
+
+def maha_pdc_test():
+    import pyemu
+    # pst = pyemu.Pst(os.path.join("temp_files","freyberg_mf6.pst"))
+    # obs = pst.observation_data
+    # oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=os.path.join("temp_files","freyberg_mf6.0.obs.csv"))
+    # z_scores, dmxs = pyemu.utils.maha_based_pdc(oe)
+    # print(z_scores)
+    # return
+    pst = pyemu.Pst(os.path.join("utils","freyberg6.pst"))
+    obs = pst.observation_data
+    obs.loc[obs.weight>0,"obsval"] -= 5
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join("utils","freyberg6.0.obs.csv"))
+    z_scores,p_vals, dmxs = pyemu.utils.maha_based_pdc(oe)
+    print(z_scores)
+    print(p_vals)
+
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    obs.loc[:, "datetime"] = pd.to_datetime(obs.obsnme.apply(lambda x: x.split("_")[-1]))
+    for group in pst.nnz_obs_groups:
+        oobs = obs.loc[obs.obgnme==group,:].copy()
+        oobs = oobs.loc[oobs.weight > 0]
+        oobs.sort_values(by="datetime")
+        fig,ax = plt.subplots(1,1,figsize=(10,4))
+        for real in oe.index:
+            ax.plot(oobs.datetime,oe.loc[real,oobs.obsnme].values,"0.5",lw=0.1)
+        ax.set_title("group:{0}, zscore:{1}".format(group,z_scores[group]))
+        ax.plot(oobs.datetime,oobs.obsval,"r",lw=2)
     plt.show()
 
-
 if __name__ == "__main__":
-
-    temporal_draw_invest()
+    maha_pdc_test()
+    #temporal_draw_invest()
     #run_test()
     #specsim_test()
     #aniso_invest()
