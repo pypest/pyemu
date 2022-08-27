@@ -14,6 +14,7 @@ import os
 import sys
 sys.path.insert(0, os.path.join('..','pyemu'))
 sys.path.append(os.path.join(".."))
+from pyemu import __version__
 
 
 
@@ -22,7 +23,7 @@ sys.path.append(os.path.join(".."))
 project = 'pyEMU'
 copyright = '2020, Jeremy White, Mike Fienen, Brioch Hemmings, and others'
 author = 'Jeremy White, Mike Fienen, Brioch Hemmings, and others'
-release = "1.2.0"
+release = __version__
 
 # -- General configuration ---------------------------------------------------
 
@@ -39,6 +40,7 @@ extensions.append('autoapi.extension')
 
 autoapi_type = 'python'
 autoapi_dirs = [os.path.join('..','pyemu')]
+autoapi_ignore = ['*version*']
 
 
 # Add any paths that contain templates here, relative to this directory.
@@ -60,4 +62,4 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
