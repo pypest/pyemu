@@ -2047,8 +2047,13 @@ def maha_pdc_test():
         ax.plot(oobs.datetime,oobs.obsval,"r",lw=2)
     plt.show()
 
+def rmr_parse_test():
+    import pyemu
+    df = pyemu.helpers.parse_rmr_file(os.path.join("utils","pest_local_pdc.rmr"))
+
 if __name__ == "__main__":
-    maha_pdc_test()
+    #maha_pdc_test()
+    rmr_parse_test()
     #temporal_draw_invest()
     #run_test()
     #specsim_test()

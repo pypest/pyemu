@@ -1,0 +1,119 @@
+
+PANTHER master listening on socket:0.0.0.0:4016 (IPv4)
+running model 10 times
+08/28/22 14:40:39->waiting for agents to appear
+
+08/28/22 14:40:41->new connection from:localhost:62140
+08/28/22 14:40:41->initializing new agent connection from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_0 socket:localhost:62140 number of agents:1
+08/28/22 14:40:41->new connection from:localhost:62141
+08/28/22 14:40:41->initializing new agent connection from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_1 socket:localhost:62141 number of agents:2
+08/28/22 14:40:41->new connection from:localhost:62142
+08/28/22 14:40:41->initializing new agent connection from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_2 socket:localhost:62142 number of agents:3
+08/28/22 14:40:41->new connection from:localhost:62143
+08/28/22 14:40:41->initializing new agent connection from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_3 socket:localhost:62143 number of agents:4
+08/28/22 14:40:41->new connection from:localhost:62144
+08/28/22 14:40:41->initializing new agent connection from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_4 socket:localhost:62144 number of agents:5
+08/28/22 14:40:41->new connection from:localhost:62145
+08/28/22 14:40:41->initializing new agent connection from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_5 socket:localhost:62145 number of agents:6
+08/28/22 14:40:41->new connection from:localhost:62146
+08/28/22 14:40:41->initializing new agent connection from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_6 socket:localhost:62146 number of agents:7
+08/28/22 14:40:41->new connection from:localhost:62147
+08/28/22 14:40:41->initializing new agent connection from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_7 socket:localhost:62147 number of agents:8
+08/28/22 14:40:41->new connection from:localhost:62148
+08/28/22 14:40:41->initializing new agent connection from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_8 socket:localhost:62148 number of agents:9
+08/28/22 14:40:42->new connection from:localhost:62149
+08/28/22 14:40:42->initializing new agent connection from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_9 socket:localhost:62149 number of agents:10
+08/28/22 14:40:42->new agent ready:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_0 socket:localhost:62140
+08/28/22 14:40:42->Sending run_id:0 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_0 group_id:2  da_cycle:-9999   realization:0 concurrent:1)
+08/28/22 14:40:42->new agent ready:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_1 socket:localhost:62141
+08/28/22 14:40:42->Sending run_id:1 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_1 group_id:2  da_cycle:-9999   realization:1 concurrent:1)
+08/28/22 14:40:42->new agent ready:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_2 socket:localhost:62142
+08/28/22 14:40:42->Sending run_id:2 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_2 group_id:2  da_cycle:-9999   realization:2 concurrent:1)
+08/28/22 14:40:42->new agent ready:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_3 socket:localhost:62143
+08/28/22 14:40:42->Sending run_id:3 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_3 group_id:2  da_cycle:-9999   realization:3 concurrent:1)
+08/28/22 14:40:42->new agent ready:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_4 socket:localhost:62144
+08/28/22 14:40:42->Sending run_id:4 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_4 group_id:2  da_cycle:-9999   realization:4 concurrent:1)
+08/28/22 14:40:42->new agent ready:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_5 socket:localhost:62145
+08/28/22 14:40:42->Sending run_id:5 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_5 group_id:2  da_cycle:-9999   realization:5 concurrent:1)
+08/28/22 14:40:42->new agent ready:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_6 socket:localhost:62146
+08/28/22 14:40:42->Sending run_id:6 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_6 group_id:2  da_cycle:-9999   realization:6 concurrent:1)
+08/28/22 14:40:42->new agent ready:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_7 socket:localhost:62147
+08/28/22 14:40:42->Sending run_id:7 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_7 group_id:2  da_cycle:-9999   realization:7 concurrent:1)
+08/28/22 14:40:42->new agent ready:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_8 socket:localhost:62148
+08/28/22 14:40:42->Sending run_id:8 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_8 group_id:2  da_cycle:-9999   realization:8 concurrent:1)
+08/28/22 14:40:42->new agent ready:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_9 socket:localhost:62149
+08/28/22 14:40:42->Sending run_id:9 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_9 group_id:2  da_cycle:-9999   realization:BASE concurrent:1)
+08/28/22 14:40:44-> run_id:0 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_0  run_time:0.0371  avg_run_time:0.0371 group_id:2  da_cycle:-9999   realization:0  worker_time:0.03535 concurrent:1
+08/28/22 14:40:44->run 0 processed
+08/28/22 14:40:44-> run_id:1 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_1  run_time:0.0370833  avg_run_time:0.0370917 group_id:2  da_cycle:-9999   realization:1  worker_time:0.0353833 concurrent:1
+08/28/22 14:40:44->run 1 processed
+08/28/22 14:40:44-> run_id:2 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_2  run_time:0.0369667  avg_run_time:0.03705 group_id:2  da_cycle:-9999   realization:2  worker_time:0.0353 concurrent:1
+08/28/22 14:40:44->run 2 processed
+08/28/22 14:40:44-> run_id:3 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_3  run_time:0.0371167  avg_run_time:0.0370667 group_id:2  da_cycle:-9999   realization:3  worker_time:0.0354167 concurrent:1
+08/28/22 14:40:44->run 3 processed
+08/28/22 14:40:44-> run_id:4 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_4  run_time:0.037  avg_run_time:0.0370533 group_id:2  da_cycle:-9999   realization:4  worker_time:0.0352833 concurrent:1
+08/28/22 14:40:44->run 4 processed
+08/28/22 14:40:44-> run_id:5 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_5  run_time:0.037  avg_run_time:0.0370444 group_id:2  da_cycle:-9999   realization:5  worker_time:0.03525 concurrent:1
+08/28/22 14:40:44->run 5 processed
+08/28/22 14:40:44-> run_id:6 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_6  run_time:0.0369167  avg_run_time:0.0370262 group_id:2  da_cycle:-9999   realization:6  worker_time:0.0352333 concurrent:1
+08/28/22 14:40:44->run 6 processed
+08/28/22 14:40:45-> run_id:7 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_7  run_time:0.0370167  avg_run_time:0.037025 group_id:2  da_cycle:-9999   realization:7  worker_time:0.0353333 concurrent:1
+08/28/22 14:40:45->run 7 processed
+08/28/22 14:40:45-> run_id:8 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_8  run_time:0.0369667  avg_run_time:0.0370185 group_id:2  da_cycle:-9999   realization:8  worker_time:0.0353 concurrent:1
+08/28/22 14:40:45->run 8 processed
+08/28/22 14:40:45-> run_id:9 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_9  run_time:0.0370333  avg_run_time:0.03702 group_id:2  da_cycle:-9999   realization:base  worker_time:0.03535 concurrent:1
+08/28/22 14:40:45->run 9 processed
+
+---------------------
+   10 runs complete :  0 runs failed
+   0.037 avg run time (min) : 0.137 run mgr time (min)
+   10 agents connected
+
+
+
+08/28/22 14:40:48->Started idle ping thread.
+08/28/22 14:40:48->Panther idle ping thread resumed.
+08/28/22 14:40:49->Panther idle ping thread paused prior to scheduling runs.
+running model 10 times
+08/28/22 14:40:49->    10 agents ready
+
+08/28/22 14:40:49->Sending run_id:0 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_0 group_id:3  da_cycle:-9999   realization:0 concurrent:1)
+08/28/22 14:40:49->Sending run_id:1 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_1 group_id:3  da_cycle:-9999   realization:1 concurrent:1)
+08/28/22 14:40:49->Sending run_id:2 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_2 group_id:3  da_cycle:-9999   realization:2 concurrent:1)
+08/28/22 14:40:49->Sending run_id:3 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_3 group_id:3  da_cycle:-9999   realization:3 concurrent:1)
+08/28/22 14:40:49->Sending run_id:4 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_4 group_id:3  da_cycle:-9999   realization:4 concurrent:1)
+08/28/22 14:40:49->Sending run_id:5 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_5 group_id:3  da_cycle:-9999   realization:5 concurrent:1)
+08/28/22 14:40:49->Sending run_id:6 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_6 group_id:3  da_cycle:-9999   realization:6 concurrent:1)
+08/28/22 14:40:49->Sending run_id:7 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_7 group_id:3  da_cycle:-9999   realization:7 concurrent:1)
+08/28/22 14:40:49->Sending run_id:8 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_8 group_id:3  da_cycle:-9999   realization:8 concurrent:1)
+08/28/22 14:40:49->Sending run_id:9 to:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_9 group_id:3  da_cycle:-9999   realization:BASE concurrent:1)
+08/28/22 14:40:51-> run_id:8 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_8  run_time:0.0353167  avg_run_time:0.0353167 group_id:3  da_cycle:-9999   realization:8  worker_time:0.0353 concurrent:1
+08/28/22 14:40:51->run 8 processed
+08/28/22 14:40:51-> run_id:0 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_0  run_time:0.0354167  avg_run_time:0.0353667 group_id:3  da_cycle:-9999   realization:0  worker_time:0.0354 concurrent:1
+08/28/22 14:40:51->run 0 processed
+08/28/22 14:40:51-> run_id:4 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_4  run_time:0.0354  avg_run_time:0.0353778 group_id:3  da_cycle:-9999   realization:4  worker_time:0.0353833 concurrent:1
+08/28/22 14:40:51->run 4 processed
+08/28/22 14:40:51-> run_id:6 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_6  run_time:0.0354  avg_run_time:0.0353833 group_id:3  da_cycle:-9999   realization:6  worker_time:0.0353833 concurrent:1
+08/28/22 14:40:51->run 6 processed
+08/28/22 14:40:51-> run_id:7 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_7  run_time:0.0354  avg_run_time:0.0353867 group_id:3  da_cycle:-9999   realization:7  worker_time:0.0353833 concurrent:1
+08/28/22 14:40:51->run 7 processed
+08/28/22 14:40:51-> run_id:1 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_1  run_time:0.0355167  avg_run_time:0.0354083 group_id:3  da_cycle:-9999   realization:1  worker_time:0.0355167 concurrent:1
+08/28/22 14:40:51->run 1 processed
+08/28/22 14:40:51-> run_id:2 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_2  run_time:0.0355333  avg_run_time:0.0354262 group_id:3  da_cycle:-9999   realization:2  worker_time:0.0355167 concurrent:1
+08/28/22 14:40:51->run 2 processed
+08/28/22 14:40:51-> run_id:3 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_3  run_time:0.0355333  avg_run_time:0.0354396 group_id:3  da_cycle:-9999   realization:3  worker_time:0.0355 concurrent:1
+08/28/22 14:40:51->run 3 processed
+08/28/22 14:40:51-> run_id:5 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_5  run_time:0.0355167  avg_run_time:0.0354481 group_id:3  da_cycle:-9999   realization:5  worker_time:0.0355 concurrent:1
+08/28/22 14:40:51->run 5 processed
+08/28/22 14:40:51-> run_id:9 received from:localhost$/Users/JWhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/worker_9  run_time:0.0355167  avg_run_time:0.035455 group_id:3  da_cycle:-9999   realization:base  worker_time:0.0354833 concurrent:1
+08/28/22 14:40:51->run 9 processed
+
+---------------------
+   10 runs complete :  0 runs failed
+   0.0355 avg run time (min) : 0.0857 run mgr time (min)
+   10 agents connected
+
+
+
+08/28/22 14:40:54->Panther idle ping thread resumed.
+08/28/22 14:40:55->Stopped idle ping thread, as Panther manager is shutting down.
