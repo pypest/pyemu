@@ -2028,9 +2028,9 @@ def maha_pdc_test():
     obs = pst.observation_data
     obs.loc[obs.weight>0,"obsval"] -= 5
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join("utils","freyberg6.0.obs.csv"))
-    z_scores,p_vals, dmxs = pyemu.utils.maha_based_pdc(oe)
-    print(z_scores)
-    print(p_vals)
+    df, dmxs = pyemu.utils.maha_based_pdc(oe)
+    print(df.z_scores)
+    print(df.p_vals)
 
     import pandas as pd
     import matplotlib.pyplot as plt
@@ -2042,7 +2042,8 @@ def maha_pdc_test():
         fig,ax = plt.subplots(1,1,figsize=(10,4))
         for real in oe.index:
             ax.plot(oobs.datetime,oe.loc[real,oobs.obsnme].values,"0.5",lw=0.1)
-        ax.set_title("group:{0}, zscore:{1}".format(group,z_scores[group]))
+        ax.set_title("group:{0}, zscore:{1}, pval:{2}".\
+                     format(group,df.z_scores.loc[group],df.p_vals.loc[group]))
         ax.plot(oobs.datetime,oobs.obsval,"r",lw=2)
     plt.show()
 

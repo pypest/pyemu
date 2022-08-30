@@ -3707,7 +3707,6 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     file_cols = df.columns.values[df.columns.str.contains("file")]
     for file_col in file_cols:
         df.loc[:,file_col] = df.loc[:,file_col].apply(lambda x: os.path.join(*x.replace("\\","/").split("/")) if isinstance(x,str) else x)
-    df.to_csv("test.csv")
     arr_pars = df.loc[df.index_cols.isna()].copy()
     list_pars = df.loc[df.index_cols.notna()].copy()
     # extract lists from string in input df
@@ -6000,7 +5999,25 @@ class SpatialReference(object):
 
 
 def maha_based_pdc(sim_en):
-    """prototype following Alfonso and Oliver 2019
+    """prototype for detecting prior-data conflict following Alfonso and Oliver 2019
+
+    Args:
+        sim_en (`pyemu.ObservationEnsemble`): a simulated outputs ensemble
+
+    Returns:
+
+        tuple containing
+
+        - **pandas.DataFrame**: 1-D subspace squared mahalanobis distances
+            that exceed the `l1_crit_val` threshold
+        - **pandas.DataFrame**: 2-D subspace squared mahalanobis distances
+            that exceed the `l2_crit_val` threshold
+
+    Note:
+        Noise realizations are added to `sim_en` to account for measurement
+            noise.
+
+
 
     """
     groups = sim_en.pst.nnz_obs_groups
@@ -6035,13 +6052,20 @@ def maha_based_pdc(sim_en):
         mu_z = np.median(dm_z)
         mad = np.median(np.abs(dm_x - mu_x))
         sigma_x = 1.4826 * mad
-        z_score = np.abs(mu_z - mu_x) / sigma_x
+        z_score = (mu_z - mu_x) / sigma_x
         z_scores[group] = z_score
-        dm_x.sort()
         dm_xs[group] = dm_x
+        dm_x.sort()
+
         p = np.argmin(np.abs(dm_x - mu_z))/dm_x.shape[0]
         p_vals[group] = 1 - p
-    return pd.Series(z_scores),pd.Series(p_vals),pd.DataFrame(dm_xs)
+
+    z_scores, p_vals, dm_xs = pd.Series(z_scores), pd.Series(p_vals), pd.DataFrame(dm_xs)
+    # dm_xs.loc[:,"z_scores"] = z_scores.loc[dm_xs.index]
+    # dm_xs.loc[:,"p_vals"] = p_vals.loc[dm_xs.index]
+    df = pd.DataFrame({"z_scores":z_scores,"p_vals":p_vals})
+    df.index.name = "obgnme"
+    return df,pd.DataFrame(dm_xs)
 
 def _maha(delta,v,x,z,lower_inv):
 
