@@ -1064,7 +1064,7 @@ class ParameterEnsemble(Ensemble):
         arr[:, :] = np.NaN
         adj_par_names = set(pst.adj_par_names)
         if len(adj_par_names) == 0:
-            warings.warn("ParameterEnsemble.from_uniform_draw(): no adj pars",PyemuWarning)
+            warnings.warn("ParameterEnsemble.from_uniform_draw(): no adj pars",PyemuWarning)
         for i, pname in enumerate(pst.parameter_data.parnme):
             # print(pname,lb[pname],ub[pname])
             if pname in adj_par_names:
