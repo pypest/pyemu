@@ -617,7 +617,7 @@ def binary_test():
 if __name__ == "__main__":
     #par_gauss_draw_consistency_test()
     #obs_gauss_draw_consistency_test()
-    phi_vector_test()
+    #phi_vector_test()
     #add_base_test()
     #nz_test()
     #deviations_test()
@@ -627,7 +627,7 @@ if __name__ == "__main__":
     #pnulpar_test()
     # triangular_draw_test()
     # uniform_draw_test()
-    # fill_test()
+    fill_test()
     #factor_draw_test()
     #emp_cov_test()
     #emp_cov_draw_test()
