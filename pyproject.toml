@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyemu"
+dynamic = ["version"]
+authors = [
+    {name = "Jeremy White", email = "jtwhite1000@gmail.com"},
+    {name = "Mike Fienen", email = "mnfienen@usgs.gov"},
+    {name = "Brioch Hemmings", email = "b.hemmings@gns.cri.nz"},
+]
+description = "pyEMU is a set of python modules for interfacing with PEST and PEST++"
+readme = "README.md"
+keywords = ["pest", "pestpp"]
+license = {text = "BSD 3-Clause"}
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Hydrology",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "numpy",
+    "pandas",
+]
+
+[project.optional-dependencies]
+optional = [
+    "flopy",
+    "matplotlib",
+    "pyshp",
+    "scipy",
+]
+test = [
+    "coverage",
+    "coveralls",
+    "nose",
+    "nose-timer",
+]
+docs = [
+    "pyemu[optional]",
+    "sphinx >=3.2.1",
+    "sphinx-autoapi",
+    "sphinx-rtd-theme",
+]
+
+[project.urls]
+documentation = "https://pyemu.readthedocs.io/"
+repository = "https://github.com/pypest/pyemu"
+
+[tool.setuptools.packages.find]
+include = [
+    "pyemu",
+    "pyemu.*",
+]
+
