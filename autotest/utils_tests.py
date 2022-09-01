@@ -2032,28 +2032,28 @@ def maha_pdc_test():
     print(df.z_scores)
     print(df.p_vals)
 
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    obs.loc[:, "datetime"] = pd.to_datetime(obs.obsnme.apply(lambda x: x.split("_")[-1]))
-    for group in pst.nnz_obs_groups:
-        oobs = obs.loc[obs.obgnme==group,:].copy()
-        oobs = oobs.loc[oobs.weight > 0]
-        oobs.sort_values(by="datetime")
-        fig,ax = plt.subplots(1,1,figsize=(10,4))
-        for real in oe.index:
-            ax.plot(oobs.datetime,oe.loc[real,oobs.obsnme].values,"0.5",lw=0.1)
-        ax.set_title("group:{0}, zscore:{1}, pval:{2}".\
-                     format(group,df.z_scores.loc[group],df.p_vals.loc[group]))
-        ax.plot(oobs.datetime,oobs.obsval,"r",lw=2)
-    plt.show()
+    # import pandas as pd
+    # import matplotlib.pyplot as plt
+    # obs.loc[:, "datetime"] = pd.to_datetime(obs.obsnme.apply(lambda x: x.split("_")[-1]))
+    # for group in pst.nnz_obs_groups:
+    #     oobs = obs.loc[obs.obgnme==group,:].copy()
+    #     oobs = oobs.loc[oobs.weight > 0]
+    #     oobs.sort_values(by="datetime")
+    #     fig,ax = plt.subplots(1,1,figsize=(10,4))
+    #     for real in oe.index:
+    #         ax.plot(oobs.datetime,oe.loc[real,oobs.obsnme].values,"0.5",lw=0.1)
+    #     ax.set_title("group:{0}, zscore:{1}, pval:{2}".\
+    #                  format(group,df.z_scores.loc[group],df.p_vals.loc[group]))
+    #     ax.plot(oobs.datetime,oobs.obsval,"r",lw=2)
+    # plt.show()
 
 def rmr_parse_test():
     import pyemu
     df = pyemu.helpers.parse_rmr_file(os.path.join("utils","pest_local_pdc.rmr"))
 
 if __name__ == "__main__":
-    #maha_pdc_test()
-    rmr_parse_test()
+    maha_pdc_test()
+    #rmr_parse_test()
     #temporal_draw_invest()
     #run_test()
     #specsim_test()
