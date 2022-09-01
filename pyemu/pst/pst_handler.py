@@ -2526,11 +2526,15 @@ class Pst(object):
             obs_dict (`dict`, optional): dictionary of observation name,new contribution pairs
             obsgrp_dict (`dict`, optional): dictionary of obs group name,contribution pairs
 
-        Note:
-            if all observations in a named obs group have zero weight, they will all be
-            assigned a non-zero weight so that the request phi contribution
-            can be met.  Similarly, any observations listed in obs_dict with zero
-            weight will also be reset. User beware!
+        Notes:
+            If a group is assigned a contribution of 0, all observations in that group will be assigned
+            zero weight.
+
+            If a group is assigned a nonzero contribution AND all observations in that group start
+            with zero weight, the observations will be assigned weight of 1.0 to allow balancing.
+
+            If groups obsgrp_dict is not passed, all nonzero
+            
 
         Example::
 
@@ -2547,16 +2551,31 @@ class Pst(object):
             pst.adjust_weights(obsgrp_dict=balanced_groups)
 
         """
+        if (obsgrp_dict is not None) and (obs_dict is not None):
+            
+            raise Exception(
+                "Pst.asjust_weights(): "
+                + "Both obsgrp_dict and obs_dict passed "
+                + "Must choose one or the other"
+            )
 
         self.observation_data.index = self.observation_data.obsnme
         self.res.index = self.res.name
 
         if obsgrp_dict is not None:
-            # reset groups with all zero weights
             obs = self.observation_data
+            # first zero-weight all obs in groups specified to have 0 contrib to phi
+            for grp, contrib in obsgrp_dict.items():
+                if contrib==0:
+                    obs.loc[obs.obgnme == grp, "weight"] = 0.0
+                    # drop zero- contribution groups
+                    del obsgrp_dict[grp]
+            # reset groups with all zero weights
             for grp in obsgrp_dict.keys():
                 if obs.loc[obs.obgnme == grp, "weight"].sum() == 0.0:
                     obs.loc[obs.obgnme == grp, "weight"] = 1.0
+            self.res.loc[obs.index, 'group'] = obs.obgnme.values
+            self.res.loc[obs.index, 'weight'] = obs.weight.values 
             res_groups = self.res.groupby("group").groups
             obs_groups = self.observation_data.groupby("obgnme").groups
             self.__reset_weights(obsgrp_dict, res_groups, obs_groups)
