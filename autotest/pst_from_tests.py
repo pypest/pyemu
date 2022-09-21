@@ -126,6 +126,9 @@ def freyberg_test():
     sfodf.sort_index(axis=1).to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
                  index_label='idx',line_terminator='\n')
     template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+
     # sr0 = m.sr
     sr = pyemu.helpers.SpatialReference.from_namfile(
         os.path.join(m.model_ws, m.namefile),
@@ -346,6 +349,8 @@ def freyberg_prior_build_test():
         prefix="hds", include_path=False)
 
     template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     # sr0 = m.sr
     sr = pyemu.helpers.SpatialReference.from_namfile(
         os.path.join(m.model_ws, m.namefile),
@@ -644,6 +649,8 @@ def mf6_freyberg_test():
             fw.write(line)
 
     template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     # sr0 = m.sr
     # sr = pyemu.helpers.SpatialReference.from_namfile(
     #     os.path.join(tmp_model_ws, "freyberg6.nam"),
@@ -979,6 +986,8 @@ def mf6_freyberg_shortnames_test():
     os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
     template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     # sr0 = m.sr
     sr = pyemu.helpers.SpatialReference.from_namfile(
         os.path.join(tmp_model_ws, "freyberg6.nam"),
@@ -1178,6 +1187,8 @@ def mf6_freyberg_da_test():
     os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
     template_ws = "new_temp_da"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     # sr0 = m.sr
     sr = pyemu.helpers.SpatialReference.from_namfile(
         os.path.join(tmp_model_ws, "freyberg6.nam"),
@@ -1364,6 +1375,8 @@ def mf6_freyberg_direct_test():
     os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
     template_ws = "new_temp_direct"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     sr = m.modelgrid
     # set up PstFrom object
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
@@ -1728,6 +1741,8 @@ def mf6_freyberg_varying_idomain():
 
 
     template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
 
     # if os.path.exists(template_ws):
     #     shutil.rmtree(template_ws)
@@ -1930,6 +1945,8 @@ def mf6_freyberg_short_direct_test():
     os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
     template_ws = "new_temp_direct"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     sr = m.modelgrid
     # set up PstFrom object
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
@@ -2715,6 +2732,8 @@ def pstfrom_profile():
                  cwd=tmp_model_ws)
 
     template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     # sr0 = m.sr
     sr = pyemu.helpers.SpatialReference.from_namfile(
         os.path.join(m.model_ws, m.namefile),
@@ -2837,6 +2856,8 @@ def mf6_freyberg_arr_obs_and_headerless_test():
     os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
     template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     # sr0 = m.sr
     # sr = pyemu.helpers.SpatialReference.from_namfile(
     #     os.path.join(tmp_model_ws, "freyberg6.nam"),
@@ -2962,6 +2983,8 @@ def mf6_freyberg_pp_locs_test():
     os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
     template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     sr = m.modelgrid
     # set up PstFrom object
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
@@ -3284,6 +3307,8 @@ def mf6_add_various_obs_test():
     os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
     template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     sr = m.modelgrid
     # set up PstFrom object
     pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
@@ -3379,6 +3404,8 @@ def mf6_subdir_test():
         exe = os.path.join('..', mf6_exe_path)
     os_utils.run("{0} ".format(exe), cwd=tmp2_ws)
     template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     # sr0 = m.sr
     # sr = pyemu.helpers.SpatialReference.from_namfile(
     #     os.path.join(tmp_model_ws, "freyberg6.nam"),
@@ -3689,6 +3716,8 @@ def shortname_conversion_test():
     # SETUP pest stuff...
 
     template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
     # set up PstFrom object
     # obs
     #   using tabular style model output
