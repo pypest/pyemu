@@ -30,6 +30,8 @@ def from_flopy_kl_test():
     m.write_input()
     setattr(m,"sr",pyemu.helpers.SpatialReference(delc=m.dis.delc.array,delr=m.dis.delr.array))
     new_model_ws = "temp_pst_from_flopy"
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
 
     hds_kperk = []
     for k in range(m.nlay):
@@ -72,6 +74,8 @@ def from_flopy():
     m.write_input()
 
     new_model_ws = "temp_pst_from_flopy"
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
 
     hds_kperk = []
     for k in range(m.nlay):
@@ -291,6 +295,8 @@ def from_flopy_zone_pars():
     m.write_input()
 
     new_model_ws = "temp_pst_from_flopy"
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     grid_props = [["upw.ss", [0, 1]], ["upw.ss", 1], ["upw.ss", 2], ["extra.prsity", 0],
                 ["rch.rech", 0], ["rch.rech", [1, 2]]]
     const_props = [["rch.rech", i] for i in range(m.nper)]
@@ -370,6 +376,8 @@ def from_flopy_reachinput():
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_reaches")
     nam_file = "freyberg.nam"
     new_model_ws = "temp_pst_from_flopy_reaches"
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
 
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
     # test passing different arguments
@@ -545,6 +553,8 @@ def pst_from_flopy_geo_draw_test():
     m.write_input()
 
     new_model_ws = "temp_pst_from_flopy"
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
 
     hds_kperk = []
     for k in range(m.nlay):
@@ -595,6 +605,8 @@ def from_flopy_pp_test():
     m.write_input()
 
     new_model_ws = "temp_pst_from_flopy"
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     pp_props = [["upw.ss", [0, 1]],["upw.hk",[1,0]],["upw.vka",1]]
 
     obssim_smp_pairs = None
@@ -623,6 +635,8 @@ def from_flopy_pp_test():
     assert np.all(df.pp_fill_value.values == 1)
 
     new_model_ws = "temp_pst_from_flopy"
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     props = ["upw.ss","upw.hk","upw.vka"]
     pp_props = []
     for k in range(m.nlay):
@@ -660,6 +674,8 @@ def pst_from_flopy_specsim_draw_test():
     m.write_input()
 
     new_model_ws = "temp_pst_from_flopy"
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
 
     hds_kperk = []
     for k in range(m.nlay):
