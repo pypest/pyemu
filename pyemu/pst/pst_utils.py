@@ -1502,7 +1502,7 @@ class InstructionFile(object):
                         )
                     )
                 # step over current value
-                cursor_pos = rline.find(" ", cursor_pos)
+                cursor_pos = rline.replace("\t"," ").find(" ", cursor_pos)
                 # now find position of next entry
                 cursor_pos = rline.find(raw[1], cursor_pos)
                 # raw[1]

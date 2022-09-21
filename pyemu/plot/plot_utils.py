@@ -579,7 +579,7 @@ def plot_id_bar(id_df, nsv=None, logger=None, **kwargs):
     else:
         ticks = np.arange(1, nsv + 1, int((nsv + 1) / 30))
 
-    cb = plt.colorbar(sm)
+    cb = plt.colorbar(sm, ax=ax)
     cb.set_ticks(ticks)
 
     logger.log("plot id bar")
