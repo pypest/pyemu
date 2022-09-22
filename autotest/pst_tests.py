@@ -1,6 +1,7 @@
 import os
 import platform
 import shutil
+import time
 import numpy as np
 if not os.path.exists("temp"):
     os.mkdir("temp")
@@ -724,50 +725,54 @@ def new_format_test_2():
     pst_files = [f for f in os.listdir(pst_dir) if f.endswith(".pst")]
     b_d = os.getcwd()
     os.chdir(pst_dir)
-    #try:
-    for pst_file in pst_files:
-        print(pst_file)
-        if os.path.exists("temp_pst"):
-            shutil.rmtree("temp_pst")
-        os.makedirs("temp_pst")
-        if "fail" in pst_file:
-            try:
-                pst = pyemu.Pst(os.path.join(pst_file))
+    try:
+        for pst_file in pst_files:
+            print(pst_file)
+            if os.path.exists("temp_pst"):
+                time.sleep(2)
+                shutil.rmtree("temp_pst")
+            os.makedirs("temp_pst")
+            if "fail" in pst_file:
+                try:
+                    pst = pyemu.Pst(os.path.join(pst_file))
 
-            except:
-                pass
+                except:
+                    pass
+                else:
+                    raise Exception("should have failed on {0}".format(pst_file))
             else:
-                raise Exception("should have failed on {0}".format(pst_file))
-        else:
-            pst = pyemu.Pst(os.path.join(pst_file))
-            pst.write(os.path.join("temp_pst","pst_test.pst"))
-            new_pst = pyemu.Pst(os.path.join("temp_pst","pst_test.pst"))
-            d = set(pst.par_names).symmetric_difference(new_pst.par_names)
-            assert len(d) == 0,d
-            d = set(pst.obs_names).symmetric_difference(new_pst.obs_names)
-            assert len(d) == 0,d
-            d = set(pst.template_files).symmetric_difference(new_pst.template_files)
-            assert len(d) == 0, d
-            assert pst.nnz_obs == new_pst.nnz_obs
-            assert pst.npar_adj == new_pst.npar_adj
+                pst = pyemu.Pst(os.path.join(pst_file))
+                pst.write(os.path.join("temp_pst","pst_test.pst"))
+                new_pst = pyemu.Pst(os.path.join("temp_pst","pst_test.pst"))
+                d = set(pst.par_names).symmetric_difference(new_pst.par_names)
+                assert len(d) == 0,d
+                d = set(pst.obs_names).symmetric_difference(new_pst.obs_names)
+                assert len(d) == 0,d
+                d = set(pst.template_files).symmetric_difference(new_pst.template_files)
+                assert len(d) == 0, d
+                assert pst.nnz_obs == new_pst.nnz_obs
+                assert pst.npar_adj == new_pst.npar_adj
 
-            new_pst.write(os.path.join("temp_pst","pst_test.pst"),version=2)
+                new_pst.write(os.path.join("temp_pst","pst_test.pst"),version=2)
 
-            assert os.path.exists(os.path.join("temp_pst","pst_test.par_data.csv"))
-            assert os.path.exists(os.path.join("temp_pst", "pst_test.obs_data.csv"))
-            assert os.path.exists(os.path.join("temp_pst", "pst_test.tplfile_data.csv"))
-            assert os.path.exists(os.path.join("temp_pst", "pst_test.insfile_data.csv"))
+                assert os.path.exists(os.path.join("temp_pst","pst_test.par_data.csv"))
+                assert os.path.exists(os.path.join("temp_pst", "pst_test.obs_data.csv"))
+                assert os.path.exists(os.path.join("temp_pst", "pst_test.tplfile_data.csv"))
+                assert os.path.exists(os.path.join("temp_pst", "pst_test.insfile_data.csv"))
 
-            new_pst = pyemu.Pst(os.path.join("temp_pst","pst_test.pst"))
-            d = set(pst.par_names).symmetric_difference(new_pst.par_names)
-            assert len(d) == 0, d
-            d = set(pst.obs_names).symmetric_difference(new_pst.obs_names)
-            assert len(d) == 0, d
-            d = set(pst.template_files).symmetric_difference(new_pst.template_files)
-            assert len(d) == 0, d
-            assert pst.nnz_obs == new_pst.nnz_obs
-            print(pst.npar_adj,new_pst.npar_adj)
-            assert pst.npar_adj == new_pst.npar_adj
+                new_pst = pyemu.Pst(os.path.join("temp_pst","pst_test.pst"))
+                d = set(pst.par_names).symmetric_difference(new_pst.par_names)
+                assert len(d) == 0, d
+                d = set(pst.obs_names).symmetric_difference(new_pst.obs_names)
+                assert len(d) == 0, d
+                d = set(pst.template_files).symmetric_difference(new_pst.template_files)
+                assert len(d) == 0, d
+                assert pst.nnz_obs == new_pst.nnz_obs
+                print(pst.npar_adj,new_pst.npar_adj)
+                assert pst.npar_adj == new_pst.npar_adj
+    except Exception as e:
+        os.chdir(b_d)
+        throw Exception("fail:"+str(e))
     os.chdir(b_d)
 
 def new_format_test():
@@ -1281,7 +1286,7 @@ def invest():
 
 
 if __name__ == "__main__":
-    
+    new_format_test_2()
     #write2_nan_test()
     #process_output_files_test()
     #change_limit_test()
@@ -1293,7 +1298,7 @@ if __name__ == "__main__":
     #new_format_test_2()
     #try_process_ins_test()
     #write_tables_test()
-    res_stats_test()
+    #res_stats_test()
     #test_write_input_files()
     #add_obs_test()
     #add_pars_test()
@@ -1302,7 +1307,7 @@ if __name__ == "__main__":
     #add_pi_test()
     #regdata_test()
     #nnz_groups_test()
-    adj_group_test()
+    #adj_group_test()
     #regul_rectify_test()
     #derivative_increment_tests()
     #tied_test()
@@ -1312,12 +1317,12 @@ if __name__ == "__main__":
     #comments_test()
     #test_e_clean()
     #load_test()
-    res_test()
+    #res_test()
     #
     #from_io_with_inschek_test()
     #pestpp_args_test()
-    reweight_test()
-    reweight_res_test()
+    #reweight_test()
+    #reweight_res_test()
     #run_test()
     # rectify_pgroup_test()
     #sanity_check_test()
