@@ -772,7 +772,7 @@ def new_format_test_2():
                 assert pst.npar_adj == new_pst.npar_adj
     except Exception as e:
         os.chdir(b_d)
-        throw Exception("fail:"+str(e))
+        Raise Exception("fail:"+str(e))
     os.chdir(b_d)
 
 def new_format_test():
