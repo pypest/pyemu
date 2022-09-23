@@ -104,6 +104,8 @@ def from_flopy():
     ph.pst.write_input_files()
     pyemu.helpers.apply_list_pars()
     os.chdir("..")
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
 
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
@@ -113,6 +115,8 @@ def from_flopy():
                                          spatial_list_props=spat_list_props)
     pe = ph.draw(100)
 
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
@@ -173,7 +177,9 @@ def from_flopy():
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
-    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
+    #m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
 
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
@@ -182,8 +188,9 @@ def from_flopy():
     pe = helper.draw(100)
 
     # go again testing passing list to sfr_pars
-    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
-
+    #m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt", 
@@ -200,8 +207,9 @@ def from_flopy():
 
 
     # go again passing bumph to sfr_par
-    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
-
+    #m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt", sfr_pars=['not_a_par0', 'not_a_par1'], sfr_obs=True)
@@ -214,12 +222,16 @@ def from_flopy():
 
     pp_props = [["upw.ss", [0, 1]], ["upw.ss", 1], ["upw.ss", 2], ["extra.prsity", 0], \
                 ["rch.rech", 0], ["rch.rech", [1, 2]]]
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              pp_props=pp_props, hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt")
 
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, exe_name="mfnwt", check=False)
     const_props = [["rch.rech", i] for i in range(m.nper)]
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     helper = pyemu.helpers.PstFromFlopyModel(m, new_model_ws,
                                              const_props=const_props, hds_kperk=[0, 0], remove_existing=True)
     pe = helper.draw(100)
@@ -231,11 +243,15 @@ def from_flopy():
         const_props.append(["upw.hk", k])
         const_props.append(["upw.ss", k])
         const_props.append(["upw.sy", k])
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              grid_props=grid_props, hds_kperk=[0, 0], remove_existing=True)
     pe = helper.draw(100)
     # zones using ibound values - vka in layer 2
     zone_props = ["upw.vka", 1]
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              zone_props=zone_props, hds_kperk=[0, 0], remove_existing=True)
     pe = helper.draw(100)
@@ -244,6 +260,8 @@ def from_flopy():
     for iper in range(m.nper):
         list_props.append(["wel.flux", iper])
         # list_props.append(["drn.elev",iper])
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              temporal_list_props=list_props, hds_kperk=[0, 0], remove_existing=True)
 
@@ -252,6 +270,8 @@ def from_flopy():
     k_zone_dict = {k: zn_arr for k in range(3)}
 
     obssim_smp_pairs = None
+    if os.path.exists(new_model_ws):
+        shutil.rmtree(new_model_ws,ignore_errors=True)
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              pp_props=pp_props,
                                              const_props=const_props,
@@ -811,11 +831,11 @@ if __name__ == "__main__":
     # run_array_pars()
     # from_flopy_zone_pars()
     # from_flopy_pp_test()
-    # from_flopy()
+    from_flopy()
     #parrep_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()
-    ineq_phi_test()
+    #ineq_phi_test()
 
 
 

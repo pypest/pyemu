@@ -726,12 +726,13 @@ def new_format_test_2():
     b_d = os.getcwd()
     os.chdir(pst_dir)
     try:
-        for pst_file in pst_files:
+        for i,pst_file in enumerate(pst_files):
             print(pst_file)
-            if os.path.exists("temp_pst"):
+            pdir = "temp_pst{0}".format(i)
+            if os.path.exists(pdir):
                 time.sleep(2)
-                shutil.rmtree("temp_pst")
-            os.makedirs("temp_pst")
+                shutil.rmtree(pdir)
+            os.makedirs(pdir)
             if "fail" in pst_file:
                 try:
                     pst = pyemu.Pst(os.path.join(pst_file))
@@ -742,8 +743,8 @@ def new_format_test_2():
                     raise Exception("should have failed on {0}".format(pst_file))
             else:
                 pst = pyemu.Pst(os.path.join(pst_file))
-                pst.write(os.path.join("temp_pst","pst_test.pst"))
-                new_pst = pyemu.Pst(os.path.join("temp_pst","pst_test.pst"))
+                pst.write(os.path.join(pdir,"pst_test.pst"))
+                new_pst = pyemu.Pst(os.path.join(pdir,"pst_test.pst"))
                 d = set(pst.par_names).symmetric_difference(new_pst.par_names)
                 assert len(d) == 0,d
                 d = set(pst.obs_names).symmetric_difference(new_pst.obs_names)
@@ -753,14 +754,14 @@ def new_format_test_2():
                 assert pst.nnz_obs == new_pst.nnz_obs
                 assert pst.npar_adj == new_pst.npar_adj
 
-                new_pst.write(os.path.join("temp_pst","pst_test.pst"),version=2)
+                new_pst.write(os.path.join(pdir,"pst_test.pst"),version=2)
 
-                assert os.path.exists(os.path.join("temp_pst","pst_test.par_data.csv"))
-                assert os.path.exists(os.path.join("temp_pst", "pst_test.obs_data.csv"))
-                assert os.path.exists(os.path.join("temp_pst", "pst_test.tplfile_data.csv"))
-                assert os.path.exists(os.path.join("temp_pst", "pst_test.insfile_data.csv"))
+                assert os.path.exists(os.path.join(pdir,"pst_test.par_data.csv"))
+                assert os.path.exists(os.path.join(pdir, "pst_test.obs_data.csv"))
+                assert os.path.exists(os.path.join(pdir, "pst_test.tplfile_data.csv"))
+                assert os.path.exists(os.path.join(pdir, "pst_test.insfile_data.csv"))
 
-                new_pst = pyemu.Pst(os.path.join("temp_pst","pst_test.pst"))
+                new_pst = pyemu.Pst(os.path.join(pdir,"pst_test.pst"))
                 d = set(pst.par_names).symmetric_difference(new_pst.par_names)
                 assert len(d) == 0, d
                 d = set(pst.obs_names).symmetric_difference(new_pst.obs_names)
