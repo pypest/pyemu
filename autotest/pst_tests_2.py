@@ -30,7 +30,7 @@ def from_flopy_kl_test():
     m.change_model_ws(org_model_ws)
     m.write_input()
     setattr(m,"sr",pyemu.helpers.SpatialReference(delc=m.dis.delc.array,delr=m.dis.delr.array))
-    new_model_ws = "temp_pst_from_flopy"
+    new_model_ws = "temp_pst_from_flopy1"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
 
@@ -74,7 +74,7 @@ def from_flopy():
     m.change_model_ws(org_model_ws)
     m.write_input()
 
-    new_model_ws = "temp_pst_from_flopy"
+    new_model_ws = "temp_pst_from_flopy2"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
 
@@ -295,7 +295,7 @@ def from_flopy_zone_pars():
     m.change_model_ws(org_model_ws)
     m.write_input()
 
-    new_model_ws = "temp_pst_from_flopy"
+    new_model_ws = "temp_pst_from_flopy3"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
     grid_props = [["upw.ss", [0, 1]], ["upw.ss", 1], ["upw.ss", 2], ["extra.prsity", 0],
@@ -468,7 +468,7 @@ def from_flopy_reachinput():
 def run_array_pars():
     import os
     import pyemu
-    new_model_ws = "temp_pst_from_flopy"
+    new_model_ws = "temp_pst_from_flopy4"
     os.chdir(new_model_ws)
     pyemu.helpers.apply_array_pars()
     os.chdir('..')
@@ -553,7 +553,7 @@ def pst_from_flopy_geo_draw_test():
     m.change_model_ws(org_model_ws)
     m.write_input()
 
-    new_model_ws = "temp_pst_from_flopy"
+    new_model_ws = "temp_pst_from_flopy5"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
 
@@ -605,7 +605,7 @@ def from_flopy_pp_test():
     m.bas6.ibound = ib
     m.write_input()
 
-    new_model_ws = "temp_pst_from_flopy"
+    new_model_ws = "temp_pst_from_flopy6"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
     pp_props = [["upw.ss", [0, 1]],["upw.hk",[1,0]],["upw.vka",1]]
@@ -635,7 +635,7 @@ def from_flopy_pp_test():
     df = pd.read_csv(os.path.join(new_model_ws, "arr_pars.csv"), index_col=0)
     assert np.all(df.pp_fill_value.values == 1)
 
-    new_model_ws = "temp_pst_from_flopy"
+    new_model_ws = "temp_pst_from_flopy7"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
     props = ["upw.ss","upw.hk","upw.vka"]
@@ -674,7 +674,7 @@ def pst_from_flopy_specsim_draw_test():
     m.change_model_ws(org_model_ws)
     m.write_input()
 
-    new_model_ws = "temp_pst_from_flopy"
+    new_model_ws = "temp_pst_from_flopy8"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
 

@@ -1159,7 +1159,8 @@ def write2_nan_test():
 def rename_pars_test():
     import pyemu
     org_d = os.path.join("..","examples","henry")
-    new_d = "henry"
+    new_d = "henry1"
+    new_d = "henry1"
     if os.path.exists(new_d):
         shutil.rmtree(new_d)
     shutil.copytree(org_d,new_d)
@@ -1209,7 +1210,7 @@ def rename_pars_test():
 def rename_obs_test():
     import pyemu
     org_d = os.path.join("..","examples","henry")
-    new_d = "henry"
+    new_d = "henry2"
     if os.path.exists(new_d):
         shutil.rmtree(new_d)
     shutil.copytree(org_d,new_d)
