@@ -189,6 +189,7 @@ def from_flopy():
 
     # go again testing passing list to sfr_pars
     #m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    new_model_ws = "temp_pst_from_flopy2a"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
@@ -416,6 +417,9 @@ def from_flopy_reachinput():
             include_temporal_pars = False
         else:
             include_temporal_pars = {'flow': [0], 'runoff': [2]}
+        new_model_ws = "temp_pst_from_flopy_reachesa{0}".format(i)
+        if os.path.exists(new_model_ws):
+            shutil.rmtree(new_model_ws, ignore_errors=True)
         helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                                  hds_kperk=[0, 0], remove_existing=True,
                                                  model_exe_name="mfnwt", sfr_pars=sfr_par,
