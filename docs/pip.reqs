@@ -2,6 +2,6 @@ numpy
 pandas
 matplotlib
 flopy
-sphinx=5.1.1
+sphinx>=3.2.1
 sphinx-autoapi
 sphinx-rtd-theme
