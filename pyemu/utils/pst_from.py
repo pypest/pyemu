@@ -2176,7 +2176,7 @@ class PstFrom(object):
                     zone_array=zone_array,
                     shape=shp,
                     get_xy=self.get_xy,
-                    fill_value=initial_value,
+                    fill_value=initial_value if initial_value is not None else 1.0,
                     gpname=pargp,
                     input_filename=in_fileabs,
                     par_style=par_style,

@@ -288,9 +288,10 @@ def setup_pilotpoints_grid(
             shp.save(shapename)
         except:
             shp.close()
-
+        shp.close()
         shp = shapefile.Reader(shapename)
         assert shp.numRecords == par_info.shape[0]
+        shp.close()
     return par_info
 
 

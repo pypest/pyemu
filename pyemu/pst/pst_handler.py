@@ -971,153 +971,120 @@ class Pst(object):
             filename
         )
         f = open(filename, "r")
-        pst_path, _ = Pst._parse_path_agnostic(filename)
-        last_section = ""
-        req_sections = {
-            "* parameter data",
-            "* observation data",
-            "* model command line",
-            "* control data",
-        }
-        sections_found = set()
-        while True:
+        try:
+            pst_path, _ = Pst._parse_path_agnostic(filename)
+            last_section = ""
+            req_sections = {
+                "* parameter data",
+                "* observation data",
+                "* model command line",
+                "* control data",
+            }
+            sections_found = set()
+            while True:
 
-            next_section, section_lines, comments = self._read_section_comments(f, True)
+                next_section, section_lines, comments = self._read_section_comments(f, True)
 
-            if "* control data" in last_section.lower():
-                iskeyword = False
-                if "keyword" in last_section.lower():
-                    iskeyword = True
-                self.pestpp_options = self.control_data.parse_values_from_lines(
-                    section_lines, iskeyword=iskeyword
-                )
-                if len(self.pestpp_options) > 0:
-                    ppo = self.pestpp_options
-                    svd_opts = ["svdmode", "eigthresh", "maxsing", "eigwrite"]
-                    for svd_opt in svd_opts:
-                        if svd_opt in ppo:
-                            self.svd_data.__setattr__(svd_opt, ppo.pop(svd_opt))
-                    for reg_opt in self.reg_data.should_write:
-                        if reg_opt in ppo:
-                            self.reg_data.__setattr__(reg_opt, ppo.pop(reg_opt))
-
-            elif "* singular value decomposition" in last_section.lower():
-                self.svd_data.parse_values_from_lines(section_lines)
-
-            elif "* observation groups" in last_section.lower():
-                pass
-
-            elif "* parameter groups" in last_section.lower():
-                self.parameter_groups = self._cast_df_from_lines(
-                    last_section,
-                    section_lines,
-                    self.pargp_fieldnames,
-                    self.pargp_converters,
-                    self.pargp_defaults,
-                    pst_path=pst_path,
-                )
-                self.parameter_groups.index = self.parameter_groups.pargpnme
-
-            elif "* parameter data" in last_section.lower():
-                # check for tied pars
-                ntied = 0
-                if "external" not in last_section.lower():
-                    for line in section_lines:
-                        if "tied" in line.lower():
-                            ntied += 1
-                if ntied > 0:
-                    slines = section_lines[:-ntied]
-                else:
-                    slines = section_lines
-                self.parameter_data = self._cast_df_from_lines(
-                    last_section,
-                    slines,
-                    self.par_fieldnames,
-                    self.par_converters,
-                    self.par_defaults,
-                    self.par_alias_map,
-                    pst_path=pst_path,
-                )
-
-                self.parameter_data.index = self.parameter_data.parnme
-                if ntied > 0:
-                    tied_pars, partied = [], []
-                    for line in section_lines[-ntied:]:
-                        raw = line.strip().split()
-                        tied_pars.append(raw[0].strip().lower())
-                        partied.append(raw[1].strip().lower())
-                    self.parameter_data.loc[:, "partied"] = np.NaN
-                    self.parameter_data.loc[tied_pars, "partied"] = partied
-
-            elif "* observation data" in last_section.lower():
-                self.observation_data = self._cast_df_from_lines(
-                    last_section,
-                    section_lines,
-                    self.obs_fieldnames,
-                    self.obs_converters,
-                    self.obs_defaults,
-                    alias_map=self.obs_alias_map,
-                    pst_path=pst_path,
-                )
-                self.observation_data.index = self.observation_data.obsnme
-
-            elif "* model command line" in last_section.lower():
-                for line in section_lines:
-                    self.model_command.append(line.strip())
-
-            elif "* model input/output" in last_section.lower():
-                if "* control data" not in sections_found:
-                    raise Exception(
-                        "attempting to read '* model input/output' before reading "
-                        + "'* control data' - need NTPLFLE counter for this..."
+                if "* control data" in last_section.lower():
+                    iskeyword = False
+                    if "keyword" in last_section.lower():
+                        iskeyword = True
+                    self.pestpp_options = self.control_data.parse_values_from_lines(
+                        section_lines, iskeyword=iskeyword
                     )
-                if (
-                    len(section_lines)
-                    != self.control_data.ntplfle + self.control_data.ninsfle
-                ):
-                    raise Exception(
-                        "didnt find the right number of '* model input/output' lines,"
-                        + "expecting {0} template files and {1} instruction files".format(
-                            self.control_data.ntplfle, self.control_data.ninsfle
-                        )
-                    )
-                template_files, input_files = [], []
-                for i in range(self.control_data.ntplfle):
-                    raw = section_lines[i].strip().split()
-                    template_files.append(raw[0])
-                    input_files.append(raw[1])
-                self.model_input_data = pd.DataFrame(
-                    {"pest_file": template_files, "model_file": input_files},
-                    index=template_files,
-                )
+                    if len(self.pestpp_options) > 0:
+                        ppo = self.pestpp_options
+                        svd_opts = ["svdmode", "eigthresh", "maxsing", "eigwrite"]
+                        for svd_opt in svd_opts:
+                            if svd_opt in ppo:
+                                self.svd_data.__setattr__(svd_opt, ppo.pop(svd_opt))
+                        for reg_opt in self.reg_data.should_write:
+                            if reg_opt in ppo:
+                                self.reg_data.__setattr__(reg_opt, ppo.pop(reg_opt))
 
-                instruction_files, output_files = [], []
-                for j in range(self.control_data.ninsfle):
-                    raw = section_lines[i + j + 1].strip().split()
-                    instruction_files.append(raw[0])
-                    output_files.append(raw[1])
-                self.model_output_data = pd.DataFrame(
-                    {"pest_file": instruction_files, "model_file": output_files},
-                    index=instruction_files,
-                )
+                elif "* singular value decomposition" in last_section.lower():
+                    self.svd_data.parse_values_from_lines(section_lines)
 
-            elif "* model input" in last_section.lower():
-                if last_section.strip().split()[-1].lower() == "external":
-                    self.model_input_data = self._cast_df_from_lines(
+                elif "* observation groups" in last_section.lower():
+                    pass
+
+                elif "* parameter groups" in last_section.lower():
+                    self.parameter_groups = self._cast_df_from_lines(
                         last_section,
                         section_lines,
-                        ["pest_file", "model_file"],
-                        [],
-                        [],
+                        self.pargp_fieldnames,
+                        self.pargp_converters,
+                        self.pargp_defaults,
                         pst_path=pst_path,
                     )
-                    # self.template_files.extend(io_df.pest_file.tolist())
-                    # self.input_files.extend(io_df.model_file.tolist())
+                    self.parameter_groups.index = self.parameter_groups.pargpnme
 
-                else:
-                    template_files, input_files = [], []
+                elif "* parameter data" in last_section.lower():
+                    # check for tied pars
+                    ntied = 0
+                    if "external" not in last_section.lower():
+                        for line in section_lines:
+                            if "tied" in line.lower():
+                                ntied += 1
+                    if ntied > 0:
+                        slines = section_lines[:-ntied]
+                    else:
+                        slines = section_lines
+                    self.parameter_data = self._cast_df_from_lines(
+                        last_section,
+                        slines,
+                        self.par_fieldnames,
+                        self.par_converters,
+                        self.par_defaults,
+                        self.par_alias_map,
+                        pst_path=pst_path,
+                    )
+
+                    self.parameter_data.index = self.parameter_data.parnme
+                    if ntied > 0:
+                        tied_pars, partied = [], []
+                        for line in section_lines[-ntied:]:
+                            raw = line.strip().split()
+                            tied_pars.append(raw[0].strip().lower())
+                            partied.append(raw[1].strip().lower())
+                        self.parameter_data.loc[:, "partied"] = np.NaN
+                        self.parameter_data.loc[tied_pars, "partied"] = partied
+
+                elif "* observation data" in last_section.lower():
+                    self.observation_data = self._cast_df_from_lines(
+                        last_section,
+                        section_lines,
+                        self.obs_fieldnames,
+                        self.obs_converters,
+                        self.obs_defaults,
+                        alias_map=self.obs_alias_map,
+                        pst_path=pst_path,
+                    )
+                    self.observation_data.index = self.observation_data.obsnme
+
+                elif "* model command line" in last_section.lower():
                     for line in section_lines:
-                        raw = line.split()
+                        self.model_command.append(line.strip())
+
+                elif "* model input/output" in last_section.lower():
+                    if "* control data" not in sections_found:
+                        raise Exception(
+                            "attempting to read '* model input/output' before reading "
+                            + "'* control data' - need NTPLFLE counter for this..."
+                        )
+                    if (
+                        len(section_lines)
+                        != self.control_data.ntplfle + self.control_data.ninsfle
+                    ):
+                        raise Exception(
+                            "didnt find the right number of '* model input/output' lines,"
+                            + "expecting {0} template files and {1} instruction files".format(
+                                self.control_data.ntplfle, self.control_data.ninsfle
+                            )
+                        )
+                    template_files, input_files = [], []
+                    for i in range(self.control_data.ntplfle):
+                        raw = section_lines[i].strip().split()
                         template_files.append(raw[0])
                         input_files.append(raw[1])
                     self.model_input_data = pd.DataFrame(
@@ -1125,23 +1092,9 @@ class Pst(object):
                         index=template_files,
                     )
 
-            elif "* model output" in last_section.lower():
-                if last_section.strip().split()[-1].lower() == "external":
-                    self.model_output_data = self._cast_df_from_lines(
-                        last_section,
-                        section_lines,
-                        ["pest_file", "model_file"],
-                        [],
-                        [],
-                        pst_path=pst_path,
-                    )
-                    # self.instruction_files.extend(io_df.pest_file.tolist())
-                    # self.output_files.extend(io_df.model_file.tolist())
-
-                else:
                     instruction_files, output_files = [], []
-                    for iline, line in enumerate(section_lines):
-                        raw = line.split()
+                    for j in range(self.control_data.ninsfle):
+                        raw = section_lines[i + j + 1].strip().split()
                         instruction_files.append(raw[0])
                         output_files.append(raw[1])
                     self.model_output_data = pd.DataFrame(
@@ -1149,47 +1102,100 @@ class Pst(object):
                         index=instruction_files,
                     )
 
-            elif "* prior information" in last_section.lower():
-                self._cast_prior_df_from_lines(
-                    last_section, section_lines, pst_path=pst_path
-                )
-                # self.prior_information = Pst._cast_df_from_lines(last_section,section_lines,self.prior_fieldnames,
-                #                                                 self.prior_format,{},pst_path=pst_path)
+                elif "* model input" in last_section.lower():
+                    if last_section.strip().split()[-1].lower() == "external":
+                        self.model_input_data = self._cast_df_from_lines(
+                            last_section,
+                            section_lines,
+                            ["pest_file", "model_file"],
+                            [],
+                            [],
+                            pst_path=pst_path,
+                        )
+                        # self.template_files.extend(io_df.pest_file.tolist())
+                        # self.input_files.extend(io_df.model_file.tolist())
 
-            elif (
-                last_section.lower() == "* regularization"
-                or last_section.lower() == "* regularisation"
-            ):
-                raw = section_lines[0].strip().split()
-                self.reg_data.phimlim = float(raw[0])
-                self.reg_data.phimaccept = float(raw[1])
-                raw = section_lines[1].strip().split()
-                self.reg_data.wfinit = float(raw[0])
+                    else:
+                        template_files, input_files = [], []
+                        for line in section_lines:
+                            raw = line.split()
+                            template_files.append(raw[0])
+                            input_files.append(raw[1])
+                        self.model_input_data = pd.DataFrame(
+                            {"pest_file": template_files, "model_file": input_files},
+                            index=template_files,
+                        )
 
-            elif len(last_section) > 0:
-                print(
-                    "Pst._load_version2() warning: unrecognized section: ", last_section
-                )
-                self.comments[last_section] = section_lines
+                elif "* model output" in last_section.lower():
+                    if last_section.strip().split()[-1].lower() == "external":
+                        self.model_output_data = self._cast_df_from_lines(
+                            last_section,
+                            section_lines,
+                            ["pest_file", "model_file"],
+                            [],
+                            [],
+                            pst_path=pst_path,
+                        )
+                        # self.instruction_files.extend(io_df.pest_file.tolist())
+                        # self.output_files.extend(io_df.model_file.tolist())
 
-            if next_section is None or len(section_lines) == 0:
-                break
-            next_section_generic = (
-                next_section.replace("external", "")
-                .replace("keyword", "")
-                .strip()
-                .lower()
-            )
-            if next_section_generic in sections_found:
-                raise Exception(
-                    "duplicate control file sections for '{0}'".format(
-                        next_section_generic
+                    else:
+                        instruction_files, output_files = [], []
+                        for iline, line in enumerate(section_lines):
+                            raw = line.split()
+                            instruction_files.append(raw[0])
+                            output_files.append(raw[1])
+                        self.model_output_data = pd.DataFrame(
+                            {"pest_file": instruction_files, "model_file": output_files},
+                            index=instruction_files,
+                        )
+
+                elif "* prior information" in last_section.lower():
+                    self._cast_prior_df_from_lines(
+                        last_section, section_lines, pst_path=pst_path
                     )
+                    # self.prior_information = Pst._cast_df_from_lines(last_section,section_lines,self.prior_fieldnames,
+                    #                                                 self.prior_format,{},pst_path=pst_path)
+
+                elif (
+                    last_section.lower() == "* regularization"
+                    or last_section.lower() == "* regularisation"
+                ):
+                    raw = section_lines[0].strip().split()
+                    self.reg_data.phimlim = float(raw[0])
+                    self.reg_data.phimaccept = float(raw[1])
+                    raw = section_lines[1].strip().split()
+                    self.reg_data.wfinit = float(raw[0])
+
+                elif len(last_section) > 0:
+                    print(
+                        "Pst._load_version2() warning: unrecognized section: ", last_section
+                    )
+                    self.comments[last_section] = section_lines
+
+                if next_section is None or len(section_lines) == 0:
+                    break
+                next_section_generic = (
+                    next_section.replace("external", "")
+                    .replace("keyword", "")
+                    .strip()
+                    .lower()
                 )
-            sections_found.add(next_section_generic)
+                if next_section_generic in sections_found:
+                    f.close()
+                    raise Exception(
+                        "duplicate control file sections for '{0}'".format(
+                            next_section_generic
+                        )
+                    )
+                sections_found.add(next_section_generic)
 
-            last_section = next_section
+                last_section = next_section
+        except Exception as e:
+            f.close()
+            raise Exception("error reading ctrl file '{0}': {1}".format(filename,str(e)))
 
+        f.close()
         not_found = []
         for section in req_sections:
             if section not in sections_found:
