@@ -653,11 +653,13 @@ def _populate_dataframe(index, columns, default_dict, dtype):
         This function is called as part of constructing a generic Pst instance
 
     """
-    new_df = pd.DataFrame(index=index, columns=columns)
-    for fieldname, dt in zip(columns, dtype.descr):
-        default = default_dict[fieldname]
-        new_df.loc[:, fieldname] = default
-        new_df.loc[:, fieldname] = new_df.loc[:, fieldname].astype(dt[1])
+    new_df = pd.concat(
+        [pd.Series(default_dict[fieldname],
+                   index=index,
+                   name=fieldname).astype(dt[1])
+         for fieldname, dt in zip(columns, dtype.descr)],
+        axis=1
+    )
     return new_df
 
 

@@ -1001,15 +1001,15 @@ class PstFrom(object):
                             fp.write(storehead[key])
                             fp.flush()
                             lc += 1
-                        if lc < len(df):
-                            df.iloc[fr:].to_csv(
-                                fp,
-                                sep=",",
-                                mode="a",
-                                header=hheader,
-                                index=False,
-                                **kwargs,
-                            )
+                        # if lc < len(df):  # finish off remaining table (todo: when supporting mid-table comments...)
+                        df.iloc[fr:].to_csv(
+                            fp,
+                            sep=",",
+                            mode="a",
+                            header=hheader,
+                            index=False,
+                            **kwargs,
+                        )
                 else:
                     df.to_csv(
                         org_file,
