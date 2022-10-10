@@ -975,7 +975,7 @@ class PstFrom(object):
                 if len(storehead) != 0:
                     kwargs = {}
                     if "win" in platform.platform().lower():
-                        kwargs = {"line_terminator": "\n"}
+                        kwargs = {"lineterminator": "\n"}
                     with open(org_file, "w") as fp:
                         lc = 0
                         fr = 0
@@ -1001,15 +1001,15 @@ class PstFrom(object):
                             fp.write(storehead[key])
                             fp.flush()
                             lc += 1
-                        if lc < len(df):
-                            df.iloc[fr:].to_csv(
-                                fp,
-                                sep=",",
-                                mode="a",
-                                header=hheader,
-                                index=False,
-                                **kwargs,
-                            )
+                        # if lc < len(df):  # finish off remaining table (todo: when supporting mid-table comments...)
+                        df.iloc[fr:].to_csv(
+                            fp,
+                            sep=",",
+                            mode="a",
+                            header=hheader,
+                            index=False,
+                            **kwargs,
+                        )
                 else:
                     df.to_csv(
                         org_file,

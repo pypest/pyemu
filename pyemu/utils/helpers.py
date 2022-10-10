@@ -4394,7 +4394,7 @@ def _process_list_file(model_file, df):
     with open(model_file, "w") as fo:
         kwargs = {}
         if "win" in platform.platform().lower():
-            kwargs = {"line_terminator": "\n"}
+            kwargs = {"lineterminator": "\n"}
         if len(storehead) != 0:
             fo.write("\n".join(storehead))
             fo.flush()
@@ -4691,9 +4691,9 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
 
 def _write_df_tpl(filename, df, sep=",", tpl_marker="~", headerlines=None, **kwargs):
     """function write a pandas dataframe to a template file."""
-    if "line_terminator" not in kwargs:
+    if "lineterminator" not in kwargs:
         if "win" in platform.platform().lower():
-            kwargs["line_terminator"] = "\n"
+            kwargs["lineterminator"] = "\n"
     with open(filename, "w") as f:
         f.write("ptf {0}\n".format(tpl_marker))
         f.flush()

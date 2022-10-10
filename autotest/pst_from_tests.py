@@ -122,9 +122,9 @@ def freyberg_test():
                       "Processed into tabular form using the lines:\n",
                       "sfo = flopy.utils.SfrFile('freyberg.sfr.out')\n",
                       "sfo.get_dataframe().to_csv('freyberg.sfo.dat')\n"])
-        sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx',line_terminator='\n')
+        sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx', lineterminator='\n')
     sfodf.sort_index(axis=1).to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
-                 index_label='idx',line_terminator='\n')
+                 index_label='idx',lineterminator='\n')
     template_ws = "new_temp"
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
@@ -189,7 +189,7 @@ def freyberg_test():
          "'Processed into tabular form using the lines:\\n', "
          "'sfo = flopy.utils.SfrFile(`freyberg.sfr.out`)\\n', "
          "'sfo.get_dataframe().to_csv(`freyberg.sfo.dat`)\\n'])",
-         "    sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx',line_terminator='\\n')"])
+         "    sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx',lineterminator='\\n')"])
     # csv version of sfr obs
     # sfr outputs to obs
     pf.add_observations('freyberg.sfo.csv', insfile=None,
@@ -692,6 +692,21 @@ def mf6_freyberg_test():
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0,a=60))
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
+    with open(os.path.join(template_ws, "inflow1.txt"), 'w') as fp:
+        fp.write("# rid type rate idx0 idx1\n")
+        fp.write("205 666 500000.0 1 1")
+    pf.add_parameters(filenames='inflow1.txt',
+                      pargp='inflow1',
+                      comment_char='#',
+                      use_cols=2,
+                      index_cols=0,
+                      upper_bound=10,
+                      lower_bound=0.1,
+                      par_type="grid",
+                      # mfile_skip=1
+                      )
+
+
     ft, ftd = _gen_dummy_obs_file(pf.new_d, sep=',', ext='txt')
     pf.add_parameters(filenames=f, par_type="grid", mfile_skip=1, index_cols=0,
                       use_cols=[2], par_name_base="tmp",
@@ -3844,14 +3859,14 @@ if __name__ == "__main__":
     # invest()
     # freyberg_test()
     #freyberg_prior_build_test()
-    # mf6_freyberg_test()
+    mf6_freyberg_test()
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     # xsec_test()
-    mf6_freyberg_short_direct_test()
+    # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
     # tpf = TestPstFrom()
