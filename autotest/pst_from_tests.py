@@ -122,9 +122,9 @@ def freyberg_test():
                       "Processed into tabular form using the lines:\n",
                       "sfo = flopy.utils.SfrFile('freyberg.sfr.out')\n",
                       "sfo.get_dataframe().to_csv('freyberg.sfo.dat')\n"])
-        sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx', lineterminator='\n')
+        sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx', line_terminator='\n')
     sfodf.sort_index(axis=1).to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
-                 index_label='idx',lineterminator='\n')
+                 index_label='idx',line_terminator='\n')
     template_ws = "new_temp"
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
@@ -189,7 +189,7 @@ def freyberg_test():
          "'Processed into tabular form using the lines:\\n', "
          "'sfo = flopy.utils.SfrFile(`freyberg.sfr.out`)\\n', "
          "'sfo.get_dataframe().to_csv(`freyberg.sfo.dat`)\\n'])",
-         "    sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx',lineterminator='\\n')"])
+         "    sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx',line_terminator='\\n')"])
     # csv version of sfr obs
     # sfr outputs to obs
     pf.add_observations('freyberg.sfo.csv', insfile=None,

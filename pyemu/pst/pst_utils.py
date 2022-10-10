@@ -660,13 +660,6 @@ def _populate_dataframe(index, columns, default_dict, dtype):
          for fieldname, dt in zip(columns, dtype.descr)],
         axis=1
     )
-    # new_df = pd.DataFrame(index=index)
-    # for fieldname, dt in zip(columns, dtype.descr):
-    #     default = default_dict[fieldname]
-    #     new_df[fieldname] = pd.Series(default,
-    #                                   index=new_df.index,
-    #                                   name=fieldname).astype(dt[1])
-        # new_df.loc[:, fieldname] = new_df.loc[:, fieldname].astype(dt[1])
     return new_df
 
 
