@@ -1449,13 +1449,15 @@ class PstFrom(object):
             df, storehead, inssep = self._load_listtype_file(
                 filenames, index_cols, use_cols, fmts, seps, skip_rows
             )
+            # parse to numeric (read as dtype object to preserve mixed types)
+            df = df.apply(pd.to_numeric, errors="ignore")
             if inssep != ",":
                 inssep = seps
             else:
                 inssep = [inssep]
             # rectify df?
             # if iloc[0] are strings and index_cols are ints,
-            # can we assume that there were infact column headers?
+            #   can we assume that there were infact column headers?
             if all(isinstance(c, str) for c in df.iloc[0]) and all(
                 isinstance(a, int) for a in index_cols
             ):

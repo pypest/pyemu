@@ -2905,6 +2905,15 @@ def mf6_freyberg_arr_obs_and_headerless_test():
     pf.add_observations(list_file, index_cols=[0, 1, 2], use_cols=[3,5], ofile_skip=0, includes_header=False,
                         prefix="welobs")
 
+    with open(os.path.join(template_ws,"badlistcall.txt"), "w") as fp:
+        fp.write("this is actually a header\n")
+        fp.write("entry 0 10 100.4 2\n")
+        fp.write("entry 1 10 2.4 5.0")
+    pf.add_observations("badlistcall.txt", index_cols=[0, 1], use_cols=[3, 4],
+                        ofile_skip=0, includes_header=False,
+                        prefix="badlistcall")
+
+
     v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
     gr_gs = pyemu.geostats.GeoStruct(variograms=v)
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
@@ -3872,7 +3881,7 @@ if __name__ == "__main__":
     # invest()
     # freyberg_test()
     #freyberg_prior_build_test()
-    mf6_freyberg_test()
+    # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
@@ -3889,7 +3898,7 @@ if __name__ == "__main__":
     #tpf.test_add_array_parameters_alt_inst_str_0_d()
     # tpf.test_add_array_parameters_pps_grid()
     # # pstfrom_profile()
-    #mf6_freyberg_arr_obs_and_headerless_test()
+    mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test()
 
 
