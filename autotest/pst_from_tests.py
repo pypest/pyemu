@@ -706,7 +706,20 @@ def mf6_freyberg_test():
                       # mfile_skip=1
                       )
 
-
+    with open(os.path.join(template_ws, "inflow2.txt"), 'w') as fp:
+        fp.write("# rid type rate idx0 idx1\n")
+        fp.write("205 infl 500000.3 1 1\n")
+        fp.write("206 div 1 500000.7 1")
+    pf.add_parameters(filenames='inflow2.txt',
+                      pargp='inflow2',
+                      comment_char='#',
+                      use_cols=2,
+                      index_cols=0,
+                      upper_bound=10,
+                      lower_bound=0.1,
+                      par_type="grid",
+                      # mfile_skip=1
+                      )
     ft, ftd = _gen_dummy_obs_file(pf.new_d, sep=',', ext='txt')
     pf.add_parameters(filenames=f, par_type="grid", mfile_skip=1, index_cols=0,
                       use_cols=[2], par_name_base="tmp",
