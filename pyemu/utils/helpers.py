@@ -4369,11 +4369,13 @@ def _process_list_file(model_file, df):
             mlt_cols = [str(col) for col in mlt.use_cols]
             operator = mlt.operator
             if operator == "*" or operator.lower()[0] == "m":
-                new_df.loc[common_idx, mlt_cols] = new_df.loc[common_idx, mlt_cols].apply(
-                    pd.to_numeric, downcast='integer') * mlts.loc[common_idx, mlt_cols]
+                new_df.loc[common_idx, mlt_cols] = \
+                    new_df.loc[common_idx, mlt_cols].apply(
+                        pd.to_numeric) * mlts.loc[common_idx, mlt_cols]
             elif operator == "+" or operator.lower()[0] == "a":
-                new_df.loc[common_idx, mlt_cols] = new_df.loc[common_idx, mlt_cols].apply(
-                    pd.to_numeric, downcast='integer') + mlts.loc[common_idx, mlt_cols]
+                new_df.loc[common_idx, mlt_cols] = \
+                    new_df.loc[common_idx, mlt_cols].apply(
+                        pd.to_numeric) + mlts.loc[common_idx, mlt_cols]
             else:
                 raise Exception(
                     "unsupported operator '{0}' for mlt file '{1}'".format(
