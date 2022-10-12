@@ -1771,15 +1771,15 @@ class PstFrom(object):
                 model rows and columns to be identified and processed to x,y.
             use_cols (`list`-like or `int`): for tabular-style model input file,
                 defines the columns to be parameterised
-            use_rows (`list` of `int` or `tuple`): Setup parameters for
+            use_rows (`list` or `tuple`): Setup parameters for
                 only specific rows in list-style model input file.
-                If list of `int` -- assumed to be a row index selection (zero-based).
-                If list of `tuple` -- assumed to be selection based `index_cols` values.
+                Collection is assumed to be selection based `index_cols` values.
                 e.g. [(3,5,6)] would attempt to set parameters where the model file
                 values for 3 `index_cols` are 3,5,6. N.B. values in tuple are actual
                 model file entry values. If no rows in the model input file match `use_rows`, parameters
                 will be set up for all rows. Only valid/effective if index_cols is not None.
                 Default is None -- setup parameters for all rows.
+                # todo implement better selection based on index
             pargp (`str`): Parameter group to assign pars to. This is PESTs
                 pargp but is also used to gather correlated parameters set up
                 using multiple `add_parameters()` calls (e.g. temporal pars)
@@ -3580,7 +3580,7 @@ def _get_tpl_or_ins_df(
         sidx = set()
         for df in dfs:
             # looses ordering
-            didx = set(df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1))
+            didx = set(df.loc[:, index_cols].apply(tuple, axis=1))
             sidx.update(didx)
     else:
         # order matters for obs

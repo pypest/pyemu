@@ -703,23 +703,56 @@ def mf6_freyberg_test():
                       upper_bound=10,
                       lower_bound=0.1,
                       par_type="grid",
-                      # mfile_skip=1
                       )
 
     with open(os.path.join(template_ws, "inflow2.txt"), 'w') as fp:
         fp.write("# rid type rate idx0 idx1\n")
         fp.write("205 infl 500000.3 1 1\n")
+        fp.write("205 div 1 500000.7 1\n")
+        fp.write("206 infl 600000.7 1 1\n")
         fp.write("206 div 1 500000.7 1")
-    pf.add_parameters(filenames='inflow2.txt',
-                      pargp='inflow2',
+    inflow2_pre = pd.read_csv(os.path.join(pf.new_d, "inflow2.txt"),
+                              header=None, sep=' ', skiprows=1)
+    with open(os.path.join(template_ws, "inflow3.txt"), 'w') as fp:
+        fp.write("# rid type rate idx0 idx1\n")
+        fp.write("205 infl 700000.3 1 1\n")
+        fp.write("205 div 1 500000.7 1\n")
+        fp.write("206 infl 800000.7 1 1\n")
+        fp.write("206 div 1 500000.7 1")
+    inflow3_pre = pd.read_csv(os.path.join(pf.new_d, "inflow3.txt"),
+                              header=None, sep=' ', skiprows=1)
+    pf.add_parameters(filenames=['inflow2.txt', "inflow3.txt"],
+                      pargp='inflow',
                       comment_char='#',
                       use_cols=2,
-                      index_cols=0,
+                      index_cols=[0, 1],
                       upper_bound=10,
                       lower_bound=0.1,
                       par_type="grid",
-                      # mfile_skip=1
+                      use_rows=[[205, 'infl'], [206, 'infl']],
                       )
+    pf.add_parameters(filenames=['inflow2.txt', "inflow3.txt"],
+                      pargp='inflow2',
+                      comment_char='#',
+                      use_cols=3,
+                      index_cols=[0, 1],
+                      upper_bound=5,
+                      lower_bound=-5,
+                      par_type="grid",
+                      use_rows=[[205, 'div'], [206, 'div']],
+                      par_style='a',
+                      transform='none'
+                      )
+    # pf.add_parameters(filenames=['inflow2.txt'],
+    #                   pargp='inflow3',
+    #                   comment_char='#',
+    #                   use_cols=2,
+    #                   index_cols=[0, 1],
+    #                   upper_bound=10,
+    #                   lower_bound=0.1,
+    #                   par_type="grid",
+    #                   use_rows=[0, 2],
+    #                   )
     ft, ftd = _gen_dummy_obs_file(pf.new_d, sep=',', ext='txt')
     pf.add_parameters(filenames=f, par_type="grid", mfile_skip=1, index_cols=0,
                       use_cols=[2], par_name_base="tmp",
@@ -880,6 +913,12 @@ def mf6_freyberg_test():
         raise e
     os.chdir('..')
     # verify apply
+    inflow2_df = pd.read_csv(os.path.join(pf.new_d, "inflow2.txt"),
+                             header=None, sep=' ', skiprows=1)
+    inflow3_df = pd.read_csv(os.path.join(pf.new_d, "inflow3.txt"),
+                             header=None, sep=' ', skiprows=1)
+    assert (inflow2_df == inflow2_pre).all().all()
+    assert (inflow3_df == inflow3_pre).all().all()
     multinfo = pd.read_csv(os.path.join(pf.new_d, "mult2model_info.csv"),
                            index_col=0)
     ppmultinfo = multinfo.dropna(subset=['pp_file'])
@@ -945,7 +984,7 @@ def mf6_freyberg_test():
     num_reals = 100
     pe = pf.draw(num_reals, use_specsim=True)
     pe.to_binary(os.path.join(template_ws, "prior.jcb"))
-    assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
+    assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[1], pst.npar_adj)
     assert pe.shape[0] == num_reals
 
 
@@ -3880,8 +3919,8 @@ if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
     # invest()
     # freyberg_test()
-    #freyberg_prior_build_test()
-    # mf6_freyberg_test()
+    # freyberg_prior_build_test()
+    mf6_freyberg_test()
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
@@ -3898,7 +3937,7 @@ if __name__ == "__main__":
     #tpf.test_add_array_parameters_alt_inst_str_0_d()
     # tpf.test_add_array_parameters_pps_grid()
     # # pstfrom_profile()
-    mf6_freyberg_arr_obs_and_headerless_test()
+    # mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test()
 
 
