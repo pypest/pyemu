@@ -1773,13 +1773,17 @@ class PstFrom(object):
                 defines the columns to be parameterised
             use_rows (`list` or `tuple`): Setup parameters for
                 only specific rows in list-style model input file.
-                Collection is assumed to be selection based `index_cols` values.
-                e.g. [(3,5,6)] would attempt to set parameters where the model file
-                values for 3 `index_cols` are 3,5,6. N.B. values in tuple are actual
-                model file entry values. If no rows in the model input file match `use_rows`, parameters
+                Action is dependent on the the dimensions of use_rows.
+                If ndim(use_rows) < 2: use_rows is assumed to represent the row number, index slicer (equiv df.iloc),
+                for all passed files (after headers stripped). So use_rows=[0,3,5], will parameterise the
+                1st, 4th and 6th rows of each passed list-like file.
+                If ndim(use_rows) = 2: use_rows represent the index value to paramterise according to index_cols.
+                e.g. [(3,5,6)] or [[3,5,6]] would attempt to set parameters where the model file
+                values for 3 `index_cols` are 3,5,6. N.B. values in tuple are the actual
+                model file entry values.
+                If no rows in the model input file match `use_rows`, parameters
                 will be set up for all rows. Only valid/effective if index_cols is not None.
                 Default is None -- setup parameters for all rows.
-                # todo implement better selection based on index
             pargp (`str`): Parameter group to assign pars to. This is PESTs
                 pargp but is also used to gather correlated parameters set up
                 using multiple `add_parameters()` calls (e.g. temporal pars)
@@ -2270,7 +2274,6 @@ class PstFrom(object):
                     elif isinstance(pp_space, int):
                         pass
                     elif isinstance(pp_space, str):
-
                         if pp_space.lower().strip().endswith(".csv"):
                             self.logger.statement(
                                 "trying to load pilot point location info from csv file '{0}'".format(
@@ -2449,7 +2452,6 @@ class PstFrom(object):
                         pnb,
                     )
                 df.loc[:, "pargp"] = pargp
-
                 df.set_index("parnme", drop=False, inplace=True)
                 # df includes most of the par info for par_dfs and also for
                 # relate_parfiles
@@ -3064,12 +3066,10 @@ def write_list_tpl(
             par_fill_value=fill_value,
             par_style=par_style,
         )
-        if use_rows is None:
-            use_rows = df_tpl.index
-        else:
-            use_rows = _get_use_rows(
-                df_tpl, use_rows, zero_based, tpl_filename, logger=logger
-            )
+        idxs = [df.loc[:, index_cols].values.tolist() for df in dfs]
+        use_rows = _get_use_rows(
+            df_tpl, idxs, use_rows, zero_based, tpl_filename, logger=logger
+        )
         df_tpl = df_tpl.loc[use_rows, :]  # direct pars done in direct function
         # can we just slice df_tpl here
     for col in use_cols:  # corellations flagged using pargp
@@ -3247,12 +3247,10 @@ def _write_direct_df_tpl(
         init_df=df,
         init_fname=in_filename,
     )
-    if use_rows is None:
-        use_rows = df_ti.index
-    else:
-        use_rows = _get_use_rows(
-            df_ti, use_rows, zero_based, tpl_filename, logger=logger
-        )
+    idxs = df.loc[:, index_cols].values.tolist()
+    use_rows = _get_use_rows(
+        df_ti, [idxs], use_rows, zero_based, tpl_filename, logger=logger
+    )
     df_ti = df_ti.loc[use_rows]
     not_rows = ~direct_tpl_df.index.isin(use_rows)
     direct_tpl_df.loc[not_rows] = df.loc[not_rows, direct_tpl_df.columns]
@@ -3266,51 +3264,45 @@ def _write_direct_df_tpl(
     return df_ti
 
 
-def _get_use_rows(df, use_rows, zero_based, fnme, logger=None):
+def _get_use_rows(tpldf, idxcolvals, use_rows, zero_based, fnme, logger=None):
     """
     private function to get use_rows index within df based on passed use_rows
     option, which could be in various forms...
     Args:
-        df:
+        tpldf:
+        idxcolvals:
         use_rows:
+        zero_based:
+        fname:
+        logger:
 
     Returns:
 
     """
-    if (
-        isinstance(use_rows, str)
-        or isinstance(use_rows, tuple)
-        or isinstance(use_rows, int)
-    ):
-        # we only 1 use_row but best in a list
+    if use_rows is None:
+        use_rows = tpldf.index
+        return use_rows
+    if np.ndim(use_rows) == 0:
         use_rows = [use_rows]
+    if np.ndim(use_rows) == 1:  # assume we have collection of int that describe iloc
+        use_rows = [idx[i] for i in use_rows for idx in idxcolvals]
     if not zero_based:  # assume passed indicies are 1 based
-        try:  # try and slice df_tpl assuming tuple of index ids passed
-            # adjust possible passed tuple.
-            use_rows = [
-                tuple([i - 1 if isinstance(i, int) else i for i in r])
-                if not isinstance(r, str)
-                else r
-                for r in use_rows
-            ]
-            # will error if use rows is just ints
-        except TypeError:
-            msg = "write_list_tpl: Assuming passed use_rows are zero-based ints!"
-            if logger is not None:
-                logger.statement(msg)
-            else:
-                warnings.warn(msg, PyemuWarning)
-            # dont need to do anything if in because should be zero-based
+        use_rows = [
+            tuple([i - 1 if isinstance(i, int) else i for i in r])
+            if not isinstance(r, str)
+            else r
+            for r in use_rows
+        ]
     orig_use_rows = use_rows
     use_rows = set(use_rows)
-    sel = df.sidx.isin(use_rows) | df.idx_strs.isin(use_rows)
+    sel = tpldf.sidx.isin(use_rows) | tpldf.idx_strs.isin(use_rows)
     if not sel.any():  # use_rows must be ints
-        inidx = list(use_rows.intersection(df.index))
-        missing = use_rows.difference(df.index)
-        use_rows = df.iloc[inidx].index.unique()
+        inidx = list(use_rows.intersection(tpldf.index))
+        missing = use_rows.difference(tpldf.index)
+        use_rows = tpldf.iloc[inidx].index.unique()
     else:
-        missing = set(use_rows).difference(df.sidx, df.idx_strs)
-        use_rows = df.loc[sel].index.unique()
+        missing = set(use_rows).difference(tpldf.sidx, tpldf.idx_strs)
+        use_rows = tpldf.loc[sel].index.unique()
     if len(missing) > 0:
         msg = (
             "write_list_tpl: Requested rows missing from parameter file, "
@@ -3330,7 +3322,7 @@ def _get_use_rows(df, use_rows, zero_based, fnme, logger=None):
             logger.warn(msg)
         else:
             warnings.warn(msg, PyemuWarning)
-        use_rows = df.index
+        use_rows = tpldf.index
     return use_rows
 
 

@@ -743,6 +743,35 @@ def mf6_freyberg_test():
                       par_style='a',
                       transform='none'
                       )
+    with open(os.path.join(template_ws, "inflow4.txt"), 'w') as fp:
+        fp.write("# rid type rate idx0 idx1\n")
+        fp.write("204 infl 700000.3 1 1\n")
+        fp.write("205 div 1 500000.7 1\n")
+        fp.write("206 infl 800000.7 1 1\n")
+        fp.write("207 div 1 500000.7 1")
+
+    inflow4_pre = pd.read_csv(os.path.join(pf.new_d, "inflow4.txt"),
+                              header=None, sep=' ', skiprows=1)
+    pf.add_parameters(filenames="inflow4.txt",
+                      pargp='inflow4',
+                      comment_char='#',
+                      use_cols=2,
+                      index_cols=[0, 1],
+                      upper_bound=10,
+                      lower_bound=0.1,
+                      par_type="grid",
+                      use_rows=[(204, "infl")],
+                      )
+    pf.add_parameters(filenames="inflow4.txt",
+                      pargp='inflow5',
+                      comment_char='#',
+                      use_cols=3,
+                      index_cols=[0],
+                      upper_bound=10,
+                      lower_bound=0.1,
+                      par_type="grid",
+                      use_rows=(1, 3),
+                      )
     # pf.add_parameters(filenames=['inflow2.txt'],
     #                   pargp='inflow3',
     #                   comment_char='#',
@@ -888,7 +917,7 @@ def mf6_freyberg_test():
     # build pest
     pst = pf.build_pst('freyberg.pst')
 
-    # quick check of write and apply method
+    # # quick check of write and apply method
     pars = pst.parameter_data
     # set reach 1 hk to 100
     sfr_pars = pars.loc[pars.parnme.str.startswith('pname:sfr')].index
@@ -917,8 +946,11 @@ def mf6_freyberg_test():
                              header=None, sep=' ', skiprows=1)
     inflow3_df = pd.read_csv(os.path.join(pf.new_d, "inflow3.txt"),
                              header=None, sep=' ', skiprows=1)
+    inflow4_df = pd.read_csv(os.path.join(pf.new_d, "inflow4.txt"),
+                             header=None, sep=' ', skiprows=1)
     assert (inflow2_df == inflow2_pre).all().all()
     assert (inflow3_df == inflow3_pre).all().all()
+    assert (inflow4_df == inflow4_pre).all().all()
     multinfo = pd.read_csv(os.path.join(pf.new_d, "mult2model_info.csv"),
                            index_col=0)
     ppmultinfo = multinfo.dropna(subset=['pp_file'])
@@ -3916,27 +3948,27 @@ def shortname_conversion_test():
 
 
 if __name__ == "__main__":
-    #mf6_freyberg_pp_locs_test()
+    # mf6_freyberg_pp_locs_test()
     # invest()
-    # freyberg_test()
+    freyberg_test()
     # freyberg_prior_build_test()
     # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
-    #mf6_freyberg_direct_test()
+    # mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     # xsec_test()
     # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
-    tpf = TestPstFrom()
-    tpf.setup()
+    # tpf = TestPstFrom()
+    # tpf.setup()
     #tpf.test_add_array_parameters_to_file_list()
     #tpf.test_add_array_parameters_alt_inst_str_none_m()
     #tpf.test_add_array_parameters_alt_inst_str_0_d()
     # tpf.test_add_array_parameters_pps_grid()
-    tpf.test_add_list_parameters()
+    # tpf.test_add_list_parameters()
     # # pstfrom_profile()
     # mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test()
