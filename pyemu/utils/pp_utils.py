@@ -520,7 +520,7 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None):
     else:
         assert os.path.exists(pp_file)
         pp_df = pd.read_csv(pp_file, delim_whitespace=True, header=None, names=PP_NAMES)
-
+    pp_df = pp_df.astype({'zone': int}, errors='ignore')
     if tpl_file is None:
         tpl_file = pp_file + ".tpl"
 
