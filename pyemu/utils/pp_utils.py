@@ -208,7 +208,7 @@ def setup_pilotpoints_grid(
                             "name": name,
                             "x": x,
                             "y": y,
-                            "zone": zone, # if use_ibound_zones is False this will always be 1
+                            "zone": zone,  # if use_ibound_zones is False this will always be 1
                             "parval1": parval1,
                             "k": k,
                             "i": i,
@@ -237,7 +237,7 @@ def setup_pilotpoints_grid(
 
                         tpl_filename = os.path.join(tpl_dir, base_filename + ".tpl")
                         # write the tpl file
-                        pilot_points_to_tpl(
+                        pp_df = pilot_points_to_tpl(
                             pp_df, tpl_filename, name_prefix=prefix,
                         )
                         pp_df.loc[:, "tpl_filename"] = tpl_filename
@@ -252,10 +252,9 @@ def setup_pilotpoints_grid(
     par_info = pd.concat(par_info)
     fields = ["k", "i", "j", "zone"]
     par_info = par_info.astype({f: int for f in fields}, errors='ignore')
-    for key, default in pst_config["par_defaults"].items():
-        if key in par_info.columns:
-            continue
-        par_info.loc[:, key] = default
+    defaults = pd.DataFrame(pst_config["par_defaults"], index=par_info.index)
+    missingcols = defaults.columns.difference(par_info.columns)
+    par_info.loc[:, missingcols] = defaults
 
     if shapename is not None:
         try:
@@ -269,7 +268,7 @@ def setup_pilotpoints_grid(
             shp = shapefile.Writer(target=shapename, shapeType=shapefile.POINT)
         except:
             shp = shapefile.Writer(shapeType=shapefile.POINT)
-        for name, dtype in par_info.dtypes.iteritems():
+        for name, dtype in par_info.dtypes.items():
             if dtype == object:
                 shp.field(name=name, fieldType="C", size=50)
             elif dtype in [int, np.int64, np.int32]:
@@ -549,7 +548,6 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None):
             lambda x: "~    {0}    ~".format(x)
         )
     else:
-        names = pp_df.name.copy()
         pp_df.loc[:, "parnme"] = pp_df.name
         pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
             lambda x: "~    {0}    ~".format(x)

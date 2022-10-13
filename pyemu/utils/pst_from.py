@@ -2274,7 +2274,6 @@ class PstFrom(object):
                     elif isinstance(pp_space, int):
                         pass
                     elif isinstance(pp_space, str):
-
                         if pp_space.lower().strip().endswith(".csv"):
                             self.logger.statement(
                                 "trying to load pilot point location info from csv file '{0}'".format(
@@ -2453,7 +2452,6 @@ class PstFrom(object):
                         pnb,
                     )
                 df.loc[:, "pargp"] = pargp
-
                 df.set_index("parnme", drop=False, inplace=True)
                 # df includes most of the par info for par_dfs and also for
                 # relate_parfiles
