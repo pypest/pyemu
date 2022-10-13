@@ -3706,7 +3706,10 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     df.loc[pd.isna(df.operator), "operator"] = "m"
     file_cols = df.columns.values[df.columns.str.contains("file")]
     for file_col in file_cols:
-        df.loc[:,file_col] = df.loc[:,file_col].apply(lambda x: os.path.join(*x.replace("\\","/").split("/")) if isinstance(x,str) else x)
+        df.loc[:, file_col] = df.loc[:, file_col].apply(
+            lambda x: os.path.join(*x.replace("\\","/").split("/"))
+            if isinstance(x,str) else x
+        )
     arr_pars = df.loc[df.index_cols.isna()].copy()
     list_pars = df.loc[df.index_cols.notna()].copy()
     # extract lists from string in input df
@@ -4313,19 +4316,21 @@ def _process_list_file(model_file, df):
         )
 
     # if writen by PstFrom this should always be comma delim - tidy
-    org_data = pd.read_csv(org_file, skiprows=datastrtrow, header=header)
+    org_data = pd.read_csv(org_file, skiprows=datastrtrow,
+                           header=header, dtype='object')
     # mult columns will be string type, so to make sure they align
     org_data.columns = org_data.columns.astype(str)
     # print("org_data columns:", org_data.columns)
     # print("org_data shape:", org_data.shape)
     new_df = org_data.copy()
     for mlt in df_mf.itertuples():
-
+        new_df.loc[:, mlt.index_cols] = new_df.loc[:, mlt.index_cols].apply(
+            pd.to_numeric, errors='ignore', downcast='integer')
         try:
-            new_df = (
-                new_df.reset_index()
-                .rename(columns={"index": "oidx"})
-                .set_index(mlt.index_cols)
+            new_df = new_df.reset_index().rename(
+                columns={"index": "oidx"}
+            ).set_index(
+                mlt.index_cols
             )
             new_df = new_df.sort_index()
         except Exception as e:
@@ -4364,9 +4369,13 @@ def _process_list_file(model_file, df):
             mlt_cols = [str(col) for col in mlt.use_cols]
             operator = mlt.operator
             if operator == "*" or operator.lower()[0] == "m":
-                new_df.loc[common_idx, mlt_cols] *= mlts.loc[common_idx, mlt_cols]
+                new_df.loc[common_idx, mlt_cols] = \
+                    new_df.loc[common_idx, mlt_cols].apply(
+                        pd.to_numeric) * mlts.loc[common_idx, mlt_cols]
             elif operator == "+" or operator.lower()[0] == "a":
-                new_df.loc[common_idx, mlt_cols] += mlts.loc[common_idx, mlt_cols]
+                new_df.loc[common_idx, mlt_cols] = \
+                    new_df.loc[common_idx, mlt_cols].apply(
+                        pd.to_numeric) + mlts.loc[common_idx, mlt_cols]
             else:
                 raise Exception(
                     "unsupported operator '{0}' for mlt file '{1}'".format(
@@ -4382,7 +4391,9 @@ def _process_list_file(model_file, df):
         ).max()
         if ub.notnull().any():
             for col, val in ub.items():
-                new_df.loc[new_df.loc[:, col] > val, col] = val
+                numeric = new_df.loc[new_df[col].apply(np.isreal)]
+                sel = numeric.loc[numeric[col] > val].index
+                new_df.loc[sel, col] = val
     if "lower_bound" in df.columns:
         lb = df_mf.apply(
             lambda x: pd.Series({str(c): b for c, b in zip(x.use_cols, x.lower_bound)}),
@@ -4390,7 +4401,9 @@ def _process_list_file(model_file, df):
         ).min()
         if lb.notnull().any():
             for col, val in lb.items():
-                new_df.loc[new_df.loc[:, col] < val, col] = val
+                numeric = new_df.loc[new_df[col].apply(np.isreal)]
+                sel = numeric.loc[numeric[col] < val].index
+                new_df.loc[sel, col] = val
     with open(model_file, "w") as fo:
         kwargs = {}
         if "win" in platform.platform().lower():
@@ -4401,7 +4414,11 @@ def _process_list_file(model_file, df):
         if fmt.lower() == "free":
             new_df.to_csv(fo, index=False, mode="a", sep=sep, header=hheader, **kwargs)
         else:
-            np.savetxt(fo, np.atleast_2d(new_df.values), fmt=fmt)
+            np.savetxt(
+                fo,
+                np.atleast_2d(new_df.apply(pd.to_numeric, errors="ignore").values),
+                fmt=fmt
+            )
 
 
 def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, longnames=False):

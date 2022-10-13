@@ -47,13 +47,13 @@ class PstFrom(object):
     """construct high-dimensional PEST(++) interfaces with all the bells and whistles
 
     Args:
-        original_d (`str`): the path to a complete set of model input and output files
-        new_d (`str`): the path to where the model files and PEST interface files will be copied/built
+        original_d (`str` or Path): the path to a complete set of model input and output files
+        new_d (`str` or Path): the path to where the model files and PEST interface files will be copied/built
         longnames (`bool`): flag to use longer-than-PEST-likes parameter and observation names.  Default is True
         remove_existing (`bool`): flag to destroy any existing files and folders in `new_d`.  Default is False
         spatial_reference (varies): an object that faciliates geo-locating model cells based on index.  Default is None
         zero_based (`bool`): flag if the model uses zero-based indices, Default is True
-        start_datetime (`str`): a string that can be case to a datatime instance the represents the starting datetime
+        start_datetime (`str` or Timestamp): a string that can be case to a datatime instance the represents the starting datetime
             of the model
         tpl_subfolder (`str`): option to write template files to a subfolder within ``new_d``.
             Default is False (write template files to ``new_d``).
@@ -1017,7 +1017,7 @@ class PstFrom(object):
                         sep=",",
                         header=hheader,
                     )
-                file_dict[rel_filepath] = df
+                file_dict[rel_filepath] = df.apply(pd.to_numeric, errors='ignore')  # make sure numeric (if reasonable)
                 fmt_dict[rel_filepath] = fmt
                 sep_dict[rel_filepath] = sep
                 skip_dict[rel_filepath] = skip
@@ -1449,13 +1449,15 @@ class PstFrom(object):
             df, storehead, inssep = self._load_listtype_file(
                 filenames, index_cols, use_cols, fmts, seps, skip_rows
             )
+            # parse to numeric (read as dtype object to preserve mixed types)
+            df = df.apply(pd.to_numeric, errors="ignore")
             if inssep != ",":
                 inssep = seps
             else:
                 inssep = [inssep]
             # rectify df?
             # if iloc[0] are strings and index_cols are ints,
-            # can we assume that there were infact column headers?
+            #   can we assume that there were infact column headers?
             if all(isinstance(c, str) for c in df.iloc[0]) and all(
                 isinstance(a, int) for a in index_cols
             ):
@@ -1769,15 +1771,15 @@ class PstFrom(object):
                 model rows and columns to be identified and processed to x,y.
             use_cols (`list`-like or `int`): for tabular-style model input file,
                 defines the columns to be parameterised
-            use_rows (`list` of `int` or `tuple`): Setup parameters for
+            use_rows (`list` or `tuple`): Setup parameters for
                 only specific rows in list-style model input file.
-                If list of `int` -- assumed to be a row index selection (zero-based).
-                If list of `tuple` -- assumed to be selection based `index_cols` values.
+                Collection is assumed to be selection based `index_cols` values.
                 e.g. [(3,5,6)] would attempt to set parameters where the model file
                 values for 3 `index_cols` are 3,5,6. N.B. values in tuple are actual
                 model file entry values. If no rows in the model input file match `use_rows`, parameters
                 will be set up for all rows. Only valid/effective if index_cols is not None.
                 Default is None -- setup parameters for all rows.
+                # todo implement better selection based on index
             pargp (`str`): Parameter group to assign pars to. This is PESTs
                 pargp but is also used to gather correlated parameters set up
                 using multiple `add_parameters()` calls (e.g. temporal pars)
@@ -2831,6 +2833,7 @@ class PstFrom(object):
             skiprows=skip,
             header=header,
             low_memory=False,
+            dtype='object'
         )
         self.logger.log(f"reading list-style file: {file_path}")
         # ensure that column ids from index_col is in input file
@@ -3136,7 +3139,7 @@ def write_list_tpl(
     )
 
     parval_cols = [c for c in df_tpl.columns if "parval1" in str(c)]
-    parval = list(df_tpl.loc[:, [pc for pc in parval_cols]].values.flatten())
+    parval = df_tpl.loc[:, parval_cols].values.flatten().tolist()
 
     if (
         par_type == "grid" and "x" in df_tpl.columns
@@ -3577,7 +3580,7 @@ def _get_tpl_or_ins_df(
         sidx = set()
         for df in dfs:
             # looses ordering
-            didx = set(df.loc[:, index_cols].apply(lambda x: tuple(x), axis=1))
+            didx = set(df.loc[:, index_cols].apply(tuple, axis=1))
             sidx.update(didx)
     else:
         # order matters for obs
