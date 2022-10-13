@@ -3249,8 +3249,9 @@ def _write_direct_df_tpl(
         init_df=df,
         init_fname=in_filename,
     )
+    idxs = df.loc[:, index_cols].values.tolist()
     use_rows = _get_use_rows(
-        df_ti, use_rows, zero_based, tpl_filename, logger=logger
+        df_ti, [idxs], use_rows, zero_based, tpl_filename, logger=logger
     )
     df_ti = df_ti.loc[use_rows]
     not_rows = ~direct_tpl_df.index.isin(use_rows)

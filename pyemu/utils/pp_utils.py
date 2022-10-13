@@ -250,8 +250,8 @@ def setup_pilotpoints_grid(
                         tpl_files.append(tpl_filename)
 
     par_info = pd.concat(par_info)
-    fields = ["k", "i", "j"]
-    par_info.loc[:, fields] = par_info.loc[:, fields].astype(int)
+    fields = ["k", "i", "j", "zone"]
+    par_info = par_info.astype({f: int for f in fields}, errors='ignore')
     for key, default in pst_config["par_defaults"].items():
         if key in par_info.columns:
             continue
