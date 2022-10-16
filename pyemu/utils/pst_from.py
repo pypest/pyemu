@@ -1710,7 +1710,7 @@ class PstFrom(object):
         sigma_range=4.0,
         upper_bound=None,
         lower_bound=None,
-        transform="log",
+        transform=None,
         par_name_base="p",
         index_cols=None,
         use_cols=None,
@@ -1875,7 +1875,17 @@ class PstFrom(object):
             self.logger.lraise(
                 "geostruct is not 'None', cant draw values for fixed pars"
             )
-
+        if transform is None:
+            if par_style in ["a", "add", "addend"]:
+                transform = 'none'
+                self.logger.lraise(
+                    "par_style is 'add' and transform was not passed, setting tranform to 'none'"
+                )
+            else:
+                transform = 'log'
+                self.logger.lraise(
+                    "transform was not passed, setting default tranform to 'log'"
+                )
         # some checks for direct parameters
         par_style = par_style.lower()
         if len(par_style) > 1:
