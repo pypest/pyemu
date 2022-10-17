@@ -1710,7 +1710,7 @@ class PstFrom(object):
         sigma_range=4.0,
         upper_bound=None,
         lower_bound=None,
-        transform="log",
+        transform=None,
         par_name_base="p",
         index_cols=None,
         use_cols=None,
@@ -1865,6 +1865,17 @@ class PstFrom(object):
         self.add_pars_callcount += 1
         self.ijwarned[self.add_pars_callcount] = False
 
+        if transform is None:
+            if par_style in ["a", "add", "addend"]:
+                transform = 'none'
+                self.logger.statement(
+                    "par_style is 'add' and transform was not passed, setting tranform to 'none'"
+                )
+            else:
+                transform = 'log'
+                self.logger.statement(
+                    "transform was not passed, setting default tranform to 'log'"
+                )
         if transform.lower().strip() not in ["none", "log", "fixed"]:
             self.logger.lraise(
                 "unrecognized transform ('{0}'), should be in ['none','log','fixed']".format(
