@@ -433,7 +433,77 @@ def obscomp_test():
     df = la.get_obs_competition_dataframe()
     print(df)
 
+
+def ends_freyberg_dev():
+    import pyemu
+    test_d = "ends_master"
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d,case+".pst")
+    pst = pyemu.Pst(pst_name)
+    predictions = ["headwater_20171130","tailwater_20161130","trgw_0_9_1_20161130"]
+    pst.pestpp_options["predictions"] = predictions
+
+    # build up the obs to test info
+    obs = pst.observation_data
+    zobs = [o for o,w in zip(obs.obsnme,obs.weight) if w > 0 and o not in predictions]
+    zgps = obs.loc[zobs,"obgnme"].unique()
+    obslist_dict = {zg: obs.loc[obs.obgnme==zg,"obsnme"].tolist() for zg in zgps}
+    # now reset these obs to have weights that reflect expected noise
+    for zg,onames in obslist_dict.items():
+        if "gage" in zg:
+            obs.loc[onames,"weight"] = 1./(obs.loc[onames,"obsval"] * 0.1)
+        else:
+            obs.loc[onames,"weight"] = 2.0
+
+    oe_name = pst_name.replace(".pst",".0.obs.csv")
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=oe_name)
+    ends = pyemu.EnDS(pst=pst,sim_ensemble=oe)
+    dfmean,dfstd = ends.get_posterior_prediction_moments(obslist_dict=obslist_dict,std_as_percent=True)
+    print(dfstd)
+    print(dfmean)
+    import matplotlib.pyplot as plt
+
+    ax = dfstd.plot(kind='bar')
+    ax.set_ylabel("percent reduction")
+    ax.set_xlabel("new obs group")
+    ax.set_title("ensemble variance analysis for three Freyberg predictions",loc="left")
+    plt.tight_layout()
+    plt.savefig("precent.pdf")
+    plt.close("all")
+
+    mean_dfs, dfstd = ends.get_posterior_prediction_moments(obslist_dict=obslist_dict)
+    fig,axes = plt.subplots(len(predictions),1,figsize=(10,10))
+    groups = list(mean_dfs.keys())
+    groups.sort()
+    colors = ["0.5","c","m","b"]
+    for p,ax in zip(predictions,axes):
+        for group,c in zip(groups,colors):
+            print(p,group,c)
+            for mn in mean_dfs[group].loc[:,p]:
+                x,y = pyemu.plot_utils.gaussian_distribution(mn,dfstd.loc[group,p],100)
+                ax.fill_between(x,0,y,facecolor=c,alpha=0.15,label=group)
+        ax.legend(loc="upper left")
+        ax.set_title("prediction:"+p,loc="left")
+    plt.tight_layout()
+    plt.show()
+
+    return
+    ends = pyemu.EnDS(pst=pst_name, ensemble=oe_name)
+    cov = pyemu.Cov.from_observation_data(pst)
+    cov.to_uncfile(os.path.join(test_d, "obs.unc"), covmat_file=None)
+    cov.to_binary(os.path.join(test_d,"cov.jcb"))
+    cov.to_ascii(os.path.join(test_d, "cov.mat"))
+
+    ends = pyemu.EnDS(pst=pst, ensemble=oe,obscov=cov)
+    ends = pyemu.EnDS(pst=pst, ensemble=oe, obscov=os.path.join(test_d, "cov.mat"))
+    ends = pyemu.EnDS(pst=pst, ensemble=oe, obscov=os.path.join(test_d, "obs.unc"))
+
+
+
+
+
 if __name__ == "__main__":
+    ends_freyberg_test()
     #obscomp_test()
     #alternative_dw()
     #freyberg_verf_test()
@@ -442,7 +512,7 @@ if __name__ == "__main__":
     #par_contrib_speed_test()
     #schur_test()
     #par_contrib_test()
-    dataworth_test()
+    #dataworth_test()
     #dataworth_next_test()
     #schur_test_nonpest()
     #la_test_io()

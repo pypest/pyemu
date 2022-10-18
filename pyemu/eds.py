@@ -12,19 +12,21 @@ from .logger import Logger
 
 
 class EnDS(object):
-    """Ensemle Data Space Analysis.
+    """Ensemble Data Space Analysis.
 
     Args:
         pst (varies): something that can be cast into a `pyemu.Pst`.  Can be an `str` for a
-            filename or an existing `pyemu.Pst`.  If `None`, a pst filename is sought
-            with the same base name as the jco argument (if passed)
-        ensemble (varies): something that can be cast into a `pyemu.ObservationEnsemble`.  Can be
-            an `str` fora  filename or `pd.DataFrame` or an existing `pyemu.ObservationEnsemble`.
+            filename or an existing `pyemu.Pst`.
+        sim_ensemble (varies): something that can be cast into a `pyemu.ObservationEnsemble`.  Can be
+            an `str` for a  filename or `pd.DataFrame` or an existing `pyemu.ObservationEnsemble`.
+        noise_ensemble (varies): something that can be cast into a `pyemu.ObservationEnsemble` that is the
+            obs+noise realizations.  If not passed, a noise ensemble is generated using either `obs_cov` or the
+            information in `pst` (i.e. weights or standard deviations)
         obscov (varies, optional): observation noise covariance matrix.  If `str`, a filename is assumed and
             the noise covariance matrix is loaded from a file using
             the file extension (".jcb"/".jco" for binary, ".cov"/".mat" for PEST-style ASCII matrix,
             or ".unc" for uncertainty files).  If `None`, the noise covariance matrix is
-            constructed from the obsevation weights (and optionally "standard_deviation")
+            constructed from the observation weights (and optionally "standard_deviation")
             .  Can also be a `pyemu.Cov` instance
         forecasts (enumerable of `str`): the names of the entries in `pst.osbervation_data` (and in `ensemble`).
         verbose (`bool`): controls screen output.  If `str`, a filename is assumed and
@@ -43,47 +45,48 @@ class EnDS(object):
     def __init__(
         self,
         pst=None,
-        ensemble=None,
+        sim_ensemble=None,
+        noise_ensemble=None,
         obscov=None,
         predictions=None,
         verbose=False,
-        forecasts=None,
     ):
         self.logger = Logger(verbose)
         self.log = self.logger.log
-        self.en_arg = ensemble
+        self.sim_en_arg = sim_ensemble
         # if jco is None:
-        self.__en = ensemble
+        self.__sim_en = sim_ensemble
 
         self.pst_arg = pst
         if obscov is None and pst is not None:
             obscov = pst
-        if forecasts is not None and predictions is not None:
-            raise Exception("can't pass both forecasts and predictions")
 
         # private attributes - access is through @decorated functions
         self.__pst = None
         self.__obscov = None
-        self.__predictions = None
+        self.__sim_ensemble = None
+        self.__noise_ensemble = None
+
 
         self.log("pre-loading base components")
-        if ensemble is not None:
-            self.__load_ensemble()
+        self.sim_ensemble_arg = sim_ensemble
+        if sim_ensemble is not None:
+            self.__sim_ensemble = self.__load_ensemble(self.sim_ensemble_arg)
+        self.noise_ensemble_arg = noise_ensemble
+        if noise_ensemble is not None:
+            self.__noise_ensemble = self.__load_ensemble(self.noise_ensemble_arg)
         if pst is not None:
             self.__load_pst()
+        self.obscov_arg = obscov
         if obscov is not None:
             self.__load_obscov()
 
-        self.prediction_arg = None
-        if predictions is not None:
-            self.prediction_arg = predictions
-        elif forecasts is not None:
-            self.prediction_arg = forecasts
-        elif self.pst is not None:
+        self.predictions = predictions
+        if predictions is None and self.pst is not None:
             if self.pst.forecast_names is not None:
-                self.prediction_arg = self.pst.forecast_names
-        if self.prediction_arg:
-            self.__load_predictions()
+                self.predictions = self.pst.forecast_names
+        if isinstance(self.predictions,list):
+            self.predictions = [p.strip().lower() for p in self.predictions]
 
         self.log("pre-loading base components")
 
@@ -127,7 +130,7 @@ class EnDS(object):
                 astype = Cov
             m = astype.from_uncfile(filename)
             self.log("loading unc file format: " + filename)
-        elif ext in [".csv"]:
+        elif ext in ["csv"]:
             self.log("loading csv format: " + filename)
             if astype is None:
                 astype = ObservationEnsemble
@@ -163,21 +166,24 @@ class EnDS(object):
                     + str(e)
                 )
 
-    def __load_ensemble(self):
+    def __load_ensemble(self,arg):
         """private method to set the ensemble attribute from a file or a dataframe object"""
-        if self.ensemble_arg is None:
+        if self.sim_ensemble_arg is None:
             return None
             # raise Exception("linear_analysis.__load_jco(): jco_arg is None")
-        if isinstance(self.ensemble_arg, Matrix):
-            self.__ensemble = ObservationEnsemble(pst=self.pst,df=self.ensemble_arg.to_dataframe())
-        elif isinstance(self.ensemble_arg, str):
-            self.__ensemble = self.__fromfile(self.ensemble_arg, astype=ObservationEnsemble)
+        if isinstance(arg, Matrix):
+            ensemble = ObservationEnsemble(pst=self.pst, df=arg.to_dataframe())
+        elif isinstance(self.sim_ensemble_arg, str):
+            ensemble = self.__fromfile(arg, astype=ObservationEnsemble)
+        elif isinstance(arg, ObservationEnsemble):
+            ensemble = arg.copy()
         else:
             raise Exception(
-                "EnDS.__load_ensemble(): ensemble_arg must "
+                "EnDS.__load_ensemble(): arg must "
                 + "be a matrix object, dataframe, or a file name: "
-                + str(self.ensemble_arg)
+                + str(arg)
             )
+        return ensemble
 
 
 
@@ -191,6 +197,7 @@ class EnDS(object):
         """
         # if the obscov arg is None, but the pst arg is not None,
         # reset and load from obs weights
+        self.log("loading obscov")
         if not self.obscov_arg:
             if self.pst_arg:
                 self.obscov_arg = self.pst_arg
@@ -201,8 +208,8 @@ class EnDS(object):
         if isinstance(self.obscov_arg, Matrix):
             self.__obscov = self.obscov_arg
             return
-        self.log("loading obscov")
-        if isinstance(self.obscov_arg, str):
+
+        elif isinstance(self.obscov_arg, str):
             if self.obscov_arg.lower().endswith(".pst"):
                 self.__obscov = Cov.from_obsweights(self.obscov_arg)
             else:
@@ -225,17 +232,8 @@ class EnDS(object):
     # returns a reference - cheap, but can be dangerous
 
     @property
-    def forecast_names(self):
-        """get the forecast (aka prediction) names
-
-        Returns:
-            ([`str`]): list of forecast names
-
-        """
-        if self.forecasts is None:
-            return []
-        return list(self.predictions)
-
+    def sim_ensemble(self):
+        return self.__sim_en
 
     @property
     def obscov(self):
@@ -294,15 +292,12 @@ class EnDS(object):
             self.obscov_arg = arg
 
 
-    def __prep_ensemble_schur_components(self):
+    def prep_dsi(self):
         pass
-    
 
 
-    def get_added_obs_importance(
-            self, obslist_dict=None, base_obslist=None, reset_zero_weight=1.0
-    ):
-        """A dataworth method to analyze the posterior uncertainty as a result of gathering
+    def get_posterior_prediction_moments(self, obslist_dict=None,std_as_percent=False):
+        """A dataworth method to analyze the posterior (expected) mean and uncertainty as a result of conditioning with
          some additional observations
 
         Args:
@@ -310,171 +305,119 @@ class EnDS(object):
                 that are to be treated as gained/collected.  key values become
                 row labels in returned dataframe. If `None`, then every zero-weighted
                 observation is tested sequentially. Default is `None`
-            base_obslist ([`str`], optional): observation names to treat as the "existing" observations.
-                The values of `obslist_dict` will be added to this list during
-                each test.  If `None`, then the values in each `obslist_dict` entry will
-                be treated as the entire calibration dataset.  That is, there
-                are no existing observations. Default is `None`.  Standard practice would
-                be to pass this argument as `pyemu.Schur.pst.nnz_obs_names` so that existing,
-                non-zero-weighted observations are accounted for in evaluating the worth of
-                new yet-to-be-collected observations.
-            reset_zero_weight (`float`, optional)
-                a flag to reset observations with zero weight in `obslist_dict`
-                If `reset_zero_weights` passed as 0.0, no weights adjustments are made.
-                Default is 1.0.
 
         Returns:
-            `pandas.DataFrame`: a dataframe with row labels (index) of `obslist_dict.keys()` and
-            columns of forecast names.  The values in the dataframe are the
-            posterior variance of the forecasts resulting from notional inversion
-            using the observations in `obslist_dict[key value]` plus the observations
-            in `base_obslist` (if any).  One row in the dataframe is labeled "base" - this is
-            posterior forecast variance resulting from the notional calibration with the
-            observations in `base_obslist` (if `base_obslist` is `None`, then the "base" row is the
-            prior forecast variance).  Conceptually, the forecast variance should either not change or
-            decrease as a result of gaining additional observations.  The magnitude of the decrease
-            represents the worth of the potential new observation(s) being tested.
+            `pandas.DataFrame`:
 
-        Note:
-            Observations listed in `base_obslist` is required to only include observations
-            with weight not equal to zero. If zero-weighted observations are in `base_obslist` an exception will
-            be thrown.  In most cases, users will want to reset zero-weighted observations as part
-            dataworth testing process. If `reset_zero_weights` == 0, no weights adjustments will be made - this is
-            most appropriate if different weights are assigned to the added observation values in `Schur.pst`
 
         Example::
 
-            sc = pyemu.Schur("my.jco")
+            ends = pyemu.EnDS("my.jco")
             obslist_dict = {"hds":["head1","head2"],"flux":["flux1","flux2"]}
-            df = sc.get_added_obs_importance(obslist_dict=obslist_dict,
-                                             base_obslist=sc.pst.nnz_obs_names,
-                                             reset_zero_weight=1.0)
+            dfmean,dfstd = sc.get_posterior_prediction_moments(obslist_dict=obslist_dict)
 
         """
+
 
         if obslist_dict is not None:
             if type(obslist_dict) == list:
                 obslist_dict = dict(zip(obslist_dict, obslist_dict))
-            base_obslist = []
-            for key, names in obslist_dict.items():
-                if isinstance(names, str):
-                    names = [names]
-                base_obslist.extend(names)
-            # dedup
-            base_obslist = list(set(base_obslist))
-            zero_basenames = []
-            try:
-                base_obslist.extend(self.pst.nnz_obs_names)
-                # dedup again
-                base_obslist = list(set(base_obslist))
-                sbase_obslist = set(base_obslist)
-                zero_basenames = [
-                    name
-                    for name in self.pst.zero_weight_obs_names
-                    if name in sbase_obslist
-                ]
-            except:
-                pass
-            if len(zero_basenames) > 0:
+            obs = self.pst.observation_data
+            onames = []
+            [onames.extend(names) for gp,names in obslist_dict.items()]
+            oobs = obs.loc[onames,:]
+            zobs = oobs.loc[oobs.weight==0,"obsnme"].tolist()
+
+            if len(zobs) > 0:
                 raise Exception(
-                    "Observations in baseobs_list must have "
+                    "Observations in obslist_dict must have "
                     + "nonzero weight. The following observations "
                     + "violate that condition: "
-                    + ",".join(zero_basenames)
+                    + ",".join(zobs)
                 )
-
         else:
-            try:
-                self.pst
-            except Exception as e:
-                raise Exception(
-                    "'obslist_dict' not passed and self.pst is not available"
-                )
-
-            if self.pst.nnz_obs == 0:
-                raise Exception(
-                    "not resetting weights and there are no non-zero weight obs to remove"
-                )
             obslist_dict = dict(zip(self.pst.nnz_obs_names, self.pst.nnz_obs_names))
-            base_obslist = self.pst.nnz_obs_names
+            onames = self.pst.nnz_obs_names
 
-    def get_removed_obs_importance(self, obslist_dict=None, reset_zero_weight=None):
-        """A dataworth method to analyze the posterior uncertainty as a result of losing
-         some existing observations
+        # ne = self.__noise_ensemble
+        # if ne is None:
+        #     self.logger.log("generating noise realizations")
+        #     ne = ObservationEnsemble.from_gaussian_draw(pst=self.pst,cov=self.obscov,num_reals=self.sim_ensemble.shape[0])
+        # else:
+        #     if ne.shape[0] == self.oe.shap[0]:
+        #         raise Exception("wrong number of noise reals")
+        #
+        # ne.index = self.oe.index
 
-        Args:
-            obslist_dict (`dict`, optional): a nested dictionary-list of groups of observations
-                that are to be treated as lost.  key values become
-                row labels in returned dataframe. If `None`, then every zero-weighted
-                observation is tested sequentially. Default is `None`
-            reset_zero_weight DEPRECATED
+        names = onames
+        names.extend(self.predictions)
+        self.logger.log("getting deviations")
+        oe = self.sim_ensemble.loc[:,names].get_deviations() / np.sqrt(float(self.sim_ensemble.shape[0] - 1))
+        self.logger.log("getting deviations")
+        self.logger.log("forming cov matrix")
+        cmat = (np.dot(oe.values.transpose(),oe.values))
+        cdf = pd.DataFrame(cmat, index=names, columns=names)
+        self.logger.log("forming cov matrix")
 
-        Returns:
-            `pandas.DataFrame`: A dataframe with index of obslist_dict.keys() and columns
-            of forecast names.  The values in the dataframe are the posterior
-            variances of the forecasts resulting from losing the information
-            contained in obslist_dict[key value]. One row in the dataframe is labeled "base" - this is
-            posterior forecast variance resulting from the notional calibration with the
-            non-zero-weighed observations in `Schur.pst`.  Conceptually, the forecast variance should
-            either not change or increase as a result of losing existing observations.  The magnitude
-            of the increase represents the worth of the existing observation(s) being tested.
+        var_data = {}
+        prior_var = self.sim_ensemble.loc[:, self.predictions].std() ** 2
+        prior_mean = self.sim_ensemble.loc[:, self.predictions].mean()
+        var_data["prior"] = prior_var
+        groups = list(obslist_dict.keys())
+        groups.sort()
 
-            Note:
-            All observations that may be evaluated as removed must have non-zero weight
+        mean_dfs = {}
+        for group in groups:
+            self.logger.log("processing "+group)
+            onames = obslist_dict[group]
+            self.logger.log("extracting blocks from cov matrix")
+
+            dd = cdf.loc[onames,onames].values.copy()
+            ccov = cdf.loc[onames,self.predictions].values.copy()
+            self.logger.log("extracting blocks from cov matrix")
+
+            self.logger.log("adding noise cov to data block")
+            dd += self.obscov.get(onames,onames).x
+            self.logger.log("adding noise cov to data block")
+
+            #todo: test for inveribility and shrink if needed...
+            self.logger.log("inverting data cov block")
+            dd = np.linalg.inv(dd)
+            self.logger.log("inverting data cov block")
+            pt_var = []
+            pt_mean = {}
+
+            omean = self.sim_ensemble.loc[:, onames].mean().values
+            reals = self.sim_ensemble.index.values
+            innovation_vecs = {real: self.sim_ensemble.loc[real, onames].values - omean for real in self.sim_ensemble.index}
+
+            for i,p in enumerate(self.predictions):
+                ccov_vec = ccov[:,i]
+                first_term = np.dot(ccov_vec.transpose(), dd)
+                schur = np.dot(first_term,ccov_vec)
+                post_var = prior_var[i] - schur
+                pt_var.append(post_var)
+                mean_vals = []
+                prmn = prior_mean[p]
+                for real in reals:
+                    mn = prmn + np.dot(first_term,innovation_vecs[real])
+                    mean_vals.append(mn)
+                pt_mean[p] = np.array(mean_vals)
+            mean_df = pd.DataFrame(pt_mean,index=reals)
+            mean_dfs[group] = mean_df
+            var_data[group] = pt_var
+
+            self.logger.log("processing " + group)
+
+        dfstd = pd.DataFrame(var_data,index=self.predictions).apply(np.sqrt).T
+        if std_as_percent:
+            prior_std = prior_var.apply(np.sqrt)
+            for p in self.predictions:
+                dfstd.loc[groups,p] = 100 * (1-(dfstd.loc[groups,p].values/prior_std.loc[p]))
+            dfstd = dfstd.loc[groups,self.predictions]
 
 
-        Example::
-
-            sc = pyemu.Schur("my.jco")
-            df = sc.get_removed_obs_importance()
-
-        """
-
-        if obslist_dict is not None:
-            if type(obslist_dict) == list:
-                obslist_dict = dict(zip(obslist_dict, obslist_dict))
-            base_obslist = []
-            for key, names in obslist_dict.items():
-                if isinstance(names, str):
-                    names = [names]
-                base_obslist.extend(names)
-            # dedup
-            base_obslist = list(set(base_obslist))
-            zero_basenames = []
-            try:
-                base_obslist.extend(self.pst.nnz_obs_names)
-                # dedup again
-                base_obslist = list(set(base_obslist))
-                sbase_obslist = set(base_obslist)
-                zero_basenames = [
-                    name
-                    for name in self.pst.zero_weight_obs_names
-                    if name in sbase_obslist
-                ]
-            except:
-                pass
-            if len(zero_basenames) > 0:
-                raise Exception(
-                    "Observations in baseobs_list must have "
-                    + "nonzero weight. The following observations "
-                    + "violate that condition: "
-                    + ",".join(zero_basenames)
-                )
-
-        else:
-            try:
-                self.pst
-            except Exception as e:
-                raise Exception(
-                    "'obslist_dict' not passed and self.pst is not available"
-                )
-
-            if self.pst.nnz_obs == 0:
-                raise Exception(
-                    "not resetting weights and there are no non-zero weight obs to remove"
-                )
-            obslist_dict = dict(zip(self.pst.nnz_obs_names, self.pst.nnz_obs_names))
-            base_obslist = self.pst.nnz_obs_names
+        return mean_dfs,dfstd
 
 
 
