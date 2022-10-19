@@ -1,0 +1,19 @@
+BEGIN Options
+  SAVE_FLOWS
+END Options
+
+BEGIN GRIDDATA
+  icelltype  LAYERED
+    CONSTANT  1
+    CONSTANT  0
+    CONSTANT  0
+  k  LAYERED
+    OPEN/CLOSE  'npf_k_0.dat'  FACTOR  1.0
+    OPEN/CLOSE  'npf_k_1.dat'  FACTOR  1.0
+    OPEN/CLOSE  'npf_k_2.dat'  FACTOR  1.0
+  k33  LAYERED
+    OPEN/CLOSE  'npf_k33_0.dat'  FACTOR  1.0
+    OPEN/CLOSE  'npf_k33_1.dat'  FACTOR  1.0
+    OPEN/CLOSE  'npf_k33_2.dat'  FACTOR  1.0
+END GRIDDATA
+
