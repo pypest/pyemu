@@ -297,11 +297,6 @@ class EnDS(object):
         if arg is not None:
             self.obscov_arg = arg
 
-
-    def prep_dsi(self):
-        pass
-
-
     def get_posterior_prediction_convergence_summary(self,num_realization_sequence,num_replicate_sequence,
                                              obslist_dict=None):
         """repeatedly run `EnDS.get_predictive_posterior_moments() with less than all the possible
