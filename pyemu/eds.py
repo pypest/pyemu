@@ -72,11 +72,15 @@ class EnDS(object):
         self.sim_ensemble_arg = sim_ensemble
         if sim_ensemble is not None:
             self.__sim_ensemble = self.__load_ensemble(self.sim_ensemble_arg)
+        if self.sim_ensemble is None:
+            raise Exception("sim_ensemble is required for EnDS")
         self.noise_ensemble_arg = noise_ensemble
         if noise_ensemble is not None:
             self.__noise_ensemble = self.__load_ensemble(self.noise_ensemble_arg)
         if pst is not None:
             self.__load_pst()
+        if pst is None:
+            raise Exception("pst is required for EnDS")
         self.obscov_arg = obscov
         if obscov is not None:
             self.__load_obscov()
@@ -85,6 +89,8 @@ class EnDS(object):
         if predictions is None and self.pst is not None:
             if self.pst.forecast_names is not None:
                 self.predictions = self.pst.forecast_names
+        if self.predictions is None:
+            raise Exception("predictions are required for EnDS")
         if isinstance(self.predictions,list):
             self.predictions = [p.strip().lower() for p in self.predictions]
 
@@ -296,25 +302,90 @@ class EnDS(object):
         pass
 
 
-    def get_posterior_prediction_moments(self, obslist_dict=None,std_as_percent=False):
+    def get_posterior_prediction_convergence_summary(self,num_realization_sequence,num_replicate_sequence,
+                                             obslist_dict=None):
+        """repeatedly run `EnDS.get_predictive_posterior_moments() with less than all the possible
+        realizations to evaluate whether the uncertainty estimates have converged
+
+        Args:
+            num_realization_sequence (`[int']): the sequence of realizations to test.
+            num_replicate_sequence (`[int]`): The number of replicates of randomly selected realizations to test
+                for each `num_realization_sequence` value.  For example, if num_realization_sequence is [10,100,1000]
+                and num_replicated_sequence is [4,5,6], then `EnDS.get_predictive posterior_moments()` is called 4
+                times using 10 randomly selected realizations (new realizations selected 4 times), 5 times using
+                100 randomly selected realizations, and then 6 times using 1000 randomly selected realizations.
+            obslist_dict (`dict`, optional): a nested dictionary-list of groups of observations
+                to pass to `EnDS.get_predictive_posterior_moments()`.
+
+        Returns:
+             `dict`: a dictionary of num_reals: `pd.DataFrame` pairs, where the dataframe is the mean
+                predictive standard deviation results from calling `EnDS.get_predictive_posterior_moments()` for the
+                desired number of replicates.
+
+         Example::
+
+            ends = pyemu.EnDS(pst="my.pst",sim_ensemble="my.0.obs.csv",predictions=["predhead","predflux"])
+            obslist_dict = {"hds":["head1","head2"],"flux":["flux1","flux2"]}
+            num_reals_seq = [10,20,30,100,1000] # assuming there are 1000 reals in "my.0.obs.csv"]
+            num_reps_seq = [5,5,5,5,5]
+            mean_dfs = sc.get_posterior_prediction_convergence_summary(num_reals_seq,num_reps_seq,
+                obslist_dict=obslist_dict)
+
+        """
+        real_idx = np.arange(self.sim_ensemble.shape[0],dtype=int)
+        results = {}
+        for nreals,nreps in zip(num_realization_sequence,num_replicate_sequence):
+            rep_results = []
+            print("-->testing ",nreals)
+            for rep in range(nreps):
+                rreals = np.random.choice(real_idx,nreals,False)
+                sim_ensemble = self.sim_ensemble.iloc[rreals,:].copy()
+                _,dfstd,_ = self.get_posterior_prediction_moments(obslist_dict=obslist_dict,
+                                                                 sim_ensemble=sim_ensemble,
+                                                                 include_first_moment=False)
+                rep_results.append(dfstd)
+            results[nreals] = rep_results
+
+        means = {}
+        for nreals,dfs in results.items():
+            mn = dfs[0]
+            for df in dfs[1:]:
+                mn += df
+            mn /= len(dfs)
+            means[nreals] = mn
+
+        return means
+
+
+    def get_posterior_prediction_moments(self, obslist_dict=None,sim_ensemble=None,include_first_moment=True):
         """A dataworth method to analyze the posterior (expected) mean and uncertainty as a result of conditioning with
-         some additional observations
+         some additional observations not used in the conditioning of the current ensemble results.
 
         Args:
             obslist_dict (`dict`, optional): a nested dictionary-list of groups of observations
                 that are to be treated as gained/collected.  key values become
                 row labels in returned dataframe. If `None`, then every zero-weighted
                 observation is tested sequentially. Default is `None`
+            sim_ensemble (`pyemu.ObservationEnsemble`): the simulation results ensemble to use.
+                If `None`, `self.sim_ensemble` is used.  Default is `None`
+
+            include_first_moment (`bool`): flag to include calculations of the predictive first moments.
+                This can slow things down,so if not needed, better to skip.  Default is `True`
 
         Returns:
-            `pandas.DataFrame`:
+            tuple containing
+
+            - **dict**: dictionary of first-moment dataframes. Keys are `obslist_dict` keys.  If `include_first_moment`
+                is None, this is an empty dict.
+            - **pd.DataFrame**: prediction standard deviation summary
+            - **pd.DataFrame**: precent prediction standard deviation reduction summary
 
 
         Example::
 
-            ends = pyemu.EnDS("my.jco")
+            ends = pyemu.EnDS(pst="my.pst",sim_ensemble="my.0.obs.csv",predictions=["predhead","predflux"])
             obslist_dict = {"hds":["head1","head2"],"flux":["flux1","flux2"]}
-            dfmean,dfstd = sc.get_posterior_prediction_moments(obslist_dict=obslist_dict)
+            mean_dfs,dfstd,dfpercent = sc.get_posterior_prediction_moments(obslist_dict=obslist_dict)
 
         """
 
@@ -339,20 +410,12 @@ class EnDS(object):
             obslist_dict = dict(zip(self.pst.nnz_obs_names, self.pst.nnz_obs_names))
             onames = self.pst.nnz_obs_names
 
-        # ne = self.__noise_ensemble
-        # if ne is None:
-        #     self.logger.log("generating noise realizations")
-        #     ne = ObservationEnsemble.from_gaussian_draw(pst=self.pst,cov=self.obscov,num_reals=self.sim_ensemble.shape[0])
-        # else:
-        #     if ne.shape[0] == self.oe.shap[0]:
-        #         raise Exception("wrong number of noise reals")
-        #
-        # ne.index = self.oe.index
-
         names = onames
         names.extend(self.predictions)
         self.logger.log("getting deviations")
-        oe = self.sim_ensemble.loc[:,names].get_deviations() / np.sqrt(float(self.sim_ensemble.shape[0] - 1))
+        if sim_ensemble is None:
+            sim_ensemble = self.sim_ensemble
+        oe = sim_ensemble.loc[:,names].get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
         self.logger.log("getting deviations")
         self.logger.log("forming cov matrix")
         cmat = (np.dot(oe.values.transpose(),oe.values))
@@ -360,8 +423,8 @@ class EnDS(object):
         self.logger.log("forming cov matrix")
 
         var_data = {}
-        prior_var = self.sim_ensemble.loc[:, self.predictions].std() ** 2
-        prior_mean = self.sim_ensemble.loc[:, self.predictions].mean()
+        prior_var = sim_ensemble.loc[:, self.predictions].std() ** 2
+        prior_mean = sim_ensemble.loc[:, self.predictions].mean()
         var_data["prior"] = prior_var
         groups = list(obslist_dict.keys())
         groups.sort()
@@ -387,37 +450,46 @@ class EnDS(object):
             pt_var = []
             pt_mean = {}
 
-            omean = self.sim_ensemble.loc[:, onames].mean().values
-            reals = self.sim_ensemble.index.values
-            innovation_vecs = {real: self.sim_ensemble.loc[real, onames].values - omean for real in self.sim_ensemble.index}
+
+            if include_first_moment:
+                self.logger.log("preping first moment pieces")
+                omean = sim_ensemble.loc[:, onames].mean().values
+                reals = sim_ensemble.index.values
+                innovation_vecs = {real: sim_ensemble.loc[real, onames].values - omean for real in sim_ensemble.index}
+                self.logger.log("preping first moment pieces")
 
             for i,p in enumerate(self.predictions):
+                self.logger.log("calc second moment for "+p)
                 ccov_vec = ccov[:,i]
                 first_term = np.dot(ccov_vec.transpose(), dd)
                 schur = np.dot(first_term,ccov_vec)
                 post_var = prior_var[i] - schur
                 pt_var.append(post_var)
-                mean_vals = []
-                prmn = prior_mean[p]
-                for real in reals:
-                    mn = prmn + np.dot(first_term,innovation_vecs[real])
-                    mean_vals.append(mn)
-                pt_mean[p] = np.array(mean_vals)
-            mean_df = pd.DataFrame(pt_mean,index=reals)
-            mean_dfs[group] = mean_df
+                self.logger.log("calc second moment for " + p)
+                if include_first_moment:
+                    self.logger.log("calc first moment values for "+p)
+                    mean_vals = []
+                    prmn = prior_mean[p]
+                    for real in reals:
+                        mn = prmn + np.dot(first_term,innovation_vecs[real])
+                        mean_vals.append(mn)
+                    pt_mean[p] = np.array(mean_vals)
+                    self.logger.log("calc first moment values for "+p)
+            if include_first_moment:
+                mean_df = pd.DataFrame(pt_mean,index=reals)
+                mean_dfs[group] = mean_df
             var_data[group] = pt_var
 
             self.logger.log("processing " + group)
 
         dfstd = pd.DataFrame(var_data,index=self.predictions).apply(np.sqrt).T
-        if std_as_percent:
-            prior_std = prior_var.apply(np.sqrt)
-            for p in self.predictions:
-                dfstd.loc[groups,p] = 100 * (1-(dfstd.loc[groups,p].values/prior_std.loc[p]))
-            dfstd = dfstd.loc[groups,self.predictions]
+        dfper = dfstd.copy()
+        prior_std = prior_var.apply(np.sqrt)
+        for p in self.predictions:
+            dfper.loc[groups,p] = 100 * (1-(dfstd.loc[groups,p].values/prior_std.loc[p]))
+        dfper = dfper.loc[groups,self.predictions]
 
-
-        return mean_dfs,dfstd
+        return mean_dfs,dfstd,dfper
 
 
 
