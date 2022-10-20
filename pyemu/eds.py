@@ -405,6 +405,9 @@ class EnDS(object):
             obslist_dict = dict(zip(self.pst.nnz_obs_names, self.pst.nnz_obs_names))
             onames = self.pst.nnz_obs_names
 
+        if "posterior" not in obslist_dict:
+            obslist_dict["posterior"] = onames
+
         names = onames
         names.extend(self.predictions)
         self.logger.log("getting deviations")
