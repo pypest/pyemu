@@ -494,7 +494,7 @@ class EnDS(object):
         return mean_dfs,dfstd,dfper
 
 
-    def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template",num_reals=100,):
+    def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template"):
         """setup a new PEST interface for the data-space inversion process
 
         """
@@ -505,8 +505,8 @@ class EnDS(object):
             self.logger.warn("EnDS.prep_for_dsi(): t_d '{0}' exists, removing...".format(t_d))
             shutil.rmtree(t_d)
         os.makedirs(t_d)
-        self.logger.log("getting deviations")
 
+        self.logger.log("getting deviations")
         nz_names = self.pst.nnz_obs_names
         snz_names = set(nz_names)
         z_names = [n for n in self.pst.obs_names if n not in snz_names]
@@ -514,16 +514,24 @@ class EnDS(object):
         names.extend(nz_names)
         oe = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
         oe = oe.loc[:,names]
+        self.logger.log("getting deviations")
 
+        self.logger.log("pseudo inv of deviations matrix")
         deltad = Matrix.from_dataframe(oe).T
         U,S,V = deltad.pseudo_inv_components(maxsing=self.pst.svd_data.maxsing,eigthresh=self.pst.svd_data.eigthresh)
+        self.logger.log("pseudo inv of deviations matrix")
+
+        self.logger.log("saving proj mat")
         pmat = U * S
         proj_name = "dsi_proj_mat.jcb" # dont change this name!!!
         proj_path = os.path.join(t_d,proj_name)
         pmat.to_coo(proj_path)
         self.logger.statement("projection matrix dimensions:"+str(pmat.shape))
         self.logger.statement("projection matrix saved to "+proj_path)
+        self.logger.log("saving proj mat")
 
+
+        self.logger.log("creating tpl files")
         dsi_in_file = os.path.join(t_d,"dsi_pars.csv")
         dsi_tpl_file = dsi_in_file+".tpl"
         ftpl = open(dsi_tpl_file,'w')
@@ -555,7 +563,9 @@ class EnDS(object):
             mn_dict[pname] = mn_vec[oname]
         fin.close()
         ftpl.close()
+        self.logger.log("creating tpl files")
 
+        # this is the dsi forward run function - it is harded coded below!
         def dsi_forward_run():
             import numpy as np
             import pandas as pd
@@ -567,11 +577,14 @@ class EnDS(object):
             print(sim_vals)
             sim_vals.to_csv("dsi_sim_vals.csv")
 
-
+        self.logger.log("test run")
+        b_d = os.getcwd()
         os.chdir(t_d)
         dsi_forward_run()
-        os.chdir("..")
+        os.chdir(b_d)
+        self.logger.log("test run")
 
+        self.logger.log("creating ins file")
         out_file = os.path.join(t_d,"dsi_sim_vals.csv")
         ins_file = out_file + ".ins"
         sdf = pd.read_csv(out_file,index_col=0)
@@ -581,7 +594,9 @@ class EnDS(object):
             f.write("l1\n")
             for oname in sdf.index.values:
                 f.write("l1 ~,~ !{0}!\n".format(oname))
+        self.logger.log("creating ins file")
 
+        self.logger.log("creating Pst")
         pst = Pst.from_io_files([mn_tpl_file,dsi_tpl_file],[mn_in_file,dsi_in_file],[ins_file],[out_file],pst_path=".")
 
         par = pst.parameter_data
@@ -604,7 +619,7 @@ class EnDS(object):
             obs.loc[org_obs.obsnme,col] = org_obs.loc[:,col]
         pst.control_data.noptmax = 0
         pst.model_command = "python forward_run.py"
-
+        self.logger.log("creating Pst")
 
         with open(os.path.join(t_d,"forward_run.py"),'w') as f:
             lines = [line.strip() for line in """ import numpy as np
@@ -619,7 +634,15 @@ class EnDS(object):
             for line in lines:
                 f.write(line+"\n")
         pst.write(os.path.join(t_d,"dsi.pst"),version=2)
-        run("pestpp-ies dsi.pst",cwd=t_d)
+        self.logger.statement("saved pst to {0}".format(os.path.join(t_d,"dsi.pst")))
+        try:
+            run("pestpp-ies dsi.pst",cwd=t_d)
+        except Exception as e:
+            self.logger.warn("error testing noptmax=0 run:{0}".format(str(e)))
+
+        return pst
+
+
 
 
 

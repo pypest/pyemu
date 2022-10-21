@@ -604,8 +604,15 @@ def ends_freyberg_dsi_test():
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
 
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe,verbose=True)
+    t_d = os.path.join("dsi","dsi_template")
+    ends.prep_for_dsi(t_d=t_d)
 
-    ends.prep_for_dsi()
+    pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
+    pst.control_data.noptmax = 3
+    pst.write(os.path.join(t_d,"dsi.pst"),version=2)
+    #pyemu.os_utils.run("pestpp-ies dsi.pst",cwd="dsi_template")
+    m_d = os.path.join("dsi","master_dsi")
+    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root="dsi",master_dir=m_d)
 
 
 if __name__ == "__main__":
