@@ -589,9 +589,28 @@ def ends_freyberg_test():
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe, obscov=os.path.join(test_d, "obs.unc"),predictions=predictions)
 
 
+def ends_freyberg_dsi_test():
+
+    import numpy as np
+    import pyemu
+    test_d = "ends_master"
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d, case + ".pst")
+    pst = pyemu.Pst(pst_name)
+    predictions = ["headwater_20171130", "tailwater_20161130", "trgw_0_9_1_20161130"]
+    pst.pestpp_options["predictions"] = predictions
+
+    oe_name = pst_name.replace(".pst", ".0.obs.csv")
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
+
+    ends = pyemu.EnDS(pst=pst, sim_ensemble=oe,verbose=True)
+
+    ends.prep_for_dsi()
+
+
 if __name__ == "__main__":
     #ends_freyberg_dev()
-    ends_freyberg_test()
+    ends_freyberg_dsi_test()
     #obscomp_test()
     #alternative_dw()
     #freyberg_verf_test()

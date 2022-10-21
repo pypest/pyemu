@@ -1,16 +1,18 @@
 from __future__ import print_function, division
 import os
 import copy
+import shutil
 from datetime import datetime
 import warnings
-from pyemu_warnings import PyemuWarning
+from .pyemu_warnings import PyemuWarning
 import numpy as np
 import pandas as pd
 from pyemu.en import ObservationEnsemble
 from pyemu.mat.mat_handler import Matrix, Jco, Cov
 from pyemu.pst.pst_handler import Pst
-from pyemu.utils.os_utils import _istextfile
+from pyemu.utils.os_utils import _istextfile,run
 from .logger import Logger
+
 
 
 class EnDS(object):
@@ -501,58 +503,126 @@ class EnDS(object):
 
         if os.path.exists(t_d):
             self.logger.warn("EnDS.prep_for_dsi(): t_d '{0}' exists, removing...".format(t_d))
-
-        self.logger.log("forming cov matrix")
-        self.logger.log("getting deviations")
-        keep_names = self.pst.nnz_obs_names
-        keep_names.extend(self.predictions)
-        oe = sim_ensemble.loc[:,keep_names].get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
+            shutil.rmtree(t_d)
+        os.makedirs(t_d)
         self.logger.log("getting deviations")
 
-        cmat = Cov(x=np.dot(oe.values.transpose(), oe.values),names=keep_names)
-        U,s,_ = cmat.pseudo_inv_components(maxsing=self.pst.svd_data.maxsing,eigthresh=self.pst.svd_data.eigthresh)
-        self.logger.log("forming cov matrix")
-        self.logger.log("factorizing full covariance matrix")
-        pmat = U * s
+        nz_names = self.pst.nnz_obs_names
+        snz_names = set(nz_names)
+        z_names = [n for n in self.pst.obs_names if n not in snz_names]
+        names = z_names.copy()
+        names.extend(nz_names)
+        oe = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
+        oe = oe.loc[:,names]
+
+        deltad = Matrix.from_dataframe(oe).T
+        U,S,V = deltad.pseudo_inv_components(maxsing=self.pst.svd_data.maxsing,eigthresh=self.pst.svd_data.eigthresh)
+        pmat = U * S
         proj_name = "dsi_proj_mat.jcb" # dont change this name!!!
         proj_path = os.path.join(t_d,proj_name)
-        pmat.to_binary(proj_path)
+        pmat.to_coo(proj_path)
         self.logger.statement("projection matrix dimensions:"+str(pmat.shape))
         self.logger.statement("projection matrix saved to "+proj_path)
-        self.logger.log("factorizing full covariance matrix")
 
-        # write tpl file
-        # write ins file
-        # write forward run script
-        # create pst and set par bounds
-        # set obsvals and weights using self.pst
-        npar = s.shape[0]
-
-        ftpl = open(os.path.join(t_d,"dsi_pars.csv.tpl"),'w')
-        fin = open(os.path.join(t_d,"dsi_pars.csv"),'w')
+        dsi_in_file = os.path.join(t_d,"dsi_pars.csv")
+        dsi_tpl_file = dsi_in_file+".tpl"
+        ftpl = open(dsi_tpl_file,'w')
+        fin = open(dsi_in_file,'w')
         ftpl.write("ptf ~\n")
+        fin.write("parnme,parval1\n")
+        ftpl.write("parnme,parval1\n")
+        npar = S.shape[0]
         for i in range(npar):
             pname = "dsi_par{0:04d}".format(i)
-            fin.write("{0},1.0\n".format(pname))
+            fin.write("{0},0.0\n".format(pname))
             ftpl.write("{0},~   {0}   ~\n".format(pname,pname))
         fin.close()
         ftpl.close()
 
+        mn_vec = sim_ensemble.mean(axis=0)
+        mn_in_file = os.path.join(t_d, "dsi_pr_mean.csv")
+        mn_tpl_file = mn_in_file+".tpl"
+        fin = open(mn_in_file, 'w')
+        ftpl = open(mn_tpl_file, 'w')
+        ftpl.write("ptf ~\n")
+        fin.write("obsnme,mn\n")
+        ftpl.write("obsnme,pn\n")
+        mn_dict = {}
+        for oname in names:
+            pname = "dsi_prmn_{0}".format(oname)
+            fin.write("{0},{1}\n".format(oname,mn_vec[oname]))
+            ftpl.write("{0},~   {0}   ~\n".format(pname, pname))
+            mn_dict[pname] = mn_vec[oname]
+        fin.close()
+        ftpl.close()
 
         def dsi_forward_run():
             import numpy as np
             import pandas as pd
             import pyemu
-
             pmat = pyemu.Matrix.from_binary("dsi_proj_mat.jcb")
             pvals = pd.read_csv("dsi_pars.csv",index_col=0)
-            sim_vals = pmat * pvals.values
-            np.savetxt("dsi_sim.dat",sim_vals,fmt="")
+            ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
+            sim_vals = ovals + np.dot(pmat.x,pvals.values)
+            print(sim_vals)
+            sim_vals.to_csv("dsi_sim_vals.csv")
 
 
         os.chdir(t_d)
         dsi_forward_run()
         os.chdir("..")
+
+        out_file = os.path.join(t_d,"dsi_sim_vals.csv")
+        ins_file = out_file + ".ins"
+        sdf = pd.read_csv(out_file,index_col=0)
+        print(sdf)
+        with open(ins_file,'w') as f:
+            f.write("pif ~\n")
+            f.write("l1\n")
+            for oname in sdf.index.values:
+                f.write("l1 ~,~ !{0}!\n".format(oname))
+
+        pst = Pst.from_io_files([mn_tpl_file,dsi_tpl_file],[mn_in_file,dsi_in_file],[ins_file],[out_file],pst_path=".")
+
+        par = pst.parameter_data
+        dsi_pars = par.loc[par.parnme.str.startswith("dsi_par"),"parnme"]
+        par.loc[dsi_pars,"parval1"] = 0
+        par.loc[dsi_pars,"parubnd"] = 2.5
+        par.loc[dsi_pars,"parlbnd"] = -2.5
+        par.loc[dsi_pars,"partrans"] = "none"
+        mn_pars = par.loc[par.parnme.str.startswith("dsi_prmn"),"parnme"]
+        par.loc[mn_pars,"partrans"] = "fixed"
+        for pname,pval in mn_dict.items():
+            par.loc[pname,"parval1"] = pval
+            par.loc[pname, "parubnd"] = pval + 1000
+            par.loc[pname, "parlbnd"] = pval - 1000
+
+        obs = pst.observation_data
+        print(obs)
+        org_obs = self.pst.observation_data
+        for col in org_obs.columns:
+            obs.loc[org_obs.obsnme,col] = org_obs.loc[:,col]
+        pst.control_data.noptmax = 0
+        pst.model_command = "python forward_run.py"
+
+
+        with open(os.path.join(t_d,"forward_run.py"),'w') as f:
+            lines = [line.strip() for line in """ import numpy as np
+            import pandas as pd
+            import pyemu
+            pmat = pyemu.Matrix.from_binary("dsi_proj_mat.jcb")
+            pvals = pd.read_csv("dsi_pars.csv",index_col=0)
+            ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
+            sim_vals = ovals + np.dot(pmat.x,pvals.values)
+            print(sim_vals)
+            sim_vals.to_csv("dsi_sim_vals.csv")""".split("\n")]
+            for line in lines:
+                f.write(line+"\n")
+        pst.write(os.path.join(t_d,"dsi.pst"),version=2)
+        run("pestpp-ies dsi.pst",cwd=t_d)
+
+
+
 
         
 
