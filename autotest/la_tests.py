@@ -615,9 +615,60 @@ def ends_freyberg_dsi_test():
     pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root="dsi",master_dir=m_d)
 
 
+def plot_freyberg_dsi():
+    import pandas as pd
+    import pyemu
+    import matplotlib.pyplot as plt
+
+    test_d = "ends_master"
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d, case + ".pst")
+    pst = pyemu.Pst(pst_name)
+    predictions = ["headwater_20171130", "tailwater_20161130", "trgw_0_9_1_20161130"]
+    oe_name = pst_name.replace(".pst", ".0.obs.csv")
+    pr_oe = pd.read_csv(os.path.join(test_d,"freyberg6_run_ies.0.obs.csv"),index_col=0)
+    pt_oe = pd.read_csv(os.path.join(test_d, "freyberg6_run_ies.3.obs.csv"), index_col=0)
+
+    m_d = os.path.join("dsi", "master_dsi")
+    pst = pyemu.Pst(os.path.join(m_d,"dsi.pst"))
+    pr_oe_dsi = pd.read_csv(os.path.join(m_d,"dsi.0.obs.csv"),index_col=0)
+    pt_oe_dsi = pd.read_csv(os.path.join(m_d, "dsi.3.obs.csv"), index_col=0)
+
+    pv = pyemu.ObservationEnsemble(pst=pst,df=pt_oe).phi_vector
+    pv_dsi = pyemu.ObservationEnsemble(pst=pst, df=pt_oe_dsi).phi_vector
+    #print(pt_oe.shape)
+    pt_oe = pt_oe.loc[pv<25, :]
+    pt_oe_dsi = pt_oe_dsi.loc[pv_dsi < 25, :]
+
+    # print(pt_oe.shape)
+    # fig,ax = plt.subplots(1,1,figsize=(5,5))
+    # ax.hist(pv,bins=10,facecolor="b",alpha=0.5,density=True)
+    # ax.hist(pv_dsi, bins=10, facecolor="m", alpha=0.5,density=True)
+    # ax.set_yticks([])
+    # plt.tight_layout()
+    # plt.show()
+
+
+
+    fig,axes = plt.subplots(len(predictions),1,figsize=(10,10))
+    for p,ax in zip(predictions,axes):
+        ax.hist(pr_oe.loc[:,p].values,bins=10,alpha=0.5,facecolor="0.5",density=True,label="prior")
+        ax.hist(pt_oe.loc[:, p].values, bins=10, alpha=0.5, facecolor="b",density=True,label="posterior")
+        ax.hist(pr_oe_dsi.loc[:, p].values, bins=10, facecolor="none",hatch="/",edgecolor="0.5",
+                lw=2.5,density=True,label="dsi prior")
+        ax.hist(pt_oe_dsi.loc[:, p].values, bins=10, facecolor="none",density=True,hatch="/",edgecolor="b",lw=2.5,
+                label="dsi posterior")
+        ax.set_title(p,loc="left")
+        ax.legend(loc="upper right")
+        ax.set_yticks([])
+    plt.tight_layout()
+    plt.savefig("dsi_pred.pdf")
+
+
 if __name__ == "__main__":
     #ends_freyberg_dev()
-    ends_freyberg_dsi_test()
+    #ends_freyberg_dsi_test()
+    plot_freyberg_dsi()
     #obscomp_test()
     #alternative_dw()
     #freyberg_verf_test()
