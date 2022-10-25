@@ -2504,6 +2504,26 @@ class TestPstFrom():
 
             # revert to original wd
             os.chdir(self.original_wd)
+        new_list = self.list_data.copy()
+        new_list[['x', 'y']] = new_list[['i', 'j']].apply(
+            lambda r: pd.Series(
+                [self.pf._spatial_reference.ycentergrid[r.i - 1, r.j - 1],
+                 self.pf._spatial_reference.xcentergrid[r.i - 1, r.j - 1]]
+            ), axis=1)
+        new_list.to_csv(Path(self.dest_ws, "xylist.csv"), index=False, header=False)
+        self.pf.add_parameters(filenames="xylist.csv", par_type='grid',
+                               par_name_base="xywel",
+                               index_cols={'lay': 0, 'x': 4, 'y': 5},
+                               use_cols=[3],
+                               pargp=f'xywel',
+                               geostruct=self.grid_gs,
+                               rebuild_pst=True
+                               )
+        cov = self.pf.build_prior()
+        x = cov.as_2d[-3:, -3:]
+        assert np.count_nonzero(x - np.diag(np.diagonal(x))) == 6
+        assert np.sum(x < np.diag(x)) == 6
+
 
     def test_add_array_parameters_pps_grid(self):
         """test setting up array parameters with a list of array text
@@ -3950,7 +3970,7 @@ def shortname_conversion_test():
 if __name__ == "__main__":
     # mf6_freyberg_pp_locs_test()
     # invest()
-    freyberg_test()
+    # freyberg_test()
     # freyberg_prior_build_test()
     # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
@@ -3962,13 +3982,13 @@ if __name__ == "__main__":
     # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
-    # tpf = TestPstFrom()
-    # tpf.setup()
+    tpf = TestPstFrom()
+    tpf.setup()
     #tpf.test_add_array_parameters_to_file_list()
     #tpf.test_add_array_parameters_alt_inst_str_none_m()
     #tpf.test_add_array_parameters_alt_inst_str_0_d()
     # tpf.test_add_array_parameters_pps_grid()
-    # tpf.test_add_list_parameters()
+    tpf.test_add_list_parameters()
     # # pstfrom_profile()
     # mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test()
