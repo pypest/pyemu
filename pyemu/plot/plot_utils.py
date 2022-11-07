@@ -1390,48 +1390,54 @@ def ensemble_res_1to1(
         if not isinstance(ben, dict):
             ben = {'g': ben.get(obsnames)}
         outofrange = False
-        # assume dict
-        oemin = 1e32  # ben.min().min()
+        # work back from crazy values
+        oemin = 1e32
         oemeanmin = 1e32
-        oemax = -1e32  # ben.max().max()
+        oemax = -1e32
         oemeanmax = -1e32
-        bemin = 1e32  # ben.min().min()
+        bemin = 1e32
         bemeanmin = 1e32
-        bemax = -1e32  # ben.max().max()
+        bemax = -1e32
         bemeanmax = -1e32
-        for c, oeni in oen.items():
-            oeni = oeni.loc[:, obsnames]
+        for _, oeni in oen.items():  # loop over ensembles
+            oeni = oeni.loc[:, obsnames]  # slice group obs
             oemin = np.min([oemin, oeni.min().min()])
-            oemeanmin = np.min([oemeanmin, oeni.mean().min()])
             oemax = np.max([oemax, oeni.max().max()])
+            # get min and max of mean sim vals
+            # (incase we want plot to ignore extremes)
+            oemeanmin = np.min([oemeanmin, oeni.mean().min()])
             oemeanmax = np.max([oemeanmax, oeni.mean().max()])
-            # assume dict
-        for c, beni in ben.items():
+        for _, beni in ben.items():  # same with base ensemble/obsval
+            # work with either ensemble or obsval series
             beni = beni.get(obsnames)
             bemin = np.min([bemin, beni.min().min()])
-            bemeanmin = np.min([bemeanmin, beni.mean().min()])
             bemax = np.max([bemax, beni.max().max()])
+            bemeanmin = np.min([bemeanmin, beni.mean().min()])
             bemeanmax = np.max([bemeanmax, beni.mean().max()])
+        # get base ensemble range
         berange = bemax-bemin
-        if berange == 0.:
-            berange = bemeanmax * 1.1
+        if berange == 0.:  # only one obs in group (probs)
+            berange = bemeanmax * 1.1  # expand a little
         # add buffer to obs endpoints
         bemin = bemin - (berange*0.05)
         bemax = bemax + (berange*0.05)
         if oemax < bemin:  # sim well below obs
-            oemin = oemeanmin
+            oemin = oemeanmin  # set min to mean min
+            # (sim captured but not extremes)
             outofrange = True
         if oemin > bemax:  # sim well above obs
             oemax = oemeanmax
             outofrange = True
         oerange = oemax - oemin
-        if bemax > oemax + (0.1*oerange):
-            if not outofrange:  # zoom to obs
+        if bemax > oemax + (0.1*oerange):  # obs max well above sim
+            if not outofrange:  # but sim still in range
+                # zoom to sim
                 bemax = oemax + (0.1*oerange)
-            else:
+            else:  # use obs mean max
                 bemax = bemeanmax
-        if bemin < oemin - (0.1 * oerange):
-            if not outofrange:  # zoom to obs
+        if bemin < oemin - (0.1 * oerange):  # obs min well below sim
+            if not outofrange:  # but sim still in range
+                # zoom to sim
                 bemin = oemin - (0.1 * oerange)
             else:
                 bemin = bemeanmin
@@ -1468,10 +1474,7 @@ def ensemble_res_1to1(
             ),
             ha="center",
         )
-    # if plot_hexbin:
-    #    pdfname = pst.filename.replace(".pst", ".1to1.hexbin.pdf")
-    # else:
-    #    pdfname = pst.filename.replace(".pst", ".1to1.pdf")
+
     figs = []
     ax_count = 0
     for g, names in grouper.items():
@@ -1489,29 +1492,18 @@ def ensemble_res_1to1(
         if ax_count % (nr * nc) == 0:
             if ax_count > 0:
                 plt.tight_layout()
-            # pdf.savefig()
-            # plt.close(fig)
             figs.append(fig)
             fig = plt.figure(figsize=figsize)
             axes = _get_page_axes()
             ax_count = 0
         ax = axes[ax_count]
 
-        # min and max for actual observations (xaxis) from control file
-        # obx = obs_g.obsval.max()  # original base obsval max
-        # obn = obs_g.obsval.min()  # original base obsval min
         if base_ensemble is None:
             # if obs not defined by obs+noise ensemble,
             # use min and max for obsval from control file
             pmin, pmax = _get_plotlims(ensembles, obs_g.obsval, obs_g.obsnme)
-            # bx = obx
-            # bn = obn
         else:
             # if obs defined by obs+noise use obs+noise min and max
-            # ben = base_ensemble["r"]
-            # ben = ben.loc[:, ben.columns.intersection(names)]
-            # bn = 1e32  # ben.min().min()
-            # bx = -1e32  # ben.max().max()
             pmin, pmax = _get_plotlims(ensembles, base_ensemble, obs_g.obsnme)
             obs_gg = obs_g.sort_values(by="obsval")
             for c, en in base_ensemble.items():
@@ -1519,68 +1511,19 @@ def ensemble_res_1to1(
                 ex = en_g.max()
                 en = en_g.min()
                 # update y min and max for obs+noise ensembles
-                # bn = np.min([en.min(), bn])
-                # bx = np.max([ex.max(), bx])
-                # [ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
                 if len(obs_gg.obsval) > 1:
                     ax.fill_between(obs_gg.obsval, en, ex, facecolor=c, alpha=0.2, zorder=2)
                 else:
                     ax.plot([obs_gg.obsval, obs_gg.obsval], [en, ex], color=c, alpha=0.2, zorder=2)
-        # ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
-        # collector for mins and max
-        # omn = []
-        # omx = []
         for c, en in ensembles.items():
             en_g = en.loc[:, obs_g.obsnme]
             # output mins and maxs
             ex = en_g.max()
             en = en_g.min()
-            # omn.append(en)
-            # omx.append(ex)
             [
                 ax.plot([ov, ov], [een, eex], color=c, zorder=1)
                 for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)
             ]
-
-        # omn = pd.concat(omn).min()
-        # omx = pd.concat(omx).max()
-        # focus on obs(+noise)
-        # need to make sure all obsval are captured (obn, obx)
-        # but helpful if not zoomed out too far
-        # rng = bx - bn
-        # mpnt = rng / 2
-        # if omn < bn:
-        #     # if the output ensemble mins extend below obs+noise
-        #     if omn < bn - 0.005 * rng:
-        #         # if a long way down
-        #         # focus on obs+noise? -- will capture obsval
-        #         mn = bn - 0.005 * rng
-        #     else:
-        #         # focus on obs
-        #         mn = omn - 0.005 * rng
-        # else:
-        #     # output ensemble min is above obs+noise
-        #     if omn - bn <= 1.05 * rng:
-        #         # if min of output en is close to obs+noise
-        #         mn = bn - 0.005 * rng # incl obs+noise
-        #     else:
-        #         mn = omn - 0.005 * (omx - omn)  # focus on model output
-        # if omx > bx:
-        #     # if the output ensemble max is above the obs+noise max
-        #     if omx > bx + 0.005 * rng:
-        #         # if alpong way up
-        #         # focus on obs+noise
-        #         mx = bx + 0.005 * rng  # focus on the obs+noise max
-        #     else:
-        #         # focus on obs
-        #         mx = omx + 0.005 * rng
-        # else:
-        #     # output ensemble max is below obs+noise
-        #     if bx - omx <= 1.05 * rng:
-        #         # if max of output is close to obs+noise
-        #         mx = bx + 0.005 * rng # incl obs+noise
-        #     else:
-        #         mx = omx + 0.005 * (omx - omn)  # focus on model output
         ax.plot([pmin, pmax], [pmin, pmax], "k--", lw=1.0, zorder=3)
         xlim = (pmin, pmax)
         ax.set_xlim(pmin, pmax)
@@ -1607,15 +1550,10 @@ def ensemble_res_1to1(
 
         if base_ensemble is not None:
             obs_gg = obs_g.sort_values(by="obsval")
-            # bn = 1e32  # ben.min().min()
-            # bx = -1e32  # ben.max().max()
             for c, en in base_ensemble.items():
                 en_g = en.loc[:, obs_gg.obsnme].subtract(obs_gg.obsval)
                 ex = en_g.max()
                 en = en_g.min()
-                # update x min and max for obs+noise ensembles
-                # bn = np.min([en.min(), bn])
-                # bx = np.max([ex.max(), bx])
                 if len(obs_gg.obsval) > 1:
                     ax.fill_between(obs_gg.obsval, en, ex, facecolor=c, alpha=0.2, zorder=2)
                 else:
@@ -1637,26 +1575,13 @@ def ensemble_res_1to1(
 
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()
-        # always focus on outputs
-        # -> if obs(+ noise) is broader, focus on sim out
-        # mn = omn
-        # mx = omx
-        # ax.set_ylim(mn, mx)
-
-        # if base_ensemble is not None:
-        #     if base_ensemble is not None:
-        #         for c, en in base_ensemble.items():
-        #             en_g = en.loc[:, obs_g.obsnme].subtract(obs_g.obsval,axis=1)
-        #             ex = en_g.max()
-        #             en = en_g.min()
-        #             [ax.plot([ov, ov], [een, eex], color=c, alpha=0.3) for ov, een, eex in
-        #              zip(obs_g.obsval.values, en.values, ex.values)]
         mx = max(np.abs(omn), np.abs(omx))  # ensure symmetric about y=0
         if obs_g.shape[0] == 1:
             mx *= 1.05
         else:
             mx *= 1.02
         if np.sign(omn) == np.sign(omx):
+            # allow y axis asymm if all above or below
             mn = np.min([0, np.sign(omn) * mx])
             mx = np.max([0, np.sign(omn) * mx])
         else:
@@ -1696,8 +1621,6 @@ def ensemble_res_1to1(
         axes[a].set_xticks([])
 
     plt.tight_layout()
-    # pdf.savefig()
-    # plt.close(fig)
     figs.append(fig)
     if filename is not None:
         plt.tight_layout()
