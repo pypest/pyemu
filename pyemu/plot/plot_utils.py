@@ -1388,7 +1388,7 @@ def ensemble_res_1to1(
         if not isinstance(oen, dict):
             oen = {'g': oen.loc[:, obsnames]}
         if not isinstance(ben, dict):
-            ben = {'g': ben.loc[:, obsnames]}
+            ben = {'g': ben.get(obsnames)}
         outofrange = False
         # assume dict
         oemin = 1e32  # ben.min().min()
@@ -1407,14 +1407,14 @@ def ensemble_res_1to1(
             oemeanmax = np.max([oemeanmax, oeni.mean().max()])
             # assume dict
         for c, beni in ben.items():
-            beni = beni.loc[:, obsnames]
+            beni = beni.get(obsnames)
             bemin = np.min([bemin, beni.min().min()])
             bemeanmin = np.min([bemeanmin, beni.mean().min()])
             bemax = np.max([bemax, beni.max().max()])
             bemeanmax = np.max([bemeanmax, beni.mean().max()])
         berange = bemax-bemin
         if berange == 0.:
-            berange = bemeanmax
+            berange = bemeanmax * 1.1
         # add buffer to obs endpoints
         bemin = bemin - (berange*0.05)
         bemax = bemax + (berange*0.05)

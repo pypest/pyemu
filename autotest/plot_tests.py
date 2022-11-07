@@ -218,6 +218,12 @@ def ensemble_1to1_test():
         base_ensemble=oe_base2
     )
 
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1+1, "b": oe2},
+        pst,
+        filename=os.path.join("temp", "e1to1_noise6.pdf")
+    )
+
     pst.observation_data.loc[:, 'obgnme'] = pst.observation_data.o_obgnme
     pyemu.plot_utils.res_phi_pie(pst=pst,ensemble=oe1)
     pyemu.plot_utils.res_1to1(pst=pst, ensemble=oe1)
