@@ -3,6 +3,8 @@ import os
 import numpy as np
 import pandas as pd
 import pyemu
+from matplotlib import use
+use("Qt5Agg")
 
 if not os.path.exists("temp"):
     os.mkdir("temp")
@@ -173,11 +175,50 @@ def ensemble_1to1_test():
     #
     # pyemu.plot_utils.ensemble_res_1to1({"0.5":oe1,"b":oe2},pst,filename=os.path.join("temp","e1to1.pdf"))
 
-    pyemu.plot_utils.ensemble_res_1to1({"0.5": oe1, "b": oe2}, pst, filename=os.path.join("temp", "e1to1_noise.pdf"),
-                                       base_ensemble=oe_base)
-    pyemu.plot_utils.ensemble_res_1to1({"0.5": oe1, "b": oe2}, pst, filename=os.path.join("temp", "e1to1_noise2.pdf"),
-                                       base_ensemble=oe_base2)
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1, "b": oe2},
+        pst,
+        filename=os.path.join("temp", "e1to1_noise.pdf"),
+        base_ensemble=oe_base
+    )
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1, "b": oe2},
+        pst,
+        filename=os.path.join("temp", "e1to1_noise2.pdf"),
+        base_ensemble=oe_base2
+    )
 
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1 + 10, "b": oe2 + 10},
+        pst,
+        filename=os.path.join("temp", "e1to1_noise3.pdf"),
+        base_ensemble=oe_base2
+    )
+
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1 + 10, "b": oe2},
+        pst,
+        filename=os.path.join("temp", "e1to1_noise4.pdf"),
+        base_ensemble=oe_base2
+    )
+
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1 * -10, "b": oe2*-10},
+        pst,
+        filename=os.path.join("temp", "e1to1_noise4.pdf"),
+        base_ensemble=oe_base2
+    )
+    pst.observation_data.loc[:, 'o_obgnme'] = pst.observation_data.obgnme
+    pst.observation_data.loc[pst.nnz_obs_names[0], 'obgnme'] = 'solo1'
+    pst.observation_data.loc[pst.nnz_obs_names[-1], 'obgnme'] = 'solo2'
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1 * -10, "b": oe2*-10},
+        pst,
+        filename=os.path.join("temp", "e1to1_noise5.pdf"),
+        base_ensemble=oe_base2
+    )
+
+    pst.observation_data.loc[:, 'obgnme'] = pst.observation_data.o_obgnme
     pyemu.plot_utils.res_phi_pie(pst=pst,ensemble=oe1)
     pyemu.plot_utils.res_1to1(pst=pst, ensemble=oe1)
     test=None
