@@ -3,8 +3,6 @@ import os
 import numpy as np
 import pandas as pd
 import pyemu
-from matplotlib import use
-use("Qt5Agg")
 
 if not os.path.exists("temp"):
     os.mkdir("temp")
