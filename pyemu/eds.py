@@ -42,6 +42,8 @@ class EnDS(object):
 
         #assumes "my.pst" exists
         ends = pyemu.EnDS(ensemble="my.0.obs.jcb",forecasts=["fore1","fore2"])
+        ends.get_posterior_prediction_moments() #similar to Schur-style data worth
+        ends.prep_for_dsi() #setup a new pest interface() based on the DSI approach
 
 
     """
