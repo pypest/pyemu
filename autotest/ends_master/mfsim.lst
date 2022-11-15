@@ -1,0 +1,860 @@
+                                   MODFLOW 6
+                U.S. GEOLOGICAL SURVEY MODULAR HYDROLOGIC MODEL
+                            VERSION 6.3.0 03/04/2022
+
+   MODFLOW 6 compiled Mar 07 2022 13:50:09 with Intel(R) Fortran Intel(R) 64
+   Compiler Classic for applications running on Intel(R) 64, Version 2021.5.0
+                             Build 20211109_000000
+
+This software has been approved for release by the U.S. Geological 
+Survey (USGS). Although the software has been subjected to rigorous 
+review, the USGS reserves the right to update the software as needed 
+pursuant to further analysis and review. No warranty, expressed or 
+implied, is made by the USGS or the U.S. Government as to the 
+functionality of the software and related material nor shall the 
+fact of release constitute any such warranty. Furthermore, the 
+software is released on condition that neither the USGS nor the U.S. 
+Government shall be held liable for any damages resulting from its 
+authorized or unauthorized use. Also refer to the USGS Water 
+Resources Software User Rights Notice for complete use, copyright, 
+and distribution information.
+
+
+As a work of the United States Government, this USGS product is 
+in the public domain within the United States. You can copy, 
+modify, distribute, and perform the work, even for commercial 
+purposes, all without asking permission. Additionally, USGS 
+waives copyright and related rights in the work worldwide 
+through CC0 1.0 Universal Public Domain Dedication 
+(https://creativecommons.org/publicdomain/zero/1.0/).
+
+The following GNU Lesser General Public License (LGPL) libraries
+are used in this USGS product:
+
+    SPARSKIT version 2.0
+      ilut, luson, and qsplit 
+      (https://www-users.cse.umn.edu/~saad/software/SPARSKIT/)
+
+    RCM - Reverse Cuthill McKee Ordering
+      (https://people.math.sc.edu/Burkardt/f_src/rcm/rcm.html)
+
+    BLAS - Basic Linear Algebra Subprograms Level 1
+      (https://people.math.sc.edu/Burkardt/f_src/blas1_d/blas1_d.html)
+
+    SPARSEKIT - Sparse Matrix Utility Package
+      amux, dperm, dvperm, rperm, and cperm
+      (https://people.sc.fsu.edu/~jburkardt/f77_src/sparsekit/sparsekit.html)
+
+The following BSD-3 License libraries are used in this USGS product:
+
+    Modern Fortran DAG Library
+      Copyright (c) 2018, Jacob Williams
+      All rights reserved.
+      (https://github.com/jacobwilliams/daglib)
+
+MODFLOW 6 compiler options: -Imac/obj_temp -O2 -no-heap-arrays -fpe0
+-traceback -fpp -module mac/mod_temp/ -c -o mac/obj_temp/compilerversion.o
+
+System command used to initiate simulation:
+mf6
+
+MODFLOW was compiled using uniform precision.
+
+Real Variables
+  KIND: 8
+  TINY (smallest non-zero value):    2.225074-308
+  HUGE (largest value):    1.797693+308
+  PRECISION: 15
+  BIT SIZE: 64
+
+Integer Variables
+  KIND: 4
+  HUGE (largest value): 2147483647
+  BIT SIZE: 32
+
+Long Integer Variables
+  KIND: 8
+  HUGE (largest value): 9223372036854775807
+  BIT SIZE: 64
+
+Logical Variables
+  KIND: 4
+  BIT SIZE: 32
+ 
+
+ OPENED mfsim.nam
+ FILE TYPE:NAM   UNIT 1001   STATUS:OLD                 
+ FORMAT:FORMATTED              ACCESS:SEQUENTIAL          
+ ACTION:READ                
+
+
+ READING SIMULATION OPTIONS
+    SIMULATION WILL CONTINUE EVEN IF THERE IS NONCONVERGENCE.
+ END OF SIMULATION OPTIONS
+
+ READING SIMULATION TIMING
+
+ OPENED freyberg6.tdis
+ FILE TYPE:TDIS   UNIT 1002   STATUS:OLD                 
+ FORMAT:FORMATTED              ACCESS:SEQUENTIAL          
+ ACTION:READ                
+
+
+ TDIS -- TEMPORAL DISCRETIZATION PACKAGE,
+ VERSION 1 : 11/13/2014 - INPUT READ FROM UNIT 1002
+ PROCESSING TDIS OPTIONS
+    SIMULATION TIME UNIT IS DAYS
+ END OF TDIS OPTIONS
+ PROCESSING TDIS DIMENSIONS
+   25 STRESS PERIOD(S) IN SIMULATION
+ END OF TDIS DIMENSIONS
+ PROCESSING TDIS PERIODDATA
+
+
+ STRESS PERIOD     LENGTH       TIME STEPS     MULTIPLIER FOR DELT
+ ----------------------------------------------------------------------------
+        1         1.000000          1                    1.000
+        2         31.00000          1                    1.000
+        3         29.00000          1                    1.000
+        4         31.00000          1                    1.000
+        5         30.00000          1                    1.000
+        6         31.00000          1                    1.000
+        7         30.00000          1                    1.000
+        8         31.00000          1                    1.000
+        9         31.00000          1                    1.000
+       10         30.00000          1                    1.000
+       11         31.00000          1                    1.000
+       12         30.00000          1                    1.000
+       13         31.00000          1                    1.000
+       14         31.00000          1                    1.000
+       15         28.00000          1                    1.000
+       16         31.00000          1                    1.000
+       17         30.00000          1                    1.000
+       18         31.00000          1                    1.000
+       19         30.00000          1                    1.000
+       20         31.00000          1                    1.000
+       21         31.00000          1                    1.000
+       22         30.00000          1                    1.000
+       23         31.00000          1                    1.000
+       24         30.00000          1                    1.000
+       25         31.00000          1                    1.000
+ END OF TDIS PERIODDATA
+ END OF SIMULATION TIMING
+
+ READING SIMULATION MODELS
+    GWF6 model FREYBERG6 will be created as model 1
+ END OF SIMULATION MODELS
+
+ READING SIMULATION EXCHANGES
+ END OF SIMULATION EXCHANGES
+
+ READING SOLUTIONGROUP
+
+ Creating solution: SLN_1           
+
+ OPENED freyberg6.ims
+ FILE TYPE:IMS   UNIT 1015   STATUS:OLD                 
+ FORMAT:FORMATTED              ACCESS:SEQUENTIAL          
+ ACTION:READ                
+
+ END OF SIMULATION SOLUTIONGROUP
+
+PROCESSING MODEL CONNECTIONS
+
+ IMS -- ITERATIVE MODEL SOLUTION PACKAGE, VERSION 6, 4/28/2017
+         INPUT READ FROM UNIT 1015
+
+ PROCESSING IMS OPTIONS
+ SIMPLE OPTION:
+ DEFAULT SOLVER INPUT VALUES FOR FAST SOLUTIONS
+ END OF IMS OPTIONS
+
+ PROCESSING IMS NONLINEAR
+ END OF IMS NONLINEAR DATA
+ **UNDER-RELAXATION WILL BE USED***
+ 
+ ***IMS LINEAR SOLVER WILL BE USED***
+
+ IMSLINEAR -- UNSTRUCTURED LINEAR SOLUTION PACKAGE, VERSION 8, 04/28/2017
+
+ PROCESSING LINEAR DATA
+ END OF LINEAR DATA
+ 
+ An asymmetric matrix will be solved
+
+ OUTER ITERATION CONVERGENCE CRITERION    (DVCLOSE) =    0.100000E-01
+ MAXIMUM NUMBER OF OUTER ITERATIONS        (MXITER) = 100
+ SOLVER PRINTOUT INDEX                     (IPRIMS) = 1
+ NONLINEAR ITERATION METHOD            (NONLINMETH) = 3
+ LINEAR SOLUTION METHOD                   (LINMETH) = 1
+ UNDER-RELAXATION WEIGHT REDUCTION FACTOR   (THETA) =    0.850000E+00
+ UNDER-RELAXATION WEIGHT INCREASE INCREMENT (KAPPA) =    0.100000E-04
+ UNDER-RELAXATION PREVIOUS HISTORY FACTOR   (GAMMA) =    0.000000E+00
+ UNDER-RELAXATION MOMENTUM TERM         (AMOMENTUM) =    0.100000E+00
+ MAXIMUM NUMBER OF BACKTRACKS            (NUMTRACK) = 50
+ BACKTRACKING TOLERANCE FACTOR               (BTOL) =    0.110000E+01
+ BACKTRACKING REDUCTION FACTOR             (BREDUC) =    0.700000E+00
+ BACKTRACKING RESIDUAL LIMIT              (RES_LIM) =    0.100000E+03
+
+       SOLUTION BY THE BICONJUGATE-GRADIENT STABILIZED METHOD
+ ------------------------------------------------------------------
+ MAXIMUM OF 100 CALLS OF SOLUTION ROUTINE
+ MAXIMUM OF 50 INTERNAL ITERATIONS PER CALL TO SOLUTION ROUTINE
+ LINEAR ACCELERATION METHOD            = BCGS      
+ MATRIX PRECONDITIONING TYPE           = INCOMPLETE LUT      
+ MATRIX SCALING APPROACH               = NO SCALING          
+ MATRIX REORDERING APPROACH            = RCM ORDERING             
+ NUMBER OF ORTHOGONALIZATIONS          = 2
+ HEAD CHANGE CRITERION FOR CLOSURE     =    0.10000E-03
+ RESIDUAL CHANGE CRITERION FOR CLOSURE =    0.10000E+00
+ RESIDUAL CONVERGENCE OPTION           = 0
+ RESIDUAL CONVERGENCE NORM             = INFINITY NORM   
+ RELAXATION FACTOR                     =    0.00000E+00
+ NUMBER OF LEVELS                      =              1
+ DROP TOLERANCE                        =    0.10000E-02
+
+
+ 
+    Solving:  Stress period:     1    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 1, LENGTH =   1.000000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   1.000000    
+
+
+
+ PSEUDO-TRANSIENT CONTINUATION WILL BE APPLIED TO MODEL 1 ("FREYBERG6") DURING THIS TIME STEP
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       1902097.8       1902097.8                       *                                   
+ Model                              1         21                                                             753.19005                            1_GWF-(3,40,16)
+ Backtracking                       2                     0          0       186751.90       186751.90                       *                                   
+ Model                              2         42                                                             494.29947                            1_GWF-(1,40,16)
+ Backtracking                       3                     0          0       43598.633       43598.633                       *                                   
+ Model                              3         50                                                             34.120434                            1_GWF-(1,40,16)
+ Backtracking                       4                     0          0       11343.620       11343.620                       *                                   
+ Model                              4         50                                                             5.0861697                            1_GWF-(3,39,16)
+ Backtracking                       5                     0          0       2296.5907       2296.5907                       *                                   
+ Model                              5         50                                                           -0.98688287                             1_GWF-(1,11,1)
+ Backtracking                       6                     0          0       868.84610       868.84610                       *                                   
+ Model                              6         50                                                           -0.12737327                            1_GWF-(1,10,13)
+ Backtracking                       7                     0          0       206.04844       206.04844                       *                                   
+ Model                              7         43                                                       -7.09429336E-02                             1_GWF-(1,31,7)
+ Backtracking                       8                     0          0       151.03051       151.03051                       *                                   
+ Model                              8         21                                                       -1.94904567E-02                             1_GWF-(1,30,8)
+ Backtracking                       9                     0          0       39.676731       39.676731                       *                                   
+ Model                              9          8                                                       -4.97259685E-03       *                     1_GWF-(1,31,7)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 9 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 1
+ 335 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:     2    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 2, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       253.81840       253.81840                       *                                   
+ Model                              1         30                                                            0.20177546                             1_GWF-(3,30,7)
+ Backtracking                       2                     0          0       6.1655542       6.1655542                       *                                   
+ Model                              2         15                                                        4.61002172E-03       *                    1_GWF-(1,39,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 2
+ 45 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:     3    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 3, LENGTH =   29.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   29.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       72.304276       72.304276                       *                                   
+ Model                              1         21                                                            0.12369332                             1_GWF-(1,26,1)
+ Backtracking                       2                     0          0       4.3628605       4.3628605                       *                                   
+ Model                              2          9                                                        2.69471622E-03       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 3
+ 30 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:     4    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 4, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       95.100109       95.100109                       *                                   
+ Model                              1         30                                                            0.10397076                             1_GWF-(1,16,1)
+ Backtracking                       2                     0          0       2.1000757       2.1000757                       *                                   
+ Model                              2          3                                                        9.42726194E-04       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 4
+ 33 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:     5    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 5, LENGTH =   30.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   30.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       127.02020       127.02020                       *                                   
+ Model                              1         28                                                       -5.09189591E-02                            1_GWF-(3,10,17)
+ Backtracking                       2                     0          0      0.87314908      0.87314908                       *                                   
+ Model                              2          3                                                       -4.24668152E-04       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 5
+ 31 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:     6    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 6, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       138.82540       138.82540                       *                                   
+ Model                              1         30                                                           -0.12575015                             1_GWF-(3,30,7)
+ Backtracking                       2                     0          0       3.8007590       3.8007590                       *                                   
+ Model                              2          6                                                       -2.42768661E-03       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 6
+ 36 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:     7    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 7, LENGTH =   30.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   30.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       123.95375       123.95375                       *                                   
+ Model                              1         33                                                           -0.16696671                             1_GWF-(1,30,7)
+ Backtracking                       2                     0          0       5.8741127       5.8741127                       *                                   
+ Model                              2         13                                                       -4.31083396E-03       *                    1_GWF-(1,39,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 7
+ 46 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:     8    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 8, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       97.799173       97.799173                       *                                   
+ Model                              1         30                                                           -0.17238258                             1_GWF-(1,30,7)
+ Backtracking                       2                     0          0       7.0579550       7.0579550                       *                                   
+ Model                              2         15                                                       -5.02994178E-03       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 8
+ 45 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:     9    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 9, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       77.525951       77.525951                       *                                   
+ Model                              1         24                                                           -0.16136975                             1_GWF-(1,19,1)
+ Backtracking                       2                     0          0       6.3415318       6.3415318                       *                                   
+ Model                              2         15                                                       -4.33146049E-03       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 9
+ 39 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    10    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 10, LENGTH =   30.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   30.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       59.481776       59.481776                       *                                   
+ Model                              1         19                                                           -0.12306844                             1_GWF-(1,15,1)
+ Backtracking                       2                     0          0       3.5758398       3.5758398                       *                                   
+ Model                              2         13                                                       -3.35870984E-03       *                    1_GWF-(1,37,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 10
+ 32 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    11    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 11, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       98.024945       98.024945                       *                                   
+ Model                              1         29                                                       -5.66055024E-02                             1_GWF-(1,14,1)
+ Backtracking                       2                     0          0       1.0468374       1.0468374                       *                                   
+ Model                              2          3                                                        5.95744817E-04       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 11
+ 32 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    12    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 12, LENGTH =   30.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   30.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       136.85878       136.85878                       *                                   
+ Model                              1         31                                                            0.11627937                             1_GWF-(3,30,7)
+ Backtracking                       2                     0          0       4.9518231       4.9518231                       *                                   
+ Model                              2         15                                                        3.73772199E-03       *                    1_GWF-(1,39,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 12
+ 46 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    13    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 13, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       145.44834       145.44834                       *                                   
+ Model                              1         38                                                            0.17614922                             1_GWF-(3,30,7)
+ Backtracking                       2                     0          0       6.9304368       6.9304368                       *                                   
+ Model                              2         13                                                        5.15439840E-03       *                    1_GWF-(1,39,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 13
+ 51 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    14    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 14, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       119.23008       119.23008                       *                                   
+ Model                              1         34                                                            0.18245563                             1_GWF-(1,30,7)
+ Backtracking                       2                     0          0       6.6038619       6.6038619                       *                                   
+ Model                              2         15                                                        4.78112878E-03       *                    1_GWF-(1,39,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 14
+ 49 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    15    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 15, LENGTH =   28.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   28.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       73.666226       73.666226                       *                                   
+ Model                              1         21                                                            0.13238867                             1_GWF-(1,25,1)
+ Backtracking                       2                     0          0       4.3826830       4.3826830                       *                                   
+ Model                              2         15                                                        2.86512078E-03       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 15
+ 36 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    16    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 16, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       65.853071       65.853071                       *                                   
+ Model                              1         22                                                            0.10112383                             1_GWF-(1,17,1)
+ Backtracking                       2                     0          0       2.0032820       2.0032820                       *                                   
+ Model                              2          9                                                        2.29715548E-03       *                    1_GWF-(1,37,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 16
+ 31 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    17    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 17, LENGTH =   30.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   30.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       109.33350       109.33350                       *                                   
+ Model                              1         32                                                       -5.37611267E-02                            1_GWF-(3,10,17)
+ Backtracking                       2                     0          0       1.3046131       1.3046131                       *                                   
+ Model                              2          3                                                       -6.35128370E-04       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 17
+ 35 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    18    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 18, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       141.96818       141.96818                       *                                   
+ Model                              1         30                                                           -0.13451250                             1_GWF-(3,30,7)
+ Backtracking                       2                     0          0       4.3207780       4.3207780                       *                                   
+ Model                              2         13                                                       -3.35145020E-03       *                    1_GWF-(1,39,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 18
+ 43 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    19    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 19, LENGTH =   30.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   30.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       141.56127       141.56127                       *                                   
+ Model                              1         36                                                           -0.17681335                             1_GWF-(3,30,7)
+ Backtracking                       2                     0          0       6.2865344       6.2865344                       *                                   
+ Model                              2         15                                                       -4.65572408E-03       *                    1_GWF-(1,39,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 19
+ 51 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    20    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 20, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       108.54058       108.54058                       *                                   
+ Model                              1         28                                                           -0.17509715                             1_GWF-(1,30,7)
+ Backtracking                       2                     0          0       7.1626094       7.1626094                       *                                   
+ Model                              2         15                                                       -5.05091727E-03       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 20
+ 43 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    21    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 21, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       64.815920       64.815920                       *                                   
+ Model                              1         17                                                           -0.13448325                             1_GWF-(1,21,1)
+ Backtracking                       2                     0          0       5.6873255       5.6873255                       *                                   
+ Model                              2         15                                                       -3.66204794E-03       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 21
+ 32 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    22    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 22, LENGTH =   30.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   30.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       74.639591       74.639591                       *                                   
+ Model                              1         25                                                       -8.29158514E-02                             1_GWF-(1,16,1)
+ Backtracking                       2                     0          0       1.6034512       1.6034512                       *                                   
+ Model                              2          9                                                       -2.06262680E-03       *                    1_GWF-(2,38,18)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 22
+ 34 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    23    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 23, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       120.00579       120.00579                       *                                   
+ Model                              1         31                                                        7.48078486E-02                            1_GWF-(3,27,11)
+ Backtracking                       2                     0          0       3.1698644       3.1698644                       *                                   
+ Model                              2         15                                                        2.49627677E-03       *                     1_GWF-(3,16,3)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 23
+ 46 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    24    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 24, LENGTH =   30.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   30.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       145.42764       145.42764                       *                                   
+ Model                              1         28                                                            0.14831563                             1_GWF-(3,30,7)
+ Backtracking                       2                     0          0       6.1160720       6.1160720                       *                                   
+ Model                              2         12                                                        4.51899740E-03       *                    1_GWF-(1,39,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 24
+ 40 TOTAL ITERATIONS
+ 
+    Solving:  Stress period:    25    Time step:     1
+ 
+1
+                            STRESS PERIOD NO. 25, LENGTH =   31.00000    
+                            -----------------------------------------------
+                            NUMBER OF TIME STEPS = 1
+                            MULTIPLIER FOR DELT =     1.000
+                            INITIAL TIME STEP SIZE =   31.00000    
+
+ SLN_1 OUTER ITERATION SUMMARY
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                OUTER      INNER  BACKTRACK  BACKTRACK        INCOMING        OUTGOING                    STEP   MAXIMUM CHANGE MODEL-(CELLID) OR
+ OUTER ITERATION STEP       ITERATION  ITERATION       FLAG ITERATIONS        RESIDUAL        RESIDUAL  MAXIMUM CHANGE SUCCESS             MODEL-PACKAGE-(NUMBER)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Backtracking                       1                     0          0       136.26621       136.26621                       *                                   
+ Model                              1         26                                                            0.18517443                             1_GWF-(1,30,7)
+ Backtracking                       2                     0          0       7.0646724       7.0646724                       *                                   
+ Model                              2         15                                                        4.96343900E-03       *                    1_GWF-(1,40,16)
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+ 2 CALLS TO NUMERICAL SOLUTION IN TIME STEP 1 STRESS PERIOD 25
+ 41 TOTAL ITERATIONS
+
+ MEMORY MANAGER TOTAL STORAGE BY DATA TYPE, IN MEGABYTES
+ -------------------------------
+                    ALLOCATED   
+ DATA TYPE           MEMORY     
+ -------------------------------
+ Character        5.73300000E-03
+ Logical          4.40000000E-05
+ Integer          0.61834400    
+ Real             1.1723440     
+ -------------------------------
+ Total            1.7964650     
+ -------------------------------
+
+
+ 
+ Run end date and time (yyyy/mm/dd hh:mm:ss): 2022/10/18 13:08:23
+ Elapsed run time:  0.346 Seconds
+
+WARNING REPORT:
+
+  1. NONLINEAR BLOCK VARIABLE 'OUTER_HCLOSE' IN FILE 'freyberg6.ims' WAS
+     DEPRECATED IN VERSION 6.1.1. SETTING OUTER_DVCLOSE TO OUTER_HCLOSE VALUE.
+  2. LINEAR BLOCK VARIABLE 'INNER_HCLOSE' IN FILE 'freyberg6.ims' WAS
+     DEPRECATED IN VERSION 6.1.1. SETTING INNER_DVCLOSE TO INNER_HCLOSE VALUE.
+ Normal termination of simulation.

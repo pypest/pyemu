@@ -433,7 +433,242 @@ def obscomp_test():
     df = la.get_obs_competition_dataframe()
     print(df)
 
+
+def ends_freyberg_dev():
+    import numpy as np
+    import pyemu
+    test_d = "ends_master"
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d,case+".pst")
+    pst = pyemu.Pst(pst_name)
+    predictions = ["headwater_20171130","tailwater_20161130","trgw_0_9_1_20161130"]
+    pst.pestpp_options["predictions"] = predictions
+
+    # build up the obs to test info
+    obs = pst.observation_data
+    zobs = [o for o,w in zip(obs.obsnme,obs.weight) if w > 0 and o not in predictions]
+    zgps = obs.loc[zobs,"obgnme"].unique()
+    obslist_dict = {zg: obs.loc[obs.obgnme==zg,"obsnme"].tolist() for zg in zgps}
+    # now reset these obs to have weights that reflect expected noise
+    for zg,onames in obslist_dict.items():
+        if "gage" in zg:
+            obs.loc[onames,"weight"] = 1./(obs.loc[onames,"obsval"] * 0.1)
+        else:
+            obs.loc[onames,"weight"] = 2.0
+
+    oe_name = pst_name.replace(".pst",".0.obs.csv")
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=oe_name)
+    #oe = oe.iloc[:10,:]
+    ends = pyemu.EnDS(pst=pst,sim_ensemble=oe)
+    dfmean,dfstd,dfper = ends.get_posterior_prediction_moments(obslist_dict=obslist_dict,include_first_moment=False)
+    print(dfstd)
+    print(dfmean)
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
+
+    ax = dfstd.plot(kind='bar')
+    ax.set_ylabel("percent variance reduction")
+    ax.set_xlabel("new obs group")
+    ax.set_title("ensemble variance analysis for three Freyberg predictions",loc="left")
+    plt.tight_layout()
+    plt.savefig("precent.pdf")
+    plt.close("all")
+
+
+    real_seq = np.linspace(3,200,20,dtype=int)
+    print(real_seq)
+    rep_seq = np.ones_like(real_seq) * 7
+    results = ends.get_posterior_prediction_convergence(real_seq,rep_seq,obslist_dict=obslist_dict)
+    fig,axes = plt.subplots(len(predictions),1,figsize=(10,10))
+    groups = list(obslist_dict.keys())
+    groups.sort()
+    colors = ["c", "m", "b"]
+    for p,ax in zip(predictions,axes):
+        for i,nreal in enumerate(real_seq):
+
+            for group,c in zip(groups,colors):
+                label = None
+                if i == 0:
+                    label = group
+                ax.scatter(nreal,results[nreal].loc[group,p],marker=".",s=30,c=c,label=label)
+        ax.legend(loc="upper left")
+        ax.set_title("prediction: "+p,loc="left")
+        ax.set_xlabel("num reals")
+        ax.set_ylabel("std")
+    plt.tight_layout()
+    plt.savefig("converge.pdf")
+    plt.close(fig)
+
+    mean_dfs, dfstd,dfper = ends.get_posterior_prediction_moments(obslist_dict=obslist_dict,sim_ensemble=oe.iloc[:100,:])
+    fig,axes = plt.subplots(len(predictions),1,figsize=(10,10))
+    groups = list(mean_dfs.keys())
+    groups.sort()
+    colors = ["c","m","b"]
+    for p,ax in zip(predictions,axes):
+        for group,c in zip(groups,colors):
+            print(p,group,c)
+            for i,mn in enumerate(mean_dfs[group].loc[:,p]):
+                x,y = pyemu.plot_utils.gaussian_distribution(mn,dfstd.loc[group,p],100)
+                label=None
+                if i == 0:
+                    label = "possible posterior with "+group
+                #ax.fill_between(x,0,y,facecolor=c,alpha=0.05,label=label)
+                ax.plot(x,y,color=c,lw=1.0,dashes=(1,1),label=label,zorder=1,alpha=0.5)
+            axt = plt.twinx(ax)
+        axt.hist(oe.loc[:,p],bins=20,facecolor="0.5",alpha=0.5,density=True,zorder=4)
+        xlim,ylim = ax.get_xlim(),ax.get_ylim()
+
+        r = Rectangle((xlim[0],ylim[0]),0,0,facecolor="0.5",alpha=0.5,label="Prior")
+        ax.add_patch(r)
+        ax.set_yticks([])
+        axt.set_yticks([])
+        ax.set_ylim(0,ax.get_ylim()[1])
+        axt.set_ylim(0, axt.get_ylim()[1])
+
+        ax.legend(loc="upper left")
+        ax.set_title("prediction:"+p,loc="left")
+    plt.tight_layout()
+    plt.savefig("post.pdf")
+    plt.close(fig)
+
+    return
+    ends = pyemu.EnDS(pst=pst_name, ensemble=oe_name)
+    cov = pyemu.Cov.from_observation_data(pst)
+    cov.to_uncfile(os.path.join(test_d, "obs.unc"), covmat_file=None)
+    cov.to_binary(os.path.join(test_d,"cov.jcb"))
+    cov.to_ascii(os.path.join(test_d, "cov.mat"))
+
+    ends = pyemu.EnDS(pst=pst, ensemble=oe,obscov=cov)
+    ends = pyemu.EnDS(pst=pst, ensemble=oe, obscov=os.path.join(test_d, "cov.mat"))
+    ends = pyemu.EnDS(pst=pst, ensemble=oe, obscov=os.path.join(test_d, "obs.unc"))
+
+
+def ends_freyberg_test():
+
+    import numpy as np
+    import pyemu
+    test_d = "ends_master"
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d, case + ".pst")
+    pst = pyemu.Pst(pst_name)
+    predictions = ["headwater_20171130", "tailwater_20161130", "trgw_0_9_1_20161130"]
+    pst.pestpp_options["predictions"] = predictions
+
+    # build up the obs to test info
+    obs = pst.observation_data
+    zobs = [o for o, w in zip(obs.obsnme, obs.weight) if w > 0 and o not in predictions]
+    zgps = obs.loc[zobs, "obgnme"].unique()
+    obslist_dict = {zg: obs.loc[obs.obgnme == zg, "obsnme"].tolist() for zg in zgps}
+    # now reset these obs to have weights that reflect expected noise
+    for zg, onames in obslist_dict.items():
+        if "gage" in zg:
+            obs.loc[onames, "weight"] = 1. / (obs.loc[onames, "obsval"] * 0.1)
+        else:
+            obs.loc[onames, "weight"] = 2.0
+
+    oe_name = pst_name.replace(".pst", ".0.obs.csv")
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100,:]
+    # oe = oe.iloc[:10,:]
+    ends = pyemu.EnDS(pst=pst, sim_ensemble=oe)
+    dfmean, dfstd, dfper = ends.get_posterior_prediction_moments(obslist_dict=obslist_dict,
+                                                                 include_first_moment=True)
+    assert len(dfmean) == len(obslist_dict),len(dfmean)
+    for gp,df in dfmean.items():
+        assert df.shape[0] == oe.shape[0]
+    assert dfstd.columns.tolist() == predictions
+    assert len(set(dfstd.index.tolist()[1:]).symmetric_difference(set(obslist_dict.keys()))) == 0
+
+    ends = pyemu.EnDS(pst=pst_name, sim_ensemble=oe_name,predictions=predictions)
+    cov = pyemu.Cov.from_observation_data(pst)
+    cov.to_uncfile(os.path.join(test_d, "obs.unc"), covmat_file=None)
+    cov.to_binary(os.path.join(test_d, "cov.jcb"))
+    cov.to_ascii(os.path.join(test_d, "cov.mat"))
+
+    ends = pyemu.EnDS(pst=pst, sim_ensemble=oe, obscov=cov,predictions=predictions)
+    ends = pyemu.EnDS(pst=pst, sim_ensemble=oe, obscov=os.path.join(test_d, "cov.mat"),predictions=predictions)
+    ends = pyemu.EnDS(pst=pst, sim_ensemble=oe, obscov=os.path.join(test_d, "obs.unc"),predictions=predictions)
+
+
+def ends_freyberg_dsi_test():
+
+    import numpy as np
+    import pyemu
+    test_d = "ends_master"
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d, case + ".pst")
+    pst = pyemu.Pst(pst_name)
+    predictions = ["headwater_20171130", "tailwater_20161130", "trgw_0_9_1_20161130"]
+    pst.pestpp_options["predictions"] = predictions
+
+    oe_name = pst_name.replace(".pst", ".0.obs.csv")
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
+
+    ends = pyemu.EnDS(pst=pst, sim_ensemble=oe,verbose=True)
+    t_d = os.path.join("dsi","dsi_template")
+    ends.prep_for_dsi(t_d=t_d)
+
+    pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
+    pst.control_data.noptmax = 3
+    pst.write(os.path.join(t_d,"dsi.pst"),version=2)
+    #pyemu.os_utils.run("pestpp-ies dsi.pst",cwd="dsi_template")
+    m_d = os.path.join("dsi","master_dsi")
+    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root="dsi",master_dir=m_d)
+
+
+def plot_freyberg_dsi():
+    import pandas as pd
+    import pyemu
+    import matplotlib.pyplot as plt
+
+    test_d = "ends_master"
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d, case + ".pst")
+    pst = pyemu.Pst(pst_name)
+    predictions = ["headwater_20171130", "tailwater_20161130", "trgw_0_9_1_20161130"]
+    oe_name = pst_name.replace(".pst", ".0.obs.csv")
+    pr_oe = pd.read_csv(os.path.join(test_d,"freyberg6_run_ies.0.obs.csv"),index_col=0)
+    pt_oe = pd.read_csv(os.path.join(test_d, "freyberg6_run_ies.3.obs.csv"), index_col=0)
+
+    m_d = os.path.join("dsi", "master_dsi")
+    pst = pyemu.Pst(os.path.join(m_d,"dsi.pst"))
+    pr_oe_dsi = pd.read_csv(os.path.join(m_d,"dsi.0.obs.csv"),index_col=0)
+    pt_oe_dsi = pd.read_csv(os.path.join(m_d, "dsi.3.obs.csv"), index_col=0)
+
+    pv = pyemu.ObservationEnsemble(pst=pst,df=pt_oe).phi_vector
+    pv_dsi = pyemu.ObservationEnsemble(pst=pst, df=pt_oe_dsi).phi_vector
+    #print(pt_oe.shape)
+    pt_oe = pt_oe.loc[pv<25, :]
+    pt_oe_dsi = pt_oe_dsi.loc[pv_dsi < 25, :]
+
+    # print(pt_oe.shape)
+    # fig,ax = plt.subplots(1,1,figsize=(5,5))
+    # ax.hist(pv,bins=10,facecolor="b",alpha=0.5,density=True)
+    # ax.hist(pv_dsi, bins=10, facecolor="m", alpha=0.5,density=True)
+    # ax.set_yticks([])
+    # plt.tight_layout()
+    # plt.show()
+
+
+
+    fig,axes = plt.subplots(len(predictions),1,figsize=(10,10))
+    for p,ax in zip(predictions,axes):
+        ax.hist(pr_oe.loc[:,p].values,bins=10,alpha=0.5,facecolor="0.5",density=True,label="prior")
+        ax.hist(pt_oe.loc[:, p].values, bins=10, alpha=0.5, facecolor="b",density=True,label="posterior")
+        ax.hist(pr_oe_dsi.loc[:, p].values, bins=10, facecolor="none",hatch="/",edgecolor="0.5",
+                lw=2.5,density=True,label="dsi prior")
+        ax.hist(pt_oe_dsi.loc[:, p].values, bins=10, facecolor="none",density=True,hatch="/",edgecolor="b",lw=2.5,
+                label="dsi posterior")
+        ax.set_title(p,loc="left")
+        ax.legend(loc="upper right")
+        ax.set_yticks([])
+    plt.tight_layout()
+    plt.savefig("dsi_pred.pdf")
+
+
 if __name__ == "__main__":
+    #ends_freyberg_dev()
+    #ends_freyberg_dsi_test()
+    plot_freyberg_dsi()
     #obscomp_test()
     #alternative_dw()
     #freyberg_verf_test()
@@ -442,7 +677,7 @@ if __name__ == "__main__":
     #par_contrib_speed_test()
     #schur_test()
     #par_contrib_test()
-    dataworth_test()
+    #dataworth_test()
     #dataworth_next_test()
     #schur_test_nonpest()
     #la_test_io()

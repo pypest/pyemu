@@ -1,0 +1,26 @@
+BEGIN Options
+END Options
+
+BEGIN GRIDDATA
+  iconvert  LAYERED
+    CONSTANT  1
+    CONSTANT  0
+    CONSTANT  0
+  ss  LAYERED
+    OPEN/CLOSE  'sto_ss_0.dat'  FACTOR  1.0
+    OPEN/CLOSE  'sto_ss_1.dat'  FACTOR  1.0
+    OPEN/CLOSE  'sto_ss_2.dat'  FACTOR  1.0
+  sy  LAYERED
+    OPEN/CLOSE  'sto_sy_0.dat'  FACTOR  1.0
+    OPEN/CLOSE  'sto_sy_1.dat'  FACTOR  1.0
+    OPEN/CLOSE  'sto_sy_2.dat'  FACTOR  1.0
+END GRIDDATA
+
+BEGIN Period  1
+  STEADY-STATE
+END Period  1
+
+BEGIN Period  2
+  TRANSIENT
+END Period  2
+

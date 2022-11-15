@@ -1,0 +1,15 @@
+pest_file,model_file
+freyberg6.rch.tpl,freyberg6.rch
+freyberg6.wel.tpl,freyberg6.wel
+npf_k33_0.dat.tpl,npf_k33_0.dat
+npf_k33_1.dat.tpl,npf_k33_1.dat
+npf_k33_2.dat.tpl,npf_k33_2.dat
+npf_k_0.dat.tpl,npf_k_0.dat
+npf_k_1.dat.tpl,npf_k_1.dat
+npf_k_2.dat.tpl,npf_k_2.dat
+sto_ss_0.dat.tpl,sto_ss_0.dat
+sto_ss_1.dat.tpl,sto_ss_1.dat
+sto_ss_2.dat.tpl,sto_ss_2.dat
+sto_sy_0.dat.tpl,sto_sy_0.dat
+sto_sy_1.dat.tpl,sto_sy_1.dat
+sto_sy_2.dat.tpl,sto_sy_2.dat

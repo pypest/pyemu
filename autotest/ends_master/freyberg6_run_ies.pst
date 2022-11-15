@@ -1,0 +1,21 @@
+pcf version=2
+* control data keyword
+pestmode                                 estimation
+noptmax                                -1
+svdmode                                 1
+maxsing                          10000000
+eigthresh                           1e-06
+eigwrite                                1
+ies_par_en                     prior.jcb
+* parameter groups external
+freyberg6_run_ies.pargp_data.csv
+* parameter data external
+freyberg6_run_ies.par_data.csv
+* observation data external
+freyberg6_run_ies.obs_data.csv
+* model command line
+mf6
+* model input external
+freyberg6_run_ies.tplfile_data.csv
+* model output external
+freyberg6_run_ies.insfile_data.csv
