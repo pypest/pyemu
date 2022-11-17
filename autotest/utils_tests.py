@@ -2084,24 +2084,30 @@ def ac_draw_test():
     pst.observation_data.loc[onames,"distance"] = distance
     pst.observation_data.loc[onames,"obsval"] = obsval
     pst.observation_data.loc[onames, "weight"] = 0.000001#1/(np.array(obsval))
-    pst.observation_data.loc[onames, "standard_deviation"] = np.array(obsval) * 0.15
+    pst.observation_data.loc[onames, "standard_deviation"] = np.array(obsval) * 0.5
     pst.write("test.pst")
     print(pst.observation_data.distance)
 
 
-    oe = pyemu.helpers.autocorrelated_draw(pst,struct_dict,num_reals=1000)
-    std = oe.std().to_dict()
+    oe = pyemu.helpers.autocorrelated_draw(pst,struct_dict,num_reals=10000)
+
     obs = pst.observation_data
+    obs.loc[:,"emp_std"] = oe.std().loc[obs.obsnme]
+    obs.loc[:,"std_diff"] = 100 * np.abs(obs.emp_std-obs.standard_deviation)/obs.emp_std
+    print(obs.std_diff.min(),obs.std_diff.max())
+    assert obs.std_diff.max() < 5.0
     #for o,s in std.items():
-    #    print(o,s,obs.loc[o,"standard_deviation"])
-    #import matplotlib.pyplot as plt
+    #    d = 100 * np.abs(s-obs.loc[o,"standard_deviation"])/s
+    #    print(o,d,s,obs.loc[o,"standard_deviation"])
+    # import matplotlib.pyplot as plt
     # fig,ax = plt.subplots(1,1)
-    # ax.scatter(obs.standard_deviation,std.loc[pst.obs_names])
+    # ax.scatter(obs.standard_deviation,obs.emp_std)
     # mn = min(ax.get_ylim()[0],ax.get_xlim()[0])
     # mx = max(ax.get_ylim()[1], ax.get_xlim()[1])
     # ax.set_xlim(mn,mx)
     # ax.set_ylim(mn,mx)
-
+    # ax.plot([mn,mx],[mn,mx],"k--",lw=2.5)
+    # plt.show()
     #fig, axes = plt.subplots(len(avals), 1, figsize=(10, 5))
     # for gs,ax in zip(struct_dict,axes):
     #     onames = struct_dict[gs]
