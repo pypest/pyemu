@@ -3119,12 +3119,17 @@ class Cov(Matrix):
         x = np.zeros((nobs, 1))
         onames = []
         ocount = 0
+        std_dict = {}
+        if "standard_deviation" in pst.observation_data.columns:
+            std_dict = pst.observation_data.standard_deviation.to_dict()
+            std_dict = {o:s**2 for o,s in std_dict.items() if pd.notna(s)}
         for weight, obsnme in zip(
             pst.observation_data.weight, pst.observation_data.obsnme
         ):
             w = float(weight)
             w = max(w, 1.0e-30)
-            x[ocount] = (1.0 / w) ** 2
+
+            x[ocount] = std_dict.get(obsnme,(1.0 / w) ** 2)
             ocount += 1
             onames.append(obsnme.lower())
         return cls(x=x, names=onames, isdiagonal=True)

@@ -2051,8 +2051,81 @@ def rmr_parse_test():
     import pyemu
     df = pyemu.helpers.parse_rmr_file(os.path.join("utils","pest_local_pdc.rmr"))
 
+
+def ac_draw_test():
+    import pyemu
+    import numpy as np
+    #import matplotlib.pyplot as plt
+
+    obs_per_group = 1000
+    avals = [10,100,1000]
+    ngrp = len(avals)
+
+    onames = []
+    ogrps = []
+    distance = []
+    obsval = []
+    struct_dict = {}
+    for igrp,aval in enumerate(avals):
+        x = np.linspace(0,np.pi*10,obs_per_group)
+        trend = 0
+        y = 10**(np.sin(x) + 5 + trend)
+        obsval.extend(list(y))
+        onamess = ["obs{0:04d}_grp{1:03d}_a{2}".format(i,igrp,aval) for i in range(obs_per_group)]
+        onames.extend(onamess)
+        ogrps.extend([igrp for _ in range(obs_per_group)])
+        distance.extend(list(x*min(avals)))
+        v = pyemu.geostats.ExpVario(contribution=1.0, a=aval)
+        gs = pyemu.geostats.GeoStruct(variograms=v)
+        struct_dict[gs] = onamess
+
+    pst = pyemu.Pst.from_par_obs_names(obs_names=onames)
+    pst.observation_data.loc[onames,"obgnme"] = ogrps
+    pst.observation_data.loc[onames,"distance"] = distance
+    pst.observation_data.loc[onames,"obsval"] = obsval
+    pst.observation_data.loc[onames, "weight"] = 0.000001#1/(np.array(obsval))
+    pst.observation_data.loc[onames, "standard_deviation"] = np.array(obsval) * 0.15
+    pst.write("test.pst")
+    print(pst.observation_data.distance)
+
+
+    oe = pyemu.helpers.autocorrelated_draw(pst,struct_dict,num_reals=1000)
+    std = oe.std().to_dict()
+    obs = pst.observation_data
+    #for o,s in std.items():
+    #    print(o,s,obs.loc[o,"standard_deviation"])
+    #import matplotlib.pyplot as plt
+    # fig,ax = plt.subplots(1,1)
+    # ax.scatter(obs.standard_deviation,std.loc[pst.obs_names])
+    # mn = min(ax.get_ylim()[0],ax.get_xlim()[0])
+    # mx = max(ax.get_ylim()[1], ax.get_xlim()[1])
+    # ax.set_xlim(mn,mx)
+    # ax.set_ylim(mn,mx)
+
+    #fig, axes = plt.subplots(len(avals), 1, figsize=(10, 5))
+    # for gs,ax in zip(struct_dict,axes):
+    #     onames = struct_dict[gs]
+    #     dvals = pst.observation_data.loc[onames,"distance"].values
+    #
+        # for real in oe.index:
+        #
+        #     ax.plot(dvals,oe.loc[real,onames].values,"0.5",alpha=0.5,lw=0.1)
+    #     ax.plot(dvals,pst.observation_data.loc[onames,"obsval"],"r")
+    #     ax.set_title("correlation length: {0} time units".format(gs.variograms[0].a),loc="left")
+    #     ax.set_xlabel("time")
+    #     ax.set_ylabel("something autocorrelated")
+    #     ax.set_yticks([])
+    # plt.tight_layout()
+    # plt.savefig("test.pdf")
+
+
+
+
+
+
 if __name__ == "__main__":
-    maha_pdc_test()
+    ac_draw_test()
+    #maha_pdc_test()
     #rmr_parse_test()
     #temporal_draw_invest()
     #run_test()

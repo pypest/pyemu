@@ -464,7 +464,7 @@ class Ensemble(object):
             if fill:
                 for i, v in enumerate(mean_values.values):
                     reals[:, i] = v
-            cov_map = {n: i for n, i in zip(cov.row_names, np.arange(cov.shape[0]))}
+            #cov_map = {n: i for n, i in zip(cov.row_names, np.arange(cov.shape[0]))}
             mv_map = {
                 n: i for n, i in zip(mean_values.index, np.arange(mean_values.shape[0]))
             }

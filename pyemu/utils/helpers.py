@@ -90,6 +90,97 @@ class Trie:
     def pattern(self):
         return self._pattern(self.dump())
 
+def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=100,verbose=True):
+    """construct an autocorrelated observation noise ensemble from covariance matrices
+        implied by geostatistical structure(s).
+
+        Args:
+            pst (`pyemu.Pst`): a control file (or the name of control file).  The
+                information in the `* observation data` dataframe is used extensively,
+                including weight, standard_deviation (if present), upper_bound/lower_bound (if present).
+            time_distance_col (str): the column in `* observation_data` the represnts the distance in time
+            for each observation listed in `struct_dict`
+
+            struct_dict (`dict`): a dict of GeoStruct (or structure file), and list of
+                observation names.
+            num_reals (`int`, optional): number of realizations to draw.  Default is 100
+
+            verbose (`bool`, optional): flag to control output to stdout.  Default is True.
+                flag for stdout.
+
+
+        Returns
+            **pyemu.ObservationEnsemble**: the realized noise ensemble added to the observation values in the
+                control file.
+
+        Note:
+            The variance of each observation is used to scale the resulting geostatistical
+            covariance matrix (as defined by the weight or optional standard deviation.
+            Therefore, the sill of the geostatistical structures
+            in `struct_dict` should be 1.0
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            #assuming there is only one timeseries of observations
+            # and they are spaced one time unit apart
+            pst.observation_data.loc[:,"distance"] = np.arange(pst.nobs)
+            v = pyemu.geostats.ExpVario(a=10) #units of `a` are time units
+            gs = pyemu.geostats.Geostruct(variograms=v)
+            sd = {gs:["obs1","obs2",""obs3]}
+            oe = pyemu.helpers.autocorrelated_draws(pst,struct_dict=sd}
+            oe.to_csv("my_oe.csv")
+
+
+        """
+
+    #check that the required time metadata is appropriate
+    passed_names = []
+    nz_names = pst.nnz_obs_names
+    [passed_names.extend(obs) for gs,obs in struct_dict.items()]
+    missing = list(set(passed_names) - set(nz_names))
+    if len(missing) > 0:
+        raise Exception("the following obs in struct_dict were not found in the nz obs names"+str(missing))
+    time_cols = ["time","datetime","distance"]
+    obs = pst.observation_data
+    if time_distance_col not in obs.columns:
+        raise Exception("time_distance_col missing")
+    dvals = obs.loc[passed_names,time_distance_col]
+    isna = obs.loc[pd.isna(dvals),"obsnme"]
+    if isna.shape[0] > 0:
+        raise Exception("the following struct dict observations have NaN for time_distance_col: {0}".format(str(isna)))
+    print("--> getting full diagonal cov matrix")
+    fcov = pyemu.Cov.from_observation_data(pst)
+    fcov_dict = {o:np.sqrt(fcov.x[i]) for i,o in enumerate(fcov.names)}
+    print("-->draw full obs en from diagonal cov")
+    full_oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,fcov,num_reals=num_reals,fill=True)
+    for gs,onames in struct_dict.items():
+        print("-->processing cov matrix for {0} items with gs {1}".format(len(onames),gs))
+        dvals = obs.loc[onames,time_distance_col].values
+        gcov = gs.covariance_matrix(dvals,np.ones(len(onames)),names=onames)
+        print("...scaling rows and cols")
+        for i,name in enumerate(gcov.names):
+            gcov.x[:,i] *= fcov_dict[name]
+            gcov.x[i, :] *= fcov_dict[name]
+        print("...draw")
+        oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,gcov,num_reals=num_reals,fill=True,by_groups=False)
+        oe = oe.loc[:,gcov.names]
+        full_oe.loc[:,gcov.names] = oe._df.values
+    return full_oe
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def geostatistical_draws(
     pst, struct_dict, num_reals=100, sigma_range=4, verbose=True,
         scale_offset=True, subset=None
