@@ -2058,7 +2058,7 @@ def ac_draw_test():
     #import matplotlib.pyplot as plt
 
     obs_per_group = 1000
-    avals = [10,100,1000]
+    avals = [1,180,365,3650]
     ngrp = len(avals)
 
     onames = []
@@ -2069,12 +2069,12 @@ def ac_draw_test():
     for igrp,aval in enumerate(avals):
         x = np.linspace(0,np.pi*10,obs_per_group)
         trend = 0
-        y = 10**(np.sin(x) + 5 + trend)
+        y = 3**(np.sin(x) + 10 + trend)
         obsval.extend(list(y))
         onamess = ["obs{0:04d}_grp{1:03d}_a{2}".format(i,igrp,aval) for i in range(obs_per_group)]
         onames.extend(onamess)
         ogrps.extend([igrp for _ in range(obs_per_group)])
-        distance.extend(list(x*min(avals)))
+        distance.extend(list(np.arange(obs_per_group)))
         v = pyemu.geostats.ExpVario(contribution=1.0, a=aval)
         gs = pyemu.geostats.GeoStruct(variograms=v)
         struct_dict[gs] = onamess
@@ -2084,10 +2084,20 @@ def ac_draw_test():
     pst.observation_data.loc[onames,"distance"] = distance
     pst.observation_data.loc[onames,"obsval"] = obsval
     pst.observation_data.loc[onames, "weight"] = 0.000001#1/(np.array(obsval))
-    pst.observation_data.loc[onames, "standard_deviation"] = np.array(obsval) * 0.5
+    print(obsval)
+    pst.observation_data.loc[onames, "standard_deviation"] = np.array(obsval) * 0.1
+    pst.observation_data.loc[onames, "lower_bound"] = np.array(obsval).min()
+    #pst.observation_data.loc[onames, "upper_bound"] = np.array(obsval) + (
+    #            pst.observation_data.loc[onames, "standard_deviation"] * 2)
+    pst.observation_data.loc[onames, "upper_bound"] = np.array(obsval).max()
+    print(pst.observation_data.standard_deviation.describe())
     pst.write("test.pst")
     print(pst.observation_data.distance)
 
+    oe = pyemu.helpers.autocorrelated_draw(pst, struct_dict, num_reals=100, enforce_bounds=True)
+    obs = pst.observation_data
+    assert oe.max().max() <= obs.upper_bound.min()
+    assert oe.min().min() >= obs.lower_bound.max()
 
     oe = pyemu.helpers.autocorrelated_draw(pst,struct_dict,num_reals=10000)
 
@@ -2096,6 +2106,25 @@ def ac_draw_test():
     obs.loc[:,"std_diff"] = 100 * np.abs(obs.emp_std-obs.standard_deviation)/obs.emp_std
     print(obs.std_diff.min(),obs.std_diff.max())
     assert obs.std_diff.max() < 5.0
+
+
+    # pst.observation_data.loc[:,"upper_bound"] = np.nan
+    # oe = pyemu.helpers.autocorrelated_draw(pst, struct_dict, num_reals=100,enforce_bounds=True)
+    # import matplotlib.pyplot as plt
+    # fig, axes = plt.subplots(len(avals), 1, figsize=(10, 10))
+    # for gs, ax in zip(struct_dict, axes):
+    #     onames = struct_dict[gs]
+    #     dvals = pst.observation_data.loc[onames, "distance"].values
+    #
+    #     for real in oe.index:
+    #         ax.plot(dvals, oe.loc[real, onames].values, "0.5", alpha=0.5, lw=0.1)
+    #     ax.plot(dvals, pst.observation_data.loc[onames, "obsval"], "r")
+    #     ax.set_title("correlation length: {0} time units".format(gs.variograms[0].a), loc="left")
+    #     ax.set_xlabel("time")
+    #     ax.set_ylabel("something autocorrelated")
+    #     ax.set_yticks([])
+    # plt.tight_layout()
+    # plt.savefig("test.pdf")
     #for o,s in std.items():
     #    d = 100 * np.abs(s-obs.loc[o,"standard_deviation"])/s
     #    print(o,d,s,obs.loc[o,"standard_deviation"])
@@ -2108,23 +2137,6 @@ def ac_draw_test():
     # ax.set_ylim(mn,mx)
     # ax.plot([mn,mx],[mn,mx],"k--",lw=2.5)
     # plt.show()
-    #fig, axes = plt.subplots(len(avals), 1, figsize=(10, 5))
-    # for gs,ax in zip(struct_dict,axes):
-    #     onames = struct_dict[gs]
-    #     dvals = pst.observation_data.loc[onames,"distance"].values
-    #
-        # for real in oe.index:
-        #
-        #     ax.plot(dvals,oe.loc[real,onames].values,"0.5",alpha=0.5,lw=0.1)
-    #     ax.plot(dvals,pst.observation_data.loc[onames,"obsval"],"r")
-    #     ax.set_title("correlation length: {0} time units".format(gs.variograms[0].a),loc="left")
-    #     ax.set_xlabel("time")
-    #     ax.set_ylabel("something autocorrelated")
-    #     ax.set_yticks([])
-    # plt.tight_layout()
-    # plt.savefig("test.pdf")
-
-
 
 
 

@@ -90,7 +90,8 @@ class Trie:
     def pattern(self):
         return self._pattern(self.dump())
 
-def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=100,verbose=True):
+def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=100,verbose=True,
+                        enforce_bounds=False):
     """construct an autocorrelated observation noise ensemble from covariance matrices
         implied by geostatistical structure(s).
 
@@ -107,6 +108,8 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
 
             verbose (`bool`, optional): flag to control output to stdout.  Default is True.
                 flag for stdout.
+            enforce_bounds (`bool`, optional): flag to enforce `lower_bound` and `upper_bound` if
+                these are present in `* observation data`.  Default is False
 
 
         Returns
@@ -149,23 +152,48 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
     isna = obs.loc[pd.isna(dvals),"obsnme"]
     if isna.shape[0] > 0:
         raise Exception("the following struct dict observations have NaN for time_distance_col: {0}".format(str(isna)))
-    print("--> getting full diagonal cov matrix")
+    if verbose:
+        print("--> getting full diagonal cov matrix")
     fcov = pyemu.Cov.from_observation_data(pst)
     fcov_dict = {o:np.sqrt(fcov.x[i]) for i,o in enumerate(fcov.names)}
-    print("-->draw full obs en from diagonal cov")
+    if verbose:
+        print("-->draw full obs en from diagonal cov")
     full_oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,fcov,num_reals=num_reals,fill=True)
     for gs,onames in struct_dict.items():
-        print("-->processing cov matrix for {0} items with gs {1}".format(len(onames),gs))
+        if verbose:
+            print("-->processing cov matrix for {0} items with gs {1}".format(len(onames),gs))
         dvals = obs.loc[onames,time_distance_col].values
         gcov = gs.covariance_matrix(dvals,np.ones(len(onames)),names=onames)
-        print("...scaling rows and cols")
+        if verbose:
+            print("...scaling rows and cols")
         for i,name in enumerate(gcov.names):
             gcov.x[:,i] *= fcov_dict[name]
             gcov.x[i, :] *= fcov_dict[name]
-        print("...draw")
+        if verbose:
+            print("...draw")
         oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,gcov,num_reals=num_reals,fill=True,by_groups=False)
         oe = oe.loc[:,gcov.names]
         full_oe.loc[:,gcov.names] = oe._df.values
+
+    if enforce_bounds:
+        if verbose:
+            print("-->enforcing bounds")
+        ub_dict = {o:1e300 for o in full_oe.columns}
+        if "upper_bound" in pst.observation_data.columns:
+            ub_dict.update(pst.observation_data.upper_bound.fillna(1.0e300).to_dict())
+
+        lb_dict = {o:-1e300 for o in full_oe.columns}
+        if "lower_bound" in pst.observation_data.columns:
+            lb_dict.update(pst.observation_data.lower_bound.fillna(-1.0e200).to_dict())
+
+        for name in full_oe.columns:
+            #print("before:",name,ub_dict[name],full_oe.loc[:,name].max(),lb_dict[name],full_oe.loc[:,name].min())
+            vals = full_oe.loc[:,name].values
+            vals[vals>ub_dict[name]] = ub_dict[name]
+            vals[vals < lb_dict[name]] = lb_dict[name]
+            full_oe.loc[:,name] = vals#oe.loc[:,name].apply(lambda x: min(x,ub_dict[name])).apply(lambda x: max(x,lb_dict[name]))
+            #print("...after:", name, ub_dict[name],full_oe.loc[:, name].max(),  lb_dict[name], full_oe.loc[:, name].min(), )
+
     return full_oe
 
 
