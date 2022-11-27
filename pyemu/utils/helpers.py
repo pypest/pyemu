@@ -149,7 +149,8 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
     if time_distance_col not in obs.columns:
         raise Exception("time_distance_col missing")
     dvals = obs.loc[passed_names,time_distance_col]
-    isna = obs.loc[pd.isna(dvals),"obsnme"]
+    pobs = obs.loc[passed_names,:]
+    isna = pobs.loc[pd.isna(dvals),"obsnme"]
     if isna.shape[0] > 0:
         raise Exception("the following struct dict observations have NaN for time_distance_col: {0}".format(str(isna)))
     if verbose:
