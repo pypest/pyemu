@@ -186,13 +186,15 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
         lb_dict = {o:-1e300 for o in full_oe.columns}
         if "lower_bound" in pst.observation_data.columns:
             lb_dict.update(pst.observation_data.lower_bound.fillna(-1.0e200).to_dict())
-
-        for name in full_oe.columns:
+        allvals = full_oe.values
+        for i,name in enumerate(full_oe.columns):
             #print("before:",name,ub_dict[name],full_oe.loc[:,name].max(),lb_dict[name],full_oe.loc[:,name].min())
-            vals = full_oe.loc[:,name].values
+            #vals = full_oe.loc[:,name].values
+            vals = allvals[:,i]
             vals[vals>ub_dict[name]] = ub_dict[name]
             vals[vals < lb_dict[name]] = lb_dict[name]
-            full_oe.loc[:,name] = vals#oe.loc[:,name].apply(lambda x: min(x,ub_dict[name])).apply(lambda x: max(x,lb_dict[name]))
+            #full_oe.loc[:,name] = vals#oe.loc[:,name].apply(lambda x: min(x,ub_dict[name])).apply(lambda x: max(x,lb_dict[name]))
+            allvals[:,i] = vals
             #print("...after:", name, ub_dict[name],full_oe.loc[:, name].max(),  lb_dict[name], full_oe.loc[:, name].min(), )
 
     return full_oe
