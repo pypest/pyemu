@@ -91,7 +91,7 @@ class Trie:
         return self._pattern(self.dump())
 
 def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=100,verbose=True,
-                        enforce_bounds=False):
+                        enforce_bounds=False, draw_ineq=False):
     """construct an autocorrelated observation noise ensemble from covariance matrices
         implied by geostatistical structure(s).
 
@@ -110,6 +110,8 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
                 flag for stdout.
             enforce_bounds (`bool`, optional): flag to enforce `lower_bound` and `upper_bound` if
                 these are present in `* observation data`.  Default is False
+            draw_ineq (`bool`, optional): flag to generate noise realizations for inequality observations.
+                If False, noise will not be added inequality observations in the ensemble.  Default is False
 
 
         Returns
@@ -197,6 +199,24 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
             allvals[:,i] = vals
             #print("...after:", name, ub_dict[name],full_oe.loc[:, name].max(),  lb_dict[name], full_oe.loc[:, name].min(), )
 
+    if not draw_ineq:
+        obs = pst.observation_data
+        lt_tags = pst.get_constraint_tags("lt")
+        lt_onames = [oname for oname,ogrp in zip(obs.obsnme,obs.obgnme) if True in [True if str(ogrp).startswith(tag) else False for tag in lt_tags]  ]
+        if verbose:
+            print("--> less than ineq obs:",lt_onames)
+        lt_dict = obs.loc[lt_onames,"obsval"].to_dict()
+        for n,v in lt_dict.items():
+            full_oe.loc[:,n] = v
+        obs = pst.observation_data
+        gt_tags = pst.get_constraint_tags("gt")
+        gt_onames = [oname for oname, ogrp in zip(obs.obsnme, obs.obgnme) if
+                     True in [True if str(ogrp).startswith(tag) else False for tag in gt_tags]]
+        if verbose:
+            print("--> greater than ineq obs:", gt_onames)
+        gt_dict = obs.loc[gt_onames, "obsval"].to_dict()
+        for n, v in gt_dict.items():
+            full_oe.loc[:, n] = v
     return full_oe
 
 

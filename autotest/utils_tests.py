@@ -2078,10 +2078,16 @@ def ac_draw_test():
         v = pyemu.geostats.ExpVario(contribution=1.0, a=aval)
         gs = pyemu.geostats.GeoStruct(variograms=v)
         struct_dict[gs] = onamess
+    onames.append("rand1")
+    onames.append("rand2")
+    obsval.append(1.0)
+    obsval.append(2.0)
+    ogrps.append("less_")
+    ogrps.append("greater_")
 
     pst = pyemu.Pst.from_par_obs_names(obs_names=onames)
     pst.observation_data.loc[onames,"obgnme"] = ogrps
-    pst.observation_data.loc[onames,"distance"] = distance
+    pst.observation_data.loc[onames[:-2],"distance"] = distance
     pst.observation_data.loc[onames,"obsval"] = obsval
     pst.observation_data.loc[onames, "weight"] = 0.000001#1/(np.array(obsval))
     print(obsval)
@@ -2098,6 +2104,8 @@ def ac_draw_test():
     obs = pst.observation_data
     assert oe.max().max() <= obs.upper_bound.min()
     assert oe.min().min() >= obs.lower_bound.max()
+    assert np.all(oe.loc[:,"rand1"].values==1.0)
+    assert np.all(oe.loc[:, "rand2"].values == 2.0)
 
     oe = pyemu.helpers.autocorrelated_draw(pst,struct_dict,num_reals=10000)
 
