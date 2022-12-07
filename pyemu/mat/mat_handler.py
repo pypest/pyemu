@@ -3206,17 +3206,23 @@ class Cov(Matrix):
             t = row["partrans"]
             if t in ["fixed", "tied"]:
                 continue
-            if scale_offset:
-                lb = row.parlbnd * row.scale + row.offset
-                ub = row.parubnd * row.scale + row.offset
+            if "standard_deviation" in row.index and pd.notna(row["standard_deviation"]):
+                if t == "log":
+                    var = (np.log10(row["standard_deviation"])) ** 2
+                else:
+                    var = row["standard_deviation"] ** 2
             else:
-                lb = row.parlbnd
-                ub = row.parubnd
+                if scale_offset:
+                    lb = row.parlbnd * row.scale + row.offset
+                    ub = row.parubnd * row.scale + row.offset
+                else:
+                    lb = row.parlbnd
+                    ub = row.parubnd
 
-            if t == "log":
-                var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / sigma_range) ** 2
-            else:
-                var = ((ub - lb) / sigma_range) ** 2
+                if t == "log":
+                    var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / sigma_range) ** 2
+                else:
+                    var = ((ub - lb) / sigma_range) ** 2
             if np.isnan(var) or not np.isfinite(var):
                 raise Exception(
                     "Cov.from_parameter_data() error: "
