@@ -702,7 +702,7 @@ class Pst(object):
                         filename
                     )
                 )
-            df = pd.read_csv(filename, index_col=False, comment="#")
+            df = pd.read_csv(filename, index_col=False, comment="#",low_memory=False)
             df.columns = df.columns.str.lower()
             for name in names:
                 if name not in df.columns:
@@ -732,6 +732,7 @@ class Pst(object):
                 converters=converters,
                 index_col=False,
                 comment="#",
+                low_memory = False
             )
 
             # in case there was some extra junk at the end of the lines
@@ -846,10 +847,14 @@ class Pst(object):
                 missing_vals = options.get("missing_values", None)
                 if sep.lower() == "w":
                     df = pd.read_csv(
-                        filename, delim_whitespace=True, na_values=missing_vals
+                        filename, delim_whitespace=True,
+                        na_values=missing_vals,
+                        low_memory=False
                     )
                 else:
-                    df = pd.read_csv(filename, sep=sep, na_values=missing_vals)
+                    df = pd.read_csv(filename, sep=sep,
+                                     na_values=missing_vals,
+                                     low_memory=False)
                 df.columns = df.columns.str.lower()
                 for easy, hard in alias_map.items():
                     if easy in df.columns and hard in df.columns:
@@ -915,10 +920,10 @@ class Pst(object):
                 missing_vals = options.get("missing_values", None)
                 if sep.lower() == "w":
                     df = pd.read_csv(
-                        filename, delim_whitespace=True, na_values=missing_vals
+                        filename, delim_whitespace=True, na_values=missing_vals,low_memory=False
                     )
                 else:
-                    df = pd.read_csv(filename, sep=sep, na_values=missing_vals)
+                    df = pd.read_csv(filename, sep=sep, na_values=missing_vals,low_memory=False)
                 df.columns = df.columns.str.lower()
 
                 for field in pst_utils.pst_config["prior_fieldnames"]:
@@ -1259,14 +1264,14 @@ class Pst(object):
         for df, fnme in ((self.parameter_data, "parlongname.map"),
                          (self.observation_data, "obslongname.map")):
             try:
-                mapr = pd.read_csv(Path(d, fnme), index_col=0)['longname']
+                mapr = pd.read_csv(Path(d, fnme), index_col=0,low_memory=False)['longname']
                 df['longname'] = df.index.map(mapr.to_dict())
             except Exception:
                 pass
         if hasattr(self, "parameter_groups"):
             df, fnme = (self.parameter_groups, "pglongname.map")
             try:
-                mapr = pd.read_csv(Path(d, fnme), index_col=0)['longname']
+                mapr = pd.read_csv(Path(d, fnme), index_col=0,low_memory=False)['longname']
                 df['longname'] = df.index.map(mapr.to_dict())
             except Exception:
                 pass
@@ -2130,6 +2135,7 @@ class Pst(object):
                     usecols=[0, 1],
                     delim_whitespace=True,
                     header=None,
+                    low_memory = False
                 )
             except FileNotFoundError:
                 raise Exception(
@@ -2311,7 +2317,7 @@ class Pst(object):
             binary_ens_file = True
         if parfile.lower()[-4:] in [".jcb", ".bin", ".csv"]:
             if parfile.lower().endswith(".csv"):
-                parens = pd.read_csv(parfile, index_col=0)
+                parens = pd.read_csv(parfile, index_col=0,low_memory=False)
             if binary_ens_file == True:
                 parens = pyemu.ParameterEnsemble.from_binary(
                     pst=self, filename=parfile

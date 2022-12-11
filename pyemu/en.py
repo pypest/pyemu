@@ -322,6 +322,8 @@ class Ensemble(object):
 
         if "index_col" not in kwargs:
             kwargs["index_col"] = 0
+        if "low_memory" not in kwargs:
+            kwargs["low_memory"] = False
         df = pd.read_csv(filename, *args, **kwargs)
         return cls(pst=pst, df=df)
 
