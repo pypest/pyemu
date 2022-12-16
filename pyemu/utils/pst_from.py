@@ -2463,6 +2463,7 @@ class PstFrom(object):
                         pnb,
                     )
                 df.loc[:, "pargp"] = pargp
+                df.loc[:, "parval1"] = initial_value
                 df.set_index("parnme", drop=False, inplace=True)
                 # df includes most of the par info for par_dfs and also for
                 # relate_parfiles
@@ -2485,6 +2486,8 @@ class PstFrom(object):
                     "cov": ok_pp.point_cov_df,
                     "zn_ar": zone_array,
                     "sr": spatial_reference,
+                    "pstyle":par_style,
+                    "transform":transform
                 }
                 fac_processed = False
                 for facfile, info in self._pp_facs.items():  # check against
@@ -2493,6 +2496,9 @@ class PstFrom(object):
                         info["pp_data"].equals(pp_info_dict["pp_data"])
                         and info["cov"].equals(pp_info_dict["cov"])
                         and np.array_equal(info["zn_ar"], pp_info_dict["zn_ar"])
+                        and pp_info_dict["pstyle"] == info["pstyle"]
+                        and pp_info_dict["transform"] == info["transform"]
+
                     ):
                         if type(info["sr"]) == type(spatial_reference):
                             if isinstance(spatial_reference, dict):
@@ -2503,6 +2509,7 @@ class PstFrom(object):
 
                         fac_processed = True  # don't need to re-calc same factors
                         fac_filename = facfile  # relate to existing fac file
+                        self.logger.statement("reusing factors")
                         break
                 if not fac_processed:
                     # TODO need better way of naming sequential fac_files?
