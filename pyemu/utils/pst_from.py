@@ -2626,9 +2626,14 @@ class PstFrom(object):
                 assert fac_filename is not None, "missing pilot-point input filename"
                 mult_dict["fac_file"] = os.path.relpath(fac_filename, self.new_d)
                 mult_dict["pp_file"] = pp_filename
-                mult_dict["pp_fill_value"] = 1.0
-                mult_dict["pp_lower_limit"] = 1.0e-10
-                mult_dict["pp_upper_limit"] = 1.0e10
+                if transform == "log":
+                    mult_dict["pp_fill_value"] = 1.0
+                    mult_dict["pp_lower_limit"] = 1.0e-30
+                    mult_dict["pp_upper_limit"] = 1.0e30
+                else:
+                    mult_dict["pp_fill_value"] = 0.0
+                    mult_dict["pp_lower_limit"] = -1.0e30
+                    mult_dict["pp_upper_limit"] = 1.0e30
             if zone_filename is not None:
                 mult_dict["zone_file"] = zone_filename
             relate_parfiles.append(mult_dict)
