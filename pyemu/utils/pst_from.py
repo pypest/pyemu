@@ -2463,7 +2463,6 @@ class PstFrom(object):
                         pnb,
                     )
                 df.loc[:, "pargp"] = pargp
-                df.loc[:, "parval1"] = initial_value
                 df.set_index("parnme", drop=False, inplace=True)
                 # df includes most of the par info for par_dfs and also for
                 # relate_parfiles
@@ -2646,6 +2645,7 @@ class PstFrom(object):
         df.loc[:, "partrans"] = transform
         df.loc[:, "parubnd"] = upper_bound
         df.loc[:, "parlbnd"] = lower_bound
+        df.loc[:, "parval1"] = initial_value
         # df.loc[:,"tpl_filename"] = tpl_filename
 
         # store tpl --> in filename pair
