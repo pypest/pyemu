@@ -160,7 +160,7 @@ jobs:
         # cd ..
         # pip install https://github.com/modflowpy/pymake/zipball/master
         pip install .
-        mamba list
+        micromamba list
 
     - name: Add executables directory to path
       shell: bash
