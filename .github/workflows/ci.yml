@@ -18,8 +18,18 @@ jobs:
         python-version: [3.8, 3.9, "3.10", "3.11"]
         run-type: [std]
         test-path: [
-              "utils_tests.py", 
-              "pst_tests_2.py"
+#               "utils_tests.py", 
+#               "pst_tests_2.py",
+#               "pst_from_tests.py", 
+              "pst_tests.py", 
+#               "en_tests.py",
+#               "full_meal_deal_tests.py", 
+#               "la_tests.py", 
+#               "plot_tests.py", 
+#               "metrics_tests.py",
+#               "moouu_tests.py", 
+#               "mat_tests.py", 
+#               "da_tests.py"
             ]
         include: 
           - os: ubuntu-latest
@@ -40,14 +50,14 @@ jobs:
       # if: ${{ runner.os == 'Windows' }} 
       uses: seanmiddleditch/gha-setup-ninja@master
 
-    - name: Cache Miniconda
-      uses: actions/cache@v3
-      env:
-        # Increase this value to reset cache if etc/environment.yml has not changed
-        CACHE_NUMBER: 0
-      with:
-        path: ~/conda_pkgs_dir
-        key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.run-type }}-${{ env.CACHE_NUMBER }}-${{ hashFiles('etc/environment.yml') }}
+#     - name: Cache Miniconda
+#       uses: actions/cache@v3
+#       env:
+#         # Increase this value to reset cache if etc/environment.yml has not changed
+#         CACHE_NUMBER: 0
+#       with:
+#         path: ~/conda_pkgs_dir
+#         key: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.run-type }}-${{ env.CACHE_NUMBER }}-${{ hashFiles('etc/environment.yml') }}
     
     - name: Set Windows ENV
       if: runner.os == 'Windows'
@@ -56,44 +66,54 @@ jobs:
     # - name: Get specific version CMake, v3.19
     #   if: ${{ runner.os == 'Windows' }} 
     #   uses: lukka/get-cmake@latest
-
+    
+    # Setup conda env
+    - name: Install Conda environment using micromamba
+      uses: mamba-org/provision-with-micromamba@main
+      with:
+        environment-file: etc/environment.yml
+        environment-name: pyemu
+        cache-downloads: true
+        cache-env: true
+        extra-specs: |
+          python=${{ matrix.python-version }}
+        
     # Standard python fails on windows without GDAL installation
     # Using custom bash shell ("shell: bash -l {0}") with Miniconda
-    - name: Setup Miniconda
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        miniforge-version: latest
-        # miniconda-version: "latest"
-        python-version: ${{ matrix.python-version }}
-        # mamba-version: "*"
-        # channels: conda-forge
-        miniforge-variant: Mambaforge
-        # auto-update-conda: true
-        activate-environment: pyemu
-        use-mamba: true
-        # environment-file: etc/environment.yml
-        # use-only-tar-bz2: true
+#     - name: Setup Miniconda
+#       uses: conda-incubator/setup-miniconda@v2
+#       with:
+#         miniforge-version: latest
+#         # miniconda-version: "latest"
+#         python-version: ${{ matrix.python-version }}
+#         # mamba-version: "*"
+#         # channels: conda-forge
+#         miniforge-variant: Mambaforge
+#         # auto-update-conda: true
+#         activate-environment: pyemu
+#         use-mamba: true
+#         # environment-file: etc/environment.yml
+#         # use-only-tar-bz2: true
 
     - name: Add jupyter and jupytext to notebooks run
       if: matrix.run-type == 'nb'
       shell: bash -l {0}
       run: |
         mamba install --name pyemu jupyter jupytext
-        # conda install --name pyemu jupyter jupytext
 
-    - name: Add packages to pyemu environment using conda
-      if: ${{ matrix.python-version < 3.8 }}
-      # if: ${{ runner.os == 'Windows' || matrix.python-version < 3.8 }}
-      shell: bash -l {0}
-      run: |
-          conda env update --name pyemu --file etc/environment.yml
+#     - name: Add packages to pyemu environment using conda
+#       if: ${{ matrix.python-version < 3.8 }}
+#       # if: ${{ runner.os == 'Windows' || matrix.python-version < 3.8 }}
+#       shell: bash -l {0}
+#       run: |
+#           conda env update --name pyemu --file etc/environment.yml
     
-    - name: Add packages to pyemu environment using mamba
-      # if: ${{ runner.os != 'Windows' && matrix.python-version >= 3.8 }}
-      if: ${{ matrix.python-version >= 3.8 }}
-      shell: bash -l {0}
-      run: |
-          mamba env update --name pyemu --file etc/environment.yml
+#     - name: Add packages to pyemu environment using mamba
+#       # if: ${{ runner.os != 'Windows' && matrix.python-version >= 3.8 }}
+#       if: ${{ matrix.python-version >= 3.8 }}
+#       shell: bash -l {0}
+#       run: |
+#           mamba env update --name pyemu --file etc/environment.yml
     
     - name: PESTPP exe install
       shell: bash -l {0}
