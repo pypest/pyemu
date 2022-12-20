@@ -19,7 +19,7 @@ jobs:
         run-type: [std]
         test-path: [
               "utils_tests.py", 
-              "pst_tests_2.py",
+              "pst_tests_2.py"
 #               "pst_from_tests.py", 
 #               "pst_tests.py", 
 #               "en_tests.py",
@@ -31,11 +31,11 @@ jobs:
 #               "mat_tests.py", 
 #               "da_tests.py"
             ]
-        exclude:
-#           - os: windows-latest 
-#             python-version: 3.7
-#           - os: windows-latest 
-#             python-version: 3.9 
+       # exclude:
+        #     - os: windows-latest 
+        #       python-version: 3.7
+        #     - os: windows-latest 
+        #      python-version: 3.9 
         include: 
           - os: ubuntu-latest
             python-version: 3.9
