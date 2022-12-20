@@ -160,7 +160,7 @@ jobs:
         # cd ..
         # pip install https://github.com/modflowpy/pymake/zipball/master
         pip install .
-        conda list
+        mamba list
 
     - name: Add executables directory to path
       shell: bash
@@ -184,12 +184,18 @@ jobs:
     #     COVERALLS_PARALLEL: true
 
     - name: Coveralls
-      if: ${{ runner.os == 'Linux' && matrix.python-version > 3.6 }}
-      uses: AndreMiras/coveralls-python-action@develop
+      uses: coverallsapp/github-action@master
       with:
-        parallel: true
-        debug: false
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
+        parallel: true
+        
+#       if: ${{ runner.os == 'Linux' && matrix.python-version > 3.6 }}
+#       uses: AndreMiras/coveralls-python-action@develop
+#       with:
+#         parallel: true
+#         debug: false
+#         flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
 
     # - name: Coveralls Parallel
     #   uses: coverallsapp/github-action@master
@@ -216,10 +222,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
-      uses: AndreMiras/coveralls-python-action@develop
+      uses: coverallsapp/github-action@master
       with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         parallel-finished: true
-        debug: true
+#       uses: AndreMiras/coveralls-python-action@develop
+#       with:
+#         parallel-finished: true
+#         debug: true
   
   # finish:
   #   needs: pyemuCI
