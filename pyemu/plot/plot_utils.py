@@ -1508,11 +1508,11 @@ def ensemble_res_1to1(
             obs_gg = obs_g.sort_values(by="obsval")
             for c, en in base_ensemble.items():
                 en_g = en.loc[:, obs_gg.obsnme]
-                ex = en_g.max()
-                en = en_g.min()
+                ex = np.zeros(obs_gg.shape[0]) + en_g.max()
+                en = np.zeros(obs_gg.shape[0]) + en_g.min()
                 # update y min and max for obs+noise ensembles
                 if len(obs_gg.obsval) > 1:
-                    ax.fill_between(obs_gg.obsval, en, ex, facecolor=c, alpha=0.2, zorder=2)
+                    ax.fill_between(obs_gg.obsval.values, en, ex, facecolor=c, alpha=0.2, zorder=2)
                 else:
                     ax.plot([obs_gg.obsval, obs_gg.obsval], [en, ex], color=c, alpha=0.2, zorder=2)
         for c, en in ensembles.items():
