@@ -99,7 +99,7 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
             pst (`pyemu.Pst`): a control file (or the name of control file).  The
                 information in the `* observation data` dataframe is used extensively,
                 including weight, standard_deviation (if present), upper_bound/lower_bound (if present).
-            time_distance_col (str): the column in `* observation_data` the represnts the distance in time
+            time_distance_col (str): the column in `* observation_data` that represents the distance in time
             for each observation listed in `struct_dict`
 
             struct_dict (`dict`): a dict of GeoStruct (or structure file), and list of
