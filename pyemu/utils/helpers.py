@@ -146,7 +146,6 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
     missing = list(set(passed_names) - set(nz_names))
     if len(missing) > 0:
         raise Exception("the following obs in struct_dict were not found in the nz obs names"+str(missing))
-    time_cols = ["time","datetime","distance"]
     obs = pst.observation_data
     if time_distance_col not in obs.columns:
         raise Exception("time_distance_col missing")
@@ -201,17 +200,19 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
 
     if not draw_ineq:
         obs = pst.observation_data
-        lt_tags = pst.get_constraint_tags("lt")
-        lt_onames = [oname for oname,ogrp in zip(obs.obsnme,obs.obgnme) if True in [True if str(ogrp).startswith(tag) else False for tag in lt_tags]  ]
+        #lt_tags = pst.get_constraint_tags("lt")
+        #lt_onames = [oname for oname,ogrp in zip(obs.obsnme,obs.obgnme) if True in [True if str(ogrp).startswith(tag) else False for tag in lt_tags]  ]
+        lt_onames = pst.less_than_obs_constraints.to_list()
         if verbose:
             print("--> less than ineq obs:",lt_onames)
         lt_dict = obs.loc[lt_onames,"obsval"].to_dict()
         for n,v in lt_dict.items():
             full_oe.loc[:,n] = v
         obs = pst.observation_data
-        gt_tags = pst.get_constraint_tags("gt")
-        gt_onames = [oname for oname, ogrp in zip(obs.obsnme, obs.obgnme) if
-                     True in [True if str(ogrp).startswith(tag) else False for tag in gt_tags]]
+        #gt_tags = pst.get_constraint_tags("gt")
+        #gt_onames = [oname for oname, ogrp in zip(obs.obsnme, obs.obgnme) if
+        #             True in [True if str(ogrp).startswith(tag) else False for tag in gt_tags]]
+        gt_onames = pst.greater_than_obs_constraints.to_list()
         if verbose:
             print("--> greater than ineq obs:", gt_onames)
         gt_dict = obs.loc[gt_onames, "obsval"].to_dict()
