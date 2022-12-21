@@ -176,17 +176,17 @@ jobs:
 #        --with-coverage -w ./autotest --cover-package=pyemu \
 #        ${{ matrix.test-path }}
       run: |
-        pytest -v --cov=pyemu --cov-report=lcov --keep-failed=.failed ${{ matrix.test-path }}
+        pytest -v --cov=pyemu --cov-report=lcov ${{ matrix.test-path }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload failed test outputs
-      uses: actions/upload-artifact@v2
-      if: failure()
-      with:
-        name: failed-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
-        path: |
-          ./autotest/.failed/**
+#     - name: Upload failed test outputs
+#       uses: actions/upload-artifact@v2
+#       if: failure()
+#       with:
+#         name: failed-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+#         path: |
+#           ./autotest/.failed/**
     # - name: Upload Coveralls
     #   run: |
     #     coveralls 
