@@ -201,6 +201,7 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
         parallel: true
+        path-to-lcov: autotest/coverage.lcov
         
 #       if: ${{ runner.os == 'Linux' && matrix.python-version > 3.6 }}
 #       uses: AndreMiras/coveralls-python-action@develop
