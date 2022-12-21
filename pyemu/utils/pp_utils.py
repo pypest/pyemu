@@ -444,7 +444,7 @@ def write_pp_shapfile(pp_df, shapename=None):
     for name, dtype in dfs[0].dtypes.iteritems():
         if dtype == object:
             shp.field(name=name, fieldType="C", size=50)
-        elif dtype in [int, np.int, np.int64, np.int32]:
+        elif dtype in [int, np.int64, np.int32]:
             shp.field(name=name, fieldType="N", size=50, decimal=0)
         elif dtype in [float, np.float32, np.float32]:
             shp.field(name=name, fieldType="N", size=50, decimal=8)
