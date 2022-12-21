@@ -99,7 +99,7 @@ jobs:
       if: matrix.run-type == 'nb'
       shell: bash -l {0}
       run: |
-        mamba install --name pyemu jupyter jupytext
+        micromamba install --name pyemu jupyter jupytext
 
 #     - name: Add packages to pyemu environment using conda
 #       if: ${{ matrix.python-version < 3.8 }}

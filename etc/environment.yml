@@ -9,6 +9,7 @@ dependencies:
   # optional
   - matplotlib>=1.4.0
   - pyshp
+  - jinja2
   # tests
   - coveralls
   - pytest
