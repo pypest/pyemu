@@ -10,6 +10,7 @@ import pyemu
 from pyemu import os_utils
 from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
+import pytest
 
 ext = ''
 local_bins = False  # change if wanting to test with local binary exes
@@ -72,7 +73,7 @@ def _gen_dummy_obs_file(ws='.', sep=',', ext=None):
     return fnme, df
 
 
-def freyberg_test():
+def freyberg_test(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -93,7 +94,7 @@ def freyberg_test():
             [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
             [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]]]})
 
-    org_model_ws = "temp_pst_from"
+    org_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(org_model_ws):
         shutil.rmtree(org_model_ws)
     m.external_path = "."
@@ -125,7 +126,7 @@ def freyberg_test():
         sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx', line_terminator='\n')
     sfodf.sort_index(axis=1).to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
                  index_label='idx',line_terminator='\n')
-    template_ws = "new_temp"
+    template_ws = Path(tmp_path, "new_temp")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
 
@@ -297,7 +298,7 @@ def freyberg_test():
     assert pst.phi < 1.0e-5, pst.phi
 
 
-def freyberg_prior_build_test():
+def freyberg_prior_build_test(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -327,7 +328,7 @@ def freyberg_prior_build_test():
     welsp[1] = np.rec.array(np.concatenate([welsp[1], samewell]))
     m.wel.stress_period_data = welsp
 
-    org_model_ws = "temp_pst_from"
+    org_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(org_model_ws):
         shutil.rmtree(org_model_ws)
     m.external_path = "."
@@ -348,7 +349,7 @@ def freyberg_prior_build_test():
         os.path.join(m.model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
         prefix="hds", include_path=False)
 
-    template_ws = "new_temp"
+    template_ws = Path(tmp_path, "new_temp")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     # sr0 = m.sr
@@ -560,7 +561,7 @@ def another_generic_function(some_arg):
     print(some_arg)
 
 
-def mf6_freyberg_test():
+def mf6_freyberg_test(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -572,13 +573,13 @@ def mf6_freyberg_test():
         return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-    tmp_model_ws = "temp_pst_from"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(str(tmp_model_ws))
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
@@ -593,41 +594,45 @@ def mf6_freyberg_test():
     os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
     # doctor some of the list par files to add a comment string
     with open(
-            os.path.join('temp_pst_from',
-                         "freyberg6.wel_stress_period_data_1.txt"), 'r') as fr:
+            Path(tmp_model_ws,
+                 "freyberg6.wel_stress_period_data_1.txt"), 'r') as fr:
         lines = [line for line in fr]
-    with open(os.path.join('temp_pst_from',
-                         "freyberg6.wel_stress_period_data_1.txt"), 'w') as fw:
+    with open(
+            Path(tmp_model_ws,
+                 "freyberg6.wel_stress_period_data_1.txt"), 'w') as fw:
         fw.write("# comment line explaining this external file\n")
         for line in lines:
             fw.write(line)
 
     with open(
-            os.path.join('temp_pst_from',
-                         "freyberg6.wel_stress_period_data_2.txt"), 'r') as fr:
+            Path(tmp_model_ws,
+                 "freyberg6.wel_stress_period_data_2.txt"), 'r') as fr:
         lines = [line for line in fr]
-    with open(os.path.join('temp_pst_from',
-                         "freyberg6.wel_stress_period_data_2.txt"), 'w') as fw:
+    with open(
+            Path(tmp_model_ws,
+                 "freyberg6.wel_stress_period_data_2.txt"), 'w') as fw:
         fw.write("# comment line explaining this external file\n")
         for line in lines[0:3] + ["# comment mid table \n"] + lines[3:]:
             fw.write(line)
 
     with open(
-            os.path.join('temp_pst_from',
-                         "freyberg6.wel_stress_period_data_3.txt"), 'r') as fr:
+            Path(tmp_model_ws,
+                 "freyberg6.wel_stress_period_data_3.txt"), 'r') as fr:
         lines = [line for line in fr]
-    with open(os.path.join('temp_pst_from',
-                           "freyberg6.wel_stress_period_data_3.txt"), 'w') as fw:
+    with open(
+            Path(tmp_model_ws,
+                 "freyberg6.wel_stress_period_data_3.txt"), 'w') as fw:
         fw.write("#k i j flux \n")
         for line in lines:
             fw.write(line)
 
     with open(
-            os.path.join('temp_pst_from',
-                         "freyberg6.wel_stress_period_data_4.txt"), 'r') as fr:
+            Path(tmp_model_ws,
+                 "freyberg6.wel_stress_period_data_4.txt"), 'r') as fr:
         lines = [line for line in fr]
-    with open(os.path.join('temp_pst_from',
-                           "freyberg6.wel_stress_period_data_4.txt"), 'w') as fw:
+    with open(
+            Path(tmp_model_ws,
+                 "freyberg6.wel_stress_period_data_4.txt"), 'w') as fw:
         fw.write("# comment line explaining this external file\n"
                  "#k i j flux\n")
         for line in lines:
@@ -638,17 +643,17 @@ def mf6_freyberg_test():
     l = sfr_pkgdf.columns.to_list()
     l = ['#rno', 'k', 'i', 'j'] + l[2:]
     with open(
-            os.path.join('temp_pst_from',
-                         "freyberg6.sfr_packagedata.txt"), 'r') as fr:
+            Path(tmp_model_ws,
+                 "freyberg6.sfr_packagedata.txt"), 'r') as fr:
         lines = [line for line in fr]
-    with open(os.path.join('temp_pst_from',
-                           "freyberg6.sfr_packagedata_test.txt"), 'w') as fw:
+    with open(Path(tmp_model_ws,
+                   "freyberg6.sfr_packagedata_test.txt"), 'w') as fw:
         fw.write(' '.join(l))
         fw.write('\n')
         for line in lines:
             fw.write(line)
 
-    template_ws = "new_temp"
+    template_ws = Path(tmp_path, "new_temp")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     # sr0 = m.sr
@@ -669,9 +674,10 @@ def mf6_freyberg_test():
     #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
     # call generic once so that the output file exists
+    bd = Path.cwd()
     os.chdir(template_ws)
     df = generic_function()
-    os.chdir("..")
+    os.chdir(bd)
     # add the values in generic to the ctl file
     f, fdf = _gen_dummy_obs_file(pf.new_d, sep=' ')
     pf.add_observations(f, index_cols='idx', use_cols='yes')
@@ -685,14 +691,14 @@ def mf6_freyberg_test():
     pf.add_py_function("pst_from_tests.py","another_generic_function(some_arg)",is_pre_cmd=None)
 
     #pf.post_py_cmds.append("generic_function()")
-    df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    df = pd.read_csv(Path(tmp_model_ws, "sfr.csv"), index_col=0)
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
     v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
     gr_gs = pyemu.geostats.GeoStruct(variograms=v)
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0,a=60))
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
-    with open(os.path.join(template_ws, "inflow1.txt"), 'w') as fp:
+    with open(Path(template_ws, "inflow1.txt"), 'w') as fp:
         fp.write("# rid type rate idx0 idx1\n")
         fp.write("205 666 500000.0 1 1")
     pf.add_parameters(filenames='inflow1.txt',
@@ -705,21 +711,21 @@ def mf6_freyberg_test():
                       par_type="grid",
                       )
 
-    with open(os.path.join(template_ws, "inflow2.txt"), 'w') as fp:
+    with open(Path(template_ws, "inflow2.txt"), 'w') as fp:
         fp.write("# rid type rate idx0 idx1\n")
         fp.write("205 infl 500000.3 1 1\n")
         fp.write("205 div 1 500000.7 1\n")
         fp.write("206 infl 600000.7 1 1\n")
         fp.write("206 div 1 500000.7 1")
-    inflow2_pre = pd.read_csv(os.path.join(pf.new_d, "inflow2.txt"),
+    inflow2_pre = pd.read_csv(Path(pf.new_d, "inflow2.txt"),
                               header=None, sep=' ', skiprows=1)
-    with open(os.path.join(template_ws, "inflow3.txt"), 'w') as fp:
+    with open(Path(template_ws, "inflow3.txt"), 'w') as fp:
         fp.write("# rid type rate idx0 idx1\n")
         fp.write("205 infl 700000.3 1 1\n")
         fp.write("205 div 1 500000.7 1\n")
         fp.write("206 infl 800000.7 1 1\n")
         fp.write("206 div 1 500000.7 1")
-    inflow3_pre = pd.read_csv(os.path.join(pf.new_d, "inflow3.txt"),
+    inflow3_pre = pd.read_csv(Path(pf.new_d, "inflow3.txt"),
                               header=None, sep=' ', skiprows=1)
     pf.add_parameters(filenames=['inflow2.txt', "inflow3.txt"],
                       pargp='inflow',
@@ -743,14 +749,14 @@ def mf6_freyberg_test():
                       par_style='a',
                       transform='none'
                       )
-    with open(os.path.join(template_ws, "inflow4.txt"), 'w') as fp:
+    with open(Path(template_ws, "inflow4.txt"), 'w') as fp:
         fp.write("# rid type rate idx0 idx1\n")
         fp.write("204 infl 700000.3 1 1\n")
         fp.write("205 div 1 500000.7 1\n")
         fp.write("206 infl 800000.7 1 1\n")
         fp.write("207 div 1 500000.7 1")
 
-    inflow4_pre = pd.read_csv(os.path.join(pf.new_d, "inflow4.txt"),
+    inflow4_pre = pd.read_csv(Path(pf.new_d, "inflow4.txt"),
                               header=None, sep=' ', skiprows=1)
     pf.add_parameters(filenames="inflow4.txt",
                       pargp='inflow4',
@@ -930,6 +936,7 @@ def mf6_freyberg_test():
                                 if ':' in s]).set_index(0)[1])
 
     sfr_pars['#rno'] = sfr_pars['#rno'].astype(int)
+    b_d = Path.cwd()
     os.chdir(pf.new_d)
     dummymult = 4.
     pars = pst.parameter_data
@@ -938,26 +945,26 @@ def mf6_freyberg_test():
     try:
         pyemu.helpers.apply_list_and_array_pars()
     except Exception as e:
-        os.chdir('..')
+        os.chdir(b_d)
         raise e
-    os.chdir('..')
+    os.chdir(b_d)
     # verify apply
-    inflow2_df = pd.read_csv(os.path.join(pf.new_d, "inflow2.txt"),
+    inflow2_df = pd.read_csv(Path(pf.new_d, "inflow2.txt"),
                              header=None, sep=' ', skiprows=1)
-    inflow3_df = pd.read_csv(os.path.join(pf.new_d, "inflow3.txt"),
+    inflow3_df = pd.read_csv(Path(pf.new_d, "inflow3.txt"),
                              header=None, sep=' ', skiprows=1)
-    inflow4_df = pd.read_csv(os.path.join(pf.new_d, "inflow4.txt"),
+    inflow4_df = pd.read_csv(Path(pf.new_d, "inflow4.txt"),
                              header=None, sep=' ', skiprows=1)
     assert (inflow2_df == inflow2_pre).all().all()
     assert (inflow3_df == inflow3_pre).all().all()
     assert (inflow4_df == inflow4_pre).all().all()
-    multinfo = pd.read_csv(os.path.join(pf.new_d, "mult2model_info.csv"),
+    multinfo = pd.read_csv(Path(pf.new_d, "mult2model_info.csv"),
                            index_col=0)
     ppmultinfo = multinfo.dropna(subset=['pp_file'])
     for mfile in ppmultinfo.model_file.unique():
         subinfo = ppmultinfo.loc[ppmultinfo.model_file == mfile]
         assert subinfo.org_file.nunique() == 1
-        org = np.loadtxt(os.path.join(pf.new_d, subinfo.org_file.values[0]))
+        org = np.loadtxt(Path(pf.new_d, subinfo.org_file.values[0]))
         m = dummymult ** len(subinfo)
         check = org * m
         check[ib == 0] = org[ib == 0]
@@ -965,12 +972,11 @@ def mf6_freyberg_test():
         ult_l = subinfo.lower_bound.astype(float).values[0]
         check[check < ult_l] = ult_l
         check[check > ult_u] = ult_u
-        result = np.loadtxt(os.path.join(pf.new_d, mfile))
+        result = np.loadtxt(Path(pf.new_d, mfile))
         assert np.isclose(check, result).all(), (f"Problem with par apply for "
                                                  f"{mfile}")
-    df = pd.read_csv(os.path.join(
-        pf.new_d, "freyberg6.sfr_packagedata_test.txt"),
-        delim_whitespace=True, index_col=0)
+    df = pd.read_csv(Path(pf.new_d, "freyberg6.sfr_packagedata_test.txt"),
+                     delim_whitespace=True, index_col=0)
     df.index = df.index - 1
     print(df.rhk)
     print((sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
@@ -986,7 +992,7 @@ def mf6_freyberg_test():
                       lower_bound=0.1,
                       par_type="grid", rebuild_pst=True)
 
-    df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
+    df = pd.read_csv(Path(tmp_model_ws, "heads.csv"), index_col=0)
     pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
                         prefix="hds", rebuild_pst=True)
 
@@ -1015,7 +1021,7 @@ def mf6_freyberg_test():
 
     num_reals = 100
     pe = pf.draw(num_reals, use_specsim=True)
-    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+    pe.to_binary(Path(template_ws, "prior.jcb"))
     assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[1], pst.npar_adj)
     assert pe.shape[0] == num_reals
 
@@ -1052,7 +1058,7 @@ def mf6_freyberg_test():
     assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
 
 
-def mf6_freyberg_shortnames_test():
+def mf6_freyberg_shortnames_test(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -1064,7 +1070,7 @@ def mf6_freyberg_shortnames_test():
         return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-    tmp_model_ws = "temp_pst_from"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
     # os.mkdir(tmp_model_ws)
@@ -1077,14 +1083,14 @@ def mf6_freyberg_shortnames_test():
     # sim.write_simulation()
 
     # to by pass the issues with flopy
-    shutil.copytree(org_model_ws,tmp_model_ws)
-    sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
+    shutil.copytree(org_model_ws, tmp_model_ws)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
     m = sim.get_model("freyberg6")
 
     # SETUP pest stuff...
     os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-    template_ws = "new_temp"
+    template_ws = Path(tmp_path, "new_temp")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     # sr0 = m.sr
@@ -1262,7 +1268,7 @@ def mf6_freyberg_shortnames_test():
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
 
-def mf6_freyberg_da_test():
+def mf6_freyberg_da_test(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -1274,18 +1280,18 @@ def mf6_freyberg_da_test():
         return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6_da')
-    tmp_model_ws = "temp_pst_from"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
     # to by pass the issues with flopy
     shutil.copytree(org_model_ws,tmp_model_ws)
-    sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
     m = sim.get_model("freyberg6")
 
     # SETUP pest stuff...
     os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-    template_ws = "new_temp_da"
+    template_ws = Path(tmp_path, "new_temp_da")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     # sr0 = m.sr
@@ -1440,7 +1446,7 @@ def mf6_freyberg_da_test():
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
 
-def mf6_freyberg_direct_test():
+def mf6_freyberg_direct_test(tmp_path):
 
     import numpy as np
     import pandas as pd
@@ -1453,13 +1459,13 @@ def mf6_freyberg_direct_test():
         return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-    tmp_model_ws = "temp_pst_from_direct"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from_direct")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(str(tmp_model_ws))
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external()
@@ -1473,7 +1479,7 @@ def mf6_freyberg_direct_test():
     # SETUP pest stuff...
     os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-    template_ws = "new_temp_direct"
+    template_ws = Path(tmp_path, "new_temp_direct")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     sr = m.modelgrid
@@ -1799,7 +1805,7 @@ def mf6_freyberg_direct_test():
             raise Exception("recharge too diff")
 
 
-def mf6_freyberg_varying_idomain():
+def mf6_freyberg_varying_idomain(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -1811,13 +1817,13 @@ def mf6_freyberg_varying_idomain():
         return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-    tmp_model_ws = "temp_pst_from"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(str(tmp_model_ws))
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
@@ -1831,15 +1837,15 @@ def mf6_freyberg_varying_idomain():
     np.savetxt(ib_file,arr,fmt="%2d")
     print(arr)
 
-    sim = flopy.mf6.MFSimulation.load(sim_ws=tmp_model_ws)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
     m = sim.get_model("freyberg6")
 
     # SETUP pest stuff...
-    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=str(tmp_model_ws))
 
 
 
-    template_ws = "new_temp"
+    template_ws = Path(tmp_path, "new_temp")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
 
@@ -1918,9 +1924,10 @@ def mf6_freyberg_varying_idomain():
 
     #pst = pf.build_pst('freyberg.pst')
     pf.parfile_relations.to_csv(os.path.join(pf.new_d, "mult2model_info.csv"))
+    b_d = Path.cwd()
     os.chdir(pf.new_d)
     df = pyemu.helpers.calc_array_par_summary_stats()
-    os.chdir("..")
+    os.chdir(b_d)
     pf.post_py_cmds.append("pyemu.helpers.calc_array_par_summary_stats()")
     pf.add_observations("arr_par_summary.csv",index_cols=["model_file"],use_cols=df.columns.tolist(),
                         obsgp=["arr_par_summary" for _ in df.columns],prefix=["arr_par_summary" for _ in df.columns])
@@ -1959,7 +1966,7 @@ def mf6_freyberg_varying_idomain():
         print(model_file,sim_val,arr.mean())
 
 
-def xsec_test():
+def xsec_test(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -1971,10 +1978,10 @@ def xsec_test():
         return
 
     org_model_ws = os.path.join('..', 'examples', 'xsec')
-    tmp_model_ws = "temp_pst_from"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
-    shutil.copytree(org_model_ws,tmp_model_ws)
+    shutil.copytree(org_model_ws, tmp_model_ws)
 
     # SETUP pest stuff...
     nam_file = "10par_xsec.nam"
@@ -1982,7 +1989,7 @@ def xsec_test():
 
     m = flopy.modflow.Modflow.load(nam_file,model_ws=tmp_model_ws,version="mfnwt")
     sr = m.modelgrid
-    t_d = "template_xsec"
+    t_d = Path(tmp_path, "template_xsec")
     pf = pyemu.utils.PstFrom(tmp_model_ws,t_d,remove_existing=True,spatial_reference=sr)
     pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_style="direct",upper_bound=25,
                       lower_bound=0.25)
@@ -2010,7 +2017,7 @@ def xsec_test():
     assert pst.phi < 1.0e-7
 
 
-def mf6_freyberg_short_direct_test():
+def mf6_freyberg_short_direct_test(tmp_path):
 
     import numpy as np
     import pandas as pd
@@ -2023,13 +2030,13 @@ def mf6_freyberg_short_direct_test():
         return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-    tmp_model_ws = "temp_pst_from_direct"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from_direct")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(str(tmp_model_ws))
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external()
@@ -2043,7 +2050,7 @@ def mf6_freyberg_short_direct_test():
     # SETUP pest stuff...
     os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-    template_ws = "new_temp_direct"
+    template_ws = Path(tmp_path, "new_temp_direct")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     sr = m.modelgrid
@@ -2119,9 +2126,6 @@ def mf6_freyberg_short_direct_test():
             for line in lines:
                 fw.write(line)
 
-
-
-
     # fl = "freyberg6.wel_stress_period_data_3.txt" # Add extra string col_id
     for fl in list_files[2:4]:
         with open(os.path.join(template_ws, fl), 'r') as fr:
@@ -2130,7 +2134,6 @@ def mf6_freyberg_short_direct_test():
             fw.write("well k i j flx \n")
             for i, line in enumerate(lines):
                 fw.write(f"w{i}" + line)
-
 
     list_files.sort()
     for list_file in list_files:
@@ -2282,18 +2285,18 @@ class TestPstFrom():
     """Test class for some PstFrom functionality
     """
     @classmethod
-    def setup(cls):
-
+    @pytest.fixture(autouse=True)
+    def setup(cls, tmp_path):
         # record the original wd
         cls.original_wd = Path().cwd()
 
-        cls.sim_ws = Path('temp/pst-from-small/')
+        cls.sim_ws = Path(tmp_path, 'pst-from-small')
         external_files_folders = [cls.sim_ws / 'external',
                                   cls.sim_ws / '../external_files']
         for folder in external_files_folders:
             folder.mkdir(parents=True, exist_ok=True)
 
-        cls.dest_ws = Path('temp/pst-from-small-template')
+        cls.dest_ws = Path(tmp_path, 'pst-from-small-template')
 
         cls.sr = pyemu.helpers.SpatialReference(delr=np.ones(3),
                                             delc=np.ones(3),
@@ -2375,19 +2378,19 @@ class TestPstFrom():
 
             # make the PEST control file
             pst = self.pf.build_pst()
-            assert pst.filename == Path('temp/pst-from-small-template/pst-from-small.pst')
+            assert pst.filename == Path(self.dest_ws, 'pst-from-small.pst')
             assert pst.filename.exists()
             rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
             assert rel_tpl in pst.template_files
 
             # make the PEST control file (just filename)
             pst = self.pf.build_pst('junk.pst')
-            assert pst.filename == Path('temp/pst-from-small-template/junk.pst')
+            assert pst.filename == Path(self.dest_ws, 'junk.pst')
             assert pst.filename.exists()
 
             # make the PEST control file (file path)
-            pst = self.pf.build_pst('temp/pst-from-small-template/junk2.pst')
-            assert pst.filename == Path('temp/pst-from-small-template/junk2.pst')
+            pst = self.pf.build_pst(str(Path(self.dest_ws, 'junk2.pst')))
+            assert pst.filename == Path(self.dest_ws, 'junk2.pst')
             assert pst.filename.exists()
 
             # check the mult2model info
@@ -2788,13 +2791,14 @@ class TestPstFrom():
         assert parzones == [1, 2]
         assert len(pst.template_files) == 3
 
-    @classmethod
-    def teardown(cls):
-        # cleanup
-        os.chdir(cls.original_wd)
-        shutil.rmtree(cls.sim_ws / '../external_files')
-        shutil.rmtree(cls.sim_ws)
-        shutil.rmtree(cls.dest_ws)
+    # @classmethod
+    # @pytest.fixture(autouse=True)
+    # def teardown(cls):
+    #     # cleanup
+    #     os.chdir(cls.original_wd)
+    #     shutil.rmtree(cls.sim_ws / '../external_files')
+    #     shutil.rmtree(cls.sim_ws)
+    #     shutil.rmtree(cls.dest_ws)
 
 
 def test_get_filepath():
@@ -2942,7 +2946,7 @@ def pstfrom_profile():
     pr.print_stats(sort="cumtime")
 
 
-def mf6_freyberg_arr_obs_and_headerless_test():
+def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -2954,13 +2958,13 @@ def mf6_freyberg_arr_obs_and_headerless_test():
         return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-    tmp_model_ws = "temp_pst_from"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(str(tmp_model_ws))
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
@@ -2974,7 +2978,7 @@ def mf6_freyberg_arr_obs_and_headerless_test():
     # SETUP pest stuff...
     os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
-    template_ws = "new_temp"
+    template_ws = Path(tmp_path, "new_temp")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     # sr0 = m.sr
@@ -3083,7 +3087,7 @@ def mf6_freyberg_arr_obs_and_headerless_test():
     assert d.sum() == 0
 
 
-def mf6_freyberg_pp_locs_test():
+def mf6_freyberg_pp_locs_test(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -3095,13 +3099,13 @@ def mf6_freyberg_pp_locs_test():
         return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-    tmp_model_ws = "temp_pst_from"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(str(tmp_model_ws))
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
@@ -3110,7 +3114,7 @@ def mf6_freyberg_pp_locs_test():
     # SETUP pest stuff...
     os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
-    template_ws = "new_temp"
+    template_ws = Path(tmp_path, "new_temp")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     sr = m.modelgrid
@@ -3200,16 +3204,19 @@ def mf6_freyberg_pp_locs_test():
     pst.write(os.path.join(template_ws,"freyberg.pst"))
 
     #pyemu.os_utils.run("{0} freyberg.pst".format("pestpp-glm"),cwd=template_ws)
-    pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,worker_root=".",master_dir="master_glm")
+    m_d = Path(tmp_path, "master_glm")
+    pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,
+                                 worker_root=tmp_path,
+                                 master_dir=m_d)
 
-    sen_df = pd.read_csv(os.path.join("master_glm","freyberg.isen"),index_col=0).loc[:,pst.adj_par_names]
+    sen_df = pd.read_csv(os.path.join(m_d,"freyberg.isen"),index_col=0).loc[:,pst.adj_par_names]
     print(sen_df.T)
     mn = sen_df.values.min()
     print(mn)
     assert mn > 0.0
 
 
-def usg_freyberg_test():
+def usg_freyberg_test(tmp_path):
     import numpy as np
     import pandas as pd
     import flopy
@@ -3226,7 +3233,7 @@ def usg_freyberg_test():
 
     #convert to all open/close
     m.external_path = "."
-    tmp_model_ws = "temp_pst_from_usg"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from_usg")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
     #change dir and write
@@ -3303,7 +3310,8 @@ def usg_freyberg_test():
 
     # we pass the full listing of node coord info to the constructor for use
     # with list-type parameters
-    pf = pyemu.utils.PstFrom(tmp_model_ws,"template",longnames=True,remove_existing=True,
+    template_d = Path(tmp_path, "template")
+    pf = pyemu.utils.PstFrom(tmp_model_ws,template_d,longnames=True,remove_existing=True,
                              zero_based=False,spatial_reference=gsf.get_node_coordinates(zero_based=True))
 
     pf.add_parameters("hk_Layer_3.ref", par_type="pilotpoints",
@@ -3365,9 +3373,10 @@ def usg_freyberg_test():
     assert diff.max() < 1.0e-6
 
     # test that the arr hds obs process is working
+    b_d = Path.cwd()
     os.chdir(pf.new_d)
     pyemu.gw_utils.apply_hds_obs('freyberg.usg.hds', precision='single', text='headu')
-    os.chdir("..")
+    os.chdir(b_d)
 
     # run the full process once using the initial par values in the control file
     # since we are using only multipliers, the initial values are all 1's so
@@ -3416,16 +3425,17 @@ def usg_freyberg_test():
     print(d.sum())
     assert d.sum() == 0.0,d.sum()
 
-def mf6_add_various_obs_test():
+
+def mf6_add_various_obs_test(tmp_path):
     import flopy
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-    tmp_model_ws = "temp_pst_from"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
     os.mkdir(tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
     # sim.set_all_data_external()
-    sim.set_sim_path(tmp_model_ws)
+    sim.set_sim_path(str(tmp_model_ws))
     # sim.set_all_data_external()
     m = sim.get_model("freyberg6")
     sim.set_all_data_external(check_data=False)
@@ -3434,7 +3444,7 @@ def mf6_add_various_obs_test():
     # SETUP pest stuff...
     os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
-    template_ws = "new_temp"
+    template_ws = Path(tmp_path, "new_temp")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     sr = m.modelgrid
@@ -3500,7 +3510,7 @@ def _add_big_obsffile(pf, profile=False, nchar=50000):
             pf.add_observations('bigobseg.csv', index_cols='time')
 
 
-def mf6_subdir_test():
+def mf6_subdir_test(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -3512,7 +3522,7 @@ def mf6_subdir_test():
         return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-    tmp_model_ws = "temp_pst_from"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from")
     sd = "sub_dir"
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
@@ -3531,7 +3541,7 @@ def mf6_subdir_test():
     else:
         exe = os.path.join('..', mf6_exe_path)
     os_utils.run("{0} ".format(exe), cwd=tmp2_ws)
-    template_ws = "new_temp"
+    template_ws = Path(tmp_path, "new_temp")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     # sr0 = m.sr
@@ -3572,7 +3582,6 @@ def mf6_subdir_test():
     pf.add_observations(os.path.join(sd, "sfr.csv"), index_cols="time", use_cols=list(df.columns.values))
     pf.add_observations(os.path.join(sd, "freyberg6.npf_k_layer1.txt"),
                         zone_array=m.dis.idomain.array[0])
-
 
     v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
     gr_gs = pyemu.geostats.GeoStruct(variograms=v)
@@ -3813,7 +3822,7 @@ def mf6_subdir_test():
     # assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
 
 
-def shortname_conversion_test():
+def shortname_conversion_test(tmp_path):
     import numpy as np
     import pandas as pd
     import re
@@ -3825,7 +3834,7 @@ def shortname_conversion_test():
     except:
         return
 
-    tmp_model_ws = "temp_pst_from"
+    tmp_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(tmp_model_ws):
         shutil.rmtree(tmp_model_ws)
     os.mkdir(tmp_model_ws)
@@ -3843,7 +3852,7 @@ def shortname_conversion_test():
     np.savetxt(os.path.join(tmp_model_ws, "obsfile3"), np.ones(dims))
     # SETUP pest stuff...
 
-    template_ws = "new_temp"
+    template_ws = Path(tmp_path, "new_temp")
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     # set up PstFrom object
@@ -3970,7 +3979,7 @@ def shortname_conversion_test():
 if __name__ == "__main__":
     # mf6_freyberg_pp_locs_test()
     # invest()
-    # freyberg_test()
+    freyberg_test()
     # freyberg_prior_build_test()
     # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
@@ -3982,13 +3991,13 @@ if __name__ == "__main__":
     # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
-    tpf = TestPstFrom()
-    tpf.setup()
+    # tpf = TestPstFrom()
+    # tpf.setup()
     #tpf.test_add_array_parameters_to_file_list()
     #tpf.test_add_array_parameters_alt_inst_str_none_m()
     #tpf.test_add_array_parameters_alt_inst_str_0_d()
     # tpf.test_add_array_parameters_pps_grid()
-    tpf.test_add_list_parameters()
+    # tpf.test_add_list_parameters()
     # # pstfrom_profile()
     # mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test()
