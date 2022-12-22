@@ -14,3 +14,4 @@ dependencies:
   - coveralls
   - pytest
   - pytest-cov
+  - pytest-xdist

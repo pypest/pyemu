@@ -176,7 +176,7 @@ jobs:
 #        --with-coverage -w ./autotest --cover-package=pyemu \
 #        ${{ matrix.test-path }}
       run: |
-        pytest -v --cov=pyemu --cov-report=lcov ${{ matrix.test-path }}
+        pytest -v -n=auto --cov=pyemu --cov-report=lcov ${{ matrix.test-path }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -239,6 +239,7 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         parallel-finished: true
+        path-to-lcov: autotest/coverage.lcov
 #       uses: AndreMiras/coveralls-python-action@develop
 #       with:
 #         parallel-finished: true
