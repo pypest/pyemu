@@ -17,20 +17,20 @@ jobs:
         os: [ubuntu-latest, windows-latest] # , macos-latest] 
         python-version: [3.8, 3.9, "3.10", "3.11"]
         run-type: [std]
-        test-path: [
-#               "utils_tests.py", 
-#               "pst_tests_2.py",
-               "pst_from_tests.py",
-               "pst_tests.py",
-#               "en_tests.py",
-#               "full_meal_deal_tests.py", 
-#               "la_tests.py", 
-#               "plot_tests.py", 
-#               "metrics_tests.py",
-#               "moouu_tests.py", 
-#               "mat_tests.py", 
-#               "da_tests.py"
-            ]
+        test-path: '.' #[
+##               "utils_tests.py",
+##               "pst_tests_2.py",
+#               "pst_from_tests.py",
+#               "pst_tests.py",
+##               "en_tests.py",
+##               "full_meal_deal_tests.py",
+##               "la_tests.py",
+##               "plot_tests.py",
+##               "metrics_tests.py",
+##               "moouu_tests.py",
+##               "mat_tests.py",
+##               "da_tests.py"
+#            ]
         include: 
           - os: ubuntu-latest
             python-version: 3.9
@@ -114,6 +114,9 @@ jobs:
 #       shell: bash -l {0}
 #       run: |
 #           mamba env update --name pyemu --file etc/environment.yml
+
+    - name: Install Modflow executables
+      uses: modflowpy/install-modflow-action@v1
     
     - name: PESTPP exe install
       shell: bash -l {0}
@@ -121,18 +124,18 @@ jobs:
         if [[ ! -d "$HOME/.local/bin" ]]; then
             mkdir -p "$HOME/.local/bin";
         fi
-        # copy modflow bins to local dir to add to PATH later
-        if [ "$RUNNER_OS" == "Windows" ]; then
-            d="win"
-        elif [ "$RUNNER_OS" == "macOS" ]; then
-            d="mac"
-        elif [ "$RUNNER_OS" == "Linux" ]; then
-            d="linux"
-        else
-            d="unexpectedos"
-            exit 1
-        fi
-        cp -r bin/$d/. "$HOME/.local/bin/"
+#        # copy modflow bins to local dir to add to PATH later
+#        if [ "$RUNNER_OS" == "Windows" ]; then
+#            d="win"
+#        elif [ "$RUNNER_OS" == "macOS" ]; then
+#            d="mac"
+#        elif [ "$RUNNER_OS" == "Linux" ]; then
+#            d="linux"
+#        else
+#            d="unexpectedos"
+#            exit 1
+#        fi
+#        cp -r bin/$d/. "$HOME/.local/bin/"
         git clone -b develop --depth 1 https://github.com/usgs/pestpp
         cd pestpp
         mkdir build && cd build
@@ -165,10 +168,11 @@ jobs:
     - name: Add executables directory to path
       shell: bash
       run: |
+        echo "$MODFLOW_BIN_PATH" >> $GITHUB_PATH
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         echo $GITHUB_PATH
 
-    - name: ${{ matrix.test-path }}
+    - name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
       shell: bash -l {0}
       working-directory: ./autotest
 #      run: |
@@ -199,7 +203,7 @@ jobs:
       uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        flag-name: ${{ matrix.python-version }}-${{ matrix.test-path }}
+        flag-name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
         parallel: true
         path-to-lcov: autotest/coverage.lcov
         
