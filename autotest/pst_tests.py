@@ -1,10 +1,10 @@
 import os
-import platform
+# import platform
 import shutil
 import time
 import numpy as np
-if not os.path.exists("temp"):
-    os.mkdir("temp")
+# if not os.path.exists("temp"):
+#     os.mkdir("temp")
 import pyemu
 
 
@@ -542,7 +542,7 @@ def rectify_pgroup_test(tmp_path):
         f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
     # print(pst.parameter_groups)
 
-    pst.add_parameters(tpl_file, "crap.in", pst_path="temp")
+    pst.add_parameters(tpl_file, "crap.in", pst_path=tmp_path)
 
     # print(pst.parameter_groups)
     pst.rectify_pgroups()
