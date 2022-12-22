@@ -17,7 +17,7 @@ jobs:
         os: [ubuntu-latest, windows-latest] # , macos-latest] 
         python-version: [3.8, 3.9, "3.10", "3.11"]
         run-type: [std]
-        test-path: '.' #[
+        test-path: "." #[
 ##               "utils_tests.py",
 ##               "pst_tests_2.py",
 #               "pst_from_tests.py",
