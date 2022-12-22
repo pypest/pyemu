@@ -271,14 +271,23 @@ def setup_pilotpoints_grid(
         for name, dtype in par_info.dtypes.items():
             if dtype == object:
                 shp.field(name=name, fieldType="C", size=50)
-            elif dtype in [int, np.int64, np.int32]:
+            elif dtype in [int]:#, np.int64, np.int32]:
                 shp.field(name=name, fieldType="N", size=50, decimal=0)
             elif dtype in [float, np.float32, np.float64]:
                 shp.field(name=name, fieldType="N", size=50, decimal=10)
             else:
-                raise Exception(
-                    "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
-                )
+                try:
+                    if dtype in [np.int64, np.int32]:
+                        shp.field(name=name, fieldType="N", size=50, decimal=0)
+                    else:
+                        raise Exception(
+                            "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
+                        )
+
+                except Exception as e:
+                    raise Exception(
+                        "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
+                    )
 
         # some pandas awesomeness..
         par_info.apply(lambda x: shp.point(x.x, x.y), axis=1)
@@ -444,14 +453,23 @@ def write_pp_shapfile(pp_df, shapename=None):
     for name, dtype in dfs[0].dtypes.iteritems():
         if dtype == object:
             shp.field(name=name, fieldType="C", size=50)
-        elif dtype in [int, np.int, np.int64, np.int32]:
+        elif dtype in [int]:#, np.int, np.int64, np.int32]:
             shp.field(name=name, fieldType="N", size=50, decimal=0)
         elif dtype in [float, np.float32, np.float32]:
             shp.field(name=name, fieldType="N", size=50, decimal=8)
         else:
-            raise Exception(
-                "unrecognized field type in pp_df:{0}:{1}".format(name, dtype)
-            )
+            try:
+                if dtype in [np.int64, np.int32]:
+                    shp.field(name=name, fieldType="N", size=50, decimal=0)
+                else:
+                    raise Exception(
+                        "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
+                    )
+
+            except Exception as e:
+                raise Exception(
+                    "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
+                )
 
     # some pandas awesomeness..
     for df in dfs:

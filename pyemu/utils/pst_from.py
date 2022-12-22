@@ -2485,6 +2485,8 @@ class PstFrom(object):
                     "cov": ok_pp.point_cov_df,
                     "zn_ar": zone_array,
                     "sr": spatial_reference,
+                    "pstyle":par_style,
+                    "transform":transform
                 }
                 fac_processed = False
                 for facfile, info in self._pp_facs.items():  # check against
@@ -2493,6 +2495,9 @@ class PstFrom(object):
                         info["pp_data"].equals(pp_info_dict["pp_data"])
                         and info["cov"].equals(pp_info_dict["cov"])
                         and np.array_equal(info["zn_ar"], pp_info_dict["zn_ar"])
+                        and pp_info_dict["pstyle"] == info["pstyle"]
+                        and pp_info_dict["transform"] == info["transform"]
+
                     ):
                         if type(info["sr"]) == type(spatial_reference):
                             if isinstance(spatial_reference, dict):
@@ -2503,6 +2508,7 @@ class PstFrom(object):
 
                         fac_processed = True  # don't need to re-calc same factors
                         fac_filename = facfile  # relate to existing fac file
+                        self.logger.statement("reusing factors")
                         break
                 if not fac_processed:
                     # TODO need better way of naming sequential fac_files?
@@ -2619,9 +2625,14 @@ class PstFrom(object):
                 assert fac_filename is not None, "missing pilot-point input filename"
                 mult_dict["fac_file"] = os.path.relpath(fac_filename, self.new_d)
                 mult_dict["pp_file"] = pp_filename
-                mult_dict["pp_fill_value"] = 1.0
-                mult_dict["pp_lower_limit"] = 1.0e-10
-                mult_dict["pp_upper_limit"] = 1.0e10
+                if transform == "log":
+                    mult_dict["pp_fill_value"] = 1.0
+                    mult_dict["pp_lower_limit"] = 1.0e-30
+                    mult_dict["pp_upper_limit"] = 1.0e30
+                else:
+                    mult_dict["pp_fill_value"] = 0.0
+                    mult_dict["pp_lower_limit"] = -1.0e30
+                    mult_dict["pp_upper_limit"] = 1.0e30
             if zone_filename is not None:
                 mult_dict["zone_file"] = zone_filename
             relate_parfiles.append(mult_dict)
@@ -2634,6 +2645,8 @@ class PstFrom(object):
         df.loc[:, "partrans"] = transform
         df.loc[:, "parubnd"] = upper_bound
         df.loc[:, "parlbnd"] = lower_bound
+        if par_style != "d":
+            df.loc[:, "parval1"] = initial_value
         # df.loc[:,"tpl_filename"] = tpl_filename
 
         # store tpl --> in filename pair
