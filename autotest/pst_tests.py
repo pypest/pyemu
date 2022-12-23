@@ -2,15 +2,17 @@ import os
 # import platform
 import shutil
 import time
+
 import numpy as np
+
+
 # if not os.path.exists("temp"):
 #     os.mkdir("temp")
-import pyemu
 
 
 def from_io_with_inschek_test(tmp_path):
     import os
-    from pyemu import Pst, pst_utils
+    from pyemu import Pst
     # creation functionality
     dir = os.path.join("..", "verification", "10par_xsec", "template_mac")
     pst = Pst(os.path.join(dir, "pest.pst"))
@@ -29,7 +31,7 @@ def from_io_with_inschek_test(tmp_path):
 
 def tpl_ins_test(tmp_path):
     import os
-    from pyemu import Pst, pst_utils, helpers
+    from pyemu import helpers
     # creation functionality
     dir = os.path.join("..", "verification", "henry", "misc")
     files = os.listdir(dir)
@@ -51,8 +53,7 @@ def tpl_ins_test(tmp_path):
 
 def res_covreg_test():
     import os
-    import numpy as np
-    from pyemu import Pst, pst_utils
+    from pyemu import Pst
     # test Pst.res with cov mat regularization
     pst_dir = os.path.join("pst")
 
@@ -64,7 +65,7 @@ def res_covreg_test():
 def res_test(tmp_path):
     import os
     import numpy as np
-    from pyemu import Pst, pst_utils
+    from pyemu import Pst
     # residual functionality testing
     pst_dir = os.path.join("pst")
 
@@ -116,7 +117,7 @@ def pst_manip_test(tmp_path):
 
 def load_test(tmp_path):
     import os
-    from pyemu import Pst, pst_utils
+    from pyemu import Pst
     pst_dir = os.path.join("pst")
     temp_dir = tmp_path
     if not os.path.exists(temp_dir):
@@ -258,7 +259,7 @@ def pestpp_args_test(tmp_path):
 def reweight_test():
     import os
     import numpy as np
-    from pyemu import Pst, pst_utils
+    from pyemu import Pst
     pst_dir = os.path.join("pst")
     p = Pst(os.path.join(pst_dir, "pest.pst"))
     obsgrp_dict = {"pred": 1.0, "head": 1.0, "conc": 1.0}
@@ -433,8 +434,7 @@ def test_write_input_files(tmp_path):
     import os
     import shutil
     import numpy as np
-    import pyemu
-    from pyemu import Pst, pst_utils
+    from pyemu import Pst
     # creation functionality
     dir = os.path.join("..", "verification", "10par_xsec", "template_mac")
     temp_d = os.path.join(tmp_path,"temp_dir")
@@ -455,12 +455,11 @@ def test_write_input_files(tmp_path):
 
 
 def res_stats_test():
-    import os
     import pyemu
 
     import os
     import numpy as np
-    from pyemu import Pst, pst_utils
+    from pyemu import Pst
     # residual functionality testing
     pst_dir = os.path.join("pst")
 
@@ -684,8 +683,6 @@ def csv_to_ins_test(tmp_path):
 def lt_gt_constraint_names_test():
     import os
     import pyemu
-    import os
-    import pyemu
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     obs = pst.observation_data
     obs.loc[:,"weight"] = 1.0
@@ -894,7 +891,7 @@ def process_output_files_test():
 
     import os
     import numpy as np
-    from pyemu import Pst, pst_utils
+    from pyemu import pst_utils
 
     # ins_file = os.path.join("utils","hauraki_transient.mt3d.processed.ins")
     # out_file = ins_file.replace(".ins","")
@@ -1018,8 +1015,6 @@ def write2_nan_test(tmp_path):
     import numpy as np
     import pyemu
     import os
-    import pandas
-
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0e+1000
