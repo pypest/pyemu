@@ -1508,22 +1508,24 @@ def ensemble_res_1to1(
             obs_gg = obs_g.sort_values(by="obsval")
             for c, en in base_ensemble.items():
                 en_g = en.loc[:, obs_gg.obsnme]
-
+                emx = en_g.max()
+                emn = en_g.min()
                 # update y min and max for obs+noise ensembles
                 if len(obs_gg.obsval) > 1:
-                    ex = np.zeros(obs_gg.shape[0]) + en_g.max()
-                    en = np.zeros(obs_gg.shape[0]) + en_g.min()
-                    ax.fill_between(obs_gg.obsval.values, en, ex, facecolor=c, alpha=0.2, zorder=2)
+                    emx = np.zeros(obs_gg.shape[0]) + emx
+                    emn = np.zeros(obs_gg.shape[0]) + emn
+                    ax.fill_between(obs_gg.obsval.values, emn.values, emx.values,
+                                    facecolor=c, alpha=0.2, zorder=2)
                 else:
-                    ax.plot([obs_gg.obsval.values, obs_gg.obsval.values], [en, ex], color=c, alpha=0.2, zorder=2)
+                    ax.plot([obs_gg.obsval.values, obs_gg.obsval.values], [emn, emx], color=c, alpha=0.2, zorder=2)
         for c, en in ensembles.items():
             en_g = en.loc[:, obs_g.obsnme]
             # output mins and maxs
-            ex = en_g.max()
-            en = en_g.min()
+            emx = en_g.max()
+            emn = en_g.min()
             [
                 ax.plot([ov, ov], [een, eex], color=c, zorder=1)
-                for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)
+                for ov, een, eex in zip(obs_g.obsval.values, emn.values, emx.values)
             ]
         ax.plot([pmin, pmax], [pmin, pmax], "k--", lw=1.0, zorder=3)
         xlim = (pmin, pmax)
@@ -1553,27 +1555,28 @@ def ensemble_res_1to1(
             obs_gg = obs_g.sort_values(by="obsval")
             for c, en in base_ensemble.items():
                 en_g = en.loc[:, obs_gg.obsnme].subtract(obs_gg.obsval)
-                ex = en_g.max()
-                en = en_g.min()
+                emx = en_g.max()
+                emn = en_g.min()
                 if len(obs_gg.obsval) > 1:
-                    ex = np.zeros(obs_gg.shape[0]) + en_g.max()
-                    en = np.zeros(obs_gg.shape[0]) + en_g.min()
-                    ax.fill_between(obs_gg.obsval.values, en, ex, facecolor=c, alpha=0.2, zorder=2)
+                    emx = np.zeros(obs_gg.shape[0]) + emx
+                    emn = np.zeros(obs_gg.shape[0]) + emn
+                    ax.fill_between(obs_gg.obsval.values, emn.values, emx.values,
+                                    facecolor=c, alpha=0.2, zorder=2)
                 else:
                     # [ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
-                    ax.plot([obs_gg.obsval.values, obs_gg.obsval.values], [en, ex], color=c,
+                    ax.plot([obs_gg.obsval.values, obs_gg.obsval.values], [emn, emx], color=c,
                             alpha=0.2, zorder=2)
         omn = []
         omx = []
         for c, en in ensembles.items():
             en_g = en.loc[:, obs_g.obsnme].subtract(obs_g.obsval, axis=1)
-            ex = en_g.max()
-            en = en_g.min()
-            omn.append(en)
-            omx.append(ex)
+            emx = en_g.max()
+            emn = en_g.min()
+            omn.append(emn)
+            omx.append(emx)
             [
                 ax.plot([ov, ov], [een, eex], color=c, zorder=1)
-                for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)
+                for ov, een, eex in zip(obs_g.obsval.values, emn.values, emx.values)
             ]
 
         omn = pd.concat(omn).min()
