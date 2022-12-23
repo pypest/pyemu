@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest] # , macos-latest] 
-        python-version: [3.7, 3.8, 3.9] # , 3.7, 3.6]
+        python-version: [3.8, 3.9, "3.10", "3.11"]
         run-type: [std]
         test-path: [
               "utils_tests.py", 
@@ -31,18 +31,13 @@ jobs:
               "mat_tests.py", 
               "da_tests.py"
             ]
-        exclude:
-          - os: windows-latest 
-            python-version: 3.7
-          - os: windows-latest 
-            python-version: 3.9 
         include: 
           - os: ubuntu-latest
-            python-version: 3.8
+            python-version: 3.9
             run-type: nb
             test-path: autotest_notebooks.py
           - os: windows-2019
-            python-version: 3.8
+            python-version: 3.9
             run-type: std
             test-path: pst_from_tests.py
 
