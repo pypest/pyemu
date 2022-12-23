@@ -1215,7 +1215,7 @@ def gw_sft_ins_test(tmp_path):
     #pyemu.gw_utils.setup_sft_obs(sft_outfile)
     #pyemu.gw_utils.setup_sft_obs(sft_outfile,start_datetime="1-1-1970")
 
-    df = pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[10950.00])
+    df = pyemu.gw_utils.setup_sft_obs(str(sft_outfile), start_datetime="1-1-1970",times=[10950.00])
     #print(df)
 
 
