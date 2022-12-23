@@ -3119,12 +3119,17 @@ class Cov(Matrix):
         x = np.zeros((nobs, 1))
         onames = []
         ocount = 0
+        std_dict = {}
+        if "standard_deviation" in pst.observation_data.columns:
+            std_dict = pst.observation_data.standard_deviation.to_dict()
+            std_dict = {o:s**2 for o,s in std_dict.items() if pd.notna(s)}
         for weight, obsnme in zip(
             pst.observation_data.weight, pst.observation_data.obsnme
         ):
             w = float(weight)
             w = max(w, 1.0e-30)
-            x[ocount] = (1.0 / w) ** 2
+
+            x[ocount] = std_dict.get(obsnme,(1.0 / w) ** 2)
             ocount += 1
             onames.append(obsnme.lower())
         return cls(x=x, names=onames, isdiagonal=True)
@@ -3201,17 +3206,23 @@ class Cov(Matrix):
             t = row["partrans"]
             if t in ["fixed", "tied"]:
                 continue
-            if scale_offset:
-                lb = row.parlbnd * row.scale + row.offset
-                ub = row.parubnd * row.scale + row.offset
+            if "standard_deviation" in row.index and pd.notna(row["standard_deviation"]):
+                if t == "log":
+                    var = (np.log10(row["standard_deviation"])) ** 2
+                else:
+                    var = row["standard_deviation"] ** 2
             else:
-                lb = row.parlbnd
-                ub = row.parubnd
+                if scale_offset:
+                    lb = row.parlbnd * row.scale + row.offset
+                    ub = row.parubnd * row.scale + row.offset
+                else:
+                    lb = row.parlbnd
+                    ub = row.parubnd
 
-            if t == "log":
-                var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / sigma_range) ** 2
-            else:
-                var = ((ub - lb) / sigma_range) ** 2
+                if t == "log":
+                    var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / sigma_range) ** 2
+                else:
+                    var = ((ub - lb) / sigma_range) ** 2
             if np.isnan(var) or not np.isfinite(var):
                 raise Exception(
                     "Cov.from_parameter_data() error: "

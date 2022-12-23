@@ -3986,7 +3986,7 @@ if __name__ == "__main__":
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
-    # mf6_freyberg_direct_test()
+    mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     # xsec_test()
     # mf6_freyberg_short_direct_test()

@@ -53,7 +53,7 @@ pst_config["par_dtype"] = np.dtype(
         ("pargp", "U20"),
         ("scale", np.float64),
         ("offset", np.float64),
-        ("dercom", np.int64),
+        ("dercom", int),
     ]
 )
 pst_config["par_fieldnames"] = (

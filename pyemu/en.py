@@ -322,6 +322,8 @@ class Ensemble(object):
 
         if "index_col" not in kwargs:
             kwargs["index_col"] = 0
+        if "low_memory" not in kwargs:
+            kwargs["low_memory"] = False
         df = pd.read_csv(filename, *args, **kwargs)
         return cls(pst=pst, df=df)
 
@@ -464,7 +466,7 @@ class Ensemble(object):
             if fill:
                 for i, v in enumerate(mean_values.values):
                     reals[:, i] = v
-            cov_map = {n: i for n, i in zip(cov.row_names, np.arange(cov.shape[0]))}
+            #cov_map = {n: i for n, i in zip(cov.row_names, np.arange(cov.shape[0]))}
             mv_map = {
                 n: i for n, i in zip(mean_values.index, np.arange(mean_values.shape[0]))
             }
