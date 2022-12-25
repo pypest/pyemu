@@ -166,7 +166,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Test Notebooks
-      if: ${{ runner.os == 'ubuntu-latest' && matrix.python-version == 3.9 }}
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9 }}
       shell: bash -l {0}
       working-directory: ./examples
       run: |
