@@ -18,15 +18,15 @@ jobs:
         python-version: [3.8, 3.9, "3.10", "3.11"]
         run-type: [std]
         test-path: ["."]
-        include: 
-          - os: ubuntu-latest
-            python-version: 3.9
-            run-type: nb
-            test-path: autotest_notebooks.py
-          - os: windows-2019
-            python-version: 3.9
-            run-type: std
-            test-path: pst_from_tests.py
+#        include:
+#          - os: ubuntu-latest
+#            python-version: 3.9
+#            run-type: nb
+#            test-path: autotest_notebooks.py
+#          - os: windows-2019
+#            python-version: 3.9
+#            run-type: std
+#            test-path: pst_from_tests.py
 
 
     steps:
@@ -81,12 +81,6 @@ jobs:
 #         use-mamba: true
 #         # environment-file: etc/environment.yml
 #         # use-only-tar-bz2: true
-
-    - name: Add jupyter and jupytext to notebooks run
-      if: matrix.run-type == 'nb'
-      shell: bash -l {0}
-      run: |
-        micromamba install --name pyemu jupyter jupytext
 
 #     - name: Add packages to pyemu environment using conda
 #       if: ${{ matrix.python-version < 3.8 }}
@@ -168,6 +162,16 @@ jobs:
 #        ${{ matrix.test-path }}
       run: |
         pytest -v -n=auto --cov=pyemu --cov-report=lcov ${{ matrix.test-path }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Test Notebooks
+      if: ${{ runner.os == 'ubuntu-latest' && matrix.python-version == 3.9 }}
+      shell: bash -l {0}
+      working-directory: ./examples
+      run: |
+        micromamba install --name pyemu jupyter jupytext
+        pytest -v -n=auto --nbmake --cov=pyemu --cov-report=lcov *.ipynb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
