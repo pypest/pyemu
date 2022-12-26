@@ -1,6 +1,8 @@
 import os
 import platform
 
+import pytest
+
 ext = ''
 local_bins = False  # change if wanting to test with local binary exes
 if local_bins:
@@ -29,11 +31,9 @@ swp_exe_name = os.path.join(bin_path, "pestpp-swp")
 #     if not os.path.exists(f):
 #         raise Exception("{0} not found",f)
 
-def freyberg_test():
-    import shutil
 
-    import numpy as np
-    import pandas as pd
+@pytest.fixture
+def freyberg_spinup(tmp_path):
     try:
         import flopy
     except Exception as e:
@@ -46,6 +46,10 @@ def freyberg_test():
                                    exe_name=mf_exe_name)
     setattr(m,"sr",pyemu.helpers.SpatialReference(delc=m.dis.delc.array,delr=m.dis.delr.array))
     org_model_ws = "temp"
+    if not os.path.exists(tmp_path):
+        os.makedirs(tmp_path)
+    bd = os.getcwd()
+    os.chdir(tmp_path)
 
     m.change_model_ws(org_model_ws)
     m.write_input()
@@ -77,10 +81,68 @@ def freyberg_test():
                                          temporal_bc_props=temp_bc_props,
                                          remove_existing=True,
                                          model_exe_name="mfnwt")
+    yield ph
+    os.chdir(bd)
+
+
+def freyberg_test(freyberg_spinup):
+    #
+    # import shutil
+    #
+    # import numpy as np
+    import pandas as pd
+    # try:
+    #     import flopy
+    # except Exception as e:
+    #     return
+    import pyemu
+    #
+    # org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    # nam_file = "freyberg.nam"
+    # m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False,forgive=False,
+    #                                exe_name=mf_exe_name)
+    # setattr(m,"sr",pyemu.helpers.SpatialReference(delc=m.dis.delc.array,delr=m.dis.delr.array))
+    # bd = os.getcwd()
+    # org_model_ws = "temp"
+    # if not os.path.exists(tmp_path):
+    #     os.makedirs(tmp_path)
+    # os.chdir(tmp_path)
+    # m.change_model_ws(org_model_ws)
+    # m.write_input()
+    # print("{0} {1}".format(mf_exe_name,m.name+".nam"),org_model_ws)
+    # pyemu.os_utils.run("{0} {1}".format(mf_exe_name,m.name+".nam"),cwd=org_model_ws)
+    # hds_file = "freyberg.hds"
+    # list_file = "freyberg.list"
+    # for f in [hds_file, list_file]:
+    #     assert os.path.exists(os.path.join(org_model_ws, f))
+    #
+    # new_model_ws = "template1"
+    #
+    # props = [["upw.hk",None],["upw.vka",None],["upw.ss",None],["rch.rech",None]]
+    #
+    # hds_kperk = [[kper,0] for kper in range(m.nper)]
+    #
+    # temp_bc_props = [["wel.flux",kper] for kper in range(m.nper)]
+    # spat_bc_props= [["wel.flux",2]]
+    #
+    # ph = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,org_model_ws,
+    #                                      const_props=props,
+    #                                      zone_props=props,
+    #                                      kl_props=props,
+    #                                      pp_props=props,
+    #                                      grid_props=props,
+    #                                      hds_kperk=hds_kperk,
+    #                                      sfr_pars=True,sfr_obs=True,
+    #                                      spatial_bc_props=spat_bc_props,
+    #                                      temporal_bc_props=temp_bc_props,
+    #                                      remove_existing=True,
+    #                                      model_exe_name="mfnwt")
     # tmp = mf_exe_name.split(os.sep)
     # tmp = os.path.join(*tmp[1:])+ext
     # assert os.path.exists(tmp),tmp
     # shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
+    ph = freyberg_spinup
+    new_model_ws = ph.new_model_ws
     ph.pst.control_data.noptmax = 0
     ph.pst.write(os.path.join(new_model_ws,"test.pst"))
     print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
@@ -114,14 +176,12 @@ def freyberg_test():
     assert final_phi < init_phi
 
 
-def fake_run_test():
+def fake_run_test(freyberg_spinup):
     import os
     import numpy as np
     import pyemu
-    new_model_ws = "template1"
-    if not os.path.exists(new_model_ws):
-        freyberg_test()
-    pst = pyemu.Pst(os.path.join(new_model_ws,"freyberg.pst"))
+    ph = freyberg_spinup
+    pst = pyemu.Pst(os.path.join(ph.new_model_ws,"freyberg.pst"))
     pst.pestpp_options["ies_num_reals"] = 10
     pst.pestpp_options["ies_par_en"] = "par_en.csv"
     pst.control_data.noptmax = 0
@@ -130,7 +190,8 @@ def fake_run_test():
     #pyemu.os_utils.run("{0} {1}".format(ies_exe_name, "fake.pst"), cwd=new_model_ws)
 
     new_cwd = "fake_test"
-    pst = pyemu.helpers.setup_fake_forward_run(pst, "fake.pst", org_cwd=new_model_ws,new_cwd=new_cwd)
+    pst = pyemu.helpers.setup_fake_forward_run(pst, "fake.pst", org_cwd=ph.new_model_ws,
+                                               new_cwd=new_cwd)
     s = pst.process_output_files(new_cwd)
     if s is not None:
         assert s.dropna().shape[0] == pst.nobs
@@ -142,7 +203,6 @@ def fake_run_test():
         print(obs.loc[diff>0.0,"obsval"],s.loc[diff>0.0,"obsval"])
         assert diff.sum() < 1.0e-3,diff.sum()
     pyemu.os_utils.run("{0} {1}".format(ies_exe_name, "fake.pst"), cwd=new_cwd)
-
 
 
 def freyberg_kl_pp_compare():
@@ -219,10 +279,7 @@ def freyberg_kl_pp_compare():
 
 
 
-def freyberg_diff_obs_test():
-    import shutil
-
-    import numpy as np
+def freyberg_diff_obs_test(tmp_path):
     import pandas as pd
     try:
         import flopy
@@ -231,11 +288,14 @@ def freyberg_diff_obs_test():
     import pyemu
 
     oorg_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    obs_locs = pd.read_csv(os.path.join(oorg_model_ws,"obs_loc.csv"))
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=oorg_model_ws, check=False,forgive=False,
                                    exe_name=mf_exe_name)
-    org_model_ws = "temp"
+    bd = os.getcwd()
+    os.chdir(tmp_path)
 
+    org_model_ws = "temp"
     m.change_model_ws(org_model_ws)
     m.write_input()
     print("{0} {1}".format(mf_exe_name,m.name+".nam"),org_model_ws)
@@ -258,8 +318,6 @@ def freyberg_diff_obs_test():
                                          remove_existing=True,
                                          model_exe_name="mfnwt")
 
-
-    obs_locs = pd.read_csv(os.path.join(oorg_model_ws,"obs_loc.csv"))
     obs_locs.loc[:, "i"] = obs_locs.pop("row") - 1
     obs_locs.loc[:, "j"] = obs_locs.pop("col") - 1
     obs_locs.loc[:,"site"] = obs_locs.apply(lambda x: "trgw_{0:03d}_{1:03d}".format(x.i,x.j),axis=1)
@@ -315,13 +373,14 @@ def freyberg_diff_obs_test():
     pst = pyemu.Pst(os.path.join(new_model_ws,"test.pst"))
     print(pst.phi)
     assert pst.phi < 1.0e-6,pst.phi
-
+    os.chdir(bd)
 
 
 if __name__ == "__main__":
     #freyberg_diff_obs_test()
-    freyberg_test()
+    # pytest.main(["-s", "-v", "--basetemp", "testrunner", f"{__file__}::freyberg_test"])
     #freyberg_kl_pp_compare()
     #import shapefile
     #run_sweep_test()
-    #fake_run_test()
+    # pytest.main(["-s", "-v", "--basetemp", "testrunner", f"{__file__}::fake_run_test"])
+    pytest.main(["-s", "-v", "--basetemp", "testrunner", f"{__file__}::freyberg_diff_obs_test"])

@@ -1,11 +1,10 @@
 import os
 import platform
 import shutil
+from pathlib import Path
 
-if not os.path.exists("temp"):
-    os.mkdir("temp")
 
-def from_flopy_kl_test():
+def from_flopy_kl_test(tmp_path):
     import shutil
     import numpy as np
     import pandas as pd
@@ -25,6 +24,9 @@ def from_flopy_kl_test():
     for i in range(m.nrow):
         hfb_data.append([0, i, jcol1, i, jcol2, 0.001])
     flopy.modflow.ModflowHfb(m, 0, 0, len(hfb_data), hfb_data=hfb_data)
+
+    bd = os.getcwd()
+    os.chdir(tmp_path)
 
     org_model_ws = "temp"
     m.change_model_ws(org_model_ws)
@@ -46,9 +48,10 @@ def from_flopy_kl_test():
                                          kl_props=kl_props,
                                          remove_existing=True,
                                          model_exe_name="mfnwt")
+    os.chdir(bd)
 
 
-def from_flopy():
+def from_flopy(tmp_path):
     import shutil
     import numpy as np
     import pandas as pd
@@ -69,6 +72,10 @@ def from_flopy():
     for i in range(m.nrow):
         hfb_data.append([0, i, jcol1, i, jcol2, 0.001])
     flopy.modflow.ModflowHfb(m, 0, 0, len(hfb_data), hfb_data=hfb_data)
+    if not Path(tmp_path).exists():
+        Path(tmp_path).mkdir()
+    bd = Path.cwd()
+    os.chdir(tmp_path)
 
     org_model_ws = "temp"
     m.change_model_ws(org_model_ws)
@@ -125,7 +132,6 @@ def from_flopy():
     pe = ph.draw(100)
     ph.pst.parameter_data.loc["rech0_zn1", "parval1"] = 2.0
 
-    bd = os.getcwd()
     os.chdir(new_model_ws)
     # try:
     ph.pst.write_input_files()
@@ -174,13 +180,13 @@ def from_flopy():
     # except:
     #     pass
     os.chdir(bd)
-
-    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    zn_arr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
+    org_model_ws = Path("..", "examples", "freyberg_sfr_update").absolute()
     nam_file = "freyberg.nam"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
     #m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
-
+    os.chdir(tmp_path)
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True,
@@ -274,7 +280,7 @@ def from_flopy():
                                              temporal_list_props=list_props, hds_kperk=[0, 0], remove_existing=True)
 
     pe = helper.draw(100)
-    zn_arr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
+
     k_zone_dict = {k: zn_arr for k in range(3)}
 
     obssim_smp_pairs = None
@@ -307,22 +313,25 @@ def from_flopy():
     pst.write(os.path.join(new_model_ws, "freyberg_pest.pst"))
     cov = helper.build_prior(fmt="none")
     cov.to_coo(os.path.join(new_model_ws, "cov.coo"))
+    os.chdir(bd)
+    # from_flopy_zone_pars()
 
-    from_flopy_zone_pars()
 
-
-def from_flopy_zone_pars():
+def from_flopy_zone_pars_test(tmp_path):
     import numpy as np
     try:
         import flopy
     except:
         return
     import pyemu
-    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    org_model_ws = Path("..", "examples", "freyberg_sfr_update").absolute()
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
-    m.change_model_ws(org_model_ws)
-    m.write_input()
+    zn_arr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
+    zn_arr2 = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "rand.zones"), dtype=int)
+
+    bd = os.getcwd()
+    os.chdir(tmp_path)
 
     new_model_ws = "temp_pst_from_flopy3"
     if os.path.exists(new_model_ws):
@@ -332,9 +341,6 @@ def from_flopy_zone_pars():
     const_props = [["rch.rech", i] for i in range(m.nper)]
     grid_props = grid_props.extend(["extra.prsity", 0])
     zone_props = [["extra.prsity", 0], ["extra.prsity", 2], ["upw.vka", 1], ["upw.vka", 2]]
-
-    zn_arr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
-    zn_arr2 = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "rand.zones"), dtype=int)
 
     pp_props = [["upw.hk", [0, 1]], ["extra.prsity", 1], ["upw.ss", 1], ["upw.ss", 2], ["upw.vka", 2]]
     k_zone_dict = {"upw.hk": {k: zn_arr for k in range(3)}, "extra.prsity": {k: zn_arr2 for k in range(3)},
@@ -368,30 +374,30 @@ def from_flopy_zone_pars():
                                              k_zone_dict=k_zone_dict,
                                              hds_kperk=[0, 0], build_prior=False)
     print(helper.pst.par_groups)
+    os.chdir(bd)
 
 
-
-def from_flopy_test():
+def from_flopy_test(tmp_path):
     bd = os.getcwd()
     try:
-        from_flopy()
+        from_flopy(tmp_path)
     except Exception as e:
         os.chdir(bd)
         raise Exception("error in from_flopy: " + str(e))
     # print(os.getcwd())
 
 
-def from_flopy_test_reachinput_test():
+def from_flopy_test_reachinput_test(tmp_path):
     bd = os.getcwd()
     try:
-        from_flopy_reachinput()
+        from_flopy_reachinput(tmp_path)
     except Exception as e:
         os.chdir(bd)
         raise Exception("error in from_flopy_reachinput: " + str(e))
     # print(os.getcwd())
 
 
-def from_flopy_reachinput():
+def from_flopy_reachinput(tmp_path):
     import pandas as pd
     """ test for building sfr pars from reachinput sfr and seg pars across all kper"""
     try:
@@ -406,13 +412,12 @@ def from_flopy_reachinput():
     #     tempchek = None  # os.path.join("..", "..", "bin", "linux", "tempchek")
 
     bd = os.getcwd()
-    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_reaches")
+    org_model_ws = Path("..", "examples", "freyberg_sfr_reaches").absolute()
     nam_file = "freyberg.nam"
-    new_model_ws = "temp_pst_from_flopy_reaches"
-    if os.path.exists(new_model_ws):
-        shutil.rmtree(new_model_ws,ignore_errors=True)
 
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    os.chdir(tmp_path)
+
     # test passing different arguments
     args_to_test = [True,
                     ["strhc1", "flow"],
@@ -497,7 +502,8 @@ def from_flopy_reachinput():
                 pass
             else:
                 raise Exception(str(e))
-        os.chdir(bd)
+        os.chdir('..')
+    os.chdir(bd)
 
 
 def run_array_pars():
@@ -508,7 +514,8 @@ def run_array_pars():
     pyemu.helpers.apply_array_pars()
     os.chdir('..')
 
-def parrep_test():
+
+def parrep_test(tmp_path):
     import pyemu
     import pandas as pd
     import numpy as np
@@ -517,7 +524,8 @@ def parrep_test():
     np.random.seed(42)
     parvals = np.random.random(20) + 5
     parvals[0] = 0.001
-
+    bd = os.getcwd()
+    os.chdir(tmp_path)
     # make a fake parfile
     with open('fake.par','w') as ofp:
         ofp.write('single point\n')
@@ -568,8 +576,10 @@ def parrep_test():
     pst.parrep('fake_parens.jcb', real_name=2)
     # confirm binary format works as csv did
     assert np.allclose(pst.parameter_data.parval1.values[:-1],parens.T[2].values[:-1],atol=0.0001)
+    os.chdir(bd)
 
-def pst_from_flopy_geo_draw_test():
+
+def pst_from_flopy_geo_draw_test(tmp_path):
     import shutil
     import numpy as np
     import pandas as pd
@@ -584,6 +594,8 @@ def pst_from_flopy_geo_draw_test():
     flopy.modflow.ModflowRiv(m, stress_period_data={0: [[0, 0, 0, 30.0, 1.0, 25.0],
                                                         [0, 0, 1, 31.0, 1.0, 25.0],
                                                         [0, 0, 1, 31.0, 1.0, 25.0]]})
+    bd = os.getcwd()
+    os.chdir(tmp_path)
     org_model_ws = "temp"
     m.change_model_ws(org_model_ws)
     m.write_input()
@@ -621,9 +633,10 @@ def pst_from_flopy_geo_draw_test():
     assert diff_mn.apply(np.abs).max() < 0.1
     print(diff_sd)
     assert diff_sd.apply(np.abs).max() < 0.1
+    os.chdir(bd)
 
 
-def from_flopy_pp_test():
+def from_flopy_pp_test(tmp_path):
     import numpy as np
     import pandas as pd
     try:
@@ -634,6 +647,8 @@ def from_flopy_pp_test():
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    bd = os.getcwd()
+    os.chdir(tmp_path)
     m.change_model_ws("temp")
     ib = m.bas6.ibound.array
     ib[ib>0] = 3
@@ -687,13 +702,12 @@ def from_flopy_pp_test():
                                              pp_space=4,
                                              use_pp_zones=False,
                                              build_prior=True)
+    os.chdir(bd)
 
 
-
-def pst_from_flopy_specsim_draw_test():
+def pst_from_flopy_specsim_draw_test(tmp_path):
     import shutil
     import numpy as np
-    import pandas as pd
     try:
         import flopy
     except:
@@ -705,6 +719,8 @@ def pst_from_flopy_specsim_draw_test():
     flopy.modflow.ModflowRiv(m, stress_period_data={0: [[0, 0, 0, 30.0, 1.0, 25.0],
                                                         [0, 0, 1, 31.0, 1.0, 25.0],
                                                         [0, 0, 1, 31.0, 1.0, 25.0]]})
+    bd = os.getcwd()
+    os.chdir(tmp_path)
     org_model_ws = "temp"
     m.change_model_ws(org_model_ws)
     m.write_input()
@@ -777,6 +793,7 @@ def pst_from_flopy_specsim_draw_test():
     #print(sd2)
     #print(diff_sd)
     assert diff_sd.apply(np.abs).max() < 0.1,diff_sd.apply(np.abs).sort_values()
+    os.chdir(bd)
 
 def at_bounds_test():
     import pyemu
@@ -845,8 +862,8 @@ if __name__ == "__main__":
     #pst_from_flopy_specsim_draw_test()
     # run_array_pars()
     # from_flopy_zone_pars()
-    from_flopy_pp_test()
-    #from_flopy()
+    # from_flopy_pp_test()
+    from_flopy("temp")
     #parrep_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()
