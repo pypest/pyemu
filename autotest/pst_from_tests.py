@@ -3207,7 +3207,7 @@ def mf6_freyberg_pp_locs_test(tmp_path):
     m_d = Path(tmp_path, "master_glm")
     pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,
                                  worker_root=tmp_path,
-                                 master_dir=m_d)
+                                 master_dir=m_d, port=4006)
 
     sen_df = pd.read_csv(os.path.join(m_d,"freyberg.isen"),index_col=0).loc[:,pst.adj_par_names]
     print(sen_df.T)
