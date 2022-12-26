@@ -167,7 +167,7 @@ def freyberg_test(freyberg_spinup):
     ph.pst.write(os.path.join(new_model_ws, "test.pst"))
     master_dir = "test_master"
     pyemu.os_utils.start_workers(new_model_ws,ies_exe_name,"test.pst",
-                                num_workers=10,worker_root='.',
+                                num_workers=10,worker_root=os.path.join(new_model_ws,'..'),
                                 master_dir=master_dir,silent_master=False)
 
     df = pd.read_csv(os.path.join(master_dir,"test.phi.meas.csv"),index_col=0)
@@ -274,7 +274,8 @@ def freyberg_kl_pp_compare():
     ph.pst.parameter_data.loc[ph.pst.parameter_data.pargp == "pp_hk0", "partrans"] = "fixed"
     ph.pst.write(os.path.join(new_model_ws, "pest_kl.pst"))
 
-    pyemu.os_utils.start_workers(new_model_ws,"pestpp-ies","pest_pp.pst", num_workers=10,worker_root='.',
+    pyemu.os_utils.start_workers(new_model_ws,"pestpp-ies","pest_pp.pst", num_workers=10,
+                                 worker_root='.',
                                 master_dir="pest_pp")
 
 
