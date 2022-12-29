@@ -276,6 +276,8 @@ class PstFrom(object):
             if self._spatial_ref_xarray is None:
                 self._spatial_ref_xarray = self._spatial_reference.xcellcenters
                 self._spatial_ref_yarray = self._spatial_reference.ycellcenters
+            if self._spatial_reference.grid_type=='vertex':
+                return (self._spatial_ref_xarray[i, ], self._spatial_ref_yarray[i, ])
 
             return (self._spatial_ref_xarray[i, j], self._spatial_ref_yarray[i, j])
 
