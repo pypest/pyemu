@@ -263,10 +263,16 @@ class PstFrom(object):
         if all([ij is None for ij in [i, j]]):
             return i, j
         else:
-            return (
-                self._spatial_reference.xcentergrid[i, j],
-                self._spatial_reference.ycentergrid[i, j],
-            )
+            if self._spatial_reference.grid_type=='vertex':
+                return (
+                    self._spatial_reference.xcentergrid[i, ],
+                    self._spatial_reference.ycentergrid[i, ],
+                )
+            else:
+                return (
+                    self._spatial_reference.xcentergrid[i, j],
+                    self._spatial_reference.ycentergrid[i, j],
+                )
 
     def _flopy_mg_get_xy(self, args, **kwargs):
         i, j = self.parse_kij_args(args, kwargs)
@@ -1968,6 +1974,9 @@ class PstFrom(object):
                     "-) Better to pass an appropriately " "transformed geostruct"
                 )
 
+        if len(zone_array.shape)==1 and self._spatial_reference.grid_type=='vertex':
+            zone_array = np.reshape(zone_array, (zone_array.shape[0], 1))
+
         # Get useful variables from arguments passed
         # if index_cols passed as a dictionary that maps i,j information
         idx_cols = index_cols
@@ -2232,6 +2241,7 @@ class PstFrom(object):
                             "OK - using spatial reference " "in parent object."
                         )
                         spatial_reference = self.spatial_reference
+                        spatial_reference_type = spatial_reference.grid_type
                     else:
                         # uhoh
                         self.logger.lraise(
@@ -2245,18 +2255,27 @@ class PstFrom(object):
                     structured = True
                     for mod_file, ar in file_dict.items():
                         orgdata = ar.shape
-                        assert orgdata[0] == spatial_reference.nrow, (
-                            "Spatial reference nrow not equal to original data nrow for\n"
-                            + os.path.join(
-                                *os.path.split(self.original_file_d)[1:], mod_file
+                        if spatial_reference_type=='vertex':
+                            assert orgdata[0] == spatial_reference.ncpl, (
+                                "Spatial reference ncpl not equal to original data ncpl for\n"
+                                + os.path.join(
+                                    *os.path.split(self.original_file_d)[1:], mod_file
+                                )
                             )
-                        )
-                        assert orgdata[1] == spatial_reference.ncol, (
-                            "Spatial reference ncol not equal to original data ncol for\n"
-                            + os.path.join(
-                                *os.path.split(self.original_file_d)[1:], mod_file
+
+                        else:
+                            assert orgdata[0] == spatial_reference.nrow, (
+                                "Spatial reference nrow not equal to original data nrow for\n"
+                                + os.path.join(
+                                    *os.path.split(self.original_file_d)[1:], mod_file
+                                )
                             )
-                        )
+                            assert orgdata[1] == spatial_reference.ncol, (
+                                "Spatial reference ncol not equal to original data ncol for\n"
+                                + os.path.join(
+                                    *os.path.split(self.original_file_d)[1:], mod_file
+                                )
+                            )
                 # (stolen from helpers.PstFromFlopyModel()._pp_prep())
                 # but only settting up one set of pps at a time
                 pnb = par_name_base[0]
