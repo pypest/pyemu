@@ -3966,6 +3966,159 @@ def shortname_conversion_test():
         par = par - parin
     assert len(par) == 0, f"{len(par)} pars not found in tplfiles: {par[:100]}..."
 
+def vertex_grid_test():
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    import flopy
+
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_quadtree')
+    tmp_model_ws = "temp_pst_from"
+    if os.path.exists(tmp_model_ws):
+        shutil.rmtree(tmp_model_ws)
+    os.mkdir(tmp_model_ws)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
+    # sim.set_all_data_external()
+    sim.set_sim_path(tmp_model_ws)
+    # sim.set_all_data_external()
+    m = sim.get_model()
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
+
+    modelgrid = m.modelgrid
+    # the model grid is vertex type
+    assert modelgrid.grid_type=='vertex'
+
+    # run the model once
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+
+    # pst from
+    template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    # instantiate PstFrom
+    pf = pyemu.utils.PstFrom(original_d=tmp_model_ws, 
+                                new_d=template_ws, 
+                                remove_existing=True, 
+                                longnames=True, 
+                                spatial_reference=modelgrid, 
+                                zero_based=False, 
+                                echo=True) 
+    pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
+
+    # exponential variogram for spatially varying parameters
+    v_space = pyemu.geostats.ExpVario(contribution=1.0, 
+                                        a=1000, 
+                                        anisotropy=1.0,
+                                        bearing=0.0 
+                                        )
+    # geostatistical structure for spatially varying parameters
+    grid_gs = pyemu.geostats.GeoStruct(variograms=v_space, transform='log') 
+
+    tag = "npf_k_"
+    files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
+
+    # get the IDOMAIN array to use as zone array
+    ib = m.dis.idomain.get_data()
+
+    # make sure array files are tidy
+    for f in files:
+        filename=os.path.join(template_ws, f)
+        with open(filename, 'r') as f:
+            a = f.read()
+        a = [float(i) for i in a.split()]
+        np.savetxt(fname=filename, X=a)
+
+    for f in files:
+        layer = int(f.split('_layer')[-1].split('.')[0]) - 1
+        # grid (fine) scale parameters
+        df_gr = pf.add_parameters(f,
+                        zone_array=ib[layer], 
+                        par_type="grid", 
+                        geostruct=grid_gs, 
+                        par_name_base=f.split('.')[1].replace("_","")+"gr", 
+                        pargp=f.split('.')[1].replace("_","")+"gr", 
+                        lower_bound=0.2, upper_bound=5.0, 
+                        ult_ubound=100, ult_lbound=0.01 
+                    )    
+        # pilot point (medium) scale parameters
+        df_pp = pf.add_parameters(f,
+                            zone_array=ib[layer],
+                            par_type="pilotpoints",
+                            geostruct=grid_gs,
+                            par_name_base=f.split('.')[1].replace("_","")+"pp",
+                            pargp=f.split('.')[1].replace("_","")+"pp",
+                            lower_bound=0.2,upper_bound=5.0,
+                            ult_ubound=100, ult_lbound=0.01,
+                            pp_space=500) # `
+
+    # add the observations to pf
+    df = pd.read_csv(os.path.join(template_ws, "sfr_obs.csv"), index_col=0)
+    sfr_df = pf.add_observations("sfr_obs.csv",
+                                insfile="sfr_obs.csv.ins", 
+                                index_cols="time", 
+                                use_cols=list(df.columns.values), 
+                                prefix="sfr") 
+
+    pst = pf.build_pst()
+
+    # run once
+    pst.control_data.noptmax=0
+    pst.write(os.path.join(template_ws, 'test.pst'))
+    os_utils.run("{0} test.pst".format(pp_exe_path), cwd=template_ws)
+    pstchk = pyemu.Pst(os.path.join(template_ws,'test.pst'))
+    assert pstchk.phi < 1e-6
+
+
+    # check zone par bounds are respected
+    par = pst.parameter_data
+    assert 'zone' in par.columns
+
+    par['zone'] = [int(i.split(':')[-1]) for i in par.parnme.values]
+    par_org = par.copy()
+    #check gr pars
+    for zone in par.zone.unique():
+        par.loc[(par.zone==zone) & (par.ptype=='gr'), 'parval1'] = float(zone)
+        par.loc[(par.zone==zone) & (par.ptype=='gr'), 'parlbnd'] = float(zone)-0.1
+        par.loc[(par.zone==zone) & (par.ptype=='gr'), 'parubnd'] = float(zone)+0.1
+
+    # write model input files
+    pst.write_input_files(template_ws)
+    pyemu.os_utils.run(r'python forward_run.py', cwd=template_ws)
+
+    ib = m.dis.idomain.get_data()
+    for f in files:
+        layer = int(f.split('_layer')[-1].split('.')[0]) - 1
+        a = np.loadtxt(os.path.join(template_ws, f))
+        a_org = np.loadtxt(os.path.join(template_ws,'org', f))
+        # weak check
+        for zone in par.zone.unique():
+            assert all(abs((a/a_org)[ib[1]==int(zone)]-int(zone)) < 1e-6)
+
+    #check pp pars
+    #reset par values
+    par.loc[:] = par_org.values
+    for zone in par.zone.unique():
+        par.loc[(par.zone==zone) & (par.ptype=='pp'), 'parval1'] = float(zone)
+        par.loc[(par.zone==zone) & (par.ptype=='pp'), 'parlbnd'] = float(zone)-0.1
+        par.loc[(par.zone==zone) & (par.ptype=='pp'), 'parubnd'] = float(zone)+0.1
+
+    # write model input files
+    pst.write_input_files(template_ws)
+    pyemu.os_utils.run(r'python forward_run.py', cwd=template_ws)
+
+    ib = m.dis.idomain.get_data()
+    for f in files:
+        layer = int(f.split('_layer')[-1].split('.')[0]) - 1
+        a = np.loadtxt(os.path.join(template_ws, f))
+        a_org = np.loadtxt(os.path.join(template_ws,'org', f))
+        # weak check
+        for zone in par.zone.unique():
+            assert all(abs((a/a_org)[ib[1]==int(zone)]-int(zone)) < 1e-6)
+    return
+
 
 if __name__ == "__main__":
     # mf6_freyberg_pp_locs_test()
@@ -3992,6 +4145,7 @@ if __name__ == "__main__":
     # # pstfrom_profile()
     # mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test()
+    vertex_grid_test()
 
 
 
