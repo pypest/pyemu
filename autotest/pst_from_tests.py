@@ -4006,7 +4006,7 @@ def vertex_grid_test():
                                 spatial_reference=modelgrid, 
                                 zero_based=False, 
                                 echo=True) 
-    pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
+    pf.mod_sys_cmds.append(mf6_exe_name)
 
     # exponential variogram for spatially varying parameters
     v_space = pyemu.geostats.ExpVario(contribution=1.0, 
