@@ -4047,6 +4047,7 @@ def vertex_grid_test():
         df_pp = pf.add_parameters(f,
                             zone_array=ib[layer],
                             par_type="pilotpoints",
+                            use_pp_zones=True,
                             geostruct=grid_gs,
                             par_name_base=f.split('.')[1].replace("_","")+"pp",
                             pargp=f.split('.')[1].replace("_","")+"pp",
