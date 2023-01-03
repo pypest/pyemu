@@ -4035,8 +4035,8 @@ def vertex_grid_test():
         layer = int(f.split('_layer')[-1].split('.')[0]) - 1
         # grid (fine) scale parameters
         df_gr = pf.add_parameters(f,
-                        zone_array=ib[layer], 
-                        par_type="grid", 
+                        zone_array=ib[layer],
+                        par_type="grid",
                         geostruct=grid_gs, 
                         par_name_base=f.split('.')[1].replace("_","")+"gr", 
                         pargp=f.split('.')[1].replace("_","")+"gr", 
@@ -4100,7 +4100,8 @@ def vertex_grid_test():
 
     #check pp pars
     #reset par values
-    par.loc[:] = par_org.values
+    print(par_org.shape,par.shape)
+    par.loc[par_org.columns,:] = par_org.values
     for zone in par.zone.unique():
         par.loc[(par.zone==zone) & (par.ptype=='pp'), 'parval1'] = float(zone)
         par.loc[(par.zone==zone) & (par.ptype=='pp'), 'parlbnd'] = float(zone)-0.1
@@ -4130,7 +4131,7 @@ if __name__ == "__main__":
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
-    mf6_freyberg_direct_test()
+    #mf6_freyberg_direct_test()
     #mf6_freyberg_varying_idomain()
     # xsec_test()
     # mf6_freyberg_short_direct_test()
