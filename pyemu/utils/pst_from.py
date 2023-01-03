@@ -1974,7 +1974,7 @@ class PstFrom(object):
                     "-) Better to pass an appropriately " "transformed geostruct"
                 )
 
-        if len(zone_array.shape)==1 and self._spatial_reference.grid_type=='vertex':
+        if self._spatial_reference.grid_type=='vertex' and zone_array is not None and len(zone_array.shape)==1:
             zone_array = np.reshape(zone_array, (zone_array.shape[0], 1))
 
         # Get useful variables from arguments passed
