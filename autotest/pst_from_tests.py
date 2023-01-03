@@ -4101,7 +4101,7 @@ def vertex_grid_test():
     #check pp pars
     #reset par values
     print(par_org.shape,par.shape)
-    par.loc[par_org.columns,:] = par_org.values
+    par.loc[:,par_org.columns] = par_org.values
     for zone in par.zone.unique():
         par.loc[(par.zone==zone) & (par.ptype=='pp'), 'parval1'] = float(zone)
         par.loc[(par.zone==zone) & (par.ptype=='pp'), 'parlbnd'] = float(zone)-0.1
