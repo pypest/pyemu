@@ -5332,6 +5332,11 @@ class SpatialReference(object):
         self._length_multiplier = length_multiplier
         self._reset()
         self.set_spatialreference(xul, yul, xll, yll, rotation)
+        self.grid_type = "structured"
+
+    @property
+    def ncpl(self):
+        raise Exception("unstructured grids not supported by SpatialReference")
 
     @property
     def xll(self):
