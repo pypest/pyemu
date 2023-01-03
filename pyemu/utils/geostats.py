@@ -993,8 +993,12 @@ class OrdinaryKrige(object):
                     )
                     continue
                 # cutting list of cell positions to just in zone
-                xzone = x[(zone_array == pt_data_zone).ravel()].copy()
-                yzone = y[(zone_array == pt_data_zone).ravel()].copy()
+                if spatial_reference.grid_type == "vertex:"
+                    xzone = x[(zone_array == pt_data_zone).ravel()].copy()
+                    yzone = y[(zone_array == pt_data_zone).ravel()].copy()
+                else:
+                    xzone = x[zone_array == pt_data_zone].copy()
+                    yzone = y[zone_array == pt_data_zone].copy()
                 
                 idx = np.arange(
                     len(zone_array.ravel())
