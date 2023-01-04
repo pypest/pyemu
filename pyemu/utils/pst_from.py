@@ -307,6 +307,11 @@ class PstFrom(object):
                     self.ijwarned[self.add_pars_callcount] = True
                 # assume i and j are the final two entries in index_cols
                 i, j = args[-2], args[-1]
+
+                # vertex/list based i == cell number
+                if self._spatial_reference.grid_type=='vertex':
+                    i, l = args[-1], args[-2]
+
         else:
             if not self.ijwarned[self.add_pars_callcount]:
                 self.logger.warn(
@@ -1974,8 +1979,9 @@ class PstFrom(object):
                     "-) Better to pass an appropriately " "transformed geostruct"
                 )
 
-        if len(zone_array.shape)==1 and self._spatial_reference.grid_type=='vertex':
-            zone_array = np.reshape(zone_array, (zone_array.shape[0], 1))
+        if zone_array is not None:
+            if len(zone_array.shape)==1 and self._spatial_reference.grid_type=='vertex':
+                zone_array = np.reshape(zone_array, (zone_array.shape[0], 1))
 
         # Get useful variables from arguments passed
         # if index_cols passed as a dictionary that maps i,j information
