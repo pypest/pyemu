@@ -2150,7 +2150,7 @@ def ac_draw_test():
 
 
 if __name__ == "__main__":
-    ac_draw_test()
+    #ac_draw_test()
     #maha_pdc_test()
     #rmr_parse_test()
     #temporal_draw_invest()
@@ -2220,7 +2220,7 @@ if __name__ == "__main__":
     # add_pi_obj_func_test()
     #ok_test()
     # ok_grid_test()
-    # ok_grid_zone_test()
+    ok_grid_zone_test()
     # ppk2fac_verf_test()
     #ok_grid_invest()
     #ok_grid_test()
