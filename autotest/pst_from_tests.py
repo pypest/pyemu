@@ -4055,6 +4055,23 @@ def vertex_grid_test():
                             ult_ubound=100, ult_lbound=0.01,
                             pp_space=500) # `
 
+    tag = "sfr_packagedata"
+    files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
+    f = files[0]
+    # constant and grid scale multiplier conductance parameters
+    name = "sfrcond"
+    df_list = pf.add_parameters(f,
+                    par_type="grid",
+                    geostruct=grid_gs,
+                    par_name_base=name+"gr",
+                    pargp=name+"gr",
+                    index_cols=[0,1,2], # this assumes 1,2 are row,col
+                    use_cols=[8],
+                    lower_bound=0.1,upper_bound=10.0)
+
+    assert df_list.x.max() != df_list.x.min()
+    assert df_list.y.max() != df_list.y.min()
+
     # add the observations to pf
     df = pd.read_csv(os.path.join(template_ws, "sfr_obs.csv"), index_col=0)
     sfr_df = pf.add_observations("sfr_obs.csv",
