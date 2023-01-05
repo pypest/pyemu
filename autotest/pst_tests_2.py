@@ -877,7 +877,27 @@ def interface_check_test():
 
     pst = pyemu.Pst.from_io_files(tpl_files, in_files, ins_files, out_files, pst_path=".")
     pyemu.pst_utils.check_interface(pst, t_d)
-    pst.observation_data = pst.observation_data.iloc[:-1,0]
+    pst.observation_data = pst.observation_data.iloc[:-1,:]
+    try:
+        pyemu.pst_utils.check_interface(pst, t_d)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst.from_io_files(tpl_files, in_files, ins_files, out_files, pst_path=".")
+    pyemu.pst_utils.check_interface(pst, t_d)
+    pst.model_input_data = pst.model_input_data.iloc[:-1, :]
+    try:
+        pyemu.pst_utils.check_interface(pst, t_d)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst.from_io_files(tpl_files, in_files, ins_files, out_files, pst_path=".")
+    pyemu.pst_utils.check_interface(pst, t_d)
+    pst.model_output_data = pst.model_output_data.iloc[:-1, :]
     try:
         pyemu.pst_utils.check_interface(pst, t_d)
     except:
