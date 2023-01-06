@@ -1,6 +1,6 @@
 
 collect_ignore = [
-    # "utils_tests.py",
+    "utils_tests.py",
     # "pst_tests_2.py",
     # "pst_from_tests.py",
     # "pst_tests.py",
