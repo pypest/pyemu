@@ -1967,19 +1967,24 @@ def run_test():
         raise Exception("should have failed")
 
 
-def maha_pdc_test():
+@pytest.skip  # todo add back in? currently super slowww
+def maha_pdc_summary_test(tmp_path):
     import pyemu
+    Path(tmp_path).mkdir(exist_ok=True)
     l1_critical_value = 6.4 #chi squared value at df=1,p=0.01
     l2_critical_value = 9.2 #chi sqaured value at df=2,p=0.01
-    pst = pyemu.Pst(os.path.join("la", "pest.pst"))
+    pst_file = os.path.join("la", "pest.pst")
+    shutil.copy(pst_file, tmp_path)
+    pst = pyemu.Pst(os.path.join(tmp_path, "pest.pst"))
     pst.observation_data.loc[:,"weight"] = 1.0
     en = pyemu.ObservationEnsemble.from_gaussian_draw(pst=pst,num_reals=20)
     level_1,level_2 = pyemu.helpers.get_maha_obs_summary(en)
     assert level_1.shape[0] == 0
     assert level_2.shape[0] == 0
 
-
-    pst = pyemu.Pst(os.path.join("pst","zoned_nz_64.pst"))
+    pst_file = os.path.join("pst","zoned_nz_64.pst")
+    shutil.copy(pst_file, tmp_path)
+    pst = pyemu.Pst(os.path.join(tmp_path, "zoned_nz_64.pst"))
     en = pyemu.ObservationEnsemble.from_gaussian_draw(pst=pst, num_reals=20)
     level_1, level_2 = pyemu.helpers.get_maha_obs_summary(en)
     level_1.sort_values(inplace=True)
@@ -1988,6 +1993,7 @@ def maha_pdc_test():
     print(level_2)
     assert level_1.shape[0] == 0
     assert level_2.shape[0] == 0
+
 
 def gsf_reader_test():
     import pyemu
@@ -2155,7 +2161,8 @@ def temporal_draw_invest():
     #plt.plot(pe.loc[pe.index[0]])
     #plt.show()
 
-def maha_pdc_test():
+
+def maha_pdc_test(tmp_path):
     import pyemu
     # pst = pyemu.Pst(os.path.join("temp_files","freyberg_mf6.pst"))
     # obs = pst.observation_data
@@ -2163,10 +2170,16 @@ def maha_pdc_test():
     # z_scores, dmxs = pyemu.utils.maha_based_pdc(oe)
     # print(z_scores)
     # return
-    pst = pyemu.Pst(os.path.join("utils","freyberg6.pst"))
+    pst_file = os.path.join("utils","freyberg6.pst")
+    shutil.copy(pst_file, tmp_path)
+    oe_file = os.path.join("utils", "freyberg6.0.obs.csv")
+    shutil.copy(oe_file, tmp_path)
+    oe_file = os.path.join(tmp_path, "freyberg6.0.obs.csv")
+    pst = pyemu.Pst(os.path.join(tmp_path,"freyberg6.pst"))
+
     obs = pst.observation_data
     obs.loc[obs.weight>0,"obsval"] -= 5
-    oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join("utils","freyberg6.0.obs.csv"))
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=oe_file)
     df, dmxs = pyemu.utils.maha_based_pdc(oe)
     print(df.z_scores)
     print(df.p_vals)
@@ -2290,52 +2303,52 @@ def ac_draw_test(tmp_path):
 
 
 if __name__ == "__main__":
-    ac_draw_test()
-    #maha_pdc_test()
-    #rmr_parse_test()
-    #temporal_draw_invest()
-    #run_test()
-    #specsim_test()
-    #aniso_invest()
-    #fieldgen_dev()
+    # ac_draw_test("temp")
+    # maha_pdc_test()
+    # rmr_parse_test()
+    # temporal_draw_invest()
+    # run_test()
+    # specsim_test()
+    # aniso_invest()
+    # fieldgen_dev()
     # smp_test()
     # smp_dateparser_test()
     # smp_to_ins_test()
-    #read_runstor_test()
-    #long_names()
-    #master_and_workers()
-    #plot_id_bar_test()
-    #pst_from_parnames_obsnames_test()
-    #write_jactest_test()
+    # read_runstor_test()
+    # # long_names()
+    # master_and_workers()
+    # plot_id_bar_test()
+    # pst_from_parnames_obsnames_test()
+    # write_jactest_test()
     # sfr_obs_test()
-    #sfr_reach_obs_test()
-    #gage_obs_test()
-    #setup_pp_test()
+    # sfr_reach_obs_test()
+    # gage_obs_test()
+    # setup_pp_test()
     # sfr_helper_test()
     # gw_sft_ins_test()
-    #par_knowledge_test()
+    # par_knowledge_test()
     # grid_obs_test()
-    #hds_timeseries_test()
-    #postprocess_inactive_conc_test()
-    #plot_summary_test()
+    # hds_timeseries_test()
+    # postprocess_inactive_conc_test()
+    # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
-    #make_hydmod_insfile_test()
+    # make_hydmod_insfile_test()
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    #conditional_prior_invest()
-    #geostat_prior_builder_test2()
-    #geostat_draws_test()
-    #jco_from_pestpp_runstorage_test()
-    #mflist_budget_test()
-    #mtlist_budget_test()
+    # conditional_prior_invest()
+    # geostat_prior_builder_test2()
+    # geostat_draws_test()
+    # jco_from_pestpp_runstorage_test()
+    # mflist_budget_test()
+    # mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
     # hfb_test()
     # hfb_zn_mult_test()
-    #more_kl_test()
-    #zero_order_regul_test()
+    # more_kl_test()
+    # zero_order_regul_test()
     # first_order_pearson_regul_test()
     # master_and_workers()
     # smp_to_ins_test()
@@ -2349,22 +2362,22 @@ if __name__ == "__main__":
     # setup_ppcov_complex()
     # ppcov_complex_test()
     # setup_ppcov_simple()
-    #ppcov_simple_sparse_test()
-    #ppcov_complex_sparse_test()
-    #fac2real_test()
+    # ppcov_simple_sparse_test()
+    # ppcov_complex_sparse_test()
+    # fac2real_test()
     # vario_test()
     # geostruct_test()
     # aniso_test()
     # struct_file_test()
     # covariance_matrix_test()
     # add_pi_obj_func_test()
-    #ok_test()
+    # ok_test()
     # ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
-    #ok_grid_invest()
-    #ok_grid_test()
-    #ok_grid_zone_test()
-    # maha_pdc_test()
-    #gsf_reader_test()
-    #kl_test()
+    # ok_grid_invest()
+    # ok_grid_test()
+    # ok_grid_zone_test()
+    maha_pdc_summary_test("temp")
+    # gsf_reader_test()
+    # kl_test()
