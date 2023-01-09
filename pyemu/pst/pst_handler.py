@@ -1831,15 +1831,18 @@ class Pst(object):
 
         f_out.close()
 
-    def write(self, new_filename, version=None):
+    def write(self, new_filename, version=None, check_interface=False):
         """main entry point to write a pest control file.
 
         Args:
             new_filename (`str`): name of the new pest control file
-
             version (`int`): flag for which version of control file to write (must be 1 or 2).
                 if None, uses the number of pars to decide: if number of pars iis greater than 10,000,
                 version 2 is used.
+            check_interface (`bool`): flag to check the control file par and obs names against the
+                names found in the template and instruction files.  Default is False
+
+
 
         Example::
 
@@ -1850,6 +1853,10 @@ class Pst(object):
             pst.write("my_new_v2.pst",version=2)
 
         """
+
+        if check_interface:
+            pst_path = os.path.split(new_filename)[0]
+            pst_utils.check_interface(self,pst_path)
 
         vstring = "noptmax:{0}, npar_adj:{1}, nnz_obs:{2}".format(
             self.control_data.noptmax, self.npar_adj, self.nnz_obs

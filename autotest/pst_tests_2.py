@@ -867,7 +867,16 @@ def interface_check_test():
 
     pst = pyemu.Pst.from_io_files(tpl_files,in_files,ins_files,out_files,pst_path=".")
     pyemu.pst_utils.check_interface(pst,t_d)
+    pst.write(os.path.join(t_d,"test.pst"),check_interface=True)
+
     pst.parameter_data = pst.parameter_data.iloc[:-1,:]
+    try:
+        pst.write(os.path.join(t_d, "test.pst"),check_interface=True)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    
     try:
         pyemu.pst_utils.check_interface(pst, t_d)
     except:
