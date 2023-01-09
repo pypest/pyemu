@@ -1967,8 +1967,8 @@ def run_test():
         raise Exception("should have failed")
 
 
-@pytest.skip  # todo add back in? currently super slowww
-def maha_pdc_summary_test(tmp_path):
+@pytest.mark.skip(reason="slow as atm -- was stomped on by maha_pdc_test previously")
+def maha_pdc_summary_test(tmp_path):  # todo add back in? currently super slowww
     import pyemu
     Path(tmp_path).mkdir(exist_ok=True)
     l1_critical_value = 6.4 #chi squared value at df=1,p=0.01
