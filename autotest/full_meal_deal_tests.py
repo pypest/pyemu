@@ -1,6 +1,7 @@
 import os
 import platform
-
+import shutil
+from pathlib import Path
 import pytest
 
 ext = ''
@@ -31,6 +32,19 @@ swp_exe_name = os.path.join(bin_path, "pestpp-swp")
 #     if not os.path.exists(f):
 #         raise Exception("{0} not found",f)
 
+def setup_tmp(od, tmp_path, sub=None):
+    basename = Path(od).name
+    if sub is not None:
+        new_d = Path(tmp_path, basename, sub)
+    else:
+        new_d = Path(tmp_path, basename)
+    if new_d.exists():
+        shutil.rmtree(new_d)
+    Path(tmp_path).mkdir(exist_ok=True)
+    # creation functionality
+    shutil.copytree(od, new_d)
+    return new_d
+
 
 @pytest.fixture
 def freyberg_spinup(tmp_path):
@@ -41,49 +55,58 @@ def freyberg_spinup(tmp_path):
     import pyemu
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
-    nam_file = "freyberg.nam"
-    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False,forgive=False,
-                                   exe_name=mf_exe_name)
-    setattr(m,"sr",pyemu.helpers.SpatialReference(delc=m.dis.delc.array,delr=m.dis.delr.array))
-    org_model_ws = "temp"
-    if not os.path.exists(tmp_path):
-        os.makedirs(tmp_path)
-    bd = os.getcwd()
+    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+
+    bd = Path.cwd()
     os.chdir(tmp_path)
 
-    m.change_model_ws(org_model_ws)
-    m.write_input()
-    print("{0} {1}".format(mf_exe_name,m.name+".nam"),org_model_ws)
-    pyemu.os_utils.run("{0} {1}".format(mf_exe_name,m.name+".nam"),cwd=org_model_ws)
-    hds_file = "freyberg.hds"
-    list_file = "freyberg.list"
-    for f in [hds_file, list_file]:
-        assert os.path.exists(os.path.join(org_model_ws, f))
+    nam_file = "freyberg.nam"
+    try:
+        org_model_ws = tmp_model_ws.relative_to(tmp_path)
+        m = flopy.modflow.Modflow.load(
+            nam_file, model_ws=org_model_ws,
+            check=False,forgive=False,
+            exe_name=mf_exe_name
+        )
+        setattr(m, "sr",
+                pyemu.helpers.SpatialReference(delc=m.dis.delc.array,
+                                               delr=m.dis.delr.array))
+        m.external_path = '.'
+        m.write_input()
+        print("{0} {1}".format(mf_exe_name,m.name+".nam"),org_model_ws)
+        pyemu.os_utils.run("{0} {1}".format(mf_exe_name,m.name+".nam"),
+                           cwd=org_model_ws)
+        hds_file = "freyberg.hds"
+        list_file = "freyberg.list"
+        for f in [hds_file, list_file]:
+            assert os.path.exists(os.path.join(org_model_ws, f))
 
-    new_model_ws = "template1"
+        new_model_ws = "template1"
 
-    props = [["upw.hk",None],["upw.vka",None],["upw.ss",None],["rch.rech",None]]
+        props = [["upw.hk",None],["upw.vka",None],["upw.ss",None],["rch.rech",None]]
 
-    hds_kperk = [[kper,0] for kper in range(m.nper)]
+        hds_kperk = [[kper,0] for kper in range(m.nper)]
 
-    temp_bc_props = [["wel.flux",kper] for kper in range(m.nper)]
-    spat_bc_props= [["wel.flux",2]]
+        temp_bc_props = [["wel.flux",kper] for kper in range(m.nper)]
+        spat_bc_props= [["wel.flux",2]]
 
-    ph = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,org_model_ws,
-                                         const_props=props,
-                                         zone_props=props,
-                                         kl_props=props,
-                                         pp_props=props,
-                                         grid_props=props,
-                                         hds_kperk=hds_kperk,
-                                         sfr_pars=True,sfr_obs=True,
-                                         spatial_bc_props=spat_bc_props,
-                                         temporal_bc_props=temp_bc_props,
-                                         remove_existing=True,
-                                         model_exe_name="mfnwt")
-    yield ph
+        ph = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,org_model_ws,
+                                             const_props=props,
+                                             zone_props=props,
+                                             kl_props=props,
+                                             pp_props=props,
+                                             grid_props=props,
+                                             hds_kperk=hds_kperk,
+                                             sfr_pars=True,sfr_obs=True,
+                                             spatial_bc_props=spat_bc_props,
+                                             temporal_bc_props=temp_bc_props,
+                                             remove_existing=True,
+                                             model_exe_name="mfnwt")
+        yield ph
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
-
 
 def freyberg_test(freyberg_spinup):
     #
@@ -279,7 +302,6 @@ def freyberg_kl_pp_compare():
                                 master_dir="pest_pp")
 
 
-
 def freyberg_diff_obs_test(tmp_path):
     import pandas as pd
     try:
@@ -290,90 +312,99 @@ def freyberg_diff_obs_test(tmp_path):
 
     oorg_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     obs_locs = pd.read_csv(os.path.join(oorg_model_ws,"obs_loc.csv"))
-    nam_file = "freyberg.nam"
-    m = flopy.modflow.Modflow.load(nam_file, model_ws=oorg_model_ws, check=False,forgive=False,
-                                   exe_name=mf_exe_name)
-    bd = os.getcwd()
+    tmp_model_ws = setup_tmp(oorg_model_ws, tmp_path)
+
+    bd = Path.cwd()
     os.chdir(tmp_path)
 
-    org_model_ws = "temp"
-    m.change_model_ws(org_model_ws)
-    m.write_input()
-    print("{0} {1}".format(mf_exe_name,m.name+".nam"),org_model_ws)
-    pyemu.os_utils.run("{0} {1}".format(mf_exe_name,m.name+".nam"),cwd=org_model_ws)
-    hds_file = "freyberg.hds"
-    list_file = "freyberg.list"
-    for f in [hds_file, list_file]:
-        assert os.path.exists(os.path.join(org_model_ws, f))
+    nam_file = "freyberg.nam"
+    try:
+        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+        m = flopy.modflow.Modflow.load(nam_file, model_ws=tmp_model_ws,
+                                       check=False,forgive=False,
+                                       exe_name=mf_exe_name)
 
-    new_model_ws = "template_diff_obs"
+        m.external_path = '.'
+        m.write_input()
+        print("{0} {1}".format(mf_exe_name,m.name+".nam"),tmp_model_ws)
+        pyemu.os_utils.run("{0} {1}".format(mf_exe_name,m.name+".nam"),
+                           cwd=tmp_model_ws)
+        hds_file = "freyberg.hds"
+        list_file = "freyberg.list"
+        for f in [hds_file, list_file]:
+            assert os.path.exists(os.path.join(tmp_model_ws, f))
 
-    props = [["upw.hk",None]]
+        new_model_ws = "template_diff_obs"
 
-    hds_kperk = [[0,k] for k in range(m.nlay)]
+        props = [["upw.hk",None]]
 
-    ph = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
-                                         const_props=props,
-                                         hds_kperk=hds_kperk,
-                                         sfr_pars=True,sfr_obs=True,
-                                         remove_existing=True,
-                                         model_exe_name="mfnwt")
+        hds_kperk = [[0,k] for k in range(m.nlay)]
 
-    obs_locs.loc[:, "i"] = obs_locs.pop("row") - 1
-    obs_locs.loc[:, "j"] = obs_locs.pop("col") - 1
-    obs_locs.loc[:,"site"] = obs_locs.apply(lambda x: "trgw_{0:03d}_{1:03d}".format(x.i,x.j),axis=1)
-    kij_dict = {site: (2, i, j) for site, i, j in zip(obs_locs.site, obs_locs.i, obs_locs.j)}
+        ph = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,tmp_model_ws,
+                                             const_props=props,
+                                             hds_kperk=hds_kperk,
+                                             sfr_pars=True,sfr_obs=True,
+                                             remove_existing=True,
+                                                 model_exe_name="mfnwt")
 
-    binary_file = os.path.join(ph.m.model_ws, nam_file.replace(".nam", ".hds"))
-    frun_line, tr_hds_df = pyemu.gw_utils.setup_hds_timeseries(binary_file, kij_dict=kij_dict, include_path=True,
-                                                               model=ph.m)
-    ph.frun_post_lines.append(frun_line)
-    ins_file = os.path.join(ph.m.model_ws,nam_file.replace(".nam", ".hds_timeseries.processed.ins"))
-    df = ph.pst.add_observations(ins_file,pst_path=".")
-    obs = ph.pst.observation_data
-    obs.loc[df.index, "obgnme"] = df.index.map(lambda x: "_".join(x.split("_")[:-1]))
-    obs.loc[df.index, "weight"] = 1.0
+        obs_locs.loc[:, "i"] = obs_locs.pop("row") - 1
+        obs_locs.loc[:, "j"] = obs_locs.pop("col") - 1
+        obs_locs.loc[:,"site"] = obs_locs.apply(lambda x: "trgw_{0:03d}_{1:03d}".format(x.i,x.j),axis=1)
+        kij_dict = {site: (2, i, j) for site, i, j in zip(obs_locs.site, obs_locs.i, obs_locs.j)}
 
-    #trgw_groups = obs.loc[df.index, "obgnme"].unique()
-    #obs.loc[obs.obgnme.apply(lambda x: x in trgw_groups[::2]),"weight"] = 0.0
-    #obs.loc[ph.pst.nnz_obs_names[::2],"weight"] = 0.0
+        binary_file = os.path.join(ph.m.model_ws, nam_file.replace(".nam", ".hds"))
+        frun_line, tr_hds_df = pyemu.gw_utils.setup_hds_timeseries(binary_file, kij_dict=kij_dict, include_path=True,
+                                                                   model=ph.m)
+        ph.frun_post_lines.append(frun_line)
+        ins_file = os.path.join(ph.m.model_ws,nam_file.replace(".nam", ".hds_timeseries.processed.ins"))
+        df = ph.pst.add_observations(ins_file,pst_path=".")
+        obs = ph.pst.observation_data
+        obs.loc[df.index, "obgnme"] = df.index.map(lambda x: "_".join(x.split("_")[:-1]))
+        obs.loc[df.index, "weight"] = 1.0
 
-    frun_line, tr_hds_diff_df = pyemu.helpers.setup_temporal_diff_obs(ph.pst, ins_file, include_path=True,
-                                                                      prefix="hdif")
-    ph.frun_post_lines.append(frun_line)
-    ins_file = os.path.join(ph.m.model_ws, nam_file.replace(".nam", ".hds_timeseries.processed.diff.processed.ins"))
-    df = ph.pst.add_observations(ins_file, pst_path=".")
-    obs = ph.pst.observation_data
-    obs.loc[df.index, "obgnme"] = df.index.map(lambda x: "_".join(x.split("_")[:-1]))
-    obs.loc[tr_hds_diff_df.index, "weight"] = tr_hds_diff_df.weight
-    obs.loc[tr_hds_diff_df.index, "obgnme"] = tr_hds_diff_df.obgnme
+        #trgw_groups = obs.loc[df.index, "obgnme"].unique()
+        #obs.loc[obs.obgnme.apply(lambda x: x in trgw_groups[::2]),"weight"] = 0.0
+        #obs.loc[ph.pst.nnz_obs_names[::2],"weight"] = 0.0
 
-    ins_file = os.path.join(ph.m.model_ws,nam_file.replace(".nam",".sfr.out.processed.ins"))
-    frun_line,tr_hds_diff_df = pyemu.helpers.setup_temporal_diff_obs(ph.pst,ins_file,include_path=True,
-                                                                     prefix="sfrdif")
-    ph.frun_post_lines.append(frun_line)
-    ins_file = os.path.join(ph.m.model_ws, nam_file.replace(".nam", ".sfr.out.processed.diff.processed.ins"))
-    df = ph.pst.add_observations(ins_file, pst_path=".")
-    obs = ph.pst.observation_data
-    obs.loc[df.index, "obgnme"] = df.index.map(lambda x: "_".join(x.split("_")[:-1]))
-    obs.loc[tr_hds_diff_df.index, "weight"] = tr_hds_diff_df.weight
-    obs.loc[tr_hds_diff_df.index, "obgnme"] = tr_hds_diff_df.obgnme
+        frun_line, tr_hds_diff_df = pyemu.helpers.setup_temporal_diff_obs(ph.pst, ins_file, include_path=True,
+                                                                          prefix="hdif")
+        ph.frun_post_lines.append(frun_line)
+        ins_file = os.path.join(ph.m.model_ws, nam_file.replace(".nam", ".hds_timeseries.processed.diff.processed.ins"))
+        df = ph.pst.add_observations(ins_file, pst_path=".")
+        obs = ph.pst.observation_data
+        obs.loc[df.index, "obgnme"] = df.index.map(lambda x: "_".join(x.split("_")[:-1]))
+        obs.loc[tr_hds_diff_df.index, "weight"] = tr_hds_diff_df.weight
+        obs.loc[tr_hds_diff_df.index, "obgnme"] = tr_hds_diff_df.obgnme
 
-    ph.write_forward_run()
+        ins_file = os.path.join(ph.m.model_ws,nam_file.replace(".nam",".sfr.out.processed.ins"))
+        frun_line,tr_hds_diff_df = pyemu.helpers.setup_temporal_diff_obs(ph.pst,ins_file,include_path=True,
+                                                                         prefix="sfrdif")
+        ph.frun_post_lines.append(frun_line)
+        ins_file = os.path.join(ph.m.model_ws, nam_file.replace(".nam", ".sfr.out.processed.diff.processed.ins"))
+        df = ph.pst.add_observations(ins_file, pst_path=".")
+        obs = ph.pst.observation_data
+        obs.loc[df.index, "obgnme"] = df.index.map(lambda x: "_".join(x.split("_")[:-1]))
+        obs.loc[tr_hds_diff_df.index, "weight"] = tr_hds_diff_df.weight
+        obs.loc[tr_hds_diff_df.index, "obgnme"] = tr_hds_diff_df.obgnme
 
-    # tmp = mf_exe_name.split(os.sep)
-    # tmp = os.path.join(*tmp[1:])+ext
-    # assert os.path.exists(tmp),tmp
-    # shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
-    ph.pst.control_data.noptmax = 0
-    ph.pst.write(os.path.join(new_model_ws,"test.pst"))
-    print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
-    pyemu.os_utils.run("{0} {1}".format(pp_exe_name,"test.pst"),cwd=new_model_ws)
-    for ext in ["rec",'rei',"par"]:
-        assert os.path.exists(os.path.join(new_model_ws,"test.{0}".format(ext))),ext
-    pst = pyemu.Pst(os.path.join(new_model_ws,"test.pst"))
-    print(pst.phi)
-    assert pst.phi < 1.0e-6,pst.phi
+        ph.write_forward_run()
+
+        # tmp = mf_exe_name.split(os.sep)
+        # tmp = os.path.join(*tmp[1:])+ext
+        # assert os.path.exists(tmp),tmp
+        # shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
+        ph.pst.control_data.noptmax = 0
+        ph.pst.write(os.path.join(new_model_ws,"test.pst"))
+        print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
+        pyemu.os_utils.run("{0} {1}".format(pp_exe_name,"test.pst"),cwd=new_model_ws)
+        for ext in ["rec",'rei',"par"]:
+            assert os.path.exists(os.path.join(new_model_ws,"test.{0}".format(ext))),ext
+        pst = pyemu.Pst(os.path.join(new_model_ws,"test.pst"))
+        print(pst.phi)
+        assert pst.phi < 1.0e-6,pst.phi
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
 
 
