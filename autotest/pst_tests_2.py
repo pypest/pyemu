@@ -775,7 +775,7 @@ def pst_from_flopy_specsim_draw_test(tmp_path):
                                              spatial_list_props=spat_list_props,build_prior=False,
                                              grid_geostruct=gs)
 
-        num_reals = 10000
+        num_reals = 5000
         par = ph.pst.parameter_data
         par.loc[:,"parval1"] = 1
         par.loc[:, "parubnd"] = 10
@@ -788,32 +788,37 @@ def pst_from_flopy_specsim_draw_test(tmp_path):
         #par.loc[gr_par.parnme, "parlbnd"] = 0.001#par.loc[gr_par.parnme,"parval1"].min()
         #print(par.loc[gr_par.parnme,"parval1"])
         li = par.partrans == "log"
+
         pe1 = ph.draw(num_reals=num_reals, sigma_range=2,use_specsim=True)
+        gr_df = ph.par_dfs[ph.gr_suffix]
+        grps = gr_df.pargp.unique()
+        gr_par = gr_df.loc[gr_df.pargp==grps[0],:]
+        pe1.transform()
+        mn1 = pe1.mean()
+        sd1 = pe1.std()
+        real1 = pe1.loc[pe1.index[-1],gr_par.parnme].copy()
+        del pe1
 
         pyemu.Ensemble.reseed()
         #print(ph.pst.parameter_data.loc[gr_par.parnme,"parval1"])
         #pe2 = pyemu.ParameterEnsemble.from_gaussian_draw(ph.pst, ph.build_prior(sigma_range=2), num_reals=num_reals)
         pe2 = ph.draw(num_reals=num_reals,sigma_range=2)
-
-        pe1.transform()
         pe2.transform()
-        gr_df = ph.par_dfs[ph.gr_suffix]
-        grps = gr_df.pargp.unique()
-        gr_par = gr_df.loc[gr_df.pargp==grps[0],:]
-        real1 = pe1.loc[pe1.index[-1],gr_par.parnme]
-        real2 = pe2.loc[0, gr_par.parnme]
+        # real2 = pe2.loc[0, gr_par.parnme]
+        mn2 = pe2.mean()
+        sd2 = pe2.std()
+        del pe2
 
         arr = np.zeros((ph.m.nrow,ph.m.ncol))
         arr[gr_par.i,gr_par.j] = real1
 
         par_vals = par.parval1.copy()
         par_vals.loc[li] = par_vals.loc[li].apply(np.log10)
-        mn1, mn2 = pe1.mean(), pe2.mean()
-        sd1, sd2 = pe1.std(), pe2.std()
-        diag = pyemu.Cov.from_parameter_data(ph.pst,sigma_range=2.0)
-        var_vals = {p:np.sqrt(v) for p,v in zip(diag.row_names,diag.x)}
-        for pname in par_vals.index:
-            print(pname,par_vals[pname],mn1[pname],mn2[pname],var_vals[pname],sd1[pname],sd2[pname])
+
+        # diag = pyemu.Cov.from_parameter_data(ph.pst,sigma_range=2.0)
+        # var_vals = {p:np.sqrt(v) for p,v in zip(diag.row_names,diag.x)}
+        # for pname in par_vals.index:
+        #     print(pname,par_vals[pname],mn1[pname],mn2[pname],var_vals[pname],sd1[pname],sd2[pname])
 
         diff_mn = mn1 - mn2
         diff_sd = sd1 - sd2

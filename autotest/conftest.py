@@ -4,7 +4,7 @@ collect_ignore = [
     # "pst_tests.py",
     # "pst_tests_2.py",
     # "pst_from_tests.py",
-    "en_tests.py",
+    # "en_tests.py",
     "full_meal_deal_tests.py",
     "la_tests.py",
     "plot_tests.py",
