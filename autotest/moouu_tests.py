@@ -1,28 +1,40 @@
 import os
 import sys
+import shutil
+from pathlib import Path
 
 #sys.path.append(os.path.join("..","pyemu"))
 
 from pyemu.prototypes.moouu import EvolAlg, EliteDiffEvol
 
 
-if not os.path.exists("temp1"):
-    os.mkdir("temp1")
+def setup_tmp(od, tmp_path, sub=None):
+    basename = Path(od).name
+    if sub is not None:
+        new_d = Path(tmp_path, basename, sub)
+    else:
+        new_d = Path(tmp_path, basename)
+    if new_d.exists():
+        shutil.rmtree(new_d)
+    Path(tmp_path).mkdir(exist_ok=True)
+    # creation functionality
+    shutil.copytree(od, new_d)
+    return new_d
 
-def tenpar_test():
+
+def tenpar_test(tmp_path):
     import os
     import numpy as np
-    import flopy
     import pyemu
 
-    bd = os.getcwd()
-    os.chdir(os.path.join("moouu", "10par_xsec"))
+    od = os.path.join("moouu", "10par_xsec")
+    tmp_model_ws = setup_tmp(od, tmp_path)
+    bd = Path.cwd()
+    os.chdir(tmp_model_ws)
     try:
-
         csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
         [os.remove(csv_file) for csv_file in csv_files]
         pst = pyemu.Pst("10par_xsec.pst")
-
         obj_names = pst.nnz_obs_names
         # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
         # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
@@ -95,10 +107,9 @@ def tenpar_test():
             assert crowd_distance.loc[oe.loc[:,name].idxmax()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:,name].idxmax()]
             assert crowd_distance.loc[oe.loc[:, name].idxmin()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:, name].idxmin()]
     except Exception as e:
-        os.chdir(os.path.join("..",".."))
-        raise Exception(str(e))
-
-    os.chdir(os.path.join("..",".."))
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
 
 
 def tenpar_dev():

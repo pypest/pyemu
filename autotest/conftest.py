@@ -9,7 +9,7 @@ collect_ignore = [
     # "la_tests.py",
     # "plot_tests.py",
     # "metrics_tests.py",
-    "moouu_tests.py",
+    # "moouu_tests.py",
     "mat_tests.py",
     "da_tests.py"
 ]
