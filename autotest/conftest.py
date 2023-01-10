@@ -8,7 +8,7 @@ collect_ignore = [
     # "full_meal_deal_tests.py",
     # "la_tests.py",
     # "plot_tests.py",
-    "metrics_tests.py",
+    # "metrics_tests.py",
     "moouu_tests.py",
     "mat_tests.py",
     "da_tests.py"
