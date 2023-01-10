@@ -196,11 +196,11 @@ class EnsembleMethod(object):
                         self.pst.filename, self.port, master_stdout, master_stderr
                     )
                 )
-
+                with open(master_stderr, "r") as f:
+                    err_lines = f.readlines()
             except Exception as e:
-                self.logger.lraise("error starting condor master: {0}".format(str(e)))
-            with open(master_stderr, "r") as f:
-                err_lines = f.readlines()
+                self.logger.lraise(f"error starting condor master: {e}\n"
+                                   f"{[l for l in err_lines]}")
             if len(err_lines) > 0:
                 self.logger.warn(
                     "master stderr lines: {0}".format(
