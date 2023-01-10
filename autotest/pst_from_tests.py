@@ -41,6 +41,13 @@ mf_exe_name = os.path.basename(mf_exe_path)
 mf6_exe_name = os.path.basename(mf6_exe_path)
 
 
+def _get_port():
+    import socket
+    sock = socket.socket()
+    sock.bind(('', 0))
+    return sock.getsockname()[1]
+
+
 def _gen_dummy_obs_file(ws='.', sep=',', ext=None):
     import pandas as pd
     ffn = "somefakeobs"
@@ -3672,9 +3679,11 @@ def mf6_freyberg_pp_locs_test(tmp_path):
 
         #pyemu.os_utils.run("{0} freyberg.pst".format("pestpp-glm"),cwd=template_ws)
         m_d = "master_glm"
+        port = _get_port()
+        print(f"Running ies on port: {port}")
         pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,
                                      worker_root=tmp_path,
-                                     master_dir=m_d, port=4006)
+                                     master_dir=m_d, port=port)
 
         sen_df = pd.read_csv(os.path.join(m_d,"freyberg.isen"),index_col=0).loc[:,pst.adj_par_names]
         print(sen_df.T)

@@ -8,6 +8,13 @@ from pathlib import Path
 from pyemu.prototypes.moouu import EvolAlg, EliteDiffEvol
 
 
+def _get_port():
+    import socket
+    sock = socket.socket()
+    sock.bind(('', 0))
+    return sock.getsockname()[1]
+
+
 def setup_tmp(od, tmp_path, sub=None):
     basename = Path(od).name
     if sub is not None:
@@ -74,7 +81,9 @@ def tenpar_test(tmp_path):
         # return
 
         pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,num_reals=5,fill=False)
-        ea = EliteDiffEvol(pst, num_workers=8, port=4005, verbose=True)
+        port = _get_port()
+        print(f"EliteDiffEvol on port: {port}")
+        ea = EliteDiffEvol(pst, num_workers=8, port=port, verbose=True)
 
         dv = pyemu.ParameterEnsemble.from_uniform_draw(pst=pst,num_reals=5,fill=False)
 

@@ -46,6 +46,13 @@ def setup_tmp(od, tmp_path, sub=None):
     return new_d
 
 
+def _get_port():
+    import socket
+    sock = socket.socket()
+    sock.bind(('', 0))
+    return sock.getsockname()[1]
+
+
 @pytest.fixture
 def freyberg_spinup(tmp_path):
     try:
@@ -107,6 +114,7 @@ def freyberg_spinup(tmp_path):
         os.chdir(bd)
         raise e
     os.chdir(bd)
+
 
 def freyberg_test(freyberg_spinup):
     #
@@ -189,9 +197,11 @@ def freyberg_test(freyberg_spinup):
     ph.pst.control_data.noptmax = 1
     ph.pst.write(os.path.join(new_model_ws, "test.pst"))
     master_dir = "test_master"
+    port = _get_port()
+    print(f"Running ies on port: {port}")
     pyemu.os_utils.start_workers(new_model_ws,ies_exe_name,"test.pst",
                                 num_workers=10,worker_root=os.path.join(new_model_ws,'..'),
-                                master_dir=master_dir,silent_master=False, port=4005)
+                                master_dir=master_dir,silent_master=False, port=port)
 
     df = pd.read_csv(os.path.join(master_dir,"test.phi.meas.csv"),index_col=0)
     init_phi = df.loc[0,"mean"]

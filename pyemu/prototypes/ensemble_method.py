@@ -199,8 +199,8 @@ class EnsembleMethod(object):
             except Exception as e:
                 with open(master_stderr, "r") as f:
                     err_lines = f.readlines()
-                self.logger.lraise(f"error starting condor master: {e}\n"
-                                   f"{[l for l in err_lines]}")
+                self.logger.lraise(f"{''.join([l for l in err_lines])}\n"
+                                   f"error starting condor master: {e}")
             with open(master_stderr, "r") as f:
                 err_lines = f.readlines()
             if len(err_lines) > 0:
