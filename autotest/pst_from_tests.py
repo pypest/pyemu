@@ -61,7 +61,7 @@ def _gen_dummy_obs_file(ws='.', sep=',', ext=None):
         else:
             t.append(text[c])
             c += 1
-
+    np.random.seed(314)
     df = pd.DataFrame(
         np.random.rand(15,2)*1000,
         columns=['no', 'yes'],
@@ -3973,6 +3973,7 @@ def _add_big_obsffile(pf, profile=False, nchar=50000):
     else:
         pstfrom_add = True
         wd = pf.new_d
+    np.random.seed(314)
     df = pd.DataFrame(np.random.random([10, nchar]),
                       columns=[hex(c) for c in range(nchar)])
     df.index.name = 'time'
