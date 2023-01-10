@@ -2044,14 +2044,16 @@ def conditional_prior_test():
     #
     # plt.show()
 
-def geostat_prior_builder_test2():
+def geostat_prior_builder2_test(tmp_path):
     import os
     import numpy as np
     import pyemu
     pst_file = os.path.join("pst","pest.pst")
     pst = pyemu.Pst(pst_file)
 
-    tpl_file = os.path.join("utils", "pp_locs.tpl")
+    o_tpl_file = os.path.join("utils", "pp_locs.tpl")
+    tpl_file = os.path.join(tmp_path, "pp_locs.tpl")
+    shutil.copy(o_tpl_file, tpl_file)
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file).iloc[:200,:]
     df.loc[:,"x"] = np.arange(df.shape[0])
     df.loc[:,"y"] = 0.0

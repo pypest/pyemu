@@ -247,7 +247,7 @@ def tied_test(tmp_path):
     #pst = pyemu.Pst(os.path.join("temp", "test.pst"))
 
 
-def derivative_increment_tests():
+def derivative_increment_test():
     import os
     import pyemu
 
@@ -724,7 +724,7 @@ def lt_gt_constraint_names_test():
     assert pst.greater_than_pi_constraints.shape[0] == 0
 
 
-def new_format_test_2(tmp_path):
+def new_format2_test(tmp_path):
     import pyemu
     pst_dir = "newpst"
     pst_files = [f for f in os.listdir(pst_dir) if f.endswith(".pst")]
@@ -1022,7 +1022,8 @@ def read_in_tpl_test():
     assert df.parval1["p5"] == df.parval1["p6"]
     assert df.parval1["p5"] == df.parval1["p7"]
 
-def read_in_tpl_test2():
+
+def read_in_tpl2_test():
     import pyemu
     tpl_d = "tpl"
     df = pyemu.pst_utils.try_read_input_file_with_tpl(os.path.join(tpl_d,"test2.dat.tpl"))
