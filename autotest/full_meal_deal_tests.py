@@ -32,6 +32,7 @@ swp_exe_name = os.path.join(bin_path, "pestpp-swp")
 #     if not os.path.exists(f):
 #         raise Exception("{0} not found",f)
 
+
 def setup_tmp(od, tmp_path, sub=None):
     basename = Path(od).name
     if sub is not None:
