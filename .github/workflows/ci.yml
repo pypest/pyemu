@@ -22,7 +22,6 @@ jobs:
           - os: macos-latest
             python-version: 3.9
 
-
     steps:
     - name: Checkout repo
       uses:  actions/checkout@v3 # checksout this repo
