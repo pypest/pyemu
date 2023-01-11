@@ -11,5 +11,5 @@ collect_ignore = [
     # "metrics_tests.py",
     # "moouu_tests.py",
     # "mat_tests.py",
-    "da_tests.py"
+    # "da_tests.py"
 ]
