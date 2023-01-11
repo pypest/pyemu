@@ -575,6 +575,7 @@ class EnDS(object):
             import pyemu
             pmat = pyemu.Matrix.from_binary("dsi_proj_mat.jcb")
             pvals = pd.read_csv("dsi_pars.csv",index_col=0)
+            pvals = pvals.loc[pmat.row_names,:]
             ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
             sim_vals = ovals + np.dot(pmat.x,pvals.values)
             print(sim_vals)
