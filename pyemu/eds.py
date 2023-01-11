@@ -514,13 +514,14 @@ class EnDS(object):
         z_names = [n for n in self.pst.obs_names if n not in snz_names]
         names = z_names.copy()
         names.extend(nz_names)
+        names.sort()
         oe = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
         oe = oe.loc[:,names]
         self.logger.log("getting deviations")
 
         self.logger.log("pseudo inv of deviations matrix")
         deltad = Matrix.from_dataframe(oe).T
-        U,S,V = deltad.pseudo_inv_components(maxsing=self.pst.svd_data.maxsing,eigthresh=self.pst.svd_data.eigthresh)
+        U,S,V = deltad.pseudo_inv_components(maxsing=oe.shape[0],eigthresh=1e-30)
         self.logger.log("pseudo inv of deviations matrix")
 
         self.logger.log("saving proj mat")

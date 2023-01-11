@@ -876,7 +876,7 @@ def interface_check_test():
         pass
     else:
         raise Exception("should have failed")
-    
+
     try:
         pyemu.pst_utils.check_interface(pst, t_d)
     except:
