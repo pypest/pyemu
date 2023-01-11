@@ -10,6 +10,6 @@ collect_ignore = [
     # "plot_tests.py",
     # "metrics_tests.py",
     # "moouu_tests.py",
-    "mat_tests.py",
+    # "mat_tests.py",
     "da_tests.py"
 ]

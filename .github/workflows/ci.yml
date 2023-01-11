@@ -140,7 +140,7 @@ jobs:
         # cd flopy
         # cd ..
         # pip install https://github.com/modflowpy/pymake/zipball/master
-        pip install .
+        pip install -e .
         micromamba list
 
     - name: Install Modflow executables
