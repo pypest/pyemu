@@ -3,6 +3,8 @@ import platform
 import shutil
 from pathlib import Path
 import pytest
+from pyemu.legacy import PstFromFlopyModel
+
 
 ext = ''
 local_bins = False  # change if wanting to test with local binary exes
@@ -98,7 +100,7 @@ def freyberg_spinup(tmp_path):
         temp_bc_props = [["wel.flux",kper] for kper in range(m.nper)]
         spat_bc_props= [["wel.flux",2]]
 
-        ph = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,org_model_ws,
+        ph = PstFromFlopyModel(m,new_model_ws,org_model_ws,
                                              const_props=props,
                                              zone_props=props,
                                              kl_props=props,
@@ -157,7 +159,7 @@ def freyberg_test(freyberg_spinup):
     # temp_bc_props = [["wel.flux",kper] for kper in range(m.nper)]
     # spat_bc_props= [["wel.flux",2]]
     #
-    # ph = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,org_model_ws,
+    # ph = PstFromFlopyModel(m,new_model_ws,org_model_ws,
     #                                      const_props=props,
     #                                      zone_props=props,
     #                                      kl_props=props,
@@ -274,7 +276,7 @@ def freyberg_kl_pp_compare():
     temp_bc_props = [["wel.flux", kper] for kper in range(m.nper)]
     spat_bc_props = [["wel.flux", 2]]
 
-    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+    ph = PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                          kl_props=props,
                                          kl_num_eig=66,
                                          pp_props=props,
@@ -351,7 +353,7 @@ def freyberg_diff_obs_test(tmp_path):
 
         hds_kperk = [[0,k] for k in range(m.nlay)]
 
-        ph = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,tmp_model_ws,
+        ph = PstFromFlopyModel(nam_file,new_model_ws,tmp_model_ws,
                                              const_props=props,
                                              hds_kperk=hds_kperk,
                                              sfr_pars=True,sfr_obs=True,

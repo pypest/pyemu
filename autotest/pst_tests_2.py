@@ -1,6 +1,8 @@
 import os
 import shutil
 from pathlib import Path
+import pyemu
+from pyemu.legacy import PstFromFlopyModel
 
 
 def setup_tmp(od, tmp_path, sub=None):
@@ -54,11 +56,11 @@ def from_flopy_kl_test(tmp_path):
         temp_list_props = [["wel.flux", None]]
         spat_list_props = [["riv.cond", 0], ["riv.stage", 0]]
         kl_props = [["upw.hk", 0], ["upw.vka", 0], ["rch.rech", 0]]
-        ph = pyemu.helpers.PstFromFlopyModel(m, new_model_ws=new_model_ws,
-                                             org_model_ws=tmp_model_ws,
-                                             kl_props=kl_props,
-                                             remove_existing=True,
-                                             model_exe_name="mfnwt")
+        ph = PstFromFlopyModel(m, new_model_ws=new_model_ws,
+                               org_model_ws=tmp_model_ws,
+                               kl_props=kl_props,
+                               remove_existing=True,
+                               model_exe_name="mfnwt")
     except Exception as e:
         os.chdir(bd)
         raise e
@@ -104,12 +106,13 @@ def from_flopy(tmp_path):
             hds_kperk.append([kper, k])
     temp_list_props = [["wel.flux", None]]
     spat_list_props = [["riv.cond", 0], ["riv.stage", 0]]
-    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
-                                         org_model_ws=tmp_model_ws,
-                                         zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
-                                         remove_existing=True,
-                                         model_exe_name="mfnwt", temporal_list_props=temp_list_props,
-                                         spatial_list_props=spat_list_props, hfb_pars=True)
+    ph = PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                           org_model_ws=tmp_model_ws,
+                           zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
+                           remove_existing=True,
+                           model_exe_name="mfnwt",
+                           temporal_list_props=temp_list_props,
+                           spatial_list_props=spat_list_props, hfb_pars=True)
     csv = os.path.join(new_model_ws, "arr_pars.csv")
     df = pd.read_csv(csv, index_col=0)
     mults_not_linked_to_pst = [f for f in df.mlt_file.unique()
@@ -127,8 +130,8 @@ def from_flopy(tmp_path):
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
 
-    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
-                                         org_model_ws=tmp_model_ws,
+    ph = PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                           org_model_ws=tmp_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True,
                                          model_exe_name="mfnwt",
@@ -137,7 +140,7 @@ def from_flopy(tmp_path):
 
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
-    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+    ph = PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=tmp_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True,
@@ -201,7 +204,7 @@ def from_flopy(tmp_path):
 
     #m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
     os.chdir(tmp_path)
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+    helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True,
                                              temporal_sfr_pars=True)
@@ -212,7 +215,7 @@ def from_flopy(tmp_path):
     new_model_ws = "temp_pst_from_flopy2a"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+    helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt",
                                              sfr_pars=['flow', 'not_a_par'],
@@ -233,7 +236,7 @@ def from_flopy(tmp_path):
     new_model_ws = "temp_pst_from_flopy2b"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+    helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt", sfr_pars=['not_a_par0', 'not_a_par1'], sfr_obs=True)
     try:
@@ -248,7 +251,7 @@ def from_flopy(tmp_path):
     new_model_ws = "temp_pst_from_flopy2c"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+    helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                              pp_props=pp_props, hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt")
 
@@ -257,7 +260,7 @@ def from_flopy(tmp_path):
     new_model_ws = "temp_pst_from_flopy2d"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
-    helper = pyemu.helpers.PstFromFlopyModel(m, new_model_ws,
+    helper = PstFromFlopyModel(m, new_model_ws,
                                              const_props=const_props, hds_kperk=[0, 0], remove_existing=True)
     pe = helper.draw(100)
     grid_props = [["extra.pr", 0]]
@@ -272,7 +275,7 @@ def from_flopy(tmp_path):
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
 
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+    helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                              grid_props=grid_props, hds_kperk=[0, 0], remove_existing=True)
     pe = helper.draw(100)
     # zones using ibound values - vka in layer 2
@@ -280,7 +283,7 @@ def from_flopy(tmp_path):
     new_model_ws = "temp_pst_from_flopy2f"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+    helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                              zone_props=zone_props, hds_kperk=[0, 0], remove_existing=True)
     pe = helper.draw(100)
     # kper-level multipliers for boundary conditions
@@ -291,7 +294,7 @@ def from_flopy(tmp_path):
     new_model_ws = "temp_pst_from_flopy2g"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+    helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                              temporal_list_props=list_props, hds_kperk=[0, 0], remove_existing=True)
 
     pe = helper.draw(100)
@@ -302,7 +305,7 @@ def from_flopy(tmp_path):
     new_model_ws = "temp_pst_from_flopy2h"
     if os.path.exists(new_model_ws):
         shutil.rmtree(new_model_ws,ignore_errors=True)
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+    helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                              pp_props=pp_props,
                                              const_props=const_props,
                                              grid_props=grid_props,
@@ -361,7 +364,7 @@ def from_flopy_zone_pars_test(tmp_path):
         k_zone_dict = {"upw.hk": {k: zn_arr for k in range(3)}, "extra.prsity": {k: zn_arr2 for k in range(3)},
                        "general_zn": {k: zn_arr for k in range(3)}}
         obssim_smp_pairs = None
-        helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+        helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                                  const_props=const_props,
                                                  grid_props=grid_props,
                                                  zone_props=zone_props,
@@ -377,7 +380,7 @@ def from_flopy_zone_pars_test(tmp_path):
         new_model_ws = "temp_pst_from_flopy3b"
         if os.path.exists(new_model_ws):
             shutil.rmtree(new_model_ws, ignore_errors=True)
-        helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+        helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                                  const_props=const_props,
                                                  grid_props=grid_props,
                                                  zone_props=zone_props,
@@ -457,7 +460,7 @@ def from_flopy_reachinput(tmp_path):
         new_model_ws = "temp_pst_from_flopy_reachesa{0}".format(i)
         if os.path.exists(new_model_ws):
             shutil.rmtree(new_model_ws, ignore_errors=True)
-        helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+        helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                                  hds_kperk=[0, 0], remove_existing=True,
                                                  model_exe_name="mfnwt", sfr_pars=sfr_par,
                                                  temporal_sfr_pars=include_temporal_pars,
@@ -635,7 +638,7 @@ def pst_from_flopy_geo_draw_test(tmp_path):
                 hds_kperk.append([kper, k])
         temp_list_props = [["wel.flux", None]]
         spat_list_props = [["riv.cond", 0], ["riv.stage", 0]]
-        ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+        ph = PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                              org_model_ws=tmp_model_ws,
                                              zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                              remove_existing=True,
@@ -691,7 +694,7 @@ def from_flopy_pp_test(tmp_path):
         pp_props = [["upw.ss", [0, 1]],["upw.hk",[1,0]],["upw.vka",1]]
 
         obssim_smp_pairs = None
-        helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
+        helper = PstFromFlopyModel(nam_file, new_model_ws, tmp_model_ws,
                                                  pp_props=pp_props,
                                                  remove_existing=True,
                                                  pp_space=4,
@@ -720,7 +723,7 @@ def from_flopy_pp_test(tmp_path):
         #pp_props = [["upw.ss", [0,], ["upw.hk", [1, 0]], ["upw.vka", 1]]
 
         obssim_smp_pairs = None
-        helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws,
+        helper = PstFromFlopyModel(nam_file, new_model_ws,
                                                  tmp_model_ws,
                                                  pp_props=pp_props,
                                                  remove_existing=True,
@@ -767,7 +770,7 @@ def pst_from_flopy_specsim_draw_test(tmp_path):
         spat_list_props = [["riv.cond", 0], ["riv.stage", 0]]
         v = pyemu.geostats.ExpVario(a=2500,contribution=1.0)
         gs = pyemu.geostats.GeoStruct(variograms=[v],transform="log")
-        ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+        ph = PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                              org_model_ws=tmp_model_ws,
                                              grid_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                              remove_existing=True,
@@ -891,6 +894,15 @@ def ineq_phi_test():
 
     #pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "l_test"
     #print(org_phi, pst.phi)
+
+
+def test_pstfromflopy_deprecation():
+    try:
+        pyemu.helpers.PstFromFlopyModel()
+    except DeprecationWarning:
+        pass
+    else:
+        raise Exception("should have failed")
 
 
 if __name__ == "__main__":

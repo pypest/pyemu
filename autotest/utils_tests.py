@@ -1766,6 +1766,8 @@ def fieldgen_dev(tmp_path):
     except:
         return
     import pyemu
+    from pyemu.legacy import PstFromFlopyModel
+
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
@@ -1778,7 +1780,7 @@ def fieldgen_dev(tmp_path):
 
     new_model_ws = "temp_fieldgen"
 
-    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+    ph = PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          grid_props=[["upw.hk", 0], ["rch.rech", 0]],
                                          remove_existing=True,build_prior=False)

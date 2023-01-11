@@ -1,0 +1,13 @@
+[run]
+source = pyemu
+parallel = True
+relative_files = True
+omit =
+    ../pyemu/legacy/*
+    */python?.?/*
+    */lib-python/?.?/*.py
+    */lib_pypy/_*.py
+    */site-packages/ordereddict.py
+    */site-packages/nose/*
+    */unittest2/*
+    *__init__*
