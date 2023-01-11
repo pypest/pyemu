@@ -6,9 +6,8 @@ import pandas as pd
 import flopy
 import pyemu
 
+
 def setup_freyberg_transient_model():
-
-
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
     mo = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False,forgive=False)
@@ -74,7 +73,6 @@ def setup_truth():
     pe.enforce()
     pe.to_csv(os.path.join("truth_template","sweep_in.csv"))
     os.chdir(os.path.join("..",".."))
-
 
 
 def run_truth_sweep():
