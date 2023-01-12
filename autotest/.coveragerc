@@ -3,7 +3,7 @@ source = pyemu
 parallel = True
 relative_files = True
 omit =
-    ../pyemu/legacy/*
+    **/legacy/*
     */python?.?/*
     */lib-python/?.?/*.py
     */lib_pypy/_*.py
