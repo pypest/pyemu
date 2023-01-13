@@ -1,13 +1,18 @@
 name: pyemu
 channels:
   - conda-forge
-dependencies:  
+dependencies:
+  # required
+  - python>=3.8
+  - numpy>=1.15.0
+  - pandas
+  # optional
+  - matplotlib>=1.4.0
   - pyshp
-  - numpy 
-  - pandas 
-  - nose-timer
-  - nbsphinx
-  - matplotlib
-  - coverage
+  - jinja2
+  # tests
   - coveralls
-  - nose
+  - pytest
+  - pytest-cov
+  - pytest-xdist
+  - nbmake

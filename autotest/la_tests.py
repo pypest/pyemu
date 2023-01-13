@@ -1,7 +1,10 @@
 import os
 import copy
-if not os.path.exists("temp"):
-    os.mkdir("temp")
+from pathlib import Path
+import shutil
+
+import pytest
+
 
 def schur_test_nonpest():
     import numpy as np
@@ -53,16 +56,32 @@ def schur_test_nonpest():
 
     sc = Schur(jco=jco, forecasts=ffile, parcov=parcov, obscov=obscov)
 
-def schur_test():
+
+def setup_tmp(od, tmp_path, sub=None):
+    basename = Path(od).name
+    if sub is not None:
+        new_d = Path(tmp_path, basename, sub)
+    else:
+        new_d = Path(tmp_path, basename)
+    if new_d.exists():
+        shutil.rmtree(new_d)
+    Path(tmp_path).mkdir(exist_ok=True)
+    # creation functionality
+    shutil.copytree(od, new_d)
+    return new_d
+
+
+def schur_test(tmp_path):
     import os
     import numpy as np
     from pyemu import Schur, Cov, Pst
     w_dir = os.path.join("..","verification","henry")
+    w_dir = setup_tmp(w_dir, tmp_path)
     forecasts = ["pd_ten","c_obs10_2"]
     pst = Pst(os.path.join(w_dir,"pest.pst"))
     cov = Cov.from_parameter_data(pst)
-    cov.to_uncfile(os.path.join("temp","pest.unc"),covmat_file=None)
-    cov2 = Cov.from_uncfile(os.path.join("temp","pest.unc"))
+    cov.to_uncfile(os.path.join(w_dir,"pest.unc"),covmat_file=None)
+    cov2 = Cov.from_uncfile(os.path.join(w_dir,"pest.unc"))
     sc = Schur(jco=os.path.join(w_dir,"pest.jcb"),
                forecasts=forecasts,
                parcov=cov2)
@@ -101,7 +120,6 @@ def schur_test():
     assert np.abs((sc.parcov.x - cov.x).sum()) == 0.0
 
 
-
 def la_test_io():
     from pyemu import Schur, Cov, Pst
     w_dir = os.path.join("..","verification","henry")
@@ -117,7 +135,6 @@ def la_test_io():
     sc_ascii = Schur(jco=os.path.join(w_dir,"pest.jcb"),
                forecasts=forecasts,
                parcov=os.path.join("temp","pest.txt.cov"))
-
 
 
 def errvar_test_nonpest():
@@ -147,16 +164,18 @@ def errvar_test():
     from pyemu import ErrVar
     w_dir = os.path.join("..","verification","henry")
     forecasts = ["pd_ten","c_obs10_2"]
-    ev = ErrVar(jco=os.path.join(w_dir,"pest.jcb"),forecasts=forecasts)
+    ev = ErrVar(jco=os.path.join(w_dir,"pest.jcb"),
+                forecasts=forecasts)
     print(ev.prior_forecast)
     print(ev.get_errvar_dataframe())
 
 
-def dataworth_test():
+def dataworth_test(tmp_path):
     import os
     import numpy as np
     from pyemu import Schur,Cov
     w_dir = os.path.join("..","verification","Freyberg")
+    w_dir = setup_tmp(w_dir, tmp_path)
     forecasts = ["travel_time","sw_gw_0","sw_gw_1"]
     sc = Schur(jco=os.path.join(w_dir,"freyberg.jcb"),forecasts=forecasts,verbose=True)
     #sc.pst.observation_data.loc[sc.pst.nnz_obs_names[3:],"weight"] = 0.0
@@ -188,11 +207,12 @@ def dataworth_test():
                                      base_obslist=scm.pst.nnz_obs_names,reset_zero_weight=1.0)
 
 
-def dataworth_next_test():
+def dataworth_next_test(tmp_path):
     import os
     import numpy as np
     from pyemu import Schur
     w_dir = os.path.join("..","verification","Freyberg")
+    w_dir = setup_tmp(w_dir, tmp_path)
     #w_dir = os.path.join("..","..","examples","freyberg")
     forecasts = ["sw_gw_0","sw_gw_1"]
     sc = Schur(jco=os.path.join(w_dir,"freyberg.jcb"),forecasts=forecasts,verbose=True)
@@ -228,8 +248,6 @@ def dataworth_next_test():
 
 
 def par_contrib_speed_test():
-    import os
-    import numpy as np
     import pyemu
 
     npar = 1800
@@ -333,12 +351,13 @@ def inf2():
     print(s.studentized_res)
 
 
-def freyberg_verf_test():
+def freyberg_verf_test(tmp_path):
     import os
     import pyemu
     import numpy as np
     import pandas as pd
     wdir = os.path.join("..","verification","Freyberg")
+    wdir = setup_tmp(wdir, tmp_path)
     post_pd7 = pyemu.Cov.from_ascii(os.path.join(wdir,"post.cov"))
     sc = pyemu.Schur(os.path.join(wdir,"freyberg.jcb"))
     post_pyemu = sc.posterior_parameter
@@ -543,11 +562,10 @@ def ends_freyberg_dev():
     ends = pyemu.EnDS(pst=pst, ensemble=oe, obscov=os.path.join(test_d, "obs.unc"))
 
 
-def ends_freyberg_test():
-
-    import numpy as np
+def ends_freyberg_test(tmp_path):
     import pyemu
     test_d = "ends_master"
+    test_d = setup_tmp(test_d, tmp_path)
     case = "freyberg6_run_ies"
     pst_name = os.path.join(test_d, case + ".pst")
     pst = pyemu.Pst(pst_name)
@@ -589,11 +607,11 @@ def ends_freyberg_test():
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe, obscov=os.path.join(test_d, "obs.unc"),predictions=predictions)
 
 
-def ends_freyberg_dsi_test():
-
-    import numpy as np
+@pytest.mark.order(0)
+def ends_freyberg_dsi_test(tmp_path):
     import pyemu
     test_d = "ends_master"
+    test_d = setup_tmp(test_d, tmp_path)
     case = "freyberg6_run_ies"
     pst_name = os.path.join(test_d, case + ".pst")
     pst = pyemu.Pst(pst_name)
@@ -604,15 +622,16 @@ def ends_freyberg_dsi_test():
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
 
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe,verbose=True)
-    t_d = os.path.join("dsi","dsi_template")
+    t_d = os.path.join(tmp_path,"dsi_template")
     ends.prep_for_dsi(t_d=t_d)
 
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
     pst.control_data.noptmax = 3
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     #pyemu.os_utils.run("pestpp-ies dsi.pst",cwd="dsi_template")
-    m_d = os.path.join("dsi","master_dsi")
-    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root="dsi",master_dir=m_d)
+    m_d = os.path.join(tmp_path,"master_dsi")
+    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
+                                 master_dir=m_d)
 
 
 def plot_freyberg_dsi():
