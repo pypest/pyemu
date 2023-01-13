@@ -421,7 +421,7 @@ def write_pp_shapfile(pp_df, shapename=None):
     """write pilot points dataframe to a shapefile
 
     Args:
-        pp_df (`pandas.DataFrame`): pilot point dataframe (must include "x" and "y"
+        pp_df (`pandas.DataFrame` or `str`): pilot point dataframe (must include "x" and "y"
             columns).  If `pp_df` is a string, it is assumed to be a pilot points file
             and is loaded with `pp_utils.pp_file_to_dataframe`. Can also be a list of
             `pandas.DataFrames` and/or filenames.

@@ -4550,7 +4550,7 @@ def _process_list_file(model_file, df):
     with open(model_file, "w") as fo:
         kwargs = {}
         if "win" in platform.platform().lower():
-            kwargs = {"line_terminator": "\n"}
+            kwargs = {"lineterminator": "\n"}
         if len(storehead) != 0:
             fo.write("\n".join(storehead))
             fo.flush()
