@@ -547,7 +547,7 @@ def setup_temporal_diff_obs(
             os.chdir(b_d)
         print(ins_pro_diff_df)
         diff_df.loc[ins_pro_diff_df.index, "obsval"] = ins_pro_diff_df.obsval
-    frun_line = "pyemu.helpers.apply_temporal_diff_obs('{0}')\n".format(config_file)
+    frun_line = "pyemu.legacy.apply_temporal_diff_obs('{0}')\n".format(config_file)
     return frun_line, diff_df
 
 
@@ -2435,7 +2435,7 @@ class PstFromFlopyModel(object):
                 "error test running apply_list_pars():{0}".format(str(e))
             )
         os.chdir("..")
-        line = "pyemu.helpers.apply_list_pars()\n"
+        line = "pyemu.legacy.apply_list_pars()\n"
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_pre_lines.append(line)
 
