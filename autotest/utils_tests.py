@@ -4,10 +4,10 @@ import pytest
 # if not os.path.exists("temp"):
 #     os.mkdir("temp")
 from pathlib import Path
+import pyemu
 
 def add_pi_obj_func_test(tmp_path):
     import os
-    import pyemu
 
     pst = os.path.join("utils","dewater_pest.pst")
     pst = pyemu.optimization.add_pi_obj_func(
@@ -21,7 +21,6 @@ def add_pi_obj_func_test(tmp_path):
 def fac2real_test(tmp_path):
     import os
     import numpy as np
-    import pyemu
     # pp_file = os.path.join("utils","points1.dat")
     # factors_file = os.path.join("utils","factors1.dat")
     # pyemu.utils.gw_utils.fac2real(pp_file,factors_file,
@@ -1288,6 +1287,7 @@ def sfr_helper_test(tmp_path):  # TODO: need attention to move IO to tmp_path (p
     import pandas as pd
     import pyemu
     import flopy
+    import numpy as np
 
     #setup the process
     m_ws = os.path.join("utils", 'supply2eg')
@@ -1390,6 +1390,60 @@ def sfr_helper_test(tmp_path):  # TODO: need attention to move IO to tmp_path (p
         #print(sd2.hcond2)
 
         assert (sd1.hcond1 * 2.0).sum() == sd2.hcond1.sum()
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
+
+    #setup the process
+    m_ws = os.path.join('..', 'examples', 'freyberg_sfr_reaches')
+    shutil.copytree(m_ws, os.path.join(tmp_path, 'freyberg_sfr_reaches'))
+    m_ws = os.path.join(tmp_path, 'freyberg_sfr_reaches')
+
+    m = flopy.modflow.Modflow.load("freyberg.nam",model_ws=m_ws,check=False,
+                                   verbose=False,forgive=False,
+                                   load_only=["dis","sfr"])
+    sd = m.sfr.segment_data[0].copy()
+
+    sd["flow"] = 1.0
+    sd["pptsw"] = 1.0
+
+    m.sfr.segment_data = {k:sd.copy() for k in range(m.nper)}
+
+    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters(
+        m, include_temporal_pars=['hcond1', 'flow'])
+    df_reaches = pyemu.gw_utils.setup_sfr_reach_parameters(m)
+    print(df_sfr)
+    os.chdir(m_ws)
+    try:
+        # change the name of the sfr file that will be created
+        pars = {}
+        with open("sfr_seg_pars.config") as f:
+            for line in f:
+                line = line.strip().split()
+                pars[line[0]] = line[1]
+        pars["sfr_filename"] = "test.sfr"
+        with open("sfr_seg_pars.config", 'w') as f:
+            for k, v in pars.items():
+                f.write("{0} {1}\n".format(k, v))
+                # change some hcond1 values
+        df = pd.read_csv("sfr_seg_temporal_pars.dat", delim_whitespace=False, index_col=0)
+        df.loc[:, "flow"] = 10.0
+        df.to_csv("sfr_seg_temporal_pars.dat", sep=',')
+
+        rdf = pd.read_csv("sfr_reach_pars.dat", delim_whitespace=False, index_col=0)
+        rdf.loc[:, "strhc1"] = 10.0
+        rdf.to_csv("sfr_reach_pars.dat", sep=',')
+
+        newsfr = pyemu.gw_utils.apply_sfr_seg_parameters(True, True)
+        sd1 = newsfr.segment_data
+        rc1 = newsfr.reach_data
+        m1 = flopy.modflow.Modflow.load("freyberg.nam", load_only=["sfr"], check=False)
+        for kper,sd in m1.sfr.segment_data.items():
+            #print(sd["flow"],sd1[kper]["flow"])
+            for i1,i2 in zip(sd["flow"],sd1[kper]["flow"]):
+                assert i1 * 10 == i2, "{0},{1}".format(i1, i2)
+        assert all(np.isclose(rc1.strhc1, 10 * m1.sfr.reach_data.strhc1))
     except Exception as e:
         os.chdir(bd)
         raise e
@@ -2304,6 +2358,29 @@ def ac_draw_test(tmp_path):
     # plt.show()
 
 
+def test_fake_frun(freybergmf6_2_pstfrom):
+    from pst_from_tests import ies_exe_path
+    pf = freybergmf6_2_pstfrom
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=500)
+    gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
+    pf.add_parameters(
+        "freyberg6.npf_k_layer1.txt",
+        par_type="grid",
+        geostruct=gs,
+        pargp=f"hk_k:{0}"
+    )
+    pf.add_observations(
+        "heads.csv",
+        index_cols=['time'],
+        obsgp="head"
+    )
+    pst = pf.build_pst()
+    pst = pyemu.utils.setup_fake_forward_run(pst, "fake.pst", pf.new_d,
+                                             new_cwd=pf.new_d)
+    pyemu.os_utils.run(f"{ies_exe_path} fake.pst", cwd=pf.new_d)
+    bd = Path.cwd()
+    os.chdir(pf.new_d)
+    pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
 
 
 if __name__ == "__main__":

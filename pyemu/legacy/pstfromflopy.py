@@ -13,7 +13,6 @@ from pyemu.utils import (
     SpatialReference,
     kl_setup,
     apply_array_pars,
-    apply_list_pars,
     geostatistical_draws,
 )
 from pyemu.utils.helpers import _write_df_tpl
@@ -235,6 +234,390 @@ def write_zone_tpl(
     df = pd.DataFrame({"parnme": parnme, "zone": zone}, index=parnme)
     df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace("_", ""), name)
     return df
+
+
+def apply_list_pars():
+    """a function to apply boundary condition multiplier parameters.
+
+    Note:
+        Used to implement the parameterization constructed by
+        PstFromFlopyModel during a forward run
+
+        Requires either "temporal_list_pars.csv" or "spatial_list_pars.csv"
+
+        Should be added to the forward_run.py script (called programmaticlly
+        by the `PstFrom` forward run script)
+
+
+    """
+    temp_file = "temporal_list_pars.dat"
+    spat_file = "spatial_list_pars.dat"
+
+    temp_df, spat_df = None, None
+    if os.path.exists(temp_file):
+        temp_df = pd.read_csv(temp_file, delim_whitespace=True)
+        temp_df.loc[:, "split_filename"] = temp_df.filename.apply(
+            lambda x: os.path.split(x)[-1]
+        )
+        org_dir = temp_df.list_org.iloc[0]
+        model_ext_path = temp_df.model_ext_path.iloc[0]
+    if os.path.exists(spat_file):
+        spat_df = pd.read_csv(spat_file, delim_whitespace=True)
+        spat_df.loc[:, "split_filename"] = spat_df.filename.apply(
+            lambda x: os.path.split(x)[-1]
+        )
+        mlt_dir = spat_df.list_mlt.iloc[0]
+        org_dir = spat_df.list_org.iloc[0]
+        model_ext_path = spat_df.model_ext_path.iloc[0]
+    if temp_df is None and spat_df is None:
+        raise Exception("apply_list_pars() - no key dfs found, nothing to do...")
+    # load the spatial mult dfs
+    sp_mlts = {}
+    if spat_df is not None:
+
+        for f in os.listdir(mlt_dir):
+            pak = f.split(".")[0].lower()
+            df = pd.read_csv(
+                os.path.join(mlt_dir, f), index_col=0, delim_whitespace=True
+            )
+            # if pak != 'hfb6':
+            df.index = df.apply(
+                lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k, x.i, x.j), axis=1
+            )
+            # else:
+            #     df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
+            #                                                                      x.irow2, x.icol2), axis = 1)
+            if pak in sp_mlts.keys():
+                raise Exception("duplicate multiplier csv for pak {0}".format(pak))
+            if df.shape[0] == 0:
+                raise Exception("empty dataframe for spatial list file: {0}".format(f))
+            sp_mlts[pak] = df
+
+    org_files = os.listdir(org_dir)
+    # for fname in df.filename.unique():
+    for fname in org_files:
+        # need to get the PAK name to handle stupid horrible expceptions for HFB...
+        # try:
+        #     pakspat = sum([True if fname in i else False for i in spat_df.filename])
+        #     if pakspat:
+        #         pak = spat_df.loc[spat_df.filename.str.contains(fname)].pak.values[0]
+        #     else:
+        #         pak = 'notHFB'
+        # except:
+        #     pak = "notHFB"
+
+        names = None
+        if temp_df is not None and fname in temp_df.split_filename.values:
+            temp_df_fname = temp_df.loc[temp_df.split_filename == fname, :]
+            if temp_df_fname.shape[0] > 0:
+                names = temp_df_fname.dtype_names.iloc[0].split(",")
+        if spat_df is not None and fname in spat_df.split_filename.values:
+            spat_df_fname = spat_df.loc[spat_df.split_filename == fname, :]
+            if spat_df_fname.shape[0] > 0:
+                names = spat_df_fname.dtype_names.iloc[0].split(",")
+        if names is not None:
+
+            df_list = pd.read_csv(
+                os.path.join(org_dir, fname),
+                delim_whitespace=True,
+                header=None,
+                names=names,
+            )
+            df_list.loc[:, "idx"] = df_list.apply(
+                lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(
+                    x.k - 1, x.i - 1, x.j - 1
+                ),
+                axis=1,
+            )
+
+            df_list.index = df_list.idx
+            pak_name = fname.split("_")[0].lower()
+            if pak_name in sp_mlts:
+                mlt_df = sp_mlts[pak_name]
+                mlt_df_ri = mlt_df.reindex(df_list.index)
+                for col in df_list.columns:
+                    if col in [
+                        "k",
+                        "i",
+                        "j",
+                        "inode",
+                        "irow1",
+                        "icol1",
+                        "irow2",
+                        "icol2",
+                        "idx",
+                    ]:
+                        continue
+                    if col in mlt_df.columns:
+                        # print(mlt_df.loc[mlt_df.index.duplicated(),:])
+                        # print(df_list.loc[df_list.index.duplicated(),:])
+                        df_list.loc[:, col] *= mlt_df_ri.loc[:, col].values
+
+            if temp_df is not None and fname in temp_df.split_filename.values:
+                temp_df_fname = temp_df.loc[temp_df.split_filename == fname, :]
+                for col, val in zip(temp_df_fname.col, temp_df_fname.val):
+                    df_list.loc[:, col] *= val
+            fmts = ""
+            for name in names:
+                if name in ["i", "j", "k", "inode", "irow1", "icol1", "irow2", "icol2"]:
+                    fmts += " %9d"
+                else:
+                    fmts += " %9G"
+        np.savetxt(
+            os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts
+        )
+
+
+def setup_temporal_diff_obs(
+    pst,
+    ins_file,
+    out_file=None,
+    include_zero_weight=False,
+    include_path=False,
+    sort_by_name=True,
+    long_names=True,
+    prefix="dif",
+):
+    """a helper function to setup difference-in-time observations based on an existing
+    set of observations in an instruction file using the observation grouping in the
+    control file
+
+    Args:
+        pst (`pyemu.Pst`): existing control file
+        ins_file (`str`): an existing instruction file
+        out_file (`str`, optional): an existing model output file that corresponds to
+            the instruction file.  If None, `ins_file.replace(".ins","")` is used
+        include_zero_weight (`bool`, optional): flag to include zero-weighted observations
+            in the difference observation process.  Default is False so that only non-zero
+            weighted observations are used.
+        include_path (`bool`, optional): flag to setup the binary file processing in directory where the hds_file
+            is located (if different from where python is running).  This is useful for setting up
+            the process in separate directory for where python is running.
+        sort_by_name (`bool`,optional): flag to sort observation names in each group prior to setting up
+            the differencing.  The order of the observations matters for the differencing.  If False, then
+            the control file order is used.  If observation names have a datetime suffix, make sure the format is
+            year-month-day to use this sorting.  Default is True
+        long_names (`bool`, optional): flag to use long, descriptive names by concating the two observation names
+            that are being differenced.  This will produce names that are too long for tradtional PEST(_HP).
+            Default is True.
+        prefix (`str`, optional): prefix to prepend to observation names and group names.  Default is "dif".
+
+    Returns:
+        tuple containing
+
+        - **str**: the forward run command to execute the binary file process during model runs.
+
+        - **pandas.DataFrame**: a dataframe of observation information for use in the pest control file
+
+    Note:
+        This is the companion function of `helpers.apply_temporal_diff_obs()`.
+
+
+
+    """
+    if not os.path.exists(ins_file):
+        raise Exception(
+            "setup_temporal_diff_obs() error: ins_file '{0}' not found".format(ins_file)
+        )
+    # the ins routines will check for missing obs, etc
+    try:
+        ins = pyemu.pst_utils.InstructionFile(ins_file, pst)
+    except Exception as e:
+        raise Exception(
+            "setup_temporal_diff_obs(): error processing instruction file: {0}".format(
+                str(e)
+            )
+        )
+
+    if out_file is None:
+        out_file = ins_file.replace(".ins", "")
+
+    # find obs groups from the obs names in the ins that have more than one observation
+    # (cant diff single entry groups)
+    obs = pst.observation_data
+    if include_zero_weight:
+        group_vc = pst.observation_data.loc[ins.obs_name_set, "obgnme"].value_counts()
+    else:
+
+        group_vc = obs.loc[
+            obs.apply(lambda x: x.weight > 0 and x.obsnme in ins.obs_name_set, axis=1),
+            "obgnme",
+        ].value_counts()
+    groups = list(group_vc.loc[group_vc > 1].index)
+    if len(groups) == 0:
+        raise Exception(
+            "setup_temporal_diff_obs() error: no obs groups found "
+            + "with more than one non-zero weighted obs"
+        )
+
+    # process each group
+    diff_dfs = []
+    for group in groups:
+        # get a sub dataframe with non-zero weighted obs that are in this group and in the instruction file
+        obs_group = obs.loc[obs.obgnme == group, :].copy()
+        obs_group = obs_group.loc[
+            obs_group.apply(
+                lambda x: x.weight > 0 and x.obsnme in ins.obs_name_set, axis=1
+            ),
+            :,
+        ]
+        # sort if requested
+        if sort_by_name:
+            obs_group = obs_group.sort_values(by="obsnme", ascending=True)
+        # the names starting with the first
+        diff1 = obs_group.obsnme[:-1].values
+        # the names ending with the last
+        diff2 = obs_group.obsnme[1:].values
+        # form a dataframe
+        diff_df = pd.DataFrame({"diff1": diff1, "diff2": diff2})
+        # build up some obs names
+        if long_names:
+            diff_df.loc[:, "obsnme"] = [
+                "{0}_{1}__{2}".format(prefix, d1, d2) for d1, d2 in zip(diff1, diff2)
+            ]
+        else:
+            diff_df.loc[:, "obsnme"] = [
+                "{0}_{1}_{2}".format(prefix, group, c) for c in len(diff1)
+            ]
+        # set the obs names as the index (per usual)
+        diff_df.index = diff_df.obsnme
+        # set the group name for the diff obs
+        diff_df.loc[:, "obgnme"] = "{0}_{1}".format(prefix, group)
+        # set the weights using the standard prop of variance formula
+        d1_std, d2_std = (
+            1.0 / obs_group.weight[:-1].values,
+            1.0 / obs_group.weight[1:].values,
+        )
+        diff_df.loc[:, "weight"] = 1.0 / (np.sqrt((d1_std ** 2) + (d2_std ** 2)))
+
+        diff_dfs.append(diff_df)
+    # concat all the diff dataframes
+    diff_df = pd.concat(diff_dfs)
+
+    # save the dataframe as a config file
+    config_file = ins_file.replace(".ins", ".diff.config")
+
+    f = open(config_file, "w")
+    if include_path:
+        # ins_path = os.path.split(ins_file)[0]
+        # f = open(os.path.join(ins_path,config_file),'w')
+        f.write(
+            "{0},{1}\n".format(os.path.split(ins_file)[-1], os.path.split(out_file)[-1])
+        )
+        # diff_df.to_csv(os.path.join(ins_path,config_file))
+    else:
+        f.write("{0},{1}\n".format(ins_file, out_file))
+        # diff_df.to_csv(os.path.join(config_file))
+
+    f.flush()
+    diff_df.to_csv(f, mode="a")
+    f.flush()
+    f.close()
+
+    # write the instruction file
+    diff_ins_file = config_file.replace(".config", ".processed.ins")
+    with open(diff_ins_file, "w") as f:
+        f.write("pif ~\n")
+        f.write("l1 \n")
+        for oname in diff_df.obsnme:
+            f.write("l1 w w w !{0}! \n".format(oname))
+
+    if include_path:
+        config_file = os.path.split(config_file)[-1]
+        diff_ins_file = os.path.split(diff_ins_file)[-1]
+
+    # if the corresponding output file exists, try to run the routine
+    if os.path.exists(out_file):
+        if include_path:
+            b_d = os.getcwd()
+            ins_path = os.path.split(ins_file)[0]
+            os.chdir(ins_path)
+        # try:
+        processed_df = apply_temporal_diff_obs(config_file=config_file)
+        # except Exception as e:
+        # if include_path:
+        #     os.chdir(b_d)
+        #
+
+        # ok, now we can use the new instruction file to process the diff outputs
+        ins = pyemu.pst_utils.InstructionFile(diff_ins_file)
+        ins_pro_diff_df = ins.read_output_file(diff_ins_file.replace(".ins", ""))
+
+        if include_path:
+            os.chdir(b_d)
+        print(ins_pro_diff_df)
+        diff_df.loc[ins_pro_diff_df.index, "obsval"] = ins_pro_diff_df.obsval
+    frun_line = "pyemu.helpers.apply_temporal_diff_obs('{0}')\n".format(config_file)
+    return frun_line, diff_df
+
+
+def apply_temporal_diff_obs(config_file):
+    """process an instruction-output file pair and formulate difference observations.
+
+    Args:
+        config_file (`str`): configuration file written by `pyemu.helpers.setup_temporal_diff_obs`.
+
+    Returns:
+        diff_df (`pandas.DataFrame`) : processed difference observations
+
+    Note:
+        Writes `config_file.replace(".config",".processed")` output file that can be read
+        with the instruction file that is created by `pyemu.helpers.setup_temporal_diff_obs()`.
+
+        This is the companion function of `helpers.setup_setup_temporal_diff_obs()`.
+    """
+
+    if not os.path.exists(config_file):
+        raise Exception(
+            "apply_temporal_diff_obs() error: config_file '{0}' not found".format(
+                config_file
+            )
+        )
+    with open(config_file, "r") as f:
+        line = f.readline().strip().split(",")
+        ins_file, out_file = line[0], line[1]
+        diff_df = pd.read_csv(f)
+    if not os.path.exists(out_file):
+        raise Exception(
+            "apply_temporal_diff_obs() error: out_file '{0}' not found".format(out_file)
+        )
+    if not os.path.exists(ins_file):
+        raise Exception(
+            "apply_temporal_diff_obs() error: ins_file '{0}' not found".format(ins_file)
+        )
+    try:
+        ins = pyemu.pst_utils.InstructionFile(ins_file)
+    except Exception as e:
+        raise Exception(
+            "apply_temporal_diff_obs() error instantiating ins file: {0}".format(str(e))
+        )
+    try:
+        out_df = ins.read_output_file(out_file)
+    except Exception as e:
+        raise Exception(
+            "apply_temporal_diff_obs() error processing ins-out file pair: {0}".format(
+                str(e)
+            )
+        )
+
+    # make sure all the listed obs names in the diff_df are in the out_df
+    diff_names = set(diff_df.diff1.to_list())
+    diff_names.update(set(diff_df.diff2.to_list()))
+    missing = diff_names - set(list(out_df.index.values))
+    if len(missing) > 0:
+        raise Exception(
+            "apply_temporal_diff_obs() error: the following obs names in the config file "
+            + "are not in the instruction file processed outputs :"
+            + ",".join(missing)
+        )
+    diff_df.loc[:, "diff1_obsval"] = out_df.loc[diff_df.diff1.values, "obsval"].values
+    diff_df.loc[:, "diff2_obsval"] = out_df.loc[diff_df.diff2.values, "obsval"].values
+    diff_df.loc[:, "diff_obsval"] = diff_df.diff1_obsval - diff_df.diff2_obsval
+    processed_name = config_file.replace(".config", ".processed")
+    diff_df.loc[:, ["obsnme", "diff1_obsval", "diff2_obsval", "diff_obsval"]].to_csv(
+        processed_name, sep=" ", index=False
+    )
+    return diff_df
 
 
 class PstFromFlopyModel(object):
