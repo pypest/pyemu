@@ -41,7 +41,7 @@ def run_notebook(fn):
     assert ival == 0 or ival is None, 'could not run {}'.format(fn)
 
 
-def test_notebooks():
+def test_notebooks_test():
     files = get_notebooks()
 
     for fn in files:

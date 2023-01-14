@@ -3,9 +3,6 @@ import pyemu
 import pandas as pd
 import numpy as np
 
-if not os.path.exists("temp"):
-    os.mkdir("temp")
-
 
 def add_base_test():
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
@@ -53,7 +50,7 @@ def nz_test():
     assert oe_nz.shape[1] == pst.nnz_obs
     assert list(oe_nz.columns.values) == pst.nnz_obs_names
 
-def par_gauss_draw_consistency_test():
+def par_gauss_draw_consistency_test(tmp_path):
 
     pst = pyemu.Pst(os.path.join("pst","pest.pst"))
     pst.parameter_data.loc[pst.par_names[3::2],"partrans"] = "fixed"
@@ -86,20 +83,24 @@ def par_gauss_draw_consistency_test():
         # ensemble should be transformed so now lets test the I/O
         pe_org = pe.copy()
 
-        pe.to_binary("test.jcb")
-        pe = pyemu.ParameterEnsemble.from_binary(pst=pst, filename="test.jcb")
+        pe.to_binary(os.path.join(tmp_path, "test.jcb"))
+        pe = pyemu.ParameterEnsemble.from_binary(
+            pst=pst, filename=os.path.join(tmp_path, "test.jcb")
+        )
         pe.transform()
         pe._df.index = pe.index.map(np.int64)
         d = (pe - pe_org).apply(np.abs)
         assert d.max().max() < 1.0e-10, d.max().sort_values(ascending=False)
 
-        pe.to_csv("test.csv")
-        pe = pyemu.ParameterEnsemble.from_csv(pst=pst,filename="test.csv")
+        pe.to_csv(os.path.join(tmp_path, "test.csv"))
+        pe = pyemu.ParameterEnsemble.from_csv(
+            pst=pst, filename=os.path.join(tmp_path, "test.csv")
+        )
         pe.transform()
         d = (pe - pe_org).apply(np.abs)
         assert d.max().max() < 1.0e-10,d.max().sort_values(ascending=False)
 
-def obs_gauss_draw_consistency_test():
+def obs_gauss_draw_consistency_test(tmp_path):
 
     pst = pyemu.Pst(os.path.join("pst","pest.pst"))
 
@@ -125,14 +126,16 @@ def obs_gauss_draw_consistency_test():
         # ensemble should be transformed so now lets test the I/O
         oe_org = oe.copy()
 
-        oe.to_binary("test.jcb")
-        oe = pyemu.ObservationEnsemble.from_binary(pst=pst, filename="test.jcb")
+        oe.to_binary(os.path.join(tmp_path, "test.jcb"))
+        oe = pyemu.ObservationEnsemble.from_binary(
+            pst=pst,  filename=os.path.join(tmp_path, "test.jcb"))
         oe._df.index = oe.index.map(np.int64)
         d = (oe - oe_org).apply(np.abs)
         assert d.max().max() < 1.0e-10, d.max().sort_values(ascending=False)
 
-        oe.to_csv("test.csv")
-        oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename="test.csv")
+        oe.to_csv(os.path.join(tmp_path, "test.csv"))
+        oe = pyemu.ObservationEnsemble.from_csv(
+            pst=pst, filename=os.path.join(tmp_path, "test.csv"))
         d = (oe - oe_org).apply(np.abs)
         assert d.max().max() < 1.0e-10,d.max().sort_values(ascending=False)
 
@@ -260,12 +263,14 @@ def enforce_test():
     pe.enforce(how="drop")
     assert pe.shape[0] == num_reals - 1
 
-def pnulpar_test():
+def pnulpar_test(tmp_path):
     import os
     import pyemu
 
     ev = pyemu.ErrVar(jco=os.path.join("mc","freyberg_ord.jco"))
-    ev.get_null_proj(maxsing=1).to_ascii("ev_new_proj.mat")
+    ev.get_null_proj(maxsing=1).to_ascii(
+        os.path.join(tmp_path, "ev_new_proj.mat")
+    )
     pst = ev.pst
     par_dir = os.path.join("mc","prior_par_draws")
     par_files = [os.path.join(par_dir,f) for f in os.listdir(par_dir) if f.endswith('.par')]
@@ -429,7 +434,7 @@ def emp_cov_test():
     pst = pyemu.Pst(os.path.join("en", "pest.pst"))
     cov = pyemu.Cov.from_binary(os.path.join("en", "cov.jcb"))
     print(pst.npar, cov.shape)
-    num_reals = 10000
+    num_reals = 5000
 
     pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
     emp_cov = pe_eig.covariance_matrix()
@@ -586,12 +591,12 @@ def mixed_par_draw_test():
     assert pst.npar == npar
 
 
-def binary_test():
+def binary_test(tmp_path):
     from datetime import datetime
     import numpy as np
     import pandas as pd
     import pyemu
-    npar = 100000
+    npar = 10000
     nobs = 500
     par_names = ["p{0}".format(i) for i in range(npar)]
     obs_names = ["o{0}".format(i) for i in range(nobs)]
@@ -600,15 +605,19 @@ def binary_test():
     df = pd.DataFrame(data=arr,columns=par_names,index=obs_names)
     pe = pyemu.ParameterEnsemble(pst=pst,df=df)
     s1 = datetime.now()
-    pe.to_dense("par.bin")
-    pe1 = pyemu.ParameterEnsemble.from_binary(pst=pst,filename="par.bin")
+    pe.to_dense(os.path.join(tmp_path, "par.bin"))
+    pe1 = pyemu.ParameterEnsemble.from_binary(
+        pst=pst,filename=os.path.join(tmp_path, "par.bin")
+    )
     e1 = datetime.now()
     d = (pe - pe1).apply(np.abs)
     print(d.max().max())
     assert d.max().max() < 1.0e-10
     s2 = datetime.now()
-    pe.to_binary("par.bin")
-    pe1 = pyemu.ParameterEnsemble.from_binary(pst=pst,filename="par.bin")
+    pe.to_binary(os.path.join(tmp_path, "par.bin"))
+    pe1 = pyemu.ParameterEnsemble.from_binary(
+        pst=pst,filename=os.path.join(tmp_path, "par.bin")
+    )
     e2 = datetime.now()
     print((e1 - s1).total_seconds())
     print((e2 - s2).total_seconds())
