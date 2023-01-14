@@ -1260,7 +1260,212 @@ def invest():
     import pyemu
     pst = pyemu.Pst(os.path.join("pst","comments_pesthp.pst"))
     pst.write(os.path.join("newpst","comments_pesthp.pst"))
-    
+
+
+def parrep_test(tmp_path):
+    import pyemu
+    import pandas as pd
+    import numpy as np
+    # make some fake parnames and values
+    parnames = ['p_{0:03}'.format(i) for i in range(20)]
+    np.random.seed(42)
+    parvals = np.random.random(20) + 5
+    parvals[0] = 0.001
+    bd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        # make a fake parfile
+        with open('fake.par','w') as ofp:
+            ofp.write('single point\n')
+            [ofp.write('{0:10s} {1:12.6f} 1.00 0.0\n'.format(i,j)) for i,j in zip(parnames,parvals)]
+
+        # make a fake ensemble parameter file
+        np.random.seed(99)
+        parens = pd.DataFrame(np.tile(parvals,(5,1))+np.random.randn(5,20)*.5, columns=parnames)
+        parens.index = list(range(4)) + ['base']
+        parens.index.name = 'real_name'
+        parens.loc['base'] = parvals[::-1]
+        # get cheeky and reverse the column names to test updating
+        parens.columns = parens.columns.sort_values(ascending = False)
+        parens.to_csv('fake.par.0.csv')
+
+        parens.drop('base').to_csv('fake.par.0.nobase.csv')
+        # and make a fake pst file
+        pst = pyemu.pst_utils.generic_pst(par_names=parnames)
+        pst.parameter_data['parval1'] = [float(i+1) for i in range(len(parvals))]
+        pst.parameter_data['parlbnd'] = 0.01
+        pst.parameter_data['parubnd'] = 100.01
+
+        pyemu.ParameterEnsemble(pst=pst,df=parens).to_binary('fake_parens.jcb')
+        # test the parfile style
+        pst.parrep('fake.par')
+        assert pst.parameter_data.parval1[0] == pst.parameter_data.parlbnd[0]
+        assert np.allclose(pst.parameter_data.iloc[1:].parval1.values,parvals[1:],atol=0.0001)
+        assert pst.control_data.noptmax == 0
+        pst.parrep('fake.par', noptmax=99, enforce_bounds=False)
+        assert np.allclose(pst.parameter_data.parval1.values,parvals,atol=0.0001)
+        assert pst.control_data.noptmax == 99
+
+        # now test the ensemble style
+        pst.parrep('fake.par.0.csv')
+        assert pst.parameter_data.parval1[0] == pst.parameter_data.parlbnd[0]
+        assert np.allclose(pst.parameter_data.iloc[1:].parval1.values,parvals[1:],atol=0.0001)
+
+        pst.parrep('fake.par.0.nobase.csv')
+        # flip the parameter ensemble back around
+        parens = parens[parens.columns.sort_values()]
+        assert np.allclose(pst.parameter_data.parval1.values[:-1],parens.T[0].values[:-1],atol=0.0001)
+
+        pst.parrep('fake.par.0.csv', real_name=3)
+        # flip the parameter ensemble back around
+        parens = parens[parens.columns.sort_values()]
+        assert np.allclose(pst.parameter_data.parval1.values[:-1],parens.T[3].values[:-1],atol=0.0001)
+
+        pst.parrep('fake_parens.jcb', real_name=2)
+        # confirm binary format works as csv did
+        assert np.allclose(pst.parameter_data.parval1.values[:-1],parens.T[2].values[:-1],atol=0.0001)
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
+
+
+def at_bounds_test():
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    par = pst.parameter_data
+    par.loc[pst.par_names[0],"parval1"] = par.parubnd[pst.par_names[0]] + 1.0
+    par.loc[pst.par_names[1], "parval1"] = par.parlbnd[pst.par_names[1]]
+
+    lb,ub = pst.get_adj_pars_at_bounds()
+    assert len(lb) == 1
+    assert len(ub) == 1
+
+
+def ineq_phi_test():
+    import pyemu
+    import numpy as np
+
+    def _check_adjust(cf, compgp, new, reset):
+        cf.res.loc[pst.nnz_obs_names, "group"] = compgp
+        cf.adjust_weights(obsgrp_dict={compgp: new})
+        assert np.isclose(cf.phi_components[compgp], new)
+        cf.adjust_weights(obsgrp_dict={compgp: reset})
+        assert np.isclose(cf.phi_components[compgp], reset)
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    phi_comp=pst.phi_components
+    #print(pst.res.loc[pst.nnz_obs_names,"residual"])
+    res = pst.res
+    swrgt = ((res.loc[res.residual > 0, 'residual'] *
+              res.loc[res.residual > 0, 'weight'])**2).sum()
+    swrlt = ((res.loc[res.residual < 0, 'residual'] *
+              res.loc[res.residual < 0, 'weight'])**2).sum()
+    for s in ["g_test", "greater_test", "<@"]:
+        pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = s
+        assert np.isclose(pst.phi_components[s], swrgt)
+        _check_adjust(pst, s, 1000, swrgt)
+    for s in ["l_test", "less_test", ">@"]:
+        pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = s
+        assert np.isclose(pst.phi_components[s], swrlt)
+        _check_adjust(pst, s, 1000, swrlt)
+
+    pst.observation_data.loc[
+        pst.nnz_obs_names, "obsval"
+    ] = pst.res.loc[pst.nnz_obs_names,"modelled"] - 1
+    for s in ["g_test", "greater_test", "<@"]:
+        pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = s
+        assert pst.phi < 1.0e-6
+
+    pst.observation_data.loc[
+        pst.nnz_obs_names, "obsval"
+    ] = pst.res.loc[pst.nnz_obs_names, "modelled"] + 1
+    for s in ["l_test", "less_test", ">@"]:
+        pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = s
+        assert pst.phi < 1.0e-6
+
+    #pst.observation_data.loc[pst.nnz_obs_names, "obgnme"] = "l_test"
+    #print(org_phi, pst.phi)
+
+
+def interface_check_test():
+    import pyemu
+    nins_files = 3
+    ntpl_files = 3
+
+    t_d = "interface_temp"
+    if os.path.exists(t_d):
+        shutil.rmtree(t_d)
+    os.makedirs(t_d)
+    ins_files,tpl_files = [],[]
+    ocount,pcount = 0,0
+    for i in range(nins_files):
+        ins_file = os.path.join(t_d,"ins_{0}.dat.ins".format(i))
+        with open(ins_file,'w') as f:
+            f.write("pif ~\n")
+            f.write('l1 !obs_{0}!\n'.format(ocount))
+            ocount += 1
+        ins_files.append(ins_file)
+    for i in range(ntpl_files):
+        tpl_file = os.path.join(t_d,"tpl_{0}.dat.tpl".format(i))
+        with open(tpl_file,'w') as f:
+            f.write("ptf ~\n")
+            f.write('~  par_{0}  ~'.format(pcount))
+            pcount += 1
+        tpl_files.append(tpl_file)
+    in_files = [f.replace(".tpl","") for f in tpl_files]
+    out_files = [f.replace(".ins", "") for f in ins_files]
+
+    pst = pyemu.Pst.from_io_files(tpl_files,in_files,ins_files,out_files,pst_path=".")
+    pyemu.pst_utils.check_interface(pst,t_d)
+    pst.write(os.path.join(t_d,"test.pst"),check_interface=True)
+
+    pst.parameter_data = pst.parameter_data.iloc[:-1,:]
+    try:
+        pst.write(os.path.join(t_d, "test.pst"),check_interface=True)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    try:
+        pyemu.pst_utils.check_interface(pst, t_d)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst.from_io_files(tpl_files, in_files, ins_files, out_files, pst_path=".")
+    pyemu.pst_utils.check_interface(pst, t_d)
+    pst.observation_data = pst.observation_data.iloc[:-1,:]
+    try:
+        pyemu.pst_utils.check_interface(pst, t_d)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst.from_io_files(tpl_files, in_files, ins_files, out_files, pst_path=".")
+    pyemu.pst_utils.check_interface(pst, t_d)
+    pst.model_input_data = pst.model_input_data.iloc[:-1, :]
+    try:
+        pyemu.pst_utils.check_interface(pst, t_d)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst.from_io_files(tpl_files, in_files, ins_files, out_files, pst_path=".")
+    pyemu.pst_utils.check_interface(pst, t_d)
+    pst.model_output_data = pst.model_output_data.iloc[:-1, :]
+    try:
+        pyemu.pst_utils.check_interface(pst, t_d)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
 
 if __name__ == "__main__":
     """
@@ -1271,6 +1476,7 @@ if __name__ == "__main__":
     with this.
     """
     d = 'temp'
+    interface_check_test()
     # new_format_test_2()
     #write2_nan_test()
     #process_output_files_test()

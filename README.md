@@ -111,7 +111,7 @@ with pytest-xdist, local runs can be parallelized:
 > pytest --basetemp=runner -n auto autotest/testfile_tests.py
 
 ### Run a specific test [`this_test()`]:
-> pytest --basetemp=runner -n auto autotest/testfile_tests.py::this_test
+> pytest --basetemp=runner autotest/testfile_tests.py::this_test
 
 ### Using an IDE:
 Most modern, feature-rich editors and IDEs support launching pytest within debug or run consoles. 

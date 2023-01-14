@@ -320,7 +320,8 @@ class Pst(object):
                         "Pst.res: self.resfile " + str(self.resfile) + " does not exist"
                     )
             else:
-                self.resfile = self.filename.replace(".pst", ".res")
+                filename = str(self.filename)
+                self.resfile = filename.replace(".pst", ".res")
                 if not os.path.exists(self.resfile):
                     self.resfile = self.resfile.replace(".res", ".rei")
                     if not os.path.exists(self.resfile):

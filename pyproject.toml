@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Hydrology",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
     "numpy",
     "pandas",
@@ -34,10 +34,11 @@ optional = [
     "scipy",
 ]
 test = [
-    "coverage",
     "coveralls",
-    "nose",
-    "nose-timer",
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist",
+    "nbmake"
 ]
 docs = [
     "pyemu[optional]",

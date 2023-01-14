@@ -92,6 +92,102 @@ def setup_tmp(od, tmp_path, sub=None):
     shutil.copytree(od, new_d)
     return new_d
 
+@pytest.fixture
+def freybergmf6_2_pstfrom(tmp_path):
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
+    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+    bd = Path.cwd()
+    os.chdir(tmp_path)
+    try:
+        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+        m = sim.get_model()
+        sim.set_all_data_external(check_data=False)
+        sim.write_simulation()
+
+        # SETUP pest stuff...
+        os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+        template_ws = "new_temp"
+        if os.path.exists(template_ws):
+            shutil.rmtree(template_ws)
+        # sr0 = m.sr
+        # sr = pyemu.helpers.SpatialReference.from_namfile(
+        #     os.path.join(tmp_model_ws, "freyberg6.nam"),
+        #     delr=m.dis.delr.array, delc=m.dis.delc.array)
+        sr = m.modelgrid
+        # set up PstFrom object
+        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                     remove_existing=True,
+                     longnames=True, spatial_reference=sr,
+                     zero_based=False, start_datetime="1-1-2018",
+                     chunk_len=1)
+        yield pf
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
+
+
+@pytest.fixture
+def freybergnwt_2_pstfrom(tmp_path):
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_sfr_reaches')
+    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+    bd = Path.cwd()
+    os.chdir(tmp_path)
+    nam_file = "freyberg.nam"
+    try:
+        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+        m = flopy.modflow.Modflow.load(nam_file, model_ws=tmp_model_ws,
+                                       check=False, forgive=False,
+                                       exe_name=mf_exe_path)
+        flopy.modflow.ModflowRiv(m, stress_period_data={
+            0: [[0, 0, 0, m.dis.top.array[0, 0], 1.0, m.dis.botm.array[0, 0, 0]],
+                [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
+                [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]]]})
+
+        m.external_path = "."
+        m.write_input()
+        runstr = ("{0} {1}".format(mf_exe_path, m.name + ".nam"), tmp_model_ws)
+        print(runstr)
+        os_utils.run(*runstr)
+        template_ws = "template"
+        if os.path.exists(template_ws):
+            shutil.rmtree(template_ws)
+        sr = pyemu.helpers.SpatialReference.from_namfile(
+            os.path.join(m.model_ws, m.namefile),
+            delr=m.dis.delr, delc=m.dis.delc)
+        # set up PstFrom object
+        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                     remove_existing=True,
+                     longnames=True, spatial_reference=sr,
+                     zero_based=False, start_datetime="1-1-2018",
+                     chunk_len=1)
+        yield pf
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
+
 
 def freyberg_test(tmp_path):
     import numpy as np
@@ -1599,7 +1695,9 @@ def direct_quickfull_test(setup_freyberg_mf6):
     pe.to_binary(os.path.join(pf.new_d, "prior.jcb"))
     assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
     assert pe.shape[0] == num_reals
-
+    pst.pestpp_options['ies_par_en'] = "prior.jcb"
+    pst.pestpp_options['ies_num_reals'] = 5
+    pst.control_data.noptmax=-1
     # check run and results -- phi should be small...
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
@@ -1608,6 +1706,11 @@ def direct_quickfull_test(setup_freyberg_mf6):
     pst.set_res(res_file)
     print(pst.phi)
     assert pst.phi < 0.1, pst.phi
+
+    df = pd.read_csv(Path(pf.new_d, "freyberg.0.obs.csv"))
+    ens, qs = pyemu.helpers.calc_observation_ensemble_quantiles(
+        df, pst, [0.05,0.25,0.5,0.75,0.95]
+    )
 
 
 def direct_multadd_combo_test(setup_freyberg_mf6):
@@ -4471,6 +4574,7 @@ def shortname_conversion_test(tmp_path):
         os.chdir(bd)
         raise Exception(str(e))
     os.chdir(bd)
+
 
 if __name__ == "__main__":
     # mf6_freyberg_pp_locs_test()
