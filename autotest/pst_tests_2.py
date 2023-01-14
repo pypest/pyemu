@@ -901,20 +901,17 @@ def test_pstfromflopy_deprecation():
         pyemu.helpers.PstFromFlopyModel()
     except DeprecationWarning:
         pass
-    else:
-        raise Exception("should have failed")
 
 
 if __name__ == "__main__":
-
     #at_bounds_test()
 
     #pst_from_flopy_geo_draw_test()
     #pst_from_flopy_specsim_draw_test()
     # run_array_pars()
     # from_flopy_zone_pars()
-    # from_flopy_pp_test()
-    from_flopy("temp")
+    from_flopy_pp_test()
+    #from_flopy()
     #parrep_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()

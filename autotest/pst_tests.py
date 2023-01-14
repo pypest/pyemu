@@ -1389,6 +1389,84 @@ def ineq_phi_test():
     #print(org_phi, pst.phi)
 
 
+def interface_check_test():
+    import pyemu
+    nins_files = 3
+    ntpl_files = 3
+
+    t_d = "interface_temp"
+    if os.path.exists(t_d):
+        shutil.rmtree(t_d)
+    os.makedirs(t_d)
+    ins_files,tpl_files = [],[]
+    ocount,pcount = 0,0
+    for i in range(nins_files):
+        ins_file = os.path.join(t_d,"ins_{0}.dat.ins".format(i))
+        with open(ins_file,'w') as f:
+            f.write("pif ~\n")
+            f.write('l1 !obs_{0}!\n'.format(ocount))
+            ocount += 1
+        ins_files.append(ins_file)
+    for i in range(ntpl_files):
+        tpl_file = os.path.join(t_d,"tpl_{0}.dat.tpl".format(i))
+        with open(tpl_file,'w') as f:
+            f.write("ptf ~\n")
+            f.write('~  par_{0}  ~'.format(pcount))
+            pcount += 1
+        tpl_files.append(tpl_file)
+    in_files = [f.replace(".tpl","") for f in tpl_files]
+    out_files = [f.replace(".ins", "") for f in ins_files]
+
+    pst = pyemu.Pst.from_io_files(tpl_files,in_files,ins_files,out_files,pst_path=".")
+    pyemu.pst_utils.check_interface(pst,t_d)
+    pst.write(os.path.join(t_d,"test.pst"),check_interface=True)
+
+    pst.parameter_data = pst.parameter_data.iloc[:-1,:]
+    try:
+        pst.write(os.path.join(t_d, "test.pst"),check_interface=True)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    try:
+        pyemu.pst_utils.check_interface(pst, t_d)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst.from_io_files(tpl_files, in_files, ins_files, out_files, pst_path=".")
+    pyemu.pst_utils.check_interface(pst, t_d)
+    pst.observation_data = pst.observation_data.iloc[:-1,:]
+    try:
+        pyemu.pst_utils.check_interface(pst, t_d)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst.from_io_files(tpl_files, in_files, ins_files, out_files, pst_path=".")
+    pyemu.pst_utils.check_interface(pst, t_d)
+    pst.model_input_data = pst.model_input_data.iloc[:-1, :]
+    try:
+        pyemu.pst_utils.check_interface(pst, t_d)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    pst = pyemu.Pst.from_io_files(tpl_files, in_files, ins_files, out_files, pst_path=".")
+    pyemu.pst_utils.check_interface(pst, t_d)
+    pst.model_output_data = pst.model_output_data.iloc[:-1, :]
+    try:
+        pyemu.pst_utils.check_interface(pst, t_d)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+
 if __name__ == "__main__":
     """
     Tests may need modifying to support passing a tmp_path argument
@@ -1398,6 +1476,7 @@ if __name__ == "__main__":
     with this.
     """
     d = 'temp'
+    interface_check_test()
     # new_format_test_2()
     #write2_nan_test()
     #process_output_files_test()

@@ -514,44 +514,37 @@ class EnDS(object):
         z_names = [n for n in self.pst.obs_names if n not in snz_names]
         names = z_names.copy()
         names.extend(nz_names)
+        names.sort()
         oe = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
         oe = oe.loc[:,names]
         self.logger.log("getting deviations")
 
         self.logger.log("pseudo inv of deviations matrix")
         deltad = Matrix.from_dataframe(oe).T
-        U,S,V = deltad.pseudo_inv_components(maxsing=self.pst.svd_data.maxsing,eigthresh=self.pst.svd_data.eigthresh)
+        U,S,V = deltad.pseudo_inv_components(maxsing=oe.shape[0],eigthresh=1e-30)
         self.logger.log("pseudo inv of deviations matrix")
 
-        self.logger.log("saving proj mat")
-        pmat = U * S
-        proj_name = "dsi_proj_mat.jcb" # dont change this name!!!
-        proj_path = os.path.join(t_d,proj_name)
-        pmat.to_coo(proj_path)
-        self.logger.statement("projection matrix dimensions:"+str(pmat.shape))
-        self.logger.statement("projection matrix saved to "+proj_path)
-        self.logger.log("saving proj mat")
-
-
         self.logger.log("creating tpl files")
-        dsi_in_file = os.path.join(t_d,"dsi_pars.csv")
-        dsi_tpl_file = dsi_in_file+".tpl"
-        ftpl = open(dsi_tpl_file,'w')
-        fin = open(dsi_in_file,'w')
+        dsi_in_file = os.path.join(t_d, "dsi_pars.csv")
+        dsi_tpl_file = dsi_in_file + ".tpl"
+        ftpl = open(dsi_tpl_file, 'w')
+        fin = open(dsi_in_file, 'w')
         ftpl.write("ptf ~\n")
         fin.write("parnme,parval1\n")
         ftpl.write("parnme,parval1\n")
         npar = S.shape[0]
+        dsi_pnames = []
         for i in range(npar):
             pname = "dsi_par{0:04d}".format(i)
+            dsi_pnames.append(pname)
             fin.write("{0},0.0\n".format(pname))
-            ftpl.write("{0},~   {0}   ~\n".format(pname,pname))
+            ftpl.write("{0},~   {0}   ~\n".format(pname, pname))
         fin.close()
         ftpl.close()
 
         mn_vec = sim_ensemble.mean(axis=0)
         mn_in_file = os.path.join(t_d, "dsi_pr_mean.csv")
-        mn_tpl_file = mn_in_file+".tpl"
+        mn_tpl_file = mn_in_file + ".tpl"
         fin = open(mn_in_file, 'w')
         ftpl = open(mn_tpl_file, 'w')
         ftpl.write("ptf ~\n")
@@ -560,12 +553,25 @@ class EnDS(object):
         mn_dict = {}
         for oname in names:
             pname = "dsi_prmn_{0}".format(oname)
-            fin.write("{0},{1}\n".format(oname,mn_vec[oname]))
+            fin.write("{0},{1}\n".format(oname, mn_vec[oname]))
             ftpl.write("{0},~   {0}   ~\n".format(pname, pname))
             mn_dict[pname] = mn_vec[oname]
         fin.close()
         ftpl.close()
         self.logger.log("creating tpl files")
+
+        self.logger.log("saving proj mat")
+        pmat = U * S
+        pmat.col_names = dsi_pnames
+        proj_name = "dsi_proj_mat.jcb" # dont change this name!!!
+        proj_path = os.path.join(t_d,proj_name)
+        pmat.to_coo(proj_path)
+        self.logger.statement("projection matrix dimensions:"+str(pmat.shape))
+        self.logger.statement("projection matrix saved to "+proj_path)
+        self.logger.log("saving proj mat")
+
+
+
 
         # this is the dsi forward run function - it is harded coded below!
         def dsi_forward_run():
@@ -574,7 +580,9 @@ class EnDS(object):
             import pyemu
             pmat = pyemu.Matrix.from_binary("dsi_proj_mat.jcb")
             pvals = pd.read_csv("dsi_pars.csv",index_col=0)
+            pvals = pvals.loc[pmat.col_names,:]
             ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
+            ovals = ovals.loc[pmat.row_names,:]
             sim_vals = ovals + np.dot(pmat.x,pvals.values)
             print(sim_vals)
             sim_vals.to_csv("dsi_sim_vals.csv")
