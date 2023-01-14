@@ -3713,7 +3713,7 @@ def write_array_tpl(
     if par_style == "d":
         if not os.path.exists(input_filename):
             raise Exception(
-                "write_grid_tpl() error: couldn't find input file "
+                "write_array_tpl() error: couldn't find input file "
                 + " {0}, which is required for 'direct' par_style".format(
                     input_filename
                 )
@@ -3736,7 +3736,7 @@ def write_array_tpl(
         org_arr = np.zeros(shape)
     else:
         raise Exception(
-            "write_grid_tpl() error: unrecognized 'par_style' {0} ".format(par_style)
+            "write_array_tpl() error: unrecognized 'par_style' {0} ".format(par_style)
             + "should be 'd','a', or 'm'"
         )
 

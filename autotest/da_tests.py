@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import flopy
 import pyemu
+from pyemu.legacy import PstFromFlopyModel
 
 
 def setup_freyberg_transient_model():
@@ -53,7 +54,7 @@ def setup_truth():
     sfr_obs_dict["hhwt"] = [iss+1 for iss in range(0,20)]
 
 
-    ph = pyemu.helpers.PstFromFlopyModel("freyberg_transient.nam",org_model_ws="truth",new_model_ws="truth_template",
+    ph = PstFromFlopyModel("freyberg_transient.nam",org_model_ws="truth",new_model_ws="truth_template",
                                     grid_props=grid_props,const_props=rch_temporal_pars,
                                     temporal_bc_props=temporal_bc_props,build_prior=False,
                                          remove_existing=True,model_exe_name="mfnwt",
@@ -94,7 +95,7 @@ def setup_daily_da():
     os.chdir(os.path.join("da","freyberg"))
     sfr_obs_dict = {iss + 1: iss + 1 for iss in range(m.sfr.nss)}
     sfr_obs_dict["hhwt"] = [iss + 1 for iss in range(0, 20)]
-    ph = pyemu.helpers.PstFromFlopyModel("freyberg_transient.nam",org_model_ws="temp",
+    ph = PstFromFlopyModel("freyberg_transient.nam",org_model_ws="temp",
                                          new_model_ws="daily_template",grid_props=grid_props,
                                          spatial_bc_props=[["wel.flux",0]],hds_kperk=[[0,0]],
                                          remove_existing=True,model_exe_name="mfnwt",build_prior=True,

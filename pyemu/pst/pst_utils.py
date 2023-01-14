@@ -1815,3 +1815,46 @@ def process_output_files(pst, pst_path="."):
     series = pd.concat(series)
     # print(series)
     return series
+
+
+def check_interface(pst,pst_path=".",warn=False):
+    """check that the tpl and ins file entries are in
+    sync with the control file entries
+
+    Args:
+        pst (`pyemu.Pst`): control file instance
+        pst_path (`str`): the path from where python is running to the control file
+        warn (`bool`): flag to treat errors as warnings
+
+    """
+
+    tpl_pnames = set()
+    for tpl_file in pst.model_input_data.pest_file:
+        names = parse_tpl_file(os.path.join(pst_path,tpl_file))
+        tpl_pnames.update(set(names))
+    pst_pnames = set(pst.par_names)
+    diff = tpl_pnames - pst_pnames
+    mess = ""
+    if len(diff) > 0:
+        mess += "\nthe following par names are not in the ctrl file but are in the tpl files: "+",".join(diff)+"\n\n"
+    diff = pst_pnames - tpl_pnames
+    if len(diff) > 0:
+        mess += "\nthe following par names are not in the tpl files but are in the ctrl file: " + ",".join(diff) + "\n\n"
+    ins_onames = set()
+    for ins_file in pst.model_output_data.pest_file:
+        i = InstructionFile(os.path.join(pst_path,ins_file))
+        ins_onames.update(i.obs_name_set)
+    pst_onames = set(pst.obs_names)
+    diff = ins_onames - pst_onames
+    if len(diff) > 0:
+        mess += "\nthe following obs names are not in the ctrl file but are in the ins files: " + ",".join(
+            diff) + "\n\n"
+    diff = pst_onames - ins_onames
+    if len(diff) > 0:
+        mess += "\nthe following ons names are not in the ins files but are in the ctrl file: " + ",".join(
+            diff) + "\n\n"
+    if len(mess) > 0:
+        if warn:
+            warnings.warn(mess,PyemuWarning)
+        else:
+            raise Exception(mess)

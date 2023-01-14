@@ -686,8 +686,8 @@ def plot_freyberg_dsi():
 
 if __name__ == "__main__":
     #ends_freyberg_dev()
-    #ends_freyberg_dsi_test()
-    plot_freyberg_dsi()
+    ends_freyberg_dsi_test()
+    #plot_freyberg_dsi()
     #obscomp_test()
     #alternative_dw()
     #freyberg_verf_test()
