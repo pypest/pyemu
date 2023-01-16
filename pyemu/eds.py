@@ -517,12 +517,17 @@ class EnDS(object):
         names.sort()
         oe = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
         oe = oe.loc[:,names]
+
         self.logger.log("getting deviations")
 
         self.logger.log("pseudo inv of deviations matrix")
-        deltad = Matrix.from_dataframe(oe).T
-        U,S,V = deltad.pseudo_inv_components(maxsing=oe.shape[0],eigthresh=1e-30)
+
+        #deltad = Matrix.from_dataframe(oe).T
+        #U,S,V = deltad.pseudo_inv_components(maxsing=oe.shape[0],eigthresh=1e-30)
+
+        U, S, V = np.linalg.svd(oe.values, full_matrices=False)
         self.logger.log("pseudo inv of deviations matrix")
+
 
         self.logger.log("creating tpl files")
         dsi_in_file = os.path.join(t_d, "dsi_pars.csv")
@@ -561,7 +566,11 @@ class EnDS(object):
         self.logger.log("creating tpl files")
 
         self.logger.log("saving proj mat")
-        pmat = U * S
+
+        #pmat = U * S
+        pmat = np.dot(V.transpose(), np.diag(S))
+        #row_names = ["sing_vec_{0}".format(i) for i in range(pmat.shape[0])]
+        pmat = Matrix(x=pmat,col_names=dsi_pnames,row_names=names)
         pmat.col_names = dsi_pnames
         proj_name = "dsi_proj_mat.jcb" # dont change this name!!!
         proj_path = os.path.join(t_d,proj_name)
