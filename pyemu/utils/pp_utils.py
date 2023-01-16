@@ -128,6 +128,12 @@ def setup_pilotpoints_grid(
             )
     start = int(float(every_n_cell) / 2.0)
 
+    if sr.grid_type=='vertex':
+        if len(xcentergrid.shape)==1:
+            xcentergrid = np.reshape(xcentergrid, (xcentergrid.shape[0], 1))
+            ycentergrid = np.reshape(ycentergrid, (ycentergrid.shape[0], 1))
+
+
     # fix for x-section models
     if xcentergrid.shape[0] == 1:
         start_row = 0

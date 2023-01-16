@@ -1,0 +1,4 @@
+  UPSTREAM  SFR  UPSTREAM
+  DOWNSTREAM  SFR  DOWNSTREAM
+  GAGE1  downstream-flow  410
+  GAGE2  ext-outflow  1000
