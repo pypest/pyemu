@@ -2,8 +2,6 @@ import os
 from pathlib import Path
 import platform
 
-import sys
-sys.path.append(os.path.join("..","pyemu"))
 import numpy as np
 import pandas as pd
 import pyemu
@@ -4757,7 +4755,7 @@ def vertex_grid_test():
 if __name__ == "__main__":
     # mf6_freyberg_pp_locs_test()
     # invest()
-    #freyberg_test()
+    freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
     # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
