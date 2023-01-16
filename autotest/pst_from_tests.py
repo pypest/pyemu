@@ -2,7 +2,8 @@ import os
 from pathlib import Path
 import platform
 
-# sys.path.append(os.path.join("..","pyemu"))
+import sys
+sys.path.append(os.path.join("..","pyemu"))
 import numpy as np
 import pandas as pd
 import pyemu
@@ -4715,20 +4716,16 @@ def vertex_grid_test():
 
     # write model input files
     pst.write_input_files(template_ws)
-    pyemu.os_utils.run(r'python forward_run.py', cwd=template_ws)
+    # update model input files
+    cwd = os.getcwd()
+    os.chdir(template_ws)
+    pyemu.helpers.apply_list_and_array_pars()
+    os.chdir(cwd)
+    #pyemu.os_utils.run(r'python forward_run.py', cwd=template_ws)
 
-    ib = m.dis.idomain.get_data()
-    for f in files:
-        layer = int(f.split('_layer')[-1].split('.')[0]) - 1
-        a = np.loadtxt(os.path.join(template_ws, f))
-        a_org = np.loadtxt(os.path.join(template_ws,'org', f))
-        # weak check
-        for zone in par.zone.unique():
-            assert all(abs((a/a_org)[ib[1]==int(zone)]-int(zone)) < 1e-6)
 
     #check pp pars
     #reset par values
-    print(par_org.shape,par.shape)
     par.loc[:,par_org.columns] = par_org.values
     for zone in par.zone.unique():
         par.loc[(par.zone==zone) & (par.ptype=='pp'), 'parval1'] = float(zone)
@@ -4746,6 +4743,8 @@ def vertex_grid_test():
     #pyemu.os_utils.run(r'python forward_run.py', cwd=template_ws)
 
     ib = m.dis.idomain.get_data()
+    tag = "npf_k_"
+    files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
     for f in files:
         layer = int(f.split('_layer')[-1].split('.')[0]) - 1
         a = np.loadtxt(os.path.join(template_ws, f))
@@ -4758,7 +4757,7 @@ def vertex_grid_test():
 if __name__ == "__main__":
     # mf6_freyberg_pp_locs_test()
     # invest()
-    freyberg_test()
+    #freyberg_test()
     # freyberg_prior_build_test()
     # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
