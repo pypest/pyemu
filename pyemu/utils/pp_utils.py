@@ -650,7 +650,7 @@ def get_zoned_ppoints_for_vertexgrid(spacing, zone_array, mg, zone_number=None, 
 
     try:
         from shapely.ops import unary_union
-        from shapely.geometry import Polygon, MultiPoint
+        from shapely.geometry import Polygon, Point
     except ImportError:
         raise ImportError('The `shapely` library was not found. Please make sure it is installed.')
 
@@ -684,7 +684,7 @@ def get_zoned_ppoints_for_vertexgrid(spacing, zone_array, mg, zone_number=None, 
     y = np.linspace(ymin, ymax, ny)
     xv, yv = np.meshgrid(x, y)
     # make grid
-    grid_points = MultiPoint([(x,y) for x,y in list(zip(xv.flatten(), yv.flatten()))])
+    grid_points = [Point(x,y) for x,y in list(zip(xv.flatten(), yv.flatten()))]
 
     # get vertices for model grid/zone polygon
     verts = [mg.get_cell_vertices(cellid) for cellid in range(mg.ncpl)]
