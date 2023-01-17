@@ -5,8 +5,7 @@ import copy
 import numpy as np
 import pandas as pd
 import warnings
-from shapely.ops import unary_union
-from shapely.geometry import Polygon, MultiPoint
+
 
 
 pd.options.display.max_colwidth = 100
@@ -648,7 +647,14 @@ def get_zoned_ppoints_for_vertexgrid(spacing, zone_array, mg, zone_number=None, 
         get_zoned_ppoints_for_vertexgrid(spacing=100, ib=idomain, mg, zone_number=1, add_buffer=False)
 
     """
- 
+
+    try:
+        from shapely.ops import unary_union
+        from shapely.geometry import Polygon, MultiPoint
+    except ImportError:
+        raise ImportError('shapely library not found.')
+
+    
     if mg.grid_type=='vertex' and zone_array is not None and len(zone_array.shape)==1:
             zone_array = np.reshape(zone_array, (zone_array.shape[0], ))
 
