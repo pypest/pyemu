@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import warnings
 
+
+
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT, IFMT, FFMT, pst_config
 from pyemu.utils.helpers import run, _write_df_tpl
@@ -128,6 +130,12 @@ def setup_pilotpoints_grid(
             )
     start = int(float(every_n_cell) / 2.0)
 
+    if sr.grid_type=='vertex':
+        if len(xcentergrid.shape)==1:
+            xcentergrid = np.reshape(xcentergrid, (xcentergrid.shape[0], 1))
+            ycentergrid = np.reshape(ycentergrid, (ycentergrid.shape[0], 1))
+
+
     # fix for x-section models
     if xcentergrid.shape[0] == 1:
         start_row = 0
@@ -167,7 +175,10 @@ def setup_pilotpoints_grid(
     par_info = []
     pp_files, tpl_files = [], []
     pp_names = copy.copy(PP_NAMES)
-    pp_names.extend(["k", "i", "j"])
+    if sr.grid_type == "vertex":
+        pp_names.extend(["k"])
+    else:
+        pp_names.extend(["k", "i", "j"])
 
     if not np.all([isinstance(v, dict) for v in ibound.values()]):
         ibound = {"general_zn": ibound}
@@ -175,50 +186,81 @@ def setup_pilotpoints_grid(
     par_keys.sort()
     for par in par_keys:
         for k in range(len(ibound[par])):
+            # skip this layer if not in prefix_dict
+            if k not in prefix_dict.keys():
+                continue
+
             pp_df = None
             ib = ibound[par][k]
             assert (
                 ib.shape == xcentergrid.shape
             ), "ib.shape != xcentergrid.shape for k {0}".format(k)
-            pp_count = 0
-            # skip this layer if not in prefix_dict
-            if k not in prefix_dict.keys():
-                continue
-            # cycle through rows and cols
-            for i in range(start_row, ib.shape[0] - start_row, every_n_cell):
-                for j in range(start_col, ib.shape[1] - start_col, every_n_cell):
-                    # skip if this is an inactive cell
-                    if ib[i, j] <= 0:  # this will account for MF6 style ibound as well
-                        continue
 
-                    # get the attributes we need
-                    x = xcentergrid[i, j]
-                    y = ycentergrid[i, j]
-                    name = "pp_{0:04d}".format(pp_count)
+            pp_count = 0
+            if sr.grid_type == "vertex":
+                spacing=every_n_cell
+                
+                for zone in np.unique(ib):
+                    # escape <zero idomain values
+                    if zone <= 0:
+                        continue
+                    ppoint_xys = get_zoned_ppoints_for_vertexgrid(spacing, ib, sr, zone_number=zone)
+
                     parval1 = 1.0
 
-                    # decide what to use as the zone
-                    zone = 1
-                    if use_ibound_zones:
-                        zone = ib[i, j]
-                    # stick this pilot point into a dataframe container
+                    for pp in ppoint_xys:
+                        name = "pp_{0:04d}".format(pp_count)
+                        x,y = pp[0], pp[-1]
+                        if pp_df is None:
+                            data = {
+                                "name": name,
+                                "x": x,
+                                "y": y,
+                                "zone": zone,  # if use_ibound_zones is False this will always be 1
+                                "parval1": parval1,
+                                "k": k,
+                            }
+                            pp_df = pd.DataFrame(data=data, index=[0], columns=pp_names)
+                        else:
+                            data = [name, x, y, zone, parval1, k,]
+                            pp_df.loc[pp_count, :] = data
+                            pp_count+=1
 
-                    if pp_df is None:
-                        data = {
-                            "name": name,
-                            "x": x,
-                            "y": y,
-                            "zone": zone,  # if use_ibound_zones is False this will always be 1
-                            "parval1": parval1,
-                            "k": k,
-                            "i": i,
-                            "j": j,
-                        }
-                        pp_df = pd.DataFrame(data=data, index=[0], columns=pp_names)
-                    else:
-                        data = [name, x, y, zone, parval1, k, i, j]
-                        pp_df.loc[pp_count, :] = data
-                    pp_count += 1
+            else:
+                # cycle through rows and cols
+                for i in range(start_row, ib.shape[0] - start_row, every_n_cell):
+                    for j in range(start_col, ib.shape[1] - start_col, every_n_cell):
+                        # skip if this is an inactive cell
+                        if ib[i, j] <= 0:  # this will account for MF6 style ibound as well
+                            continue
+                        # get the attributes we need
+                        x = xcentergrid[i, j]
+                        y = ycentergrid[i, j]
+                        name = "pp_{0:04d}".format(pp_count)
+                        parval1 = 1.0
+
+                        # decide what to use as the zone
+                        zone = 1
+                        if use_ibound_zones:
+                            zone = ib[i, j]
+                        # stick this pilot point into a dataframe container
+
+                        if pp_df is None:
+                            data = {
+                                "name": name,
+                                "x": x,
+                                "y": y,
+                                "zone": zone,  # if use_ibound_zones is False this will always be 1
+                                "parval1": parval1,
+                                "k": k,
+                                "i": i,
+                                "j": j,
+                            }
+                            pp_df = pd.DataFrame(data=data, index=[0], columns=pp_names)
+                        else:
+                            data = [name, x, y, zone, parval1, k, i, j]
+                            pp_df.loc[pp_count, :] = data
+                        pp_count += 1
             # if we found some acceptable locs...
             if pp_df is not None:
                 for prefix in prefix_dict[k]:
@@ -250,7 +292,10 @@ def setup_pilotpoints_grid(
                         tpl_files.append(tpl_filename)
 
     par_info = pd.concat(par_info)
-    fields = ["k", "i", "j", "zone"]
+    if sr.grid_type == "vertex":
+        fields = ["k", "zone"]
+    else:
+        fields = ["k", "i", "j", "zone"]
     par_info = par_info.astype({f: int for f in fields}, errors='ignore')
     defaults = pd.DataFrame(pst_config["par_defaults"], index=par_info.index)
     missingcols = defaults.columns.difference(par_info.columns)
@@ -415,7 +460,7 @@ def write_pp_shapfile(pp_df, shapename=None):
     """write pilot points dataframe to a shapefile
 
     Args:
-        pp_df (`pandas.DataFrame` or `str`): pilot point dataframe (must include "x" and "y"
+        pp_df (`pandas.DataFrame`): pilot point dataframe (must include "x" and "y"
             columns).  If `pp_df` is a string, it is assumed to be a pilot points file
             and is loaded with `pp_utils.pp_file_to_dataframe`. Can also be a list of
             `pandas.DataFrames` and/or filenames.
@@ -582,3 +627,76 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None):
     )
 
     return pp_df
+
+def get_zoned_ppoints_for_vertexgrid(spacing, zone_array, mg, zone_number=None, add_buffer=True):
+    """Generate equally spaced pilot points for active area of DISV type MODFLOW6 grid. 
+ 
+    Args:
+        spacing (`float`): spacing in model length units between pilot points. 
+        zone_array (`numpy.ndarray`): the modflow 6 idomain integer array.  This is used to
+            set pilot points only in active areas and to assign zone numbers. 
+        mg  (`flopy.discretization.vertexgrid.VertexGrid`): a VertexGrid flopy discretization dervied type.
+        zone_number (`int`): zone number 
+        add_buffer (`boolean`): specifies whether pilot points ar eplaced wihtin a buffer zone of size `distance` around the zone/active domain
+
+    Returns:
+        `list`: a list of tuples with pilot point x and y coordinates
+
+    Example::
+
+        get_zoned_ppoints_for_vertexgrid(spacing=100, ib=idomain, mg, zone_number=1, add_buffer=False)
+
+    """
+
+    try:
+        from shapely.ops import unary_union
+        from shapely.geometry import Polygon, Point
+    except ImportError:
+        raise ImportError('The `shapely` library was not found. Please make sure it is installed.')
+
+    
+    if mg.grid_type=='vertex' and zone_array is not None and len(zone_array.shape)==1:
+            zone_array = np.reshape(zone_array, (zone_array.shape[0], ))
+
+
+    assert zone_array.shape[0] == mg.xcellcenters.shape[0], "The ib idomain array should be of shape (ncpl,). i.e. For a single layer."
+
+    if zone_number:
+        assert zone_array[zone_array==zone_number].shape[0]>0, f"The zone_number: {zone_number} is not in the ib array."
+
+    # get zone cell x,y 
+    xc, yc = mg.xcellcenters, mg.ycellcenters
+    if zone_number != None:
+        xc_zone = xc[np.where(zone_array==zone_number)[0]]
+        yc_zone = yc[np.where(zone_array==zone_number)[0]]
+    else:
+        xc_zone = xc[np.where(zone_array>0)]
+        yc_zone = yc[np.where(zone_array>0)]   
+
+    # get outer bounds
+    xmin, xmax = min(xc_zone), max(xc_zone)
+    ymin, ymax = min(yc_zone), max(yc_zone)
+    # n-ppoints
+    nx = int(np.ceil((xmax - xmin) / spacing))
+    ny = int(np.ceil((ymax - ymin) / spacing))
+    # make even spaced points
+    x = np.linspace(xmin, xmax, nx)
+    y = np.linspace(ymin, ymax, ny)
+    xv, yv = np.meshgrid(x, y)
+    # make grid
+    grid_points = [Point(x,y) for x,y in list(zip(xv.flatten(), yv.flatten()))]
+
+    # get vertices for model grid/zone polygon
+    verts = [mg.get_cell_vertices(cellid) for cellid in range(mg.ncpl)]
+    if zone_number != None:
+        # select zone area
+        verts = [verts[i] for i in np.where(zone_array==zone_number)[0]]
+    # dissolve
+    polygon = unary_union([Polygon(v) for v in verts])
+    # add buffer
+    if add_buffer==True:
+        polygon = polygon.buffer(spacing)
+    # select ppoint coords within area
+    ppoints = [(p.x, p.y) for p in grid_points if polygon.covers(p) ]
+    assert len(ppoints)>0
+    return ppoints

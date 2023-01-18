@@ -941,10 +941,16 @@ class OrdinaryKrige(object):
             )
 
         if var_filename is not None:
-            arr = (
-                np.zeros((self.spatial_reference.nrow, self.spatial_reference.ncol))
+            if self.spatial_reference.grid_type=='vertex':
+                arr = (
+                np.zeros((self.spatial_reference.ncpl, 1))
                 - 1.0e30
-            )
+                )
+            else:
+                arr = (
+                    np.zeros((self.spatial_reference.nrow, self.spatial_reference.ncol))
+                    - 1.0e30
+                )
 
         # the simple case of no zone array: ignore point_data zones
         if zone_array is None:
@@ -965,7 +971,10 @@ class OrdinaryKrige(object):
                 np.savetxt(var_filename, arr, fmt="%15.6E")
 
         if zone_array is not None:
-            assert zone_array.shape == x.shape
+            if self.spatial_reference.grid_type=='vertex':
+                assert zone_array.shape[0] == x.shape[0]
+            else:
+                assert zone_array.shape == x.shape
             if "zone" not in self.point_data.columns:
                 warnings.warn(
                     "'zone' columns not in point_data, assigning generic zone",
@@ -984,8 +993,13 @@ class OrdinaryKrige(object):
                     )
                     continue
                 # cutting list of cell positions to just in zone
-                xzone = x[zone_array == pt_data_zone].copy()
-                yzone = y[zone_array == pt_data_zone].copy()
+                if spatial_reference.grid_type == "vertex":
+                    xzone = x[(zone_array == pt_data_zone).ravel()].copy()
+                    yzone = y[(zone_array == pt_data_zone).ravel()].copy()
+                else:
+                    xzone = x[zone_array == pt_data_zone].copy()
+                    yzone = y[zone_array == pt_data_zone].copy()
+                
                 idx = np.arange(
                     len(zone_array.ravel())
                 )[(zone_array == pt_data_zone).ravel()]
@@ -1017,6 +1031,8 @@ class OrdinaryKrige(object):
                     fulldf = fulldf.reset_index()
                     a = fulldf.err_var.values.reshape(x.shape)
                     na_idx = np.isfinite(a.astype(float))
+                    if len(a.shape)==1:
+                        a = np.reshape(a, (a.shape[0], 1))
                     arr[na_idx] = a[na_idx]
             if self.interp_data is None or self.interp_data.dropna().shape[0] == 0:
                 raise Exception("no interpolation took place...something is wrong")
@@ -1606,6 +1622,9 @@ class OrdinaryKrige(object):
             nrow = 1
             if ncol < self.interp_data.shape[0]:
                 raise Exception("something is wrong")
+        elif self.spatial_reference.grid_type=='vertex':
+            nrow = self.spatial_reference.ncpl
+            ncol = 1
         else:
             nrow = self.spatial_reference.nrow
             ncol = self.spatial_reference.ncol

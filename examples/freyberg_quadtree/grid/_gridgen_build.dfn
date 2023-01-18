@@ -1,0 +1,44 @@
+BEGIN MODFLOW_GRID basegrid
+  ROTATION_ANGLE = 0.0
+  X_OFFSET = 0.0
+  Y_OFFSET = 0.0
+  NLAY = 1
+  NROW = 40
+  NCOL = 20
+  DELR = CONSTANT 250.0
+  DELC = CONSTANT 250.0
+  TOP = CONSTANT 1.0
+  BOTTOM LAYER 1 = CONSTANT 0.0
+END MODFLOW_GRID
+
+
+BEGIN QUADTREE_BUILDER quadtreebuilder
+  MODFLOW_GRID = basegrid
+  REFINEMENT_FEATURES LAYER 1 = rf0 rf1 
+  SMOOTHING = full
+  SMOOTHING_LEVEL_VERTICAL = 1
+  SMOOTHING_LEVEL_HORIZONTAL = 1
+  TOP LAYER 1 = REPLICATE basename
+  BOTTOM LAYER 1 = REPLICATE basename
+  GRID_DEFINITION_FILE = quadtreegrid.dfn
+END QUADTREE_BUILDER
+
+
+
+
+BEGIN REFINEMENT_FEATURES rf0
+  SHAPEFILE = C:\Users\rui2h\OneDrive\Documents\GitHub\python-for-hydrology\notebooks\part1_flopy\data_project\Flowline_river
+  FEATURE_TYPE = line
+  REFINEMENT_LEVEL = 4
+END REFINEMENT_FEATURES
+
+
+BEGIN REFINEMENT_FEATURES rf1
+  SHAPEFILE = C:\Users\rui2h\OneDrive\Documents\GitHub\python-for-hydrology\notebooks\part1_flopy\data_project\pumping_well_locations
+  FEATURE_TYPE = point
+  REFINEMENT_LEVEL = 4
+END REFINEMENT_FEATURES
+
+
+
+

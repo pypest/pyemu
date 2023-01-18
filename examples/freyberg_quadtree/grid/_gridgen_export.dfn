@@ -1,0 +1,31 @@
+LOAD quadtreegrid.dfn
+
+BEGIN GRID_TO_SHAPEFILE grid_to_shapefile_poly
+  GRID = quadtreegrid
+  SHAPEFILE = qtgrid
+  FEATURE_TYPE = polygon
+END GRID_TO_SHAPEFILE
+
+BEGIN GRID_TO_SHAPEFILE grid_to_shapefile_point
+  GRID = quadtreegrid
+  SHAPEFILE = qtgrid_pt
+  FEATURE_TYPE = point
+END GRID_TO_SHAPEFILE
+
+BEGIN GRID_TO_USGDATA grid_to_usgdata
+  GRID = quadtreegrid
+  USG_DATA_PREFIX = qtg
+  VERTICAL_PASS_THROUGH = False
+END GRID_TO_USGDATA
+
+BEGIN GRID_TO_VTKFILE grid_to_vtk
+  GRID = quadtreegrid
+  VTKFILE = qtg
+  SHARE_VERTEX = False
+END GRID_TO_VTKFILE
+
+BEGIN GRID_TO_VTKFILE grid_to_vtk_sv
+  GRID = quadtreegrid
+  VTKFILE = qtg_sv
+  SHARE_VERTEX = True
+END GRID_TO_VTKFILE

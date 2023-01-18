@@ -263,10 +263,16 @@ class PstFrom(object):
         if all([ij is None for ij in [i, j]]):
             return i, j
         else:
-            return (
-                self._spatial_reference.xcentergrid[i, j],
-                self._spatial_reference.ycentergrid[i, j],
-            )
+            if self._spatial_reference.grid_type=='vertex':
+                return (
+                    self._spatial_reference.xcentergrid[i, ],
+                    self._spatial_reference.ycentergrid[i, ],
+                )
+            else:
+                return (
+                    self._spatial_reference.xcentergrid[i, j],
+                    self._spatial_reference.ycentergrid[i, j],
+                )
 
     def _flopy_mg_get_xy(self, args, **kwargs):
         i, j = self.parse_kij_args(args, kwargs)
@@ -276,6 +282,8 @@ class PstFrom(object):
             if self._spatial_ref_xarray is None:
                 self._spatial_ref_xarray = self._spatial_reference.xcellcenters
                 self._spatial_ref_yarray = self._spatial_reference.ycellcenters
+            if self._spatial_reference.grid_type=='vertex':
+                return (self._spatial_ref_xarray[i, ], self._spatial_ref_yarray[i, ])
 
             return (self._spatial_ref_xarray[i, j], self._spatial_ref_yarray[i, j])
 
@@ -299,6 +307,11 @@ class PstFrom(object):
                     self.ijwarned[self.add_pars_callcount] = True
                 # assume i and j are the final two entries in index_cols
                 i, j = args[-2], args[-1]
+
+                # vertex/list based i == cell number
+                if self._spatial_reference.grid_type=='vertex':
+                    i, l = args[-1], args[-2]
+
         else:
             if not self.ijwarned[self.add_pars_callcount]:
                 self.logger.warn(
@@ -1788,7 +1801,8 @@ class PstFrom(object):
                 pargp but is also used to gather correlated parameters set up
                 using multiple `add_parameters()` calls (e.g. temporal pars)
                 with common geostructs.
-            pp_space (`int`,`str` or `pd.DataFrame`): Spatial pilot point information.
+            pp_space (`float`, `int`,`str` or `pd.DataFrame`): Spatial pilot point information.
+                If `float` or `int`, AND `spatial_reference` is of type VertexGrid, it is the spacing in model length untis between pilot points.
                 If `int` it is the spacing in rows and cols of where to place pilot points.
                 If `pd.DataFrame`, then this arg is treated as a prefined set of pilot points
                 and in this case, the dataframe must have "name", "x", "y", and optionally "zone" columns.
@@ -1965,6 +1979,9 @@ class PstFrom(object):
                 self.logger.warn(
                     "-) Better to pass an appropriately " "transformed geostruct"
                 )
+        if not isinstance(self._spatial_reference,dict):
+            if self._spatial_reference.grid_type=='vertex' and zone_array is not None and len(zone_array.shape)==1:
+                zone_array = np.reshape(zone_array, (zone_array.shape[0], 1))
 
         # Get useful variables from arguments passed
         # if index_cols passed as a dictionary that maps i,j information
@@ -2230,6 +2247,7 @@ class PstFrom(object):
                             "OK - using spatial reference " "in parent object."
                         )
                         spatial_reference = self.spatial_reference
+                        spatial_reference_type = spatial_reference.grid_type
                     else:
                         # uhoh
                         self.logger.lraise(
@@ -2243,18 +2261,27 @@ class PstFrom(object):
                     structured = True
                     for mod_file, ar in file_dict.items():
                         orgdata = ar.shape
-                        assert orgdata[0] == spatial_reference.nrow, (
-                            "Spatial reference nrow not equal to original data nrow for\n"
-                            + os.path.join(
-                                *os.path.split(self.original_file_d)[1:], mod_file
+                        if spatial_reference_type=='vertex':
+                            assert orgdata[0] == spatial_reference.ncpl, (
+                                "Spatial reference ncpl not equal to original data ncpl for\n"
+                                + os.path.join(
+                                    *os.path.split(self.original_file_d)[1:], mod_file
+                                )
                             )
-                        )
-                        assert orgdata[1] == spatial_reference.ncol, (
-                            "Spatial reference ncol not equal to original data ncol for\n"
-                            + os.path.join(
-                                *os.path.split(self.original_file_d)[1:], mod_file
+
+                        else:
+                            assert orgdata[0] == spatial_reference.nrow, (
+                                "Spatial reference nrow not equal to original data nrow for\n"
+                                + os.path.join(
+                                    *os.path.split(self.original_file_d)[1:], mod_file
+                                )
                             )
-                        )
+                            assert orgdata[1] == spatial_reference.ncol, (
+                                "Spatial reference ncol not equal to original data ncol for\n"
+                                + os.path.join(
+                                    *os.path.split(self.original_file_d)[1:], mod_file
+                                )
+                            )
                 # (stolen from helpers.PstFromFlopyModel()._pp_prep())
                 # but only settting up one set of pps at a time
                 pnb = par_name_base[0]

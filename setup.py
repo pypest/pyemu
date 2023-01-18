@@ -9,6 +9,7 @@ import versioneer  # noqa: E402
 
 # see pyproject.toml for static project metadata
 setup(
+    name="pyemu",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
 )

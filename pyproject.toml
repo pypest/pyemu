@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools"]
+requires = [
+    "setuptools >= 61",
+    'tomli; python_version < "3.11"',
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -32,6 +35,7 @@ optional = [
     "matplotlib",
     "pyshp",
     "scipy",
+    "shapely"
 ]
 test = [
     "coveralls",
@@ -52,8 +56,11 @@ documentation = "https://pyemu.readthedocs.io/"
 repository = "https://github.com/pypest/pyemu"
 
 [tool.setuptools.packages.find]
-include = [
-    "pyemu",
-    "pyemu.*",
-]
+include = ["pyemu", "pyemu.*"]
 
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "pyemu/_version.py"
+versionfile_build = "pyemu/_version.py"
+tag_prefix = ""
