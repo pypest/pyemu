@@ -36,7 +36,6 @@ class EnDS(object):
         verbose (`bool`): controls screen output.  If `str`, a filename is assumed and
                 and log file is written.
         
-    Note:
 
     Example::
 
@@ -499,6 +498,23 @@ class EnDS(object):
     def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template"):
         """setup a new PEST interface for the data-space inversion process
 
+        Args:
+
+            sim_ensemble (`pyemu.ObservationEnsemble`): observation ensemble to use for DSI latent space
+                variables.  If `None`, use `self.sim_ensemble`.  Default is `None`
+            t_d (`str`): template directory to setup the DSI model + pest files in.  Default is `dsi_template`
+
+
+        Example::
+
+        #assumes "my.pst" exists
+        ends = pyemu.EnDS(ensemble="my.0.obs.jcb",forecasts=["fore1","fore2"])
+        ends.prep_for_dsi() #setup a new pest interface() based on the DSI approach
+        pyemu.os_utils.start_workers("pestpp-ies","my.pst","dsi_template",num_workers=20,
+                                      master_dir="dsi_master")
+                                      
+
+
         """
         if sim_ensemble is None:
             sim_ensemble = self.sim_ensemble.copy()
@@ -559,7 +575,7 @@ class EnDS(object):
         for oname in names:
             pname = "dsi_prmn_{0}".format(oname)
             fin.write("{0},{1}\n".format(oname, mn_vec[oname]))
-            ftpl.write("{0},~   {0}   ~\n".format(pname, pname))
+            ftpl.write("{0},~   {1}   ~\n".format(oname, pname))
             mn_dict[pname] = mn_vec[oname]
         fin.close()
         ftpl.close()
@@ -639,17 +655,11 @@ class EnDS(object):
         pst.control_data.noptmax = 0
         pst.model_command = "python forward_run.py"
         self.logger.log("creating Pst")
+        import inspect
+        lines = [line[12:] for line in inspect.getsource(dsi_forward_run).split("\n")][1:]
 
         with open(os.path.join(t_d,"forward_run.py"),'w') as f:
-            lines = [line.strip() for line in """ import numpy as np
-            import pandas as pd
-            import pyemu
-            pmat = pyemu.Matrix.from_binary("dsi_proj_mat.jcb")
-            pvals = pd.read_csv("dsi_pars.csv",index_col=0)
-            ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
-            sim_vals = ovals + np.dot(pmat.x,pvals.values)
-            print(sim_vals)
-            sim_vals.to_csv("dsi_sim_vals.csv")""".split("\n")]
+            
             for line in lines:
                 f.write(line+"\n")
         pst.write(os.path.join(t_d,"dsi.pst"),version=2)
