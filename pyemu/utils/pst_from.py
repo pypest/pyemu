@@ -1801,7 +1801,8 @@ class PstFrom(object):
                 pargp but is also used to gather correlated parameters set up
                 using multiple `add_parameters()` calls (e.g. temporal pars)
                 with common geostructs.
-            pp_space (`int`,`str` or `pd.DataFrame`): Spatial pilot point information.
+            pp_space (`float`, `int`,`str` or `pd.DataFrame`): Spatial pilot point information.
+                If `float` or `int`, AND `spatial_reference` is of type VertexGrid, it is the spacing in model length untis between pilot points.
                 If `int` it is the spacing in rows and cols of where to place pilot points.
                 If `pd.DataFrame`, then this arg is treated as a prefined set of pilot points
                 and in this case, the dataframe must have "name", "x", "y", and optionally "zone" columns.

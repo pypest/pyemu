@@ -35,6 +35,7 @@ optional = [
     "matplotlib",
     "pyshp",
     "scipy",
+    "shapely"
 ]
 test = [
     "coveralls",
