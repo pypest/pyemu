@@ -46,7 +46,7 @@ pyEMU also includes lots of functionality for dealing with PEST(++) datasets, su
 * preferred differencing prior information equations where the weights are based on the Pearson correlation coefficient
 * verification-based tests based on results from several PEST utilities
 
-Version 1.1 includes the `PstFrom` setup class to support generating PEST(++) interfaces in the 100,000 to 1,000,000 parameter range with all the bells and whistles.  A publication documenting the `PstFrom` class can be found here:
+Version => 1.1 includes the `PstFrom` setup class to support generating PEST(++) interfaces in the 100,000 to 1,000,000 parameter range with all the bells and whistles.  A publication documenting the `PstFrom` class can be found here:
 
 [https://doi.org/10.1016/j.envsoft.2021.105022](https://doi.org/10.1016/j.envsoft.2021.105022)
 
