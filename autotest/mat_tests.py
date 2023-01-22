@@ -693,6 +693,35 @@ def from_uncfile_firstlast_test(setup_empty_mat_temp):
         raise Exception("should have failed")
 
 
+def trunc_names_test():
+    import pyemu
+    import pandas as pd
+
+    a=pd.DataFrame({'a': [1,2,3], 'b': [4,5,6]})
+    names = ['They','We','Reality']
+    a['names'] =  names
+    a.set_index('names',inplace=True, drop=True)
+    am = pyemu.Matrix.from_dataframe(a)
+    am.to_binary('a.binary.jcb')
+    am.to_coo('a.coo.jcb')
+    # both read fine
+    ar = pyemu.Matrix.from_binary('a.coo.jcb')
+    ar = pyemu.Matrix.from_binary('a.binary.jcb')
+
+    # use longer names
+    names = ["They've done studies, you know. 60 percent of the time, it works every time.",
+             "We’ll never survive! You’re only saying that because no one ever has.",
+             "Reality is frequently inaccurate."]
+    a['names'] =  [n.replace(" ","-",) for n in names]
+    a.set_index('names',inplace=True, drop=True)
+    am = pyemu.Matrix.from_dataframe(a)
+    am.to_binary('a.binary.jcb')
+    am.to_coo('a.coo.jcb')
+
+    ar = pyemu.Matrix.from_binary('a.coo.jcb')
+    # long names save with .to_binary() can't be read with .from_binary()
+    ar = pyemu.Matrix.from_binary('a.binary.jcb')
+
 if __name__ == "__main__":
     #df_tests()
     # cov_scale_offset_test()
@@ -719,4 +748,5 @@ if __name__ == "__main__":
     # sparse_get_sparse_test()
     #dense_mat_format_test()
     #icode_minus_one_test()
-    from_uncfile_firstlast_test()
+    #from_uncfile_firstlast_test()
+    trunc_names_test()
