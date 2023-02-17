@@ -844,8 +844,17 @@ def geostat_draws_test(tmp_path):
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
     gs = pyemu.geostats.read_struct_file(str_file)
+    np.random.seed(pyemu.en.SEED)
     pe = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
                                           sigma_range=4)
+    np.random.seed(pyemu.en.SEED)
+    pe2 = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
+                                          sigma_range=4)
+
+    diff = pe - pe2
+    print(diff.max())
+    assert diff.max().max() == 0.0
+
 
     ttpl_file = os.path.join(tmp_path, "temp.dat.tpl")
     with open(ttpl_file, 'w') as f:
@@ -2311,7 +2320,14 @@ def ac_draw_test(tmp_path):
     pst.write(os.path.join(tmp_path, "test.pst"))
     print(pst.observation_data.distance)
 
+    np.random.seed(pyemu.en.SEED)
     oe = pyemu.helpers.autocorrelated_draw(pst, struct_dict, num_reals=100, enforce_bounds=True)
+    np.random.seed(pyemu.en.SEED)
+    oe2 = pyemu.helpers.autocorrelated_draw(pst, struct_dict, num_reals=100, enforce_bounds=True)
+    diff = oe - oe2
+    print(diff.max())
+    assert diff.max().max() == 0.0
+    
     obs = pst.observation_data
     assert oe.max().max() <= obs.upper_bound.min()
     assert oe.min().min() >= obs.lower_bound.max()
@@ -2384,8 +2400,8 @@ def test_fake_frun(freybergmf6_2_pstfrom):
 
 
 if __name__ == "__main__":
-
-    # ac_draw_test("temp")
+    #geostat_draws_test("temp")
+    ac_draw_test("temp")
     # maha_pdc_test()
     # rmr_parse_test()
     # temporal_draw_invest()
@@ -2455,11 +2471,11 @@ if __name__ == "__main__":
     # add_pi_obj_func_test()
     # ok_test()
     # ok_grid_test()
-    ok_grid_zone_test()
+    #ok_grid_zone_test()
     # ppk2fac_verf_test()
     # ok_grid_invest()
     # ok_grid_test()
     # ok_grid_zone_test()
-    maha_pdc_summary_test("temp")
+    #maha_pdc_summary_test("temp")
     # gsf_reader_test()
     # kl_test()

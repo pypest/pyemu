@@ -898,7 +898,7 @@ class Pst(object):
                 df.loc[:, col] = df.loc[:, col].fillna(defaults[col])
             if col in converters:
 
-                df.loc[:, col] = df.loc[:, col].apply(converters[col])
+                df.loc[:, col] = df.loc[:, col].apply(str).apply(converters[col])
 
         return df
 

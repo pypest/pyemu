@@ -160,7 +160,11 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
     if verbose:
         print("-->draw full obs en from diagonal cov")
     full_oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,fcov,num_reals=num_reals,fill=True)
-    for gs,onames in struct_dict.items():
+    keys = list(struct_dict.keys())
+    keys.sort()
+    #for gs,onames in struct_dict.items():
+    for gs in keys:
+        onames = struct_dict[gs]
         if verbose:
             print("-->processing cov matrix for {0} items with gs {1}".format(len(onames),gs))
         dvals = obs.loc[onames,time_distance_col].values
@@ -286,14 +290,12 @@ def geostatistical_draws(
         subset=subset
     )
     full_cov_dict = {n: float(v) for n, v in zip(full_cov.col_names, full_cov.x)}
-
     # par_org = pst.parameter_data.copy  # not sure about the need or function of this line? (BH)
     par = pst.parameter_data
     par_ens = []
     pars_in_cov = set()
     keys = list(struct_dict.keys())
     keys.sort()
-
     for gs in keys:
         items = struct_dict[gs]
         if verbose:
@@ -393,6 +395,7 @@ def geostatistical_draws(
         print("adding remaining parameters to diagonal")
     fset = set(full_cov.row_names)
     diff = list(fset.difference(pars_in_cov))
+    diff.sort()
     if len(diff) > 0:
         name_dict = {name: i for i, name in enumerate(full_cov.row_names)}
         vec = np.atleast_2d(np.array([full_cov.x[name_dict[d]] for d in diff]))
