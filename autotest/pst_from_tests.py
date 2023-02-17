@@ -4752,6 +4752,52 @@ def vertex_grid_test():
             assert all(abs((a/a_org)[ib[1]==int(zone)]-int(zone)) < 1e-6)
     return
 
+def test_defaults(tmp_path):
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
+    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+    bd = Path.cwd()
+    os.chdir(tmp_path)
+    try:
+        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+        m = sim.get_model()
+        sim.set_all_data_external(check_data=False)
+        sim.write_simulation()
+
+        # SETUP pest stuff...
+        os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+        template_ws = "new_temp"
+        if os.path.exists(template_ws):
+            shutil.rmtree(template_ws)
+        # sr0 = m.sr
+        # sr = pyemu.helpers.SpatialReference.from_namfile(
+        #     os.path.join(tmp_model_ws, "freyberg6.nam"),
+        #     delr=m.dis.delr.array, delc=m.dis.delc.array)
+        sr = m.modelgrid
+        # set up PstFrom object
+        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws)
+        kper = 0
+        list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper + 1)
+        pf.add_parameters(list_file, par_type="grid", index_cols=[0, 1, 2],
+                      use_cols=[3])
+        pf.add_observations("heads.csv", index_cols="time")
+        pst = pf.build_pst()
+    except Exception as e:
+        os.chdir(bd)
+        raise Exception(str(e))
+    os.chdir(bd)
+
+
 if __name__ == "__main__":
     # mf6_freyberg_pp_locs_test()
     # invest()

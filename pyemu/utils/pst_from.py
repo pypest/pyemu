@@ -263,7 +263,8 @@ class PstFrom(object):
         if all([ij is None for ij in [i, j]]):
             return i, j
         else:
-            if self._spatial_reference.grid_type=='vertex':
+            if (hasattr(self._spatial_reference, "grid_type") and
+                    self._spatial_reference.grid_type == 'vertex'):
                 return (
                     self._spatial_reference.xcentergrid[i, ],
                     self._spatial_reference.ycentergrid[i, ],
@@ -282,10 +283,13 @@ class PstFrom(object):
             if self._spatial_ref_xarray is None:
                 self._spatial_ref_xarray = self._spatial_reference.xcellcenters
                 self._spatial_ref_yarray = self._spatial_reference.ycellcenters
-            if self._spatial_reference.grid_type=='vertex':
-                return (self._spatial_ref_xarray[i, ], self._spatial_ref_yarray[i, ])
+            if (hasattr(self._spatial_reference, "grid_type") and
+                    self._spatial_reference.grid_type == 'vertex'):
+                return (self._spatial_ref_xarray[i, ],
+                        self._spatial_ref_yarray[i, ])
 
-            return (self._spatial_ref_xarray[i, j], self._spatial_ref_yarray[i, j])
+            return (self._spatial_ref_xarray[i, j],
+                    self._spatial_ref_yarray[i, j])
 
     def parse_kij_args(self, args, kwargs):
         """parse args into kij indices.  Called programmatically"""
@@ -309,7 +313,8 @@ class PstFrom(object):
                 i, j = args[-2], args[-1]
 
                 # vertex/list based i == cell number
-                if self._spatial_reference.grid_type=='vertex':
+                if (hasattr(self._spatial_reference, "grid_type") and
+                    self._spatial_reference.grid_type == 'vertex'):
                     i, l = args[-1], args[-2]
 
         else:
@@ -1979,9 +1984,16 @@ class PstFrom(object):
                 self.logger.warn(
                     "-) Better to pass an appropriately " "transformed geostruct"
                 )
-        if not isinstance(self._spatial_reference,dict):
-            if self._spatial_reference.grid_type=='vertex' and zone_array is not None and len(zone_array.shape)==1:
-                zone_array = np.reshape(zone_array, (zone_array.shape[0], 1))
+        # big sr and zone dependancy checker here: todo - tidy?
+        checker = (
+                self._spatial_reference is not None
+                and not isinstance(self._spatial_reference, dict)
+                and self._spatial_reference.grid_type == 'vertex'
+                and zone_array is not None
+                and len(zone_array.shape) == 1
+        )
+        if checker:
+            zone_array = np.reshape(zone_array, (zone_array.shape[0], 1))
 
         # Get useful variables from arguments passed
         # if index_cols passed as a dictionary that maps i,j information
