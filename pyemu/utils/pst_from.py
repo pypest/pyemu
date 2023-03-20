@@ -993,7 +993,7 @@ class PstFrom(object):
                 if len(storehead) != 0:
                     kwargs = {}
                     if "win" in platform.platform().lower():
-                        kwargs = {"line_terminator": "\n"}
+                        kwargs = {"lineterminator": "\n"}
                     with open(org_file, "w") as fp:
                         lc = 0
                         fr = 0

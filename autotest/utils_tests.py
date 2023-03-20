@@ -2334,7 +2334,7 @@ def ac_draw_test(tmp_path):
     assert np.all(oe.loc[:,"rand1"].values==1.0)
     assert np.all(oe.loc[:, "rand2"].values == 2.0)
 
-    oe = pyemu.helpers.autocorrelated_draw(pst,struct_dict,num_reals=10000)
+    oe = pyemu.helpers.autocorrelated_draw(pst,struct_dict,num_reals=8000)
 
     obs = pst.observation_data
     obs.loc[:,"emp_std"] = oe.std().loc[obs.obsnme]
@@ -2399,7 +2399,21 @@ def test_fake_frun(freybergmf6_2_pstfrom):
     pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
 
 
+def obs_ensemble_quantile_test():
+    import os
+    import numpy as np
+    import pyemu
+    pst_file = os.path.join("pst","pest.pst")
+    pst = pyemu.Pst(pst_file)
+
+    oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst=pst,cov=pyemu.Cov.from_observation_data(pst),num_reals=100,fill=True)
+
+    quans = [0.25,0.5,0.75]
+    qt,d = pyemu.helpers.calc_observation_ensemble_quantiles(oe,pst,quans)
+
+
 if __name__ == "__main__":
+    #obs_ensemble_quantile_test()
     #geostat_draws_test("temp")
     ac_draw_test("temp")
     # maha_pdc_test()
@@ -2420,10 +2434,10 @@ if __name__ == "__main__":
     # write_jactest_test()
     # sfr_obs_test()
     # sfr_reach_obs_test()
-    # gage_obs_test()
+    #gage_obs_test('.')
     # setup_pp_test()
     # sfr_helper_test()
-    # gw_sft_ins_test()
+    #gw_sft_ins_test('.')
     # par_knowledge_test()
     # grid_obs_test()
     # hds_timeseries_test()
@@ -2446,16 +2460,16 @@ if __name__ == "__main__":
     # hfb_test()
     # hfb_zn_mult_test()
     # more_kl_test()
-    # zero_order_regul_test()
-    # first_order_pearson_regul_test()
+    #zero_order_regul_test('.')
+    #first_order_pearson_regul_test('.')
     # master_and_workers()
     # smp_to_ins_test()
     # read_pestpp_runstorage_file_test()
     # write_tpl_test()
-    # pp_to_shapefile_test()
+    #pp_to_shapefile_test(".")
     # read_pval_test()
     # read_hob_test()
-    # setup_pp_test()
+    # setup_pp_test(".")
     # pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()
@@ -2469,7 +2483,7 @@ if __name__ == "__main__":
     # struct_file_test()
     # covariance_matrix_test()
     # add_pi_obj_func_test()
-    # ok_test()
+    # ok_test('.')
     # ok_grid_test()
     #ok_grid_zone_test()
     # ppk2fac_verf_test()

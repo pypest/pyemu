@@ -935,7 +935,7 @@ class ParameterEnsemble(Ensemble):
         par = pst.parameter_data
         li = par.partrans == "log"
         mean_values = par.parval1.copy()
-        mean_values.loc[li] = mean_values.loc[li].apply(np.log10)
+        mean_values.loc[li] = [np.log10(v) for v in mean_values.loc[li].values]
         if len(pst.adj_par_names) == 0:
             warnings.warn("ParameterEnsemble.from_gaussian_draw(): no adj pars", PyemuWarning)
         grouper = None
@@ -986,13 +986,13 @@ class ParameterEnsemble(Ensemble):
 
         li = pst.parameter_data.partrans == "log"
         ub = pst.parameter_data.parubnd.copy()
-        ub.loc[li] = ub.loc[li].apply(np.log10)
+        ub.loc[li] = [np.log10(v) for v in ub.loc[li].values]
 
         lb = pst.parameter_data.parlbnd.copy()
-        lb.loc[li] = lb.loc[li].apply(np.log10)
+        lb.loc[li] = [np.log10(v) for v in lb.loc[li].values]
 
         pv = pst.parameter_data.parval1.copy()
-        pv.loc[li] = pv[li].apply(np.log10)
+        pv.loc[li] = [np.log10(v) for v in pv[li].values]
 
         ub = ub.to_dict()
         lb = lb.to_dict()
@@ -1055,10 +1055,10 @@ class ParameterEnsemble(Ensemble):
 
         li = pst.parameter_data.partrans == "log"
         ub = pst.parameter_data.parubnd.copy()
-        ub.loc[li] = ub.loc[li].apply(np.log10)
+        ub.loc[li] = [np.log10(v) for v in ub.loc[li].values]
         ub = ub.to_dict()
         lb = pst.parameter_data.parlbnd.copy()
-        lb.loc[li] = lb.loc[li].apply(np.log10)
+        lb.loc[li] = [np.log10(v) for v in lb.loc[li].values]
         lb = lb.to_dict()
 
         real_names = np.arange(num_reals, dtype=np.int64)
@@ -1175,7 +1175,7 @@ class ParameterEnsemble(Ensemble):
         # gaussian
         pes = []
         if len(how_groups["gaussian"]) > 0:
-            gset = set(how_groups["gaussian"])
+            gset = list(set(how_groups["gaussian"]))
             par_gaussian = par_org.loc[gset, :]
             # par_gaussian.sort_values(by="parnme", inplace=True)
             par_gaussian.sort_index(inplace=True)
@@ -1272,7 +1272,8 @@ class ParameterEnsemble(Ensemble):
             # check for scale differences - I don't who is dumb enough
             # to change scale between par files and pst...
             diff = df.scale - pst.parameter_data.scale
-            if diff.apply(np.abs).sum() > 0.0:
+            dsum = sum([np.abs(v) for v in diff.values])
+            if dsum > 0.0:
                 warnings.warn(
                     "differences in scale detected, applying scale in par file",
                     PyemuWarning,
@@ -1348,7 +1349,7 @@ class ParameterEnsemble(Ensemble):
         df = self._df
         # self.loc[:,:] = (self.loc[:,:] * self.pst.parameter_data.scale) +\
         #                 self.pst.parameter_data.offset
-        df.loc[:, li] = df.loc[:, li].apply(np.log10)
+        df.loc[:, li] = [np.log10(v) for v in df.loc[:, li].values]
         self._istransformed = True
 
     def add_base(self):
@@ -1395,7 +1396,7 @@ class ParameterEnsemble(Ensemble):
             return self.pst.parameter_data.parubnd.copy()
         else:
             ub = self.pst.parameter_data.parubnd.copy()
-            ub[self.log_indexer] = np.log10(ub[self.log_indexer])
+            ub[self.log_indexer] = [np.log10(v) for v in ub[self.log_indexer]]
             return ub
 
     @property
@@ -1411,7 +1412,7 @@ class ParameterEnsemble(Ensemble):
             return self.pst.parameter_data.parlbnd.copy()
         else:
             lb = self.pst.parameter_data.parlbnd.copy()
-            lb[self.log_indexer] = np.log10(lb[self.log_indexer])
+            lb[self.log_indexer] = [np.log10(v) for v in lb[self.log_indexer]]
             return lb
 
     @property
@@ -1556,8 +1557,8 @@ class ParameterEnsemble(Ensemble):
         ub = self.ubnd * (1.0 - bound_tol)
         lb = self.lbnd * (1.0 + bound_tol)
         base_vals = self.pst.parameter_data.loc[self._df.columns, "parval1"].copy()
-        ub_dist = (ub - base_vals).apply(np.abs)
-        lb_dist = (base_vals - lb).apply(np.abs)
+        ub_dist = pd.Series(data=np.abs((ub - base_vals).values),index=base_vals.index,dtype=float)
+        lb_dist = pd.Series(data=np.abs((base_vals - lb).values),index=base_vals.index,dtype=float)
 
         if ub_dist.min() <= 0.0:
             raise Exception(
@@ -1575,7 +1576,8 @@ class ParameterEnsemble(Ensemble):
             )
         for ridx in self._df.index:
             real = self._df.loc[ridx, :]
-            real_dist = (real - base_vals).apply(np.abs)
+            real_dist = pd.Series(data=np.abs((real - base_vals).values),index=real.index,dtype=float)
+
             out_ubnd = real - ub
             out_ubnd = out_ubnd.loc[out_ubnd > 0.0]
             ubnd_facs = ub_dist.loc[out_ubnd.index] / real_dist.loc[out_ubnd.index]
@@ -1604,6 +1606,7 @@ class ParameterEnsemble(Ensemble):
 
             if lbnd_facs.shape[0] > 0:
                 lmin = lbnd_facs.min()
+                print(lbnd_facs)
                 lmin_idx = lbnd_facs.idxmin()
                 print(
                     "enforce_scale lbnd controlling parameter, scale factor, "

@@ -660,9 +660,10 @@ def calc_observation_ensemble_quantiles(
                 + ["{}\n".format(i) for i in (set(trimnames) - set(obs.index.values))]
             )
     # trim the data to subsets (or complete )
-    ens_eval = ens[trimnames].copy()
-    weights = obs.loc[trimnames].weight.values
+    ens_eval = ens.loc[:,trimnames].copy()
+    weights = obs.loc[trimnames,:].weight.values.astype(float)
 
+    data = {}
     for cq in quantiles:
         # calculate the point-wise quantile values
         qfit = np.quantile(ens_eval, cq, axis=0)
@@ -671,10 +672,13 @@ def calc_observation_ensemble_quantiles(
             np.linalg.norm([(i - qfit) * weights for i in ens_eval.values], axis=1)
         )
         quantile_idx["q{}".format(cq)] = qreal
-        ens = ens.append(ens.iloc[qreal])
-        idx = ens.index.values
-        idx[-1] = "q{}".format(cq)
-        ens.set_index(idx, inplace=True)
+        #ens = ens.append(ens.iloc[qreal])
+        #idx = ens.index.values
+        #idx[-1] = "q{}".format(cq)
+        #ens.set_index(idx, inplace=True)
+        data["q{}".format(cq)] = ens.iloc[qreal]
+
+    ens = pd.DataFrame(data=data).transpose()
 
     return ens, quantile_idx
 
@@ -994,7 +998,8 @@ def zero_order_tikhonov(pst, parbounds=True, par_groups=None, reset=True):
         pi = pd.DataFrame(
             {"pilbl": pilbl, "equation": equation, "obgnme": obgnme, "weight": weight}
         )
-        pst.prior_information = pst.prior_information.append(pi)
+
+        pst.prior_information = pd.concat([pst.prior_information,pi])
     if parbounds:
         _regweight_from_parbound(pst)
     if pst.control_data.pestmode == "estimation":
@@ -1099,7 +1104,7 @@ def first_order_pearson_tikhonov(pst, cov, reset=True, abs_drop_tol=1.0e-3):
     if reset:
         pst.prior_information = df
     else:
-        pst.prior_information = pst.prior_information.append(df)
+        pst.prior_information = pd.concat([pst.prior_information,df])
 
     if pst.control_data.pestmode == "estimation":
         pst.control_data.pestmode = "regularization"
@@ -1334,11 +1339,11 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
         raise Exception("couldn't get base run...")
     par = par.loc[base_par.index, :]
     li = base_par.index.map(lambda x: par.loc[x, "partrans"] == "log")
-    base_par.loc[li] = base_par.loc[li].apply(np.log10)
+    base_par.loc[li] = [np.log10(v) for v in base_par.loc[li].values]
     jco_cols = {}
     for irun in range(1, int(header["n_runs"])):
         par_df, obs_df = read_pestpp_runstorage(rnj_filename, irun=irun)
-        par_df.loc[li] = par_df.loc[li].apply(np.log10)
+        par_df.loc[li] = [np.log10(v) for v in par_df.loc[li].values]
         obs_diff = base_obs - obs_df
         par_diff = base_par - par_df
         # check only one non-zero element per col(par)
@@ -2238,13 +2243,13 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
     li = par.partrans == "log"
     lbnd = par.parlbnd.copy()
     ubnd = par.parubnd.copy()
-    lbnd.loc[li] = lbnd.loc[li].apply(np.log10)
-    ubnd.loc[li] = ubnd.loc[li].apply(np.log10)
+    lbnd.loc[li] = [np.log10(v) for v in lbnd.loc[li].values]
+    ubnd.loc[li] = [np.log10(v) for v in ubnd.loc[li].values]
     lbnd = lbnd.to_dict()
     ubnd = ubnd.to_dict()
 
     org_vals = par.parval1.copy()
-    org_vals.loc[li] = org_vals.loc[li].apply(np.log10)
+    org_vals.loc[li] = [np.log10(v) for v in org_vals.loc[li].values]
     if forward:
         sign = 1.0
     else:
@@ -2288,9 +2293,9 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
 
 def _write_df_tpl(filename, df, sep=",", tpl_marker="~", headerlines=None, **kwargs):
     """function write a pandas dataframe to a template file."""
-    if "line_terminator" not in kwargs:
+    if "lineterminator" not in kwargs:
         if "win" in platform.platform().lower():
-            kwargs["line_terminator"] = "\n"
+            kwargs["lineterminator"] = "\n"
     with open(filename, "w") as f:
         f.write("ptf {0}\n".format(tpl_marker))
         f.flush()

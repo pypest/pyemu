@@ -1932,8 +1932,7 @@ class Pst(object):
             f_out,
             self.parameter_data,
             self.par_format,
-            self.par_fieldnames,
-        )
+            self.par_fieldnames)
 
         if self.tied is not None:
             self._write_df(
@@ -2405,7 +2404,7 @@ class Pst(object):
                 (og.str.startswith(self.get_constraint_tags('lt'))) &
                 (res >= 0)] = 0
             swr = (res * obs.weight) ** 2
-            factors = (1.0 / swr).apply(np.sqrt)
+            factors = pd.Series(data=[np.sqrt(v) for v in (1.0 / swr).values],index=names)
             if original_ceiling:
                 factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
 
@@ -2756,9 +2755,9 @@ class Pst(object):
             ) + self.parameter_data.offset
             # isnotfixed = self.parameter_data.partrans != "fixed"
             islog = self.parameter_data.partrans == "log"
-            self.parameter_data.loc[islog, col + "_trans"] = self.parameter_data.loc[
+            self.parameter_data.loc[islog, col + "_trans"] = [np.log10(v) for v in self.parameter_data.loc[
                 islog, col + "_trans"
-            ].apply(lambda x: np.log10(x))
+            ].values]
 
     def enforce_bounds(self):
         """enforce bounds violation
@@ -3382,9 +3381,9 @@ class Pst(object):
             )
 
         if report_in_linear_space == False:
-            par.loc[li, "parval1"] = par.parval1.loc[li].apply(np.log10)
-            par.loc[li, "parubnd"] = par.parubnd.loc[li].apply(np.log10)
-            par.loc[li, "parlbnd"] = par.parlbnd.loc[li].apply(np.log10)
+            par.loc[li, "parval1"] = [np.log10(v) for v in par.parval1.loc[li].values]
+            par.loc[li, "parubnd"] = [np.log10(v) for v in par.parubnd.loc[li].values]
+            par.loc[li, "parlbnd"] = [np.log10(v) for v in par.parlbnd.loc[li].values]
             par.loc[:, "stdev"] = (par.parubnd - par.parlbnd) / sigma_range
 
         data = {c: [] for c in cols}
@@ -3503,8 +3502,10 @@ class Pst(object):
             "pe": "percent error",
         }
 
-        obs.loc[:, "stdev"] = 1.0 / obs.weight
-        obs.loc[:, "pe"] = 100.0 * (obs.stdev / obs.obsval.apply(np.abs))
+        obs.loc[:,"stdev"] = 0.0
+        obs.loc[obs.weight>0, "stdev"] = 1.0 / obs.loc[obs.weight>0,"weight"].values
+        obs.loc[:,"pe"] = 0.0
+        obs.loc[obs.stdev>0, "pe"] = 100.0 * (obs.loc[obs.stdev>0,"stdev"] / obs.loc[obs.stdev>0,"obsval"].apply(np.abs))
         obs = obs.replace([np.inf, -np.inf], np.NaN)
 
         data = {c: [] for c in cols}

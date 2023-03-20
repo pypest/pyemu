@@ -1315,10 +1315,10 @@ def setup_sft_obs(sft_file, ins_file=None, start_datetime=None, times=None, ncom
     idx = df.time.apply(lambda x: x in times)
     if start_datetime is not None:
         start_datetime = pd.to_datetime(start_datetime)
-        df.loc[:, "time_str"] = pd.to_timedelta(df.time, unit="d") + start_datetime
-        df.loc[:, "time_str"] = df.time_str.apply(
-            lambda x: datetime.strftime(x, "%Y%m%d")
-        )
+        df.loc[:, "dt"] = pd.to_timedelta(df.time, unit="d") + start_datetime
+        df.loc[:, "time_str"] = df.dt.dt.strftime("%Y%m%d").values
+        print(df.time_str)
+        
     else:
         df.loc[:, "time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
     df.loc[:, "ins_str"] = "l1\n"
@@ -1347,6 +1347,8 @@ def setup_sft_obs(sft_file, ins_file=None, start_datetime=None, times=None, ncom
             ),
             axis=1,
         )
+        #print(df)
+        #print(df.ins_str)
     df.index = np.arange(df.shape[0])
     if ins_file is None:
         ins_file = sft_file + ".processed.ins"
@@ -2556,10 +2558,8 @@ def setup_gage_obs(gage_file, ins_file=None, start_datetime=None, times=None):
     if start_datetime is not None:
         # convert times to usable observation times
         start_datetime = pd.to_datetime(start_datetime)
-        df.loc[:, "time_str"] = pd.to_timedelta(df.time, unit="d") + start_datetime
-        df.loc[:, "time_str"] = df.time_str.apply(
-            lambda x: datetime.strftime(x, "%Y%m%d")
-        )
+        df.loc[:, "dt"] = pd.to_timedelta(df.time, unit="d") + start_datetime
+        df.loc[:, "time_str"] = df.dt.dt.strftime("%Y%m%d")
     else:
         df.loc[:, "time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
     # set up instructions (line feed for lines without obs (not in time)
