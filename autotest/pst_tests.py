@@ -272,14 +272,22 @@ def reweight_test():
     from pyemu import Pst
     pst_dir = os.path.join("pst")
     p = Pst(os.path.join(pst_dir, "pest.pst"))
+    
+     # test re-weighting with zero-weight groups included
+    obsgrp_dict = {"pred": 1., "head": 0., "conc": 1.0}
+    p.adjust_weights(obsgrp_dict=obsgrp_dict)
+    assert np.abs(p.phi - 2.0) < 1.0e-5, p.phi
+    
     obsgrp_dict = {"pred": 1.0, "head": 1.0, "conc": 1.0}
     p.adjust_weights(obsgrp_dict=obsgrp_dict)
     assert np.abs(p.phi - 3.0) < 1.0e-5, p.phi
-
+    
     obs = p.observation_data
     obs.loc[obs.obgnme == "pred", "weight"] = 0.0
     assert np.abs(p.phi - 2.0) < 1.0e-5, p.phi
 
+    obsgrp_dict = {"pred": 0., "head": 1.0, "conc": 1.0}
+    p.adjust_weights(obsgrp_dict=obsgrp_dict)
     obs_dict = {"pd_one": 1.0, "pd_ten": 1.0}
     p.adjust_weights(obs_dict=obs_dict)
     assert np.abs(p.phi - 4.0) < 1.0e-5, p.phi
