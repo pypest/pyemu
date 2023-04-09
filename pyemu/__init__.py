@@ -30,7 +30,7 @@ from .utils import (
 from .plot import plot_utils
 from .logger import Logger
 
-from .prototypes import *
+#from .prototypes import *
 from .legacy import *
 
 from ._version import get_versions
