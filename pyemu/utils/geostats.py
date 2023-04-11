@@ -788,10 +788,10 @@ class OrdinaryKrige(object):
             warnings.warn(
                 "duplicates detected in point_data..attempting to rectify", PyemuWarning
             )
-            ux_std = point_data.loc[:,["x"]].groupby(point_data.name).std()["x"]
+            ux_std = point_data.groupby(point_data.name).x.std()
             if ux_std.max() > 0.0:
                 raise Exception("duplicate point_info entries with different x values")
-            uy_std = point_data.loc[:,["y"]].groupby(point_data.name).std()["y"]
+            uy_std = point_data.groupby(point_data.name).y.std()
             if uy_std.max() > 0.0:
                 raise Exception("duplicate point_info entries with different y values")
 
@@ -1291,14 +1291,14 @@ class OrdinaryKrige(object):
                 continue
 
             # only the maxpts_interp points
-            pt_names = dist.iloc[:maxpts_interp].index.values
-            dist = np.sqrt(dist.iloc[:maxpts_interp].values)
+            pt_names = dist.index.values[:maxpts_interp]
+            dist = np.sqrt(dist.values[:maxpts_interp])
             
             # if one of the points is super close, just use it and skip
             if dist.min() <= EPSILON:
                 ifacts.append([1.0])
                 idist.append([EPSILON])
-                inames.append([pt_names[np.argmin(dist)]])
+                inames.append([pt_names[dist.argmin()]])
                 err_var.append(self.geostruct.nugget)
                 continue
             # if verbose == 2:
