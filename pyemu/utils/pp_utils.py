@@ -495,7 +495,7 @@ def write_pp_shapfile(pp_df, shapename=None):
         shp = shapefile.Writer(shapeType=shapefile.POINT)
     except:
         shp = shapefile.Writer(target=shapename, shapeType=shapefile.POINT)
-    for name, dtype in dfs[0].dtypes.iteritems():
+    for name, dtype in dfs[0].dtypes.items():
         if dtype == object:
             shp.field(name=name, fieldType="C", size=50)
         elif dtype in [int]:#, np.int, np.int64, np.int32]:
