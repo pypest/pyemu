@@ -2587,18 +2587,14 @@ class Pst(object):
         if obsgrp_dict is not None:
             obs = self.observation_data
             # first zero-weight all obs in groups specified to have 0 contrib to phi
-            zero_weight_groups = []
-            for grp, contrib in obsgrp_dict.items():
-                if contrib==0:
-                    obs.loc[obs.obgnme == grp, "weight"] = 0.0
-                    # drop zero- contribution groups
-                    zero_weight_groups.append(grp)
-            obsgrp_dict = {k: v for k, v in obsgrp_dict.items() 
-                           if k not in zero_weight_groups}
-            # reset groups with all zero weights
-            for grp in obsgrp_dict.keys():
-                if obs.loc[obs.obgnme == grp, "weight"].sum() == 0.0:
-                    obs.loc[obs.obgnme == grp, "weight"] = 1.0
+            original_groups = list(obsgrp_dict.keys())
+            for grp in original_groups:
+                if obsgrp_dict[grp] == 0:
+                    obs.loc[obs.obgnme == grp, "weight"] = 0.
+                    del obsgrp_dict[grp]
+                # reset groups with all zero weights
+                elif obs.loc[obs.obgnme == grp, "weight"].sum() == 0:
+                    obs.loc[obs.obgnme==grp, "weight"] = 1.
             self.res.loc[obs.index, 'group'] = obs.obgnme.values
             self.res.loc[obs.index, 'weight'] = obs.weight.values 
             res_groups = self.res.groupby("group").groups
