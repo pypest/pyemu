@@ -1337,8 +1337,8 @@ def sfr_helper_test(tmp_path):  # TODO: need attention to move IO to tmp_path (p
         m1 = flopy.modflow.Modflow.load("supply2.nam", load_only=["sfr"], check=False)
         for kper,sd in m1.sfr.segment_data.items():
             #print(sd["flow"],sd1[kper]["flow"])
-            for i1,i2 in zip(sd["flow"],sd1[kper]["flow"]):
-                assert i1 * 10 == i2,"{0},{1}".format(i1,i2)
+            for i1, i2 in zip(sd["flow"], sd1[kper]["flow"]):
+                assert i1 * 10 == i2, "{0},{1}".format(i1, i2)
 
         df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters("supply2.nam", model_ws=m_ws, include_temporal_pars=True)
 

@@ -676,7 +676,7 @@ class Pst(object):
             return None
 
     @staticmethod
-    def _read_df(f, nrows, names, converters, defaults=None):
+    def _read_df(f, nrows, names, converters, defaults=None):  # todo : drop method? seems to not be used?
         """a private method to read part of an open file into a pandas.DataFrame.
 
         Args:
@@ -897,9 +897,11 @@ class Pst(object):
             if col in defaults:
                 df.loc[:, col] = df.loc[:, col].fillna(defaults[col])
             if col in converters:
-
-                df.loc[:, col] = df.loc[:, col].apply(str).apply(converters[col])
-
+                # pandas 2.0 `df.loc[:, col] = df.loc[:, col].astype(int)` type
+                # assignment cast RHS to LHS dtype -- therefore did not change
+                # LHS dtype -- this broke shit.
+                # Using `df[col] =` assignment instead.
+                df[col] = df.loc[:, col].astype(str).apply(converters[col])
         return df
 
     def _cast_prior_df_from_lines(self, section, lines, pst_path="."):
@@ -1932,7 +1934,8 @@ class Pst(object):
             f_out,
             self.parameter_data,
             self.par_format,
-            self.par_fieldnames)
+            self.par_fieldnames,
+        )
 
         if self.tied is not None:
             self._write_df(
@@ -2404,7 +2407,7 @@ class Pst(object):
                 (og.str.startswith(self.get_constraint_tags('lt'))) &
                 (res >= 0)] = 0
             swr = (res * obs.weight) ** 2
-            factors = pd.Series(data=[np.sqrt(v) for v in (1.0 / swr).values],index=names)
+            factors = (1.0 / swr)**0.5
             if original_ceiling:
                 factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
 
@@ -2755,9 +2758,8 @@ class Pst(object):
             ) + self.parameter_data.offset
             # isnotfixed = self.parameter_data.partrans != "fixed"
             islog = self.parameter_data.partrans == "log"
-            self.parameter_data.loc[islog, col + "_trans"] = [np.log10(v) for v in self.parameter_data.loc[
-                islog, col + "_trans"
-            ].values]
+            self.parameter_data.loc[islog, col + "_trans"] = \
+                self.parameter_data.loc[islog, col + "_trans"].apply(np.log10)
 
     def enforce_bounds(self):
         """enforce bounds violation
@@ -3381,9 +3383,9 @@ class Pst(object):
             )
 
         if report_in_linear_space == False:
-            par.loc[li, "parval1"] = [np.log10(v) for v in par.parval1.loc[li].values]
-            par.loc[li, "parubnd"] = [np.log10(v) for v in par.parubnd.loc[li].values]
-            par.loc[li, "parlbnd"] = [np.log10(v) for v in par.parlbnd.loc[li].values]
+            par.loc[li, "parval1"] = par.parval1.loc[li].apply(np.log10)
+            par.loc[li, "parubnd"] = par.parubnd.loc[li].apply(np.log10)
+            par.loc[li, "parlbnd"] = par.parlbnd.loc[li].apply(np.log10)
             par.loc[:, "stdev"] = (par.parubnd - par.parlbnd) / sigma_range
 
         data = {c: [] for c in cols}
@@ -3502,10 +3504,8 @@ class Pst(object):
             "pe": "percent error",
         }
 
-        obs.loc[:,"stdev"] = 0.0
-        obs.loc[obs.weight>0, "stdev"] = 1.0 / obs.loc[obs.weight>0,"weight"].values
-        obs.loc[:,"pe"] = 0.0
-        obs.loc[obs.stdev>0, "pe"] = 100.0 * (obs.loc[obs.stdev>0,"stdev"] / obs.loc[obs.stdev>0,"obsval"].apply(np.abs))
+        obs["stdev"] = obs.weight**-1
+        obs["pe"] = 100.0 * (obs.stdev / obs.obsval.abs())
         obs = obs.replace([np.inf, -np.inf], np.NaN)
 
         data = {c: [] for c in cols}

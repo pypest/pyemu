@@ -40,14 +40,14 @@ def plot_summary_distributions(
     figsize=(11, 8.5),
     pt_color="b",
 ):
-    """helper function to plot gaussian distrbutions from prior and posterior
+    """helper function to plot gaussian distributions from prior and posterior
     means and standard deviations
 
     Args:
         df (`pandas.DataFrame`): a dataframe and csv file.  Must have columns named:
             'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
             from a csv file, column 0 is assumed to tbe the index
-        ax (`atplotlib.pyplot.axis`): If None, and not subplots, then one is created
+        ax (`matplotlib.pyplot.axis`): If None, and not subplots, then one is created
             and all distributions are plotted on a single plot
         label_post (`bool`): flag to add text labels to the peak of the posterior
         label_prior (`bool`): flag to add text labels to the peak of the prior
@@ -84,9 +84,9 @@ def plot_summary_distributions(
         ax.grid()
 
     if "post_stdev" not in df.columns and "post_var" in df.columns:
-        df.loc[:, "post_stdev"] = np.sqrt(df.post_var.values)
+        df.loc[:, "post_stdev"] = df.post_var.apply(np.sqrt)
     if "prior_stdev" not in df.columns and "prior_var" in df.columns:
-        df.loc[:, "prior_stdev"] = np.sqrt(df.prior_var.values)
+        df.loc[:, "prior_stdev"] = df.prior_var.apply(np.sqrt)
     if "prior_expt" not in df.columns and "prior_mean" in df.columns:
         df.loc[:, "prior_expt"] = df.prior_mean
     if "post_expt" not in df.columns and "post_mean" in df.columns:
@@ -725,7 +725,7 @@ def pst_prior(pst, logger=None, filename=None, **kwargs):
     mean = par.parval1.loc[cov.names]
     info = par.loc[cov.names, :].copy()
     info.loc[:, "mean"] = mean
-    info.loc[li, "mean"] = [np.log10(v) for v in mean[li].values]
+    info.loc[li, "mean"] = mean[li].apply(np.log10)
     logger.log("building mean parameter values")
 
     logger.log("building stdev parameter values")
@@ -910,7 +910,7 @@ def ensemble_helper(
         for col, func in func_dict.items():
             for fc, en in ensembles.items():
                 if col in en.columns:
-                    en.loc[:, col] = func(en.loc[:, col].values)
+                    en.loc[:, col] = en.loc[:, col].apply(func)
         logger.log("applying functions")
 
     # get a list of all cols (union)
@@ -1161,16 +1161,16 @@ def ensemble_change_summary(
     if "grouper" in kwargs:
         raise NotImplementedError()
     else:
-        en_cols = set(ensemble1.columns)
-        if len(en_cols.difference(set(pst.par_names))) == 0:
-            par = pst.parameter_data.loc[list(en_cols), :]
+        en_cols = ensemble1.columns
+        if len(en_cols.difference(pst.par_names)) == 0:
+            par = pst.parameter_data.loc[en_cols, :]
             grouper = par.groupby(par.pargp).groups
             grouper["all"] = pst.adj_par_names
             li = par.loc[par.partrans == "log", "parnme"]
-            ensemble1.loc[:, li] = [np.log10(v) for v in ensemble1.loc[:, li].values]
-            ensemble2.loc[:, li] = [np.log10(v) for v in ensemble2.loc[:, li].values]
-        elif len(en_cols.difference(set(pst.obs_names))) == 0:
-            obs = pst.observation_data.loc[list(en_cols), :]
+            ensemble1.loc[:, li] = ensemble1.loc[:, li].apply(np.log10)
+            ensemble2.loc[:, li] = ensemble2.loc[:, li].apply(np.log10)
+        elif len(en_cols.difference(pst.obs_names)) == 0:
+            obs = pst.observation_data.loc[en_cols, :]
             grouper = obs.groupby(obs.obgnme).groups
             grouper["all"] = pst.nnz_obs_names
         else:
@@ -1501,7 +1501,7 @@ def ensemble_res_1to1(
         if base_ensemble is None:
             # if obs not defined by obs+noise ensemble,
             # use min and max for obsval from control file
-            pmin, pmax = _get_plotlims(ensembles, obs_g.loc[:,["obsval"]], obs_g.obsnme)
+            pmin, pmax = _get_plotlims(ensembles, obs_g.obsval, obs_g.obsnme)
         else:
             # if obs defined by obs+noise use obs+noise min and max
             pmin, pmax = _get_plotlims(ensembles, base_ensemble, obs_g.obsnme)
@@ -1515,9 +1515,9 @@ def ensemble_res_1to1(
                 # update y min and max for obs+noise ensembles
                 if len(obs_gg.obsval) > 1:
 
-                    emx = np.zeros(obs_gg.shape[0]) + emx[0]
-                    emn = np.zeros(obs_gg.shape[0]) + emn[0]
-                    ax.fill_between(obs_gg.obsval.values.astype(float), emn, emx,
+                    emx = np.zeros(obs_gg.shape[0]) + emx
+                    emn = np.zeros(obs_gg.shape[0]) + emn
+                    ax.fill_between(obs_gg.obsval.values, emn.values, emx.values,
                                     facecolor=c, alpha=0.2, zorder=2)
                 else:
                     ax.plot([obs_gg.obsval.values, obs_gg.obsval.values], [emn, emx], color=c, alpha=0.2, zorder=2)
@@ -1561,9 +1561,9 @@ def ensemble_res_1to1(
                 emx = en_g.max()
                 emn = en_g.min()
                 if len(obs_gg.obsval) > 1:
-                    emx = np.zeros(obs_gg.shape[0]) + emx[0]
-                    emn = np.zeros(obs_gg.shape[0]) + emn[0]
-                    ax.fill_between(obs_gg.obsval.values.astype(float), emn, emx,
+                    emx = np.zeros(obs_gg.shape[0]) + emx
+                    emn = np.zeros(obs_gg.shape[0]) + emn
+                    ax.fill_between(obs_gg.obsval.values, emn.values, emx.values,
                                     facecolor=c, alpha=0.2, zorder=2)
                 else:
                     # [ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]

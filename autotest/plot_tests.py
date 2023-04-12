@@ -60,6 +60,7 @@ def pst_plot_test(tmp_path):
     os.chdir(tmp_path)
     try:
         pst = pyemu.Pst("pest.pst")
+        pst.plot()
         pst.parameter_data.loc[:, "partrans"] = "none"
         pst.plot()
 
@@ -163,7 +164,7 @@ def ensemble_plot_test(tmp_path):
                                          plot_cols=pst.par_names[:10], sync_bins=False,
                                          func_dict={pst.par_names[0]:np.log10})
         plt.close("all")
-        deter_vals = pst.parameter_data.parval1.apply(lambda x: np.log10(x)).to_dict()
+        deter_vals = pst.parameter_data.parval1.apply(np.log10).to_dict()
         pyemu.plot_utils.ensemble_helper({"b": pe, "y": csv_file}, filename=csv_file + ".pdf",
                                          plot_cols=pst.par_names[:10], sync_bins=False,
                                          deter_vals=deter_vals)
@@ -253,11 +254,11 @@ def ensemble_1to1_test(tmp_path):
         base_ensemble=oe_base2
     )
 
-    # pyemu.plot_utils.ensemble_res_1to1(
-    #     {"0.5": oe1+1, "b": oe2},
-    #     pst,
-    #     filename="e1to1_noise6.pdf"
-    # )
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1+1, "b": oe2},
+        pst,
+        filename="e1to1_noise6.pdf"
+    )
 
     pst.observation_data.loc[:, 'obgnme'] = pst.observation_data.o_obgnme
     pyemu.plot_utils.res_phi_pie(pst=pst,ensemble=oe1)

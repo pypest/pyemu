@@ -999,7 +999,7 @@ def zero_order_tikhonov(pst, parbounds=True, par_groups=None, reset=True):
             {"pilbl": pilbl, "equation": equation, "obgnme": obgnme, "weight": weight}
         )
 
-        pst.prior_information = pd.concat([pst.prior_information,pi])
+        pst.prior_information = pd.concat([pst.prior_information, pi])
     if parbounds:
         _regweight_from_parbound(pst)
     if pst.control_data.pestmode == "estimation":
@@ -1104,7 +1104,7 @@ def first_order_pearson_tikhonov(pst, cov, reset=True, abs_drop_tol=1.0e-3):
     if reset:
         pst.prior_information = df
     else:
-        pst.prior_information = pd.concat([pst.prior_information,df])
+        pst.prior_information = pd.concat([pst.prior_information, df])
 
     if pst.control_data.pestmode == "estimation":
         pst.control_data.pestmode = "regularization"
@@ -1339,11 +1339,11 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
         raise Exception("couldn't get base run...")
     par = par.loc[base_par.index, :]
     li = base_par.index.map(lambda x: par.loc[x, "partrans"] == "log")
-    base_par.loc[li] = [np.log10(v) for v in base_par.loc[li].values]
+    base_par.loc[li] = base_par.loc[li].apply(np.log10)
     jco_cols = {}
     for irun in range(1, int(header["n_runs"])):
         par_df, obs_df = read_pestpp_runstorage(rnj_filename, irun=irun)
-        par_df.loc[li] = [np.log10(v) for v in par_df.loc[li].values]
+        par_df.loc[li] = par_df.loc[li].apply(np.log10)
         obs_diff = base_obs - obs_df
         par_diff = base_par - par_df
         # check only one non-zero element per col(par)
@@ -2243,13 +2243,13 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
     li = par.partrans == "log"
     lbnd = par.parlbnd.copy()
     ubnd = par.parubnd.copy()
-    lbnd.loc[li] = [np.log10(v) for v in lbnd.loc[li].values]
-    ubnd.loc[li] = [np.log10(v) for v in ubnd.loc[li].values]
+    lbnd.loc[li] = lbnd.loc[li].apply(np.log10)
+    ubnd.loc[li] = ubnd.loc[li].apply(np.log10)
     lbnd = lbnd.to_dict()
     ubnd = ubnd.to_dict()
 
     org_vals = par.parval1.copy()
-    org_vals.loc[li] = [np.log10(v) for v in org_vals.loc[li].values]
+    org_vals.loc[li] = org_vals.loc[li].apply(np.log10)
     if forward:
         sign = 1.0
     else:
