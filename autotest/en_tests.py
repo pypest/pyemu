@@ -263,6 +263,11 @@ def enforce_test():
     pe.enforce(how="drop")
     assert pe.shape[0] == num_reals - 1
 
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe.transform()
+    pe.enforce()
+
+
 def pnulpar_test(tmp_path):
     import os
     import pyemu
@@ -632,16 +637,17 @@ if __name__ == "__main__":
     #deviations_test()
     # as_pyemu_matrix_test()
     # dropna_test()
-    #enforce_test()
+    enforce_test()
     #pnulpar_test()
     # triangular_draw_test()
     # uniform_draw_test()
-    fill_test()
+    #fill_test()
     #factor_draw_test()
     #emp_cov_test()
     #emp_cov_draw_test()
     #mixed_par_draw_test()
     #binary_test()
+
 
 
 

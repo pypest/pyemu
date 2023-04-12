@@ -40,14 +40,14 @@ def plot_summary_distributions(
     figsize=(11, 8.5),
     pt_color="b",
 ):
-    """helper function to plot gaussian distrbutions from prior and posterior
+    """helper function to plot gaussian distributions from prior and posterior
     means and standard deviations
 
     Args:
         df (`pandas.DataFrame`): a dataframe and csv file.  Must have columns named:
             'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
             from a csv file, column 0 is assumed to tbe the index
-        ax (`atplotlib.pyplot.axis`): If None, and not subplots, then one is created
+        ax (`matplotlib.pyplot.axis`): If None, and not subplots, then one is created
             and all distributions are plotted on a single plot
         label_post (`bool`): flag to add text labels to the peak of the posterior
         label_prior (`bool`): flag to add text labels to the peak of the prior
@@ -1161,15 +1161,15 @@ def ensemble_change_summary(
     if "grouper" in kwargs:
         raise NotImplementedError()
     else:
-        en_cols = set(ensemble1.columns)
-        if len(en_cols.difference(set(pst.par_names))) == 0:
+        en_cols = ensemble1.columns
+        if len(en_cols.difference(pst.par_names)) == 0:
             par = pst.parameter_data.loc[en_cols, :]
             grouper = par.groupby(par.pargp).groups
             grouper["all"] = pst.adj_par_names
             li = par.loc[par.partrans == "log", "parnme"]
             ensemble1.loc[:, li] = ensemble1.loc[:, li].apply(np.log10)
             ensemble2.loc[:, li] = ensemble2.loc[:, li].apply(np.log10)
-        elif len(en_cols.difference(set(pst.obs_names))) == 0:
+        elif len(en_cols.difference(pst.obs_names)) == 0:
             obs = pst.observation_data.loc[en_cols, :]
             grouper = obs.groupby(obs.obgnme).groups
             grouper["all"] = pst.nnz_obs_names
@@ -1510,8 +1510,11 @@ def ensemble_res_1to1(
                 en_g = en.loc[:, obs_gg.obsnme]
                 emx = en_g.max()
                 emn = en_g.min()
+                
+                #exit()
                 # update y min and max for obs+noise ensembles
                 if len(obs_gg.obsval) > 1:
+
                     emx = np.zeros(obs_gg.shape[0]) + emx
                     emn = np.zeros(obs_gg.shape[0]) + emn
                     ax.fill_between(obs_gg.obsval.values, emn.values, emx.values,

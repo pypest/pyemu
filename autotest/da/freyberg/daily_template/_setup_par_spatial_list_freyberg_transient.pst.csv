@@ -1,7 +1,0 @@
-parnme,k,parnme,x,y,pargp,tpl_file,in_file
-wf0000090016,0,wf0000090016,4125.0,7625.0,welflux_k00,wel.csv.tpl,list_mlt/wel.csv
-wf0000110013,0,wf0000110013,3375.0,7125.0,welflux_k00,wel.csv.tpl,list_mlt/wel.csv
-wf0000200014,0,wf0000200014,3625.0,4875.0,welflux_k00,wel.csv.tpl,list_mlt/wel.csv
-wf0000260010,0,wf0000260010,2625.0,3375.0,welflux_k00,wel.csv.tpl,list_mlt/wel.csv
-wf0000290006,0,wf0000290006,1625.0,2625.0,welflux_k00,wel.csv.tpl,list_mlt/wel.csv
-wf0000340012,0,wf0000340012,3125.0,1375.0,welflux_k00,wel.csv.tpl,list_mlt/wel.csv

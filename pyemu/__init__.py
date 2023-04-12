@@ -30,8 +30,14 @@ from .utils import (
 from .plot import plot_utils
 from .logger import Logger
 
-from .prototypes import *
-from .legacy import *
+#from .prototypes import *
+try:
+    from .legacy import *
+except (ModuleNotFoundError, ImportError) as e:
+    import warnings
+    warnings.warn("Failed to import legacy module. "
+                  "May impact ability to access older methods."
+                  f"{type(e).__name__} {e.msg}")
 
 from ._version import get_versions
 

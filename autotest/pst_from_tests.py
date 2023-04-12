@@ -4801,7 +4801,7 @@ def test_defaults(tmp_path):
 if __name__ == "__main__":
     # mf6_freyberg_pp_locs_test()
     # invest()
-    freyberg_test(os.path.abspath("."))
+    #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
     # mf6_freyberg_test()
     #$mf6_freyberg_da_test()
@@ -4823,7 +4823,9 @@ if __name__ == "__main__":
     # # pstfrom_profile()
     # mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test()
-    vertex_grid_test()
+    #vertex_grid_test()
+    direct_quickfull_test()
+    
 
 
 

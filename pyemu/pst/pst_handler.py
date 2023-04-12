@@ -676,7 +676,7 @@ class Pst(object):
             return None
 
     @staticmethod
-    def _read_df(f, nrows, names, converters, defaults=None):
+    def _read_df(f, nrows, names, converters, defaults=None):  # todo : drop method? seems to not be used?
         """a private method to read part of an open file into a pandas.DataFrame.
 
         Args:
@@ -897,9 +897,11 @@ class Pst(object):
             if col in defaults:
                 df.loc[:, col] = df.loc[:, col].fillna(defaults[col])
             if col in converters:
-
-                df.loc[:, col] = df.loc[:, col].apply(str).apply(converters[col])
-
+                # pandas 2.0 `df.loc[:, col] = df.loc[:, col].astype(int)` type
+                # assignment cast RHS to LHS dtype -- therefore did not change
+                # LHS dtype -- this broke shit.
+                # Using `df[col] =` assignment instead.
+                df[col] = df.loc[:, col].astype(str).apply(converters[col])
         return df
 
     def _cast_prior_df_from_lines(self, section, lines, pst_path="."):
@@ -2405,7 +2407,7 @@ class Pst(object):
                 (og.str.startswith(self.get_constraint_tags('lt'))) &
                 (res >= 0)] = 0
             swr = (res * obs.weight) ** 2
-            factors = (1.0 / swr).apply(np.sqrt)
+            factors = (1.0 / swr)**0.5
             if original_ceiling:
                 factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
 
@@ -2756,9 +2758,8 @@ class Pst(object):
             ) + self.parameter_data.offset
             # isnotfixed = self.parameter_data.partrans != "fixed"
             islog = self.parameter_data.partrans == "log"
-            self.parameter_data.loc[islog, col + "_trans"] = self.parameter_data.loc[
-                islog, col + "_trans"
-            ].apply(lambda x: np.log10(x))
+            self.parameter_data.loc[islog, col + "_trans"] = \
+                self.parameter_data.loc[islog, col + "_trans"].apply(np.log10)
 
     def enforce_bounds(self):
         """enforce bounds violation
@@ -3503,8 +3504,8 @@ class Pst(object):
             "pe": "percent error",
         }
 
-        obs.loc[:, "stdev"] = 1.0 / obs.weight
-        obs.loc[:, "pe"] = 100.0 * (obs.stdev / obs.obsval.apply(np.abs))
+        obs["stdev"] = obs.weight**-1
+        obs["pe"] = 100.0 * (obs.stdev / obs.obsval.abs())
         obs = obs.replace([np.inf, -np.inf], np.NaN)
 
         data = {c: [] for c in cols}

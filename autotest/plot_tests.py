@@ -60,6 +60,7 @@ def pst_plot_test(tmp_path):
     os.chdir(tmp_path)
     try:
         pst = pyemu.Pst("pest.pst")
+        pst.plot()
         pst.parameter_data.loc[:, "partrans"] = "none"
         pst.plot()
 
@@ -189,82 +190,82 @@ def ensemble_1to1_test(tmp_path):
                 os.path.join(tmp_path, "pest.rei"))
     bd = Path.cwd()
     os.chdir(tmp_path)
-    try:
-        pst = pyemu.Pst("pest.pst")
-        num_reals = 100
+    #try:
+    pst = pyemu.Pst("pest.pst")
+    num_reals = 100
 
-        oe1 = pyemu.ObservationEnsemble.from_gaussian_draw(pst,num_reals=num_reals)
-        pst.observation_data.loc[pst.nnz_obs_names,"weight"] *= 10.0
-        oe2 = pyemu.ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    oe1 = pyemu.ObservationEnsemble.from_gaussian_draw(pst,num_reals=num_reals)
+    pst.observation_data.loc[pst.nnz_obs_names,"weight"] *= 10.0
+    oe2 = pyemu.ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
 
-        pst.observation_data.loc[pst.nnz_obs_names, "weight"] /= 100.0
-        oe_base = pyemu.ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pst.observation_data.loc[pst.nnz_obs_names, "weight"] /= 100.0
+    oe_base = pyemu.ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
 
-        pst.observation_data.loc[pst.nnz_obs_names, "weight"] *= 1000.0
-        oe_base2 = pyemu.ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pst.observation_data.loc[pst.nnz_obs_names, "weight"] *= 1000.0
+    oe_base2 = pyemu.ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
 
-        print(oe1.loc[:,pst.nnz_obs_names].std())
-        print(oe2.loc[:,pst.nnz_obs_names].std())
+    #print(oe1.loc[:,pst.nnz_obs_names].std())
+    #print(oe2.loc[:,pst.nnz_obs_names].std())
 
-        # pyemu.plot_utils.ensemble_res_1to1(oe1,pst,filename=os.path.join("temp","e1to1.pdf"))
-        #
-        # pyemu.plot_utils.ensemble_res_1to1({"0.5":oe1,"b":oe2},pst,filename=os.path.join("temp","e1to1.pdf"))
+    # pyemu.plot_utils.ensemble_res_1to1(oe1,pst,filename=os.path.join("temp","e1to1.pdf"))
+    #
+    # pyemu.plot_utils.ensemble_res_1to1({"0.5":oe1,"b":oe2},pst,filename=os.path.join("temp","e1to1.pdf"))
 
-        pyemu.plot_utils.ensemble_res_1to1(
-            {"0.5": oe1, "b": oe2},
-            pst,
-            filename="e1to1_noise.pdf",
-            base_ensemble=oe_base
-        )
-        pyemu.plot_utils.ensemble_res_1to1(
-            {"0.5": oe1, "b": oe2},
-            pst,
-            filename="e1to1_noise2.pdf",
-            base_ensemble=oe_base2
-        )
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1, "b": oe2},
+        pst,
+        filename="e1to1_noise.pdf",
+        base_ensemble=oe_base
+    )
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1, "b": oe2},
+        pst,
+        filename="e1to1_noise2.pdf",
+        base_ensemble=oe_base2
+    )
 
-        pyemu.plot_utils.ensemble_res_1to1(
-            {"0.5": oe1 + 10, "b": oe2 + 10},
-            pst,
-            filename="e1to1_noise3.pdf",
-            base_ensemble=oe_base2
-        )
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1 + 10, "b": oe2 + 10},
+        pst,
+        filename="e1to1_noise3.pdf",
+        base_ensemble=oe_base2
+    )
 
-        pyemu.plot_utils.ensemble_res_1to1(
-            {"0.5": oe1 + 10, "b": oe2},
-            pst,
-            filename="e1to1_noise4.pdf",
-            base_ensemble=oe_base2
-        )
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1 + 10, "b": oe2},
+        pst,
+        filename="e1to1_noise4.pdf",
+        base_ensemble=oe_base2
+    )
 
-        pyemu.plot_utils.ensemble_res_1to1(
-            {"0.5": oe1 * -10, "b": oe2*-10},
-            pst,
-            filename="e1to1_noise4.pdf",
-            base_ensemble=oe_base2
-        )
-        pst.observation_data.loc[:, 'o_obgnme'] = pst.observation_data.obgnme
-        pst.observation_data.loc[pst.nnz_obs_names[0], 'obgnme'] = 'solo1'
-        pst.observation_data.loc[pst.nnz_obs_names[-1], 'obgnme'] = 'solo2'
-        pyemu.plot_utils.ensemble_res_1to1(
-            {"0.5": oe1 * -10, "b": oe2*-10},
-            pst,
-            filename="e1to1_noise5.pdf",
-            base_ensemble=oe_base2
-        )
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1 * -10, "b": oe2*-10},
+        pst,
+        filename="e1to1_noise4.pdf",
+        base_ensemble=oe_base2
+    )
+    pst.observation_data.loc[:, 'o_obgnme'] = pst.observation_data.obgnme
+    pst.observation_data.loc[pst.nnz_obs_names[0], 'obgnme'] = 'solo1'
+    pst.observation_data.loc[pst.nnz_obs_names[-1], 'obgnme'] = 'solo2'
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1 * -10, "b": oe2*-10},
+        pst,
+        filename="e1to1_noise5.pdf",
+        base_ensemble=oe_base2
+    )
 
-        pyemu.plot_utils.ensemble_res_1to1(
-            {"0.5": oe1+1, "b": oe2},
-            pst,
-            filename="e1to1_noise6.pdf"
-        )
+    pyemu.plot_utils.ensemble_res_1to1(
+        {"0.5": oe1+1, "b": oe2},
+        pst,
+        filename="e1to1_noise6.pdf"
+    )
 
-        pst.observation_data.loc[:, 'obgnme'] = pst.observation_data.o_obgnme
-        pyemu.plot_utils.res_phi_pie(pst=pst,ensemble=oe1)
-        pyemu.plot_utils.res_1to1(pst=pst, ensemble=oe1)
-    except Exception as e:
-        os.chdir(bd)
-        raise e
+    pst.observation_data.loc[:, 'obgnme'] = pst.observation_data.o_obgnme
+    pyemu.plot_utils.res_phi_pie(pst=pst,ensemble=oe1)
+    pyemu.plot_utils.res_1to1(pst=pst, ensemble=oe1)
+    #except Exception as e:
+    #    os.chdir(bd)
+    #    raise e
     os.chdir(bd)
 
 
@@ -359,11 +360,11 @@ def ensemble_change_test(tmp_path):
     os.chdir(bd)
 
 if __name__ == "__main__":
-    # plot_summary_test()
+    plot_summary_test('.')
     # pst_plot_test()
-    #ensemble_summary_test()
+    #ensemble_summary_test('.')
     #ensemble_plot_test()
-    ensemble_1to1_test()
-    #
-    #ensemble_change_test()
+    #ensemble_1to1_test('.')
+    #ensemble_plot_test('.')
+    #ensemble_change_test('.')
 

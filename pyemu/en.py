@@ -1175,7 +1175,7 @@ class ParameterEnsemble(Ensemble):
         # gaussian
         pes = []
         if len(how_groups["gaussian"]) > 0:
-            gset = set(how_groups["gaussian"])
+            gset = how_groups["gaussian"]
             par_gaussian = par_org.loc[gset, :]
             # par_gaussian.sort_values(by="parnme", inplace=True)
             par_gaussian.sort_index(inplace=True)
@@ -1184,7 +1184,7 @@ class ParameterEnsemble(Ensemble):
             if cov is not None:
                 cset = set(cov.row_names)
                 # gset = set(how_groups["gaussian"])
-                diff = gset.difference(cset)
+                diff = set(gset).difference(cset)
                 assert len(diff) == 0, (
                     "ParameterEnsemble.from_mixed_draws() error: the 'cov' is not compatible with "
                     + " the parameters listed as 'gaussian' in how_dict, the following are not in the cov:{0}".format(
@@ -1272,7 +1272,7 @@ class ParameterEnsemble(Ensemble):
             # check for scale differences - I don't who is dumb enough
             # to change scale between par files and pst...
             diff = df.scale - pst.parameter_data.scale
-            if diff.apply(np.abs).sum() > 0.0:
+            if diff.abs().sum() > 0.0:
                 warnings.warn(
                     "differences in scale detected, applying scale in par file",
                     PyemuWarning,
@@ -1545,7 +1545,7 @@ class ParameterEnsemble(Ensemble):
         else:
             raise Exception(
                 "unrecognized enforce_bounds arg:"
-                + "{0}, should be 'reset' or 'drop'".format(enforce_bounds)
+                + "{0}, should be 'reset' or 'drop'".format(how)
             )
 
     def _enforce_scale(self, bound_tol):
@@ -1604,6 +1604,7 @@ class ParameterEnsemble(Ensemble):
 
             if lbnd_facs.shape[0] > 0:
                 lmin = lbnd_facs.min()
+                # print(lbnd_facs)
                 lmin_idx = lbnd_facs.idxmin()
                 print(
                     "enforce_scale lbnd controlling parameter, scale factor, "

@@ -1315,17 +1315,16 @@ def setup_sft_obs(sft_file, ins_file=None, start_datetime=None, times=None, ncom
     idx = df.time.apply(lambda x: x in times)
     if start_datetime is not None:
         start_datetime = pd.to_datetime(start_datetime)
-        df.loc[:, "time_str"] = pd.to_timedelta(df.time, unit="d") + start_datetime
-        df.loc[:, "time_str"] = df.time_str.apply(
-            lambda x: datetime.strftime(x, "%Y%m%d")
-        )
+        df["time_str"] = pd.to_timedelta(df.time, unit="d") + start_datetime
+        df["time_str"] = df.time_str.dt.strftime("%Y%m%d")
+        # print(df.time_str)
     else:
-        df.loc[:, "time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
-    df.loc[:, "ins_str"] = "l1\n"
+        df["time_str"] = df.time.apply(lambda x: f"{x:08.2f}")
+    df["ins_str"] = "l1\n"
     # check for multiple components
-    df_times = df.loc[idx, :]
+    # df_times = df.loc[idx, :]
     df.loc[:, "icomp"] = 1
-    icomp_idx = list(df.columns).index("icomp")
+    # icomp_idx = list(df.columns).index("icomp")
     for t in times:
         df_time = df.loc[df.time == t, :].copy()
         vc = df_time.sfr_node.value_counts()
@@ -1347,6 +1346,8 @@ def setup_sft_obs(sft_file, ins_file=None, start_datetime=None, times=None, ncom
             ),
             axis=1,
         )
+        #print(df)
+        #print(df.ins_str)
     df.index = np.arange(df.shape[0])
     if ins_file is None:
         ins_file = sft_file + ".processed.ins"
@@ -2556,14 +2557,12 @@ def setup_gage_obs(gage_file, ins_file=None, start_datetime=None, times=None):
     if start_datetime is not None:
         # convert times to usable observation times
         start_datetime = pd.to_datetime(start_datetime)
-        df.loc[:, "time_str"] = pd.to_timedelta(df.time, unit="d") + start_datetime
-        df.loc[:, "time_str"] = df.time_str.apply(
-            lambda x: datetime.strftime(x, "%Y%m%d")
-        )
+        df["time_str"] = pd.to_timedelta(df.time, unit="d") + start_datetime
+        df["time_str"] = df.time_str.dt.strftime("%Y%m%d")
     else:
-        df.loc[:, "time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
+        df["time_str"] = df.time.apply(lambda x: f"{x:08.2f}")
     # set up instructions (line feed for lines without obs (not in time)
-    df.loc[:, "ins_str"] = "l1\n"
+    df["ins_str"] = "l1\n"
     df_times = df.loc[idx, :]  # Slice by desired times
     # TODO include GAGE No. in obs name (if permissible)
     df.loc[df_times.index, "ins_str"] = df_times.apply(
