@@ -1,0 +1,166 @@
+pcf
+* control data
+restart estimation
+#NPAR NOBS NPARGP NPRIOR NOBSGP [MAXCOMPDIM][DERZEROLIM]
+72 13 16 0 7
+#NTPLFLE NINSFLE PRECIS DPOINT [NUMCOM][JACFILE] [MESSFILE] [OBSREREF]
+14 5 single point 1 0 0
+5.000000e+001 -2.000000e+000 3.000000e-001 1.000000e-003 15 0 lamforgive derforgive
+1.000000e+001 3.000000e+000 1.000000e-003
+1.000000e-001 noaui senreuse noboundscale
+0 1.000000e-004 3 3 1.000000e-002 3
+0 0 0 0 jcosave noverboserec jcosaveitn reisaveitn parsaveitn
+* singular value decomposition
+0
+50 5.000000e-007
+1
+* parameter groups
+real relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+hsu_thk relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+top_elev relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+chd_hd relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+kxy relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+va relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+neff relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+pit_geom relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+brn_rt relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+cnc relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+rch_rate relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+disp relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+hdi relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+drhodc relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+ss relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+sy relative 1.000000e-002 0.000000e+000 switch 2.000000e+000 parabolic
+* parameter data
+#PARNAME PARTRANS PARCHGLIM PARVAL1 PARLBND PARUBND PARGP SCALE OFFSET DERCOM
+brn_rt fixed factor 6.0000E+05 3.0000E+05 9.0000E+05 brn_rt 1.00 0.00 1
+chd_hd1 fixed factor 3.4000E+02 3.2000E+02 3.5000E+02 chd_hd 1.00 0.00 1
+chd_hd2 none factor 3.0000E+01 1.0000E+01 5.0000E+01 chd_hd -1.00 0.00 1
+chd_hd3 none factor 5.0000E+00 0.0000E+00 1.0000E+01 chd_hd 1.00 -5.00 1
+chd_hd4 tied factor 5.0000E+00 0.0000E+00 1.0000E+01 chd_hd 1.00 -5.00 1
+chd_hd5 none factor 5.0000E+00 0.0000E+00 1.0000E+01 chd_hd 1.00 -5.00 1
+chd_hd6 tied factor 5.0000E+00 0.0000E+00 1.0000E+01 chd_hd 1.00 -5.00 1
+chd_cnc1 fixed factor 3.0000E+02 0.0000E+00 1.0000E+03 cnc 1.00 0.00 1
+chd_cnc2 fixed factor 3.0000E+02 0.0000E+00 1.0000E+03 cnc 1.00 0.00 1
+chd_cnc3 fixed factor 3.0000E+02 0.0000E+00 1.0000E+03 cnc 1.00 0.00 1
+chd_cnc4 fixed factor 3.0000E+02 0.0000E+00 1.0000E+03 cnc 1.00 0.00 1
+chd_cnc5 fixed factor 3.0000E+02 0.0000E+00 1.0000E+03 cnc 1.00 0.00 1
+chd_cnc6 fixed factor 3.0000E+02 0.0000E+00 1.0000E+03 cnc 1.00 0.00 1
+rch_cnc1 fixed factor 3.0000E+02 0.0000E+00 1.0000E+03 cnc 1.00 0.00 1
+rch_cnc10 fixed factor 3.0000E+02 0.0000E+00 1.0000E+03 cnc 1.00 0.00 1
+brn_cnc log factor 5.7500E+04 1.5000E+04 1.0000E+05 cnc 1.00 0.00 1
+br_cnc fixed factor 3.0000E+02 1.0000E+00 2.0000E+03 cnc 1.00 0.00 1
+top_elev fixed factor 3.2500E+02 3.0000E+02 4.0000E+02 top_elev 1.00 0.00 1
+hsu_thk1 none factor 2.6408E-02 3.5211E-03 5.2817E-02 hsu_thk 1.00 0.00 1
+hsu_thk2 none factor 2.6408E-02 1.7606E-02 3.5211E-02 hsu_thk 1.00 0.00 1
+hsu_thk3 none factor 1.4085E-02 1.0000E-04 1.7606E-01 hsu_thk 1.00 0.00 1
+hsu_thk4 none factor 1.9366E-01 1.5845E-01 2.2887E-01 hsu_thk 1.00 0.00 1
+hsu_thk5 none factor 3.5211E-02 1.0000E-04 1.0563E-01 hsu_thk 1.00 0.00 1
+hsu_thk6 fixed factor 7.0423E-01 7.0000E-01 7.3944E-01 hsu_thk 1.00 0.00 1
+kxy1 log factor 7.8475E-02 7.8475E-03 7.8475E-01 kxy 1.00 0.00 1
+kxy2 log factor 3.4180E-01 3.4180E-02 3.4180E+00 kxy 1.00 0.00 1
+kxy3 log factor 6.1681E-02 6.1681E-03 6.1681E-01 kxy 1.00 0.00 1
+kxy4 log factor 9.7976E-03 9.7976E-04 9.7976E-02 kxy 1.00 0.00 1
+kxy5 log factor 8.6058E-01 8.6058E-02 8.6058E+00 kxy 1.00 0.00 1
+kxy6 log factor 1.6235E-04 1.6235E-05 1.6235E-03 kxy 1.00 0.00 1
+kxy10 log factor 1.2557E-06 1.2557E-07 1.2557E-05 kxy 1.00 0.00 1
+neff1 none factor 2.0000E-01 6.0000E-02 2.5000E-01 neff 1.00 0.00 1
+neff2 none factor 2.0000E-01 6.0000E-02 2.5000E-01 neff 1.00 0.00 1
+neff3 none factor 2.0000E-01 6.0000E-02 2.1000E-01 neff 1.00 0.00 1
+neff4 none factor 1.0000E-01 6.0000E-02 2.0000E-01 neff 1.00 0.00 1
+neff5 none factor 2.0000E-01 1.5000E-01 3.0000E-01 neff 1.00 0.00 1
+neff6 none factor 2.0000E-01 1.3000E-01 2.2000E-01 neff 1.00 0.00 1
+neff10 none factor 2.0000E-01 1.0000E-01 3.0000E-01 neff 1.00 0.00 1
+pit_ln fixed factor 1.2000E+03 9.6000E+02 1.4400E+03 pit_geom 1.00 0.00 1
+pit_wd fixed factor 2.0000E+03 1.6000E+03 2.4000E+03 pit_geom 1.00 0.00 1
+pit_dp fixed factor 7.5000E+01 6.0000E+01 9.0000E+01 pit_geom 1.00 0.00 1
+rch_rate1 none factor 3.0137E-05 1.3699E-05 7.1233E-05 rch_rate 1.00 0.00 1
+rch_rate10 fixed factor 0.0000E+00 0.0000E+00 8.2192E-05 rch_rate 1.00 0.00 1
+real none factor 1.0000E+00 0.0000E+00 9.9999E+04 real 1.00 0.00 1
+va1 log factor 1.0000E-01 1.0000E-02 1.0000E+00 va 1.00 0.00 1
+va2 log factor 1.0000E-01 1.0000E-02 1.0000E+00 va 1.00 0.00 1
+va3 log factor 1.0000E-01 1.0000E-02 1.0000E+00 va 1.00 0.00 1
+va4 log factor 1.0000E-01 1.0000E-02 1.0000E+00 va 1.00 0.00 1
+va5 log factor 1.0000E-01 1.0000E-02 1.0000E+00 va 1.00 0.00 1
+va6 log factor 1.0000E-01 1.0000E-02 1.0000E+00 va 1.00 0.00 1
+va10 log factor 1.0000E-01 1.0000E-02 1.0000E+00 va 1.00 0.00 1
+diffc log factor 1.7539E-04 8.7696E-05 3.5078E-04 disp 1.00 0.00 1
+alh log factor 1.0000E+02 1.0000E-01 2.0000E+02 disp 1.00 0.00 1
+ath1 log factor 1.0000E-01 1.0000E-02 1.0000E+00 disp 1.00 0.00 1
+ath2 log factor 1.0000E-01 1.0000E-02 1.0000E+00 disp 1.00 0.00 1
+hdi_frsh fixed factor 3.2500E+02 3.2000E+02 3.3000E+02 hdi 1.00 0.00 1
+hdi_brn none factor 8.2500E+02 3.2500E+02 1.3250E+03 hdi 1.00 0.00 1
+drhodc fixed factor 6.9000E-01 6.0000E-01 8.0000E-01 drhodc 1.00 0.00 1
+ss1 log factor 1.0000E-05 1.0000E-06 1.0000E-04 ss 1.00 0.00 1
+ss2 log factor 1.0000E-05 1.0000E-06 1.0000E-04 ss 1.00 0.00 1
+ss3 log factor 1.0000E-05 1.0000E-06 1.0000E-04 ss 1.00 0.00 1
+ss4 log factor 1.0000E-05 1.0000E-06 1.0000E-04 ss 1.00 0.00 1
+ss5 log factor 1.0000E-05 1.0000E-06 1.0000E-04 ss 1.00 0.00 1
+ss6 log factor 1.0000E-05 1.0000E-06 1.0000E-04 ss 1.00 0.00 1
+ss10 log factor 1.0000E-05 1.0000E-06 1.0000E-04 ss 1.00 0.00 1
+sy1 tied factor 2.0000E-01 6.0000E-02 2.5000E-01 sy 1.00 0.00 1
+sy2 tied factor 2.0000E-01 6.0000E-02 2.5000E-01 sy 1.00 0.00 1
+sy3 tied factor 2.0000E-01 6.0000E-02 2.1000E-01 sy 1.00 0.00 1
+sy4 tied factor 1.0000E-01 6.0000E-02 2.0000E-01 sy 1.00 0.00 1
+sy5 tied factor 2.0000E-01 1.5000E-01 3.0000E-01 sy 1.00 0.00 1
+sy6 tied factor 2.0000E-01 1.3000E-01 2.2000E-01 sy 1.00 0.00 1
+sy10 tied factor 2.0000E-01 1.0000E-01 3.0000E-01 sy 1.00 0.00 1
+chd_hd4 chd_hd3
+chd_hd6 chd_hd5
+sy1 neff1
+sy2 neff2
+sy3 neff3
+sy4 neff4
+sy5 neff5
+sy6 neff6
+sy10 neff10
+* observation groups
+calc_obs
+real
+mass_balance
+zb_trns
+cnc_ext
+cnc_mx_wt
+cnc_mx_tls
+* observation data
+pit_a 0.00E+00 0.00E+00 calc_obs
+pit_vol 0.00E+00 0.00E+00 calc_obs
+pit_bttm 0.00E+00 0.00E+00 calc_obs
+brn_vol 0.00E+00 0.00E+00 calc_obs
+brn_pore_vol 0.00E+00 0.00E+00 calc_obs
+prc_brn_pit_vol 0.00E+00 0.00E+00 calc_obs
+brn_top 0.00E+00 0.00E+00 calc_obs
+brn_dns 0.00E+00 0.00E+00 calc_obs
+real 0.000E+00 0.000E+00 real
+flow_mbe_fnl 0.000E+00 0.000E+00 mass_balance
+trns_mbe_fnl 0.000E+00 0.000E+00 mass_balance
+cnc_mx_wt_fnl 0.00000000E+00 0.00000000E+00 cnc_mx_wt
+cnc_mx_tls_fnl 0.00000000E+00 0.00000000E+00 cnc_mx_tls
+* model command line
+model_runner.bat
+* model input/output
+real.dat.tpl real.dat
+top_elev.dat.tpl top_elev.dat
+hsu_thk.dat.tpl hsu_thk.dat
+chd_hd.dat.tpl chd_hd.dat
+kxy_va.dat.tpl kxy_va.dat
+pit_geom.dat.tpl pit_geom.dat
+conc.dat.tpl conc.dat
+brn_rt.dat.tpl brn_rt.dat
+neff.dat.tpl neff.dat
+rch_rate.dat.tpl rch_rate.dat
+disp.dat.tpl disp.dat
+hdi.dat.tpl hdi.dat
+drhodc.dat.tpl drhodc.dat
+sto.dat.tpl sto.dat
+calc_obs.out.ins calc_obs.out
+pnthr_real.out.ins pnthr_real.out
+trns_mbe.out.ins trns_mbe.out
+flow_mbe.out.ins flow_mbe.out
+compiled_obs.out.ins compiled_obs.out
+++ies_num_reals(1000)
+++sweep_parameter_csv_file(swp_input.csv)
+++sweep_chunk(10000)
+++overdue_giveup_fac(100)
+++overdue_giveup_minutes(40)
+++panther_agent_freeze_on_fail(False)
