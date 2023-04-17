@@ -2111,6 +2111,21 @@ def _process_list_file(model_file, df):
     # print("org_data columns:", org_data.columns)
     # print("org_data shape:", org_data.shape)
     new_df = org_data.copy()
+    def index_caster(x,add1):
+        vals = []
+        for xx in x.strip("()").replace('\'','').split(","):
+            if xx:
+                print(xx)
+                if xx.strip().isdigit() or (xx.strip()[0] == '-' and xx.strip()[1:].isdigit()):
+                    vals.append(add1 + int(xx))
+                else:
+                    try:
+                        vals.append(float(xx))
+                    except Exception as e:
+                        vals.append(xx.strip().strip("'\" "))
+
+        return tuple(vals)
+
     for mlt in df_mf.itertuples():
         new_df.loc[:, mlt.index_cols] = new_df.loc[:, mlt.index_cols].apply(
             pd.to_numeric, errors='ignore', downcast='integer')
@@ -2139,13 +2154,10 @@ def _process_list_file(model_file, df):
             # mult idxs will always be written zero based if int
             # if original model files is not zero based need to add 1
             add1 = int(mlt.zero_based == False)
+            
             mlts.index = pd.MultiIndex.from_tuples(
                 mlts.sidx.apply(
-                    lambda x: [
-                        add1 + int(xx) if xx.strip().isdigit() else xx.strip("'\" ")
-                        for xx in x.strip("()").split(",")
-                        if xx
-                    ]
+                    lambda x: index_caster(x,add1)
                 ),
                 names=mlt.index_cols,
             )
