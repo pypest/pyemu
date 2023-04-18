@@ -2047,6 +2047,23 @@ def _process_chunk_list_files(chunk, i, df):
     print("process", i, " processed ", len(chunk), "process_list_file calls")
 
 
+def _list_index_caster(x,add1):
+        vals = []
+        for xx in x:
+            if xx:
+                if xx.strip().isdigit() or (xx.strip()[0] == '-' and xx.strip()[1:].isdigit()):
+                    vals.append(add1 + int(xx))
+                else:
+                    try:
+                        vals.append(float(xx))
+                    except Exception as e:
+                        vals.append(xx.strip().strip("'\" "))
+
+        return tuple(vals)
+
+def _list_index_splitter_and_caster(x,add1):
+    return _list_index_caster(x.strip("()").replace('\'','').split(","),add1)
+
 def _process_list_file(model_file, df):
 
     # print("processing model file:", model_file)
@@ -2111,6 +2128,7 @@ def _process_list_file(model_file, df):
     # print("org_data columns:", org_data.columns)
     # print("org_data shape:", org_data.shape)
     new_df = org_data.copy()
+
     for mlt in df_mf.itertuples():
         new_df.loc[:, mlt.index_cols] = new_df.loc[:, mlt.index_cols].apply(
             pd.to_numeric, errors='ignore', downcast='integer')
@@ -2139,13 +2157,10 @@ def _process_list_file(model_file, df):
             # mult idxs will always be written zero based if int
             # if original model files is not zero based need to add 1
             add1 = int(mlt.zero_based == False)
+
             mlts.index = pd.MultiIndex.from_tuples(
                 mlts.sidx.apply(
-                    lambda x: [
-                        add1 + int(xx) if xx.strip().isdigit() else xx.strip("'\" ")
-                        for xx in x.strip("()").split(",")
-                        if xx
-                    ]
+                    lambda x: _list_index_splitter_and_caster(x,add1)
                 ),
                 names=mlt.index_cols,
             )
@@ -2154,6 +2169,8 @@ def _process_list_file(model_file, df):
             common_idx = (
                 new_df.index.intersection(mlts.index).sort_values().drop_duplicates()
             )
+            if common_idx.shape[0] == 0:
+                raise Exception("error: common_idx is empty")
             mlt_cols = [str(col) for col in mlt.use_cols]
             assert len(common_idx) * len(mlt_cols) == mlt.chkpar, (
                 "probable miss-alignment in tpl indices and original file:\n"

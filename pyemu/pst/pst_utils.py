@@ -32,7 +32,6 @@ def str_con(item):
         return np.NaN
     return item.lower().strip()
 
-
 pst_config = {}
 
 # parameter stuff
