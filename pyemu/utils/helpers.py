@@ -2047,6 +2047,23 @@ def _process_chunk_list_files(chunk, i, df):
     print("process", i, " processed ", len(chunk), "process_list_file calls")
 
 
+def _list_index_caster(x,add1):
+        vals = []
+        for xx in x:
+            if xx:
+                if xx.strip().isdigit() or (xx.strip()[0] == '-' and xx.strip()[1:].isdigit()):
+                    vals.append(add1 + int(xx))
+                else:
+                    try:
+                        vals.append(float(xx))
+                    except Exception as e:
+                        vals.append(xx.strip().strip("'\" "))
+
+        return tuple(vals)
+
+def _list_index_splitter_and_caster(x,add1):
+    return _list_index_caster(x.strip("()").replace('\'','').split(","),add1)
+
 def _process_list_file(model_file, df):
 
     # print("processing model file:", model_file)
@@ -2111,20 +2128,6 @@ def _process_list_file(model_file, df):
     # print("org_data columns:", org_data.columns)
     # print("org_data shape:", org_data.shape)
     new_df = org_data.copy()
-    def index_caster(x,add1):
-        vals = []
-        for xx in x.strip("()").replace('\'','').split(","):
-            if xx:
-                print(xx)
-                if xx.strip().isdigit() or (xx.strip()[0] == '-' and xx.strip()[1:].isdigit()):
-                    vals.append(add1 + int(xx))
-                else:
-                    try:
-                        vals.append(float(xx))
-                    except Exception as e:
-                        vals.append(xx.strip().strip("'\" "))
-
-        return tuple(vals)
 
     for mlt in df_mf.itertuples():
         new_df.loc[:, mlt.index_cols] = new_df.loc[:, mlt.index_cols].apply(
@@ -2154,10 +2157,10 @@ def _process_list_file(model_file, df):
             # mult idxs will always be written zero based if int
             # if original model files is not zero based need to add 1
             add1 = int(mlt.zero_based == False)
-            
+
             mlts.index = pd.MultiIndex.from_tuples(
                 mlts.sidx.apply(
-                    lambda x: index_caster(x,add1)
+                    lambda x: _list_index_splitter_and_caster(x,add1)
                 ),
                 names=mlt.index_cols,
             )
