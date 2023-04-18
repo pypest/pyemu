@@ -3637,8 +3637,9 @@ def _get_tpl_or_ins_df(
         sidx = set()
         for df in dfs:
             # looses ordering
-            vals = [df.loc[:,i].values for i in index_cols]
-            didx = set([v for v in zip(*vals)])
+            #vals = [df.loc[:,i].values for i in index_cols]
+            #didx = set([v for v in zip(*vals)])
+            didx = set(df.loc[:, index_cols].apply(tuple, axis=1))
             sidx.update(didx)
     else:
         # order matters for obs

@@ -4808,7 +4808,7 @@ def list_float_int_index_test():
     
     #print(os.getcwd())
     df = pd.read_csv(os.path.join(org_d,"ppoints.faults.csv"))
-    pf = pyemu.utils.PstFrom(original_d=org_d, new_d="list_temp_new",remove_existing=True)
+    pf = pyemu.utils.PstFrom(original_d=org_d, new_d="list_temp_new",remove_existing=True,zero_based=False)
     pf.add_parameters(filenames="ppoints.faults.csv",
                      par_type="grid",
                      par_name_base=["kh","ss","sy","w","a"],
@@ -4870,6 +4870,7 @@ if __name__ == "__main__":
     #vertex_grid_test()
     #direct_quickfull_test()
     list_float_int_index_test()
+    #freyberg_test()
     
 
 
