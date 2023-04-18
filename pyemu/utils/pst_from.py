@@ -2655,6 +2655,7 @@ class PstFrom(object):
                 "upper_bound": ult_ubound,
                 "lower_bound": ult_lbound,
                 "operator": par_style,
+                "chkpar": len(df)
             }
             if par_style in ["m", "a"]:
                 mult_dict["mlt_file"] = Path(self.mult_file_d.name, mlt_filename)

@@ -2155,6 +2155,12 @@ def _process_list_file(model_file, df):
                 new_df.index.intersection(mlts.index).sort_values().drop_duplicates()
             )
             mlt_cols = [str(col) for col in mlt.use_cols]
+            assert len(common_idx) * len(mlt_cols) == mlt.chkpar, (
+                "probable miss-alignment in tpl indices and original file:\n"
+                f"mult idx[:10] : {mlts.index.values.tolist()[:10]}\n"
+                f"org file idx[:10]: {new_df.index.value[:10]}\n"
+                f"n common: {len(common_idx)}, n cols: {len(mlt_cols)}"
+            )
             operator = mlt.operator
             if operator == "*" or operator.lower()[0] == "m":
                 new_df.loc[common_idx, mlt_cols] = \
