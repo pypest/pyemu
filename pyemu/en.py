@@ -1226,7 +1226,7 @@ class ParameterEnsemble(Ensemble):
                 df.loc[:, p] = v
 
         for pe in pes:
-            df.loc[pe.index, pe.columns] = pe
+            df.loc[pe.index, pe.columns] = pe._df
 
         # this dropna covers both "fill" and "partial"
         df = df.dropna(axis=1)

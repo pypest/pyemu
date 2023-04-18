@@ -4798,6 +4798,50 @@ def test_defaults(tmp_path):
     os.chdir(bd)
 
 
+def list_float_int_index_test():
+    
+    org_d = "list_temp"
+    if os.path.exists(org_d):
+        shutil.rmtree(org_d)
+    os.makedirs(org_d)
+    shutil.copy2(os.path.join("utils","ppoints.faults.csv"),os.path.join(org_d,"ppoints.faults.csv"))
+    
+    #print(os.getcwd())
+    df = pd.read_csv(os.path.join(org_d,"ppoints.faults.csv"))
+    pf = pyemu.utils.PstFrom(original_d=org_d, new_d="list_temp_new",remove_existing=True,zero_based=False)
+    pf.add_parameters(filenames="ppoints.faults.csv",
+                     par_type="grid",
+                     par_name_base=["kh","ss","sy","w","a"],
+                     pargp=["kh","ss","sy","w","a"],
+                     index_cols=["x","y","zone"],
+                     use_cols=["kh","ss","sy","w","a"],
+                      lower_bound=[0.01,0.1,0.2,0.5],
+                      upper_bound=[1.5,2,4,5])
+    pf.add_observations(filename="ppoints.faults.csv",
+                     index_cols=["x","y","zone"],
+                     use_cols=["kh","ss","sy","w","a"])
+    pst = pf.build_pst()
+    par = pst.parameter_data
+
+    assert par.shape[0] == df.shape[0] * 5
+    obs = pst.observation_data
+    assert obs.shape[0] == df.shape[0] * 5
+    #pf.parfile_relations.to_csv(os.path.join(pf.new_d,"mult2model_info.csv"))
+    par.loc[par.parnme.str.contains("kh"),"parval1"] = 0.1
+    print(par.loc[par.parnme.str.contains("kh"),"parval1"])
+    pst.write_input_files(pf.new_d)
+    bd = os.getcwd()
+    os.chdir(pf.new_d)
+    pyemu.helpers.apply_list_and_array_pars(chunk_len=1000)
+    os.chdir(bd)
+    df1 = pd.read_csv(os.path.join(pf.new_d, "ppoints.faults.csv"))
+    diff = df1.kh/df.kh.values
+    diff_sum = np.abs((diff - par.loc[par.parnme.str.contains("kh"),"parval1"].values).sum())
+    print(diff_sum)
+    assert diff_sum < 1.0e-7
+
+
+
 if __name__ == "__main__":
     # mf6_freyberg_pp_locs_test()
     # invest()
@@ -4824,7 +4868,9 @@ if __name__ == "__main__":
     # mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test()
     #vertex_grid_test()
-    direct_quickfull_test()
+    #direct_quickfull_test()
+    list_float_int_index_test()
+    #freyberg_test()
     
 
 
