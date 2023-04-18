@@ -2169,6 +2169,8 @@ def _process_list_file(model_file, df):
             common_idx = (
                 new_df.index.intersection(mlts.index).sort_values().drop_duplicates()
             )
+            if common_idx.shape[0] == 0:
+                raise Exception("error: common_idx is empty")
             mlt_cols = [str(col) for col in mlt.use_cols]
             operator = mlt.operator
             if operator == "*" or operator.lower()[0] == "m":
