@@ -1383,7 +1383,7 @@ class OrdinaryKrige(object):
             if self.interp_data is None:
                 self.interp_data = df
             else:
-                self.interp_data = self.interp_data.append(df)
+                self.interp_data = pd.concat([self.interp_data, df])
         # correct for negative kriging factors, if requested
         if remove_negative_factors == True:
             self._remove_neg_factors()
