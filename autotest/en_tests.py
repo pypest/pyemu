@@ -711,7 +711,7 @@ if __name__ == "__main__":
     #deviations_test()
     # as_pyemu_matrix_test()
     # dropna_test()
-    #enforce_test()
+    enforce_test()
     #pnulpar_test()
     # triangular_draw_test()
     # uniform_draw_test()

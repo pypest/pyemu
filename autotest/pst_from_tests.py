@@ -555,6 +555,12 @@ def freyberg_prior_build_test(tmp_path):
                           par_name_base="welflux_grid",
                           zone_array=m.bas6.ibound.array,
                           geostruct=geostruct, lower_bound=0.25, upper_bound=1.75)
+        pf.add_parameters(filenames=well_mfiles,
+                          par_type="grid", index_cols=[0, 1, 2], use_cols=3,
+                          par_name_base="welflux_grid",
+                          zone_array=m.bas6.ibound.array,
+                          use_rows=(1, 3, 4),
+                          geostruct=geostruct, lower_bound=0.25, upper_bound=1.75)
         # global constant across all files
         pf.add_parameters(filenames=well_mfiles,
                           par_type="constant",

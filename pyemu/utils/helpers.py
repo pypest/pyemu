@@ -2047,11 +2047,12 @@ def _process_chunk_list_files(chunk, i, df):
     print("process", i, " processed ", len(chunk), "process_list_file calls")
 
 
-def _list_index_caster(x,add1):
+def _list_index_caster(x, add1):
         vals = []
         for xx in x:
             if xx:
-                if xx.strip().isdigit() or (xx.strip()[0] == '-' and xx.strip()[1:].isdigit()):
+                if (xx.strip().isdigit() or
+                        (xx.strip()[0] == '-' and xx.strip()[1:].isdigit())):
                     vals.append(add1 + int(xx))
                 else:
                     try:
@@ -2061,11 +2062,12 @@ def _list_index_caster(x,add1):
 
         return tuple(vals)
 
-def _list_index_splitter_and_caster(x,add1):
-    return _list_index_caster(x.strip("()").replace('\'','').split(","),add1)
+
+def _list_index_splitter_and_caster(x, add1):
+    return _list_index_caster(x.strip("()").replace('\'', '').split(","), add1)
+
 
 def _process_list_file(model_file, df):
-
     # print("processing model file:", model_file)
     df_mf = df.loc[df.model_file == model_file, :].copy()
     # read data stored in org (mults act on this)
@@ -2110,7 +2112,7 @@ def _process_list_file(model_file, df):
         # index_cols can be from header str
         header = 0
         hheader = True
-    elif isinstance(index_col_eg, int):
+    elif isinstance(index_col_eg, (int, np.integer)):
         # index_cols are column numbers in input file
         header = None
         hheader = None
@@ -2169,9 +2171,14 @@ def _process_list_file(model_file, df):
             common_idx = (
                 new_df.index.intersection(mlts.index).sort_values().drop_duplicates()
             )
-            if common_idx.shape[0] == 0:
-                raise Exception("error: common_idx is empty")
             mlt_cols = [str(col) for col in mlt.use_cols]
+            assert len(common_idx) == mlt.chkpar, (
+                "Probable miss-alignment in tpl indices and original file:\n"
+                f"mult idx[:10] : {mlts.index.sort_values().tolist()[:10]}\n"
+                f"org file idx[:10]: {new_df.index.sort_values().to_list()[:10]}\n"
+                f"n common: {len(common_idx)}, n cols: {len(mlt_cols)}, "
+                f"expected: {mlt.chkpar}."
+            )
             operator = mlt.operator
             if operator == "*" or operator.lower()[0] == "m":
                 new_df.loc[common_idx, mlt_cols] = \
