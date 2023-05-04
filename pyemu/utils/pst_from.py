@@ -2645,7 +2645,7 @@ class PstFrom(object):
             zone_filename = zone_filename.name
 
         relate_parfiles = []
-        for mod_file, pdf in file_dict.items():
+        for mod_file in file_dict.keys():
             mult_dict = {
                 "org_file": Path(self.original_file_d.name, mod_file.name),
                 "model_file": mod_file,
