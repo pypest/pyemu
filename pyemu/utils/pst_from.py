@@ -3638,24 +3638,15 @@ def _get_tpl_or_ins_df(
         dfs = list(dfs)
 
     # work out the union of indices across all dfs
-    if typ != "obs":
-        sidx = set()
-        for df in dfs:
-            # looses ordering
-            #vals = [df.loc[:,i].values for i in index_cols]
-            #didx = set([v for v in zip(*vals)])
-            didx = set(df.loc[:, index_cols].apply(tuple, axis=1))
-            sidx.update(didx)
-    else:
-        # order matters for obs
-        sidx = []
-        for df in dfs:
-            didx = df.loc[:, index_cols].values
-            aidx = [i for i in didx if i not in sidx]
-            sidx.extend(aidx)
+    # order matters for obs
+    sidx = []
+    for df in dfs:
+        didx = list(zip(*[df[col] for col in index_cols]))
+        # didx = df.loc[:, index_cols].values
+        aidx = [i for i in didx if i not in sidx]
+        sidx.extend(aidx)
 
-
-    df_ti = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
+    df_ti = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
     inames, fmt = _get_index_strfmt(index_cols)
     df_ti = _get_index_strings(df_ti, fmt, zero_based)
     df_ti = _getxy_from_idx(df_ti, get_xy, xy_in_idx, ij_in_idx)
