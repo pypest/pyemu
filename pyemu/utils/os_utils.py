@@ -175,6 +175,7 @@ def start_workers(
     verbose=False,
     silent_master=False,
     reuse_master=False,
+    restart=False
 ):
     """start a group of pest(++) workers on the local machine
 
@@ -211,6 +212,8 @@ def start_workers(
         reuse_master (`bool`): flag to use an existing `master_dir` as is - this is an advanced user
             option for cases where you want to construct your own `master_dir` then have an async
             process started in it by this function.
+        restart (`bool`): flag to add a restart flag to the master start. If `True`, this will include
+            `/r` in the master call string.
 
     Notes:
         If all workers (and optionally master) exit gracefully, then the worker
@@ -273,8 +276,12 @@ def start_workers(
             _try_remove_existing(master_dir)
         if master_dir != "." and not reuse_master:
             _try_copy_dir(worker_dir, master_dir)
-
+        
         args = [exe_rel_path, pst_rel_path, "/h", ":{0}".format(port)]
+        if restart is True:
+            # add restart if requested
+            args = [exe_rel_path, pst_rel_path, "/h", "/r", ":{0}".format(port)]
+        
         if rel_path is not None:
             cwd = os.path.join(master_dir, rel_path)
         else:
