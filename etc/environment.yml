@@ -17,3 +17,4 @@ dependencies:
   - pytest-xdist
   - nbmake
   - shapely
+  - pyproj
