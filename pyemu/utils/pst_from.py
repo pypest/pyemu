@@ -3641,8 +3641,8 @@ def _get_tpl_or_ins_df(
     # order matters for obs
     sidx = []
     for df in dfs:
-        didx = list(zip(*[df[col] for col in index_cols]))
-        # didx = df.loc[:, index_cols].values
+        # avoiding df.values to prevent conversion to same type
+        didx = zip(*[df[col] for col in index_cols])
         aidx = [i for i in didx if i not in sidx]
         sidx.extend(aidx)
 
