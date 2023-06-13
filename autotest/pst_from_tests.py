@@ -4703,8 +4703,7 @@ def vertex_grid_test():
     pst.write(os.path.join(template_ws, 'test.pst'))
     os_utils.run("{0} test.pst".format(pp_exe_path), cwd=template_ws)
     pstchk = pyemu.Pst(os.path.join(template_ws,'test.pst'))
-    assert pstchk.phi < 1e-6
-
+    assert pstchk.phi < 1e-6, f"expected near zero phi: {pstchk.phi}"
 
     # check zone par bounds are respected
     par = pst.parameter_data
