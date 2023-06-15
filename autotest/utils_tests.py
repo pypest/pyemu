@@ -397,13 +397,19 @@ def write_tpl_test(tmp_path):
 
 def read_pestpp_runstorage_file_test():
     import os
+    import numpy as np
+    import pandas as pd
     import pyemu
-    rnj_file = os.path.join("utils","freyberg.rnj")
+
+    #rnj_file = os.path.join("utils","freyberg.rnj")
     #rnj_file = os.path.join("..", "..", "verification", "10par_xsec", "master_opt1","pest.rnj")
-    p1,o1 = pyemu.helpers.read_pestpp_runstorage(rnj_file)
-    p2,o2 = pyemu.helpers.read_pestpp_runstorage(rnj_file,9)
-    diff = p1 - p2
-    diff.sort_values("parval1",inplace=True)
+    rns_file = os.path.join("utils","runstor.rns")
+    p1,o1 = pyemu.helpers.read_pestpp_runstorage(rns_file,irun="all")
+    p2 = pd.read_csv(os.path.join("utils","runstor.0.par.csv"),index_col=0)
+
+    diff = np.abs(p1.loc[:,p2.columns].values - p2.values)
+    print(diff.max())
+    assert diff.max() < 1.0e-7
 
 def smp_to_ins_test(tmp_path):
     import os
@@ -2415,7 +2421,7 @@ def obs_ensemble_quantile_test():
 if __name__ == "__main__":
     #obs_ensemble_quantile_test()
     #geostat_draws_test("temp")
-    ac_draw_test("temp")
+    #ac_draw_test("temp")
     # maha_pdc_test()
     # rmr_parse_test()
     # temporal_draw_invest()
@@ -2426,7 +2432,7 @@ if __name__ == "__main__":
     # smp_test()
     # smp_dateparser_test()
     # smp_to_ins_test()
-    # read_runstor_test()
+    #read_runstor_test()
     # # long_names()
     # master_and_workers()
     # plot_id_bar_test()
@@ -2464,7 +2470,7 @@ if __name__ == "__main__":
     #first_order_pearson_regul_test('.')
     # master_and_workers()
     # smp_to_ins_test()
-    # read_pestpp_runstorage_file_test()
+    read_pestpp_runstorage_file_test()
     # write_tpl_test()
     #pp_to_shapefile_test(".")
     # read_pval_test()
