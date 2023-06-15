@@ -395,7 +395,7 @@ def write_tpl_test(tmp_path):
     pyemu.pst_utils.write_to_template(par_vals,tpl_file,in_file)
 
 
-def read_pestpp_runstorage_file_test():
+def read_pestpp_runstorage_file_test(tmp_path):
     import os
     import numpy as np
     import pandas as pd
@@ -2470,7 +2470,9 @@ if __name__ == "__main__":
     #first_order_pearson_regul_test('.')
     # master_and_workers()
     # smp_to_ins_test()
-    read_pestpp_runstorage_file_test()
+    #read_runstor_test(".")
+    #read_pestpp_runstorage_file_test()
+    jco_from_pestpp_runstorage_test(".")
     # write_tpl_test()
     #pp_to_shapefile_test(".")
     # read_pval_test()
