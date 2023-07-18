@@ -2421,7 +2421,7 @@ def obs_ensemble_quantile_test():
 if __name__ == "__main__":
     #obs_ensemble_quantile_test()
     #geostat_draws_test("temp")
-    #ac_draw_test("temp")
+    ac_draw_test("temp")
     # maha_pdc_test()
     # rmr_parse_test()
     # temporal_draw_invest()
@@ -2472,7 +2472,7 @@ if __name__ == "__main__":
     # smp_to_ins_test()
     #read_runstor_test(".")
     #read_pestpp_runstorage_file_test()
-    jco_from_pestpp_runstorage_test(".")
+    #jco_from_pestpp_runstorage_test(".")
     # write_tpl_test()
     #pp_to_shapefile_test(".")
     # read_pval_test()
