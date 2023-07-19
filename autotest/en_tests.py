@@ -150,6 +150,14 @@ def phi_vector_test():
         d = np.abs(pst.phi - pv.loc[real])
         assert d < 1.0e-10
 
+def get_phi_vector_noise_obs_test():
+    pst = pyemu.Pst('ends_master/freyberg6_run_ies.pst')
+    oe = pyemu.ObservationEnsemble.from_csv(pst, 'ends_master/freyberg6_run_ies.0.obs.csv')
+    phi = oe.phi_vector
+    phi_noise = oe.get_phi_vector_noise_obs(noise_obs_filename='ends_master/freyberg6_run_ies.obs+noise.csv')
+    assert phi.loc['base']==phi_noise['base']
+    assert (phi==phi_noise).sum() < len(phi)
+    
 def deviations_test():
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     num_reals = 10
@@ -711,7 +719,7 @@ if __name__ == "__main__":
     #deviations_test()
     # as_pyemu_matrix_test()
     # dropna_test()
-    enforce_test()
+    #enforce_test()
     #pnulpar_test()
     # triangular_draw_test()
     # uniform_draw_test()
@@ -719,9 +727,9 @@ if __name__ == "__main__":
     #factor_draw_test()
     #emp_cov_test()
     #emp_cov_draw_test()
-    mixed_par_draw_2_test()
+    #mixed_par_draw_2_test()
     #binary_test()
-
+    get_phi_vector_noise_obs_test()
 
 
 
