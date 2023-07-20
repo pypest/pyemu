@@ -873,36 +873,7 @@ class ObservationEnsemble(Ensemble):
                 phi += contrib
             phi_vec.append(phi)
         return pd.Series(data=phi_vec, index=self.index)
-    
-    # def get_phi_vector_noise_obs(self, noise_obs_filename=None):
-    #     """vector of L2 norm (phi) for the realizations (rows) of `Ensemble`. This
-    #         differs from `phi_vector` in that phi is calculated for each ensemble 
-    #         member with respect to the realization of observation noise for that 
-    #         ensemble member represented in the `noise_obs_filename` argument.
-
-    #     Args:
-    #         noise_obs_filename (_type_, string): Filename of csv or binary noise realizations
-    #                                             ensemble filename. If None, attemps to use the 
-    #                                             filename from the `pst` attribute of `self`.
-    #                                             Defaults to None.
-    #     Returns:
-    #         `pandas.Series`: series of realization name (`Ensemble.index`) and phi values
-        
-    #     """
-
-        
-    #     # now make the calculations
-    #     cols = self._df.columns
-    #     weights = self.pst.observation_data.loc[cols, "weight"]
-    #     phi_vec = []
-    #     for idx in self._df.index.values:
-    #         simval = self._df.loc[idx, cols]
-    #         obsval = noise_obs.loc[idx, cols]
-    #         phi = (((simval - obsval) * weights) ** 2).sum()
-    #         phi_vec.append(phi)
-    #     return pd.Series(data=phi_vec, index=self.index)
- 
-            
+               
     def add_base(self):
         """add the control file `obsval` values as a realization
 
