@@ -811,8 +811,8 @@ class ObservationEnsemble(Ensemble):
         """
         cols = self._df.columns
         pst = self.pst
-        weights = self.pst.observation_data.loc[cols, "weight"]
-        obsval = self.pst.observation_data.loc[cols, "obsval"]
+        weights = pst.observation_data.loc[cols, "weight"]
+        obsval = pst.observation_data.loc[cols, "obsval"]
         phi_vec = []
         for idx in self._df.index.values:
             simval = self._df.loc[idx, cols]

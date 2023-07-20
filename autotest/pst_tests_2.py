@@ -910,12 +910,12 @@ if __name__ == "__main__":
     #pst_from_flopy_specsim_draw_test()
     # run_array_pars()
     # from_flopy_zone_pars()
-    from_flopy_pp_test()
+    #from_flopy_pp_test()
     #from_flopy()
     #parrep_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()
-    #ineq_phi_test()
+    ineq_phi_test()
 
 
 

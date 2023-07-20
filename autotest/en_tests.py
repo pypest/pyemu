@@ -155,7 +155,7 @@ def get_phi_vector_noise_obs_test():
     oe = pyemu.ObservationEnsemble.from_csv(pst, 'ends_master/freyberg6_run_ies.0.obs.csv')
     phi = oe.phi_vector
     phi_noise = oe.get_phi_vector_noise_obs(noise_obs_filename='ends_master/freyberg6_run_ies.obs+noise.csv')
-    assert phi.loc['base']==phi_noise['base']
+    assert np.isclose(phi.loc['base'],phi_noise['base'])
     assert (phi==phi_noise).sum() < len(phi)
     
 def deviations_test():
