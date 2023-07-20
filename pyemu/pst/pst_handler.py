@@ -21,12 +21,12 @@ from pyemu.plot import plot_utils
 
 # from pyemu.utils.os_utils import run
 
-# @staticmethod
 def get_constraint_tags(ltgt='lt'):
     if ltgt == 'lt':
         return "l_", "less", ">@"
     else:
         return "g_", "greater", "<@"
+    
 class Pst(object):
     """All things PEST(++) control file
 
@@ -246,8 +246,6 @@ class Pst(object):
 
         """
 
-        # calculate phi components for each obs group
-        components = {}
         ogroups = self.observation_data.groupby("obgnme").groups
         self.res.index = self.res.name
         obs = self.observation_data[['obsval','weight']]
@@ -259,77 +257,7 @@ class Pst(object):
             pi_ogroups = None
             pi_df = None
         return self.get_phi_components(ogroups, self.res, obs, pi_ogroups, pi_df)
-        # rgroups = self.res.groupby("group").groups
-        
-        # for og, onames in ogroups.items():
-        #     # assert og in rgroups.keys(),"Pst.phi_componentw obs group " +\
-        #     #    "not found: " + str(og)
-        #     # og_res_df = self.res.ix[rgroups[og]]
-        #     og_res_df = self.res.loc[onames, :].dropna(axis=1)
-        #     # og_res_df.index = og_res_df.name
-        #     og_df = self.observation_data.loc[ogroups[og], :]
-        #     og_df.index = og_df.obsnme
-        #     # og_res_df = og_res_df.loc[og_df.index,:]
-        #     assert og_df.shape[0] == og_res_df.shape[0], (
-        #         " Pst.phi_components error: group residual dataframe row length"
-        #         + "doesn't match observation data group dataframe row length"
-        #         + str(og_df.shape)
-        #         + " vs. "
-        #         + str(og_res_df.shape)
-        #         + ","
-        #         + og
-        #     )
-        #     if "modelled" not in og_res_df.columns:
-        #         print(og_res_df)
-        #         m = self.res.loc[onames, "modelled"]
-        #         print(m.loc[m.isna()])
-        #         raise Exception("'modelled' not in res df columns for group " + og)
-        #     # components[og] = np.sum((og_res_df["residual"] *
-        #     #                          og_df["weight"]) ** 2)
-        #     mod_vals = og_res_df.loc[og_df.obsnme, "modelled"]
-        #     if og.lower().startswith(self.get_constraint_tags('gt')):
-        #         mod_vals.loc[mod_vals >= og_df.loc[:, "obsval"]] = og_df.loc[
-        #             :, "obsval"
-        #         ]
-        #     elif og.lower().startswith(self.get_constraint_tags('lt')):
-        #         mod_vals.loc[mod_vals <= og_df.loc[:, "obsval"]] = og_df.loc[
-        #             :, "obsval"
-        #         ]
-        #     components[og] = np.sum(
-        #         ((og_df.loc[:, "obsval"] - mod_vals) * og_df.loc[:, "weight"]) ** 2
-        #     )
-        # if (
-        #     not self.control_data.pestmode.startswith("reg")
-        #     and self.prior_information.shape[0] > 0
-        # ):
-        #     ogroups = self.prior_information.groupby("obgnme").groups
-        #     for og in ogroups.keys():
-        #         if og not in rgroups.keys():
-        #             raise Exception(
-        #                 "Pst.adjust_weights_res() obs group " + "not found: " + str(og)
-        #             )
-        #         og_res_df = self.res.loc[rgroups[og], :]
-        #         og_res_df.index = og_res_df.name
-        #         og_df = self.prior_information.loc[ogroups[og], :]
-        #         og_df.index = og_df.pilbl
-        #         og_res_df = og_res_df.loc[og_df.index, :].copy()
-        #         if og_df.shape[0] != og_res_df.shape[0]:
-        #             raise Exception(
-        #                 " Pst.phi_components error: group residual dataframe row length"
-        #                 + "doesn't match observation data group dataframe row length"
-        #                 + str(og_df.shape)
-        #                 + " vs. "
-        #                 + str(og_res_df.shape)
-        #             )
-        #         if og.lower().startswith(self.get_constraint_tags('gt')):
-        #             gidx = og_res_df.loc[:, "residual"] >= 0
-        #             og_res_df.loc[gidx, "residual"] = 0
-        #         elif og.lower().startswith(self.get_constraint_tags('lt')):
-        #             lidx = og_res_df.loc[:, "residual"] <= 0
-        #             og_res_df.loc[lidx, "residual"] = 0
-        #         components[og] = np.sum((og_res_df["residual"] * og_df["weight"]) ** 2)
-
-        # return components
+       
 
     @property
     def phi_components_normalized(self):

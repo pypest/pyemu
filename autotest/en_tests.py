@@ -713,7 +713,7 @@ def mixed_par_draw_2_test():
 if __name__ == "__main__":
     #par_gauss_draw_consistency_test()
     #obs_gauss_draw_consistency_test()
-    #phi_vector_test()
+    phi_vector_test()
     #add_base_test()
     #nz_test()
     #deviations_test()
