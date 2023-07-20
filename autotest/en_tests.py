@@ -154,7 +154,7 @@ def get_phi_vector_noise_obs_test():
     pst = pyemu.Pst('ends_master/freyberg6_run_ies.pst')
     oe = pyemu.ObservationEnsemble.from_csv(pst, 'ends_master/freyberg6_run_ies.0.obs.csv')
     phi = oe.phi_vector
-    phi_noise = oe.get_phi_vector_noise_obs(noise_obs_filename='ends_master/freyberg6_run_ies.obs+noise.csv')
+    phi_noise = oe.get_phi_vector(noise_obs_filename='ends_master/freyberg6_run_ies.obs+noise.csv')
     assert np.isclose(phi.loc['base'],phi_noise['base'])
     assert (phi==phi_noise).sum() < len(phi)
     
@@ -713,7 +713,7 @@ def mixed_par_draw_2_test():
 if __name__ == "__main__":
     #par_gauss_draw_consistency_test()
     #obs_gauss_draw_consistency_test()
-    phi_vector_test()
+    # phi_vector_test()
     #add_base_test()
     #nz_test()
     #deviations_test()

@@ -799,114 +799,108 @@ class ObservationEnsemble(Ensemble):
 
     @property
     def phi_vector(self):
-        return self.get_phi_vector() 
-    # def phi_vector(self):
-    #     """vector of L2 norm (phi) for the realizations (rows) of `Ensemble`.
+        """vector of L2 norm (phi) for the realizations (rows) of `Ensemble`.
 
+        Returns:
+            `pandas.Series`: series of realization name (`Ensemble.index`) and phi values
+
+        Note:
+            The ObservationEnsemble.pst.weights can be updated prior to calling
+            this method to evaluate new weighting strategies
+
+        """
+        return self.get_phi_vector() 
+    
+    def get_phi_vector(self, noise_obs_filename=None, noise_obs_flag=False):
+        if noise_obs_filename is not None:
+            noise_obs_flag = True
+        if noise_obs_flag is True:
+            # if no noise_obs_filename included, try to grab from pst object
+            if noise_obs_filename is None:
+                try:
+                    noise_obs_filename = self.pst.pestpp_options['ies_observation_ensemble']
+                except:
+                    raise Exception(
+                            "no noise_observation_filename passed or found in pst options"
+                        )
+            # if it looks like a binary file, try loading from binary
+            if (noise_obs_filename.endswith('jcb')) or (noise_obs_filename.endswith('jco')):
+                try:
+                    noise_obs = pyemu.Matrix.from_binary(noise_obs_filename).to_dataframe()
+                except:
+                    raise Exception(
+                        f"Could not open {noise_obs_filename}"
+                    )
+            # otherwise assume it's a csv
+            else:
+                kwargs = {}
+                kwargs["index_col"] = 0
+                kwargs["low_memory"] = False
+                try:
+                    noise_obs = pd.read_csv(noise_obs_filename, **kwargs)
+                except:
+                    raise Exception(
+                        f"Could not open {noise_obs_filename}"
+                    )
+            # make sure the index is all string (since the real)
+            noise_obs.index = [str(i) for i in noise_obs.index]   
+                     
+        cols = self._df.columns
+        pst = self.pst
+        ogroups = pst.observation_data.loc[cols].groupby("obgnme").groups
+        res = pd.DataFrame(data={'name':cols,
+                                'group':pst.observation_data.loc[cols,'obgnme'].values,
+                                'modelled':np.nan,
+                                'residual':np.nan
+                                    })
+        res.index = res.name
+        obs = pst.observation_data.loc[cols, ['obsval','weight']]
+        pi_ogroups = None
+        pi_df = None
+        phi_vec = []
+        for idx in self._df.index.values:
+            res.loc[cols,'modelled'] = self._df.loc[idx, cols]
+            if noise_obs_flag is True:
+                obs.loc[cols,'obsval'] = noise_obs.loc[idx,cols]
+            res.loc[cols,'residual'] = res.loc[cols,'modelled'] - obs.loc[cols,'obsval']
+            
+            phi = 0.0
+            for _, contrib in pyemu.Pst.get_phi_components(ogroups,
+                                                            res,
+                                                            obs,
+                                                            pi_ogroups,
+                                                            pi_df).items():
+                phi += contrib
+            phi_vec.append(phi)
+        return pd.Series(data=phi_vec, index=self.index)
+    
+    # def get_phi_vector_noise_obs(self, noise_obs_filename=None):
+    #     """vector of L2 norm (phi) for the realizations (rows) of `Ensemble`. This
+    #         differs from `phi_vector` in that phi is calculated for each ensemble 
+    #         member with respect to the realization of observation noise for that 
+    #         ensemble member represented in the `noise_obs_filename` argument.
+
+    #     Args:
+    #         noise_obs_filename (_type_, string): Filename of csv or binary noise realizations
+    #                                             ensemble filename. If None, attemps to use the 
+    #                                             filename from the `pst` attribute of `self`.
+    #                                             Defaults to None.
     #     Returns:
     #         `pandas.Series`: series of realization name (`Ensemble.index`) and phi values
-
-    #     Note:
-    #         The ObservationEnsemble.pst.weights can be updated prior to calling
-    #         this method to evaluate new weighting strategies
-
+        
     #     """
+
+        
+    #     # now make the calculations
     #     cols = self._df.columns
-    #     pst = self.pst
-    #     weights = pst.observation_data.loc[cols, "weight"]
-    #     obsval = pst.observation_data.loc[cols, "obsval"]
+    #     weights = self.pst.observation_data.loc[cols, "weight"]
     #     phi_vec = []
     #     for idx in self._df.index.values:
     #         simval = self._df.loc[idx, cols]
+    #         obsval = noise_obs.loc[idx, cols]
     #         phi = (((simval - obsval) * weights) ** 2).sum()
     #         phi_vec.append(phi)
-    #     jj = pyemu.Pst.get_phi_components
     #     return pd.Series(data=phi_vec, index=self.index)
-
-    def get_phi_vector(self, noise_obs_filename=None):
-        if noise_obs_filename is None:
-            cols = self._df.columns
-            pst = self.pst
-            ogroups = pst.observation_data.loc[cols].groupby("obgnme").groups
-            res = pd.DataFrame(data={'name':cols,
-                                    'group':pst.observation_data.loc[cols,'obgnme'].values,
-                                    'modelled':np.nan,
-                                    'residual':np.nan
-                                     })
-            res.index = res.name
-            obs = pst.observation_data.loc[cols, ['obsval','weight']]
-            pi_ogroups = None
-            pi_df = None
-            phi_vec = []
-            for idx in self._df.index.values:
-                res.loc[cols,'modelled'] = self._df.loc[idx, cols]
-                res.loc[cols,'residual'] = res.loc[cols,'modelled'] - obs.loc[cols,'obsval']
-                
-                phi = 0.0
-                for _, contrib in pyemu.Pst.get_phi_components(ogroups,
-                                                               res,
-                                                               obs,
-                                                               pi_ogroups,
-                                                               pi_df).items():
-                    phi += contrib
-                phi_vec.append(phi)
-        return pd.Series(data=phi_vec, index=self.index)
-    
-    def get_phi_vector_noise_obs(self, noise_obs_filename=None):
-        """vector of L2 norm (phi) for the realizations (rows) of `Ensemble`. This
-            differs from `phi_vector` in that phi is calculated for each ensemble 
-            member with respect to the realization of observation noise for that 
-            ensemble member represented in the `noise_obs_filename` argument.
-
-        Args:
-            noise_obs_filename (_type_, string): Filename of csv or binary noise realizations
-                                                ensemble filename. If None, attemps to use the 
-                                                filename from the `pst` attribute of `self`.
-                                                Defaults to None.
-        Returns:
-            `pandas.Series`: series of realization name (`Ensemble.index`) and phi values
-        
-        """
-        # if no noise_obs_filename included, try to grab from pst object
-        if noise_obs_filename is None:
-            try:
-                noise_obs_filename = self.pst.pestpp_options['ies_observation_ensemble']
-            except:
-                raise Exception(
-                        "no noise_observation_filename passed or found in pst options"
-                    )
-        # if it looks like a binary file, try loading from binary
-        if (noise_obs_filename.endswith('jcb')) or (noise_obs_filename.endswith('jco')):
-            try:
-                noise_obs = pyemu.Matrix.from_binary(noise_obs_filename).to_dataframe()
-            except:
-                raise Exception(
-                    f"Could not open {noise_obs_filename}"
-                )
-        # otherwise assume it's a csv
-        else:
-            kwargs = {}
-            kwargs["index_col"] = 0
-            kwargs["low_memory"] = False
-            try:
-                noise_obs = pd.read_csv(noise_obs_filename, **kwargs)
-            except:
-                raise Exception(
-                    f"Could not open {noise_obs_filename}"
-                )
-        # make sure the index is all string (since the real)
-        noise_obs.index = [str(i) for i in noise_obs.index]
-        
-        # now make the calculations
-        cols = self._df.columns
-        weights = self.pst.observation_data.loc[cols, "weight"]
-        phi_vec = []
-        for idx in self._df.index.values:
-            simval = self._df.loc[idx, cols]
-            obsval = noise_obs.loc[idx, cols]
-            phi = (((simval - obsval) * weights) ** 2).sum()
-            phi_vec.append(phi)
-        return pd.Series(data=phi_vec, index=self.index)
  
             
     def add_base(self):

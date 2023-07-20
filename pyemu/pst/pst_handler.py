@@ -192,11 +192,11 @@ class Pst(object):
             for og, onames in pi_ogroups.items():
                 if og not in rgroups.keys():
                     raise Exception(
-                        "Pst.adjust_weights_res() obs group " + "not found: " + str(og)
+                        "Pst.prior_information() obs group " + "not found: " + str(og)
                     )
                 og_res_df = res.loc[rgroups[og], :]
                 og_res_df.index = og_res_df.name
-                og_df = pi_df.loc[pi_ogroups[og], :]
+                og_df = pi_df.loc[onames, :]
                 og_df.index = og_df.pilbl
                 og_res_df = og_res_df.loc[og_df.index, :].copy()
                 if og_df.shape[0] != og_res_df.shape[0]:
