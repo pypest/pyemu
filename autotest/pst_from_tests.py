@@ -4994,8 +4994,8 @@ def mf6_freyberg_thresh_invest(tmp_path):
     assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
     assert pe.shape[0] == num_reals
 
-    truth = pyemu.pst_utils.read_resfile(os.path.join("utils","freyberg_mf6.base.rei"))
-    truth = truth.loc[truth.name.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"measured"]
+    #truth = pyemu.pst_utils.read_resfile(os.path.join("utils","freyberg_mf6.base.rei"))
+    #truth = truth.loc[truth.name.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"measured"]
     obs = pst.observation_data
     obs.loc[:,"weight"] = 0.0
     obs.loc[:,"standard_deviation"] = np.nan
@@ -5003,7 +5003,8 @@ def mf6_freyberg_thresh_invest(tmp_path):
     #obs.loc[obs.oname=="hds","weight"] = 1.0
     #obs.loc[obs.oname == "hds", "standard_deviation"] = 0.001
     obs.loc[onames,"weight"] = 1.0
-    obs.loc[onames,"obsval"] = truth.values
+    #obs.loc[onames,"obsval"] = truth.values
+    obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.1,onames.shape[0])
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
@@ -5112,7 +5113,7 @@ if __name__ == "__main__":
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
-    
+
     mf6_freyberg_thresh_invest(".")
     plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
