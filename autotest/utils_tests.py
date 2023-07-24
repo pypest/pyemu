@@ -2310,12 +2310,23 @@ def ac_draw_test(tmp_path):
     obsval.append(2.0)
     ogrps.append("less_")
     ogrps.append("greater_")
+    onames.append("zero1")
+    obsval.append(1.0)
+    ogrps.append("zero")
+
+    onames.append("zero2")
+    obsval.append(1.0)
+    ogrps.append("less_zero")
+    onames.append("zero3")
+    obsval.append(1.0)
+    ogrps.append("greater_zero")
 
     pst = pyemu.Pst.from_par_obs_names(obs_names=onames)
     pst.observation_data.loc[onames,"obgnme"] = ogrps
-    pst.observation_data.loc[onames[:-2],"distance"] = distance
+    pst.observation_data.loc[onames[:-5],"distance"] = distance
     pst.observation_data.loc[onames,"obsval"] = obsval
     pst.observation_data.loc[onames, "weight"] = 0.000001#1/(np.array(obsval))
+    pst.observation_data.loc[["zero1","zero2","zero3"],"weight"] = 0.0
     print(obsval)
     pst.observation_data.loc[onames, "standard_deviation"] = np.array(obsval) * 0.1
     pst.observation_data.loc[onames, "lower_bound"] = np.array(obsval).min()
@@ -2421,7 +2432,7 @@ def obs_ensemble_quantile_test():
 if __name__ == "__main__":
     #obs_ensemble_quantile_test()
     #geostat_draws_test("temp")
-    #ac_draw_test("temp")
+    ac_draw_test("temp")
     # maha_pdc_test()
     # rmr_parse_test()
     # temporal_draw_invest()
@@ -2472,7 +2483,7 @@ if __name__ == "__main__":
     # smp_to_ins_test()
     #read_runstor_test(".")
     #read_pestpp_runstorage_file_test()
-    jco_from_pestpp_runstorage_test(".")
+    #jco_from_pestpp_runstorage_test(".")
     # write_tpl_test()
     #pp_to_shapefile_test(".")
     # read_pval_test()

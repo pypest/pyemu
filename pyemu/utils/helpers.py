@@ -176,7 +176,7 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
             gcov.x[i, :] *= fcov_dict[name]
         if verbose:
             print("...draw")
-        oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,gcov,num_reals=num_reals,fill=True,by_groups=False)
+        oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,gcov,num_reals=num_reals,fill=False,by_groups=False)
         oe = oe.loc[:,gcov.names]
         full_oe.loc[:,gcov.names] = oe._df.values
 
