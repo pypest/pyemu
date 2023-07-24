@@ -3640,6 +3640,157 @@ def parse_rmr_file(rmr_file):
     return df
 
 
+def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=None):
+    """setup a thresholding 2-category binary array prcoess.
+
+    Parameters:
+        orgarr_file (`str`): the input array that will ultimately be created at runtime
+        cat_dict (`str`): dict of info for the two categories.  Keys are (unused) category names.
+            values are a len 2 iterable of requested proportion and fill value.
+        testing_workspace (`str`): directory where the apply process can be tested.
+        inact_arr (`np.ndarray`): an array that indicates inactive nodes (inact_arr=0)
+
+    Returns:
+        thresharr_file (`str`): thresholding array file (to be parameterized)
+        csv_file (`str`): the csv file that has the inputs needed for the apply process
+
+    Note:
+        all required files are based on the `orgarr_file` with suffixes appended to them
+
+    """
+    assert os.path.exists(orgarr_file)
+    #atleast 2d for xsections
+    org_arr = np.atleast_2d(np.loadtxt(orgarr_file))
+
+    if len(cat_dict) != 2:
+        raise Exception("only two categories currently supported, {0} found in target_proportions_dict".\
+                        format(len(cat_dict)))
+
+    prop_tags,prop_vals,fill_vals = [],[],[]
+    for key,(proportion,fill_val) in cat_dict.items():
+        if int(key) not in cat_dict:
+            raise Exception("integer type of key '{0}' not found in target_proportions_dict".format(key))
+        prop_tags.append(int(key))
+        prop_vals.append(float(proportion))
+        # use the key as the fill value for testing purposes
+        fill_vals.append(float(fill_val))
+
+    thresharr = org_arr.copy()
+    thresharr = thresharr / thresharr.max()
+    thresharr_file = orgarr_file+".thresharr.dat"
+    np.savetxt(thresharr_file,thresharr,fmt="%15.6E")
+
+    if inact_arr is not None:
+        assert inact_arr.shape == org_arr.shape
+        inactarr_file = orgarr_file+".threshinact.dat"
+        np.savetxt(inactarr_file,inact_arr,fmt="%4.0f")
+
+    df = pd.DataFrame({"threshcat":prop_tags,"threshval":prop_vals,"threshfill":fill_vals})
+    csv_file = orgarr_file+".threshprops.csv"
+    df.to_csv(csv_file,index=False)
+
+    # test that it seems to be working
+    bd = os.getcwd()
+    os.chdir(testing_workspace)
+    apply_threshold_pars(os.path.split(csv_file)[1])
+    os.chdir(bd)
+    return thresharr_file,csv_file
+
+
+def apply_threshold_pars(csv_file):
+    """apply the thresholding process.  everything keys off of csv_file name...
+
+    """
+    df = pd.read_csv(csv_file,index_col=0)
+    thresarr_file = csv_file.replace("props.csv","arr.dat")
+    tarr = np.loadtxt(thresarr_file)
+    if np.any(tarr < 0):
+        print(tarr)
+        raise Exception("negatives in thresholding array")
+    #norm tarr
+    tarr = tarr / tarr.max()
+    orgarr_file = csv_file.replace(".threshprops.csv","")
+    inactarr_file = csv_file.replace(".threshprops.csv",".threshinact.dat")
+
+    tvals = df.threshval.astype(float).values.copy()
+    #ttags = df.threshcat.astype(int).values.copy()
+    tfill = df.threshfill.astype(float).values.copy()
+    # for now...
+    assert len(tvals) == 2
+    if np.any(tvals <= 0.0):
+        print(tvals)
+        raise Exception("threshold values much be strictly positive")
+
+    #since we only have two categories, we can just focus on the first proportion
+    target_prop = tvals[0]
+
+    tol = 1.0e-10
+    if tarr.std() < tol * 2.0:
+        raise Exception("thresholding array has very low standard deviation")
+
+    # a classic:
+    gr = (np.sqrt(5.) + 1.) / 2.
+    a = tarr.min()
+    b = tarr.max()
+    c = b - ((b - a) / gr)
+    d = a + ((b - a) / gr)
+
+    iarr = None
+    tot_shape = tarr.shape[0] * tarr.shape[1]
+    if os.path.exists(inactarr_file):
+        iarr = np.loadtxt(inactarr_file, dtype=int)
+        # this keeps inact from interfering with calcs later...
+        tarr[iarr == 0] = 1.0e+30
+        tiarr = iarr.copy()
+        tiarr[tiarr <= 0] = 0
+        tiarr[tiarr > 0] = 1
+        tot_shape = tiarr.sum()
+
+    def get_current_prop(_cur_thresh):
+        itarr = np.zeros_like(tarr)
+        itarr[tarr <= _cur_thresh] = 1
+        current_prop = itarr.sum() / tot_shape
+        return current_prop
+
+    numiter = 0
+    while True:
+        if (b - a) <= tol:
+            break
+        if numiter > 10000:
+            raise Exception("golden section failed to converge")
+
+        cprop = get_current_prop(c)
+        dprop = get_current_prop(d)
+        #print(a,b,c,d,cprop,dprop,target_prop)
+        cphi = (cprop - target_prop)**2
+        dphi = (dprop - target_prop)**2
+        if cphi < dphi:
+            b = d
+        else:
+            a = c
+        c = b - ((b - a) / gr)
+        d = a + ((b - a) / gr)
+        numiter += 1
+
+    #print(a,b,c,d)
+    thresh = (a+b) / 2.0
+    prop = get_current_prop(thresh)
+    #print(thresh,prop)
+    farr = np.zeros_like(tarr) - 1
+    farr[tarr>thresh] = tfill[1]
+    farr[tarr<=thresh] = tfill[0]
+    if iarr is not None:
+        farr[iarr==0] = -1.0e+30
+    np.savetxt(orgarr_file,farr,fmt="%15.6E")
+    return thresh, prop
+
+
+
+
+
+
+
+
 
 
 

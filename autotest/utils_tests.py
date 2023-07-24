@@ -2418,7 +2418,67 @@ def obs_ensemble_quantile_test():
     qt,d = pyemu.helpers.calc_observation_ensemble_quantiles(oe,pst,quans)
 
 
+def thresh_pars_test():
+    import os
+    import shutil
+    import numpy as np
+    import pyemu
+    test_d = "thresh_test"
+    if os.path.exists(test_d):
+        shutil.rmtree(test_d)
+    os.makedirs(test_d)
+    dim = 500
+    arr = np.ones((dim,dim))
+    gs = pyemu.geostats.GeoStruct(variograms=[pyemu.geostats.ExpVario(1.0,30.0)])
+    ss = pyemu.geostats.SpecSim2d(np.ones(dim),np.ones(dim),gs)
+    arr = 10**(ss.draw_arrays()[0])
+    print(arr)
+
+    inact_arr = np.ones_like(arr,dtype=int)
+    inact_arr[:50,:] = 0
+    orgarr_file = os.path.join(test_d,"org_arr.dat")
+    np.savetxt(orgarr_file,arr,fmt="%15.6E")
+    p1 = np.percentile(arr,5)
+    p2 = np.percentile(arr,95)
+    cat_dict = {1:[0.4,p1],2:[0.6,p2]}
+    pyemu.helpers.setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=test_d,inact_arr=inact_arr)
+
+
+    newarr = np.loadtxt(orgarr_file)
+    print(newarr)
+    newarr[inact_arr==0] = np.nan
+    print(np.unique(newarr))
+
+    tarr = np.zeros_like(newarr)
+    tarr[np.isclose(newarr,cat_dict[1][1])] = 1.0
+    #tarr[inact_arr==0] = np.nan
+    tot = inact_arr.sum()
+    prop = np.nansum(tarr) / tot
+    print(prop,cat_dict[1])
+    assert np.isclose(prop,cat_dict[1][0])
+
+    tarr = np.zeros_like(newarr)
+    tarr[np.isclose(newarr, cat_dict[2][1])] = 1.0
+    prop = tarr.sum() / tot
+    print(prop, cat_dict[2])
+    assert np.isclose(prop, cat_dict[2][0])
+
+    import matplotlib.pyplot as plt
+    fig,axes = plt.subplots(1,2,figsize=(10,5))
+    arr = np.log10(arr)
+    arr[inact_arr==0] = np.nan
+    newarr = np.log10(newarr)
+    cb = axes[0].imshow(arr)
+    plt.colorbar(cb,ax=axes[0])
+    cb = axes[1].imshow(newarr,vmax=np.nanmax(arr),vmin=np.nanmin(arr))
+    plt.colorbar(cb,ax=axes[1])
+
+    plt.show()
+
+
+
 if __name__ == "__main__":
+    thresh_pars_test()
     #obs_ensemble_quantile_test()
     #geostat_draws_test("temp")
     #ac_draw_test("temp")
@@ -2472,7 +2532,7 @@ if __name__ == "__main__":
     # smp_to_ins_test()
     #read_runstor_test(".")
     #read_pestpp_runstorage_file_test()
-    jco_from_pestpp_runstorage_test(".")
+    #jco_from_pestpp_runstorage_test(".")
     # write_tpl_test()
     #pp_to_shapefile_test(".")
     # read_pval_test()
