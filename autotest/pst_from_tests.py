@@ -4931,7 +4931,8 @@ def mf6_freyberg_thresh_invest(tmp_path):
                 pth_arr_file = os.path.join(pf.new_d,arr_file)
                 arr = np.loadtxt(pth_arr_file)
                 cat_dict = {1:[0.45,arr.mean()],2:[0.55,arr.mean()]}
-                thresharr,threshcsv = pyemu.helpers.setup_threshold_pars(pth_arr_file,cat_dict=cat_dict,testing_workspace=pf.new_d,inact_arr=ib)
+                thresharr,threshcsv = pyemu.helpers.setup_threshold_pars(pth_arr_file,cat_dict=cat_dict,
+                                                                         testing_workspace=pf.new_d,inact_arr=ib)
                 pf.pre_py_cmds.append("pyemu.helpers.apply_threshold_pars('{0}')".format(os.path.split(threshcsv)[1]))
                 pf.add_parameters(filenames=os.path.split(thresharr)[1],par_type="grid",transform="none",
                                   par_name_base=arr_file.split('.')[1].replace("_","-")+"-thresharr",
@@ -4956,10 +4957,6 @@ def mf6_freyberg_thresh_invest(tmp_path):
     #cov = pf.build_prior(fmt="none")
     #cov.to_coo(os.path.join(template_ws, "prior.jcb"))
     pst.try_parse_name_metadata()
-
-
-
-
 
     pst.control_data.noptmax = 0
     pst.pestpp_options["additional_ins_delimiters"] = ","
@@ -4997,16 +4994,24 @@ def mf6_freyberg_thresh_invest(tmp_path):
     assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
     assert pe.shape[0] == num_reals
 
-
+    truth = pyemu.pst_utils.read_resfile(os.path.join("utils","freyberg_mf6.base.rei"))
+    truth = truth.loc[truth.name.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"measured"]
     obs = pst.observation_data
     obs.loc[:,"weight"] = 0.0
     obs.loc[:,"standard_deviation"] = np.nan
-    obs.loc[obs.oname=="hds","weight"] = 1.0
-    obs.loc[obs.oname == "hds", "standard_deviation"] = 0.001
+    onames = obs.loc[obs.obsnme.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"obsnme"].values
+    #obs.loc[obs.oname=="hds","weight"] = 1.0
+    #obs.loc[obs.oname == "hds", "standard_deviation"] = 0.001
+    obs.loc[onames,"weight"] = 1.0
+    obs.loc[onames,"obsval"] = truth.values
 
-    pst.control_data.noptmax=10
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+
+    pst.control_data.noptmax=3
     pst.pestpp_options["ies_par_en"] = "prior.jcb"
     pst.pestpp_options["ies_subset_size"] = -10
+    pst.pestpp_options["ies_no_noise"] = True
 
     pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
 
@@ -5021,7 +5026,7 @@ def mf6_freyberg_thresh_invest(tmp_path):
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
 
     pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir="master_thresh_mm",
-                                 num_workers=15)
+                                 num_workers=20)
 
 def plot_thresh(m_d):
     pst = pyemu.Pst(os.path.join(m_d,"freyberg.pst"))
@@ -5031,8 +5036,30 @@ def plot_thresh(m_d):
     obs.loc[:, "i"] = obs.pop("i").astype(int)
     obs.loc[:, "j"] = obs.pop("j").astype(int)
 
-    pr_oe = pd.read_csv(os.path.join(m_d,"freyberg.0.obs.csv"),index_col=0)
-    pt_oe = pd.read_csv(os.path.join(m_d, "freyberg.{0}.obs.csv".format(pst.control_data.noptmax)), index_col=0)
+
+    pst.control_data.noptmax = 3
+    pr_oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join(m_d,"freyberg.0.obs.csv"))
+    pt_oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join(m_d, "freyberg.{0}.obs.csv".format(pst.control_data.noptmax)))
+
+    pv = pt_oe.phi_vector
+    pv.sort_values(inplace=True)
+    pr_pv = pr_oe.phi_vector
+    print(pv)
+    pt_oe = pt_oe._df.loc[pv.index,:]
+    pr_oe.index = pr_oe.index.map(str)
+    #print(pr_oe.index)
+    #print(pt_oe.index)
+
+
+    #pt_oe.loc[:, obs.obsnme] = np.log10(pt_oe.loc[:, obs.obsnme].values)
+    #pr_oe.loc[:, obs.obsnme] = np.log10(pr_oe.loc[:, obs.obsnme].values)
+
+    vals = pt_oe.loc[:, obs.obsnme].values
+    mx = np.nanmax(vals)
+    vals = pt_oe.loc[:, obs.obsnme].values
+    vals[vals < 0.0] = np.nan
+    mn = np.nanmin(vals)
+    print(mn,mx)
 
     import flopy
 
@@ -5042,25 +5069,36 @@ def plot_thresh(m_d):
     nrow,ncol = dis.nrow.data,dis.ncol.data
 
     import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
 
-    for real in pt_oe.index:
-        prarr = np.zeros((nrow,ncol)) - 1
-        prarr[obs.i,obs.j] = pr_oe.loc[real,obs.obsnme]
-        prarr[ib==0] = np.nan
-        ptarr = np.zeros((nrow, ncol)) - 1
-        ptarr[obs.i, obs.j] = pt_oe.loc[real, obs.obsnme]
-        ptarr[ib == 0] = np.nan
-        #print(prarr)
-        #print(ptarr)
-        mx = max(np.nanmax(prarr),np.nanmax(ptarr))
-        mn = max(np.nanmin(prarr), np.nanmin(ptarr))
-        fig,axes = plt.subplots(1,2,figsize=(10,10))
-        cb = axes[0].imshow(prarr,vmin=mn,vmax=mx)
-        plt.colorbar(cb,ax=axes[0])
-        cb = axes[1].imshow(ptarr, vmin=mn, vmax=mx)
-        plt.colorbar(cb,ax=axes[1])
-        plt.show()
-        break
+    with PdfPages(os.path.join(m_d,"results.pdf")) as pdf:
+        for ireal,real in enumerate(pt_oe.index):
+            prarr = np.zeros((nrow,ncol)) - 1
+            prarr[obs.i,obs.j] = pr_oe.loc[real,obs.obsnme]
+            prarr[ib==0] = np.nan
+            ptarr = np.zeros((nrow, ncol)) - 1
+            ptarr[obs.i, obs.j] = pt_oe.loc[real, obs.obsnme]
+            ptarr[ib == 0] = np.nan
+            #print(prarr)
+            #print(ptarr)
+            #mx = max(np.nanmax(prarr),np.nanmax(ptarr))
+            #mn = max(np.nanmin(prarr), np.nanmin(ptarr))
+            fig,axes = plt.subplots(1,2,figsize=(10,10))
+            cb = axes[0].imshow(prarr,vmin=mn,vmax=mx)
+            plt.colorbar(cb,ax=axes[0])
+            cb = axes[1].imshow(ptarr, vmin=mn, vmax=mx)
+            plt.colorbar(cb,ax=axes[1])
+            axes[1].set_title("real: {1}, phi: {0:4.1f}".format(pv[real], real), loc="left")
+            axes[0].set_title("real: {1}, phi: {0:4.1f}".format(pr_pv[real],real),loc="left")
+
+            plt.tight_layout()
+            pdf.savefig()
+            plt.close(fig)
+            #plt.show()
+            #break
+            if ireal > 10:
+                break
+            print(ireal)
 
 
 
