@@ -289,7 +289,7 @@ def geostatistical_draws(
         pst, sigma_range=sigma_range, scale_offset=scale_offset,
         subset=subset
     )
-    full_cov_dict = {n: float(v) for n, v in zip(full_cov.col_names, full_cov.x)}
+    full_cov_dict = {n: float(v[0]) for n, v in zip(full_cov.col_names, full_cov.x)}
     # par_org = pst.parameter_data.copy  # not sure about the need or function of this line? (BH)
     par = pst.parameter_data
     par_ens = []
