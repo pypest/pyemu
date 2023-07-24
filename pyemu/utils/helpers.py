@@ -468,7 +468,7 @@ def geostatistical_prior_builder(
         pst, sigma_range=sigma_range, scale_offset=scale_offset
     )
 
-    full_cov_dict = {n: float(v) for n, v in zip(full_cov.col_names, full_cov.x)}
+    full_cov_dict = {n: float(v[0]) for n, v in zip(full_cov.col_names, full_cov.x)}
     # full_cov = None
     par = pst.parameter_data
     for gs, items in struct_dict.items():
@@ -3666,6 +3666,10 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
         raise Exception("only two categories currently supported, {0} found in target_proportions_dict".\
                         format(len(cat_dict)))
 
+    tol = 1.0e-10
+    if org_arr.std() < tol * 2.0:
+        print("WARNING: org_arr has very low standard deviation, adding some noise for now...")
+        org_arr += np.random.normal(0,1e-6,org_arr.shape)
     prop_tags,prop_vals,fill_vals = [],[],[]
     for key,(proportion,fill_val) in cat_dict.items():
         if int(key) not in cat_dict:

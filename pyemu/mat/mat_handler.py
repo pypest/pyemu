@@ -553,7 +553,7 @@ class Matrix(object):
             elif second.isdiagonal:
                 x = first.x
                 for j in range(second.shape[0]):
-                    x[j, j] += second.x[j]
+                    x[j, j] += second.__x[j,0]
                 return type(self)(
                     x=x, row_names=first.row_names, col_names=first.col_names
                 )
