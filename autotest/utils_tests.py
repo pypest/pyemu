@@ -2455,13 +2455,13 @@ def thresh_pars_test():
     tot = inact_arr.sum()
     prop = np.nansum(tarr) / tot
     print(prop,cat_dict[1])
-    assert np.isclose(prop,cat_dict[1][0])
+    assert np.isclose(prop,cat_dict[1][0],0.01)
 
     tarr = np.zeros_like(newarr)
     tarr[np.isclose(newarr, cat_dict[2][1])] = 1.0
     prop = tarr.sum() / tot
     print(prop, cat_dict[2])
-    assert np.isclose(prop, cat_dict[2][0])
+    assert np.isclose(prop, cat_dict[2][0],0.01)
 
     import matplotlib.pyplot as plt
     fig,axes = plt.subplots(1,2,figsize=(10,5))

@@ -5004,12 +5004,12 @@ def mf6_freyberg_thresh_invest(tmp_path):
     #obs.loc[obs.oname == "hds", "standard_deviation"] = 0.001
     obs.loc[onames,"weight"] = 1.0
     #obs.loc[onames,"obsval"] = truth.values
-    obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.1,onames.shape[0])
+    obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.001,onames.shape[0])
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
-    pst.control_data.noptmax=3
+    pst.control_data.noptmax=10
     pst.pestpp_options["ies_par_en"] = "prior.jcb"
     pst.pestpp_options["ies_subset_size"] = -10
     pst.pestpp_options["ies_no_noise"] = True
@@ -5038,7 +5038,7 @@ def plot_thresh(m_d):
     obs.loc[:, "j"] = obs.pop("j").astype(int)
 
 
-    pst.control_data.noptmax = 3
+    pst.control_data.noptmax = 10
     pr_oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join(m_d,"freyberg.0.obs.csv"))
     pt_oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join(m_d, "freyberg.{0}.obs.csv".format(pst.control_data.noptmax)))
 
@@ -5072,7 +5072,7 @@ def plot_thresh(m_d):
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_pdf import PdfPages
 
-    with PdfPages(os.path.join(m_d,"results.pdf")) as pdf:
+    with PdfPages(os.path.join(m_d,"results_{0}.pdf".format(pst.control_data.noptmax))) as pdf:
         for ireal,real in enumerate(pt_oe.index):
             prarr = np.zeros((nrow,ncol)) - 1
             prarr[obs.i,obs.j] = pr_oe.loc[real,obs.obsnme]
@@ -5085,9 +5085,9 @@ def plot_thresh(m_d):
             #mx = max(np.nanmax(prarr),np.nanmax(ptarr))
             #mn = max(np.nanmin(prarr), np.nanmin(ptarr))
             fig,axes = plt.subplots(1,2,figsize=(10,10))
-            cb = axes[0].imshow(prarr,vmin=mn,vmax=mx)
+            cb = axes[0].imshow(prarr,vmin=mn,vmax=mx,cmap="coolwarm")
             plt.colorbar(cb,ax=axes[0])
-            cb = axes[1].imshow(ptarr, vmin=mn, vmax=mx)
+            cb = axes[1].imshow(ptarr, vmin=mn, vmax=mx,cmap="coolwarm")
             plt.colorbar(cb,ax=axes[1])
             axes[1].set_title("real: {1}, phi: {0:4.1f}".format(pv[real], real), loc="left")
             axes[0].set_title("real: {1}, phi: {0:4.1f}".format(pr_pv[real],real),loc="left")
@@ -5097,7 +5097,7 @@ def plot_thresh(m_d):
             plt.close(fig)
             #plt.show()
             #break
-            if ireal > 10:
+            if ireal > 20:
                 break
             print(ireal)
 
@@ -5114,7 +5114,7 @@ if __name__ == "__main__":
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
 
-    mf6_freyberg_thresh_invest(".")
+    #mf6_freyberg_thresh_invest(".")
     plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
     # xsec_test()
