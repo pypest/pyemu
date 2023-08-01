@@ -2463,17 +2463,17 @@ def thresh_pars_test():
     print(prop, cat_dict[2])
     assert np.isclose(prop, cat_dict[2][0],0.01)
 
-    import matplotlib.pyplot as plt
-    fig,axes = plt.subplots(1,2,figsize=(10,5))
-    arr = np.log10(arr)
-    arr[inact_arr==0] = np.nan
-    newarr = np.log10(newarr)
-    cb = axes[0].imshow(arr)
-    plt.colorbar(cb,ax=axes[0])
-    cb = axes[1].imshow(newarr,vmax=np.nanmax(arr),vmin=np.nanmin(arr))
-    plt.colorbar(cb,ax=axes[1])
+    # import matplotlib.pyplot as plt
+    # fig,axes = plt.subplots(1,2,figsize=(10,5))
+    # arr = np.log10(arr)
+    # arr[inact_arr==0] = np.nan
+    # newarr = np.log10(newarr)
+    # cb = axes[0].imshow(arr)
+    # plt.colorbar(cb,ax=axes[0])
+    # cb = axes[1].imshow(newarr,vmax=np.nanmax(arr),vmin=np.nanmin(arr))
+    # plt.colorbar(cb,ax=axes[1])
 
-    plt.show()
+    # plt.show()
 
 
 
