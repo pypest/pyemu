@@ -1357,9 +1357,10 @@ class OrdinaryKrige(object):
 
             err_var.append(
                 float(
-                    sill
-                    + facs[-1]
-                    - sum([f * c for f, c in zip(facs[:-1], interp_cov)])
+                    (sill
+                     + facs[-1]
+                     - sum([f * c for f, c in zip(facs[:-1], interp_cov)])
+                     ).squeeze()
                 )
             )
             inames.append(pt_names)
@@ -1575,9 +1576,10 @@ class OrdinaryKrige(object):
 
             err_var[idx] = [
                 float(
-                    sill
-                    + facs[-1]
-                    - sum([f * c for f, c in zip(facs[:-1], interp_cov)])
+                    (sill
+                     + facs[-1]
+                     - sum([f * c for f, c in zip(facs[:-1], interp_cov)])
+                     ).squeeze()
                 )
             ]
             inames[idx] = [pt_names.tolist()]

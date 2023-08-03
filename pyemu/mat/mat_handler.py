@@ -552,8 +552,10 @@ class Matrix(object):
                 )
             elif second.isdiagonal:
                 x = first.x
-                for j in range(second.shape[0]):
-                    x[j, j] += second.x[j]
+                js = range(second.shape[0])
+                x[js, js] += second.x.ravel()
+                # for j in range(second.shape[0]):
+                #     x[j, j] += second._Matrix__x[j,0]
                 return type(self)(
                     x=x, row_names=first.row_names, col_names=first.col_names
                 )
