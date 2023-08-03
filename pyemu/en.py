@@ -773,7 +773,8 @@ class ObservationEnsemble(Ensemble):
             warnings.warn("ObservationEnsemble.from_gaussian_draw(): all zero weights",PyemuWarning)
         # only draw for non-zero weights, get a new cov
         if not fill:
-            nz_cov = cov.get(pst.nnz_obs_names)
+            names = set(pst.nnz_obs_names).intersection(set(cov.row_names))
+            nz_cov = cov.get(list(names))
         else:
             nz_cov = cov.copy()
 
