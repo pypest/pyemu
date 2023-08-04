@@ -6,10 +6,10 @@
 version: 2
 
 # Set the OS, Python version and other tools you might need
- 8build:
- 9  os: ubuntu-22.04
-10  tools:
-11    python: 3.9
+ build:
+   os: ubuntu-22.04
+   tools:
+     python: 3.9
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
