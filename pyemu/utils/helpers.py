@@ -289,7 +289,8 @@ def geostatistical_draws(
         pst, sigma_range=sigma_range, scale_offset=scale_offset,
         subset=subset
     )
-    full_cov_dict = {n: float(v[0]) for n, v in zip(full_cov.col_names, full_cov.x)}
+    full_cov_dict = {n: float(v) for n, v in
+                     zip(full_cov.col_names, full_cov.x.ravel())}
     # par_org = pst.parameter_data.copy  # not sure about the need or function of this line? (BH)
     par = pst.parameter_data
     par_ens = []
@@ -468,7 +469,8 @@ def geostatistical_prior_builder(
         pst, sigma_range=sigma_range, scale_offset=scale_offset
     )
 
-    full_cov_dict = {n: float(v[0]) for n, v in zip(full_cov.col_names, full_cov.x)}
+    full_cov_dict = {n: float(v)
+                     for n, v in zip(full_cov.col_names, full_cov.x.ravel())}
     # full_cov = None
     par = pst.parameter_data
     for gs, items in struct_dict.items():
@@ -735,7 +737,7 @@ def _condition_on_par_knowledge(cov, var_knowledge_dict):
     know_cov = cov.get(know_names, know_names)
     # add the par knowledge to the diagonal of know_cov
     for i, name in enumerate(know_names):
-        know_cov.x[i, i] += var_knowledge_dict[name]
+        know_cov.x[i, i] += np.squeeze(var_knowledge_dict[name])
 
     # kalman gain
     k_gain = know_cross_cov * know_cov.inv
@@ -1341,7 +1343,7 @@ def jco_from_pestpp_runstorage(rnj_filename, pst_filename):
     li = base_par.index.map(lambda x: par.loc[x, "partrans"] == "log")
     base_par.loc[li] = base_par.loc[li].apply(np.log10)
     jco_cols = {}
-    for irun in range(1, int(header["n_runs"])):
+    for irun in range(1, int(np.squeeze(header["n_runs"]))):
         par_df, obs_df = read_pestpp_runstorage(rnj_filename, irun=irun)
         par_df.loc[li] = par_df.loc[li].apply(np.log10)
         obs_diff = base_obs - obs_df

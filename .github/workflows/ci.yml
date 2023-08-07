@@ -36,14 +36,14 @@ jobs:
 
     # Setup conda env
     - name: Install Conda environment using micromamba
-      uses: mamba-org/provision-with-micromamba@main
+      uses: mamba-org/setup-micromamba@v1
       with:
         environment-file: etc/environment.yml
         environment-name: pyemu
-        cache-downloads: true
-        cache-env: true
-        extra-specs: |
+        create-args: >-
           python=${{ matrix.python-version }}
+        cache-downloads: true
+        cache-environment: true
 
     # Install PEST++ executables TODO: got to be a way of speeding this up/cacheing...
     - name: PESTPP exe install

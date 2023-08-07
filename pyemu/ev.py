@@ -517,7 +517,7 @@ class ErrVar(LinearAnalysis):
             results = {}
             for prediction in self.predictions_iter:
                 results[("first", prediction.col_names[0])] = float(
-                    (prediction.T * first_term * prediction).x
+                    (prediction.T * first_term * prediction).x.squeeze()
                 )
             self.log("calc first term parameter @" + str(singular_value))
             return results
@@ -598,7 +598,7 @@ class ErrVar(LinearAnalysis):
             results = {}
             for prediction in self.predictions_iter:
                 results[("second", prediction.col_names[0])] = float(
-                    (prediction.T * second_term * prediction).x
+                    (prediction.T * second_term * prediction).x.squeeze()
                 )
             self.log("calc second term prediction @" + str(singular_value))
             return results
@@ -678,7 +678,7 @@ class ErrVar(LinearAnalysis):
                     (prediction.T * self.G(singular_value) * self.omitted_jco)
                     - omitted_prediction.T
                 ).T
-                result = float((p.T * self.omitted_parcov * p).x)
+                result = float((p.T * self.omitted_parcov * p).x.squeeze())
                 results[("third", prediction.col_names[0])] = result
             self.log("calc third term prediction @" + str(singular_value))
             return results
