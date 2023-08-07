@@ -1994,9 +1994,9 @@ def direct_listpars_test(setup_freyberg_mf6):
 
     # check on that those dummy pars compare to the model versions.
     for f in Path(pf.new_d).glob("new_*txt"):
-        n_df = pd.read_csv(f, sep="\s+")
+        n_df = pd.read_csv(f, sep=r"\s+")
         o_df = pd.read_csv(f.with_name(f.name.strip('new_')),
-                           sep="\s+", header=None)
+                           sep=r"\s+", header=None)
         o_df.columns = ['k', 'i', 'j', 'flux']
         assert np.isclose(n_df.loc[:, o_df.columns], o_df).all(), (
             f"Something broke with alternative style model files ({f})"
@@ -2253,8 +2253,8 @@ def mf6_freyberg_direct_test(tmp_path):
                       if f.startswith('new_') and f.endswith('txt')]
         # check on that those dummy pars compare to the model versions.
         for f in list_files:
-            n_df = pd.read_csv(f, sep="\s+")
-            o_df = pd.read_csv(f.strip('new_'), sep="\s+", header=None)
+            n_df = pd.read_csv(f, sep=r"\s+")
+            o_df = pd.read_csv(f.strip('new_'), sep=r"\s+", header=None)
             o_df.columns = ['k', 'i', 'j', 'flux']
             assert np.isclose(n_df.loc[:, o_df.columns], o_df).all(), (
                 "Something broke with alternative style model files"
@@ -2780,8 +2780,8 @@ def mf6_freyberg_short_direct_test(tmp_path):
                       if f.startswith('new_') and f.endswith('txt')]
         # check on that those dummy pars compare to the model versions.
         for f in list_files:
-            n_df = pd.read_csv(f, sep="\s+")
-            o_df = pd.read_csv(f.strip('new_'), sep="\s+", header=None)
+            n_df = pd.read_csv(f, sep=r"\s+")
+            o_df = pd.read_csv(f.strip('new_'), sep=r"\s+", header=None)
             o_df.columns = ['k', 'i', 'j', 'flx']
             assert np.allclose(o_df.values,
                                n_df.loc[:, o_df.columns].values,
@@ -3350,7 +3350,7 @@ class TestPstFrom():
         except Exception as e:
             os.chdir(self.original_wd)
             raise e
-        
+
     def test_add_array_parameters_alt_inst_str_0_d(self):
         """Given a list of text file arrays, test setting up
         array parameters that can extend across multiple files,
@@ -4615,23 +4615,22 @@ def vertex_grid_test():
     if os.path.exists(template_ws):
         shutil.rmtree(template_ws)
     # instantiate PstFrom
-    pf = pyemu.utils.PstFrom(original_d=tmp_model_ws, 
-                                new_d=template_ws, 
-                                remove_existing=True, 
-                                longnames=True, 
-                                spatial_reference=modelgrid, 
-                                zero_based=False, 
-                                echo=True) 
+    pf = pyemu.utils.PstFrom(original_d=tmp_model_ws,
+                             new_d=template_ws,
+                             remove_existing=True,
+                             longnames=True,
+                             spatial_reference=modelgrid,
+                             zero_based=False,
+                             echo=True)
     pf.mod_sys_cmds.append(mf6_exe_name)
 
     # exponential variogram for spatially varying parameters
-    v_space = pyemu.geostats.ExpVario(contribution=1.0, 
-                                        a=1000, 
-                                        anisotropy=1.0,
-                                        bearing=0.0 
-                                        )
+    v_space = pyemu.geostats.ExpVario(contribution=1.0,
+                                      a=1000,
+                                      anisotropy=1.0,
+                                      bearing=0.0)
     # geostatistical structure for spatially varying parameters
-    grid_gs = pyemu.geostats.GeoStruct(variograms=v_space, transform='log') 
+    grid_gs = pyemu.geostats.GeoStruct(variograms=v_space, transform='log')
 
     tag = "npf_k_"
     files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
@@ -4650,15 +4649,16 @@ def vertex_grid_test():
     for f in files:
         layer = int(f.split('_layer')[-1].split('.')[0]) - 1
         # grid (fine) scale parameters
-        df_gr = pf.add_parameters(f,
-                        zone_array=ib[layer],
-                        par_type="grid",
-                        geostruct=grid_gs, 
-                        par_name_base=f.split('.')[1].replace("_","")+"gr", 
-                        pargp=f.split('.')[1].replace("_","")+"gr", 
-                        lower_bound=0.2, upper_bound=5.0, 
-                        ult_ubound=100, ult_lbound=0.01 
-                    )    
+        df_gr = pf.add_parameters(
+            f,
+            zone_array=ib[layer],
+            par_type="grid",
+            geostruct=grid_gs,
+            par_name_base=f.split('.')[1].replace("_","")+"gr",
+            pargp=f.split('.')[1].replace("_","")+"gr",
+            lower_bound=0.2, upper_bound=5.0,
+            ult_ubound=100, ult_lbound=0.01
+        )
         # pilot point (medium) scale parameters
         df_pp = pf.add_parameters(f,
                             zone_array=ib[layer],
@@ -4691,10 +4691,10 @@ def vertex_grid_test():
     # add the observations to pf
     df = pd.read_csv(os.path.join(template_ws, "sfr_obs.csv"), index_col=0)
     sfr_df = pf.add_observations("sfr_obs.csv",
-                                insfile="sfr_obs.csv.ins", 
-                                index_cols="time", 
-                                use_cols=list(df.columns.values), 
-                                prefix="sfr") 
+                                insfile="sfr_obs.csv.ins",
+                                index_cols="time",
+                                use_cols=list(df.columns.values),
+                                prefix="sfr")
 
     pst = pf.build_pst()
 
@@ -4737,7 +4737,7 @@ def vertex_grid_test():
 
     # write input files
     pst.write_input_files(template_ws)
-    
+
     # update model input files
     cwd = os.getcwd()
     os.chdir(template_ws)
@@ -4803,37 +4803,53 @@ def test_defaults(tmp_path):
     os.chdir(bd)
 
 
-def list_float_int_index_test():
-    
-    org_d = "list_temp"
-    if os.path.exists(org_d):
-        shutil.rmtree(org_d)
-    os.makedirs(org_d)
-    shutil.copy2(os.path.join("utils","ppoints.faults.csv"),os.path.join(org_d,"ppoints.faults.csv"))
-    
-    #print(os.getcwd())
-    df = pd.read_csv(os.path.join(org_d,"ppoints.faults.csv"))
-    pf = pyemu.utils.PstFrom(original_d=org_d, new_d="list_temp_new",remove_existing=True,zero_based=False)
+def list_float_int_index_test(tmp_path):
+    org_d = tmp_path
+    # if os.path.exists(org_d):
+    #     shutil.rmtree(org_d)
+    # os.makedirs(org_d)
+    shutil.copy2(os.path.join("utils", "ppoints.faults.csv"),
+                 os.path.join(org_d, "ppoints.faults.csv"))
+    shutil.copy2(os.path.join("utils", "ghb_ppt_part1.dat"),
+                 os.path.join(org_d, "ghb_ppt_part1.dat"))
+    # print(os.getcwd())
+    df = pd.read_csv(os.path.join(org_d, "ppoints.faults.csv"))
+    new_d = Path(org_d, "list_temp_new")
+    pf = pyemu.utils.PstFrom(original_d=org_d, new_d=new_d,
+                             remove_existing=True, zero_based=False)
     pf.add_parameters(filenames="ppoints.faults.csv",
-                     par_type="grid",
-                     par_name_base=["kh","ss","sy","w","a"],
-                     pargp=["kh","ss","sy","w","a"],
-                     index_cols=["x","y","zone"],
-                     use_cols=["kh","ss","sy","w","a"],
+                      par_type="grid",
+                      par_name_base=["kh", "ss", "sy", "w", "a"],
+                      pargp=["kh","ss","sy","w","a"],
+                      index_cols=["x", "y", "zone"],
+                      use_cols=["kh", "ss", "sy", "w", "a"],
                       lower_bound=[0.01,0.1,0.2,0.5],
                       upper_bound=[1.5,2,4,5])
     pf.add_observations(filename="ppoints.faults.csv",
-                     index_cols=["x","y","zone"],
-                     use_cols=["kh","ss","sy","w","a"])
+                        index_cols=["x", "y", "zone"],
+                        use_cols=["kh", "ss", "sy", "w", "a"])
+
+    pf.add_parameters(filenames="ghb_ppt_part1.dat",
+                      par_type="grid",
+                      par_name_base=["n"],
+                      index_cols=["ppt", 'x', 'y'],
+                      use_cols=["ghbcondN"],
+                      lower_bound=0.01,
+                      upper_bound=100)
+    pf.add_observations(filename="ghb_ppt_part1.dat",
+                        index_cols=["ppt", 'x', 'y'],
+                        use_cols="ghbcondN")
     pst = pf.build_pst()
     par = pst.parameter_data
-
-    assert par.shape[0] == df.shape[0] * 5
+    df0 = pd.read_csv(os.path.join(org_d, "ghb_ppt_part1.dat"),
+                      delim_whitespace=True)
+    assert par.shape[0] == df.shape[0] * 5 + len(df0)
     obs = pst.observation_data
-    assert obs.shape[0] == df.shape[0] * 5
-    #pf.parfile_relations.to_csv(os.path.join(pf.new_d,"mult2model_info.csv"))
-    par.loc[par.parnme.str.contains("kh"),"parval1"] = 0.1
-    print(par.loc[par.parnme.str.contains("kh"),"parval1"])
+    assert obs.shape[0] == df.shape[0] * 5 + len(df0)
+    # pf.parfile_relations.to_csv(os.path.join(pf.new_d,"mult2model_info.csv"))
+    par.loc[par.parnme.str.contains("kh"), "parval1"] = 0.1
+    # print(par.loc[par.parnme.str.contains("kh"),"parval1"])
+    par.loc[par.parnme.str.contains("ghbcondN"), "parval1"] = 10
     pst.write_input_files(pf.new_d)
     bd = os.getcwd()
     os.chdir(pf.new_d)
@@ -4841,10 +4857,17 @@ def list_float_int_index_test():
     os.chdir(bd)
     df1 = pd.read_csv(os.path.join(pf.new_d, "ppoints.faults.csv"))
     diff = df1.kh/df.kh.values
-    diff_sum = np.abs((diff - par.loc[par.parnme.str.contains("kh"),"parval1"].values).sum())
+    diff_sum = np.abs(
+        (diff - par.loc[par.parnme.str.contains("kh"), "parval1"].values).sum()
+    )
     print(diff_sum)
     assert diff_sum < 1.0e-7
-
+    df2 = pd.read_csv(os.path.join(pf.new_d, "ghb_ppt_part1.dat"),
+                      delim_whitespace=True)
+    diff_sum = np.abs(((df2.ghbcondN/df0.ghbcondN) -
+                       par.loc[par.parnme.str.contains("ghbcondN"),
+                       "parval1"].values).sum())
+    assert diff_sum < 1.0e-7
 
 
 def mf6_freyberg_thresh_invest(tmp_path):
@@ -5135,7 +5158,7 @@ if __name__ == "__main__":
     #direct_quickfull_test()
     #list_float_int_index_test()
     #freyberg_test()
-    
+
 
 
 
