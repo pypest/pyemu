@@ -448,7 +448,8 @@ def write_input_files(pst, pst_path="."):
 
 
     """
-    par = pst.parameter_data
+    par = pst.parameter_data.copy()
+    par.index = par.index.str.lower()
     par.loc[:, "parval1_trans"] = (par.parval1 * par.scale) + par.offset
     pairs = np.array(list(zip(pst.template_files, pst.input_files)))
     num_tpl = len(pairs)
@@ -475,7 +476,7 @@ def write_input_files(pst, pst_path="."):
     x = [
         pool.apply_async(
             _write_chunk_to_template,
-            args=(chunk, pst.parameter_data.parval1_trans, pst_path),
+            args=(chunk, par.parval1_trans, pst_path),
         )
         for i, chunk in enumerate(chunks)
     ]
