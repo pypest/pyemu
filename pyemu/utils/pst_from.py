@@ -421,8 +421,8 @@ class PstFrom(object):
             for _, l in gps.items():
                 df = pd.concat(l)
                 if "timedelta" in df.columns:
-                    df.loc[:, "y"] = 0  #
-                    df.loc[:, "x"] = df.timedelta.dt.days
+                    df["y"] = 0  #
+                    df["x"] = df.timedelta.dt.days
                 par_dfs.append(df)
             struct_dict[gs] = par_dfs
         return struct_dict
