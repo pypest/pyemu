@@ -1034,6 +1034,30 @@ def mf6_freyberg_test(tmp_path):
                           lower_bound=0.1,
                           par_type="grid")
 
+        # SFR inflow
+        files = [f for f in os.listdir(pf.new_d) if "sfr_perioddata" in f and f.endswith(".txt")]
+        sp = [int(f.split(".")[1].split('_')[-1]) for f in files]
+        d = {s: f for s, f in zip(sp, files)}
+        sp.sort()
+        files = [d[s] for s in sp]
+        print(files)
+        for f in files:
+            # get the stress period number from the file name
+            kper = int(f.split('.')[1].split('_')[-1]) - 1
+            if kper > 1:
+                continue  # only want 1 kper in test
+            # add the parameters
+            pf.add_parameters(filenames=f,
+                              index_cols=[0],  # reach number
+                              use_cols=[2],  # columns with parameter values
+                              par_type="grid",
+                              par_name_base="grsfr",
+                              pargp="grsfr",
+                              upper_bound=10, lower_bound=0.1,
+                              # don't need ult_bounds because it is a single multiplier
+                              datetime=dts[kper],  # this places the parameter value on the "time axis"
+                              geostruct=rch_temporal_gs)
+
         # add model run command
         pf.mod_sys_cmds.append("mf6")
         print(pf.mult_files)
