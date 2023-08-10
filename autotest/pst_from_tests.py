@@ -1044,7 +1044,7 @@ def mf6_freyberg_test(tmp_path):
         for f in files:
             # get the stress period number from the file name
             kper = int(f.split('.')[1].split('_')[-1]) - 1
-            if kper != 0
+            if kper != 0:
                 continue  # only want 1 kper in test
             # add the parameters
             pf.add_parameters(filenames=f,
