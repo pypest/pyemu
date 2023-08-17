@@ -157,6 +157,8 @@ class PstFrom(object):
         self.ult_ubound_fill = 1.0e30
         self.ult_lbound_fill = -1.0e30
         self.chunk_len = int(chunk_len)
+        self.py_functions = set()
+
 
     @property
     def parfile_relations(self):
@@ -323,8 +325,8 @@ class PstFrom(object):
                     (
                         "get_xy() warning: need locational information "
                         "(e.g. i,j) to generate xy, "
-                        "insufficient index cols passed to interpret: {}"
-                        ""
+                        "insufficient index cols passed to interpret: {}."
+                        "i,j will be set to (None,None)"
                     ).format(str(args))
                 )
                 self.ijwarned[self.add_pars_callcount] = True
@@ -1117,7 +1119,8 @@ class PstFrom(object):
         return self._prefix_count[prefix]
 
     def add_py_function(
-        self, file_name, call_str=None, is_pre_cmd=True, function_name=None
+            self, file_name, call_str=None, is_pre_cmd=True,
+            function_name=None
     ):
         """add a python function to the forward run script
 
@@ -1191,33 +1194,42 @@ class PstFrom(object):
         function_name = call_str[
             : call_str.find("(")
         ]  # strip to first occurance of '('
-        func_lines = []
-        search_str = "def " + function_name + "("
-        abet_set = set(string.ascii_uppercase)
-        abet_set.update(set(string.ascii_lowercase))
-        with open(file_name, "r") as f:
-            while True:
-                line = f.readline()
-                if line == "":
-                    self.logger.lraise(
-                        "add_py_function(): EOF while searching for function '{0}'".format(
-                            search_str
+        if function_name in self.py_functions:
+            # todo: could add more duplication options here: override, increment
+            warnings.warn(
+                f"add_py_function(): {function_name} already "
+                f"in forward run python functions, not overriding here, "
+                f"original will be maintained",
+                PyemuWarning,
+            )
+        else:
+            func_lines = []
+            search_str = "def " + function_name + "("
+            abet_set = set(string.ascii_uppercase)
+            abet_set.update(set(string.ascii_lowercase))
+            with open(file_name, "r") as f:
+                while True:
+                    line = f.readline()
+                    if line == "":
+                        self.logger.lraise(
+                            "add_py_function(): EOF while searching for function '{0}'".format(
+                                search_str
+                            )
                         )
-                    )
-                if line.startswith(
-                    search_str
-                ):  # case sens and no strip since 'def' should be flushed left
-                    func_lines.append(line)
-                    while True:
-                        line = f.readline()
-                        if line == "":
-                            break
-                        if line[0] in abet_set:
-                            break
+                    if line.startswith(
+                        search_str
+                    ):  # case sens and no strip since 'def' should be flushed left
                         func_lines.append(line)
-                    break
+                        while True:
+                            line = f.readline()
+                            if line == "":
+                                break
+                            if line[0] in abet_set:
+                                break
+                            func_lines.append(line)
+                        break
 
-        self._function_lines_list.append(func_lines)
+            self._function_lines_list.append(func_lines)
         if is_pre_cmd is True:
             self.pre_py_cmds.append(call_str)
         elif is_pre_cmd is False:
@@ -1228,6 +1240,7 @@ class PstFrom(object):
                     call_str
                 )
             )
+        self.py_functions.update({function_name})
 
     def _process_array_obs(
         self,
@@ -1974,17 +1987,17 @@ class PstFrom(object):
                 self.logger.warn(
                     "0) Inconsistency between " "geostruct transform and partrans."
                 )
-                self.logger.warn(f"1) Setting geostruct transform to " "{transform}")
+                self.logger.warn(f"1) Setting geostruct transform to {transform}")
                 if geostruct not in self.par_struct_dict.keys():
                     # safe to just reset transform
                     geostruct.transform = transform
                 else:
-                    self.logger.warn("2) This will create a new copy of " "geostruct")
+                    self.logger.warn("2) This will create a new copy of geostruct")
                     # to avoid flip flopping transform need to make a new geostruct
                     geostruct = copy.copy(geostruct)
                     geostruct.transform = transform
                 self.logger.warn(
-                    "-) Better to pass an appropriately " "transformed geostruct"
+                    "-) Better to pass an appropriately transformed geostruct"
                 )
         # big sr and zone dependancy checker here: todo - tidy?
         checker = (
