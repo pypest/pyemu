@@ -183,6 +183,23 @@ def load_test(tmp_path):
     if len(exceptions) > 0:
         raise Exception('\n'.join(exceptions))
 
+
+def test_write_precision(tmp_path):
+    import os
+    from pyemu import Pst
+    pst_dir = os.path.join("pst")
+    org_path = os.path.join(pst_dir, "pest.pst")
+    new_path = os.path.join(tmp_path, "pest1.pst")
+    pst = Pst(org_path)
+    par = pst.parameter_data.copy()
+    par.loc[par.index[1:20], 'parlbnd'] = 1.e-20
+    par.loc[par.index[1:20], 'parval1'] = 1.e-14
+    pst.parameter_data = par
+    pst.write(new_path)
+    newpst = Pst(new_path)
+    assert all(newpst.parameter_data.iloc[1:20].parlbnd > 0)
+
+
 def comments_test(tmp_path):
     import os
     import pyemu

@@ -191,6 +191,7 @@ def freybergnwt_2_pstfrom(tmp_path):
 def freyberg_test(tmp_path):
     import numpy as np
     import pandas as pd
+    from pyemu import PyemuWarning
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
@@ -273,6 +274,9 @@ def freyberg_test(tmp_path):
         # sfr outputs to obs
         sfr_idx = ['segment', 'reach', 'kstp', 'kper']
         sfr_use = ["Qaquifer", "Qout", 'width']
+        with pytest.warns(PyemuWarning):
+            pf.add_py_function(__file__, '_gen_dummy_obs_file()',
+                               is_pre_cmd=False)
         pf.add_observations('freyberg.sfo.dat', insfile=None,
                             index_cols=sfr_idx,
                             use_cols=sfr_use, prefix='sfr',
