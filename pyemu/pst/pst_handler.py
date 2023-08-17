@@ -1908,7 +1908,7 @@ class Pst(object):
         # for line in self.other_lines:
         #     f_out.write(line)
         if self.with_comments:
-            for line in self.comments.get("* singular value decompisition", []):
+            for line in self.comments.get("* singular value decomposition", []):
                 f_out.write(line)
         self.svd_data.write(f_out)
 
