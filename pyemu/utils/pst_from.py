@@ -845,11 +845,11 @@ class PstFrom(object):
                 # shortnames from using previous a starting point (if existing)
                 obgpmap["shortname"] = "obg" + (obgpmap.index+gshtmx).astype(str)
                 ltobs = obgpmap.longname.str.startswith(
-                    pyemu.Pst.get_constraint_tags('lt')
+                    pyemu.pst.pst_handler.get_constraint_tags('lt')
                 )
                 obgpmap.loc[ltobs, "shortname"] = "l_" + obgpmap.loc[ltobs, "shortname"]
                 gtobs = obgpmap.longname.str.startswith(
-                    pyemu.Pst.get_constraint_tags('gt')
+                    pyemu.pst.pst_handler.get_constraint_tags('gt')
                 )
                 obgpmap.loc[gtobs, "shortname"] = "g_" + obgpmap.loc[gtobs, "shortname"]
                 obgpmap_dict = obgpmap.set_index('longname').shortname.to_dict()
