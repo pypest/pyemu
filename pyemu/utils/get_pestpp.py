@@ -29,7 +29,7 @@ default_owner = "usgs"
 default_repo = "pestpp"
 # key is the repo name, value is the renamed file prefix for the download
 renamed_prefix = {
-    "pestpp": "mestpp",
+    "pestpp": "pestpp",
 }
 available_repos = list(renamed_prefix.keys())
 available_ostags = ["linux", "mac", "win"]
