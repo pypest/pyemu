@@ -35,14 +35,16 @@ optional = [
     "matplotlib",
     "pyshp",
     "scipy",
-    "shapely"
+    "shapely",
 ]
 test = [
     "coveralls",
     "pytest",
     "pytest-cov",
     "pytest-xdist",
-    "nbmake"
+    "flaky",
+    "nbmake",
+    "modflow-devtools",
 ]
 docs = [
     "pyemu[optional]",

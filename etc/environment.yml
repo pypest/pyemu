@@ -12,9 +12,13 @@ dependencies:
   - jinja2
   # tests
   - coveralls
+  - flaky
   - pytest
   - pytest-cov
   - pytest-xdist
   - nbmake
   - shapely
   - pyproj
+  - pip
+  - pip:
+      - modflow-devtools

@@ -57,7 +57,7 @@ def get_ostag() -> str:
     if sys.platform.startswith("linux"):
         return "linux"
     elif sys.platform.startswith("iwin"):
-        return "win" + ("64" if sys.maxsize > 2**32 else "32")
+        return "win"
     elif sys.platform.startswith("darwin"):
         return "mac"
     raise ValueError(f"platform {sys.platform!r} not supported")
@@ -517,7 +517,8 @@ def run_main(
         for pth in zipf.namelist():
             p = Path(pth)
             if p.parent.name == "bin":
-                full_path[p.name] = pth
+                key = p.name.replace(exe_suffix, "")
+                full_path[key] = pth
         files = set(full_path.keys())
 
         if not files:
@@ -525,7 +526,7 @@ def run_main(
             files = set(zipf.namelist())
 
         code = False
-        if "code.json" in files and repo == "executables":
+        if "code.json" in files and repo == "pestpp":
             code_bytes = zipf.read("code.json")
             code = json.loads(code_bytes.decode())
             if meta_path:
