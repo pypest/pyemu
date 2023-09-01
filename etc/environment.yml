@@ -19,6 +19,4 @@ dependencies:
   - nbmake
   - shapely
   - pyproj
-  - pip
-  - pip:
-      - modflow-devtools
+  - modflow-devtools
