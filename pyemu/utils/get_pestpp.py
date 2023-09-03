@@ -56,7 +56,7 @@ def get_ostag() -> str:
     """Determine operating system tag from sys.platform."""
     if sys.platform.startswith("linux"):
         return "linux"
-    elif sys.platform.startswith("iwin"):
+    elif sys.platform.startswith("win"):
         return "win"
     elif sys.platform.startswith("darwin"):
         return "mac"
@@ -463,10 +463,22 @@ def run_main(
         urllib.request.urlretrieve(download_url, download_pth)
 
     if subset:
+        if not isinstance(subset, (str, list, tuple)):
+            raise TypeError(
+                "subset but be a comma-separated string, list, or tuple"
+            )
+        print(subset)
         if isinstance(subset, str):
-            subset = set(subset.replace(",", " ").split())
-        else:
-            subset = set(subset)
+            for rep_text in ("'", '"'):
+                subset = subset.replace(rep_text, "")
+            subset = subset.split(sep=",")
+        if ostag in ("win",):
+            for idx, entry in enumerate(subset):
+                if entry.startswith("pestpp") and not entry.endswith(
+                    exe_suffix
+                ):
+                    subset[idx] = f"{entry}{exe_suffix}"
+        subset = set(subset)
 
     # Open archive and extract files
     extract = set()
@@ -517,8 +529,7 @@ def run_main(
         for pth in zipf.namelist():
             p = Path(pth)
             if p.parent.name == "bin":
-                key = p.name.replace(exe_suffix, "")
-                full_path[key] = pth
+                full_path[p.name] = pth
         files = set(full_path.keys())
 
         if not files:
