@@ -1,5 +1,8 @@
+from pathlib import Path
 import pytest
 from pst_from_tests import freybergmf6_2_pstfrom
+
+pytest_plugins = ["modflow_devtools.fixtures"]
 
 
 collect_ignore = [
@@ -16,5 +19,3 @@ collect_ignore = [
     # "mat_tests.py",
     # "da_tests.py"
 ]
-
-
