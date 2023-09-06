@@ -25,10 +25,6 @@ jobs:
     steps:
     - name: Checkout repo
       uses:  actions/checkout@v3 # checksout this repo
-    
-    - name: Setup Ninja
-      # if: ${{ runner.os == 'Windows' }} 
-      uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Set Windows ENV
       if: runner.os == 'Windows'
@@ -45,32 +41,9 @@ jobs:
         cache-downloads: true
         cache-environment: true
 
-    # Install PEST++ executables TODO: got to be a way of speeding this up/cacheing...
-    - name: PESTPP exe install
+    - name: Install pyemu
       shell: bash -l {0}
       run: |
-        if [[ ! -d "$HOME/.local/bin" ]]; then
-            mkdir -p "$HOME/.local/bin";
-        fi
-        git clone -b develop --depth 1 https://github.com/usgs/pestpp
-        cd pestpp
-        mkdir build && cd build
-        if [[ "$RUNNER_OS" == "Windows" ]]; then
-            cmake -GNinja -DCMAKE_CXX_COMPILER=cl -DCMAKE_C_COMPILER=cl -DCMAKE_BUILD_TYPE=Release ..
-            ninja
-        else
-            cmake -DCMAKE_BUILD_TYPE=Release ..
-            make -j2
-        fi
-        cd ..
-        # do we also need to cp to os specific within .local/bin/? probs...
-        find bin -maxdepth 1 -type f -exec cp {} $HOME/.local/bin/. \;
-        cd ..
-    
-    - name: Install Flopy & pyemu?
-      shell: bash -l {0}
-      run: |
-        pip install https://github.com/modflowpy/flopy/zipball/develop
         pip install -e .
         micromamba list
 
@@ -83,6 +56,12 @@ jobs:
         echo "$MODFLOW_BIN_PATH" >> $GITHUB_PATH
         echo "$HOME/.local/bin" >> $GITHUB_PATH
         echo $GITHUB_PATH
+
+    # order matters for this step - after setting path to executables
+    - name: Install PEST++ suite using get-pestpp
+      shell: bash -l {0}
+      run: |
+        get-pestpp :home
 
     - name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
       shell: bash -l {0}
