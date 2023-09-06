@@ -62,6 +62,8 @@ jobs:
       shell: bash -l {0}
       run: |
         get-pestpp :home
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
       shell: bash -l {0}
