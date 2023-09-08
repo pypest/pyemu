@@ -218,6 +218,7 @@ def comments_test(tmp_path):
 def tied_test(tmp_path):
     import os
     import pyemu
+    import pandas as pd
     pst_dir = os.path.join("pst")
     pst = pyemu.Pst(os.path.join(pst_dir, "br_opt_no_zero_weighted.pst"))
     print(pst.tied)
@@ -240,7 +241,8 @@ def tied_test(tmp_path):
     par = pst.parameter_data
     par.loc[pst.par_names[2], "partrans"] = "tied"
     print(pst.tied)
-    par.loc[pst.par_names[2], "partied"] = "junk1"
+    par.loc[pst.par_names[2], "partied"] = pd.Series("junk1",
+                                                     index=pst.par_names[2])
     try:
         pst.write(os.path.join(tmp_path, "test.pst"))
     except:
@@ -1324,7 +1326,7 @@ def parrep_test(tmp_path):
         pyemu.ParameterEnsemble(pst=pst,df=parens).to_binary('fake_parens.jcb')
         # test the parfile style
         pst.parrep('fake.par')
-        assert pst.parameter_data.parval1[0] == pst.parameter_data.parlbnd[0]
+        assert pst.parameter_data.parval1.iloc[0] == pst.parameter_data.parlbnd.iloc[0]
         assert np.allclose(pst.parameter_data.iloc[1:].parval1.values,parvals[1:],atol=0.0001)
         assert pst.control_data.noptmax == 0
         pst.parrep('fake.par', noptmax=99, enforce_bounds=False)
@@ -1333,7 +1335,7 @@ def parrep_test(tmp_path):
 
         # now test the ensemble style
         pst.parrep('fake.par.0.csv')
-        assert pst.parameter_data.parval1[0] == pst.parameter_data.parlbnd[0]
+        assert pst.parameter_data.parval1.iloc[0] == pst.parameter_data.parlbnd.iloc[0]
         assert np.allclose(pst.parameter_data.iloc[1:].parval1.values,parvals[1:],atol=0.0001)
 
         pst.parrep('fake.par.0.nobase.csv')

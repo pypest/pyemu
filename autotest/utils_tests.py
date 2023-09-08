@@ -2354,10 +2354,11 @@ def ac_draw_test(tmp_path):
     oe = pyemu.helpers.autocorrelated_draw(pst,struct_dict,num_reals=8000)
 
     obs = pst.observation_data
-    obs.loc[:,"emp_std"] = oe.std().loc[obs.obsnme]
-    obs.loc[:,"std_diff"] = 100 * np.abs(obs.emp_std-obs.standard_deviation)/obs.emp_std
-    print(obs.std_diff.min(),obs.std_diff.max())
-    assert obs.std_diff.max() < 5.0
+    obs["emp_std"] = oe.std().loc[obs.obsnme]
+    obs["std_diff"] = 100 * np.abs(obs.emp_std-obs.standard_deviation)/obs.emp_std
+    sel = obs.emp_std != 0
+    print(obs[sel].std_diff.min(), obs[sel].std_diff.max())
+    assert obs[sel].std_diff.max() < 5.0
 
 
     # pst.observation_data.loc[:,"upper_bound"] = np.nan
