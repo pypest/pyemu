@@ -80,11 +80,21 @@ Related Links
 How to get started with pyEMU
 =============================
 
-pyEMU is available through pyPI:
+pyEMU is available through pyPI and conda. To install pyEMU type:
 
-`>>>pip install pyemu`
+    >>>conda install -c conda-forge pyemu
+
+or
+
+    >>>pip install pyemu
 
 pyEMU needs `numpy` and `pandas`.  For plotting, `matplotloib`, `pyshp`, and `flopy` to take advantage of the auto interface construction
+
+After pyEMU is installed, the PEST++ software suite can be installed for your operating system  using the command:
+
+    get-pestpp :pyemu
+
+See [documentation](get_pestpp.md) for more information.
 
 Found a bug? Got a smart idea? Contributions welcome.
 ====================================================

@@ -5,16 +5,19 @@ dependencies:
   # required
   - python>=3.8
   - numpy>=1.15.0
-  - pandas
+  - pandas<2.1.0
   # optional
   - matplotlib>=1.4.0
   - pyshp
   - jinja2
   # tests
   - coveralls
+  - flaky
   - pytest
   - pytest-cov
   - pytest-xdist
   - nbmake
   - shapely
   - pyproj
+  - flopy
+  - modflow-devtools
