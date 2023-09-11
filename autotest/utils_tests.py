@@ -591,7 +591,7 @@ def ok_grid_test(tmp_path):
     pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
     pts_data.index = pts_data.name
     pts_data = pts_data.loc[:,["x","y","name"]]
-
+    pts_data['name'] = pts_data.name.astype(str)
 
     sr = pyemu.helpers.SpatialReference(delr=delr,delc=delc)
     pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
@@ -624,13 +624,13 @@ def ok_grid_zone_test(tmp_path):
     pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
     pts_data.index = pts_data.name
     pts_data = pts_data.loc[:,["x","y","name"]]
-
+    pts_data['name'] = pts_data.name.astype(str)
 
     sr = pyemu.helpers.SpatialReference(delr=delr,delc=delc)
     pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
     pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
-    pts_data.loc[:,"zone"] = 1
-    pts_data.zone.iloc[1] = 2
+    pts_data.loc[:, "zone"] = 1
+    pts_data.loc[pts_data.index[1], "zone"] = 2
     print(pts_data.zone.unique())
     str_file = os.path.join("utils","struct_test.dat")
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
@@ -780,6 +780,7 @@ def geostat_prior_builder_test(tmp_path):
     import os
     import numpy as np
     import pyemu
+    import pandas as pd
     pst_file = os.path.join("pst","pest.pst")
     pst = pyemu.Pst(pst_file)
     # print(pst.parameter_data)
@@ -804,6 +805,9 @@ def geostat_prior_builder_test(tmp_path):
     assert np.array_equiv(d1, d2)
 
     pst.parameter_data.loc[pst.par_names[1:10], "partrans"] = "tied"
+    pst.parameter_data['partied'] = pd.Series(
+        np.nan, index=pst.parameter_data.index, dtype=object
+    )
     pst.parameter_data.loc[pst.par_names[1:10], "partied"] = pst.par_names[0]
     cov = pyemu.helpers.geostatistical_prior_builder(pst, {gs: df},
                                                      sigma_range=4)
@@ -841,6 +845,9 @@ def geostat_draws_test(tmp_path):
     pe = pyemu.helpers.geostatistical_draws(pst_file,{str_file:tpl_file,str_file:df_one})
     assert (pe.shape == pe.dropna().shape)
 
+    pst.parameter_data["partied"] = pd.Series(
+        np.nan, index=pst.parameter_data.index, dtype=object
+    )
     pst.parameter_data.loc[pst.par_names[1:10], "partrans"] = "tied"
     pst.parameter_data.loc[pst.par_names[1:10], "partied"] = pst.par_names[0]
     pe = pyemu.helpers.geostatistical_draws(pst, {str_file: tpl_file})
@@ -2277,7 +2284,6 @@ def rmr_parse_test():
     df = pyemu.helpers.parse_rmr_file(os.path.join("utils","pest_local_pdc.rmr"))
 
 
-@pytest.mark.order(0)
 def ac_draw_test(tmp_path):
     import pyemu
     import numpy as np

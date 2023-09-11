@@ -198,11 +198,10 @@ def smp_to_dataframe(smp_filename, datetime_format=None):
     df = pd.read_csv(
         smp_filename,
         delim_whitespace=True,
-        parse_dates={"datetime": ["date", "time"]},
         header=None,
         names=["name", "date", "time", "value"],
         dtype={"name": object, "value": np.float64},
         na_values=["dry"],
-        date_parser=date_func,
     )
+    df['datetime'] = (df.date + " " + df.time).apply(date_func)
     return df
