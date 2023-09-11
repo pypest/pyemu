@@ -84,7 +84,9 @@ class Ensemble(object):
     """
 
     def __init__(self, pst, df, istransformed=False):
-        self._df = df.replace([np.inf, -np.inf], np.nan)
+        self._df = df
+        if df is not None:
+            self._df = self._df.replace([np.inf, -np.inf], np.nan)
         """`pandas.DataFrame`: the underlying dataframe that stores the realized values"""
         self.pst = pst
         """`pyemu.Pst`: control file instance"""
