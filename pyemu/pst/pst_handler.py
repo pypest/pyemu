@@ -604,7 +604,11 @@ class Pst(object):
         if tied_pars.shape[0] == 0:
             return None
         if "partied" not in par.columns:
-            par.loc[:, "partied"] = np.NaN
+            # pandas 2.1 + assigning np.nan triggers column to be set as float
+            # whole load of trouble assigning strings later -- but assume that
+            # we want nan (nodata) here for other methods downstream.
+            # pandas 3+ might handle this as pyarrow supports nan string type
+            par["partied"] = pd.Series(np.nan, index=par.index, dtype=object)
         tied = par.loc[tied_pars, ["parnme", "partied"]]
         return tied
 
@@ -1371,12 +1375,11 @@ class Pst(object):
         if len(need_groups) > 0:
             # print(need_groups)
             defaults = copy.copy(pst_utils.pst_config["pargp_defaults"])
+            dfs = [None if self.parameter_groups.empty else self.parameter_groups]
             for grp in need_groups:
                 defaults["pargpnme"] = grp
-                self.parameter_groups = pd.concat(
-                    [self.parameter_groups, pd.DataFrame([defaults])],
-                    ignore_index=True
-                )
+                dfs.append(pd.DataFrame([defaults]))
+            self.parameter_groups = pd.concat(dfs, ignore_index=True)
 
         # now drop any left over groups that aren't needed
         for gp in self.parameter_groups.loc[:, "pargpnme"]:
@@ -1474,7 +1477,6 @@ class Pst(object):
             pilbl = "pilbl_{0}".format(self.__pi_count)
             self.__pi_count += 1
         missing, fixed = [], []
-
         for par_name in par_names:
             if par_name not in self.parameter_data.parnme:
                 missing.append(par_name)
@@ -1490,6 +1492,10 @@ class Pst(object):
                 "Pst.add_pi_equation(): the following pars "
                 + " were are fixed/tied: {0}".format(",".join(fixed))
             )
+        pi = self.prior_information
+        if "equation" not in pi.columns:
+            idx = pi.index
+            pi["equation"] = pd.Series(np.nan, index=idx, dtype=object)
         eqs_str = ""
         sign = ""
         for i, par_name in enumerate(par_names):
@@ -1503,10 +1509,10 @@ class Pst(object):
                 par_name = "log({})".format(par_name)
             eqs_str += " {0} {1} * {2} ".format(sign, coef, par_name)
         eqs_str += " = {0}".format(rhs)
-        self.prior_information.loc[pilbl, "pilbl"] = pilbl
-        self.prior_information.loc[pilbl, "equation"] = eqs_str
-        self.prior_information.loc[pilbl, "weight"] = weight
-        self.prior_information.loc[pilbl, "obgnme"] = obs_group
+        pi.loc[pilbl, "pilbl"] = pilbl
+        pi.loc[pilbl, "equation"] = eqs_str
+        pi.loc[pilbl, "weight"] = weight
+        pi.loc[pilbl, "obgnme"] = obs_group
 
     def rectify_pi(self):
         """rectify the prior information equation with the current state of the
