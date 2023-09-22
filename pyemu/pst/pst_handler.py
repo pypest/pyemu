@@ -12,7 +12,7 @@ import pandas as pd
 
 
 pd.options.display.max_colwidth = 100
-pd.options.mode.use_inf_as_na = True
+# pd.options.mode.use_inf_as_na = True
 import pyemu
 from ..pyemu_warnings import PyemuWarning
 from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
@@ -26,7 +26,21 @@ def get_constraint_tags(ltgt='lt'):
         return "l_", "less", ">@"
     else:
         return "g_", "greater", "<@"
-    
+
+
+def _check_and_reject_nans(df, name):
+    # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+    if (np.isfinite(df.select_dtypes('number').values).all()
+            and not df.isnull().values.any()):
+        return
+    csv_name = "pst.{0}.nans.csv".format(
+        name.replace(" ", "_").replace("*", "")
+    )
+    df.to_csv(csv_name)
+    raise Exception(
+        "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
+    )
+
 class Pst(object):
     """All things PEST(++) control file
 
@@ -590,7 +604,11 @@ class Pst(object):
         if tied_pars.shape[0] == 0:
             return None
         if "partied" not in par.columns:
-            par.loc[:, "partied"] = np.NaN
+            # pandas 2.1 + assigning np.nan triggers column to be set as float
+            # whole load of trouble assigning strings later -- but assume that
+            # we want nan (nodata) here for other methods downstream.
+            # pandas 3+ might handle this as pyarrow supports nan string type
+            par["partied"] = pd.Series(np.nan, index=par.index, dtype=object)
         tied = par.loc[tied_pars, ["parnme", "partied"]]
         return tied
 
@@ -1056,8 +1074,8 @@ class Pst(object):
                             raw = line.strip().split()
                             tied_pars.append(raw[0].strip().lower())
                             partied.append(raw[1].strip().lower())
-                        self.parameter_data.loc[:, "partied"] = np.NaN
-                        self.parameter_data.loc[tied_pars, "partied"] = partied
+                        self.parameter_data.loc[tied_pars, 'partied'] = \
+                            pd.Series(partied, index=tied_pars)
 
                 elif "* observation data" in last_section.lower():
                     self.observation_data = self._cast_df_from_lines(
@@ -1357,12 +1375,11 @@ class Pst(object):
         if len(need_groups) > 0:
             # print(need_groups)
             defaults = copy.copy(pst_utils.pst_config["pargp_defaults"])
+            dfs = [None if self.parameter_groups.empty else self.parameter_groups]
             for grp in need_groups:
                 defaults["pargpnme"] = grp
-                self.parameter_groups = pd.concat(
-                    [self.parameter_groups, pd.DataFrame([defaults])],
-                    ignore_index=True
-                )
+                dfs.append(pd.DataFrame([defaults]))
+            self.parameter_groups = pd.concat(dfs, ignore_index=True)
 
         # now drop any left over groups that aren't needed
         for gp in self.parameter_groups.loc[:, "pargpnme"]:
@@ -1460,7 +1477,6 @@ class Pst(object):
             pilbl = "pilbl_{0}".format(self.__pi_count)
             self.__pi_count += 1
         missing, fixed = [], []
-
         for par_name in par_names:
             if par_name not in self.parameter_data.parnme:
                 missing.append(par_name)
@@ -1476,6 +1492,10 @@ class Pst(object):
                 "Pst.add_pi_equation(): the following pars "
                 + " were are fixed/tied: {0}".format(",".join(fixed))
             )
+        pi = self.prior_information
+        if "equation" not in pi.columns:
+            idx = pi.index
+            pi["equation"] = pd.Series(np.nan, index=idx, dtype=object)
         eqs_str = ""
         sign = ""
         for i, par_name in enumerate(par_names):
@@ -1489,10 +1509,10 @@ class Pst(object):
                 par_name = "log({})".format(par_name)
             eqs_str += " {0} {1} * {2} ".format(sign, coef, par_name)
         eqs_str += " = {0}".format(rhs)
-        self.prior_information.loc[pilbl, "pilbl"] = pilbl
-        self.prior_information.loc[pilbl, "equation"] = eqs_str
-        self.prior_information.loc[pilbl, "weight"] = weight
-        self.prior_information.loc[pilbl, "obgnme"] = obs_group
+        pi.loc[pilbl, "pilbl"] = pilbl
+        pi.loc[pilbl, "equation"] = eqs_str
+        pi.loc[pilbl, "weight"] = weight
+        pi.loc[pilbl, "obgnme"] = obs_group
 
     def rectify_pi(self):
         """rectify the prior information equation with the current state of the
@@ -1526,15 +1546,7 @@ class Pst(object):
         if self.with_comments:
             for line in self.comments.get(name, []):
                 f.write(line + "\n")
-        if df.loc[:, columns].isnull().values.any():
-            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-            csv_name = "pst.{0}.nans.csv".format(
-                name.replace(" ", "_").replace("*", "")
-            )
-            df.to_csv(csv_name)
-            raise Exception(
-                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
-            )
+        _check_and_reject_nans(df.loc[:, columns], name)
 
         def ext_fmt(x):
             if pd.notnull(x):
@@ -1711,15 +1723,7 @@ class Pst(object):
         # parameter groups
         name = "pargp_data"
         columns = self.pargp_fieldnames
-        if self.parameter_groups.loc[:, columns].isnull().values.any():
-            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-            csv_name = "pst.{0}.nans.csv".format(
-                name.replace(" ", "_").replace("*", "")
-            )
-            self.parameter_groups.to_csv(csv_name)
-            raise Exception(
-                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
-            )
+        _check_and_reject_nans(self.parameter_groups.loc[:, columns], name)
         f_out.write("* parameter groups external\n")
         pargp_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
         if pst_path is not None:
@@ -1731,15 +1735,7 @@ class Pst(object):
         # parameter data
         name = "par_data"
         columns = self.par_fieldnames
-        if self.parameter_data.loc[:, columns].isnull().values.any():
-            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-            csv_name = "pst.{0}.nans.csv".format(
-                name.replace(" ", "_").replace("*", "")
-            )
-            self.parameter_data.to_csv(csv_name)
-            raise Exception(
-                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
-            )
+        _check_and_reject_nans(self.parameter_data.loc[:, columns], name)
         f_out.write("* parameter data external\n")
         par_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
         if pst_path is not None:
@@ -1751,15 +1747,7 @@ class Pst(object):
         # observation data
         name = "obs_data"
         columns = self.obs_fieldnames
-        if self.observation_data.loc[:, columns].isnull().values.any():
-            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-            csv_name = "pst.{0}.nans.csv".format(
-                name.replace(" ", "_").replace("*", "")
-            )
-            self.observation_data.to_csv(csv_name)
-            raise Exception(
-                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
-            )
+        _check_and_reject_nans(self.observation_data.loc[:, columns], name)
         f_out.write("* observation data external\n")
         obs_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
         if pst_path is not None:
@@ -1775,15 +1763,7 @@ class Pst(object):
         # model input
         name = "tplfile_data"
         columns = self.model_io_fieldnames
-        if self.model_input_data.loc[:, columns].isnull().values.any():
-            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-            csv_name = "pst.{0}.nans.csv".format(
-                name.replace(" ", "_").replace("*", "")
-            )
-            self.model_input_data.to_csv(csv_name)
-            raise Exception(
-                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
-            )
+        _check_and_reject_nans(self.model_input_data.loc[:, columns], name)
         f_out.write("* model input external\n")
         io_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
         if pst_path is not None:
@@ -1795,15 +1775,7 @@ class Pst(object):
         # model output
         name = "insfile_data"
         columns = self.model_io_fieldnames
-        if self.model_output_data.loc[:, columns].isnull().values.any():
-            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-            csv_name = "pst.{0}.nans.csv".format(
-                name.replace(" ", "_").replace("*", "")
-            )
-            self.model_output_data.to_csv(csv_name)
-            raise Exception(
-                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
-            )
+        _check_and_reject_nans(self.model_output_data.loc[:, columns], name)
         f_out.write("* model output external\n")
         io_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
         if pst_path is not None:
@@ -1816,15 +1788,7 @@ class Pst(object):
         if self.prior_information.shape[0] > 0:
             name = "pi_data"
             columns = self.prior_fieldnames
-            if self.prior_information.loc[:, columns].isnull().values.any():
-                # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-                csv_name = "pst.{0}.nans.csv".format(
-                    name.replace(" ", "_").replace("*", "")
-                )
-                self.prior_information.to_csv(csv_name)
-                raise Exception(
-                    "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
-                )
+            _check_and_reject_nans(self.prior_information.loc[:, columns], name)
             f_out.write("* prior information external\n")
             pi_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
             if pst_path is not None:
@@ -1974,26 +1938,10 @@ class Pst(object):
 
         name = "tplfile_data"
         columns = self.model_io_fieldnames
-        if self.model_input_data.loc[:, columns].isnull().values.any():
-            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-            csv_name = "pst.{0}.nans.csv".format(
-                name.replace(" ", "_").replace("*", "")
-            )
-            self.model_input_data.to_csv(csv_name)
-            raise Exception(
-                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
-            )
+        _check_and_reject_nans(self.model_input_data.loc[:, columns], name)
         name = "insfile_data"
         columns = self.model_io_fieldnames
-        if self.model_output_data.loc[:, columns].isnull().values.any():
-            # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-            csv_name = "pst.{0}.nans.csv".format(
-                name.replace(" ", "_").replace("*", "")
-            )
-            self.model_output_data.to_csv(csv_name)
-            raise Exception(
-                "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
-            )
+        _check_and_reject_nans(self.model_output_data.loc[:, columns], name)
         f_out.write("* model input/output\n")
         for tplfle, infle in zip(
             self.model_input_data.pest_file, self.model_input_data.model_file
@@ -2007,15 +1955,7 @@ class Pst(object):
         if self.nprior > 0:
             name = "pi_data"
             columns = self.prior_fieldnames
-            if self.prior_information.loc[:, columns].isnull().values.any():
-                # warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-                csv_name = "pst.{0}.nans.csv".format(
-                    name.replace(" ", "_").replace("*", "")
-                )
-                self.prior_information.to_csv(csv_name)
-                raise Exception(
-                    "NaNs in {0} dataframe, csv written to {1}".format(name, csv_name)
-                )
+            _check_and_reject_nans(self.prior_information.loc[:, columns], name)
             f_out.write("* prior information\n")
             # self.prior_information.index = self.prior_information.pop("pilbl")
             max_eq_len = self.prior_information.equation.apply(lambda x: len(x)).max()
@@ -2399,7 +2339,7 @@ class Pst(object):
             names = self.nnz_obs_names
             obs = self.observation_data.loc[names, :]
             # "Phi should equal nnz - nnzobs that satisfy inequ"
-            res = self.res.loc[names, :].residual
+            res = self.res.loc[names, 'residual'].copy()
             og = obs.obgnme
             res.loc[
                 (og.str.startswith(get_constraint_tags('gt'))) &
@@ -2412,8 +2352,7 @@ class Pst(object):
             if original_ceiling:
                 factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
 
-            w = self.observation_data.weight
-            w.loc[names] *= factors.values
+            self.observation_data.loc[names, "weight"] *= factors
 
     def _adjust_weights_by_phi_components(self, components, original_ceiling):
         """private method that resets the weights of observations by group to account for

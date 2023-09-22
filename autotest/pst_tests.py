@@ -218,6 +218,7 @@ def comments_test(tmp_path):
 def tied_test(tmp_path):
     import os
     import pyemu
+    import pandas as pd
     pst_dir = os.path.join("pst")
     pst = pyemu.Pst(os.path.join(pst_dir, "br_opt_no_zero_weighted.pst"))
     print(pst.tied)
@@ -252,8 +253,10 @@ def tied_test(tmp_path):
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     print(pst.tied)
     par = pst.parameter_data
-    par.loc[pst.par_names[2], "partrans"] = "tied"
-    par.loc[pst.par_names[2], "partied"] = "junk"
+    idx = pst.par_names[2]
+    par.loc[idx, "partrans"] = "tied"
+    par["partied"] = pd.Series(np.nan, index=par.index, dtype=object)
+    par.loc[idx, "partied"] = "junk"
     try:
 
         pst.write(os.path.join(tmp_path, "test.pst"))
@@ -380,7 +383,7 @@ def add_pi_test(tmp_path):
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.prior_information = pst.null_prior
     par_names = pst.parameter_data.parnme[:10]
-    pst.add_pi_equation(par_names, coef_dict={par_names[1]: -1.0})
+    pst.add_pi_equation(par_names, coef_dict={par_names.iloc[1]: -1.0})
     pst.write(os.path.join(tmp_path, "test.pst"))
 
     pst = pyemu.Pst(os.path.join(tmp_path, "test.pst"))
@@ -402,13 +405,15 @@ def setattr_test(tmp_path):
 def add_pars_test(tmp_path):
     import os
     import pyemu
+    import pandas as pd
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     npar = pst.npar
     tpl_file = os.path.join(tmp_path, "crap.in.tpl")
+    idx = pst.parameter_data.parnme.iloc[0]
     with open(tpl_file, 'w') as f:
         f.write("ptf ~\n")
         f.write("  ~junk1   ~\n")
-        f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
+        f.write("  ~ {0}  ~\n".format(idx))
     print(pst.npar)
     pst.add_parameters(tpl_file, "crap.in", pst_path=tmp_path)
     assert npar + 1 == pst.npar
@@ -418,8 +423,14 @@ def add_pars_test(tmp_path):
 
     pyemu.helpers.zero_order_tikhonov(pst)
     nprior,npar = pst.nprior,pst.npar
-    pst.parameter_data.loc[pst.par_names[0], "partrans"] = "tied"
-    pst.parameter_data.loc[pst.par_names[0], "partied"] = "junk1"
+    idx = pst.par_names[0]
+    pst.parameter_data.loc[idx, "partrans"] = "tied"
+    # urgh pandas is getting grumpy trying to set string to
+    # an absent columns
+    pst.parameter_data["partied"] = pd.Series(
+        np.nan, index=pst.parameter_data.index, dtype=object
+    )
+    pst.parameter_data.loc[idx, "partied"] = 'junk1'
     try:
         pst.drop_parameters(tpl_file,tmp_path)
     except:
@@ -575,10 +586,11 @@ def rectify_pgroup_test(tmp_path):
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     npar = pst.npar
     tpl_file = os.path.join(tmp_path, "crap.in.tpl")
+    idx = pst.parameter_data.parnme.iloc[0]
     with open(tpl_file, 'w') as f:
         f.write("ptf ~\n")
         f.write("  ~junk1   ~\n")
-        f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
+        f.write("  ~ {0}  ~\n".format(idx))
     # print(pst.parameter_groups)
 
     pst.add_parameters(tpl_file, "crap.in", pst_path=tmp_path)
@@ -1143,7 +1155,8 @@ def write2_nan_test(tmp_path):
     os.chdir(bd)
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
-    pst.parameter_groups.loc[pst.parameter_groups.pargpnme[0], "derinc"] = np.NaN
+    idx = pst.parameter_groups.pargpnme.iloc[0]
+    pst.parameter_groups.loc[idx, "derinc"] = np.NaN
     os.chdir(tmp_path)
     try:
         _try_write2fail(pst, newpst_f, order=[2, 1])
@@ -1324,7 +1337,7 @@ def parrep_test(tmp_path):
         pyemu.ParameterEnsemble(pst=pst,df=parens).to_binary('fake_parens.jcb')
         # test the parfile style
         pst.parrep('fake.par')
-        assert pst.parameter_data.parval1[0] == pst.parameter_data.parlbnd[0]
+        assert pst.parameter_data.parval1.iloc[0] == pst.parameter_data.parlbnd.iloc[0]
         assert np.allclose(pst.parameter_data.iloc[1:].parval1.values,parvals[1:],atol=0.0001)
         assert pst.control_data.noptmax == 0
         pst.parrep('fake.par', noptmax=99, enforce_bounds=False)
@@ -1333,7 +1346,7 @@ def parrep_test(tmp_path):
 
         # now test the ensemble style
         pst.parrep('fake.par.0.csv')
-        assert pst.parameter_data.parval1[0] == pst.parameter_data.parlbnd[0]
+        assert pst.parameter_data.parval1.iloc[0] == pst.parameter_data.parlbnd.iloc[0]
         assert np.allclose(pst.parameter_data.iloc[1:].parval1.values,parvals[1:],atol=0.0001)
 
         pst.parrep('fake.par.0.nobase.csv')

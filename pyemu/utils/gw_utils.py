@@ -1506,8 +1506,8 @@ def setup_sfr_seg_parameters(
         # look across all kper in multiindex df to check for values entry - fill with absmax should capture entries
         else:
             seg_data.loc[:, par_col] = (
-                seg_data_all_kper.loc[:, (slice(None), par_col)]
-                    .abs().groupby(level=1, axis=1).max()
+                seg_data_all_kper.loc[:, (slice(None), par_col)].abs(
+                ).T.groupby(level=1).max().T
             )
     if len(missing) > 0:
         warnings.warn(
@@ -1569,11 +1569,12 @@ def setup_sfr_seg_parameters(
             tpl_str.extend(list(pnames.values))
         if par_col in tmp_par_cols.keys():
             parnme = tmp_df.index.map(
-                lambda x: "{0}_{1:04d}_tmp".format(par_col, int(x))
+                lambda x: f"{par_col}_{int(x):04d}_tmp"
                 if x in tmp_par_cols[par_col]
                 else 1.0
             )
             sel = parnme != 1.0
+            tmp_df[par_col] = tmp_df[par_col].astype(object)
             tmp_df.loc[sel, par_col] = parnme[sel].map(lambda x: "~   {0}  ~".format(x))
             tmp_tpl_str.extend(list(tmp_df.loc[sel, par_col].values))
             tmp_pnames.extend(list(parnme[sel].values))
