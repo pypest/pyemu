@@ -1160,7 +1160,14 @@ def mf6_freyberg_test(tmp_path):
         assert rcov.sum().sum() > dsum
 
         num_reals = 100
-        pe = pf.draw(num_reals, use_specsim=True)
+        pe = pf.draw(num_reals, use_specsim=False)
+        #pe = pe.copy()
+        pe.enforce()
+        lbnd = pst.parameter_data.parlbnd.to_dict()
+        for pname,lb in lbnd.items():
+            diff = pe.loc[:,pname].values - lb
+            print(pname,lb,diff.min())
+            assert diff.min() >= 0
         pe.to_binary(Path(template_ws, "prior.jcb"))
         assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[1], pst.npar_adj)
         assert pe.shape[0] == num_reals
@@ -5159,7 +5166,7 @@ if __name__ == "__main__":
     # invest()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
-    # mf6_freyberg_test()
+    mf6_freyberg_test(os.path.abspath("."))
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
@@ -5181,7 +5188,7 @@ if __name__ == "__main__":
     # tpf.test_add_list_parameters()
     # # pstfrom_profile()
     # mf6_freyberg_arr_obs_and_headerless_test()
-    usg_freyberg_test(".")
+    #usg_freyberg_test(".")
     #vertex_grid_test()
     #direct_quickfull_test()
     #list_float_int_index_test()
