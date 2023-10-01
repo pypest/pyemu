@@ -3682,7 +3682,7 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
 
             pval = fobs.loc[fobs.apply(lambda x: x.i==3 and x.j==1,axis=1),"obsval"]
             assert len(pval) == 1
-            pval = pval[0]
+            pval = pval.iloc[0]
             aval = arr[3,1]
             print(fname,pval,aval)
             assert pval == aval,"{0},{1},{2}".format(fname,pval,aval)
