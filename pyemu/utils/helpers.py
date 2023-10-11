@@ -1112,7 +1112,7 @@ def first_order_pearson_tikhonov(pst, cov, reset=True, abs_drop_tol=1.0e-3):
         pst.control_data.pestmode = "regularization"
 
 
-def simple_tpl_from_pars(parnames, tplfilename="model.input.tpl"):
+def simple_tpl_from_pars(parnames, tplfilename="model.input.tpl", out_dir="."):
     """Make a simple template file from a list of parameter names.
 
     Args:
@@ -1120,17 +1120,21 @@ def simple_tpl_from_pars(parnames, tplfilename="model.input.tpl"):
             new template file
         tplfilename (`str`): Name of the template file to create.  Default
             is "model.input.tpl"
+        out_dir (`str`): Directory where the template file should be saved.
+            Default is the current working directory (".")
 
     Note:
         Writes a file `tplfilename` with each parameter name in `parnames` on a line
 
     """
-    with open(tplfilename, "w") as ofp:
+    tpl_path = os.path.join(out_dir, tplfilename)
+
+    with open(tpl_path, "w") as ofp:
         ofp.write("ptf ~\n")
         [ofp.write("~{0:^12}~\n".format(cname)) for cname in parnames]
 
 
-def simple_ins_from_obs(obsnames, insfilename="model.output.ins"):
+def simple_ins_from_obs(obsnames, insfilename="model.output.ins", out_dir="."):
     """write a simple instruction file that reads the values named
      in obsnames in order, one per line from a model output file
 
@@ -1139,20 +1143,23 @@ def simple_ins_from_obs(obsnames, insfilename="model.output.ins"):
             new instruction file
         insfilename (`str`): the name of the instruction file to
             create. Default is "model.output.ins"
+        out_dir (`str`): Directory where the instruction file should be saved.
+            Default is the current working directory (".")
 
     Note:
         writes a file `insfilename` with each observation read off
         of a single line
 
-
     """
-    with open(insfilename, "w") as ofp:
+    ins_path = os.path.join(out_dir, insfilename)
+
+    with open(ins_path, "w") as ofp:
         ofp.write("pif ~\n")
         [ofp.write("l1 !{0}!\n".format(cob)) for cob in obsnames]
 
 
 def pst_from_parnames_obsnames(
-    parnames, obsnames, tplfilename="model.input.tpl", insfilename="model.output.ins"
+    parnames, obsnames, tplfilename="model.input.tpl", insfilename="model.output.ins", out_dir="."
 ):
     """Creates a Pst object from a list of parameter names and a list of observation names.
 
@@ -1161,6 +1168,8 @@ def pst_from_parnames_obsnames(
         obsnames (`str`): list of observation names
         tplfilename (`str`): template filename. Default is  "model.input.tpl"
         insfilename (`str`): instruction filename. Default is "model.output.ins"
+        out_dir (str): Directory where template and instruction files should be saved.
+            Default is the current working directory (".")
 
     Returns:
         `pyemu.Pst`: the generic control file
@@ -1173,14 +1182,17 @@ def pst_from_parnames_obsnames(
 
 
     """
-    simple_tpl_from_pars(parnames, tplfilename)
-    simple_ins_from_obs(obsnames, insfilename)
+    tpl_path = os.path.join(out_dir, tplfilename)
+    ins_path = os.path.join(out_dir, insfilename)
+
+    simple_tpl_from_pars(parnames, tplfilename, out_dir)
+    simple_ins_from_obs(obsnames, insfilename, out_dir)
 
     modelinputfilename = tplfilename.replace(".tpl", "")
     modeloutputfilename = insfilename.replace(".ins", "")
 
     return pyemu.Pst.from_io_files(
-        tplfilename, modelinputfilename, insfilename, modeloutputfilename
+        tpl_path, modelinputfilename, ins_path, modeloutputfilename
     )
 
 
