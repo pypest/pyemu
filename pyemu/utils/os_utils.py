@@ -126,9 +126,9 @@ def run(cmd_str, cwd=".", verbose=False):
             raise Exception("run() returned non-zero: {0}".format(ret_val))
     else:
         estat = os.WEXITSTATUS(ret_val)
-        if estat != 0:
-            raise Exception("run() returned non-zero: {0}".format(estat))
-
+        if estat != 0 or ret_val != 0:
+            raise Exception("run() returned non-zero: {0},{1}".format(estat,ret_val))
+        
 
 def _try_remove_existing(d, forgive=False):
     try:

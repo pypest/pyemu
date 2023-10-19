@@ -603,7 +603,7 @@ class PstFrom(object):
         else:
             pe = pyemu.ParameterEnsemble(pst=self.pst, df=gr_par_pe)
         self.logger.log("drawing realizations")
-        return pe
+        return pe.copy()
 
     def build_pst(self, filename=None, update=False, version=1):
         """Build control file from i/o files in PstFrom object.
