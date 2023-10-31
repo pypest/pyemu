@@ -1635,8 +1635,8 @@ class Pst(object):
         if self.tied is not None and len(self.tied) > 0:
             sadj = set(self.adj_par_names)
             spar = set(self.par_names)
-
-            tpar_dict = self.parameter_data.partied.to_dict()
+            ptied = self.parameter_data.loc[self.parameter_data.loc[:,"partrans"]=="tied",:]
+            tpar_dict = ptied.partied.to_dict()
 
             for tpar, ptied in tpar_dict.items():
                 if pd.isna(ptied):
