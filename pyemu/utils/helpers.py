@@ -3804,7 +3804,8 @@ def apply_threshold_pars(csv_file):
     return thresh, prop
 
 
-def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_kernel=None,nverf=0):
+def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_kernel=None,nverf=0,
+                 plot_fits=False):
     """helper function to setup a gaussian-process-regression emulator for outputs of interest.  This
     is primarily targeted at low-dimensional settings like those encountered in PESTPP-MOU
 
@@ -3817,7 +3818,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
         gp_kernel (sklearn GaussianProcess kernel): the kernel to use.  if None, a standard RBF kernel
             is created and used
         nverf (int): the number of input-output pairs to hold back for a simple verification test
-
+        plot_fits (bool): flag to plot the fit GPRs
     Returns:
         None
 
@@ -3828,7 +3829,8 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
 
     from sklearn.gaussian_process import GaussianProcessRegressor
     from sklearn.gaussian_process.kernels import RBF, Matern, ConstantKernel
-
+    import pickle
+    import inspect
     pst = pyemu.Pst(pst_fname)
 
     # work out input variable names
@@ -3921,6 +3923,10 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
         shutil.rmtree(gpr_t_d)
     os.makedirs(gpr_t_d)
     model_fnames = []
+    if plot_fits:
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_pdf import PdfPages
+        pdf = PdfPages(os.path.join(gpr_t_d,"gpr_fits.pdf"))
     for output_name in output_names:
 
         y_verf = df.loc[:,output_name].values.copy()[cut:]
@@ -3929,11 +3935,40 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
         gaussian_process = GaussianProcessRegressor(kernel=gp_kernel, n_restarts_optimizer=20)
         gaussian_process.fit(X_train, y_train)
         print(output_name,"optimized kernel:",gaussian_process.kernel_)
+        if plot_fits:
+            print("...plotting fits for",output_name)
+            predmean,predstd = gaussian_process.predict(df.loc[:, input_names].values.copy(), return_std=True)
+            df.loc[:,"predmean"] = predmean
+            df.loc[:,"predstd"] = predstd
+            isverf = np.zeros_like(predmean)
+            isverf[cut:] = 1
+            df.loc[:,"isverf"] = isverf
+            for input_name in input_names:
+                fig,ax = plt.subplots(1,1,figsize=(6,6))
+                #print(X_train[:,ii])
+                #print(y_train)
+                ddf = df[[input_name,output_name,"predmean","predstd","isverf"]].copy()
+                ddf.sort_values(by=input_name,inplace=True)
+                ax.scatter(ddf.loc[ddf.isverf==0,input_name],ddf.loc[ddf.isverf==0,output_name],marker=".",c="r",label="training")
+                if nverf > 0:
+                    ax.scatter(ddf.loc[ddf.isverf==1,input_name],ddf.loc[ddf.isverf==1,output_name],marker="^",c="c",label="verf")
+                ax.plot(ddf[input_name],ddf["predmean"],"k--",label="GPR mean")
+                ax.fill_between(ddf[input_name],ddf["predmean"] - (2*ddf["predstd"]),ddf["predmean"]+(2*ddf["predstd"]),alpha=0.5,fc='0.5',label="+/- 95%")
+                ax.set_title("input:{0}, output:{1}".format(input_name,output_name),loc="left")
+                ax.legend()
+                plt.tight_layout()
+                pdf.savefig()
+
+                plt.close(fig)
+
+
+
         model_fname = os.path.split(pst_fname)[1]+"."+output_name+".pkl"
         if os.path.exists(os.path.join(gpr_t_d,model_fname)):
             print("WARNING: model_fname '{0}' exists, overwriting...".format(model_fname))
         with open(os.path.join(gpr_t_d,model_fname),'wb') as f:
             pickle.dump(gaussian_process,f)
+
         model_fnames.append(model_fname)
         if nverf > 0:
             pred_mean,pred_std = gaussian_process.predict(X_verf,return_std=True)
@@ -3943,6 +3978,8 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
             print("saved ",output_fname,"verfication csv to",verf_fname)
             mabs = np.abs(vdf.y_verf - vdf.y_pred).mean()
             print("...mean abs error",mabs)
+    if plot_fits:
+        pdf.close()
     mdf = pd.DataFrame({"output_name":output_names,"model_fname":model_fnames},index=output_names)
     minfo_fname = os.path.join(gpr_t_d,"gprmodel_info.csv")
     mdf.to_csv(minfo_fname)
@@ -3995,12 +4032,12 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
     gpst_fname = os.path.split(pst_fname)[1]
     gpst.write(os.path.join(gpr_t_d,gpst_fname),version=2)
     print("saved gpr pst:",gpst_fname,"in gpr_t_d",gpr_t_d)
-    pyemu.os_utils.run("pestpp-mou {0}".format(gpst_fname),cwd=gpr_t_d)
-
-    gpst.pestpp_options.pop("opt_risk",None)
-    gpst.control_data.noptmax = 10
+    try:
+        pyemu.os_utils.run("pestpp-mou {0}".format(gpst_fname),cwd=gpr_t_d)
+    except Exception as e:
+        print("WARNING: pestpp-mou test run failed: {0}".format(str(e)))
+    gpst.control_data.noptmax = pst.control_data.noptmax
     gpst.write(os.path.join(gpr_t_d, gpst_fname), version=2)
-    pyemu.os_utils.run("pestpp-mou {0}".format(gpst_fname), cwd=gpr_t_d)
 
 
 def gpr_forward_run():
