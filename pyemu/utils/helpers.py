@@ -3804,6 +3804,223 @@ def apply_threshold_pars(csv_file):
     return thresh, prop
 
 
+def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_kernel=None,nverf=0):
+    """helper function to setup a gaussian-process-regression emulator for outputs of interest.  This
+    is primarily targeted at low-dimensional settings like those encountered in PESTPP-MOU
+
+    Parameters:
+        pst_fname (str): existing pest control filename
+        input_fnames (str | list[str]): usually a list of decision variable population files
+        output_fnames (str | list[str]): usually a list of observation population files that
+            corresponds to the simulation results associated with `input_fnames`
+        gpr_t_d (str): the template file dir to create that will hold the GPR emulators
+        gp_kernel (sklearn GaussianProcess kernel): the kernel to use.  if None, a standard RBF kernel
+            is created and used
+        nverf (int): the number of input-output pairs to hold back for a simple verification test
+
+    Returns:
+        None
+
+    Note:
+        requires scikit-learn
+
+    """
+
+    from sklearn.gaussian_process import GaussianProcessRegressor
+    from sklearn.gaussian_process.kernels import RBF, Matern, ConstantKernel
+
+    pst = pyemu.Pst(pst_fname)
+
+    # work out input variable names
+    input_groups = pst.pestpp_options.get("opt_dec_var_groups",None)
+    par = pst.parameter_data
+    if input_groups is None:
+        print("using all adjustable parameters as inputs")
+        input_names = pst.adj_par_names
+    else:
+        input_groups = set([i.strip() for i in input_groups.lower().strip().split(",")])
+        print("input groups:",input_groups)
+        adj_par = par.loc[pst.adj_par_names,:].copy()
+        adj_par = adj_par.loc[adj_par.pargp.apply(lambda x: x in input_groups),:]
+        input_names = adj_par.parnme.tolist()
+    print("input names:",input_names)
+
+    #work out constraints and objectives
+    ineq_names = pst.less_than_obs_constraints.tolist()
+    ineq_names.extend(pst.greater_than_obs_constraints.tolist())
+    obs = pst.observation_data
+    objs = pst.pestpp_options.get("mou_objectives",None)
+    constraints = []
+
+    if objs is None:
+        print("'mou_objectives' not found in ++ options, using all ineq tagged non-zero weighted obs as objectives")
+        objs = ineq_names
+    else:
+        objs = objs.lower().strip().split(',')
+        constraints = [n for n in ineq_names if n not in objs]
+
+    print("objectives:",objs)
+    print("constraints:",constraints)
+    output_names = objs
+    output_names.extend(constraints)
+
+    print("loading input and output files")
+    if isinstance(input_fnames,str):
+        input_fnames = [input_fnames]
+    if isinstance(output_fnames,str):
+        output_fnames = [output_fnames]
+    if len(output_fnames) != len(input_fnames):
+        raise Exception("len(input_fnames) != len(output_fnames)")
+
+
+    dfs = []
+    for input_fname,output_fname in zip(input_fnames,output_fnames):
+        if input_fname.lower().endswith(".csv"):
+            input_df = pd.read_csv(os.path.join(input_fname),index_col=0)
+        elif input_fname.lower().endswith(".jcb"):
+            input_df = pyemu.ParameterEnsemble.from_binary(pst=pst,filename=input_fname)._df
+        else:
+            raise Exception("unrecognized input_fname extension:'{0}', looking for csv or jcb".\
+                           format(input_fname.lower()))
+
+        if output_fname.lower().endswith(".csv"):
+            output_df = pd.read_csv(os.path.join(output_fname),index_col=0)
+        elif output_fname.lower().endswith(".jcb"):
+            output_df = pyemu.ObservationEnsemble.from_binary(pst=pst,filename=output_fname)._df
+        else:
+            raise Exception("unrecognized output_fname extension:'{0}', looking for csv or jcb".\
+                            format(output_fname.lower()))
+
+        if input_df.shape[0] != output_df.shape[0]:
+            raise Exception("input rows != output rows for {0} and {1}".\
+                            format(input_fname,output_fname))
+        input_df = input_df.loc[:,input_names]
+        assert input_df.shape == input_df.dropna().shape
+
+        output_df = output_df.loc[:, output_names]
+        assert output_df.shape == output_df.dropna().shape
+
+        input_df.loc[:,output_names] = output_df.values
+        dfs.append(input_df)
+        print("...loaded",input_fname,output_fname)
+
+    df = pd.concat(dfs)
+    assert df.shape == df.dropna().shape
+    df.to_csv(pst_fname + ".aggresults.csv")
+    print("aggregated training dataset shape",df.shape,"saved to",pst_fname + ".aggresults.csv")
+
+
+    if gp_kernel is None:
+        gp_kernel = 1 * RBF(length_scale=1000.0, length_scale_bounds=(1e-4, 1e6))
+        #gp_kernel = Matern(length_scale=100.0, length_scale_bounds=(1e-4, 1e4), nu=4)
+
+    cut = df.shape[0] - nverf
+    X_train = df.loc[:, input_names].values.copy()[:cut, :]
+    X_verf = df.loc[:, input_names].values.copy()[cut:, :]
+    if os.path.exists(gpr_t_d):
+        shutil.rmtree(gpr_t_d)
+    os.makedirs(gpr_t_d)
+    model_fnames = []
+    for output_name in output_names:
+
+        y_verf = df.loc[:,output_name].values.copy()[cut:]
+        y_train = df.loc[:, output_name].values.copy()[:cut]
+        print("training GPR for {0} with {1} data points".format(output_name,y_train.shape[0]))
+        gaussian_process = GaussianProcessRegressor(kernel=gp_kernel, n_restarts_optimizer=20)
+        gaussian_process.fit(X_train, y_train)
+        print(output_name,"optimized kernel:",gaussian_process.kernel_)
+        model_fname = os.path.split(pst_fname)[1]+"."+output_name+".pkl"
+        if os.path.exists(os.path.join(gpr_t_d,model_fname)):
+            print("WARNING: model_fname '{0}' exists, overwriting...".format(model_fname))
+        with open(os.path.join(gpr_t_d,model_fname),'wb') as f:
+            pickle.dump(gaussian_process,f)
+        model_fnames.append(model_fname)
+        if nverf > 0:
+            pred_mean,pred_std = gaussian_process.predict(X_verf,return_std=True)
+            vdf = pd.DataFrame({"y_verf":y_verf,"y_pred":pred_mean,"y_pred_std":pred_std})
+            verf_fname = os.path.join(gpr_t_d,os.path.split(pst_fname)[1]+"."+output_name+".verf.csv")
+            vdf.to_csv(verf_fname)
+            print("saved ",output_fname,"verfication csv to",verf_fname)
+            mabs = np.abs(vdf.y_verf - vdf.y_pred).mean()
+            print("...mean abs error",mabs)
+    mdf = pd.DataFrame({"output_name":output_names,"model_fname":model_fnames},index=output_names)
+    minfo_fname = os.path.join(gpr_t_d,"gprmodel_info.csv")
+    mdf.to_csv(minfo_fname)
+    print("GPR model info saved to",minfo_fname)
+
+    #write a template file
+    tpl_fname = os.path.join(gpr_t_d,"gpr_input.csv.tpl")
+    with open(tpl_fname,'w') as f:
+        f.write("ptf ~\nparnme,parval1\n")
+        for input_name in input_names:
+            f.write("{0},~  {0}   ~\n".format(input_name))
+    other_adj_pars = list(set(pst.adj_par_names)-set(input_names))
+    aux_tpl_fname = None
+    if len(other_adj_pars) > 0:
+
+        aux_tpl_fname = os.path.join(gpr_t_d,"aux_par.csv.tpl")
+        print("writing aux par tpl file: ",aux_tpl_fname)
+        with open(aux_tpl_fname,'w') as f:
+            f.write("ptf ~\n")
+            for input_name in other_adj_pars:
+                f.write("{0},~  {0}   ~\n".format(input_name))
+    #write an ins file
+    ins_fname = os.path.join(gpr_t_d,"gpr_output.csv.ins")
+    with open(ins_fname,'w') as f:
+        f.write("pif ~\nl1\n")
+        for output_name in output_names:
+            f.write("l1 ~,~ !{0}!\n".format(output_name))
+    tpl_list = [tpl_fname]
+    if aux_tpl_fname is not None:
+        tpl_list.append(aux_tpl_fname)
+    input_list = [f.replace(".tpl","") for f in tpl_list]
+    gpst = pyemu.Pst.from_io_files(tpl_list,input_list,
+                                   [ins_fname],[ins_fname.replace(".ins","")],pst_path=".")
+    for col in pst.parameter_data.columns:
+        gpst.parameter_data.loc[input_names,col] = pst.parameter_data.loc[input_names,col].values
+
+    for col in pst.observation_data.columns:
+        gpst.observation_data.loc[output_names,col] = pst.observation_data.loc[output_names,col].values
+    gpst.pestpp_options = pst.pestpp_options
+
+    lines = [line[4:] for line in inspect.getsource(gpr_forward_run).split("\n")][1:]
+
+    with open(os.path.join(gpr_t_d, "forward_run.py"), 'w') as f:
+
+        for line in lines:
+            f.write(line + "\n")
+
+    gpst.control_data.noptmax = 0
+    gpst.model_command = "python forward_run.py"
+    gpst_fname = os.path.split(pst_fname)[1]
+    gpst.write(os.path.join(gpr_t_d,gpst_fname),version=2)
+    print("saved gpr pst:",gpst_fname,"in gpr_t_d",gpr_t_d)
+    pyemu.os_utils.run("pestpp-mou {0}".format(gpst_fname),cwd=gpr_t_d)
+
+    gpst.pestpp_options.pop("opt_risk",None)
+    gpst.control_data.noptmax = 10
+    gpst.write(os.path.join(gpr_t_d, gpst_fname), version=2)
+    pyemu.os_utils.run("pestpp-mou {0}".format(gpst_fname), cwd=gpr_t_d)
+
+
+def gpr_forward_run():
+    """the function to evaluate a set of inputs thru the GPR emulators.\
+    This function gets added programmatically to the forward run process"""
+    import os
+    import pandas as pd
+    import numpy as np
+    import pickle
+    from sklearn.gaussian_process import GaussianProcessRegressor
+    input_df = pd.read_csv("gpr_input.csv",index_col=0)
+    mdf = pd.read_csv(os.path.join("gprmodel_info.csv"),index_col=0)
+    mdf.loc[:,"sim"] = np.nan
+    for output_name,model_fname in zip(mdf.output_name,mdf.model_fname):
+        guassian_process = pickle.load(open(model_fname,'rb'))
+        sim = guassian_process.predict(np.atleast_2d(input_df.parval1.values))
+        print(output_name,sim)
+        mdf.loc[output_name,"sim"] = sim
+    mdf.loc[:,["output_name","sim"]].to_csv("gpr_output.csv",index=False)
+
 
 
 
