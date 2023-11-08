@@ -3916,7 +3916,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
 
 
     if gp_kernel is None:
-        gp_kernel = ConstantKernel(constant_value=1.0,constant_value_bounds=(1e-6,100000)) *\
+        gp_kernel = ConstantKernel(constant_value=1.0,constant_value_bounds=(1e-8,1e8)) *\
                              RBF(length_scale=1000.0, length_scale_bounds=(1e-8, 1e8))
         #gp_kernel = Matern(length_scale=100.0, length_scale_bounds=(1e-4, 1e4), nu=4)
 
