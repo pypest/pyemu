@@ -3874,6 +3874,9 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
     if len(output_fnames) != len(input_fnames):
         raise Exception("len(input_fnames) != len(output_fnames)")
 
+    if os.path.exists(gpr_t_d):
+        shutil.rmtree(gpr_t_d)
+    os.makedirs(gpr_t_d)
 
     dfs = []
     for input_fname,output_fname in zip(input_fnames,output_fnames):
@@ -3908,20 +3911,21 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
 
     df = pd.concat(dfs)
     assert df.shape == df.dropna().shape
-    df.to_csv(pst_fname + ".aggresults.csv")
+    df.to_csv(os.path.join(gpr_t_d,"gpr_aggregate_training_data.csv"))
     print("aggregated training dataset shape",df.shape,"saved to",pst_fname + ".aggresults.csv")
 
 
     if gp_kernel is None:
-        gp_kernel = 1 * RBF(length_scale=1000.0, length_scale_bounds=(1e-4, 1e6))
+        gp_kernel = ConstantKernel(constant_value=1.0,constant_value_bounds=(1e-6,100000)) *\
+                             RBF(length_scale=1000.0, length_scale_bounds=(1e-8, 1e8))
         #gp_kernel = Matern(length_scale=100.0, length_scale_bounds=(1e-4, 1e4), nu=4)
 
+    for hp in gp_kernel.hyperparameters:
+        print(hp)
     cut = df.shape[0] - nverf
     X_train = df.loc[:, input_names].values.copy()[:cut, :]
     X_verf = df.loc[:, input_names].values.copy()[cut:, :]
-    if os.path.exists(gpr_t_d):
-        shutil.rmtree(gpr_t_d)
-    os.makedirs(gpr_t_d)
+
     model_fnames = []
     if plot_fits:
         import matplotlib.pyplot as plt
@@ -3991,15 +3995,16 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
         f.write("ptf ~\nparnme,parval1\n")
         for input_name in input_names:
             f.write("{0},~  {0}   ~\n".format(input_name))
-    other_adj_pars = list(set(pst.adj_par_names)-set(input_names))
+    other_pars = list(set(pst.par_names)-set(input_names))
     aux_tpl_fname = None
-    if len(other_adj_pars) > 0:
+
+    if len(other_pars) > 0:
 
         aux_tpl_fname = os.path.join(gpr_t_d,"aux_par.csv.tpl")
         print("writing aux par tpl file: ",aux_tpl_fname)
         with open(aux_tpl_fname,'w') as f:
             f.write("ptf ~\n")
-            for input_name in other_adj_pars:
+            for input_name in other_pars:
                 f.write("{0},~  {0}   ~\n".format(input_name))
     #write an ins file
     ins_fname = os.path.join(gpr_t_d,"gpr_output.csv.ins")
@@ -4013,8 +4018,10 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
     input_list = [f.replace(".tpl","") for f in tpl_list]
     gpst = pyemu.Pst.from_io_files(tpl_list,input_list,
                                    [ins_fname],[ins_fname.replace(".ins","")],pst_path=".")
+    par_names = pst.par_names
+    assert len(set(par_names).symmetric_difference(set(gpst.par_names))) == 0
     for col in pst.parameter_data.columns:
-        gpst.parameter_data.loc[input_names,col] = pst.parameter_data.loc[input_names,col].values
+        gpst.parameter_data.loc[par_names,col] = pst.parameter_data.loc[par_names,col].values
 
     for col in pst.observation_data.columns:
         gpst.observation_data.loc[output_names,col] = pst.observation_data.loc[output_names,col].values
