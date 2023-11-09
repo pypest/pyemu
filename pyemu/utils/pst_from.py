@@ -1566,7 +1566,7 @@ class PstFrom(object):
 
                 if len(nprefix) == 0:
                     nprefix = filenames[0]
-                nprefix = "oname:{0}_otype:lst".format(nprefix)
+                nprefix = "oname:{0}_otype:lst".format(nprefix.lower())
                 df_ins = pyemu.pst_utils.csv_to_ins_file(
                     df.set_index("idx_str"),
                     ins_filename=self.new_d / insfile,
@@ -1575,7 +1575,7 @@ class PstFrom(object):
                     marker="~",
                     includes_header=includes_header,
                     includes_index=False,
-                    prefix=nprefix.lower(),
+                    prefix=nprefix,
                     head_lines_len=lenhead,
                     sep=sep,
                     gpname=obsgp,
