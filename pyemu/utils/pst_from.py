@@ -1575,7 +1575,7 @@ class PstFrom(object):
                     marker="~",
                     includes_header=includes_header,
                     includes_index=False,
-                    prefix=nprefix,
+                    prefix=nprefix.lower(),
                     head_lines_len=lenhead,
                     sep=sep,
                     gpname=obsgp,
