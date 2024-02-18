@@ -385,8 +385,8 @@ def res_1to1(
         # if obs_g.shape[0] == 1:
         #    ax.scatter(list(obs_g.sim),list(obs_g.obsval),marker='.',s=30,color='b')
         # else:
-        mx = max(obs_g.obsval.max(), obs_g.sim.max())
-        mn = min(obs_g.obsval.min(), obs_g.sim.min())
+        mx = np.nanmax(obs_g.obsval.nanmax(), obs_g.sim.nanmax())
+        mn = np.nanmin(obs_g.obsval.nanmin(), obs_g.sim.nanmin())
 
         # if obs_g.shape[0] == 1:
         mx *= 1.1
@@ -449,8 +449,8 @@ def res_1to1(
             ax_count += 1
         else:
             # need max and min res to set xlim, otherwise wonky figsize
-            mxr = obs_g.res.max()
-            mnr = obs_g.res.min()
+            mxr = obs_g.res.nanmax()
+            mnr = obs_g.res.nanmin()
 
             # if obs_g.shape[0] == 1:
             mxr *= 1.1
