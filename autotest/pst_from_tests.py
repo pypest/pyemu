@@ -1756,6 +1756,7 @@ def direct_quickfull_test(setup_freyberg_mf6):
 def direct_multadd_combo_test(setup_freyberg_mf6):
     dup_file = "freyberg6.wel_stress_period_data_with_dups.txt"
     pf, _ = setup_freyberg_mf6
+    pf.longnames = False
     ghb_files = [f for f in os.listdir(pf.new_d) if ".ghb_stress" in f and f.endswith("txt")]
     pf.add_parameters(ghb_files, par_type="grid", par_style="add", use_cols=3, par_name_base="ghbstage",
                       pargp="ghbstage", index_cols=[0, 1, 2], transform="none", lower_bound=-5, upper_bound=5)
