@@ -1584,7 +1584,7 @@ def ensemble_res_1to1(
 
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()
-        mx = np.nanmax(np.abs(omn), np.abs(omx))  # ensure symmetric about y=0
+        mx = np.nanmax([np.abs(omn), np.abs(omx)])  # ensure symmetric about y=0
         if obs_g.shape[0] == 1:
             mx *= 1.05
         else:
