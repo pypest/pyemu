@@ -693,26 +693,7 @@ def mf6_freyberg_test(setup_freyberg_mf6):
     pf, sim = setup_freyberg_mf6
     m = sim.get_model()
     mg = m.modelgrid
-
-    # import numpy as np
-    # import pandas as pd
-    # pd.set_option('display.max_rows', 500)
-    # pd.set_option('display.max_columns', 500)
-    # pd.set_option('display.width', 1000)
-    # try:
-    #     import flopy
-    # except:
-    #     return
-
-    # org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-    # tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
-    # bd = Path.cwd()
-    # os.chdir(tmp_path)
     template_ws = pf.new_d
-    # sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-    # m = sim.get_model()
-    # sim.set_all_data_external(check_data=False)
-    # sim.write_simulation()
 
     # SETUP pest stuff...
     # os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
@@ -763,7 +744,7 @@ def mf6_freyberg_test(setup_freyberg_mf6):
             fw.write(line)
 
     # generate a test with headers and non spatial idex
-    sfr_pkgdf = pd.DataFrame.from_records(m.sfr.packagedata.array)
+    sfr_pkgdf = pd.DataFrame.from_records(m.sfr.packagedata.array).rename(columns={'ifno':'rno'})
     l = sfr_pkgdf.columns.to_list()
     l = ['#rno', 'k', 'i', 'j'] + l[2:]
     with open(
@@ -1125,11 +1106,6 @@ def mf6_freyberg_test(setup_freyberg_mf6):
 
     # test par mults are working
     check_apply(pf)
-    # os.chdir(pf.new_d)
-    # pst.write_input_files()
-    # pyemu.helpers.apply_list_and_array_pars(
-    #     arr_par_file="mult2model_info.csv", chunk_len=1)
-    # os.chdir(tmp_path)
 
     # cov build
     cov = pf.build_prior(fmt="none").to_dataframe()
@@ -1179,12 +1155,12 @@ def mf6_freyberg_test(setup_freyberg_mf6):
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
     # make sure the appropriate ult bounds have made it thru
-    df = pd.read_csv(os.path.join(template_ws,"mult2model_info.csv"))
-    print(df.columns)
+    df = pd.read_csv(os.path.join(template_ws, "mult2model_info.csv"))
+    # print(df.columns)
     df = df.loc[df.model_file.apply(lambda x: "npf_k_" in x),:]
-    print(df)
-    print(df.upper_bound)
-    print(df.lower_bound)
+    # print(df)
+    # print(df.upper_bound)
+    # print(df.lower_bound)
     assert np.abs(float(df.upper_bound.min()) - 30.) < 1.0e-6,df.upper_bound.min()
     assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
 
