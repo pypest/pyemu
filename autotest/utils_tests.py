@@ -2400,7 +2400,7 @@ def ac_draw_test(tmp_path):
 
 def test_fake_frun(setup_freyberg_mf6):
     from pst_from_tests import ies_exe_path
-    pf = setup_freyberg_mf6
+    pf, sim = setup_freyberg_mf6
     v = pyemu.geostats.ExpVario(contribution=1.0, a=500)
     gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
     pf.add_parameters(
