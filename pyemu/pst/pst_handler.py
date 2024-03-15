@@ -867,7 +867,7 @@ class Pst(object):
                 missing_vals = options.get("missing_values", None)
                 if sep.lower() == "w":
                     df = pd.read_csv(
-                        filename, delim_whitespace=True,
+                        filename, sep=r"\s+",
                         na_values=missing_vals,
                         low_memory=False
                     )
@@ -914,7 +914,7 @@ class Pst(object):
             if col not in df.columns:
                 df.loc[:, col] = np.NaN
             if col in defaults:
-                df.loc[:, col] = df.loc[:, col].fillna(defaults[col])
+                df[col] = df.loc[:, col].fillna(defaults[col])
             if col in converters:
                 # pandas 2.0 `df.loc[:, col] = df.loc[:, col].astype(int)` type
                 # assignment cast RHS to LHS dtype -- therefore did not change
@@ -3800,9 +3800,7 @@ class Pst(object):
                         if kk not in fieldnames and kk not in unique_keys:
                             unique_keys.append(kk)
                 for uk in unique_keys:
-                    if uk not in df.columns:
-                        df.loc[:, uk] = np.NaN
-                    df.loc[:, uk] = meta_dict.apply(lambda x: x.get(uk, np.NaN))
+                    df[uk] = meta_dict.apply(lambda x: x.get(uk, np.NaN))
             except Exception as e:
                 print("error parsing metadata from '{0}', continuing".format(name))
 
@@ -3906,7 +3904,8 @@ def _replace_str_in_files(filelist, name_dict, file_obsparmap=None, pst_path='.'
             )
             if not os.path.exists(sys_fname):
                 warnings.warn(
-                    "template/instruction file '{0}' not found, continuing...",
+                    f"template/instruction file '{sys_fname}' "
+                    f"not found, continuing...",
                     PyemuWarning
                 )
                 continue

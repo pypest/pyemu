@@ -623,7 +623,8 @@ def try_process_ins_test():
 
 
     # df1 = pyemu.pst_utils._try_run_inschek(ins_file,ins_file.replace(".ins",""))
-    df1 = pd.read_csv(ins_file.replace(".ins", ".obf"), delim_whitespace=True, names=["obsnme", "obsval"], index_col=0)
+    df1 = pd.read_csv(ins_file.replace(".ins", ".obf"), sep=r"\s+",
+                      names=["obsnme", "obsval"], index_col=0)
     df1.loc[df1.obsval > 1.0e+10, "obsval"] = np.NaN
     print(df1.max())
     print(df2.max())

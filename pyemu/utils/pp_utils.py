@@ -365,7 +365,7 @@ def pp_file_to_dataframe(pp_filename):
 
     df = pd.read_csv(
         pp_filename,
-        delim_whitespace=True,
+        sep=r'\s+',
         header=None,
         names=PP_NAMES,
         usecols=[0, 1, 2, 3, 4],
@@ -400,7 +400,7 @@ def pp_tpl_to_dataframe(tpl_filename):
     usecols = [0, 1, 2, 3]
     df = pd.read_csv(
         tpl_filename,
-        delim_whitespace=True,
+        sep=r"\s+",
         skiprows=1,
         header=None,
         names=PP_NAMES[:-1],
@@ -581,7 +581,8 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None):
         assert tpl_file is not None
     else:
         assert os.path.exists(pp_file)
-        pp_df = pd.read_csv(pp_file, delim_whitespace=True, header=None, names=PP_NAMES)
+        pp_df = pd.read_csv(pp_file, sep=r"\s+",
+                            header=None, names=PP_NAMES)
     pp_df = pp_df.astype({'zone': int}, errors='ignore')
     if tpl_file is None:
         tpl_file = pp_file + ".tpl"
