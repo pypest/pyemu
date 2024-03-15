@@ -607,7 +607,6 @@ def ends_freyberg_test(tmp_path):
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe, obscov=os.path.join(test_d, "obs.unc"),predictions=predictions)
 
 
-@pytest.mark.order(0)
 def ends_freyberg_dsi_test(tmp_path):
     import pyemu
     test_d = "ends_master"

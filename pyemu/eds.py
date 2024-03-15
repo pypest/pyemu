@@ -466,7 +466,7 @@ class EnDS(object):
                 ccov_vec = ccov[:,i]
                 first_term = np.dot(ccov_vec.transpose(), dd)
                 schur = np.dot(first_term,ccov_vec)
-                post_var = prior_var[i] - schur
+                post_var = prior_var.iloc[i] - schur
                 pt_var.append(post_var)
                 self.logger.log("calc second moment for " + p)
                 if include_first_moment:

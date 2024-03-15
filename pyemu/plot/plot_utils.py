@@ -828,7 +828,7 @@ def pst_prior(pst, logger=None, filename=None, **kwargs):
     figs.append(fig)
     if filename is not None:
         with PdfPages(filename) as pdf:
-            plt.tight_layout()
+            # plt.tight_layout()
             pdf.savefig(fig)
             plt.close(fig)
         logger.log("plot pst_prior")
@@ -1084,7 +1084,7 @@ def ensemble_helper(
     # plt.close(fig)
     figs.append(fig)
     if filename is not None:
-        plt.tight_layout()
+        # plt.tight_layout()
         with PdfPages(filename) as pdf:
             for fig in figs:
                 pdf.savefig(fig)
@@ -1277,7 +1277,7 @@ def ensemble_change_summary(
     # plt.close(fig)
     figs.append(fig)
     if filename is not None:
-        plt.tight_layout()
+        # plt.tight_layout()
         with PdfPages(filename) as pdf:
             for fig in figs:
                 pdf.savefig(fig)
@@ -1632,7 +1632,7 @@ def ensemble_res_1to1(
     plt.tight_layout()
     figs.append(fig)
     if filename is not None:
-        plt.tight_layout()
+        # plt.tight_layout()
         with PdfPages(filename) as pdf:
             for fig in figs:
                 pdf.savefig(fig)

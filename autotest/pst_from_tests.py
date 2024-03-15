@@ -1083,7 +1083,7 @@ def mf6_freyberg_test(setup_freyberg_mf6):
         assert np.isclose(check, result).all(), (f"Problem with par apply for "
                                                  f"{mfile}")
     df = pd.read_csv(Path(pf.new_d, "freyberg6.sfr_packagedata_test.txt"),
-                     delim_whitespace=True, index_col=0)
+                     sep=r'\s+', index_col=0)
     df.index = df.index - 1
     print(df.rhk)
     print((sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
@@ -1249,7 +1249,7 @@ def mf6_freyberg_shortnames_test(tmp_path):
                               upper_bound=1.5,lower_bound=0.5)
         za = np.ones((3, 40, 20))
         df = pd.read_csv(os.path.join(m.model_ws, list_file),
-                         delim_whitespace=True, header=None) - 1
+                         sep=r'\s+', header=None) - 1
         za[tuple(df.loc[0:2, [0, 1, 2]].values.T)] = [2,3,4]
         pdf = pf.add_parameters(filenames=list_file, par_type="zone",
                                 par_name_base="w{0}".format(kper),
@@ -1746,7 +1746,7 @@ def direct_multadd_combo_test(setup_freyberg_mf6):
     org_ghb = pd.read_csv(os.path.join(pf.new_d, "org", "freyberg6.ghb_stress_period_data_1.txt"),
                           header=None, names=["l", "r", "c", "stage", "cond"])
     new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-                          delim_whitespace=True,
+                          sep=r'\s+',
                           header=None, names=["l", "r", "c", "stage", "cond"])
     d = org_ghb.stage - new_ghb.stage
     print(d)
@@ -1764,7 +1764,7 @@ def direct_multadd_combo_test(setup_freyberg_mf6):
     )
     new_ghb = pd.read_csv(
         os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-        delim_whitespace=True,
+        sep=r'\s+',
         header=None, names=["l", "r", "c", "stage", "cond"]
     )
     d = (org_ghb.stage - new_ghb.stage).apply(np.abs)
@@ -1779,11 +1779,11 @@ def direct_multadd_combo_test(setup_freyberg_mf6):
     org_ghb = pd.read_csv(
         os.path.join(pf.original_d, "freyberg6.ghb_stress_period_data_1.txt"),
         header=None, names=["l", "r", "c", "stage", "cond"],
-        delim_whitespace=True
+        sep=r'\s+'
     )
     new_ghb = pd.read_csv(
         os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-        delim_whitespace=True,
+        sep=r'\s+',
         header=None, names=["l", "r", "c", "stage", "cond"]
     )
     d = org_ghb.stage - new_ghb.stage
@@ -1800,10 +1800,10 @@ def direct_multadd_combo_test(setup_freyberg_mf6):
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
     org_ghb = pd.read_csv(
         os.path.join(pf.original_d, "freyberg6.ghb_stress_period_data_1.txt"),
-        header=None, names=["l", "r", "c", "stage", "cond"], delim_whitespace=True)
+        header=None, names=["l", "r", "c", "stage", "cond"], sep=r'\s+')
     new_ghb = pd.read_csv(
         os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-        delim_whitespace=True,
+        sep=r'\s+',
         header=None, names=["l", "r", "c", "stage", "cond"])
     d = (org_ghb.stage * 1.1) - new_ghb.stage
     print(new_ghb.stage)
@@ -1870,7 +1870,7 @@ def direct_arraypars_test(setup_freyberg_mf6):
 
     rch_files = [f for f in os.listdir(pf.new_d)
                  if ".rch_recharge" in f and f.endswith(".txt")]
-    rch_val = par.loc[rch_par, "parval1"][0]
+    rch_val = par.loc[rch_par, "parval1"].iloc[0]
     i, j = par.loc[rch_par, ["i", 'j']].astype(int).values.T
     for rch_file in rch_files:
         arr = np.loadtxt(os.path.join(pf.new_d, rch_file))[i, j]
@@ -3076,7 +3076,7 @@ class TestPstFrom():
                 pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
                 # model file should have been remade by apply_list_and_array_pars
                 assert model_file.exists()
-                result = pd.read_csv(model_file, delim_whitespace=True)
+                result = pd.read_csv(model_file, sep=r'\s+')
                 # results should be the same with default multipliers of 1
                 # assume details of parameterization are handled by other tests
                 assert np.allclose(result['flux'], self.list_data['flux'] * mult)
@@ -3580,7 +3580,7 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
                      zero_based=False, start_datetime="1-1-2018")
 
         list_file = "freyberg6.wel_stress_period_data_1.txt"
-        df = pd.read_csv(os.path.join(template_ws,list_file),header=None,delim_whitespace=True)
+        df = pd.read_csv(os.path.join(template_ws, list_file), header=None, sep=r'\s+')
         df.loc[:,4] = 4
         df.loc[:,5] = 5
         df.to_csv(os.path.join(template_ws,list_file),sep=" ",index=False,header=False)
@@ -3654,7 +3654,8 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
             print(fname,pval,aval)
             assert pval == aval,"{0},{1},{2}".format(fname,pval,aval)
 
-        df = pd.read_csv(os.path.join(template_ws,list_file),header=None,delim_whitespace=True)
+        df = pd.read_csv(os.path.join(template_ws, list_file),
+                         header=None, sep=r'\s+')
         print(df)
         wobs = obs.loc[obs.obsnme.str.contains("welobs"),:]
         print(wobs)
@@ -4848,7 +4849,7 @@ def list_float_int_index_test(tmp_path):
     pst = pf.build_pst()
     par = pst.parameter_data
     df0 = pd.read_csv(os.path.join(org_d, "ghb_ppt_part1.dat"),
-                      delim_whitespace=True)
+                      sep=r'\s+')
     assert par.shape[0] == df.shape[0] * 5 + len(df0)
     obs = pst.observation_data
     assert obs.shape[0] == df.shape[0] * 5 + len(df0)
@@ -4869,7 +4870,7 @@ def list_float_int_index_test(tmp_path):
     print(diff_sum)
     assert diff_sum < 1.0e-7
     df2 = pd.read_csv(os.path.join(pf.new_d, "ghb_ppt_part1.dat"),
-                      delim_whitespace=True)
+                      sep=r'\s+')
     diff_sum = np.abs(((df2.ghbcondN/df0.ghbcondN) -
                        par.loc[par.parnme.str.contains("ghbcondN"),
                        "parval1"].values).sum())

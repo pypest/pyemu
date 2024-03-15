@@ -435,9 +435,9 @@ class PstFrom(object):
             for k, li in gps.items():
                 tdf = []
                 for df in li:
-                    df.parnme.update(mapdict)
-                    df = df.rename(index=mapdict)
-                    tdf.append(df)
+                    tdf.append(
+                        df.replace({'parnme': mapdict}).rename(index=mapdict)
+                    )
                 df_dict[k] = tdf
             self.par_struct_dict[gs] = df_dict
 
@@ -1037,7 +1037,7 @@ class PstFrom(object):
                         sep=",",
                         header=hheader,
                     )
-                file_dict[rel_filepath] = df.apply(pd.to_numeric, errors='ignore')  # make sure numeric (if reasonable)
+                file_dict[rel_filepath] = df.apply(pd.to_numeric, errors="coerce").fillna(df)  # make sure numeric (if reasonable)
                 fmt_dict[rel_filepath] = fmt
                 sep_dict[rel_filepath] = sep
                 skip_dict[rel_filepath] = skip
@@ -1481,7 +1481,8 @@ class PstFrom(object):
                 filenames, index_cols, use_cols, fmts, seps, skip_rows
             )
             # parse to numeric (read as dtype object to preserve mixed types)
-            df = df.apply(pd.to_numeric, errors="ignore")
+            # df = df.apply(pd.to_numeric, errors="ignore")
+            df = df.apply(pd.to_numeric, errors="coerce").fillna(df)
             if inssep != ",":
                 inssep = seps
             else:
@@ -1495,12 +1496,10 @@ class PstFrom(object):
                 index_cols = df.iloc[0][index_cols].to_list()  # redefine index_cols
                 if use_cols is not None:
                     use_cols = df.iloc[0][use_cols].to_list()  # redefine use_cols
-                df = (
-                    df.rename(columns=df.iloc[0].to_dict())
-                    .drop(0)
-                    .reset_index(drop=True)
-                    .apply(pd.to_numeric, errors="ignore")
-                )
+                df = df.rename(
+                    columns=df.iloc[0].to_dict()
+                ).drop(0).reset_index(drop=True)
+                df = df.apply(pd.to_numeric, errors="coerce").fillna(df)
             # Select all non index cols if use_cols is None
             if use_cols is None:
                 use_cols = df.columns.drop(index_cols).tolist()
@@ -3582,7 +3581,7 @@ def _build_parnames(
             )
 
         if par_style == "d":
-            direct_tpl_df.loc[:, use_col] = (
+            direct_tpl_df[use_col] = (
                 df.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
             )
     if par_style == "d":
