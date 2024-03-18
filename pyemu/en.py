@@ -812,24 +812,30 @@ class ObservationEnsemble(Ensemble):
             this method to evaluate new weighting strategies
 
         """
-        return self.get_phi_vector() 
-    
+        return self.get_phi_vector()
+
     def get_phi_vector(self, noise_obs_filename=None, noise_obs_flag=False):
+        from pyemu.pst.pst_handler import get_constraint_tags
+        pstpath = os.path.join(*os.path.split(self.pst.filename)[:-1])
         if noise_obs_filename is not None:
             noise_obs_flag = True
         if noise_obs_flag is True:
             # if no noise_obs_filename included, try to grab from pst object
             if noise_obs_filename is None:
-                try:
-                    noise_obs_filename = self.pst.pestpp_options['ies_observation_ensemble']
-                except:
+                for tag in ['ies_observation_ensemble', 'ies_obs_en']:
+                    noise_obs_filename = self.pst.pestpp_options.get(tag)
+                    if noise_obs_filename is not None:
+                        break
+                if noise_obs_filename is None:
                     raise Exception(
-                            "no noise_observation_filename passed or found in pst options"
-                        )
+                        "no noise_observation_filename passed or found in pst options"
+                    )
             # if it looks like a binary file, try loading from binary
             if (noise_obs_filename.endswith('jcb')) or (noise_obs_filename.endswith('jco')):
                 try:
-                    noise_obs = pyemu.Matrix.from_binary(noise_obs_filename).to_dataframe()
+                    noise_obs = pyemu.Matrix.from_binary(
+                        os.path.join(pstpath, noise_obs_filename)
+                    ).to_dataframe()
                 except:
                     raise Exception(
                         f"Could not open {noise_obs_filename}"
@@ -846,36 +852,22 @@ class ObservationEnsemble(Ensemble):
                         f"Could not open {noise_obs_filename}"
                     )
             # make sure the index is all string (since the real)
-            noise_obs.index = [str(i) for i in noise_obs.index]   
-                     
+            noise_obs.index = [str(i) for i in noise_obs.index]
+
         cols = self._df.columns
         pst = self.pst
-        ogroups = pst.observation_data.loc[cols].groupby("obgnme").groups
-        res = pd.DataFrame(data={'name':cols,
-                                'group':pst.observation_data.loc[cols,'obgnme'].values,
-                                'modelled':np.nan,
-                                'residual':np.nan
-                                    })
-        res.index = res.name
-        obs = pst.observation_data.loc[cols, ['obsval','weight']]
-        pi_ogroups = None
-        pi_df = None
-        phi_vec = []
-        for idx in self._df.index.values:
-            res.loc[cols,'modelled'] = self._df.loc[idx, cols]
-            if noise_obs_flag is True:
-                obs.loc[cols,'obsval'] = noise_obs.loc[idx,cols]
-            res.loc[cols,'residual'] = res.loc[cols,'modelled'] - obs.loc[cols,'obsval']
-            
-            phi = 0.0
-            for _, contrib in pyemu.Pst.get_phi_components(ogroups,
-                                                            res,
-                                                            obs,
-                                                            pi_ogroups,
-                                                            pi_df).items():
-                phi += contrib
-            phi_vec.append(phi)
-        return pd.Series(data=phi_vec, index=self.index)
+        obs = pst.observation_data.loc[cols, ['obsval', 'weight', "obgnme"]]
+        if noise_obs_flag is True:
+            enres = self._df.sub(noise_obs).dropna().T
+        else:
+            enres = self._df.sub(obs.obsval).T
+        ltobs = obs.obgnme.str.lower().str.startswith(get_constraint_tags('lt'))
+        gtobs = obs.obgnme.str.lower().str.startswith(get_constraint_tags('gt'))
+        enres.loc[ltobs] = enres.loc[ltobs].clip(0, None)
+        enres.loc[gtobs] = enres.loc[gtobs].clip(None, 0)
+        enswr = enres.mul(obs.weight, axis=0) ** 2
+
+        return enswr.sum()
                
     def add_base(self):
         """add the control file `obsval` values as a realization
