@@ -24,7 +24,7 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses:  actions/checkout@v3 # checksout this repo
+      uses:  actions/checkout@v4 # checksout this repo
 
     - name: Set Windows ENV
       if: runner.os == 'Windows'
@@ -85,7 +85,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Coveralls
-      uses: coverallsapp/github-action@master
+      uses: coverallsapp/github-action@v2
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         flag-name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
-      uses: coverallsapp/github-action@master
+      uses: coverallsapp/github-action@v2
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         parallel-finished: true
