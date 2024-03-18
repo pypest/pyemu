@@ -3794,13 +3794,9 @@ class Pst(object):
                         [item.split(":") for item in x.split("_") if ":" in item]
                     )
                 )
-                unique_keys = []
-                for k, v in meta_dict.items():
-                    for kk, vv in v.items():
-                        if kk not in fieldnames and kk not in unique_keys:
-                            unique_keys.append(kk)
-                for uk in unique_keys:
-                    df[uk] = meta_dict.apply(lambda x: x.get(uk, np.NaN))
+                meta_dict = pd.DataFrame(list(meta_dict), index=meta_dict.index)
+                unique_keys = meta_dict.columns.difference(fieldnames)
+                df[unique_keys] = meta_dict[unique_keys]
             except Exception as e:
                 print("error parsing metadata from '{0}', continuing".format(name))
 
