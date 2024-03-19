@@ -2112,8 +2112,6 @@ def _process_list_file(model_file, df):
     else:
         sep = None
     datastrtrow = df_mf.head_rows.values[-1]
-    if fmt.lower() == "free" and sep == " ":
-        delim_whitespace = True
     if datastrtrow > 0:
         with open(org_file, "r") as fp:
             storehead = [next(fp) for _ in range(datastrtrow)]

@@ -193,7 +193,7 @@ def make_pst():
     pdata.loc["sy","pargp"] = "storage"
 
     hds = pd.read_csv("freyberg.hds.truth.obf",header=None,names=["obsnme","obsval"],index_col=0,
-        delim_whitespace=True)
+                      sep=r"\s+")
     pst.observation_data.loc[:,"weight"] = 0.0
     pst.observation_data.loc[:,"obgnme"] = "forecast"
     groups = pst.observation_data.groupby(pst.observation_data.obsnme.apply(lambda x:x in obs_names)).groups
