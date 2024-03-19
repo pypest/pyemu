@@ -404,7 +404,8 @@ def res_1to1(
             )
         #               plt.colorbar(ax=ax)
         else:
-            ax.scatter([obs_g.obsval], [obs_g.sim], marker=".", s=10, color="b")
+            ax.scatter(obs_g.obsval.values, obs_g.sim.values,
+                       marker=".", s=10, color="b")
 
         ax.plot([mn, mx], [mn, mx], "k--", lw=1.0)
         xlim = (mn, mx)
@@ -425,7 +426,8 @@ def res_1to1(
 
         if histogram == False:
             ax = axes[ax_count]
-            ax.scatter(obs_g.obsval, obs_g.res, marker=".", s=10, color="b")
+            ax.scatter(obs_g.obsval.values, obs_g.res.values,
+                       marker=".", s=10, color="b")
             ylim = ax.get_ylim()
             mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
             if obs_g.shape[0] == 1:

@@ -369,11 +369,11 @@ def ensemble_change_test(tmp_path):
     os.chdir(bd)
 
 if __name__ == "__main__":
-    plot_summary_test('.')
-    # pst_plot_test()
+    # plot_summary_test('.')
+    pst_plot_test('.')
     #ensemble_summary_test('.')
     #ensemble_plot_test()
-    ensemble_1to1_test('.')
+    # ensemble_1to1_test('.')
     #ensemble_plot_test('.')
     #ensemble_change_test('.')
 
