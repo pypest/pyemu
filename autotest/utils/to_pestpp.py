@@ -13,7 +13,8 @@ hedcon_file = "dewater.hedcon"
 # get hedcon locations
 with open(hedcon_file,'r') as f:
     [f.readline() for _ in range(4)]
-    hed_df = pd.read_csv(f,usecols=[2,3],header=None,names=["row","col"],delim_whitespace=True)
+    hed_df = pd.read_csv(f,usecols=[2,3],header=None,names=["row","col"],
+                         sep=r"\s+")
 hed_df.loc[:,'i'] = hed_df.pop("row") - 1
 hed_df.loc[:,'j'] = hed_df.pop("col") - 1
 

@@ -748,7 +748,7 @@ class Pst(object):
                 header=None,
                 names=names,
                 nrows=nrows,
-                delim_whitespace=True,
+                sep=r"\s+",
                 converters=converters,
                 index_col=False,
                 comment="#",
@@ -942,7 +942,7 @@ class Pst(object):
                 missing_vals = options.get("missing_values", None)
                 if sep.lower() == "w":
                     df = pd.read_csv(
-                        filename, delim_whitespace=True, na_values=missing_vals,low_memory=False
+                        filename, sep=r"\s+", na_values=missing_vals, low_memory=False
                     )
                 else:
                     df = pd.read_csv(filename, sep=sep, na_values=missing_vals,low_memory=False)
@@ -2084,7 +2084,7 @@ class Pst(object):
                     skiprows=1,
                     index_col=0,
                     usecols=[0, 1],
-                    delim_whitespace=True,
+                    sep=r"\s+",
                     header=None,
                     low_memory = False
                 )

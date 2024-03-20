@@ -1511,7 +1511,7 @@ def sfr_reach_obs_test(tmp_path):
     import flopy
     import pandas as pd
     import numpy as np
-    [shutil.copy(os.path.join("utils",f"freyberg.{ext}"), tmp_path)
+    [shutil.copy(os.path.join("utils", f"freyberg.{ext}"), tmp_path)
      for ext in ["sfr.out", "nam", "dis", "bas"]]
     sfr_file = "freyberg.sfr.out"
     bd = os.getcwd()

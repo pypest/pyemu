@@ -80,7 +80,8 @@ def predvar1b_test():
 
 def ident_test():
 
-    idf = pd.read_csv(os.path.join(verf_dir,"ident.out"),delim_whitespace=True,index_col="parameter")
+    idf = pd.read_csv(os.path.join(verf_dir, "ident.out"),
+                      sep=r"\s+", index_col="parameter")
 
     la_ord_errvar = pyemu.ErrVar(jco=ord_base+".jco",
                                  predictions=predictions,

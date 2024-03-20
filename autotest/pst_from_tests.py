@@ -2284,7 +2284,7 @@ def mf6_freyberg_direct_test(tmp_path):
         org_ghb = pd.read_csv(os.path.join(pf.new_d,"org","freyberg6.ghb_stress_period_data_1.txt"),
                               header=None,names=["l","r","c","stage","cond"])
         new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-                              delim_whitespace=True,
+                              sep=r"\s+",
                               header=None, names=["l", "r", "c", "stage", "cond"])
         d = org_ghb.stage - new_ghb.stage
         print(d)
@@ -2299,7 +2299,7 @@ def mf6_freyberg_direct_test(tmp_path):
         org_ghb = pd.read_csv(os.path.join(pf.new_d, "org", "freyberg6.ghb_stress_period_data_1.txt"),
                               header=None, names=["l", "r", "c", "stage", "cond"])
         new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-                              delim_whitespace=True,
+                              sep=r"\s+",
                               header=None, names=["l", "r", "c", "stage", "cond"])
         d = (org_ghb.stage - new_ghb.stage).apply(np.abs)
         print(d)
@@ -2311,9 +2311,9 @@ def mf6_freyberg_direct_test(tmp_path):
         pst.write(os.path.join(pf.new_d, "freyberg.pst"))
         pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
         org_ghb = pd.read_csv(os.path.join(tmp_model_ws,"freyberg6.ghb_stress_period_data_1.txt"),
-                              header=None, names=["l", "r", "c", "stage", "cond"],delim_whitespace=True)
+                              header=None, names=["l", "r", "c", "stage", "cond"],sep=r"\s+")
         new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-                              delim_whitespace=True,
+                              sep=r"\s+",
                               header=None, names=["l", "r", "c", "stage", "cond"])
         d = org_ghb.stage - new_ghb.stage
         print(new_ghb.stage)
@@ -2328,9 +2328,9 @@ def mf6_freyberg_direct_test(tmp_path):
         pst.write(os.path.join(pf.new_d, "freyberg.pst"))
         pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
         org_ghb = pd.read_csv(os.path.join(tmp_model_ws, "freyberg6.ghb_stress_period_data_1.txt"),
-                              header=None, names=["l", "r", "c", "stage", "cond"], delim_whitespace=True)
+                              header=None, names=["l", "r", "c", "stage", "cond"], sep=r"\s+")
         new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-                              delim_whitespace=True,
+                              sep=r"\s+",
                               header=None, names=["l", "r", "c", "stage", "cond"])
         d = (org_ghb.stage * 1.1) - new_ghb.stage
         print(new_ghb.stage)

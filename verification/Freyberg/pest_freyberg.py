@@ -20,7 +20,7 @@ ml.dis.start_datetime = "11-5-1955"
 ml.dis.sr.write_gridSpec(os.path.join("misc","freyberg.spc"))
 
 # write the bore coords file
-obs_rowcol = pd.read_csv(os.path.join("misc","obs_rowcol.dat"),delim_whitespace=True)
+obs_rowcol = pd.read_csv(os.path.join("misc","obs_rowcol.dat"), sep=r"\s+")
 obs_rowcol.loc[:,'x'] = ml.dis.sr.xcentergrid[obs_rowcol.row-1,obs_rowcol.col-1]
 obs_rowcol.loc[:,'y'] = ml.dis.sr.ycentergrid[obs_rowcol.row-1,obs_rowcol.col-1]
 obs_rowcol.loc[:,"top"] = ml.dis.top[obs_rowcol.row-1,obs_rowcol.col-1]
