@@ -1864,9 +1864,9 @@ class PstFrom(object):
                 This is not additive with `mfile_skip` option.
                 Warning: currently comment lines within list-style tabular data
                 will be lost.
-            par_style (`str`): either "m"/"mult"/"multiplier", "a"/"add"/"addend", or "d"/"direct" where the former setups
+            par_style (`str`): either "m"/"mult"/"multiplier", "a"/"add"/"addend", or "d"/"direct" where the former sets up
                 up a multiplier and addend parameters process against the existing model input
-                array and the former setups a template file to write the model
+                array and the former sets up a template file to write the model
                 input file directly.  Default is "multiplier".
 
             initial_value (`float`): the value to set for the `parval1` value in the control file
