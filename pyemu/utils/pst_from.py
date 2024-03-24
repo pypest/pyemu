@@ -435,9 +435,9 @@ class PstFrom(object):
             for k, li in gps.items():
                 tdf = []
                 for df in li:
-                    tdf.append(
-                        df.replace({'parnme': mapdict}).rename(index=mapdict)
-                    )
+                    df['parnme'] = df.parnme.apply(lambda x: mapdict.get(x, x))
+                    df = df.set_index('parnme', drop=False)
+                    tdf.append(df)
                 df_dict[k] = tdf
             self.par_struct_dict[gs] = df_dict
 
