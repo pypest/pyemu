@@ -10,6 +10,7 @@ from ..pyemu_warnings import PyemuWarning
 import copy
 import string
 
+from pyemu.utils.helpers import _try_pdcol_numeric
 
 # the tolerable percent difference (100 * (max - min)/mean)
 # used when checking that constant and zone type parameters are in fact constant (within
@@ -90,7 +91,6 @@ class PstFrom(object):
         chunk_len=50,
         echo=True,
     ):
-
         self.original_d = Path(original_d)
         self.new_d = Path(new_d)
         self.original_file_d = None
@@ -1037,7 +1037,7 @@ class PstFrom(object):
                         sep=",",
                         header=hheader,
                     )
-                file_dict[rel_filepath] = df.apply(pd.to_numeric, errors="coerce").fillna(df)  # make sure numeric (if reasonable)
+                file_dict[rel_filepath] = df.apply(_try_pdcol_numeric)  # make sure numeric (if reasonable)
                 fmt_dict[rel_filepath] = fmt
                 sep_dict[rel_filepath] = sep
                 skip_dict[rel_filepath] = skip
@@ -1482,7 +1482,7 @@ class PstFrom(object):
             )
             # parse to numeric (read as dtype object to preserve mixed types)
             # df = df.apply(pd.to_numeric, errors="ignore")
-            df = df.apply(pd.to_numeric, errors="coerce").fillna(df)
+            df = df.apply(_try_pdcol_numeric)
             if inssep != ",":
                 inssep = seps
             else:
@@ -1491,7 +1491,7 @@ class PstFrom(object):
             # if iloc[0] are strings and index_cols are ints,
             #   can we assume that there were infact column headers?
             if all(isinstance(c, str) for c in df.iloc[0]) and all(
-                isinstance(a, int) for a in index_cols
+                isinstance(a, (int, np.integer)) for a in index_cols
             ):
                 index_cols = df.iloc[0][index_cols].to_list()  # redefine index_cols
                 if use_cols is not None:
@@ -1499,7 +1499,7 @@ class PstFrom(object):
                 df = df.rename(
                     columns=df.iloc[0].to_dict()
                 ).drop(0).reset_index(drop=True)
-                df = df.apply(pd.to_numeric, errors="coerce").fillna(df)
+                df = df.apply(_try_pdcol_numeric)
             # Select all non index cols if use_cols is None
             if use_cols is None:
                 use_cols = df.columns.drop(index_cols).tolist()
@@ -1536,7 +1536,7 @@ class PstFrom(object):
                                 "".format(use_rows)
                             )
                             use_rows = None
-                    elif isinstance(use_rows, int):
+                    elif isinstance(use_rows, (int, np.integer)):
                         use_rows = [use_rows]
                     use_rows = [r for r in use_rows if r <= len(df)]
                     use_rows = df.iloc[use_rows].idx_str.unique()
@@ -2325,7 +2325,7 @@ class PstFrom(object):
                     self.logger.warn("pp_space is None, using 10...\n")
                     pp_space = 10
                 else:
-                    if not use_pp_zones and (isinstance(pp_space, int)):
+                    if not use_pp_zones and (isinstance(pp_space, (int, np.integer))):
                         # if not using pp zones will set up pp for just one
                         # zone (all non zero) -- for active domain...
                         if zone_array is None:
@@ -2335,7 +2335,7 @@ class PstFrom(object):
                         # gt-zero to 1
                     if isinstance(pp_space, float):
                         pp_space = int(pp_space)
-                    elif isinstance(pp_space, int):
+                    elif isinstance(pp_space, (int, np.integer)):
                         pass
                     elif isinstance(pp_space, str):
                         if pp_space.lower().strip().endswith(".csv"):
@@ -2456,7 +2456,7 @@ class PstFrom(object):
                             "and a=(pp_space*max(delr,delc))"
                         )
                         # set up a default - could probably do something better if pp locs are passed
-                        if not isinstance(pp_space, int):
+                        if not isinstance(pp_space, (int, np.integer)):
                             space = 10
                         else:
                             space = pp_space
@@ -2831,7 +2831,7 @@ class PstFrom(object):
         if all(isinstance(a[0], str) for a in check_args):
             # index_cols can be from header str
             header = 0  # will need to read a header
-        elif all(isinstance(a[0], int) for a in check_args):
+        elif all(isinstance(a[0], (int, np.integer)) for a in check_args):
             # index_cols are column numbers in input file
             header = None
         else:
@@ -3435,7 +3435,7 @@ def _get_index_strings(df, fmt, zero_based):
     if not zero_based:
         # only if indices are ints (trying to support strings as par ids)
         df.loc[:, "sidx"] = df.sidx.apply(
-            lambda x: tuple(xx - 1 if isinstance(xx, int) else xx for xx in x)
+            lambda x: tuple(xx - 1 if isinstance(xx, (int, np.integer)) else xx for xx in x)
         )
 
     df.loc[:, "idx_strs"] = df.sidx.apply(lambda x: fmt.format(*x)).str.replace(" ", "")

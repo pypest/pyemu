@@ -4820,61 +4820,70 @@ def list_float_int_index_test(tmp_path):
     shutil.copy2(os.path.join("utils", "ghb_ppt_part1.dat"),
                  os.path.join(org_d, "ghb_ppt_part1.dat"))
     # print(os.getcwd())
-    df = pd.read_csv(os.path.join(org_d, "ppoints.faults.csv"))
+    faultdf_o = pd.read_csv(os.path.join(org_d, "ppoints.faults.csv"))
+    ghbdf_o = pd.read_csv(os.path.join(org_d, "ghb_ppt_part1.dat"), sep=r'\s+')
+    ghbdf_o.loc[slice(5), 'ppt'] = ghbdf_o.loc[slice(5), 'ppt'].str.strip('pt')
+    ghbdf_o.to_csv(os.path.join(org_d, "ghb_ppt_part1.dat"), index=False, sep=' ')
     new_d = Path(org_d, "list_temp_new")
     pf = pyemu.utils.PstFrom(original_d=org_d, new_d=new_d,
                              remove_existing=True, zero_based=False)
+    faultidx = ["x", "y", "zone"]
     pf.add_parameters(filenames="ppoints.faults.csv",
                       par_type="grid",
                       par_name_base=["kh", "ss", "sy", "w", "a"],
                       pargp=["kh","ss","sy","w","a"],
-                      index_cols=["x", "y", "zone"],
+                      index_cols=faultidx,
                       use_cols=["kh", "ss", "sy", "w", "a"],
                       lower_bound=[0.01,0.1,0.2,0.5],
                       upper_bound=[1.5,2,4,5])
     pf.add_observations(filename="ppoints.faults.csv",
-                        index_cols=["x", "y", "zone"],
+                        index_cols=faultidx,
                         use_cols=["kh", "ss", "sy", "w", "a"])
-
+    ghbidx = ["ppt", 'x', 'y']
     pf.add_parameters(filenames="ghb_ppt_part1.dat",
                       par_type="grid",
                       par_name_base=["n"],
-                      index_cols=["ppt", 'x', 'y'],
+                      index_cols=ghbidx,
                       use_cols=["ghbcondN"],
                       lower_bound=0.01,
                       upper_bound=100)
     pf.add_observations(filename="ghb_ppt_part1.dat",
-                        index_cols=["ppt", 'x', 'y'],
+                        index_cols=ghbidx,
                         use_cols="ghbcondN")
     pst = pf.build_pst()
     par = pst.parameter_data
-    df0 = pd.read_csv(os.path.join(org_d, "ghb_ppt_part1.dat"),
-                      sep=r'\s+')
-    assert par.shape[0] == df.shape[0] * 5 + len(df0)
+    assert par.shape[0] == faultdf_o.shape[0] * 5 + len(ghbdf_o)
     obs = pst.observation_data
-    assert obs.shape[0] == df.shape[0] * 5 + len(df0)
+    assert obs.shape[0] == faultdf_o.shape[0] * 5 + len(ghbdf_o)
     # pf.parfile_relations.to_csv(os.path.join(pf.new_d,"mult2model_info.csv"))
-    par.loc[par.parnme.str.contains("kh"), "parval1"] = 0.1
+    kpar = par.parnme.str.contains("kh")
+    kparval1 = np.linspace(0.1, 10, sum(kpar))
+    par.loc[kpar, "parval1"] = kparval1
     # print(par.loc[par.parnme.str.contains("kh"),"parval1"])
-    par.loc[par.parnme.str.contains("ghbcondN"), "parval1"] = 10
+    bpar = par.parnme.str.contains("ghbcondN")
+    bparval1 = np.linspace(0.1, 10, sum(bpar))
+    par.loc[bpar, "parval1"] = bparval1
     pst.write_input_files(pf.new_d)
     bd = os.getcwd()
     os.chdir(pf.new_d)
-    pyemu.helpers.apply_list_and_array_pars(chunk_len=1000)
+    try:
+        pyemu.helpers.apply_list_and_array_pars(chunk_len=1000)
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
-    df1 = pd.read_csv(os.path.join(pf.new_d, "ppoints.faults.csv"))
-    diff = df1.kh/df.kh.values
-    diff_sum = np.abs(
-        (diff - par.loc[par.parnme.str.contains("kh"), "parval1"].values).sum()
-    )
-    print(diff_sum)
-    assert diff_sum < 1.0e-7
-    df2 = pd.read_csv(os.path.join(pf.new_d, "ghb_ppt_part1.dat"),
-                      sep=r'\s+')
-    diff_sum = np.abs(((df2.ghbcondN/df0.ghbcondN) -
-                       par.loc[par.parnme.str.contains("ghbcondN"),
-                       "parval1"].values).sum())
-    assert diff_sum < 1.0e-7
+    faultdf_n = pd.read_csv(os.path.join(pf.new_d, "ppoints.faults.csv"))
+    idxcheck = faultdf_n.set_index(faultidx).index.difference(faultdf_o.set_index(faultidx).index)
+    assert len(idxcheck) == 0, idxcheck
+    diff = faultdf_n.set_index(faultidx).kh/faultdf_o.set_index(faultidx).kh
+    assert np.isclose(diff,kparval1).all(), diff.loc[~np.isclose(diff,kparval1)]
+
+    ghbdf_n = pd.read_csv(os.path.join(pf.new_d, "ghb_ppt_part1.dat"), sep=r'\s+')
+    idxcheck = ghbdf_n.set_index(ghbidx).index.difference(ghbdf_o.set_index(ghbidx).index)
+    assert len(idxcheck) == 0, idxcheck
+    diff = (ghbdf_n.set_index(ghbidx).ghbcondN/ghbdf_o.set_index(ghbidx).ghbcondN).sort_index(level=0)
+    bparval1 = par.loc[bpar].sort_values('ppt').parval1.values
+    assert np.isclose(diff,bparval1).all(), diff.loc[~np.isclose(diff,bparval1)]
 
 
 def mf6_freyberg_thresh_invest(tmp_path):
