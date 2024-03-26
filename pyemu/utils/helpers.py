@@ -89,6 +89,18 @@ class Trie:
     def pattern(self):
         return self._pattern(self.dump())
 
+
+def _try_pdcol_numeric(x, first=True, **kwargs):
+    try:
+        x = pd.to_numeric(x, errors="raise", **kwargs)
+    except ValueError as e:
+        if first:
+            x = x.apply(_try_pdcol_numeric, first=False, **kwargs)
+        else:
+            pass
+    return x
+
+
 def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=100,verbose=True,
                         enforce_bounds=False, draw_ineq=False):
     """construct an autocorrelated observation noise ensemble from covariance matrices
@@ -2146,7 +2158,7 @@ def _process_list_file(model_file, df):
 
     for mlt in df_mf.itertuples():
         new_df.loc[:, mlt.index_cols] = new_df.loc[:, mlt.index_cols].apply(
-            pd.to_numeric, errors='coerce', downcast='integer').fillna(new_df)
+            _try_pdcol_numeric, downcast='integer')
         try:
             new_df = new_df.reset_index().rename(
                 columns={"index": "oidx"}
@@ -2182,7 +2194,7 @@ def _process_list_file(model_file, df):
             if mlts.index.nlevels < 2:  # just in case only one index col is used
                 mlts.index = mlts.index.get_level_values(0)
             common_idx = (
-                new_df.index.intersection(mlts.index).sort_values().drop_duplicates()
+                new_df.index.intersection(mlts.index).drop_duplicates()
             )
             mlt_cols = [str(col) for col in mlt.use_cols]
             assert len(common_idx) == mlt.chkpar, (
@@ -2241,9 +2253,7 @@ def _process_list_file(model_file, df):
         else:
             np.savetxt(
                 fo,
-                np.atleast_2d(new_df.apply(
-                    pd.to_numeric, errors="coerce"
-                ).fillna(new_df).values),
+                np.atleast_2d(new_df.apply(_try_pdcol_numeric).values),
                 fmt=fmt
             )
 
@@ -2520,7 +2530,7 @@ class SpatialReference(object):
     ):
 
         for delrc in [delr, delc]:
-            if isinstance(delrc, float) or isinstance(delrc, int):
+            if isinstance(delrc, (float, int, np.integer)):
                 msg = (
                     "delr and delcs must be an array or sequences equal in "
                     "length to the number of rows/columns."
