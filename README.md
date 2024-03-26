@@ -7,9 +7,9 @@ pyEMU also has a pure python (pandas and numpy) implementation of ordinary krigi
 support for generating high-dimensional PEST(++) model interfaces, including support for (very) high-dimensional 
 ensemble generation and handling   
 
-Master branch:
-[![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=master)](https://github.com/pypest/pyemu/actions)
-[![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=master)](https://coveralls.io/github/pypest/pyemu?branch=master)
+Main branch:
+[![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=main)](https://github.com/pypest/pyemu/actions)
+[![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=main)](https://coveralls.io/github/pypest/pyemu?branch=main)
 
 Develop branch:
 [![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=develop)](https://github.com/pypest/pyemu/actions)

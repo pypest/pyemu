@@ -1,9 +1,9 @@
 0) update CITATION.cff with version number and date
-1) checkout master and merge in release branch (or just develop)
-2) tag new version in master branch (git tag -a `newversion` -m `version message`)
+1) checkout main and merge in release branch (or just develop)
+2) tag new version in main branch (git tag -a `newversion` -m `version message`)
 2.5) remove any existing dist, build, egg, etc
 3) python -m build
 4) [optional] test distro upload with twine (twine upload --repository testpypi dist/*)
 5) twine upload dist/* (pip install twine, not conda)
-6) [maybe] update README.md to point to build and coverage status for master (should be ok develop and master both tracked by readme)
-7) push to master to remote
+6) [maybe] update README.md to point to build and coverage status for main (should be ok develop and main both tracked by readme)
+7) push to main to remote
