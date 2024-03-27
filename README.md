@@ -8,11 +8,11 @@ support for generating high-dimensional PEST(++) model interfaces, including sup
 ensemble generation and handling   
 
 Main branch:
-[![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=main)](https://github.com/pypest/pyemu/actions)
+[![pyemu continuous integration](https://github.com/pypest/pyemu/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pypest/pyemu/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=main)](https://coveralls.io/github/pypest/pyemu?branch=main)
 
 Develop branch:
-[![GHA CI](https://github.com/pypest/pyemu/workflows/pyemu%20continuous%20integration/badge.svg?branch=develop)](https://github.com/pypest/pyemu/actions)
+[![pyemu continuous integration](https://github.com/pypest/pyemu/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/pypest/pyemu/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/pypest/pyemu?branch=develop)
 
 Documentation
