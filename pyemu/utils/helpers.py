@@ -3740,7 +3740,8 @@ def apply_threshold_pars(csv_file):
     tarr = tarr / tarr.max()
     orgarr_file = csv_file.replace(".threshprops.csv","")
     inactarr_file = csv_file.replace(".threshprops.csv",".threshinact.dat")
-
+    tarr_file = csv_file.replace(".threshprops.csv",".threshcat.dat")
+    tcat = df.index.values.astype(int).copy()
     tvals = df.threshval.astype(float).values.copy()
     #ttags = df.threshcat.astype(int).values.copy()
     tfill = df.threshfill.astype(float).values.copy()
@@ -3806,12 +3807,22 @@ def apply_threshold_pars(csv_file):
     prop = get_current_prop(thresh)
     #print(thresh,prop)
     farr = np.zeros_like(tarr) - 1
+
     farr[tarr>thresh] = tfill[1]
     farr[tarr<=thresh] = tfill[0]
+    tarr[tarr>thresh] = tcat[0]
+    tarr[tarr <= thresh] = tcat[1]
+
     if iarr is not None:
         farr[iarr==0] = -1.0e+30
+        tarr[iarr == 0] = -1.0e+30
+
     np.savetxt(orgarr_file,farr,fmt="%15.6E")
+    np.savetxt(tarr_file, tarr, fmt="%15.6E")
+    print("\n\n\n\n\n\n\n\n\n**********************************\n\n\n\n\n\n\n\n\n")
     return thresh, prop
+
+
 
 
 
