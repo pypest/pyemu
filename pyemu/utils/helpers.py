@@ -3714,7 +3714,7 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
         inactarr_file = orgarr_file+".threshinact.dat"
         np.savetxt(inactarr_file,inact_arr,fmt="%4.0f")
 
-    df = pd.DataFrame({"threshcat":prop_tags,"threshval":prop_vals,"threshfill":fill_vals})
+    df = pd.DataFrame({"threshcat":prop_tags,"threshproportion":prop_vals,"threshfill":fill_vals})
     csv_file = orgarr_file+".threshprops.csv"
     df.to_csv(csv_file,index=False)
 
@@ -3742,7 +3742,7 @@ def apply_threshold_pars(csv_file):
     inactarr_file = csv_file.replace(".threshprops.csv",".threshinact.dat")
     tarr_file = csv_file.replace(".threshprops.csv",".threshcat.dat")
     tcat = df.index.values.astype(int).copy()
-    tvals = df.threshval.astype(float).values.copy()
+    tvals = df.threshproportion.astype(float).values.copy()
     #ttags = df.threshcat.astype(int).values.copy()
     tfill = df.threshfill.astype(float).values.copy()
     # for now...
@@ -3756,7 +3756,10 @@ def apply_threshold_pars(csv_file):
 
     tol = 1.0e-10
     if tarr.std() < tol * 2.0:
-        raise Exception("thresholding array {0} has very low standard deviation".format(thresarr_file))
+        #raise Exception("thresholding array {0} has very low standard deviation".format(thresarr_file))
+
+        print("WARNING: thresholding array {0} has very low standard deviation, adding noise".format(thresarr_file))
+        tarr += np.random.normal(0, tol*2.0, tarr.shape)
 
     # a classic:
     gr = (np.sqrt(5.) + 1.) / 2.
