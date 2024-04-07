@@ -3735,9 +3735,9 @@ def apply_threshold_pars(csv_file):
     tarr = np.loadtxt(thresarr_file)
     if np.any(tarr < 0):
         print(tarr)
-        raise Exception("negatives in thresholding array")
+        raise Exception("negatives in thresholding array {0}".format(thresarr_file))
     #norm tarr
-    tarr = tarr / tarr.max()
+    tarr = (tarr - tarr.min()) / tarr.max()
     orgarr_file = csv_file.replace(".threshprops.csv","")
     inactarr_file = csv_file.replace(".threshprops.csv",".threshinact.dat")
     tarr_file = csv_file.replace(".threshprops.csv",".threshcat.dat")
@@ -3756,7 +3756,7 @@ def apply_threshold_pars(csv_file):
 
     tol = 1.0e-10
     if tarr.std() < tol * 2.0:
-        raise Exception("thresholding array has very low standard deviation")
+        raise Exception("thresholding array {0} has very low standard deviation".format(thresarr_file))
 
     # a classic:
     gr = (np.sqrt(5.) + 1.) / 2.
@@ -3816,10 +3816,12 @@ def apply_threshold_pars(csv_file):
     if iarr is not None:
         farr[iarr==0] = -1.0e+30
         tarr[iarr == 0] = -1.0e+30
-
+    df.loc[tcat[0],"threshold"] = thresh
+    df.loc[tcat[1], "threshold"] = 1.0 - thresh
+    df.to_csv(csv_file.replace(".csv","_results.csv"))
     np.savetxt(orgarr_file,farr,fmt="%15.6E")
     np.savetxt(tarr_file, tarr, fmt="%15.6E")
-    print("\n\n\n\n\n\n\n\n\n**********************************\n\n\n\n\n\n\n\n\n")
+
     return thresh, prop
 
 
