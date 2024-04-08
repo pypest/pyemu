@@ -1,6 +1,6 @@
 BEGIN options
   DIGITS  10
-  PRINT-INPUT
+  PRINT_INPUT
 END options
 
 BEGIN continuous  FILEOUT  heads.csv

@@ -4935,14 +4935,14 @@ def mf6_freyberg_thresh_invest(tmp_path):
     # Setup geostruct for spatial pars
     gr_v = pyemu.geostats.ExpVario(contribution=1.0, a=500)
     gr_gs = pyemu.geostats.GeoStruct(variograms=gr_v, transform="log")
-    pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
+    pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
     pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
     pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
     #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
     #        "rch_recharge": [.5, 1.5]}
-    tags = {"npf_k_": [0.1, 10.]}
+    tags = {"npf_k_": [0.1, 10.],"rch_recharge": [.5, 1.5]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
     print(dts)
     # ib = m.dis.idomain.array[0,:,:]
@@ -5090,14 +5090,16 @@ def mf6_freyberg_thresh_invest(tmp_path):
 
     assert par.loc[par.parnme.str.contains("threshgr"),:].shape[0] > 0
     #par.loc[par.parnme.str.contains("threshgr"),"parval1"] = 0.5
-    #par.loc[par.parnme.str.contains("threshgr"),"partrans"] = "fixed"
+    par.loc[par.parnme.str.contains("threshgr"),"partrans"] = "fixed"
     
     print(pst.adj_par_names)
     print(pst.npar,pst.npar_adj)
 
     org_par = par.copy()
-    
+
+
     num_reals = 100
+
     pe = pf.draw(num_reals, use_specsim=False)
     pe.enforce()
     print(pe.shape)
@@ -5117,7 +5119,9 @@ def mf6_freyberg_thresh_invest(tmp_path):
     #print(pe.loc[:,cat1par].describe())
     #print(pe.loc[:, cat2par].describe())
     #return
-    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+    truth_idx = pe.index[0]
+    pe = pe.loc[pe.index.map(lambda x: x != truth_idx),:]
+    pe.to_dense(os.path.join(template_ws, "prior.jcb"))
 
 
     # just use a real as the truth...
@@ -5160,18 +5164,18 @@ def mf6_freyberg_thresh_invest(tmp_path):
     #pst.write(os.path.join(pf.new_d, "freyberg.pst"))
     #pyemu.os_utils.start_workers(pf.new_d,ies_exe_path,"freyberg.pst",worker_root=".",master_dir="master_thresh",num_workers=15)
 
-    num_reals = 300
-    pe = pf.draw(num_reals, use_specsim=False)
-    pe.enforce()
-    pe.to_dense(os.path.join(template_ws, "prior.jcb"))
-    pst.pestpp_options["ies_par_en"] = "prior.jcb"
+    #num_reals = 100
+    #pe = pf.draw(num_reals, use_specsim=False)
+    #pe.enforce()
+    #pe.to_dense(os.path.join(template_ws, "prior.jcb"))
+    #pst.pestpp_options["ies_par_en"] = "prior.jcb"
     
     pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
 
-    #pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir="master_thresh",
-    #                             num_workers=40)
+    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir="master_thresh",
+                                 num_workers=40)
 
-    pst.pestpp_options["ies_multimodal_alpha"] = 0.15
+    pst.pestpp_options["ies_multimodal_alpha"] = 0.99
     
     #pst.pestpp_options["ies_num_threads"] = 6
     pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
@@ -5262,8 +5266,9 @@ def plot_thresh(m_d):
             tcarray = np.zeros((nrow, ncol)) - 1e10
             tcarray[kcobs.i.values, kcobs.j.values] = kcobs.obsval.values
             tcarray[tcarray==-1e10] = np.nan
-            mn = kobs.obsval.min()
-            mx = kobs.obsval.max()
+            tarray = np.log10(tarray)
+            mn = np.log10(kobs.obsval.values).min()
+            mx = np.log10(kobs.obsval.values).max()
             cmn = kcobs.obsval.min()
             cmx = kcobs.obsval.max()
 
@@ -5291,9 +5296,9 @@ def plot_thresh(m_d):
                     fig,axes = plt.subplots(2,3,figsize=(10,10))
                     cb = axes[0,0].imshow(tarray, vmin=mn, vmax=mx, cmap="plasma")
                     plt.colorbar(cb, ax=axes[0,0])
-                    cb = axes[0,1].imshow(prarr,vmin=mn,vmax=mx,cmap="plasma")
+                    cb = axes[0,1].imshow(np.log10(prarr),vmin=mn,vmax=mx,cmap="plasma")
                     plt.colorbar(cb,ax=axes[0,1])
-                    cb = axes[0,2].imshow(ptarr, vmin=mn, vmax=mx,cmap="plasma")
+                    cb = axes[0,2].imshow(np.log10(ptarr), vmin=mn, vmax=mx,cmap="plasma")
                     plt.colorbar(cb,ax=axes[0,2])
                     axes[0,2].set_title("post real: {1}, phi: {0:4.1f}".format(pv[real], real), loc="left")
                     axes[0,1].set_title("prior real: {1}, phi: {0:4.1f}".format(pr_pv[real],real),loc="left")
@@ -5342,7 +5347,7 @@ if __name__ == "__main__":
 
     mf6_freyberg_thresh_invest(".")
 
-    #plot_thresh("master_thresh")
+    plot_thresh("master_thresh")
     plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
     # xsec_test()
