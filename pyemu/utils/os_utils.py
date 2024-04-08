@@ -132,7 +132,7 @@ def run(cmd_str, cwd=".", verbose=False):
 
 def _try_remove_existing(d, forgive=False):
     try:
-        shutil.rmtree(d, onerror=_remove_readonly)  # , onerror=del_rw)
+        shutil.rmtree(d, onexc=_remove_readonly)  # , onerror=del_rw)
         return True
     except Exception as e:
         if not forgive:

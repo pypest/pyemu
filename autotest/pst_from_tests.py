@@ -5347,7 +5347,7 @@ if __name__ == "__main__":
 
     mf6_freyberg_thresh_invest(".")
 
-    plot_thresh("master_thresh")
+    #plot_thresh("master_thresh")
     plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
     # xsec_test()
