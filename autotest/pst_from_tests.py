@@ -4886,17 +4886,17 @@ def list_float_int_index_test(tmp_path):
     assert np.isclose(diff,bparval1).all(), diff.loc[~np.isclose(diff,bparval1)]
 
 
-def mf6_freyberg_thresh_invest(tmp_path):
+def mf6_freyberg_thresh_test(tmp_path):
 
     import numpy as np
     import pandas as pd
-    pd.set_option('display.max_rows', 500)
-    pd.set_option('display.max_columns', 500)
-    pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
+    # pd.set_option('display.max_rows', 500)
+    # pd.set_option('display.max_columns', 500)
+    # pd.set_option('display.width', 1000)
+    # try:
+    import flopy
+    # except:
+    #     return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -5096,10 +5096,7 @@ def mf6_freyberg_thresh_invest(tmp_path):
     print(pst.npar,pst.npar_adj)
 
     org_par = par.copy()
-
-
     num_reals = 100
-
     pe = pf.draw(num_reals, use_specsim=False)
     pe.enforce()
     print(pe.shape)
@@ -5153,8 +5150,9 @@ def mf6_freyberg_thresh_invest(tmp_path):
     # reset away from the truth...
     pst.parameter_data.loc[:,"parval1"] = org_par.parval1.values.copy()
 
-    pst.control_data.noptmax=6
+    pst.control_data.noptmax = 2
     pst.pestpp_options["ies_par_en"] = "prior.jcb"
+    pst.pestpp_options["ies_num_reals"] = 30
     pst.pestpp_options["ies_subset_size"] = -10
     pst.pestpp_options["ies_no_noise"] = True
     #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
@@ -5171,21 +5169,20 @@ def mf6_freyberg_thresh_invest(tmp_path):
     #pst.pestpp_options["ies_par_en"] = "prior.jcb"
     
     pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
+    m_d = "master_thresh"
+    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
+                                 num_workers=10)
+    phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
+    print(phidf["mean"])
+    assert phidf["mean"].min() < 1000
 
-    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir="master_thresh",
-                                 num_workers=40)
-
-    pst.pestpp_options["ies_multimodal_alpha"] = 0.99
+    #pst.pestpp_options["ies_multimodal_alpha"] = 0.99
     
     #pst.pestpp_options["ies_num_threads"] = 6
-    pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
+    #pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
 
-    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir="master_thresh_mm",
-                                 num_workers=40)
-    # if os.path.exists(m_d):
-    #     shutil.rmtree(m_d)
-    # shutil.copytree(pf.new_d,m_d)
-    # pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path),cwd=m_d)
+    #pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir="master_thresh_mm",
+    #                             num_workers=40)
 
 def plot_thresh(m_d):
     import flopy
@@ -5219,6 +5216,10 @@ def plot_thresh(m_d):
     pr_pv = pr_oe.phi_vector
     pr_pv.sort_values(inplace=True,ascending=False)
     pr_oe = pr_oe.loc[pr_pv.index,:]
+
+    reals_to_plot = pr_pv.index[:19].tolist()
+    if "base" in pr_pv.index:
+        reals_to_plot.append("base")
     for iiter in range(1,mxiter+1):
         pt_oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join(m_d, "freyberg.{0}.obs.csv".format(iiter)))
         pt_oe.index = pt_oe.index.map(str)
@@ -5280,7 +5281,8 @@ def plot_thresh(m_d):
 
             with PdfPages(os.path.join(m_d,"results_{0}_hk_layer_{1}.pdf".format(iiter,k+1))) as pdf:
                 ireal = 0
-                for real in pr_oe.index:
+                #for real in pr_oe.index:
+                for real in reals_to_plot:
                     if real not in pt_oe.index:
                         continue
                     prarr = np.zeros((nrow,ncol)) - 1
@@ -5345,10 +5347,10 @@ if __name__ == "__main__":
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
 
-    mf6_freyberg_thresh_invest(".")
+    mf6_freyberg_thresh_test(".")
 
-    #plot_thresh("master_thresh")
-    plot_thresh("master_thresh_mm")
+    plot_thresh("master_thresh")
+    #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
     # xsec_test()
     # mf6_freyberg_short_direct_test()
