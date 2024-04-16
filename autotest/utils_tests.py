@@ -129,11 +129,15 @@ def covariance_matrix_test():
     import pandas as pd
     import pyemu
 
-    pts = pd.read_csv(os.path.join("utils","points1.dat"),delim_whitespace=True,
-                      header=None,names=["name","x","y"],usecols=[0,1,2])
+    pts = pd.read_csv(os.path.join("utils", "points1.dat"), 
+                      sep=r"\s+",
+                      header=None, 
+                      names=["name", "x", "y"], 
+                      usecols=[0, 1, 2])
     struct = pyemu.utils.geostats.read_struct_file(
-            os.path.join("utils","struct.dat"))[0]
-    struct.variograms[0].covariance_matrix(pts.x,pts.y,names=pts.name)
+            os.path.join("utils", "struct.dat"))[0]
+    struct.variograms[0].covariance_matrix(pts.x, pts.y, 
+                                           names=pts.name)
 
     print(struct.covariance_matrix(pts.x,pts.y,names=pts.name).x)
 
@@ -179,8 +183,10 @@ def ppcov_simple_test():
     ppc_mat2 = pyemu.Cov.from_ascii(mat2_file)
     ppc_mat3 = pyemu.Cov.from_ascii(mat3_file)
 
-    pts = pd.read_csv(pts_file,header=None,names=["name","x","y"],usecols=[0,1,2],
-                      delim_whitespace=True)
+    pts = pd.read_csv(pts_file, header=None,
+                      names=["name", "x", "y"],
+                      usecols=[0, 1, 2],
+                      sep=r"\s+")
 
     struct1,struct2,struct3 = pyemu.utils.geostats.read_struct_file(str_file)
     print(struct1)
@@ -233,8 +239,11 @@ def ppcov_complex_test():
     ppc_mat1 = pyemu.Cov.from_ascii(mat1_file)
     ppc_mat2 = pyemu.Cov.from_ascii(mat2_file)
 
-    pts = pd.read_csv(pts_file,header=None,names=["name","x","y"],usecols=[0,1,2],
-                      delim_whitespace=True)
+    pts = pd.read_csv(pts_file,
+                      header=None,
+                      names=["name", "x", "y"],
+                      usecols=[0, 1, 2],
+                      sep=r"\s+",)
 
     struct1,struct2 = pyemu.utils.geostats.read_struct_file(str_file)
     print(struct1)
@@ -968,8 +977,8 @@ def read_hydmod_test(tmp_path):
         return
     df, outfile = pyemu.gw_utils.modflow_read_hydmod_file(os.path.join('utils','freyberg.hyd.bin'),
                                                           os.path.join(tmp_path,'freyberg.hyd.bin.dat'))
-    df = pd.read_csv(os.path.join(tmp_path, 'freyberg.hyd.bin.dat'), delim_whitespace=True)
-    dftrue = pd.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat.true'), delim_whitespace=True)
+    df = pd.read_csv(os.path.join(tmp_path, 'freyberg.hyd.bin.dat'), sep=r"\s+")
+    dftrue = pd.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat.true'), sep=r"\s+")
 
     assert np.allclose(df.obsval.values, dftrue.obsval.values)
 
@@ -1102,9 +1111,9 @@ def hds_timeseries_test(tmp_path):
     pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True)
     pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True, prefix="hds")
 
-    # df1 = pd.read_csv(out_file, delim_whitespace=True)
+    # df1 = pd.read_csv(out_file, sep=r"\s+",)
     # pyemu.gw_utils.apply_hds_obs(hds_file)
-    # df2 = pd.read_csv(out_file, delim_whitespace=True)
+    # df2 = pd.read_csv(out_file, sep=r"\s+",)
     # diff = df1.obsval - df2.obsval
 
 
@@ -1137,69 +1146,69 @@ def grid_obs_test(tmp_path):
     m_ws = "freyberg_sfr_update"
     try:
         pyemu.gw_utils.setup_hds_obs(hds_file)
-        df1 = pd.read_csv(out_file,delim_whitespace=True)
+        df1 = pd.read_csv(out_file, sep=r"\s+")
         pyemu.gw_utils.apply_hds_obs(hds_file)
-        df2 = pd.read_csv(out_file,delim_whitespace=True)
+        df2 = pd.read_csv(out_file, sep=r"\s+")
         diff = df1.obsval - df2.obsval
         assert abs(diff.max()) < 1.0e-6, abs(diff.max())
 
         pyemu.gw_utils.setup_hds_obs(multlay_hds_file)
-        df1 = pd.read_csv(multlay_out_file,delim_whitespace=True)
+        df1 = pd.read_csv(multlay_out_file, sep=r"\s+")
         assert len(df1) == 3*len(df2), "{} != 3*{}".format(len(df1), len(df2))
         pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
-        df2 = pd.read_csv(multlay_out_file,delim_whitespace=True)
+        df2 = pd.read_csv(multlay_out_file, sep=r"\s+")
         diff = df1.obsval - df2.obsval
         assert np.allclose(df1.obsval,df2.obsval), abs(diff.max())
 
-        pyemu.gw_utils.setup_hds_obs(hds_file,skip=-999)
-        df1 = pd.read_csv(out_file,delim_whitespace=True)
+        pyemu.gw_utils.setup_hds_obs(hds_file, skip=-999)
+        df1 = pd.read_csv(out_file, sep=r"\s+")
         pyemu.gw_utils.apply_hds_obs(hds_file)
-        df2 = pd.read_csv(out_file,delim_whitespace=True)
+        df2 = pd.read_csv(out_file,sep=r"\s+",)
         diff = df1.obsval - df2.obsval
         assert diff.max() < 1.0e-6
 
         pyemu.gw_utils.setup_hds_obs(ucn_file, skip=1.e30, prefix='ucn')
-        df1 = pd.read_csv(ucn_out_file, delim_whitespace=True)
+        df1 = pd.read_csv(ucn_out_file, sep=r"\s+",)
         pyemu.gw_utils.apply_hds_obs(ucn_file)
-        df2 = pd.read_csv(ucn_out_file, delim_whitespace=True)
+        df2 = pd.read_csv(ucn_out_file, sep=r"\s+",)
         diff = df1.obsval - df2.obsval
         assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
 
         # skip = lambda x : x < -888.0
         skip = lambda x: x if x > -888.0 else np.NaN
         pyemu.gw_utils.setup_hds_obs(hds_file,skip=skip)
-        df1 = pd.read_csv(out_file,delim_whitespace=True)
+        df1 = pd.read_csv(out_file,sep=r"\s+",)
         pyemu.gw_utils.apply_hds_obs(hds_file)
-        df2 = pd.read_csv(out_file,delim_whitespace=True)
+        df2 = pd.read_csv(out_file,sep=r"\s+",)
         diff = df1.obsval - df2.obsval
         assert diff.max() < 1.0e-6
 
         kperk_pairs = (0,0)
         pyemu.gw_utils.setup_hds_obs(hds_file,kperk_pairs=kperk_pairs,
                                      skip=skip)
-        df1 = pd.read_csv(out_file,delim_whitespace=True)
+        df1 = pd.read_csv(out_file,sep=r"\s+",)
         pyemu.gw_utils.apply_hds_obs(hds_file)
-        df2 = pd.read_csv(out_file,delim_whitespace=True)
+        df2 = pd.read_csv(out_file,sep=r"\s+",)
         diff = df1.obsval - df2.obsval
         assert diff.max() < 1.0e-6
 
         kperk_pairs = [(0, 0), (0, 1), (0, 2)]
         pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
                                      skip=skip)
-        df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+        df1 = pd.read_csv(multlay_out_file, sep=r"\s+",)
         assert len(df1) == 3*len(df2), "{} != 3*{}".format(len(df1), len(df2))
         pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
-        df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+        df2 = pd.read_csv(multlay_out_file, sep=r"\s+",)
         diff = df1.obsval - df2.obsval
         assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
 
         kperk_pairs = [(0, 0), (0, 1), (0, 2), (2, 0), (2, 1), (2, 2)]
         pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
                                      skip=skip)
-        df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+        df1 = pd.read_csv(multlay_out_file, sep=r"\s+",)
         assert len(df1) == 2 * len(df2), "{} != 2*{}".format(len(df1), len(df2))
         pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
-        df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+        df2 = pd.read_csv(multlay_out_file, sep=r"\s+",)
         diff = df1.obsval - df2.obsval
         assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
 
@@ -1208,9 +1217,9 @@ def grid_obs_test(tmp_path):
         skipmask = m.bas6.ibound.array
         pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
                                      skip=skipmask)
-        df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+        df1 = pd.read_csv(multlay_out_file, sep=r"\s+",)
         pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
-        df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+        df2 = pd.read_csv(multlay_out_file, sep=r"\s+",)
         assert len(df1) == len(df2) == np.abs(skipmask).sum(), \
             "array skip failing, expecting {0} obs but returned {1}".format(np.abs(skipmask).sum(), len(df1))
         diff = df1.obsval - df2.obsval
@@ -1220,9 +1229,9 @@ def grid_obs_test(tmp_path):
         skipmask = m.bas6.ibound.array[0]
         pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
                                      skip=skipmask)
-        df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+        df1 = pd.read_csv(multlay_out_file, sep=r"\s+",)
         pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
-        df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+        df2 = pd.read_csv(multlay_out_file, sep=r"\s+",)
         assert len(df1) == len(df2) == 2 * m.nlay * np.abs(skipmask).sum(), "array skip failing"
         diff = df1.obsval - df2.obsval
         assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
@@ -1231,9 +1240,9 @@ def grid_obs_test(tmp_path):
         skipmask = m.bas6.ibound.array
         pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
                                      skip=skipmask)
-        df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+        df1 = pd.read_csv(multlay_out_file, sep=r"\s+",)
         pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
-        df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+        df2 = pd.read_csv(multlay_out_file, sep=r"\s+",)
         assert len(df1) == len(df2) == 2 * np.abs(skipmask).sum(), "array skip failing"
         diff = df1.obsval - df2.obsval
         assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
@@ -1266,13 +1275,14 @@ def postprocess_inactive_conc_test(tmp_path):
     os.chdir(tmp_path)
     try:
         m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=model_ws, load_only=[], check=False)
-        frun_line, df = pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True, prefix="hds",
+        frun_line, df = pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True, 
+                                                            prefix="hds",
                                                             postprocess_inact=1E30)
-        df0 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
-        df1 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
+        df0 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), sep=r"\s+").T
+        df1 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), sep=r"\s+").T
         eval(frun_line)
-        df2 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
-        df3 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True).T
+        df2 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), sep=r"\s+").T
+        df3 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), sep=r"\s+").T
         assert np.allclose(df0, df2)
         assert np.allclose(df2.test1, df3.test1)
         assert np.allclose(df2.test2, df3.test2)
@@ -1342,7 +1352,7 @@ def sfr_helper_test(tmp_path):  # TODO: need attention to move IO to tmp_path (p
             for k, v in pars.items():
                 f.write("{0} {1}\n".format(k, v))
                 # change some hcond1 values
-        df = pd.read_csv("sfr_seg_temporal_pars.dat", delim_whitespace=False, index_col=0)
+        df = pd.read_csv("sfr_seg_temporal_pars.dat", index_col=0)
         df.loc[:, "flow"] = 10.0
         df.to_csv("sfr_seg_temporal_pars.dat", sep=',')
 
@@ -1367,7 +1377,7 @@ def sfr_helper_test(tmp_path):  # TODO: need attention to move IO to tmp_path (p
                 f.write("{0} {1}\n".format(k, v))
 
         # change some hcond1 values
-        df = pd.read_csv("sfr_seg_pars.dat", delim_whitespace=False,index_col=0)
+        df = pd.read_csv("sfr_seg_pars.dat",index_col=0)
         df.loc[:, "hcond1"] = 1.0
         df.to_csv("sfr_seg_pars.dat", sep=',')
 
@@ -1385,7 +1395,7 @@ def sfr_helper_test(tmp_path):  # TODO: need attention to move IO to tmp_path (p
         assert sd1.hcond1.sum() == sd2.hcond1.sum()
 
         # change some hcond1 values
-        df = pd.read_csv("sfr_seg_pars.dat",delim_whitespace=False,index_col=0)
+        df = pd.read_csv("sfr_seg_pars.dat",index_col=0)
         df.loc[:,"hcond1"] = 0.5
         df.to_csv("sfr_seg_pars.dat",sep=',')
 
@@ -1449,11 +1459,11 @@ def sfr_helper_test(tmp_path):  # TODO: need attention to move IO to tmp_path (p
             for k, v in pars.items():
                 f.write("{0} {1}\n".format(k, v))
                 # change some hcond1 values
-        df = pd.read_csv("sfr_seg_temporal_pars.dat", delim_whitespace=False, index_col=0)
+        df = pd.read_csv("sfr_seg_temporal_pars.dat", index_col=0)
         df.loc[:, "flow"] = 10.0
         df.to_csv("sfr_seg_temporal_pars.dat", sep=',')
 
-        rdf = pd.read_csv("sfr_reach_pars.dat", delim_whitespace=False, index_col=0)
+        rdf = pd.read_csv("sfr_reach_pars.dat", index_col=0)
         rdf.loc[:, "strhc1"] = 10.0
         rdf.to_csv("sfr_reach_pars.dat", sep=',')
 
@@ -1501,7 +1511,7 @@ def sfr_reach_obs_test(tmp_path):
     import flopy
     import pandas as pd
     import numpy as np
-    [shutil.copy(os.path.join("utils",f"freyberg.{ext}"), tmp_path)
+    [shutil.copy(os.path.join("utils", f"freyberg.{ext}"), tmp_path)
      for ext in ["sfr.out", "nam", "dis", "bas"]]
     sfr_file = "freyberg.sfr.out"
     bd = os.getcwd()
@@ -2398,9 +2408,9 @@ def ac_draw_test(tmp_path):
     # plt.show()
 
 
-def test_fake_frun(freybergmf6_2_pstfrom):
+def test_fake_frun(setup_freyberg_mf6):
     from pst_from_tests import ies_exe_path
-    pf = freybergmf6_2_pstfrom
+    pf, sim = setup_freyberg_mf6
     v = pyemu.geostats.ExpVario(contribution=1.0, a=500)
     gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
     pf.add_parameters(
@@ -2459,7 +2469,9 @@ def thresh_pars_test():
     p1 = np.percentile(arr,5)
     p2 = np.percentile(arr,95)
     cat_dict = {1:[0.4,p1],2:[0.6,p2]}
-    pyemu.helpers.setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=test_d,inact_arr=inact_arr)
+    pyemu.helpers.setup_threshold_pars(
+        orgarr_file, cat_dict,
+        testing_workspace=test_d, inact_arr=inact_arr)
 
 
     newarr = np.loadtxt(orgarr_file)
@@ -2496,10 +2508,10 @@ def thresh_pars_test():
 
 
 if __name__ == "__main__":
-    thresh_pars_test()
+    # thresh_pars_test()
     #obs_ensemble_quantile_test()
     #geostat_draws_test("temp")
-    ac_draw_test("temp")
+    # ac_draw_test("temp")
     # maha_pdc_test()
     # rmr_parse_test()
     # temporal_draw_invest()
@@ -2578,4 +2590,4 @@ if __name__ == "__main__":
     # ok_grid_zone_test()
     #maha_pdc_summary_test("temp")
     # gsf_reader_test()
-    # kl_test()
+    kl_test()

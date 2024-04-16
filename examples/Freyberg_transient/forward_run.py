@@ -11,12 +11,12 @@ if not os.path.exists(out_dir):
 def prepare():
 
 	# apply drain conductance parameters
-	drn_df = pd.read_csv("drain_mlt.dat",delim_whitespace=True,header=None,names=["name","cond"])
+	drn_df = pd.read_csv("drain_mlt.dat",sep=r"\s+",header=None,names=["name","cond"])
 	drn_df.index = drn_df.name.apply(lambda x: (int(x[-5:-3])+1,int(x[-2:])+1))
 	drn_files = [f for f in os.listdir(bak_dir) if "drn" in f.lower()]
 	for drn_file in drn_files:
 		df = pd.read_csv(os.path.join(bak_dir,drn_file),header=None,
-			names=["l","r","c","stage","cond"],delim_whitespace=True)
+			names=["l","r","c","stage","cond"],sep=r"\s+")
 		df.index = df.apply(lambda x: (x.r,x.c),axis=1)
 
 		df.loc[:,"cond"] = drn_df.cond

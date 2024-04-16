@@ -404,7 +404,8 @@ def res_1to1(
             )
         #               plt.colorbar(ax=ax)
         else:
-            ax.scatter([obs_g.obsval], [obs_g.sim], marker=".", s=10, color="b")
+            ax.scatter(obs_g.obsval.values, obs_g.sim.values,
+                       marker=".", s=10, color="b")
 
         ax.plot([mn, mx], [mn, mx], "k--", lw=1.0)
         xlim = (mn, mx)
@@ -425,7 +426,8 @@ def res_1to1(
 
         if histogram == False:
             ax = axes[ax_count]
-            ax.scatter(obs_g.obsval, obs_g.res, marker=".", s=10, color="b")
+            ax.scatter(obs_g.obsval.values, obs_g.res.values,
+                       marker=".", s=10, color="b")
             ylim = ax.get_ylim()
             mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
             if obs_g.shape[0] == 1:
@@ -828,7 +830,7 @@ def pst_prior(pst, logger=None, filename=None, **kwargs):
     figs.append(fig)
     if filename is not None:
         with PdfPages(filename) as pdf:
-            plt.tight_layout()
+            # plt.tight_layout()
             pdf.savefig(fig)
             plt.close(fig)
         logger.log("plot pst_prior")
@@ -1084,7 +1086,7 @@ def ensemble_helper(
     # plt.close(fig)
     figs.append(fig)
     if filename is not None:
-        plt.tight_layout()
+        # plt.tight_layout()
         with PdfPages(filename) as pdf:
             for fig in figs:
                 pdf.savefig(fig)
@@ -1277,7 +1279,7 @@ def ensemble_change_summary(
     # plt.close(fig)
     figs.append(fig)
     if filename is not None:
-        plt.tight_layout()
+        # plt.tight_layout()
         with PdfPages(filename) as pdf:
             for fig in figs:
                 pdf.savefig(fig)
@@ -1401,19 +1403,19 @@ def ensemble_res_1to1(
         bemeanmax = -1e32
         for _, oeni in oen.items():  # loop over ensembles
             oeni = oeni.loc[:, obsnames]  # slice group obs
-            oemin = np.min([oemin, oeni.min().min()])
-            oemax = np.max([oemax, oeni.max().max()])
+            oemin = np.nanmin([oemin, oeni.min().min()])
+            oemax = np.nanmax([oemax, oeni.max().max()])
             # get min and max of mean sim vals
             # (incase we want plot to ignore extremes)
-            oemeanmin = np.min([oemeanmin, oeni.mean().min()])
-            oemeanmax = np.max([oemeanmax, oeni.mean().max()])
+            oemeanmin = np.nanmin([oemeanmin, oeni.mean().min()])
+            oemeanmax = np.nanmax([oemeanmax, oeni.mean().max()])
         for _, beni in ben.items():  # same with base ensemble/obsval
             # work with either ensemble or obsval series
             beni = beni.get(obsnames)
-            bemin = np.min([bemin, beni.min().min()])
-            bemax = np.max([bemax, beni.max().max()])
-            bemeanmin = np.min([bemeanmin, beni.mean().min()])
-            bemeanmax = np.max([bemeanmax, beni.mean().max()])
+            bemin = np.nanmin([bemin, beni.min().min()])
+            bemax = np.nanmax([bemax, beni.max().max()])
+            bemeanmin = np.nanmin([bemeanmin, beni.mean().min()])
+            bemeanmax = np.nanmax([bemeanmax, beni.mean().max()])
         # get base ensemble range
         berange = bemax-bemin
         if berange == 0.:  # only one obs in group (probs)
@@ -1441,8 +1443,8 @@ def ensemble_res_1to1(
                 bemin = oemin - (0.1 * oerange)
             else:
                 bemin = bemeanmin
-        pmin = np.min([oemin, bemin])
-        pmax = np.max([oemax, bemax])
+        pmin = np.nanmin([oemin, bemin])
+        pmax = np.nanmax([oemax, bemax])
         return pmin, pmax
 
 
@@ -1584,15 +1586,15 @@ def ensemble_res_1to1(
 
         omn = pd.concat(omn).min()
         omx = pd.concat(omx).max()
-        mx = max(np.abs(omn), np.abs(omx))  # ensure symmetric about y=0
+        mx = np.nanmax([np.abs(omn), np.abs(omx)])  # ensure symmetric about y=0
         if obs_g.shape[0] == 1:
             mx *= 1.05
         else:
             mx *= 1.02
         if np.sign(omn) == np.sign(omx):
             # allow y axis asymm if all above or below
-            mn = np.min([0, np.sign(omn) * mx])
-            mx = np.max([0, np.sign(omn) * mx])
+            mn = np.nanmin([0, np.sign(omn) * mx])
+            mx = np.nanmax([0, np.sign(omn) * mx])
         else:
             mn = -mx
         ax.set_ylim(mn, mx)
@@ -1632,7 +1634,7 @@ def ensemble_res_1to1(
     plt.tight_layout()
     figs.append(fig)
     if filename is not None:
-        plt.tight_layout()
+        # plt.tight_layout()
         with PdfPages(filename) as pdf:
             for fig in figs:
                 pdf.savefig(fig)

@@ -197,7 +197,7 @@ def smp_to_dataframe(smp_filename, datetime_format=None):
         date_func = _date_parser
     df = pd.read_csv(
         smp_filename,
-        delim_whitespace=True,
+        sep=r"\s+",
         header=None,
         names=["name", "date", "time", "value"],
         dtype={"name": object, "value": np.float64},

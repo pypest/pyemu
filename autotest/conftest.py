@@ -1,6 +1,6 @@
 from pathlib import Path
 import pytest
-from pst_from_tests import freybergmf6_2_pstfrom
+from pst_from_tests import setup_freyberg_mf6
 
 pytest_plugins = ["modflow_devtools.fixtures"]
 

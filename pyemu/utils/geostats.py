@@ -2404,9 +2404,7 @@ def fac2real(
     arr = np.zeros((nrow, ncol), dtype=np.float64) + fill_value
     pp_dict = {int(name): val for name, val in zip(pp_data.index, pp_data.parval1)}
     try:
-        pp_dict_log = {
-            name: np.log10(val) for name, val in zip(pp_data.index, pp_data.parval1)
-        }
+        pp_dict_log = np.log10(pp_data.parval1).to_dict()
     except:
         pp_dict_log = {}
     # for i in range(nrow):

@@ -1820,7 +1820,7 @@ def setup_lorenz():
         f.write("import os\nimport numpy as np\nimport pandas as pd\n")
         f.write("sigma,rho,beta = 10.0,28.0,2.66667\n")
 
-        f.write("df = pd.read_csv('{0}',delim_whitespace=True,index_col=0)\n".format(state_file))
+        f.write("df = pd.read_csv('{0}',sep=r'\\s+',index_col=0)\n".format(state_file))
         f.write("x,y,z,dt = df.loc[:,'prev'].values\n")
 
         f.write("df.loc['x','new'] = sigma * (y - x)\n")
