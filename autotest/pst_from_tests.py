@@ -4886,7 +4886,7 @@ def list_float_int_index_test(tmp_path):
     assert np.isclose(diff,bparval1).all(), diff.loc[~np.isclose(diff,bparval1)]
 
 
-def mf6_freyberg_thresh_test(setup_freyberg_mf6):
+def mf6_freyberg_thresh_test(tmp_path):
 
     import numpy as np
     import pandas as pd
@@ -5337,7 +5337,7 @@ def plot_thresh(m_d):
 
 
 if __name__ == "__main__":
-    # mf6_freyberg_pp_locs_test()
+    #mf6_freyberg_pp_locs_test()
     # invest()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
@@ -5349,7 +5349,7 @@ if __name__ == "__main__":
 
     mf6_freyberg_thresh_test(".")
 
-    plot_thresh("master_thresh")
+    #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
     # xsec_test()
