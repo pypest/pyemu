@@ -4901,7 +4901,12 @@ def mf6_freyberg_thresh_test(tmp_path):
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
 
+
     tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    if os.path.exists(tmp_model_ws):
+        shutil.rmtree(tmp_model_ws)
+    shutil.copytree(org_model_ws,tmp_model_ws)
     sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
     m = sim.get_model("freyberg6")
     sim.set_all_data_external()
