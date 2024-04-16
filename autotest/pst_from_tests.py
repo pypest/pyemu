@@ -4886,7 +4886,7 @@ def list_float_int_index_test(tmp_path):
     assert np.isclose(diff,bparval1).all(), diff.loc[~np.isclose(diff,bparval1)]
 
 
-def mf6_freyberg_thresh_test(tmp_path):
+def mf6_freyberg_thresh_test(setup_freyberg_mf6):
 
     import numpy as np
     import pandas as pd
