@@ -1689,7 +1689,11 @@ def _process_array_file(model_file, df):
                 lb = float(list(lb_vals.keys())[0])
                 org_arr[org_arr < lb] = lb
 
-    np.savetxt(model_file, np.atleast_2d(org_arr), fmt="%15.6E", delimiter="")
+    fmt = df_mf.fmt.iloc[0]
+    sep = df_mf.sep.iloc[0]
+    if np.isnan(sep):
+        sep = ''
+    np.savetxt(model_file, np.atleast_2d(org_arr), fmt=fmt, delimiter=sep)
 
 
 def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
