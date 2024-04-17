@@ -55,7 +55,7 @@ def _load_array_get_fmt(fname, sep=None, fullfile=False):
             arr = np.genfromtxt(lines, delimiter=sep, ndmin=2)
         else:
             lines = [fp.readline()]  # just read first line
-            if splitsep not in lines:
+            if splitsep not in lines[0]:
                 return _load_array_get_fmt(fname, sep, True)
             fp.seek(0)  # reset pointer
             arr = np.loadtxt(fp, delimiter=sep, ndmin=2)  # read array
