@@ -3681,6 +3681,8 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
 
     Note:
         all required files are based on the `orgarr_file` with suffixes appended to them
+        This process was inspired by Todaro and others, 2023, "Experimental sandbox tracer
+        tests to characterize a two-facies aquifer via an ensemble smoother"
 
     """
     assert os.path.exists(orgarr_file)
