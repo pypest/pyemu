@@ -4579,6 +4579,8 @@ def vertex_grid_test(setup_freyberg_mf6):
             a = f.read()
         a = [float(i) for i in a.split()]
         np.savetxt(fname=filename, X=a)
+    # run model after input file change
+    pyemu.os_utils.run('mf6', cwd=template_ws)
 
     for f in files:
         layer = int(f.split('_layer')[-1].split('.')[0]) - 1
@@ -4631,7 +4633,7 @@ def vertex_grid_test(setup_freyberg_mf6):
                                 prefix="sfr")
     pf.mod_sys_cmds.append('mf6')
     pst = pf.build_pst()
-
+    # check_apply(pf)
     # run once
     pst.control_data.noptmax=0
     pst.write(os.path.join(template_ws, 'test.pst'))
@@ -4652,14 +4654,7 @@ def vertex_grid_test(setup_freyberg_mf6):
         par.loc[(par.zone==zone) & (par.ptype=='gr'), 'parubnd'] = float(zone)+0.1
 
     # write model input files
-    pst.write_input_files(template_ws)
-    # update model input files
-    cwd = os.getcwd()
-    os.chdir(template_ws)
-    pyemu.helpers.apply_list_and_array_pars()
-    os.chdir(cwd)
-    #pyemu.os_utils.run(r'python forward_run.py', cwd=template_ws)
-
+    check_apply(pf)
 
     #check pp pars
     #reset par values
@@ -4669,26 +4664,22 @@ def vertex_grid_test(setup_freyberg_mf6):
         par.loc[(par.zone==zone) & (par.ptype=='pp'), 'parlbnd'] = float(zone)-0.1
         par.loc[(par.zone==zone) & (par.ptype=='pp'), 'parubnd'] = float(zone)+0.1
 
-    # write input files
-    pst.write_input_files(template_ws)
-
-    # update model input files
-    cwd = os.getcwd()
-    os.chdir(template_ws)
-    pyemu.helpers.apply_list_and_array_pars()
-    os.chdir(cwd)
+    # write model input files
+    check_apply(pf)
     #pyemu.os_utils.run(r'python forward_run.py', cwd=template_ws)
 
     ib = m.dis.idomain.get_data()
     tag = "npf_k_"
     files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
+    npfpar = par.loc[par.pname.str.contains('npf'), :]
+    assert len(npfpar) > 0
     for f in files:
-        layer = int(f.split('_layer')[-1].split('.')[0]) - 1
+        k = int(f.split('_layer')[-1].split('.')[0]) - 1
         a = np.loadtxt(os.path.join(template_ws, f))
         a_org = np.loadtxt(os.path.join(template_ws,'org', f))
         # weak check
-        for zone in par.zone.unique():
-            assert all(abs((a/a_org)[ib[1]==int(zone)]-int(zone)) < 1e-6)
+        for zone in npfpar.loc[npfpar.pname.str.contains(f'layer{k+1}')].zone.unique():
+            assert np.isclose(abs((a/a_org)[ib[k]==int(zone)]-int(zone)).max(), 0)
     return
 
 def test_defaults(tmp_path):
@@ -5128,6 +5119,13 @@ def test_array_fmt(tmp_path):
         fp.write(" 00.3E01,30.0E-1,03.00\n     3.0,3.00,03.000")
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=',')
     assert fmt == "%8.2E"
+    assert arr.sum(axis=1).sum() == 18
+    # 1 col option
+    with open(Path(tmp_path, "test.dat"), 'w') as fp:
+        fp.write("3.0000000000\n30.000000E-1\n03.00000\n3.0\n3.00\n03.000")
+    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    assert arr.shape == (6,1)
+    assert fmt == "%12.10E"
     assert arr.sum(axis=1).sum() == 18
 
 

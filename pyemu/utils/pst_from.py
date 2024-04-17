@@ -46,7 +46,6 @@ def _check_var_len(var, n, fill=None):
 
 def _load_array_get_fmt(fname, sep=None, fullfile=False):
     splitsep = sep  # sep for splitting string for fmt (need to count mult delim.)
-    # todo honor passed sep (i.e. single space or set to None for multi delim as one flex)
     if sep is None:  # need to split line with space and count multiple
         splitsep = ' '
     with open(fname, 'r') as fp:  # load file or line
