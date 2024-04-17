@@ -1216,11 +1216,13 @@ def mf6_freyberg_shortnames_test(setup_freyberg_mf6):
         pf.add_parameters(filenames=list_file,par_type="constant",par_name_base="w{0}".format(kper),
                           pargp="wel_{0}".format(kper),index_cols=[0,1,2],use_cols=[3],
                           upper_bound=1.5,lower_bound=0.5)
+    f = list_files[-1] if 'dup' not in list_files[-1] else list_files[-2]
+    kper = f.split('.')[1].split('_')[-1]
     za = np.ones((3, 40, 20))
-    df = pd.read_csv(os.path.join(m.model_ws, list_file),
+    df = pd.read_csv(os.path.join(m.model_ws, f),
                      sep=r'\s+', header=None) - 1
     za[tuple(df.loc[0:2, [0, 1, 2]].values.T)] = [2,3,4]
-    pdf = pf.add_parameters(filenames=list_file, par_type="zone",
+    pdf = pf.add_parameters(filenames=f, par_type="zone",
                             par_name_base="w{0}".format(kper),
                             pargp="wz_{0}".format(kper), index_cols=[0, 1, 2],
                             use_cols=[3],
