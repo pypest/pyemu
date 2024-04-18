@@ -1696,7 +1696,7 @@ def _process_array_file(model_file, df):
     try:
         sep = df_mf.sep.iloc[0]
     except AttributeError:
-        sep = ''
+        sep = np.nan
     if np.isnan(sep):
         sep = ''
     np.savetxt(model_file, np.atleast_2d(org_arr), fmt=fmt, delimiter=sep)
