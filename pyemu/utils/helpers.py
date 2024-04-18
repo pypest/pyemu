@@ -3688,6 +3688,8 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
 
     Note:
         all required files are based on the `orgarr_file` with suffixes appended to them
+        This process was inspired by Todaro and others, 2023, "Experimental sandbox tracer
+        tests to characterize a two-facies aquifer via an ensemble smoother"
 
     """
     assert os.path.exists(orgarr_file)
@@ -3698,10 +3700,6 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
         raise Exception("only two categories currently supported, {0} found in target_proportions_dict".\
                         format(len(cat_dict)))
 
-    tol = 1.0e-10
-    if org_arr.std() < tol * 2.0:
-        print("WARNING: org_arr has very low standard deviation, adding some noise for now...")
-        org_arr += np.random.normal(0,1e-6,org_arr.shape)
     prop_tags,prop_vals,fill_vals = [],[],[]
     for key,(proportion,fill_val) in cat_dict.items():
         if int(key) not in cat_dict:
@@ -3721,7 +3719,7 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
         inactarr_file = orgarr_file+".threshinact.dat"
         np.savetxt(inactarr_file,inact_arr,fmt="%4.0f")
 
-    df = pd.DataFrame({"threshcat":prop_tags,"threshval":prop_vals,"threshfill":fill_vals})
+    df = pd.DataFrame({"threshcat":prop_tags,"threshproportion":prop_vals,"threshfill":fill_vals})
     csv_file = orgarr_file+".threshprops.csv"
     df.to_csv(csv_file,index=False)
 
@@ -3736,21 +3734,32 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
 def apply_threshold_pars(csv_file):
     """apply the thresholding process.  everything keys off of csv_file name...
 
+    Note: if the standard deviation of the continous thresholding array is too low,
+    the line search will fail.  Currently, if this stdev is less than 1.e-10,
+    then a homogenous array of the first category fill value will be created.  User
+    beware!
+
     """
     df = pd.read_csv(csv_file,index_col=0)
     thresarr_file = csv_file.replace("props.csv","arr.dat")
     tarr = np.loadtxt(thresarr_file)
     if np.any(tarr < 0):
         print(tarr)
-        raise Exception("negatives in thresholding array")
+        raise Exception("negatives in thresholding array {0}".format(thresarr_file))
     #norm tarr
-    tarr = tarr / tarr.max()
+    tarr = (tarr - tarr.min()) / tarr.max()
     orgarr_file = csv_file.replace(".threshprops.csv","")
     inactarr_file = csv_file.replace(".threshprops.csv",".threshinact.dat")
-
-    tvals = df.threshval.astype(float).values.copy()
+    tarr_file = csv_file.replace(".threshprops.csv",".threshcat.dat")
+    tcat = df.index.values.astype(int).copy()
+    tvals = df.threshproportion.astype(float).values.copy()
     #ttags = df.threshcat.astype(int).values.copy()
     tfill = df.threshfill.astype(float).values.copy()
+
+    iarr = None
+    if os.path.exists(inactarr_file):
+        iarr = np.loadtxt(inactarr_file, dtype=int)
+
     # for now...
     assert len(tvals) == 2
     if np.any(tvals <= 0.0):
@@ -3761,8 +3770,26 @@ def apply_threshold_pars(csv_file):
     target_prop = tvals[0]
 
     tol = 1.0e-10
-    if tarr.std() < tol * 2.0:
-        raise Exception("thresholding array has very low standard deviation")
+    if tarr.std() < tol:
+        print("WARNING: thresholding array {0} has very low standard deviation".format(thresarr_file))
+        print("         using a homogenous array with first category fill value {0}".format(tfill[0]))
+
+        farr = np.zeros_like(tarr) + tfill[0]
+        if iarr is not None:
+            farr[iarr == 0] = -1.0e+30
+            tarr[iarr == 0] = -1.0e+30
+        df.loc[tcat[0], "threshold"] = tarr.mean()
+        df.loc[tcat[1], "threshold"] = tarr.mean()
+        df.loc[tcat[0], "proportion"] = 1
+        df.loc[tcat[1], "proportion"] = 0
+
+        df.to_csv(csv_file.replace(".csv", "_results.csv"))
+        np.savetxt(orgarr_file, farr, fmt="%15.6E")
+        np.savetxt(tarr_file, tarr, fmt="%15.6E")
+        return tarr.mean(), 1.0
+
+        #    print("WARNING: thresholding array {0} has very low standard deviation, adding noise".format(thresarr_file))
+        #    tarr += np.random.normal(0, tol*2.0, tarr.shape)
 
     # a classic:
     gr = (np.sqrt(5.) + 1.) / 2.
@@ -3771,10 +3798,10 @@ def apply_threshold_pars(csv_file):
     c = b - ((b - a) / gr)
     d = a + ((b - a) / gr)
 
-    iarr = None
+
     tot_shape = tarr.shape[0] * tarr.shape[1]
-    if os.path.exists(inactarr_file):
-        iarr = np.loadtxt(inactarr_file, dtype=int)
+    if iarr is not None:
+
         # this keeps inact from interfering with calcs later...
         tarr[iarr == 0] = 1.0e+30
         tiarr = iarr.copy()
@@ -3808,17 +3835,28 @@ def apply_threshold_pars(csv_file):
         d = a + ((b - a) / gr)
         numiter += 1
 
-    #print(a,b,c,d)
     thresh = (a+b) / 2.0
     prop = get_current_prop(thresh)
-    #print(thresh,prop)
     farr = np.zeros_like(tarr) - 1
     farr[tarr>thresh] = tfill[1]
     farr[tarr<=thresh] = tfill[0]
+    tarr[tarr>thresh] = tcat[0]
+    tarr[tarr <= thresh] = tcat[1]
+
     if iarr is not None:
         farr[iarr==0] = -1.0e+30
+        tarr[iarr == 0] = -1.0e+30
+    df.loc[tcat[0],"threshold"] = thresh
+    df.loc[tcat[1], "threshold"] = 1.0 - thresh
+    df.loc[tcat[0], "proportion"] = prop
+    df.loc[tcat[1], "proportion"] = 1.0 - prop
+    df.to_csv(csv_file.replace(".csv","_results.csv"))
     np.savetxt(orgarr_file,farr,fmt="%15.6E")
+    np.savetxt(tarr_file, tarr, fmt="%15.6E")
+
     return thresh, prop
+
+
 
 
 

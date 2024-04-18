@@ -4806,259 +4806,462 @@ def list_float_int_index_test(tmp_path):
     assert np.isclose(diff,bparval1).all(), diff.loc[~np.isclose(diff,bparval1)]
 
 
-def mf6_freyberg_thresh_invest(tmp_path):
+def mf6_freyberg_thresh_test(tmp_path):
 
     import numpy as np
     import pandas as pd
-    pd.set_option('display.max_rows', 500)
-    pd.set_option('display.max_columns', 500)
-    pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
+    # pd.set_option('display.max_rows', 500)
+    # pd.set_option('display.max_columns', 500)
+    # pd.set_option('display.width', 1000)
+    # try:
+    import flopy
+    # except:
+    #     return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
 
+
     tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-    m = sim.get_model("freyberg6")
-    sim.set_all_data_external()
-    sim.write_simulation()
+    bd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+        m = sim.get_model("freyberg6")
+        sim.set_all_data_external()
+        sim.write_simulation()
 
-    # SETUP pest stuff...
-    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-    template_ws = Path(tmp_path, "new_temp_thresh")
-    if os.path.exists(template_ws):
-        shutil.rmtree(template_ws)
-    sr = m.modelgrid
-    # set up PstFrom object
-    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                 remove_existing=True,
-                 longnames=True, spatial_reference=sr,
-                 zero_based=False, start_datetime="1-1-2018")
 
-    df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
-    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
-                        use_cols=list(df.columns.values),
-                        prefix="hds", rebuild_pst=True)
+        # SETUP pest stuff...
+        os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-    # Add stream flow observation
-    # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
-    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
-                        use_cols=["GAGE_1", "HEADWATER", "TAILWATER"], ofile_sep=",")
+        template_ws = Path(tmp_path, "new_temp_thresh")
+        if os.path.exists(template_ws):
+            shutil.rmtree(template_ws)
+        sr = m.modelgrid
+        # set up PstFrom object
+        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                     remove_existing=True,
+                     longnames=True, spatial_reference=sr,
+                     zero_based=False, start_datetime="1-1-2018")
 
-    # Setup geostruct for spatial pars
-    gr_v = pyemu.geostats.ExpVario(contribution=1.0, a=10000)
-    gr_gs = pyemu.geostats.GeoStruct(variograms=gr_v, transform="log")
-    pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
-    pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
-    rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
-    pf.extra_py_imports.append('flopy')
-    ib = m.dis.idomain[0].array
-    #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
-    #        "rch_recharge": [.5, 1.5]}
-    tags = {"npf_k_": [0.1, 10.]}
-    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-    print(dts)
-    # ib = m.dis.idomain.array[0,:,:]
-    # setup from array style pars
-    for tag, bnd in tags.items():
-        lb, ub = bnd[0], bnd[1]
-        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-        if "rch" in tag:
-            for arr_file in arr_files:
-                # indy direct grid pars for each array type file
-                recharge_files = ["recharge_1.txt", "recharge_2.txt", "recharge_3.txt"]
-                pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
-                                  pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
-                                  par_style="direct")
-                # additional constant mults
-                kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-                pf.add_parameters(filenames=arr_file, par_type="constant",
-                                  par_name_base=arr_file.split('.')[1] + "_cn",
-                                  pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                                  geostruct=rch_temporal_gs,
-                                  datetime=dts[kper])
-        else:
-            for arr_file in arr_files:
-                # grid mults pure and simple
-                print(arr_file)
-                k = int(arr_file.split(".")[1][-1]) - 1
-                pth_arr_file = os.path.join(pf.new_d,arr_file)
-                arr = np.loadtxt(pth_arr_file)
-                cat_dict = {1:[0.45,arr.mean()],2:[0.55,arr.mean()]}
-                thresharr,threshcsv = pyemu.helpers.setup_threshold_pars(pth_arr_file,cat_dict=cat_dict,
-                                                                         testing_workspace=pf.new_d,inact_arr=ib)
-                pf.pre_py_cmds.append("pyemu.helpers.apply_threshold_pars('{0}')".format(os.path.split(threshcsv)[1]))
-                pf.add_parameters(filenames=os.path.split(thresharr)[1],par_type="grid",transform="none",
-                                  par_name_base=arr_file.split('.')[1].replace("_","-")+"-thresharr",
-                                  pargp=arr_file.split('.')[1].replace("_", "-") + "-thresharr",
-                                  lower_bound=0.0,upper_bound=1.0,geostruct=gr_gs,par_style="direct"
-                                  )
+        df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
+        pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
+                            use_cols=list(df.columns.values),
+                            prefix="hds", rebuild_pst=True)
 
-                pf.add_parameters(filenames=os.path.split(threshcsv)[1], par_type="grid",index_cols=["threshcat"],
-                                  use_cols=["threshfill"],
-                                  par_name_base=arr_file.split('.')[1].replace("_", "-"),
-                                  pargp=arr_file.split('.')[1].replace("_", "-"),lower_bound=0.1,upper_bound=10.0)
-                pf.add_observations(arr_file,prefix="hkarr-"+arr_file.split('.')[1].replace("_", "-"),
-                                    obsgp="hkarr-"+arr_file.split('.')[1].replace("_", "-"))
+        # Add stream flow observation
+        # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+        pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
+                            use_cols=["GAGE_1", "HEADWATER", "TAILWATER"], ofile_sep=",")
 
-    # add model run command
-    pf.mod_sys_cmds.append("mf6")
-    print(pf.mult_files)
-    print(pf.org_files)
+        # Setup geostruct for spatial pars
+        gr_v = pyemu.geostats.ExpVario(contribution=1.0, a=500)
+        gr_gs = pyemu.geostats.GeoStruct(variograms=gr_v, transform="log")
+        pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+        pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
+        rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
+        pf.extra_py_imports.append('flopy')
+        ib = m.dis.idomain[0].array
+        #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
+        #        "rch_recharge": [.5, 1.5]}
+        tags = {"npf_k_": [0.1, 10.],"rch_recharge": [.5, 1.5]}
+        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+        print(dts)
+        # ib = m.dis.idomain.array[0,:,:]
+        # setup from array style pars
+        num_cat_arrays = 0
+        for tag, bnd in tags.items():
+            lb, ub = bnd[0], bnd[1]
+            arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+            if "rch" in tag:
+                for arr_file in arr_files:
+                    # indy direct grid pars for each array type file
+                    recharge_files = ["recharge_1.txt", "recharge_2.txt", "recharge_3.txt"]
+                    pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
+                                      pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
+                                      par_style="direct")
+                    # additional constant mults
+                    kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+                    pf.add_parameters(filenames=arr_file, par_type="constant",
+                                      par_name_base=arr_file.split('.')[1] + "_cn",
+                                      pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                                      geostruct=rch_temporal_gs,
+                                      datetime=dts[kper])
+            else:
+                for arr_file in arr_files:
+                    print(arr_file)
+                    k = int(arr_file.split(".")[1][-1]) - 1
+                    if k == 1:
+                        arr_file = arr_file.replace("_k_","_k33_")
+                    pth_arr_file = os.path.join(pf.new_d,arr_file)
+                    arr = np.loadtxt(pth_arr_file)
+                    cat_dict = {1:[0.4,arr.mean()],2:[0.6,arr.mean()]}
+                    thresharr,threshcsv = pyemu.helpers.setup_threshold_pars(pth_arr_file,cat_dict=cat_dict,
+                                                                             testing_workspace=pf.new_d,inact_arr=ib)
 
-    # build pest
-    pst = pf.build_pst('freyberg.pst')
-    #cov = pf.build_prior(fmt="none")
-    #cov.to_coo(os.path.join(template_ws, "prior.jcb"))
-    pst.try_parse_name_metadata()
+                    pf.pre_py_cmds.append("pyemu.helpers.apply_threshold_pars('{0}')".format(os.path.split(threshcsv)[1]))
+                    prefix = arr_file.split('.')[1].replace("_","-")
+                    pf.add_parameters(filenames=os.path.split(thresharr)[1],par_type="grid",transform="none",
+                                      par_name_base=prefix+"-threshgr_k:{0}".format(k),
+                                      pargp=prefix + "-threshgr_k:{0}".format(k),
+                                      lower_bound=0.0,upper_bound=1.0,geostruct=gr_gs,par_style="d")
 
-    pst.control_data.noptmax = 0
-    pst.pestpp_options["additional_ins_delimiters"] = ","
 
-    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+                    pf.add_parameters(filenames=os.path.split(thresharr)[1],par_type="pilotpoints",transform="none",
+                                      par_name_base=prefix+"-threshpp_k:{0}".format(k),
+                                      pargp=prefix + "-threshpp_k:{0}".format(k),
+                                      lower_bound=0.0,upper_bound=2.0,geostruct=pp_gs,par_style="m",
+                                      pp_space=3
+                                      )
 
-    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
-    assert os.path.exists(res_file), res_file
-    pst.set_res(res_file)
-    print(pst.phi)
-    assert pst.phi < 0.1, pst.phi
 
-    par = pst.parameter_data
-    cat1par = par.loc[par.threshcat=="0","parnme"]
-    cat2par = par.loc[par.threshcat=="1","parnme"]
-    print(cat1par,cat2par)
-    assert cat1par.shape[0] == 3
-    assert cat2par.shape[0] == 3
+                    pf.add_parameters(filenames=os.path.split(threshcsv)[1], par_type="grid",index_cols=["threshcat"],
+                                      use_cols=["threshproportion","threshfill"],
+                                      par_name_base=[prefix+"threshproportion_k:{0}".format(k),prefix+"threshfill_k:{0}".format(k)],
+                                      pargp=[prefix+"threshproportion_k:{0}".format(k),prefix+"threshfill_k:{0}".format(k)],
+                                      lower_bound=[0.1,0.1],upper_bound=[10.0,10.0],transform="none",par_style='d')
 
-    par.loc[cat1par,"parval1"] = 0.1
-    par.loc[cat1par, "parubnd"] = 1.0
-    par.loc[cat1par, "parlbnd"] = 0.01
+                    pf.add_observations(arr_file,prefix="hkarr-"+prefix+"_k:{0}".format(k),
+                                        obsgp="hkarr-"+prefix+"_k:{0}".format(k),zone_array=ib)
 
-    par.loc[cat2par, "parval1"] = 10
-    par.loc[cat2par, "parubnd"] = 100
-    par.loc[cat2par, "parlbnd"] = 1
+                    pf.add_observations(arr_file+".threshcat.dat", prefix="tcatarr-" + prefix+"_k:{0}".format(k),
+                                        obsgp="tcatarr-" + prefix+"_k:{0}".format(k),zone_array=ib)
 
-    num_reals = 100
-    pe = pf.draw(num_reals, use_specsim=True)
-    #print(pe.loc[:,cat1par].describe())
-    #print(pe.loc[:, cat2par].describe())
-    #return
-    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
-    assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
-    assert pe.shape[0] == num_reals
+                    pf.add_observations(arr_file + ".thresharr.dat",
+                                        prefix="tarr-" +prefix+"_k:{0}".format(k),
+                                        obsgp="tarr-" + prefix + "_k:{0}".format(k), zone_array=ib)
 
-    #truth = pyemu.pst_utils.read_resfile(os.path.join("utils","freyberg_mf6.base.rei"))
-    #truth = truth.loc[truth.name.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"measured"]
-    obs = pst.observation_data
-    obs.loc[:,"weight"] = 0.0
-    obs.loc[:,"standard_deviation"] = np.nan
-    onames = obs.loc[obs.obsnme.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"obsnme"].values
-    #obs.loc[obs.oname=="hds","weight"] = 1.0
-    #obs.loc[obs.oname == "hds", "standard_deviation"] = 0.001
-    obs.loc[onames,"weight"] = 1.0
-    #obs.loc[onames,"obsval"] = truth.values
-    obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.001,onames.shape[0])
+                    df = pd.read_csv(threshcsv.replace(".csv","_results.csv"),index_col=0)
+                    pf.add_observations(os.path.split(threshcsv)[1].replace(".csv","_results.csv"),index_cols="threshcat",use_cols=df.columns.tolist(),prefix=prefix+"-results_k:{0}".format(k),
+                                        obsgp=prefix+"-results_k:{0}".format(k),ofile_sep=",")
+                    num_cat_arrays += 1
 
-    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+        # add model run command
+        pf.mod_sys_cmds.append("mf6")
+        print(pf.mult_files)
+        print(pf.org_files)
 
-    pst.control_data.noptmax=10
-    pst.pestpp_options["ies_par_en"] = "prior.jcb"
-    pst.pestpp_options["ies_subset_size"] = -10
-    pst.pestpp_options["ies_no_noise"] = True
+        # build pest
+        pst = pf.build_pst('freyberg.pst')
+        #cov = pf.build_prior(fmt="none")
+        #cov.to_coo(os.path.join(template_ws, "prior.jcb"))
+        pst.try_parse_name_metadata()
 
-    pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
+        pst.control_data.noptmax = 0
+        pst.pestpp_options["additional_ins_delimiters"] = ","
 
-    #pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-    #pyemu.os_utils.start_workers(pf.new_d,ies_exe_path,"freyberg.pst",worker_root=".",master_dir="master_thresh",num_workers=15)
+        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
-    num_reals = 500
-    pe = pf.draw(num_reals, use_specsim=True)
-    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
-    pst.pestpp_options["ies_multimodal_alpha"] = 0.1
-    pst.pestpp_options["ies_num_threads"] = 6
-    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+        res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+        assert os.path.exists(res_file), res_file
+        pst.set_res(res_file)
+        print(pst.phi)
+        assert pst.phi < 0.1, pst.phi
 
-    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir="master_thresh_mm",
-                                 num_workers=20)
+        #set the initial and bounds for the fill values
+        par = pst.parameter_data
+        cat1par = par.loc[par.apply(lambda x: x.threshcat=="0" and x.usecol=="threshfill",axis=1),"parnme"]
+        cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
+        print(cat1par,cat2par)
+        assert cat1par.shape[0] == num_cat_arrays
+        assert cat2par.shape[0] == num_cat_arrays
+
+        cat1parhk = [p for p in cat1par if "k:1" not in p]
+        cat2parhk = [p for p in cat2par if "k:1" not in p]
+        cat1parvk = [p for p in cat1par if "k:1" in p]
+        cat2parvk = [p for p in cat2par if "k:1" in p]
+        for lst in [cat2parvk,cat2parhk,cat1parhk,cat1parvk]:
+            assert len(lst) > 0
+        par.loc[cat1parhk,"parval1"] = 0.1
+        par.loc[cat1parhk, "parubnd"] = 1.0
+        par.loc[cat1parhk, "parlbnd"] = 0.01
+        par.loc[cat1parhk, "partrans"] = "log"
+        par.loc[cat2parhk, "parval1"] = 10
+        par.loc[cat2parhk, "parubnd"] = 100
+        par.loc[cat2parhk, "parlbnd"] = 1
+        par.loc[cat2parhk, "partrans"] = "log"
+
+        par.loc[cat1parvk, "parval1"] = 0.0001
+        par.loc[cat1parvk, "parubnd"] = 0.01
+        par.loc[cat1parvk, "parlbnd"] = 0.00001
+        par.loc[cat1parvk, "partrans"] = "log"
+        par.loc[cat2parvk, "parval1"] = 0.1
+        par.loc[cat2parvk, "parubnd"] = 1
+        par.loc[cat2parvk, "parlbnd"] = 0.01
+        par.loc[cat2parvk, "partrans"] = "log"
+
+
+        cat1par = par.loc[par.apply(lambda x: x.threshcat == "0" and x.usecol == "threshproportion", axis=1), "parnme"]
+        cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshproportion", axis=1), "parnme"]
+
+        print(cat1par, cat2par)
+        assert cat1par.shape[0] == num_cat_arrays
+        assert cat2par.shape[0] == num_cat_arrays
+
+        par.loc[cat1par, "parval1"] = 0.5
+        par.loc[cat1par, "parubnd"] = 1.0
+        par.loc[cat1par, "parlbnd"] = 0.0
+        par.loc[cat1par,"partrans"] = "none"
+
+        # since the apply method only looks that first proportion, we can just fix this one
+        par.loc[cat2par, "parval1"] = 1
+        par.loc[cat2par, "parubnd"] = 1
+        par.loc[cat2par, "parlbnd"] = 1
+        par.loc[cat2par,"partrans"] = "fixed"
+
+        assert par.loc[par.parnme.str.contains("threshgr"),:].shape[0] > 0
+        #par.loc[par.parnme.str.contains("threshgr"),"parval1"] = 0.5
+        par.loc[par.parnme.str.contains("threshgr"),"partrans"] = "fixed"
+        
+        print(pst.adj_par_names)
+        print(pst.npar,pst.npar_adj)
+
+        org_par = par.copy()
+        num_reals = 100
+        pe = pf.draw(num_reals, use_specsim=False)
+        pe.enforce()
+        print(pe.shape)
+        assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[1], pst.npar_adj)
+        assert pe.shape[0] == num_reals
+        
+        # cat1par = cat1par[0]
+        # pe = pe.loc[pe.loc[:,cat1par].values>0.35,:]
+        # pe = pe.loc[pe.loc[:, cat1par].values < 0.5, :]
+        # cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
+        # cat2par = cat2par[0]
+        # pe = pe.loc[pe.loc[:, cat2par].values > 10, :]
+        # pe = pe.loc[pe.loc[:, cat2par].values < 50, :]
+
+        print(pe.shape)
+        assert pe.shape[0] > 0
+        #print(pe.loc[:,cat1par].describe())
+        #print(pe.loc[:, cat2par].describe())
+        #return
+        truth_idx = pe.index[0]
+        pe = pe.loc[pe.index.map(lambda x: x != truth_idx),:]
+        pe.to_dense(os.path.join(template_ws, "prior.jcb"))
+
+
+        # just use a real as the truth...
+        pst.parameter_data.loc[pst.adj_par_names,"parval1"] = pe.loc[pe.index[0],pst.adj_par_names].values
+        pst.control_data.noptmax = 0
+        pst.write(os.path.join(pf.new_d,"truth.pst"),version=2)
+        pyemu.os_utils.run("{0} truth.pst".format(ies_exe_path),cwd=pf.new_d)
+
+        pst = pyemu.Pst(os.path.join(pf.new_d,"truth.pst"))
+
+        obs = pst.observation_data
+        obs.loc[:,"obsval"] = pst.res.loc[pst.obs_names,"modelled"].values
+        obs.loc[:,"weight"] = 0.0
+        obs.loc[:,"standard_deviation"] = np.nan
+        onames = obs.loc[obs.obsnme.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"obsnme"].values
+        #obs.loc[obs.oname=="hds","weight"] = 1.0
+        #obs.loc[obs.oname == "hds", "standard_deviation"] = 0.001
+        snames = [o for o in onames if "gage" in o]
+        obs.loc[onames,"weight"] = 1.0
+        obs.loc[snames,"weight"] = 1./(obs.loc[snames,"obsval"] * 0.2).values
+        #obs.loc[onames,"obsval"] = truth.values
+        #obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.01,onames.shape[0])
+
+        pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
+        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+        pst = pyemu.Pst(os.path.join(pf.new_d,"freyberg.pst"))
+        assert pst.phi < 0.01,str(pst.phi)
+
+        # reset away from the truth...
+        pst.parameter_data.loc[:,"parval1"] = org_par.parval1.values.copy()
+
+        pst.control_data.noptmax = 2
+        pst.pestpp_options["ies_par_en"] = "prior.jcb"
+        pst.pestpp_options["ies_num_reals"] = 30
+        pst.pestpp_options["ies_subset_size"] = -10
+        pst.pestpp_options["ies_no_noise"] = True
+        #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
+        pst.pestpp_options["overdue_giveup_fac"] = 100.0
+        #pst.pestpp_options["panther_agent_freeze_on_fail"] = True
+
+        #pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+        #pyemu.os_utils.start_workers(pf.new_d,ies_exe_path,"freyberg.pst",worker_root=".",master_dir="master_thresh",num_workers=15)
+
+        #num_reals = 100
+        #pe = pf.draw(num_reals, use_specsim=False)
+        #pe.enforce()
+        #pe.to_dense(os.path.join(template_ws, "prior.jcb"))
+        #pst.pestpp_options["ies_par_en"] = "prior.jcb"
+        
+        pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
+        m_d = "master_thresh"
+        pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
+                                     num_workers=10)
+        phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
+        print(phidf["mean"])
+
+        assert phidf["mean"].min() < phidf["mean"].max()
+
+        #pst.pestpp_options["ies_multimodal_alpha"] = 0.99
+        
+        #pst.pestpp_options["ies_num_threads"] = 6
+        #pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
+
+        #pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir="master_thresh_mm",
+        #                             num_workers=40)
+    except Exception as e:
+        os.chdir(bd)
+        raise Exception(e)
+    os.chdir(bd)
 
 def plot_thresh(m_d):
-    pst = pyemu.Pst(os.path.join(m_d,"freyberg.pst"))
-    obs = pst.observation_data
-    print(obs.oname.unique())
-    obs = obs.loc[obs.oname=="hkarr-npf-k-layer1",:].copy()
-    obs.loc[:, "i"] = obs.pop("i").astype(int)
-    obs.loc[:, "j"] = obs.pop("j").astype(int)
-
-
-    pst.control_data.noptmax = 10
-    pr_oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join(m_d,"freyberg.0.obs.csv"))
-    pt_oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join(m_d, "freyberg.{0}.obs.csv".format(pst.control_data.noptmax)))
-
-    pv = pt_oe.phi_vector
-    pv.sort_values(inplace=True)
-    pr_pv = pr_oe.phi_vector
-    print(pv)
-    pt_oe = pt_oe._df.loc[pv.index,:]
-    pr_oe.index = pr_oe.index.map(str)
-    #print(pr_oe.index)
-    #print(pt_oe.index)
-
-
-    #pt_oe.loc[:, obs.obsnme] = np.log10(pt_oe.loc[:, obs.obsnme].values)
-    #pr_oe.loc[:, obs.obsnme] = np.log10(pr_oe.loc[:, obs.obsnme].values)
-
-    vals = pt_oe.loc[:, obs.obsnme].values
-    mx = np.nanmax(vals)
-    vals = pt_oe.loc[:, obs.obsnme].values
-    vals[vals < 0.0] = np.nan
-    mn = np.nanmin(vals)
-    print(mn,mx)
-
     import flopy
 
     sim = flopy.mf6.MFSimulation.load(sim_ws=m_d)
     dis = sim.get_model().dis
-    ib = dis.idomain.array[0,:,:]
-    nrow,ncol = dis.nrow.data,dis.ncol.data
+    ib = dis.idomain.array[0, :, :]
+    nlay,nrow, ncol = dis.nlay.data,dis.nrow.data, dis.ncol.data
 
-    import matplotlib.pyplot as plt
-    from matplotlib.backends.backend_pdf import PdfPages
+    # tpst = pyemu.Pst(os.path.join(m_d, "truth.pst"))
+    # tobs = tpst.observation_data
+    # print(tobs.oname.unique())
+    # tobs = tobs.loc[tobs.oname == "hkarr-npf-k-layer1", :].copy()
+    # tobs = tobs.loc[tobs.obsval>-1e10,:]
+    # tobs.loc[:, "i"] = tobs.pop("i").astype(int)
+    # tobs.loc[:, "j"] = tobs.pop("j").astype(int)
+    # tarray = np.zeros((nrow,ncol))
+    # tarray[tobs.i.values,tobs.j.values] = tobs.obsval.values
 
-    with PdfPages(os.path.join(m_d,"results_{0}.pdf".format(pst.control_data.noptmax))) as pdf:
-        for ireal,real in enumerate(pt_oe.index):
-            prarr = np.zeros((nrow,ncol)) - 1
-            prarr[obs.i,obs.j] = pr_oe.loc[real,obs.obsnme]
-            prarr[ib==0] = np.nan
-            ptarr = np.zeros((nrow, ncol)) - 1
-            ptarr[obs.i, obs.j] = pt_oe.loc[real, obs.obsnme]
-            ptarr[ib == 0] = np.nan
-            #print(prarr)
-            #print(ptarr)
-            #mx = max(np.nanmax(prarr),np.nanmax(ptarr))
-            #mn = max(np.nanmin(prarr), np.nanmin(ptarr))
-            fig,axes = plt.subplots(1,2,figsize=(10,10))
-            cb = axes[0].imshow(prarr,vmin=mn,vmax=mx,cmap="coolwarm")
-            plt.colorbar(cb,ax=axes[0])
-            cb = axes[1].imshow(ptarr, vmin=mn, vmax=mx,cmap="coolwarm")
-            plt.colorbar(cb,ax=axes[1])
-            axes[1].set_title("real: {1}, phi: {0:4.1f}".format(pv[real], real), loc="left")
-            axes[0].set_title("real: {1}, phi: {0:4.1f}".format(pr_pv[real],real),loc="left")
+    pst = pyemu.Pst(os.path.join(m_d,"freyberg.pst"))
+    obs = pst.observation_data
+    print(obs.oname.unique())
+    
 
-            plt.tight_layout()
-            pdf.savefig()
-            plt.close(fig)
-            #plt.show()
-            #break
-            if ireal > 20:
-                break
-            print(ireal)
+    #pst.control_data.noptmax = 10
+    phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
+    mxiter = phidf.iteration.max()
+    print(mxiter)
+    pr_oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join(m_d,"freyberg.0.obs.csv"))
+    pr_oe.index = pr_oe.index.map(str)
+    pr_pv = pr_oe.phi_vector
+    pr_pv.sort_values(inplace=True,ascending=False)
+    pr_oe = pr_oe.loc[pr_pv.index,:]
+
+    reals_to_plot = pr_pv.index[:19].tolist()
+    if "base" in pr_pv.index:
+        reals_to_plot.append("base")
+    for iiter in range(1,mxiter+1):
+        pt_oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join(m_d, "freyberg.{0}.obs.csv".format(iiter)))
+        pt_oe.index = pt_oe.index.map(str)
+        pv = pt_oe.phi_vector
+        # pv.sort_values(inplace=True)
+        # pr_pv = pr_oe.phi_vector
+        # print(pv)
+        #pt_oe = pt_oe._df.loc[pv.index,:]
+        #pr_oe.index = pr_oe.index.map(str)
+        #print(pr_oe.index)
+        #print(pt_oe.index)
+
+
+        #pt_oe.loc[:, obs.obsnme] = np.log10(pt_oe.loc[:, obs.obsnme].values)
+        #pr_oe.loc[:, obs.obsnme] = np.log10(pr_oe.loc[:, obs.obsnme].values)
+
+        # vals = pt_oe.loc[:, obs.obsnme].values
+        # mx = np.nanmax(vals)
+        # vals = pt_oe.loc[:, obs.obsnme].values
+        # vals[vals < 0.0] = np.nan
+        # mn = np.nanmin(vals)
+
+        
+        for k in range(nlay):
+            if k == 1:
+                kobs = obs.loc[obs.oname == "hkarr-npf-k33-layer{0}".format(k + 1), :].copy()
+                kcobs = obs.loc[obs.oname == "tarr-npf-k33-layer{0}".format(k + 1), :].copy()
+            else:
+                kobs = obs.loc[obs.oname=="hkarr-npf-k-layer{0}".format(k+1),:].copy()
+                kcobs = obs.loc[obs.oname == "tarr-npf-k-layer{0}".format(k + 1), :].copy()
+            if kobs.shape[0] == 0:
+                print("no obs for layer {0}".format(k+1))
+                continue
+            
+            kobs.loc[:, "i"] = kobs.pop("i").astype(int)
+            kobs.loc[:, "j"] = kobs.pop("j").astype(int)
+            kobs = kobs.loc[kobs.obsval > -1e10, :]
+
+            kcobs.loc[:, "i"] = kcobs.pop("i").astype(int)
+            kcobs.loc[:, "j"] = kcobs.pop("j").astype(int)
+            kcobs = kcobs.loc[kcobs.obsval > -1e10, :]
+            tarray = np.zeros((nrow, ncol)) - 1e10
+            tarray[kobs.i.values, kobs.j.values] = kobs.obsval.values
+            tarray[tarray==-1e10] = np.nan
+            tcarray = np.zeros((nrow, ncol)) - 1e10
+            tcarray[kcobs.i.values, kcobs.j.values] = kcobs.obsval.values
+            tcarray[tcarray==-1e10] = np.nan
+            tarray = np.log10(tarray)
+            mn = np.log10(kobs.obsval.values).min()
+            mx = np.log10(kobs.obsval.values).max()
+            cmn = kcobs.obsval.min()
+            cmx = kcobs.obsval.max()
+
+            print(mn, mx)
+
+
+            import matplotlib.pyplot as plt
+            from matplotlib.backends.backend_pdf import PdfPages
+
+            with PdfPages(os.path.join(m_d,"results_{0}_hk_layer_{1}.pdf".format(iiter,k+1))) as pdf:
+                ireal = 0
+                #for real in pr_oe.index:
+                for real in reals_to_plot:
+                    if real not in pt_oe.index:
+                        continue
+                    prarr = np.zeros((nrow,ncol)) - 1
+                    prarr[kobs.i,kobs.j] = pr_oe.loc[real,kobs.obsnme]
+                    prarr[ib==0] = np.nan
+                    ptarr = np.zeros((nrow, ncol)) - 1
+                    ptarr[kobs.i, kobs.j] = pt_oe.loc[real, kobs.obsnme]
+                    ptarr[ib == 0] = np.nan
+                    #print(prarr)
+                    #print(ptarr)
+                    #mx = max(np.nanmax(prarr),np.nanmax(ptarr))
+                    #mn = max(np.nanmin(prarr), np.nanmin(ptarr))
+                    fig,axes = plt.subplots(2,3,figsize=(10,10))
+                    cb = axes[0,0].imshow(tarray, vmin=mn, vmax=mx, cmap="plasma")
+                    plt.colorbar(cb, ax=axes[0,0])
+                    cb = axes[0,1].imshow(np.log10(prarr),vmin=mn,vmax=mx,cmap="plasma")
+                    plt.colorbar(cb,ax=axes[0,1])
+                    cb = axes[0,2].imshow(np.log10(ptarr), vmin=mn, vmax=mx,cmap="plasma")
+                    plt.colorbar(cb,ax=axes[0,2])
+                    axes[0,2].set_title("post real: {1}, phi: {0:4.1f}".format(pv[real], real), loc="left")
+                    axes[0,1].set_title("prior real: {1}, phi: {0:4.1f}".format(pr_pv[real],real),loc="left")
+                    axes[0,0].set_title("truth", loc="left")
+
+
+                    prarr = np.zeros((nrow,ncol)) - 1
+                    prarr[kcobs.i,kcobs.j] = pr_oe.loc[real,kcobs.obsnme]
+                    prarr[ib==0] = np.nan
+                    ptarr = np.zeros((nrow, ncol)) - 1
+                    ptarr[kcobs.i, kcobs.j] = pt_oe.loc[real, kcobs.obsnme]
+                    ptarr[ib == 0] = np.nan
+                    cb = axes[1,0].imshow(tcarray,vmin=cmn,vmax=cmx,cmap="plasma")
+                    plt.colorbar(cb, ax=axes[1,0])
+                    cb = axes[1,1].imshow(prarr,vmin=cmn,vmax=cmx,cmap="plasma")
+                    plt.colorbar(cb,ax=axes[1,1])
+                    cb = axes[1,2].imshow(ptarr, vmin=cmn,vmax=cmx,cmap="plasma")
+                    plt.colorbar(cb,ax=axes[1,2])
+                    axes[1,2].set_title("post real: {1}, phi: {0:4.1f}".format(pv[real], real), loc="left")
+                    axes[1,1].set_title("prior real: {1}, phi: {0:4.1f}".format(pr_pv[real],real),loc="left")
+                    axes[1,0].set_title("truth", loc="left")
+
+                    plt.tight_layout()
+                    pdf.savefig()
+                    plt.close(fig)
+                    #plt.show()
+                    #break
+                    ireal += 1
+                    if ireal > 20:
+                        break
+                    print(ireal)
+
 
 
 def test_array_fmt(tmp_path):
@@ -5132,17 +5335,19 @@ def test_array_fmt(tmp_path):
 
 
 if __name__ == "__main__":
-    # mf6_freyberg_pp_locs_test()
+    mf6_freyberg_pp_locs_test()
     # invest()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
-    mf6_freyberg_test(os.path.abspath("."))
+    #mf6_freyberg_test(os.path.abspath("."))
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
 
-    #mf6_freyberg_thresh_invest(".")
+    mf6_freyberg_thresh_test(".")
+
+    #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
     # xsec_test()
