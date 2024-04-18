@@ -1769,7 +1769,9 @@ class PstFrom(object):
         pest interface
 
         Args:
-            filenames (`str`): Model input filenames to parameterize
+            filenames (`str`): Model input filenames to parameterize. By default filename should give relative
+                loction from top level of pest template directory
+                (`new_d` as passed to `PstFrom()`).
             par_type (`str`): One of `grid` - for every element, `constant` - for single
                 parameter applied to every element, `zone` - for zone-based
                 parameterization or `pilotpoint` - for
