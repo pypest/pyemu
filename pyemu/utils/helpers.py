@@ -4045,7 +4045,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
     for col in pst.observation_data.columns:
         gpst.observation_data.loc[output_names,col] = pst.observation_data.loc[output_names,col].values
     gpst.pestpp_options = pst.pestpp_options
-
+    gpst.prior_information = pst.prior_information.copy()
     lines = [line[4:] for line in inspect.getsource(gpr_forward_run).split("\n")][1:]
 
     with open(os.path.join(gpr_t_d, "forward_run.py"), 'w') as f:
