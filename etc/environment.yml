@@ -21,3 +21,4 @@ dependencies:
   - pyproj
   - flopy
   - modflow-devtools
+  - scikit-learn
