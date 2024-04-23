@@ -1646,13 +1646,13 @@ def _process_array_file(model_file, df):
     org_file = df_mf.org_file.unique()
     if org_file.shape[0] != 1:
         raise Exception("wrong number of org_files for {0}".format(model_file))
-    org_arr = np.loadtxt(org_file[0])
+    org_arr = np.loadtxt(org_file[0], ndmin=2)
 
     if "mlt_file" in df_mf.columns:
         for mlt, operator in zip(df_mf.mlt_file, df_mf.operator):
             if pd.isna(mlt):
                 continue
-            mlt_data = np.loadtxt(mlt)
+            mlt_data = np.loadtxt(mlt, ndmin=2)
             if org_arr.shape != mlt_data.shape:
                 raise Exception(
                     "shape of org file {}:{} differs from mlt file {}:{}".format(
@@ -1689,7 +1689,17 @@ def _process_array_file(model_file, df):
                 lb = float(list(lb_vals.keys())[0])
                 org_arr[org_arr < lb] = lb
 
-    np.savetxt(model_file, np.atleast_2d(org_arr), fmt="%15.6E", delimiter="")
+    try:
+        fmt = df_mf.fmt.iloc[0]
+    except AttributeError:
+        fmt = "%15.6E"
+    try:
+        sep = df_mf.sep.iloc[0]
+    except AttributeError:
+        sep = np.nan
+    if np.isnan(sep):
+        sep = ''
+    np.savetxt(model_file, np.atleast_2d(org_arr), fmt=fmt, delimiter=sep)
 
 
 def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
@@ -1780,14 +1790,15 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
         if len(chunks) == 1:
             _process_chunk_fac2real(chunks[0], 0)
         else:
-            pool = mp.Pool(processes=min(mp.cpu_count(), len(chunks), 60))
-            x = [
-                pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
-                for i, chunk in enumerate(chunks)
-            ]
-            [xx.get() for xx in x]
-            pool.close()
-            pool.join()
+            with mp.get_context("spawn").Pool(
+                    processes=min(mp.cpu_count(), 60)) as pool:
+                x = [
+                    pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
+                    for i, chunk in enumerate(chunks)
+                ]
+                [xx.get() for xx in x]
+                pool.close()
+                pool.join()
         # procs = []
         # for chunk in chunks:
         #     p = mp.Process(target=_process_chunk_fac2real, args=[chunk])
@@ -1821,14 +1832,15 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     #     r = p.get(False)
     #     p.join()
     else:
-        pool = mp.Pool(processes=min(mp.cpu_count(), len(chunks), 60))
-        x = [
-            pool.apply_async(_process_chunk_array_files, args=(chunk, i, df))
-            for i, chunk in enumerate(chunks)
-        ]
-        [xx.get() for xx in x]
-        pool.close()
-        pool.join()
+        with mp.get_context("spawn").Pool(
+                processes=min(mp.cpu_count(), 60)) as pool:
+            x = [
+                pool.apply_async(_process_chunk_array_files, args=(chunk, i, df))
+                for i, chunk in enumerate(chunks)
+            ]
+            [xx.get() for xx in x]
+            pool.close()
+            pool.join()
     print("finished arr mlt", datetime.now())
 
 
@@ -2053,14 +2065,15 @@ def apply_genericlist_pars(df, chunk_len=50):
     if len(chunks) == 1:
         _process_chunk_list_files(chunks[0], 0, df)
     else:
-        pool = mp.Pool(processes=min(mp.cpu_count(), len(chunks), 60))
-        x = [
-            pool.apply_async(_process_chunk_list_files, args=(chunk, i, df))
-            for i, chunk in enumerate(chunks)
-        ]
-        [xx.get() for xx in x]
-        pool.close()
-        pool.join()
+        with mp.get_context("spawn").Pool(
+                processes=min(mp.cpu_count(), 60)) as pool:
+            x = [
+                pool.apply_async(_process_chunk_list_files, args=(chunk, i, df))
+                for i, chunk in enumerate(chunks)
+            ]
+            [xx.get() for xx in x]
+            pool.close()
+            pool.join()
     print("finished list mlt", datetime.now())
 
 
