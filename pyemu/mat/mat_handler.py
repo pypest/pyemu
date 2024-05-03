@@ -1825,6 +1825,10 @@ class Matrix(object):
         if row_names is None and col_names is None:
             raise Exception("Matrix.extract() " + "row_names and col_names both None")
         extract = self.get(row_names, col_names, drop=True)
+        i,j = extract.x.shape
+        if i==j:
+            test = extract.x.reshape(-1)[:-1].reshape(i-1,j+1)
+            extract.isdiagonal = ~np.any(test[:,1:])
         return extract
 
     def get_diagonal_vector(self, col_name="diag"):
@@ -3067,7 +3071,7 @@ class Cov(Matrix):
                 f.write("START STANDARD_DEVIATION\n")
                 for iname, name in enumerate(self.row_names):
                     f.write(
-                        "  {0:20s}  {1:15.6E}\n".format(name, np.sqrt(self.x[iname, 0]))
+                        "  {0:20s}  {1:15.6E}\n".format(name, np.sqrt(self.x[iname, iname]))
                     )
                 f.write("END STANDARD_DEVIATION\n")
                 f.close()
