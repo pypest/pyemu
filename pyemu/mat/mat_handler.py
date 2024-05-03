@@ -3067,7 +3067,7 @@ class Cov(Matrix):
                 f.write("START STANDARD_DEVIATION\n")
                 for iname, name in enumerate(self.row_names):
                     f.write(
-                        "  {0:20s}  {1:15.6E}\n".format(name, np.sqrt(self.x[iname, 0]))
+                        "  {0:20s}  {1:15.6E}\n".format(name, np.sqrt(self.x[iname, iname]))
                     )
                 f.write("END STANDARD_DEVIATION\n")
                 f.close()
