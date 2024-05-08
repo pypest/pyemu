@@ -2290,9 +2290,7 @@ class Pst(object):
                     real_name, parfile
                 )
             )
-            self.parameter_data.parval1 = parens.loc[real_name].T.loc[
-                self.parameter_data.parnme
-            ]
+            self.parameter_data["parval1"] = parens.loc[self.par_names,real_name]
 
         if enforce_bounds:
             par = self.parameter_data
