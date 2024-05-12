@@ -1981,6 +1981,9 @@ class Matrix(object):
             f (`file`): the file handle.  Only returned if `close` is False
 
         """
+        row_names = [str(r) for r in row_names]
+        col_names = [str(c) for c in col_names]
+        
 
         if isinstance(filename, str):
             f = open(filename, "wb")
