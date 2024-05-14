@@ -917,6 +917,14 @@ def mf6_freyberg_test(setup_freyberg_mf6):
                                   pargp=arr_file.split('.')[1] + "_cn", zone_array=ib,
                                   upper_bound=ub, lower_bound=lb,geostruct=gr_gs)
 
+    # arr = np.loadtxt(Path(template_ws, 'freyberg6.npf_k_layer1.txt'))
+    # onecolf = Path(template_ws, '1col.txt')
+    # np.savetxt(onecolf, arr.ravel()[:,None])
+    # pdf = pf.add_parameters(filenames=onecolf.relative_to(template_ws),
+    #                   par_type="grid", par_name_base="onecol-gr",
+    #                   pargp="onecol-gr", zone_array=ib.ravel()[:,None],
+    #                   upper_bound=10, lower_bound=0.1)
+
     # add SP1 spatially constant, but temporally correlated wel flux pars
     kper = 0
     list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
