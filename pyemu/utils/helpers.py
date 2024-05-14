@@ -2088,9 +2088,12 @@ def _process_chunk_list_files(chunk, i, df):
 
 
 def _list_index_caster(x, add1):
-        vals = []
-        for xx in x:
-            if xx:
+    vals = []
+    for xx in x:
+        if xx:
+            if any(s not in " 01234456789.-" for s in xx):
+                vals.append(xx.strip().strip("'\" "))
+            else:
                 if (xx.strip().isdigit() or
                         (xx.strip()[0] == '-' and xx.strip()[1:].isdigit())):
                     vals.append(add1 + int(xx))
@@ -2100,7 +2103,7 @@ def _list_index_caster(x, add1):
                     except Exception as e:
                         vals.append(xx.strip().strip("'\" "))
 
-        return tuple(vals)
+    return tuple(vals)
 
 
 def _list_index_splitter_and_caster(x, add1):
