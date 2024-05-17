@@ -5263,75 +5263,121 @@ def plot_thresh(m_d):
                     print(ireal)
 
 
-
 def test_array_fmt(tmp_path):
     from pyemu.utils.pst_from import _load_array_get_fmt
     # psuedo ff option
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
-        fp.write("   3.000  3.0000  03.000\n     3.0  3.0000  03.000")
+        fp.write("       3.000      3.0000      03.000\n"
+                 "         3.0      3.0000      03.000")
+    # will be converted to Exp format -- only safe option
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
-    assert fmt == "%8.4F"
+    assert fmt == ''.join([" %11.4F"] * 3)
     assert arr.sum(axis=1).sum() == 18
+    # actually space delim but could be fixed (first col is 1 wider)
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
-        fp.write("3.000 3.00 03.0\n  3.0  3.0  03.")
+        fp.write("3.000 3.00 03.0\n"
+                 "  3.0  3.0  03.")
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
-    assert fmt == "%5.3F"
-    assert arr.sum(axis=1).sum() == 18
-    # tru space delim option
+    assert fmt == ''.join([" %4.1F"] * 3)
+    # actually space delim but could be fixed (first col is 1 wider)
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
-        fp.write("3.000 3.00000 03.000\n3.0 3.0000 03.000")
+        fp.write(" 3.000000000        3.00        03.0\n"
+                 "         3.0         3.0         03.")
+    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    assert fmt == ''.join([" %11.8F"] * 3)
+    assert arr.sum(axis=1).sum() == 18
+    # tru space delim option -- sep passed
+    with open(Path(tmp_path, "test.dat"), 'w') as fp:
+        fp.write("3.000 3.00000 03.000\n"
+                 "3.0 3.0000 03.000")
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=' ')
     assert fmt == "%7.5F"
     assert arr.sum(axis=1).sum() == 18
     # tru space delim option with sep None
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
-        fp.write("3.000 3.00000 03.000\n3.0 3.0000 03.000")
+        fp.write("3.000 3.00000 03.000\n"
+                 "3.0 3.0000 03.000")
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
-    assert fmt == "%8.5F"
+    assert fmt == "%7.5F"
     assert arr.sum(axis=1).sum() == 18
     # comma delim option
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
-        fp.write("3.000, 3.00000, 03.000\n 3.0, 3.0000,03.000")
+        fp.write("3.000, 3.00000, 03.000\n"
+                 " 3.0, 3.0000,03.000")
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=',')
     assert fmt == "%8.5F"
     assert arr.sum(axis=1).sum() == 18
-    # sci note option
+    # partial sci note option (fixed format) but short
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
-        fp.write(" 00.3E01 30.0E-1   03.00\n     3.0    3.00  03.000")
+        fp.write(" 00.3E01 30.0E-1   03.00\n"
+                 "     3.0    3.00  03.000")
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
-    assert fmt == "%8.2E"
+    assert fmt == ''.join([" %7.0E"] * 3)
     assert arr.sum(axis=1).sum() == 18
+    try:
+        # partial sci note option (fixed format) but short
+        with open(Path(tmp_path, "test.dat"), 'w') as fp:
+            fp.write(" 0.3E01 3.0E-1  03.00\n"
+                     "    3.0   3.00 03.000")
+        arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    except ValueError:
+        # should fail
+        pass
+    # sci note option fixed
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
-        fp.write(" 00.3E01 30.0E-1   03.00\n     3.0    3.00  03.000")
+        fp.write("      3.0E00  30.0000E-1       03.00\n"
+                 "         3.0        3.00      03.000")
+    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    assert fmt == ''.join([" %11.4E"] * 3)
+    assert arr.sum(axis=1).sum() == 18
+    # free but not passing delim
+    with open(Path(tmp_path, "test.dat"), 'w') as fp:
+        fp.write(" 0.3E01   30.0E-1 03.00\n"
+                 "3.0 3.00  03.000")
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"),
                                    fullfile=True)
-    assert fmt == "%8.3E"
+    assert fmt == "%9.3G"
     assert arr.sum(axis=1).sum() == 18
+
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
-        fp.write(" 0.3E01   30.0E-1 03.00\n3.0 3.00  03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"),
-                                   fullfile=True)
-    assert fmt == "%10.3E"
-    assert arr.sum(axis=1).sum() == 18
-    with open(Path(tmp_path, "test.dat"), 'w') as fp:
-        fp.write(" 00.3E01,30.0E-1, 03.00\n3.0, 3.00,03.000")
+        fp.write(" 00.3E01,30.0E-1, 03.00\n"
+                 "3.0, 3.00,03.000")
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"),
                                    fullfile=True, sep=',')
-    assert fmt == "%8.3E"
-    assert arr.sum(axis=1).sum() == 18
-    # comma option
-    with open(Path(tmp_path, "test.dat"), 'w') as fp:
-        fp.write(" 00.3E01,30.0E-1,03.00\n     3.0,3.00,03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=',')
-    assert fmt == "%8.2E"
+    assert fmt == "%8.3G"
     assert arr.sum(axis=1).sum() == 18
     # 1 col option
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.0000000000\n30.000000E-1\n03.00000\n3.0\n3.00\n03.000")
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert arr.shape == (6,1)
-    assert fmt == "%12.10E"
+    assert fmt == "%12.10G"
     assert arr.sum(axis=1).sum() == 18
+
+
+def test_array_fmt_pst_from(tmp_path):
+    pf = PstFrom(Path("utils",'weird_array'),
+                 Path(tmp_path, "weird_tmp"),
+                 remove_existing=True)
+    arr = np.loadtxt(Path(tmp_path, "weird_tmp", "ar.arr"))
+    # pf.add_parameters("ar.arr", 'grid', zone_array=~np.isnan(arr),
+    #                   mfile_sep=' ')
+    pf.add_parameters("ar.arr", 'grid', zone_array=~np.isnan(arr))
+    np.savetxt(Path(tmp_path, "weird_tmp", "ar2.arr"), arr, fmt="%15.8f",
+               delimiter='')
+    pf.add_parameters("ar2.arr", 'grid', zone_array=~np.isnan(arr))
+    np.savetxt(Path(tmp_path, "weird_tmp", "ar3.arr"), arr, fmt="%15.8e",
+               delimiter='')
+    pf.add_parameters("ar3.arr", 'grid', zone_array=~np.isnan(arr))
+    pf.add_observations("ar.arr", zone_array=~np.isnan(arr))
+    pf.add_observations("ar2.arr", zone_array=~np.isnan(arr))
+    pst = pf.build_pst()
+    par = pst.parameter_data
+    par.loc[par.sample(10).index, 'parval1'] = -100
+    check_apply(pf)
+    arr1 = np.loadtxt(Path(tmp_path, "weird_tmp", "ar.arr"))
+    arr2 = np.loadtxt(Path(tmp_path, "weird_tmp", "ar2.arr"))
+    arr3 = np.loadtxt(Path(tmp_path, "weird_tmp", "ar3.arr"))
 
 
 if __name__ == "__main__":
