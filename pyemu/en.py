@@ -1700,7 +1700,8 @@ class ParameterEnsemble(Ensemble):
         ub = (self.ubnd * (1.0 - bound_tol)).to_dict()
         lb = (self.lbnd * (1.0 + bound_tol)).to_dict()
 
-        val_arr = self._df.values
+        val_arr = self._df.to_numpy()
         for iname, name in enumerate(self.columns):
             val_arr[val_arr[:, iname] > ub[name], iname] = ub[name]
             val_arr[val_arr[:, iname] < lb[name], iname] = lb[name]
+        self._df = pd.DataFrame(val_arr, index=self._df.index, columns=self._df.columns)
