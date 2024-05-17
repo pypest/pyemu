@@ -260,6 +260,7 @@ def enforce_test():
     pe.enforce(how="scale")
 
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe._df["mult1"] = pe._df["mult1"].astype("float")
     pe._df.loc[0,:] += pst.parameter_data.parubnd
     pe.enforce()
     assert (pe._df.loc[0,:] - pst.parameter_data.parubnd).apply(np.abs).sum() == 0.0
@@ -718,7 +719,7 @@ if __name__ == "__main__":
     #deviations_test()
     # as_pyemu_matrix_test()
     # dropna_test()
-    #enforce_test()
+    enforce_test()
     #pnulpar_test()
     # triangular_draw_test()
     # uniform_draw_test()
