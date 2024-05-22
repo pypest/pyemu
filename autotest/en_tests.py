@@ -264,12 +264,21 @@ def enforce_test():
     pe.enforce()
     assert (pe._df.loc[0,:] - pst.parameter_data.parubnd).apply(np.abs).sum() == 0.0
 
+    # mixed numpy types test
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
     pe._df["mult1"] = pe._df["mult1"].astype("float")
     pe._df.loc[0,:] += pst.parameter_data.parubnd
     pe.enforce()
     assert (pe._df.loc[0,:] - pst.parameter_data.parubnd).apply(np.abs).sum() == 0.0
 
+    # columns out of order test
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe._df.loc[0,:] += pst.parameter_data.parubnd
+    cols_arr = pe._df.columns.values
+    cols_out_of_order = np.append(cols_arr[1:], [cols_arr[0]])
+    pe._df = pe._df[cols_out_of_order]
+    pe.enforce()
+    assert (pe._df.loc[0,:] - pst.parameter_data.parubnd).apply(np.abs).sum() == 0.0
 
     pe._df.loc[0, :] += pst.parameter_data.parubnd
     pe._df.loc[1:,:] = pst.parameter_data.parval1.values
