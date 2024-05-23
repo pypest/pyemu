@@ -504,7 +504,7 @@ def factor_draw_test():
     d = (sd_eig - sd_svd).apply(np.abs)
     assert d.max() < 0.5,d.sort_values()
 
-    num_reals = 10
+    num_reals = 1000
     pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
 
     emp_cov = pe_eig.covariance_matrix()
@@ -518,7 +518,7 @@ def emp_cov_draw_test():
 
     pst = pyemu.Pst(os.path.join("en","pest.pst"))
     cov = pyemu.Cov.from_binary(os.path.join("en","cov.jcb"))
-    num_reals = 10
+    num_reals = 1000
     pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
 
     emp_cov = pe_eig.covariance_matrix()
@@ -740,10 +740,11 @@ if __name__ == "__main__":
     #fill_test()
     #factor_draw_test()
     #emp_cov_test()
-    #emp_cov_draw_test()
+    emp_cov_draw_test()
     #mixed_par_draw_2_test()
     #binary_test()
-    get_phi_vector_noise_obs_test()
-
+    #get_phi_vector_noise_obs_test()
+    #factor_draw_test()
+    #enforce_test()
 
 
