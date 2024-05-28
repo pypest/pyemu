@@ -5139,7 +5139,8 @@ def plot_thresh(m_d):
     #pst.control_data.noptmax = 10
     phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
     mxiter = phidf.iteration.max()
-    print(mxiter)
+    #mxiter = 1
+    #print(mxiter)
     pr_oe = pyemu.ObservationEnsemble.from_csv(pst=pst,filename=os.path.join(m_d,"freyberg.0.obs.csv"))
     pr_oe.index = pr_oe.index.map(str)
     pr_pv = pr_oe.phi_vector
@@ -5225,15 +5226,15 @@ def plot_thresh(m_d):
                     #mx = max(np.nanmax(prarr),np.nanmax(ptarr))
                     #mn = max(np.nanmin(prarr), np.nanmin(ptarr))
                     fig,axes = plt.subplots(2,3,figsize=(10,10))
-                    cb = axes[0,0].imshow(tarray, vmin=mn, vmax=mx, cmap="plasma")
+                    cb = axes[0,2].imshow(tarray, vmin=mn, vmax=mx, cmap="plasma")
                     plt.colorbar(cb, ax=axes[0,0])
-                    cb = axes[0,1].imshow(np.log10(prarr),vmin=mn,vmax=mx,cmap="plasma")
+                    cb = axes[0,0].imshow(np.log10(prarr),vmin=mn,vmax=mx,cmap="plasma")
                     plt.colorbar(cb,ax=axes[0,1])
-                    cb = axes[0,2].imshow(np.log10(ptarr), vmin=mn, vmax=mx,cmap="plasma")
+                    cb = axes[0,1].imshow(np.log10(ptarr), vmin=mn, vmax=mx,cmap="plasma")
                     plt.colorbar(cb,ax=axes[0,2])
-                    axes[0,2].set_title("post real: {1}, phi: {0:4.1f}".format(pv[real], real), loc="left")
-                    axes[0,1].set_title("prior real: {1}, phi: {0:4.1f}".format(pr_pv[real],real),loc="left")
-                    axes[0,0].set_title("truth", loc="left")
+                    axes[0,1].set_title("post real: {1}, phi: {0:4.1f}".format(pv[real], real), loc="left")
+                    axes[0,0].set_title("prior real: {1}, phi: {0:4.1f}".format(pr_pv[real],real),loc="left")
+                    axes[0,2].set_title("truth", loc="left")
 
 
                     prarr = np.zeros((nrow,ncol)) - 1
@@ -5242,15 +5243,15 @@ def plot_thresh(m_d):
                     ptarr = np.zeros((nrow, ncol)) - 1
                     ptarr[kcobs.i, kcobs.j] = pt_oe.loc[real, kcobs.obsnme]
                     ptarr[ib == 0] = np.nan
-                    cb = axes[1,0].imshow(tcarray,vmin=cmn,vmax=cmx,cmap="plasma")
+                    cb = axes[1,0].imshow(prarr,vmin=cmn,vmax=cmx,cmap="plasma")
                     plt.colorbar(cb, ax=axes[1,0])
                     cb = axes[1,1].imshow(prarr,vmin=cmn,vmax=cmx,cmap="plasma")
                     plt.colorbar(cb,ax=axes[1,1])
-                    cb = axes[1,2].imshow(ptarr, vmin=cmn,vmax=cmx,cmap="plasma")
+                    cb = axes[1,2].imshow(tcarray, vmin=cmn,vmax=cmx,cmap="plasma")
                     plt.colorbar(cb,ax=axes[1,2])
-                    axes[1,2].set_title("post real: {1}, phi: {0:4.1f}".format(pv[real], real), loc="left")
-                    axes[1,1].set_title("prior real: {1}, phi: {0:4.1f}".format(pr_pv[real],real),loc="left")
-                    axes[1,0].set_title("truth", loc="left")
+                    axes[1,1].set_title("post real: {1}, phi: {0:4.1f}".format(pv[real], real), loc="left")
+                    axes[1,0].set_title("prior real: {1}, phi: {0:4.1f}".format(pr_pv[real],real),loc="left")
+                    axes[1,2].set_title("truth", loc="left")
 
                     plt.tight_layout()
                     pdf.savefig()
@@ -5335,7 +5336,7 @@ def test_array_fmt(tmp_path):
 
 
 if __name__ == "__main__":
-    mf6_freyberg_pp_locs_test()
+    #mf6_freyberg_pp_locs_test()
     # invest()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
@@ -5345,9 +5346,9 @@ if __name__ == "__main__":
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
 
-    mf6_freyberg_thresh_test(".")
+    #mf6_freyberg_thresh_test(".")
 
-    #plot_thresh("master_thresh")
+    plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
     # xsec_test()
