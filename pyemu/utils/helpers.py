@@ -2091,7 +2091,7 @@ def _list_index_caster(x, add1):
     vals = []
     for xx in x:
         if xx:
-            if any(s not in " 01234456789.-" for s in xx):
+            if any(s not in " 0123456789.-" for s in xx):
                 vals.append(xx.strip().strip("'\" "))
             else:
                 if (xx.strip().isdigit() or
