@@ -1697,10 +1697,6 @@ class ParameterEnsemble(Ensemble):
         violating vals to bound
         """
 
-        ub = (self.ubnd * (1.0 - bound_tol)).to_dict()
-        lb = (self.lbnd * (1.0 + bound_tol)).to_dict()
-
-        val_arr = self._df.values
-        for iname, name in enumerate(self.columns):
-            val_arr[val_arr[:, iname] > ub[name], iname] = ub[name]
-            val_arr[val_arr[:, iname] < lb[name], iname] = lb[name]
+        ub = self.ubnd * (1.0 - bound_tol)
+        lb = self.lbnd * (1.0 + bound_tol)
+        self._df = self._df.clip(lb, ub, axis=1)

@@ -44,6 +44,52 @@ def _check_var_len(var, n, fill=None):
     return var
 
 
+def _load_array_get_fmt(fname, sep=None, fullfile=False):
+    splitsep = sep  # sep for splitting string for fmt (need to count mult delim.)
+    if sep is None:  # need to split line with space and count multiple
+        splitsep = ' '
+    with open(fname, 'r') as fp:  # load file or line
+        if fullfile:
+            lines = [line for line in fp.readlines()]
+            arr = np.genfromtxt(lines, delimiter=sep, ndmin=2)
+        else:
+            lines = [fp.readline()]  # just read first line
+            if splitsep not in lines[0]:
+                return _load_array_get_fmt(fname, sep, True)
+            fp.seek(0)  # reset pointer
+            arr = np.loadtxt(fp, delimiter=sep, ndmin=2)  # read array
+    n = 0  # counter for repeat delim when sep is None
+    lens, prec = [], []  # container for fmt length and precision
+    exps = 0  # exponential counter (could be bool)
+    for s in lines:
+        ilens, iprec = [], []
+        for ss in s.split(splitsep):
+            ss = ss.strip('\n').lower()
+            if not ss:
+                n += 1
+            else:
+                d = len(ss) + n if sep is None else len(ss)
+                ilens.append(d)
+                if 'e' in ss:
+                    exps += 1
+                    ss = ss.split('e')[0]
+                iprec.append(len(ss.split('.')[-1]))
+                n = 0  # reset space counter
+        lens.append(ilens)
+        prec.append(iprec)
+    firsts = [line.pop(0) for line in lens]
+    fmax = max(firsts)
+    maxlen = max(np.ravel(lens) if np.ravel(lens).shape[0]>0 else [0])
+    maxprec = max(np.ravel(prec))
+    if sep is None and fmax <= maxlen:
+        maxlen += 1
+    maxlen = max([fmax, maxlen])
+    # fracexp = exps / total
+    fmt = f"%{maxlen}.{maxprec}"
+    fmt += "E" if exps > 0 else "F"
+    return arr, fmt
+
+
 class PstFrom(object):
     """construct high-dimensional PEST(++) interfaces with all the bells and whistles
 
@@ -1077,16 +1123,18 @@ class PstFrom(object):
                 if not dest_filepath.exists():
                     self.logger.lraise(f"par filename '{dest_filepath}' not found ")
                 # read array type input file
-                arr = np.loadtxt(dest_filepath, delimiter=sep, ndmin=2)
+                arr, infmt = _load_array_get_fmt(dest_filepath, sep=sep)
+                # arr = np.loadtxt(dest_filepath, delimiter=sep, ndmin=2)
                 self.logger.log(f"loading array {dest_filepath}")
                 self.logger.statement(
                     f"loaded array '{input_filena}' of shape {arr.shape}"
                 )
                 # save copy of input file to `org` dir
                 # make any subfolders if they don't exist
+                # this will be python auto precision
                 np.savetxt(self.original_file_d / rel_filepath.name, arr)
                 file_dict[rel_filepath] = arr
-                fmt_dict[rel_filepath] = fmt
+                fmt_dict[rel_filepath] = infmt
                 sep_dict[rel_filepath] = sep
                 skip_dict[rel_filepath] = skip
             # check for compatibility
