@@ -3127,7 +3127,9 @@ def write_list_tpl(
             If list of `tuple` -- assumed to be selection based `index_cols`
                 values. e.g. [(3,5,6)] would attempt to set parameters where the
                 model file values for 3 `index_cols` are 3,5,6. N.B. values in
-                tuple are actual model file entry values.
+                tuple are actual model file entry values. For use_rows with a
+                single 'index_cols' use [(3,),(5,),(6,)] to set parameters for
+                rows with model file index entries of 3,5,6.
             If no rows in the model input file match `use_rows` -- parameters
                 will be set up for all rows.
             Only valid/effective if index_cols is not None.
