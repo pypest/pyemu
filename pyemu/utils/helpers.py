@@ -235,20 +235,31 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
             full_oe.loc[:, n] = v
     return full_oe
 
-def draw_by_group(pst, delr, delc, num_reals=100, sigma_range=6, use_specsim=False,
-         struct_dict={}, scale_offset=True, echo=True, logger=False):
+def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
+         struct_dict={}, delr=[], delc=[], scale_offset=True, echo=True, logger=False):
     """Draw a parameter ensemble from the distribution implied by the initial parameter values in the
-    control file and the prior parameter covariance matrix.
+    control file and the prior parameter covariance matrix. Previously in pst_from.
 
     Args:
+        pst ():
         num_reals (`int`): the number of realizations to draw
         sigma_range (`int`): number of standard deviations represented by parameter bounds.  Default is 6 (99%
             confidence).  4 would be approximately 95% confidence bounds
         use_specsim (`bool`): flag to use spectral simulation for grid-scale pars (highly recommended).
             Default is False
+        struct_dict (`dict`): struct_dict (`dict`): a dict of GeoStruct (or structure file), and list of
+            pilot point template files pairs. If the values in the dict are
+            `pd.DataFrames`, then they must have an 'x','y', and 'parnme' column.
+            If the filename ends in '.csv', then a pd.DataFrame is loaded,
+            otherwise a pilot points file is loaded.
+        delr (`list`, optional): required for specsim, dimension of cells along a row (i.e., column widths), 
+            specsim only works with regular grids
+        delc (`list`, optional):  required for specsim, dimension of cells along a column (i.e., row heights)
         scale_offset (`bool`): flag to apply scale and offset to parameter bounds before calculating prior variance.
             Dfault is True.  If you are using non-default scale and/or offset and you get an exception during
             draw, try changing this value to False.
+        echo (`bool`):
+        logger (`bool`):
 
     Returns:
         `pyemu.ParameterEnsemble`: a prior parameter ensemble
@@ -270,7 +281,7 @@ def draw_by_group(pst, delr, delc, num_reals=100, sigma_range=6, use_specsim=Fal
     subset = pst.parameter_data.index
     gr_par_pe = None
     if use_specsim:
-        if not pyemu.geostats.SpecSim2d.grid_is_regular(
+        if len(delr)>0 and len(delc)>0 and not pyemu.geostats.SpecSim2d.grid_is_regular(
             delr, delc
         ):
             logger.lraise(
