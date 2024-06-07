@@ -236,7 +236,7 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
     return full_oe
 
 def draw_by_group(pst, delr, delc, num_reals=100, sigma_range=6, use_specsim=False,
-         struct_dict={}, scale_offset=True, echo=True, logger=pyemu.Logger("draw_by_groups.log", echo=echo)):
+         struct_dict={}, scale_offset=True, echo=True, logger=False):
     """Draw a parameter ensemble from the distribution implied by the initial parameter values in the
     control file and the prior parameter covariance matrix.
 
@@ -259,6 +259,8 @@ def draw_by_group(pst, delr, delc, num_reals=100, sigma_range=6, use_specsim=Fal
         If you are using grid-style parameters, please use spectral simulation (`use_specsim=True`)
 
     """
+    if not logger:
+        logger = pyemu.Logger("draw_by_groups.log", echo=echo)
     if pst.npar_adj == 0:
         logger.warn("no adjustable parameters, nothing to draw...")
         return
