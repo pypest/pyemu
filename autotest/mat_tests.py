@@ -556,6 +556,22 @@ def dense_mat_format_test(setup_empty_mat_temp):
     matfile = os.path.join(wd, "dense.bin")
     m = pyemu.Matrix(x=arr, row_names=rnames, col_names=cnames)
     f = m.to_dense(matfile, close=True)
+    row_names,row_offsets,col_names,success = pyemu.Matrix.get_dense_binary_info(matfile)
+    assert success
+    assert col_names == cnames
+    assert row_names == rnames
+    assert len(row_offsets) == len(row_names)
+
+    only_rows = row_names[::5]
+    data_rows_only, row_names_only,col_names_only = pyemu.Matrix.read_dense(matfile,only_rows=only_rows)
+
+    assert len(row_names_only) == len(only_rows)
+    assert data_rows_only.shape == (len(only_rows),ncol)
+    assert len(col_names_only) == len(col_names)
+    dif = np.abs(arr[::5,:] - data_rows_only)
+    print(dif.max())
+    assert dif.max() == 0.0
+
     m1 = pyemu.Matrix.from_binary(matfile)
     print(m1.shape)
     assert m1.shape == (nrow, ncol)
@@ -746,7 +762,7 @@ if __name__ == "__main__":
     # sparse_extend_test()
     # sparse_get_test()
     # sparse_get_sparse_test()
-    #dense_mat_format_test()
+    dense_mat_format_test(".")
     #icode_minus_one_test()
     #from_uncfile_firstlast_test()
-    trunc_names_test()
+    #trunc_names_test()
