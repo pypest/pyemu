@@ -832,10 +832,10 @@ def mf6_freyberg_test(setup_freyberg_mf6):
                       )
     with open(Path(template_ws, "inflow4.txt"), 'w') as fp:
         fp.write("# rid type rate idx0 idx1\n")
-        fp.write("204 infl 700000.3 1 1\n")
-        fp.write("205 div 1 500000.7 1\n")
-        fp.write("206 infl 800000.7 1 1\n")
-        fp.write("207 div 1 500000.7 1")
+        fp.write("204_1 infl 700000.3 1 1\n")
+        fp.write("205_1 div 1 500000.7 1\n")
+        fp.write("206_1 infl 800000.7 1 1\n")
+        fp.write("207_1 div 1 500000.7 1")
 
     inflow4_pre = pd.read_csv(Path(pf.new_d, "inflow4.txt"),
                               header=None, sep=' ', skiprows=1)
@@ -847,7 +847,7 @@ def mf6_freyberg_test(setup_freyberg_mf6):
                       upper_bound=10,
                       lower_bound=0.1,
                       par_type="grid",
-                      use_rows=[(204, "infl")],
+                      use_rows=[("204_1", "infl")],
                       )
     pf.add_parameters(filenames="inflow4.txt",
                       pargp='inflow5',
@@ -916,6 +916,14 @@ def mf6_freyberg_test(setup_freyberg_mf6):
                                   par_name_base=arr_file.split('.')[1] + "_cn",
                                   pargp=arr_file.split('.')[1] + "_cn", zone_array=ib,
                                   upper_bound=ub, lower_bound=lb,geostruct=gr_gs)
+
+    # arr = np.loadtxt(Path(template_ws, 'freyberg6.npf_k_layer1.txt'))
+    # onecolf = Path(template_ws, '1col.txt')
+    # np.savetxt(onecolf, arr.ravel()[:,None])
+    # pdf = pf.add_parameters(filenames=onecolf.relative_to(template_ws),
+    #                   par_type="grid", par_name_base="onecol-gr",
+    #                   pargp="onecol-gr", zone_array=ib.ravel()[:,None],
+    #                   upper_bound=10, lower_bound=0.1)
 
     # add SP1 spatially constant, but temporally correlated wel flux pars
     kper = 0
