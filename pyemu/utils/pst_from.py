@@ -44,7 +44,7 @@ def _check_var_len(var, n, fill=None):
     return var
 
 
-def _load_array_get_fmt(fname, sep=None, fullfile=False):
+def _load_array_get_fmt(fname, sep=None, fullfile=False, logger=None):
     splitsep = sep  # sep for splitting string for fmt (need to count mult delim.)
     if sep is None:  # need to split line with space and count multiple
         splitsep = ' '
@@ -61,32 +61,109 @@ def _load_array_get_fmt(fname, sep=None, fullfile=False):
     n = 0  # counter for repeat delim when sep is None
     lens, prec = [], []  # container for fmt length and precision
     exps = 0  # exponential counter (could be bool)
-    for s in lines:
+    for s in lines:  # loop over loaded lines
         ilens, iprec = [], []
         for ss in s.split(splitsep):
             ss = ss.strip('\n').lower()
             if not ss:
-                n += 1
+                n += 1  # count 1 char
             else:
                 d = len(ss) + n if sep is None else len(ss)
-                ilens.append(d)
+                ilens.append(d)  # store width (plus n spaces if no sep)
                 if 'e' in ss:
-                    exps += 1
-                    ss = ss.split('e')[0]
-                iprec.append(len(ss.split('.')[-1]))
+                    exps += 1  # count the number of exp notations
+                    ss = ss.split('e')[0]  # get left of exp
+                iprec.append(len(ss.split('.')[-1]))  # store n dec place
                 n = 0  # reset space counter
         lens.append(ilens)
         prec.append(iprec)
-    firsts = [line.pop(0) for line in lens]
-    fmax = max(firsts)
-    maxlen = max(np.ravel(lens) if np.ravel(lens).shape[0]>0 else [0])
-    maxprec = max(np.ravel(prec))
-    if sep is None and fmax <= maxlen:
-        maxlen += 1
-    maxlen = max([fmax, maxlen])
-    # fracexp = exps / total
-    fmt = f"%{maxlen}.{maxprec}"
-    fmt += "E" if exps > 0 else "F"
+    N = np.sum(~np.isnan(arr[:len(lines)]))
+    # try to catch if file is infact fixed format (like old mt3d files)
+    firsts = np.ravel([line.pop(0) for line in lens])  # first entry on each line
+    rest = np.array(lens).ravel()  # the len of the rest of the entries
+    # if input file is fake free-format (actually fixed) then:
+    #  0. sep will be None,
+    #  1. all entries will be the same length, and
+    #  2. the first entry will "look" 1 char longer.
+    #     -- the rest will lose their fake delimiting space when we split above.
+    # if sci notation (exps>0) then precision needs to be width-8 to account for
+    #  space + sign + unit + dec + 4(for exp)
+    # if float format -- we can't know the width.precision relationship that
+    # will leave us with enough space for space and sign. precision needs to be
+    # max width-3 but this wont allow for any growth of the LHS for float.
+    fmax = max(firsts)  # max of first column
+    rmax = max(rest) if len(rest) > 0 else 0  # max of rest of cols
+    width = max([fmax, rmax])  # max len to max of these
+    prec = max(np.array(prec).ravel())  # max decimal places
+
+    if sep is None and all(firsts == firsts[0]) and all(rest == firsts[0]-1):
+        # this is the situation where we think the input file is fixed format
+        # so we need to try and match that and keep the width consistent with
+        # input
+        width = width - 1  # will be manually prepreding a delim so need to sub one here
+        if exps < N:  # Not all values are exp format
+            msg = ("\n_load_array_get_fmt(), likely fixed format file:\n"
+                   f"{Path(fname).name} appears to contain some float notation (%F) values.\n"
+                   "Can't define a generic format specifier that\n"
+                   "will guarantee file is readable by downstream engine.\n"
+                   "Will try to use %E, but this could cause issues\n"
+                   "downstream...")
+            if logger is not None:
+                logger.warn(msg)
+            else:
+                PyemuWarning(msg)
+        # force E:
+        if exps > 0:  # if read file contains some exp notation use all
+            typ = "E"
+            wlim = 7  # minimum width,
+        else:
+            typ = "F"
+            wlim = 3
+        precmax = width - wlim  # maximum precision supported with width
+        if width < wlim:
+            # If width is too narrow we really shouldn't proceed.
+            # This should catch where max precision would make it negative.
+            raise ValueError("\n_load_array_get_fmt(), likely fixed format file:\n"
+                             f"notation type %{typ} but values fields are not\n"
+                             f"wide enough ({width}, min width: {wlim}),\n"
+                             f"file: {Path(fname).name}")
+        if precmax < 4:
+            # If the max allowable precision is low -- better warn
+            msg = (
+                f"\n_load_array_get_fmt(), likely fixed format file:\n"
+                "the maximum precision that be safely supported for notation\n"
+                f"type (%{typ}) with width {width} is low ({precmax}<4).\n"
+                "You may want to consider the formatting of your\n"
+                f"input file: {Path(fname).name}.")
+            if logger is not None:
+                logger.warn(msg)
+            else:
+                PyemuWarning(msg)
+        if prec > precmax:
+            # If the extracted precision is larger than the max allowable.
+            msg = (
+                "\n_load_array_get_fmt(), likely fixed format file:\n"
+                f"{Path(fname).name} interpreted data value width ({width}) and precision\n"
+                f"({prec}) cannot be satisfied for format type %{typ}.\n"
+                f"Reducing precision term to {precmax}."
+            )
+            if logger is not None:
+                logger.warn(msg)
+            else:
+                PyemuWarning(msg)
+            prec = precmax
+        fmt = f"%{width}.{prec}{typ}"
+        # to allow us to override the delimiter in this fixed format case
+        fmt = ' ' + ' '.join([fmt]*arr.shape[1])
+    else:
+        # regular situation where file is def free format
+        if exps == N:
+            typ = "E"
+        elif exps > 0:
+            typ = "G"
+        else:
+            typ = "F"
+        fmt = f"%{width}.{prec}{typ}"
     return arr, fmt
 
 
@@ -1123,7 +1200,8 @@ class PstFrom(object):
                 if not dest_filepath.exists():
                     self.logger.lraise(f"par filename '{dest_filepath}' not found ")
                 # read array type input file
-                arr, infmt = _load_array_get_fmt(dest_filepath, sep=sep)
+                arr, infmt = _load_array_get_fmt(dest_filepath, sep=sep,
+                                                 logger=self.logger)
                 # arr = np.loadtxt(dest_filepath, delimiter=sep, ndmin=2)
                 self.logger.log(f"loading array {dest_filepath}")
                 self.logger.statement(

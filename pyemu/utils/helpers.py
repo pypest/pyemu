@@ -1694,11 +1694,11 @@ def _process_array_file(model_file, df):
     except AttributeError:
         fmt = "%15.6E"
     try:
-        sep = df_mf.sep.iloc[0]
+        # default to space (if fixed format file this should be taken care of
+        # in fmt string)
+        sep = df_mf.sep.fillna(' ').iloc[0]
     except AttributeError:
-        sep = np.nan
-    if np.isnan(sep):
-        sep = ''
+        sep = ' '
     np.savetxt(model_file, np.atleast_2d(org_arr), fmt=fmt, delimiter=sep)
 
 
