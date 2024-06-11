@@ -2476,7 +2476,7 @@ def thresh_pars_test():
 
     newarr = np.loadtxt(orgarr_file)
     print(newarr)
-    newarr[inact_arr==0] = np.nan
+    newarr[inact_arr==0] = 0.0
     print(np.unique(newarr))
 
     tarr = np.zeros_like(newarr)
@@ -2485,7 +2485,8 @@ def thresh_pars_test():
     tot = inact_arr.sum()
     prop = np.nansum(tarr) / tot
     print(prop,cat_dict[1])
-    assert np.isclose(prop,cat_dict[1][0],0.01),"cat_dict 1,{0} vs {1}".format(prop,cat_dict[1])
+    print(np.nansum(tarr),tot)
+    assert np.isclose(prop,cat_dict[1][0],0.01),"cat_dict 1,{0} vs {1}, tot:{2}, prop:{3}".format(prop,cat_dict[1],tot,np.nansum(tarr))
 
     tarr = np.zeros_like(newarr)
     tarr[np.isclose(newarr, cat_dict[2][1])] = 1.0
