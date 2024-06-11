@@ -238,7 +238,8 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
 def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
          struct_dict={}, delr=[], delc=[], scale_offset=True, echo=True, logger=False):
     """Draw a parameter ensemble from the distribution implied by the initial parameter values in the
-    control file and the prior parameter covariance matrix. Previously in pst_from.
+    control file and a prior parameter covariance matrix derived from grouped geostructures.
+    Previously in pst_from.
 
     Args:
         pst ():
