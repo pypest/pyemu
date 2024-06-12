@@ -235,32 +235,47 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
             full_oe.loc[:, n] = v
     return full_oe
 
+
 def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
-         struct_dict={}, delr=[], delc=[], scale_offset=True, echo=True, logger=False):
+                  struct_dict=None, delr=None, delc=None, scale_offset=True,
+                  echo=True, logger=False):
     """Draw a parameter ensemble from the distribution implied by the initial parameter values in the
     control file and a prior parameter covariance matrix derived from grouped geostructures.
     Previously in pst_from.
 
     Args:
-        pst ():
+        pst (`pyemu.Pst`): a control file instance
         num_reals (`int`): the number of realizations to draw
         sigma_range (`int`): number of standard deviations represented by parameter bounds.  Default is 6 (99%
             confidence).  4 would be approximately 95% confidence bounds
         use_specsim (`bool`): flag to use spectral simulation for grid-scale pars (highly recommended).
             Default is False
-        struct_dict (`dict`): struct_dict (`dict`): a dict of GeoStruct (or structure file), and list of
-            pilot point template files pairs. If the values in the dict are
-            `pd.DataFrames`, then they must have an 'x','y', and 'parnme' column.
-            If the filename ends in '.csv', then a pd.DataFrame is loaded,
-            otherwise a pilot points file is loaded.
-        delr (`list`, optional): required for specsim, dimension of cells along a row (i.e., column widths), 
-            specsim only works with regular grids
-        delc (`list`, optional):  required for specsim, dimension of cells along a column (i.e., row heights)
+        struct_dict (`dict`): a dict with keys of GeoStruct (or structure file).
+            Dictionary values can depend on the values of `use_specsim`.
+            If `use_specsim` is True, values are expected to be `list[pd.DataFrame]`
+            with dataframes indexed by parameter names and containing columns
+            [`parval1`, `pargp`, `i`, `j`, `partype`], where `i` and `j` are
+            grid index locations of grid parameters, and `partype` is used to
+            indicate grid type parameters. The draw will be independent for each
+            unique `pargp`.
+            If `use_specsim` is False, dictionary values are expected to be
+            `list[pd.DataFrame]` with dataframes indexed by parameter names and
+            containing columns ["x", "y", "parnme"], the optional `zone` column
+            can be used to draw realizations independently for different zones.
+            Alternatively, if use_specsim` is False dictionary keys and values
+            can be paths to external structure files and pilotpoint or tpl files,
+            respectively.
+        delr (`list`, optional): required for specsim (`use_specsim` is True),
+            dimension of cells along a row (i.e., column widths), specsim only
+            works with regular grids
+        delc (`list`, optional):  required for specsim (`use_specsim` is True),
+            dimension of cells along a column (i.e., row heights)
         scale_offset (`bool`): flag to apply scale and offset to parameter bounds before calculating prior variance.
             Dfault is True.  If you are using non-default scale and/or offset and you get an exception during
             draw, try changing this value to False.
-        echo (`bool`):
-        logger (`bool`):
+        echo (`bool`): Verbosity flag passed to new Logger instance if
+            `logger`is None
+        logger (`pyemu.Logger`, optional): Object for logging process
 
     Returns:
         `pyemu.ParameterEnsemble`: a prior parameter ensemble
@@ -271,12 +286,17 @@ def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
         If you are using grid-style parameters, please use spectral simulation (`use_specsim=True`)
 
     """
+    if delc is None:
+        delc = []
+    if delr is None:
+        delr = []
+    if struct_dict is None:
+        struct_dict = {}
     if not logger:
         logger = pyemu.Logger("draw_by_groups.log", echo=echo)
     if pst.npar_adj == 0:
         logger.warn("no adjustable parameters, nothing to draw...")
         return
-    # precondition {geostruct:{group:df}} dict to {geostruct:[par_dfs]}
     # list for holding grid style groups
     gr_pe_l = []
     subset = pst.parameter_data.index
