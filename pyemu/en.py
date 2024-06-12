@@ -480,7 +480,7 @@ class Ensemble(object):
                     # cnames = names
                     cnames = []
                     snames = set(names)
-                    for n in cov.col_names:
+                    for n in cov.names:
                         if n in snames:
                             cnames.append(n)
                     names = None

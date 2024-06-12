@@ -1515,7 +1515,8 @@ if __name__ == "__main__":
     with this.
     """
     d = 'temp'
-    interface_check_test()
+    parrep_test(d)
+    #interface_check_test()
     # new_format_test_2()
     #write2_nan_test()
     #process_output_files_test()
@@ -1557,7 +1558,7 @@ if __name__ == "__main__":
     # rectify_pgroup_test()
     #sanity_check_test()
     #change_limit_test()
-    write_tables_test('.')
+    #write_tables_test('.')
     #pi_helper_test()
     #ctrl_data_test()
     #new_format_test_2()
