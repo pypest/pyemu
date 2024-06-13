@@ -645,10 +645,21 @@ class PstFrom(object):
             return
         # precondition {geostruct:{group:df}} dict to {geostruct:[par_dfs]}
         struct_dict = self._pivot_par_struct_dict()
+        delr = None
+        delc = None
+        try:
+            delr = self.spatial_reference.delr
+        except Exception as e:
+            pass
+        try:
+            delc = self.spatial_reference.delc
+        except Exception as e:
+            pass
+        
         # method moved to helpers
         pe = pyemu.helpers.draw_by_group(self.pst, num_reals=num_reals, sigma_range=sigma_range,
                                          use_specsim=use_specsim, scale_offset=scale_offset, struct_dict=struct_dict,
-                                         delr=self.spatial_reference.delr, delc=self.spatial_reference.delc,
+                                         delr=delr, delc=delc,
                                          logger=self.logger)
         return pe
 

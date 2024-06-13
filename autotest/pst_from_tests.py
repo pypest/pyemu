@@ -3837,7 +3837,7 @@ def usg_freyberg_test(tmp_path):
         zone_array_k2 = np.ones((1, len(sr_dict_by_layer[3])))
         zone_array_k2[:, 200:420] = 2
         zone_array_k2[:, 500:1000:3] = 3
-        zone_array_k2[:,:100] = 0
+        zone_array_k2[:,:100] = 4
 
         #gen up some fake pp locs
         np.random.seed(pyemu.en.SEED)
