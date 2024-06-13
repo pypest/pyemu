@@ -236,6 +236,158 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
     return full_oe
 
 
+def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
+                  struct_dict=None, delr=None, delc=None, scale_offset=True,
+                  echo=True, logger=False):
+    """Draw a parameter ensemble from the distribution implied by the initial parameter values in the
+    control file and a prior parameter covariance matrix derived from grouped geostructures.
+    Previously in pst_from.
+
+    Args:
+        pst (`pyemu.Pst`): a control file instance
+        num_reals (`int`): the number of realizations to draw
+        sigma_range (`int`): number of standard deviations represented by parameter bounds.  Default is 6 (99%
+            confidence).  4 would be approximately 95% confidence bounds
+        use_specsim (`bool`): flag to use spectral simulation for grid-scale pars (highly recommended).
+            Default is False
+        struct_dict (`dict`): a dict with keys of GeoStruct (or structure file).
+            Dictionary values can depend on the values of `use_specsim`.
+            If `use_specsim` is True, values are expected to be `list[pd.DataFrame]`
+            with dataframes indexed by parameter names and containing columns
+            [`parval1`, `pargp`, `i`, `j`, `partype`], where `i` and `j` are
+            grid index locations of grid parameters, and `partype` is used to
+            indicate grid type parameters. The draw will be independent for each
+            unique `pargp`.
+            If `use_specsim` is False, dictionary values are expected to be
+            `list[pd.DataFrame]` with dataframes indexed by parameter names and
+            containing columns ["x", "y", "parnme"], the optional `zone` column
+            can be used to draw realizations independently for different zones.
+            Alternatively, if use_specsim` is False dictionary keys and values
+            can be paths to external structure files and pilotpoint or tpl files,
+            respectively.
+        delr (`list`, optional): required for specsim (`use_specsim` is True),
+            dimension of cells along a row (i.e., column widths), specsim only
+            works with regular grids
+        delc (`list`, optional):  required for specsim (`use_specsim` is True),
+            dimension of cells along a column (i.e., row heights)
+        scale_offset (`bool`): flag to apply scale and offset to parameter bounds before calculating prior variance.
+            Dfault is True.  If you are using non-default scale and/or offset and you get an exception during
+            draw, try changing this value to False.
+        echo (`bool`): Verbosity flag passed to new Logger instance if
+            `logger`is None
+        logger (`pyemu.Logger`, optional): Object for logging process
+
+    Returns:
+        `pyemu.ParameterEnsemble`: a prior parameter ensemble
+
+    Note:
+        This method draws by parameter group
+
+        If you are using grid-style parameters, please use spectral simulation (`use_specsim=True`)
+
+    """
+    if delc is None:
+        delc = []
+    if delr is None:
+        delr = []
+    if struct_dict is None:
+        struct_dict = {}
+    if not logger:
+        logger = pyemu.Logger("draw_by_groups.log", echo=echo)
+    if pst.npar_adj == 0:
+        logger.warn("no adjustable parameters, nothing to draw...")
+        return
+    # list for holding grid style groups
+    gr_pe_l = []
+    subset = pst.parameter_data.index
+    gr_par_pe = None
+    if use_specsim:
+        if len(delr)>0 and len(delc)>0 and not pyemu.geostats.SpecSim2d.grid_is_regular(
+            delr, delc
+        ):
+            logger.lraise(
+                "draw() error: can't use spectral simulation with irregular grid"
+            )
+        logger.log("spectral simulation for grid-scale pars")
+        # loop over geostructures defined in PestFrom object
+        # (setup through add_parameters)
+        for geostruct, par_df_l in struct_dict.items():
+            par_df = pd.concat(par_df_l)  # force to single df
+            if not 'partype' in par_df.columns:
+                logger.warn(
+                    f"draw() error: use_specsim is {use_specsim} but no column named"
+                    f"'partype' to indicate grid based pars in geostruct {geostruct}"
+                    f"not using specsim"
+                )
+            else:
+                par_df = par_df.loc[par_df.partype == "grid", :]
+                if "i" in par_df.columns:  # need 'i' and 'j' for specsim
+                    grd_p = pd.notna(par_df.i)
+                else:
+                    grd_p = np.array([0])
+                # if there are grid pars (also grid pars with i,j info)
+                if grd_p.sum() > 0:
+                    # select pars to use specsim for
+                    gr_df = par_df.loc[grd_p]
+                    gr_df = gr_df.astype({"i": int, "j": int})  # make sure int
+                    # (won't be if there were nans in concatenated df)
+                    if len(gr_df) > 0:
+                        # get specsim object for this geostruct
+                        ss = pyemu.geostats.SpecSim2d(
+                            delx=delr,
+                            dely=delc,
+                            geostruct=geostruct,
+                        )
+                        # specsim draw (returns df)
+                        gr_pe1 = ss.grid_par_ensemble_helper(
+                            pst=pst,
+                            gr_df=gr_df,
+                            num_reals=num_reals,
+                            sigma_range=sigma_range,
+                            logger=logger,
+                        )
+                        # append to list of specsim drawn pars
+                        gr_pe_l.append(gr_pe1)
+                        # rebuild struct_dict entry for this geostruct
+                        # to not include specsim pars
+                        struct_dict[geostruct] = []
+                        # loop over all in list associated with geostruct
+                        for p_df in par_df_l:
+                            # if pars are not in the specsim pars just created
+                            # assign them to this struct_dict entry
+                            # needed if none specsim pars are linked to same geostruct
+                            if not p_df.index.isin(gr_df.index).all():
+                                struct_dict[geostruct].append(p_df)
+                            else:
+                                subset = subset.difference(p_df.index)
+        if len(gr_pe_l) > 0:
+            gr_par_pe = pd.concat(gr_pe_l, axis=1)
+        logger.log("spectral simulation for grid-scale pars")
+    # draw remaining pars based on their geostruct
+    if not subset.empty:
+        logger.log(f"Drawing {len(subset)} non-specsim pars")
+        pe = pyemu.helpers.geostatistical_draws(
+            pst,
+            struct_dict=struct_dict,
+            num_reals=num_reals,
+            sigma_range=sigma_range,
+            scale_offset=scale_offset,
+            subset=subset
+        )
+        logger.log(f"Drawing {len(subset)} non-specsim pars")
+        if gr_par_pe is not None:
+            logger.log(f"Joining specsim and non-specsim pars")
+            exist = gr_par_pe.columns.intersection(pe.columns)
+            pe = pe._df.drop(exist, axis=1)  # specsim par take precedence
+            pe = pd.concat([pe, gr_par_pe], axis=1)
+            pe = pyemu.ParameterEnsemble(pst=pst, df=pe)
+            logger.log(f"Joining specsim and non-specsim pars")
+    else:
+        pe = pyemu.ParameterEnsemble(pst=pst, df=gr_par_pe)
+    logger.log("drawing realizations")
+    return pe.copy()
+
+
 def geostatistical_draws(
     pst, struct_dict, num_reals=100, sigma_range=4, verbose=True,
         scale_offset=True, subset=None
