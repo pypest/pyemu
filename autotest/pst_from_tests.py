@@ -3778,7 +3778,7 @@ def mf6_freyberg_pp_locs_test(tmp_path):
     os.chdir(bd)
 
 
-@pytest.mark.xfail
+
 def usg_freyberg_test(tmp_path):
     import numpy as np
     import pandas as pd
@@ -3837,7 +3837,7 @@ def usg_freyberg_test(tmp_path):
         zone_array_k2 = np.ones((1, len(sr_dict_by_layer[3])))
         zone_array_k2[:, 200:420] = 2
         zone_array_k2[:, 500:1000:3] = 3
-        zone_array_k2[:,:100] = 0
+        zone_array_k2[:,:100] = 4
 
         #gen up some fake pp locs
         np.random.seed(pyemu.en.SEED)
@@ -5402,7 +5402,7 @@ if __name__ == "__main__":
 
     #mf6_freyberg_thresh_test(".")
 
-    plot_thresh("master_thresh")
+    #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
     # xsec_test()
@@ -5418,7 +5418,7 @@ if __name__ == "__main__":
     # tpf.test_add_list_parameters()
     # # pstfrom_profile()
     # mf6_freyberg_arr_obs_and_headerless_test()
-    #usg_freyberg_test(".")
+    usg_freyberg_test(".")
     #vertex_grid_test()
     #direct_quickfull_test()
     #list_float_int_index_test()
