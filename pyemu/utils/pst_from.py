@@ -645,88 +645,12 @@ class PstFrom(object):
             return
         # precondition {geostruct:{group:df}} dict to {geostruct:[par_dfs]}
         struct_dict = self._pivot_par_struct_dict()
-        # list for holding grid style groups
-        gr_pe_l = []
-        subset = self.pst.parameter_data.index
-        gr_par_pe = None
-        if use_specsim:
-            if not pyemu.geostats.SpecSim2d.grid_is_regular(
-                self.spatial_reference.delr, self.spatial_reference.delc
-            ):
-                self.logger.lraise(
-                    "draw() error: can't use spectral simulation with irregular grid"
-                )
-            self.logger.log("spectral simulation for grid-scale pars")
-            # loop over geostructures defined in PestFrom object
-            # (setup through add_parameters)
-            for geostruct, par_df_l in struct_dict.items():
-                par_df = pd.concat(par_df_l)  # force to single df
-                par_df = par_df.loc[par_df.partype == "grid", :]
-                if "i" in par_df.columns:  # need 'i' and 'j' for specsim
-                    grd_p = pd.notna(par_df.i)
-                else:
-                    grd_p = np.array([0])
-                # if there are grid pars (also grid pars with i,j info)
-                if grd_p.sum() > 0:
-                    # select pars to use specsim for
-                    gr_df = par_df.loc[grd_p]
-                    gr_df = gr_df.astype({"i": int, "j": int})  # make sure int
-                    # (won't be if there were nans in concatenated df)
-                    if len(gr_df) > 0:
-                        # get specsim object for this geostruct
-                        ss = pyemu.geostats.SpecSim2d(
-                            delx=self.spatial_reference.delr,
-                            dely=self.spatial_reference.delc,
-                            geostruct=geostruct,
-                        )
-                        # specsim draw (returns df)
-                        gr_pe1 = ss.grid_par_ensemble_helper(
-                            pst=self.pst,
-                            gr_df=gr_df,
-                            num_reals=num_reals,
-                            sigma_range=sigma_range,
-                            logger=self.logger,
-                        )
-                        # append to list of specsim drawn pars
-                        gr_pe_l.append(gr_pe1)
-                        # rebuild struct_dict entry for this geostruct
-                        # to not include specsim pars
-                        struct_dict[geostruct] = []
-                        # loop over all in list associated with geostruct
-                        for p_df in par_df_l:
-                            # if pars are not in the specsim pars just created
-                            # assign them to this struct_dict entry
-                            # needed if none specsim pars are linked to same geostruct
-                            if not p_df.index.isin(gr_df.index).all():
-                                struct_dict[geostruct].append(p_df)
-                            else:
-                                subset = subset.difference(p_df.index)
-            if len(gr_pe_l) > 0:
-                gr_par_pe = pd.concat(gr_pe_l, axis=1)
-            self.logger.log("spectral simulation for grid-scale pars")
-        # draw remaining pars based on their geostruct
-        if not subset.empty:
-            self.logger.log(f"Drawing {len(subset)} non-specsim pars")
-            pe = pyemu.helpers.geostatistical_draws(
-                self.pst,
-                struct_dict=struct_dict,
-                num_reals=num_reals,
-                sigma_range=sigma_range,
-                scale_offset=scale_offset,
-                subset=subset
-            )
-            self.logger.log(f"Drawing {len(subset)} non-specsim pars")
-            if gr_par_pe is not None:
-                self.logger.log(f"Joining specsim and non-specsim pars")
-                exist = gr_par_pe.columns.intersection(pe.columns)
-                pe = pe._df.drop(exist, axis=1)  # specsim par take precedence
-                pe = pd.concat([pe, gr_par_pe], axis=1)
-                pe = pyemu.ParameterEnsemble(pst=self.pst, df=pe)
-                self.logger.log(f"Joining specsim and non-specsim pars")
-        else:
-            pe = pyemu.ParameterEnsemble(pst=self.pst, df=gr_par_pe)
-        self.logger.log("drawing realizations")
-        return pe.copy()
+        # method moved to helpers
+        pe = pyemu.helpers.draw_by_group(self.pst, num_reals=num_reals, sigma_range=sigma_range,
+                                         use_specsim=use_specsim, scale_offset=scale_offset, struct_dict=struct_dict,
+                                         delr=self.spatial_reference.delr, delc=self.spatial_reference.delc,
+                                         logger=self.logger)
+        return pe
 
     def build_pst(self, filename=None, update=False, version=1):
         """Build control file from i/o files in PstFrom object.
@@ -1992,9 +1916,9 @@ class PstFrom(object):
                 This is not additive with `mfile_skip` option.
                 Warning: currently comment lines within list-style tabular data
                 will be lost.
-            par_style (`str`): either "m"/"mult"/"multiplier", "a"/"add"/"addend", or "d"/"direct" where the former setups
+            par_style (`str`): either "m"/"mult"/"multiplier", "a"/"add"/"addend", or "d"/"direct" where the former sets up
                 up a multiplier and addend parameters process against the existing model input
-                array and the former setups a template file to write the model
+                array and the former sets up a template file to write the model
                 input file directly.  Default is "multiplier".
 
             initial_value (`float`): the value to set for the `parval1` value in the control file
@@ -3205,7 +3129,9 @@ def write_list_tpl(
             If list of `tuple` -- assumed to be selection based `index_cols`
                 values. e.g. [(3,5,6)] would attempt to set parameters where the
                 model file values for 3 `index_cols` are 3,5,6. N.B. values in
-                tuple are actual model file entry values.
+                tuple are actual model file entry values. For use_rows with a
+                single 'index_cols' use [(3,),(5,),(6,)] to set parameters for
+                rows with model file index entries of 3,5,6.
             If no rows in the model input file match `use_rows` -- parameters
                 will be set up for all rows.
             Only valid/effective if index_cols is not None.
