@@ -264,6 +264,21 @@ def enforce_test():
     pe.enforce()
     assert (pe._df.loc[0,:] - pst.parameter_data.parubnd).apply(np.abs).sum() == 0.0
 
+    # mixed numpy types test
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe._df["mult1"] = pe._df["mult1"].astype("float")
+    pe._df.loc[0,:] += pst.parameter_data.parubnd
+    pe.enforce()
+    assert (pe._df.loc[0,:] - pst.parameter_data.parubnd).apply(np.abs).sum() == 0.0
+
+    # columns out of order test
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe._df.loc[0,:] += pst.parameter_data.parubnd
+    cols_arr = pe._df.columns.values
+    cols_out_of_order = np.append(cols_arr[1:], [cols_arr[0]])
+    pe._df = pe._df[cols_out_of_order]
+    pe.enforce()
+    assert (pe._df.loc[0,:] - pst.parameter_data.parubnd).apply(np.abs).sum() == 0.0
 
     pe._df.loc[0, :] += pst.parameter_data.parubnd
     pe._df.loc[1:,:] = pst.parameter_data.parval1.values
@@ -489,7 +504,7 @@ def factor_draw_test():
     d = (sd_eig - sd_svd).apply(np.abs)
     assert d.max() < 0.5,d.sort_values()
 
-    num_reals = 10
+    num_reals = 1000
     pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
 
     emp_cov = pe_eig.covariance_matrix()
@@ -503,7 +518,7 @@ def emp_cov_draw_test():
 
     pst = pyemu.Pst(os.path.join("en","pest.pst"))
     cov = pyemu.Cov.from_binary(os.path.join("en","cov.jcb"))
-    num_reals = 10
+    num_reals = 1000
     pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
 
     emp_cov = pe_eig.covariance_matrix()
@@ -725,10 +740,11 @@ if __name__ == "__main__":
     #fill_test()
     #factor_draw_test()
     #emp_cov_test()
-    #emp_cov_draw_test()
+    emp_cov_draw_test()
     #mixed_par_draw_2_test()
     #binary_test()
-    get_phi_vector_noise_obs_test()
-
+    #get_phi_vector_noise_obs_test()
+    #factor_draw_test()
+    #enforce_test()
 
 

@@ -591,7 +591,7 @@ def parrep_test(tmp_path):
         # flip the parameter ensemble back around
         parens = parens[parens.columns.sort_values()]
         assert np.allclose(pst.parameter_data.parval1.values[:-1],parens.T[0].values[:-1],atol=0.0001)
-
+        print(pyemu.__file__)
         pst.parrep('fake.par.0.csv', real_name=3)
         # flip the parameter ensemble back around
         parens = parens[parens.columns.sort_values()]
@@ -912,10 +912,10 @@ if __name__ == "__main__":
     # from_flopy_zone_pars()
     #from_flopy_pp_test()
     #from_flopy()
-    #parrep_test()
+    parrep_test(".")
     #from_flopy_kl_test()
     #from_flopy_reachinput()
-    ineq_phi_test()
+    #ineq_phi_test()
 
 
 

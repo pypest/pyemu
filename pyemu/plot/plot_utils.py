@@ -363,7 +363,7 @@ def res_1to1(
         obs_g.loc[:, "sim"] = res.loc[names, "modelled"]
         logger.statement("using control file obsvals to calculate residuals")
         obs_g.loc[:, "res"] = obs_g.sim - obs_g.obsval
-        if "include_zero" not in kwargs or kwargs["include_zero"] is True:
+        if "include_zero" not in kwargs or kwargs["include_zero"] is False:
             obs_g = obs_g.loc[obs_g.weight > 0, :]
         if obs_g.shape[0] == 0:
             logger.statement("no non-zero obs for group '{0}'".format(g))

@@ -44,6 +44,129 @@ def _check_var_len(var, n, fill=None):
     return var
 
 
+def _load_array_get_fmt(fname, sep=None, fullfile=False, logger=None):
+    splitsep = sep  # sep for splitting string for fmt (need to count mult delim.)
+    if sep is None:  # need to split line with space and count multiple
+        splitsep = ' '
+    with open(fname, 'r') as fp:  # load file or line
+        if fullfile:
+            lines = [line for line in fp.readlines()]
+            arr = np.genfromtxt(lines, delimiter=sep, ndmin=2)
+        else:
+            lines = [fp.readline()]  # just read first line
+            if splitsep not in lines[0]:
+                return _load_array_get_fmt(fname, sep, True)
+            fp.seek(0)  # reset pointer
+            arr = np.loadtxt(fp, delimiter=sep, ndmin=2)  # read array
+    n = 0  # counter for repeat delim when sep is None
+    lens, prec = [], []  # container for fmt length and precision
+    exps = 0  # exponential counter (could be bool)
+    for s in lines:  # loop over loaded lines
+        ilens, iprec = [], []
+        for ss in s.split(splitsep):
+            ss = ss.strip('\n').lower()
+            if not ss:
+                n += 1  # count 1 char
+            else:
+                d = len(ss) + n if sep is None else len(ss)
+                ilens.append(d)  # store width (plus n spaces if no sep)
+                if 'e' in ss:
+                    exps += 1  # count the number of exp notations
+                    ss = ss.split('e')[0]  # get left of exp
+                iprec.append(len(ss.split('.')[-1]))  # store n dec place
+                n = 0  # reset space counter
+        lens.append(ilens)
+        prec.append(iprec)
+    N = np.sum(~np.isnan(arr[:len(lines)]))
+    # try to catch if file is infact fixed format (like old mt3d files)
+    firsts = np.ravel([line.pop(0) for line in lens])  # first entry on each line
+    rest = np.array(lens).ravel()  # the len of the rest of the entries
+    # if input file is fake free-format (actually fixed) then:
+    #  0. sep will be None,
+    #  1. all entries will be the same length, and
+    #  2. the first entry will "look" 1 char longer.
+    #     -- the rest will lose their fake delimiting space when we split above.
+    # if sci notation (exps>0) then precision needs to be width-8 to account for
+    #  space + sign + unit + dec + 4(for exp)
+    # if float format -- we can't know the width.precision relationship that
+    # will leave us with enough space for space and sign. precision needs to be
+    # max width-3 but this wont allow for any growth of the LHS for float.
+    fmax = max(firsts)  # max of first column
+    rmax = max(rest) if len(rest) > 0 else 0  # max of rest of cols
+    width = max([fmax, rmax])  # max len to max of these
+    prec = max(np.array(prec).ravel())  # max decimal places
+
+    if sep is None and all(firsts == firsts[0]) and all(rest == firsts[0]-1):
+        # this is the situation where we think the input file is fixed format
+        # so we need to try and match that and keep the width consistent with
+        # input
+        width = width - 1  # will be manually prepreding a delim so need to sub one here
+        if exps < N:  # Not all values are exp format
+            msg = ("\n_load_array_get_fmt(), likely fixed format file:\n"
+                   f"{Path(fname).name} appears to contain some float notation (%F) values.\n"
+                   "Can't define a generic format specifier that\n"
+                   "will guarantee file is readable by downstream engine.\n"
+                   "Will try to use %E, but this could cause issues\n"
+                   "downstream...")
+            if logger is not None:
+                logger.warn(msg)
+            else:
+                PyemuWarning(msg)
+        # force E:
+        if exps > 0:  # if read file contains some exp notation use all
+            typ = "E"
+            wlim = 7  # minimum width,
+        else:
+            typ = "F"
+            wlim = 3
+        precmax = width - wlim  # maximum precision supported with width
+        if width < wlim:
+            # If width is too narrow we really shouldn't proceed.
+            # This should catch where max precision would make it negative.
+            raise ValueError("\n_load_array_get_fmt(), likely fixed format file:\n"
+                             f"notation type %{typ} but values fields are not\n"
+                             f"wide enough ({width}, min width: {wlim}),\n"
+                             f"file: {Path(fname).name}")
+        if precmax < 4:
+            # If the max allowable precision is low -- better warn
+            msg = (
+                f"\n_load_array_get_fmt(), likely fixed format file:\n"
+                "the maximum precision that be safely supported for notation\n"
+                f"type (%{typ}) with width {width} is low ({precmax}<4).\n"
+                "You may want to consider the formatting of your\n"
+                f"input file: {Path(fname).name}.")
+            if logger is not None:
+                logger.warn(msg)
+            else:
+                PyemuWarning(msg)
+        if prec > precmax:
+            # If the extracted precision is larger than the max allowable.
+            msg = (
+                "\n_load_array_get_fmt(), likely fixed format file:\n"
+                f"{Path(fname).name} interpreted data value width ({width}) and precision\n"
+                f"({prec}) cannot be satisfied for format type %{typ}.\n"
+                f"Reducing precision term to {precmax}."
+            )
+            if logger is not None:
+                logger.warn(msg)
+            else:
+                PyemuWarning(msg)
+            prec = precmax
+        fmt = f"%{width}.{prec}{typ}"
+        # to allow us to override the delimiter in this fixed format case
+        fmt = ' ' + ' '.join([fmt]*arr.shape[1])
+    else:
+        # regular situation where file is def free format
+        if exps == N:
+            typ = "E"
+        elif exps > 0:
+            typ = "G"
+        else:
+            typ = "F"
+        fmt = f"%{width}.{prec}{typ}"
+    return arr, fmt
+
+
 class PstFrom(object):
     """construct high-dimensional PEST(++) interfaces with all the bells and whistles
 
@@ -522,88 +645,12 @@ class PstFrom(object):
             return
         # precondition {geostruct:{group:df}} dict to {geostruct:[par_dfs]}
         struct_dict = self._pivot_par_struct_dict()
-        # list for holding grid style groups
-        gr_pe_l = []
-        subset = self.pst.parameter_data.index
-        gr_par_pe = None
-        if use_specsim:
-            if not pyemu.geostats.SpecSim2d.grid_is_regular(
-                self.spatial_reference.delr, self.spatial_reference.delc
-            ):
-                self.logger.lraise(
-                    "draw() error: can't use spectral simulation with irregular grid"
-                )
-            self.logger.log("spectral simulation for grid-scale pars")
-            # loop over geostructures defined in PestFrom object
-            # (setup through add_parameters)
-            for geostruct, par_df_l in struct_dict.items():
-                par_df = pd.concat(par_df_l)  # force to single df
-                par_df = par_df.loc[par_df.partype == "grid", :]
-                if "i" in par_df.columns:  # need 'i' and 'j' for specsim
-                    grd_p = pd.notna(par_df.i)
-                else:
-                    grd_p = np.array([0])
-                # if there are grid pars (also grid pars with i,j info)
-                if grd_p.sum() > 0:
-                    # select pars to use specsim for
-                    gr_df = par_df.loc[grd_p]
-                    gr_df = gr_df.astype({"i": int, "j": int})  # make sure int
-                    # (won't be if there were nans in concatenated df)
-                    if len(gr_df) > 0:
-                        # get specsim object for this geostruct
-                        ss = pyemu.geostats.SpecSim2d(
-                            delx=self.spatial_reference.delr,
-                            dely=self.spatial_reference.delc,
-                            geostruct=geostruct,
-                        )
-                        # specsim draw (returns df)
-                        gr_pe1 = ss.grid_par_ensemble_helper(
-                            pst=self.pst,
-                            gr_df=gr_df,
-                            num_reals=num_reals,
-                            sigma_range=sigma_range,
-                            logger=self.logger,
-                        )
-                        # append to list of specsim drawn pars
-                        gr_pe_l.append(gr_pe1)
-                        # rebuild struct_dict entry for this geostruct
-                        # to not include specsim pars
-                        struct_dict[geostruct] = []
-                        # loop over all in list associated with geostruct
-                        for p_df in par_df_l:
-                            # if pars are not in the specsim pars just created
-                            # assign them to this struct_dict entry
-                            # needed if none specsim pars are linked to same geostruct
-                            if not p_df.index.isin(gr_df.index).all():
-                                struct_dict[geostruct].append(p_df)
-                            else:
-                                subset = subset.difference(p_df.index)
-            if len(gr_pe_l) > 0:
-                gr_par_pe = pd.concat(gr_pe_l, axis=1)
-            self.logger.log("spectral simulation for grid-scale pars")
-        # draw remaining pars based on their geostruct
-        if not subset.empty:
-            self.logger.log(f"Drawing {len(subset)} non-specsim pars")
-            pe = pyemu.helpers.geostatistical_draws(
-                self.pst,
-                struct_dict=struct_dict,
-                num_reals=num_reals,
-                sigma_range=sigma_range,
-                scale_offset=scale_offset,
-                subset=subset
-            )
-            self.logger.log(f"Drawing {len(subset)} non-specsim pars")
-            if gr_par_pe is not None:
-                self.logger.log(f"Joining specsim and non-specsim pars")
-                exist = gr_par_pe.columns.intersection(pe.columns)
-                pe = pe._df.drop(exist, axis=1)  # specsim par take precedence
-                pe = pd.concat([pe, gr_par_pe], axis=1)
-                pe = pyemu.ParameterEnsemble(pst=self.pst, df=pe)
-                self.logger.log(f"Joining specsim and non-specsim pars")
-        else:
-            pe = pyemu.ParameterEnsemble(pst=self.pst, df=gr_par_pe)
-        self.logger.log("drawing realizations")
-        return pe.copy()
+        # method moved to helpers
+        pe = pyemu.helpers.draw_by_group(self.pst, num_reals=num_reals, sigma_range=sigma_range,
+                                         use_specsim=use_specsim, scale_offset=scale_offset, struct_dict=struct_dict,
+                                         delr=self.spatial_reference.delr, delc=self.spatial_reference.delc,
+                                         logger=self.logger)
+        return pe
 
     def build_pst(self, filename=None, update=False, version=1):
         """Build control file from i/o files in PstFrom object.
@@ -1077,16 +1124,19 @@ class PstFrom(object):
                 if not dest_filepath.exists():
                     self.logger.lraise(f"par filename '{dest_filepath}' not found ")
                 # read array type input file
-                arr = np.loadtxt(dest_filepath, delimiter=sep, ndmin=2)
+                arr, infmt = _load_array_get_fmt(dest_filepath, sep=sep,
+                                                 logger=self.logger)
+                # arr = np.loadtxt(dest_filepath, delimiter=sep, ndmin=2)
                 self.logger.log(f"loading array {dest_filepath}")
                 self.logger.statement(
                     f"loaded array '{input_filena}' of shape {arr.shape}"
                 )
                 # save copy of input file to `org` dir
                 # make any subfolders if they don't exist
+                # this will be python auto precision
                 np.savetxt(self.original_file_d / rel_filepath.name, arr)
                 file_dict[rel_filepath] = arr
-                fmt_dict[rel_filepath] = fmt
+                fmt_dict[rel_filepath] = infmt
                 sep_dict[rel_filepath] = sep
                 skip_dict[rel_filepath] = skip
             # check for compatibility
@@ -1769,7 +1819,9 @@ class PstFrom(object):
         pest interface
 
         Args:
-            filenames (`str`): Model input filenames to parameterize
+            filenames (`str`): Model input filenames to parameterize. By default filename should give relative
+                loction from top level of pest template directory
+                (`new_d` as passed to `PstFrom()`).
             par_type (`str`): One of `grid` - for every element, `constant` - for single
                 parameter applied to every element, `zone` - for zone-based
                 parameterization or `pilotpoint` - for
@@ -1864,9 +1916,9 @@ class PstFrom(object):
                 This is not additive with `mfile_skip` option.
                 Warning: currently comment lines within list-style tabular data
                 will be lost.
-            par_style (`str`): either "m"/"mult"/"multiplier", "a"/"add"/"addend", or "d"/"direct" where the former setups
+            par_style (`str`): either "m"/"mult"/"multiplier", "a"/"add"/"addend", or "d"/"direct" where the former sets up
                 up a multiplier and addend parameters process against the existing model input
-                array and the former setups a template file to write the model
+                array and the former sets up a template file to write the model
                 input file directly.  Default is "multiplier".
 
             initial_value (`float`): the value to set for the `parval1` value in the control file
@@ -3077,7 +3129,9 @@ def write_list_tpl(
             If list of `tuple` -- assumed to be selection based `index_cols`
                 values. e.g. [(3,5,6)] would attempt to set parameters where the
                 model file values for 3 `index_cols` are 3,5,6. N.B. values in
-                tuple are actual model file entry values.
+                tuple are actual model file entry values. For use_rows with a
+                single 'index_cols' use [(3,),(5,),(6,)] to set parameters for
+                rows with model file index entries of 3,5,6.
             If no rows in the model input file match `use_rows` -- parameters
                 will be set up for all rows.
             Only valid/effective if index_cols is not None.
