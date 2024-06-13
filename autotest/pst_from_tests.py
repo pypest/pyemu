@@ -3778,7 +3778,7 @@ def mf6_freyberg_pp_locs_test(tmp_path):
     os.chdir(bd)
 
 
-@pytest.mark.xfail
+
 def usg_freyberg_test(tmp_path):
     import numpy as np
     import pandas as pd
