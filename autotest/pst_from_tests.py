@@ -30,7 +30,7 @@ else:
 
 mf_exe_path = os.path.join(bin_path, "mfnwt")
 mt_exe_path = os.path.join(bin_path, "mt3dusgs")
-usg_exe_path = os.path.join(bin_path, "mfusg")
+usg_exe_path = os.path.join(bin_path, "mfusg_gsi")
 mf6_exe_path = os.path.join(bin_path, "mf6")
 pp_exe_path = os.path.join(bin_path, "pestpp-glm")
 ies_exe_path = os.path.join(bin_path, "pestpp-ies")
@@ -3807,7 +3807,7 @@ def usg_freyberg_test(tmp_path):
         nam_file = os.path.join(tmp_model_ws,"freyberg.usg.nam")
 
         #make sure the model runs in the new dir with all external formats
-        pyemu.os_utils.run("mfusg freyberg.usg.nam", cwd=tmp_model_ws)
+        pyemu.os_utils.run("{0} freyberg.usg.nam".format(usg_exe_path), cwd=tmp_model_ws)
 
         # for usg, we need to do some trickery to support the unstructured by layers concept
         # this is just for array-based parameters, list-based pars are g2g because they have an index
@@ -3909,7 +3909,7 @@ def usg_freyberg_test(tmp_path):
         pf.post_py_cmds.append(hds_runline)
 
         # the command the run the model
-        pf.mod_sys_cmds.append("mfusg freyberg.usg.nam")
+        pf.mod_sys_cmds.append("{0} freyberg.usg.nam".format(usg_exe_path))
 
         #build the control file and draw the prior par ensemble
         pf.build_pst()
