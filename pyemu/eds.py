@@ -11,6 +11,7 @@ from pyemu.en import ObservationEnsemble
 from pyemu.mat.mat_handler import Matrix, Jco, Cov
 from pyemu.pst.pst_handler import Pst
 from pyemu.utils.os_utils import _istextfile,run
+from pyemu.utils.helpers import normal_score_transform
 from .logger import Logger
 
 
@@ -495,15 +496,17 @@ class EnDS(object):
         return mean_dfs,dfstd,dfper
 
 
-    def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template"):
-        """setup a new PEST interface for the data-space inversion process
+    def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template",apply_normal_score_transform=False):
+        """Setup a new PEST interface for the data-space inversion process.
+        If the observation data in the Pst object has a "obstransform" column, then observations for which "log" is specified will be subject to log-transformation. 
+        If the `apply_normal_score_transform` flag is set to `True`, then the observations and predictions will be subject to a normal score transform.
 
         Args:
 
             sim_ensemble (`pyemu.ObservationEnsemble`): observation ensemble to use for DSI latent space
                 variables.  If `None`, use `self.sim_ensemble`.  Default is `None`
             t_d (`str`): template directory to setup the DSI model + pest files in.  Default is `dsi_template`
-
+            apply_normal_score_transform (`bool`): flag to apply a normal score transform to the observations
 
         Example::
 
@@ -531,6 +534,44 @@ class EnDS(object):
         names = z_names.copy()
         names.extend(nz_names)
         names.sort()
+
+        # implement log-transform/offset and normal score transform
+        transf_names = nz_names.copy()
+        transf_names.extend(self.predictions)
+        
+        if "obstransform" in self.pst.observation_data.columns:
+            obs = self.pst.observation_data.loc[transf_names].copy()
+            obs["offset"] = 0.0 #TODO: more elegant? incase all 'none' are passed...
+            obsnmes = obs.loc[obs.obstransform=='log'].obsnme.values
+            if len(obsnmes) > 0:
+                for name in obsnmes:
+                    #TODO: make more efficient
+                    self.logger.log("applying obs log-transform to:"+name)
+                    values = sim_ensemble.loc[:,name].values
+                    offset = abs(min(values))+1.0 #arbitrary; enforce positive values
+                    values+=offset
+                    assert min(values)>0, "values must be positive. min value is "+str(min(values))
+                    sim_ensemble.loc[:,name] = np.log10(values)
+                    obs.loc[obs.obsnme==name,'offset'] = offset
+            obs[['obsnme','obsval','obstransform','offset']].to_csv(os.path.join(t_d,"dsi_obs_transform.csv"),index=False)
+
+        if apply_normal_score_transform:
+            back_transform_df = pd.DataFrame()
+            self.logger.log("applying normal score transform to non-zero obs and predictions")
+            #TODO: make more efficient
+            for name in transf_names:
+                print("transforming:",name)
+                values = sim_ensemble._df.loc[:,name].copy()
+                transformed_values, sorted_values, sorted_idxs = normal_score_transform(values) #transformed data retains the same order as the original data
+                sim_ensemble.loc[sorted_idxs,name] = transformed_values
+                df = pd.DataFrame()
+                df['real'] = sorted_idxs
+                df['sorted_values'] = sorted_values
+                df['transformed_values'] = transformed_values
+                df['obsnme'] = name
+                back_transform_df=pd.concat([back_transform_df,df],ignore_index=True)
+            back_transform_df.to_csv(os.path.join(t_d,"dsi_obs_backtransform.csv"),index=False)
+
         oe = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
         oe = oe.loc[:,names]
 
@@ -570,7 +611,7 @@ class EnDS(object):
         ftpl = open(mn_tpl_file, 'w')
         ftpl.write("ptf ~\n")
         fin.write("obsnme,mn\n")
-        ftpl.write("obsnme,pn\n")
+        ftpl.write("obsnme,mn\n")
         mn_dict = {}
         for oname in names:
             pname = "dsi_prmn_{0}".format(oname)
@@ -603,12 +644,34 @@ class EnDS(object):
             import numpy as np
             import pandas as pd
             import pyemu
+            import os
             pmat = pyemu.Matrix.from_binary("dsi_proj_mat.jcb")
             pvals = pd.read_csv("dsi_pars.csv",index_col=0)
             pvals = pvals.loc[pmat.col_names,:]
             ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
             ovals = ovals.loc[pmat.row_names,:]
             sim_vals = ovals + np.dot(pmat.x,pvals.values)
+            filename = "dsi_obs_backtransform.csv"
+            if os.path.exists(filename):
+                back_transform_df = pd.read_csv(filename)
+                print("applying back-transform")
+                obsnmes = back_transform_df.obsnme.unique()
+                back_vals = [
+                            pyemu.helpers.inverse_normal_score_transform(sim_vals.loc[o].mn,
+                            back_transform_df.loc[back_transform_df['obsnme']==o,'transformed_values'].values,
+                            back_transform_df.loc[back_transform_df['obsnme']==o,'sorted_values'].values) 
+                            for o in obsnmes
+                            ]         
+                sim_vals.loc[obsnmes,'mn'] = back_vals
+            if os.path.exists("dsi_obs_transform.csv"):
+                print("reversing log-transform")
+                obs = pd.read_csv("dsi_obs_transform.csv")
+                obsnmes = obs.loc[obs.obstransform=='log'].obsnme.unique()
+                back_vals = [
+                            (10**sim_vals.loc[x].mn) - obs.loc[obs.obsnme==x,'offset'].values[0] 
+                            for x in obsnmes
+                            ]
+                sim_vals.loc[obsnmes,'mn'] = back_vals
             print(sim_vals)
             sim_vals.to_csv("dsi_sim_vals.csv")
 
@@ -655,9 +718,9 @@ class EnDS(object):
         self.logger.log("creating Pst")
         import inspect
         lines = [line[12:] for line in inspect.getsource(dsi_forward_run).split("\n")][1:]
+        
 
         with open(os.path.join(t_d,"forward_run.py"),'w') as f:
-            
             for line in lines:
                 f.write(line+"\n")
         pst.write(os.path.join(t_d,"dsi.pst"),version=2)
