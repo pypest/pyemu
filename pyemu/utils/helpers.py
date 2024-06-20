@@ -4059,6 +4059,12 @@ class Interpolator1d:
         self.x_points = np.array(x_points)
         self.y_points = np.array(y_points)
 
+        # check if there are duplciates of x and y
+        #remove duplicate x values
+        _, idx = np.unique(self.x_points, return_index=True)
+        self.x_points = self.x_points[np.sort(idx)]
+        self.y_points = self.y_points[np.sort(idx)]
+
     def _linear_extrapolate(self, x):
         if x < self.x_points[0]:
             slope = (self.y_points[1] - self.y_points[0]) / (self.x_points[1] - self.x_points[0])
@@ -4079,9 +4085,11 @@ class Interpolator1d:
         else:
             return None
 
-        a = (y2 - (y1 - y0) * (x2 - x0) / (x1 - x0)) / ((x2 - x0) * (x2 - x1))
-        b = (y1 - y0) / (x1 - x0) - a * (x1 + x0)
-        c = y0 - a * x0 * x0 - b * x0
+        # Calculate the coefficients of the quadratic polynomial
+        denom = (x0 - x1) * (x0 - x2) * (x1 - x2)
+        a = (x2 * (y1 - y0) + x1 * (y0 - y2) + x0 * (y2 - y1)) / denom
+        b = (x2**2 * (y0 - y1) + x1**2 * (y2 - y0) + x0**2 * (y1 - y2)) / denom
+        c = (x1 * x2 * (x1 - x2) * y0 + x2 * x0 * (x2 - x0) * y1 + x0 * x1 * (x0 - x1) * y2) / denom
 
         return a * x**2 + b * x + c
 
@@ -4235,6 +4243,9 @@ def normal_score_transform(values):
     # get the sorted real/indexes for safe keeping
     sorted_index = values.index
     sorted_values = values.values
+    if np.all(sorted_values == sorted_values[0]):
+        print("warning: all values are the same, returning all zeroes")
+        return np.zeros_like(sorted_values), sorted_values, sorted_index
     #Calucalte the Rank
     ranks = values.rank(method='average')
     assert (ranks==np.sort(ranks)).all(), "ranks must be sorted"
@@ -4276,10 +4287,13 @@ def inverse_normal_score_transform(gaussian_data, transformed_values, sorted_val
     This function relies on the `Interpolator1d` class from the `pyemu.helpers` module for performing the
     interpolation.
     """
-    # check that transformed values are sorted
-    assert (transformed_values==np.sort(transformed_values)).all(), "transformed_values must be sorted"
-    assert (sorted_values==np.sort(sorted_values)).all(), f"sorted values must be sorted{(sorted_values-np.sort(sorted_values))}"
-    
+
+    # check if all values in transformed_values and in sorted_values are the same
+    # if so, dont bother interpolating
+    if np.all(sorted_values == sorted_values[0]):
+        if np.all(transformed_values == transformed_values[0]):
+            return sorted_values[:len(gaussian_data)]
+
     # interpolate back to data-space
     interpolator = pyemu.helpers.Interpolator1d(transformed_values, sorted_values)
     back_trasformed_values = interpolator.interpolate(gaussian_data, kind='linear')
