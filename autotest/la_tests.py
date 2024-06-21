@@ -645,6 +645,7 @@ def ends_freyberg_dsi_test(tmp_path):
     
     # run test with log-transform
     pst = pyemu.Pst(pst_name)
+    pst.pestpp_options["predictions"] = predictions
     pst.observation_data["obstransform"] = "log"
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe,verbose=True)
     ends.prep_for_dsi(t_d=t_d,apply_normal_score_transform=False)
