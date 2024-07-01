@@ -496,7 +496,7 @@ class EnDS(object):
         return mean_dfs,dfstd,dfper
 
 
-    def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template",apply_normal_score_transform=False):
+    def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template",apply_normal_score_transform=False,truncated_svd=False):
         """Setup a new PEST interface for the data-space inversion process.
         If the observation data in the Pst object has a "obstransform" column, then observations for which "log" is specified will be subject to log-transformation. 
         If the `apply_normal_score_transform` flag is set to `True`, then the observations and predictions will be subject to a normal score transform.
@@ -572,17 +572,20 @@ class EnDS(object):
                 back_transform_df=pd.concat([back_transform_df,df],ignore_index=True)
             back_transform_df.to_csv(os.path.join(t_d,"dsi_obs_backtransform.csv"),index=False)
 
-        oe = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
-        oe = oe.loc[:,names]
+        Z = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
+        Z = Z.loc[:,names]
 
         self.logger.log("getting deviations")
 
         self.logger.log("pseudo inv of deviations matrix")
 
-        #deltad = Matrix.from_dataframe(oe).T
-        #U,S,V = deltad.pseudo_inv_components(maxsing=oe.shape[0],eigthresh=1e-30)
-
-        U, S, V = np.linalg.svd(oe.values, full_matrices=False)
+        if truncated_svd:
+            deltad = Matrix.from_dataframe(Z)
+            U, S, V = deltad.pseudo_inv_components(maxsing=Z.shape[0],eigthresh=1e-30)
+            S = np.diag(S)
+        else:
+            U, S, V = np.linalg.svd(Z.values, full_matrices=False)
+            V = V.transpose()
         self.logger.log("pseudo inv of deviations matrix")
 
 
@@ -625,7 +628,7 @@ class EnDS(object):
         self.logger.log("saving proj mat")
 
         #pmat = U * S
-        pmat = np.dot(V.transpose(), np.diag(S))
+        pmat = np.dot(V, np.diag(S))
         #row_names = ["sing_vec_{0}".format(i) for i in range(pmat.shape[0])]
         pmat = Matrix(x=pmat,col_names=dsi_pnames,row_names=names)
         pmat.col_names = dsi_pnames
