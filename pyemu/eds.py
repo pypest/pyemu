@@ -507,6 +507,9 @@ class EnDS(object):
                 variables.  If `None`, use `self.sim_ensemble`.  Default is `None`
             t_d (`str`): template directory to setup the DSI model + pest files in.  Default is `dsi_template`
             apply_normal_score_transform (`bool`): flag to apply a normal score transform to the observations
+                and predictions.  Default is `False`
+            truncated_svd (`bool`): flag to use a truncated SVD for the pseudo-inverse of the deviations matrix.
+                Default is `False`
 
         Example::
 
