@@ -620,6 +620,8 @@ def ends_freyberg_dsi_test(tmp_path):
     oe_name = pst_name.replace(".pst", ".0.obs.csv")
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
 
+    
+
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe,verbose=True)
     t_d = os.path.join(tmp_path,"dsi_template")
     ends.prep_for_dsi(t_d=t_d)
@@ -629,6 +631,35 @@ def ends_freyberg_dsi_test(tmp_path):
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     #pyemu.os_utils.run("pestpp-ies dsi.pst",cwd="dsi_template")
     m_d = os.path.join(tmp_path,"master_dsi")
+    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
+                                 master_dir=m_d)
+
+    # run test wtih truncated svd
+    ends.prep_for_dsi(t_d=t_d,truncated_svd=True)
+    pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
+    pst.control_data.noptmax = 3
+    pst.write(os.path.join(t_d,"dsi.pst"),version=2)
+    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
+                                 master_dir=m_d)
+
+
+    # run test wtih normal score transform
+    ends.prep_for_dsi(t_d=t_d,apply_normal_score_transform=True)
+    pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
+    pst.control_data.noptmax = 3
+    pst.write(os.path.join(t_d,"dsi.pst"),version=2)
+    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
+                                 master_dir=m_d)
+    
+    # run test with log-transform
+    pst = pyemu.Pst(pst_name)
+    pst.pestpp_options["predictions"] = predictions
+    pst.observation_data["obstransform"] = "log"
+    ends = pyemu.EnDS(pst=pst, sim_ensemble=oe,verbose=True)
+    ends.prep_for_dsi(t_d=t_d,apply_normal_score_transform=False)
+    pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
+    pst.control_data.noptmax = 3
+    pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
                                  master_dir=m_d)
 
@@ -683,9 +714,31 @@ def plot_freyberg_dsi():
     plt.savefig("dsi_pred.pdf")
 
 
+def dsi_normscoretransform_test():
+    import pyemu
+    test_d = "ends_master"
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d, case + ".pst")
+    pst = pyemu.Pst(pst_name)
+
+    oe_name = pst_name.replace(".pst", ".0.obs.csv")
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
+
+    for name in oe.columns:
+        print("transforming:",name)
+        values = oe._df.loc[:,name].copy()
+        transformed_values, sorted_values, sorted_idxs = pyemu.helpers.normal_score_transform(values) 
+        backtransformed_values = pyemu.helpers.inverse_normal_score_transform(transformed_values,
+                                transformed_values,
+                                sorted_values)
+        
+        diff = backtransformed_values-sorted_values
+        assert max(abs(diff))<1e-7, backtransformed_values
+
 if __name__ == "__main__":
+    dsi_normscoretransform_test()
     #ends_freyberg_dev()
-    ends_freyberg_dsi_test("temp")
+    #ends_freyberg_dsi_test("temp")
     #plot_freyberg_dsi()
     #obscomp_test()
     #alternative_dw()

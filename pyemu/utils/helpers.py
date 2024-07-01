@@ -15,6 +15,7 @@ import traceback
 import re
 import numpy as np
 import pandas as pd
+import math
 
 pd.options.display.max_colwidth = 100
 from ..pyemu_warnings import PyemuWarning
@@ -4019,7 +4020,287 @@ def apply_threshold_pars(csv_file):
 
 
 
+class Interpolator1d:
+    """Interpolation class for 1D data.
+    Replaces scipy.interpolate.interp1d.
+    
+    Parameters
+    ----------
+    
+    x_points : array-like
+        X-coordinates of the data points.  
+    y_points : array-like
+        Y-coordinates of the data points.
+    kind : str, optional
+        The kind of interpolation to use. Supported kinds: 'linear', 'quadratic', 'cubic'.
+        Default is 'linear'.
+        
+    Attributes
+    ----------
+    
+    x_points : numpy.ndarray
+    y_points : numpy.ndarray
+    kind : str
+    
+    Methods
+    -------
+    
+    interpolate(x_new)
+    
+    Example:
+    interpolator = pyemu.helpers.Interpolator1d(x_points, y_points)
+    y_new = interpolator.interpolate(x_new, kind='linear')
+    
+    """
+    def __init__(self, x_points, y_points):
+        if len(x_points) != len(y_points):
+            raise ValueError("x_points and y_points must have the same length.")
+        
+        self.x_points = np.array(x_points)
+        self.y_points = np.array(y_points)
 
+        # check if there are duplciates of x and y
+        #remove duplicate x values
+        _, idx = np.unique(self.x_points, return_index=True)
+        self.x_points = self.x_points[np.sort(idx)]
+        self.y_points = self.y_points[np.sort(idx)]
+
+    def _linear_extrapolate(self, x):
+        if x < self.x_points[0]:
+            slope = (self.y_points[1] - self.y_points[0]) / (self.x_points[1] - self.x_points[0])
+            return self.y_points[0] + slope * (x - self.x_points[0])
+        elif x > self.x_points[-1]:
+            slope = (self.y_points[-1] - self.y_points[-2]) / (self.x_points[-1] - self.x_points[-2])
+            return self.y_points[-1] + slope * (x - self.x_points[-1])
+        else:
+            return None
+
+    def _quadratic_extrapolate(self, x):
+        if x < self.x_points[0]:
+            x0, x1, x2 = self.x_points[0], self.x_points[1], self.x_points[2]
+            y0, y1, y2 = self.y_points[0], self.y_points[1], self.y_points[2]
+        elif x > self.x_points[-1]:
+            x0, x1, x2 = self.x_points[-3], self.x_points[-2], self.x_points[-1]
+            y0, y1, y2 = self.y_points[-3], self.y_points[-2], self.y_points[-1]
+        else:
+            return None
+
+        # Calculate the coefficients of the quadratic polynomial
+        denom = (x0 - x1) * (x0 - x2) * (x1 - x2)
+        a = (x2 * (y1 - y0) + x1 * (y0 - y2) + x0 * (y2 - y1)) / denom
+        b = (x2**2 * (y0 - y1) + x1**2 * (y2 - y0) + x0**2 * (y1 - y2)) / denom
+        c = (x1 * x2 * (x1 - x2) * y0 + x2 * x0 * (x2 - x0) * y1 + x0 * x1 * (x0 - x1) * y2) / denom
+
+        return a * x**2 + b * x + c
+
+    def _cubic_extrapolate(self, x):
+        if x < self.x_points[0]:
+            x0, x1, x2, x3 = self.x_points[0], self.x_points[1], self.x_points[2], self.x_points[3]
+            y0, y1, y2, y3 = self.y_points[0], self.y_points[1], self.y_points[2], self.y_points[3]
+        elif x > self.x_points[-1]:
+            x0, x1, x2, x3 = self.x_points[-4], self.x_points[-3], self.x_points[-2], self.x_points[-1]
+            y0, y1, y2, y3 = self.y_points[-4], self.y_points[-3], self.y_points[-2], self.y_points[-1]
+        else:
+            return None
+
+        A = np.array([
+            [x0**3, x0**2, x0, 1],
+            [x1**3, x1**2, x1, 1],
+            [x2**3, x2**2, x2, 1],
+            [x3**3, x3**2, x3, 1]
+        ])
+        b = np.array([y0, y1, y2, y3])
+
+        coeffs = np.linalg.solve(A, b)
+        return coeffs[0] * x**3 + coeffs[1] * x**2 + coeffs[2] * x + coeffs[3]
+
+    def interpolate(self, x_new, kind='linear'):
+        if isinstance(x_new, (int, float)):
+            x_new = [x_new]
+
+        if kind == 'linear':
+            return [self._linear_interpolate(x) for x in x_new]
+        elif kind == 'quadratic':
+            return [self._quadratic_interpolate(x) for x in x_new]
+        elif kind == 'cubic':
+            return [self._cubic_interpolate(x) for x in x_new]
+        else:
+            raise ValueError("Unknown interpolation kind. Supported kinds: 'linear', 'quadratic', 'cubic'.")
+
+    def _linear_interpolate(self, x):
+        y = self._linear_extrapolate(x)
+        if y is not None:
+            return y
+        for i in range(1, len(self.x_points)):
+            if x <= self.x_points[i]:
+                slope = (self.y_points[i] - self.y_points[i-1]) / (self.x_points[i] - self.x_points[i-1])
+                return self.y_points[i-1] + slope * (x - self.x_points[i-1])
+
+    def _quadratic_interpolate(self, x):
+        y = self._quadratic_extrapolate(x)
+        if y is not None:
+            return y
+        for i in range(1, len(self.x_points) - 1):
+            if x <= self.x_points[i+1]:
+                x0, x1, x2 = self.x_points[i-1], self.x_points[i], self.x_points[i+1]
+                y0, y1, y2 = self.y_points[i-1], self.y_points[i], self.y_points[i+1]
+                return y0 * (x - x1) * (x - x2) / ((x0 - x1) * (x0 - x2)) + \
+                       y1 * (x - x0) * (x - x2) / ((x1 - x0) * (x1 - x2)) + \
+                       y2 * (x - x0) * (x - x1) / ((x2 - x0) * (x2 - x1))
+
+    def _cubic_interpolate(self, x):
+        y = self._cubic_extrapolate(x)
+        if y is not None:
+            return y
+        for i in range(1, len(self.x_points) - 2):
+            if x <= self.x_points[i+2]:
+                x0, x1, x2, x3 = self.x_points[i-1], self.x_points[i], self.x_points[i+1], self.x_points[i+2]
+                y0, y1, y2, y3 = self.y_points[i-1], self.y_points[i], self.y_points[i+1], self.y_points[i+2]
+                A = np.array([
+                    [x0**3, x0**2, x0, 1],
+                    [x1**3, x1**2, x1, 1],
+                    [x2**3, x2**2, x2, 1],
+                    [x3**3, x3**2, x3, 1]
+                ])
+                b = np.array([y0, y1, y2, y3])
+                coeffs = np.linalg.solve(A, b)
+                return coeffs[0] * x**3 + coeffs[1] * x**2 + coeffs[2] * x + coeffs[3]
+
+
+def norm_cdf(x):
+    """Compute the CDF of the standard normal distribution."""
+    return 0.5 * (1 + math.erf(x / math.sqrt(2)))
+
+def norm_pdf(x):
+    """Compute the PDF of the standard normal distribution."""
+    return (1 / math.sqrt(2 * math.pi)) * math.exp(-0.5 * x * x)
+
+def norm_ppf(p, tol=1e-10, max_iter=100):
+    """
+    Compute the inverse of the cumulative distribution function (CDF)
+    of the standard normal distribution using the Newton-Raphson method.
+    
+    Parameters:
+    p : float
+        A probability value in the range (0, 1).
+    tol : float
+        Tolerance for the stopping criterion.
+    max_iter : int
+        Maximum number of iterations.
+    
+    Returns:
+    float
+        The value x such that the CDF of the standard normal distribution at x is p.
+    """
+    if p <= 0.0 or p >= 1.0:
+        raise ValueError("p must be in the range (0, 1)")
+
+    # Initial guess using an approximation
+    if p < 0.5:
+        initial_guess = -math.sqrt(-2.0 * math.log(p))
+    else:
+        initial_guess = math.sqrt(-2.0 * math.log(1.0 - p))
+    
+    x = initial_guess
+    for _ in range(max_iter):
+        # Compute the function value and its derivative
+        cdf_value = norm_cdf(x)
+        pdf_value = norm_pdf(x)
+        
+        # Newton-Raphson update
+        x_new = x - (cdf_value - p) / pdf_value
+        
+        # Check for convergence
+        if abs(x_new - x) < tol:
+            return x_new
+        
+        x = x_new
+    
+    raise RuntimeError("Convergence not achieved within max_iter iterations")
+
+
+def normal_score_transform(values):
+    """
+    Transforms a pandas Series of values to their normal scores.
+
+    This function first sorts the input values, then computes their ranks and uses these ranks to
+    calculate uniform quantiles. These quantiles are then transformed into normal scores using the
+    inverse of the normal cumulative distribution function (norm_ppf). A linear interpolation is
+    performed to map these normal scores back to the original data distribution, resulting in the
+    transformed values.
+
+    Parameters:
+    values (pd.Series): A pandas Series containing the values to be transformed.This is assumed to come from an Observation Ensemble.
+
+    Returns:
+    tuple: A tuple containing three elements:
+        - transformed_values (np.ndarray): The values transformed to their normal scores.
+        - sorted_values (np.ndarray): The original values sorted in ascending order.
+        - sorted_index (pd.Index): The original index of the sorted values.
+    """
+    #Ensure values are sorted
+    values.sort_values(inplace=True)
+    # get the sorted real/indexes for safe keeping
+    sorted_index = values.index
+    sorted_values = values.values
+    if np.all(sorted_values == sorted_values[0]):
+        print("warning: all values are the same, returning all zeroes")
+        return np.zeros_like(sorted_values), sorted_values, sorted_index
+    #Calucalte the Rank
+    ranks = values.rank(method='average')
+    assert (ranks==np.sort(ranks)).all(), "ranks must be sorted"
+    # the quartiles
+    uniform_quantiles = (ranks - 0.5) / len(values)
+    # and normal scores
+    normal_scores = np.array([norm_ppf(i) for i in uniform_quantiles]) # scipy.stats.norm.ppf(uniform_quantiles)
+    cdf_norm = np.linspace(0,1,len(normal_scores))
+    cdf = np.linspace(0,1,len(values))
+    #Interpoalte to obtain transforemd vlaues
+    interpolator = pyemu.helpers.Interpolator1d(cdf_norm, normal_scores)
+    transformed_values = interpolator.interpolate(cdf, kind='linear')
+    assert (values==np.sort(values)).all(), "sorted values must be sorted"
+    return transformed_values, sorted_values, sorted_index
+
+def inverse_normal_score_transform(gaussian_data, transformed_values, sorted_values):
+    """
+    Transforms Gaussian-distributed data back to its original scale using inverse normal score transformation.
+
+    This function applies an inverse transformation to data that has been previously transformed to a Gaussian
+    distribution. It uses linear interpolation based on sorted transformed values and their corresponding original
+    values to map Gaussian-distributed data back to its original scale.
+
+    Parameters:
+    gaussian_data (np.ndarray): The Gaussian-distributed data to be transformed back to its original scale.
+    transformed_values (np.ndarray): The transformed values that were originally used to map the original data
+                                     to a Gaussian distribution. Must be sorted in ascending order.
+    sorted_values (np.ndarray): The original values corresponding to the transformed_values, sorted in ascending
+                                order. These are used as the target values for interpolation.
+
+    Returns:
+    np.ndarray or float: The back-transformed values in their original scale. Returns a single float if the input
+                         is a single value.
+
+    Raises:
+    AssertionError: If either transformed_values or sorted_values are not sorted in ascending order.
+
+    Note:
+    This function relies on the `Interpolator1d` class from the `pyemu.helpers` module for performing the
+    interpolation.
+    """
+
+    # check if all values in transformed_values and in sorted_values are the same
+    # if so, dont bother interpolating
+    if np.all(sorted_values == sorted_values[0]):
+        if np.all(transformed_values == transformed_values[0]):
+            return sorted_values[:len(gaussian_data)]
+
+    # interpolate back to data-space
+    interpolator = pyemu.helpers.Interpolator1d(transformed_values, sorted_values)
+    back_trasformed_values = interpolator.interpolate(gaussian_data, kind='linear')
+    # if single value, return as float 
+    if len(back_trasformed_values)==1:
+        back_trasformed_values = back_trasformed_values[0]
+    return back_trasformed_values
 
 
 
