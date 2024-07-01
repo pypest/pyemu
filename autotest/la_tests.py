@@ -634,6 +634,14 @@ def ends_freyberg_dsi_test(tmp_path):
     pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
                                  master_dir=m_d)
 
+    # run test wtih truncated svd
+    ends.prep_for_dsi(t_d=t_d,truncated_svd=True)
+    pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
+    pst.control_data.noptmax = 3
+    pst.write(os.path.join(t_d,"dsi.pst"),version=2)
+    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
+                                 master_dir=m_d)
+
 
     # run test wtih normal score transform
     ends.prep_for_dsi(t_d=t_d,apply_normal_score_transform=True)
