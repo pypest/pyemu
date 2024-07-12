@@ -584,11 +584,14 @@ class EnDS(object):
 
         if truncated_svd:
             deltad = Matrix.from_dataframe(Z)
-            U, S, V = deltad.pseudo_inv_components(maxsing=Z.shape[0],eigthresh=1e-30)
-            S = np.diag(S)
+            U, S, V = deltad.pseudo_inv_components(maxsing=Z.shape[0],
+                                                   eigthresh=1e-5)
+            S = S.x
+            V = V.x
         else:
             U, S, V = np.linalg.svd(Z.values, full_matrices=False)
             V = V.transpose()
+            S = np.diag(S)
         self.logger.log("pseudo inv of deviations matrix")
 
 
