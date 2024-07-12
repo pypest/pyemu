@@ -634,7 +634,7 @@ class EnDS(object):
         self.logger.log("saving proj mat")
 
         #pmat = U * S
-        pmat = np.dot(V, np.diag(S))
+        pmat = np.dot(V, S)
         #row_names = ["sing_vec_{0}".format(i) for i in range(pmat.shape[0])]
         pmat = Matrix(x=pmat,col_names=dsi_pnames,row_names=names)
         pmat.col_names = dsi_pnames
