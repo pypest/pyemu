@@ -652,10 +652,9 @@ class EnDS(object):
         self.logger.log("saving proj mat")
 
 
-
-
         # this is the dsi forward run function - it is harded coded below!
         def dsi_forward_run():
+            import os
             import numpy as np
             import pandas as pd
             from pyemu.mat.mat_handler import Matrix
