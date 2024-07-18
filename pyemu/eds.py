@@ -11,7 +11,7 @@ from pyemu.en import ObservationEnsemble
 from pyemu.mat.mat_handler import Matrix, Jco, Cov
 from pyemu.pst.pst_handler import Pst
 from pyemu.utils.os_utils import _istextfile,run
-from pyemu.utils.helpers import normal_score_transform
+from pyemu.utils.helpers import normal_score_transform,randrealgen_optimized,inverse_normal_score_transform
 from .logger import Logger
 
 
@@ -559,18 +559,24 @@ class EnDS(object):
             obs[['obsnme','obsval','obstransform','offset']].to_csv(os.path.join(t_d,"dsi_obs_transform.csv"),index=False)
 
         if apply_normal_score_transform:
+            # prepare for normal score transform
+            nstval = randrealgen_optimized(sim_ensemble.shape[0], 1e-7, 1e4)
+
             back_transform_df = pd.DataFrame()
             self.logger.log("applying normal score transform to non-zero obs and predictions")
             #TODO: make more efficient
             for name in transf_names:
                 print("transforming:",name)
                 values = sim_ensemble._df.loc[:,name].copy()
-                transformed_values, sorted_values, sorted_idxs = normal_score_transform(values) #transformed data retains the same order as the original data
-                sim_ensemble.loc[sorted_idxs,name] = transformed_values
+                values.sort_values(inplace=True)
+                transformed_values = [normal_score_transform(nstval, values.values, v)[0] for v in values.values]
+                #transformed_values, sorted_values, sorted_idxs = normal_score_transform(values) #transformed data retains the same order as the original data
+                sim_ensemble.loc[values.index,name] = transformed_values
                 df = pd.DataFrame()
-                df['real'] = sorted_idxs
-                df['sorted_values'] = sorted_values
+                df['real'] = values.index
+                df['sorted_values'] = values.values
                 df['transformed_values'] = transformed_values
+                df['nstval'] = nstval
                 df['obsnme'] = name
                 back_transform_df=pd.concat([back_transform_df,df],ignore_index=True)
             back_transform_df.to_csv(os.path.join(t_d,"dsi_obs_backtransform.csv"),index=False)
@@ -652,9 +658,9 @@ class EnDS(object):
         def dsi_forward_run():
             import numpy as np
             import pandas as pd
-            import pyemu
-            import os
-            pmat = pyemu.Matrix.from_binary("dsi_proj_mat.jcb")
+            from pyemu.mat.mat_handler import Matrix
+            from pyemu.utils.helpers import inverse_normal_score_transform
+            pmat = Matrix.from_binary("dsi_proj_mat.jcb")
             pvals = pd.read_csv("dsi_pars.csv",index_col=0)
             pvals = pvals.loc[pmat.col_names,:]
             ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
@@ -665,12 +671,12 @@ class EnDS(object):
                 back_transform_df = pd.read_csv(filename)
                 print("applying back-transform")
                 obsnmes = back_transform_df.obsnme.unique()
-                back_vals = [
-                            pyemu.helpers.inverse_normal_score_transform(sim_vals.loc[o].mn,
-                            back_transform_df.loc[back_transform_df['obsnme']==o,'transformed_values'].values,
-                            back_transform_df.loc[back_transform_df['obsnme']==o,'sorted_values'].values) 
-                            for o in obsnmes
-                            ]         
+                back_vals = [inverse_normal_score_transform(
+                                                back_transform_df.loc[back_transform_df['obsnme']==o,'nstval'].values, 
+                                                back_transform_df.loc[back_transform_df['obsnme']==o,'sorted_values'].values, 
+                                                sim_vals.loc[o].mn
+                                                )[0] 
+                             for o in obsnmes]       
                 sim_vals.loc[obsnmes,'mn'] = back_vals
             if os.path.exists("dsi_obs_transform.csv"):
                 print("reversing log-transform")
