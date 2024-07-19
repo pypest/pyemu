@@ -206,7 +206,7 @@ def dropna_test():
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     num_reals = 10
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
-    pe.iloc[::3,:] = np.NaN
+    pe.iloc[::3,:] = np.nan
     ped = pe.dropna()
     assert type(ped) == pyemu.ParameterEnsemble
     assert ped.shape == pe._df.dropna().shape

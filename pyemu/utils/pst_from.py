@@ -2194,7 +2194,7 @@ class PstFrom(object):
             in_filepst = in_fileabs.relative_to(self.new_d)
             tpl_filename = self.tpl_d / (mlt_filename + ".tpl")
         else:
-            mlt_filename = np.NaN
+            mlt_filename = np.nan
             # absolute path to org/datafile
             in_fileabs = self.original_file_d / filenames[0].name
             # pst input file (for tpl->in pair) is orgfile (in org dir)
@@ -3819,7 +3819,7 @@ def write_array_tpl(
                 if zval < 1:
                     continue
                 zone_org_arr = org_arr.copy()
-                zone_org_arr[zone_array != zval] = np.NaN
+                zone_org_arr[zone_array != zval] = np.nan
                 _check_diff(zone_org_arr, input_filename, zval)
     elif par_style == "m":
         org_arr = np.ones(shape)

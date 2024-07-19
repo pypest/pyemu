@@ -2119,8 +2119,8 @@ def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv"):
             elif len(zone_file) == 1:
                 zone_arr = np.loadtxt(zone_file[0])
             if zone_arr is not None:
-                arr[zone_arr == 0] = np.NaN
-                org_arr[zone_arr == 0] = np.NaN
+                arr[zone_arr == 0] = np.nan
+                org_arr[zone_arr == 0] = np.nan
 
         for stat, func in stat_dict.items():
             v = func(arr)
