@@ -324,6 +324,29 @@ def pnulpar_test(tmp_path):
 
     assert max(diff.max()) < 1.0e-4,diff
 
+
+def from_parfiles_test(tmp_path):
+    from pathlib import Path
+    pst = os.path.join("mc","freyberg_ord.pst")
+    pst = pyemu.Pst(pst)
+    pars = pst.parameter_data
+    par_dir = Path("mc","prior_par_draws")
+    par_files = list(par_dir.glob('*.par'))
+    pe = pyemu.ParameterEnsemble.from_parfiles(pst=pst, parfile_names=par_files)
+    for pfile in par_files:
+        real = pd.read_csv(pfile, sep=r'\s+', skiprows=1, index_col=0, header=None)
+        with open(Path(tmp_path, pfile.name), 'w') as fp:
+            fp.write('single point\n')
+            sel = real.index.str.startswith('hkr')
+            real.loc[sel].to_csv(fp, header=False, sep=' ')
+    newparfiles = list(Path(tmp_path).glob('*.par'))
+    pe = pyemu.ParameterEnsemble.from_parfiles(pst=pst, parfile_names=newparfiles)
+    assert pe.shape == (len(newparfiles), len(pars))
+    pst.parameter_data = pars.loc[pars.parnme.str.startswith('hkr')]
+    pe = pyemu.ParameterEnsemble.from_parfiles(pst=pst, parfile_names=par_files)
+    assert pe.shape == (len(par_files), len(pst.parameter_data))
+
+
 def triangular_draw_test():
     import os
     import matplotlib.pyplot as plt
