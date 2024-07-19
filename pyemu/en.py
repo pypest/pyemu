@@ -1346,7 +1346,7 @@ class ParameterEnsemble(Ensemble):
                     ),
                     PyemuWarning,
                 )
-                blank_df = pd.DataFrame(index=df_all.index, columns=diff)
+                blank_df = pd.DataFrame(index=df_all.index, columns=list(diff))
 
                 df_all = pd.concat([df_all, blank_df], axis=1)
 
