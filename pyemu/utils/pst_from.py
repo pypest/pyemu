@@ -354,6 +354,8 @@ class PstFrom(object):
     def _dict_get_xy(self, arg, **kwargs):
         if isinstance(arg, list):
             arg = tuple(arg)
+        if len(arg) == 1:
+            arg = arg[0]
         xy = self._spatial_reference.get(arg, None)
         if xy is None:
             arg_len = None
