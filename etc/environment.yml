@@ -4,7 +4,7 @@ channels:
 dependencies:
   # required
   - python>=3.8
-  - numpy<2.0
+  - numpy
   - pandas
   # optional
   - matplotlib
@@ -19,6 +19,9 @@ dependencies:
   - nbmake
   - shapely
   - pyproj
-  - flopy
+#  - flopy
   - modflow-devtools
   - scikit-learn
+  - pip
+  - pip:
+      - git+https://github.com/modflowpy/flopy@develop
