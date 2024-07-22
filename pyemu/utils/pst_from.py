@@ -418,6 +418,7 @@ class PstFrom(object):
 
     def parse_kij_args(self, args, kwargs):
         """parse args into kij indices.  Called programmatically"""
+        args = list(args)
         if len(args) >= 2:
             ij_id = None
             if "ij_id" in kwargs:
@@ -2095,6 +2096,11 @@ class PstFrom(object):
                     "keys need to contain [`i` and `j`] or "
                     "[`x` and `y`]"
                 )
+        elif isinstance(index_cols, (list, tuple)):
+            if 'x' in index_cols and 'y' in index_cols:
+                xy_in_idx = [index_cols.index(c) for c in ['x', 'y']]
+            if 'i' in index_cols and 'j' in index_cols:
+                ij_in_idx = [index_cols.index(c) for c in ['i', 'j']]
 
         (
             index_cols,
@@ -3210,7 +3216,8 @@ def write_list_tpl(
             par_fill_value=fill_value,
             par_style=par_style,
         )
-        idxs = [[tuple(s) for s in df.loc[:, index_cols].values] for df in dfs]
+        # getting each input dataframe index col values, preserving individual column types
+        idxs = [list(zip(*[df[c] for c in index_cols])) for df in dfs]
         use_rows, nxs = _get_use_rows(
             df_tpl, idxs, use_rows, zero_based, tpl_filename, logger=logger
         )
@@ -3248,12 +3255,9 @@ def write_list_tpl(
                 else:
                     PyemuWarning(msg)
                 for col in use_cols:
-                    df_tpl["covgp{0}".format(col)] = df_tpl.loc[
-                        :, "covgp{0}".format(col)
-                    ].str.cat(
-                        pd.DataFrame(df_tpl.sidx.to_list()).iloc[:, 0].astype(str),
-                        "_cov",
-                    )
+                    df_tpl["covgp{0}".format(col)] = (df_tpl["covgp{0}".format(col)] +
+                                                      "_cov" +
+                                                      df_tpl[third_d[-1]].astype(str))
             else:
                 msg = (
                     "Coincidently located pars in list-style file. "
@@ -3365,18 +3369,19 @@ def _write_direct_df_tpl(
         This function is called by `PstFrom` programmatically
 
     """
+    from pyemu.utils.helpers import _try_pdcol_numeric
     # TODO much of this duplicates what is in _get_tpl_or_ins_df() -- could posssibly be consolidated
     # work out the union of indices across all dfs
 
-    sidx = []
-
-    didx = df.loc[:, index_cols].apply(tuple, axis=1)
-    sidx.extend(didx)
-
-    df_ti = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
-    inames, fmt = _get_index_strfmt(index_cols)
-    df_ti = _get_index_strings(df_ti, fmt, zero_based)
-    df_ti = _getxy_from_idx(df_ti, get_xy, xy_in_idx, ij_in_idx)
+    df_ti = df[index_cols].copy()
+    # adjust int-like indicies to zero-base
+    df_ti = df_ti.apply(_try_pdcol_numeric,
+                        intadj=0 if zero_based else -1,
+                        downcast='integer')
+    # retaining sidx tuple definition as handy for use_rows selection
+    df_ti['sidx'] = list(zip(*[df_ti[c] for c in index_cols]))
+    df_ti = _get_index_strings(df_ti, index_cols)
+    df_ti = _getxy_from_idx(df_ti, index_cols, get_xy, xy_in_idx, ij_in_idx)
 
     df_ti, direct_tpl_df = _build_parnames(
         df_ti,
@@ -3393,7 +3398,7 @@ def _write_direct_df_tpl(
     )
     idxs = [tuple(s) for s in df.loc[:, index_cols].values]
     use_rows, nxs = _get_use_rows(
-        df_ti, [idxs], use_rows, zero_based, tpl_filename, logger=logger
+        df_ti,[idxs], use_rows, zero_based, tpl_filename, logger=logger
     )
     df_ti = df_ti.loc[use_rows]
     not_rows = ~direct_tpl_df.index.isin(use_rows)
@@ -3408,7 +3413,8 @@ def _write_direct_df_tpl(
     return df_ti, nxs
 
 
-def _get_use_rows(tpldf, idxcolvals, use_rows, zero_based, fnme, logger=None):
+def _get_use_rows(tpldf, idxcolvals, use_rows, zero_based, fnme,
+                  logger=None):
     """
     private function to get use_rows index within df based on passed use_rows
     option, which could be in various forms...
@@ -3484,41 +3490,30 @@ def _get_index_strfmt(index_cols):
         inames = ["idx{0}".format(i) for i in range(len(index_cols))]
     # full formatter string
     fmt = j.join([f"{iname}|{{{i}}}" for i, iname in enumerate(inames)])
-    # else:
-    #     # fmt = "{1:3}"
-    #     j = ""
-    #     if isinstance(index_cols[0], str):
-    #         inames = index_cols
-    #     else:
-    #         inames = ["{0}".format(i) for i in range(len(index_cols))]
-    #     # full formatter string
-    #     fmt = j.join([f"{{{i}:3}}" for i, iname in enumerate(inames)])
-    return inames, fmt
+    return fmt
 
 
-def _get_index_strings(df, fmt, zero_based):
-    if not zero_based:
-        # only if indices are ints (trying to support strings as par ids)
-        df.loc[:, "sidx"] = df.sidx.apply(
-            lambda x: tuple(xx - 1 if isinstance(xx, (int, np.integer)) else xx for xx in x)
-        )
-
-    df.loc[:, "idx_strs"] = df.sidx.apply(lambda x: fmt.format(*x)).str.replace(" ", "")
-    df.loc[:, "idx_strs"] = df.idx_strs.str.replace(":", "", regex=False).str.lower()
-    df.loc[:, "idx_strs"] = df.idx_strs.str.replace("|", ":", regex=False)
+def _get_index_strings(df, idxs):
+    fmt = _get_index_strfmt(idxs)
+    # avoiding pandas apply and .values to prevent casting of ints ot floats etc
+    df["idx_strs"] = [
+        fmt.format(*x
+                   ).replace(" ", ""
+                             ).replace(":", ""
+                                       ).replace("|", ":"
+                                                 ).lower()
+        for x in zip(*[df[c] for c in idxs])]
     return df
 
 
-def _getxy_from_idx(df, get_xy, xy_in_idx, ij_in_idx):
+def _getxy_from_idx(df, idxs, get_xy, xy_in_idx, ij_in_idx):
     if get_xy is None:
         return df
     if xy_in_idx is not None:
-        df[["x", "y"]] = pd.DataFrame(df.sidx.to_list()).iloc[:, xy_in_idx]
+        df[["x", "y"]] = df[idxs].iloc[:, xy_in_idx]
         return df
 
-    df.loc[:, "xy"] = df.sidx.apply(get_xy, ij_id=ij_in_idx)
-    df.loc[:, "x"] = df.xy.apply(lambda x: x[0])
-    df.loc[:, "y"] = df.xy.apply(lambda x: x[1])
+    df[['x', 'y']] = df[idxs].apply(get_xy, ij_id=ij_in_idx, axis=1).to_list()
     return df
 
 
@@ -3709,6 +3704,7 @@ def _get_tpl_or_ins_df(
         else: pandas.DataFrame with paranme and pargroup define for each `use_col`
 
     """
+    from pyemu.utils.helpers import _try_pdcol_numeric
     if isinstance(dfs, pd.DataFrame):
         dfs = [dfs]
     if not isinstance(dfs, list):
@@ -3716,17 +3712,17 @@ def _get_tpl_or_ins_df(
 
     # work out the union of indices across all dfs
     # order matters for obs
-    sidx = []
-    for df in dfs:
-        # avoiding df.values to prevent conversion to same type
-        didx = zip(*[df[col] for col in index_cols])
-        aidx = [i for i in didx if i not in sidx]
-        sidx.extend(aidx)
-
-    df_ti = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
-    inames, fmt = _get_index_strfmt(index_cols)
-    df_ti = _get_index_strings(df_ti, fmt, zero_based)
-    df_ti = _getxy_from_idx(df_ti, get_xy, xy_in_idx, ij_in_idx)
+    idxs = [df[index_cols] for df in dfs]
+    df_ti = pd.concat(idxs).drop_duplicates()
+    # adjust int-like indicies to zero-base
+    df_ti = df_ti.apply(_try_pdcol_numeric,
+                        intadj=0 if zero_based else -1,
+                        downcast='integer')
+    df_ti['sidx'] = list(zip(*[df_ti[c] for c in index_cols]))
+    # df_ti = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
+    # inames, fmt = _get_index_strfmt(index_cols)
+    df_ti = _get_index_strings(df_ti, index_cols)
+    df_ti = _getxy_from_idx(df_ti, index_cols, get_xy, xy_in_idx, ij_in_idx)
 
     if typ == "obs":
         return df_ti  #################### RETURN if OBS

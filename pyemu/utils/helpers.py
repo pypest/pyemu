@@ -90,12 +90,17 @@ class Trie:
         return self._pattern(self.dump())
 
 
-def _try_pdcol_numeric(x, first=True, **kwargs):
+def _try_pdcol_numeric(x, first=True, intadj=0, **kwargs):
     try:
         x = pd.to_numeric(x, errors="raise", **kwargs)
+        if intadj != 0:
+            if first:
+                x = pd.Series([xx + intadj if isinstance(xx, (int, np.integer)) else xx for xx in x])
+            else:
+                x = x + intadj if isinstance(x, (int, np.integer)) else x
     except ValueError as e:
         if first:
-            x = x.apply(_try_pdcol_numeric, first=False, **kwargs)
+            x = x.apply(_try_pdcol_numeric, first=False, intadj=intadj, **kwargs)
         else:
             pass
     return x
@@ -2353,12 +2358,9 @@ def _process_list_file(model_file, df):
             # if original model files is not zero based need to add 1
             add1 = int(mlt.zero_based == False)
 
-            mlts.index = pd.MultiIndex.from_tuples(
-                mlts.sidx.apply(
-                    lambda x: _list_index_splitter_and_caster(x,add1)
-                ),
-                names=mlt.index_cols,
-            )
+            mlts[mlt.index_cols] = mlts[mlt.index_cols].apply(
+                _try_pdcol_numeric, intadj=add1, downcast='integer')
+            mlts = mlts.set_index(mlt.index_cols)
             if mlts.index.nlevels < 2:  # just in case only one index col is used
                 mlts.index = mlts.index.get_level_values(0)
             common_idx = (
