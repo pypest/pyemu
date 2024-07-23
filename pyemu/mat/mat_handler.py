@@ -1981,6 +1981,9 @@ class Matrix(object):
             f (`file`): the file handle.  Only returned if `close` is False
 
         """
+        row_names = [str(r) for r in row_names]
+        col_names = [str(c) for c in col_names]
+        
 
         if isinstance(filename, str):
             f = open(filename, "wb")
@@ -2095,7 +2098,7 @@ class Matrix(object):
         f.close()
 
     @staticmethod
-    def read_dense(filename, forgive=False, close=True):
+    def read_dense(filename, forgive=False, close=True, only_rows=None):
         """read a dense-format binary file.
 
         Args:
@@ -2105,6 +2108,7 @@ class Matrix(object):
                 records are returned.  If False, an exception is raised for an
                 incomplete record
             close (`bool`): flag to close the filehandle.  Default is True
+            only_rows (`iterable`): rows to read.  If None, all rows are read
 
         Returns:
             tuple containing
@@ -2123,27 +2127,26 @@ class Matrix(object):
             f = open(filename, "rb")
         else:
             f = filename
-        # the header datatype
-        itemp1, itemp2, icount = np.fromfile(f, Matrix.binary_header_dt, 1)[0]
-        # print(itemp1,itemp2,icount)
-        if itemp1 != 0:
-            raise Exception("Matrix.read_dense() itemp1 != 0")
-        if itemp2 != icount:
-            raise Exception("Matrix.read_dense() itemp2 != icount")
-        ncol = np.abs(itemp2)
+
         col_names = []
         row_names = []
         data_rows = []
-        col_slens = np.fromfile(f, Matrix.integer, ncol)
+
+        row_names,row_offsets,col_names,success = Matrix.get_dense_binary_info(filename)
+        if not forgive and not success:
+            raise Exception("Matrix.read_dense(): error reading dense binary info")
+        if only_rows is not None:
+            missing = list(set(only_rows)-set(row_names))
+            if len(missing) > 0:
+                raise Exception("the following only_rows are missing:{0}".format(",".join(missing)))
+            only_offsets = [row_offsets[row_names.index(only_row)] for only_row in only_rows]
+            row_names = only_rows
+            row_offsets = only_offsets
+        ncol = len(col_names)
+
         i = 0
-        # for j in range(ncol):
-        for slen in col_slens:
-            # slen = np.fromfile(f, Matrix.integer,1)[0]
-            name = (
-                struct.unpack(str(slen) + "s", f.read(slen))[0].strip().lower().decode()
-            )
-            col_names.append(name)
-        while True:
+        for row_name,offset in zip(row_names,row_offsets):
+            f.seek(offset)
             try:
                 slen = np.fromfile(f, Matrix.integer, 1)[0]
             except Exception as e:
@@ -2169,7 +2172,6 @@ class Matrix(object):
                     break
                 else:
                     raise Exception("error reading row {0}: {1}".format(i, str(e)))
-            row_names.append(name)
             data_rows.append(data_row)
             i += 1
 
@@ -2177,6 +2179,91 @@ class Matrix(object):
         if close:
             f.close()
         return data_rows, row_names, col_names
+
+
+
+    @staticmethod
+    def get_dense_binary_info(filename):
+        """read the header and row and offsets for a dense binary file.
+
+        Parameters
+        ----------
+            fileanme (`str`): dense binary filename
+
+
+        Returns:
+            tuple containing
+
+            - **['str']**: list of row names
+            - **['int']**: list of row offsets
+            - **[`str`]**: list of col names
+            - **bool**: flag indicating successful reading of all records found
+
+
+        """
+        if not os.path.exists(filename):
+            raise Exception(
+                "Matrix.read_dense(): filename '{0}' not found".format(filename)
+            )
+        if isinstance(filename, str):
+            f = open(filename, "rb")
+        else:
+            f = filename
+        # the header datatype
+        itemp1, itemp2, icount = np.fromfile(f, Matrix.binary_header_dt, 1)[0]
+        # print(itemp1,itemp2,icount)
+        if itemp1 != 0:
+            raise Exception("Matrix.read_dense() itemp1 != 0")
+        if itemp2 != icount:
+            raise Exception("Matrix.read_dense() itemp2 != icount")
+        ncol = np.abs(itemp2)
+        col_slens = np.fromfile(f, Matrix.integer, ncol)
+        i = 0
+        col_names = []
+        for slen in col_slens:
+            name = (
+                struct.unpack(str(slen) + "s", f.read(slen))[0].strip().lower().decode()
+            )
+            col_names.append(name)
+        row_names = []
+        row_offsets = []
+        data_len = np.array(1,dtype=Matrix.double).itemsize * ncol
+        success = True
+        while True:
+            curr_pos = f.tell()
+            try:
+                slen = np.fromfile(f, Matrix.integer, 1)[0]
+            except Exception as e:
+                break
+            try:
+                name = (
+                    struct.unpack(str(slen) + "s", f.read(slen))[0]
+                    .strip()
+                    .lower()
+                    .decode()
+                )
+            except Exception as e:
+                    print("error reading row name {0}: {1}".format(i, str(e)))
+                    success = False
+                    break
+            try:
+                data_row = np.fromfile(f, Matrix.double, ncol)
+                if data_row.shape[0] != ncol:
+                    raise Exception(
+                        "incomplete data in row {0}: {1} vs {2}".format(
+                            i, data_row.shape[0], ncol))
+            except Exception as e:
+                print("error reading row data record {0}: {1}".format(i, str(e)))
+                success = False
+                break
+
+            row_offsets.append(curr_pos)
+            row_names.append(name)
+
+            i += 1
+        f.close()
+        return row_names,row_offsets,col_names,success
+
 
     @classmethod
     def from_binary(cls, filename, forgive=False):

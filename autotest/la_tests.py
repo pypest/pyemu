@@ -609,6 +609,7 @@ def ends_freyberg_test(tmp_path):
 
 def ends_freyberg_dsi_test(tmp_path):
     import pyemu
+    import os 
     test_d = "ends_master"
     test_d = setup_tmp(test_d, tmp_path)
     case = "freyberg6_run_ies"
@@ -620,15 +621,56 @@ def ends_freyberg_dsi_test(tmp_path):
     oe_name = pst_name.replace(".pst", ".0.obs.csv")
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
 
+    
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe,verbose=True)
     t_d = os.path.join(tmp_path,"dsi_template")
     ends.prep_for_dsi(t_d=t_d)
+    # copy exe to dsi_template
+    #shutil.copy2(os.path.join(test_d,"pestpp-ies.exe"),os.path.join(t_d,"pestpp-ies.exe"))
 
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
-    pst.control_data.noptmax = 3
+    pst.control_data.noptmax = 0
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     #pyemu.os_utils.run("pestpp-ies dsi.pst",cwd="dsi_template")
     m_d = os.path.join(tmp_path,"master_dsi")
+    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
+                                 master_dir=m_d)
+
+    # run test wtih truncated svd
+    ends.prep_for_dsi(t_d=t_d,truncated_svd=True)
+    # copy exe to dsi_template
+    #shutil.copy2(os.path.join(test_d,"pestpp-ies.exe"),os.path.join(t_d,"pestpp-ies.exe"))
+
+    pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(t_d,"dsi.pst"),version=2)
+    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
+                                 master_dir=m_d)
+
+
+    # run test wtih normal score transform
+    ends.prep_for_dsi(t_d=t_d,apply_normal_score_transform=True)
+    # copy exe to dsi_template
+    #shutil.copy2(os.path.join(test_d,"pestpp-ies.exe"),os.path.join(t_d,"pestpp-ies.exe"))
+    
+    pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(t_d,"dsi.pst"),version=2)
+    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
+                                 master_dir=m_d)
+    
+    # run test with log-transform
+    pst = pyemu.Pst(pst_name)
+    pst.pestpp_options["predictions"] = predictions
+    pst.observation_data["obstransform"] = "log"
+    ends = pyemu.EnDS(pst=pst, sim_ensemble=oe,verbose=True)
+    ends.prep_for_dsi(t_d=t_d,apply_normal_score_transform=False)
+    # copy exe to dsi_template
+    #shutil.copy2(os.path.join(test_d,"pestpp-ies.exe"),os.path.join(t_d,"pestpp-ies.exe"))
+    
+    pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
                                  master_dir=m_d)
 
@@ -683,7 +725,30 @@ def plot_freyberg_dsi():
     plt.savefig("dsi_pred.pdf")
 
 
+def dsi_normscoretransform_test():
+    import numpy as np
+    import pyemu
+    from pyemu.utils.helpers import randrealgen_optimized,normal_score_transform,inverse_normal_score_transform
+    test_d = "ends_master"
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d, case + ".pst")
+    pst = pyemu.Pst(pst_name)
+
+    oe_name = pst_name.replace(".pst", ".0.obs.csv")
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
+
+    nstval = randrealgen_optimized(oe.shape[0], 1e-7, 1e4)
+    for name in oe.columns:
+        print("transforming:",name)
+        sorted_values = oe._df.loc[:,name].sort_values().copy()
+        transformed_values = np.asarray([normal_score_transform(nstval, sorted_values, value)[0] for value in sorted_values])
+        backtransformed_values = np.asarray([inverse_normal_score_transform(nstval, sorted_values, value)[0] for value in transformed_values])
+        
+        diff = backtransformed_values-sorted_values
+        assert max(abs(diff))<1e-7, backtransformed_values
+
 if __name__ == "__main__":
+    #dsi_normscoretransform_test()
     #ends_freyberg_dev()
     ends_freyberg_dsi_test("temp")
     #plot_freyberg_dsi()

@@ -15,6 +15,7 @@ import traceback
 import re
 import numpy as np
 import pandas as pd
+import math
 
 pd.options.display.max_colwidth = 100
 from ..pyemu_warnings import PyemuWarning
@@ -234,6 +235,158 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
         for n, v in gt_dict.items():
             full_oe.loc[:, n] = v
     return full_oe
+
+
+def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
+                  struct_dict=None, delr=None, delc=None, scale_offset=True,
+                  echo=True, logger=False):
+    """Draw a parameter ensemble from the distribution implied by the initial parameter values in the
+    control file and a prior parameter covariance matrix derived from grouped geostructures.
+    Previously in pst_from.
+
+    Args:
+        pst (`pyemu.Pst`): a control file instance
+        num_reals (`int`): the number of realizations to draw
+        sigma_range (`int`): number of standard deviations represented by parameter bounds.  Default is 6 (99%
+            confidence).  4 would be approximately 95% confidence bounds
+        use_specsim (`bool`): flag to use spectral simulation for grid-scale pars (highly recommended).
+            Default is False
+        struct_dict (`dict`): a dict with keys of GeoStruct (or structure file).
+            Dictionary values can depend on the values of `use_specsim`.
+            If `use_specsim` is True, values are expected to be `list[pd.DataFrame]`
+            with dataframes indexed by parameter names and containing columns
+            [`parval1`, `pargp`, `i`, `j`, `partype`], where `i` and `j` are
+            grid index locations of grid parameters, and `partype` is used to
+            indicate grid type parameters. The draw will be independent for each
+            unique `pargp`.
+            If `use_specsim` is False, dictionary values are expected to be
+            `list[pd.DataFrame]` with dataframes indexed by parameter names and
+            containing columns ["x", "y", "parnme"], the optional `zone` column
+            can be used to draw realizations independently for different zones.
+            Alternatively, if use_specsim` is False dictionary keys and values
+            can be paths to external structure files and pilotpoint or tpl files,
+            respectively.
+        delr (`list`, optional): required for specsim (`use_specsim` is True),
+            dimension of cells along a row (i.e., column widths), specsim only
+            works with regular grids
+        delc (`list`, optional):  required for specsim (`use_specsim` is True),
+            dimension of cells along a column (i.e., row heights)
+        scale_offset (`bool`): flag to apply scale and offset to parameter bounds before calculating prior variance.
+            Dfault is True.  If you are using non-default scale and/or offset and you get an exception during
+            draw, try changing this value to False.
+        echo (`bool`): Verbosity flag passed to new Logger instance if
+            `logger`is None
+        logger (`pyemu.Logger`, optional): Object for logging process
+
+    Returns:
+        `pyemu.ParameterEnsemble`: a prior parameter ensemble
+
+    Note:
+        This method draws by parameter group
+
+        If you are using grid-style parameters, please use spectral simulation (`use_specsim=True`)
+
+    """
+    if delc is None:
+        delc = []
+    if delr is None:
+        delr = []
+    if struct_dict is None:
+        struct_dict = {}
+    if not logger:
+        logger = pyemu.Logger("draw_by_groups.log", echo=echo)
+    if pst.npar_adj == 0:
+        logger.warn("no adjustable parameters, nothing to draw...")
+        return
+    # list for holding grid style groups
+    gr_pe_l = []
+    subset = pst.parameter_data.index
+    gr_par_pe = None
+    if use_specsim:
+        if len(delr)>0 and len(delc)>0 and not pyemu.geostats.SpecSim2d.grid_is_regular(
+            delr, delc
+        ):
+            logger.lraise(
+                "draw() error: can't use spectral simulation with irregular grid"
+            )
+        logger.log("spectral simulation for grid-scale pars")
+        # loop over geostructures defined in PestFrom object
+        # (setup through add_parameters)
+        for geostruct, par_df_l in struct_dict.items():
+            par_df = pd.concat(par_df_l)  # force to single df
+            if not 'partype' in par_df.columns:
+                logger.warn(
+                    f"draw() error: use_specsim is {use_specsim} but no column named"
+                    f"'partype' to indicate grid based pars in geostruct {geostruct}"
+                    f"not using specsim"
+                )
+            else:
+                par_df = par_df.loc[par_df.partype == "grid", :]
+                if "i" in par_df.columns:  # need 'i' and 'j' for specsim
+                    grd_p = pd.notna(par_df.i)
+                else:
+                    grd_p = np.array([0])
+                # if there are grid pars (also grid pars with i,j info)
+                if grd_p.sum() > 0:
+                    # select pars to use specsim for
+                    gr_df = par_df.loc[grd_p]
+                    gr_df = gr_df.astype({"i": int, "j": int})  # make sure int
+                    # (won't be if there were nans in concatenated df)
+                    if len(gr_df) > 0:
+                        # get specsim object for this geostruct
+                        ss = pyemu.geostats.SpecSim2d(
+                            delx=delr,
+                            dely=delc,
+                            geostruct=geostruct,
+                        )
+                        # specsim draw (returns df)
+                        gr_pe1 = ss.grid_par_ensemble_helper(
+                            pst=pst,
+                            gr_df=gr_df,
+                            num_reals=num_reals,
+                            sigma_range=sigma_range,
+                            logger=logger,
+                        )
+                        # append to list of specsim drawn pars
+                        gr_pe_l.append(gr_pe1)
+                        # rebuild struct_dict entry for this geostruct
+                        # to not include specsim pars
+                        struct_dict[geostruct] = []
+                        # loop over all in list associated with geostruct
+                        for p_df in par_df_l:
+                            # if pars are not in the specsim pars just created
+                            # assign them to this struct_dict entry
+                            # needed if none specsim pars are linked to same geostruct
+                            if not p_df.index.isin(gr_df.index).all():
+                                struct_dict[geostruct].append(p_df)
+                            else:
+                                subset = subset.difference(p_df.index)
+        if len(gr_pe_l) > 0:
+            gr_par_pe = pd.concat(gr_pe_l, axis=1)
+        logger.log("spectral simulation for grid-scale pars")
+    # draw remaining pars based on their geostruct
+    if not subset.empty:
+        logger.log(f"Drawing {len(subset)} non-specsim pars")
+        pe = pyemu.helpers.geostatistical_draws(
+            pst,
+            struct_dict=struct_dict,
+            num_reals=num_reals,
+            sigma_range=sigma_range,
+            scale_offset=scale_offset,
+            subset=subset
+        )
+        logger.log(f"Drawing {len(subset)} non-specsim pars")
+        if gr_par_pe is not None:
+            logger.log(f"Joining specsim and non-specsim pars")
+            exist = gr_par_pe.columns.intersection(pe.columns)
+            pe = pe._df.drop(exist, axis=1)  # specsim par take precedence
+            pe = pd.concat([pe, gr_par_pe], axis=1)
+            pe = pyemu.ParameterEnsemble(pst=pst, df=pe)
+            logger.log(f"Joining specsim and non-specsim pars")
+    else:
+        pe = pyemu.ParameterEnsemble(pst=pst, df=gr_par_pe)
+    logger.log("drawing realizations")
+    return pe.copy()
 
 
 def geostatistical_draws(
@@ -1646,13 +1799,13 @@ def _process_array_file(model_file, df):
     org_file = df_mf.org_file.unique()
     if org_file.shape[0] != 1:
         raise Exception("wrong number of org_files for {0}".format(model_file))
-    org_arr = np.loadtxt(org_file[0])
+    org_arr = np.loadtxt(org_file[0], ndmin=2)
 
     if "mlt_file" in df_mf.columns:
         for mlt, operator in zip(df_mf.mlt_file, df_mf.operator):
             if pd.isna(mlt):
                 continue
-            mlt_data = np.loadtxt(mlt)
+            mlt_data = np.loadtxt(mlt, ndmin=2)
             if org_arr.shape != mlt_data.shape:
                 raise Exception(
                     "shape of org file {}:{} differs from mlt file {}:{}".format(
@@ -1689,7 +1842,17 @@ def _process_array_file(model_file, df):
                 lb = float(list(lb_vals.keys())[0])
                 org_arr[org_arr < lb] = lb
 
-    np.savetxt(model_file, np.atleast_2d(org_arr), fmt="%15.6E", delimiter="")
+    try:
+        fmt = df_mf.fmt.iloc[0]
+    except AttributeError:
+        fmt = "%15.6E"
+    try:
+        # default to space (if fixed format file this should be taken care of
+        # in fmt string)
+        sep = df_mf.sep.fillna(' ').iloc[0]
+    except AttributeError:
+        sep = ' '
+    np.savetxt(model_file, np.atleast_2d(org_arr), fmt=fmt, delimiter=sep)
 
 
 def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
@@ -1780,14 +1943,15 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
         if len(chunks) == 1:
             _process_chunk_fac2real(chunks[0], 0)
         else:
-            pool = mp.Pool(processes=min(mp.cpu_count(), len(chunks), 60))
-            x = [
-                pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
-                for i, chunk in enumerate(chunks)
-            ]
-            [xx.get() for xx in x]
-            pool.close()
-            pool.join()
+            with mp.get_context("spawn").Pool(
+                    processes=min(mp.cpu_count(), 60)) as pool:
+                x = [
+                    pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
+                    for i, chunk in enumerate(chunks)
+                ]
+                [xx.get() for xx in x]
+                pool.close()
+                pool.join()
         # procs = []
         # for chunk in chunks:
         #     p = mp.Process(target=_process_chunk_fac2real, args=[chunk])
@@ -1821,14 +1985,15 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     #     r = p.get(False)
     #     p.join()
     else:
-        pool = mp.Pool(processes=min(mp.cpu_count(), len(chunks), 60))
-        x = [
-            pool.apply_async(_process_chunk_array_files, args=(chunk, i, df))
-            for i, chunk in enumerate(chunks)
-        ]
-        [xx.get() for xx in x]
-        pool.close()
-        pool.join()
+        with mp.get_context("spawn").Pool(
+                processes=min(mp.cpu_count(), 60)) as pool:
+            x = [
+                pool.apply_async(_process_chunk_array_files, args=(chunk, i, df))
+                for i, chunk in enumerate(chunks)
+            ]
+            [xx.get() for xx in x]
+            pool.close()
+            pool.join()
     print("finished arr mlt", datetime.now())
 
 
@@ -2053,14 +2218,15 @@ def apply_genericlist_pars(df, chunk_len=50):
     if len(chunks) == 1:
         _process_chunk_list_files(chunks[0], 0, df)
     else:
-        pool = mp.Pool(processes=min(mp.cpu_count(), len(chunks), 60))
-        x = [
-            pool.apply_async(_process_chunk_list_files, args=(chunk, i, df))
-            for i, chunk in enumerate(chunks)
-        ]
-        [xx.get() for xx in x]
-        pool.close()
-        pool.join()
+        with mp.get_context("spawn").Pool(
+                processes=min(mp.cpu_count(), 60)) as pool:
+            x = [
+                pool.apply_async(_process_chunk_list_files, args=(chunk, i, df))
+                for i, chunk in enumerate(chunks)
+            ]
+            [xx.get() for xx in x]
+            pool.close()
+            pool.join()
     print("finished list mlt", datetime.now())
 
 
@@ -2075,9 +2241,12 @@ def _process_chunk_list_files(chunk, i, df):
 
 
 def _list_index_caster(x, add1):
-        vals = []
-        for xx in x:
-            if xx:
+    vals = []
+    for xx in x:
+        if xx:
+            if any(s not in " 0123456789.-" for s in xx):
+                vals.append(xx.strip().strip("'\" "))
+            else:
                 if (xx.strip().isdigit() or
                         (xx.strip()[0] == '-' and xx.strip()[1:].isdigit())):
                     vals.append(add1 + int(xx))
@@ -2087,7 +2256,7 @@ def _list_index_caster(x, add1):
                     except Exception as e:
                         vals.append(xx.strip().strip("'\" "))
 
-        return tuple(vals)
+    return tuple(vals)
 
 
 def _list_index_splitter_and_caster(x, add1):
@@ -3681,6 +3850,8 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
 
     Note:
         all required files are based on the `orgarr_file` with suffixes appended to them
+        This process was inspired by Todaro and others, 2023, "Experimental sandbox tracer
+        tests to characterize a two-facies aquifer via an ensemble smoother"
 
     """
     assert os.path.exists(orgarr_file)
@@ -3691,10 +3862,6 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
         raise Exception("only two categories currently supported, {0} found in target_proportions_dict".\
                         format(len(cat_dict)))
 
-    tol = 1.0e-10
-    if org_arr.std() < tol * 2.0:
-        print("WARNING: org_arr has very low standard deviation, adding some noise for now...")
-        org_arr += np.random.normal(0,1e-6,org_arr.shape)
     prop_tags,prop_vals,fill_vals = [],[],[]
     for key,(proportion,fill_val) in cat_dict.items():
         if int(key) not in cat_dict:
@@ -3714,7 +3881,7 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
         inactarr_file = orgarr_file+".threshinact.dat"
         np.savetxt(inactarr_file,inact_arr,fmt="%4.0f")
 
-    df = pd.DataFrame({"threshcat":prop_tags,"threshval":prop_vals,"threshfill":fill_vals})
+    df = pd.DataFrame({"threshcat":prop_tags,"threshproportion":prop_vals,"threshfill":fill_vals})
     csv_file = orgarr_file+".threshprops.csv"
     df.to_csv(csv_file,index=False)
 
@@ -3729,21 +3896,32 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
 def apply_threshold_pars(csv_file):
     """apply the thresholding process.  everything keys off of csv_file name...
 
+    Note: if the standard deviation of the continous thresholding array is too low,
+    the line search will fail.  Currently, if this stdev is less than 1.e-10,
+    then a homogenous array of the first category fill value will be created.  User
+    beware!
+
     """
     df = pd.read_csv(csv_file,index_col=0)
     thresarr_file = csv_file.replace("props.csv","arr.dat")
     tarr = np.loadtxt(thresarr_file)
     if np.any(tarr < 0):
         print(tarr)
-        raise Exception("negatives in thresholding array")
+        raise Exception("negatives in thresholding array {0}".format(thresarr_file))
     #norm tarr
-    tarr = tarr / tarr.max()
+    tarr = (tarr - tarr.min()) / tarr.max()
     orgarr_file = csv_file.replace(".threshprops.csv","")
     inactarr_file = csv_file.replace(".threshprops.csv",".threshinact.dat")
-
-    tvals = df.threshval.astype(float).values.copy()
+    tarr_file = csv_file.replace(".threshprops.csv",".threshcat.dat")
+    tcat = df.index.values.astype(int).copy()
+    tvals = df.threshproportion.astype(float).values.copy()
     #ttags = df.threshcat.astype(int).values.copy()
     tfill = df.threshfill.astype(float).values.copy()
+
+    iarr = None
+    if os.path.exists(inactarr_file):
+        iarr = np.loadtxt(inactarr_file, dtype=int)
+
     # for now...
     assert len(tvals) == 2
     if np.any(tvals <= 0.0):
@@ -3754,8 +3932,26 @@ def apply_threshold_pars(csv_file):
     target_prop = tvals[0]
 
     tol = 1.0e-10
-    if tarr.std() < tol * 2.0:
-        raise Exception("thresholding array has very low standard deviation")
+    if tarr.std() < tol:
+        print("WARNING: thresholding array {0} has very low standard deviation".format(thresarr_file))
+        print("         using a homogenous array with first category fill value {0}".format(tfill[0]))
+
+        farr = np.zeros_like(tarr) + tfill[0]
+        if iarr is not None:
+            farr[iarr == 0] = -1.0e+30
+            tarr[iarr == 0] = -1.0e+30
+        df.loc[tcat[0], "threshold"] = tarr.mean()
+        df.loc[tcat[1], "threshold"] = tarr.mean()
+        df.loc[tcat[0], "proportion"] = 1
+        df.loc[tcat[1], "proportion"] = 0
+
+        df.to_csv(csv_file.replace(".csv", "_results.csv"))
+        np.savetxt(orgarr_file, farr, fmt="%15.6E")
+        np.savetxt(tarr_file, tarr, fmt="%15.6E")
+        return tarr.mean(), 1.0
+
+        #    print("WARNING: thresholding array {0} has very low standard deviation, adding noise".format(thresarr_file))
+        #    tarr += np.random.normal(0, tol*2.0, tarr.shape)
 
     # a classic:
     gr = (np.sqrt(5.) + 1.) / 2.
@@ -3764,10 +3960,10 @@ def apply_threshold_pars(csv_file):
     c = b - ((b - a) / gr)
     d = a + ((b - a) / gr)
 
-    iarr = None
+
     tot_shape = tarr.shape[0] * tarr.shape[1]
-    if os.path.exists(inactarr_file):
-        iarr = np.loadtxt(inactarr_file, dtype=int)
+    if iarr is not None:
+
         # this keeps inact from interfering with calcs later...
         tarr[iarr == 0] = 1.0e+30
         tiarr = iarr.copy()
@@ -3801,26 +3997,181 @@ def apply_threshold_pars(csv_file):
         d = a + ((b - a) / gr)
         numiter += 1
 
-    #print(a,b,c,d)
     thresh = (a+b) / 2.0
     prop = get_current_prop(thresh)
-    #print(thresh,prop)
     farr = np.zeros_like(tarr) - 1
     farr[tarr>thresh] = tfill[1]
     farr[tarr<=thresh] = tfill[0]
+    tarr[tarr>thresh] = tcat[0]
+    tarr[tarr <= thresh] = tcat[1]
+
     if iarr is not None:
         farr[iarr==0] = -1.0e+30
+        tarr[iarr == 0] = -1.0e+30
+    df.loc[tcat[0],"threshold"] = thresh
+    df.loc[tcat[1], "threshold"] = 1.0 - thresh
+    df.loc[tcat[0], "proportion"] = prop
+    df.loc[tcat[1], "proportion"] = 1.0 - prop
+    df.to_csv(csv_file.replace(".csv","_results.csv"))
     np.savetxt(orgarr_file,farr,fmt="%15.6E")
+    np.savetxt(tarr_file, tarr, fmt="%15.6E")
+
     return thresh, prop
 
 
 
+def randrealgen_optimized(nreal, tol=1e-7, max_samples=1000000):
+    """
+    Generate a set of random realizations with a normal distribution.
+    
+    Parameters:
+    nreal : int
+        The number of realizations to generate.
+    tol : float
+        Tolerance for the stopping criterion.
+    max_samples : int
+        Maximum number of samples to use.
+        
+    Returns:
+    numpy.ndarray
+        An array of nreal random realizations.
+    """
+    rval = np.zeros(nreal)
+    nsamp = 0
+    numsort = (nreal + 1) // 2
+
+    while nsamp < max_samples:
+        nsamp += 1
+        work1 = np.random.normal(size=nreal)
+        work1.sort()
+        
+        if nsamp > 1:
+            previous_mean = rval[:numsort] / (nsamp - 1)
+            rval[:numsort] += work1[:numsort]
+            current_mean = rval[:numsort] / nsamp
+            max_diff = np.max(np.abs(current_mean - previous_mean))
+            
+            if max_diff <= tol:
+                break
+        else:
+            rval[:numsort] = work1[:numsort]
+    
+    rval[:numsort] /= nsamp
+    rval[numsort:] = -rval[:numsort][::-1]
+    
+    return rval
 
 
+def normal_score_transform(nstval, val, value):
+    """
+    Transform a value to its normal score using a normal score transform table.
+    
+    Parameters:
+    nstval : array-like
+        Normal score transform table values.
+    val : array-like
+        Original values corresponding to the normal score transform table.
+    value : float
+        The value to transform.
+        
+    Returns:
+    float
+        The normal score of the value.
+    int
+        The index of the value in the normal score transform table."""
+    
+    # make sure the input is numpy arrays
+    val = np.asarray(val)
+    nstval = np.asarray(nstval)
+    
+    # if the value is outside the range of the table, return the first or last value
+    if value <= val[0]:
+        return nstval[0], 0
+    elif value >= val[-1]:
+        return nstval[-1], len(val)
+
+    # find the rank of the value in the table
+    rank = np.searchsorted(val, value, side='right') - 1
+    if rank == len(val) - 1:
+        return nstval[-1], len(val)
+    # if the value conincides with a value in the table, return the corresponding normal score
+    nstdiff = nstval[rank + 1] - nstval[rank]
+    diff = val[rank + 1] - val[rank]
+    if nstdiff <= 0.0 or diff <= 0.0:
+        return nstval[rank], rank
+    
+    # otherwise, interpolate to get the normal score
+    dist = value - val[rank]
+    interpolated_value = nstval[rank] + (dist / diff) * nstdiff
+    return interpolated_value, rank
 
 
+def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
+    nreal = len(val)
+    
+    def linear_extrapolate(x0, y0, x1, y1, x):
+        if x1 != x0:
+            return y0 + (y1 - y0) / (x1 - x0) * (x - x0)
+        return y0
 
+    def quadratic_extrapolate(x0, y0, x1, y1, x2, y2, x):
+        denom = (x0 - x) * (x1 - x) * (x2 - x)
+        if denom == 0:
+            print(x, x0, x1, x2)
+            raise ValueError("Input x values must be distinct")
 
+        a = ((x - x1) * (y2 - y1) - (x - x2) * (y1 - y0)) / denom
+        b = ((x - x2) * (y1 - y0) - (x - x0) * (y2 - y1)) / denom
+        c = y0 - a * x0**2 - b * x0
+        y = a * x**2 + b * x + c
+        return y
 
+    ilim = 0
+    if value in nstval:
+        rank = np.searchsorted(nstval, value)
+        value = val[rank]
 
+    elif value < nstval[0]:
+        ilim = -1
+        if extrap is None:
+            value = val[0]
+        elif extrap == 'linear':
+            value = linear_extrapolate(nstval[0], val[0], nstval[1], val[1], value)
+            value = min(value, val[0])
+        elif extrap == 'quadratic' and nreal >= 3:
+            y_vals = np.unique(val)[:3]
+            idxs = np.searchsorted(val,y_vals)
+            x_vals = nstval[idxs]
+            value = quadratic_extrapolate(x_vals[-3], y_vals[-3], x_vals[-2], y_vals[-2], x_vals[-1], y_vals[-1], value)
+            #value = min(value, val[0])
+        else:
+            value = val[0]
+
+    elif value > nstval[-1]:
+        ilim = 1
+        if extrap is None:
+            value = val[-1]
+        elif extrap == 'linear':
+            value = linear_extrapolate(nstval[-2], val[-2], nstval[-1], val[-1], value)
+            value = max(value, val[-1])
+        elif extrap == 'quadratic' and nreal >= 3:
+            y_vals = np.unique(val)[-3:]
+            idxs = np.searchsorted(val,y_vals)
+            x_vals = nstval[idxs]
+            value = quadratic_extrapolate(x_vals[-3], y_vals[-3], x_vals[-2], y_vals[-2], x_vals[-1], y_vals[-1], value)
+            #value = max(value, val[-1])
+        else:
+            value = val[-1]
+
+    else:
+        rank = np.searchsorted(nstval, value) - 1
+        nstdiff = nstval[rank + 1] - nstval[rank]
+        diff = val[rank + 1] - val[rank]
+        if nstdiff <= 0.0 or diff <= 0.0:
+            value = val[rank]
+        else:
+            nstdist = value - nstval[rank]
+            value = val[rank] + (nstdist / nstdiff) * diff
+    
+    return value, ilim
 

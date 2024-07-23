@@ -264,6 +264,21 @@ def enforce_test():
     pe.enforce()
     assert (pe._df.loc[0,:] - pst.parameter_data.parubnd).apply(np.abs).sum() == 0.0
 
+    # mixed numpy types test
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe._df["mult1"] = pe._df["mult1"].astype("float")
+    pe._df.loc[0,:] += pst.parameter_data.parubnd
+    pe.enforce()
+    assert (pe._df.loc[0,:] - pst.parameter_data.parubnd).apply(np.abs).sum() == 0.0
+
+    # columns out of order test
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe._df.loc[0,:] += pst.parameter_data.parubnd
+    cols_arr = pe._df.columns.values
+    cols_out_of_order = np.append(cols_arr[1:], [cols_arr[0]])
+    pe._df = pe._df[cols_out_of_order]
+    pe.enforce()
+    assert (pe._df.loc[0,:] - pst.parameter_data.parubnd).apply(np.abs).sum() == 0.0
 
     pe._df.loc[0, :] += pst.parameter_data.parubnd
     pe._df.loc[1:,:] = pst.parameter_data.parval1.values
@@ -308,6 +323,29 @@ def pnulpar_test(tmp_path):
     diff = 100.0 * ((pe_proj._df - pe_pnul._df) / pe_proj._df)
 
     assert max(diff.max()) < 1.0e-4,diff
+
+
+def from_parfiles_test(tmp_path):
+    from pathlib import Path
+    pst = os.path.join("mc","freyberg_ord.pst")
+    pst = pyemu.Pst(pst)
+    pars = pst.parameter_data
+    par_dir = Path("mc","prior_par_draws")
+    par_files = list(par_dir.glob('*.par'))
+    pe = pyemu.ParameterEnsemble.from_parfiles(pst=pst, parfile_names=par_files)
+    for pfile in par_files:
+        real = pd.read_csv(pfile, sep=r'\s+', skiprows=1, index_col=0, header=None)
+        with open(Path(tmp_path, pfile.name), 'w') as fp:
+            fp.write('single point\n')
+            sel = real.index.str.startswith('hkr')
+            real.loc[sel].to_csv(fp, header=False, sep=' ')
+    newparfiles = list(Path(tmp_path).glob('*.par'))
+    pe = pyemu.ParameterEnsemble.from_parfiles(pst=pst, parfile_names=newparfiles)
+    assert pe.shape == (len(newparfiles), len(pars))
+    pst.parameter_data = pars.loc[pars.parnme.str.startswith('hkr')]
+    pe = pyemu.ParameterEnsemble.from_parfiles(pst=pst, parfile_names=par_files)
+    assert pe.shape == (len(par_files), len(pst.parameter_data))
+
 
 def triangular_draw_test():
     import os
@@ -489,7 +527,7 @@ def factor_draw_test():
     d = (sd_eig - sd_svd).apply(np.abs)
     assert d.max() < 0.5,d.sort_values()
 
-    num_reals = 10
+    num_reals = 1000
     pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
 
     emp_cov = pe_eig.covariance_matrix()
@@ -503,7 +541,7 @@ def emp_cov_draw_test():
 
     pst = pyemu.Pst(os.path.join("en","pest.pst"))
     cov = pyemu.Cov.from_binary(os.path.join("en","cov.jcb"))
-    num_reals = 10
+    num_reals = 1000
     pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
 
     emp_cov = pe_eig.covariance_matrix()
@@ -725,10 +763,11 @@ if __name__ == "__main__":
     #fill_test()
     #factor_draw_test()
     #emp_cov_test()
-    #emp_cov_draw_test()
+    emp_cov_draw_test()
     #mixed_par_draw_2_test()
     #binary_test()
-    get_phi_vector_noise_obs_test()
-
+    #get_phi_vector_noise_obs_test()
+    #factor_draw_test()
+    #enforce_test()
 
 
