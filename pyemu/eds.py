@@ -496,7 +496,7 @@ class EnDS(object):
         return mean_dfs,dfstd,dfper
 
 
-    def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template",apply_normal_score_transform=False,truncated_svd=False):
+    def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template",apply_normal_score_transform=False,truncated_svd=False,nst_extrap=None):
         """Setup a new PEST interface for the data-space inversion process.
         If the observation data in the Pst object has a "obstransform" column, then observations for which "log" is specified will be subject to log-transformation. 
         If the `apply_normal_score_transform` flag is set to `True`, then the observations and predictions will be subject to a normal score transform.
@@ -510,6 +510,7 @@ class EnDS(object):
                 and predictions.  Default is `False`
             truncated_svd (`bool`): flag to use a truncated SVD for the pseudo-inverse of the deviations matrix.
                 Default is `False`
+            nst_extrap (None or 'str'): flag to select extrapolation type used during normal-score transformation. Can be None, "linear" or "quadratic". If None, normal-score back-transformation is truncated to the range of the distribution of the provided observation ensemble.
 
         Example::
 
@@ -673,7 +674,8 @@ class EnDS(object):
                 back_vals = [inverse_normal_score_transform(
                                                 back_transform_df.loc[back_transform_df['obsnme']==o,'nstval'].values, 
                                                 back_transform_df.loc[back_transform_df['obsnme']==o,'sorted_values'].values, 
-                                                sim_vals.loc[o].mn
+                                                sim_vals.loc[o].mn,
+                                                extrap=None
                                                 )[0] 
                              for o in obsnmes]       
                 sim_vals.loc[obsnmes,'mn'] = back_vals
@@ -736,6 +738,8 @@ class EnDS(object):
 
         with open(os.path.join(t_d,"forward_run.py"),'w') as f:
             for line in lines:
+                if line == "extrap=None\n":
+                    line = f"extrap={nst_extrap}\n"
                 f.write(line+"\n")
         pst.write(os.path.join(t_d,"dsi.pst"),version=2)
         self.logger.statement("saved pst to {0}".format(os.path.join(t_d,"dsi.pst")))
