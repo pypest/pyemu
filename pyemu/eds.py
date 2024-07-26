@@ -561,7 +561,7 @@ class EnDS(object):
 
         if apply_normal_score_transform:
             # prepare for normal score transform
-            nstval = randrealgen_optimized(sim_ensemble.shape[0], 1e-7, 1e4)
+            nstval = randrealgen_optimized(sim_ensemble.shape[0])
 
             back_transform_df = pd.DataFrame()
             self.logger.log("applying normal score transform to non-zero obs and predictions")
