@@ -4,7 +4,7 @@ channels:
 dependencies:
   # required
   - python>=3.8
-  - numpy
+  - numpy<2.0
   - pandas
   # optional
   - matplotlib

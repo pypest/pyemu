@@ -7,9 +7,7 @@ import shutil
 import time
 import warnings
 import numpy as np
-from numpy.lib.type_check import real_if_close
 import pandas as pd
-
 
 pd.options.display.max_colwidth = 100
 # pd.options.mode.use_inf_as_na = True
@@ -20,6 +18,7 @@ from pyemu.pst import pst_utils
 from pyemu.plot import plot_utils
 
 # from pyemu.utils.os_utils import run
+
 
 def get_constraint_tags(ltgt='lt'):
     if ltgt == 'lt':
