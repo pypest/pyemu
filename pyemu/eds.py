@@ -11,7 +11,7 @@ from pyemu.en import ObservationEnsemble
 from pyemu.mat.mat_handler import Matrix, Jco, Cov
 from pyemu.pst.pst_handler import Pst
 from pyemu.utils.os_utils import _istextfile,run
-from pyemu.utils.helpers import normal_score_transform,randrealgen_optimized,inverse_normal_score_transform
+from pyemu.utils.helpers import normal_score_transform,randrealgen_optimized
 from .logger import Logger
 
 
@@ -496,7 +496,9 @@ class EnDS(object):
         return mean_dfs,dfstd,dfper
 
 
-    def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template",apply_normal_score_transform=False,truncated_svd=False,nst_extrap=None):
+    def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template",
+                     apply_normal_score_transform=False,
+                     use_ztz=False,energy=0.9999,nst_extrap=None):
         """Setup a new PEST interface for the data-space inversion process.
         If the observation data in the Pst object has a "obstransform" column, then observations for which "log" is specified will be subject to log-transformation. 
         If the `apply_normal_score_transform` flag is set to `True`, then the observations and predictions will be subject to a normal score transform.
@@ -531,34 +533,45 @@ class EnDS(object):
             shutil.rmtree(t_d)
         os.makedirs(t_d)
 
-        self.logger.log("getting deviations")
+        
         nz_names = self.pst.nnz_obs_names
         snz_names = set(nz_names)
         z_names = [n for n in self.pst.obs_names if n not in snz_names]
         names = z_names.copy()
         names.extend(nz_names)
         names.sort()
-
+        
+        self.logger.log("applying transformations")
         # implement log-transform/offset and normal score transform
         transf_names = nz_names.copy()
         transf_names.extend(self.predictions)
         
         if "obstransform" in self.pst.observation_data.columns:
-            obs = self.pst.observation_data.loc[transf_names].copy()
+            obs = self.pst.observation_data.copy()
+            #TODO: deal with "scale" and user-specified "offset"
             obs["offset"] = 0.0 #TODO: more elegant? incase all 'none' are passed...
             obsnmes = obs.loc[obs.obstransform=='log'].obsnme.values
             if len(obsnmes) > 0:
                 for name in obsnmes:
                     #TODO: make more efficient
                     self.logger.log("applying obs log-transform to:"+name)
-                    values = sim_ensemble.loc[:,name].values
+                    values = sim_ensemble.loc[:,name].astype(float).values
                     offset = abs(min(values))+1.0 #arbitrary; enforce positive values
                     values+=offset
                     assert min(values)>0, "values must be positive. min value is "+str(min(values))
                     sim_ensemble.loc[:,name] = np.log10(values)
                     obs.loc[obs.obsnme==name,'offset'] = offset
             obs[['obsnme','obsval','obstransform','offset']].to_csv(os.path.join(t_d,"dsi_obs_transform.csv"),index=False)
-
+            #numpy binary for speed
+            np.save(os.path.join(t_d,"dsi_obs_offset.npy"),
+                    obs.offset.values, 
+                    allow_pickle=False, fix_imports=True)
+            obs['flag'] = 0
+            obs.loc[obs.obstransform=='log', "flag"] = 1
+            np.save(os.path.join(t_d,"dsi_obs_log.npy"),
+                    obs.flag.values, 
+                    allow_pickle=False, fix_imports=True)
+            
         if apply_normal_score_transform:
             # prepare for normal score transform
             nstval = randrealgen_optimized(sim_ensemble.shape[0])
@@ -580,26 +593,33 @@ class EnDS(object):
                 df['nstval'] = nstval
                 df['obsnme'] = name
                 back_transform_df=pd.concat([back_transform_df,df],ignore_index=True)
-            back_transform_df.to_csv(os.path.join(t_d,"dsi_obs_backtransform.csv"),index=False)
+            #back_transform_df.to_csv(os.path.join(t_d,"dsi_obs_backtransform.csv"),index=False)
+            #numpy binary for speed
+            np.save(os.path.join(t_d,"dsi_obs_backtransformvals.npy"),
+                    back_transform_df[['sorted_values',"nstval"]].values, 
+                    allow_pickle=False, fix_imports=True)
+            np.save(os.path.join(t_d,"dsi_obs_backtransformobsnmes.npy"),
+                    back_transform_df['obsnme'].values, 
+                    allow_pickle=True, fix_imports=True)
+        
+        self.logger.log("applying transformations")
 
-        Z = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
-        Z = Z.loc[:,names]
+        
+        #TODO: choose approach...
+        if use_ztz:
+            self.logger.log("using ztz approach...")
+            pmat, s = compute_using_ztz(sim_ensemble)
+            nobs = sim_ensemble.shape[1]
+            nreal = sim_ensemble.shape[0]
+            self.logger.log("using ztz approach...")
 
-        self.logger.log("getting deviations")
-
-        self.logger.log("pseudo inv of deviations matrix")
-
-        if truncated_svd:
-            deltad = Matrix.from_dataframe(Z)
-            U, S, V = deltad.pseudo_inv_components(maxsing=Z.shape[0],
-                                                   eigthresh=1e-5)
-            S = S.x
-            V = V.x
+            self.logger.log("applying truncation...")
+            apply_energy_based_truncation(energy, s, pmat,nobs,nreal)
+            self.logger.log("applying truncation...")
         else:
-            U, S, V = np.linalg.svd(Z.values, full_matrices=False)
-            V = V.transpose()
-            S = np.diag(S)
-        self.logger.log("pseudo inv of deviations matrix")
+            self.logger.log("using z approach...")
+            pmat, s = compute_using_z(sim_ensemble)
+            self.logger.log("using z approach...")
 
 
         self.logger.log("creating tpl files")
@@ -610,7 +630,7 @@ class EnDS(object):
         ftpl.write("ptf ~\n")
         fin.write("parnme,parval1\n")
         ftpl.write("parnme,parval1\n")
-        npar = S.shape[0]
+        npar = s.shape[0]
         dsi_pnames = []
         for i in range(npar):
             pname = "dsi_par{0:04d}".format(i)
@@ -639,15 +659,16 @@ class EnDS(object):
         self.logger.log("creating tpl files")
 
         self.logger.log("saving proj mat")
-
-        #pmat = U * S
-        pmat = np.dot(V, S)
         #row_names = ["sing_vec_{0}".format(i) for i in range(pmat.shape[0])]
         pmat = Matrix(x=pmat,col_names=dsi_pnames,row_names=names)
         pmat.col_names = dsi_pnames
-        proj_name = "dsi_proj_mat.jcb" # dont change this name!!!
+        #proj_name = "dsi_proj_mat.jcb" # dont change this name!!!
+        proj_name = "dsi_proj_mat.npy" # dont change this name!!!
         proj_path = os.path.join(t_d,proj_name)
-        pmat.to_coo(proj_path)
+        #pmat.to_coo(proj_path)
+        # use numpy for speed
+        np.save(os.path.join(t_d,proj_name), pmat.x, allow_pickle=False, fix_imports=True)
+
         self.logger.statement("projection matrix dimensions:"+str(pmat.shape))
         self.logger.statement("projection matrix saved to "+proj_path)
         self.logger.log("saving proj mat")
@@ -658,36 +679,36 @@ class EnDS(object):
             import os
             import numpy as np
             import pandas as pd
-            from pyemu.mat.mat_handler import Matrix
             from pyemu.utils.helpers import inverse_normal_score_transform
-            pmat = Matrix.from_binary("dsi_proj_mat.jcb")
+            pmat = np.load("dsi_proj_mat.npy")
             pvals = pd.read_csv("dsi_pars.csv",index_col=0)
-            pvals = pvals.loc[pmat.col_names,:]
             ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
-            ovals = ovals.loc[pmat.row_names,:]
-            sim_vals = ovals + np.dot(pmat.x,pvals.values)
-            filename = "dsi_obs_backtransform.csv"
+            sim_vals = ovals + np.dot(pmat,pvals.values)
+            filename = "dsi_obs_backtransformvals.npy"
             if os.path.exists(filename):
-                back_transform_df = pd.read_csv(filename)
                 print("applying back-transform")
-                obsnmes = back_transform_df.obsnme.unique()
-                back_vals = [inverse_normal_score_transform(
-                                                back_transform_df.loc[back_transform_df['obsnme']==o,'nstval'].values, 
-                                                back_transform_df.loc[back_transform_df['obsnme']==o,'sorted_values'].values, 
+                backtransformvals = np.load("dsi_obs_backtransformvals.npy")
+                backtransformobsnmes = np.load("dsi_obs_backtransformobsnmes.npy",allow_pickle=True)
+                obsnmes = np.unique(backtransformobsnmes)
+                back_vals = [
+                            inverse_normal_score_transform(
+                                                backtransformvals[np.where(backtransformobsnmes==o)][:,1],
+                                                backtransformvals[np.where(backtransformobsnmes==o)][:,0],
                                                 sim_vals.loc[o].mn,
                                                 extrap=None
                                                 )[0] 
-                             for o in obsnmes]       
+                            for o in obsnmes
+                            ]     
                 sim_vals.loc[obsnmes,'mn'] = back_vals
             if os.path.exists("dsi_obs_transform.csv"):
                 print("reversing log-transform")
-                obs = pd.read_csv("dsi_obs_transform.csv")
-                obsnmes = obs.loc[obs.obstransform=='log'].obsnme.unique()
-                back_vals = [
-                            (10**sim_vals.loc[x].mn) - obs.loc[obs.obsnme==x,'offset'].values[0] 
-                            for x in obsnmes
-                            ]
-                sim_vals.loc[obsnmes,'mn'] = back_vals
+                offset = np.load("dsi_obs_offset.npy")
+                log_trans = np.load("dsi_obs_log.npy")
+                assert log_trans.shape[0] == sim_vals.mn.values.shape[0], f"log transform shape mismatch: {log_trans.shape[0]},{sim_vals.mn.values.shape[0]}"
+                vals = sim_vals.mn.values
+                vals[np.where(log_trans==1)] = 10**vals
+                vals-= offset
+                sim_vals.loc[:,'mn'] = vals
             print(sim_vals)
             sim_vals.to_csv("dsi_sim_vals.csv")
 
@@ -751,12 +772,58 @@ class EnDS(object):
         return pst
 
 
+def compute_using_z(sim_ensemble):
+    z = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
+    z = z.values
+    u, s, v = np.linalg.svd(z, full_matrices=False)
+    v = v.transpose()
+    s = np.diag(s)
+    us = np.dot(v, s)
+    return us,s
 
+def compute_using_ztz(sim_ensemble,energy=0.9999):
+    # rval are the transformed obs values
+    rval = sim_ensemble._df.copy()
+    #mu2 is the mean of the transformed obs values
+    mu2 = rval.mean()
+    #adjust rval by subtracting mu2
+    rval -= mu2
+    #divide rval by the sqrt of nreal-1
+    nreal = rval.shape[0]
+    rval = rval*np.sqrt(1/(nreal-1))
+    # rval.T to match pest utils implementation
+    z = rval.T.values
+    # Compute the ZtZ matrix
+    ztz = np.dot(z.T,z)
+    assert ztz.shape[0] == z.shape[1], "ZtZ matrix is not square"
+    assert ztz.shape[0] == sim_ensemble.shape[0], "ZtZ matrix is not nreal*nreal"
 
+    #We now do SVD on ZtZ.
+    print("doing SVD on ZtZ")
+    u, s, v = np.linalg.svd(ztz, full_matrices=False)
 
+    # formulate the sqrt of the covariance matrix
+    us = np.dot(z,u)
+    return us, s
 
-        
-
+def apply_energy_based_truncation(energy, s, us,nobs,nreal):
+    assert us.shape == (nobs,nreal), "us shape is not nobs*nreal"
+    # Determine where to truncate
+    # Determine nn
+    nn = min(nobs, nreal - 1)
+    # Compute total_energy
+    total_energy = np.sum(np.sqrt(s[:nn]))
+    # Find truncation point
+    ntrunc = s[np.where(np.sqrt(s).cumsum()/total_energy<=energy)].shape[0] 
+    print("truncating to {0} singular values".format(ntrunc))
+    # Initialize threshold
+    s1 = s[0]
+    thresh = 1.0e-7 * s1
+    # Apply threshold logic
+    indices = np.arange(nreal)
+    mask = (s <= thresh) | (indices > ntrunc)
+    us[:, mask] = 0.0
+    return us, ntrunc
 
 
 

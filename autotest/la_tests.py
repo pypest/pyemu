@@ -621,7 +621,6 @@ def ends_freyberg_dsi_test(tmp_path):
     oe_name = pst_name.replace(".pst", ".0.obs.csv")
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
 
-    
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe,verbose=True)
     t_d = os.path.join(tmp_path,"dsi_template")
     ends.prep_for_dsi(t_d=t_d)
@@ -631,22 +630,17 @@ def ends_freyberg_dsi_test(tmp_path):
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
     pst.control_data.noptmax = 0
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
-    #pyemu.os_utils.run("pestpp-ies dsi.pst",cwd="dsi_template")
-    m_d = os.path.join(tmp_path,"master_dsi")
-    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
-                                 master_dir=m_d)
+    pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
 
     # run test wtih truncated svd
-    ends.prep_for_dsi(t_d=t_d,truncated_svd=True)
+    ends.prep_for_dsi(t_d=t_d,use_ztz=True)
     # copy exe to dsi_template
     #shutil.copy2(os.path.join(test_d,"pestpp-ies.exe"),os.path.join(t_d,"pestpp-ies.exe"))
 
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
     pst.control_data.noptmax = 0
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
-    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
-                                 master_dir=m_d)
-
+    pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
 
     # run test wtih normal score transform
     ends.prep_for_dsi(t_d=t_d,apply_normal_score_transform=True)
@@ -656,8 +650,7 @@ def ends_freyberg_dsi_test(tmp_path):
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
     pst.control_data.noptmax = 0
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
-    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
-                                 master_dir=m_d)
+    pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
     
     # run test with log-transform
     pst = pyemu.Pst(pst_name)
@@ -671,8 +664,7 @@ def ends_freyberg_dsi_test(tmp_path):
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
     pst.control_data.noptmax = 0
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
-    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",num_workers=15,worker_root=tmp_path,
-                                 master_dir=m_d)
+    pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
 
 
 def plot_freyberg_dsi():
