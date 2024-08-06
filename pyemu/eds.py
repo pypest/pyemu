@@ -498,7 +498,7 @@ class EnDS(object):
 
     def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template",
                      apply_normal_score_transform=False,
-                     use_ztz=False,energy=0.9999,nst_extrap=None):
+                     use_ztz=False,energy=1.0,nst_extrap=None):
         """Setup a new PEST interface for the data-space inversion process.
         If the observation data in the Pst object has a "obstransform" column, then observations for which "log" is specified will be subject to log-transformation. 
         If the `apply_normal_score_transform` flag is set to `True`, then the observations and predictions will be subject to a normal score transform.
@@ -540,6 +540,9 @@ class EnDS(object):
         names = z_names.copy()
         names.extend(nz_names)
         names.sort()
+
+        # make sure names are sorted
+        sim_ensemble = sim_ensemble.loc[:,names]
         
         self.logger.log("applying transformations")
         # implement log-transform/offset and normal score transform
@@ -548,6 +551,8 @@ class EnDS(object):
         
         if "obstransform" in self.pst.observation_data.columns:
             obs = self.pst.observation_data.copy()
+            #make sure names are ordered
+            obs = obs.loc[names,:]
             #TODO: deal with "scale" and user-specified "offset"
             obs["offset"] = 0.0 #TODO: more elegant? incase all 'none' are passed...
             obsnmes = obs.loc[obs.obstransform=='log'].obsnme.values
@@ -562,7 +567,7 @@ class EnDS(object):
                     sim_ensemble.loc[:,name] = np.log10(values)
                     obs.loc[obs.obsnme==name,'offset'] = offset
             obs[['obsnme','obsval','obstransform','offset']].to_csv(os.path.join(t_d,"dsi_obs_transform.csv"),index=False)
-            #numpy binary for speed
+            #numpy binary for i/o speed
             np.save(os.path.join(t_d,"dsi_obs_offset.npy"),
                     obs.offset.values, 
                     allow_pickle=False, fix_imports=True)
@@ -575,11 +580,10 @@ class EnDS(object):
         if apply_normal_score_transform:
             # prepare for normal score transform
             nstval = randrealgen_optimized(sim_ensemble.shape[0])
-
             back_transform_df = pd.DataFrame()
             self.logger.log("applying normal score transform to non-zero obs and predictions")
             #TODO: make more efficient
-            for name in transf_names:
+            for name in  transf_names:
                 print("transforming:",name)
                 values = sim_ensemble._df.loc[:,name].copy()
                 values.sort_values(inplace=True)
@@ -604,7 +608,7 @@ class EnDS(object):
         
         self.logger.log("applying transformations")
 
-        
+        self.logger.log("computing projection matrix")
         #TODO: choose approach...
         if use_ztz:
             self.logger.log("using ztz approach...")
@@ -613,14 +617,14 @@ class EnDS(object):
             nreal = sim_ensemble.shape[0]
             self.logger.log("using ztz approach...")
 
-            self.logger.log("applying truncation...")
+            #self.logger.log("applying truncation...")
             apply_energy_based_truncation(energy, s, pmat,nobs,nreal)
-            self.logger.log("applying truncation...")
+            #self.logger.log("applying truncation...")
         else:
             self.logger.log("using z approach...")
             pmat, s = compute_using_z(sim_ensemble)
             self.logger.log("using z approach...")
-
+        self.logger.log("computing projection matrix")
 
         self.logger.log("creating tpl files")
         dsi_in_file = os.path.join(t_d, "dsi_pars.csv")
@@ -641,6 +645,8 @@ class EnDS(object):
         ftpl.close()
 
         mn_vec = sim_ensemble.mean(axis=0)
+        # check that sim_ensemble has names ordered
+        assert (mn_vec.index.values == names).all(), "sim_ensemble names are not ordered"
         mn_in_file = os.path.join(t_d, "dsi_pr_mean.csv")
         mn_tpl_file = mn_in_file + ".tpl"
         fin = open(mn_in_file, 'w')
@@ -705,8 +711,9 @@ class EnDS(object):
                 offset = np.load("dsi_obs_offset.npy")
                 log_trans = np.load("dsi_obs_log.npy")
                 assert log_trans.shape[0] == sim_vals.mn.values.shape[0], f"log transform shape mismatch: {log_trans.shape[0]},{sim_vals.mn.values.shape[0]}"
+                assert offset.shape[0] == sim_vals.mn.values.shape[0], f"offset transform shape mismatch: {offset.shape[0]},{sim_vals.mn.values.shape[0]}"
                 vals = sim_vals.mn.values
-                vals[np.where(log_trans==1)] = 10**vals
+                vals[np.where(log_trans==1)] = 10**vals[np.where(log_trans==1)]
                 vals-= offset
                 sim_vals.loc[:,'mn'] = vals
             print(sim_vals)
@@ -754,9 +761,8 @@ class EnDS(object):
         pst.model_command = "python forward_run.py"
         self.logger.log("creating Pst")
         import inspect
+        #print([l for l in inspect.getsource(dsi_forward_run).split("\n")])
         lines = [line[12:] for line in inspect.getsource(dsi_forward_run).split("\n")][1:]
-        
-
         with open(os.path.join(t_d,"forward_run.py"),'w') as f:
             for line in lines:
                 if line == "extrap=None\n":
@@ -773,15 +779,13 @@ class EnDS(object):
 
 
 def compute_using_z(sim_ensemble):
-    z = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble.shape[0] - 1))
+    z = sim_ensemble.get_deviations() / np.sqrt(float(sim_ensemble._df.shape[0] - 1))
     z = z.values
     u, s, v = np.linalg.svd(z, full_matrices=False)
-    v = v.transpose()
-    s = np.diag(s)
-    us = np.dot(v, s)
+    us = np.dot(v.T, np.diag(s))
     return us,s
 
-def compute_using_ztz(sim_ensemble,energy=0.9999):
+def compute_using_ztz(sim_ensemble):
     # rval are the transformed obs values
     rval = sim_ensemble._df.copy()
     #mu2 is the mean of the transformed obs values
@@ -814,15 +818,20 @@ def apply_energy_based_truncation(energy, s, us,nobs,nreal):
     # Compute total_energy
     total_energy = np.sum(np.sqrt(s[:nn]))
     # Find truncation point
-    ntrunc = s[np.where(np.sqrt(s).cumsum()/total_energy<=energy)].shape[0] 
+    ntrunc = np.where(np.sqrt(s).cumsum()/total_energy<=energy)[0].shape[0] +1
     print("truncating to {0} singular values".format(ntrunc))
     # Initialize threshold
-    s1 = s[0]
-    thresh = 1.0e-7 * s1
+    #s1 = s[0]
+    thresh = 1.0e-7 #* s1 #NOTE: JDoh's implementation uses thresh*s1; a bit heavy handed?
     # Apply threshold logic
-    indices = np.arange(nreal)
-    mask = (s <= thresh) | (indices > ntrunc)
-    us[:, mask] = 0.0
+    for ireal in range(nreal):
+        if s[ireal] > thresh:
+            if ireal <= ntrunc:
+                continue
+            else:
+                us[:, ireal] = 0.0
+        else:
+            us[:, ireal] = 0.0
     return us, ntrunc
 
 

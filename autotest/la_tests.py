@@ -625,10 +625,10 @@ def ends_freyberg_dsi_test(tmp_path):
     t_d = os.path.join(tmp_path,"dsi_template")
     ends.prep_for_dsi(t_d=t_d)
     # copy exe to dsi_template
-    #shutil.copy2(os.path.join(test_d,"pestpp-ies.exe"),os.path.join(t_d,"pestpp-ies.exe"))
+    shutil.copy2(os.path.join(test_d,"pestpp-ies.exe"),os.path.join(t_d,"pestpp-ies.exe"))
 
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
-    pst.control_data.noptmax = 0
+    pst.control_data.noptmax = -1
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
 
@@ -638,7 +638,7 @@ def ends_freyberg_dsi_test(tmp_path):
     #shutil.copy2(os.path.join(test_d,"pestpp-ies.exe"),os.path.join(t_d,"pestpp-ies.exe"))
 
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
-    pst.control_data.noptmax = 0
+    pst.control_data.noptmax = -1
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
 
@@ -648,7 +648,7 @@ def ends_freyberg_dsi_test(tmp_path):
     #shutil.copy2(os.path.join(test_d,"pestpp-ies.exe"),os.path.join(t_d,"pestpp-ies.exe"))
     
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
-    pst.control_data.noptmax = 0
+    pst.control_data.noptmax = -1
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
     
@@ -662,7 +662,7 @@ def ends_freyberg_dsi_test(tmp_path):
     #shutil.copy2(os.path.join(test_d,"pestpp-ies.exe"),os.path.join(t_d,"pestpp-ies.exe"))
     
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
-    pst.control_data.noptmax = 0
+    pst.control_data.noptmax = -1
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
 
