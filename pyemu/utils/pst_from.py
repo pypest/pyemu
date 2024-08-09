@@ -3497,7 +3497,7 @@ def _get_index_strfmt(index_cols):
 
 def _get_index_strings(df, idxs):
     fmt = _get_index_strfmt(idxs)
-    # avoiding pandas apply and .values to prevent casting of ints ot floats etc
+    # avoiding pandas apply and .values to prevent casting of ints to floats etc
     df["idx_strs"] = [
         fmt.format(*x
                    ).replace(" ", ""

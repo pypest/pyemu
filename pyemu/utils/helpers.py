@@ -2244,29 +2244,6 @@ def _process_chunk_list_files(chunk, i, df):
     print("process", i, " processed ", len(chunk), "process_list_file calls")
 
 
-def _list_index_caster(x, add1):
-    vals = []
-    for xx in x:
-        if xx:
-            if any(s not in " 0123456789.-" for s in xx):
-                vals.append(xx.strip().strip("'\" "))
-            else:
-                if (xx.strip().isdigit() or
-                        (xx.strip()[0] == '-' and xx.strip()[1:].isdigit())):
-                    vals.append(add1 + int(xx))
-                else:
-                    try:
-                        vals.append(float(xx))
-                    except Exception as e:
-                        vals.append(xx.strip().strip("'\" "))
-
-    return tuple(vals)
-
-
-def _list_index_splitter_and_caster(x, add1):
-    return _list_index_caster(x.strip("()").replace('\'', '').split(","), add1)
-
-
 def _process_list_file(model_file, df):
     # print("processing model file:", model_file)
     df_mf = df.loc[df.model_file == model_file, :].copy()

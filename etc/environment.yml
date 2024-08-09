@@ -19,9 +19,6 @@ dependencies:
   - nbmake
   - shapely
   - pyproj
-#  - flopy
+  - flopy
   - modflow-devtools
   - scikit-learn
-  - pip
-  - pip:
-      - git+https://github.com/modflowpy/flopy@develop
