@@ -19,6 +19,9 @@ dependencies:
   - nbmake
   - shapely
   - pyproj
-  - flopy
+#  - flopy
   - modflow-devtools
   - scikit-learn
+  - pip
+  - pip:
+      - flopy
