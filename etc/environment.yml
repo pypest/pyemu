@@ -4,7 +4,7 @@ channels:
 dependencies:
   # required
   - python>=3.8
-  - numpy<2.0
+  - numpy
   - pandas
   # optional
   - matplotlib
@@ -22,3 +22,4 @@ dependencies:
   - flopy
   - modflow-devtools
   - scikit-learn
+#  - pip

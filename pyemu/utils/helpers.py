@@ -91,12 +91,17 @@ class Trie:
         return self._pattern(self.dump())
 
 
-def _try_pdcol_numeric(x, first=True, **kwargs):
+def _try_pdcol_numeric(x, first=True, intadj=0, **kwargs):
     try:
         x = pd.to_numeric(x, errors="raise", **kwargs)
+        if intadj != 0:
+            if first:
+                x = pd.Series([xx + intadj if isinstance(xx, (int, np.integer)) else xx for xx in x])
+            else:
+                x = x + intadj if isinstance(x, (int, np.integer)) else x
     except ValueError as e:
         if first:
-            x = x.apply(_try_pdcol_numeric, first=False, **kwargs)
+            x = x.apply(_try_pdcol_numeric, first=False, intadj=intadj, **kwargs)
         else:
             pass
     return x
@@ -2120,8 +2125,8 @@ def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv"):
             elif len(zone_file) == 1:
                 zone_arr = np.loadtxt(zone_file[0])
             if zone_arr is not None:
-                arr[zone_arr == 0] = np.NaN
-                org_arr[zone_arr == 0] = np.NaN
+                arr[zone_arr == 0] = np.nan
+                org_arr[zone_arr == 0] = np.nan
 
         for stat, func in stat_dict.items():
             v = func(arr)
@@ -2240,29 +2245,6 @@ def _process_chunk_list_files(chunk, i, df):
     print("process", i, " processed ", len(chunk), "process_list_file calls")
 
 
-def _list_index_caster(x, add1):
-    vals = []
-    for xx in x:
-        if xx:
-            if any(s not in " 0123456789.-" for s in xx):
-                vals.append(xx.strip().strip("'\" "))
-            else:
-                if (xx.strip().isdigit() or
-                        (xx.strip()[0] == '-' and xx.strip()[1:].isdigit())):
-                    vals.append(add1 + int(xx))
-                else:
-                    try:
-                        vals.append(float(xx))
-                    except Exception as e:
-                        vals.append(xx.strip().strip("'\" "))
-
-    return tuple(vals)
-
-
-def _list_index_splitter_and_caster(x, add1):
-    return _list_index_caster(x.strip("()").replace('\'', '').split(","), add1)
-
-
 def _process_list_file(model_file, df):
     # print("processing model file:", model_file)
     df_mf = df.loc[df.model_file == model_file, :].copy()
@@ -2354,12 +2336,9 @@ def _process_list_file(model_file, df):
             # if original model files is not zero based need to add 1
             add1 = int(mlt.zero_based == False)
 
-            mlts.index = pd.MultiIndex.from_tuples(
-                mlts.sidx.apply(
-                    lambda x: _list_index_splitter_and_caster(x,add1)
-                ),
-                names=mlt.index_cols,
-            )
+            mlts[mlt.index_cols] = mlts[mlt.index_cols].apply(
+                _try_pdcol_numeric, intadj=add1, downcast='integer')
+            mlts = mlts.set_index(mlt.index_cols)
             if mlts.index.nlevels < 2:  # just in case only one index col is used
                 mlts.index = mlts.index.get_level_values(0)
             common_idx = (

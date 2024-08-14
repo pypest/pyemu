@@ -769,7 +769,7 @@ class Pst(object):
             extras = []
             for _ in range(nrows):
                 line = f.readline()
-                extra = np.NaN
+                extra = np.nan
                 if "#" in line:
                     raw = line.strip().split("#")
                     extra = " # ".join(raw[1:])
@@ -900,7 +900,7 @@ class Pst(object):
                     r = er[0].split()
                 else:
                     r = line.strip().split()
-                    extra.append(np.NaN)
+                    extra.append(np.nan)
 
                 raw.append(r[: len(defaults)])
 
@@ -911,7 +911,7 @@ class Pst(object):
 
         for col in fieldnames:
             if col not in df.columns:
-                df.loc[:, col] = np.NaN
+                df.loc[:, col] = np.nan
             if col in defaults:
                 df[col] = df.loc[:, col].fillna(defaults[col])
             if col in converters:
@@ -969,7 +969,7 @@ class Pst(object):
                     raw = er[0].split()
                     extra.append("#".join(er[1:]))
                 else:
-                    extra.append(np.NaN)
+                    extra.append(np.nan)
                     raw = line.split()
                 pilbl.append(raw[0].lower())
                 obgnme.append(raw[-1].lower())
@@ -3442,7 +3442,7 @@ class Pst(object):
 
         obs["stdev"] = obs.weight**-1
         obs["pe"] = 100.0 * (obs.stdev / obs.obsval.abs())
-        obs = obs.replace([np.inf, -np.inf], np.NaN)
+        obs = obs.replace([np.inf, -np.inf], np.nan)
 
         data = {c: [] for c in cols}
         for og, onames in obsgp.items():
@@ -3705,10 +3705,10 @@ class Pst(object):
         change_df.loc[:, "rel_upper"] = base_vals + rdelta
         change_df.loc[:, "rel_lower"] = base_vals - rdelta
 
-        change_df.loc[:, "chg_upper"] = np.NaN
+        change_df.loc[:, "chg_upper"] = np.nan
         change_df.loc[fpars, "chg_upper"] = change_df.fac_upper[fpars]
         change_df.loc[rpars, "chg_upper"] = change_df.rel_upper[rpars]
-        change_df.loc[:, "chg_lower"] = np.NaN
+        change_df.loc[:, "chg_lower"] = np.nan
         change_df.loc[fpars, "chg_lower"] = change_df.fac_lower[fpars]
         change_df.loc[rpars, "chg_lower"] = change_df.rel_lower[rpars]
 

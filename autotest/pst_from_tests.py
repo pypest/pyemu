@@ -4775,12 +4775,21 @@ def list_float_int_index_test(tmp_path):
                       use_cols=["ghbcondN"],
                       lower_bound=0.01,
                       upper_bound=100)
+    pf.add_parameters(filenames="ghb_ppt_part1.dat",
+                      par_type="grid",
+                      par_name_base=["n2"],
+                      index_cols=ghbidx,
+                      use_cols=["ghbcondN"],
+                      use_rows=[(29, 1920172.116, 5610676.98),
+                                ('pt38', 1914756.535, 5605938.218)],
+                      lower_bound=0.01,
+                      upper_bound=100)
     pf.add_observations(filename="ghb_ppt_part1.dat",
                         index_cols=ghbidx,
                         use_cols="ghbcondN")
     pst = pf.build_pst()
     par = pst.parameter_data
-    assert par.shape[0] == faultdf_o.shape[0] * 5 + len(ghbdf_o)
+    assert par.shape[0] == faultdf_o.shape[0] * 5 + len(ghbdf_o) + 2
     obs = pst.observation_data
     assert obs.shape[0] == faultdf_o.shape[0] * 5 + len(ghbdf_o)
     # pf.parfile_relations.to_csv(os.path.join(pf.new_d,"mult2model_info.csv"))
@@ -4810,7 +4819,7 @@ def list_float_int_index_test(tmp_path):
     idxcheck = ghbdf_n.set_index(ghbidx).index.difference(ghbdf_o.set_index(ghbidx).index)
     assert len(idxcheck) == 0, idxcheck
     diff = (ghbdf_n.set_index(ghbidx).ghbcondN/ghbdf_o.set_index(ghbidx).ghbcondN).sort_index(level=0)
-    bparval1 = par.loc[bpar].sort_values('ppt').parval1.values
+    bparval1 = par.loc[bpar].sort_values('ppt').groupby(ghbidx).parval1.prod()
     assert np.isclose(diff,bparval1).all(), diff.loc[~np.isclose(diff,bparval1)]
 
 
