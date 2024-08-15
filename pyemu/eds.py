@@ -510,8 +510,10 @@ class EnDS(object):
             t_d (`str`): template directory to setup the DSI model + pest files in.  Default is `dsi_template`
             apply_normal_score_transform (`bool`): flag to apply a normal score transform to the observations
                 and predictions.  Default is `False`
-            truncated_svd (`bool`): flag to use a truncated SVD for the pseudo-inverse of the deviations matrix.
+            use_ztz (`bool`): flag to use the condensed ZtZ matrix for SVD. The ZtZ matrix has dimensions nreal*nreal, instead of the nreal*nobs dimensions of Z. 
+                This makes the SVD computation faster and more memory efficient when nobs >> nreal. Default is `False`
                 Default is `False`
+            energy (`float`): energy threshold for truncating the SVD when `use_ztz` is True.  Default is `1.0` which applys no truncation. If `use_ztz` is False, this argument is ignored.
             nst_extrap (None or 'str'): flag to select extrapolation type used during normal-score transformation. Can be None, "linear" or "quadratic". If None, normal-score back-transformation is truncated to the range of the distribution of the provided observation ensemble.
 
         Example::
@@ -821,8 +823,8 @@ def apply_energy_based_truncation(energy, s, us,nobs,nreal):
     ntrunc = np.where(np.sqrt(s).cumsum()/total_energy<=energy)[0].shape[0] +1
     print("truncating to {0} singular values".format(ntrunc))
     # Initialize threshold
-    #s1 = s[0]
-    thresh = 1.0e-7 #* s1 #NOTE: JDoh's implementation uses thresh*s1; a bit heavy handed?
+    s1 = s[0]
+    thresh = 1.0e-7 * s1 #NOTE: JDoh's implementation uses thresh*s1
     # Apply threshold logic
     for ireal in range(nreal):
         if s[ireal] > thresh:
