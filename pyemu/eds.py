@@ -743,9 +743,16 @@ class EnDS(object):
         par = pst.parameter_data
         dsi_pars = par.loc[par.parnme.str.startswith("dsi_par"),"parnme"]
         par.loc[dsi_pars,"parval1"] = 0
-        par.loc[dsi_pars,"parubnd"] = 2.5
-        par.loc[dsi_pars,"parlbnd"] = -2.5
+        par.loc[dsi_pars,"parubnd"] = 10.0
+        par.loc[dsi_pars,"parlbnd"] = -10.0
         par.loc[dsi_pars,"partrans"] = "none"
+        with open(os.path.join(t_d,"dsi.unc"),'w') as f:
+            f.write("START STANDARD_DEVIATION\n")
+            for p in dsi_pars:
+                f.write("{0} 1.0\n".format(p))
+            f.write("END STANDARD_DEVIATION")
+        pst.pestpp_options['parcov'] = "dsi.unc"
+
         mn_pars = par.loc[par.parnme.str.startswith("dsi_prmn"),"parnme"]
         par.loc[mn_pars,"partrans"] = "fixed"
         for pname,pval in mn_dict.items():
