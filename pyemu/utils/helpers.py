@@ -4127,11 +4127,11 @@ def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
         return y
 
     ilim = 0
-    if value in nstval:
-        rank = np.searchsorted(nstval, value)
-        value = val[rank]
+    #if value in nstval:
+    #    rank = np.searchsorted(nstval, value)
+    #    value = val[rank]
 
-    elif value < nstval[0]:
+    if value < nstval[0]:
         ilim = -1
         if extrap is None:
             value = val[0]
