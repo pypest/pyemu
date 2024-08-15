@@ -4114,30 +4114,34 @@ def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
             return y0 + (y1 - y0) / (x1 - x0) * (x - x0)
         return y0
 
-    def quadratic_extrapolate(x0, y0, x1, y1, x2, y2, x):
-        denom = (x0 - x) * (x1 - x) * (x2 - x)
-        if denom == 0:
-            print(x, x0, x1, x2)
+    def quadratic_extrapolate(x1, y1, x2, y2, x3, y3, x4):
+        y12=y1-y2
+        x23=x2-x3
+        y23=y2-y3
+        x12=x1-x2
+        x13=x1-x3
+        if x12==0 or x23==0 or x13==0:
             raise ValueError("Input x values must be distinct")
-
-        a = ((x - x1) * (y2 - y1) - (x - x2) * (y1 - y0)) / denom
-        b = ((x - x2) * (y1 - y0) - (x - x0) * (y2 - y1)) / denom
-        c = y0 - a * x0**2 - b * x0
-        y = a * x**2 + b * x + c
-        return y
+        a = (y12*x23-y23*x12)
+        den = x12*x23*x13
+        a = a/den
+        b = y23/x23 - a*(x2+x3)
+        c=y1-x1*(a*x1+b)
+        y4 = a*x4**2 + b*x4 + c
+        return y4
 
     ilim = 0
-    #if value in nstval:
-    #    rank = np.searchsorted(nstval, value)
-    #    value = val[rank]
+    if value in nstval:
+        rank = np.searchsorted(nstval, value)
+        value = val[rank]
 
-    if value < nstval[0]:
+    elif value < nstval[0]:
         ilim = -1
         if extrap is None:
             value = val[0]
         elif extrap == 'linear':
             value = linear_extrapolate(nstval[0], val[0], nstval[1], val[1], value)
-            value = min(value, val[0])
+            #value = min(value, val[0])
         elif extrap == 'quadratic' and nreal >= 3:
             y_vals = np.unique(val)[:3]
             idxs = np.searchsorted(val,y_vals)
@@ -4153,7 +4157,7 @@ def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
             value = val[-1]
         elif extrap == 'linear':
             value = linear_extrapolate(nstval[-2], val[-2], nstval[-1], val[-1], value)
-            value = max(value, val[-1])
+            #value = max(value, val[-1])
         elif extrap == 'quadratic' and nreal >= 3:
             y_vals = np.unique(val)[-3:]
             idxs = np.searchsorted(val,y_vals)
