@@ -497,8 +497,8 @@ class EnDS(object):
 
 
     def prep_for_dsi(self,sim_ensemble=None,t_d="dsi_template",
-                     apply_normal_score_transform=False,
-                     use_ztz=False,energy=1.0,nst_extrap=None):
+                     apply_normal_score_transform=False,nst_extrap=None,
+                     use_ztz=False,energy=1.0):
         """Setup a new PEST interface for the data-space inversion process.
         If the observation data in the Pst object has a "obstransform" column, then observations for which "log" is specified will be subject to log-transformation. 
         If the `apply_normal_score_transform` flag is set to `True`, then the observations and predictions will be subject to a normal score transform.
@@ -510,11 +510,11 @@ class EnDS(object):
             t_d (`str`): template directory to setup the DSI model + pest files in.  Default is `dsi_template`
             apply_normal_score_transform (`bool`): flag to apply a normal score transform to the observations
                 and predictions.  Default is `False`
+            nst_extrap (`str`): flag to apply extrapolation to the normal score transform. Can be None, 'linear' or 'quadratic'. Default is None. 
             use_ztz (`bool`): flag to use the condensed ZtZ matrix for SVD. The ZtZ matrix has dimensions nreal*nreal, instead of the nreal*nobs dimensions of Z. 
                 This makes the SVD computation faster and more memory efficient when nobs >> nreal. Default is `False`
                 Default is `False`
-            energy (`float`): energy threshold for truncating the SVD when `use_ztz` is True.  Default is `1.0` which applys no truncation. If `use_ztz` is False, this argument is ignored.
-            nst_extrap (None or 'str'): flag to select extrapolation type used during normal-score transformation. Can be None, "linear" or "quadratic". If None, normal-score back-transformation is truncated to the range of the distribution of the provided observation ensemble.
+            energy (`float`): energy threshold for truncating the sqrt(C) matrix.  Default is `1.0` which applys no truncation. 
 
         Example::
 
@@ -615,18 +615,16 @@ class EnDS(object):
         if use_ztz:
             self.logger.log("using ztz approach...")
             pmat, s = compute_using_ztz(sim_ensemble)
-            nobs = sim_ensemble.shape[1]
-            nreal = sim_ensemble.shape[0]
             self.logger.log("using ztz approach...")
-
-            #self.logger.log("applying truncation...")
-            apply_energy_based_truncation(energy, s, pmat,nobs,nreal)
-            #self.logger.log("applying truncation...")
         else:
             self.logger.log("using z approach...")
             pmat, s = compute_using_z(sim_ensemble)
             self.logger.log("using z approach...")
         self.logger.log("computing projection matrix")
+
+        self.logger.log("applying truncation...")
+        apply_energy_based_truncation(energy,s,pmat)
+        self.logger.log("applying truncation...")
 
         self.logger.log("creating tpl files")
         dsi_in_file = os.path.join(t_d, "dsi_pars.csv")
@@ -767,8 +765,8 @@ class EnDS(object):
         lines = [line[12:] for line in inspect.getsource(dsi_forward_run).split("\n")][1:]
         with open(os.path.join(t_d,"forward_run.py"),'w') as f:
             for line in lines:
-                if line == "extrap=None\n":
-                    line = f"extrap={nst_extrap}\n"
+                if "extrap=None" in line:
+                    line = line.replace("None",f"'{nst_extrap}'") 
                 f.write(line+"\n")
         pst.write(os.path.join(t_d,"dsi.pst"),version=2)
         self.logger.statement("saved pst to {0}".format(os.path.join(t_d,"dsi.pst")))
@@ -806,35 +804,41 @@ def compute_using_ztz(sim_ensemble):
 
     #We now do SVD on ZtZ.
     print("doing SVD on ZtZ")
-    u, s, v = np.linalg.svd(ztz, full_matrices=False)
+    u, s2, v = np.linalg.svd(ztz, full_matrices=False)
+    s =  np.sqrt(s2)
+    s[z.shape[0]:] = 0  #truncation to match compute_using_z()
 
     # formulate the sqrt of the covariance matrix
     us = np.dot(z,u)
     return us, s
 
-def apply_energy_based_truncation(energy, s, us,nobs,nreal):
-    assert us.shape == (nobs,nreal), "us shape is not nobs*nreal"
+def apply_energy_based_truncation(energy,s,us):
+    if energy >= 1.0:
+        print("Warning: energy>=1.0, no truncation applied")
+        return us
     # Determine where to truncate
     # Determine nn
-    nn = min(nobs, nreal - 1)
+    if us.shape[0]==us.shape[1]:
+        nn = us.shape[0]
+    else:
+        nobs = us.shape[0]
+        nreal = us.shape[1]
+        nn = min(nobs, nreal - 1)
     # Compute total_energy
-    total_energy = np.sum(np.sqrt(s[:nn]))
-    # Find truncation point
-    ntrunc = np.where(np.sqrt(s).cumsum()/total_energy<=energy)[0].shape[0] +1
-    print("truncating to {0} singular values".format(ntrunc))
+    total_energy = np.sum((s)[:nn])
+    # Find energy truncation point
+    ntrunc = np.where((s).cumsum()/total_energy<=energy)[0].shape[0]+1
     # Initialize threshold
     s1 = s[0]
-    thresh = 1.0e-7 * s1 #NOTE: JDoh's implementation uses thresh*s1
-    # Apply threshold logic
-    for ireal in range(nreal):
-        if s[ireal] > thresh:
-            if ireal <= ntrunc:
-                continue
-            else:
-                us[:, ireal] = 0.0
-        else:
-            us[:, ireal] = 0.0
-    return us, ntrunc
+    thresh = 1.0e-7 * s1 #NOTE: JDoh's implementation uses an additional level of truncation
+    ntrunc = min(np.where(s<=thresh)[0][0], ntrunc)
+    if ntrunc>=us.shape[1]:
+        print("ntrunc>=us.shape[1], no truncation applied")
+    else:
+        print("truncating to {0} singular values".format(ntrunc))
+        # Apply threshold logic
+        us = us[:,:ntrunc]
+    return us
 
 
 
