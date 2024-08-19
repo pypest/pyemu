@@ -642,6 +642,7 @@ def ends_run_freyberg_dsi(tmp_path,nst=False,nst_extrap=None,ztz=False,energy=1.
 
     #read in the results
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=os.path.join(t_d,"dsi.0.obs.csv"))
+    assert oe.shape[0]==50, f"{50-oe.shape} failed runs"
     phi_vector = oe.phi_vector.sort_values().values
     assert phi_vector[0] != phi_vector[1],phi_vector
 
