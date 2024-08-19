@@ -4085,10 +4085,10 @@ def normal_score_transform(nstval, val, value):
     nstval = np.asarray(nstval)
     
     # if the value is outside the range of the table, return the first or last value
-    if value <= val[0]:
-        return nstval[0], 0
-    elif value >= val[-1]:
-        return nstval[-1], len(val)
+    assert value >= val[0], "Value is below the minimum value in the table."
+    assert value <= val[-1], "Value is greater than the maximum value in the table."
+    # ensure that val is sorted
+    assert np.all(np.diff(val) > 0), f"Values in the table must be sorted in ascending order:{list(zip(np.diff(val)>0,val))}"
 
     # find the rank of the value in the table
     rank = np.searchsorted(val, value, side='right') - 1
@@ -4108,6 +4108,10 @@ def normal_score_transform(nstval, val, value):
 
 def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
     nreal = len(val)
+    # check that nstval is sorted
+    assert np.all(np.diff(nstval) > 0), "Values in the table must be sorted in ascending order"
+    # check that val is sorted
+    assert np.all(np.diff(val) > 0), "Values in the table must be sorted in ascending order"
     
     def linear_extrapolate(x0, y0, x1, y1, x):
         if x1 != x0:
@@ -4169,13 +4173,11 @@ def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
 
     else:
         rank = np.searchsorted(nstval, value) - 1
-        nstdiff = nstval[rank + 1] - nstval[rank]
-        diff = val[rank + 1] - val[rank]
-        if nstdiff <= 0.0 or diff <= 0.0:
-            value = val[rank]
-        else:
-            nstdist = value - nstval[rank]
-            value = val[rank] + (nstdist / nstdiff) * diff
+        # Get the bounding x and y values
+        x0, x1 = nstval[rank], nstval[rank + 1]
+        y0, y1 = val[rank], val[rank + 1]
+        # Perform linear interpolation
+        value = y0 + (y1 - y0) * (value - x0) / (x1 - x0)
     
     return value, ilim
 

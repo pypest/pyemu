@@ -512,7 +512,7 @@ class EnDS(object):
                 and predictions.  Default is `False`
             nst_extrap (`str`): flag to apply extrapolation to the normal score transform. Can be None, 'linear' or 'quadratic'. Default is None. 
             use_ztz (`bool`): flag to use the condensed ZtZ matrix for SVD. The ZtZ matrix has dimensions nreal*nreal, instead of the nreal*nobs dimensions of Z. 
-                This makes the SVD computation faster and more memory efficient when nobs >> nreal. Default is `False`
+                This makes the SVD computation faster and more memory efficient when nobs >> nreal. 
                 Default is `False`
             energy (`float`): energy threshold for truncating the sqrt(C) matrix.  Default is `1.0` which applys no truncation. 
 
@@ -529,6 +529,9 @@ class EnDS(object):
         """
         if sim_ensemble is None:
             sim_ensemble = self.sim_ensemble.copy()
+
+        if nst_extrap is not None:
+            assert nst_extrap in ["linear","quadratic"], "nst_extrap must be None, 'linear' or 'quadratic'"
 
         if os.path.exists(t_d):
             self.logger.warn("EnDS.prep_for_dsi(): t_d '{0}' exists, removing...".format(t_d))
@@ -784,8 +787,9 @@ class EnDS(object):
         lines = [line[12:] for line in inspect.getsource(dsi_forward_run).split("\n")][1:]
         with open(os.path.join(t_d,"forward_run.py"),'w') as f:
             for line in lines:
-                if "extrap=None" in line:
-                    line = line.replace("None",f"'{nst_extrap}'") 
+                if nst_extrap is not None:
+                    if "extrap=None" in line:
+                        line = line.replace("None",f"'{nst_extrap}'") 
                 f.write(line+"\n")
         pst.write(os.path.join(t_d,"dsi.pst"),version=2)
         self.logger.statement("saved pst to {0}".format(os.path.join(t_d,"dsi.pst")))
