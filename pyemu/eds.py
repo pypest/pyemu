@@ -843,15 +843,15 @@ def apply_energy_based_truncation(energy,s,us):
     # Determine where to truncate
     # Determine nn
     if us.shape[0]==us.shape[1]:
-        nn = us.shape[0]
+        nn = us.shape[0] - 1
     else:
         nobs = us.shape[0]
         nreal = us.shape[1]
-        nn = min(nobs, nreal - 1)
+        nn = min(nobs, nreal) - 1
     # Compute total_energy
-    total_energy = np.sum((s)[:nn])
+    total_energy = np.sum((np.sqrt(s))[:nn])
     # Find energy truncation point
-    ntrunc = np.where((s).cumsum()/total_energy<=energy)[0].shape[0]
+    ntrunc = np.where((np.sqrt(s)).cumsum()/total_energy<=energy)[0].shape[0]
     # Initialize threshold
     #s1 = s[0]
     #thresh = 1.0e-7 * s1 #NOTE: JDoh's implementation uses an additional level of truncation
