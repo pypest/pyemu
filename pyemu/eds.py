@@ -592,21 +592,22 @@ class EnDS(object):
                 print("transforming:",name)
                 values = sim_ensemble._df.loc[:,name].copy()
                 values.sort_values(inplace=True)
-                if values.iloc[0] == values.iloc[-1]:
-                    print("all values are the same, skipping")
-                    continue
-                # apply smoothing as per DSI2; window sizes are arbitrary...                
-                window_size=3   
-                if values.shape[0]>40:
-                    window_size=5                    
-                if values.shape[0]>90:
-                    window_size=7
-                if values.shape[0]>200:
-                    window_size=9            
-                #print("window size:",window_size,values.shape[0])     
-                values.loc[:] = moving_average_with_endpoints(values.values, window_size)
-                transformed_values = [normal_score_transform(nstval, values.values, v)[0] for v in values.values]
-                #transformed_values, sorted_values, sorted_idxs = normal_score_transform(values) #transformed data retains the same order as the original data
+                if values.iloc[0] != values.iloc[-1]:
+                    # apply smoothing as per DSI2; window sizes are arbitrary...                
+                    window_size=3   
+                    if values.shape[0]>40:
+                        window_size=5                    
+                    if values.shape[0]>90:
+                        window_size=7
+                    if values.shape[0]>200:
+                        window_size=9            
+                    #print("window size:",window_size,values.shape[0])     
+                    values.loc[:] = moving_average_with_endpoints(values.values, window_size)
+                    transformed_values = [normal_score_transform(nstval, values.values, v)[0] for v in values.values]
+                    #transformed_values, sorted_values, sorted_idxs = normal_score_transform(values) #transformed data retains the same order as the original data
+                elif values.iloc[0] == values.iloc[-1]:
+                    print("all values are the same, skipping nst")
+                    transformed_values = values.values
                 sim_ensemble.loc[values.index,name] = transformed_values
                 df = pd.DataFrame()
                 df['real'] = values.index
