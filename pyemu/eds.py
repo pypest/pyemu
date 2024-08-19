@@ -589,6 +589,9 @@ class EnDS(object):
                 print("transforming:",name)
                 values = sim_ensemble._df.loc[:,name].copy()
                 values.sort_values(inplace=True)
+                if values.iloc[0] == values.iloc[-1]:
+                    print("all values are the same, skipping")
+                    continue
                 # apply smoothing as per DSI2; window sizes are arbitrary...                
                 window_size=3   
                 if values.shape[0]>40:
