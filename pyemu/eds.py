@@ -589,6 +589,16 @@ class EnDS(object):
                 print("transforming:",name)
                 values = sim_ensemble._df.loc[:,name].copy()
                 values.sort_values(inplace=True)
+                # apply smoothing as per DSI2; window sizes are arbitrary...                
+                window_size=3   
+                if values.shape[0]>40:
+                    window_size=5                    
+                if values.shape[0]>90:
+                    window_size=7
+                if values.shape[0]>200:
+                    window_size=9            
+                #print("window size:",window_size,values.shape[0])     
+                values.loc[:] = moving_average_with_endpoints(values.values, window_size)
                 transformed_values = [normal_score_transform(nstval, values.values, v)[0] for v in values.values]
                 #transformed_values, sorted_values, sorted_idxs = normal_score_transform(values) #transformed data retains the same order as the original data
                 sim_ensemble.loc[values.index,name] = transformed_values
@@ -611,7 +621,6 @@ class EnDS(object):
         self.logger.log("applying transformations")
 
         self.logger.log("computing projection matrix")
-        #TODO: choose approach...
         if use_ztz:
             self.logger.log("using ztz approach...")
             pmat, s = compute_using_ztz(sim_ensemble)
@@ -834,11 +843,12 @@ def apply_energy_based_truncation(energy,s,us):
     # Compute total_energy
     total_energy = np.sum((s)[:nn])
     # Find energy truncation point
-    ntrunc = np.where((s).cumsum()/total_energy<=energy)[0].shape[0]+1
+    ntrunc = np.where((s).cumsum()/total_energy<=energy)[0].shape[0]
     # Initialize threshold
-    s1 = s[0]
-    thresh = 1.0e-7 * s1 #NOTE: JDoh's implementation uses an additional level of truncation
-    ntrunc = min(np.where(s<=thresh)[0][0], ntrunc)
+    #s1 = s[0]
+    #thresh = 1.0e-7 * s1 #NOTE: JDoh's implementation uses an additional level of truncation
+    #ntrunc = min(np.where(s>=thresh)[0][0], ntrunc)+1
+    ntrunc=ntrunc+1
     if ntrunc>=us.shape[1]:
         print("ntrunc>=us.shape[1], no truncation applied")
     else:
@@ -847,7 +857,44 @@ def apply_energy_based_truncation(energy,s,us):
         us = us[:,:ntrunc]
     return us
 
+def moving_average_with_endpoints(y_values, window_size):
+    # Ensure the window size is odd
+    if window_size % 2 == 0:
+        raise ValueError("window_size must be odd")
+    # Calculate half-window size
+    half_window = window_size // 2
+    # Initialize the output array
+    smoothed_y = np.zeros_like(y_values)
+    # Handle the endpoints
+    for i in range(0,half_window):
+        # Start
+        smoothed_y[i] = np.mean(y_values[:i + half_window ])
+    for i in range(1,half_window+1):
+        # End
+        smoothed_y[-i] = np.mean(y_values[::-1][:i + half_window +1])
+    # Handle the middle part with full window
+    for i in range(half_window, len(y_values) - half_window):
+        smoothed_y[i] = np.mean(y_values[i - half_window:i + half_window])
+    #Enforce endoints
+    smoothed_y[0] = y_values[0]
+    smoothed_y[-1] = y_values[-1]
+    # Ensure uniqueness by adding small increments if values are duplicated
+    #NOTE: this is a hack to ensure uniqueness in the normal score transform
+    smoothed_y = make_unique(smoothed_y, delta=1e-10)
+    return smoothed_y
 
 
+def make_unique(arr, delta=1e-10):
+    """
+    Modifies a sorted numpy array in-place to ensure all elements are unique.
+    
+    Parameters:
+    arr (np.ndarray): The sorted numpy array.
+    delta (float): The minimum increment to apply to duplicate elements. 
+                   Default is a very small value (1e-10).
+    """
+    for i in range(1, len(arr)):
+        if arr[i] <= arr[i - 1]:
+            arr[i] = arr[i - 1] + delta
 
-
+    return arr
