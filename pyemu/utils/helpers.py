@@ -4038,8 +4038,11 @@ def randrealgen_optimized(nreal, tol=1e-7, max_samples=1000000):
     """
     rval = np.zeros(nreal)
     nsamp = 0
-    numsort = (nreal + 1) // 2
-
+    # if nreal is even add 1
+    if nreal % 2 == 0:
+        numsort = (nreal + 1) // 2
+    else:
+        numsort = nreal // 2
     while nsamp < max_samples:
         nsamp += 1
         work1 = np.random.normal(size=nreal)
@@ -4057,7 +4060,10 @@ def randrealgen_optimized(nreal, tol=1e-7, max_samples=1000000):
             rval[:numsort] = work1[:numsort]
     
     rval[:numsort] /= nsamp
-    rval[numsort:] = -rval[:numsort][::-1]
+    if nreal % 2 == 0:
+        rval[numsort:] = -rval[:numsort][::-1]
+    else:
+        rval[numsort+1:] = -rval[:numsort][::-1]
     
     return rval
 
