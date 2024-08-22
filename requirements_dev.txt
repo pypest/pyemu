@@ -5,3 +5,4 @@ pytest-xdist
 flaky
 nbmake
 modflow-devtools
+shapely

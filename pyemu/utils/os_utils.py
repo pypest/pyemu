@@ -62,6 +62,12 @@ def _istextfile(filename, blocksize=512):
     nontext = block.translate(None, _text_characters)
     return float(len(nontext)) / len(block) <= 0.30
 
+def _isexe(filename):
+    """
+    Function to determine if a file is an executable file
+    """
+
+    return os.path.isfile(filename) and os.access(filename, os.X_OK)
 
 def _remove_readonly(func, path, excinfo):
     """remove readonly dirs, apparently only a windows issue
@@ -70,7 +76,7 @@ def _remove_readonly(func, path, excinfo):
     func(path)
 
 
-def run(cmd_str, cwd=".", verbose=False):
+def run2(cmd_str, cwd=".", verbose=False):
     """an OS agnostic function to execute a command line
 
     Args:
@@ -115,6 +121,7 @@ def run(cmd_str, cwd=".", verbose=False):
         print("run():{0}".format(cmd_str))
 
     try:
+        print(cmd_str)
         ret_val = os.system(cmd_str)
     except Exception as e:
         os.chdir(bwd)
@@ -129,6 +136,84 @@ def run(cmd_str, cwd=".", verbose=False):
         if estat != 0 or ret_val != 0:
             raise Exception("run() returned non-zero: {0},{1}".format(estat,ret_val))
         
+def run(cmd_str, cwd=".", verbose=False, shell=False):
+    """an OS agnostic function to execute a command line
+
+    Args:
+        cmd_str (`str`): the str to execute with `os.system()`
+
+        cwd (`str`, optional): the directory to execute the command in.
+            Default is ".".
+        verbose (`bool`, optional): flag to echo to stdout the  `cmd_str`.
+            Default is `False`.
+
+    Notes:
+        uses `platform` to detect OS and adds .exe suffix or ./ prefix as appropriate
+        if `os.system` returns non-zero, an exception is raised
+
+    Example::
+
+        pyemu.os_utils.run("pestpp-ies my.pst",cwd="template")
+
+    """
+    bwd = os.getcwd()
+    os.chdir(cwd)
+    try:
+        exe_name = cmd_str.split()[0]
+        if "window" in platform.platform().lower() and _isexe(exe_name + ".exe"):
+            if not exe_name.lower().endswith("exe"):
+                raw = cmd_str.split()
+                raw[0] = exe_name + ".exe"
+                cmd_str = " ".join(raw)
+        else:
+            if exe_name.lower().endswith("exe"):
+                raw = cmd_str.split()
+                exe_name = exe_name.replace(".exe", "")
+                raw[0] = exe_name
+                cmd_str = "{0} {1} ".format(*raw)
+            if os.path.exists(exe_name) and not exe_name.startswith("./"):
+                cmd_str = "./" + cmd_str
+
+    except Exception as e:
+        os.chdir(bwd)
+        raise Exception("run() error preprocessing command line :{0}".format(str(e)))
+    if verbose:
+        print("run():{0}".format(cmd_str))
+
+    try:
+        cmd_ins = [i for i in cmd_str.split()]
+        print(cmd_ins)
+        ret_val = sp.Popen(cmd_ins, stdout=sp.PIPE, stderr=sp.PIPE, shell=shell)
+        stdout, stderr = ret_val.communicate()
+        print(stdout.decode())
+    except Exception as e:
+        os.chdir(bwd)
+        raise Exception("run() raised :{0}".format(str(e)))
+    os.chdir(bwd)
+
+    if "window" in platform.platform().lower():
+        if ret_val.returncode != 0:
+            raise Exception("run() returned non-zero: {0}".format(ret_val.returncode))
+    else:
+        estat = os.WEXITSTATUS(ret_val.returncode)
+        if estat != 0 or ret_val != 0:
+            raise Exception("run() returned non-zero: {0},{1}".format(estat,ret_val.returncode))        
+
+def _try_remove_existing(d, forgive=False):
+    try:
+        shutil.rmtree(d, onerror=_remove_readonly)  # , onerror=del_rw)
+        return True
+    except Exception as e:
+        if not forgive:
+            raise Exception(
+                f"unable to remove existing dir: {d}\n{e}"
+            )
+        else:
+            warnings.warn(
+                f"unable to remove worker dir: {d}\n{e}",
+                PyemuWarning,
+            )
+        return False
 
 def _try_remove_existing(d, forgive=False):
     try:
