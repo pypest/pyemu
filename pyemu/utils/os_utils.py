@@ -75,8 +75,32 @@ def _remove_readonly(func, path, excinfo):
     os.chmod(path, 128)  # stat.S_IWRITE==128==normal
     func(path)
 
+def run(cmd_str, cwd=".", verbose=False, use_sp = False, **kwargs):
+    """an OS agnostic function to execute a command line
 
-def run2(cmd_str, cwd=".", verbose=False):
+    Args:
+        cmd_str (`str`): the str to execute with `os.system()`
+
+        cwd (`str`, optional): the directory to execute the command in.
+            Default is ".".
+        verbose (`bool`, optional): flag to echo to stdout the  `cmd_str`.
+            Default is `False`.
+
+    Notes:
+        by default calls run_system which is the OG function from pyemu that uses `os.system()`
+        if use_sp is True, then run_sp is called which uses `subprocess.Popen` instead of `os.system`
+
+    Example::
+
+        pyemu.os_utils.run("pestpp-ies my.pst",cwd="template")
+    """
+
+    if use_sp:
+        run_sp(cmd_str, cwd, verbose)
+    else:
+        run_system(cmd_str, cwd, verbose, **kwargs)
+
+def run_system(cmd_str, cwd=".", verbose=False):
     """an OS agnostic function to execute a command line
 
     Args:
@@ -136,7 +160,7 @@ def run2(cmd_str, cwd=".", verbose=False):
         if estat != 0 or ret_val != 0:
             raise Exception("run() returned non-zero: {0},{1}".format(estat,ret_val))
         
-def run(cmd_str, cwd=".", verbose=False, shell=False):
+def run_sp(cmd_str, cwd=".", verbose=False, shell=False):
     """an OS agnostic function to execute a command line
 
     Args:
