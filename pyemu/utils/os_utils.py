@@ -98,9 +98,9 @@ def run(cmd_str, cwd=".", verbose=False, use_sp = False, **kwargs):
     if use_sp:
         run_sp(cmd_str, cwd, verbose)
     else:
-        run_system(cmd_str, cwd, verbose, **kwargs)
+        run_ossystem(cmd_str, cwd, verbose, **kwargs)
 
-def run_system(cmd_str, cwd=".", verbose=False):
+def run_ossystem(cmd_str, cwd=".", verbose=False):
     """an OS agnostic function to execute a command line
 
     Args:
@@ -164,16 +164,16 @@ def run_sp(cmd_str, cwd=".", verbose=False, shell=False):
     """an OS agnostic function to execute a command line
 
     Args:
-        cmd_str (`str`): the str to execute with `os.system()`
+        cmd_str (`str`): the str to execute with `sp.Popen()`
 
         cwd (`str`, optional): the directory to execute the command in.
             Default is ".".
         verbose (`bool`, optional): flag to echo to stdout the  `cmd_str`.
             Default is `False`.
+        shell (`bool`, optional): flag to use shell=True in the `subprocess.Popen` call. Not recommended
 
     Notes:
-        uses `platform` to detect OS and adds .exe suffix or ./ prefix as appropriate
-        if `os.system` returns non-zero, an exception is raised
+        uses sp Popen to execute the command line. By default does not run in shell mode (ie. does not look for in the env variables)
 
     Example::
 
@@ -201,27 +201,34 @@ def run_sp(cmd_str, cwd=".", verbose=False, shell=False):
     except Exception as e:
         os.chdir(bwd)
         raise Exception("run() error preprocessing command line :{0}".format(str(e)))
-    if verbose:
-        print("run():{0}".format(cmd_str))
 
     try:
+        logfile = open(os.path.join('pyemu.log'), 'w+')
         cmd_ins = [i for i in cmd_str.split()]
-        print(cmd_ins)
-        ret_val = sp.Popen(cmd_ins, stdout=sp.PIPE, stderr=sp.PIPE, shell=shell)
-        stdout, stderr = ret_val.communicate()
-        print(stdout.decode())
+        # ret_val = sp.Popen(cmd_ins, stdout=sp.PIPE, stderr=sp.PIPE, shell=shell)
+        with sp.Popen(cmd_ins, stdout=sp.PIPE, stderr=sp.STDOUT) as process:
+            for line in process.stdout:
+                if verbose:
+                    print(line.decode('utf8'), flush=True, end='')
+                #apprend to log file
+                logfile.write(line.decode().strip('\n'))
+            retval = process.returncode
+            print('returncode',retval)
+        # save stdout to logfile
+        logfile.close()
+
     except Exception as e:
         os.chdir(bwd)
         raise Exception("run() raised :{0}".format(str(e)))
     os.chdir(bwd)
 
     if "window" in platform.platform().lower():
-        if ret_val.returncode != 0:
-            raise Exception("run() returned non-zero: {0}".format(ret_val.returncode))
+        if retval != 0:
+            raise Exception("run() returned non-zero: {0}".format(retval))
     else:
-        estat = os.WEXITSTATUS(ret_val.returncode)
-        if estat != 0 or ret_val != 0:
-            raise Exception("run() returned non-zero: {0},{1}".format(estat,ret_val.returncode))        
+        estat = os.WEXITSTATUS(retval)
+        if estat != 0 or retval != 0:
+            raise Exception("run() returned non-zero: {0},{1}".format(estat, retval))        
 
 def _try_remove_existing(d, forgive=False):
     try:
