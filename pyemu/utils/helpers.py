@@ -4017,8 +4017,11 @@ def randrealgen_optimized(nreal, tol=1e-7, max_samples=1000000):
     """
     rval = np.zeros(nreal)
     nsamp = 0
-    numsort = (nreal + 1) // 2
-
+    # if nreal is even add 1
+    if nreal % 2 == 0:
+        numsort = (nreal + 1) // 2
+    else:
+        numsort = nreal // 2
     while nsamp < max_samples:
         nsamp += 1
         work1 = np.random.normal(size=nreal)
@@ -4036,7 +4039,10 @@ def randrealgen_optimized(nreal, tol=1e-7, max_samples=1000000):
             rval[:numsort] = work1[:numsort]
     
     rval[:numsort] /= nsamp
-    rval[numsort:] = -rval[:numsort][::-1]
+    if nreal % 2 == 0:
+        rval[numsort:] = -rval[:numsort][::-1]
+    else:
+        rval[numsort+1:] = -rval[:numsort][::-1]
     
     return rval
 
@@ -4064,10 +4070,10 @@ def normal_score_transform(nstval, val, value):
     nstval = np.asarray(nstval)
     
     # if the value is outside the range of the table, return the first or last value
-    if value <= val[0]:
-        return nstval[0], 0
-    elif value >= val[-1]:
-        return nstval[-1], len(val)
+    assert value >= val[0], "Value is below the minimum value in the table."
+    assert value <= val[-1], "Value is greater than the maximum value in the table."
+    # ensure that val is sorted
+    assert np.all(np.diff(val) > 0), f"Values in the table must be sorted in ascending order:{list(zip(np.diff(val)>0,val))}"
 
     # find the rank of the value in the table
     rank = np.searchsorted(val, value, side='right') - 1
@@ -4087,23 +4093,31 @@ def normal_score_transform(nstval, val, value):
 
 def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
     nreal = len(val)
+    # check that nstval is sorted
+    assert np.all(np.diff(nstval) > 0), "Values in the table must be sorted in ascending order"
+    # check that val is sorted
+    assert np.all(np.diff(val) > 0), "Values in the table must be sorted in ascending order"
     
     def linear_extrapolate(x0, y0, x1, y1, x):
         if x1 != x0:
             return y0 + (y1 - y0) / (x1 - x0) * (x - x0)
         return y0
 
-    def quadratic_extrapolate(x0, y0, x1, y1, x2, y2, x):
-        denom = (x0 - x) * (x1 - x) * (x2 - x)
-        if denom == 0:
-            print(x, x0, x1, x2)
+    def quadratic_extrapolate(x1, y1, x2, y2, x3, y3, x4):
+        y12=y1-y2
+        x23=x2-x3
+        y23=y2-y3
+        x12=x1-x2
+        x13=x1-x3
+        if x12==0 or x23==0 or x13==0:
             raise ValueError("Input x values must be distinct")
-
-        a = ((x - x1) * (y2 - y1) - (x - x2) * (y1 - y0)) / denom
-        b = ((x - x2) * (y1 - y0) - (x - x0) * (y2 - y1)) / denom
-        c = y0 - a * x0**2 - b * x0
-        y = a * x**2 + b * x + c
-        return y
+        a = (y12*x23-y23*x12)
+        den = x12*x23*x13
+        a = a/den
+        b = y23/x23 - a*(x2+x3)
+        c=y1-x1*(a*x1+b)
+        y4 = a*x4**2 + b*x4 + c
+        return y4
 
     ilim = 0
     if value in nstval:
@@ -4116,7 +4130,7 @@ def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
             value = val[0]
         elif extrap == 'linear':
             value = linear_extrapolate(nstval[0], val[0], nstval[1], val[1], value)
-            value = min(value, val[0])
+            #value = min(value, val[0])
         elif extrap == 'quadratic' and nreal >= 3:
             y_vals = np.unique(val)[:3]
             idxs = np.searchsorted(val,y_vals)
@@ -4132,7 +4146,7 @@ def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
             value = val[-1]
         elif extrap == 'linear':
             value = linear_extrapolate(nstval[-2], val[-2], nstval[-1], val[-1], value)
-            value = max(value, val[-1])
+            #value = max(value, val[-1])
         elif extrap == 'quadratic' and nreal >= 3:
             y_vals = np.unique(val)[-3:]
             idxs = np.searchsorted(val,y_vals)
@@ -4144,13 +4158,11 @@ def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
 
     else:
         rank = np.searchsorted(nstval, value) - 1
-        nstdiff = nstval[rank + 1] - nstval[rank]
-        diff = val[rank + 1] - val[rank]
-        if nstdiff <= 0.0 or diff <= 0.0:
-            value = val[rank]
-        else:
-            nstdist = value - nstval[rank]
-            value = val[rank] + (nstdist / nstdiff) * diff
+        # Get the bounding x and y values
+        x0, x1 = nstval[rank], nstval[rank + 1]
+        y0, y1 = val[rank], val[rank + 1]
+        # Perform linear interpolation
+        value = y0 + (y1 - y0) * (value - x0) / (x1 - x0)
     
     return value, ilim
 
