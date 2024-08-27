@@ -96,9 +96,9 @@ def run(cmd_str, cwd=".", verbose=False, use_sp = False, **kwargs):
     """
 
     if use_sp:
-        run_sp(cmd_str, cwd, verbose)
-    else:
-        run_ossystem(cmd_str, cwd, verbose, **kwargs)
+        run_sp(cmd_str, cwd, verbose, **kwargs)
+    else:       
+        run_ossystem(cmd_str, cwd, verbose)
 
 def run_ossystem(cmd_str, cwd=".", verbose=False):
     """an OS agnostic function to execute a command line
@@ -160,7 +160,7 @@ def run_ossystem(cmd_str, cwd=".", verbose=False):
         if estat != 0 or ret_val != 0:
             raise Exception("run() returned non-zero: {0},{1}".format(estat,ret_val))
         
-def run_sp(cmd_str, cwd=".", verbose=False, shell=False):
+def run_sp(cmd_str, cwd=".", verbose=False,  **kwargs):
     """an OS agnostic function to execute a command line
 
     Args:
@@ -175,45 +175,34 @@ def run_sp(cmd_str, cwd=".", verbose=False, shell=False):
     Notes:
         uses sp Popen to execute the command line. By default does not run in shell mode (ie. does not look for in the env variables)
 
-    Example::
-
-        pyemu.os_utils.run("pestpp-ies my.pst",cwd="template")
-
     """
+    # update shell and detached from  kwargs
+    shell = kwargs.get("shell", False)
+    detached = kwargs.get("detached", False)
+    # print warning if shell is True
+    if shell:
+        warnings.warn("shell=True is not recommended and may cause issues, but hey! YOLO", PyemuWarning)
+    # print("shell", shell, "detached", detached)
+
     bwd = os.getcwd()
     os.chdir(cwd)
-    try:
-        exe_name = cmd_str.split()[0]
-        if "window" in platform.platform().lower() and _isexe(exe_name + ".exe"):
-            if not exe_name.lower().endswith("exe"):
-                raw = cmd_str.split()
-                raw[0] = exe_name + ".exe"
-                cmd_str = " ".join(raw)
-        else:
-            if exe_name.lower().endswith("exe"):
-                raw = cmd_str.split()
-                exe_name = exe_name.replace(".exe", "")
-                raw[0] = exe_name
-                cmd_str = "{0} {1} ".format(*raw)
-            if os.path.exists(exe_name) and not exe_name.startswith("./"):
-                cmd_str = "./" + cmd_str
-
-    except Exception as e:
-        os.chdir(bwd)
-        raise Exception("run() error preprocessing command line :{0}".format(str(e)))
 
     try:
         logfile = open(os.path.join('pyemu.log'), 'w+')
         cmd_ins = [i for i in cmd_str.split()]
-        # ret_val = sp.Popen(cmd_ins, stdout=sp.PIPE, stderr=sp.PIPE, shell=shell)
-        with sp.Popen(cmd_ins, stdout=sp.PIPE, stderr=sp.STDOUT) as process:
+
+        with sp.Popen(cmd_ins, 
+                    # #   creationflags=  sp.CREATE_NO_WINDOW, 
+                    #   bufsize=1,
+                      stdout=sp.PIPE, stderr=sp.STDOUT,  shell=shell) as process:
             for line in process.stdout:
                 if verbose:
                     print(line.decode('utf8'), flush=True, end='')
                 #apprend to log file
                 logfile.write(line.decode().strip('\n'))
+            process.wait() # wait for the process to finish
             retval = process.returncode
-            print('returncode',retval)
+            # print('returncode',retval)
         # save stdout to logfile
         logfile.close()
 
