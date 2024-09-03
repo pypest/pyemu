@@ -680,10 +680,10 @@ def ppk2fac_verf_test(tmp_path):
 
     pyemu_arr = pyemu.utils.fac2real(pp_file,pyemu_facfile,out_file=None)
     ppk2fac_arr = pyemu.utils.fac2real(pp_file,ppk2fac_facfile,out_file=None)
-    pyemu_arr[zone_arr == 0] = np.NaN
-    pyemu_arr[zone_arr == -1] = np.NaN
-    ppk2fac_arr[zone_arr == 0] = np.NaN
-    ppk2fac_arr[zone_arr == -1] = np.NaN
+    pyemu_arr[zone_arr == 0] = np.nan
+    pyemu_arr[zone_arr == -1] = np.nan
+    ppk2fac_arr[zone_arr == 0] = np.nan
+    ppk2fac_arr[zone_arr == -1] = np.nan
 
     diff = np.abs(pyemu_arr - ppk2fac_arr)
     print(diff)
@@ -1175,7 +1175,7 @@ def grid_obs_test(tmp_path):
         assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
 
         # skip = lambda x : x < -888.0
-        skip = lambda x: x if x > -888.0 else np.NaN
+        skip = lambda x: x if x > -888.0 else np.nan
         pyemu.gw_utils.setup_hds_obs(hds_file,skip=skip)
         df1 = pd.read_csv(out_file,sep=r"\s+",)
         pyemu.gw_utils.apply_hds_obs(hds_file)
@@ -2176,13 +2176,13 @@ def geostat_prior_builder2_test(tmp_path):
     ecov2 = pe.covariance_matrix()
 
     x1 = cov1.x.copy()
-    x1[np.abs(cov1.to_pearson().x)<0.001] = np.NaN
+    x1[np.abs(cov1.to_pearson().x)<0.001] = np.nan
     x2 = cov2.x.copy()
-    x2[np.abs(cov2.to_pearson().x) < 0.001] = np.NaN
+    x2[np.abs(cov2.to_pearson().x) < 0.001] = np.nan
     ex2 = ecov2.x.copy()
-    ex2[np.abs(ecov2.to_pearson().x) < 0.001] = np.NaN
+    ex2[np.abs(ecov2.to_pearson().x) < 0.001] = np.nan
     x3 = cov3.x.copy()
-    x3[np.abs(cov3.to_pearson().x) < 0.001] = np.NaN
+    x3[np.abs(cov3.to_pearson().x) < 0.001] = np.nan
 
     # even tho we scaled cov2, the resulting corr coef matrix should be the same as cov1
     d = np.abs(cov1.to_pearson().x - cov2.to_pearson().x)
@@ -2476,7 +2476,7 @@ def thresh_pars_test():
 
     newarr = np.loadtxt(orgarr_file)
     print(newarr)
-    newarr[inact_arr==0] = np.nan
+    newarr[inact_arr==0] = 0.0
     print(np.unique(newarr))
 
     tarr = np.zeros_like(newarr)
@@ -2485,13 +2485,14 @@ def thresh_pars_test():
     tot = inact_arr.sum()
     prop = np.nansum(tarr) / tot
     print(prop,cat_dict[1])
-    assert np.isclose(prop,cat_dict[1][0],0.01)
+    print(np.nansum(tarr),tot)
+    assert np.isclose(prop,cat_dict[1][0],0.01),"cat_dict 1,{0} vs {1}, tot:{2}, prop:{3}".format(prop,cat_dict[1],tot,np.nansum(tarr))
 
     tarr = np.zeros_like(newarr)
     tarr[np.isclose(newarr, cat_dict[2][1])] = 1.0
     prop = tarr.sum() / tot
     print(prop, cat_dict[2])
-    assert np.isclose(prop, cat_dict[2][0],0.01)
+    assert np.isclose(prop, cat_dict[2][0],0.01),"cat_dict 2,{0} vs {1}".format(prop,cat_dict[2])
 
     # import matplotlib.pyplot as plt
     # fig,axes = plt.subplots(1,2,figsize=(10,5))
@@ -2508,7 +2509,7 @@ def thresh_pars_test():
 
 
 if __name__ == "__main__":
-    # thresh_pars_test()
+    thresh_pars_test()
     #obs_ensemble_quantile_test()
     #geostat_draws_test("temp")
     # ac_draw_test("temp")
@@ -2590,4 +2591,4 @@ if __name__ == "__main__":
     # ok_grid_zone_test()
     #maha_pdc_summary_test("temp")
     # gsf_reader_test()
-    kl_test()
+    #kl_test()

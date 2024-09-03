@@ -619,13 +619,13 @@ def try_process_ins_test():
     ins_file = os.path.join("utils", "BH.mt3d.processed.ins")
     i = pyemu.pst_utils.InstructionFile(ins_file)
     df2 = i.read_output_file(ins_file.replace(".ins",""))
-    df2.loc[df2.obsval>1.0e+10,"obsval"] = np.NaN
+    df2.loc[df2.obsval>1.0e+10,"obsval"] = np.nan
 
 
     # df1 = pyemu.pst_utils._try_run_inschek(ins_file,ins_file.replace(".ins",""))
     df1 = pd.read_csv(ins_file.replace(".ins", ".obf"), sep=r"\s+",
                       names=["obsnme", "obsval"], index_col=0)
-    df1.loc[df1.obsval > 1.0e+10, "obsval"] = np.NaN
+    df1.loc[df1.obsval > 1.0e+10, "obsval"] = np.nan
     print(df1.max())
     print(df2.max())
     # df1.index = df1.obsnme
@@ -873,7 +873,7 @@ def new_format_test(tmp_path):
         assert len(pst.instruction_files) == len(pst_new.instruction_files)
         assert len(pst.output_files) == len(pst_new.output_files)
 
-    pst_new.parameter_groups.loc[:,:] = np.NaN
+    pst_new.parameter_groups.loc[:,:] = np.nan
     pst_new.parameter_groups.dropna(inplace=True)
     pst_new.write(os.path.join(tmp_path, "test.pst"), version=2)
     pst_new = pyemu.Pst(os.path.join(tmp_path, "test.pst"))
@@ -1118,7 +1118,7 @@ def write2_nan_test(tmp_path):
     os.chdir(tmp_path)
     try:
         pyemu.helpers.zero_order_tikhonov(pst)
-        pst.prior_information.loc[pst.prior_names[0], "weight"] = np.NaN
+        pst.prior_information.loc[pst.prior_names[0], "weight"] = np.nan
         _try_write2fail(pst, newpst_f, order=[1,2])
     except Exception as e:
         os.chdir(bd)
@@ -1126,7 +1126,7 @@ def write2_nan_test(tmp_path):
     os.chdir(bd)
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
-    pst.model_output_data.loc[pst.instruction_files[0], "pest_file"] = np.NaN
+    pst.model_output_data.loc[pst.instruction_files[0], "pest_file"] = np.nan
     os.chdir(tmp_path)
     try:
         _try_write2fail(pst, newpst_f, order=[1,2])
@@ -1136,7 +1136,7 @@ def write2_nan_test(tmp_path):
     os.chdir(bd)
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
-    pst.model_input_data.loc[pst.template_files[0], "pest_file"] = np.NaN
+    pst.model_input_data.loc[pst.template_files[0], "pest_file"] = np.nan
     os.chdir(tmp_path)
     try:
         _try_write2fail(pst, newpst_f, order=[1,2])
@@ -1146,7 +1146,7 @@ def write2_nan_test(tmp_path):
     os.chdir(bd)
 
     pst = pyemu.Pst(os.path.join("pst","pest.pst"))
-    pst.parameter_data.loc[pst.par_names[0],"parval1"] = np.NaN
+    pst.parameter_data.loc[pst.par_names[0],"parval1"] = np.nan
     os.chdir(tmp_path)
     try:
         _try_write2fail(pst, newpst_f)
@@ -1157,7 +1157,7 @@ def write2_nan_test(tmp_path):
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     idx = pst.parameter_groups.pargpnme.iloc[0]
-    pst.parameter_groups.loc[idx, "derinc"] = np.NaN
+    pst.parameter_groups.loc[idx, "derinc"] = np.nan
     os.chdir(tmp_path)
     try:
         _try_write2fail(pst, newpst_f, order=[2, 1])
@@ -1167,7 +1167,7 @@ def write2_nan_test(tmp_path):
     os.chdir(bd)
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
-    pst.observation_data.loc[pst.obs_names[0], "weight"] = np.NaN
+    pst.observation_data.loc[pst.obs_names[0], "weight"] = np.nan
     os.chdir(tmp_path)
     try:
         _try_write2fail(pst, newpst_f)
@@ -1515,7 +1515,8 @@ if __name__ == "__main__":
     with this.
     """
     d = 'temp'
-    interface_check_test()
+    parrep_test(d)
+    #interface_check_test()
     # new_format_test_2()
     #write2_nan_test()
     #process_output_files_test()
@@ -1557,7 +1558,7 @@ if __name__ == "__main__":
     # rectify_pgroup_test()
     #sanity_check_test()
     #change_limit_test()
-    write_tables_test('.')
+    #write_tables_test('.')
     #pi_helper_test()
     #ctrl_data_test()
     #new_format_test_2()

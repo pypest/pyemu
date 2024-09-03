@@ -153,8 +153,8 @@ def from_flopy(tmp_path):
     ph.pst.write_input_files()
     csv = os.path.join("arr_pars.csv")
     df = pd.read_csv(csv,index_col=0)
-    df.loc[:, "upper_bound"] = np.NaN
-    df.loc[:, "lower_bound"] = np.NaN
+    df.loc[:, "upper_bound"] = np.nan
+    df.loc[:, "lower_bound"] = np.nan
     df.to_csv(csv)
     pyemu.helpers.apply_array_pars()
 
@@ -163,7 +163,7 @@ def from_flopy(tmp_path):
     # #df.loc[:, "org_file"] = df.org_file.iloc[0]
     # #df.loc[:, "model_file"] = df.org_file
     # df.loc[:, "upper_bound"] = np.arange(df.shape[0])
-    # df.loc[:, "lower_bound"] = np.NaN
+    # df.loc[:, "lower_bound"] = np.nan
     # print(df)
     # df.to_csv(csv)
     # try:
@@ -173,7 +173,7 @@ def from_flopy(tmp_path):
     # else:
     #     raise Exception()
     # df.loc[:, "lower_bound"] = np.arange(df.shape[0])
-    # df.loc[:, "upper_bound"] = np.NaN
+    # df.loc[:, "upper_bound"] = np.nan
     # print(df)
     # df.to_csv(csv)
     # try:
@@ -591,7 +591,7 @@ def parrep_test(tmp_path):
         # flip the parameter ensemble back around
         parens = parens[parens.columns.sort_values()]
         assert np.allclose(pst.parameter_data.parval1.values[:-1],parens.T[0].values[:-1],atol=0.0001)
-
+        print(pyemu.__file__)
         pst.parrep('fake.par.0.csv', real_name=3)
         # flip the parameter ensemble back around
         parens = parens[parens.columns.sort_values()]
@@ -912,10 +912,10 @@ if __name__ == "__main__":
     # from_flopy_zone_pars()
     #from_flopy_pp_test()
     #from_flopy()
-    #parrep_test()
+    parrep_test(".")
     #from_flopy_kl_test()
     #from_flopy_reachinput()
-    ineq_phi_test()
+    #ineq_phi_test()
 
 
 

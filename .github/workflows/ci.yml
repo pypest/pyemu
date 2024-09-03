@@ -40,6 +40,8 @@ jobs:
           python=${{ matrix.python-version }}
         cache-downloads: true
         cache-environment: true
+        cache-environment-key: environment-${{ steps.date.outputs.date }}
+        cache-downloads-key: downloads-${{ steps.date.outputs.date }}
 
     - name: Install pyemu
       shell: bash -l {0}
@@ -69,7 +71,7 @@ jobs:
       shell: bash -l {0}
       working-directory: ./autotest
       run: |
-        pytest -v -n=auto --tb=native --cov=pyemu --cov-report=lcov ${{ matrix.test-path }}
+        pytest -rP -rx --capture=no -v -n=auto --tb=native --cov=pyemu --cov-report=lcov ${{ matrix.test-path }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -79,7 +81,7 @@ jobs:
       working-directory: ./examples
       run: |
         micromamba install --name pyemu jupyter jupytext
-        pytest -v -n=auto --nbmake --cov=pyemu --cov-report=lcov:../autotest/coverage.lcov \
+        pytest -v -rP -rx --capture=no -n=auto --nbmake --cov=pyemu --cov-report=lcov:../autotest/coverage.lcov \
           --cov-config=../autotest/.coveragerc *.ipynb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

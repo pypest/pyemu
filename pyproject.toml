@@ -36,6 +36,7 @@ optional = [
     "pyshp",
     "scipy",
     "shapely",
+    "jinja2"  # for to_latex options
 ]
 test = [
     "coveralls",
