@@ -872,6 +872,8 @@ class OrdinaryKrige(object):
         var_filename=None,
         forgive=False,
         num_threads=1,
+        try_use_ppu=False,
+        ppu_factor_file_name = "factors.dat"
     ):
         """calculate kriging factors (weights) for a structured grid.
 
@@ -939,18 +941,56 @@ class OrdinaryKrige(object):
             raise Exception(
                 "spatial_reference does not have proper attributes:{0}".format(str(e))
             )
-
-        use_ppu = False
-        try:
-            import pypestutils as ppu
-            use_ppu = True
-        except Exception as e:
-            pass
+        if try_use_ppu:
+            use_ppu = False
+            try:
+                from pypestutils.pestutilslib import PestUtilsLib
+                use_ppu = True
+            except Exception as e:
+                pass
 
 
         if use_ppu:
             print("...pypestutils detected and being used for kriging solve, trust us, you want this!")
-        exit()
+            ecs = self.point_data.x.values
+            ncs = self.point_data.y.values
+            zns = 1#np.ones_like(ecs,dtype=int)
+            if "zone" in self.point_data.columns:
+                zns = self.point_data.zone.values
+            ect = x.ravel()
+            nct = y.ravel()
+            znt = 1
+            if zone_array is not None:
+                znt = zone_array.ravel()
+            assert len(self.geostruct.variograms) == 1
+            v = self.geostruct.variograms[0]
+            vartype = 2
+            if isinstance(v,ExpVario):
+                pass
+            elif isinstance(v,SphVario):
+                vartype = 1
+            elif isinstance(v, GauVarioVario):
+                vartype = 3
+            else:
+                raise NotImplementedError("unsupported variogram type: {0}".format(str(type(v))))
+            krigtype = 1 #hard coded to ordinary
+            factorfile = ppu_factor_file_name
+            factorfiletype = 1 #hard coded to ascii for now
+
+            plib = PestUtilsLib()
+            num_interp_pts = plib.calc_kriging_factors_2d(self.point_data.x.values,
+                                                          self.point_data.y.values,zns,
+                                                          x.ravel(),y.ravel(),znt,
+                                                          vartype,krigtype,
+                                                          v.a,v.anisotropy,v.bearing,
+                                                          search_radius,maxpts_interp,
+                                                          minpts_interp,ppu_factor_file_name,
+                                                          factorfiletype)
+            plib.free_all_memory()
+
+            assert os.path.exists(factorfile)
+            print("...factors calculated for",num_interp_pts,"points")
+            return num_interp_pts
 
         if var_filename is not None:
             if self.spatial_reference.grid_type=='vertex':
