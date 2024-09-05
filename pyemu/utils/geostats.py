@@ -873,7 +873,7 @@ class OrdinaryKrige(object):
         forgive=False,
         num_threads=1,
         try_use_ppu=False,
-        ppu_factor_file_name = "factors.dat"
+        ppu_factor_filename = "factors.dat"
     ):
         """calculate kriging factors (weights) for a structured grid.
 
@@ -974,7 +974,6 @@ class OrdinaryKrige(object):
             else:
                 raise NotImplementedError("unsupported variogram type: {0}".format(str(type(v))))
             krigtype = 1 #hard coded to ordinary
-            factorfile = ppu_factor_file_name
             factorfiletype = 1 #hard coded to ascii for now
 
             plib = PestUtilsLib()
@@ -984,12 +983,13 @@ class OrdinaryKrige(object):
                                                           vartype,krigtype,
                                                           v.a,v.anisotropy,v.bearing,
                                                           search_radius,maxpts_interp,
-                                                          minpts_interp,ppu_factor_file_name,
+                                                          minpts_interp,ppu_factor_filename,
                                                           factorfiletype)
             plib.free_all_memory()
 
-            assert os.path.exists(factorfile)
-            print("...factors calculated for",num_interp_pts,"points")
+            assert os.path.exists(ppu_factor_filename)
+            print("...ppu_factor_filename '{0}' created =, factors calculated for {1} points".\
+                  format(ppu_factor_filename,num_interp_pts))
             return num_interp_pts
 
         if var_filename is not None:

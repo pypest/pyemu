@@ -23,5 +23,5 @@ dependencies:
   - modflow-devtools
   - scikit-learn
   - pip
-  pip: 
+  - pip: 
     - pypestutils

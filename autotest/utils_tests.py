@@ -2538,7 +2538,10 @@ def ppu_geostats_invest(tmp_path):
     #print(par_info_unrot.parnme.value_counts())
     gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0))
     ok = pyemu.geostats.OrdinaryKrige(gs,par_info_unrot)
-    ok.calc_factors_grid(sr,try_use_ppu=True)
+    ppu_factor_filename = os.path.join("utils","ppu_factors.dat")
+    ok.calc_factors_grid(sr,try_use_ppu=True,ppu_factor_filename=ppu_factor_filename)
+
+    pyemu.geostats.fac2real(par_info_unrot,ppu_factor_filename,out_file=os.path.join("utils","ppu_array.dat"))
     exit()
     
     sr2 = pyemu.helpers.SpatialReference.from_gridspec(
