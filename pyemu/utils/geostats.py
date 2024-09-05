@@ -940,6 +940,18 @@ class OrdinaryKrige(object):
                 "spatial_reference does not have proper attributes:{0}".format(str(e))
             )
 
+        use_ppu = False
+        try:
+            import pypestutils as ppu
+            use_ppu = True
+        except Exception as e:
+            pass
+
+
+        if use_ppu:
+            print("...pypestutils detected and being used for kriging solve, trust us, you want this!")
+        exit()
+
         if var_filename is not None:
             if self.spatial_reference.grid_type=='vertex':
                 arr = (

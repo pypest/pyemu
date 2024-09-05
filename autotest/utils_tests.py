@@ -2508,8 +2508,76 @@ def thresh_pars_test():
 
 
 
+def ppu_geostats_invest(tmp_path):
+    import sys
+
+
+    import os
+    import pyemu
+    
+    import flopy
+
+    sys.path.insert(0,os.path.join("..","..","pypestutils"))
+
+    import pypestutils as ppu
+
+    o_model_ws = os.path.join("..","examples","Freyberg","extra_crispy")
+    model_ws = os.path.join(tmp_path, "extra_crispy")
+    if os.path.exists(model_ws):
+        shutil.rmtree(model_ws)
+    shutil.copytree(o_model_ws, model_ws)
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
+    pp_dir = os.path.join(tmp_path)
+    #ml.export(os.path.join("temp","test_unrot_grid.shp"))
+    sr = pyemu.helpers.SpatialReference().from_namfile(
+        os.path.join(ml.model_ws, ml.namefile),
+        delc=ml.dis.delc, delr=ml.dis.delr)
+    sr.rotation = 0.
+    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr, prefix_dict={0: "hk1",1:"hk2"},
+                                                           every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+                                                           shapename=os.path.join(tmp_path, "test_unrot.shp"),
+                                                           )
+    #print(par_info_unrot.parnme.value_counts())
+    gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0))
+    ok = pyemu.geostats.OrdinaryKrige(gs,par_info_unrot)
+    ok.calc_factors_grid(sr)
+    exit()
+    
+    sr2 = pyemu.helpers.SpatialReference.from_gridspec(
+        os.path.join(ml.model_ws, "test.spc"), lenuni=2)
+    par_info_drot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr2, prefix_dict={0: ["hk1_", "sy1_", "rch_"]},
+                                                           every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+                                                           shapename=os.path.join(tmp_path, "test_unrot.shp"),
+                                                           )
+    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
+    ok.calc_factors_grid(sr2)
+
+    par_info_mrot = pyemu.pp_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
+                                                     every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
+                                                     shapename=os.path.join(tmp_path,"test_unrot.shp"))
+    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
+    ok.calc_factors_grid(sr)
+
+
+
+    sr.rotation = 15
+    #ml.export(os.path.join("temp","test_rot_grid.shp"))
+
+    #pyemu.gw_utils.setup_pilotpoints_grid(ml)
+
+    par_info_rot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+                                                     shapename=os.path.join(tmp_path, "test_rot.shp"))
+    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
+    ok.calc_factors_grid(sr)
+    print(par_info_unrot.x)
+    print(par_info_drot.x)
+    print(par_info_mrot.x)
+    print(par_info_rot.x)
+
+
 if __name__ == "__main__":
-    thresh_pars_test()
+    ppu_geostats_invest(".")
+    #thresh_pars_test()
     #obs_ensemble_quantile_test()
     #geostat_draws_test("temp")
     # ac_draw_test("temp")
