@@ -941,8 +941,9 @@ class OrdinaryKrige(object):
             raise Exception(
                 "spatial_reference does not have proper attributes:{0}".format(str(e))
             )
+
+        use_ppu = False
         if try_use_ppu:
-            use_ppu = False
             try:
                 from pypestutils.pestutilslib import PestUtilsLib
                 use_ppu = True
