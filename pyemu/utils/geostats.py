@@ -3,6 +3,7 @@
 from __future__ import print_function
 import os
 import copy
+import shutil
 from datetime import datetime
 import multiprocessing as mp
 import warnings
@@ -975,7 +976,7 @@ class OrdinaryKrige(object):
             else:
                 raise NotImplementedError("unsupported variogram type: {0}".format(str(type(v))))
             krigtype = 1 #hard coded to ordinary
-            factorfiletype = 1 #hard coded to ascii for now
+            factorfiletype = 1 #hard coded to ascii for now since we have to rewrite the fac file
 
             plib = PestUtilsLib()
             num_interp_pts = plib.calc_kriging_factors_2d(self.point_data.x.values,
@@ -987,9 +988,10 @@ class OrdinaryKrige(object):
                                                           minpts_interp,ppu_factor_filename,
                                                           factorfiletype)
             plib.free_all_memory()
-
             assert os.path.exists(ppu_factor_filename)
-            print("...ppu_factor_filename '{0}' created =, factors calculated for {1} points".\
+            reformat_factorfile(x.shape[0], x.shape[1], self.point_data, self.geostruct, ppu_factor_filename)
+
+            print("...ppu_factor_filename '{0}' created, factors calculated for {1} points".\
                   format(ppu_factor_filename,num_interp_pts))
             return num_interp_pts
 
@@ -2433,7 +2435,7 @@ def fac2real(
                 type(pp_file)
             )
         )
-    assert os.path.exists(factors_file), "factors file not found"
+    assert os.path.exists(factors_file), "factors file {0} not found".format(factors_file)
     f_fac = open(factors_file, "r")
     fpp_file = f_fac.readline()
     if pp_file is None and pp_data is None:
@@ -2509,3 +2511,29 @@ def _parse_factor_line(line):
     #     fac = float(raw[ifac+1])
     #     fac_data[pnum] = fac
     return inode, itrans, fac_data
+
+
+def reformat_factorfile(nrow,ncol,point_data,geostruct,ppu_factor_filename):
+    f_in = open(ppu_factor_filename,'r')
+    f_out = open("temp.fac",'w')
+    f_out.write("points.junk\nzone.junk\n")
+    f_out.write("{0} {1}\n".format(ncol,nrow))
+    f_out.write("{0}\n".format(point_data.shape[0]))
+    [f_out.write("{0}\n".format(name)) for name in point_data.name]
+    t = 0
+    if geostruct.transform == "log":
+        t = 1
+    t = str(t)
+    f_in.readline()
+    f_in.readline()
+    for line in f_in:
+        raw = line.strip().split()
+        raw.insert(1,t)
+        line = " ".join(raw)
+        f_out.write(line+"\n")
+    f_in.close()
+    f_out.close()
+    shutil.copy2("temp.fac",ppu_factor_filename)
+    os.remove("temp.fac")
+
+

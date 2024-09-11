@@ -2511,6 +2511,8 @@ def thresh_pars_test():
 def ppu_geostats_invest(tmp_path):
     import sys
     import os
+    import numpy as np
+    import matplotlib.pyplot as plt
     import pyemu
     
     import flopy
@@ -2532,48 +2534,38 @@ def ppu_geostats_invest(tmp_path):
         delc=ml.dis.delc, delr=ml.dis.delr)
     sr.rotation = 0.
     par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr, prefix_dict={0: "hk1",1:"hk2"},
-                                                           every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+                                                           every_n_cell=6, pp_dir=pp_dir, tpl_dir=pp_dir,
                                                            shapename=os.path.join(tmp_path, "test_unrot.shp"),
                                                            )
     #print(par_info_unrot.parnme.value_counts())
+    par_info_unrot.loc[:,"parval1"] = np.random.uniform(10,100,par_info_unrot.shape[0])
     gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0))
     ok = pyemu.geostats.OrdinaryKrige(gs,par_info_unrot)
     ppu_factor_filename = os.path.join("utils","ppu_factors.dat")
+    pyemu_factor_filename = os.path.join("utils", "pyemu_factors.dat")
+
+    ok.calc_factors_grid(sr, try_use_ppu=False)
+    ok.to_grid_factors_file(pyemu_factor_filename)
     ok.calc_factors_grid(sr,try_use_ppu=True,ppu_factor_filename=ppu_factor_filename)
-
-    pyemu.geostats.fac2real(par_info_unrot,ppu_factor_filename,out_file=os.path.join("utils","ppu_array.dat"))
-    exit()
-    
-    sr2 = pyemu.helpers.SpatialReference.from_gridspec(
-        os.path.join(ml.model_ws, "test.spc"), lenuni=2)
-    par_info_drot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr2, prefix_dict={0: ["hk1_", "sy1_", "rch_"]},
-                                                           every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
-                                                           shapename=os.path.join(tmp_path, "test_unrot.shp"),
-                                                           )
-    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
-    ok.calc_factors_grid(sr2)
-
-    par_info_mrot = pyemu.pp_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
-                                                     every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
-                                                     shapename=os.path.join(tmp_path,"test_unrot.shp"))
-    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
-    ok.calc_factors_grid(sr)
-
-
-
-    sr.rotation = 15
-    #ml.export(os.path.join("temp","test_rot_grid.shp"))
-
-    #pyemu.gw_utils.setup_pilotpoints_grid(ml)
-
-    par_info_rot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
-                                                     shapename=os.path.join(tmp_path, "test_rot.shp"))
-    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
-    ok.calc_factors_grid(sr)
-    print(par_info_unrot.x)
-    print(par_info_drot.x)
-    print(par_info_mrot.x)
-    print(par_info_rot.x)
+    out_file = os.path.join("utils","pyemu_array.dat")
+    pyemu.geostats.fac2real(par_info_unrot,pyemu_factor_filename,out_file=out_file)
+    out_file_ppu = os.path.join("utils", "ppu_array.dat")
+    pyemu.geostats.fac2real(par_info_unrot, ppu_factor_filename, out_file=out_file_ppu)
+    arr_ppu = np.loadtxt(out_file_ppu)
+    arr = np.loadtxt(out_file)
+    diff = 100 * np.abs(arr - arr_ppu) / np.abs(arr)
+    assert diff.max() < 1.0
+    # fig,axes = plt.subplots(1,3,figsize=(10,10))
+    # cb = axes[0].imshow(arr)
+    # plt.colorbar(cb, ax=axes[0])
+    #
+    # cb = axes[1].imshow(arr_ppu,vmin=arr.min(),vmax=arr.max())
+    # plt.colorbar(cb, ax=axes[1])
+    #
+    # cb = axes[2].imshow(diff)
+    # plt.colorbar(cb,ax=axes[2])
+    # plt.show()
+    # exit()
 
 
 if __name__ == "__main__":
