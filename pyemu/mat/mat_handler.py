@@ -3575,7 +3575,7 @@ class Cov(Matrix):
             import matplotlib.pyplot as plt
             cov = pyemu.Cov.from_ascii("pest.post.cov")
             cc = cov.to_pearson()
-            cc.x[cc.x==1.0] = np.NaN
+            cc.x[cc.x==1.0] = np.nan
             plt.imshow(cc)
 
         """

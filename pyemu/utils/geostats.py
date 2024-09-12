@@ -347,8 +347,8 @@ class SpecSim2d(object):
         self.geostruct = geostruct
         self.delx = delx
         self.dely = dely
-        self.num_pts = np.NaN
-        self.sqrt_fftc = np.NaN
+        self.num_pts = np.nan
+        self.sqrt_fftc = np.nan
         self.effective_variograms = None
         self.initialize()
 
@@ -554,7 +554,7 @@ class SpecSim2d(object):
 
             gp_par = par.loc[gp_df.parnme, :]
             # use the parval1 as the mean
-            mean_arr = np.zeros((self.dely.shape[0], self.delx.shape[0])) + np.NaN
+            mean_arr = np.zeros((self.dely.shape[0], self.delx.shape[0])) + np.nan
             mean_arr[gp_df.i, gp_df.j] = gp_par.parval1
             # fill missing mean values
             mean_arr[np.isnan(mean_arr)] = gp_par.parval1.mean()
@@ -889,7 +889,7 @@ class OrdinaryKrige(object):
                 interpolating each grid node. Default is None
             minpts_interp (`int`): minimum number of `point_data` entires to use for interpolation at
                 a given grid node.  grid nodes with less than `minpts_interp`
-                `point_data` found will be skipped (assigned np.NaN).  Defaut is 1
+                `point_data` found will be skipped (assigned np.nan).  Defaut is 1
             maxpts_interp (`int`) maximum number of `point_data` entries to use for interpolation at
                 a given grid node.  A larger `maxpts_interp` will yield "smoother"
                 interplation, but using a large `maxpts_interp` will slow the
@@ -1058,8 +1058,8 @@ class OrdinaryKrige(object):
                 idx = np.arange(
                     len(zone_array.ravel())
                 )[(zone_array == pt_data_zone).ravel()]
-                # xzone[zone_array != pt_data_zone] = np.NaN
-                # yzone[zone_array != pt_data_zone] = np.NaN
+                # xzone[zone_array != pt_data_zone] = np.nan
+                # yzone[zone_array != pt_data_zone] = np.nan
 
                 df = self.calc_factors(
                     xzone,
@@ -1191,7 +1191,7 @@ class OrdinaryKrige(object):
             minpts_interp (`int`): minimum number of point_data entires to use for interpolation at
                 a given x,y interplation point.  interpolation points with less
                 than `minpts_interp` `point_data` found will be skipped
-                (assigned np.NaN).  Defaut is 1
+                (assigned np.nan).  Defaut is 1
             maxpts_interp (`int`): maximum number of point_data entries to use for interpolation at
                 a given x,y interpolation point.  A larger `maxpts_interp` will
                 yield "smoother" interplation, but using a large `maxpts_interp`
@@ -1320,7 +1320,7 @@ class OrdinaryKrige(object):
                 inames.append([])
                 idist.append([])
                 ifacts.append([])
-                err_var.append(np.NaN)
+                err_var.append(np.nan)
                 continue
             if verbose:
                 istart = datetime.now()
@@ -1404,7 +1404,7 @@ class OrdinaryKrige(object):
                     inames.append([])
                     idist.append([])
                     ifacts.append([])
-                    err_var.append(np.NaN)
+                    err_var.append(np.nan)
                     continue
                 else:
                     raise Exception("error solving for factors:{0}".format(str(e)))
@@ -1473,7 +1473,7 @@ class OrdinaryKrige(object):
         idist = [[]] * len(df.x)
         inames = [[]] * len(df.x)
         ifacts = [[]] * len(df.x)
-        err_var = [np.NaN] * len(df.x)
+        err_var = [np.nan] * len(df.x)
         with mp.Manager() as manager:
             point_pairs = manager.list(point_pairs)
             idist = manager.list(idist)
@@ -1566,7 +1566,7 @@ class OrdinaryKrige(object):
                 ifacts[idx] = [[]]
                 idist[idx] = [[]]
                 inames[idx] = [[]]
-                err_var[idx] = [np.NaN]
+                err_var[idx] = [np.nan]
                 continue
 
             # calc dist from this interp point to all point data...
@@ -2380,7 +2380,7 @@ def load_sgems_exp_var(filename):
             for item in attrib:
                 print(item, item.tag)
         df = pd.DataFrame({"x": x, "y": y, "pairs": pairs})
-        df.loc[df.y < 0.0, "y"] = np.NaN
+        df.loc[df.y < 0.0, "y"] = np.nan
         dfs[title] = df
     return dfs
 

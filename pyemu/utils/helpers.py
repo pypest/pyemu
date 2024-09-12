@@ -15,6 +15,7 @@ import traceback
 import re
 import numpy as np
 import pandas as pd
+import math
 
 pd.options.display.max_colwidth = 100
 from ..pyemu_warnings import PyemuWarning
@@ -90,12 +91,17 @@ class Trie:
         return self._pattern(self.dump())
 
 
-def _try_pdcol_numeric(x, first=True, **kwargs):
+def _try_pdcol_numeric(x, first=True, intadj=0, **kwargs):
     try:
         x = pd.to_numeric(x, errors="raise", **kwargs)
+        if intadj != 0:
+            if first:
+                x = pd.Series([xx + intadj if isinstance(xx, (int, np.integer)) else xx for xx in x])
+            else:
+                x = x + intadj if isinstance(x, (int, np.integer)) else x
     except ValueError as e:
         if first:
-            x = x.apply(_try_pdcol_numeric, first=False, **kwargs)
+            x = x.apply(_try_pdcol_numeric, first=False, intadj=intadj, **kwargs)
         else:
             pass
     return x
@@ -2119,8 +2125,8 @@ def calc_array_par_summary_stats(arr_par_file="mult2model_info.csv"):
             elif len(zone_file) == 1:
                 zone_arr = np.loadtxt(zone_file[0])
             if zone_arr is not None:
-                arr[zone_arr == 0] = np.NaN
-                org_arr[zone_arr == 0] = np.NaN
+                arr[zone_arr == 0] = np.nan
+                org_arr[zone_arr == 0] = np.nan
 
         for stat, func in stat_dict.items():
             v = func(arr)
@@ -2239,29 +2245,6 @@ def _process_chunk_list_files(chunk, i, df):
     print("process", i, " processed ", len(chunk), "process_list_file calls")
 
 
-def _list_index_caster(x, add1):
-    vals = []
-    for xx in x:
-        if xx:
-            if any(s not in " 0123456789.-" for s in xx):
-                vals.append(xx.strip().strip("'\" "))
-            else:
-                if (xx.strip().isdigit() or
-                        (xx.strip()[0] == '-' and xx.strip()[1:].isdigit())):
-                    vals.append(add1 + int(xx))
-                else:
-                    try:
-                        vals.append(float(xx))
-                    except Exception as e:
-                        vals.append(xx.strip().strip("'\" "))
-
-    return tuple(vals)
-
-
-def _list_index_splitter_and_caster(x, add1):
-    return _list_index_caster(x.strip("()").replace('\'', '').split(","), add1)
-
-
 def _process_list_file(model_file, df):
     # print("processing model file:", model_file)
     df_mf = df.loc[df.model_file == model_file, :].copy()
@@ -2353,12 +2336,9 @@ def _process_list_file(model_file, df):
             # if original model files is not zero based need to add 1
             add1 = int(mlt.zero_based == False)
 
-            mlts.index = pd.MultiIndex.from_tuples(
-                mlts.sidx.apply(
-                    lambda x: _list_index_splitter_and_caster(x,add1)
-                ),
-                names=mlt.index_cols,
-            )
+            mlts[mlt.index_cols] = mlts[mlt.index_cols].apply(
+                _try_pdcol_numeric, intadj=add1, downcast='integer')
+            mlts = mlts.set_index(mlt.index_cols)
             if mlts.index.nlevels < 2:  # just in case only one index col is used
                 mlts.index = mlts.index.get_level_values(0)
             common_idx = (
@@ -4019,14 +3999,170 @@ def apply_threshold_pars(csv_file):
 
 
 
+def randrealgen_optimized(nreal, tol=1e-7, max_samples=1000000):
+    """
+    Generate a set of random realizations with a normal distribution.
+    
+    Parameters:
+    nreal : int
+        The number of realizations to generate.
+    tol : float
+        Tolerance for the stopping criterion.
+    max_samples : int
+        Maximum number of samples to use.
+        
+    Returns:
+    numpy.ndarray
+        An array of nreal random realizations.
+    """
+    rval = np.zeros(nreal)
+    nsamp = 0
+    # if nreal is even add 1
+    if nreal % 2 == 0:
+        numsort = (nreal + 1) // 2
+    else:
+        numsort = nreal // 2
+    while nsamp < max_samples:
+        nsamp += 1
+        work1 = np.random.normal(size=nreal)
+        work1.sort()
+        
+        if nsamp > 1:
+            previous_mean = rval[:numsort] / (nsamp - 1)
+            rval[:numsort] += work1[:numsort]
+            current_mean = rval[:numsort] / nsamp
+            max_diff = np.max(np.abs(current_mean - previous_mean))
+            
+            if max_diff <= tol:
+                break
+        else:
+            rval[:numsort] = work1[:numsort]
+    
+    rval[:numsort] /= nsamp
+    if nreal % 2 == 0:
+        rval[numsort:] = -rval[:numsort][::-1]
+    else:
+        rval[numsort+1:] = -rval[:numsort][::-1]
+    
+    return rval
 
 
+def normal_score_transform(nstval, val, value):
+    """
+    Transform a value to its normal score using a normal score transform table.
+    
+    Parameters:
+    nstval : array-like
+        Normal score transform table values.
+    val : array-like
+        Original values corresponding to the normal score transform table.
+    value : float
+        The value to transform.
+        
+    Returns:
+    float
+        The normal score of the value.
+    int
+        The index of the value in the normal score transform table."""
+    
+    # make sure the input is numpy arrays
+    val = np.asarray(val)
+    nstval = np.asarray(nstval)
+    
+    # if the value is outside the range of the table, return the first or last value
+    assert value >= val[0], "Value is below the minimum value in the table."
+    assert value <= val[-1], "Value is greater than the maximum value in the table."
+    # ensure that val is sorted
+    assert np.all(np.diff(val) > 0), f"Values in the table must be sorted in ascending order:{list(zip(np.diff(val)>0,val))}"
+
+    # find the rank of the value in the table
+    rank = np.searchsorted(val, value, side='right') - 1
+    if rank == len(val) - 1:
+        return nstval[-1], len(val)
+    # if the value conincides with a value in the table, return the corresponding normal score
+    nstdiff = nstval[rank + 1] - nstval[rank]
+    diff = val[rank + 1] - val[rank]
+    if nstdiff <= 0.0 or diff <= 0.0:
+        return nstval[rank], rank
+    
+    # otherwise, interpolate to get the normal score
+    dist = value - val[rank]
+    interpolated_value = nstval[rank] + (dist / diff) * nstdiff
+    return interpolated_value, rank
 
 
+def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
+    nreal = len(val)
+    # check that nstval is sorted
+    assert np.all(np.diff(nstval) > 0), "Values in the table must be sorted in ascending order"
+    # check that val is sorted
+    assert np.all(np.diff(val) > 0), "Values in the table must be sorted in ascending order"
+    
+    def linear_extrapolate(x0, y0, x1, y1, x):
+        if x1 != x0:
+            return y0 + (y1 - y0) / (x1 - x0) * (x - x0)
+        return y0
 
+    def quadratic_extrapolate(x1, y1, x2, y2, x3, y3, x4):
+        y12=y1-y2
+        x23=x2-x3
+        y23=y2-y3
+        x12=x1-x2
+        x13=x1-x3
+        if x12==0 or x23==0 or x13==0:
+            raise ValueError("Input x values must be distinct")
+        a = (y12*x23-y23*x12)
+        den = x12*x23*x13
+        a = a/den
+        b = y23/x23 - a*(x2+x3)
+        c=y1-x1*(a*x1+b)
+        y4 = a*x4**2 + b*x4 + c
+        return y4
 
+    ilim = 0
+    if value in nstval:
+        rank = np.searchsorted(nstval, value)
+        value = val[rank]
 
+    elif value < nstval[0]:
+        ilim = -1
+        if extrap is None:
+            value = val[0]
+        elif extrap == 'linear':
+            value = linear_extrapolate(nstval[0], val[0], nstval[1], val[1], value)
+            #value = min(value, val[0])
+        elif extrap == 'quadratic' and nreal >= 3:
+            y_vals = np.unique(val)[:3]
+            idxs = np.searchsorted(val,y_vals)
+            x_vals = nstval[idxs]
+            value = quadratic_extrapolate(x_vals[-3], y_vals[-3], x_vals[-2], y_vals[-2], x_vals[-1], y_vals[-1], value)
+            #value = min(value, val[0])
+        else:
+            value = val[0]
 
+    elif value > nstval[-1]:
+        ilim = 1
+        if extrap is None:
+            value = val[-1]
+        elif extrap == 'linear':
+            value = linear_extrapolate(nstval[-2], val[-2], nstval[-1], val[-1], value)
+            #value = max(value, val[-1])
+        elif extrap == 'quadratic' and nreal >= 3:
+            y_vals = np.unique(val)[-3:]
+            idxs = np.searchsorted(val,y_vals)
+            x_vals = nstval[idxs]
+            value = quadratic_extrapolate(x_vals[-3], y_vals[-3], x_vals[-2], y_vals[-2], x_vals[-1], y_vals[-1], value)
+            #value = max(value, val[-1])
+        else:
+            value = val[-1]
 
-
+    else:
+        rank = np.searchsorted(nstval, value) - 1
+        # Get the bounding x and y values
+        x0, x1 = nstval[rank], nstval[rank + 1]
+        y0, y1 = val[rank], val[rank + 1]
+        # Perform linear interpolation
+        value = y0 + (y1 - y0) * (value - x0) / (x1 - x0)
+    
+    return value, ilim
 
