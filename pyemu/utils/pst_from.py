@@ -282,6 +282,14 @@ class PstFrom(object):
         self.chunk_len = int(chunk_len)
         self.py_functions = set()
 
+        self.pre_py_cmds.insert(
+            0,
+            "pyemu.helpers.apply_list_and_array_pars("
+            "arr_par_file='mult2model_info.csv',chunk_len={0})".format(
+                self.chunk_len
+            ),
+        )
+
 
     @property
     def parfile_relations(self):
@@ -1938,8 +1946,11 @@ class PstFrom(object):
                 input file directly.  Default is "multiplier".
             initial_value (`float`): the value to set for the `parval1` value in the control file
                 Default is 1.0
-            prep_pp_hyperpars (`bool`): flag to setup and use pilot point hyper parameters
-                (ie anisotropy, bearing, "a").  Only used if par type is pilot points.
+            pp_options (`dict`): various options to control pilot point options.  Also includes
+                 `prep_hyperpars`, a `bool` flag to setup and use pilot point hyper parameters
+                (ie anisotropy, bearing, "a") with `PyPestUtils`, and `try_use_ppu`, a flag to
+                (attempt) to use `PyPestUtils` to calculate the kriging factors instead of the
+                pyemu geostats slowness.  Only used if par type is pilot points.
         Returns:
             `pandas.DataFrame`: dataframe with info for new parameters
 
@@ -2603,16 +2614,33 @@ class PstFrom(object):
 
                 # Calculating pp factors
                 pg = pargp[0]
-
+                prep_pp_hyperpars = pp_options.get("prep_hyperpars",False)
                 if prep_pp_hyperpars:
                     if structured:
                         grid_dict = {}
-                        for inode,(xx,yy) in enumerate(spatial_reference.xcentergrid.flatten(),
-                                                       spatial_reference.ycentergrid.flatten()):
+                        for inode,(xx,yy) in enumerate(zip(spatial_reference.xcentergrid.flatten(),
+                                                       spatial_reference.ycentergrid.flatten())):
                             grid_dict[inode] = (xx,yy)
                     else:
                         grid_dict = spatial_reference
-                    config_df = pyemu.utils.prep_pp_hyperpars(pg,grid_dict,pp_geostruct,df,pp_options)
+                    #prep_pp_hyperpars(file_tag,pp_filename,out_filename,grid_dict,
+                    #   geostruct,arr_shape,pp_options,zone_array=None)
+                    if structured:
+                        shape = spatial_reference.xcentergrid.shape
+                    else:
+                        shape = (1,len(grid_dict))
+                    config_df = pyemu.utils.prep_pp_hyperpars(pg,os.path.join("mult",pp_filename),
+                                                              pp_locs,os.path.join("mult",mlt_filename),
+                                                              grid_dict,pp_geostruct,shape,pp_options,
+                                                              zone_array=zone_array,
+                                                              ws=self.new_d)
+                    #todo: add call to apply func ahead of call to mult func
+                    config_df_filename = config_df.loc["config_df_filename","value"]
+                    self.pre_py_cmds.insert(0,"pyemu.utils.apply_ppu_hyperpars('{0}')".\
+                                            format(config_df_filename))
+                    #if "pypestutils" not in self.extra_py_imports:
+                    #    self.extra_py_imports.append("pypestutils")
+                    print(config_df_filename)
 
                 else:
 
@@ -2667,7 +2695,7 @@ class PstFrom(object):
                         # when required
                         if structured:
 
-                            ok_pp.calc_factors_grid(
+                            ret_val = ok_pp.calc_factors_grid(
                                 spatial_reference,
                                 var_filename=var_filename,
                                 zone_array=zone_array,
@@ -2675,10 +2703,11 @@ class PstFrom(object):
                                 minpts_interp=pp_options.get("minpts_interp",1),
                                 maxpts_interp=pp_options.get("maxpts_interp",20),
                                 search_radius=pp_options.get("search_radius",1e10),
-                                try_use_ppu=pp_options.get("try_use_ppu",True),
+                                try_use_ppu=pp_options.get("try_use_ppu",False),
                                 ppu_factor_filename=pp_options.get("ppu_factor_filename","factors.dat")
                             )
-                            ok_pp.to_grid_factors_file(fac_filename)
+                            if not isinstance(ret_val,int):
+                                ok_pp.to_grid_factors_file(fac_filename)
                         else:
                             # put the sr dict info into a df
                             # but we only want to use the n
@@ -2686,7 +2715,6 @@ class PstFrom(object):
                                 for zone in np.unique(zone_array):
                                     if int(zone) == 0:
                                         continue
-
                                     data = []
                                     for node, (x, y) in spatial_reference.items():
                                         if zone_array[0, node] == zone:
@@ -2718,7 +2746,7 @@ class PstFrom(object):
                                 )
 
                         self.logger.log("calculating factors for pargp={0}".format(pg))
-            # TODO - other par types - JTW?
+
             elif par_type == "kl":
                 self.logger.lraise("array type 'kl' not implemented")
             else:
@@ -2777,13 +2805,13 @@ class PstFrom(object):
                 mult_dict["fac_file"] = os.path.relpath(fac_filename, self.new_d)
                 mult_dict["pp_file"] = pp_filename
                 if transform == "log":
-                    mult_dict["pp_fill_value"] = 1.0
-                    mult_dict["pp_lower_limit"] = 1.0e-30
-                    mult_dict["pp_upper_limit"] = 1.0e30
+                    mult_dict["pp_fill_value"] = pp_options.get("fill_values",1.0)
+                    mult_dict["pp_lower_limit"] = pp_options.get("lower_limit",1.0e-30)
+                    mult_dict["pp_upper_limit"] = pp_options.get("upper_limit",1.0e30)
                 else:
-                    mult_dict["pp_fill_value"] = 0.0
-                    mult_dict["pp_lower_limit"] = -1.0e30
-                    mult_dict["pp_upper_limit"] = 1.0e30
+                    mult_dict["pp_fill_value"] = pp_options.get("fill_value",0.0)
+                    mult_dict["pp_lower_limit"] = pp_options.get("lower_limit",-1.0e30)
+                    mult_dict["pp_upper_limit"] = pp_options("upper_limit",1.0e30)
             if zone_filename is not None:
                 mult_dict["zone_file"] = zone_filename
             relate_parfiles.append(mult_dict)
@@ -3978,8 +4006,9 @@ def get_relative_filepath(folder, filename):
     return get_filepath(folder, filename).relative_to(folder)
 
 
-def prep_pp_hyperpars(file_tag,pp_filename,out_filename,grid_dict,
-                       geostruct,arr_shape,pp_options,zone_array=None):
+def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
+                       geostruct,arr_shape,pp_options,zone_array=None,
+                      ws = "."):
     try:
         from pypestutils.pestutilslib import PestUtilsLib
     except Exception as e:
@@ -3994,21 +4023,21 @@ def prep_pp_hyperpars(file_tag,pp_filename,out_filename,grid_dict,
 
     nodes = list(grid_dict.keys())
     nodes.sort()
-    with open(gridinfo_filename, 'w') as f:
+    with open(os.path.join(ws,gridinfo_filename), 'w') as f:
         f.write("node,x,y\n")
         for node in nodes:
             f.write("{0},{1},{2}\n".format(node, grid_dict[node][0], grid_dict[node][1]))
 
     corrlen = np.zeros(arr_shape) + geostruct.variograms[0].a
-    np.savetxt(corrlen_filename, corrlen, fmt="%20.8E")
+    np.savetxt(os.path.join(ws,corrlen_filename), corrlen, fmt="%20.8E")
     bearing = np.zeros(arr_shape) + geostruct.variograms[0].bearing
-    np.savetxt(bearing_filename, bearing, fmt="%20.8E")
-    aniso = np.zeros(arr_shape) + geostruct.variograms[0].aniso
-    np.savetxt(aniso_filename, aniso, fmt="%20.8E")
+    np.savetxt(os.path.join(ws,bearing_filename), bearing, fmt="%20.8E")
+    aniso = np.zeros(arr_shape) + geostruct.variograms[0].anisotropy
+    np.savetxt(os.path.join(ws,aniso_filename), aniso, fmt="%20.8E")
 
     if zone_array is None:
         zone_array = np.ones(shape,dtype=int)
-    np.savetxt(zone_filename,zone_array,fmt="%5d")
+    np.savetxt(os.path.join(ws,zone_filename),zone_array,fmt="%5d")
 
 
     # fnx_call = "pyemu.utils.apply_ppu_hyperpars('{0}','{1}','{2}','{3}','{4}'". \
@@ -4030,14 +4059,14 @@ def prep_pp_hyperpars(file_tag,pp_filename,out_filename,grid_dict,
     config_df.loc["gridinfo_filename", "value"] = gridinfo_filename
     config_df.loc["zone_filename", "value"] = zone_filename
 
-    config_df.loc["variotransform","value"] = geostruct.transform
+    config_df.loc["vartransform","value"] = geostruct.transform
     v = geostruct.variograms[0]
     vartype = 2
-    if isinstance(v, ExpVario):
+    if isinstance(v, pyemu.geostats.ExpVario):
         pass
-    elif isinstance(v, SphVario):
+    elif isinstance(v, pyemu.geostats.SphVario):
         vartype = 1
-    elif isinstance(v, GauVarioVario):
+    elif isinstance(v, pyemu.geostats.GauVarioVario):
         vartype = 3
     else:
         raise NotImplementedError("unsupported variogram type: {0}".format(str(type(v))))
@@ -4051,14 +4080,19 @@ def prep_pp_hyperpars(file_tag,pp_filename,out_filename,grid_dict,
     for k in keys:
         config_df.loc["k","value"] = pp_options[k]
 
-    config_df.loc["function_call","value"] = fnx_call
+    #config_df.loc["function_call","value"] = fnx_call
     config_df_filename = file_tag + ".config.csv"
     config_df.loc["config_df_filename",:"value"] = config_df_filename
 
-    config_df.to_csv(config_df_filename)
-
+    config_df.to_csv(os.path.join(ws, config_df_filename))
+    # this is just a temp input file needed for testing...
+    #pp_info.to_csv(os.path.join(ws,pp_filename),sep=" ",header=False)
+    pyemu.pp_utils.write_pp_file(os.path.join(ws,pp_filename),pp_info)
+    bd = os.getcwd()
+    os.chdir(ws)
+    #todo: wrap this in a try-catch
     apply_ppu_hyperpars(config_df_filename)
-
+    os.chdir(bd)
     return config_df
 
 
@@ -4072,29 +4106,32 @@ def apply_ppu_hyperpars(config_df_filename):
     except Exception as e:
         raise Exception("apply_ppu_hyperpars() error importing pypestutils: '{0}'".format(str(e)))
 
-    config_df = pd.read_csv(config_df_filename)
+    config_df = pd.read_csv(config_df_filename,index_col=0)
     config_dict = config_df["value"].to_dict()
     out_filename = config_dict["out_filename"]
-    pp_info = pd.read_csv(config_dict["pp_filename"])
-    grid_df = pd.read_csv(config_df["gridinfo_filename"])
+    #pp_info = pd.read_csv(config_dict["pp_filename"],sep="\s+")
+    pp_info = pyemu.pp_utils.pp_file_to_dataframe(config_dict["pp_filename"])
+    grid_df = pd.read_csv(config_dict["gridinfo_filename"])
     corrlen = np.loadtxt(config_dict["corrlen_filename"])
     bearing = np.loadtxt(config_dict["bearing_filename"])
     aniso = np.loadtxt(config_dict["aniso_filename"])
     zone = np.loadtxt(config_dict["zone_filename"])
+
+
     lib = PestUtilsLib()
     fac_fname = out_filename+".temp.fac"
     if os.path.exists(fac_fname):
         os.remove(fac_fname)
-    fac_ftype = "binary"
+    fac_ftype = "text"
     npts = lib.calc_kriging_factors_2d(
             pp_info.x.values,
             pp_info.y.values,
             pp_info.zone.values,
-            x.flatten(),
-            y.flatten(),
+            grid_df.x.values.flatten(),
+            grid_df.y.values.flatten(),
             zone.flatten().astype(int),
-            config_dict.get("vartype",1),
-            config_dict.get("krigtype",1),
+            int(config_dict.get("vartype",1)),
+            int(config_dict.get("krigtype",1)),
             corrlen.flatten(),
             aniso.flatten(),
             bearing.flatten(),
@@ -4105,22 +4142,27 @@ def apply_ppu_hyperpars(config_df_filename):
             fac_ftype,
         )
 
-    noint = config_dict.get("fill_value",pp_info.loc[:, "value"].mean())
+    noint = config_dict.get("fill_value",pp_info.loc[:, "parval1"].mean())
 
     result = lib.krige_using_file(
         fac_fname,
         fac_ftype,
-        len(zone),
-        config_dict.get("vartype", 1),
-        config_dict.get("krigtype", 1),
-        pp_info.loc[:, "value"].values,
+        zone.size,
+        int(config_dict.get("krigtype", 1)),
+        config_dict.get("vartransform", "none"),
+        pp_info["parval1"].values,
         noint,
         noint,
     )
-
+    assert npts == result["icount_interp"]
+    result = result["targval"]
+    #shape = tuple([int(s) for s in config_dict["shape"]])
+    tup_string = config_dict["shape"]
+    shape = tuple(int(x) for x in tup_string[1:-1].split(','))
     result = result.reshape(shape)
     np.savetxt(out_filename,result,fmt="%20.8E")
     os.remove(fac_fname)
+    lib.free_all_memory()
 
     return result
 

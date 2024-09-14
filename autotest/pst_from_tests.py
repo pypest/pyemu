@@ -5411,6 +5411,7 @@ def mf6_freyberg_ppu_hyperpars_test(tmp_path):
 
     sys.path.insert(0,os.path.join("..","..","pypestutils"))
 
+
     import pypestutils as ppu
 
     pd.set_option('display.max_rows', 500)
@@ -5426,7 +5427,7 @@ def mf6_freyberg_ppu_hyperpars_test(tmp_path):
 
     bd = Path.cwd()
     os.chdir(tmp_path)
-    try:
+    #try:
     tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
     sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
     m = sim.get_model("freyberg6")
@@ -5504,8 +5505,13 @@ def mf6_freyberg_ppu_hyperpars_test(tmp_path):
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
                                   par_name_base=arr_file.split('.')[1] + "_pp",
                                   pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
-                                  upper_bound=ub, lower_bound=lb,pp_space=pp_opt)
+                                  upper_bound=ub, lower_bound=lb,pp_space=pp_opt,
+                                  pp_options={"try_use_ppu":True,"prep_hyperpars":True})
                 break
+
+    pf.pre_py_cmds.insert(0,"import sys")
+    pf.pre_py_cmds.insert(1,"sys.path.append(os.path.join('..','..', '..', 'pypestutils'))")
+
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
@@ -5515,7 +5521,11 @@ def mf6_freyberg_ppu_hyperpars_test(tmp_path):
     # build pest
     pst = pf.build_pst('freyberg.pst')
 
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(template_ws, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path),cwd=template_ws)
     exit()
+
     num_reals = 10
     pe = pf.draw(num_reals, use_specsim=True)
     pe.to_binary(os.path.join(template_ws, "prior.jcb"))
@@ -5526,7 +5536,7 @@ def mf6_freyberg_ppu_hyperpars_test(tmp_path):
     m_d = "master_ies"
     port = _get_port()
     print(f"Running ies on port: {port}")
-    pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,
+    pyemu.os_utils.start_workers(template_ws,ies_exe_path,"freyberg.pst",num_workers=5,
                                  worker_root=tmp_path,
                                  master_dir=m_d, port=port)
 
@@ -5539,7 +5549,8 @@ def mf6_freyberg_ppu_hyperpars_test(tmp_path):
 
 
 if __name__ == "__main__":
-    mf6_freyberg_pp_locs_test()
+    #mf6_freyberg_pp_locs_test()
+    mf6_freyberg_ppu_hyperpars_test(".")
     # invest()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
