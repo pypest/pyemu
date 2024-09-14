@@ -908,14 +908,21 @@ class OrdinaryKrige(object):
                 is raised for failed matrix inversion.
             num_threads (`int`): number of multiprocessing workers to use to try to speed up
                 kriging in python.  Default is 1.
-
+            try_use_ppu (`bool`): flag to try to use `PyPestUtils` to solve the kriging equations.  If `true`,
+                and if `from pypestutils.pestutilslib import PestUtilsLib` does not raise an exception,
+                the `PestUtilsLib.calc_kriging_factors_2d()` is used.  Otherwise, the `OrdinaryKrige`
+                implementation is used. 
+            ppu_factor_filename (`str`): the name of the factor file that will be created if 
+                `PestUtilsLib.calc_kriging_factors_2d()` is used.  Default is "factors.dat".  Unused if
+                `try_use_ppu` is `False`.  
         Returns:
             `pandas.DataFrame`: a dataframe with information summarizing the ordinary kriging
-            process for each grid node
+            process for each grid node.  Not returned if `try_use_ppu` is `True`.
 
         Note:
             this method calls OrdinaryKrige.calc_factors()
             this method is the main entry point for grid-based kriging factor generation
+            
 
 
         Example::
