@@ -5398,12 +5398,152 @@ def test_array_fmt_pst_from(tmp_path):
     arr3 = np.loadtxt(Path(tmp_path, "weird_tmp", "ar3.arr"))
 
 
+def mf6_freyberg_ppu_hyperpars_test(tmp_path):
+    import numpy as np
+    import pandas as pd
+    
+    import sys
+    import os
+    import matplotlib.pyplot as plt
+    import pyemu
+    
+    import flopy
+
+    sys.path.insert(0,os.path.join("..","..","pypestutils"))
+
+    import pypestutils as ppu
+
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
+    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+
+    bd = Path.cwd()
+    os.chdir(tmp_path)
+    try:
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
+
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+
+    template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018",
+                 chunk_len=1)
+
+    # pf.post_py_cmds.append("generic_function()")
+    df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
+    pp_gs = pyemu.geostats.GeoStruct(variograms=v)
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
+    #         "rch_recharge": [.5, 1.5]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+
+    xmn = m.modelgrid.xvertices.min()
+    xmx = m.modelgrid.xvertices.max()
+    ymn = m.modelgrid.yvertices.min()
+    ymx = m.modelgrid.yvertices.max()
+
+    numpp = 20
+    xvals = np.random.uniform(xmn,xmx,numpp)
+    yvals = np.random.uniform(ymn, ymx, numpp)
+    pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
+    pp_locs.loc[:,"zone"] = 1
+    pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
+    pp_locs.loc[:,"parval1"] = 1.0
+
+    pyemu.pp_utils.write_pp_shapfile(pp_locs,os.path.join(template_ws,"pp_locs.shp"))
+    df = pyemu.pp_utils.pilot_points_from_shapefile(os.path.join(template_ws,"pp_locs.shp"))
+
+    #pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
+    #pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
+    pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
+    pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
+    pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
+
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            pass
+            # pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
+            #                   pargp="rch_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                   geostruct=gr_gs)
+            # for arr_file in arr_files:
+            #     kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+            #     pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
+            #                       pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                       geostruct=rch_temporal_gs,
+            #                       datetime=dts[kper])
+        else:
+            for i,arr_file in enumerate(arr_files):
+                if i < len(pp_container):
+                    pp_opt = pp_container[i]
+                else:
+                    pp_opt = pp_locs
+                pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
+                                  par_name_base=arr_file.split('.')[1] + "_pp",
+                                  pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
+                                  upper_bound=ub, lower_bound=lb,pp_space=pp_opt)
+                break
+
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
+
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+
+    exit()
+    num_reals = 10
+    pe = pf.draw(num_reals, use_specsim=True)
+    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+
+    pst.write(os.path.join(template_ws,"freyberg.pst"))
+
+    #pyemu.os_utils.run("{0} freyberg.pst".format("pestpp-glm"),cwd=template_ws)
+    m_d = "master_ies"
+    port = _get_port()
+    print(f"Running ies on port: {port}")
+    pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,
+                                 worker_root=tmp_path,
+                                 master_dir=m_d, port=port)
+
+    
+    # except Exception as e:
+    #     os.chdir(bd)
+    #     raise e
+    os.chdir(bd)
+
+
+
 if __name__ == "__main__":
-    #mf6_freyberg_pp_locs_test()
+    mf6_freyberg_pp_locs_test()
     # invest()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
-    #mf6_freyberg_test(os.path.abspath("."))
+    # mf6_freyberg_test(os.path.abspath("."))
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
@@ -5427,7 +5567,7 @@ if __name__ == "__main__":
     # tpf.test_add_list_parameters()
     # # pstfrom_profile()
     # mf6_freyberg_arr_obs_and_headerless_test()
-    usg_freyberg_test(".")
+    #usg_freyberg_test(".")
     #vertex_grid_test()
     #direct_quickfull_test()
     #list_float_int_index_test()
