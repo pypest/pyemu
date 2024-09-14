@@ -2543,4 +2543,3 @@ def reformat_factorfile(nrow,ncol,point_data,geostruct,ppu_factor_filename):
     shutil.copy2("temp.fac",ppu_factor_filename)
     os.remove("temp.fac")
 
-
