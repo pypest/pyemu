@@ -2508,7 +2508,7 @@ def thresh_pars_test():
 
 
 
-def ppu_geostats_invest(tmp_path):
+def ppu_geostats_test(tmp_path):
     import sys
     import os
     import numpy as np
@@ -2517,7 +2517,7 @@ def ppu_geostats_invest(tmp_path):
     
     import flopy
 
-    sys.path.insert(0,os.path.join("..","..","pypestutils"))
+    #sys.path.insert(0,os.path.join("..","..","pypestutils"))
 
     import pypestutils as ppu
 
