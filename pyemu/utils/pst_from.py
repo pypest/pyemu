@@ -2671,7 +2671,7 @@ class PstFrom(object):
                                 spatial_reference,
                                 var_filename=var_filename,
                                 zone_array=zone_array,
-                                num_threads=pp_options.get_("num_threads",10),
+                                num_threads=pp_options.get("num_threads",10),
                                 minpts_interp=pp_options.get("minpts_interp",1),
                                 maxpts_interp=pp_options.get("maxpts_interp",20),
                                 search_radius=pp_options.get("search_radius",1e10),
