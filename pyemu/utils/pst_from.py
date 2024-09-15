@@ -2725,7 +2725,7 @@ class PstFrom(object):
                                     ok_pp.calc_factors(
                                         node_df.x,
                                         node_df.y,
-                                        num_threads=pp_options.get_("num_threads", 1),
+                                        num_threads=pp_options.get("num_threads", 1),
                                         minpts_interp=pp_options.get("minpts_interp", 1),
                                         maxpts_interp=pp_options.get("maxpts_interp", 20),
                                         search_radius=pp_options.get("search_radius", 1e10),
