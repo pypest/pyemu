@@ -2508,7 +2508,7 @@ def thresh_pars_test():
 
 
 
-def ppu_geostats_test(tmp_path):
+def ppu_geostats_invest(tmp_path):
     import sys
     import os
     import numpy as np
