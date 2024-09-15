@@ -2422,7 +2422,7 @@ class PstFrom(object):
                         # zone (all non zero) -- for active domain...
                         if zone_array is None:
                             nr, nc = file_dict[list(file_dict.keys())[0]].shape
-                            zone_array = np.ones((nr,nc))                        
+                            zone_array = np.ones((nr,nc),dtype=int)
                         zone_array[zone_array > 0] = 1  # so can set all
                         # gt-zero to 1
                     if isinstance(pp_space, float):
@@ -2622,6 +2622,7 @@ class PstFrom(object):
                 # Calculating pp factors
                 pg = pargp[0]
                 prep_pp_hyperpars = pp_options.get("prep_hyperpars",False)
+                config_df_filename = None
                 if prep_pp_hyperpars:
                     if structured:
                         grid_dict = {}
@@ -2636,18 +2637,22 @@ class PstFrom(object):
                         shape = spatial_reference.xcentergrid.shape
                     else:
                         shape = (1,len(grid_dict))
-                    config_df = pyemu.utils.prep_pp_hyperpars(pg,os.path.join("mult",pp_filename),
+                    config_df = pyemu.utils.prep_pp_hyperpars(pg,os.path.join(pp_filename),
                                                               pp_locs,os.path.join("mult",mlt_filename),
                                                               grid_dict,pp_geostruct,shape,pp_options,
                                                               zone_array=zone_array,
                                                               ws=self.new_d)
                     #todo: add call to apply func ahead of call to mult func
                     config_df_filename = config_df.loc["config_df_filename","value"]
-                    self.pre_py_cmds.insert(0,"pyemu.utils.apply_ppu_hyperpars('{0}')".\
-                                            format(config_df_filename))
+                    #self.pre_py_cmds.insert(0,"pyemu.utils.apply_ppu_hyperpars('{0}')".\
+                    #                        format(config_df_filename))
+
                     #if "pypestutils" not in self.extra_py_imports:
                     #    self.extra_py_imports.append("pypestutils")
                     print(config_df_filename)
+                    config_func_str = "pyemu.utils.apply_ppu_hyperpars('{0}')".\
+                                      format(config_df_filename)
+
 
                 else:
 
@@ -2825,7 +2830,9 @@ class PstFrom(object):
             relate_parfiles.append(mult_dict)
         relate_pars_df = pd.DataFrame(relate_parfiles)
         relate_pars_df["apply_order"] = apply_order
-        relate_pars_df["apply_function"] = apply_function
+        if config_df_filename is not None:
+            relate_pars_df["pre_apply_function"] = config_func_str
+
         # store on self for use in pest build etc
         self._parfile_relations.append(relate_pars_df)
 

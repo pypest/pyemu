@@ -5485,7 +5485,8 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
     pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
     pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
-
+    bearing_v = pyemu.geostats.ExpVario(contribution=1,a=1000,anisotropy=2,bearing=90.0)
+    bearing_gs = pyemu.geostats.GeoStruct(variograms=bearing_v)
     for tag, bnd in tags.items():
         lb, ub = bnd[0], bnd[1]
         arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
@@ -5506,26 +5507,27 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
                     pp_opt = pp_container[i]
                 else:
                     pp_opt = pp_locs
-                tag = arr_file.split('.')[1] + "_pp"
+                tag = arr_file.split('.')[1].replace("_","-") + "_pp"
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
                                   par_name_base=tag,
                                   pargp=tag, zone_array=ib,
                                   upper_bound=ub, lower_bound=lb,pp_space=pp_opt,
                                   pp_options={"try_use_ppu":False,"prep_hyperpars":True},
                                   apply_order=2)
-                pf.add_observations(arr_file,prefix=tag,obsgp=tag)
+                tag = arr_file.split('.')[1].replace("_","-")
+                pf.add_observations(arr_file,prefix=tag+"input",obsgp=tag+"input")
                 tfiles = [f for f in os.listdir(pf.new_d) if tag in f]
                 afile = [f for f in tfiles if "aniso" in f][0]
                 pf.add_parameters(afile,par_type="pilotpoints",par_name_base=tag+"aniso",
-                                  pargp=tag+"aniso",pp_space=pp_opt,lower_bound=0.1,upper_bound=10,
+                                  pargp=tag+"aniso",pp_space=5,lower_bound=0.1,upper_bound=10,
                                   pp_options={"try_use_ppu":True},apply_order=1)
                 pf.add_observations(afile, prefix=tag+"aniso", obsgp=tag+"aniso")
                 bfile = [f for f in tfiles if "bearing" in f][0]
                 pf.add_parameters(bfile, par_type="pilotpoints", par_name_base=tag + "bearing",
-                                  pargp=tag + "bearing", pp_space=pp_opt,lower_bound=-45,upper_bound=45,
+                                  pargp=tag + "bearing", pp_space=3,lower_bound=-45,upper_bound=45,
                                   par_style="a",transform="none",
                                   pp_options={"try_use_ppu":True},
-                                  apply_order=1)
+                                  apply_order=1,geostruct=bearing_gs)
                 pf.add_observations(bfile, prefix=tag + "bearing", obsgp=tag + "bearing")
 
                 break
@@ -5544,24 +5546,52 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     pst = pf.build_pst('freyberg.pst')
 
     pst.control_data.noptmax = 0
-    pst.write(os.path.join(template_ws, "freyberg.pst"))
+    pst.write(os.path.join(template_ws, "freyberg.pst"),version=2)
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path),cwd=template_ws)
 
     par = pst.parameter_data
     apar = par.loc[par.pname.str.contains("aniso"),:]
     bpar = par.loc[par.pname.str.contains("bearing"), :]
-    apar["parval1"] = 10
-    apar["parlbnd"] = 5
-    apar["parubnd"] = 50
+    par.loc[apar.parnme,"parval1"] = 10
+    par.loc[apar.parnme,"parlbnd"] = 1
+    par.loc[apar.parnme,"parubnd"] = 20
 
-    bpar["parval1"] = 40
-    bpar["parlbnd"] = 20
-    bpar["parubnd"] = 60
+    par.loc[bpar.parnme,"parval1"] = 0
+    par.loc[bpar.parnme,"parlbnd"] = -50
+    par.loc[bpar.parnme,"parubnd"] = 50
 
 
     num_reals = 10
     pe = pf.draw(num_reals, use_specsim=True)
     pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+    pst.parameter_data["parval1"] = pe._df.loc[pe.index[0],pst.par_names]
+
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(template_ws, "freyberg.pst"),version=2)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=template_ws)
+    pst = pyemu.Pst(os.path.join(template_ws, "freyberg.pst"))
+    obs = pst.observation_data
+    aobs = obs.loc[obs.otype=="arr",:].copy()
+    aobs["i"] = aobs.i.astype(int)
+    aobs["j"] = aobs.j.astype(int)
+    hk0 = aobs.loc[aobs.oname=="npf-k-layer1input",:].copy()
+    bearing0 = aobs.loc[aobs.oname=="npf-k-layer1bearing",:].copy()
+    aniso0 = aobs.loc[aobs.oname == "npf-k-layer1aniso", :].copy()
+    fig,axes = plt.subplots(1,3,figsize=(10,5))
+    nrow = hk0.i.max()+1
+    ncol = hk0.j.max()+1
+    for ax,name,df in zip(axes,["aniso","bearing","input"],[aniso0,bearing0,hk0]):
+        arr = np.zeros((nrow,ncol))
+        arr[df.i,df.j] = pst.res.loc[df.obsnme,"modelled"].values
+        if name == "input":
+            arr = np.log10(arr)
+        cb = ax.imshow(arr)
+        plt.colorbar(cb,ax=ax)
+        ax.set_title(name,loc="left")
+    plt.tight_layout()
+    plt.savefig("hyper.pdf")
+    plt.close(fig)
+    exit()
     pst.pestpp_options["ies_par_en"] = "prior.jcb"
     pst.control_data.noptmax = -1
     pst.write(os.path.join(template_ws,"freyberg.pst"))
@@ -5579,7 +5609,6 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     #     os.chdir(bd)
     #     raise e
     os.chdir(bd)
-
 
 
 if __name__ == "__main__":

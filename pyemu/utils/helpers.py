@@ -1788,9 +1788,21 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
         list_pars["lower_bound"] = list_pars.lower_bound.apply(literal_eval)
         list_pars["upper_bound"] = list_pars.upper_bound.apply(literal_eval)
 
+        if "pre_apply_function" in ddf.columns:
+            calls = ddf.pre_apply_function.dropna()
+            for call in calls:
+                print("...evaluting pre-apply function '{0}'".format(call))
+                eval(call)
+
         # TODO check use_cols is always present
         apply_genericlist_pars(list_pars, chunk_len=chunk_len)
         apply_array_pars(arr_pars, chunk_len=chunk_len)
+
+        if "post_apply_function" in ddf.columns:
+            calls = ddf.post_apply_function.dropna()
+            for call in calls:
+                print("...evaluting post-apply function '{0}'".format(call))
+                eval(call)
 
 
 def _process_chunk_fac2real(chunk, i):
