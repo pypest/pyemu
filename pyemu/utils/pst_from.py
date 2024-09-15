@@ -2609,6 +2609,7 @@ class PstFrom(object):
                     )
                 df.loc[:, "pargp"] = pargp
                 df.set_index("parnme", drop=False, inplace=True)
+                pp_locs = df
                 # df includes most of the par info for par_dfs and also for
                 # relate_parfiles
                 self.logger.statement(
@@ -2637,6 +2638,7 @@ class PstFrom(object):
                         shape = spatial_reference.xcentergrid.shape
                     else:
                         shape = (1,len(grid_dict))
+
                     config_df = pyemu.utils.prep_pp_hyperpars(pg,os.path.join(pp_filename),
                                                               pp_locs,os.path.join("mult",mlt_filename),
                                                               grid_dict,pp_geostruct,shape,pp_options,

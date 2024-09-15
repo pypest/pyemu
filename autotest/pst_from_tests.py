@@ -5485,8 +5485,12 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
     pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
     pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
-    bearing_v = pyemu.geostats.ExpVario(contribution=1,a=1000,anisotropy=2,bearing=90.0)
+    value_v = pyemu.geostats.ExpVario(contribution=1, a=500, anisotropy=1, bearing=0.0)
+    value_gs = pyemu.geostats.GeoStruct(variograms=value_v)
+    bearing_v = pyemu.geostats.ExpVario(contribution=1,a=5000,anisotropy=3,bearing=90.0)
     bearing_gs = pyemu.geostats.GeoStruct(variograms=bearing_v)
+    aniso_v = pyemu.geostats.ExpVario(contribution=1, a=2000, anisotropy=1, bearing=45.0)
+    aniso_gs = pyemu.geostats.GeoStruct(variograms=aniso_v)
     for tag, bnd in tags.items():
         lb, ub = bnd[0], bnd[1]
         arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
@@ -5511,20 +5515,20 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
                                   par_name_base=tag,
                                   pargp=tag, zone_array=ib,
-                                  upper_bound=ub, lower_bound=lb,pp_space=pp_opt,
+                                  upper_bound=ub, lower_bound=lb,pp_space=5,
                                   pp_options={"try_use_ppu":False,"prep_hyperpars":True},
-                                  apply_order=2)
+                                  apply_order=2)#,geostruct=value_gs)
                 tag = arr_file.split('.')[1].replace("_","-")
                 pf.add_observations(arr_file,prefix=tag+"input",obsgp=tag+"input")
                 tfiles = [f for f in os.listdir(pf.new_d) if tag in f]
                 afile = [f for f in tfiles if "aniso" in f][0]
                 pf.add_parameters(afile,par_type="pilotpoints",par_name_base=tag+"aniso",
                                   pargp=tag+"aniso",pp_space=5,lower_bound=0.1,upper_bound=10,
-                                  pp_options={"try_use_ppu":True},apply_order=1)
+                                  pp_options={"try_use_ppu":True},apply_order=1,geostruct=aniso_gs)
                 pf.add_observations(afile, prefix=tag+"aniso", obsgp=tag+"aniso")
                 bfile = [f for f in tfiles if "bearing" in f][0]
                 pf.add_parameters(bfile, par_type="pilotpoints", par_name_base=tag + "bearing",
-                                  pargp=tag + "bearing", pp_space=3,lower_bound=-45,upper_bound=45,
+                                  pargp=tag + "bearing", pp_space=6,lower_bound=-45,upper_bound=45,
                                   par_style="a",transform="none",
                                   pp_options={"try_use_ppu":True},
                                   apply_order=1,geostruct=bearing_gs)
@@ -5552,9 +5556,9 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     par = pst.parameter_data
     apar = par.loc[par.pname.str.contains("aniso"),:]
     bpar = par.loc[par.pname.str.contains("bearing"), :]
-    par.loc[apar.parnme,"parval1"] = 10
-    par.loc[apar.parnme,"parlbnd"] = 1
-    par.loc[apar.parnme,"parubnd"] = 20
+    par.loc[apar.parnme,"parval1"] = 5
+    par.loc[apar.parnme,"parlbnd"] = .5
+    par.loc[apar.parnme,"parubnd"] = 50
 
     par.loc[bpar.parnme,"parval1"] = 0
     par.loc[bpar.parnme,"parlbnd"] = -50
