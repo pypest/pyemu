@@ -5398,7 +5398,7 @@ def test_array_fmt_pst_from(tmp_path):
     arr3 = np.loadtxt(Path(tmp_path, "weird_tmp", "ar3.arr"))
 
 
-def mf6_freyberg_ppu_hyperpars_test(tmp_path):
+def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     import numpy as np
     import pandas as pd
     
