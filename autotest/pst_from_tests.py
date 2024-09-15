@@ -5506,11 +5506,27 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
                     pp_opt = pp_container[i]
                 else:
                     pp_opt = pp_locs
+                tag = arr_file.split('.')[1] + "_pp"
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
-                                  par_name_base=arr_file.split('.')[1] + "_pp",
-                                  pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
+                                  par_name_base=tag,
+                                  pargp=tag, zone_array=ib,
                                   upper_bound=ub, lower_bound=lb,pp_space=pp_opt,
-                                  pp_options={"try_use_ppu":True,"prep_hyperpars":True})
+                                  pp_options={"try_use_ppu":False,"prep_hyperpars":True},
+                                  apply_order=2)
+                tfiles = [f for f in os.listdir(pf.new_d) if tag in f]
+                afile = [f for f in tfiles if "aniso" in f][0]
+                pf.add_parameters(afile,par_type="pilotpoints",par_name_base=tag+"aniso",
+                                  pargp=tag+"aniso",pp_space=pp_opt,lower_bound=0.1,upper_bound=10,
+                                  pp_options={"try_use_ppu":True},apply_order=1)
+
+                afile = [f for f in tfiles if "bearing" in f][0]
+                pf.add_parameters(afile, par_type="pilotpoints", par_name_base=tag + "bearing",
+                                  pargp=tag + "bearing", pp_space=pp_opt,lower_bound=-45,upper_bound=45,
+                                  par_style="a",transform="none",
+                                  pp_options={"try_use_ppu":True},
+                                  apply_order=1)
+
+
                 break
 
     pf.pre_py_cmds.insert(0,"import sys")
@@ -5553,8 +5569,8 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
 
 
 if __name__ == "__main__":
-    mf6_freyberg_pp_locs_test('.')
-    #mf6_freyberg_ppu_hyperpars_test(".")
+    #mf6_freyberg_pp_locs_test('.')
+    mf6_freyberg_ppu_hyperpars_invest(".")
     # invest()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()

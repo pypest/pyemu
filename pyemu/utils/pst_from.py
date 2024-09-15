@@ -2711,7 +2711,8 @@ class PstFrom(object):
                                 maxpts_interp=pp_options.get("maxpts_interp",20),
                                 search_radius=pp_options.get("search_radius",1e10),
                                 try_use_ppu=pp_options.get("try_use_ppu",False),
-                                ppu_factor_filename=pp_options.get("ppu_factor_filename","factors.dat")
+                                #ppu_factor_filename=pp_options.get("ppu_factor_filename","factors.dat")
+                                ppu_factor_filename=fac_filename
                             )
                             if not isinstance(ret_val,int):
                                 ok_pp.to_grid_factors_file(fac_filename)
