@@ -1770,17 +1770,27 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
             lambda x: os.path.join(*x.replace("\\","/").split("/"))
             if isinstance(x,str) else x
         )
-    arr_pars = df.loc[df.index_cols.isna()].copy()
-    list_pars = df.loc[df.index_cols.notna()].copy()
-    # extract lists from string in input df
-    list_pars["index_cols"] = list_pars.index_cols.apply(literal_eval)
-    list_pars["use_cols"] = list_pars.use_cols.apply(literal_eval)
-    list_pars["lower_bound"] = list_pars.lower_bound.apply(literal_eval)
-    list_pars["upper_bound"] = list_pars.upper_bound.apply(literal_eval)
+    if "apply_order" in df.columns:
+        df["apply_order"] = df.apply_order.astype(float)
+        uapply_values = df.apply_order.unique()
+        uapply_values.sort()
+    else:
+        df["apply_order"] = 999
+        uapply_values = [999]
+    for apply_value in uapply_values:
+        ddf = df.loc[df.apply_order==apply_value,:].copy()
+        assert ddf.shape[0] > 0
+        arr_pars = ddf.loc[ddf.index_cols.isna()].copy()
+        list_pars = ddf.loc[ddf.index_cols.notna()].copy()
+        # extract lists from string in input df
+        list_pars["index_cols"] = list_pars.index_cols.apply(literal_eval)
+        list_pars["use_cols"] = list_pars.use_cols.apply(literal_eval)
+        list_pars["lower_bound"] = list_pars.lower_bound.apply(literal_eval)
+        list_pars["upper_bound"] = list_pars.upper_bound.apply(literal_eval)
 
-    # TODO check use_cols is always present
-    apply_genericlist_pars(list_pars, chunk_len=chunk_len)
-    apply_array_pars(arr_pars, chunk_len=chunk_len)
+        # TODO check use_cols is always present
+        apply_genericlist_pars(list_pars, chunk_len=chunk_len)
+        apply_array_pars(arr_pars, chunk_len=chunk_len)
 
 
 def _process_chunk_fac2real(chunk, i):

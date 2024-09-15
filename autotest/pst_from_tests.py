@@ -790,6 +790,7 @@ def mf6_freyberg_test(setup_freyberg_mf6):
                       upper_bound=10,
                       lower_bound=0.1,
                       par_type="grid",
+                      apply_order=0
                       )
 
     with open(Path(template_ws, "inflow2.txt"), 'w') as fp:
@@ -817,7 +818,7 @@ def mf6_freyberg_test(setup_freyberg_mf6):
                       lower_bound=0.1,
                       par_type="grid",
                       use_rows=[[205, 'infl'], [206, 'infl']],
-                      )
+                      apply_order=1)
     pf.add_parameters(filenames=['inflow2.txt', "inflow3.txt"],
                       pargp='inflow2',
                       comment_char='#',
@@ -828,7 +829,8 @@ def mf6_freyberg_test(setup_freyberg_mf6):
                       par_type="grid",
                       use_rows=[[205, 'div'], [206, 'div']],
                       par_style='a',
-                      transform='none'
+                      transform='none',
+                      apply_order=0
                       )
     with open(Path(template_ws, "inflow4.txt"), 'w') as fp:
         fp.write("# rid type rate idx0 idx1\n")
@@ -848,7 +850,7 @@ def mf6_freyberg_test(setup_freyberg_mf6):
                       lower_bound=0.1,
                       par_type="grid",
                       use_rows=[("204_1", "infl")],
-                      )
+                      apply_order=2)
     pf.add_parameters(filenames="inflow4.txt",
                       pargp='inflow5',
                       comment_char='#',
@@ -858,6 +860,7 @@ def mf6_freyberg_test(setup_freyberg_mf6):
                       lower_bound=0.1,
                       par_type="grid",
                       use_rows=(1, 3),
+                      apply_order=0
                       )
     # pf.add_parameters(filenames=['inflow2.txt'],
     #                   pargp='inflow3',
@@ -872,10 +875,10 @@ def mf6_freyberg_test(setup_freyberg_mf6):
     ft, ftd = _gen_dummy_obs_file(pf.new_d, sep=',', ext='txt')
     pf.add_parameters(filenames=f, par_type="grid", mfile_skip=1, index_cols=0,
                       use_cols=[2], par_name_base="tmp",
-                      pargp="tmp")
+                      pargp="tmp",apply_order=10)
     pf.add_parameters(filenames=ft, par_type="grid", mfile_skip=1, index_cols=0,
                       use_cols=[1, 2], par_name_base=["tmp2_1", "tmp2_2"],
-                      pargp="tmp2", mfile_sep=',', par_style='direct')
+                      pargp="tmp2", mfile_sep=',', par_style='direct',apply_order=0)
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
     print(dts)
@@ -885,12 +888,12 @@ def mf6_freyberg_test(setup_freyberg_mf6):
         if "rch" in tag:
             pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
                               pargp="rch_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                              geostruct=gr_gs)
+                              geostruct=gr_gs,apply_order=10)
             for arr_file in arr_files:
                 kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
                 pf.add_parameters(filenames=arr_file,par_type="constant",par_name_base=arr_file.split('.')[1]+"_cn",
                                   pargp="rch_const",zone_array=ib,upper_bound=ub,lower_bound=lb,geostruct=rch_temporal_gs,
-                                  datetime=dts[kper])
+                                  datetime=dts[kper],apply_order=10)
         else:
             for arr_file in arr_files:
                 # these ult bounds are used later in an assert
@@ -3740,7 +3743,7 @@ def mf6_freyberg_pp_locs_test(tmp_path):
                     pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
                                       par_name_base=arr_file.split('.')[1] + "_pp",
                                       pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
-                                      upper_bound=ub, lower_bound=lb,pp_space=pp_opt)
+                                      upper_bound=ub, lower_bound=lb,pp_space=pp_opt,apply_order=i)
 
         # add model run command
         pf.mod_sys_cmds.append("mf6")
@@ -3763,6 +3766,7 @@ def mf6_freyberg_pp_locs_test(tmp_path):
         m_d = "master_glm"
         port = _get_port()
         print(f"Running ies on port: {port}")
+        print(pp_exe_path)
         pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,
                                      worker_root=tmp_path,
                                      master_dir=m_d, port=port)
@@ -3882,14 +3886,14 @@ def usg_freyberg_test(tmp_path):
                           par_name_base="hk3_pp", pp_space=pp_df,
                           geostruct=gs, spatial_reference=sr_dict_by_layer[3],
                           upper_bound=2.0, lower_bound=0.5,
-                          zone_array=zone_array_k2)
+                          zone_array=zone_array_k2,apply_order=10)
 
         # we pass layer specific sr dict for each "array" type that is spatially distributed
         pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_Gr",geostruct=gs,
                           spatial_reference=sr_dict_by_layer[1],
-                          upper_bound=2.0,lower_bound=0.5)
+                          upper_bound=2.0,lower_bound=0.5,apply_order=0)
         pf.add_parameters("sy_Layer_1.ref", par_type="zone", par_name_base="sy1_zn",zone_array=zone_array_k0,
-                          upper_bound=1.5,lower_bound=0.5,ult_ubound=0.35)
+                          upper_bound=1.5,lower_bound=0.5,ult_ubound=0.35,apply_order=100)
 
 
 
@@ -3897,7 +3901,7 @@ def usg_freyberg_test(tmp_path):
         wel_files = [f for f in os.listdir(tmp_model_ws) if f.lower().startswith("wel_") and f.lower().endswith(".dat")]
         for wel_file in wel_files:
             pf.add_parameters(wel_file,par_type="grid",par_name_base=wel_file.lower().split('.')[0],index_cols=[0],use_cols=[1],
-                              geostruct=gs,lower_bound=0.5,upper_bound=1.5)
+                              geostruct=gs,lower_bound=0.5,upper_bound=1.5,apply_order=10)
 
         # add pest "observations" for each active node for each stress period
         hds_runline, df = pyemu.gw_utils.setup_hds_obs(
@@ -5549,19 +5553,19 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
 
 
 if __name__ == "__main__":
-    #mf6_freyberg_pp_locs_test()
+    #mf6_freyberg_pp_locs_test('.')
     #mf6_freyberg_ppu_hyperpars_test(".")
     # invest()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
-    # mf6_freyberg_test(os.path.abspath("."))
+    #mf6_freyberg_test(os.path.abspath("."))
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
 
     #mf6_freyberg_thresh_test(".")
-    test_defaults(".")
+    #test_defaults(".")
     #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()

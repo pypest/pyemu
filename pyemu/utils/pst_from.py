@@ -1976,7 +1976,8 @@ class PstFrom(object):
         """
         # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
-
+        if apply_function is not None:
+            raise NotImplementedError("apply_function is not implemented")
         # TODO support passing par_file (i,j)/(x,y) directly where information
         #  is not contained in model parameter file - e.g. no i,j columns
         self.add_pars_callcount += 1
