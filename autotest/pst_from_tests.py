@@ -5553,7 +5553,7 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
 
 
 if __name__ == "__main__":
-    #mf6_freyberg_pp_locs_test('.')
+    mf6_freyberg_pp_locs_test('.')
     #mf6_freyberg_ppu_hyperpars_test(".")
     # invest()
     #freyberg_test(os.path.abspath("."))
