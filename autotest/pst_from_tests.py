@@ -5513,22 +5513,24 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
                                   upper_bound=ub, lower_bound=lb,pp_space=pp_opt,
                                   pp_options={"try_use_ppu":False,"prep_hyperpars":True},
                                   apply_order=2)
+                pf.add_observations(arr_file,prefix=tag,obsgp=tag)
                 tfiles = [f for f in os.listdir(pf.new_d) if tag in f]
                 afile = [f for f in tfiles if "aniso" in f][0]
                 pf.add_parameters(afile,par_type="pilotpoints",par_name_base=tag+"aniso",
                                   pargp=tag+"aniso",pp_space=pp_opt,lower_bound=0.1,upper_bound=10,
                                   pp_options={"try_use_ppu":True},apply_order=1)
-
-                afile = [f for f in tfiles if "bearing" in f][0]
-                pf.add_parameters(afile, par_type="pilotpoints", par_name_base=tag + "bearing",
+                pf.add_observations(afile, prefix=tag+"aniso", obsgp=tag+"aniso")
+                bfile = [f for f in tfiles if "bearing" in f][0]
+                pf.add_parameters(bfile, par_type="pilotpoints", par_name_base=tag + "bearing",
                                   pargp=tag + "bearing", pp_space=pp_opt,lower_bound=-45,upper_bound=45,
                                   par_style="a",transform="none",
                                   pp_options={"try_use_ppu":True},
                                   apply_order=1)
-
+                pf.add_observations(bfile, prefix=tag + "bearing", obsgp=tag + "bearing")
 
                 break
 
+    # this is just for local prelim testing
     pf.pre_py_cmds.insert(0,"import sys")
     pf.pre_py_cmds.insert(1,"sys.path.append(os.path.join('..','..', '..', 'pypestutils'))")
 
@@ -5544,12 +5546,24 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     pst.control_data.noptmax = 0
     pst.write(os.path.join(template_ws, "freyberg.pst"))
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path),cwd=template_ws)
-    exit()
+
+    par = pst.parameter_data
+    apar = par.loc[par.pname.str.contains("aniso"),:]
+    bpar = par.loc[par.pname.str.contains("bearing"), :]
+    apar["parval1"] = 10
+    apar["parlbnd"] = 5
+    apar["parubnd"] = 50
+
+    bpar["parval1"] = 40
+    bpar["parlbnd"] = 20
+    bpar["parubnd"] = 60
+
 
     num_reals = 10
     pe = pf.draw(num_reals, use_specsim=True)
     pe.to_binary(os.path.join(template_ws, "prior.jcb"))
-
+    pst.pestpp_options["ies_par_en"] = "prior.jcb"
+    pst.control_data.noptmax = -1
     pst.write(os.path.join(template_ws,"freyberg.pst"))
 
     #pyemu.os_utils.run("{0} freyberg.pst".format("pestpp-glm"),cwd=template_ws)
