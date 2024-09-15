@@ -1835,7 +1835,9 @@ class PstFrom(object):
         par_style="multiplier",
         initial_value=None,
         prep_pp_hyperpars=False,
-        pp_options={}
+        pp_options={},
+        apply_order=999,
+        apply_function=None
     ):
         """
         Add list or array style model input files to PstFrom object.
@@ -1951,6 +1953,10 @@ class PstFrom(object):
                 (ie anisotropy, bearing, "a") with `PyPestUtils`, and `try_use_ppu`, a flag to
                 (attempt) to use `PyPestUtils` to calculate the kriging factors instead of the
                 pyemu geostats slowness.  Only used if par type is pilot points.
+            apply_order (`int`): the optional order to process this set of parameters at runtime.
+                Default is 999.
+            apply_function (`str`): a python function to call during the apply process at runtime.
+                Default is None.
         Returns:
             `pandas.DataFrame`: dataframe with info for new parameters
 
@@ -2816,6 +2822,8 @@ class PstFrom(object):
                 mult_dict["zone_file"] = zone_filename
             relate_parfiles.append(mult_dict)
         relate_pars_df = pd.DataFrame(relate_parfiles)
+        relate_pars_df["apply_order"] = apply_order
+        relate_pars_df["apply_function"] = apply_function
         # store on self for use in pest build etc
         self._parfile_relations.append(relate_pars_df)
 
