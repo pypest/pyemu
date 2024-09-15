@@ -5550,7 +5550,7 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
 
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test()
-    mf6_freyberg_ppu_hyperpars_test(".")
+    #mf6_freyberg_ppu_hyperpars_test(".")
     # invest()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
@@ -5561,7 +5561,7 @@ if __name__ == "__main__":
     #mf6_freyberg_direct_test()
 
     #mf6_freyberg_thresh_test(".")
-
+    test_defaults(".")
     #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()

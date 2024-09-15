@@ -2811,7 +2811,7 @@ class PstFrom(object):
                 else:
                     mult_dict["pp_fill_value"] = pp_options.get("fill_value",0.0)
                     mult_dict["pp_lower_limit"] = pp_options.get("lower_limit",-1.0e30)
-                    mult_dict["pp_upper_limit"] = pp_options("upper_limit",1.0e30)
+                    mult_dict["pp_upper_limit"] = pp_options.get("upper_limit",1.0e30)
             if zone_filename is not None:
                 mult_dict["zone_file"] = zone_filename
             relate_parfiles.append(mult_dict)
