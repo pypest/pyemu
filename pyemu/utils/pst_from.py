@@ -1982,7 +1982,7 @@ class PstFrom(object):
         #  is not contained in model parameter file - e.g. no i,j columns
         self.add_pars_callcount += 1
         self.ijwarned[self.add_pars_callcount] = False
-
+        config_df_filename = None
         if transform is None:
             if par_style in ["a", "add", "addend"]:
                 transform = 'none'
@@ -2623,7 +2623,7 @@ class PstFrom(object):
                 # Calculating pp factors
                 pg = pargp[0]
                 prep_pp_hyperpars = pp_options.get("prep_hyperpars",False)
-                config_df_filename = None
+
                 if prep_pp_hyperpars:
                     if structured:
                         grid_dict = {}
