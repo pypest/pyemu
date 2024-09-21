@@ -5417,10 +5417,10 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     
     import flopy
 
-    #sys.path.insert(0,os.path.join("..","..","pypestutils"))
+    sys.path.insert(0,os.path.join("..","..","pypestutils"))
 
 
-    #import pypestutils as ppu
+    import pypestutils as ppu
 
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
@@ -5457,8 +5457,9 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
                  chunk_len=1)
 
     wfiles = [f for f in os.listdir(pf.new_d) if ".wel_stress_period_data_" in f and f.endswith(".txt")]
-    pf.add_parameters(wfiles,par_type='grid',index_cols=[0,1,2],use_cols=[3],pargp="welgrid",par_name_base="welgrid")
-    exit()
+    pf.add_parameters(wfiles,par_type='grid',index_cols=[0,1,2],use_cols=[3],pargp="welgrid",par_name_base="welgrid",
+                      upper_bound=1.2,lower_bound=0.8)
+    
 
     # pf.post_py_cmds.append("generic_function()")
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
@@ -5519,13 +5520,25 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
                     pp_opt = pp_container[i]
                 else:
                     pp_opt = pp_locs
+                pth_arr_file = os.path.join(pf.new_d,arr_file)
+                arr = np.loadtxt(pth_arr_file)
+
                 tag = arr_file.split('.')[1].replace("_","-") + "_pp"
+                
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
                                   par_name_base=tag,
                                   pargp=tag, zone_array=ib,
                                   upper_bound=ub, lower_bound=lb,pp_space=5,
                                   pp_options={"try_use_ppu":False,"prep_hyperpars":True},
                                   apply_order=2)#,geostruct=value_gs)
+                #now setup the thresholding process on the mult arr that was just created
+                mult_file = os.path.join(pf.new_d,"mult","{0}_inst0_pilotpoints.csv".format(tag))
+                assert os.path.exists(mult_file)
+                cat_dict = {1:[0.4,1,0],2:[0.6,1.0]}
+                thresharr_file,threshcsv_file = pyemu.helpers.setup_threshold_pars(mult_file,cat_dict=cat_dict,
+                                                                             testing_workspace=pf.new_d,inact_arr=ib)
+
+
                 tag = arr_file.split('.')[1].replace("_","-")
                 pf.add_observations(arr_file,prefix=tag+"input",obsgp=tag+"input")
                 tfiles = [f for f in os.listdir(pf.new_d) if tag in f]
@@ -5625,9 +5638,9 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
 
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test('.')
-    #mf6_freyberg_ppu_hyperpars_invest(".")
+    mf6_freyberg_ppu_hyperpars_invest(".")
     # invest()
-    freyberg_test(os.path.abspath("."))
+    #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
     #mf6_freyberg_test(os.path.abspath("."))
     #$mf6_freyberg_da_test()
@@ -5635,7 +5648,7 @@ if __name__ == "__main__":
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
 
-    #mf6_freyberg_thresh_test(".")
+    #$mf6_freyberg_thresh_test(".")
     #test_defaults(".")
     #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")

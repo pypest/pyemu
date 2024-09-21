@@ -3864,7 +3864,14 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
                         format(len(cat_dict)))
 
     prop_tags,prop_vals,fill_vals = [],[],[]
-    for key,(proportion,fill_val) in cat_dict.items():
+    #print(cat_dict[1])
+    #for key,(proportion,fill_val) in cat_dict.items():
+    keys = list(cat_dict.keys())
+    keys.sort()
+    for key in keys:
+        proportion = cat_dict[key][0]
+        fill_val = cat_dict[key][1]
+
         if int(key) not in cat_dict:
             raise Exception("integer type of key '{0}' not found in target_proportions_dict".format(key))
         prop_tags.append(int(key))
@@ -3886,10 +3893,16 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
     csv_file = orgarr_file+".threshprops.csv"
     df.to_csv(csv_file,index=False)
 
+
     # test that it seems to be working
+    rel_csv_file = csv_file
+    
+    rel_csv_file = os.path.relpath(csv_file,start=testing_workspace)
     bd = os.getcwd()
     os.chdir(testing_workspace)
-    apply_threshold_pars(os.path.split(csv_file)[1])
+
+    #apply_threshold_pars(os.path.split(csv_file)[1])
+    apply_threshold_pars(rel_csv_file)
     os.chdir(bd)
     return thresharr_file,csv_file
 
