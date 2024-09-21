@@ -22,7 +22,6 @@ dependencies:
   - flopy
   - modflow-devtools
   - scikit-learn
-  - flopy
   - pip
   - pip: 
     - pypestutils

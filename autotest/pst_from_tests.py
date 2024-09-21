@@ -195,10 +195,11 @@ def freyberg_test(tmp_path):
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    # try:
-    #     import flopy
-    # except:
-    #     return
+    
+    try:
+        import flopy
+    except:
+        return
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
