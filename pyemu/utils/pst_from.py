@@ -1982,7 +1982,7 @@ class PstFrom(object):
         #  is not contained in model parameter file - e.g. no i,j columns
         self.add_pars_callcount += 1
         self.ijwarned[self.add_pars_callcount] = False
-        config_df_filename = None
+        
         if transform is None:
             if par_style in ["a", "add", "addend"]:
                 transform = 'none'
@@ -2348,6 +2348,7 @@ class PstFrom(object):
                 "pilot-points",
                 "pp"
             }:
+                config_df_filename = None
                 if par_style == "d":
                     self.logger.lraise(
                         "pilot points not supported for 'direct' par_style"

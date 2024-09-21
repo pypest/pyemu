@@ -195,10 +195,10 @@ def freyberg_test(tmp_path):
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
+    # try:
+    #     import flopy
+    # except:
+    #     return
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -209,6 +209,7 @@ def freyberg_test(tmp_path):
     nam_file = "freyberg.nam"
     try:
         org_model_ws = tmp_model_ws.relative_to(tmp_path)
+
         m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws,
                                        check=False, forgive=False,
                                        exe_name=mf_exe_path)
@@ -226,10 +227,12 @@ def freyberg_test(tmp_path):
         for k in range(m.nlay):
             for kper in range(m.nper):
                 hds_kperk.append([kper, k])
+
         hds_runline, df = pyemu.gw_utils.setup_hds_obs(
             os.path.join(org_model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
-            prefix="hds", include_path=False)
-        pyemu.gw_utils.apply_hds_obs(os.path.join(org_model_ws, f"{m.name}.hds"))
+            prefix="hds", include_path=False, precision="double")
+        pyemu.gw_utils.apply_hds_obs(os.path.join(org_model_ws, f"{m.name}.hds"),precision="double")
+        
 
         sfo = flopy.utils.SfrFile(os.path.join(m.model_ws, 'freyberg.sfr.out'))
         sfodf = sfo.get_dataframe()
@@ -408,8 +411,8 @@ def freyberg_test(tmp_path):
         print(pst.phi)
         assert np.isclose(pst.phi, 0.), pst.phi
     except Exception as e:
-        os.chdir(bd)
-        raise e
+       os.chdir(bd)
+       raise e
     os.chdir(bd)
 
 
@@ -5413,10 +5416,10 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     
     import flopy
 
-    sys.path.insert(0,os.path.join("..","..","pypestutils"))
+    #sys.path.insert(0,os.path.join("..","..","pypestutils"))
 
 
-    import pypestutils as ppu
+    #import pypestutils as ppu
 
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
@@ -5451,6 +5454,10 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
                  longnames=True, spatial_reference=sr,
                  zero_based=False, start_datetime="1-1-2018",
                  chunk_len=1)
+
+    wfiles = [f for f in os.listdir(pf.new_d) if ".wel_stress_period_data_" in f and f.endswith(".txt")]
+    pf.add_parameters(wfiles,par_type='grid',index_cols=[0,1,2],use_cols=[3],pargp="welgrid",par_name_base="welgrid")
+    exit()
 
     # pf.post_py_cmds.append("generic_function()")
     df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
@@ -5617,9 +5624,9 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
 
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test('.')
-    mf6_freyberg_ppu_hyperpars_invest(".")
+    #mf6_freyberg_ppu_hyperpars_invest(".")
     # invest()
-    #freyberg_test(os.path.abspath("."))
+    freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
     #mf6_freyberg_test(os.path.abspath("."))
     #$mf6_freyberg_da_test()
