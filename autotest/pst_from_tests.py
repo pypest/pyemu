@@ -195,7 +195,7 @@ def freyberg_test(tmp_path):
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    
+
     try:
         import flopy
     except:
@@ -232,7 +232,7 @@ def freyberg_test(tmp_path):
         hds_runline, df = pyemu.gw_utils.setup_hds_obs(
             os.path.join(org_model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
             prefix="hds", include_path=False, precision="double")
-        pyemu.gw_utils.apply_hds_obs(os.path.join(org_model_ws, f"{m.name}.hds"),precision="double")
+        pyemu.gw_utils.apply_hds_obs(os.path.join(org_model_ws, f"{m.name}.hds"),precision="single")
         
 
         sfo = flopy.utils.SfrFile(os.path.join(m.model_ws, 'freyberg.sfr.out'))
