@@ -232,7 +232,7 @@ def freyberg_test(tmp_path):
         hds_runline, df = pyemu.gw_utils.setup_hds_obs(
             os.path.join(org_model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
             prefix="hds", include_path=False, precision="double")
-        pyemu.gw_utils.apply_hds_obs(os.path.join(org_model_ws, f"{m.name}.hds"),precision="single")
+        pyemu.gw_utils.apply_hds_obs(os.path.join(org_model_ws, f"{m.name}.hds"),precision="double")
         
 
         sfo = flopy.utils.SfrFile(os.path.join(m.model_ws, 'freyberg.sfr.out'))
@@ -5638,7 +5638,7 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
 
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test('.')
-    mf6_freyberg_ppu_hyperpars_invest(".")
+    #mf6_freyberg_ppu_hyperpars_invest(".")
     # invest()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
