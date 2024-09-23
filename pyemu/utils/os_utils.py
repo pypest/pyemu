@@ -62,13 +62,6 @@ def _istextfile(filename, blocksize=512):
     nontext = block.translate(None, _text_characters)
     return float(len(nontext)) / len(block) <= 0.30
 
-def _isexe(filename):
-    """
-    Function to determine if a file is an executable file
-    """
-
-    return os.path.isfile(filename) and os.access(filename, os.X_OK)
-
 def _remove_readonly(func, path, excinfo):
     """remove readonly dirs, apparently only a windows issue
     add to all rmtree calls: shutil.rmtree(**,onerror=remove_readonly), wk"""
@@ -76,7 +69,7 @@ def _remove_readonly(func, path, excinfo):
     func(path)
 
 def run(cmd_str, cwd=".", verbose=False, use_sp = False, **kwargs):
-    """an OS agnostic function to execute a command line
+    """main run function so both run_sp and run_ossystem can coexist
 
     Args:
         cmd_str (`str`): the str to execute with `os.system()`
@@ -85,13 +78,11 @@ def run(cmd_str, cwd=".", verbose=False, use_sp = False, **kwargs):
             Default is ".".
         verbose (`bool`, optional): flag to echo to stdout the  `cmd_str`.
             Default is `False`.
-
     Notes:
-        by default calls run_system which is the OG function from pyemu that uses `os.system()`
+        by default calls run_ossystem which is the OG function from pyemu that uses `os.system()`
         if use_sp is True, then run_sp is called which uses `subprocess.Popen` instead of `os.system`
 
     Example::
-
         pyemu.os_utils.run("pestpp-ies my.pst",cwd="template")
     """
 
@@ -161,7 +152,7 @@ def run_ossystem(cmd_str, cwd=".", verbose=False):
             raise Exception("run() returned non-zero: {0},{1}".format(estat,ret_val))
         
 def run_sp(cmd_str, cwd=".", verbose=False,  **kwargs):
-    """an OS agnostic function to execute a command line
+    """an OS agnostic function to execute a command line with subprocess
 
     Args:
         cmd_str (`str`): the str to execute with `sp.Popen()`
@@ -178,7 +169,8 @@ def run_sp(cmd_str, cwd=".", verbose=False,  **kwargs):
     """
     # update shell and detached from  kwargs
     shell = kwargs.get("shell", False)
-    detached = kwargs.get("detached", False)
+    # detached = kwargs.get("detached", False)
+
     # print warning if shell is True
     if shell:
         warnings.warn("shell=True is not recommended and may cause issues, but hey! YOLO", PyemuWarning)
