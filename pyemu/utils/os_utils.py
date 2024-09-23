@@ -173,7 +173,7 @@ def run_sp(cmd_str, cwd=".", verbose=False,  **kwargs):
         shell (`bool`, optional): flag to use shell=True in the `subprocess.Popen` call. Not recommended
 
     Notes:
-        uses sp Popen to execute the command line. By default does not run in shell mode (ie. does not look for in the env variables)
+        uses sp Popen to execute the command line. By default does not run in shell mode (ie. does not look for the exe in env variables)
 
     """
     # update shell and detached from  kwargs
@@ -182,7 +182,7 @@ def run_sp(cmd_str, cwd=".", verbose=False,  **kwargs):
     # print warning if shell is True
     if shell:
         warnings.warn("shell=True is not recommended and may cause issues, but hey! YOLO", PyemuWarning)
-    # print("shell", shell, "detached", detached)
+
 
     bwd = os.getcwd()
     os.chdir(cwd)
@@ -191,10 +191,8 @@ def run_sp(cmd_str, cwd=".", verbose=False,  **kwargs):
         logfile = open(os.path.join('pyemu.log'), 'w+')
         cmd_ins = [i for i in cmd_str.split()]
 
-        with sp.Popen(cmd_ins, 
-                    # #   creationflags=  sp.CREATE_NO_WINDOW, 
-                    #   bufsize=1,
-                      stdout=sp.PIPE, stderr=sp.STDOUT,  shell=shell) as process:
+        with sp.Popen(cmd_ins, stdout=sp.PIPE, 
+                      stderr=sp.STDOUT,  shell=shell) as process:
             for line in process.stdout:
                 if verbose:
                     print(line.decode('utf8'), flush=True, end='')
@@ -202,7 +200,7 @@ def run_sp(cmd_str, cwd=".", verbose=False,  **kwargs):
                 logfile.write(line.decode().strip('\n'))
             process.wait() # wait for the process to finish
             retval = process.returncode
-            # print('returncode',retval)
+
         # save stdout to logfile
         logfile.close()
 
