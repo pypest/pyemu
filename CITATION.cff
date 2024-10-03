@@ -3,8 +3,8 @@ message: If you use this software, please cite both the article from preferred-c
   and the software itself.
 type: software
 title: pyEMU
-version: 1.3.6
-date-released: '2024-06-17'
+version: 1.3.7
+date-released: '2024-08-15'
 abstract: A python package for interfacing with PEST and PEST++, and providing model-independent data-worth, and linear and non-linear uncertainty analyses.
 repository-artifact: https://pypi.org/project/pyemu
 repository-code: https://github.com/pypest/pyemu

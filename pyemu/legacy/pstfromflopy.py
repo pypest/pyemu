@@ -1541,7 +1541,7 @@ class PstFromFlopyModel(object):
         pp_dfs_k = {}
         fac_files = {}
         pp_processed = set()
-        pp_df.loc[:, "fac_file"] = np.NaN
+        pp_df.loc[:, "fac_file"] = np.nan
         for pg in pargp:
             ks = pp_df.loc[pp_df.pargp == pg, "k"].unique()
             if len(ks) == 0:
@@ -1640,8 +1640,8 @@ class PstFromFlopyModel(object):
         out_files = mlt_df.loc[
             mlt_df.mlt_file.apply(lambda x: x.endswith(self.pp_suffix)), "mlt_file"
         ]
-        # mlt_df.loc[:,"fac_file"] = np.NaN
-        # mlt_df.loc[:,"pp_file"] = np.NaN
+        # mlt_df.loc[:,"fac_file"] = np.nan
+        # mlt_df.loc[:,"pp_file"] = np.nan
         for out_file in out_files:
             pp_df_pf = pp_df.loc[pp_df.out_file == out_file, :]
             fac_files = pp_df_pf.fac_file
@@ -1664,7 +1664,7 @@ class PstFromFlopyModel(object):
 
         self.par_dfs[self.pp_suffix] = pp_df
 
-        mlt_df.loc[mlt_df.suffix == self.pp_suffix, "tpl_file"] = np.NaN
+        mlt_df.loc[mlt_df.suffix == self.pp_suffix, "tpl_file"] = np.nan
 
     def _kl_prep(self, mlt_df):
         """prepare KL based parameterizations"""
@@ -1732,7 +1732,7 @@ class PstFromFlopyModel(object):
             mlt_df.loc[mlt_df.prefix == prefix, "pp_upper_limit"] = 1.0e10
 
         print(kl_mlt_df)
-        mlt_df.loc[mlt_df.suffix == self.kl_suffix, "tpl_file"] = np.NaN
+        mlt_df.loc[mlt_df.suffix == self.kl_suffix, "tpl_file"] = np.nan
         self.par_dfs[self.kl_suffix] = kl_df
         # calc factors for each layer
 
@@ -1744,7 +1744,7 @@ class PstFromFlopyModel(object):
         mlt_df.loc[:, "tpl_file"] = mlt_df.mlt_file.apply(
             lambda x: os.path.split(x)[-1] + ".tpl"
         )
-        # mlt_df.loc[mlt_df.tpl_file.apply(lambda x:pd.notnull(x.pp_file)),"tpl_file"] = np.NaN
+        # mlt_df.loc[mlt_df.tpl_file.apply(lambda x:pd.notnull(x.pp_file)),"tpl_file"] = np.nan
         mlt_files = mlt_df.mlt_file.unique()
         # for suffix,tpl_file,layer,name in zip(self.mlt_df.suffix,
         #                                 self.mlt_df.tpl,self.mlt_df.layer,
@@ -2568,7 +2568,7 @@ class PstFromFlopyModel(object):
         info_df.loc[:, "model_ext_path"] = self.m.external_path
 
         # check that all files for a given package have the same number of entries
-        info_df.loc[:, "itmp"] = np.NaN
+        info_df.loc[:, "itmp"] = np.nan
         pak_dfs = {}
         for pak in info_df.pak.unique():
             df_pak = info_df.loc[info_df.pak == pak, :]
@@ -2762,9 +2762,9 @@ class PstFromFlopyModel(object):
         elif self.m.upw is not None:
             inact = self.m.upw.hdry
         if inact is None:
-            skip = lambda x: np.NaN if x == self.m.bas6.hnoflo else x
+            skip = lambda x: np.nan if x == self.m.bas6.hnoflo else x
         else:
-            skip = lambda x: np.NaN if x == self.m.bas6.hnoflo or x == inact else x
+            skip = lambda x: np.nan if x == self.m.bas6.hnoflo or x == inact else x
         print(self.hds_kperk)
         frun_line, df = setup_hds_obs(
             os.path.join(self.m.model_ws, hds_file),

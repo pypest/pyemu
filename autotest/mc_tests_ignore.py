@@ -543,16 +543,16 @@ def ensemble_covariance_test():
     ecov = peh.covariance_matrix(localizer=localizer)
 
     d = 100.0 * (np.abs((cov - ecov).x) / cov.x)
-    d[localizer==0.0] = np.NaN
+    d[localizer==0.0] = np.nan
 
     assert np.nanmax(d) < 10.0
 
     # import matplotlib.pyplot as plt
     #
     # cov = cov.x
-    # cov[localizer == 0.0] = np.NaN
+    # cov[localizer == 0.0] = np.nan
     # ecov = ecov.x
-    # ecov[localizer == 0.0] = np.NaN
+    # ecov[localizer == 0.0] = np.nan
     #
     # ax = plt.subplot(311)
     # ax2 = plt.subplot(312)
