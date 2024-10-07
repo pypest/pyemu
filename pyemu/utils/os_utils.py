@@ -151,7 +151,7 @@ def run_ossystem(cmd_str, cwd=".", verbose=False):
         if estat != 0 or ret_val != 0:
             raise Exception("run() returned non-zero: {0},{1}".format(estat,ret_val))
         
-def run_sp(cmd_str, cwd=".", verbose=False,  **kwargs):
+def run_sp(cmd_str, cwd=".", verbose=True,  **kwargs):
     """an OS agnostic function to execute a command line with subprocess
 
     Args:
@@ -180,21 +180,18 @@ def run_sp(cmd_str, cwd=".", verbose=False,  **kwargs):
     os.chdir(cwd)
 
     try:
-        logfile = open(os.path.join('pyemu.log'), 'w+')
         cmd_ins = [i for i in cmd_str.split()]
-
-        with sp.Popen(cmd_ins, stdout=sp.PIPE, 
-                      stderr=sp.STDOUT,  shell=shell) as process:
+        with open(os.path.join('pyemu.log'), 'w+') as logfile, \
+            sp.Popen(cmd_ins, stdout=sp.PIPE, 
+                          stderr=sp.STDOUT,  shell=shell) as process:
             for line in process.stdout:
+                decoded_line = line.decode('utf8')
                 if verbose:
-                    print(line.decode('utf8'), flush=True, end='')
-                #apprend to log file
-                logfile.write(line.decode().strip('\n'))
+                    print(decoded_line, flush=True, end='')
+                    #apprend to log file
+                    logfile.write(decoded_line.strip('\n'))
             process.wait() # wait for the process to finish
             retval = process.returncode
-
-        # save stdout to logfile
-        logfile.close()
 
     except Exception as e:
         os.chdir(bwd)

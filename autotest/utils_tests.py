@@ -2054,20 +2054,32 @@ def run_test():
     else:
         raise Exception("should have failed")
 
-def run_sp_test():
-    import pyemu
+def run_sp_success_test():
     import platform
-
     if "window" in platform.platform().lower():
         pyemu.os_utils.run("echo test", use_sp=True, shell=True)
     else:
         pyemu.os_utils.run("ls", use_sp=True, shell=True)
-    try:
-        pyemu.os_utils.run("junk", use_sp=True, shell=True)
-    except:
-        pass
-    else:
-        raise Exception("should have failed")
+
+    assert True
+
+def run_sp_failure_test():
+    with pytest.raises(Exception):
+        pyemu.os_utils.run("junk_command", use_sp=True, shell=True)
+
+def run_sp_capture_output_test(tmp_path):
+    log_file = os.path.join(tmp_path, "pyemu.log")
+    pyemu.os_utils.run("echo Hello World", 
+                       verbose=True, use_sp=True, shell=True, cwd=tmp_path)
+    
+    with open(log_file, 'r') as f:
+        content = f.read()
+    assert "Hello World" in content
+
+def run_sp_verbose_test(capsys):
+    pyemu.os_utils.run("echo test", use_sp=True, shell=True, verbose=True)
+    captured = capsys.readouterr()
+    assert "test" in captured.out
 
 @pytest.mark.skip(reason="slow as atm -- was stomped on by maha_pdc_test previously")
 def maha_pdc_summary_test(tmp_path):  # todo add back in? currently super slowww
