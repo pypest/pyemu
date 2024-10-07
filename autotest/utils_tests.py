@@ -2070,14 +2070,16 @@ def run_sp_failure_test():
 def run_sp_capture_output_test(tmp_path):
     log_file = os.path.join(tmp_path, "pyemu.log")
     pyemu.os_utils.run("echo Hello World", 
-                       verbose=True, use_sp=True, shell=True, cwd=tmp_path)
+                       verbose=False, use_sp=True, 
+                       shell=True, cwd=tmp_path)
     
     with open(log_file, 'r') as f:
         content = f.read()
     assert "Hello World" in content
 
 def run_sp_verbose_test(capsys):
-    pyemu.os_utils.run("echo test", use_sp=True, shell=True, verbose=True)
+    pyemu.os_utils.run("echo test", use_sp=True, 
+                       shell=True, verbose=True)
     captured = capsys.readouterr()
     assert "test" in captured.out
 

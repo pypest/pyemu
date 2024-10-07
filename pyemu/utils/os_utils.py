@@ -189,7 +189,7 @@ def run_sp(cmd_str, cwd=".", verbose=True,  **kwargs):
                 if verbose:
                     print(decoded_line, flush=True, end='')
                     #apprend to log file
-                    logfile.write(decoded_line.strip('\n'))
+                logfile.write(decoded_line.strip('\n'))
             process.wait() # wait for the process to finish
             retval = process.returncode
 
