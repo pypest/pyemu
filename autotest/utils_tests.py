@@ -2054,6 +2054,45 @@ def run_test():
     else:
         raise Exception("should have failed")
 
+def run_sp_success_test():
+    import platform
+    if "window" in platform.platform().lower():
+        pyemu.os_utils.run("echo test", use_sp=True, shell=True)
+    else:
+        pyemu.os_utils.run("ls", use_sp=True, shell=True)
+
+    assert True
+
+def run_sp_failure_test():
+    with pytest.raises(Exception):
+        pyemu.os_utils.run("junk_command", use_sp=True, 
+                           shell=False, logfile=False)
+
+def run_sp_capture_output_test(tmp_path):
+    import platform
+    if platform.system() == "Windows":
+        shell = True
+    else:
+        shell = False
+    log_file = os.path.join(tmp_path, "pyemu.log")
+    pyemu.os_utils.run("echo Hello World", 
+                       verbose=False, use_sp=True, 
+                       shell=shell, cwd=tmp_path, logfile=True)
+    
+    with open(log_file, 'r') as f:
+        content = f.read()
+    assert "Hello World" in content
+
+def run_sp_verbose_test(capsys):
+    import platform
+    if platform.system() == "Windows":
+        shell = True
+    else:
+        shell = False
+    pyemu.os_utils.run("echo test", use_sp=True, 
+                       shell=shell, verbose=True)
+    captured = capsys.readouterr()
+    assert "test" in captured.out
 
 @pytest.mark.skip(reason="slow as atm -- was stomped on by maha_pdc_test previously")
 def maha_pdc_summary_test(tmp_path):  # todo add back in? currently super slowww
