@@ -151,7 +151,7 @@ def run_ossystem(cmd_str, cwd=".", verbose=False):
         if estat != 0 or ret_val != 0:
             raise Exception("run() returned non-zero: {0},{1}".format(estat,ret_val))
         
-def run_sp(cmd_str, cwd=".", verbose=True,  **kwargs):
+def run_sp(cmd_str, cwd=".", verbose=True, logfile=False, **kwargs):
     """an OS agnostic function to execute a command line with subprocess
 
     Args:
@@ -167,7 +167,7 @@ def run_sp(cmd_str, cwd=".", verbose=True,  **kwargs):
         uses sp Popen to execute the command line. By default does not run in shell mode (ie. does not look for the exe in env variables)
 
     """
-    # update shell and detached from  kwargs
+    # update shell from  kwargs
     shell = kwargs.get("shell", False)
     # detached = kwargs.get("detached", False)
 
@@ -181,22 +181,26 @@ def run_sp(cmd_str, cwd=".", verbose=True,  **kwargs):
 
     try:
         cmd_ins = [i for i in cmd_str.split()]
-        with open(os.path.join('pyemu.log'), 'w+') as logfile, \
-            sp.Popen(cmd_ins, stdout=sp.PIPE, 
-                          stderr=sp.STDOUT,  shell=shell) as process:
+        log_stream = open(os.path.join('pyemu.log'), 'w+', newline='') if logfile else None
+        with sp.Popen(cmd_ins, stdout=sp.PIPE, 
+                      stderr=sp.STDOUT, text=True,
+                      shell=shell, bufsize=1) as process:
             for line in process.stdout:
-                decoded_line = line.decode('utf8')
                 if verbose:
-                    print(decoded_line, flush=True, end='')
-                    #apprend to log file
-                logfile.write(decoded_line.strip('\n'))
-                logfile.flush()
+                    print(line, flush=True, end='')
+                if logfile:
+                    log_stream.write(line.strip('\n'))
+                    log_stream.flush()
             process.wait() # wait for the process to finish
             retval = process.returncode
 
     except Exception as e:
         os.chdir(bwd)
         raise Exception("run() raised :{0}".format(str(e)))
+
+    finally:
+        if logfile:
+            log_stream.close()
     os.chdir(bwd)
 
     if "window" in platform.platform().lower():
@@ -206,6 +210,8 @@ def run_sp(cmd_str, cwd=".", verbose=True,  **kwargs):
         estat = os.WEXITSTATUS(retval)
         if estat != 0 or retval != 0:
             raise Exception("run() returned non-zero: {0},{1}".format(estat, retval))        
+    return retval
+
 
 def _try_remove_existing(d, forgive=False):
     try:
@@ -222,23 +228,6 @@ def _try_remove_existing(d, forgive=False):
                 PyemuWarning,
             )
         return False
-
-def _try_remove_existing(d, forgive=False):
-    try:
-        shutil.rmtree(d, onerror=_remove_readonly)  # , onerror=del_rw)
-        return True
-    except Exception as e:
-        if not forgive:
-            raise Exception(
-                f"unable to remove existing dir: {d}\n{e}"
-            )
-        else:
-            warnings.warn(
-                f"unable to remove worker dir: {d}\n{e}",
-                PyemuWarning,
-            )
-        return False
-
 
 def _try_copy_dir(o_d, n_d):
     try:
