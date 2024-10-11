@@ -179,6 +179,9 @@ def run_sp(cmd_str, cwd=".", verbose=True, logfile=False, **kwargs):
     bwd = os.getcwd()
     os.chdir(cwd)
 
+    if platform.system() != "Windows" and not shutil.which(cmd_str.split()[0]):
+        cmd_str = "./" + cmd_str
+
     try:
         cmd_ins = [i for i in cmd_str.split()]
         log_stream = open(os.path.join('pyemu.log'), 'w+', newline='') if logfile else None
