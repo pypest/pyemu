@@ -2461,6 +2461,7 @@ class PstFrom(object):
                                 "'zone' col not found in pp dataframe, adding generic zone"
                             )
                             pp_locs.loc[:, "zone"] = 1
+
                         elif zone_array is not None:
                             # check that all the zones in the pp df are in the zone array
                             missing = []
@@ -2586,6 +2587,8 @@ class PstFrom(object):
                         tpl_filename,
                         pnb,
                     )
+                    df["tpl_filename"] = tpl_filename
+                    df["pp_filename"] = pp_filename
                 df.loc[:, "pargp"] = pargp
                 df.set_index("parnme", drop=False, inplace=True)
                 # df includes most of the par info for par_dfs and also for
