@@ -186,6 +186,8 @@ class PstFrom(object):
             On windows, beware setting this much smaller than 50 because of the overhead associated with
             spawning the pool.  This value is added to the call to `apply_list_and_array_pars`. Default is 50
         echo (`bool`): flag to echo logger messages to the screen.  Default is True
+        pp_solve_num_threads (`int`): number of threads to use for the pyemu very-slow kriging solve for
+            pilot-point type parameters.  Default is 10.
 
     Note:
         This is the way...
@@ -213,6 +215,7 @@ class PstFrom(object):
         tpl_subfolder=None,
         chunk_len=50,
         echo=True,
+        pp_solve_num_threads=10
     ):
         self.original_d = Path(original_d)
         self.new_d = Path(new_d)
@@ -231,6 +234,7 @@ class PstFrom(object):
             start_datetime = _get_datetime_from_str(start_datetime)
         self.start_datetime = start_datetime
         self.geostruct = None
+        self.pp_solve_num_threads = int(pp_solve_num_threads)
         self.par_struct_dict = {}
         # self.par_struct_dict_l = {}
 
@@ -2657,7 +2661,7 @@ class PstFrom(object):
                             spatial_reference,
                             var_filename=var_filename,
                             zone_array=zone_array,
-                            num_threads=10,
+                            num_threads=self.pp_solve_num_threads,
                         )
                         ok_pp.to_grid_factors_file(fac_filename)
                     else:
@@ -2678,7 +2682,7 @@ class PstFrom(object):
                                 ok_pp.calc_factors(
                                     node_df.x,
                                     node_df.y,
-                                    num_threads=1,
+                                    num_threads=self.pp_solve_num_threads,
                                     pt_zone=zone,
                                     idx_vals=node_df.node.astype(int),
                                 )
@@ -2690,7 +2694,7 @@ class PstFrom(object):
                             for node, (x, y) in spatial_reference.items():
                                 data.append([node, x, y])
                             node_df = pd.DataFrame(data, columns=["node", "x", "y"])
-                            ok_pp.calc_factors(node_df.x, node_df.y, num_threads=10)
+                            ok_pp.calc_factors(node_df.x, node_df.y, num_threads=self.pp_solve_num_threads)
                             ok_pp.to_grid_factors_file(
                                 fac_filename, ncol=node_df.shape[0]
                             )

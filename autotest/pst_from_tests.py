@@ -4451,7 +4451,8 @@ def shortname_conversion_test(tmp_path):
                      remove_existing=True,
                      longnames=False,
                      zero_based=False,
-                     spatial_reference=sr)
+                     spatial_reference=sr,
+                     pp_solve_num_threads=1)
 
         v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
         gr_gs = pyemu.geostats.GeoStruct(variograms=v)
