@@ -11,6 +11,7 @@ import socket
 import time
 from datetime import datetime
 from ..pyemu_warnings import PyemuWarning
+from . import log_utils
 
 ext = ""
 bin_path = os.path.join("..", "bin")
@@ -184,26 +185,19 @@ def run_sp(cmd_str, cwd=".", verbose=True, logfile=False, **kwargs):
 
     try:
         cmd_ins = [i for i in cmd_str.split()]
-        log_stream = open(os.path.join('pyemu.log'), 'w+', newline='') if logfile else None
-        with sp.Popen(cmd_ins, stdout=sp.PIPE, 
-                      stderr=sp.STDOUT, text=True,
-                      shell=shell, bufsize=1) as process:
+        logger = log_utils.get_logger(verbose=verbose, logger=logfile)
+        with sp.Popen(
+            cmd_ins, stdout=sp.PIPE, stderr=sp.STDOUT, text=True, shell=shell, bufsize=1
+        ) as process:
             for line in process.stdout:
-                if verbose:
-                    print(line, flush=True, end='')
-                if logfile:
-                    log_stream.write(line.strip('\n'))
-                    log_stream.flush()
-            process.wait() # wait for the process to finish
+                logger.info(line)
+            process.wait()  # wait for the process to finish
             retval = process.returncode
 
     except Exception as e:
         os.chdir(bwd)
         raise Exception("run() raised :{0}".format(str(e)))
 
-    finally:
-        if logfile:
-            log_stream.close()
     os.chdir(bwd)
 
     if "window" in platform.platform().lower():
