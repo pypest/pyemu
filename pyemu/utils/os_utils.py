@@ -174,8 +174,10 @@ def run_sp(cmd_str, cwd=".", verbose=True, logfile=False, **kwargs):
 
     # print warning if shell is True
     if shell:
-        warnings.warn("shell=True is not recommended and may cause issues, but hey! YOLO", PyemuWarning)
-
+        warnings.warn(
+            "shell=True is not recommended and may cause issues, but hey! YOLO",
+            PyemuWarning,
+        )
 
     bwd = os.getcwd()
     os.chdir(cwd)
@@ -185,12 +187,12 @@ def run_sp(cmd_str, cwd=".", verbose=True, logfile=False, **kwargs):
 
     try:
         cmd_ins = [i for i in cmd_str.split()]
-        logger = log_utils.get_logger(verbose=verbose, logger=logfile)
+        logger = log_utils.get_logger(verbose=verbose, logfile=logfile)
         with sp.Popen(
             cmd_ins, stdout=sp.PIPE, stderr=sp.STDOUT, text=True, shell=shell, bufsize=1
         ) as process:
             for line in process.stdout:
-                logger.info(line)
+                logger.info(line.rstrip("\n"))
             process.wait()  # wait for the process to finish
             retval = process.returncode
 

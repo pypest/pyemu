@@ -2,16 +2,28 @@
 
 import logging
 import sys
-from typing import Optional, Union
+from typing import Optional
 
-FILE_LOGGER = logging.FileHandler("pyemu.log", delay=True)
-STREAM_LOGGER = logging.StreamHandler(sys.stdout)
+FILE_HANDLER = logging.FileHandler("pyemu.log", delay=True)
+STREAM_HANDLER = logging.StreamHandler(sys.stdout)
+
+LOGGER: Optional[logging.Logger] = None
+
+
+def set_logger(logger: logging.Logger) -> None:
+    """Set the global logger to be used by pyemu.
+
+    Args:
+        logger (logging.Logger): the logger to be used.
+    """
+    global LOGGER
+    LOGGER = logger
 
 
 def get_logger(
     name: Optional[str] = "pyemu",
     verbose: bool = False,
-    logger: Union[bool, logging.Logger] = True,
+    logfile: bool = False,
 ) -> logging.Logger:
     """Get a logger instance.
 
@@ -24,14 +36,17 @@ def get_logger(
     Returns:
         logging.Logger object
     """
-    if isinstance(logger, bool):
-        create_file = logger
-        logger = logging.getLogger(name)
-        logger.setLevel(logging.INFO)
-        if create_file is True and FILE_LOGGER not in logger.handlers:
-            logger.addHandler(FILE_LOGGER)
-    if verbose and STREAM_LOGGER not in logger.handlers:
-        logger.addHandler(STREAM_LOGGER)
-    if not verbose and STREAM_LOGGER in logger.handlers:
-        logger.removeHandler(STREAM_LOGGER)
+    if LOGGER is not None:
+        return LOGGER
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    _toggle_handler(logfile, logger, FILE_HANDLER)
+    _toggle_handler(verbose, logger, STREAM_HANDLER)
     return logger
+
+
+def _toggle_handler(switch: bool, logger: logging.Logger, handler: logging.Handler):
+    if switch and handler not in logger.handlers:
+        logger.addHandler(handler)
+    if not switch and handler in logger.handlers:
+        logger.removeHandler(handler)
