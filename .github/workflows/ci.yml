@@ -15,12 +15,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest] # , macos-latest] 
-        python-version: [3.8, 3.9, "3.10", "3.11", "3.12"]
+        python-version: [3.9, "3.10", "3.11", "3.12"]
         run-type: [std]
         test-path: ["."]
         include:
           - os: macos-latest
-            python-version: 3.9
+            python-version: "3.11"
 
     steps:
     - name: Checkout repo
@@ -48,6 +48,42 @@ jobs:
       run: |
         pip install -e .
         micromamba list
+
+    - name: Checkout pypestutils
+      uses:  actions/checkout@v4
+      with:
+        repository: pypest/pypestutils
+        ref: develop
+
+    - name: Install MinGW-w64 tools (Windows)
+      if: runner.os == 'Windows'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        path-type: inherit
+#        install: >-
+#          mingw-w64-x86_64-gcc-fortran
+#          mingw-w64-x86_64-lapack
+#          mingw-w64-x86_64-meson
+#          mingw-w64-x86_64-ninja
+
+    - name: Install meson and gfortran (for ppu)
+      shell: bash -l {0}
+      run: |
+        micromamba install meson gfortran 
+
+    - name: Build pypestutils (Windows)
+      if: runner.os == 'Windows'
+      shell: msys2 {0}
+      env:
+        LDFLAGS: -static-libgcc -static-libgfortran -static-libquadmath -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive
+      run: |
+        bash scripts/build_lib.sh
+
+    - name: Build pypestutils (non-Windows)
+      if: runner.os != 'Windows'
+      run: |
+        bash scripts/build_lib.sh
 
     - name: Install Modflow executables
       uses: modflowpy/install-modflow-action@v1
