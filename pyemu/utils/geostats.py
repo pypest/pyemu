@@ -873,7 +873,7 @@ class OrdinaryKrige(object):
         var_filename=None,
         forgive=False,
         num_threads=1,
-        try_use_ppu=False,
+        try_use_ppu=True,
         ppu_factor_filename = "factors.dat"
     ):
         """calculate kriging factors (weights) for a structured grid.
