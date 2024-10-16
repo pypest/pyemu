@@ -2054,6 +2054,69 @@ def run_test():
     else:
         raise Exception("should have failed")
 
+def run_sp_success_test():
+    import platform
+    if "window" in platform.platform().lower():
+        pyemu.os_utils.run("echo test", use_sp=True, shell=True)
+    else:
+        pyemu.os_utils.run("ls", use_sp=True, shell=True)
+    assert True
+
+def test_fake_frun_sp(setup_freyberg_mf6):
+    from pst_from_tests import ies_exe_path
+    pf, sim = setup_freyberg_mf6
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=500)
+    gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
+    pf.add_parameters(
+        "freyberg6.npf_k_layer1.txt",
+        par_type="grid",
+        geostruct=gs,
+        pargp=f"hk_k:{0}"
+    )
+    pf.add_observations(
+        "heads.csv",
+        index_cols=['time'],
+        obsgp="head"
+    )
+    pst = pf.build_pst()
+    pst = pyemu.utils.setup_fake_forward_run(pst, "fake.pst", pf.new_d,
+                                             new_cwd=pf.new_d)
+    pyemu.os_utils.run(f"{ies_exe_path} fake.pst", 
+                       use_sp=True, cwd=pf.new_d)
+    bd = Path.cwd()
+    os.chdir(pf.new_d)
+    pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
+
+def run_sp_failure_test():
+    with pytest.raises(Exception):
+        pyemu.os_utils.run("junk_command", use_sp=True, 
+                           shell=False, logfile=False)
+
+def run_sp_capture_output_test(tmp_path):
+    import platform
+    if platform.system() == "Windows":
+        shell = True
+    else:
+        shell = False
+    log_file = os.path.join(tmp_path, "pyemu.log")
+    pyemu.os_utils.run("echo Hello World", 
+                       verbose=False, use_sp=True, 
+                       shell=shell, cwd=tmp_path, logfile=True)
+    
+    with open(log_file, 'r') as f:
+        content = f.read()
+    assert "Hello World" in content
+
+def run_sp_verbose_test(capsys):
+    import platform
+    if platform.system() == "Windows":
+        shell = True
+    else:
+        shell = False
+    pyemu.os_utils.run("echo test", use_sp=True, 
+                       shell=shell, verbose=True)
+    captured = capsys.readouterr()
+    assert "test" in captured.out
 
 @pytest.mark.skip(reason="slow as atm -- was stomped on by maha_pdc_test previously")
 def maha_pdc_summary_test(tmp_path):  # todo add back in? currently super slowww
