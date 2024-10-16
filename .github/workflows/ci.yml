@@ -71,13 +71,16 @@ jobs:
     - name: Install meson and gfortran (for ppu)
       shell: bash -l {0}
       run: |
-        micromamba install meson gfortran 
+        micromamba install meson gfortran
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build pypestutils (Windows)
       if: runner.os == 'Windows'
       shell: bash -l {0}
       env:
         LDFLAGS: -static-libgcc -static-libgfortran -static-libquadmath -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         scripts/build_lib.sh
 
@@ -86,6 +89,8 @@ jobs:
       shell: bash -l {0}
       run: |
         scripts/build_lib.sh
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Install Modflow executables
       uses: modflowpy/install-modflow-action@v1
