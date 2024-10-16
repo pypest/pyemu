@@ -85,6 +85,7 @@ jobs:
         scripts/build_lib.sh
 
     - name: Install pypestutils
+      shell: bash -l {0}
       working-directory: pypestutils
       run: |
         pip install -e .
