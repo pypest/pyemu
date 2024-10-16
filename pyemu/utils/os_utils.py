@@ -62,15 +62,36 @@ def _istextfile(filename, blocksize=512):
     nontext = block.translate(None, _text_characters)
     return float(len(nontext)) / len(block) <= 0.30
 
-
 def _remove_readonly(func, path, excinfo):
     """remove readonly dirs, apparently only a windows issue
     add to all rmtree calls: shutil.rmtree(**,onerror=remove_readonly), wk"""
     os.chmod(path, 128)  # stat.S_IWRITE==128==normal
     func(path)
 
+def run(cmd_str, cwd=".", verbose=False, use_sp = False, **kwargs):
+    """main run function so both run_sp and run_ossystem can coexist
 
-def run(cmd_str, cwd=".", verbose=False):
+    Args:
+        cmd_str (`str`): the str to execute with `os.system()`
+
+        cwd (`str`, optional): the directory to execute the command in.
+            Default is ".".
+        verbose (`bool`, optional): flag to echo to stdout the  `cmd_str`.
+            Default is `False`.
+    Notes:
+        by default calls run_ossystem which is the OG function from pyemu that uses `os.system()`
+        if use_sp is True, then run_sp is called which uses `subprocess.Popen` instead of `os.system`
+
+    Example::
+        pyemu.os_utils.run("pestpp-ies my.pst",cwd="template")
+    """
+
+    if use_sp:
+        run_sp(cmd_str, cwd, verbose, **kwargs)
+    else:       
+        run_ossystem(cmd_str, cwd, verbose)
+
+def run_ossystem(cmd_str, cwd=".", verbose=False):
     """an OS agnostic function to execute a command line
 
     Args:
@@ -115,6 +136,7 @@ def run(cmd_str, cwd=".", verbose=False):
         print("run():{0}".format(cmd_str))
 
     try:
+        print(cmd_str)
         ret_val = os.system(cmd_str)
     except Exception as e:
         os.chdir(bwd)
@@ -129,6 +151,70 @@ def run(cmd_str, cwd=".", verbose=False):
         if estat != 0 or ret_val != 0:
             raise Exception("run() returned non-zero: {0},{1}".format(estat,ret_val))
         
+def run_sp(cmd_str, cwd=".", verbose=True, logfile=False, **kwargs):
+    """an OS agnostic function to execute a command line with subprocess
+
+    Args:
+        cmd_str (`str`): the str to execute with `sp.Popen()`
+
+        cwd (`str`, optional): the directory to execute the command in.
+            Default is ".".
+        verbose (`bool`, optional): flag to echo to stdout the  `cmd_str`.
+            Default is `False`.
+        shell (`bool`, optional): flag to use shell=True in the `subprocess.Popen` call. Not recommended
+
+    Notes:
+        uses sp Popen to execute the command line. By default does not run in shell mode (ie. does not look for the exe in env variables)
+
+    """
+    # update shell from  kwargs
+    shell = kwargs.get("shell", False)
+    # detached = kwargs.get("detached", False)
+
+    # print warning if shell is True
+    if shell:
+        warnings.warn("shell=True is not recommended and may cause issues, but hey! YOLO", PyemuWarning)
+
+
+    bwd = os.getcwd()
+    os.chdir(cwd)
+
+    if platform.system() != "Windows" and not shutil.which(cmd_str.split()[0]):
+        cmd_str = "./" + cmd_str
+
+    try:
+        cmd_ins = [i for i in cmd_str.split()]
+        log_stream = open(os.path.join('pyemu.log'), 'w+', newline='') if logfile else None
+        with sp.Popen(cmd_ins, stdout=sp.PIPE, 
+                      stderr=sp.STDOUT, text=True,
+                      shell=shell, bufsize=1) as process:
+            for line in process.stdout:
+                if verbose:
+                    print(line, flush=True, end='')
+                if logfile:
+                    log_stream.write(line.strip('\n'))
+                    log_stream.flush()
+            process.wait() # wait for the process to finish
+            retval = process.returncode
+
+    except Exception as e:
+        os.chdir(bwd)
+        raise Exception("run() raised :{0}".format(str(e)))
+
+    finally:
+        if logfile:
+            log_stream.close()
+    os.chdir(bwd)
+
+    if "window" in platform.platform().lower():
+        if retval != 0:
+            raise Exception("run() returned non-zero: {0}".format(retval))
+    else:
+        estat = os.WEXITSTATUS(retval)
+        if estat != 0 or retval != 0:
+            raise Exception("run() returned non-zero: {0},{1}".format(estat, retval))        
+    return retval
+
 
 def _try_remove_existing(d, forgive=False):
     try:
@@ -145,7 +231,6 @@ def _try_remove_existing(d, forgive=False):
                 PyemuWarning,
             )
         return False
-
 
 def _try_copy_dir(o_d, n_d):
     try:

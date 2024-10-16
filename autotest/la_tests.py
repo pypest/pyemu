@@ -637,12 +637,13 @@ def ends_run_freyberg_dsi(tmp_path,nst=False,nst_extrap=None,ztz=False,energy=1.
         os.remove(filename)
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
     pst.control_data.noptmax = -1
+    pst.pestpp_options["overdue_giveup_fac"] = 1000
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
 
     #read in the results
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=os.path.join(t_d,"dsi.0.obs.csv"))
-    assert oe.shape[0]==50, f"{50-oe.shape} failed runs"
+    assert oe.shape[0]==50, f"{50-oe.shape[0]} failed runs"
     phi_vector = oe.phi_vector.sort_values().values
     assert phi_vector[0] != phi_vector[1],phi_vector
 

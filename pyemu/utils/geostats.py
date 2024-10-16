@@ -971,6 +971,16 @@ class OrdinaryKrige(object):
             znt = 1
             if zone_array is not None:
                 znt = zone_array.ravel()
+            
+            #reset any missing values in znt to a zns value - 
+            # doesnt matter in the end, just results in more nodes 
+            # being solved for...
+            znt_unique = np.unique(znt)
+            zns_unique = np.unique(zns)
+            for uz in znt_unique:
+                if uz not in zns_unique:
+                    znt[znt==uz] = zns_unique[0]
+            
             assert len(self.geostruct.variograms) == 1
             v = self.geostruct.variograms[0]
             vartype = 2
@@ -2542,4 +2552,5 @@ def reformat_factorfile(nrow,ncol,point_data,geostruct,ppu_factor_filename):
     f_out.close()
     shutil.copy2("temp.fac",ppu_factor_filename)
     os.remove("temp.fac")
+
 
