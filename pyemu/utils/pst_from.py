@@ -186,6 +186,8 @@ class PstFrom(object):
             On windows, beware setting this much smaller than 50 because of the overhead associated with
             spawning the pool.  This value is added to the call to `apply_list_and_array_pars`. Default is 50
         echo (`bool`): flag to echo logger messages to the screen.  Default is True
+        pp_solve_num_threads (`int`): number of threads to use for the pyemu very-slow kriging solve for
+            pilot-point type parameters.  Default is 10.
 
     Note:
         This is the way...
@@ -213,12 +215,14 @@ class PstFrom(object):
         tpl_subfolder=None,
         chunk_len=50,
         echo=True,
+        pp_solve_num_threads=10
     ):
         self.original_d = Path(original_d)
         self.new_d = Path(new_d)
         self.original_file_d = None
         self.mult_file_d = None
         self.tpl_d = self.new_d
+        self.pp_solve_num_threads = int(pp_solve_num_threads)
         if tpl_subfolder is not None:
             self.tpl_d = Path(self.new_d, tpl_subfolder)
         self.remove_existing = bool(remove_existing)
@@ -2607,6 +2611,8 @@ class PstFrom(object):
                         tpl_filename,
                         pnb,
                     )
+                df["tpl_filename"] = tpl_filename
+                df["pp_filename"] = pp_filename    
                 df.loc[:, "pargp"] = pargp
                 df.set_index("parnme", drop=False, inplace=True)
                 pp_locs = df
@@ -2713,7 +2719,7 @@ class PstFrom(object):
                                 spatial_reference,
                                 var_filename=var_filename,
                                 zone_array=zone_array,
-                                num_threads=pp_options.get("num_threads",10),
+                                num_threads=pp_options.get("num_threads",self.pp_solve_num_threads),
                                 minpts_interp=pp_options.get("minpts_interp",1),
                                 maxpts_interp=pp_options.get("maxpts_interp",20),
                                 search_radius=pp_options.get("search_radius",1e10),
@@ -2740,7 +2746,7 @@ class PstFrom(object):
                                     ok_pp.calc_factors(
                                         node_df.x,
                                         node_df.y,
-                                        num_threads=pp_options.get("num_threads", 1),
+                                        num_threads=pp_options.get("num_threads", self.pp_solve_num_threads),
                                         minpts_interp=pp_options.get("minpts_interp", 1),
                                         maxpts_interp=pp_options.get("maxpts_interp", 20),
                                         search_radius=pp_options.get("search_radius", 1e10),
@@ -2755,7 +2761,8 @@ class PstFrom(object):
                                 for node, (x, y) in spatial_reference.items():
                                     data.append([node, x, y])
                                 node_df = pd.DataFrame(data, columns=["node", "x", "y"])
-                                ok_pp.calc_factors(node_df.x, node_df.y, num_threads=10)
+                                ok_pp.calc_factors(node_df.x, node_df.y, 
+                                    num_threads=pp_options.get("num_threads", self.pp_solve_num_threads))
                                 ok_pp.to_grid_factors_file(
                                     fac_filename, ncol=node_df.shape[0]
                                 )
