@@ -2584,7 +2584,7 @@ def ppu_geostats_test(tmp_path):
     
     import flopy
 
-    #sys.path.insert(0,os.path.join("..","..","pypestutils"))
+    sys.path.insert(0,os.path.join("..","..","pypestutils"))
 
     import pypestutils as ppu
 
@@ -2606,7 +2606,7 @@ def ppu_geostats_test(tmp_path):
                                                            )
     #print(par_info_unrot.parnme.value_counts())
     par_info_unrot.loc[:,"parval1"] = np.random.uniform(10,100,par_info_unrot.shape[0])
-    gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0))
+    gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0,anisotropy=3.0,bearing=45))
     ok = pyemu.geostats.OrdinaryKrige(gs,par_info_unrot)
     ppu_factor_filename = os.path.join("utils","ppu_factors.dat")
     pyemu_factor_filename = os.path.join("utils", "pyemu_factors.dat")
@@ -2636,7 +2636,7 @@ def ppu_geostats_test(tmp_path):
 
 
 if __name__ == "__main__":
-    ppu_geostats_invest(".")
+    ppu_geostats_test(".")
     #thresh_pars_test()
     #obs_ensemble_quantile_test()
     #geostat_draws_test("temp")
