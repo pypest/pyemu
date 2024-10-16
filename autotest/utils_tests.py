@@ -2570,6 +2570,10 @@ def thresh_pars_test():
     # plt.show()
 
 
+def test_ppu_import():
+    import pypestutils as ppu
+
+
 
 if __name__ == "__main__":
     thresh_pars_test()

@@ -84,6 +84,11 @@ jobs:
       run: |
         scripts/build_lib.sh
 
+    - name: Install pypestutils
+      working-directory: pypestutils
+      run: |
+        pip install -e .
+
     - name: Install pyemu
       shell: bash -l {0}
       run: |
@@ -117,7 +122,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Test Notebooks
-      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9 }}
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == "3.10" }}
       shell: bash -l {0}
       working-directory: ./examples
       run: |
