@@ -3524,6 +3524,8 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
     except:
         return
 
+
+
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
     bd = Path.cwd()
@@ -3659,10 +3661,16 @@ def mf6_freyberg_pp_locs_test(tmp_path):
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
+    #try:
+    import flopy
+    #except:
+    #    return
+
+    import sys
+    sys.path.insert(0,os.path.join("..","..","pypestutils"))
+
+
+    import pypestutils as ppu
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -3748,6 +3756,7 @@ def mf6_freyberg_pp_locs_test(tmp_path):
                                       par_name_base=arr_file.split('.')[1] + "_pp",
                                       pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
                                       upper_bound=ub, lower_bound=lb,pp_space=pp_opt,apply_order=i)
+                    
 
         # add model run command
         pf.mod_sys_cmds.append("mf6")
@@ -6021,10 +6030,11 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
 
 if __name__ == "__main__":
-    #mf6_freyberg_pp_locs_test('.')
-    mf6_freyberg_ppu_hyperpars_invest(".")
-    mf6_freyberg_ppu_hyperpars_thresh_invest(".")
+    mf6_freyberg_pp_locs_test('.')
+    #mf6_freyberg_ppu_hyperpars_invest(".")
+    #mf6_freyberg_ppu_hyperpars_thresh_invest(".")
     # invest()
+    #test_add_array_parameters_pps_grid()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
     #mf6_freyberg_test(os.path.abspath("."))
@@ -6042,12 +6052,12 @@ if __name__ == "__main__":
     # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
-    # tpf = TestPstFrom()
-    # tpf.setup()
+    #tpf = TestPstFrom()
+    #$tpf.setup()
     #tpf.test_add_array_parameters_to_file_list()
     #tpf.test_add_array_parameters_alt_inst_str_none_m()
     #tpf.test_add_array_parameters_alt_inst_str_0_d()
-    # tpf.test_add_array_parameters_pps_grid()
+    #tpf.test_add_array_parameters_pps_grid()
     # tpf.test_add_list_parameters()
     # # pstfrom_profile()
     # mf6_freyberg_arr_obs_and_headerless_test()

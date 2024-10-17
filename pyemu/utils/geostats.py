@@ -943,8 +943,8 @@ class OrdinaryKrige(object):
         self.interp_data = None
         # assert isinstance(spatial_reference,SpatialReference)
         try:
-            x = self.spatial_reference.xcentergrid.copy()
-            y = self.spatial_reference.ycentergrid.copy()
+            x = np.atleast_2d(self.spatial_reference.xcentergrid.copy())
+            y = np.atleast_2d(self.spatial_reference.ycentergrid.copy())
         except Exception as e:
             raise Exception(
                 "spatial_reference does not have proper attributes:{0}".format(str(e))
@@ -965,12 +965,12 @@ class OrdinaryKrige(object):
             ncs = self.point_data.y.values
             zns = 1#np.ones_like(ecs,dtype=int)
             if "zone" in self.point_data.columns:
-                zns = self.point_data.zone.values
+                zns = self.point_data.zone.values.astype(int)
             ect = x.ravel()
             nct = y.ravel()
             znt = 1
             if zone_array is not None:
-                znt = zone_array.ravel()
+                znt = zone_array.ravel().astype(int)
             
             #reset any missing values in znt to a zns value - 
             # doesnt matter in the end, just results in more nodes 
