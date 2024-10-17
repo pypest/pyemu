@@ -943,12 +943,16 @@ class OrdinaryKrige(object):
         self.interp_data = None
         # assert isinstance(spatial_reference,SpatialReference)
         try:
-            x = np.atleast_2d(self.spatial_reference.xcentergrid.copy())
-            y = np.atleast_2d(self.spatial_reference.ycentergrid.copy())
+            x = self.spatial_reference.xcentergrid.copy()
+            y = self.spatial_reference.ycentergrid.copy()
         except Exception as e:
             raise Exception(
                 "spatial_reference does not have proper attributes:{0}".format(str(e))
             )
+        if x.ndim == 1:
+            x = np.atleast_2d(x).transpose()
+            y = np.atleast_2d(y).transpose()
+
 
         use_ppu = False
         if try_use_ppu:
