@@ -2725,7 +2725,7 @@ class PstFrom(object):
                                 minpts_interp=pp_options.get("minpts_interp",1),
                                 maxpts_interp=pp_options.get("maxpts_interp",20),
                                 search_radius=pp_options.get("search_radius",1e10),
-                                try_use_ppu=pp_options.get("try_use_ppu",True),
+                                try_use_ppu=pp_options.get("try_use_ppu",False),
                                 #ppu_factor_filename=pp_options.get("ppu_factor_filename","factors.dat")
                                 ppu_factor_filename=fac_filename
                             )
