@@ -4866,6 +4866,10 @@ def mf6_freyberg_thresh_test(tmp_path):
     import flopy
     # except:
     #     return
+    import sys
+    sys.path.insert(0,os.path.join("..","..","pypestutils"))
+    import pypestutils as ppu
+
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -4949,7 +4953,7 @@ def mf6_freyberg_thresh_test(tmp_path):
                     cat_dict = {1:[0.4,arr.mean()],2:[0.6,arr.mean()]}
                     thresharr,threshcsv = pyemu.helpers.setup_threshold_pars(pth_arr_file,cat_dict=cat_dict,
                                                                              testing_workspace=pf.new_d,inact_arr=ib)
-
+                    
                     pf.pre_py_cmds.append("pyemu.helpers.apply_threshold_pars('{0}')".format(os.path.split(threshcsv)[1]))
                     prefix = arr_file.split('.')[1].replace("_","-")
                     pf.add_parameters(filenames=os.path.split(thresharr)[1],par_type="grid",transform="none",
@@ -4983,10 +4987,11 @@ def mf6_freyberg_thresh_test(tmp_path):
                                         obsgp="tarr-" + prefix + "_k:{0}".format(k), zone_array=ib)
 
                     df = pd.read_csv(threshcsv.replace(".csv","_results.csv"),index_col=0)
+
                     pf.add_observations(os.path.split(threshcsv)[1].replace(".csv","_results.csv"),index_cols="threshcat",use_cols=df.columns.tolist(),prefix=prefix+"-results_k:{0}".format(k),
                                         obsgp=prefix+"-results_k:{0}".format(k),ofile_sep=",")
                     num_cat_arrays += 1
-
+        
         # add model run command
         pf.mod_sys_cmds.append("mf6")
         print(pf.mult_files)
@@ -5009,6 +5014,7 @@ def mf6_freyberg_thresh_test(tmp_path):
         pst.set_res(res_file)
         print(pst.phi)
         assert pst.phi < 0.1, pst.phi
+
 
         #set the initial and bounds for the fill values
         par = pst.parameter_data
@@ -6030,7 +6036,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
 
 if __name__ == "__main__":
-    mf6_freyberg_pp_locs_test('.')
+    #mf6_freyberg_pp_locs_test('.')
     #mf6_freyberg_ppu_hyperpars_invest(".")
     #mf6_freyberg_ppu_hyperpars_thresh_invest(".")
     # invest()
@@ -6043,7 +6049,7 @@ if __name__ == "__main__":
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #freyberg_test()
-    #mf6_freyberg_thresh_test(".")
+    mf6_freyberg_thresh_test(".")
     #test_defaults(".")
     #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")

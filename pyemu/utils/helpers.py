@@ -3945,19 +3945,23 @@ def apply_threshold_pars(csv_file):
     #since we only have two categories, we can just focus on the first proportion
     target_prop = tvals[0]
 
-    tol = 1.0e-10
+    tol = 1.0e-5
     if tarr.std() < tol:
         print("WARNING: thresholding array {0} has very low standard deviation".format(thresarr_file))
         print("         using a homogenous array with first category fill value {0}".format(tfill[0]))
 
         farr = np.zeros_like(tarr) + tfill[0]
         if iarr is not None:
-            farr[iarr == 0] = -1.0e+30
-            tarr[iarr == 0] = -1.0e+30
-        df.loc[tcat[0], "threshold"] = tarr.mean()
-        df.loc[tcat[1], "threshold"] = tarr.mean()
+            farr[iarr == 0] = np.nan
+            tarr[iarr == 0] = np.nan
+        df.loc[tcat[0], "threshold"] = np.nanmean(tarr)
+        df.loc[tcat[1], "threshold"] = np.nanmean(tarr)
         df.loc[tcat[0], "proportion"] = 1
         df.loc[tcat[1], "proportion"] = 0
+
+        if iarr is not None:
+            farr[iarr == 0] = -1e30
+            tarr[iarr == 0] = -1e30
 
         df.to_csv(csv_file.replace(".csv", "_results.csv"))
         np.savetxt(orgarr_file, farr, fmt="%15.6E")
@@ -3969,8 +3973,8 @@ def apply_threshold_pars(csv_file):
 
     # a classic:
     gr = (np.sqrt(5.) + 1.) / 2.
-    a = tarr.min()
-    b = tarr.max()
+    a = np.nanmin(tarr)
+    b = np.nanmax(tarr)
     c = b - ((b - a) / gr)
     d = a + ((b - a) / gr)
 
@@ -3979,7 +3983,7 @@ def apply_threshold_pars(csv_file):
     if iarr is not None:
 
         # this keeps inact from interfering with calcs later...
-        tarr[iarr == 0] = 1.0e+30
+        tarr[iarr == 0] = np.nan
         tiarr = iarr.copy()
         tiarr[tiarr <= 0] = 0
         tiarr[tiarr > 0] = 1
@@ -4020,8 +4024,8 @@ def apply_threshold_pars(csv_file):
     tarr[tarr <= thresh] = tcat[1]
 
     if iarr is not None:
-        farr[iarr==0] = -1.0e+30
-        tarr[iarr == 0] = -1.0e+30
+        farr[iarr==0] = -1e+30
+        tarr[iarr==0] = -1e+30
     df.loc[tcat[0],"threshold"] = thresh
     df.loc[tcat[1], "threshold"] = 1.0 - thresh
     df.loc[tcat[0], "proportion"] = prop
