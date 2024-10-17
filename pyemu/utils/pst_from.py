@@ -235,6 +235,7 @@ class PstFrom(object):
             start_datetime = _get_datetime_from_str(start_datetime)
         self.start_datetime = start_datetime
         self.geostruct = None
+        self.pp_solve_num_threads = int(pp_solve_num_threads)
         self.par_struct_dict = {}
         # self.par_struct_dict_l = {}
 
@@ -2486,6 +2487,7 @@ class PstFrom(object):
                                 "'zone' col not found in pp dataframe, adding generic zone"
                             )
                             pp_locs.loc[:, "zone"] = 1
+
                         elif zone_array is not None:
                             # check that all the zones in the pp df are in the zone array
                             missing = []

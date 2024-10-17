@@ -4459,7 +4459,8 @@ def shortname_conversion_test(tmp_path):
                      remove_existing=True,
                      longnames=False,
                      zero_based=False,
-                     spatial_reference=sr)
+                     spatial_reference=sr,
+                     pp_solve_num_threads=1)
 
         v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
         gr_gs = pyemu.geostats.GeoStruct(variograms=v)
@@ -4475,6 +4476,19 @@ def shortname_conversion_test(tmp_path):
                           par_type="constant", par_name_base="cpar",
                           pargp="cpargp", upper_bound=0.1, lower_bound=10.0,
                           geostruct=gr_gs)
+        pf.add_parameters(filenames=parfiles,
+                          par_type="pilotpoints", par_name_base="pppar",
+                          pargp="pppargp", upper_bound=0.1, lower_bound=10.0,
+                          geostruct=gr_gs)
+
+        pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
+        pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
+        pf.add_parameters(filenames=parfiles,
+                          par_type="pilotpoints", par_name_base="pppar2",
+                          pargp="pppargp2", upper_bound=0.1, lower_bound=10.0,
+                          geostruct=gr_gs,pp_space=pp_locs)
+
+
 
         pf.add_observations(
             "obsfile1",
@@ -4525,7 +4539,7 @@ def shortname_conversion_test(tmp_path):
             with open(os.path.join(pf.new_d, tpl), "rt") as f:
                 parin = set(rex.findall(f.read()))
             par = par - parin
-        assert len(par) == 0, f"{len(par)} pars not found in tplfiles: {par[:100]}..."
+        assert len(par) == 0, f"{len(par)} pars not found in tplfiles: {par}..."
         # test update/rebuild
         pf.add_observations(
             "obsfile3",
@@ -4563,6 +4577,7 @@ def shortname_conversion_test(tmp_path):
     except Exception as e:
         os.chdir(bd)
         raise Exception(str(e))
+
     os.chdir(bd)
 
 
