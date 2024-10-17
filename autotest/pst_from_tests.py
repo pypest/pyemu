@@ -909,19 +909,19 @@ def mf6_freyberg_test(setup_freyberg_mf6):
                    ult_ub = 31.0
                    ult_lb = -1.3
                 pf.add_parameters(filenames=arr_file,par_type="grid",par_name_base=arr_file.split('.')[1]+"_gr",
-                                  pargp=arr_file.split('.')[1]+"_gr",zone_array=ib,upper_bound=ub,lower_bound=lb,
+                                  pargp=arr_file.split('.')[1]+"_gr",upper_bound=ub,lower_bound=lb,
                                   geostruct=gr_gs,ult_ubound=None if ult_ub is None else ult_ub + 1,
                                   ult_lbound=None if ult_lb is None else ult_lb + 1)
                 # use a slightly lower ult bound here
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
-                                  pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,
+                                  pargp=arr_file.split('.')[1]+"_pp", upper_bound=ub,lower_bound=lb,
                                   ult_ubound=None if ult_ub is None else ult_ub - 1,
                                   ult_lbound=None if ult_lb is None else ult_lb - 1,geostruct=gr_gs)
 
                 # use a slightly lower ult bound here
                 pf.add_parameters(filenames=arr_file, par_type="constant",
                                   par_name_base=arr_file.split('.')[1] + "_cn",
-                                  pargp=arr_file.split('.')[1] + "_cn", zone_array=ib,
+                                  pargp=arr_file.split('.')[1] + "_cn",
                                   upper_bound=ub, lower_bound=lb,geostruct=gr_gs)
 
     # arr = np.loadtxt(Path(template_ws, 'freyberg6.npf_k_layer1.txt'))
@@ -6049,7 +6049,7 @@ if __name__ == "__main__":
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #freyberg_test()
-    mf6_freyberg_thresh_test(".")
+    #mf6_freyberg_thresh_test(".")
     #test_defaults(".")
     #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
@@ -6066,7 +6066,7 @@ if __name__ == "__main__":
     #tpf.test_add_array_parameters_pps_grid()
     # tpf.test_add_list_parameters()
     # # pstfrom_profile()
-    # mf6_freyberg_arr_obs_and_headerless_test()
+    mf6_freyberg_test()
     #usg_freyberg_test(".")
     #vertex_grid_test()
     #direct_quickfull_test()
