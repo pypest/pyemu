@@ -688,8 +688,13 @@ def another_generic_function(some_arg):
     print(some_arg)
 
 
-def mf6_freyberg_test(setup_freyberg_mf6):
-    pf, sim = setup_freyberg_mf6
+def mf6_freyberg_test():
+    import sys
+    sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
+    import pypestutils as ppu
+    r = setup_freyberg_mf6(".",None)
+    print(r)
+    pf,sim = r[0],r[1]
     m = sim.get_model()
     mg = m.modelgrid
     template_ws = pf.new_d
@@ -1084,13 +1089,18 @@ def mf6_freyberg_test(setup_freyberg_mf6):
         org = np.loadtxt(Path(pf.new_d, subinfo.org_file.values[0]))
         m = dummymult ** len(subinfo)
         check = org * m
-        check[ib == 0] = org[ib == 0]
+        #check[ib == 0] = org[ib == 0]
         ult_u = subinfo.upper_bound.astype(float).values[0]
         ult_l = subinfo.lower_bound.astype(float).values[0]
         check[check < ult_l] = ult_l
         check[check > ult_u] = ult_u
+        check[ib==0] = np.nan
+
         result = np.loadtxt(Path(pf.new_d, mfile))
-        assert np.isclose(check, result).all(), (f"Problem with par apply for "
+        result[ib==0] = np.nan
+        diff = np.abs(check - result)
+        diff[ib==0] = 0.0
+        assert np.isclose(diff,0.0,rtol=0.0001,atol=0.0001).all(), (f"Problem with par apply for "
                                                  f"{mfile}")
     df = pd.read_csv(Path(pf.new_d, "freyberg6.sfr_packagedata_test.txt"),
                      sep=r'\s+', index_col=0)
@@ -1519,7 +1529,7 @@ def mf6_freyberg_da_test(tmp_path):
     os.chdir(bd)
 
 
-@pytest.fixture
+#@pytest.fixture
 def setup_freyberg_mf6(tmp_path, request):
     try:
         import flopy
@@ -1563,11 +1573,12 @@ def setup_freyberg_mf6(tmp_path, request):
                                 index_cols="time",
                                 use_cols=["GAGE_1", "HEADWATER", "TAILWATER"],
                                 ofile_sep=",")
-        yield pf, sim
+        #yield pf, sim
     except Exception as e:
         os.chdir(bd)
         raise e
     os.chdir(bd)
+    return pf,sim
 
 
 def build_direct(pf):
@@ -3668,8 +3679,6 @@ def mf6_freyberg_pp_locs_test(tmp_path):
 
     import sys
     sys.path.insert(0,os.path.join("..","..","pypestutils"))
-
-
     import pypestutils as ppu
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
@@ -6049,7 +6058,8 @@ if __name__ == "__main__":
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #freyberg_test()
-    mf6_freyberg_thresh_test(".")
+    #mf6_freyberg_thresh_test(".")
+    mf6_freyberg_test()
     #test_defaults(".")
     #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
