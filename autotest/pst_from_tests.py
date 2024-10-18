@@ -1528,7 +1528,7 @@ def mf6_freyberg_da_test(tmp_path):
     os.chdir(bd)
 
 
-#@pytest.fixture
+@pytest.fixture
 def setup_freyberg_mf6(tmp_path, request):
     try:
         import flopy
