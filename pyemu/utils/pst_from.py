@@ -222,6 +222,7 @@ class PstFrom(object):
         self.original_file_d = None
         self.mult_file_d = None
         self.tpl_d = self.new_d
+        self.pp_solve_num_threads = int(pp_solve_num_threads)
         if tpl_subfolder is not None:
             self.tpl_d = Path(self.new_d, tpl_subfolder)
         self.remove_existing = bool(remove_existing)
@@ -285,6 +286,14 @@ class PstFrom(object):
         self.ult_lbound_fill = -1.0e30
         self.chunk_len = int(chunk_len)
         self.py_functions = set()
+
+        self.pre_py_cmds.insert(
+            0,
+            "pyemu.helpers.apply_list_and_array_pars("
+            "arr_par_file='mult2model_info.csv',chunk_len={0})".format(
+                self.chunk_len
+            ),
+        )
 
 
     @property
@@ -1830,6 +1839,10 @@ class PstFrom(object):
         comment_char=None,
         par_style="multiplier",
         initial_value=None,
+        prep_pp_hyperpars=False,
+        pp_options={},
+        apply_order=999,
+        apply_function=None
     ):
         """
         Add list or array style model input files to PstFrom object.
@@ -1934,13 +1947,21 @@ class PstFrom(object):
                 This is not additive with `mfile_skip` option.
                 Warning: currently comment lines within list-style tabular data
                 will be lost.
-            par_style (`str`): either "m"/"mult"/"multiplier", "a"/"add"/"addend", or "d"/"direct" where the former sets up
-                up a multiplier and addend parameters process against the existing model input
-                array and the former sets up a template file to write the model
+            par_style (`str`): either "m"/"mult"/"multiplier", "a"/"add"/"addend", or "d"/"direct" where
+                the former sets up a multiplier and addend parameters process against the existing
+                model input array and the former sets up a template file to write the model
                 input file directly.  Default is "multiplier".
-
             initial_value (`float`): the value to set for the `parval1` value in the control file
                 Default is 1.0
+            pp_options (`dict`): various options to control pilot point options.  Also includes
+                 `prep_hyperpars`, a `bool` flag to setup and use pilot point hyper parameters
+                (ie anisotropy, bearing, "a") with `PyPestUtils`, and `try_use_ppu`, a flag to
+                (attempt) to use `PyPestUtils` to calculate the kriging factors instead of the
+                pyemu geostats slowness.  Only used if par type is pilot points.
+            apply_order (`int`): the optional order to process this set of parameters at runtime.
+                Default is 999.
+            apply_function (`str`): a python function to call during the apply process at runtime.
+                Default is None.
         Returns:
             `pandas.DataFrame`: dataframe with info for new parameters
 
@@ -1960,12 +1981,13 @@ class PstFrom(object):
         """
         # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
-
+        if apply_function is not None:
+            raise NotImplementedError("apply_function is not implemented")
         # TODO support passing par_file (i,j)/(x,y) directly where information
         #  is not contained in model parameter file - e.g. no i,j columns
         self.add_pars_callcount += 1
         self.ijwarned[self.add_pars_callcount] = False
-
+        config_df_filename = None
         if transform is None:
             if par_style in ["a", "add", "addend"]:
                 transform = 'none'
@@ -2405,7 +2427,7 @@ class PstFrom(object):
                         # zone (all non zero) -- for active domain...
                         if zone_array is None:
                             nr, nc = file_dict[list(file_dict.keys())[0]].shape
-                            zone_array = np.ones((nr,nc))                        
+                            zone_array = np.ones((nr,nc),dtype=int)
                         zone_array[zone_array > 0] = 1  # so can set all
                         # gt-zero to 1
                     if isinstance(pp_space, float):
@@ -2591,10 +2613,11 @@ class PstFrom(object):
                         tpl_filename,
                         pnb,
                     )
-                    df["tpl_filename"] = tpl_filename
-                    df["pp_filename"] = pp_filename
+                df["tpl_filename"] = tpl_filename
+                df["pp_filename"] = pp_filename    
                 df.loc[:, "pargp"] = pargp
                 df.set_index("parnme", drop=False, inplace=True)
+                pp_locs = df
                 # df includes most of the par info for par_dfs and also for
                 # relate_parfiles
                 self.logger.statement(
@@ -2607,100 +2630,147 @@ class PstFrom(object):
 
                 # Calculating pp factors
                 pg = pargp[0]
-                # this reletvively quick
-                ok_pp = pyemu.geostats.OrdinaryKrige(pp_geostruct, df)
-                # build krige reference information on the fly - used to help
-                # prevent unnecessary krig factor calculation
-                pp_info_dict = {
-                    "pp_data": ok_pp.point_data.loc[:, ["x", "y", "zone"]],
-                    "cov": ok_pp.point_cov_df,
-                    "zn_ar": zone_array,
-                    "sr": spatial_reference,
-                    "pstyle":par_style,
-                    "transform":transform
-                }
-                fac_processed = False
-                for facfile, info in self._pp_facs.items():  # check against
-                    # factors already calculated
-                    if (
-                        info["pp_data"].equals(pp_info_dict["pp_data"])
-                        and info["cov"].equals(pp_info_dict["cov"])
-                        and np.array_equal(info["zn_ar"], pp_info_dict["zn_ar"])
-                        and pp_info_dict["pstyle"] == info["pstyle"]
-                        and pp_info_dict["transform"] == info["transform"]
+                prep_pp_hyperpars = pp_options.get("prep_hyperpars",False)
 
-                    ):
-                        if type(info["sr"]) == type(spatial_reference):
-                            if isinstance(spatial_reference, dict):
-                                if len(info["sr"]) != len(spatial_reference):
-                                    continue
-                        else:
-                            continue
-
-                        fac_processed = True  # don't need to re-calc same factors
-                        fac_filename = facfile  # relate to existing fac file
-                        self.logger.statement("reusing factors")
-                        break
-                if not fac_processed:
-                    # TODO need better way of naming sequential fac_files?
-                    self.logger.log("calculating factors for pargp={0}".format(pg))
-                    fac_filename = self.new_d / "{0}pp.fac".format(par_name_store)
-                    var_filename = fac_filename.with_suffix(".var.dat")
-                    self.logger.statement(
-                        "saving krige variance file:{0}".format(var_filename)
-                    )
-                    self.logger.statement(
-                        "saving krige factors file:{0}".format(fac_filename)
-                    )
-                    # store info on pilotpoints
-                    self._pp_facs[fac_filename] = pp_info_dict
-                    # this is slow (esp on windows) so only want to do this
-                    # when required
+                if prep_pp_hyperpars:
                     if structured:
-                        ok_pp.calc_factors_grid(
-                            spatial_reference,
-                            var_filename=var_filename,
-                            zone_array=zone_array,
-                            num_threads=self.pp_solve_num_threads,
-                        )
-                        ok_pp.to_grid_factors_file(fac_filename)
+                        grid_dict = {}
+                        for inode,(xx,yy) in enumerate(zip(spatial_reference.xcentergrid.flatten(),
+                                                       spatial_reference.ycentergrid.flatten())):
+                            grid_dict[inode] = (xx,yy)
                     else:
-                        # put the sr dict info into a df
-                        # but we only want to use the n
-                        if zone_array is not None:
-                            for zone in np.unique(zone_array):
-                                if int(zone) == 0:
-                                    continue
+                        grid_dict = spatial_reference
+                    #prep_pp_hyperpars(file_tag,pp_filename,out_filename,grid_dict,
+                    #   geostruct,arr_shape,pp_options,zone_array=None)
+                    if structured:
+                        shape = spatial_reference.xcentergrid.shape
+                    else:
+                        shape = (1,len(grid_dict))
 
+                    config_df = pyemu.utils.prep_pp_hyperpars(pg,os.path.join(pp_filename),
+                                                              pp_locs,os.path.join("mult",mlt_filename),
+                                                              grid_dict,pp_geostruct,shape,pp_options,
+                                                              zone_array=zone_array,
+                                                              ws=self.new_d)
+                    #todo: add call to apply func ahead of call to mult func
+                    config_df_filename = config_df.loc["config_df_filename","value"]
+                    #self.pre_py_cmds.insert(0,"pyemu.utils.apply_ppu_hyperpars('{0}')".\
+                    #                        format(config_df_filename))
+
+                    #if "pypestutils" not in self.extra_py_imports:
+                    #    self.extra_py_imports.append("pypestutils")
+                    print(config_df_filename)
+                    config_func_str = "pyemu.utils.apply_ppu_hyperpars('{0}')".\
+                                      format(config_df_filename)
+
+
+                else:
+
+                    # this reletvively quick
+                    ok_pp = pyemu.geostats.OrdinaryKrige(pp_geostruct, df)
+                    # build krige reference information on the fly - used to help
+                    # prevent unnecessary krig factor calculation
+                    pp_info_dict = {
+                        "pp_data": ok_pp.point_data.loc[:, ["x", "y", "zone"]],
+                        "cov": ok_pp.point_cov_df,
+                        "zn_ar": zone_array,
+                        "sr": spatial_reference,
+                        "pstyle":par_style,
+                        "transform":transform
+                    }
+                    fac_processed = False
+                    for facfile, info in self._pp_facs.items():  # check against
+                        # factors already calculated
+                        if (
+                            info["pp_data"].equals(pp_info_dict["pp_data"])
+                            and info["cov"].equals(pp_info_dict["cov"])
+                            and np.array_equal(info["zn_ar"], pp_info_dict["zn_ar"])
+                            and pp_info_dict["pstyle"] == info["pstyle"]
+                            and pp_info_dict["transform"] == info["transform"]
+
+                        ):
+                            if type(info["sr"]) == type(spatial_reference):
+                                if isinstance(spatial_reference, dict):
+                                    if len(info["sr"]) != len(spatial_reference):
+                                        continue
+                            else:
+                                continue
+
+                            fac_processed = True  # don't need to re-calc same factors
+                            fac_filename = facfile  # relate to existing fac file
+                            self.logger.statement("reusing factors")
+                            break
+                    if not fac_processed:
+                        # TODO need better way of naming sequential fac_files?
+                        self.logger.log("calculating factors for pargp={0}".format(pg))
+                        fac_filename = self.new_d / "{0}pp.fac".format(par_name_store)
+                        var_filename = fac_filename.with_suffix(".var.dat")
+                        self.logger.statement(
+                            "saving krige variance file:{0}".format(var_filename)
+                        )
+                        self.logger.statement(
+                            "saving krige factors file:{0}".format(fac_filename)
+                        )
+                        # store info on pilotpoints
+                        self._pp_facs[fac_filename] = pp_info_dict
+                        # this is slow (esp on windows) so only want to do this
+                        # when required
+                        if structured:
+
+                            ret_val = ok_pp.calc_factors_grid(
+                                spatial_reference,
+                                var_filename=var_filename,
+                                zone_array=zone_array,
+                                num_threads=pp_options.get("num_threads",self.pp_solve_num_threads),
+                                minpts_interp=pp_options.get("minpts_interp",1),
+                                maxpts_interp=pp_options.get("maxpts_interp",20),
+                                search_radius=pp_options.get("search_radius",1e10),
+                                try_use_ppu=pp_options.get("try_use_ppu",True),
+                                #ppu_factor_filename=pp_options.get("ppu_factor_filename","factors.dat")
+                                ppu_factor_filename=fac_filename
+                            )
+                            if not isinstance(ret_val,int):
+                                ok_pp.to_grid_factors_file(fac_filename)
+                        else:
+                            # put the sr dict info into a df
+                            # but we only want to use the n
+                            if zone_array is not None:
+                                for zone in np.unique(zone_array):
+                                    if int(zone) == 0:
+                                        continue
+                                    data = []
+                                    for node, (x, y) in spatial_reference.items():
+                                        if zone_array[0, node] == zone:
+                                            data.append([node, x, y])
+                                    if len(data) == 0:
+                                        continue
+                                    node_df = pd.DataFrame(data, columns=["node", "x", "y"])
+                                    ok_pp.calc_factors(
+                                        node_df.x,
+                                        node_df.y,
+                                        num_threads=pp_options.get("num_threads", self.pp_solve_num_threads),
+                                        minpts_interp=pp_options.get("minpts_interp", 1),
+                                        maxpts_interp=pp_options.get("maxpts_interp", 20),
+                                        search_radius=pp_options.get("search_radius", 1e10),
+                                        pt_zone=zone,
+                                        idx_vals=node_df.node.astype(int),
+                                    )
+                                ok_pp.to_grid_factors_file(
+                                    fac_filename, ncol=len(spatial_reference)
+                                )
+                            else:
                                 data = []
                                 for node, (x, y) in spatial_reference.items():
-                                    if zone_array[0, node] == zone:
-                                        data.append([node, x, y])
-                                if len(data) == 0:
-                                    continue
+                                    data.append([node, x, y])
                                 node_df = pd.DataFrame(data, columns=["node", "x", "y"])
-                                ok_pp.calc_factors(
-                                    node_df.x,
-                                    node_df.y,
-                                    num_threads=self.pp_solve_num_threads,
-                                    pt_zone=zone,
-                                    idx_vals=node_df.node.astype(int),
+                                ok_pp.calc_factors(node_df.x, node_df.y, 
+                                    num_threads=pp_options.get("num_threads", self.pp_solve_num_threads))
+                                ok_pp.to_grid_factors_file(
+                                    fac_filename, ncol=node_df.shape[0]
                                 )
-                            ok_pp.to_grid_factors_file(
-                                fac_filename, ncol=len(spatial_reference)
-                            )
-                        else:
-                            data = []
-                            for node, (x, y) in spatial_reference.items():
-                                data.append([node, x, y])
-                            node_df = pd.DataFrame(data, columns=["node", "x", "y"])
-                            ok_pp.calc_factors(node_df.x, node_df.y, num_threads=self.pp_solve_num_threads)
-                            ok_pp.to_grid_factors_file(
-                                fac_filename, ncol=node_df.shape[0]
-                            )
 
-                    self.logger.log("calculating factors for pargp={0}".format(pg))
-            # TODO - other par types - JTW?
+                        self.logger.log("calculating factors for pargp={0}".format(pg))
+
             elif par_type == "kl":
                 self.logger.lraise("array type 'kl' not implemented")
             else:
@@ -2753,23 +2823,27 @@ class PstFrom(object):
             if par_style in ["m", "a"]:
                 mult_dict["mlt_file"] = Path(self.mult_file_d.name, mlt_filename)
 
-            if pp_filename is not None:
+            if pp_filename is not None and not prep_pp_hyperpars:
                 # if pilotpoint need to store more info
                 assert fac_filename is not None, "missing pilot-point input filename"
                 mult_dict["fac_file"] = os.path.relpath(fac_filename, self.new_d)
                 mult_dict["pp_file"] = pp_filename
                 if transform == "log":
-                    mult_dict["pp_fill_value"] = 1.0
-                    mult_dict["pp_lower_limit"] = 1.0e-30
-                    mult_dict["pp_upper_limit"] = 1.0e30
+                    mult_dict["pp_fill_value"] = pp_options.get("fill_values",1.0)
+                    mult_dict["pp_lower_limit"] = pp_options.get("lower_limit",1.0e-30)
+                    mult_dict["pp_upper_limit"] = pp_options.get("upper_limit",1.0e30)
                 else:
-                    mult_dict["pp_fill_value"] = 0.0
-                    mult_dict["pp_lower_limit"] = -1.0e30
-                    mult_dict["pp_upper_limit"] = 1.0e30
+                    mult_dict["pp_fill_value"] = pp_options.get("fill_value",0.0)
+                    mult_dict["pp_lower_limit"] = pp_options.get("lower_limit",-1.0e30)
+                    mult_dict["pp_upper_limit"] = pp_options.get("upper_limit",1.0e30)
             if zone_filename is not None:
                 mult_dict["zone_file"] = zone_filename
             relate_parfiles.append(mult_dict)
         relate_pars_df = pd.DataFrame(relate_parfiles)
+        relate_pars_df["apply_order"] = apply_order
+        if config_df_filename is not None:
+            relate_pars_df["pre_apply_function"] = config_func_str
+
         # store on self for use in pest build etc
         self._parfile_relations.append(relate_pars_df)
 
@@ -3958,3 +4032,168 @@ def get_relative_filepath(folder, filename):
     return path for filename relative to folder.
     """
     return get_filepath(folder, filename).relative_to(folder)
+
+
+def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
+                       geostruct,arr_shape,pp_options,zone_array=None,
+                      ws = "."):
+    try:
+        from pypestutils.pestutilslib import PestUtilsLib
+    except Exception as e:
+        raise Exception("prep_pp_hyperpars() error importing pypestutils: '{0}'".format(str(e)))
+
+
+    gridinfo_filename = file_tag + ".gridinfo.dat"
+    corrlen_filename = file_tag + ".corrlen.dat"
+    bearing_filename = file_tag + ".bearing.dat"
+    aniso_filename = file_tag + ".aniso.dat"
+    zone_filename = file_tag + ".zone.dat"
+
+    nodes = list(grid_dict.keys())
+    nodes.sort()
+    with open(os.path.join(ws,gridinfo_filename), 'w') as f:
+        f.write("node,x,y\n")
+        for node in nodes:
+            f.write("{0},{1},{2}\n".format(node, grid_dict[node][0], grid_dict[node][1]))
+
+    corrlen = np.zeros(arr_shape) + geostruct.variograms[0].a
+    np.savetxt(os.path.join(ws,corrlen_filename), corrlen, fmt="%20.8E")
+    bearing = np.zeros(arr_shape) + geostruct.variograms[0].bearing
+    np.savetxt(os.path.join(ws,bearing_filename), bearing, fmt="%20.8E")
+    aniso = np.zeros(arr_shape) + geostruct.variograms[0].anisotropy
+    np.savetxt(os.path.join(ws,aniso_filename), aniso, fmt="%20.8E")
+
+    if zone_array is None:
+        zone_array = np.ones(shape,dtype=int)
+    np.savetxt(os.path.join(ws,zone_filename),zone_array,fmt="%5d")
+
+
+    # fnx_call = "pyemu.utils.apply_ppu_hyperpars('{0}','{1}','{2}','{3}','{4}'". \
+    #     format(pp_filename, gridinfo_filename, out_filename, corrlen_filename,
+    #            bearing_filename)
+    # fnx_call += "'{0}',({1},{2}))".format(aniso_filename, arr_shape[0], arr_shape[1])
+
+    # apply_ppu_hyperpars(pp_filename, gridinfo_filename, out_filename, corrlen_filename,
+    #                     bearing_filename, aniso_filename, arr_shape)
+
+    config_df = pd.DataFrame(columns=["value"])
+    config_df.index.name = "key"
+
+    config_df.loc["pp_filename", "value"] = pp_filename
+    config_df.loc["out_filename","value"] = out_filename
+    config_df.loc["corrlen_filename", "value"] = corrlen_filename
+    config_df.loc["bearing_filename", "value"] = bearing_filename
+    config_df.loc["aniso_filename", "value"] = aniso_filename
+    config_df.loc["gridinfo_filename", "value"] = gridinfo_filename
+    config_df.loc["zone_filename", "value"] = zone_filename
+
+    config_df.loc["vartransform","value"] = geostruct.transform
+    v = geostruct.variograms[0]
+    vartype = 2
+    if isinstance(v, pyemu.geostats.ExpVario):
+        pass
+    elif isinstance(v, pyemu.geostats.SphVario):
+        vartype = 1
+    elif isinstance(v, pyemu.geostats.GauVarioVario):
+        vartype = 3
+    else:
+        raise NotImplementedError("unsupported variogram type: {0}".format(str(type(v))))
+    krigtype = 1  #ordinary
+    config_df.loc["vartype","value"] = vartype
+    config_df.loc["krigtype","value"] = krigtype
+    config_df.loc["shape", "value"] = arr_shape
+
+    keys = list(pp_options.keys())
+    keys.sort()
+    for k in keys:
+        config_df.loc["k","value"] = pp_options[k]
+
+    #config_df.loc["function_call","value"] = fnx_call
+    config_df_filename = file_tag + ".config.csv"
+    config_df.loc["config_df_filename",:"value"] = config_df_filename
+
+    config_df.to_csv(os.path.join(ws, config_df_filename))
+    # this is just a temp input file needed for testing...
+    #pp_info.to_csv(os.path.join(ws,pp_filename),sep=" ",header=False)
+    pyemu.pp_utils.write_pp_file(os.path.join(ws,pp_filename),pp_info)
+    bd = os.getcwd()
+    os.chdir(ws)
+    #todo: wrap this in a try-catch
+    apply_ppu_hyperpars(config_df_filename)
+    os.chdir(bd)
+    return config_df
+
+
+# def apply_ppu_hyperpars(pp_filename, gridinfo_filename,
+#                         out_filename, corrlen_filename, bearing_filename,
+#                         aniso_filename, out_shape=None):
+
+def apply_ppu_hyperpars(config_df_filename):
+    try:
+        from pypestutils.pestutilslib import PestUtilsLib
+    except Exception as e:
+        raise Exception("apply_ppu_hyperpars() error importing pypestutils: '{0}'".format(str(e)))
+
+    config_df = pd.read_csv(config_df_filename,index_col=0)
+    config_dict = config_df["value"].to_dict()
+    out_filename = config_dict["out_filename"]
+    #pp_info = pd.read_csv(config_dict["pp_filename"],sep="\s+")
+    pp_info = pyemu.pp_utils.pp_file_to_dataframe(config_dict["pp_filename"])
+    grid_df = pd.read_csv(config_dict["gridinfo_filename"])
+    corrlen = np.loadtxt(config_dict["corrlen_filename"])
+    bearing = np.loadtxt(config_dict["bearing_filename"])
+    aniso = np.loadtxt(config_dict["aniso_filename"])
+    zone = np.loadtxt(config_dict["zone_filename"])
+
+
+    lib = PestUtilsLib()
+    fac_fname = out_filename+".temp.fac"
+    if os.path.exists(fac_fname):
+        os.remove(fac_fname)
+    fac_ftype = "text"
+    npts = lib.calc_kriging_factors_2d(
+            pp_info.x.values,
+            pp_info.y.values,
+            pp_info.zone.values,
+            grid_df.x.values.flatten(),
+            grid_df.y.values.flatten(),
+            zone.flatten().astype(int),
+            int(config_dict.get("vartype",1)),
+            int(config_dict.get("krigtype",1)),
+            corrlen.flatten(),
+            aniso.flatten(),
+            bearing.flatten(),
+            config_dict.get("search_dist",1e30),
+            config_dict.get("maxpts_interp",50),
+            config_dict.get("minpts_interp",1),
+            fac_fname,
+            fac_ftype,
+        )
+
+    noint = config_dict.get("fill_value",pp_info.loc[:, "parval1"].mean())
+
+    result = lib.krige_using_file(
+        fac_fname,
+        fac_ftype,
+        zone.size,
+        int(config_dict.get("krigtype", 1)),
+        config_dict.get("vartransform", "none"),
+        pp_info["parval1"].values,
+        noint,
+        noint,
+    )
+    assert npts == result["icount_interp"]
+    result = result["targval"]
+    #shape = tuple([int(s) for s in config_dict["shape"]])
+    tup_string = config_dict["shape"]
+    shape = tuple(int(x) for x in tup_string[1:-1].split(','))
+    result = result.reshape(shape)
+    np.savetxt(out_filename,result,fmt="%20.8E")
+    os.remove(fac_fname)
+    lib.free_all_memory()
+
+    return result
+
+
+
+
