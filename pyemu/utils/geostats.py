@@ -949,9 +949,7 @@ class OrdinaryKrige(object):
             raise Exception(
                 "spatial_reference does not have proper attributes:{0}".format(str(e))
             )
-        if x.ndim == 1:
-            x = np.atleast_2d(x).transpose()
-            y = np.atleast_2d(y).transpose()
+
 
 
         use_ppu = False
@@ -964,6 +962,9 @@ class OrdinaryKrige(object):
 
 
         if use_ppu:
+            if x.ndim == 1:
+                x = np.atleast_2d(x).transpose()
+                y = np.atleast_2d(y).transpose()
             print("...pypestutils detected and being used for kriging solve, trust us, you want this!")
             ecs = self.point_data.x.values
             ncs = self.point_data.y.values
