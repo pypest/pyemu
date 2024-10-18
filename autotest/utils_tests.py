@@ -2636,8 +2636,8 @@ def ppu_geostats_test(tmp_path):
 
 
 if __name__ == "__main__":
-    ppu_geostats_test(".")
-    #thresh_pars_test()
+    #ppu_geostats_test(".")
+    thresh_pars_test()
     #obs_ensemble_quantile_test()
     #geostat_draws_test("temp")
     # ac_draw_test("temp")
