@@ -688,13 +688,12 @@ def another_generic_function(some_arg):
     print(some_arg)
 
 
-def mf6_freyberg_test():
+def mf6_freyberg_test(setup_freyberg_mf6):
     import sys
     sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
     import pypestutils as ppu
-    r = setup_freyberg_mf6(".",None)
-    print(r)
-    pf,sim = r[0],r[1]
+
+    pf,sim = setup_freyberg_mf6
     m = sim.get_model()
     mg = m.modelgrid
     template_ws = pf.new_d
@@ -1573,12 +1572,11 @@ def setup_freyberg_mf6(tmp_path, request):
                                 index_cols="time",
                                 use_cols=["GAGE_1", "HEADWATER", "TAILWATER"],
                                 ofile_sep=",")
-        #yield pf, sim
+        yield pf, sim
     except Exception as e:
         os.chdir(bd)
         raise e
     os.chdir(bd)
-    return pf,sim
 
 
 def build_direct(pf):
