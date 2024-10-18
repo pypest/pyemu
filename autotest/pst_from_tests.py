@@ -5882,13 +5882,13 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         
         apar = par.loc[par.pname.str.contains("aniso"),:]
         bpar = par.loc[par.pname.str.contains("bearing"), :]
-        par.loc[apar.parnme,"parval1"] = 0
-        par.loc[apar.parnme,"parlbnd"] = -2
-        par.loc[apar.parnme,"parubnd"] = 2
+        par.loc[apar.parnme,"parval1"] = 3
+        par.loc[apar.parnme,"parlbnd"] = 1
+        par.loc[apar.parnme,"parubnd"] = 5
 
-        par.loc[bpar.parnme,"parval1"] = 90
-        par.loc[bpar.parnme,"parlbnd"] = 45
-        par.loc[bpar.parnme,"parubnd"] = 135
+        par.loc[bpar.parnme,"parval1"] = 45
+        par.loc[bpar.parnme,"parlbnd"] = 0
+        par.loc[bpar.parnme,"parubnd"] = 90
 
         cat1par = par.loc[par.apply(lambda x: x.threshcat=="0" and x.usecol=="threshfill",axis=1),"parnme"]
         cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
@@ -6045,7 +6045,8 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test('.')
     #mf6_freyberg_ppu_hyperpars_invest(".")
-    #mf6_freyberg_ppu_hyperpars_thresh_invest(".")
+    mf6_freyberg_ppu_hyperpars_thresh_invest(".")
+    plot_thresh("master_thresh")
     # invest()
     #test_add_array_parameters_pps_grid()
     #freyberg_test(os.path.abspath("."))
@@ -6057,7 +6058,7 @@ if __name__ == "__main__":
     #mf6_freyberg_direct_test()
     #freyberg_test()
     #mf6_freyberg_thresh_test(".")
-    mf6_freyberg_test()
+    #mf6_freyberg_test()
     #test_defaults(".")
     #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
