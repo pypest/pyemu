@@ -3947,6 +3947,7 @@ def apply_threshold_pars(csv_file):
 
     tol = 1.0e-10
     if tarr.std() < 1e-5:
+
         print("WARNING: thresholding array {0} has very low standard deviation".format(thresarr_file))
         print("         using a homogenous array with first category fill value {0}".format(tfill[0]))
 

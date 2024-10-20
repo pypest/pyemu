@@ -5108,7 +5108,7 @@ def mf6_freyberg_thresh_test(tmp_path):
 
 
         # just use a real as the truth...
-        pst.parameter_data.loc[pst.adj_par_names,"parval1"] = pe.loc[pe.index[0],pst.adj_par_names].values
+        pst.parameter_data.loc[pst.adj_par_names,"parval1"] = pe.loc[pe.index[1],pst.adj_par_names].values
         pst.control_data.noptmax = 0
         pst.write(os.path.join(pf.new_d,"truth.pst"),version=2)
         pyemu.os_utils.run("{0} truth.pst".format(ies_exe_path),cwd=pf.new_d)
@@ -5267,11 +5267,10 @@ def plot_thresh(m_d):
 
             print(mn, mx)
 
-
             import matplotlib.pyplot as plt
             from matplotlib.backends.backend_pdf import PdfPages
 
-            with PdfPages(os.path.join(m_d,"results_{0}_hk_layer_{1}.pdf".format(iiter,k+1))) as pdf:
+            with PdfPages(os.path.join(m_d,"results_{0}_layer_{1}.pdf".format(iiter,k+1))) as pdf:
                 ireal = 0
                 #for real in pr_oe.index:
                 for real in reals_to_plot:
@@ -5307,7 +5306,7 @@ def plot_thresh(m_d):
                     ptarr[ib == 0] = np.nan
                     cb = axes[1,0].imshow(prarr,vmin=cmn,vmax=cmx,cmap="plasma")
                     plt.colorbar(cb, ax=axes[1,0])
-                    cb = axes[1,1].imshow(prarr,vmin=cmn,vmax=cmx,cmap="plasma")
+                    cb = axes[1,1].imshow(ptarr,vmin=cmn,vmax=cmx,cmap="plasma")
                     plt.colorbar(cb,ax=axes[1,1])
                     cb = axes[1,2].imshow(tcarray, vmin=cmn,vmax=cmx,cmap="plasma")
                     plt.colorbar(cb,ax=axes[1,2])
@@ -5697,8 +5696,6 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         sim.set_all_data_external()
         sim.write_simulation()
 
-
-
         # SETUP pest stuff...
         os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
@@ -5766,7 +5763,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
         value_v = pyemu.geostats.ExpVario(contribution=1, a=5000, anisotropy=5, bearing=0.0)
         value_gs = pyemu.geostats.GeoStruct(variograms=value_v)
-        bearing_v = pyemu.geostats.ExpVario(contribution=1,a=10000,anisotropy=3,bearing=90.0)
+        bearing_v = pyemu.geostats.ExpVario(contribution=1,a=5000,anisotropy=3,bearing=0.0)
         bearing_gs = pyemu.geostats.GeoStruct(variograms=bearing_v)
         aniso_v = pyemu.geostats.ExpVario(contribution=1, a=10000, anisotropy=3, bearing=45.0)
         aniso_gs = pyemu.geostats.GeoStruct(variograms=aniso_v)
@@ -5882,12 +5879,12 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         
         apar = par.loc[par.pname.str.contains("aniso"),:]
         bpar = par.loc[par.pname.str.contains("bearing"), :]
-        par.loc[apar.parnme,"parval1"] = 3
-        par.loc[apar.parnme,"parlbnd"] = 1
-        par.loc[apar.parnme,"parubnd"] = 5
+        par.loc[apar.parnme,"parval1"] = 5
+        par.loc[apar.parnme,"parlbnd"] = 4
+        par.loc[apar.parnme,"parubnd"] = 6
 
-        par.loc[bpar.parnme,"parval1"] = 45
-        par.loc[bpar.parnme,"parlbnd"] = 0
+        par.loc[bpar.parnme,"parval1"] = 0
+        par.loc[bpar.parnme,"parlbnd"] = -90
         par.loc[bpar.parnme,"parubnd"] = 90
 
         cat1par = par.loc[par.apply(lambda x: x.threshcat=="0" and x.usecol=="threshfill",axis=1),"parnme"]
@@ -5913,7 +5910,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
         par.loc[cat1parvk, "parval1"] = 0.0001
         par.loc[cat1parvk, "parubnd"] = 0.01
-        par.loc[cat1parvk, "parlbnd"] = 0.00001
+        par.loc[cat1parvk, "parlbnd"] = 0.000001
         par.loc[cat1parvk, "partrans"] = "log"
         par.loc[cat2parvk, "parval1"] = 0.1
         par.loc[cat2parvk, "parubnd"] = 1
@@ -5928,9 +5925,9 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         assert cat1par.shape[0] == num_cat_arrays
         assert cat2par.shape[0] == num_cat_arrays
 
-        par.loc[cat1par, "parval1"] = 0.5
+        par.loc[cat1par, "parval1"] = 0.8
         par.loc[cat1par, "parubnd"] = 1.0
-        par.loc[cat1par, "parlbnd"] = 0.0
+        par.loc[cat1par, "parlbnd"] = 0.6
         par.loc[cat1par,"partrans"] = "none"
 
         # since the apply method only looks that first proportion, we can just fix this one
@@ -5967,13 +5964,17 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         #print(pe.loc[:,cat1par].describe())
         #print(pe.loc[:, cat2par].describe())
         #return
-        truth_idx = pe.index[0]
-        pe = pe.loc[pe.index.map(lambda x: x != truth_idx),:]
-        pe.to_dense(os.path.join(template_ws, "prior.jcb"))
+        #pe._df.index = np.arange(pe.shape[0])
 
+        truth_idx = 3
+
+
+        #pe = pe._df
 
         # just use a real as the truth...
-        pst.parameter_data.loc[pst.adj_par_names,"parval1"] = pe.loc[pe.index[0],pst.adj_par_names].values
+        pst.parameter_data.loc[pst.adj_par_names,"parval1"] = pe.loc[truth_idx,pst.adj_par_names].values
+        pe = pe.loc[pe.index.map(lambda x: x != truth_idx), :]
+        pe.to_dense(os.path.join(template_ws, "prior.jcb"))
         pst.control_data.noptmax = 0
         pst.write(os.path.join(pf.new_d,"truth.pst"),version=2)
         pyemu.os_utils.run("{0} truth.pst".format(ies_exe_path),cwd=pf.new_d)
@@ -5989,7 +5990,11 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         #obs.loc[obs.oname == "hds", "standard_deviation"] = 0.001
         snames = [o for o in onames if "gage" in o]
         obs.loc[onames,"weight"] = 1.0
+        obs.loc[onames, "standard_deviation"] = 0.5
+
         obs.loc[snames,"weight"] = 1./(obs.loc[snames,"obsval"] * 0.2).values
+        obs.loc[snames, "standard_deviation"] = (obs.loc[snames, "obsval"] * 0.2).values
+
         #obs.loc[onames,"obsval"] = truth.values
         #obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.01,onames.shape[0])
 
@@ -6001,13 +6006,14 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         # reset away from the truth...
         pst.parameter_data.loc[:,"parval1"] = org_par.parval1.values.copy()
 
-        pst.control_data.noptmax = 2
+        pst.control_data.noptmax = 3
         pst.pestpp_options["ies_par_en"] = "prior.jcb"
         pst.pestpp_options["ies_num_reals"] = 30
         pst.pestpp_options["ies_subset_size"] = -10
         pst.pestpp_options["ies_no_noise"] = True
         #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
         pst.pestpp_options["overdue_giveup_fac"] = 100.0
+        pst.pestpp_options["ies_multimodal_alpha"] = 0.99
         #pst.pestpp_options["panther_agent_freeze_on_fail"] = True
 
         #pst.write(os.path.join(pf.new_d, "freyberg.pst"))
@@ -6045,7 +6051,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test('.')
     #mf6_freyberg_ppu_hyperpars_invest(".")
-    #mf6_freyberg_ppu_hyperpars_thresh_invest(".")
+    mf6_freyberg_ppu_hyperpars_thresh_invest(".")
     #plot_thresh("master_thresh")
     # invest()
     #test_add_array_parameters_pps_grid()
@@ -6057,10 +6063,10 @@ if __name__ == "__main__":
     #mf6_freyberg_shortnames_test()
     #mf6_freyberg_direct_test()
     #freyberg_test()
-    mf6_freyberg_thresh_test(".")
+    #mf6_freyberg_thresh_test(".")
     #mf6_freyberg_test()
     #test_defaults(".")
-    #plot_thresh("master_thresh")
+    plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
     # xsec_test()
