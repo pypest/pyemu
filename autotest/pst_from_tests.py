@@ -5116,7 +5116,14 @@ def mf6_freyberg_thresh_test(tmp_path):
         pst = pyemu.Pst(os.path.join(pf.new_d,"truth.pst"))
 
         obs = pst.observation_data
-        obs.loc[:,"obsval"] = pst.res.loc[pst.obs_names,"modelled"].values
+        obs["weight"] = 1.0
+        obs["obsval"] = pst.res.loc[pst.obs_names,"modelled"].values
+        pst.write(os.path.join(pf.new_d, "truth2.pst"), version=2)
+        pyemu.os_utils.run("{0} truth2.pst".format(ies_exe_path), cwd=pf.new_d)
+        pst2 = pyemu.Pst(os.path.join(pf.new_d, "truth2.pst"))
+        print(pst2.phi)
+        assert pst2.phi < 0.1
+
         obs.loc[:,"weight"] = 0.0
         obs.loc[:,"standard_deviation"] = np.nan
         onames = obs.loc[obs.obsnme.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"obsnme"].values
@@ -5966,7 +5973,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         #return
         #pe._df.index = np.arange(pe.shape[0])
 
-        truth_idx = 3
+        truth_idx = 2
 
 
         #pe = pe._df
@@ -6026,7 +6033,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         #pst.pestpp_options["ies_par_en"] = "prior.jcb"
         
         pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
-        m_d = "master_thresh"
+        m_d = "master_thresh_nonstat"
         pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
                                      num_workers=10)
         phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
@@ -6052,7 +6059,8 @@ if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test('.')
     #mf6_freyberg_ppu_hyperpars_invest(".")
     mf6_freyberg_ppu_hyperpars_thresh_invest(".")
-    #plot_thresh("master_thresh")
+    #mf6_freyberg_thresh_test(".")
+    plot_thresh("master_thresh_nonstat")
     # invest()
     #test_add_array_parameters_pps_grid()
     #freyberg_test(os.path.abspath("."))
@@ -6066,7 +6074,7 @@ if __name__ == "__main__":
     #mf6_freyberg_thresh_test(".")
     #mf6_freyberg_test()
     #test_defaults(".")
-    plot_thresh("master_thresh")
+    #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
     # xsec_test()
