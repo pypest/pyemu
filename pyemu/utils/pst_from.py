@@ -1823,8 +1823,8 @@ class PstFrom(object):
         use_cols=None,
         use_rows=None,
         pargp=None,
-        pp_space=10,
-        use_pp_zones=False,
+        pp_space=None,
+        use_pp_zones=None,
         num_eig_kl=100,
         spatial_reference=None,
         geostruct=None,
@@ -1981,6 +1981,28 @@ class PstFrom(object):
         """
         # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
+        if pp_space is not None:
+            if "pp_space" in pp_options:
+                self.logger.lraise("'pp_space' passed but its also in 'pp_options")
+            self.logger.warn("'pp_space' has been deprecated and will eventually be removed"+
+                             ", please use pp_options['pp_space'] instead")
+            pp_options["pp_space"] = pp_space
+            pp_space = None
+        elif "pp_space" not in pp_options:
+            pp_options["pp_space"] = 10
+            self.logger.statement("setting pp_options['pp_space'] to 10")
+
+        if use_pp_zones is not None:
+            if "use_pp_zones" in pp_options:
+                self.logger.lraise("'use_pp_zones' passed but its also in 'pp_options")
+            self.logger.warn("'use_pp_zones' has been deprecated and will eventually be removed"+
+                             ", please use pp_options['use_pp_zones'] instead")
+            pp_options["use_pp_zones"] = use_pp_zones
+            use_pp_zones = None
+        elif "use_pp_zones" not in pp_options:
+            pp_options["use_pp_zones"] = False
+            self.logger.statement("setting pp_options['use_pp_zones'] to False")
+
         if apply_function is not None:
             raise NotImplementedError("apply_function is not implemented")
         # TODO support passing par_file (i,j)/(x,y) directly where information
@@ -2418,11 +2440,11 @@ class PstFrom(object):
                 tpl_filename = self.tpl_d / (pp_filename + ".tpl")
                 # tpl_filename = get_relative_filepath(self.new_d, tpl_filename)
                 pp_locs = None
-                if pp_space is None:  # default spacing if not passed
+                if "pp_space" not in pp_options or pp_options["pp_space"] is None:  # default spacing if not passed
                     self.logger.warn("pp_space is None, using 10...\n")
-                    pp_space = 10
+                    pp_options["pp_space"]
                 else:
-                    if not use_pp_zones and (isinstance(pp_space, (int, np.integer))):
+                    if not pp_options["use_pp_zones"] and (isinstance(pp_options["pp_space"], (int, np.integer))):
                         # if not using pp zones will set up pp for just one
                         # zone (all non zero) -- for active domain...
                         if zone_array is None:
@@ -2430,48 +2452,48 @@ class PstFrom(object):
                             zone_array = np.ones((nr,nc),dtype=int)
                         zone_array[zone_array > 0] = 1  # so can set all
                         # gt-zero to 1
-                    if isinstance(pp_space, float):
-                        pp_space = int(pp_space)
-                    elif isinstance(pp_space, (int, np.integer)):
+                    if isinstance(pp_options["pp_space"], float):
+                        pp_options["pp_space"] = int(pp_options["pp_space"])
+                    elif isinstance(pp_options["pp_space"], (int, np.integer)):
                         pass
-                    elif isinstance(pp_space, str):
-                        if pp_space.lower().strip().endswith(".csv"):
+                    elif isinstance(pp_options["pp_space"], str):
+                        if pp_options["pp_space"].lower().strip().endswith(".csv"):
                             self.logger.statement(
                                 "trying to load pilot point location info from csv file '{0}'".format(
-                                    self.new_d / Path(pp_space)
+                                    self.new_d / Path(pp_options["pp_space"])
                                 )
                             )
-                            pp_locs = pd.read_csv(self.new_d / pp_space)
+                            pp_locs = pd.read_csv(self.new_d / pp_options["pp_space"])
 
-                        elif pp_space.lower().strip().endswith(".shp"):
+                        elif pp_options["pp_space"].lower().strip().endswith(".shp"):
                             self.logger.statement(
                                 "trying to load pilot point location info from shapefile '{0}'".format(
-                                    self.new_d / Path(pp_space)
+                                    self.new_d / Path(pp_options["pp_space"])
                                 )
                             )
                             pp_locs = pyemu.pp_utils.pilot_points_from_shapefile(
-                                str(self.new_d / Path(pp_space))
+                                str(self.new_d / Path(pp_options["pp_space"]))
                             )
                         else:
                             self.logger.statement(
                                 "trying to load pilot point location info from pilot point file '{0}'".format(
-                                    self.new_d / Path(pp_space)
+                                    self.new_d / Path(pp_options["pp_space"])
                                 )
                             )
                             pp_locs = pyemu.pp_utils.pp_file_to_dataframe(
-                                self.new_d / pp_space
+                                self.new_d / pp_options["pp_space"]
                             )
                         self.logger.statement(
                             "pilot points found in file '{0}' will be transferred to '{1}' for parameterization".format(
-                                pp_space, pp_filename
+                                ppp_options["pp_space"], pp_filename
                             )
                         )
-                    elif isinstance(pp_space, pd.DataFrame):
-                        pp_locs = pp_space
+                    elif isinstance(pp_options["pp_space"], pd.DataFrame):
+                        pp_locs = pp_options["pp_space"]
                     else:
                         self.logger.lraise(
-                            "unrecognized 'pp_space' value, should be int, csv file, pp file or dataframe, not '{0}'".format(
-                                type(pp_space)
+                            "unrecognized pp_options['pp_space'] value, should be int, csv file, pp file or dataframe, not '{0}'".format(
+                                type(pp_options["pp_space"])
                             )
                         )
                     if pp_locs is not None:
@@ -2554,10 +2576,10 @@ class PstFrom(object):
                             "and a=(pp_space*max(delr,delc))"
                         )
                         # set up a default - could probably do something better if pp locs are passed
-                        if not isinstance(pp_space, (int, np.integer)):
+                        if not isinstance(pp_options["pp_space"], (int, np.integer)):
                             space = 10
                         else:
-                            space = pp_space
+                            space = pp_options["pp_space"]
                         pp_dist = space * float(
                             max(
                                 spatial_reference.delr.max(),
@@ -2598,9 +2620,9 @@ class PstFrom(object):
                     df = pyemu.pp_utils.setup_pilotpoints_grid(
                         sr=spatial_reference,
                         ibound=zone_array,
-                        use_ibound_zones=use_pp_zones,
+                        use_ibound_zones=pp_options['use_pp_zones'],
                         prefix_dict=pp_dict,
-                        every_n_cell=pp_space,
+                        every_n_cell=pp_options["pp_space"],
                         pp_dir=self.new_d,
                         tpl_dir=self.tpl_d,
                         shapename=str(self.new_d / "{0}.shp".format(par_name_store)),

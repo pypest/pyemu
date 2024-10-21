@@ -4973,7 +4973,7 @@ def mf6_freyberg_thresh_test(tmp_path):
                                       par_name_base=prefix+"-threshpp_k:{0}".format(k),
                                       pargp=prefix + "-threshpp_k:{0}".format(k),
                                       lower_bound=0.0,upper_bound=2.0,geostruct=pp_gs,par_style="m",
-                                      pp_space=3
+                                      pp_space=3,pp_options={"try_use_ppu":False}
                                       )
 
 
@@ -6058,9 +6058,9 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test('.')
     #mf6_freyberg_ppu_hyperpars_invest(".")
-    mf6_freyberg_ppu_hyperpars_thresh_invest(".")
-    #mf6_freyberg_thresh_test(".")
-    plot_thresh("master_thresh_nonstat")
+    #mf6_freyberg_ppu_hyperpars_thresh_invest(".")
+    mf6_freyberg_thresh_test(".")
+    #plot_thresh("master_thresh_nonstat")
     # invest()
     #test_add_array_parameters_pps_grid()
     #freyberg_test(os.path.abspath("."))
