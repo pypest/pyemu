@@ -2442,7 +2442,7 @@ class PstFrom(object):
                 pp_locs = None
                 if "pp_space" not in pp_options or pp_options["pp_space"] is None:  # default spacing if not passed
                     self.logger.warn("pp_space is None, using 10...\n")
-                    pp_options["pp_space"]
+                    pp_options["pp_space"] = 10
                 else:
                     if not pp_options["use_pp_zones"] and (isinstance(pp_options["pp_space"], (int, np.integer))):
                         # if not using pp zones will set up pp for just one

@@ -4119,6 +4119,10 @@ def mf6_subdir_test(tmp_path):
     except:
         return
 
+    import sys
+    sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
+    import pypestutils as ppu
+
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     sd = "sub_dir"
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path, sub=sd)
@@ -4358,11 +4362,12 @@ def mf6_subdir_test(tmp_path):
                             rebuild_pst=True)
         #
         # # test par mults are working
+        bd = os.getcwd()
         os.chdir(pf.new_d)
         pst.write_input_files()
         pyemu.helpers.apply_list_and_array_pars(
             arr_par_file="mult2model_info.csv",chunk_len=1)
-        os.chdir(tmp_path)
+        os.chdir(bd)
         #
         # cov = pf.build_prior(fmt="none").to_dataframe()
         # twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
@@ -6056,7 +6061,8 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
 
 if __name__ == "__main__":
-    mf6_freyberg_pp_locs_test('.')
+    #mf6_freyberg_pp_locs_test('.')
+    mf6_subdir_test(".")
     #mf6_freyberg_ppu_hyperpars_invest(".")
     #mf6_freyberg_ppu_hyperpars_thresh_invest(".")
     #mf6_freyberg_thresh_test(".")
