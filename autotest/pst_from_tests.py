@@ -5978,7 +5978,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         #return
         #pe._df.index = np.arange(pe.shape[0])
 
-        truth_idx = 2
+        truth_idx = 1
 
 
         #pe = pe._df
@@ -6020,7 +6020,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
         pst.control_data.noptmax = 3
         pst.pestpp_options["ies_par_en"] = "prior.jcb"
-        pst.pestpp_options["ies_num_reals"] = 30
+        pst.pestpp_options["ies_num_reals"] = 100
         pst.pestpp_options["ies_subset_size"] = -10
         pst.pestpp_options["ies_no_noise"] = True
         #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
@@ -6064,9 +6064,10 @@ if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")
     #mf6_freyberg_ppu_hyperpars_invest(".")
-    #mf6_freyberg_ppu_hyperpars_thresh_invest(".")
-    mf6_freyberg_thresh_test(".")
-    #plot_thresh("master_thresh_nonstat")
+    mf6_freyberg_ppu_hyperpars_thresh_invest(".")
+    #mf6_freyberg_thresh_test(".")
+    plot_thresh("master_thresh_nonstat")
+    
     # invest()
     #test_add_array_parameters_pps_grid()
     #freyberg_test(os.path.abspath("."))
