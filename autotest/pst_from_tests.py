@@ -6056,10 +6056,10 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
 
 if __name__ == "__main__":
-    #mf6_freyberg_pp_locs_test('.')
+    mf6_freyberg_pp_locs_test('.')
     #mf6_freyberg_ppu_hyperpars_invest(".")
     #mf6_freyberg_ppu_hyperpars_thresh_invest(".")
-    mf6_freyberg_thresh_test(".")
+    #mf6_freyberg_thresh_test(".")
     #plot_thresh("master_thresh_nonstat")
     # invest()
     #test_add_array_parameters_pps_grid()
@@ -6082,7 +6082,7 @@ if __name__ == "__main__":
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
     #tpf = TestPstFrom()
-    #$tpf.setup()
+    #tpf.setup()
     #tpf.test_add_array_parameters_to_file_list()
     #tpf.test_add_array_parameters_alt_inst_str_none_m()
     #tpf.test_add_array_parameters_alt_inst_str_0_d()
