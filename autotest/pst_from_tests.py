@@ -6074,17 +6074,13 @@ if __name__ == "__main__":
     #mf6_subdir_test(".")
     #mf6_freyberg_ppu_hyperpars_invest(".")
     mf6_freyberg_ppu_hyperpars_thresh_invest(".")
-<<<<<<< HEAD
     #while True:
     #    mf6_freyberg_thresh_test(".")
     #plot_thresh("master_thresh_nonstat")
-    
-=======
     #mf6_freyberg_thresh_test(".")
     #plot_thresh("master_thresh_nonstat")
     #plot_thresh("master_thresh_nonstat_nim")
 
->>>>>>> 2fcabf56a5c7dece2f7d8e7df77d46c752db4e4b
     # invest()
     #test_add_array_parameters_pps_grid()
     #freyberg_test(os.path.abspath("."))
