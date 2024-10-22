@@ -1745,9 +1745,9 @@ def hfb_zn_mult_test(tmp_path):
     hfb_pars = pd.read_csv(os.path.join(m.model_ws, 'hfb6_pars.csv'))
     hfb_tpl_contents = open(tpl_file, 'r').readlines()
     mult_str = ''.join(hfb_tpl_contents[1:]).replace(
-        '~  hbz_0000  ~', '0.1').replace(
-        '~  hbz_0001  ~', '1.0').replace(
-        '~  hbz_0002  ~', '10.0')
+        '~ hbz_0000 ~', '0.1').replace(
+        '~ hbz_0001 ~', '1.0').replace(
+        '~ hbz_0002 ~', '10.0')
     with open(hfb_pars.mlt_file.values[0], 'w') as mfp:
         mfp.write(mult_str)
     pyemu.gw_utils.apply_hfb_pars(os.path.join(m.model_ws, 'hfb6_pars.csv'))
