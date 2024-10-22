@@ -1980,9 +1980,13 @@ class PstFrom(object):
         """
         # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
+
+        # if pp_options is None:
+        #     pp_options = {}
+
         if pp_space is not None:
             if "pp_space" in pp_options:
-                self.logger.warn("'pp_space' passed but its also in 'pp_options")
+                self.logger.lraise("'pp_space' passed but its also in 'pp_options")
             self.logger.warn("'pp_space' has been deprecated and will eventually be removed"+
                              ", please use pp_options['pp_space'] instead")
             pp_options["pp_space"] = pp_space
@@ -1993,7 +1997,7 @@ class PstFrom(object):
 
         if use_pp_zones is not None:
             if "use_pp_zones" in pp_options:
-                self.logger.warn("'use_pp_zones' passed but its also in 'pp_options")
+                self.logger.lraise("'use_pp_zones' passed but its also in 'pp_options")
             self.logger.warn("'use_pp_zones' has been deprecated and will eventually be removed"+
                              ", please use pp_options['use_pp_zones'] instead")
             pp_options["use_pp_zones"] = use_pp_zones
