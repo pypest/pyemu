@@ -6020,9 +6020,9 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         # reset away from the truth...
         pst.parameter_data.loc[:,"parval1"] = org_par.parval1.values.copy()
 
-        pst.control_data.noptmax = 3
+        pst.control_data.noptmax = 1
         pst.pestpp_options["ies_par_en"] = "prior.jcb"
-        pst.pestpp_options["ies_num_reals"] = 100
+        pst.pestpp_options["ies_num_reals"] = 30
         pst.pestpp_options["ies_subset_size"] = -10
         pst.pestpp_options["ies_no_noise"] = True
         #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
@@ -6042,19 +6042,26 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
         m_d = "master_thresh_nonstat"
         pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
-                                     num_workers=10)
+                                     num_workers=15)
         phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
         print(phidf["mean"])
 
         assert phidf["mean"].min() < phidf["mean"].max()
 
-        #pst.pestpp_options["ies_multimodal_alpha"] = 0.99
-        
-        #pst.pestpp_options["ies_num_threads"] = 6
-        #pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
 
-        #pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir="master_thresh_mm",
-        #                             num_workers=40)
+
+        # pst.pestpp_options["ies_n_iter_mean"] = 3
+        #
+        # #pst.pestpp_options["ies_num_threads"] = 6
+        # pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
+        #
+        # m_d = "master_thresh_nonstat_nim"
+        # pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
+        #                              num_workers=15)
+        # phidf = pd.read_csv(os.path.join(m_d, "freyberg.phi.actual.csv"))
+        # print(phidf["mean"])
+        #
+        # assert phidf["mean"].min() < phidf["mean"].max()
     except Exception as e:
         os.chdir(bd)
         raise Exception(e)
@@ -6067,10 +6074,17 @@ if __name__ == "__main__":
     #mf6_subdir_test(".")
     #mf6_freyberg_ppu_hyperpars_invest(".")
     mf6_freyberg_ppu_hyperpars_thresh_invest(".")
+<<<<<<< HEAD
     #while True:
     #    mf6_freyberg_thresh_test(".")
     #plot_thresh("master_thresh_nonstat")
     
+=======
+    #mf6_freyberg_thresh_test(".")
+    #plot_thresh("master_thresh_nonstat")
+    #plot_thresh("master_thresh_nonstat_nim")
+
+>>>>>>> 2fcabf56a5c7dece2f7d8e7df77d46c752db4e4b
     # invest()
     #test_add_array_parameters_pps_grid()
     #freyberg_test(os.path.abspath("."))
