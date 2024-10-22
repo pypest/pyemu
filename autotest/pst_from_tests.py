@@ -4941,19 +4941,20 @@ def mf6_freyberg_thresh_test(tmp_path):
             lb, ub = bnd[0], bnd[1]
             arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
             if "rch" in tag:
-                for arr_file in arr_files:
-                    # indy direct grid pars for each array type file
-                    recharge_files = ["recharge_1.txt", "recharge_2.txt", "recharge_3.txt"]
-                    pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
-                                      pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
-                                      par_style="direct")
-                    # additional constant mults
-                    kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-                    pf.add_parameters(filenames=arr_file, par_type="constant",
-                                      par_name_base=arr_file.split('.')[1] + "_cn",
-                                      pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                                      geostruct=rch_temporal_gs,
-                                      datetime=dts[kper])
+                pass
+                # for arr_file in arr_files:
+                #     # indy direct grid pars for each array type file
+                #     recharge_files = ["recharge_1.txt", "recharge_2.txt", "recharge_3.txt"]
+                #     pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
+                #                       pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
+                #                       par_style="direct")
+                #     # additional constant mults
+                #     kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+                #     pf.add_parameters(filenames=arr_file, par_type="constant",
+                #                       par_name_base=arr_file.split('.')[1] + "_cn",
+                #                       pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                #                       geostruct=rch_temporal_gs,
+                #                       datetime=dts[kper])
             else:
                 for arr_file in arr_files:
                     print(arr_file)
@@ -5070,7 +5071,7 @@ def mf6_freyberg_thresh_test(tmp_path):
 
         par.loc[cat1par, "parval1"] = 0.5
         par.loc[cat1par, "parubnd"] = 1.0
-        par.loc[cat1par, "parlbnd"] = 0.0
+        par.loc[cat1par, "parlbnd"] = 0.0001
         par.loc[cat1par,"partrans"] = "none"
 
         # since the apply method only looks that first proportion, we can just fix this one
@@ -5088,6 +5089,7 @@ def mf6_freyberg_thresh_test(tmp_path):
 
         org_par = par.copy()
         num_reals = 100
+        np.random.seed()
         pe = pf.draw(num_reals, use_specsim=False)
         pe.enforce()
         print(pe.shape)
@@ -6065,8 +6067,9 @@ if __name__ == "__main__":
     #mf6_subdir_test(".")
     #mf6_freyberg_ppu_hyperpars_invest(".")
     mf6_freyberg_ppu_hyperpars_thresh_invest(".")
-    #mf6_freyberg_thresh_test(".")
-    plot_thresh("master_thresh_nonstat")
+    #while True:
+    #    mf6_freyberg_thresh_test(".")
+    #plot_thresh("master_thresh_nonstat")
     
     # invest()
     #test_add_array_parameters_pps_grid()
