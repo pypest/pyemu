@@ -1282,8 +1282,7 @@ class PstFrom(object):
         else:
             func_lines = []
             search_str = "def " + function_name + "("
-            abet_set = set(string.ascii_uppercase)
-            abet_set.update(set(string.ascii_lowercase))
+            abet_set = set(string.printable) - {' '}
             with open(file_name, "r") as f:
                 while True:
                     line = f.readline()
