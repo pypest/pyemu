@@ -1840,7 +1840,7 @@ class PstFrom(object):
         par_style="multiplier",
         initial_value=None,
         prep_pp_hyperpars=False,
-        pp_options=None,
+        pp_options={},
         apply_order=999,
         apply_function=None
     ):
@@ -1982,8 +1982,8 @@ class PstFrom(object):
         # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
 
-        if pp_options is None:
-            pp_options = {}
+        # if pp_options is None:
+        #     pp_options = {}
 
         if pp_space is not None:
             if "pp_space" in pp_options:
