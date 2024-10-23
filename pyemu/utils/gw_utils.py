@@ -2749,10 +2749,8 @@ def write_hfb_zone_multipliers_template(m):
     with open(tpl_file, "w", newline="") as ofp:
         ofp.write("ptf ~\n")
         [ofp.write("{0}\n".format(line.strip())) for line in header]
-        ofp.flush()
-        hfb_in[["lay", "irow1", "icol1", "irow2", "icol2", "tpl"]].to_csv(
-            ofp, sep=" ", quotechar=" ", header=None, index=None, mode="a"
-        )
+        hfb_in[["lay", "irow1", "icol1", "irow2", "icol2", "tpl"]].apply(
+            lambda x: ofp.write(' '.join(x.astype(str)) + '\n'), axis=1)
 
     # make a lookup for lining up the necessary files to
     # perform multiplication with the helpers.apply_hfb_pars() function

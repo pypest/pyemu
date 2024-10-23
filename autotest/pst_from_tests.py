@@ -88,6 +88,7 @@ def setup_tmp(od, tmp_path, sub=None):
         shutil.rmtree(new_d)
     Path(tmp_path).mkdir(exist_ok=True)
     # creation functionality
+    assert Path(od).exists(), f"can't find {Path(od).absolute()}"
     shutil.copytree(od, new_d)
     return new_d
 
@@ -3802,7 +3803,6 @@ def mf6_freyberg_pp_locs_test(tmp_path):
     os.chdir(bd)
 
 
-
 def usg_freyberg_test(tmp_path):
     import numpy as np
     import pandas as pd
@@ -4130,6 +4130,7 @@ def mf6_subdir_test(tmp_path):
     bd = Path.cwd()
     os.chdir(tmp_path)
     try:
+        # get model dir relative to temp path
         tmp2_ws = tmp_model_ws.relative_to(tmp_path)
         tmp_model_ws = tmp2_ws.parents[tmp2_ws.parts.index(sd) - 1]
         sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp2_ws))
@@ -4362,12 +4363,12 @@ def mf6_subdir_test(tmp_path):
                             rebuild_pst=True)
         #
         # # test par mults are working
-        bd = os.getcwd()
+        bd1 = os.getcwd()
         os.chdir(pf.new_d)
         pst.write_input_files()
         pyemu.helpers.apply_list_and_array_pars(
             arr_par_file="mult2model_info.csv",chunk_len=1)
-        os.chdir(bd)
+        os.chdir(bd1)
         #
         # cov = pf.build_prior(fmt="none").to_dataframe()
         # twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
@@ -6066,7 +6067,6 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
         os.chdir(bd)
         raise Exception(e)
     os.chdir(bd)
-
 
 
 if __name__ == "__main__":

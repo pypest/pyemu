@@ -1282,8 +1282,7 @@ class PstFrom(object):
         else:
             func_lines = []
             search_str = "def " + function_name + "("
-            abet_set = set(string.ascii_uppercase)
-            abet_set.update(set(string.ascii_lowercase))
+            abet_set = set(string.printable) - {' '}
             with open(file_name, "r") as f:
                 while True:
                     line = f.readline()
@@ -1840,7 +1839,7 @@ class PstFrom(object):
         par_style="multiplier",
         initial_value=None,
         prep_pp_hyperpars=False,
-        pp_options={},
+        pp_options=None,
         apply_order=999,
         apply_function=None
     ):
@@ -1982,8 +1981,8 @@ class PstFrom(object):
         # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
 
-        # if pp_options is None:
-        #     pp_options = {}
+        if pp_options is None:
+            pp_options = dict({})
 
         if pp_space is not None:
             if "pp_space" in pp_options:
