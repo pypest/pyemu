@@ -10,7 +10,6 @@ import warnings
 
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT, IFMT, FFMT, pst_config
-from pyemu.utils.helpers import run, _write_df_tpl
 from ..pyemu_warnings import PyemuWarning
 
 PP_FMT = {
@@ -616,16 +615,20 @@ def pilot_points_to_tpl(pp_file, tpl_file=None, name_prefix=None):
         pp_df.loc[:, "tpl"] = pp_df.parnme.apply(
             lambda x: "~    {0}    ~".format(x)
         )
-    _write_df_tpl(
-        tpl_file,
-        pp_df.loc[:, ["name", "x", "y", "zone", "tpl"]],
-        sep=" ",
-        index_label="index",
-        header=False,
-        index=False,
-        quotechar=" ",
-        quoting=2,
-    )
+    with open(tpl_file, "w") as f:
+        f.write("ptf ~\n")
+        pp_df.loc[:, ["name", "x", "y", "zone", "tpl"]].apply(
+            lambda x: f.write(' '.join(x.astype(str)) + '\n'), axis=1)
+    # _write_df_tpl(
+    #     tpl_file,
+    #     pp_df.loc[:, ["name", "x", "y", "zone", "tpl"]],
+    #     sep=" ",
+    #     index_label="index",
+    #     header=False,
+    #     index=False,
+    #     quotechar=" ",
+    #     quoting=2,
+    # )
 
     return pp_df
 
