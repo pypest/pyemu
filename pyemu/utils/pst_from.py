@@ -4042,7 +4042,11 @@ def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
     except Exception as e:
         raise Exception("prep_pp_hyperpars() error importing pypestutils: '{0}'".format(str(e)))
 
-
+    illegal_chars = [i for i in r"/:*?<>\|"]
+    for i in illegal_chars:
+        print("warning: replacing illegal character '{0}' with '-' in file_tag name '{1}'".format(i,pg))
+        file_tag = file_tag.replace(i,"-")
+        
     gridinfo_filename = file_tag + ".gridinfo.dat"
     corrlen_filename = file_tag + ".corrlen.dat"
     bearing_filename = file_tag + ".bearing.dat"
