@@ -2537,8 +2537,7 @@ class PstFrom(object):
                     pp_geostruct = geostruct
 
                 # Calculating pp factors
-                pg = pargp[0]
-
+                pg = pargp
                 # getting hyperpars request
                 prep_pp_hyperpars = pp_options.get("prep_hyperpars",False)
                 pp_locs = pp_options["pp_locs"]
