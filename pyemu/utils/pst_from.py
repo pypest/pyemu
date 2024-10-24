@@ -2369,78 +2369,89 @@ class PstFrom(object):
                 "pilot-points",
                 "pp"
             }:
-                pppars = True
-                if par_style == "d":
+                # setup pilotpoint style pars
+                pppars = True  # for use later
+
+                if par_style == "d":  # not currently supporting direct
                     self.logger.lraise(
                         "pilot points not supported for 'direct' par_style"
                     )
+
                 # Setup pilotpoints for array type par files
                 self.logger.log("setting up pilot point parameters")
 
                 # get pp_options from passed args
+                # we have a few args that only relate to pp setup
+                # -- can now group these into pp_options arg,
+                # just define these "to be deprecated" in separate dict for now
                 depr_pp_args = {k: v for k, v in locals().items() if k in
                                 ['pp_space', 'use_pp_zones', 'spatial_reference']}
+                # pull out pp_options or set to empty dict
                 pp_options = dict([]) if pp_options is None else pp_options
 
                 # We might need a functioning zone_array for what is to come
+                # this is a change from previous where we were relying on zone_array
+                # being None to indicate not setting up by zone. Now should be leaning more
+                # on the "use_pp_zones" arg in pp_options
                 if zone_array is None:  # but need dummy zone array
                     nr, nc = file_dict[list(file_dict.keys())[0]].shape
                     zone_array = np.ones((nr, nc), dtype=int)
 
-                pp_options['zone_array'] = zone_array
+                # don't want to have to pass too much in on this pp_options dict,
+                # so define pp_filename here
                 pp_options['pp_filename'] = "{0}pp.dat".format(par_name_store)  # todo could also be a pp_kwarg
-                # todo - could bundle optional/deprecated pp_kwargs before parsing here
+                # pp_options passed as a dict (and returned) after modification
+                # zone array is reset to ar>1=1 if not using pp zones
                 pp_options = self._prep_pp_args(zone_array, pp_options, **depr_pp_args)
+                zone_array = pp_options['zone_array']
+                # also set parname base from what is extracted above.
                 pnb = par_name_base[0]
                 pnb = "pname:{1}_ptype:pp_pstyle:{0}".format(par_style, pnb)
                 pp_options['pp_basename'] = pnb
+
                 # pp_utils.setup_pilotpoints_grid will write a tpl file
                 # with the name take from pp_filename_dict. (pp_filename+".tpl")
                 # and pp_filename comes from "{0}pp.dat".format(par_name_store)
                 # par_name_store comes from par_name base with instants increment
                 # better to make tpl consistent between method?
                 tpl_filename = pp_options['pp_tpl'] = self.tpl_d / (pp_options['pp_filename'] + ".tpl")
+                # in_filepst is a general variable used to fill input file list
                 in_filepst = pp_filename = pp_options['pp_filename']
 
                 # Additional check that spatial reference lines up with the original array dimensions
+                # and defining grid type and struct or unstruct -- for use later
                 spatial_reference = pp_options['spatial_reference']
                 if isinstance(spatial_reference, dict): # unstruct
                     structured = False
                 else:  # this is then a structured grid
                     spatial_reference_type = spatial_reference.grid_type
                     structured = True
+                    # slightly different check needed for vertex type
                     if spatial_reference_type == 'vertex':
-                        for mod_file, ar in file_dict.items():
-                            orgdata = ar.shape
-                            assert orgdata[0] == spatial_reference.ncpl, (
-                                "Spatial reference ncpl not equal to original data ncpl for\n"
-                                + os.path.join(
-                                    *os.path.split(self.original_file_d)[1:], mod_file
-                                )
-                            )
+                        checkref = {0: ['ncpl', spatial_reference.ncpl]}
                     else:
-                        for mod_file, ar in file_dict.items():
-                            orgdata = ar.shape
-                            assert orgdata[0] == spatial_reference.nrow, (
-                                "Spatial reference nrow not equal to original data nrow for\n"
+                        checkref = {0: ['nrow', spatial_reference.nrow],
+                                    1: ['ncol', spatial_reference.ncol]}
+                    # loop files and dimensions
+                    for mod_file, ar in file_dict.items():
+                        orgdata = ar.shape
+                        for i, chk in checkref.items():
+                            assert orgdata[i] == chk[1], (
+                                f"Spatial reference {chk[0]} not equal to original data {chk[0]} for\n"
                                 + os.path.join(
                                     *os.path.split(self.original_file_d)[1:], mod_file
                                 )
                             )
-                            assert orgdata[1] == spatial_reference.ncol, (
-                                "Spatial reference ncol not equal to original data ncol for\n"
-                                + os.path.join(
-                                    *os.path.split(self.original_file_d)[1:], mod_file
-                                )
-                            )
-                # use pp_options kwargs dict in pp setup
+
+                # Use pp_options kwargs dict in pp setup
                 pp_df = self._setup_pp_df(**pp_options)
+                # set par group -- already defined above
                 pp_df.loc[:, "pargp"] = pargp
-                # should be only one group at a time
-                pargp = pp_df.pargp.unique()
                 self.logger.statement("pilot point 'pargp':{0}".format(",".join(pargp)))
                 self.logger.log("setting up pilot point parameters")
 
+                # start working on interp factor calcs
+                # check on geostruct for pilotpoints -- something is required!
                 if geostruct is None:  # need a geostruct for pilotpoints
                     # can use model default, if provided
                     if self.geostruct is None:  # but if no geostruct passed...
@@ -2454,7 +2465,39 @@ class PstFrom(object):
                             "using ExpVario with contribution=1 "
                             "and a=(pp_space*max(delr,delc))"
                         )
-                        # set up a default - TODO could probably do something better if pp locs are passed
+                        # set up a default -
+                        # TODO could probably do something better if pp locs are passed
+                        #  How about this?!??
+                        #     if not isinstance(pp_options["pp_space"], (int, np.integer)):
+                        #         self.logger.warn(
+                        #             "pp_space is not defined, "
+                        #             "attempting to extract pp_dist (a) from "
+                        #             "pp_locs"
+                        #         )
+                        #         try:
+                        #             pp_dist = pp_options["pp_locs"][['x', 'y']].apply(
+                        #                 lambda xy: sorted( # sortign to extract min non zero
+                        #                     ((pp_options["pp_locs"][['x', 'y']] - xy) ** 2).sum(axis=1) ** 0.5)[1], axis=1
+                        #                 ).mean()
+                        #         except:
+                        #             self.logger.warn(
+                        #                 "Unable to extract pp_dist from pp_locs, "
+                        #                 "reverting to dist defined by 10 cells."
+                        #             )
+                        #             # default to 10 cells spacing
+                        #             pp_dist = 10 * float(
+                        #                 max(
+                        #                     spatial_reference.delr.max(),
+                        #                     spatial_reference.delc.max(),
+                        #                 )
+                        #             )
+                        #     else:
+                        #         pp_dist = pp_options["pp_space"] * float(
+                        #             max(
+                        #                 spatial_reference.delr.max(),
+                        #                 spatial_reference.delc.max(),
+                        #             )
+                        #         )
                         if not isinstance(pp_options["pp_space"], (int, np.integer)):
                             space = 10
                         else:
@@ -2496,6 +2539,7 @@ class PstFrom(object):
                 # Calculating pp factors
                 pg = pargp[0]
 
+                # getting hyperpars request
                 prep_pp_hyperpars = pp_options.get("prep_hyperpars",False)
                 pp_locs = pp_options["pp_locs"]
                 pp_mult_dict = {}
@@ -2518,7 +2562,7 @@ class PstFrom(object):
                         pg,
                         pp_filename,
                         pp_df,
-                        os.path.join("mult",mlt_filename),
+                        os.path.join("mult", mlt_filename),
                         grid_dict,
                         pp_geostruct,
                         shape,pp_options,
@@ -2964,13 +3008,16 @@ class PstFrom(object):
             **kwargs
 
     ):
+        # a few essentials
         assert pp_filename is not None, "No arg passed for pp_filename"
         assert pp_basename is not None, "No arg passed for pp_basename"
         assert pp_tpl is not None, "No arg passed for pp_tpl"
         if pp_locs is None:
+            # some more essentials if not passed pp_locs
             assert pp_space is not None, "If pp_locs is not pp_space should be int."
             assert use_pp_zones is not None, "If pp_locs is not use_pp_zones should be bool."
             assert spatial_reference is not None, "If pp_locs is not spatial_reference should be passed."
+            # define a shape file -- incidental
             shp_fname = str(self.new_d / "{0}.shp".format(pp_filename))
             # Set up pilot points
             pp_dict = {0: pp_basename}
@@ -2988,6 +3035,8 @@ class PstFrom(object):
             )
         else:
             # build tpl from pp_locs
+            # todo -- do we lose flexibility here regarding where tpls are saved
+            #  should the tpl file we pass be Path(self.tpl_d)/pp_tpl?
             df = pyemu.pp_utils.pilot_points_to_tpl(
                 pp_locs,
                 pp_tpl,
@@ -4149,7 +4198,7 @@ def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
         pass
     elif isinstance(v, pyemu.geostats.SphVario):
         vartype = 1
-    elif isinstance(v, pyemu.geostats.GauVarioVario):
+    elif isinstance(v, pyemu.geostats.GauVario):
         vartype = 3
     else:
         raise NotImplementedError("unsupported variogram type: {0}".format(str(type(v))))
