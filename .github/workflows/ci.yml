@@ -15,12 +15,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest] # , macos-latest] 
-        python-version: [3.8, 3.9, "3.10", "3.11", "3.12"]
+        python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
         run-type: [std]
         test-path: ["."]
         include:
           - os: macos-latest
-            python-version: 3.9
+            python-version: 3.11
 
     steps:
     - name: Checkout repo
@@ -76,7 +76,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Test Notebooks
-      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9 }}
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11 }}
       shell: bash -l {0}
       working-directory: ./examples
       run: |
