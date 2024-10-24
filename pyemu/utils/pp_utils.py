@@ -348,7 +348,7 @@ def setup_pilotpoints_grid(
 
 
 def pp_file_to_dataframe(pp_filename):
-    """read a pilot point file to a pandas Dataframe
+    """read a space-delim pilot point file to a pandas Dataframe
 
     Args:
         pp_filename (`str`): path and name of an existing pilot point file

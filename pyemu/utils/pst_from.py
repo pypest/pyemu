@@ -167,6 +167,14 @@ def _load_array_get_fmt(fname, sep=None, fullfile=False, logger=None):
     return arr, fmt
 
 
+def get_default_pp_option(key):
+    ppdf = dict(pp_space=10,
+                use_pp_zones=False,
+                spatial_reference=None,
+                )
+    return ppdf[key]
+
+
 class PstFrom(object):
     """construct high-dimensional PEST(++) interfaces with all the bells and whistles
 
@@ -1901,13 +1909,19 @@ class PstFrom(object):
                 using multiple `add_parameters()` calls (e.g. temporal pars)
                 with common geostructs.
             pp_space (`float`, `int`,`str` or `pd.DataFrame`): Spatial pilot point information.
-                If `float` or `int`, AND `spatial_reference` is of type VertexGrid, it is the spacing in model length untis between pilot points.
-                If `int` it is the spacing in rows and cols of where to place pilot points.
-                If `pd.DataFrame`, then this arg is treated as a prefined set of pilot points
+
+                If `float` or `int`, AND `spatial_reference` is of type VertexGrid : it is the spacing in model length
+                units between pilot points.
+
+                If `int` : it is the spacing in rows and cols of where to place pilot points.
+
+                If `pd.DataFrame` : then this arg is treated as a prefined set of pilot points
                 and in this case, the dataframe must have "name", "x", "y", and optionally "zone" columns.
-                If `str`, then an attempt is made to load a dataframe from a csv file (if `pp_space` ends with ".csv"),
-                shapefile (if `pp_space` ends with ".shp") or from a pilot points file.  If `pp_space` is None,
-                an integer spacing of 10 is used.  Default is None
+
+                If `str` : then an attempt is made to load a dataframe from a csv file (if `pp_space` ends with ".csv"),
+                shapefile (if `pp_space` ends with ".shp") or from a pilot points file.
+
+                If `pp_space` is None : an integer spacing of 10 is used.  Default is None
             use_pp_zones (`bool`): a flag to use the greater-than-zero values
                 in the zone_array as pilot point zones.
                 If False, zone_array values greater than zero are treated as a
@@ -1980,31 +1994,6 @@ class PstFrom(object):
         """
         # TODO need more support for temporal pars?
         #  - As another partype using index_cols or an additional time_cols
-
-        if pp_options is None:
-            pp_options = dict({})
-
-        if pp_space is not None:
-            if "pp_space" in pp_options:
-                self.logger.lraise("'pp_space' passed but its also in 'pp_options")
-            self.logger.warn("'pp_space' has been deprecated and will eventually be removed"+
-                             ", please use pp_options['pp_space'] instead")
-            pp_options["pp_space"] = pp_space
-            pp_space = None
-        elif "pp_space" not in pp_options:
-            pp_options["pp_space"] = 10
-            self.logger.statement("setting pp_options['pp_space'] to 10")
-
-        if use_pp_zones is not None:
-            if "use_pp_zones" in pp_options:
-                self.logger.lraise("'use_pp_zones' passed but its also in 'pp_options")
-            self.logger.warn("'use_pp_zones' has been deprecated and will eventually be removed"+
-                             ", please use pp_options['use_pp_zones'] instead")
-            pp_options["use_pp_zones"] = use_pp_zones
-            use_pp_zones = None
-        elif "use_pp_zones" not in pp_options:
-            pp_options["use_pp_zones"] = False
-            self.logger.statement("setting pp_options['use_pp_zones'] to False")
 
         if apply_function is not None:
             raise NotImplementedError("apply_function is not implemented")
@@ -2272,8 +2261,8 @@ class PstFrom(object):
             ult_lbound = self.ult_lbound_fill
             lbfill = "first"
 
-        pp_filename = None  # setup placeholder variables
-        fac_filename = None
+        # pp_filename = None  # setup placeholder variables
+        # fac_filename = None
         nxs = None
         # Process model parameter files to produce appropriate pest pars
         if index_cols is not None:  # Assume list/tabular type input files
@@ -2384,40 +2373,44 @@ class PstFrom(object):
                     )
                 # Setup pilotpoints for array type par files
                 self.logger.log("setting up pilot point parameters")
-                # finding spatial references for for setting up pilot points
-                if spatial_reference is None:
-                    # if none passed with add_pars call
-                    self.logger.statement(
-                        "No spatial reference " "(containing cell spacing) passed."
-                    )
-                    if self.spatial_reference is not None:
-                        # using global sr on PstFrom object
-                        self.logger.statement(
-                            "OK - using spatial reference " "in parent object."
-                        )
-                        spatial_reference = self.spatial_reference
-                        spatial_reference_type = spatial_reference.grid_type
-                    else:
-                        # uhoh
-                        self.logger.lraise(
-                            "No spatial reference in parent "
-                            "object either. "
-                            "Can't set-up pilotpoints"
-                        )
-                # check that spatial reference lines up with the original array dimensions
-                structured = False
-                if not isinstance(spatial_reference, dict):
+
+                # get pp_options from passed args
+                depr_pp_args = {k: v for k, v in locals().items() if k in
+                                ['pp_space', 'use_pp_zones', 'spatial_reference']}
+                pp_options = dict([]) if pp_options is None else pp_options
+
+                # We might need a functioning zone_array for what is to come
+                if zone_array is None:  # but need dummy zone array
+                    nr, nc = file_dict[list(file_dict.keys())[0]].shape
+                    zone_array = np.ones((nr, nc), dtype=int)
+
+                pp_options['zone_array'] = zone_array
+                pp_options['pp_filename'] = "{0}pp.dat".format(par_name_store)  # todo could also be a pp_kwarg
+                # todo - could bundle optional/deprecated pp_kwargs before parsing here
+                pp_options = self._prep_pp_args(zone_array, pp_options, **depr_pp_args)
+                pnb = par_name_base[0]
+                pnb = "pname:{1}_ptype:pp_pstyle:{0}".format(par_style, pnb)
+                pp_options['pp_basename'] = pnb
+
+                # Additional check that spatial reference lines up with the original array dimensions
+                spatial_reference = pp_options['spatial_reference']
+                if isinstance(spatial_reference, dict): # unstruct
+                    structured = False
+                else:  # this is then a structured grid
+                    spatial_reference_type = spatial_reference.grid_type
                     structured = True
-                    for mod_file, ar in file_dict.items():
-                        orgdata = ar.shape
-                        if spatial_reference_type == 'vertex':
+                    if spatial_reference_type == 'vertex':
+                        for mod_file, ar in file_dict.items():
+                            orgdata = ar.shape
                             assert orgdata[0] == spatial_reference.ncpl, (
                                 "Spatial reference ncpl not equal to original data ncpl for\n"
                                 + os.path.join(
                                     *os.path.split(self.original_file_d)[1:], mod_file
                                 )
                             )
-                        else:
+                    else:
+                        for mod_file, ar in file_dict.items():
+                            orgdata = ar.shape
                             assert orgdata[0] == spatial_reference.nrow, (
                                 "Spatial reference nrow not equal to original data nrow for\n"
                                 + os.path.join(
@@ -2430,142 +2423,176 @@ class PstFrom(object):
                                     *os.path.split(self.original_file_d)[1:], mod_file
                                 )
                             )
+                # use pp_options kwargs dict in pp setup
+                df = self._setup_pp_df(**pp_options)
+                df.loc[:, "pargp"] = pargp
+                # should be only one group at a time
+                pargp = df.pargp.unique()
+                self.logger.statement("pilot point 'pargp':{0}".format(",".join(pargp)))
+                self.logger.log("setting up pilot point parameters")
                 # (stolen from helpers.PstFromFlopyModel()._pp_prep())
                 # but only settting up one set of pps at a time
-                pnb = par_name_base[0]
-                pnb = "pname:{1}_ptype:pp_pstyle:{0}".format(par_style, pnb)
-                pp_dict = {0: pnb}
-                pp_filename = "{0}pp.dat".format(par_name_store)
-                # pst inputfile (for tpl->in pair) is
-                # par_name_storepp.dat table (in pst ws)
-                in_filepst = pp_filename
-                pp_filename_dict = {pnb: in_filepst}
-                tpl_filename = self.tpl_d / (pp_filename + ".tpl")
-                # tpl_filename = get_relative_filepath(self.new_d, tpl_filename)
-                pp_locs = None
-                if "pp_space" not in pp_options or pp_options["pp_space"] is None:  # default spacing if not passed
-                    self.logger.warn("pp_space is None, using 10...\n")
-                    pp_options["pp_space"] = 10
-                else:
-                    if not pp_options["use_pp_zones"] and (isinstance(pp_options["pp_space"], (int, np.integer))):
-                        # if not using pp zones will set up pp for just one
-                        # zone (all non zero) -- for active domain...
-                        if zone_array is None:
-                            nr, nc = file_dict[list(file_dict.keys())[0]].shape
-                            zone_array = np.ones((nr,nc),dtype=int)
-                        zone_array[zone_array > 0] = 1  # so can set all
-                        # gt-zero to 1
-                    if isinstance(pp_options["pp_space"], float):
-                        pp_options["pp_space"] = int(pp_options["pp_space"])
-                    elif isinstance(pp_options["pp_space"], (int, np.integer)):
-                        pass
-                    elif isinstance(pp_options["pp_space"], str):
-                        if pp_options["pp_space"].lower().strip().endswith(".csv"):
-                            self.logger.statement(
-                                "trying to load pilot point location info from csv file '{0}'".format(
-                                    self.new_d / Path(pp_options["pp_space"])
-                                )
-                            )
-                            pp_locs = pd.read_csv(self.new_d / pp_options["pp_space"])
+                # pnb = par_name_base[0]
+                # pnb = "pname:{1}_ptype:pp_pstyle:{0}".format(par_style, pnb)
+                # pp_dict = {0: pnb}
+                #
+                # # pst inputfile (for tpl->in pair) is
+                # # par_name_storepp.dat table (in pst ws)
+                # in_filepst = pp_filename
+                # pp_filename_dict = {pnb: in_filepst}
+                # tpl_filename = self.tpl_d / (pp_filename + ".tpl")
+                # # tpl_filename = get_relative_filepath(self.new_d, tpl_filename)
+                # pp_locs = None
+                # if "pp_space" not in pp_options or pp_options["pp_space"] is None:  # default spacing if not passed
+                #     self.logger.warn("pp_space is None, using 10...\n")
+                #     pp_options["pp_space"] = 10
+                # else:
+                #     if not pp_options["use_pp_zones"] and (isinstance(pp_options["pp_space"], (int, np.integer))):
+                #         # if not using pp zones and not using pp_locs
+                #         # will set up pp for just one
+                #         # zone (all non zero) -- for active domain...
+                #         zone_array[zone_array > 0] = 1  # so can set all
+                #         # gt-zero to 1
+                #     if isinstance(pp_options["pp_space"], float):
+                #         pp_options["pp_space"] = int(pp_options["pp_space"])
+                #     elif isinstance(pp_options["pp_space"], str):
+                #         if pp_options["pp_space"].lower().strip().endswith(".csv"):
+                #             self.logger.statement(
+                #                 "trying to load pilot point location info from csv file '{0}'".format(
+                #                     self.new_d / Path(pp_options["pp_space"])
+                #                 )
+                #             )
+                #             pp_locs = pd.read_csv(self.new_d / pp_options["pp_space"])
+                #
+                #         elif pp_options["pp_space"].lower().strip().endswith(".shp"):
+                #             self.logger.statement(
+                #                 "trying to load pilot point location info from shapefile '{0}'".format(
+                #                     self.new_d / Path(pp_options["pp_space"])
+                #                 )
+                #             )
+                #             pp_locs = pyemu.pp_utils.pilot_points_from_shapefile(
+                #                 str(self.new_d / Path(pp_options["pp_space"]))
+                #             )
+                #         else:
+                #             self.logger.statement(
+                #                 "trying to load pilot point location info from pilot point file '{0}'".format(
+                #                     self.new_d / Path(pp_options["pp_space"])
+                #                 )
+                #             )
+                #             pp_locs = pyemu.pp_utils.pp_file_to_dataframe(
+                #                 self.new_d / pp_options["pp_space"]
+                #             )
+                #         self.logger.statement(
+                #             "pilot points found in file '{0}' will be transferred to '{1}' for parameterization".format(
+                #                 pp_options["pp_space"], pp_filename
+                #             )
+                #         )
+                #     elif isinstance(pp_options["pp_space"], pd.DataFrame):
+                #         pp_locs = pp_options["pp_space"]
+                #     elif not isinstance(pp_options["pp_space"], (int, np.integer)):
+                #         self.logger.lraise(
+                #             "unrecognized pp_options['pp_space'] value, should be int, csv file, pp file or dataframe, not '{0}'".format(
+                #                 type(pp_options["pp_space"])
+                #             )
+                #         )
+                #     if pp_locs is not None:
+                #         cols = pp_locs.columns.tolist()
+                #         if "name" not in cols:
+                #             self.logger.lraise("'name' col not found in pp dataframe")
+                #         if "x" not in cols:
+                #             self.logger.lraise("'x' col not found in pp dataframe")
+                #         if "y" not in cols:
+                #             self.logger.lraise("'y' col not found in pp dataframe")
+                #         if "zone" not in cols:
+                #             self.logger.warn(
+                #                 "'zone' col not found in pp dataframe, adding generic zone"
+                #             )
+                #             pp_locs.loc[:, "zone"] = 1
+                #
+                #         elif zone_array is not None:
+                #             # check that all the zones in the pp df are in the zone array
+                #             missing = []
+                #             for uz in pp_locs.zone.unique():
+                #                 if int(uz) not in zone_array:
+                #                     missing.append(str(uz))
+                #             if len(missing) > 0:
+                #                 self.logger.lraise(
+                #                     "the following pp zone values were not found in the zone array: {0}".format(
+                #                         ",".join(missing)
+                #                     )
+                #                 )
+                #
+                #             for uz in np.unique(zone_array):
+                #                 if uz < 1:
+                #                     continue
+                #                 if uz not in pp_locs.zone.values:
+                #
+                #                     missing.append(str(uz))
+                #             if len(missing) > 0:
+                #                 self.logger.warn(
+                #                     "the following zones don't have any pilot points:{0}".format(
+                #                         ",".join(missing)
+                #                     )
+                #                 )
 
-                        elif pp_options["pp_space"].lower().strip().endswith(".shp"):
-                            self.logger.statement(
-                                "trying to load pilot point location info from shapefile '{0}'".format(
-                                    self.new_d / Path(pp_options["pp_space"])
-                                )
-                            )
-                            pp_locs = pyemu.pp_utils.pilot_points_from_shapefile(
-                                str(self.new_d / Path(pp_options["pp_space"]))
-                            )
-                        else:
-                            self.logger.statement(
-                                "trying to load pilot point location info from pilot point file '{0}'".format(
-                                    self.new_d / Path(pp_options["pp_space"])
-                                )
-                            )
-                            pp_locs = pyemu.pp_utils.pp_file_to_dataframe(
-                                self.new_d / pp_options["pp_space"]
-                            )
-                        self.logger.statement(
-                            "pilot points found in file '{0}' will be transferred to '{1}' for parameterization".format(
-                                pp_options["pp_space"], pp_filename
-                            )
-                        )
-                    elif isinstance(pp_options["pp_space"], pd.DataFrame):
-                        pp_locs = pp_options["pp_space"]
-                    else:
-                        self.logger.lraise(
-                            "unrecognized pp_options['pp_space'] value, should be int, csv file, pp file or dataframe, not '{0}'".format(
-                                type(pp_options["pp_space"])
-                            )
-                        )
-                    if pp_locs is not None:
-                        cols = pp_locs.columns.tolist()
-                        if "name" not in cols:
-                            self.logger.lraise("'name' col not found in pp dataframe")
-                        if "x" not in cols:
-                            self.logger.lraise("'x' col not found in pp dataframe")
-                        if "y" not in cols:
-                            self.logger.lraise("'y' col not found in pp dataframe")
-                        if "zone" not in cols:
-                            self.logger.warn(
-                                "'zone' col not found in pp dataframe, adding generic zone"
-                            )
-                            pp_locs.loc[:, "zone"] = 1
 
-                        elif zone_array is not None:
-                            # check that all the zones in the pp df are in the zone array
-                            missing = []
-                            for uz in pp_locs.zone.unique():
-                                if int(uz) not in zone_array:
-                                    missing.append(str(uz))
-                            if len(missing) > 0:
-                                self.logger.lraise(
-                                    "the following pp zone values were not found in the zone array: {0}".format(
-                                        ",".join(missing)
-                                    )
-                                )
+                # if not structured and zone_array is not None:
+                #     # self.logger.lraise("'zone_array' not supported for unstructured grids and pilot points")
+                #     if "zone" not in pp_locs.columns:
+                #         self.logger.lraise(
+                #             "'zone' not found in pp info dataframe and 'zone_array' passed"
+                #         )
+                #     uvals = np.unique(zone_array)
+                #     zvals = set([int(z) for z in pp_locs.zone.tolist()])
+                #     missing = []
+                #     for uval in uvals:
+                #         if int(uval) not in zvals and int(uval) != 0:
+                #             missing.append(str(int(uval)))
+                #     if len(missing) > 0:
+                #         self.logger.warn(
+                #             "the following values in the zone array were not found in the pp info: {0}".format(
+                #                 ",".join(missing)
+                #             )
+                #         )
 
-                            for uz in np.unique(zone_array):
-                                if uz < 1:
-                                    continue
-                                if uz not in pp_locs.zone.values:
+                # if pp_locs is None:
+                #     # Set up pilot points
+                #
+                #     df = pyemu.pp_utils.setup_pilotpoints_grid(
+                #         sr=spatial_reference,
+                #         ibound=zone_array,
+                #         use_ibound_zones=pp_options['use_pp_zones'],
+                #         prefix_dict=pp_dict,
+                #         every_n_cell=pp_options["pp_space"],
+                #         pp_dir=self.new_d,
+                #         tpl_dir=self.tpl_d,
+                #         shapename=str(self.new_d / "{0}.shp".format(par_name_store)),
+                #         pp_filename_dict=pp_filename_dict,
+                #     )
+                # else:
+                #
+                #     df = pyemu.pp_utils.pilot_points_to_tpl(
+                #         pp_locs,
+                #         tpl_filename,
+                #         pnb,
+                #     )
+                # df["tpl_filename"] = tpl_filename
+                # df["pp_filename"] = pp_filename
+                # df.loc[:, "pargp"] = pargp
+                # df.set_index("parnme", drop=False, inplace=True)
+                # pp_locs = df
+                # # df includes most of the par info for par_dfs and also for
+                # # relate_parfiles
+                # self.logger.statement(
+                #     "{0} pilot point parameters created".format(df.shape[0])
+                # )
+                # # should be only one group at a time
+                # pargp = df.pargp.unique()
+                # self.logger.statement("pilot point 'pargp':{0}".format(",".join(pargp)))
+                # self.logger.log("setting up pilot point parameters")
 
-                                    missing.append(str(uz))
-                            if len(missing) > 0:
-                                self.logger.warn(
-                                    "the following zones don't have any pilot points:{0}".format(
-                                        ",".join(missing)
-                                    )
-                                )
-
-                if not structured and pp_locs is None:
-                    self.logger.lraise(
-                        "pilot point type parameters with an unstructured grid requires 'pp_space' "
-                        "contain explict pilot point information"
-                    )
-
-                if not structured and zone_array is not None:
-                    # self.logger.lraise("'zone_array' not supported for unstructured grids and pilot points")
-                    if "zone" not in pp_locs.columns:
-                        self.logger.lraise(
-                            "'zone' not found in pp info dataframe and 'zone_array' passed"
-                        )
-                    uvals = np.unique(zone_array)
-                    zvals = set([int(z) for z in pp_locs.zone.tolist()])
-                    missing = []
-                    for uval in uvals:
-                        if int(uval) not in zvals and int(uval) != 0:
-                            missing.append(str(int(uval)))
-                    if len(missing) > 0:
-                        self.logger.warn(
-                            "the following values in the zone array were not found in the pp info: {0}".format(
-                                ",".join(missing)
-                            )
-                        )
 
                 if geostruct is None:  # need a geostruct for pilotpoints
-
                     # can use model default, if provided
                     if self.geostruct is None:  # but if no geostruct passed...
                         if not structured:
@@ -2578,7 +2605,7 @@ class PstFrom(object):
                             "using ExpVario with contribution=1 "
                             "and a=(pp_space*max(delr,delc))"
                         )
-                        # set up a default - could probably do something better if pp locs are passed
+                        # set up a default - TODO could probably do something better if pp locs are passed
                         if not isinstance(pp_options["pp_space"], (int, np.integer)):
                             space = 10
                         else:
@@ -2617,46 +2644,12 @@ class PstFrom(object):
                 else:
                     pp_geostruct = geostruct
 
-                if pp_locs is None:
-                    # Set up pilot points
-
-                    df = pyemu.pp_utils.setup_pilotpoints_grid(
-                        sr=spatial_reference,
-                        ibound=zone_array,
-                        use_ibound_zones=pp_options['use_pp_zones'],
-                        prefix_dict=pp_dict,
-                        every_n_cell=pp_options["pp_space"],
-                        pp_dir=self.new_d,
-                        tpl_dir=self.tpl_d,
-                        shapename=str(self.new_d / "{0}.shp".format(par_name_store)),
-                        pp_filename_dict=pp_filename_dict,
-                    )
-                else:
-
-                    df = pyemu.pp_utils.pilot_points_to_tpl(
-                        pp_locs,
-                        tpl_filename,
-                        pnb,
-                    )
-                df["tpl_filename"] = tpl_filename
-                df["pp_filename"] = pp_filename    
-                df.loc[:, "pargp"] = pargp
-                df.set_index("parnme", drop=False, inplace=True)
-                pp_locs = df
-                # df includes most of the par info for par_dfs and also for
-                # relate_parfiles
-                self.logger.statement(
-                    "{0} pilot point parameters created".format(df.shape[0])
-                )
-                # should be only one group at a time
-                pargp = df.pargp.unique()
-                self.logger.statement("pilot point 'pargp':{0}".format(",".join(pargp)))
-                self.logger.log("setting up pilot point parameters")
-
                 # Calculating pp factors
                 pg = pargp[0]
-                prep_pp_hyperpars = pp_options.get("prep_hyperpars",False)
 
+                prep_pp_hyperpars = pp_options.get("prep_hyperpars",False)
+                pp_filename = pp_options['pp_filename']
+                pp_locs = pp_options["pp_locs"]
                 if prep_pp_hyperpars:
                     if structured:
                         grid_dict = {}
@@ -2980,6 +2973,328 @@ class PstFrom(object):
                     "pst object not available, " "new control file will be written"
                 )
         return df
+
+
+    def _prep_pp_args(self, zone_array, pp_kwargs=None, **depr_kwargs):
+        if pp_kwargs is None:
+            pp_kwargs = dict([])
+
+        for key, val in depr_kwargs.items():
+            deft = get_default_pp_option(key)
+            if val is not None:
+                if key in pp_kwargs:
+                    self.logger.lraise(f"'{key}' passed but its also in 'pp_options")
+                self.logger.warn(f"Directly passing '{key}' has been deprecated and will eventually be removed"+
+                                 f", please use pp_options['{key}'] instead.")
+                pp_kwargs[key] = val
+            elif key not in pp_kwargs:
+                self.logger.statement(f"setting pp_options['{key}'] to {deft}")
+                pp_kwargs[key] = deft
+
+        if not pp_kwargs["use_pp_zones"]:
+            # will set up pp for just one
+            # zone (all non zero) -- for active domain...
+            zone_array[zone_array > 0] = 1  # so can set all
+            # gt-zero to 1
+
+        # extra check for spatial ref
+        if pp_kwargs.get('spatial_reference', None) is None:
+            self.logger.statement(
+                "No spatial reference " "(containing cell spacing) passed."
+            )
+            if self.spatial_reference is not None:
+                # using global sr on PstFrom object
+                self.logger.statement(
+                    "OK - using spatial reference " "in parent object."
+                )
+                pp_kwargs['spatial_reference'] = self.spatial_reference
+            else:
+                # uhoh
+                self.logger.lraise(
+                    "No spatial reference passed and none in parent object."
+                    "Can't set-up pilotpoint pars"
+                )
+
+        # get pp_locs arg from pp_space
+        pp_filename = pp_kwargs['pp_filename']
+        pp_space = pp_kwargs['pp_space']
+        # default pp_locs to None # todo -- could this be a pp_kwargs passed to add pars?
+        pp_locs = None
+        if isinstance(pp_space, float):
+            pp_space = int(pp_space)
+        elif isinstance(pp_space, str):
+            if pp_space.strip().lower().endswith(".csv"):
+                self.logger.statement(
+                    "trying to load pilot point location info from csv file '{0}'".format(
+                        self.new_d / Path(pp_space)
+                    )
+                )
+                pp_locs = pd.read_csv(self.new_d / pp_space)
+
+            elif pp_space.strip().lower().endswith(".shp"):
+                self.logger.statement(
+                    "trying to load pilot point location info from shapefile '{0}'".format(
+                        self.new_d / Path(pp_space)
+                    )
+                )
+                pp_locs = pyemu.pp_utils.pilot_points_from_shapefile(
+                    str(self.new_d / Path(pp_space))
+                )
+            else:
+                self.logger.statement(
+                    "trying to load pilot point location info from pilot point file '{0}'".format(
+                        self.new_d / Path(pp_space)
+                    )
+                )
+                pp_locs = pyemu.pp_utils.pp_file_to_dataframe(
+                    self.new_d / Path(pp_space)
+                )
+            self.logger.statement(
+                "pilot points found in file '{0}' will be transferred to '{1}' for parameterization".format(
+                    pp_space, pp_filename
+                )
+            )
+        elif isinstance(pp_space, pd.DataFrame):
+            pp_locs = pp_space
+        elif not isinstance(pp_space, (int, np.integer)):
+            self.logger.lraise(
+                "unrecognized pp_options['pp_space'] value, should be int, csv file, pp file or dataframe, not '{0}'".format(
+                    type(pp_space)
+                )
+            )
+        if pp_locs is None:
+            if isinstance(pp_kwargs['spatial_reference'], dict): # then we are unstructured and need pp_locs
+                self.logger.lraise(
+                    "pilot point type parameters with an unstructured grid requires 'pp_space' "
+                    "contain explict pilot point information"
+                )
+        else:  # check pp_locs (if not None)
+            cols = pp_locs.columns.tolist()
+            if "name" not in cols:
+                self.logger.lraise("'name' col not found in pp dataframe")
+            if "x" not in cols:
+                self.logger.lraise("'x' col not found in pp dataframe")
+            if "y" not in cols:
+                self.logger.lraise("'y' col not found in pp dataframe")
+            if "zone" not in cols:
+                self.logger.warn(
+                    "'zone' col not found in pp dataframe, adding generic zone"
+                )
+                pp_locs.loc[:, "zone"] = 1
+            # check that all the zones in the pp_locs are in the zone array
+            missing = set(pp_locs.zone.unique()) - set(np.unique(zone_array))
+            if len(missing) > 0:
+                self.logger.lraise(
+                    "the following pp zone values were not found in the zone array: {0}".format(
+                        ",".join(missing)
+                    )
+                )
+            missing = set(np.unique(zone_array)) - set(pp_locs.zone.unique()) - {0}
+            if len(missing) > 0:
+                self.logger.warn(
+                    "the following zones (in zone_array) don't have any pilot points:{0}".format(
+                        ",".join(missing)
+                    )
+                )
+        pp_kwargs.update(dict(pp_space=pp_space, pp_locs=pp_locs,
+                              zone_array=zone_array))
+        return pp_kwargs
+
+    def _setup_pp_df(
+            self,
+            pp_filename=None,
+            pp_basename=None,
+            pp_space=None,
+            pp_locs=None,
+            use_pp_zones=None,
+            zone_array=None,
+            spatial_reference=None
+
+    ):
+        # pp_utils.setup_pilotpoints_grid will write a tpl file
+        # with the name take from pp_filename_dict. (pp_filename+".tpl")
+        # and pp_filename comes from "{0}pp.dat".format(par_name_store)
+        # par_name_store comes from par_name base with instants increment
+        # better to make tpl consistent between method right?
+        tpl_fname = self.tpl_d / (pp_filename+".tpl")
+        if pp_locs is None:
+            shp_fname = str(self.new_d / "{0}.shp".format(pp_filename))
+            # Set up pilot points
+            pp_dict = {0: pp_basename}
+            pp_filename_dict = {pp_basename: pp_filename}
+            df = pyemu.pp_utils.setup_pilotpoints_grid(
+                sr=spatial_reference,
+                ibound=zone_array,
+                use_ibound_zones=use_pp_zones,
+                prefix_dict=pp_dict,
+                every_n_cell=pp_space,
+                pp_dir=self.new_d,
+                tpl_dir=self.tpl_d,
+                shapename=shp_fname,
+                pp_filename_dict=pp_filename_dict,
+            )
+        else:
+            # build tpl from pp_locs
+            df = pyemu.pp_utils.pilot_points_to_tpl(
+                pp_locs,
+                tpl_fname,
+                pp_basename,
+            )
+        if "tpl_filename" not in df.columns:
+            df["tpl_filename"] = tpl_fname
+        if "pp_filename" not in df.columns:
+            df["pp_filename"] = pp_filename
+        df.set_index("parnme", drop=False, inplace=True)
+        # pp_locs = df
+        # df includes most of the par info for par_dfs and also for
+        # relate_parfiles
+        self.logger.statement(
+            "{0} pilot point parameters created".format(df.shape[0])
+        )
+        return df
+
+        # # Calculating pp factors
+        # pg = pargp[0]
+        # prep_pp_hyperpars = pp_options.get("prep_hyperpars", False)
+        #
+        # if prep_pp_hyperpars:
+        #     if structured:
+        #         grid_dict = {}
+        #         for inode, (xx, yy) in enumerate(zip(spatial_reference.xcentergrid.flatten(),
+        #                                              spatial_reference.ycentergrid.flatten())):
+        #             grid_dict[inode] = (xx, yy)
+        #     else:
+        #         grid_dict = spatial_reference
+        #     # prep_pp_hyperpars(file_tag,pp_filename,out_filename,grid_dict,
+        #     #   geostruct,arr_shape,pp_options,zone_array=None)
+        #     if structured:
+        #         shape = spatial_reference.xcentergrid.shape
+        #     else:
+        #         shape = (1, len(grid_dict))
+        #
+        #     config_df = pyemu.utils.prep_pp_hyperpars(pg, os.path.join(pp_filename),
+        #                                               pp_locs, os.path.join("mult", mlt_filename),
+        #                                               grid_dict, pp_geostruct, shape, pp_options,
+        #                                               zone_array=zone_array,
+        #                                               ws=self.new_d)
+        #     # todo: add call to apply func ahead of call to mult func
+        #     config_df_filename = config_df.loc["config_df_filename", "value"]
+        #     # self.pre_py_cmds.insert(0,"pyemu.utils.apply_ppu_hyperpars('{0}')".\
+        #     #                        format(config_df_filename))
+        #
+        #     # if "pypestutils" not in self.extra_py_imports:
+        #     #    self.extra_py_imports.append("pypestutils")
+        #     print(config_df_filename)
+        #     config_func_str = "pyemu.utils.apply_ppu_hyperpars('{0}')". \
+        #         format(config_df_filename)
+        #
+        #
+        # else:
+        #
+        #     # this reletvively quick
+        #     ok_pp = pyemu.geostats.OrdinaryKrige(pp_geostruct, df)
+        #     # build krige reference information on the fly - used to help
+        #     # prevent unnecessary krig factor calculation
+        #     pp_info_dict = {
+        #         "pp_data": ok_pp.point_data.loc[:, ["x", "y", "zone"]],
+        #         "cov": ok_pp.point_cov_df,
+        #         "zn_ar": zone_array,
+        #         "sr": spatial_reference,
+        #         "pstyle": par_style,
+        #         "transform": transform
+        #     }
+        #     fac_processed = False
+        #     for facfile, info in self._pp_facs.items():  # check against
+        #         # factors already calculated
+        #         if (
+        #                 info["pp_data"].equals(pp_info_dict["pp_data"])
+        #                 and info["cov"].equals(pp_info_dict["cov"])
+        #                 and np.array_equal(info["zn_ar"], pp_info_dict["zn_ar"])
+        #                 and pp_info_dict["pstyle"] == info["pstyle"]
+        #                 and pp_info_dict["transform"] == info["transform"]
+        #
+        #         ):
+        #             if type(info["sr"]) == type(spatial_reference):
+        #                 if isinstance(spatial_reference, dict):
+        #                     if len(info["sr"]) != len(spatial_reference):
+        #                         continue
+        #             else:
+        #                 continue
+        #
+        #             fac_processed = True  # don't need to re-calc same factors
+        #             fac_filename = facfile  # relate to existing fac file
+        #             self.logger.statement("reusing factors")
+        #             break
+        #     if not fac_processed:
+        #         # TODO need better way of naming sequential fac_files?
+        #         self.logger.log("calculating factors for pargp={0}".format(pg))
+        #         fac_filename = self.new_d / "{0}pp.fac".format(par_name_store)
+        #         var_filename = fac_filename.with_suffix(".var.dat")
+        #         self.logger.statement(
+        #             "saving krige variance file:{0}".format(var_filename)
+        #         )
+        #         self.logger.statement(
+        #             "saving krige factors file:{0}".format(fac_filename)
+        #         )
+        #         # store info on pilotpoints
+        #         self._pp_facs[fac_filename] = pp_info_dict
+        #         # this is slow (esp on windows) so only want to do this
+        #         # when required
+        #         if structured:
+        #
+        #             ret_val = ok_pp.calc_factors_grid(
+        #                 spatial_reference,
+        #                 var_filename=var_filename,
+        #                 zone_array=zone_array,
+        #                 num_threads=pp_options.get("num_threads", self.pp_solve_num_threads),
+        #                 minpts_interp=pp_options.get("minpts_interp", 1),
+        #                 maxpts_interp=pp_options.get("maxpts_interp", 20),
+        #                 search_radius=pp_options.get("search_radius", 1e10),
+        #                 try_use_ppu=pp_options.get("try_use_ppu", True),
+        #                 # ppu_factor_filename=pp_options.get("ppu_factor_filename","factors.dat")
+        #                 ppu_factor_filename=fac_filename
+        #             )
+        #             if not isinstance(ret_val, int):
+        #                 ok_pp.to_grid_factors_file(fac_filename)
+        #         else:
+        #             # put the sr dict info into a df
+        #             # but we only want to use the n
+        #             if zone_array is not None:
+        #                 for zone in np.unique(zone_array):
+        #                     if int(zone) == 0:
+        #                         continue
+        #                     data = []
+        #                     for node, (x, y) in spatial_reference.items():
+        #                         if zone_array[0, node] == zone:
+        #                             data.append([node, x, y])
+        #                     if len(data) == 0:
+        #                         continue
+        #                     node_df = pd.DataFrame(data, columns=["node", "x", "y"])
+        #                     ok_pp.calc_factors(
+        #                         node_df.x,
+        #                         node_df.y,
+        #                         num_threads=pp_options.get("num_threads", self.pp_solve_num_threads),
+        #                         minpts_interp=pp_options.get("minpts_interp", 1),
+        #                         maxpts_interp=pp_options.get("maxpts_interp", 20),
+        #                         search_radius=pp_options.get("search_radius", 1e10),
+        #                         pt_zone=zone,
+        #                         idx_vals=node_df.node.astype(int),
+        #                     )
+        #                 ok_pp.to_grid_factors_file(
+        #                     fac_filename, ncol=len(spatial_reference)
+        #                 )
+        #             else:
+        #                 data = []
+        #                 for node, (x, y) in spatial_reference.items():
+        #                     data.append([node, x, y])
+        #                 node_df = pd.DataFrame(data, columns=["node", "x", "y"])
+        #                 ok_pp.calc_factors(node_df.x, node_df.y,
+        #                                    num_threads=pp_options.get("num_threads", self.pp_solve_num_threads))
+        #                 ok_pp.to_grid_factors_file(
+        #                     fac_filename, ncol=node_df.shape[0]
+        #                 )
+        #
+        #         self.logger.log("calculating factors for pargp={0}".format(pg))
 
     def _load_listtype_file(
         self, filename, index_cols, use_cols, fmt=None, sep=None, skip=None, c_char=None
