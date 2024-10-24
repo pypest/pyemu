@@ -2931,21 +2931,22 @@ class PstFrom(object):
                     "'zone' col not found in pp dataframe, adding generic zone"
                 )
                 pp_locs.loc[:, "zone"] = 1
-            # check that all the zones in the pp_locs are in the zone array
-            missing = set(pp_locs.zone.unique()) - set(np.unique(zone_array))
-            if len(missing) > 0:
-                self.logger.lraise(
-                    "the following pp zone values were not found in the zone array: {0}".format(
-                        ",".join(missing)
+            if pp_kwargs["use_pp_zones"]:
+                # check that all the zones in the pp_locs are in the zone array
+                missing = set(pp_locs.zone.unique()) - set(np.unique(zone_array))
+                if len(missing) > 0:
+                    self.logger.lraise(
+                        "the following pp zone values were not found in the zone array: {0}".format(
+                            ",".join(str(m) for m in missing)
+                        )
                     )
-                )
-            missing = set(np.unique(zone_array)) - set(pp_locs.zone.unique()) - {0}
-            if len(missing) > 0:
-                self.logger.warn(
-                    "the following zones (in zone_array) don't have any pilot points:{0}".format(
-                        ",".join(missing)
+                missing = set(np.unique(zone_array)) - set(pp_locs.zone.unique()) - {0}
+                if len(missing) > 0:
+                    self.logger.warn(
+                        "the following zones (in zone_array) don't have any pilot points:{0}".format(
+                            ",".join(str(m) for m in missing)
+                        )
                     )
-                )
         pp_kwargs.update(dict(pp_space=pp_space, pp_locs=pp_locs,
                               zone_array=zone_array))
         return pp_kwargs
