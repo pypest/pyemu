@@ -993,7 +993,7 @@ class OrdinaryKrige(object):
                 pass
             elif isinstance(v,SphVario):
                 vartype = 1
-            elif isinstance(v, GauVarioVario):
+            elif isinstance(v, GauVario):
                 vartype = 3
             else:
                 raise NotImplementedError("unsupported variogram type: {0}".format(str(type(v))))

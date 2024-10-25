@@ -167,14 +167,6 @@ def _load_array_get_fmt(fname, sep=None, fullfile=False, logger=None):
     return arr, fmt
 
 
-def get_default_pp_option(key):
-    ppdf = dict(pp_space=10,
-                use_pp_zones=False,
-                spatial_reference=None,
-                )
-    return ppdf[key]
-
-
 class PstFrom(object):
     """construct high-dimensional PEST(++) interfaces with all the bells and whistles
 
@@ -243,7 +235,6 @@ class PstFrom(object):
             start_datetime = _get_datetime_from_str(start_datetime)
         self.start_datetime = start_datetime
         self.geostruct = None
-        self.pp_solve_num_threads = int(pp_solve_num_threads)
         self.par_struct_dict = {}
         # self.par_struct_dict_l = {}
 
@@ -2400,15 +2391,21 @@ class PstFrom(object):
                 # don't want to have to pass too much in on this pp_options dict,
                 # so define pp_filename here
                 pp_options['pp_filename'] = "{0}pp.dat".format(par_name_store)  # todo could also be a pp_kwarg
-                # pp_options passed as a dict (and returned) after modification
-                # zone array is reset to ar>1=1 if not using pp zones
-                pp_options = self._prep_pp_args(zone_array, pp_options, **depr_pp_args)
-                zone_array = pp_options['zone_array']
                 # also set parname base from what is extracted above.
                 pnb = par_name_base[0]
                 pnb = "pname:{1}_ptype:pp_pstyle:{0}".format(par_style, pnb)
                 pp_options['pp_basename'] = pnb
+                # pp_options passed as a dict (and returned) after modification
+                pp_options = parse_pp_options_with_defaults(pp_options,
+                                                           self.pp_solve_num_threads,
+                                                           transform=='log',
+                                                           self.logger,
+                                                           **depr_pp_args)
 
+                # zone array is reset to ar>1=1 if not using pp zones
+                pp_options = self._prep_pp_args(zone_array, pp_options)
+                # collect zone_array back (used later)
+                zone_array = pp_options['zone_array']
                 # pp_utils.setup_pilotpoints_grid will write a tpl file
                 # with the name take from pp_filename_dict. (pp_filename+".tpl")
                 # and pp_filename comes from "{0}pp.dat".format(par_name_store)
@@ -2564,7 +2561,8 @@ class PstFrom(object):
                         os.path.join("mult", mlt_filename),
                         grid_dict,
                         pp_geostruct,
-                        shape,pp_options,
+                        shape,
+                        pp_options,
                         zone_array=zone_array,
                         ws=self.new_d
                     )
@@ -2688,7 +2686,7 @@ class PstFrom(object):
                     pp_mult_dict["fac_file"] = os.path.relpath(fac_filename, self.new_d)
                     pp_mult_dict["pp_file"] = pp_filename
                     if transform == "log":
-                        pp_mult_dict["pp_fill_value"] = pp_options.get("fill_values", 1.0)
+                        pp_mult_dict["pp_fill_value"] = pp_options.get("fill_value", 1.0)
                         pp_mult_dict["pp_lower_limit"] = pp_options.get("lower_limit", 1.0e-30)
                         pp_mult_dict["pp_upper_limit"] = pp_options.get("upper_limit", 1.0e30)
                     else:
@@ -2868,21 +2866,9 @@ class PstFrom(object):
         return pp_df
 
 
-    def _prep_pp_args(self, zone_array, pp_kwargs=None, **depr_kwargs):
+    def _prep_pp_args(self, zone_array, pp_kwargs=None):
         if pp_kwargs is None:
             pp_kwargs = dict([])
-
-        for key, val in depr_kwargs.items():
-            deft = get_default_pp_option(key)
-            if val is not None:
-                if key in pp_kwargs:
-                    self.logger.lraise(f"'{key}' passed but its also in 'pp_options")
-                self.logger.warn(f"Directly passing '{key}' has been deprecated and will eventually be removed"+
-                                 f", please use pp_options['{key}'] instead.")
-                pp_kwargs[key] = val
-            elif key not in pp_kwargs:
-                self.logger.statement(f"setting pp_options['{key}'] to {deft}")
-                pp_kwargs[key] = deft
 
         if not pp_kwargs["use_pp_zones"]:
             # will set up pp for just one
@@ -2992,6 +2978,7 @@ class PstFrom(object):
                     )
         pp_kwargs.update(dict(pp_space=pp_space, pp_locs=pp_locs,
                               zone_array=zone_array))
+
         return pp_kwargs
 
     def _setup_pp_df(
@@ -4132,6 +4119,63 @@ def get_relative_filepath(folder, filename):
     return get_filepath(folder, filename).relative_to(folder)
 
 
+def parse_pp_options_with_defaults(pp_kwargs, threads=10, log=True, logger=None, **depr_kwargs):
+    default_dict = dict(pp_space=10,  # default pp spacing
+                        use_pp_zones=False, # don't setup pp by zone, as default
+                        spatial_reference=None,  # if not passed pstfrom will use class attrib
+                        # factor calc options
+                        try_use_ppu=True,  # default to using ppu
+                        num_threads=threads,  # fallback if num_threads not in pp_kwargs, only used if ppu fails
+                        # factor calc options, incl at run time.
+                        minpts_interp=1,
+                        maxpts_interp=20,
+                        search_radius=1e10,
+                        # ult lims
+                        fill_value=1.0 if log else 0.,
+                        lower_limit=1.0e-30 if log else -1.0e30,
+                        upper_limit=1.0e30
+                        )
+    # for run time options we need to be strict about dtypes
+    default_dtype = dict(# pp_space=10,  # default pp spacing
+                         # use_pp_zones=False, # don't setup pp by zone, as default
+                         # spatial_reference=None,  # if not passed pstfrom will use class attrib
+                         # # factor calc options
+                         # try_use_ppu=True,  # default to using ppu
+                         # num_threads=threads,  # fallback if num_threads not in pp_kwargs, only used if ppu fails
+                         # # factor calc options, incl at run time.
+                         minpts_interp=int,
+                         maxpts_interp=int,
+                         search_radius=float,
+                         # ult lims
+                         fill_value=float,
+                         lower_limit=float,
+                         upper_limit=float)
+
+    # parse deprecated kwargs first
+    for key, val in depr_kwargs.items():
+        if val is not None:
+            if key in pp_kwargs:
+                if logger is not None:
+                    logger.lraise(f"'{key}' passed but its also in 'pp_options")
+            if logger is not None:
+                logger.warn(f"Directly passing '{key}' has been deprecated and will eventually be removed" +
+                            f", please use pp_options['{key}'] instead.")
+            pp_kwargs[key] = val
+
+    # fill defaults
+    for key, val in default_dict.items():
+        if key not in pp_kwargs:
+            if logger is not None:
+                logger.statement(f"'{key}' not set in pp_options, "
+                                 f"Setting to default value: [{val}]")
+            pp_kwargs[key] = val
+
+    for key, typ in default_dtype.items():
+        pp_kwargs[key] = typ(pp_kwargs[key])
+
+    return pp_kwargs
+
+
 def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
                        geostruct,arr_shape,pp_options,zone_array=None,
                       ws = "."):
@@ -4182,7 +4226,7 @@ def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
     config_df = pd.DataFrame(columns=["value"])
     config_df.index.name = "key"
 
-    config_df.loc["pp_filename", "value"] = pp_filename
+    config_df.loc["pp_filename", "value"] = pp_filename  # this might be in pp_options too in which case does this get stomped on?
     config_df.loc["out_filename","value"] = out_filename
     config_df.loc["corrlen_filename", "value"] = corrlen_filename
     config_df.loc["bearing_filename", "value"] = bearing_filename
@@ -4209,7 +4253,7 @@ def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
     keys = list(pp_options.keys())
     keys.sort()
     for k in keys:
-        config_df.loc["k","value"] = pp_options[k]
+        config_df.loc[k,"value"] = pp_options[k]
 
     #config_df.loc["function_call","value"] = fnx_call
     config_df_filename = file_tag + ".config.csv"
@@ -4239,6 +4283,9 @@ def apply_ppu_hyperpars(config_df_filename):
 
     config_df = pd.read_csv(config_df_filename,index_col=0)
     config_dict = config_df["value"].to_dict()
+    vartransform = config_dict.get("vartransform", "none")
+    config_dict = parse_pp_options_with_defaults(config_dict, threads=None, log=vartransform=='log')
+
     out_filename = config_dict["out_filename"]
     #pp_info = pd.read_csv(config_dict["pp_filename"],sep="\s+")
     pp_info = pyemu.pp_utils.pp_file_to_dataframe(config_dict["pp_filename"])
@@ -4247,7 +4294,6 @@ def apply_ppu_hyperpars(config_df_filename):
     bearing = np.loadtxt(config_dict["bearing_filename"])
     aniso = np.loadtxt(config_dict["aniso_filename"])
     zone = np.loadtxt(config_dict["zone_filename"])
-
 
     lib = PestUtilsLib()
     fac_fname = out_filename+".temp.fac"
@@ -4266,13 +4312,16 @@ def apply_ppu_hyperpars(config_df_filename):
             corrlen.flatten(),
             aniso.flatten(),
             bearing.flatten(),
-            config_dict.get("search_dist",1e30),
+            # defaults should be in config_dict -- the fallbacks here should not be hit now
+            config_dict.get("search_dist",config_dict.get("search_radius", 1e10)),
             config_dict.get("maxpts_interp",50),
             config_dict.get("minpts_interp",1),
             fac_fname,
             fac_ftype,
         )
 
+    # this is now filled as a default in config_dict if not in config file,
+    # default value dependent on vartransform (ie. 1 for log 0 for non log)
     noint = config_dict.get("fill_value",pp_info.loc[:, "parval1"].mean())
 
     result = lib.krige_using_file(
@@ -4280,7 +4329,7 @@ def apply_ppu_hyperpars(config_df_filename):
         fac_ftype,
         zone.size,
         int(config_dict.get("krigtype", 1)),
-        config_dict.get("vartransform", "none"),
+        vartransform,
         pp_info["parval1"].values,
         noint,
         noint,
