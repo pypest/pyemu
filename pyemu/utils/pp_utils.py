@@ -1,12 +1,14 @@
 """Pilot point support utilities
 """
+from __future__ import division, print_function
+
 import os
 import copy
 import numpy as np
 import pandas as pd
 import warnings
 
-
+import pyemu
 
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT, IFMT, FFMT, pst_config
@@ -704,3 +706,230 @@ def get_zoned_ppoints_for_vertexgrid(spacing, zone_array, mg, zone_number=None, 
     ppoints = [(p.x, p.y) for p in grid_points if polygon.covers(p) ]
     assert len(ppoints)>0
     return ppoints
+
+
+def parse_pp_options_with_defaults(pp_kwargs, threads=10, log=True, logger=None, **depr_kwargs):
+    default_dict = dict(pp_space=10,  # default pp spacing
+                        use_pp_zones=False, # don't setup pp by zone, as default
+                        spatial_reference=None,  # if not passed pstfrom will use class attrib
+                        # factor calc options
+                        try_use_ppu=True,  # default to using ppu
+                        num_threads=threads,  # fallback if num_threads not in pp_kwargs, only used if ppu fails
+                        # factor calc options, incl at run time.
+                        minpts_interp=1,
+                        maxpts_interp=20,
+                        search_radius=1e10,
+                        # ult lims
+                        fill_value=1.0 if log else 0.,
+                        lower_limit=1.0e-30 if log else -1.0e30,
+                        upper_limit=1.0e30
+                        )
+    # for run time options we need to be strict about dtypes
+    default_dtype = dict(# pp_space=10,  # default pp spacing
+                         # use_pp_zones=False, # don't setup pp by zone, as default
+                         # spatial_reference=None,  # if not passed pstfrom will use class attrib
+                         # # factor calc options
+                         # try_use_ppu=True,  # default to using ppu
+                         # num_threads=threads,  # fallback if num_threads not in pp_kwargs, only used if ppu fails
+                         # # factor calc options, incl at run time.
+                         minpts_interp=int,
+                         maxpts_interp=int,
+                         search_radius=float,
+                         # ult lims
+                         fill_value=float,
+                         lower_limit=float,
+                         upper_limit=float)
+
+    # parse deprecated kwargs first
+    for key, val in depr_kwargs.items():
+        if val is not None:
+            if key in pp_kwargs:
+                if logger is not None:
+                    logger.lraise(f"'{key}' passed but its also in 'pp_options")
+            if logger is not None:
+                logger.warn(f"Directly passing '{key}' has been deprecated and will eventually be removed" +
+                            f", please use pp_options['{key}'] instead.")
+            pp_kwargs[key] = val
+
+    # fill defaults
+    for key, val in default_dict.items():
+        if key not in pp_kwargs:
+            if logger is not None:
+                logger.statement(f"'{key}' not set in pp_options, "
+                                 f"Setting to default value: [{val}]")
+            pp_kwargs[key] = val
+
+    for key, typ in default_dtype.items():
+        pp_kwargs[key] = typ(pp_kwargs[key])
+
+    return pp_kwargs
+
+
+def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
+                       geostruct,arr_shape,pp_options,zone_array=None,
+                      ws = "."):
+    try:
+        from pypestutils.pestutilslib import PestUtilsLib
+    except Exception as e:
+        raise Exception("prep_pp_hyperpars() error importing pypestutils: '{0}'".format(str(e)))
+
+    illegal_chars = [i for i in r"/:*?<>\|"]
+    for i in illegal_chars:
+        if i in file_tag:
+            print("warning: replacing illegal character '{0}' with '-' in file_tag name '{1}'".format(i,file_tag))
+            file_tag = file_tag.replace(i,"-")
+
+    gridinfo_filename = file_tag + ".gridinfo.dat"
+    corrlen_filename = file_tag + ".corrlen.dat"
+    bearing_filename = file_tag + ".bearing.dat"
+    aniso_filename = file_tag + ".aniso.dat"
+    zone_filename = file_tag + ".zone.dat"
+
+    nodes = list(grid_dict.keys())
+    nodes.sort()
+    with open(os.path.join(ws,gridinfo_filename), 'w') as f:
+        f.write("node,x,y\n")
+        for node in nodes:
+            f.write("{0},{1},{2}\n".format(node, grid_dict[node][0], grid_dict[node][1]))
+
+    corrlen = np.zeros(arr_shape) + geostruct.variograms[0].a
+    np.savetxt(os.path.join(ws,corrlen_filename), corrlen, fmt="%20.8E")
+    bearing = np.zeros(arr_shape) + geostruct.variograms[0].bearing
+    np.savetxt(os.path.join(ws,bearing_filename), bearing, fmt="%20.8E")
+    aniso = np.zeros(arr_shape) + geostruct.variograms[0].anisotropy
+    np.savetxt(os.path.join(ws,aniso_filename), aniso, fmt="%20.8E")
+
+    if zone_array is None:
+        zone_array = np.ones(shape,dtype=int)
+    np.savetxt(os.path.join(ws,zone_filename),zone_array,fmt="%5d")
+
+
+    # fnx_call = "pyemu.utils.apply_ppu_hyperpars('{0}','{1}','{2}','{3}','{4}'". \
+    #     format(pp_filename, gridinfo_filename, out_filename, corrlen_filename,
+    #            bearing_filename)
+    # fnx_call += "'{0}',({1},{2}))".format(aniso_filename, arr_shape[0], arr_shape[1])
+
+    # apply_ppu_hyperpars(pp_filename, gridinfo_filename, out_filename, corrlen_filename,
+    #                     bearing_filename, aniso_filename, arr_shape)
+
+    config_df = pd.DataFrame(columns=["value"])
+    config_df.index.name = "key"
+
+    config_df.loc["pp_filename", "value"] = pp_filename  # this might be in pp_options too in which case does this get stomped on?
+    config_df.loc["out_filename","value"] = out_filename
+    config_df.loc["corrlen_filename", "value"] = corrlen_filename
+    config_df.loc["bearing_filename", "value"] = bearing_filename
+    config_df.loc["aniso_filename", "value"] = aniso_filename
+    config_df.loc["gridinfo_filename", "value"] = gridinfo_filename
+    config_df.loc["zone_filename", "value"] = zone_filename
+
+    config_df.loc["vartransform","value"] = geostruct.transform
+    v = geostruct.variograms[0]
+    vartype = 2
+    if isinstance(v, pyemu.geostats.ExpVario):
+        pass
+    elif isinstance(v, pyemu.geostats.SphVario):
+        vartype = 1
+    elif isinstance(v, pyemu.geostats.GauVario):
+        vartype = 3
+    else:
+        raise NotImplementedError("unsupported variogram type: {0}".format(str(type(v))))
+    krigtype = 1  #ordinary
+    config_df.loc["vartype","value"] = vartype
+    config_df.loc["krigtype","value"] = krigtype
+    config_df.loc["shape", "value"] = arr_shape
+
+    keys = list(pp_options.keys())
+    keys.sort()
+    for k in keys:
+        config_df.loc[k,"value"] = pp_options[k]
+
+    #config_df.loc["function_call","value"] = fnx_call
+    config_df_filename = file_tag + ".config.csv"
+    config_df.loc["config_df_filename",:"value"] = config_df_filename
+
+    config_df.to_csv(os.path.join(ws, config_df_filename))
+    # this is just a temp input file needed for testing...
+    #pp_info.to_csv(os.path.join(ws,pp_filename),sep=" ",header=False)
+    pyemu.pp_utils.write_pp_file(os.path.join(ws,pp_filename),pp_info)
+    bd = os.getcwd()
+    os.chdir(ws)
+    try:
+        apply_ppu_hyperpars(config_df_filename)
+    except Exception as e:
+        os.chdir(bd)
+        raise RuntimeError(f"apply_ppu_hyperpars() error: {e}")
+    os.chdir(bd)
+    return config_df
+
+
+def apply_ppu_hyperpars(config_df_filename):
+    try:
+        from pypestutils.pestutilslib import PestUtilsLib
+    except Exception as e:
+        raise Exception("apply_ppu_hyperpars() error importing pypestutils: '{0}'".format(str(e)))
+
+    config_df = pd.read_csv(config_df_filename,index_col=0)
+    config_dict = config_df["value"].to_dict()
+    vartransform = config_dict.get("vartransform", "none")
+    config_dict = parse_pp_options_with_defaults(config_dict, threads=None, log=vartransform=='log')
+
+    out_filename = config_dict["out_filename"]
+    #pp_info = pd.read_csv(config_dict["pp_filename"],sep="\s+")
+    pp_info = pyemu.pp_utils.pp_file_to_dataframe(config_dict["pp_filename"])
+    grid_df = pd.read_csv(config_dict["gridinfo_filename"])
+    corrlen = np.loadtxt(config_dict["corrlen_filename"])
+    bearing = np.loadtxt(config_dict["bearing_filename"])
+    aniso = np.loadtxt(config_dict["aniso_filename"])
+    zone = np.loadtxt(config_dict["zone_filename"])
+
+    lib = PestUtilsLib()
+    fac_fname = out_filename+".temp.fac"
+    if os.path.exists(fac_fname):
+        os.remove(fac_fname)
+    fac_ftype = "text"
+    npts = lib.calc_kriging_factors_2d(
+            pp_info.x.values,
+            pp_info.y.values,
+            pp_info.zone.values,
+            grid_df.x.values.flatten(),
+            grid_df.y.values.flatten(),
+            zone.flatten().astype(int),
+            int(config_dict.get("vartype",1)),
+            int(config_dict.get("krigtype",1)),
+            corrlen.flatten(),
+            aniso.flatten(),
+            bearing.flatten(),
+            # defaults should be in config_dict -- the fallbacks here should not be hit now
+            config_dict.get("search_dist",config_dict.get("search_radius", 1e10)),
+            config_dict.get("maxpts_interp",50),
+            config_dict.get("minpts_interp",1),
+            fac_fname,
+            fac_ftype,
+        )
+
+    # this is now filled as a default in config_dict if not in config file,
+    # default value dependent on vartransform (ie. 1 for log 0 for non log)
+    noint = config_dict.get("fill_value",pp_info.loc[:, "parval1"].mean())
+
+    result = lib.krige_using_file(
+        fac_fname,
+        fac_ftype,
+        zone.size,
+        int(config_dict.get("krigtype", 1)),
+        vartransform,
+        pp_info["parval1"].values,
+        noint,
+        noint,
+    )
+    assert npts == result["icount_interp"]
+    result = result["targval"]
+    #shape = tuple([int(s) for s in config_dict["shape"]])
+    tup_string = config_dict["shape"]
+    shape = tuple(int(x) for x in tup_string[1:-1].split(','))
+    result = result.reshape(shape)
+    np.savetxt(out_filename,result,fmt="%20.8E")
+    os.remove(fac_fname)
+    lib.free_all_memory()
+
+    return result
