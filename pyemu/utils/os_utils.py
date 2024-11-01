@@ -10,6 +10,9 @@ import warnings
 import socket
 import time
 from datetime import datetime
+
+import numpy as np
+
 from ..pyemu_warnings import PyemuWarning
 
 ext = ""
@@ -522,10 +525,29 @@ class NetPack(object):
         self.desc = data[self.desc_idx[0]:self.desc_idx[1]].decode().strip("\\0")
         self.data_pak = data[self.data_idx[0]:]
 
+    def _serialize_data(self,data):
+        if isinstance(data,str):
+            return data.encode()
+        elif isinstance(data,list):
+            return np.array(data).tobytes()
+        elif isinstance(data,np.ndarray):
+            return data.tobytes()
+        else:
+            raise Exception("can't serialize unknown 'data' type {0}".format(data))
+
     def send(self,s,mtype,group,runid,desc,data):
-        #buf = bytearray
-        buf_size = self.header_size
-        #buf.append()
+        buf = bytearray()
+        sdata = self._serialize_data(data) + "\x00".encode()
+        buf_size = self.header_size + len(sdata)
+        buf += buf_size.to_bytes(length=8,byteorder="little")
+        buf += mtype.to_bytes(length=4,byteorder="little")
+        buf += group.to_bytes(length=8, byteorder="little")
+        buf += runid.to_bytes(length=8, byteorder="little")
+        fill_desc = "\x00" * (1001 - len(desc))
+        full_desc = desc + fill_desc
+        buf += full_desc.encode()
+        buf += sdata
+        s.send(buf)
 
     def _check_sec_message(self,recv_sec_message):
         if recv_sec_message != self.sec_message:
@@ -575,7 +597,8 @@ class PyPestWorker(object):
             raise Exception("unexpected net pack type, should be {0}, not {1}".\
                             format(NetPack.netpack_type[4],
                                    NetPack.netpack_type[self.net_pack.mtype]))
-        self.send(self,5,os.getcwd())
+        self.send(mtype=5,group=self.net_pack.group,
+                  runid=self.net_pack.runid,desc="sending cwd",data=os.getcwd())
 
 if __name__ == "__main__":
     host = "localhost"
