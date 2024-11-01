@@ -4,6 +4,7 @@ import os
 import sys
 import platform
 import time
+import struct
 import shutil
 import subprocess as sp
 import multiprocessing as mp
@@ -515,7 +516,7 @@ class NetPack(object):
     #     while total < num_bytes:
     #          data += s.recv()
 
-    def recv(self,s):
+    def recv(self,s,dtype=None):
         recv_sec_message = None
         while True:
             data = s.recv(len(self.sec_message_buf))
@@ -533,28 +534,43 @@ class NetPack(object):
         self.mtype = int.from_bytes(data[self.type_idx[0]:self.type_idx[1]], "little")
         self.group = int.from_bytes(data[self.group_idx[0]:self.group_idx[1]], "little")
         self.runid = int.from_bytes(data[self.runid_idx[0]:self.runid_idx[1]], "little")
-        self.desc = data[self.desc_idx[0]:self.desc_idx[1]].decode()
-        data_len = self.buf_size - self.data_idx[0]
+        self.desc = data[self.desc_idx[0]:self.desc_idx[1]].decode().replace("\x00","")
+        data_len = self.buf_size - self.data_idx[0] - 1
         self.data_pak = None
         if data_len > 0:
-            self.data_pak = s.recv(data_len)
+            self.data_pak = self.deserialize_data(s.recv(data_len),dtype)
         #self.data_pak = data[self.data_idx[0]:]
         print()
 
-    def _serialize_data(self,data):
+    def deserialize_data(self,data,dtype=None):
+        if dtype is not None and dtype in [int,float]:
+            return np.frombuffer(data,dtype=dtype)
+        ddata = np.array(data.decode().lower().replace('\x00',' ').split())
+        if dtype is not None:
+            ddata = ddata.astype(dtype)
+        return ddata
+
+    def serialize_data(self,data):
+
         if isinstance(data,str):
             return data.encode()
         elif isinstance(data,list):
             return np.array(data).tobytes()
         elif isinstance(data,np.ndarray):
             return data.tobytes()
+        elif isinstance(data,int):
+            print("warning: casting int to float to serialize")
+            return struct.pack('d',float(data))
+        elif isinstance(data,float):
+            return struct.pack('d', data)
+
         else:
             raise Exception("can't serialize unknown 'data' type {0}".format(data))
 
     def send(self,s,mtype,group,runid,desc,data):
         buf = bytearray()
         buf += self.sec_message_buf
-        sdata = self._serialize_data(data) + "\x00".encode()
+        sdata = self.serialize_data(data) + "\x00".encode()
         buf_size = self.header_size + len(sdata)
         buf += buf_size.to_bytes(length=8,byteorder="little")
         buf += mtype.to_bytes(length=4,byteorder="little")
@@ -584,6 +600,9 @@ class PyPestWorker(object):
         self.timeout = float(timeout)
         self.net_pack = NetPack(timeout=timeout)
 
+        self.par_names = None
+        self.obs_names = None
+
     def _process_pst(self):
         pass
 
@@ -601,8 +620,8 @@ class PyPestWorker(object):
             except Exception as e:
                 continue
 
-    def recv(self):
-        self.net_pack.recv(self.s)
+    def recv(self,dtype=None):
+        self.net_pack.recv(self.s,dtype=dtype)
         print("recv'd message type:", NetPack.netpack_type[self.net_pack.mtype])
 
 
@@ -623,8 +642,22 @@ class PyPestWorker(object):
         self.send(mtype=5,group=self.net_pack.group,
                   runid=self.net_pack.runid,desc="sending cwd",data=os.getcwd())
 
-        # recv par names
+        # par names
         self.recv()
+        # todo: check revc'd mtype
+        self.par_names = self.net_pack.data_pak.copy()
+
+        # obs nanes
+        self.recv()
+        # todo check recv'd mtype
+        self.obs_names = self.net_pack.data_pak.copy()
+
+        # lin pack request
+        self.recv()
+
+
+        self.send(7,self.net_pack.group,self.net_pack.runid,"fake linpack result",data=1)
+
         print()
 
 
@@ -635,3 +668,5 @@ if __name__ == "__main__":
 
     ppw = PyPestWorker(None,host,port)
     ppw.initialize()
+
+
