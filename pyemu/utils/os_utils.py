@@ -464,3 +464,122 @@ def start_workers(
         ret_val = master_p.returncode
         if ret_val != 0:
             raise Exception("start_workers() master returned non-zero: {0}".format(ret_val))
+
+
+
+class NetPack(object):
+    netpack_type = {
+        0: "UNKN", 1: "OK", 2: "CONFIRM_OK", 3: "READY",
+        4: "REQ_RUNDIR", 5: "RUNDIR", 6: "REQ_LINPACK",
+        7: "LINPACK", 8: "PAR_NAMES", 9: "OBS_NAMES",
+        10: "START_RUN", 11: "RUN_FINISHED", 12: "RUN_FAILED",
+        13: "RUN_KILLED", 14: "TERMINATE", 15: "PING",
+        16: "REQ_KILL", 17: "IO_ERROR", 18: "CORRUPT_MESG",
+        19: "DEBUG_LOOP", 20: "DEBUG_FAIL_FREEZE",
+        21: "START_FILE_WRKR2MSTR", 22: "CONT_FILE_WRKR2MSTR",
+        23: "FINISH_FILE_WRKR2MSTR"}
+    sec_message = [1, 3, 5, 7, 9]
+    def __init__(self):
+        self.header_size = 8 + 4 + 8 + 8 + 1001
+        self.buf_size = None
+        self.buf_idx = (0, 8)
+        self.type_idx = (8, 12)
+        self.group_idx = (12, 20)
+        self.runid_idx = (20, 28)
+        self.desc_idx = (28, 1028)
+        self.data_idx = (1028,None)
+
+        self.buf_size = None
+        self.mtype = None
+        self.group = None
+        self.runid = None
+        self.desc = None
+        self.data_pak = None
+
+    # def recv(self,num_bytes):
+    #     data = bytes()
+    #     total = 0
+    #     bytes_left = num_bytes
+    #     while total < num_bytes:
+    #          data += s.recv()
+
+    def recv(self,s):
+        recv_sec_message = None
+        while True:
+            data = s.recv(5)
+            if len(data) > 0:
+                recv_sec_message = [int(d) for d in data]
+                break
+        self._check_sec_message(recv_sec_message)
+        while True:
+            data = s.recv(self.header_size)
+            if len(data) > 0:
+                break
+        self.buf_size = int.from_bytes(data[self.buf_idx[0]:self.buf_idx[1]], "little")
+        self.mtype = int.from_bytes(data[self.type_idx[0]:self.type_idx[1]], "little")
+        self.group = int.from_bytes(data[self.group_idx[0]:self.group_idx[1]], "little")
+        self.runid = int.from_bytes(data[self.runid_idx[0]:self.runid_idx[1]], "little")
+        self.desc = data[self.desc_idx[0]:self.desc_idx[1]].decode().strip("\\0")
+        self.data_pak = data[self.data_idx[0]:]
+
+    def send(self,s,mtype,group,runid,desc,data):
+        #buf = bytearray
+        buf_size = self.header_size
+        #buf.append()
+
+    def _check_sec_message(self,recv_sec_message):
+        if recv_sec_message != self.sec_message:
+            raise Exception("recv'd security message {0} invalid, should be {1}".\
+                            format(recv_sec_message,self.sec_message))
+
+class PyPestWorker(object):
+
+
+    def __init__(self, pst, host, port):
+        self.host = host
+        self.port = port
+        self._pst_arg = pst
+        self.s = None
+        self.net_pack = NetPack()
+
+    def _process_pst(self):
+        pass
+
+    def connect(self):
+        self.s = None
+        while True:
+            try:
+                self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.s.connect((self.host, self.port))
+                print("-->connected to {0}:{1}".format(self.host,self.port))
+
+                break
+            except ConnectionRefusedError:
+                continue
+            except Exception as e:
+                continue
+
+    def recv(self):
+        self.net_pack.recv(self.s)
+
+    def send(self,mtype,group,runid,desc="",data=0):
+        self.net_pack.send(self.s,mtype,group,runid,desc,data)
+
+    def initialize(self):
+        self.connect()
+
+        #recv initial comms
+        self.recv()
+        print("recv'd message type:",NetPack.netpack_type[self.net_pack.mtype])
+        if self.net_pack.mtype != 4:
+            raise Exception("unexpected net pack type, should be {0}, not {1}".\
+                            format(NetPack.netpack_type[4],
+                                   NetPack.netpack_type[self.net_pack.mtype]))
+        self.send(self,5,os.getcwd())
+
+if __name__ == "__main__":
+    host = "localhost"
+    port = 4004
+
+    ppw = PyPestWorker(None,host,port)
+    ppw.initialize()
