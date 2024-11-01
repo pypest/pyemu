@@ -3,6 +3,7 @@
 import os
 import sys
 import platform
+import time
 import shutil
 import subprocess as sp
 import multiprocessing as mp
@@ -482,7 +483,8 @@ class NetPack(object):
         21: "START_FILE_WRKR2MSTR", 22: "CONT_FILE_WRKR2MSTR",
         23: "FINISH_FILE_WRKR2MSTR"}
     sec_message = [1, 3, 5, 7, 9]
-    def __init__(self):
+
+    def __init__(self,timeout=0.1):
         self.header_size = 8 + 4 + 8 + 8 + 1001
         self.buf_size = None
         self.buf_idx = (0, 8)
@@ -499,6 +501,13 @@ class NetPack(object):
         self.desc = None
         self.data_pak = None
 
+        self.timeout = float(timeout)
+
+        self.sec_message_buf = bytearray()
+        for sm in NetPack.sec_message:
+            self.sec_message_buf += sm.to_bytes(1,byteorder="little")
+
+
     # def recv(self,num_bytes):
     #     data = bytes()
     #     total = 0
@@ -509,21 +518,28 @@ class NetPack(object):
     def recv(self,s):
         recv_sec_message = None
         while True:
-            data = s.recv(5)
+            data = s.recv(len(self.sec_message_buf))
             if len(data) > 0:
                 recv_sec_message = [int(d) for d in data]
                 break
+            time.sleep(self.timeout)
         self._check_sec_message(recv_sec_message)
         while True:
             data = s.recv(self.header_size)
             if len(data) > 0:
                 break
+            time.sleep(self.timeout)
         self.buf_size = int.from_bytes(data[self.buf_idx[0]:self.buf_idx[1]], "little")
         self.mtype = int.from_bytes(data[self.type_idx[0]:self.type_idx[1]], "little")
         self.group = int.from_bytes(data[self.group_idx[0]:self.group_idx[1]], "little")
         self.runid = int.from_bytes(data[self.runid_idx[0]:self.runid_idx[1]], "little")
-        self.desc = data[self.desc_idx[0]:self.desc_idx[1]].decode().strip("\\0")
-        self.data_pak = data[self.data_idx[0]:]
+        self.desc = data[self.desc_idx[0]:self.desc_idx[1]].decode()
+        data_len = self.buf_size - self.data_idx[0]
+        self.data_pak = None
+        if data_len > 0:
+            self.data_pak = s.recv(data_len)
+        #self.data_pak = data[self.data_idx[0]:]
+        print()
 
     def _serialize_data(self,data):
         if isinstance(data,str):
@@ -537,6 +553,7 @@ class NetPack(object):
 
     def send(self,s,mtype,group,runid,desc,data):
         buf = bytearray()
+        buf += self.sec_message_buf
         sdata = self._serialize_data(data) + "\x00".encode()
         buf_size = self.header_size + len(sdata)
         buf += buf_size.to_bytes(length=8,byteorder="little")
@@ -548,6 +565,8 @@ class NetPack(object):
         buf += full_desc.encode()
         buf += sdata
         s.send(buf)
+        print()
+
 
     def _check_sec_message(self,recv_sec_message):
         if recv_sec_message != self.sec_message:
@@ -557,12 +576,13 @@ class NetPack(object):
 class PyPestWorker(object):
 
 
-    def __init__(self, pst, host, port):
+    def __init__(self, pst, host, port, timeout=0.1):
         self.host = host
         self.port = port
         self._pst_arg = pst
         self.s = None
-        self.net_pack = NetPack()
+        self.timeout = float(timeout)
+        self.net_pack = NetPack(timeout=timeout)
 
     def _process_pst(self):
         pass
@@ -574,8 +594,8 @@ class PyPestWorker(object):
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.host, self.port))
                 print("-->connected to {0}:{1}".format(self.host,self.port))
-
                 break
+                time.sleep(self.timeout)
             except ConnectionRefusedError:
                 continue
             except Exception as e:
@@ -583,22 +603,31 @@ class PyPestWorker(object):
 
     def recv(self):
         self.net_pack.recv(self.s)
+        print("recv'd message type:", NetPack.netpack_type[self.net_pack.mtype])
+
 
     def send(self,mtype,group,runid,desc="",data=0):
         self.net_pack.send(self.s,mtype,group,runid,desc,data)
+        print("sent message type:", NetPack.netpack_type[mtype])
 
     def initialize(self):
         self.connect()
 
-        #recv initial comms
+        #request for cwd
         self.recv()
-        print("recv'd message type:",NetPack.netpack_type[self.net_pack.mtype])
+
         if self.net_pack.mtype != 4:
             raise Exception("unexpected net pack type, should be {0}, not {1}".\
                             format(NetPack.netpack_type[4],
                                    NetPack.netpack_type[self.net_pack.mtype]))
         self.send(mtype=5,group=self.net_pack.group,
                   runid=self.net_pack.runid,desc="sending cwd",data=os.getcwd())
+
+        # recv par names
+        self.recv()
+        print()
+
+
 
 if __name__ == "__main__":
     host = "localhost"
