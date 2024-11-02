@@ -16,6 +16,7 @@ from datetime import datetime
 import numpy as np
 
 from ..pyemu_warnings import PyemuWarning
+from ..pst import pst_handler
 
 ext = ""
 bin_path = os.path.join("..", "bin")
@@ -596,6 +597,7 @@ class PyPestWorker(object):
         self.host = host
         self.port = port
         self._pst_arg = pst
+        self._pst = None
         self.s = None
         self.timeout = float(timeout)
         self.net_pack = NetPack(timeout=timeout)
@@ -603,8 +605,17 @@ class PyPestWorker(object):
         self.par_names = None
         self.obs_names = None
 
+        self._process_pst()
+
     def _process_pst(self):
-        pass
+        if isinstance(self._pst_arg,str):
+            self._pst = pst_handler.Pst(self._pst_arg)
+        elif isinstance(self._pst_arg,pst_handler.Pst):
+            self._pst = self._pst_arg
+        else:
+            raise Exception("unrecognized 'pst' arg:{0}".\
+                            format(type(self._pst_arg)))
+
 
     def connect(self):
         self.s = None
