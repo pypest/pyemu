@@ -2099,10 +2099,15 @@ def run_sp_capture_output_test(tmp_path):
     else:
         shell = False
     log_file = os.path.join(tmp_path, "pyemu.log")
-    pyemu.os_utils.run("echo Hello World", 
-                       verbose=False, use_sp=True, 
-                       shell=shell, cwd=tmp_path, logfile=True)
-    
+    pyemu.os_utils.run(
+        "echo Hello World",
+        verbose=False,
+        use_sp=True,
+        shell=shell,
+        cwd=tmp_path,
+        logfile=log_file,
+    )
+
     with open(log_file, 'r') as f:
         content = f.read()
     assert "Hello World" in content

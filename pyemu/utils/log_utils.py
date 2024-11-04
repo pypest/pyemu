@@ -40,7 +40,7 @@ def set_logger(
 def get_logger(
     name: Optional[str] = "pyemu",
     verbose: bool = False,
-    logfile: bool = False,
+    logfile: bool | str = False,
 ) -> logging.Logger:
     """Get a logger instance.
 
@@ -57,13 +57,15 @@ def get_logger(
         return LOGGER
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
-    _toggle_handler(logfile, logger, FILE_HANDLER)
-    _toggle_handler(verbose, logger, STREAM_HANDLER)
-    return logger
 
-
-def _toggle_handler(switch: bool, logger: logging.Logger, handler: logging.Handler):
-    if switch and handler not in logger.handlers:
-        logger.addHandler(handler)
-    if not switch and handler in logger.handlers:
+    for handler in logger.handlers:
         logger.removeHandler(handler)
+    if logfile is True:
+        logger.addHandler(FILE_HANDLER)
+    elif isinstance(logfile, str):
+        logger.addHandler(logging.FileHandler(logfile))
+
+    if verbose:
+        logger.addHandler(STREAM_HANDLER)
+
+    return logger
