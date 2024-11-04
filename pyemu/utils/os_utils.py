@@ -6,6 +6,7 @@ import platform
 import time
 import struct
 import shutil
+import threading
 import subprocess as sp
 import multiprocessing as mp
 import warnings
@@ -14,6 +15,7 @@ import time
 from datetime import datetime
 
 import numpy as np
+import pandas as pd
 
 from ..pyemu_warnings import PyemuWarning
 from ..pst import pst_handler
@@ -637,7 +639,10 @@ class PyPestWorker(object):
 
         self._process_pst()
         self.connect()
-
+        self._lock = threading.Lock()
+        self._send_lock = threading.Lock()
+        self._listen_thread = threading.Thread(target=self.listen,args=(self._lock,self._send_lock))
+        self._listen_thread.start()
 
     def _process_pst(self):
         if isinstance(self._pst_arg,str):
@@ -650,7 +655,7 @@ class PyPestWorker(object):
 
 
     def connect(self):
-        print("trying to connect to {0}:{1}...".format(self.host,self.port))
+        self.message("trying to connect to {0}:{1}...".format(self.host,self.port))
         self.s = None
         c = 0
         while True:
@@ -662,7 +667,7 @@ class PyPestWorker(object):
                     print('')
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.host, self.port))
-                print("-->connected to {0}:{1}".format(self.host,self.port))
+                self.message("connected to {0}:{1}".format(self.host,self.port))
                 break
 
             except ConnectionRefusedError:
@@ -670,18 +675,22 @@ class PyPestWorker(object):
             except Exception as e:
                 continue
 
+    def message(self,msg):
+        print(str(datetime.now())+" : "+msg)
+
+
     def recv(self,dtype=None):
         n = self.net_pack.recv(self.s,dtype=dtype)
         if n > 0:
-            print("recv'd message type:", NetPack.netpack_type[self.net_pack.mtype])
+            self.message("recv'd message type:{0}".format(NetPack.netpack_type[self.net_pack.mtype]))
         return n
 
 
     def send(self,mtype,group,runid,desc="",data=0):
         self.net_pack.send(self.s,mtype,group,runid,desc,data)
-        print("sent message type:", NetPack.netpack_type[mtype])
+        self.message("sent message type:{0}".format(NetPack.netpack_type[mtype]))
 
-    def listen(self):
+    def listen(self,lock=None,send_lock=None):
         self.s.settimeout(self.timeout)
         while True:
             time.sleep(self.timeout)
@@ -690,13 +699,21 @@ class PyPestWorker(object):
             if n > 0:
                 # need to sync here
                 if self.net_pack.mtype == 10:
+                    if lock is not None:
+                        lock.acquire()
                     self.par_values =  self.net_pack.data_pak.copy()
+                    if lock is not None:
+                        lock.release()
 
                 # request cwd
                 elif self.net_pack.mtype == 4:
+                    if self._send_lock is not None:
+                        self._send_lock.acquire()
                     self.send(mtype=5, group=self.net_pack.group,
                               runid=self.net_pack.runid,
                               desc="sending cwd", data=os.getcwd())
+                    if self._send_lock is not None:
+                        self._send_lock.release()
 
                 elif self.net_pack.mtype == 8:
                     self.par_names = self.net_pack.data_pak
@@ -705,45 +722,106 @@ class PyPestWorker(object):
                     self.obs_names = self.net_pack.data_pak
 
                 elif self.net_pack.mtype == 6:
+                    if self._send_lock is not None:
+                        self._send_lock.acquire()
                     self.send(7, self.net_pack.group,
                               self.net_pack.runid,
                               "fake linpack result", data=1)
+                    if self._send_lock is not None:
+                        self._send_lock.release()
 
                 elif self.net_pack.mtype == 15:
+                    if self._send_lock is not None:
+                        self._send_lock.acquire()
                     self.send(15, self.net_pack.group,
                               self.net_pack.runid,
                               "ping back")
+                    if self._send_lock is not None:
+                        self._send_lock.release()
+                else:
+
+                    self.message("WARNING: unsupported request recieved: {0}".format(NetPack.netpack_type[self.net_pack.mtype]))
 
 
+    def get_parameters(self):
+        pars = None
+        while True:
+            self._lock.acquire()
+            if self.par_values is not None:
+                pars = self.par_values
+                self._lock.release()
+                break
+            self._lock.release()
+            time.sleep(self.timeout)
+        if len(pars) != len(self.par_names):
+            raise Exception("len(par vals) {0} != len(par names)".format(len(pars),len(self.par_names)))
+        return pd.Series(data=pars,index=self.par_names)
 
-    # def initialize(self):
-    #     self.connect()
-    #
-    #     #request for cwd
-    #     self.recv()
-    #
-    #     if self.net_pack.mtype != 4:
-    #         raise Exception("unexpected net pack type, should be {0}, not {1}".\
-    #                         format(NetPack.netpack_type[4],
-    #                                NetPack.netpack_type[self.net_pack.mtype]))
-    #     self.send(mtype=5,group=self.net_pack.group,
-    #               runid=self.net_pack.runid,desc="sending cwd",data=os.getcwd())
-    #
-    #     # par names
-    #     self.recv()
-    #     # todo: check revc'd mtype
-    #     self.par_names = self.net_pack.data_pak.copy()
-    #
-    #     # obs nanes
-    #     self.recv()
-    #     # todo check recv'd mtype
-    #     self.obs_names = self.net_pack.data_pak.copy()
-    #
-    #     # lin pack request
-    #     self.recv()
-    #
-    #     self.send(7,self.net_pack.group,self.net_pack.runid,"fake linpack result",data=1)
-    #
+    def send_observations(self,obsvals,parvals=None,request_more_pars=True):
+        if len(obsvals) != len(self.obs_names):
+            raise Exception("len(obs vals) {0} != len(obs names)".format(len(obsvals), len(self.obs_names)))
+        if isinstance(obsvals,np.ndarray):
+            _obsvals = obsvals
+        elif isinstance(obsvals,pd.Series):
+            _obsvals = obsvals.loc[self.obs_names].values
+        elif isinstance(obsvals,list):
+            _obsvals = np.array(obsvals)
+        else:
+            raise Exception("unknown obsvals type {0}".format(type(obsvals)))
+        if np.any(np.isnan(_obsvals)):
+            raise Exception("nans in obsvals")
+
+        if parvals is None:
+            _parvals = self.par_values
+        elif isinstance(parvals,np.ndarray):
+            _parvals = parvals
+        elif isinstance(parvals,pd.Series):
+            _parvals = parvals.loc[self.par_names].values
+        elif isinstance(parvals,list):
+            _parvals = np.array(parvals)
+        else:
+            raise Exception("unknown parvals type {0}".format(type(parvals)))
+        if np.any(np.isnan(_parvals)):
+            raise Exception("nans in parvals")
+
+        #first reset par_values to None
+        self._lock.acquire()
+        self.par_values = None
+        self._lock.release()
+
+        data = np.concatenate((_parvals,_obsvals))
+
+        self._send_lock.acquire()
+        # send the stack obsvals and par vals
+        self.send(11, self.net_pack.group, self.net_pack.runid, self.net_pack.desc, data=data)
+
+        # now send the ready message
+        if request_more_pars:
+            self.send(3,0,0,"ready for next run",data=0)
+        self._send_lock.release()
+
+    def request_more_pars(self):
+        self._send_lock.acquire()
+        self.send(3, 0, 0, "ready for next run", data=0.0)
+        self._send_lock.release()
+
+    def send_failed_run(self,group=None,runid=None,desc="failed"):
+        if group is None:
+            group = self.net_pack.group
+        if runid is None:
+            runid = self.net_pack.runid
+        self._send_lock.acquire()
+        self.send(12, int(group), int(runid), desc, data=0.0)
+        self._send_lock.release()
+
+    def send_killed_run(self,group=None,runid=None,desc="killed"):
+        if group is None:
+            group = self.net_pack.group
+        if runid is None:
+            runid = self.net_pack.runid
+        self._send_lock.acquire()
+        self.send(13, int(group), int(runid), desc, data=0.0)
+        self._send_lock.release()
 
 
 
