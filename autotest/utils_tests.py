@@ -391,6 +391,7 @@ def pp_to_shapefile_test(tmp_path):
     shutil.copy(o_pp_file, pp_file)
     shp_file = os.path.join(tmp_path, "points1.dat.shp")
     pyemu.pp_utils.write_pp_shapfile(pp_file, shp_file)
+    df = pyemu.pp_utils.pilot_points_from_shapefile(shp_file)
 
 
 def write_tpl_test(tmp_path):

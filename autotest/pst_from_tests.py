@@ -5457,6 +5457,160 @@ def test_array_fmt_pst_from(tmp_path):
     arr3 = np.loadtxt(Path(tmp_path, "weird_tmp", "ar3.arr"))
 
 
+def hyperpars_test(setup_freyberg_mf6):
+    from matplotlib import use
+    import matplotlib.pyplot as plt
+    use('qt5agg')
+    pf, sim = setup_freyberg_mf6
+    m = sim.get_model()
+    template_ws = pf.new_d
+
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
+    pp_gs = pyemu.geostats.GeoStruct(variograms=v)
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+
+    xmn = m.modelgrid.xvertices.min()
+    xmx = m.modelgrid.xvertices.max()
+    ymn = m.modelgrid.yvertices.min()
+    ymx = m.modelgrid.yvertices.max()
+
+    numpp = 20
+    xvals = np.random.uniform(xmn, xmx, numpp)
+    yvals = np.random.uniform(ymn, ymx, numpp)
+    pp_locs = pd.DataFrame({"x": xvals, "y": yvals})
+    pp_locs.loc[:, "zone"] = 1
+    pp_locs.loc[:, "name"] = ["pp_{0}".format(i) for i in range(numpp)]
+    pp_locs.loc[:, "parval1"] = 1.0
+
+    # pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
+    # pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
+    # pp_locs.to_csv(os.path.join(template_ws, "pp.csv"))
+    value_v = pyemu.geostats.ExpVario(contribution=1, a=5000, anisotropy=5, bearing=0.0)
+    value_gs = pyemu.geostats.GeoStruct(variograms=value_v)
+    bearing_v = pyemu.geostats.ExpVario(contribution=1, a=10000, anisotropy=3, bearing=90.0)
+    bearing_gs = pyemu.geostats.GeoStruct(variograms=bearing_v)
+    aniso_v = pyemu.geostats.ExpVario(contribution=1, a=10000, anisotropy=3, bearing=45.0)
+    aniso_gs = pyemu.geostats.GeoStruct(variograms=aniso_v)
+    tag = "npf_k_"
+    bnd = [0.1, 10.]
+    lb, ub = bnd[0], bnd[1]
+    arr_files = [f for f in os.listdir(template_ws) if tag in f and f.endswith(".txt")]
+    for i, arr_file in enumerate(arr_files):
+        if 'layer1' not in arr_file:
+            continue
+        ppu_file = arr_file + ".ppu"
+        shutil.copy(os.path.join(template_ws,arr_file), os.path.join(template_ws, ppu_file))
+        tag = arr_file.split('.')[1].replace("_", "-") + "_pp"
+        tagppu = tag+"-ppu"
+        ppdf = pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
+                                 par_name_base=tag,
+                                 pargp=tag, zone_array=ib,
+                                 upper_bound=ub, lower_bound=lb, pp_space=5,
+                                 pp_options={"try_use_ppu": False, "prep_hyperpars": True},
+                                 apply_order=2, geostruct=value_gs)
+
+        pf.add_parameters(filenames=ppu_file, par_type="pilotpoints",
+                          par_name_base=tagppu,
+                          pargp=tagppu, zone_array=ib,
+                          upper_bound=ub, lower_bound=lb, pp_space=5,
+                          pp_options={"try_use_ppu": True, "prep_hyperpars": True},
+                          apply_order=2, geostruct=value_gs)
+
+        tag = arr_file.split('.')[1].replace("_", "-")
+        tagppu = tag+"-ppu"
+        pf.add_observations(arr_file, prefix=tag + "input", obsgp=tag + "input")
+        pf.add_observations(ppu_file, prefix=tagppu + "input", obsgp=tagppu + "input")
+
+        tfiles = [f for f in os.listdir(pf.new_d) if tag in f]
+        afile = [f for f in tfiles if "aniso" in f][0]
+        # pf.add_parameters(afile,par_type="pilotpoints",par_name_base=tag+"aniso",
+        #                   pargp=tag+"aniso",pp_space=5,lower_bound=-1.0,upper_bound=1.0,
+        #                   pp_options={"try_use_ppu":True},apply_order=1,geostruct=aniso_gs,
+        #                   par_style="a",transform="none",initial_value=0.0)
+        pf.add_parameters(afile, par_type="constant", par_name_base=tag + "aniso",
+                          pargp=tag + "aniso", lower_bound=-1.0, upper_bound=1.0,
+                          apply_order=1,
+                          par_style="a", transform="none", initial_value=0.0)
+        pf.add_observations(afile, prefix=tag + "aniso", obsgp=tag + "aniso")
+        bfile = [f for f in tfiles if "bearing" in f][0]
+        pf.add_parameters(bfile, par_type="pilotpoints", par_name_base=tag + "bearing",
+                          pargp=tag + "bearing", pp_space=6, lower_bound=-45, upper_bound=45,
+                          par_style="a", transform="none",
+                          pp_options={"try_use_ppu": True},
+                          apply_order=1, geostruct=bearing_gs)
+        pf.add_observations(bfile, prefix=tag + "bearing", obsgp=tag + "bearing")
+
+    # this is just for local prelim testing
+    # pf.pre_py_cmds.insert(0, "import sys")
+    # pf.pre_py_cmds.insert(1, "sys.path.append(os.path.join('..','..', '..', 'pypestutils'))")
+
+    # add model run command
+    # pf.mod_sys_cmds.append("mf6")
+    # print(pf.mult_files)
+    # print(pf.org_files)
+
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+
+    par = pst.parameter_data
+    apar = par.loc[par.pname.str.contains("aniso"), :]
+    bpar = par.loc[par.pname.str.contains("bearing"), :]
+    basepar = par.loc[par.pargp == "npf-k-layer1_pp", :]
+    testpar = par.loc[par.pargp == "npf-k-layer1_pp-ppu", :]
+    link = testpar.parnme.str.replace('-ppu', '')
+
+    num_reals = 1
+    pe = pf.draw(num_reals, use_specsim=True)
+    par.loc[bpar.parnme,'parval1'] = pe.loc[:, bpar.parnme].values.squeeze()
+    par.loc[testpar.parnme, 'parval1'] = pe.loc[:, link].values.squeeze()
+    par.loc[basepar.parnme, 'parval1'] = pe.loc[:, link].values.squeeze()
+
+    check_apply(pf)
+
+    arr_files = [f for f in os.listdir(template_ws) if tag in f and f.endswith(".txt")]
+    for i, arr_file in enumerate(arr_files):
+        ppu_file = arr_file + ".ppu"
+
+
+
+    obs = pst.observation_data
+    aobs = obs.loc[obs.otype == "arr", :].copy()
+    aobs["i"] = aobs.i.astype(int)
+    aobs["j"] = aobs.j.astype(int)
+    hk0 = aobs.loc[aobs.oname == "npf-k-layer1input", :].copy()
+    bearing0 = aobs.loc[aobs.oname == "npf-k-layer1bearing", :].copy()
+    aniso0 = aobs.loc[aobs.oname == "npf-k-layer1aniso", :].copy()
+
+    fig, axes = plt.subplots(1, 3, figsize=(10, 5))
+    nrow = hk0.i.max() + 1
+    ncol = hk0.j.max() + 1
+    for ax, name, df in zip(axes, ["aniso", "bearing", "input"], [aniso0, bearing0, hk0]):
+        arr = np.zeros((nrow, ncol))
+        arr[df.i, df.j] = pst.res.loc[df.obsnme, "modelled"].values
+        if name == "input":
+            arr = np.log10(arr)
+        cb = ax.imshow(arr)
+        plt.colorbar(cb, ax=ax)
+        ax.set_title(name, loc="left")
+    plt.tight_layout()
+    plt.savefig("hyper.pdf")
+    plt.close(fig)
+
+    pst.pestpp_options["ies_par_en"] = "prior.jcb"
+    pst.control_data.noptmax = -1
+    pst.write(os.path.join(template_ws, "freyberg.pst"))
+
+    # pyemu.os_utils.run("{0} freyberg.pst".format("pestpp-glm"),cwd=template_ws)
+    m_d = "master_ies"
+    port = _get_port()
+    print(f"Running ies on port: {port}")
+    pyemu.os_utils.start_workers(template_ws, ies_exe_path, "freyberg.pst", num_workers=5,
+                                 worker_root=tmp_path,
+                                 master_dir=m_d, port=port)
+
+
+
 def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     import numpy as np
     import pandas as pd
@@ -5464,6 +5618,7 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     import sys
     import os
     import matplotlib.pyplot as plt
+
     import pyemu
     
     import flopy
@@ -6072,17 +6227,17 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")
-    #mf6_freyberg_ppu_hyperpars_invest(".")
-    mf6_freyberg_ppu_hyperpars_thresh_invest(".")
+    mf6_freyberg_ppu_hyperpars_invest(".")
+    # mf6_freyberg_ppu_hyperpars_thresh_invest(".")
     #while True:
     #    mf6_freyberg_thresh_test(".")
-    #plot_thresh("master_thresh_nonstat")
+    plot_thresh("master_thresh_nonstat")
     #mf6_freyberg_thresh_test(".")
     #plot_thresh("master_thresh_nonstat")
     #plot_thresh("master_thresh_nonstat_nim")
 
     # invest()
-    #test_add_array_parameters_pps_grid()
+    # test_add_array_parameters_pps_grid()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
     #mf6_freyberg_test(os.path.abspath("."))
