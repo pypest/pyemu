@@ -6078,7 +6078,7 @@ if __name__ == "__main__":
     #    mf6_freyberg_thresh_test(".")
     #plot_thresh("master_thresh_nonstat")
     #mf6_freyberg_thresh_test(".")
-    #plot_thresh("master_thresh_nonstat")
+    plot_thresh("master_thresh_nonstat")
     #plot_thresh("master_thresh_nonstat_nim")
 
     # invest()
