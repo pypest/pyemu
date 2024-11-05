@@ -23,3 +23,4 @@ dependencies:
   - modflow-devtools
   - scikit-learn
   - pip
+  - ffmpeg

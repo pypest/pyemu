@@ -3920,8 +3920,10 @@ def apply_threshold_pars(csv_file):
     thresarr_file = csv_file.replace("props.csv","arr.dat")
     tarr = np.loadtxt(thresarr_file)
     if np.any(tarr < 0):
-        print(tarr)
-        raise Exception("negatives in thresholding array {0}".format(thresarr_file))
+        tmin = tarr.min()
+        tarr += tmin + 1
+        #print(tarr)
+        #raise Exception("negatives in thresholding array {0}".format(thresarr_file))
     #norm tarr
     tarr = (tarr - tarr.min()) / tarr.max()
     orgarr_file = csv_file.replace(".threshprops.csv","")
