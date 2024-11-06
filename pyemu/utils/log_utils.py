@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 FILE_HANDLER = logging.FileHandler("pyemu.log", delay=True)
 STREAM_HANDLER = logging.StreamHandler(sys.stdout)
@@ -40,7 +40,7 @@ def set_logger(
 def get_logger(
     name: Optional[str] = "pyemu",
     verbose: bool = False,
-    logfile: bool | str = False,
+    logfile: Union[bool , str] = False,
 ) -> logging.Logger:
     """Get a logger instance.
 
