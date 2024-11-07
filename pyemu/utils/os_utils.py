@@ -15,9 +15,9 @@ from . import log_utils
 
 ext = ""
 bin_path = os.path.join("..", "bin")
-if "linux" in platform.platform().lower():
+if "linux" in platform.system().lower():
     bin_path = os.path.join(bin_path, "linux")
-elif "darwin" in platform.platform().lower():
+elif "darwin" in platform.system().lower():
     bin_path = os.path.join(bin_path, "mac")
 else:
     bin_path = os.path.join(bin_path, "win")
