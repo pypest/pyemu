@@ -5,6 +5,7 @@ on:
     - cron: '0 8 * * *' # run at 8 AM UTC (12 AM PST, 8 PM NZST)
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   pyemuCI:
@@ -15,12 +16,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest] # , macos-latest] 
-        python-version: [3.8, 3.9, "3.10", "3.11", "3.12"]
+        python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
         run-type: [std]
         test-path: ["."]
         include:
           - os: macos-latest
-            python-version: 3.9
+            python-version: "3.11"
 
     steps:
     - name: Checkout repo
@@ -42,6 +43,52 @@ jobs:
         cache-environment: true
         cache-environment-key: environment-${{ steps.date.outputs.date }}
         cache-downloads-key: downloads-${{ steps.date.outputs.date }}
+
+    - name: Checkout pypestutils
+      uses:  actions/checkout@v4
+      with:
+        repository: pypest/pypestutils
+        ref: develop
+        path: pypestutils
+
+#    - name: Install MinGW-w64 tools (Windows)
+#      if: runner.os == 'Windows'
+#      uses: msys2/setup-msys2@v2
+#      with:
+#        msystem: MINGW64
+#        path-type: inherit
+##        install: >-
+##          mingw-w64-x86_64-gcc-fortran
+##          mingw-w64-x86_64-lapack
+##          mingw-w64-x86_64-meson
+##          mingw-w64-x86_64-ninja
+
+    - name: Install meson and gfortran (for ppu)
+      shell: bash -l {0}
+      run: |
+        micromamba install meson gfortran
+
+    - name: Build pypestutils (Windows)
+      if: runner.os == 'Windows'
+      shell: bash -l {0}
+      working-directory: pypestutils
+      env:
+        LDFLAGS: -static-libgcc -static-libgfortran -static-libquadmath -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive
+      run: |
+        scripts/build_lib.sh
+
+    - name: Build pypestutils (non-Windows)
+      if: runner.os != 'Windows'
+      shell: bash -l {0}
+      working-directory: pypestutils
+      run: |
+        scripts/build_lib.sh
+
+    - name: Install pypestutils
+      shell: bash -l {0}
+      working-directory: pypestutils
+      run: |
+        pip install -e .
 
     - name: Install pyemu
       shell: bash -l {0}
@@ -76,7 +123,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Test Notebooks
-      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.9 }}
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11 }}
       shell: bash -l {0}
       working-directory: ./examples
       run: |

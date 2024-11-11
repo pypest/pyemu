@@ -1770,17 +1770,39 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
             lambda x: os.path.join(*x.replace("\\","/").split("/"))
             if isinstance(x,str) else x
         )
-    arr_pars = df.loc[df.index_cols.isna()].copy()
-    list_pars = df.loc[df.index_cols.notna()].copy()
-    # extract lists from string in input df
-    list_pars["index_cols"] = list_pars.index_cols.apply(literal_eval)
-    list_pars["use_cols"] = list_pars.use_cols.apply(literal_eval)
-    list_pars["lower_bound"] = list_pars.lower_bound.apply(literal_eval)
-    list_pars["upper_bound"] = list_pars.upper_bound.apply(literal_eval)
+    if "apply_order" in df.columns:
+        df["apply_order"] = df.apply_order.astype(float)
+        uapply_values = df.apply_order.unique()
+        uapply_values.sort()
+    else:
+        df["apply_order"] = 999
+        uapply_values = [999]
+    for apply_value in uapply_values:
+        ddf = df.loc[df.apply_order==apply_value,:].copy()
+        assert ddf.shape[0] > 0
+        arr_pars = ddf.loc[ddf.index_cols.isna()].copy()
+        list_pars = ddf.loc[ddf.index_cols.notna()].copy()
+        # extract lists from string in input df
+        list_pars["index_cols"] = list_pars.index_cols.apply(literal_eval)
+        list_pars["use_cols"] = list_pars.use_cols.apply(literal_eval)
+        list_pars["lower_bound"] = list_pars.lower_bound.apply(literal_eval)
+        list_pars["upper_bound"] = list_pars.upper_bound.apply(literal_eval)
 
-    # TODO check use_cols is always present
-    apply_genericlist_pars(list_pars, chunk_len=chunk_len)
-    apply_array_pars(arr_pars, chunk_len=chunk_len)
+        if "pre_apply_function" in ddf.columns:
+            calls = ddf.pre_apply_function.dropna()
+            for call in calls:
+                print("...evaluting pre-apply function '{0}'".format(call))
+                eval(call)
+
+        # TODO check use_cols is always present
+        apply_genericlist_pars(list_pars, chunk_len=chunk_len)
+        apply_array_pars(arr_pars, chunk_len=chunk_len)
+
+        if "post_apply_function" in ddf.columns:
+            calls = ddf.post_apply_function.dropna()
+            for call in calls:
+                print("...evaluting post-apply function '{0}'".format(call))
+                eval(call)
 
 
 def _process_chunk_fac2real(chunk, i):
@@ -3842,7 +3864,14 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
                         format(len(cat_dict)))
 
     prop_tags,prop_vals,fill_vals = [],[],[]
-    for key,(proportion,fill_val) in cat_dict.items():
+    #print(cat_dict[1])
+    #for key,(proportion,fill_val) in cat_dict.items():
+    keys = list(cat_dict.keys())
+    keys.sort()
+    for key in keys:
+        proportion = cat_dict[key][0]
+        fill_val = cat_dict[key][1]
+
         if int(key) not in cat_dict:
             raise Exception("integer type of key '{0}' not found in target_proportions_dict".format(key))
         prop_tags.append(int(key))
@@ -3864,10 +3893,16 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
     csv_file = orgarr_file+".threshprops.csv"
     df.to_csv(csv_file,index=False)
 
+
     # test that it seems to be working
+    rel_csv_file = csv_file
+    
+    rel_csv_file = os.path.relpath(csv_file,start=testing_workspace)
     bd = os.getcwd()
     os.chdir(testing_workspace)
-    apply_threshold_pars(os.path.split(csv_file)[1])
+
+    #apply_threshold_pars(os.path.split(csv_file)[1])
+    apply_threshold_pars(rel_csv_file)
     os.chdir(bd)
     return thresharr_file,csv_file
 
@@ -3885,8 +3920,10 @@ def apply_threshold_pars(csv_file):
     thresarr_file = csv_file.replace("props.csv","arr.dat")
     tarr = np.loadtxt(thresarr_file)
     if np.any(tarr < 0):
-        print(tarr)
-        raise Exception("negatives in thresholding array {0}".format(thresarr_file))
+        tmin = tarr.min()
+        tarr += tmin + 1
+        #print(tarr)
+        #raise Exception("negatives in thresholding array {0}".format(thresarr_file))
     #norm tarr
     tarr = (tarr - tarr.min()) / tarr.max()
     orgarr_file = csv_file.replace(".threshprops.csv","")
@@ -3911,18 +3948,23 @@ def apply_threshold_pars(csv_file):
     target_prop = tvals[0]
 
     tol = 1.0e-10
-    if tarr.std() < tol:
+    if tarr.std() < 1e-5:
+
         print("WARNING: thresholding array {0} has very low standard deviation".format(thresarr_file))
         print("         using a homogenous array with first category fill value {0}".format(tfill[0]))
 
         farr = np.zeros_like(tarr) + tfill[0]
         if iarr is not None:
-            farr[iarr == 0] = -1.0e+30
-            tarr[iarr == 0] = -1.0e+30
-        df.loc[tcat[0], "threshold"] = tarr.mean()
-        df.loc[tcat[1], "threshold"] = tarr.mean()
+            farr[iarr == 0] = np.nan
+            tarr[iarr == 0] = np.nan
+        df.loc[tcat[0], "threshold"] = np.nanmean(tarr)
+        df.loc[tcat[1], "threshold"] = np.nanmean(tarr)
         df.loc[tcat[0], "proportion"] = 1
         df.loc[tcat[1], "proportion"] = 0
+
+        if iarr is not None:
+            farr[iarr == 0] = -1e30
+            tarr[iarr == 0] = -1e30
 
         df.to_csv(csv_file.replace(".csv", "_results.csv"))
         np.savetxt(orgarr_file, farr, fmt="%15.6E")
@@ -3934,8 +3976,8 @@ def apply_threshold_pars(csv_file):
 
     # a classic:
     gr = (np.sqrt(5.) + 1.) / 2.
-    a = tarr.min()
-    b = tarr.max()
+    a = np.nanmin(tarr)
+    b = np.nanmax(tarr)
     c = b - ((b - a) / gr)
     d = a + ((b - a) / gr)
 
@@ -3944,7 +3986,7 @@ def apply_threshold_pars(csv_file):
     if iarr is not None:
 
         # this keeps inact from interfering with calcs later...
-        tarr[iarr == 0] = 1.0e+30
+        tarr[iarr == 0] = np.nan
         tiarr = iarr.copy()
         tiarr[tiarr <= 0] = 0
         tiarr[tiarr > 0] = 1
@@ -3985,8 +4027,8 @@ def apply_threshold_pars(csv_file):
     tarr[tarr <= thresh] = tcat[1]
 
     if iarr is not None:
-        farr[iarr==0] = -1.0e+30
-        tarr[iarr == 0] = -1.0e+30
+        farr[iarr==0] = -1e+30
+        tarr[iarr==0] = -1e+30
     df.loc[tcat[0],"threshold"] = thresh
     df.loc[tcat[1], "threshold"] = 1.0 - thresh
     df.loc[tcat[0], "proportion"] = prop
