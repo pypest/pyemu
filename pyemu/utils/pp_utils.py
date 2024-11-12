@@ -229,8 +229,9 @@ def setup_pilotpoints_grid(
 
             else:
                 # cycle through rows and cols
-                for i in range(start_row, ib.shape[0] - start_row, every_n_cell):
-                    for j in range(start_col, ib.shape[1] - start_col, every_n_cell):
+                # allow to run closer to outside edge rather than leaving a gap
+                for i in range(start_row, ib.shape[0] - start_row//2, every_n_cell):
+                    for j in range(start_col, ib.shape[1] - start_col//2, every_n_cell):
                         # skip if this is an inactive cell
                         if ib[i, j] <= 0:  # this will account for MF6 style ibound as well
                             continue
