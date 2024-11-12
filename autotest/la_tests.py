@@ -554,7 +554,7 @@ def ends_freyberg_dev():
     ends = pyemu.EnDS(pst=pst_name, ensemble=oe_name)
     cov = pyemu.Cov.from_observation_data(pst)
     cov.to_uncfile(os.path.join(test_d, "obs.unc"), covmat_file=None)
-    cov.to_coo(os.path.join(test_d,"cov.jcb"))
+    cov.to_binary(os.path.join(test_d,"cov.jcb"))
     cov.to_ascii(os.path.join(test_d, "cov.mat"))
 
     ends = pyemu.EnDS(pst=pst, ensemble=oe,obscov=cov)
@@ -599,7 +599,7 @@ def ends_freyberg_test(tmp_path):
     ends = pyemu.EnDS(pst=pst_name, sim_ensemble=oe_name,predictions=predictions)
     cov = pyemu.Cov.from_observation_data(pst)
     cov.to_uncfile(os.path.join(test_d, "obs.unc"), covmat_file=None)
-    cov.to_coo(os.path.join(test_d, "cov.jcb"))
+    cov.to_binary(os.path.join(test_d, "cov.jcb"))
     cov.to_ascii(os.path.join(test_d, "cov.mat"))
 
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe, obscov=cov,predictions=predictions)
