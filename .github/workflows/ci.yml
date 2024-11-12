@@ -22,7 +22,6 @@ jobs:
         include:
           - os: macos-latest
             python-version: "3.11"
-
     steps:
     - name: Checkout repo
       uses:  actions/checkout@v4 # checksout this repo
