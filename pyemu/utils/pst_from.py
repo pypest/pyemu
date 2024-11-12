@@ -1836,7 +1836,6 @@ class PstFrom(object):
         comment_char=None,
         par_style="multiplier",
         initial_value=None,
-        prep_pp_hyperpars=False,
         pp_options=None,
         apply_order=999,
         apply_function=None
@@ -1899,24 +1898,9 @@ class PstFrom(object):
                 using multiple `add_parameters()` calls (e.g. temporal pars)
                 with common geostructs.
             pp_space (`float`, `int`,`str` or `pd.DataFrame`): Spatial pilot point information.
-
-                If `float` or `int`, AND `spatial_reference` is of type VertexGrid : it is the spacing in model length
-                units between pilot points.
-
-                If `int` : it is the spacing in rows and cols of where to place pilot points.
-
-                If `pd.DataFrame` : then this arg is treated as a prefined set of pilot points
-                and in this case, the dataframe must have "name", "x", "y", and optionally "zone" columns.
-
-                If `str` : then an attempt is made to load a dataframe from a csv file (if `pp_space` ends with ".csv"),
-                shapefile (if `pp_space` ends with ".shp") or from a pilot points file.
-
-                If `pp_space` is None : an integer spacing of 10 is used.  Default is None
+                DEPRECATED : use pp_options['pp_space'] instead.
             use_pp_zones (`bool`): a flag to use the greater-than-zero values
-                in the zone_array as pilot point zones.
-                If False, zone_array values greater than zero are treated as a
-                single zone.  This argument is only used if `pp_space` is None
-                or `int`. Default is False.
+                DEPRECATED : use pp_options['use_pp_zones'] instead.
             num_eig_kl: TODO - impliment with KL pars
             spatial_reference (`pyemu.helpers.SpatialReference`): If different
                 spatial reference required for pilotpoint setup.
@@ -1956,11 +1940,42 @@ class PstFrom(object):
                 input file directly.  Default is "multiplier".
             initial_value (`float`): the value to set for the `parval1` value in the control file
                 Default is 1.0
-            pp_options (`dict`): various options to control pilot point options.  Also includes
-                 `prep_hyperpars`, a `bool` flag to setup and use pilot point hyper parameters
-                (ie anisotropy, bearing, "a") with `PyPestUtils`, and `try_use_ppu`, a flag to
-                (attempt) to use `PyPestUtils` to calculate the kriging factors instead of the
-                pyemu geostats slowness.  Only used if par type is pilot points.
+            pp_options (`dict`): Various options to control pilot point options.
+
+                Can include:
+
+                * `try_use_ppu` (`bool`) : Flag to attempt to use `PyPestUtils` library to setup and apply pilot points.
+                Recommended but requires pypestutils in build environment (and forward run env).
+                (try `conda install pypestutils` or `pip install pypestutils`)
+
+                * `pp_space` (multiple) : Spatial pilot point information.
+
+                If `pp_space` is `float` or `int` type, AND `spatial_reference` is of type VertexGrid :
+                    it is the spacing in model length units between pilot points.
+
+                If `pp_space` is `int` type: it is the spacing in rows and cols of where to place pilot points.
+
+                If `pp_space` is `pd.DataFrame` type: then this arg is treated as a prefined set of pilot points
+                and in this case, the dataframe must have "name", "x", "y", and optionally "zone" columns.
+
+                If `pp_space` is `str` or path-like: then an attempt is made to load a dataframe from a csv file
+                    (if `pp_space` ends with ".csv"), shapefile (if `pp_space` ends with ".shp") or from a pilot points
+                    file.
+
+                If `pp_space` is None : an integer spacing of 10 is used.  Default is None
+
+                * `use_pp_zones` (`bool`) : A flag to use the greater-than-zero values in the `zone_array` as pilot point
+                zones. If False: zone_array values greater than zero are treated as a single zone.
+                This argument is only used if `pp_space` is None or `int`. Default is False.
+
+                * `spatial_reference` (`pyemu.helpers.SpatialReference`): If different
+                spatial reference required for pilot point setup. If None spatial reference passed to `PstFrom()`
+                will be used for pilot points
+
+                * `prep_hyperpars` (`bool`) : Flag to setup and use pilot point hyper parameters.
+                (ie anisotropy, bearing, "a") with `PyPestUtils`. Only functions if using `PyPestUtils` (i.e.
+                `try_use_ppu` is True and pypestutils is successfully located).
+
             apply_order (`int`): the optional order to process this set of parameters at runtime.
                 Default is 999.
             apply_function (`str`): a python function to call during the apply process at runtime.
@@ -2361,8 +2376,6 @@ class PstFrom(object):
             }:
                 from pyemu.utils import pp_utils
                 # setup pilotpoint style pars
-                pppars = True  # for use later
-
                 if par_style == "d":  # not currently supporting direct
                     self.logger.lraise(
                         "pilot points not supported for 'direct' par_style"
@@ -2877,6 +2890,22 @@ class PstFrom(object):
             # zone (all non zero) -- for active domain...
             zone_array[zone_array > 0] = 1  # so can set all
             # gt-zero to 1
+        use_ppu = pp_kwargs.get('try_use_ppu', True)
+        hyper = pp_kwargs.get('prep_hyperpars', False)
+        if hyper:
+            if not use_ppu:
+                self.logger.warn("`prep_hyperpars` requested but `try_use_ppu` set to False.\n"
+                                 "Setting `try_use_ppu` to True and testing import")
+                use_ppu = True
+        if use_ppu:
+            try:
+                import pypestutils as ppu
+            except ImportError as e:
+                if hyper:
+                    raise ImportError(f"`prep_hyperpars` needs  pypestutils : {e}")
+                else:
+                    self.logger.warn("`use_ppu` requested but failed to import\n"
+                                     "falling back to pyemu pp methods")
 
         # extra check for spatial ref
         if pp_kwargs.get('spatial_reference', None) is None:

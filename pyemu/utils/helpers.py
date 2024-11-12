@@ -1749,7 +1749,7 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
     Args:
         arr_par_file (str):
         chunk_len (`int`): the number of files to process per multiprocessing
-            chunk in appl_array_pars().  default is 50.
+            chunk in apply_array_pars().  default is 50.
 
     Returns:
 
@@ -1791,7 +1791,7 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
         if "pre_apply_function" in ddf.columns:
             calls = ddf.pre_apply_function.dropna()
             for call in calls:
-                print("...evaluting pre-apply function '{0}'".format(call))
+                print("...evaluating pre-apply function '{0}'".format(call))
                 eval(call)
 
         # TODO check use_cols is always present
@@ -1801,7 +1801,7 @@ def apply_list_and_array_pars(arr_par_file="mult2model_info.csv", chunk_len=50):
         if "post_apply_function" in ddf.columns:
             calls = ddf.post_apply_function.dropna()
             for call in calls:
-                print("...evaluting post-apply function '{0}'".format(call))
+                print("...evaluating post-apply function '{0}'".format(call))
                 eval(call)
 
 
@@ -2003,14 +2003,6 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     print("number of chunks to process:", len(chunks))
     if len(chunks) == 1:
         _process_chunk_array_files(chunks[0], 0, df)
-    # procs = []
-    # for chunk in chunks:  # now only spawn processor for each chunk
-    #     p = mp.Process(target=_process_chunk_model_files, args=[chunk, df])
-    #     p.start()
-    #     procs.append(p)
-    # for p in procs:
-    #     r = p.get(False)
-    #     p.join()
     else:
         with mp.get_context("spawn").Pool(
                 processes=min(mp.cpu_count(), 60)) as pool:

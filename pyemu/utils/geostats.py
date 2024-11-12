@@ -988,9 +988,8 @@ class OrdinaryKrige(object):
             
             assert len(self.geostruct.variograms) == 1
             v = self.geostruct.variograms[0]
-            vartype = 2
             if isinstance(v,ExpVario):
-                pass
+                vartype = 2
             elif isinstance(v,SphVario):
                 vartype = 1
             elif isinstance(v, GauVario):
