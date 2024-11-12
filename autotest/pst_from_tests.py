@@ -14,10 +14,10 @@ ext = ''
 local_bins = False  # change if wanting to test with local binary exes
 if local_bins:
     bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.platform().lower():
+    if "linux" in platform.system().lower():
         pass
         bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.platform().lower() or 'macos' in platform.platform().lower():
+    elif "darwin" in platform.system().lower():
         pass
         bin_path = os.path.join(bin_path, "mac")
     else:
@@ -25,7 +25,7 @@ if local_bins:
         ext = '.exe'
 else:
     bin_path = ''
-    if "windows" in platform.platform().lower():
+    if "windows" in platform.system().lower():
         ext = '.exe'
 
 mf_exe_path = os.path.join(bin_path, "mfnwt")
@@ -205,217 +205,211 @@ def freyberg_test(tmp_path):
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
 
-    bd = Path.cwd()
     os.chdir(tmp_path)
 
     nam_file = "freyberg.nam"
-    try:
-        org_model_ws = tmp_model_ws.relative_to(tmp_path)
+    org_model_ws = tmp_model_ws.relative_to(tmp_path)
 
-        m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws,
-                                       check=False, forgive=False,
-                                       exe_name=mf_exe_path)
-        flopy.modflow.ModflowRiv(m, stress_period_data={
-            0: [[0, 0, 0, m.dis.top.array[0, 0], 1.0, m.dis.botm.array[0, 0, 0]],
-                [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
-                [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]]]})
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws,
+                                   check=False, forgive=False,
+                                   exe_name=mf_exe_path)
+    flopy.modflow.ModflowRiv(m, stress_period_data={
+        0: [[0, 0, 0, m.dis.top.array[0, 0], 1.0, m.dis.botm.array[0, 0, 0]],
+            [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
+            [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]]]})
 
-        m.external_path = "."
-        m.write_input()
-        print("{0} {1}".format(mf_exe_path, m.name + ".nam"), org_model_ws)
-        os_utils.run("{0} {1}".format(mf_exe_path, m.name + ".nam"),
-                     cwd=org_model_ws)
-        # hds_kperk = []
-        # for k in range(m.nlay):
-        #     for kper in range(m.nper):
-        #         hds_kperk.append([kper, k])
+    m.external_path = "."
+    m.write_input()
+    print("{0} {1}".format(mf_exe_path, m.name + ".nam"), org_model_ws)
+    os_utils.run("{0} {1}".format(mf_exe_path, m.name + ".nam"),
+                 cwd=org_model_ws)
+    # hds_kperk = []
+    # for k in range(m.nlay):
+    #     for kper in range(m.nper):
+    #         hds_kperk.append([kper, k])
 
-        #hds_runline, df = pyemu.gw_utils.setup_hds_obs(
-        #    os.path.join(org_model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
-        #    prefix="hds", include_path=False, precision="double")
-        #pyemu.gw_utils.apply_hds_obs(os.path.join(org_model_ws, f"{m.name}.hds"),precision="double")
-        
+    #hds_runline, df = pyemu.gw_utils.setup_hds_obs(
+    #    os.path.join(org_model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
+    #    prefix="hds", include_path=False, precision="double")
+    #pyemu.gw_utils.apply_hds_obs(os.path.join(org_model_ws, f"{m.name}.hds"),precision="double")
 
-        sfo = flopy.utils.SfrFile(os.path.join(m.model_ws, 'freyberg.sfr.out'))
-        sfodf = sfo.get_dataframe()
-        sfodf[['kstp', 'kper']] = pd.DataFrame(sfodf.kstpkper.to_list(),
-                                               index=sfodf.index)
-        sfodf = sfodf.drop('kstpkper', axis=1)
-        # just adding a bit of header in for test purposes
-        sfo_pp_file = os.path.join(m.model_ws, 'freyberg.sfo.dat')
-        with open(sfo_pp_file, 'w') as fp:
-            fp.writelines(["This is a post processed sfr output file\n",
-                          "Processed into tabular form using the lines:\n",
-                          "sfo = flopy.utils.SfrFile('freyberg.sfr.out')\n",
-                          "sfo.get_dataframe().to_csv('freyberg.sfo.dat')\n"])
-            sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx', lineterminator='\n')
-        sfodf.sort_index(axis=1).to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
-                     index_label='idx',lineterminator='\n')
-        template_ws = "new_temp"
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
 
-        # sr0 = m.sr
-        sr = pyemu.helpers.SpatialReference.from_namfile(
-            os.path.join(m.model_ws, m.namefile),
-            delr=m.dis.delr, delc=m.dis.delc)
-        # set up PstFrom object
-        pf = PstFrom(original_d=org_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False)
-        # obs
-        #   using tabular style model output
-        #   (generated by pyemu.gw_utils.setup_hds_obs())
-        f, fdf = _gen_dummy_obs_file(pf.new_d)
-        pf.add_observations(f, index_cols='idx', use_cols='yes')
+    sfo = flopy.utils.SfrFile(os.path.join(m.model_ws, 'freyberg.sfr.out'))
+    sfodf = sfo.get_dataframe()
+    sfodf[['kstp', 'kper']] = pd.DataFrame(sfodf.kstpkper.to_list(),
+                                           index=sfodf.index)
+    sfodf = sfodf.drop('kstpkper', axis=1)
+    # just adding a bit of header in for test purposes
+    sfo_pp_file = os.path.join(m.model_ws, 'freyberg.sfo.dat')
+    with open(sfo_pp_file, 'w') as fp:
+        fp.writelines(["This is a post processed sfr output file\n",
+                      "Processed into tabular form using the lines:\n",
+                      "sfo = flopy.utils.SfrFile('freyberg.sfr.out')\n",
+                      "sfo.get_dataframe().to_csv('freyberg.sfo.dat')\n"])
+        sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx', lineterminator='\n')
+    sfodf.sort_index(axis=1).to_csv(os.path.join(m.model_ws, 'freyberg.sfo.csv'),
+                 index_label='idx',lineterminator='\n')
+    template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+
+    # sr0 = m.sr
+    sr = pyemu.helpers.SpatialReference.from_namfile(
+        os.path.join(m.model_ws, m.namefile),
+        delr=m.dis.delr, delc=m.dis.delc)
+    # set up PstFrom object
+    pf = PstFrom(original_d=org_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False)
+    # obs
+    #   using tabular style model output
+    #   (generated by pyemu.gw_utils.setup_hds_obs())
+    f, fdf = _gen_dummy_obs_file(pf.new_d)
+    pf.add_observations(f, index_cols='idx', use_cols='yes')
+    pf.add_py_function(__file__, '_gen_dummy_obs_file()',
+                       is_pre_cmd=False)
+    #pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
+    #                    index_cols='obsnme', use_cols='obsval', prefix='hds')
+    #   using the ins file generated by pyemu.gw_utils.setup_hds_obs()
+    #pf.add_observations_from_ins(ins_file='freyberg.hds.dat.ins')
+    #pf.post_py_cmds.append(hds_runline)
+    pf.tmp_files.append(f"{m.name}.hds")
+    # sfr outputs to obs
+    sfr_idx = ['segment', 'reach', 'kstp', 'kper']
+    sfr_use = ["Qaquifer", "Qout", 'width']
+    with pytest.warns(PyemuWarning):
         pf.add_py_function(__file__, '_gen_dummy_obs_file()',
                            is_pre_cmd=False)
-        #pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
-        #                    index_cols='obsnme', use_cols='obsval', prefix='hds')
-        #   using the ins file generated by pyemu.gw_utils.setup_hds_obs()
-        #pf.add_observations_from_ins(ins_file='freyberg.hds.dat.ins')
-        #pf.post_py_cmds.append(hds_runline)
-        pf.tmp_files.append(f"{m.name}.hds")
-        # sfr outputs to obs
-        sfr_idx = ['segment', 'reach', 'kstp', 'kper']
-        sfr_use = ["Qaquifer", "Qout", 'width']
-        with pytest.warns(PyemuWarning):
-            pf.add_py_function(__file__, '_gen_dummy_obs_file()',
-                               is_pre_cmd=False)
-        pf.add_observations('freyberg.sfo.dat', insfile=None,
-                            index_cols=sfr_idx,
-                            use_cols=sfr_use, prefix='sfr',
-                            ofile_skip=4, ofile_sep=' ', use_rows=np.arange(0, 50))
-        # check obs set up
-        sfrobs = pf.obs_dfs[-1].copy()
-        sfrobs[["oname","otype",'usecol'] + sfr_idx] = sfrobs.obsnme.apply(
-            lambda x: pd.Series(
-                dict([s.split(':') for s in x.split('_') if ':' in s])))
-        sfrobs.pop("oname")
-        sfrobs.pop("otype")
-        sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
-        sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
-                                      columns=['usecol'], values='obsval')
-        sfodf_c = sfodf.set_index(sfr_idx).sort_index()
-        sfodf_c.columns = sfodf_c.columns.str.lower()
-        assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
-                                        sfrobs_p.columns]).all().all(), (
-            "Mis-match between expected and processed obs values\n",
-            sfrobs_p.head(),
-            sfodf_c.loc[sfrobs_p.index, sfrobs_p.columns].head())
+    pf.add_observations('freyberg.sfo.dat', insfile=None,
+                        index_cols=sfr_idx,
+                        use_cols=sfr_use, prefix='sfr',
+                        ofile_skip=4, ofile_sep=' ', use_rows=np.arange(0, 50))
+    # check obs set up
+    sfrobs = pf.obs_dfs[-1].copy()
+    sfrobs[["oname","otype",'usecol'] + sfr_idx] = sfrobs.obsnme.apply(
+        lambda x: pd.Series(
+            dict([s.split(':') for s in x.split('_') if ':' in s])))
+    sfrobs.pop("oname")
+    sfrobs.pop("otype")
+    sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
+    sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
+                                  columns=['usecol'], values='obsval')
+    sfodf_c = sfodf.set_index(sfr_idx).sort_index()
+    sfodf_c.columns = sfodf_c.columns.str.lower()
+    assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
+                                    sfrobs_p.columns]).all().all(), (
+        "Mis-match between expected and processed obs values\n",
+        sfrobs_p.head(),
+        sfodf_c.loc[sfrobs_p.index, sfrobs_p.columns].head())
 
-        pf.tmp_files.append(f"{m.name}.sfr.out")
-        pf.extra_py_imports.append('flopy')
-        pf.post_py_cmds.extend(
-            ["sfo_pp_file = 'freyberg.sfo.dat'",
-             "sfo = flopy.utils.SfrFile('freyberg.sfr.out')",
-             "sfodf = sfo.get_dataframe()",
-             "sfodf[['kstp', 'kper']] = pd.DataFrame(sfodf.kstpkper.to_list(), index=sfodf.index)",
-             "sfodf = sfodf.drop('kstpkper', axis=1)",
-             "with open(sfo_pp_file, 'w') as fp:",
-             "    fp.writelines(['This is a post processed sfr output file\\n', "
-             "'Processed into tabular form using the lines:\\n', "
-             "'sfo = flopy.utils.SfrFile(`freyberg.sfr.out`)\\n', "
-             "'sfo.get_dataframe().to_csv(`freyberg.sfo.dat`)\\n'])",
-             "    sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx',lineterminator='\\n')"])
-        # csv version of sfr obs
-        # sfr outputs to obs
-        pf.add_observations('freyberg.sfo.csv', insfile=None,
-                            index_cols=['segment', 'reach', 'kstp', 'kper'],
-                            use_cols=["Qaquifer", "Qout", "width"], prefix='sfr2',
-                            ofile_sep=',', obsgp=['qaquifer', 'qout', "width"],
-                            use_rows=np.arange(50, 101))
-        # check obs set up
-        sfrobs = pf.obs_dfs[-1].copy()
-        sfrobs[['oname','otype','usecol'] + sfr_idx] = sfrobs.obsnme.apply(
-            lambda x: pd.Series(
-                dict([s.split(':') for s in x.split('_') if ':' in s])))
-        sfrobs.pop("oname")
-        sfrobs.pop("otype")
-        sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
-        sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
-                                      columns=['usecol'], values='obsval')
-        sfodf_c = sfodf.set_index(sfr_idx).sort_index()
-        sfodf_c.columns = sfodf_c.columns.str.lower()
-        assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
-                                        sfrobs_p.columns]).all().all(), (
-            "Mis-match between expected and processed obs values")
-        obsnmes = pd.concat([df.obgnme for df in pf.obs_dfs]).unique()
-        assert all([gp in obsnmes for gp in ['qaquifer', 'qout']])
-        pf.post_py_cmds.append(
-            "sfodf.sort_index(axis=1).to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
-        zone_array = np.arange(m.nlay*m.nrow*m.ncol)
-        s = lambda x: "zval_"+str(x)
-        zone_array = np.array([s(x) for x in zone_array]).reshape(m.nlay,m.nrow,m.ncol)
-        # pars
-        pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
-                          index_cols=[0, 1, 2], use_cols=[3, 5],
-                          par_name_base=["rivstage_grid", "rivbot_grid"],
-                          mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F',
-                          pargp='rivbot')
-        pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
-                          index_cols=[0, 1, 2], use_cols=4)
-        pf.add_parameters(filenames=["WEL_0000.dat", "WEL_0001.dat"],
-                          par_type="grid", index_cols=[0, 1, 2], use_cols=3,
-                          par_name_base="welflux_grid",
-                          zone_array=zone_array)
-        pf.add_parameters(filenames="WEL_0000.dat",
-                          par_type="grid", index_cols=[0, 1, 2], use_cols=3,
-                          par_name_base="welflux_grid_direct",
-                          zone_array=zone_array,par_style="direct",transform="none")
-        pf.add_parameters(filenames=["WEL_0000.dat"], par_type="constant",
-                          index_cols=[0, 1, 2], use_cols=3,
-                          par_name_base=["flux_const"])
-        pf.add_parameters(filenames="rech_1.ref", par_type="grid",
-                          zone_array=m.bas6.ibound[0].array,
-                          par_name_base="rch_datetime:1-1-1970")
-        pf.add_parameters(filenames=["rech_1.ref", "rech_2.ref"],
-                          par_type="zone", zone_array=m.bas6.ibound[0].array)
-        pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
-                          zone_array=m.bas6.ibound[0].array,
-                          par_name_base="rch_datetime:1-1-1970", pp_space=4)
-        pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
-                          zone_array=m.bas6.ibound[0].array,
-                          par_name_base="rch_datetime:1-1-1970", pp_space=1,
-                          ult_ubound=100, ult_lbound=0.0)
-        pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
-                          par_name_base="rch_datetime:1-1-1970", pp_space=1,
-                          ult_ubound=100, ult_lbound=0.0)
+    pf.tmp_files.append(f"{m.name}.sfr.out")
+    pf.extra_py_imports.append('flopy')
+    pf.post_py_cmds.extend(
+        ["sfo_pp_file = 'freyberg.sfo.dat'",
+         "sfo = flopy.utils.SfrFile('freyberg.sfr.out')",
+         "sfodf = sfo.get_dataframe()",
+         "sfodf[['kstp', 'kper']] = pd.DataFrame(sfodf.kstpkper.to_list(), index=sfodf.index)",
+         "sfodf = sfodf.drop('kstpkper', axis=1)",
+         "with open(sfo_pp_file, 'w') as fp:",
+         "    fp.writelines(['This is a post processed sfr output file\\n', "
+         "'Processed into tabular form using the lines:\\n', "
+         "'sfo = flopy.utils.SfrFile(`freyberg.sfr.out`)\\n', "
+         "'sfo.get_dataframe().to_csv(`freyberg.sfo.dat`)\\n'])",
+         "    sfodf.sort_index(axis=1).to_csv(fp, sep=' ', index_label='idx',lineterminator='\\n')"])
+    # csv version of sfr obs
+    # sfr outputs to obs
+    pf.add_observations('freyberg.sfo.csv', insfile=None,
+                        index_cols=['segment', 'reach', 'kstp', 'kper'],
+                        use_cols=["Qaquifer", "Qout", "width"], prefix='sfr2',
+                        ofile_sep=',', obsgp=['qaquifer', 'qout', "width"],
+                        use_rows=np.arange(50, 101))
+    # check obs set up
+    sfrobs = pf.obs_dfs[-1].copy()
+    sfrobs[['oname','otype','usecol'] + sfr_idx] = sfrobs.obsnme.apply(
+        lambda x: pd.Series(
+            dict([s.split(':') for s in x.split('_') if ':' in s])))
+    sfrobs.pop("oname")
+    sfrobs.pop("otype")
+    sfrobs.loc[:, sfr_idx] = sfrobs.loc[:, sfr_idx].astype(int)
+    sfrobs_p = sfrobs.pivot_table(index=sfr_idx,
+                                  columns=['usecol'], values='obsval')
+    sfodf_c = sfodf.set_index(sfr_idx).sort_index()
+    sfodf_c.columns = sfodf_c.columns.str.lower()
+    assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
+                                    sfrobs_p.columns]).all().all(), (
+        "Mis-match between expected and processed obs values")
+    obsnmes = pd.concat([df.obgnme for df in pf.obs_dfs]).unique()
+    assert all([gp in obsnmes for gp in ['qaquifer', 'qout']])
+    pf.post_py_cmds.append(
+        "sfodf.sort_index(axis=1).to_csv('freyberg.sfo.csv', sep=',', index_label='idx')")
+    zone_array = np.arange(m.nlay*m.nrow*m.ncol)
+    s = lambda x: "zval_"+str(x)
+    zone_array = np.array([s(x) for x in zone_array]).reshape(m.nlay,m.nrow,m.ncol)
+    # pars
+    pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
+                      index_cols=[0, 1, 2], use_cols=[3, 5],
+                      par_name_base=["rivstage_grid", "rivbot_grid"],
+                      mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F',
+                      pargp='rivbot')
+    pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
+                      index_cols=[0, 1, 2], use_cols=4)
+    pf.add_parameters(filenames=["WEL_0000.dat", "WEL_0001.dat"],
+                      par_type="grid", index_cols=[0, 1, 2], use_cols=3,
+                      par_name_base="welflux_grid",
+                      zone_array=zone_array)
+    pf.add_parameters(filenames="WEL_0000.dat",
+                      par_type="grid", index_cols=[0, 1, 2], use_cols=3,
+                      par_name_base="welflux_grid_direct",
+                      zone_array=zone_array,par_style="direct",transform="none")
+    pf.add_parameters(filenames=["WEL_0000.dat"], par_type="constant",
+                      index_cols=[0, 1, 2], use_cols=3,
+                      par_name_base=["flux_const"])
+    pf.add_parameters(filenames="rech_1.ref", par_type="grid",
+                      zone_array=m.bas6.ibound[0].array,
+                      par_name_base="rch_datetime:1-1-1970")
+    pf.add_parameters(filenames=["rech_1.ref", "rech_2.ref"],
+                      par_type="zone", zone_array=m.bas6.ibound[0].array)
+    pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
+                      zone_array=m.bas6.ibound[0].array,
+                      par_name_base="rch_datetime:1-1-1970", pp_space=4)
+    pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
+                      zone_array=m.bas6.ibound[0].array,
+                      par_name_base="rch_datetime:1-1-1970", pp_space=1,
+                      ult_ubound=100, ult_lbound=0.0)
+    pf.add_parameters(filenames="rech_1.ref", par_type="pilot_point",
+                      par_name_base="rch_datetime:1-1-1970", pp_space=1,
+                      ult_ubound=100, ult_lbound=0.0)
 
 
-        # add model run command
-        pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
-        print(pf.mult_files)
-        print(pf.org_files)
+    # add model run command
+    pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
+    print(pf.mult_files)
+    print(pf.org_files)
 
 
-        # build pest
-        pst = pf.build_pst('freyberg.pst')
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
 
-        # check mult files are in pst input files
-        csv = os.path.join(template_ws, "mult2model_info.csv")
-        df = pd.read_csv(csv, index_col=0)
-        df = df.loc[pd.notna(df.mlt_file),:]
-        pst_input_files = {str(f) for f in pst.input_files}
-        mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
-                                    pst_input_files) -
-                                   set(df.loc[df.pp_file.notna()].mlt_file))
-        assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
-        check_apply(pf)
-        pst.control_data.noptmax = 0
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    # check mult files are in pst input files
+    csv = os.path.join(template_ws, "mult2model_info.csv")
+    df = pd.read_csv(csv, index_col=0)
+    df = df.loc[pd.notna(df.mlt_file),:]
+    pst_input_files = {str(f) for f in pst.input_files}
+    mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
+                                pst_input_files) -
+                               set(df.loc[df.pp_file.notna()].mlt_file))
+    assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
+    check_apply(pf)
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
-        res_file = os.path.join(pf.new_d, "freyberg.base.rei")
-        assert os.path.exists(res_file), res_file
-        pst.set_res(res_file)
-        print(pst.phi)
-        assert np.isclose(pst.phi, 0.), pst.phi
-    except Exception as e:
-       os.chdir(bd)
-       raise e
-    os.chdir(bd)
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+    assert np.isclose(pst.phi, 0.), pst.phi
 
 
 def freyberg_prior_build_test(tmp_path):
@@ -431,245 +425,239 @@ def freyberg_prior_build_test(tmp_path):
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
-    bd = Path.cwd()
     os.chdir(tmp_path)
 
     nam_file = "freyberg.nam"
-    try:
-        org_model_ws = tmp_model_ws.relative_to(tmp_path)
-        m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws,
-                                       check=False, forgive=False,
-                                       exe_name=mf_exe_path)
-        flopy.modflow.ModflowRiv(m, stress_period_data={
-            0: [[0, 0, 0, m.dis.top.array[0, 0], 1.0, m.dis.botm.array[0, 0, 0]],
-                [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
-                [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]]]})
+    org_model_ws = tmp_model_ws.relative_to(tmp_path)
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws,
+                                   check=False, forgive=False,
+                                   exe_name=mf_exe_path)
+    flopy.modflow.ModflowRiv(m, stress_period_data={
+        0: [[0, 0, 0, m.dis.top.array[0, 0], 1.0, m.dis.botm.array[0, 0, 0]],
+            [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
+            [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]]]})
 
-        welsp = m.wel.stress_period_data.data.copy()
-        addwell = welsp[0].copy()
-        addwell['k'] = 1
-        welsp[0] = np.rec.array(np.concatenate([welsp[0], addwell]))
-        samewell = welsp[1].copy()
-        samewell['flux'] *= 10
-        welsp[1] = np.rec.array(np.concatenate([welsp[1], samewell]))
-        m.wel.stress_period_data = welsp
+    welsp = m.wel.stress_period_data.data.copy()
+    addwell = welsp[0].copy()
+    addwell['k'] = 1
+    welsp[0] = np.rec.array(np.concatenate([welsp[0], addwell]))
+    samewell = welsp[1].copy()
+    samewell['flux'] *= 10
+    welsp[1] = np.rec.array(np.concatenate([welsp[1], samewell]))
+    m.wel.stress_period_data = welsp
 
-        m.external_path = "."
-        m.write_input()
+    m.external_path = "."
+    m.write_input()
 
-        # for exe in [mf_exe_path, mt_exe_path, ies_exe_path]:
-        #     shutil.copy(os.path.relpath(exe, '..'), org_model_ws)
+    # for exe in [mf_exe_path, mt_exe_path, ies_exe_path]:
+    #     shutil.copy(os.path.relpath(exe, '..'), org_model_ws)
 
-        print("{0} {1}".format(mf_exe_path, m.name + ".nam"), org_model_ws)
-        os_utils.run("{0} {1}".format(mf_exe_path, m.name + ".nam"),
-                     cwd=org_model_ws)
-        hds_kperk = []
-        for k in range(m.nlay):
-            for kper in range(m.nper):
-                hds_kperk.append([kper, k])
-        hds_runline, df = pyemu.gw_utils.setup_hds_obs(
-            os.path.join(m.model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
-            prefix="hds", include_path=False)
-        pyemu.gw_utils.apply_hds_obs(os.path.join(m.model_ws, f"{m.name}.hds"))
+    print("{0} {1}".format(mf_exe_path, m.name + ".nam"), org_model_ws)
+    os_utils.run("{0} {1}".format(mf_exe_path, m.name + ".nam"),
+                 cwd=org_model_ws)
+    hds_kperk = []
+    for k in range(m.nlay):
+        for kper in range(m.nper):
+            hds_kperk.append([kper, k])
+    hds_runline, df = pyemu.gw_utils.setup_hds_obs(
+        os.path.join(m.model_ws, f"{m.name}.hds"), kperk_pairs=None, skip=None,
+        prefix="hds", include_path=False)
+    pyemu.gw_utils.apply_hds_obs(os.path.join(m.model_ws, f"{m.name}.hds"))
 
-        template_ws = Path(tmp_path, "new_temp")
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        # sr0 = m.sr
-        sr = pyemu.helpers.SpatialReference.from_namfile(
-            os.path.join(m.model_ws, m.namefile),
-            delr=m.dis.delr, delc=m.dis.delc)
-        # set up PstFrom object
-        pf = PstFrom(original_d=org_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False)
-        pf.extra_py_imports.append('flopy')
-        if "linux" in platform.platform().lower():
-            pf.mod_sys_cmds.append("which python")
-        # obs
-        #   using tabular style model output
-        #   (generated by pyemu.gw_utils.setup_hds_obs())
-        pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
-                            index_cols='obsnme', use_cols='obsval', prefix='hds')
-        pf.post_py_cmds.append(hds_runline)
-        pf.tmp_files.append(f"{m.name}.hds")
+    template_ws = Path(tmp_path, "new_temp")
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    # sr0 = m.sr
+    sr = pyemu.helpers.SpatialReference.from_namfile(
+        os.path.join(m.model_ws, m.namefile),
+        delr=m.dis.delr, delc=m.dis.delc)
+    # set up PstFrom object
+    pf = PstFrom(original_d=org_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False)
+    pf.extra_py_imports.append('flopy')
+    if "linux" in platform.platform().lower():
+        pf.mod_sys_cmds.append("which python")
+    # obs
+    #   using tabular style model output
+    #   (generated by pyemu.gw_utils.setup_hds_obs())
+    pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
+                        index_cols='obsnme', use_cols='obsval', prefix='hds')
+    pf.post_py_cmds.append(hds_runline)
+    pf.tmp_files.append(f"{m.name}.hds")
 
-        # pars
-        v = pyemu.geostats.ExpVario(contribution=1.0, a=2500)
-        geostruct = pyemu.geostats.GeoStruct(variograms=v, transform='log')
-        # Pars for river list style model file, every entry in columns 3 and 4
-        # specifying formatted model file and passing a geostruct  # TODO method for appending specific ult bounds
-        # pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
-        #                   index_cols=[0, 1, 2], use_cols=[3, 4],
-        #                   par_name_base=["rivstage_grid", "rivcond_grid"],
-        #                   mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F',
-        #                   geostruct=geostruct, lower_bound=[0.9, 0.01],
-        #                   upper_bound=[1.1, 100.], ult_lbound=[0.3, None])
-        # # 2 constant pars applied to columns 3 and 4
-        # # this time specifying free formatted model file
-        # pf.add_parameters(filenames="RIV_0000.dat", par_type="constant",
-        #                   index_cols=[0, 1, 2], use_cols=[3, 4],
-        #                   par_name_base=["rivstage", "rivcond"],
-        #                   mfile_fmt='free', lower_bound=[0.9, 0.01],
-        #                   upper_bound=[1.1, 100.], ult_lbound=[None, 0.01])
-        # Pars for river list style model file, every entry in column 4
-        pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
-                          index_cols=[0, 1, 2], use_cols=[4],
-                          par_name_base=["rivcond_grid"],
-                          mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F',
-                          geostruct=geostruct, lower_bound=[0.01],
-                          upper_bound=[100.], ult_lbound=[None])
-        # constant par applied to column 4
-        # this time specifying free formatted model file
-        pf.add_parameters(filenames="RIV_0000.dat", par_type="constant",
-                          index_cols=[0, 1, 2], use_cols=[4],
-                          par_name_base=["rivcond"],
-                          mfile_fmt='free', lower_bound=[0.01],
-                          upper_bound=[100.], ult_lbound=[0.01])
-        # pf.add_parameters(filenames="RIV_0000.dat", par_type="constant",
-        #                   index_cols=[0, 1, 2], use_cols=5,
-        #                   par_name_base="rivbot",
-        #                   mfile_fmt='free', lower_bound=0.9,
-        #                   upper_bound=1.1, ult_ubound=100.,
-        #                   ult_lbound=0.001)
-        # setting up temporal variogram for correlating temporal pars
-        date = m.dis.start_datetime
-        v = pyemu.geostats.ExpVario(contribution=1.0, a=180.0)  # 180 correlation length
-        t_geostruct = pyemu.geostats.GeoStruct(variograms=v, transform='log')
-        # looping over temporal list style input files
-        # setting up constant parameters for col 3 for each temporal file
-        # making sure all are set up with same pargp and geostruct (to ensure correlation)
-        # Parameters for wel list style
-        well_mfiles = ["WEL_0000.dat", "WEL_0001.dat", "WEL_0002.dat"]
-        for t, well_file in enumerate(well_mfiles):
-            # passing same temporal geostruct and pargp,
-            # date is incremented and will be used for correlation with
-            pf.add_parameters(filenames=well_file, par_type="constant",
-                              index_cols=[0, 1, 2], use_cols=3,
-                              par_name_base="flux", alt_inst_str='kper',
-                              datetime=date, geostruct=t_geostruct,
-                              pargp='wellflux_t', lower_bound=0.25,
-                              upper_bound=1.75)
-            date = (pd.to_datetime(date) +
-                    pd.DateOffset(m.dis.perlen.array[t], 'day'))
-        # par for each well (same par through time)
-        pf.add_parameters(filenames=well_mfiles,
-                          par_type="grid", index_cols=[0, 1, 2], use_cols=3,
-                          par_name_base="welflux_grid",
-                          zone_array=m.bas6.ibound.array,
-                          geostruct=geostruct, lower_bound=0.25, upper_bound=1.75)
-        pf.add_parameters(filenames=well_mfiles,
-                          par_type="grid", index_cols=[0, 1, 2], use_cols=3,
-                          par_name_base="welflux_grid",
-                          zone_array=m.bas6.ibound.array,
-                          use_rows=(1, 3, 4),
-                          geostruct=geostruct, lower_bound=0.25, upper_bound=1.75)
-        # global constant across all files
-        pf.add_parameters(filenames=well_mfiles,
-                          par_type="constant",
+    # pars
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=2500)
+    geostruct = pyemu.geostats.GeoStruct(variograms=v, transform='log')
+    # Pars for river list style model file, every entry in columns 3 and 4
+    # specifying formatted model file and passing a geostruct  # TODO method for appending specific ult bounds
+    # pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
+    #                   index_cols=[0, 1, 2], use_cols=[3, 4],
+    #                   par_name_base=["rivstage_grid", "rivcond_grid"],
+    #                   mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F',
+    #                   geostruct=geostruct, lower_bound=[0.9, 0.01],
+    #                   upper_bound=[1.1, 100.], ult_lbound=[0.3, None])
+    # # 2 constant pars applied to columns 3 and 4
+    # # this time specifying free formatted model file
+    # pf.add_parameters(filenames="RIV_0000.dat", par_type="constant",
+    #                   index_cols=[0, 1, 2], use_cols=[3, 4],
+    #                   par_name_base=["rivstage", "rivcond"],
+    #                   mfile_fmt='free', lower_bound=[0.9, 0.01],
+    #                   upper_bound=[1.1, 100.], ult_lbound=[None, 0.01])
+    # Pars for river list style model file, every entry in column 4
+    pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
+                      index_cols=[0, 1, 2], use_cols=[4],
+                      par_name_base=["rivcond_grid"],
+                      mfile_fmt='%10d%10d%10d %15.8F %15.8F %15.8F',
+                      geostruct=geostruct, lower_bound=[0.01],
+                      upper_bound=[100.], ult_lbound=[None])
+    # constant par applied to column 4
+    # this time specifying free formatted model file
+    pf.add_parameters(filenames="RIV_0000.dat", par_type="constant",
+                      index_cols=[0, 1, 2], use_cols=[4],
+                      par_name_base=["rivcond"],
+                      mfile_fmt='free', lower_bound=[0.01],
+                      upper_bound=[100.], ult_lbound=[0.01])
+    # pf.add_parameters(filenames="RIV_0000.dat", par_type="constant",
+    #                   index_cols=[0, 1, 2], use_cols=5,
+    #                   par_name_base="rivbot",
+    #                   mfile_fmt='free', lower_bound=0.9,
+    #                   upper_bound=1.1, ult_ubound=100.,
+    #                   ult_lbound=0.001)
+    # setting up temporal variogram for correlating temporal pars
+    date = m.dis.start_datetime
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=180.0)  # 180 correlation length
+    t_geostruct = pyemu.geostats.GeoStruct(variograms=v, transform='log')
+    # looping over temporal list style input files
+    # setting up constant parameters for col 3 for each temporal file
+    # making sure all are set up with same pargp and geostruct (to ensure correlation)
+    # Parameters for wel list style
+    well_mfiles = ["WEL_0000.dat", "WEL_0001.dat", "WEL_0002.dat"]
+    for t, well_file in enumerate(well_mfiles):
+        # passing same temporal geostruct and pargp,
+        # date is incremented and will be used for correlation with
+        pf.add_parameters(filenames=well_file, par_type="constant",
                           index_cols=[0, 1, 2], use_cols=3,
-                          par_name_base=["flux_global"],
-                          lower_bound=0.25, upper_bound=1.75)
+                          par_name_base="flux", alt_inst_str='kper',
+                          datetime=date, geostruct=t_geostruct,
+                          pargp='wellflux_t', lower_bound=0.25,
+                          upper_bound=1.75)
+        date = (pd.to_datetime(date) +
+                pd.DateOffset(m.dis.perlen.array[t], 'day'))
+    # par for each well (same par through time)
+    pf.add_parameters(filenames=well_mfiles,
+                      par_type="grid", index_cols=[0, 1, 2], use_cols=3,
+                      par_name_base="welflux_grid",
+                      zone_array=m.bas6.ibound.array,
+                      geostruct=geostruct, lower_bound=0.25, upper_bound=1.75)
+    pf.add_parameters(filenames=well_mfiles,
+                      par_type="grid", index_cols=[0, 1, 2], use_cols=3,
+                      par_name_base="welflux_grid",
+                      zone_array=m.bas6.ibound.array,
+                      use_rows=(1, 3, 4),
+                      geostruct=geostruct, lower_bound=0.25, upper_bound=1.75)
+    # global constant across all files
+    pf.add_parameters(filenames=well_mfiles,
+                      par_type="constant",
+                      index_cols=[0, 1, 2], use_cols=3,
+                      par_name_base=["flux_global"],
+                      lower_bound=0.25, upper_bound=1.75)
 
-        # Spatial array style pars - cell-by-cell
-        hk_files = ["hk_Layer_{0:d}.ref".format(i) for i in range(1, 4)]
-        for hk in hk_files:
-            pf.add_parameters(filenames=hk, par_type="grid",
-                              zone_array=m.bas6.ibound[0].array,
-                              par_name_base="hk", alt_inst_str='lay',
-                              geostruct=geostruct,
-                              lower_bound=0.01, upper_bound=100.)
-
-        # Pars for temporal array style model files
-        date = m.dis.start_datetime  # reset date
-        rch_mfiles = ["rech_0.ref", "rech_1.ref", "rech_2.ref"]
-        for t, rch_file in enumerate(rch_mfiles):
-            # constant par for each file but linked by geostruct and pargp
-            pf.add_parameters(filenames=rch_file, par_type="constant",
-                              zone_array=m.bas6.ibound[0].array,
-                              par_name_base="rch", alt_inst_str='kper',
-                              datetime=date, geostruct=t_geostruct,
-                              pargp='rch_t', lower_bound=0.9, upper_bound=1.1)
-            date = (pd.to_datetime(date) +
-                    pd.DateOffset(m.dis.perlen.array[t], 'day'))
-        # spatially distributed array style pars - cell-by-cell
-        # pf.add_parameters(filenames=rch_mfiles, par_type="grid",
-        #                   zone_array=m.bas6.ibound[0].array,
-        #                   par_name_base="rch",
-        #                   geostruct=geostruct)
-        pf.add_parameters(filenames=rch_mfiles, par_type="pilot_point",
+    # Spatial array style pars - cell-by-cell
+    hk_files = ["hk_Layer_{0:d}.ref".format(i) for i in range(1, 4)]
+    for hk in hk_files:
+        pf.add_parameters(filenames=hk, par_type="grid",
                           zone_array=m.bas6.ibound[0].array,
-                          par_name_base="rch", pp_space=1,
-                          ult_ubound=None, ult_lbound=None,
-                          geostruct=geostruct, lower_bound=0.9, upper_bound=1.1)
-        # global constant recharge par
-        pf.add_parameters(filenames=rch_mfiles, par_type="constant",
+                          par_name_base="hk", alt_inst_str='lay',
+                          geostruct=geostruct,
+                          lower_bound=0.01, upper_bound=100.)
+
+    # Pars for temporal array style model files
+    date = m.dis.start_datetime  # reset date
+    rch_mfiles = ["rech_0.ref", "rech_1.ref", "rech_2.ref"]
+    for t, rch_file in enumerate(rch_mfiles):
+        # constant par for each file but linked by geostruct and pargp
+        pf.add_parameters(filenames=rch_file, par_type="constant",
                           zone_array=m.bas6.ibound[0].array,
-                          par_name_base="rch_global", lower_bound=0.9,
-                          upper_bound=1.1)
-        # zonal recharge pars
-        pf.add_parameters(filenames=rch_mfiles,
-                          par_type="zone", par_name_base='rch_zone',
-                          lower_bound=0.9, upper_bound=1.1, ult_lbound=1.e-6,
-                          ult_ubound=100.)
+                          par_name_base="rch", alt_inst_str='kper',
+                          datetime=date, geostruct=t_geostruct,
+                          pargp='rch_t', lower_bound=0.9, upper_bound=1.1)
+        date = (pd.to_datetime(date) +
+                pd.DateOffset(m.dis.perlen.array[t], 'day'))
+    # spatially distributed array style pars - cell-by-cell
+    # pf.add_parameters(filenames=rch_mfiles, par_type="grid",
+    #                   zone_array=m.bas6.ibound[0].array,
+    #                   par_name_base="rch",
+    #                   geostruct=geostruct)
+    pf.add_parameters(filenames=rch_mfiles, par_type="pilot_point",
+                      zone_array=m.bas6.ibound[0].array,
+                      par_name_base="rch", pp_space=1,
+                      ult_ubound=None, ult_lbound=None,
+                      geostruct=geostruct, lower_bound=0.9, upper_bound=1.1)
+    # global constant recharge par
+    pf.add_parameters(filenames=rch_mfiles, par_type="constant",
+                      zone_array=m.bas6.ibound[0].array,
+                      par_name_base="rch_global", lower_bound=0.9,
+                      upper_bound=1.1)
+    # zonal recharge pars
+    pf.add_parameters(filenames=rch_mfiles,
+                      par_type="zone", par_name_base='rch_zone',
+                      lower_bound=0.9, upper_bound=1.1, ult_lbound=1.e-6,
+                      ult_ubound=100.)
 
 
-        # add model run command
-        pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
-        print(pf.mult_files)
-        print(pf.org_files)
+    # add model run command
+    pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
+    print(pf.mult_files)
+    print(pf.org_files)
 
 
-        # build pest
-        pst = pf.build_pst('freyberg.pst')
-        cov = pf.build_prior(fmt="ascii")
-        pe = pf.draw(100, use_specsim=True)
-        # check mult files are in pst input files
-        csv = os.path.join(template_ws, "mult2model_info.csv")
-        df = pd.read_csv(csv, index_col=0)
-        pst_input_files = {str(f) for f in pst.input_files}
-        mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
-                                    pst_input_files) -
-                                   set(df.loc[df.pp_file.notna()].mlt_file))
-        assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+    cov = pf.build_prior(fmt="ascii")
+    pe = pf.draw(100, use_specsim=True)
+    # check mult files are in pst input files
+    csv = os.path.join(template_ws, "mult2model_info.csv")
+    df = pd.read_csv(csv, index_col=0)
+    pst_input_files = {str(f) for f in pst.input_files}
+    mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
+                                pst_input_files) -
+                               set(df.loc[df.pp_file.notna()].mlt_file))
+    assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
-        pst.write_input_files(pst_path=pf.new_d)
-        # test par mults are working
-        os.chdir(pf.new_d)
-        pyemu.helpers.apply_list_and_array_pars(
-            arr_par_file="mult2model_info.csv")
-        os.chdir(tmp_path)
+    pst.write_input_files(pst_path=pf.new_d)
+    # test par mults are working
+    os.chdir(pf.new_d)
+    pyemu.helpers.apply_list_and_array_pars(
+        arr_par_file="mult2model_info.csv")
+    os.chdir(tmp_path)
 
-        pst.control_data.noptmax = 0
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
-        res_file = os.path.join(pf.new_d, "freyberg.base.rei")
-        assert os.path.exists(res_file), res_file
-        pst.set_res(res_file)
-        print(pst.phi)
-        assert np.isclose(pst.phi, 0), pst.phi
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+    assert np.isclose(pst.phi, 0), pst.phi
 
-        pe.to_binary(os.path.join(pf.new_d, 'par.jcb'))
+    pe.to_binary(os.path.join(pf.new_d, 'par.jcb'))
 
-        # quick sweep test?
-        pst.pestpp_options["ies_par_en"] = 'par.jcb'
-        pst.pestpp_options["ies_num_reals"] = 10
-        pst.control_data.noptmax = -1
-        # par = pst.parameter_data
-        # par.loc[:, 'parval1'] = pe.iloc[0].T
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-        # pyemu.os_utils.start_workers(pf.new_d,
-        #                              exe_rel_path="pestpp-ies",
-        #                              pst_rel_path="freyberg.pst",
-        #                              num_workers=20, master_dir="master",
-        #                              cleanup=False, port=4005)
-    except Exception as e:
-        os.chdir(bd)
-        raise Exception(str(e))
-    os.chdir(bd)
+    # quick sweep test?
+    pst.pestpp_options["ies_par_en"] = 'par.jcb'
+    pst.pestpp_options["ies_num_reals"] = 10
+    pst.control_data.noptmax = -1
+    # par = pst.parameter_data
+    # par.loc[:, 'parval1'] = pe.iloc[0].T
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    # pyemu.os_utils.start_workers(pf.new_d,
+    #                              exe_rel_path="pestpp-ies",
+    #                              pst_rel_path="freyberg.pst",
+    #                              num_workers=20, master_dir="master",
+    #                              cleanup=False, port=4005)
 
 
 def generic_function(wd='.'):
@@ -689,12 +677,12 @@ def another_generic_function(some_arg):
     print(some_arg)
 
 
-def mf6_freyberg_test(setup_freyberg_mf6):
-    import sys
-    sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
+def mf6_freyberg_test(tmp_path):
+    # import sys
+    # sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
     import pypestutils as ppu
 
-    pf,sim = setup_freyberg_mf6
+    pf,sim = setup_freyberg_mf6(tmp_path)
     m = sim.get_model()
     mg = m.modelgrid
     template_ws = pf.new_d
@@ -1185,7 +1173,7 @@ def mf6_freyberg_test(setup_freyberg_mf6):
     assert np.isclose(np.abs(float(df.lower_bound.max()) - -0.3), 0.), df.lower_bound.max()
 
 
-def mf6_freyberg_shortnames_test(setup_freyberg_mf6):
+def mf6_freyberg_shortnames_test(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -1197,7 +1185,7 @@ def mf6_freyberg_shortnames_test(setup_freyberg_mf6):
     #   (generated by pyemu.gw_utils.setup_hds_obs())
     # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
     #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
-    pf, sim = setup_freyberg_mf6
+    pf, sim = setup_freyberg_mf6(tmp_path)
     m = sim.get_model()
     tmp_model_ws = m.model_ws
     template_ws = pf.new_d
@@ -1366,188 +1354,181 @@ def mf6_freyberg_da_test(tmp_path):
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6_da')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
-    bd = Path.cwd()
     os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        m = sim.get_model("freyberg6")
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    m = sim.get_model("freyberg6")
 
-        # SETUP pest stuff...
-        os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-        template_ws = "new_temp_da"
-        if os.path.exists(template_ws):
-             shutil.rmtree(template_ws)
-        # sr0 = m.sr
-        sr = pyemu.helpers.SpatialReference.from_namfile(
-            os.path.join(tmp_model_ws, "freyberg6.nam"),
-            delr=m.dis.delr.array, delc=m.dis.delc.array)
-        # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False,start_datetime="1-1-2018")
-        # obs
-        #   using tabular style model output
-        #   (generated by pyemu.gw_utils.setup_hds_obs())
-        # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
-        #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
+    template_ws = "new_temp_da"
+    if os.path.exists(template_ws):
+         shutil.rmtree(template_ws)
+    # sr0 = m.sr
+    sr = pyemu.helpers.SpatialReference.from_namfile(
+        os.path.join(tmp_model_ws, "freyberg6.nam"),
+        delr=m.dis.delr.array, delc=m.dis.delc.array)
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False,start_datetime="1-1-2018")
+    # obs
+    #   using tabular style model output
+    #   (generated by pyemu.gw_utils.setup_hds_obs())
+    # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
+    #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
-        df = pd.read_csv(os.path.join(tmp_model_ws,"heads.csv"),index_col=0)
-        pf.add_observations("heads.csv",insfile="heads.csv.ins",index_cols="time",use_cols=list(df.columns.values),prefix="hds")
-        df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
-        pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
-        v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
-        gr_gs = pyemu.geostats.GeoStruct(variograms=v)
-        rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0,a=60))
-        pf.extra_py_imports.append('flopy')
-        ib = m.dis.idomain[0].array
-        tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
-        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
-        print(dts)
-        for tag,bnd in tags.items():
-            lb,ub = bnd[0],bnd[1]
-            arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-            if "rch" in tag:
-                pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
-                                  pargp="rch_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
+    df = pd.read_csv(os.path.join(tmp_model_ws,"heads.csv"),index_col=0)
+    pf.add_observations("heads.csv",insfile="heads.csv.ins",index_cols="time",use_cols=list(df.columns.values),prefix="hds")
+    df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
+    v = pyemu.geostats.ExpVario(contribution=1.0,a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+    rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0,a=60))
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
+    print(dts)
+    for tag,bnd in tags.items():
+        lb,ub = bnd[0],bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
+                              pargp="rch_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                              geostruct=gr_gs)
+            for arr_file in arr_files:
+                kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+                pf.add_parameters(filenames=arr_file,par_type="constant",par_name_base=arr_file.split('.')[1]+"_cn",
+                                  pargp="rch_const",zone_array=ib,upper_bound=ub,lower_bound=lb,geostruct=rch_temporal_gs,
+                                  datetime=dts[kper])
+        else:
+            for arr_file in arr_files:
+                pf.add_parameters(filenames=arr_file,par_type="grid",par_name_base=arr_file.split('.')[1]+"_gr",
+                                  pargp=arr_file.split('.')[1]+"_gr",zone_array=ib,upper_bound=ub,lower_bound=lb,
                                   geostruct=gr_gs)
-                for arr_file in arr_files:
-                    kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-                    pf.add_parameters(filenames=arr_file,par_type="constant",par_name_base=arr_file.split('.')[1]+"_cn",
-                                      pargp="rch_const",zone_array=ib,upper_bound=ub,lower_bound=lb,geostruct=rch_temporal_gs,
-                                      datetime=dts[kper])
-            else:
-                for arr_file in arr_files:
-                    pf.add_parameters(filenames=arr_file,par_type="grid",par_name_base=arr_file.split('.')[1]+"_gr",
-                                      pargp=arr_file.split('.')[1]+"_gr",zone_array=ib,upper_bound=ub,lower_bound=lb,
-                                      geostruct=gr_gs)
-                    pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
-                                      pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,)
+                pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
+                                  pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,)
 
 
-        list_files = [f for f in os.listdir(tmp_model_ws) if "wel_stress_period_data" in f]
-        for list_file in list_files:
-            kper = int(list_file.split(".")[1].split('_')[-1]) - 1
-            # add spatially constant, but temporally correlated wel flux pars
-            pf.add_parameters(filenames=list_file,par_type="constant",par_name_base="twel_mlt_{0}".format(kper),
-                              pargp="twel_mlt".format(kper),index_cols=[0,1,2],use_cols=[3],
-                              upper_bound=1.5,lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
+    list_files = [f for f in os.listdir(tmp_model_ws) if "wel_stress_period_data" in f]
+    for list_file in list_files:
+        kper = int(list_file.split(".")[1].split('_')[-1]) - 1
+        # add spatially constant, but temporally correlated wel flux pars
+        pf.add_parameters(filenames=list_file,par_type="constant",par_name_base="twel_mlt_{0}".format(kper),
+                          pargp="twel_mlt".format(kper),index_cols=[0,1,2],use_cols=[3],
+                          upper_bound=1.5,lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
 
-            # add temporally indep, but spatially correlated wel flux pars
-            pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
-                              pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
-                              upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
+        # add temporally indep, but spatially correlated wel flux pars
+        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
+                          pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
+                          upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
 
-        pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt",par_name_base="sfr_rhk",
-                          pargp="sfr_rhk",index_cols={'k':1,'i':2,'j':3},use_cols=[9],upper_bound=10.,lower_bound=0.1,
-                          par_type="grid")
+    pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt",par_name_base="sfr_rhk",
+                      pargp="sfr_rhk",index_cols={'k':1,'i':2,'j':3},use_cols=[9],upper_bound=10.,lower_bound=0.1,
+                      par_type="grid")
 
-        # add model run command
-        pf.mod_sys_cmds.append("mf6")
-        print(pf.mult_files)
-        print(pf.org_files)
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
 
-        # build pest
-        pst = pf.build_pst('freyberg.pst', version=2)
-        pst.write(os.path.join(template_ws,"freyberg6_da.pst"),version=2)
-
-
-        # setup direct (non mult) pars on the IC files with par names that match the obs names
-        obs = pst.observation_data
-        hobs = obs.loc[obs.obsnme.str.startswith("hds"),:].copy()
-        hobs.loc[:,"k"] = hobs.obsnme.apply(lambda x: int(x.split(':')[1].split("_")[1]))
-        hobs.loc[:, "i"] = hobs.obsnme.apply(lambda x: int(x.split(':')[1].split("_")[2]))
-        hobs.loc[:, "j"] = hobs.obsnme.apply(lambda x: int(x.split(':')[1].split("_")[3]))
-        hobs_set = set(hobs.obsnme.to_list())
-        ic_files = [f for f in os.listdir(template_ws) if "ic_strt" in f and f.endswith(".txt")]
-        print(ic_files)
-        ib = m.dis.idomain[0].array
-        tpl_files = []
-        for ic_file in ic_files:
-            tpl_file = os.path.join(template_ws,ic_file+".tpl")
-            vals,names = [],[]
-            with open(tpl_file,'w') as f:
-                f.write("ptf ~\n")
-                k = int(ic_file.split('.')[1][-1]) - 1
-                org_arr = np.loadtxt(os.path.join(template_ws,ic_file))
-                for i in range(org_arr.shape[0]):
-                    for j in range(org_arr.shape[1]):
-                        if ib[i,j] < 1:
-                            f.write(" -1.0e+30 ")
-                        else:
-                            pname = "hds_usecol:trgw_{0}_{1}_{2}_time:31.0".format(k,i,j)
-                            if pname not in hobs_set and ib[i,j] > 0:
-                                print(k,i,j,pname,ib[i,j])
-                            f.write(" ~  {0}   ~".format(pname))
-                            vals.append(org_arr[i,j])
-                            names.append(pname)
-                    f.write("\n")
-            df = pf.pst.add_parameters(tpl_file,pst_path=".")
-            pf.pst.parameter_data.loc[df.parnme,"partrans"] = "fixed"
-            pf.pst.parameter_data.loc[names,"parval1"] = vals
-
-        pf.pst.write(os.path.join(template_ws,"freyberg6_da.pst"),version=2)
-
-        num_reals = 100
-        pe = pf.draw(num_reals, use_specsim=True)
-        pe.to_binary(os.path.join(template_ws, "prior.jcb"))
-        assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
-        assert pe.shape[0] == num_reals
-
-        # test par mults are working
-        os.chdir(pf.new_d)
-        pst.write_input_files()
-        pyemu.helpers.apply_list_and_array_pars(
-            arr_par_file="mult2model_info.csv")
-        os.chdir(tmp_path)
-
-        pst.control_data.noptmax = 0
-        pst.pestpp_options["additional_ins_delimiters"] = ","
-
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-
-        res_file = os.path.join(pf.new_d, "freyberg.base.rei")
-        assert os.path.exists(res_file), res_file
-        pst.set_res(res_file)
-        print(pst.phi)
-        assert np.isclose(pst.phi, 0), pst.phi
-
-        # check mult files are in pst input files
-        csv = os.path.join(template_ws, "mult2model_info.csv")
-        df = pd.read_csv(csv, index_col=0)
-        pst_input_files = {str(f) for f in pst.input_files}
-        mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
-                                    pst_input_files) -
-                                   set(df.loc[df.pp_file.notna()].mlt_file))
-        assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
-    except Exception as e:
-        os.chdir(bd)
-        raise e
-    os.chdir(bd)
+    # build pest
+    pst = pf.build_pst('freyberg.pst', version=2)
+    pst.write(os.path.join(template_ws,"freyberg6_da.pst"),version=2)
 
 
-@pytest.fixture
-def setup_freyberg_mf6(tmp_path, request):
+    # setup direct (non mult) pars on the IC files with par names that match the obs names
+    obs = pst.observation_data
+    hobs = obs.loc[obs.obsnme.str.startswith("hds"),:].copy()
+    hobs.loc[:,"k"] = hobs.obsnme.apply(lambda x: int(x.split(':')[1].split("_")[1]))
+    hobs.loc[:, "i"] = hobs.obsnme.apply(lambda x: int(x.split(':')[1].split("_")[2]))
+    hobs.loc[:, "j"] = hobs.obsnme.apply(lambda x: int(x.split(':')[1].split("_")[3]))
+    hobs_set = set(hobs.obsnme.to_list())
+    ic_files = [f for f in os.listdir(template_ws) if "ic_strt" in f and f.endswith(".txt")]
+    print(ic_files)
+    ib = m.dis.idomain[0].array
+    tpl_files = []
+    for ic_file in ic_files:
+        tpl_file = os.path.join(template_ws,ic_file+".tpl")
+        vals,names = [],[]
+        with open(tpl_file,'w') as f:
+            f.write("ptf ~\n")
+            k = int(ic_file.split('.')[1][-1]) - 1
+            org_arr = np.loadtxt(os.path.join(template_ws,ic_file))
+            for i in range(org_arr.shape[0]):
+                for j in range(org_arr.shape[1]):
+                    if ib[i,j] < 1:
+                        f.write(" -1.0e+30 ")
+                    else:
+                        pname = "hds_usecol:trgw_{0}_{1}_{2}_time:31.0".format(k,i,j)
+                        if pname not in hobs_set and ib[i,j] > 0:
+                            print(k,i,j,pname,ib[i,j])
+                        f.write(" ~  {0}   ~".format(pname))
+                        vals.append(org_arr[i,j])
+                        names.append(pname)
+                f.write("\n")
+        df = pf.pst.add_parameters(tpl_file,pst_path=".")
+        pf.pst.parameter_data.loc[df.parnme,"partrans"] = "fixed"
+        pf.pst.parameter_data.loc[names,"parval1"] = vals
+
+    pf.pst.write(os.path.join(template_ws,"freyberg6_da.pst"),version=2)
+
+    num_reals = 100
+    pe = pf.draw(num_reals, use_specsim=True)
+    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+    assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
+    assert pe.shape[0] == num_reals
+
+    # test par mults are working
+    os.chdir(pf.new_d)
+    pst.write_input_files()
+    pyemu.helpers.apply_list_and_array_pars(
+        arr_par_file="mult2model_info.csv")
+    os.chdir(tmp_path)
+
+    pst.control_data.noptmax = 0
+    pst.pestpp_options["additional_ins_delimiters"] = ","
+
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+    assert np.isclose(pst.phi, 0), pst.phi
+
+    # check mult files are in pst input files
+    csv = os.path.join(template_ws, "mult2model_info.csv")
+    df = pd.read_csv(csv, index_col=0)
+    pst_input_files = {str(f) for f in pst.input_files}
+    mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
+                                pst_input_files) -
+                               set(df.loc[df.pp_file.notna()].mlt_file))
+    assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
+
+
+def setup_freyberg_mf6(wd, model="freyberg_mf6", **kwargs):
     try:
         import flopy
     except:
         return
-    try:
-        model = request.param
-    except AttributeError:
-        model = "freyberg_mf6"
+    # try:
+    #     model = request.param
+    # except AttributeError:
+    #     model = "freyberg_mf6"
     org_model_ws = os.path.join('..', 'examples', model)
-    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+    tmp_model_ws = setup_tmp(org_model_ws, wd)
     # print(tmp_model_ws)
     dup_file = "freyberg6.wel_stress_period_data_with_dups.txt"
     shutil.copy2(os.path.join("utils", dup_file), tmp_model_ws)
     bd = Path.cwd()
-    os.chdir(tmp_path)
+    os.chdir(wd)
     try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+        tmp_model_ws = tmp_model_ws.relative_to(wd)
         sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
         m = sim.get_model()
         sim.set_all_data_external()
@@ -1556,7 +1537,7 @@ def setup_freyberg_mf6(tmp_path, request):
         # SETUP pest stuff...
         os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-        template_ws = Path(tmp_path, "template")
+        template_ws = Path(wd, "template")
         if os.path.exists(template_ws):
             shutil.rmtree(template_ws)
         sr = m.modelgrid
@@ -1567,17 +1548,18 @@ def setup_freyberg_mf6(tmp_path, request):
                      longnames=True,
                      spatial_reference=sr,
                      zero_based=False,
-                     start_datetime="1-1-2018")
+                     start_datetime="1-1-2018",
+                     **kwargs)
         if model == 'freyberg_mf6':
             pf.add_observations("sfr.csv", insfile="sfr.csv.ins",
                                 index_cols="time",
                                 use_cols=["GAGE_1", "HEADWATER", "TAILWATER"],
                                 ofile_sep=",")
-        yield pf, sim
+        return pf, sim
     except Exception as e:
         os.chdir(bd)
         raise e
-    os.chdir(bd)
+    # os.chdir(bd)
 
 
 def build_direct(pf):
@@ -1597,22 +1579,22 @@ def build_direct(pf):
     return pf, pst
 
 
-def check_apply(pf):
+def check_apply(pf, chunklen=100):
     # test par mults are working
     bd = Path.cwd()
     os.chdir(pf.new_d)
     try:
         pf.pst.write_input_files()
         pyemu.helpers.apply_list_and_array_pars(
-            arr_par_file="mult2model_info.csv", chunk_len=100)
+            arr_par_file="mult2model_info.csv", chunk_len=chunklen)
     except Exception as e:
         os.chdir(bd)
         raise e
     os.chdir(bd)
 
 
-def direct_quickfull_test(setup_freyberg_mf6):
-    pf, sim = setup_freyberg_mf6
+def direct_quickfull_test(tmp_path):
+    pf, sim = setup_freyberg_mf6(tmp_path)
     m = sim.get_model()
     mg = m.modelgrid
     # Setup geostruct for spatial pars
@@ -1707,9 +1689,9 @@ def direct_quickfull_test(setup_freyberg_mf6):
     )
 
 
-def direct_multadd_combo_test(setup_freyberg_mf6):
+def direct_multadd_combo_test(tmp_path):
     dup_file = "freyberg6.wel_stress_period_data_with_dups.txt"
-    pf, _ = setup_freyberg_mf6
+    pf, _ = setup_freyberg_mf6(tmp_path)
     pf.longnames = False
     ghb_files = [f for f in os.listdir(pf.new_d) if ".ghb_stress" in f and f.endswith("txt")]
     pf.add_parameters(ghb_files, par_type="grid", par_style="add", use_cols=3, par_name_base="ghbstage",
@@ -1800,8 +1782,8 @@ def direct_multadd_combo_test(setup_freyberg_mf6):
     assert d.sum() == 0.0, d.sum()
 
 
-def direct_arraypars_test(setup_freyberg_mf6):
-    pf, sim = setup_freyberg_mf6
+def direct_arraypars_test(tmp_path):
+    pf, sim = setup_freyberg_mf6(tmp_path)
     m = sim.get_model()
     mg = m.modelgrid
     # Setup geostruct for spatial pars
@@ -1867,9 +1849,9 @@ def direct_arraypars_test(setup_freyberg_mf6):
             raise Exception("recharge too diff")
 
 
-def direct_listpars_test(setup_freyberg_mf6):
+def direct_listpars_test(tmp_path):
     import flopy
-    pf, sim = setup_freyberg_mf6
+    pf, sim = setup_freyberg_mf6(tmp_path)
     m = sim.get_model()
     template_ws = pf.new_d
     # Setup geostruct for spatial pars
@@ -2030,333 +2012,328 @@ def mf6_freyberg_direct_test(tmp_path):
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
     dup_file = "freyberg6.wel_stress_period_data_with_dups.txt"
     shutil.copy2(os.path.join("utils", dup_file), tmp_model_ws)
-    bd = Path.cwd()
+
     os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        m = sim.get_model("freyberg6")
-        sim.set_all_data_external()
-        sim.write_simulation()
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external()
+    sim.write_simulation()
 
-        # SETUP pest stuff...
-        os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-        template_ws = Path(tmp_path, "new_temp_direct")
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        sr = m.modelgrid
-        # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False, start_datetime="1-1-2018")
-        # obs
-        #   using tabular style model output
-        #   (generated by pyemu.gw_utils.setup_hds_obs())
-        # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
-        #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
+    template_ws = Path(tmp_path, "new_temp_direct")
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018")
+    # obs
+    #   using tabular style model output
+    #   (generated by pyemu.gw_utils.setup_hds_obs())
+    # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
+    #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
 
-        ghb_files = [f for f in os.listdir(template_ws) if ".ghb_stress" in f and f.endswith("txt")]
-        pf.add_parameters(ghb_files,par_type="grid",par_style="add",use_cols=3,par_name_base="ghbstage",
-                          pargp="ghbstage",index_cols=[0,1,2],transform="none",lower_bound=-5,upper_bound=5)
+    ghb_files = [f for f in os.listdir(template_ws) if ".ghb_stress" in f and f.endswith("txt")]
+    pf.add_parameters(ghb_files,par_type="grid",par_style="add",use_cols=3,par_name_base="ghbstage",
+                      pargp="ghbstage",index_cols=[0,1,2],transform="none",lower_bound=-5,upper_bound=5)
 
-        pf.add_parameters(ghb_files, par_type="grid", par_style="multiplier", use_cols=3, par_name_base="mltstage",
-                          pargp="ghbstage", index_cols=[0, 1, 2], transform="log", lower_bound=0.5,
-                          upper_bound=1.5)
+    pf.add_parameters(ghb_files, par_type="grid", par_style="multiplier", use_cols=3, par_name_base="mltstage",
+                      pargp="ghbstage", index_cols=[0, 1, 2], transform="log", lower_bound=0.5,
+                      upper_bound=1.5)
 
-        # Add stream flow observation
-        # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
-        pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
-                            use_cols=["GAGE_1","HEADWATER","TAILWATER"],ofile_sep=",")
-        # Setup geostruct for spatial pars
-        gr_v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
-        gr_gs = pyemu.geostats.GeoStruct(variograms=gr_v, transform="log")
-        pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
-        pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
-        rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
-        pf.extra_py_imports.append('flopy')
-        ib = m.dis.idomain[0].array
-        tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
-                "rch_recharge": [.5, 1.5]}
-        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-        print(dts)
-        #ib = m.dis.idomain.array[0,:,:]
-        # setup from array style pars
-        for tag, bnd in tags.items():
-            lb, ub = bnd[0], bnd[1]
-            arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-            if "rch" in tag:
-                for arr_file in arr_files:
-                    # indy direct grid pars for each array type file
-                    recharge_files = ["recharge_1.txt","recharge_2.txt","recharge_3.txt"]
-                    pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
-                                      pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
-                                      par_style="direct")
-                    # additional constant mults
-                    kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-                    pf.add_parameters(filenames=arr_file, par_type="constant",
-                                      par_name_base=arr_file.split('.')[1] + "_cn",
-                                      pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                                      geostruct=rch_temporal_gs,
-                                      datetime=dts[kper])
-            else:
-                for arr_file in arr_files:
-                    # grid mults pure and simple
-                    pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
-                                      pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub,
-                                      lower_bound=lb,
-                                      geostruct=gr_gs)
+    # Add stream flow observation
+    # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
+                        use_cols=["GAGE_1","HEADWATER","TAILWATER"],ofile_sep=",")
+    # Setup geostruct for spatial pars
+    gr_v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=gr_v, transform="log")
+    pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
+    pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
+    rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
+            "rch_recharge": [.5, 1.5]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+    #ib = m.dis.idomain.array[0,:,:]
+    # setup from array style pars
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            for arr_file in arr_files:
+                # indy direct grid pars for each array type file
+                recharge_files = ["recharge_1.txt","recharge_2.txt","recharge_3.txt"]
+                pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
+                                  pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
+                                  par_style="direct")
+                # additional constant mults
+                kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+                pf.add_parameters(filenames=arr_file, par_type="constant",
+                                  par_name_base=arr_file.split('.')[1] + "_cn",
+                                  pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                                  geostruct=rch_temporal_gs,
+                                  datetime=dts[kper])
+        else:
+            for arr_file in arr_files:
+                # grid mults pure and simple
+                pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
+                                  pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub,
+                                  lower_bound=lb,
+                                  geostruct=gr_gs)
 
-        # Add a variety of list style pars
-        list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
-                      for t in range(1, m.nper + 1)]
-        # make dummy versions with headers
-        for fl in list_files[0:2]: # this adds a header to well file
-            with open(os.path.join(template_ws, fl), 'r') as fr:
-                lines = [line for line in fr]
-            with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
-                fw.write("k i j flux \n")
-                for line in lines:
-                    fw.write(line)
+    # Add a variety of list style pars
+    list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
+                  for t in range(1, m.nper + 1)]
+    # make dummy versions with headers
+    for fl in list_files[0:2]: # this adds a header to well file
+        with open(os.path.join(template_ws, fl), 'r') as fr:
+            lines = [line for line in fr]
+        with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
+            fw.write("k i j flux \n")
+            for line in lines:
+                fw.write(line)
 
-        # fl = "freyberg6.wel_stress_period_data_3.txt" # Add extra string col_id
-        for fl in list_files[2:7]:
-            with open(os.path.join(template_ws, fl), 'r') as fr:
-                lines = [line for line in fr]
-            with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
-                fw.write("well k i j flux \n")
-                for i, line in enumerate(lines):
-                    fw.write(f"well{i}" + line)
+    # fl = "freyberg6.wel_stress_period_data_3.txt" # Add extra string col_id
+    for fl in list_files[2:7]:
+        with open(os.path.join(template_ws, fl), 'r') as fr:
+            lines = [line for line in fr]
+        with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
+            fw.write("well k i j flux \n")
+            for i, line in enumerate(lines):
+                fw.write(f"well{i}" + line)
 
-        list_files.sort()
-        for list_file in list_files:
-            kper = int(list_file.split(".")[1].split('_')[-1]) - 1
-            #add spatially constant, but temporally correlated wel flux pars
-            pf.add_parameters(filenames=list_file, par_type="constant", par_name_base="twel_mlt_{0}".format(kper),
-                              pargp="twel_mlt_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
-                              upper_bound=1.5, lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
+    list_files.sort()
+    for list_file in list_files:
+        kper = int(list_file.split(".")[1].split('_')[-1]) - 1
+        #add spatially constant, but temporally correlated wel flux pars
+        pf.add_parameters(filenames=list_file, par_type="constant", par_name_base="twel_mlt_{0}".format(kper),
+                          pargp="twel_mlt_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
+                          upper_bound=1.5, lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
 
-            # add temporally indep, but spatially correlated wel flux pars
-            pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
-                              pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
-                              upper_bound=0.0, lower_bound=-1000, geostruct=gr_gs, par_style="direct",
-                              transform="none")
-        # Adding dummy list pars with different file structures
-        list_file = "new_freyberg6.wel_stress_period_data_1.txt"  # with a header
-        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nwell_mlt',
-                          pargp='nwell_mult', index_cols=['k', 'i', 'j'], use_cols='flux',
-                          upper_bound=10, lower_bound=-10, geostruct=gr_gs,
+        # add temporally indep, but spatially correlated wel flux pars
+        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
+                          pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
+                          upper_bound=0.0, lower_bound=-1000, geostruct=gr_gs, par_style="direct",
                           transform="none")
-        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nwell_grid',
-                          pargp='nwell', index_cols=['k', 'i', 'j'], use_cols='flux',
-                          upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
-                          transform="none")
-        # with skip instead
-        list_file = "new_freyberg6.wel_stress_period_data_2.txt"
-        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nwell_grid',
-                          pargp='nwell', index_cols=[0, 1, 2], use_cols=3,
-                          upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
-                          transform="none", mfile_skip=1)
+    # Adding dummy list pars with different file structures
+    list_file = "new_freyberg6.wel_stress_period_data_1.txt"  # with a header
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nwell_mlt',
+                      pargp='nwell_mult', index_cols=['k', 'i', 'j'], use_cols='flux',
+                      upper_bound=10, lower_bound=-10, geostruct=gr_gs,
+                      transform="none")
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nwell_grid',
+                      pargp='nwell', index_cols=['k', 'i', 'j'], use_cols='flux',
+                      upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
+                      transform="none")
+    # with skip instead
+    list_file = "new_freyberg6.wel_stress_period_data_2.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nwell_grid',
+                      pargp='nwell', index_cols=[0, 1, 2], use_cols=3,
+                      upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
+                      transform="none", mfile_skip=1)
 
-        list_file = "new_freyberg6.wel_stress_period_data_3.txt"
-        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nwell_mlt',
-                          pargp='nwell_mult', index_cols=['well', 'k', 'i', 'j'], use_cols='flux',
-                          upper_bound=10, lower_bound=-10, geostruct=gr_gs,
-                          transform="none")
-        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nwell_grid',
-                          pargp='nwell', index_cols=['well', 'k', 'i', 'j'], use_cols='flux',
-                          upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
-                          transform="none")
-        # with skip instead
-        list_file = "new_freyberg6.wel_stress_period_data_4.txt"
-        pf.add_parameters(filenames=list_file, par_type="grid",
-                          par_name_base='nwell_grid', pargp='nwell',
-                          index_cols=[0, 1, 2, 3],  # or... {'well': 0, 'k': 1, 'i': 2, 'j': 3},
-                          use_cols=4, upper_bound=10, lower_bound=-10,
-                          geostruct=gr_gs, par_style="direct", transform="none",
-                          mfile_skip=1)
+    list_file = "new_freyberg6.wel_stress_period_data_3.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nwell_mlt',
+                      pargp='nwell_mult', index_cols=['well', 'k', 'i', 'j'], use_cols='flux',
+                      upper_bound=10, lower_bound=-10, geostruct=gr_gs,
+                      transform="none")
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nwell_grid',
+                      pargp='nwell', index_cols=['well', 'k', 'i', 'j'], use_cols='flux',
+                      upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
+                      transform="none")
+    # with skip instead
+    list_file = "new_freyberg6.wel_stress_period_data_4.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base='nwell_grid', pargp='nwell',
+                      index_cols=[0, 1, 2, 3],  # or... {'well': 0, 'k': 1, 'i': 2, 'j': 3},
+                      use_cols=4, upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=1)
 
-        list_file = "freyberg6.ghb_stress_period_data_1.txt"
-        pf.add_parameters(filenames=list_file, par_type="constant", par_name_base=["ghb_stage","ghb_cond"],
-                          pargp=["ghb_stage","ghb_cond"], index_cols=[0, 1, 2], use_cols=[3,4],
-                          upper_bound=[35,150], lower_bound=[32,50], par_style="direct",
-                          transform="none")
-        pf.add_parameters(filenames=dup_file, par_type="grid", par_name_base="dups",
-                          pargp="dups", index_cols=[0, 1, 2], use_cols=[3],
-                          upper_bound=0.0, lower_bound=-500,par_style="direct",
-                          transform="none")
+    list_file = "freyberg6.ghb_stress_period_data_1.txt"
+    pf.add_parameters(filenames=list_file, par_type="constant", par_name_base=["ghb_stage","ghb_cond"],
+                      pargp=["ghb_stage","ghb_cond"], index_cols=[0, 1, 2], use_cols=[3,4],
+                      upper_bound=[35,150], lower_bound=[32,50], par_style="direct",
+                      transform="none")
+    pf.add_parameters(filenames=dup_file, par_type="grid", par_name_base="dups",
+                      pargp="dups", index_cols=[0, 1, 2], use_cols=[3],
+                      upper_bound=0.0, lower_bound=-500,par_style="direct",
+                      transform="none")
 
-        list_file = "new_freyberg6.wel_stress_period_data_5.txt"
-        pf.add_parameters(filenames=list_file, par_type="grid",
-                          par_name_base=['nwell5_k', 'nwell5_q'],
-                          pargp='nwell5',
-                          index_cols=['well', 'i',  'j'],
-                          use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
-                          geostruct=gr_gs, par_style="direct", transform="none",
-                          mfile_skip=0, use_rows=[3, 4])
+    list_file = "new_freyberg6.wel_stress_period_data_5.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell5_k', 'nwell5_q'],
+                      pargp='nwell5',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0, use_rows=[3, 4])
 
-        list_file = "new_freyberg6.wel_stress_period_data_6.txt"
-        pf.add_parameters(filenames=list_file, par_type="grid",
-                          par_name_base=['nwell6_k', 'nwell6_q'],
-                          pargp='nwell6',
-                          index_cols=['well', 'i',  'j'],
-                          use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
-                          geostruct=gr_gs, par_style="direct", transform="none",
-                          mfile_skip=0, use_rows=[(3, 21, 15), (3, 30, 7)])
-        # use_rows should match so all should be setup 2 cols 6 rows
-        assert len(pf.par_dfs[-1]) == 2*6 # should be
-        list_file = "new_freyberg6.wel_stress_period_data_7.txt"
-        pf.add_parameters(filenames=list_file, par_type="grid",
-                          par_name_base=['nwell6_k', 'nwell6_q'],
-                          pargp='nwell6',
-                          index_cols=['well', 'i',  'j'],
-                          use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
-                          geostruct=gr_gs, par_style="direct", transform="none",
-                          mfile_skip=0,
-                          use_rows=[('well2', 21, 15), ('well4', 30, 7)])
-        assert len(pf.par_dfs[-1]) == 2 * 2  # should be
-        # add model run command
-        pf.mod_sys_cmds.append("mf6")
-        print(pf.mult_files)
-        print(pf.org_files)
+    list_file = "new_freyberg6.wel_stress_period_data_6.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell6_k', 'nwell6_q'],
+                      pargp='nwell6',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0, use_rows=[(3, 21, 15), (3, 30, 7)])
+    # use_rows should match so all should be setup 2 cols 6 rows
+    assert len(pf.par_dfs[-1]) == 2*6 # should be
+    list_file = "new_freyberg6.wel_stress_period_data_7.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base=['nwell6_k', 'nwell6_q'],
+                      pargp='nwell6',
+                      index_cols=['well', 'i',  'j'],
+                      use_cols=['k', 'flux'], upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=0,
+                      use_rows=[('well2', 21, 15), ('well4', 30, 7)])
+    assert len(pf.par_dfs[-1]) == 2 * 2  # should be
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
 
-        # build pest
-        pst = pf.build_pst('freyberg.pst')
-        cov = pf.build_prior(fmt="non")
-        cov.to_coo(os.path.join(template_ws, "prior.jcb"))
-        pst.try_parse_name_metadata()
-        df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
-        pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
-                            use_cols=list(df.columns.values),
-                            prefix="hds", rebuild_pst=True)
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+    cov = pf.build_prior(fmt="non")
+    cov.to_coo(os.path.join(template_ws, "prior.jcb"))
+    pst.try_parse_name_metadata()
+    df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
+    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
+                        use_cols=list(df.columns.values),
+                        prefix="hds", rebuild_pst=True)
 
-        # test par mults are working
+    # test par mults are working
 
-        os.chdir(pf.new_d)
-        pst.write_input_files()
-        pyemu.helpers.apply_list_and_array_pars(
-            arr_par_file="mult2model_info.csv", chunk_len=1)
-        # TODO Some checks on resultant par files...
-        list_files = [f for f in os.listdir('.')
-                      if f.startswith('new_') and f.endswith('txt')]
-        # check on that those dummy pars compare to the model versions.
-        for f in list_files:
-            n_df = pd.read_csv(f, sep=r"\s+")
-            o_df = pd.read_csv(f.strip('new_'), sep=r"\s+", header=None)
-            o_df.columns = ['k', 'i', 'j', 'flux']
-            assert np.isclose(n_df.loc[:, o_df.columns], o_df).all(), (
-                "Something broke with alternative style model files"
-            )
-        os.chdir(tmp_path)
+    os.chdir(pf.new_d)
+    pst.write_input_files()
+    pyemu.helpers.apply_list_and_array_pars(
+        arr_par_file="mult2model_info.csv", chunk_len=1)
+    # TODO Some checks on resultant par files...
+    list_files = [f for f in os.listdir('.')
+                  if f.startswith('new_') and f.endswith('txt')]
+    # check on that those dummy pars compare to the model versions.
+    for f in list_files:
+        n_df = pd.read_csv(f, sep=r"\s+")
+        o_df = pd.read_csv(f.strip('new_'), sep=r"\s+", header=None)
+        o_df.columns = ['k', 'i', 'j', 'flux']
+        assert np.isclose(n_df.loc[:, o_df.columns], o_df).all(), (
+            "Something broke with alternative style model files"
+        )
+    os.chdir(tmp_path)
 
-        num_reals = 100
-        pe = pf.draw(num_reals, use_specsim=True)
-        pe.to_binary(os.path.join(template_ws, "prior.jcb"))
-        assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
-        assert pe.shape[0] == num_reals
+    num_reals = 100
+    pe = pf.draw(num_reals, use_specsim=True)
+    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+    assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
+    assert pe.shape[0] == num_reals
 
-        pst.control_data.noptmax = 0
-        pst.pestpp_options["additional_ins_delimiters"] = ","
+    pst.control_data.noptmax = 0
+    pst.pestpp_options["additional_ins_delimiters"] = ","
 
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
-        res_file = os.path.join(pf.new_d, "freyberg.base.rei")
-        assert os.path.exists(res_file), res_file
-        pst.set_res(res_file)
-        print(pst.phi)
-        assert pst.phi < 0.1, pst.phi
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+    assert pst.phi < 0.1, pst.phi
 
-        org_ghb = pd.read_csv(os.path.join(pf.new_d,"org","freyberg6.ghb_stress_period_data_1.txt"),
-                              header=None,names=["l","r","c","stage","cond"])
-        new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-                              sep=r"\s+",
-                              header=None, names=["l", "r", "c", "stage", "cond"])
-        d = org_ghb.stage - new_ghb.stage
-        print(d)
-        assert d.sum() == 0, d.sum()
+    org_ghb = pd.read_csv(os.path.join(pf.new_d,"org","freyberg6.ghb_stress_period_data_1.txt"),
+                          header=None,names=["l","r","c","stage","cond"])
+    new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
+                          sep=r"\s+",
+                          header=None, names=["l", "r", "c", "stage", "cond"])
+    d = org_ghb.stage - new_ghb.stage
+    print(d)
+    assert d.sum() == 0, d.sum()
 
 
-        # test the additive ghb stage pars
-        par = pst.parameter_data
-        par.loc[par.parnme.str.contains("ghbstage_inst:0"),"parval1"] = 3.0
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-        org_ghb = pd.read_csv(os.path.join(pf.new_d, "org", "freyberg6.ghb_stress_period_data_1.txt"),
-                              header=None, names=["l", "r", "c", "stage", "cond"])
-        new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-                              sep=r"\s+",
-                              header=None, names=["l", "r", "c", "stage", "cond"])
-        d = (org_ghb.stage - new_ghb.stage).apply(np.abs)
-        print(d)
-        assert d.mean() == 3.0, d.mean()
+    # test the additive ghb stage pars
+    par = pst.parameter_data
+    par.loc[par.parnme.str.contains("ghbstage_inst:0"),"parval1"] = 3.0
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    org_ghb = pd.read_csv(os.path.join(pf.new_d, "org", "freyberg6.ghb_stress_period_data_1.txt"),
+                          header=None, names=["l", "r", "c", "stage", "cond"])
+    new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
+                          sep=r"\s+",
+                          header=None, names=["l", "r", "c", "stage", "cond"])
+    d = (org_ghb.stage - new_ghb.stage).apply(np.abs)
+    print(d)
+    assert d.mean() == 3.0, d.mean()
 
-        # check that the interaction between the direct ghb stage par and the additive ghb stage pars
-        # is working
-        par.loc[par.parnme.str.contains("ghb_stage"),"parval1"] -= 3.0
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-        org_ghb = pd.read_csv(os.path.join(tmp_model_ws,"freyberg6.ghb_stress_period_data_1.txt"),
-                              header=None, names=["l", "r", "c", "stage", "cond"],sep=r"\s+")
-        new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-                              sep=r"\s+",
-                              header=None, names=["l", "r", "c", "stage", "cond"])
-        d = org_ghb.stage - new_ghb.stage
-        print(new_ghb.stage)
-        print(org_ghb.stage)
-        print(d)
-        assert d.sum() == 0.0, d.sum()
+    # check that the interaction between the direct ghb stage par and the additive ghb stage pars
+    # is working
+    par.loc[par.parnme.str.contains("ghb_stage"),"parval1"] -= 3.0
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    org_ghb = pd.read_csv(os.path.join(tmp_model_ws,"freyberg6.ghb_stress_period_data_1.txt"),
+                          header=None, names=["l", "r", "c", "stage", "cond"],sep=r"\s+")
+    new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
+                          sep=r"\s+",
+                          header=None, names=["l", "r", "c", "stage", "cond"])
+    d = org_ghb.stage - new_ghb.stage
+    print(new_ghb.stage)
+    print(org_ghb.stage)
+    print(d)
+    assert d.sum() == 0.0, d.sum()
 
-        # check the interaction with multiplicative ghb stage, direct ghb stage and additive ghb stage
-        par.loc[par.parnme.str.contains("mltstage"), "parval1"] = 1.1
-        #par.loc[par.parnme.str.contains("ghbstage_inst:0"), "parval1"] = 0.0
-        #par.loc[par.parnme.str.contains("ghb_stage"), "parval1"] += 3.0
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-        org_ghb = pd.read_csv(os.path.join(tmp_model_ws, "freyberg6.ghb_stress_period_data_1.txt"),
-                              header=None, names=["l", "r", "c", "stage", "cond"], sep=r"\s+")
-        new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
-                              sep=r"\s+",
-                              header=None, names=["l", "r", "c", "stage", "cond"])
-        d = (org_ghb.stage * 1.1) - new_ghb.stage
-        print(new_ghb.stage)
-        print(org_ghb.stage)
-        print(d)
-        assert d.sum() == 0.0, d.sum()
+    # check the interaction with multiplicative ghb stage, direct ghb stage and additive ghb stage
+    par.loc[par.parnme.str.contains("mltstage"), "parval1"] = 1.1
+    #par.loc[par.parnme.str.contains("ghbstage_inst:0"), "parval1"] = 0.0
+    #par.loc[par.parnme.str.contains("ghb_stage"), "parval1"] += 3.0
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    org_ghb = pd.read_csv(os.path.join(tmp_model_ws, "freyberg6.ghb_stress_period_data_1.txt"),
+                          header=None, names=["l", "r", "c", "stage", "cond"], sep=r"\s+")
+    new_ghb = pd.read_csv(os.path.join(pf.new_d, "freyberg6.ghb_stress_period_data_1.txt"),
+                          sep=r"\s+",
+                          header=None, names=["l", "r", "c", "stage", "cond"])
+    d = (org_ghb.stage * 1.1) - new_ghb.stage
+    print(new_ghb.stage)
+    print(org_ghb.stage)
+    print(d)
+    assert d.sum() == 0.0, d.sum()
 
-        # turn direct recharge to min and direct wel to min and
-        # check that the model results are consistent
-        par = pst.parameter_data
-        rch_par = par.loc[par.parnme.apply(
-            lambda x: "pname:rch_gr" in x and "ptype:gr_pstyle:d" in x ), "parnme"]
-        wel_par = par.loc[par.parnme.apply(
-            lambda x: "pname:wel_grid" in x and "ptype:gr_usecol:3_pstyle:d" in x), "parnme"]
-        par.loc[rch_par,"parval1"] = par.loc[rch_par, "parlbnd"]
-        # this should set wells to zero since they are negative values in the control file
-        par.loc[wel_par,"parval1"] = par.loc[wel_par, "parubnd"]
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-        lst = flopy.utils.Mf6ListBudget(os.path.join(pf.new_d, "freyberg6.lst"))
-        flx, cum = lst.get_dataframes(diff=True)
-        wel_tot = flx.wel.apply(np.abs).sum()
-        print(flx.wel)
-        assert wel_tot < 1.0e-6, wel_tot
+    # turn direct recharge to min and direct wel to min and
+    # check that the model results are consistent
+    par = pst.parameter_data
+    rch_par = par.loc[par.parnme.apply(
+        lambda x: "pname:rch_gr" in x and "ptype:gr_pstyle:d" in x ), "parnme"]
+    wel_par = par.loc[par.parnme.apply(
+        lambda x: "pname:wel_grid" in x and "ptype:gr_usecol:3_pstyle:d" in x), "parnme"]
+    par.loc[rch_par,"parval1"] = par.loc[rch_par, "parlbnd"]
+    # this should set wells to zero since they are negative values in the control file
+    par.loc[wel_par,"parval1"] = par.loc[wel_par, "parubnd"]
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    lst = flopy.utils.Mf6ListBudget(os.path.join(pf.new_d, "freyberg6.lst"))
+    flx, cum = lst.get_dataframes(diff=True)
+    wel_tot = flx.wel.apply(np.abs).sum()
+    print(flx.wel)
+    assert wel_tot < 1.0e-6, wel_tot
 
-        rch_files = [f for f in os.listdir(pf.new_d)
-                     if ".rch_recharge" in f and f.endswith(".txt")]
-        rch_val = par.loc[rch_par,"parval1"][0]
-        i, j = par.loc[rch_par, ["i", 'j']].astype(int).values.T
-        for rch_file in rch_files:
-            arr = np.loadtxt(os.path.join(pf.new_d, rch_file))[i, j]
-            print(rch_file, rch_val, arr.mean(), arr.max(), arr.min())
-            if np.abs(arr.max() - rch_val) > 1.0e-6 or np.abs(arr.min() - rch_val) > 1.0e-6:
-                raise Exception("recharge too diff")
-    except Exception as e:
-        os.chdir(bd)
-        raise e
-    os.chdir(bd)
+    rch_files = [f for f in os.listdir(pf.new_d)
+                 if ".rch_recharge" in f and f.endswith(".txt")]
+    rch_val = par.loc[rch_par,"parval1"][0]
+    i, j = par.loc[rch_par, ["i", 'j']].astype(int).values.T
+    for rch_file in rch_files:
+        arr = np.loadtxt(os.path.join(pf.new_d, rch_file))[i, j]
+        print(rch_file, rch_val, arr.mean(), arr.max(), arr.min())
+        if np.abs(arr.max() - rch_val) > 1.0e-6 or np.abs(arr.min() - rch_val) > 1.0e-6:
+            raise Exception("recharge too diff")
 
 
 def mf6_freyberg_varying_idomain(tmp_path):
@@ -2372,155 +2349,150 @@ def mf6_freyberg_varying_idomain(tmp_path):
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
-    bd = Path.cwd()
+
     os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        # sim.set_all_data_external()
-        sim.set_sim_path(str(tmp_model_ws))
-        # sim.set_all_data_external()
-        m = sim.get_model("freyberg6")
-        sim.set_all_data_external(check_data=False)
-        sim.write_simulation()
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    # sim.set_all_data_external()
+    sim.set_sim_path(str(tmp_model_ws))
+    # sim.set_all_data_external()
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
 
-        #sim = None
-        ib_file = os.path.join(tmp_model_ws,"freyberg6.dis_idomain_layer1.txt")
-        arr = np.loadtxt(ib_file,dtype=np.int64)
+    #sim = None
+    ib_file = os.path.join(tmp_model_ws,"freyberg6.dis_idomain_layer1.txt")
+    arr = np.loadtxt(ib_file,dtype=np.int64)
 
-        arr[:2,:14] = 0
-        np.savetxt(ib_file,arr,fmt="%2d")
-        print(arr)
+    arr[:2,:14] = 0
+    np.savetxt(ib_file,arr,fmt="%2d")
+    print(arr)
 
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        m = sim.get_model("freyberg6")
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    m = sim.get_model("freyberg6")
 
-        # SETUP pest stuff...
-        os_utils.run("{0} ".format(mf6_exe_path), cwd=str(tmp_model_ws))
-
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=str(tmp_model_ws))
 
 
-        template_ws = "new_temp"
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
 
-        # if os.path.exists(template_ws):
-        #     shutil.rmtree(template_ws)
-        # shutil.copytree(tmp_model_ws,template_ws)
-        # hk_file = os.path.join(template_ws, "freyberg6.npf_k_layer1.txt")
-        # hk = np.loadtxt(hk_file)
-        #
-        # hk[arr == 0] = 1.0e+30
-        # np.savetxt(hk_file,hk,fmt="%50.45f")
-        # os_utils.run("{0} ".format(mf6_exe_path), cwd=template_ws)
-        # import matplotlib.pyplot as plt
-        # hds1 = flopy.utils.HeadFile(os.path.join(tmp_model_ws, "freyberg6_freyberg.hds"))
-        # hds2 = flopy.utils.HeadFile(os.path.join(template_ws, "freyberg6_freyberg.hds"))
-        #
-        # d = hds1.get_data() - hds2.get_data()
-        # for dd in d:
-        #     cb = plt.imshow(dd)
-        #     plt.colorbar(cb)
-        #     plt.show()
-        # return
+    template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
 
-        # sr0 = m.sr
-        # sr = pyemu.helpers.SpatialReference.from_namfile(
-        #     os.path.join(tmp_model_ws, "freyberg6.nam"),
-        #     delr=m.dis.delr.array, delc=m.dis.delc.array)
+    # if os.path.exists(template_ws):
+    #     shutil.rmtree(template_ws)
+    # shutil.copytree(tmp_model_ws,template_ws)
+    # hk_file = os.path.join(template_ws, "freyberg6.npf_k_layer1.txt")
+    # hk = np.loadtxt(hk_file)
+    #
+    # hk[arr == 0] = 1.0e+30
+    # np.savetxt(hk_file,hk,fmt="%50.45f")
+    # os_utils.run("{0} ".format(mf6_exe_path), cwd=template_ws)
+    # import matplotlib.pyplot as plt
+    # hds1 = flopy.utils.HeadFile(os.path.join(tmp_model_ws, "freyberg6_freyberg.hds"))
+    # hds2 = flopy.utils.HeadFile(os.path.join(template_ws, "freyberg6_freyberg.hds"))
+    #
+    # d = hds1.get_data() - hds2.get_data()
+    # for dd in d:
+    #     cb = plt.imshow(dd)
+    #     plt.colorbar(cb)
+    #     plt.show()
+    # return
 
-        sr = m.modelgrid
-        # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False, start_datetime="1-1-2018")
+    # sr0 = m.sr
+    # sr = pyemu.helpers.SpatialReference.from_namfile(
+    #     os.path.join(tmp_model_ws, "freyberg6.nam"),
+    #     delr=m.dis.delr.array, delc=m.dis.delc.array)
 
-
-        # pf.post_py_cmds.append("generic_function()")
-        df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
-        pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values),
-                            ofile_sep=",")
-        v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
-        gr_gs = pyemu.geostats.GeoStruct(variograms=v)
-        rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
-        pf.extra_py_imports.append('flopy')
-
-        ib = {}
-        for k in range(m.dis.nlay.data):
-            a = m.dis.idomain.array[k,:,:].copy()
-            print(a)
-            ib[k] = a
-
-        tags = {"npf_k_": [0.1, 10.,0.003,35]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1]}
-        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-        print(dts)
-        for tag, bnd in tags.items():
-            lb, ub = bnd[0], bnd[1]
-            ult_lb = bnd[2]
-            ult_ub = bnd[3]
-            arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-
-            for arr_file in arr_files:
-
-                # these ult bounds are used later in an assert
-
-                k = int(arr_file.split(".")[-2].split("layer")[1].split("_")[0]) - 1
-                pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1] + "_pp",
-                                  pargp=arr_file.split('.')[1] + "_pp", upper_bound=ub, lower_bound=lb,
-                                  geostruct=gr_gs, zone_array=ib[k],ult_lbound=ult_lb,ult_ubound=ult_ub)
-
-        # add model run command
-        pf.mod_sys_cmds.append("mf6")
-        df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
-        df = pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
-                            prefix="hds", ofile_sep=",")
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018")
 
 
-        #pst = pf.build_pst('freyberg.pst')
-        pf.parfile_relations.to_csv(os.path.join(pf.new_d, "mult2model_info.csv"))
-        os.chdir(pf.new_d)
-        df = pyemu.helpers.calc_array_par_summary_stats()
-        os.chdir(tmp_path)
-        pf.post_py_cmds.append("pyemu.helpers.calc_array_par_summary_stats()")
-        pf.add_observations("arr_par_summary.csv",index_cols=["model_file"],use_cols=df.columns.tolist(),
-                            obsgp=["arr_par_summary" for _ in df.columns],prefix=["arr_par_summary" for _ in df.columns])
-        pst = pf.build_pst('freyberg.pst')
-        pst.control_data.noptmax = 0
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    # pf.post_py_cmds.append("generic_function()")
+    df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values),
+                        ofile_sep=",")
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+    rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
+    pf.extra_py_imports.append('flopy')
 
-        res_file = os.path.join(pf.new_d, "freyberg.base.rei")
-        assert os.path.exists(res_file), res_file
-        pst.set_res(res_file)
-        print(pst.phi)
-        assert pst.phi < 1.0e-6
+    ib = {}
+    for k in range(m.dis.nlay.data):
+        a = m.dis.idomain.array[k,:,:].copy()
+        print(a)
+        ib[k] = a
 
-        pe = pf.draw(10,use_specsim=True)
-        pe.enforce()
-        pst.parameter_data.loc[:,"parval1"] = pe.loc[pe.index[0],pst.par_names]
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    tags = {"npf_k_": [0.1, 10.,0.003,35]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        ult_lb = bnd[2]
+        ult_ub = bnd[3]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
 
-        res_file = os.path.join(pf.new_d, "freyberg.base.rei")
-        assert os.path.exists(res_file), res_file
-        pst.set_res(res_file)
-        print(pst.phi)
+        for arr_file in arr_files:
 
-        df = pd.read_csv(os.path.join(pf.new_d,"mult2model_info.csv"), index_col=0)
-        arr_pars = df.loc[df.index_cols.isna()].copy()
-        model_files = arr_pars.model_file.unique()
-        pst.try_parse_name_metadata()
-        for model_file in model_files:
-            arr = np.loadtxt(os.path.join(pf.new_d,model_file))
-            clean_name = model_file.replace(".","_").replace("\\","_").replace("/","_")
-            sim_val = pst.res.loc[pst.res.name.apply(lambda x: clean_name in x ),"modelled"]
-            sim_val = sim_val.loc[sim_val.index.map(lambda x: "mean_model_file" in x)]
-            print(model_file,sim_val,arr.mean())
-    except Exception as e:
-        os.chdir(bd)
-        raise e
-    os.chdir(bd)
+            # these ult bounds are used later in an assert
+
+            k = int(arr_file.split(".")[-2].split("layer")[1].split("_")[0]) - 1
+            pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1] + "_pp",
+                              pargp=arr_file.split('.')[1] + "_pp", upper_bound=ub, lower_bound=lb,
+                              geostruct=gr_gs, zone_array=ib[k],ult_lbound=ult_lb,ult_ubound=ult_ub)
+
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
+    df = pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
+                        prefix="hds", ofile_sep=",")
+
+
+    #pst = pf.build_pst('freyberg.pst')
+    pf.parfile_relations.to_csv(os.path.join(pf.new_d, "mult2model_info.csv"))
+    os.chdir(pf.new_d)
+    df = pyemu.helpers.calc_array_par_summary_stats()
+    os.chdir(tmp_path)
+    pf.post_py_cmds.append("pyemu.helpers.calc_array_par_summary_stats()")
+    pf.add_observations("arr_par_summary.csv",index_cols=["model_file"],use_cols=df.columns.tolist(),
+                        obsgp=["arr_par_summary" for _ in df.columns],prefix=["arr_par_summary" for _ in df.columns])
+    pst = pf.build_pst('freyberg.pst')
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+    assert pst.phi < 1.0e-6
+
+    pe = pf.draw(10,use_specsim=True)
+    pe.enforce()
+    pst.parameter_data.loc[:,"parval1"] = pe.loc[pe.index[0],pst.par_names]
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+
+    df = pd.read_csv(os.path.join(pf.new_d,"mult2model_info.csv"), index_col=0)
+    arr_pars = df.loc[df.index_cols.isna()].copy()
+    model_files = arr_pars.model_file.unique()
+    pst.try_parse_name_metadata()
+    for model_file in model_files:
+        arr = np.loadtxt(os.path.join(pf.new_d,model_file))
+        clean_name = model_file.replace(".","_").replace("\\","_").replace("/","_")
+        sim_val = pst.res.loc[pst.res.name.apply(lambda x: clean_name in x ),"modelled"]
+        sim_val = sim_val.loc[sim_val.index.map(lambda x: "mean_model_file" in x)]
+        print(model_file,sim_val,arr.mean())
 
 
 def xsec_test(tmp_path):
@@ -2539,42 +2511,37 @@ def xsec_test(tmp_path):
     # SETUP pest stuff...
     nam_file = "10par_xsec.nam"
     os_utils.run("{0} {1}".format(mf_exe_path,nam_file), cwd=tmp_model_ws)
-    bd = Path.cwd()
+
     os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-        m = flopy.modflow.Modflow.load(nam_file,model_ws=tmp_model_ws,version="mfnwt")
-        sr = m.modelgrid
-        t_d = "template_xsec"
-        pf = pyemu.utils.PstFrom(tmp_model_ws,t_d,remove_existing=True,spatial_reference=sr)
-        pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_style="direct",upper_bound=25,
-                          lower_bound=0.25)
-        pf.add_parameters("hk_Layer_1.ref", par_type="grid", par_style="multiplier", upper_bound=10.0,
-                          lower_bound=0.1)
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    m = flopy.modflow.Modflow.load(nam_file,model_ws=tmp_model_ws,version="mfnwt")
+    sr = m.modelgrid
+    t_d = "template_xsec"
+    pf = pyemu.utils.PstFrom(tmp_model_ws,t_d,remove_existing=True,spatial_reference=sr)
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_style="direct",upper_bound=25,
+                      lower_bound=0.25)
+    pf.add_parameters("hk_Layer_1.ref", par_type="grid", par_style="multiplier", upper_bound=10.0,
+                      lower_bound=0.1)
 
-        hds_arr = np.loadtxt(os.path.join(t_d,"10par_xsec.hds"))
-        with open(os.path.join(t_d,"10par_xsec.hds.ins"),'w')  as f:
-            f.write("pif ~\n")
-            for kper in range(hds_arr.shape[0]):
-                f.write("l1 ")
-                for j in range(hds_arr.shape[1]):
-                    oname = "hds_{0}_{1}".format(kper,j)
-                    f.write(" !{0}! ".format(oname))
-                f.write("\n")
-        pf.add_observations_from_ins(os.path.join(t_d,"10par_xsec.hds.ins"),pst_path=".")
+    hds_arr = np.loadtxt(os.path.join(t_d,"10par_xsec.hds"))
+    with open(os.path.join(t_d,"10par_xsec.hds.ins"),'w')  as f:
+        f.write("pif ~\n")
+        for kper in range(hds_arr.shape[0]):
+            f.write("l1 ")
+            for j in range(hds_arr.shape[1]):
+                oname = "hds_{0}_{1}".format(kper,j)
+                f.write(" !{0}! ".format(oname))
+            f.write("\n")
+    pf.add_observations_from_ins(os.path.join(t_d,"10par_xsec.hds.ins"),pst_path=".")
 
-        pf.mod_sys_cmds.append("mfnwt {0}".format(nam_file))
+    pf.mod_sys_cmds.append("mfnwt {0}".format(nam_file))
 
-        pf.build_pst(os.path.join(t_d,"pest.pst"))
+    pf.build_pst(os.path.join(t_d,"pest.pst"))
 
-        pyemu.os_utils.run("{0} {1}".format(ies_exe_path,"pest.pst"),cwd=t_d)
-        pst = pyemu.Pst(os.path.join(t_d,"pest.pst"))
-        print(pst.phi)
-        assert np.isclose(pst.phi, 0), pst.phi
-    except Exception as e:
-        os.chdir(bd)
-        raise e
-    os.chdir(bd)
+    pyemu.os_utils.run("{0} {1}".format(ies_exe_path,"pest.pst"),cwd=t_d)
+    pst = pyemu.Pst(os.path.join(t_d,"pest.pst"))
+    print(pst.phi)
+    assert np.isclose(pst.phi, 0), pst.phi
 
 
 def mf6_freyberg_short_direct_test(tmp_path):
@@ -2592,248 +2559,242 @@ def mf6_freyberg_short_direct_test(tmp_path):
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
 
-    bd = Path.cwd()
     os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        m = sim.get_model("freyberg6")
-        sim.set_all_data_external()
-        sim.write_simulation()
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external()
+    sim.write_simulation()
 
-        # SETUP pest stuff...
-        os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-        template_ws = "new_temp_direct"
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        sr = m.modelgrid
-        # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=False, spatial_reference=sr,
-                     zero_based=False, start_datetime="1-1-2018")
-        # obs
-        #   using tabular style model output
-        #   (generated by pyemu.gw_utils.setup_hds_obs())
-        # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
-        #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
+    template_ws = "new_temp_direct"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=False, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018")
+    # obs
+    #   using tabular style model output
+    #   (generated by pyemu.gw_utils.setup_hds_obs())
+    # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
+    #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
 
-        # Add stream flow observation
-        # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
-        pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
-                            use_cols=["GAGE_1","HEADWATER","TAILWATER"],ofile_sep=",")
-        # Setup geostruct for spatial pars
-        v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
-        gr_gs = pyemu.geostats.GeoStruct(variograms=v, transform="log")
-        rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
-        pf.extra_py_imports.append('flopy')
-        ib = m.dis.idomain[0].array
-        tags = {
-            "npf_k_": [0.1, 10.],
-            "npf_k33_": [.1, 10],
-            "sto_ss": [.1, 10],
-            "sto_sy": [.9, 1.1],
-            "rch_recharge": [.5, 1.5]
-        }
-        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-        print(dts)
-        # setup from array style pars
-        for tag, bnd in tags.items():
-            lb, ub = bnd[0], bnd[1]
-            arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-            if "rch" in tag:
-                for arr_file in arr_files:
-                    nmebase = arr_file.split('.')[1].replace('layer','').replace('_','').replace("npf",'').replace("sto",'').replace("recharge",'')
-                    # indy direct grid pars for each array type file
-                    recharge_files = ["recharge_1.txt","recharge_2.txt","recharge_3.txt"]
-                    pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rchg",
-                                      pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
-                                      par_style="direct")
-                    # additional constant mults
-                    kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-                    pf.add_parameters(filenames=arr_file, par_type="constant",
-                                      par_name_base=nmebase + "cn",
-                                      pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                                      geostruct=rch_temporal_gs,
-                                      datetime=dts[kper])
-            else:
-                for arr_file in arr_files:
-                    nmebase = arr_file.split('.')[1].replace(
-                        'layer', '').replace('_','').replace("npf",'').replace(
-                        "sto",'').replace("recharge",'')
-                    # grid mults pure and simple
-                    pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=nmebase,
-                                      pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub,
-                                      lower_bound=lb,
-                                      geostruct=gr_gs)
+    # Add stream flow observation
+    # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
+                        use_cols=["GAGE_1","HEADWATER","TAILWATER"],ofile_sep=",")
+    # Setup geostruct for spatial pars
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v, transform="log")
+    rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {
+        "npf_k_": [0.1, 10.],
+        "npf_k33_": [.1, 10],
+        "sto_ss": [.1, 10],
+        "sto_sy": [.9, 1.1],
+        "rch_recharge": [.5, 1.5]
+    }
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+    # setup from array style pars
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            for arr_file in arr_files:
+                nmebase = arr_file.split('.')[1].replace('layer','').replace('_','').replace("npf",'').replace("sto",'').replace("recharge",'')
+                # indy direct grid pars for each array type file
+                recharge_files = ["recharge_1.txt","recharge_2.txt","recharge_3.txt"]
+                pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rchg",
+                                  pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
+                                  par_style="direct")
+                # additional constant mults
+                kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+                pf.add_parameters(filenames=arr_file, par_type="constant",
+                                  par_name_base=nmebase + "cn",
+                                  pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                                  geostruct=rch_temporal_gs,
+                                  datetime=dts[kper])
+        else:
+            for arr_file in arr_files:
+                nmebase = arr_file.split('.')[1].replace(
+                    'layer', '').replace('_','').replace("npf",'').replace(
+                    "sto",'').replace("recharge",'')
+                # grid mults pure and simple
+                pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=nmebase,
+                                  pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub,
+                                  lower_bound=lb,
+                                  geostruct=gr_gs)
 
-        # Add a variety of list style pars
-        list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
-                      for t in range(1, m.nper + 1)]
-        # make dummy versions with headers
-        for fl in list_files[0:2]: # this adds a header to well file
-            with open(os.path.join(template_ws, fl), 'r') as fr:
-                lines = [line for line in fr]
-            with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
-                fw.write("k i j flx \n")
-                for line in lines:
-                    fw.write(line)
+    # Add a variety of list style pars
+    list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
+                  for t in range(1, m.nper + 1)]
+    # make dummy versions with headers
+    for fl in list_files[0:2]: # this adds a header to well file
+        with open(os.path.join(template_ws, fl), 'r') as fr:
+            lines = [line for line in fr]
+        with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
+            fw.write("k i j flx \n")
+            for line in lines:
+                fw.write(line)
 
-        # fl = "freyberg6.wel_stress_period_data_3.txt" # Add extra string col_id
-        for fl in list_files[2:4]:
-            with open(os.path.join(template_ws, fl), 'r') as fr:
-                lines = [line for line in fr]
-            with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
-                fw.write("well k i j flx \n")
-                for i, line in enumerate(lines):
-                    fw.write(f"w{i}" + line)
+    # fl = "freyberg6.wel_stress_period_data_3.txt" # Add extra string col_id
+    for fl in list_files[2:4]:
+        with open(os.path.join(template_ws, fl), 'r') as fr:
+            lines = [line for line in fr]
+        with open(os.path.join(template_ws, f"new_{fl}"), 'w') as fw:
+            fw.write("well k i j flx \n")
+            for i, line in enumerate(lines):
+                fw.write(f"w{i}" + line)
 
-        list_files.sort()
-        for list_file in list_files:
-            kper = int(list_file.split(".")[1].split('_')[-1]) - 1
-            #add spatially constant, but temporally correlated wel flux pars
-            pf.add_parameters(filenames=list_file, par_type="constant", par_name_base="wel{0}".format(kper),
-                              pargp="twel_mlt_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
-                              upper_bound=1.5, lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
+    list_files.sort()
+    for list_file in list_files:
+        kper = int(list_file.split(".")[1].split('_')[-1]) - 1
+        #add spatially constant, but temporally correlated wel flux pars
+        pf.add_parameters(filenames=list_file, par_type="constant", par_name_base="wel{0}".format(kper),
+                          pargp="twel_mlt_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
+                          upper_bound=1.5, lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
 
-            # add temporally indep, but spatially correlated wel flux pars
-            pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel{0}".format(kper),
-                              pargp="wel_{0}_direct".format(kper), index_cols=[0, 1, 2], use_cols=[3],
-                              upper_bound=0.0, lower_bound=-1000, geostruct=gr_gs, par_style="direct",
-                              transform="none")
-        # # Adding dummy list pars with different file structures
-        list_file = "new_freyberg6.wel_stress_period_data_1.txt"  # with a header
-        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nw',
-                          pargp='nwell_mult', index_cols=['k', 'i', 'j'], use_cols='flx',
-                          upper_bound=10, lower_bound=-10, geostruct=gr_gs,
+        # add temporally indep, but spatially correlated wel flux pars
+        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel{0}".format(kper),
+                          pargp="wel_{0}_direct".format(kper), index_cols=[0, 1, 2], use_cols=[3],
+                          upper_bound=0.0, lower_bound=-1000, geostruct=gr_gs, par_style="direct",
                           transform="none")
-        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nw',
-                          pargp='nwell', index_cols=['k', 'i', 'j'], use_cols='flx',
-                          upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
-                          transform="none")
-        # with skip instead
-        list_file = "new_freyberg6.wel_stress_period_data_2.txt"
-        pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nw',
-                          pargp='nwell', index_cols=[0, 1, 2], use_cols=3,
-                          upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
-                          transform="none", mfile_skip=1)
+    # # Adding dummy list pars with different file structures
+    list_file = "new_freyberg6.wel_stress_period_data_1.txt"  # with a header
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nw',
+                      pargp='nwell_mult', index_cols=['k', 'i', 'j'], use_cols='flx',
+                      upper_bound=10, lower_bound=-10, geostruct=gr_gs,
+                      transform="none")
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nw',
+                      pargp='nwell', index_cols=['k', 'i', 'j'], use_cols='flx',
+                      upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
+                      transform="none")
+    # with skip instead
+    list_file = "new_freyberg6.wel_stress_period_data_2.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid", par_name_base='nw',
+                      pargp='nwell', index_cols=[0, 1, 2], use_cols=3,
+                      upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
+                      transform="none", mfile_skip=1)
 
-        list_file = "new_freyberg6.wel_stress_period_data_3.txt"
-        pf.add_parameters(filenames=list_file, par_type="grid",
-                          pargp='nwell_mult', index_cols=['well', 'k', 'i', 'j'], use_cols='flx',
-                          upper_bound=10, lower_bound=-10, geostruct=gr_gs,
-                          transform="none")
-        pf.add_parameters(filenames=list_file, par_type="grid",
-                          pargp='nwell', index_cols=['well', 'k', 'i', 'j'], use_cols='flx',
-                          upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
-                          transform="none")
-        # with skip instead
-        list_file = "new_freyberg6.wel_stress_period_data_4.txt"
-        pf.add_parameters(filenames=list_file, par_type="grid",
-                          par_name_base='nw', pargp='nwell',
-                          index_cols=[0, 1, 2, 3],  # or... {'well': 0, 'k': 1, 'i': 2, 'j': 3},
-                          use_cols=4, upper_bound=10, lower_bound=-10,
-                          geostruct=gr_gs, par_style="direct", transform="none",
-                          mfile_skip=1)
+    list_file = "new_freyberg6.wel_stress_period_data_3.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      pargp='nwell_mult', index_cols=['well', 'k', 'i', 'j'], use_cols='flx',
+                      upper_bound=10, lower_bound=-10, geostruct=gr_gs,
+                      transform="none")
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      pargp='nwell', index_cols=['well', 'k', 'i', 'j'], use_cols='flx',
+                      upper_bound=10, lower_bound=-10, geostruct=gr_gs, par_style="direct",
+                      transform="none")
+    # with skip instead
+    list_file = "new_freyberg6.wel_stress_period_data_4.txt"
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base='nw', pargp='nwell',
+                      index_cols=[0, 1, 2, 3],  # or... {'well': 0, 'k': 1, 'i': 2, 'j': 3},
+                      use_cols=4, upper_bound=10, lower_bound=-10,
+                      geostruct=gr_gs, par_style="direct", transform="none",
+                      mfile_skip=1)
 
-        list_file = "freyberg6.ghb_stress_period_data_1.txt"
-        pf.add_parameters(filenames=list_file, par_type="constant", par_name_base=["ghbst","ghbc"],
-                          pargp=["ghb_stage","ghb_cond"], index_cols=[0, 1, 2], use_cols=[3,4],
-                          upper_bound=[35,150], lower_bound=[32,50], par_style="direct",
-                          transform="none")
+    list_file = "freyberg6.ghb_stress_period_data_1.txt"
+    pf.add_parameters(filenames=list_file, par_type="constant", par_name_base=["ghbst","ghbc"],
+                      pargp=["ghb_stage","ghb_cond"], index_cols=[0, 1, 2], use_cols=[3,4],
+                      upper_bound=[35,150], lower_bound=[32,50], par_style="direct",
+                      transform="none")
 
-        # add model run command
-        pf.mod_sys_cmds.append("mf6")
-        print(pf.mult_files)
-        print(pf.org_files)
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
 
-        # build pest
-        pst = pf.build_pst('freyberg.pst')
-        #cov = pf.build_prior(fmt="non")
-        #cov.to_coo("prior.jcb")
-        pst.try_parse_name_metadata()
-        df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
-        pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
-                            use_cols=list(df.columns.values),
-                            prefix="hds", rebuild_pst=True)
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+    #cov = pf.build_prior(fmt="non")
+    #cov.to_coo("prior.jcb")
+    pst.try_parse_name_metadata()
+    df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
+    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
+                        use_cols=list(df.columns.values),
+                        prefix="hds", rebuild_pst=True)
 
-        # test par mults are working
+    # test par mults are working
 
-        os.chdir(pf.new_d)
-        pst.write_input_files()
-        pyemu.helpers.apply_list_and_array_pars(
-            arr_par_file="mult2model_info.csv", chunk_len=1)
+    os.chdir(pf.new_d)
+    pst.write_input_files()
+    pyemu.helpers.apply_list_and_array_pars(
+        arr_par_file="mult2model_info.csv", chunk_len=1)
 
-        # TODO Some checks on resultant par files...
-        list_files = [f for f in os.listdir('.')
-                      if f.startswith('new_') and f.endswith('txt')]
-        # check on that those dummy pars compare to the model versions.
-        for f in list_files:
-            n_df = pd.read_csv(f, sep=r"\s+")
-            o_df = pd.read_csv(f.strip('new_'), sep=r"\s+", header=None)
-            o_df.columns = ['k', 'i', 'j', 'flx']
-            assert np.allclose(o_df.values,
-                               n_df.loc[:, o_df.columns].values,
-                               rtol=1e-4), (
-                f"Something broke with alternative style model file: {f}"
-            )
-        os.chdir(tmp_path)
+    # TODO Some checks on resultant par files...
+    list_files = [f for f in os.listdir('.')
+                  if f.startswith('new_') and f.endswith('txt')]
+    # check on that those dummy pars compare to the model versions.
+    for f in list_files:
+        n_df = pd.read_csv(f, sep=r"\s+")
+        o_df = pd.read_csv(f.strip('new_'), sep=r"\s+", header=None)
+        o_df.columns = ['k', 'i', 'j', 'flx']
+        assert np.allclose(o_df.values,
+                           n_df.loc[:, o_df.columns].values,
+                           rtol=1e-4), (
+            f"Something broke with alternative style model file: {f}"
+        )
+    os.chdir(tmp_path)
 
-        num_reals = 100
-        pe = pf.draw(num_reals, use_specsim=True)
-        pe.to_binary(os.path.join(template_ws, "prior.jcb"))
-        assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
-        assert pe.shape[0] == num_reals
+    num_reals = 100
+    pe = pf.draw(num_reals, use_specsim=True)
+    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+    assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
+    assert pe.shape[0] == num_reals
 
-        pst.control_data.noptmax = 0
-        pst.pestpp_options["additional_ins_delimiters"] = ","
+    pst.control_data.noptmax = 0
+    pst.pestpp_options["additional_ins_delimiters"] = ","
 
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
-        res_file = os.path.join(pf.new_d, "freyberg.base.rei")
-        assert os.path.exists(res_file), res_file
-        pst.set_res(res_file)
-        print(pst.phi)
-        assert np.isclose(pst.phi, 0), pst.phi
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+    assert np.isclose(pst.phi, 0), pst.phi
 
 
-        # turn direct recharge to min and direct wel to min and
-        # check that the model results are consistent
-        par = pst.parameter_data
-        rch_par = par.loc[(par.pname == 'rch') &
-                          (par.ptype == 'gr') &
-                          (par.pstyle == 'd'),
-                          "parnme"]
-        wel_par = par.loc[(par.pname.str.contains('wel')) &
-                          (par.pstyle == 'd'),
-                          "parnme"]
-        par.loc[rch_par, "parval1"] = par.loc[rch_par, "parlbnd"]
-        # this should set wells to zero since they are negative values in the control file
-        par.loc[wel_par, "parval1"] = par.loc[wel_par, "parubnd"]
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-        lst = flopy.utils.Mf6ListBudget(os.path.join(pf.new_d, "freyberg6.lst"))
-        flx, cum = lst.get_dataframes(diff=True)
-        wel_tot = flx.wel.apply(np.abs).sum()
-        print(flx.wel)
-        assert np.isclose(wel_tot, 0), wel_tot
+    # turn direct recharge to min and direct wel to min and
+    # check that the model results are consistent
+    par = pst.parameter_data
+    rch_par = par.loc[(par.pname == 'rch') &
+                      (par.ptype == 'gr') &
+                      (par.pstyle == 'd'),
+                      "parnme"]
+    wel_par = par.loc[(par.pname.str.contains('wel')) &
+                      (par.pstyle == 'd'),
+                      "parnme"]
+    par.loc[rch_par, "parval1"] = par.loc[rch_par, "parlbnd"]
+    # this should set wells to zero since they are negative values in the control file
+    par.loc[wel_par, "parval1"] = par.loc[wel_par, "parubnd"]
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    lst = flopy.utils.Mf6ListBudget(os.path.join(pf.new_d, "freyberg6.lst"))
+    flx, cum = lst.get_dataframes(diff=True)
+    wel_tot = flx.wel.apply(np.abs).sum()
+    print(flx.wel)
+    assert np.isclose(wel_tot, 0), wel_tot
 
-        # shortpars so not going to be able to get ij easily
-        # rch_files = [f for f in os.listdir(pf.new_d)
-        #              if ".rch_recharge" in f and f.endswith(".txt")]
-        # rch_val = par.loc[rch_par,"parval1"][0]
-        # i, j = par.loc[rch_par, ["i", 'j']].astype(int).values.T
-        # for rch_file in rch_files:
-        #     arr = np.loadtxt(os.path.join(pf.new_d, rch_file))[i, j]
-        #     print(rch_file, rch_val, arr.mean(), arr.max(), arr.min())
-        #     if np.abs(arr.max() - rch_val) > 1.0e-6 or np.abs(arr.min() - rch_val) > 1.0e-6:
-        #         raise Exception("recharge too diff")
-    except Exception as e:
-        os.chdir(bd)
-        raise e
-    os.chdir(bd)
+    # shortpars so not going to be able to get ij easily
+    # rch_files = [f for f in os.listdir(pf.new_d)
+    #              if ".rch_recharge" in f and f.endswith(".txt")]
+    # rch_val = par.loc[rch_par,"parval1"][0]
+    # i, j = par.loc[rch_par, ["i", 'j']].astype(int).values.T
+    # for rch_file in rch_files:
+    #     arr = np.loadtxt(os.path.join(pf.new_d, rch_file))[i, j]
+    #     print(rch_file, rch_val, arr.mean(), arr.max(), arr.min())
+    #     if np.abs(arr.max() - rch_val) > 1.0e-6 or np.abs(arr.min() - rch_val) > 1.0e-6:
+    #         raise Exception("recharge too diff")
 
 
 class TestPstFrom():
@@ -2901,386 +2862,74 @@ class TestPstFrom():
         """test setting up array parameters with different external file
         configurations and path formats.
         """
-        try:
-            tag = 'hk'
-            # test with different array input configurations
-            array_file_input = [
-                Path('hk0.dat'),  # sim_ws; just file name as Path instance
-                'hk1.dat',  # sim_ws; just file name as string
-                Path(self.sim_ws, 'hk2.dat'),  # sim_ws; full path as Path instance
-                'external/hk3.dat',  # subfolder; relative file path as string
-                Path('external/hk4.dat'),  # subfolder; relative path as Path instance
-                '../external_files/hk5.dat',  # subfolder up one level
-                                ]
-            for i, array_file in enumerate(array_file_input):
-                par_name_base = f'{tag}_{i:d}'
+        tag = 'hk'
+        # test with different array input configurations
+        array_file_input = [
+            Path('hk0.dat'),  # sim_ws; just file name as Path instance
+            'hk1.dat',  # sim_ws; just file name as string
+            Path(self.sim_ws, 'hk2.dat'),  # sim_ws; full path as Path instance
+            'external/hk3.dat',  # subfolder; relative file path as string
+            Path('external/hk4.dat'),  # subfolder; relative path as Path instance
+            '../external_files/hk5.dat',  # subfolder up one level
+                            ]
+        for i, array_file in enumerate(array_file_input):
+            par_name_base = f'{tag}_{i:d}'
 
-                # create the file
-                # dest_file is the data file relative to the sim or dest ws
-                dest_file = Path(array_file)
-                if self.sim_ws in dest_file.parents:
-                    dest_file = dest_file.relative_to(self.sim_ws)
-                shutil.copy(self.array_file, Path(self.dest_ws, dest_file))
+            # create the file
+            # dest_file is the data file relative to the sim or dest ws
+            dest_file = Path(array_file)
+            if self.sim_ws in dest_file.parents:
+                dest_file = dest_file.relative_to(self.sim_ws)
+            shutil.copy(self.array_file, Path(self.dest_ws, dest_file))
 
-                self.pf.add_parameters(filenames=array_file, par_type='zone',
-                                       zone_array=self.zone_array,
-                                       par_name_base=par_name_base,  # basename for parameters that are set up
-                                       pargp=f'{tag}_zone',  # Parameter group to assign pars to.
-                                       )
-
-                assert (self.dest_ws / dest_file).exists()
-                assert (self.dest_ws / f'org/{dest_file.name}').exists()
-                # mult file name is par_name_base + `instance` identifier + part_type
-                mult_filename = f'{par_name_base}_inst0_zone.csv'
-                assert (self.dest_ws / f'mult/{mult_filename}').exists()
-                # for now, assume tpl file should be in main folder
-                template_file = (self.pf.tpl_d / f'{mult_filename}.tpl')
-                assert template_file.exists()
-
-                # make the PEST control file
-                pst = self.pf.build_pst()
-                assert pst.filename == Path(self.dest_ws, 'pst-from-small.pst')
-                assert pst.filename.exists()
-                rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
-                assert rel_tpl in pst.template_files
-
-                # make the PEST control file (just filename)
-                pst = self.pf.build_pst('junk.pst')
-                assert pst.filename == Path(self.dest_ws, 'junk.pst')
-                assert pst.filename.exists()
-
-                # make the PEST control file (file path)
-                pst = self.pf.build_pst(str(Path(self.dest_ws, 'junk2.pst')))
-                assert pst.filename == Path(self.dest_ws, 'junk2.pst')
-                assert pst.filename.exists()
-
-                # check the mult2model info
-                df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
-                # org data file relative to dest_ws
-                org_file = Path(df['org_file'].values[i])
-                assert org_file == Path(f'org/{dest_file.name}')
-                # model file relative to dest_ws
-                model_file = Path(df['model_file'].values[i])
-                assert model_file == dest_file
-                # mult file
-                mult_file = Path(df['mlt_file'].values[i])
-                assert mult_file == Path(f'mult/{mult_filename}')
-
-                # check applying the parameters (in the dest or template ws)
-                os.chdir(self.dest_ws)
-                # first delete the model file in the template ws
-                model_file.unlink()
-                # manually apply a multipler
-                mult = 4
-                mult_values = np.loadtxt(mult_file)
-                mult_values[:] = mult
-                np.savetxt(mult_file, mult_values)
-                # apply the multiplier
-                pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
-                # model file should have been remade by apply_list_and_array_pars
-                assert model_file.exists()
-                result = np.loadtxt(model_file)
-                # results should be the same with default multipliers of 1
-                # assume details of parameterization are handled by other tests
-                assert np.allclose(result, self.array_data * mult)
-                # revert to original wd
-                os.chdir(self.tmp_path)
-        except Exception as e:
-            os.chdir(self.original_wd)
-            raise e
-
-    def test_add_list_parameters(self):
-        """test setting up list parameters with different external file
-        configurations and path formats.
-        """
-        try:
-            tag = 'wel'
-            # test with different array input configurations
-            list_file_input = [
-                Path('wel0.dat'),  # sim_ws; just file name as Path instance
-                'wel1.dat',  # sim_ws; just file name as string
-                Path(self.sim_ws, 'wel2.dat'),  # sim_ws; full path as Path instance
-                'external/wel3.dat',  # subfolder; relative file path as string
-                Path('external/wel4.dat'),  # subfolder; relative path as Path instance
-                '../external_files/wel5.dat',  # subfolder up one level
-                                ]
-            par_type = 'constant'
-            for i, list_file in enumerate(list_file_input):
-                par_name_base = f'{tag}_{i:d}'
-
-                # create the file
-                # dest_file is the data file relative to the sim or dest ws
-                dest_file = Path(list_file)
-                if self.sim_ws in dest_file.parents:
-                    dest_file = dest_file.relative_to(self.sim_ws)
-                shutil.copy(self.list_file, Path(self.dest_ws, dest_file))
-
-                self.pf.add_parameters(filenames=list_file, par_type=par_type,
-                                       par_name_base=par_name_base,
-                                       index_cols=[0, 1, 2], use_cols=[3],
-                                       pargp=f'{tag}_{i}',
-                                       comment_char='#',
-                                       )
-
-                assert (self.dest_ws / dest_file).exists()
-                assert (self.dest_ws / f'org/{dest_file.name}').exists()
-                # mult file name is par_name_base + `instance` identifier + part_type
-                mult_filename = f'{par_name_base}_inst0_{par_type}.csv'
-                assert (self.dest_ws / f'mult/{mult_filename}').exists()
-                # for now, assume tpl file should be in main folder
-                template_file = (self.pf.tpl_d / f'{mult_filename}.tpl')
-                assert template_file.exists()
-
-                # make the PEST control file
-                pst = self.pf.build_pst()
-                rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
-                assert rel_tpl in pst.template_files
-
-                # check the mult2model info
-                df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
-                # org data file relative to dest_ws
-                org_file = Path(df['org_file'].values[i])
-                assert org_file == Path(f'org/{dest_file.name}')
-                # model file relative to dest_ws
-                model_file = Path(df['model_file'].values[i])
-                assert model_file == dest_file
-                # mult file
-                mult_file = Path(df['mlt_file'].values[i])
-                assert mult_file == Path(f'mult/{mult_filename}')
-
-                # check applying the parameters (in the dest or template ws)
-                os.chdir(self.dest_ws)
-                # first delete the model file in the template ws
-                model_file.unlink()
-                # manually apply a multipler
-                mult = 4
-                mult_df = pd.read_csv(mult_file)
-                # no idea why '3' is the column with multipliers and 'parval1_3' isn't
-                # what is the purpose of 'parval1_3'?
-                parval_col = '3'
-                mult_df[parval_col] = mult
-                mult_df.to_csv(mult_file, index=False)
-                # apply the multiplier
-                pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
-                # model file should have been remade by apply_list_and_array_pars
-                assert model_file.exists()
-                result = pd.read_csv(model_file, sep=r'\s+')
-                # results should be the same with default multipliers of 1
-                # assume details of parameterization are handled by other tests
-                assert np.allclose(result['flux'], self.list_data['flux'] * mult)
-
-                # revert to original wd
-                os.chdir(self.tmp_path)
-            new_list = self.list_data.copy()
-            new_list[['x', 'y']] = new_list[['i', 'j']].apply(
-                lambda r: pd.Series(
-                    [self.pf._spatial_reference.ycentergrid[r.i - 1, r.j - 1],
-                     self.pf._spatial_reference.xcentergrid[r.i - 1, r.j - 1]]
-                ), axis=1)
-            new_list.to_csv(Path(self.dest_ws, "xylist.csv"), index=False, header=False)
-            self.pf.add_parameters(filenames="xylist.csv", par_type='grid',
-                                   par_name_base="xywel",
-                                   index_cols={'lay': 0, 'x': 4, 'y': 5},
-                                   use_cols=[3],
-                                   pargp=f'xywel',
-                                   geostruct=self.grid_gs,
-                                   rebuild_pst=True
-                                   )
-            cov = self.pf.build_prior()
-            x = cov.as_2d[-3:, -3:]
-            assert np.count_nonzero(x - np.diag(np.diagonal(x))) == 6
-            assert np.sum(x < np.diag(x)) == 6
-        except Exception as e:
-            os.chdir(self.original_wd)
-            raise e
-
-    def test_add_array_parameters_pps_grid(self):
-        """test setting up array parameters with a list of array text
-        files in a subfolder.
-        """
-        try:
-            tag = 'hk'
-            par_styles = ['multiplier', #'direct'
-                          ]
-            array_files = ['hk_{}_{}.dat', 'external/hk_{}_{}.dat']
-            for par_style in par_styles:
-                mult2model_row = 0
-                for j, array_file in enumerate(array_files):
-
-                    par_types = {'pilotpoints': 'pp',
-                                 'grid': 'gr'}
-                    for i, (par_type, suffix) in enumerate(par_types.items()):
-                        # (re)create the file
-                        dest_file = array_file.format(mult2model_row, suffix)
-                        shutil.copy(self.array_file, Path(self.dest_ws, dest_file))
-                        # add the parameters
-                        par_name_base = f'{tag}_{suffix}'
-                        self.pf.add_parameters(filenames=dest_file, par_type=par_type,
-                                               zone_array=self.zone_array,
-                                               par_name_base=par_name_base,
-                                               pargp=f'{tag}_zone',
-                                               pp_space=1, geostruct=self.grid_gs,
-                                               par_style=par_style
-                                               )
-                        if par_type != 'pilotpoints':
-                            template_file = (self.pf.tpl_d / f'{par_name_base}_inst0_grid.csv.tpl')
-                            assert template_file.exists()
-                        else:
-                            template_file = (self.pf.tpl_d / f'{par_name_base}_inst0pp.dat.tpl')
-                            assert template_file.exists()
-
-                        # make the PEST control file
-                        pst = self.pf.build_pst()
-                        rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
-                        assert rel_tpl in pst.template_files
-
-                        # check the mult2model info
-                        df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
-                        mult_file = Path(df['mlt_file'].values[mult2model_row])
-
-                        # check applying the parameters (in the dest or template ws)
-                        os.chdir(self.dest_ws)
-                        # first delete the model file in the template ws
-                        model_file = df['model_file'].values[mult2model_row]
-                        os.remove(model_file)
-                        # manually apply a multipler
-                        mult = 4
-                        if par_type != "pilotpoints":
-                            mult_values = np.loadtxt(mult_file)
-                            mult_values[:] = mult
-                            np.savetxt(mult_file, mult_values)
-                        else:
-                            ppdata = pp_file_to_dataframe(df['pp_file'].values[mult2model_row])
-                            ppdata['parval1'] = mult
-                            write_pp_file(df['pp_file'].values[mult2model_row], ppdata)
-                        # apply the multiplier
-                        pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
-                        # model files should have been remade by apply_list_and_array_pars
-                        for model_file in df['model_file']:
-                            assert os.path.exists(model_file)
-                            result = np.loadtxt(model_file)
-                            # results should be the same with default multipliers of 1
-                            # assume details of parameterization are handled by other tests
-
-                            # not sure why zone 2 is coming back as invalid (1e30)
-                            zone1 = self.zone_array == 1
-                            assert np.allclose(result[zone1], self.array_data[zone1] * mult)
-
-                        # revert to original wd
-                        os.chdir(self.tmp_path)
-                        mult2model_row += 1
-        except Exception as e:
-            os.chdir(self.original_wd)
-            raise e
-
-    def test_add_direct_array_parameters(self):
-        """test setting up array parameters with a list of array text
-        files in a subfolder.
-        """
-        try:
-            tag = 'hk'
-            par_styles = ['direct', #'direct'
-                          ]
-            array_files = ['hk_{}_{}.dat', 'external/hk_{}_{}.dat']
-            for par_style in par_styles:
-                mult2model_row = 0
-                for j, array_file in enumerate(array_files):
-
-                    par_types = {#'constant': 'cn',
-                                 'zone': 'zn',
-                                 'grid': 'gr'}
-                    for i, (par_type, suffix) in enumerate(par_types.items()):
-                        # (re)create the file
-                        dest_file = array_file.format(mult2model_row, suffix)
-
-                        # make a new input array file with initial values
-                        arr = np.loadtxt(self.array_file)
-                        parval = 8
-                        arr[:] = parval
-                        np.savetxt(Path(self.dest_ws, dest_file), arr)
-
-                        # add the parameters
-                        par_name_base = f'{tag}_{suffix}'
-                        self.pf.add_parameters(filenames=dest_file, par_type=par_type,
-                                               zone_array=self.zone_array,
-                                               par_name_base=par_name_base,
-                                               pargp=f'{tag}_zone',
-                                               par_style=par_style
-                                               )
-                        template_file = (self.pf.tpl_d / f'{Path(dest_file).name}.tpl')
-                        assert template_file.exists()
-
-                        # make the PEST control file
-                        pst = self.pf.build_pst()
-                        rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
-                        assert rel_tpl in pst.template_files
-
-                        # check the mult2model info
-                        df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
-
-                        # check applying the parameters (in the dest or template ws)
-                        os.chdir(self.dest_ws)
-
-                        # first delete the model file that was in the template ws
-                        model_file = df['model_file'].values[mult2model_row]
-                        assert Path(model_file) == Path(dest_file), (f"model_file: {model_file} "
-                                                         f"differs from dest_file {dest_file}")
-                        os.remove(model_file)
-
-                        # pretend that PEST created the input files
-                        # values from dest_file above formed basis for parval in PEST control data
-                        # PEST input file is set up as the org/ version
-                        # apply_list_and_array_pars then takes the org/ version and writes model_file
-                        np.savetxt(pst.input_files[mult2model_row], arr)
-
-                        pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
-                        # model files should have been remade by apply_list_and_array_pars
-                        for model_file in df['model_file']:
-                            assert os.path.exists(model_file)
-                            result = np.loadtxt(model_file)
-                            # results should be the same with default multipliers of 1
-                            # assume details of parameterization are handled by other tests
-
-                            # not sure why zone 2 is coming back as invalid (1e30)
-                            zone1 = self.zone_array == 1
-                            assert np.allclose(result[zone1], parval)
-
-                        # revert to original wd
-                        os.chdir(self.tmp_path)
-                        mult2model_row += 1
-        except Exception as e:
-            os.chdir(self.original_wd)
-            raise e
-
-    def test_add_array_parameters_to_file_list(self):
-        """test setting up array parameters with a list of array text
-        files in a subfolder.
-        """
-        try:
-            tag = 'r'
-            array_file_input = ['external/r0.dat',
-                                'external/r1.dat',
-                                'external/r2.dat']
-            for file in array_file_input:
-                shutil.copy(self.array_file, Path(self.dest_ws, file))
-
-            # single 2D zone array applied to each file in filesnames
-            self.pf.add_parameters(filenames=array_file_input, par_type='zone',
+            self.pf.add_parameters(filenames=array_file, par_type='zone',
                                    zone_array=self.zone_array,
-                                   par_name_base=tag,  # basename for parameters that are set up
+                                   par_name_base=par_name_base,  # basename for parameters that are set up
                                    pargp=f'{tag}_zone',  # Parameter group to assign pars to.
                                    )
+
+            assert (self.dest_ws / dest_file).exists()
+            assert (self.dest_ws / f'org/{dest_file.name}').exists()
+            # mult file name is par_name_base + `instance` identifier + part_type
+            mult_filename = f'{par_name_base}_inst0_zone.csv'
+            assert (self.dest_ws / f'mult/{mult_filename}').exists()
+            # for now, assume tpl file should be in main folder
+            template_file = (self.pf.tpl_d / f'{mult_filename}.tpl')
+            assert template_file.exists()
+
             # make the PEST control file
             pst = self.pf.build_pst()
+            assert pst.filename == Path(self.dest_ws, 'pst-from-small.pst')
+            assert pst.filename.exists()
+            rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
+            assert rel_tpl in pst.template_files
+
+            # make the PEST control file (just filename)
+            pst = self.pf.build_pst('junk.pst')
+            assert pst.filename == Path(self.dest_ws, 'junk.pst')
+            assert pst.filename.exists()
+
+            # make the PEST control file (file path)
+            pst = self.pf.build_pst(str(Path(self.dest_ws, 'junk2.pst')))
+            assert pst.filename == Path(self.dest_ws, 'junk2.pst')
+            assert pst.filename.exists()
+
             # check the mult2model info
             df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
-            mult_file = Path(df['mlt_file'].values[0])
+            # org data file relative to dest_ws
+            org_file = Path(df['org_file'].values[i])
+            assert org_file == Path(f'org/{dest_file.name}')
+            # model file relative to dest_ws
+            model_file = Path(df['model_file'].values[i])
+            assert model_file == dest_file
+            # mult file
+            mult_file = Path(df['mlt_file'].values[i])
+            assert mult_file == Path(f'mult/{mult_filename}')
 
             # check applying the parameters (in the dest or template ws)
             os.chdir(self.dest_ws)
             # first delete the model file in the template ws
-            for model_file in df['model_file']:
-                os.remove(model_file)
+            model_file.unlink()
             # manually apply a multipler
             mult = 4
             mult_values = np.loadtxt(mult_file)
@@ -3288,19 +2937,315 @@ class TestPstFrom():
             np.savetxt(mult_file, mult_values)
             # apply the multiplier
             pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
-            # model files should have been remade by apply_list_and_array_pars
-            for model_file in df['model_file']:
-                assert os.path.exists(model_file)
-                result = np.loadtxt(model_file)
-                # results should be the same with default multipliers of 1
-                # assume details of parameterization are handled by other tests
-                assert np.allclose(result, self.array_data * mult)
+            # model file should have been remade by apply_list_and_array_pars
+            assert model_file.exists()
+            result = np.loadtxt(model_file)
+            # results should be the same with default multipliers of 1
+            # assume details of parameterization are handled by other tests
+            assert np.allclose(result, self.array_data * mult)
+            # revert to original wd
+            os.chdir(self.tmp_path)
+
+    def test_add_list_parameters(self):
+        """test setting up list parameters with different external file
+        configurations and path formats.
+        """
+        tag = 'wel'
+        # test with different array input configurations
+        list_file_input = [
+            Path('wel0.dat'),  # sim_ws; just file name as Path instance
+            'wel1.dat',  # sim_ws; just file name as string
+            Path(self.sim_ws, 'wel2.dat'),  # sim_ws; full path as Path instance
+            'external/wel3.dat',  # subfolder; relative file path as string
+            Path('external/wel4.dat'),  # subfolder; relative path as Path instance
+            '../external_files/wel5.dat',  # subfolder up one level
+                            ]
+        par_type = 'constant'
+        for i, list_file in enumerate(list_file_input):
+            par_name_base = f'{tag}_{i:d}'
+
+            # create the file
+            # dest_file is the data file relative to the sim or dest ws
+            dest_file = Path(list_file)
+            if self.sim_ws in dest_file.parents:
+                dest_file = dest_file.relative_to(self.sim_ws)
+            shutil.copy(self.list_file, Path(self.dest_ws, dest_file))
+
+            self.pf.add_parameters(filenames=list_file, par_type=par_type,
+                                   par_name_base=par_name_base,
+                                   index_cols=[0, 1, 2], use_cols=[3],
+                                   pargp=f'{tag}_{i}',
+                                   comment_char='#',
+                                   )
+
+            assert (self.dest_ws / dest_file).exists()
+            assert (self.dest_ws / f'org/{dest_file.name}').exists()
+            # mult file name is par_name_base + `instance` identifier + part_type
+            mult_filename = f'{par_name_base}_inst0_{par_type}.csv'
+            assert (self.dest_ws / f'mult/{mult_filename}').exists()
+            # for now, assume tpl file should be in main folder
+            template_file = (self.pf.tpl_d / f'{mult_filename}.tpl')
+            assert template_file.exists()
+
+            # make the PEST control file
+            pst = self.pf.build_pst()
+            rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
+            assert rel_tpl in pst.template_files
+
+            # check the mult2model info
+            df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+            # org data file relative to dest_ws
+            org_file = Path(df['org_file'].values[i])
+            assert org_file == Path(f'org/{dest_file.name}')
+            # model file relative to dest_ws
+            model_file = Path(df['model_file'].values[i])
+            assert model_file == dest_file
+            # mult file
+            mult_file = Path(df['mlt_file'].values[i])
+            assert mult_file == Path(f'mult/{mult_filename}')
+
+            # check applying the parameters (in the dest or template ws)
+            os.chdir(self.dest_ws)
+            # first delete the model file in the template ws
+            model_file.unlink()
+            # manually apply a multipler
+            mult = 4
+            mult_df = pd.read_csv(mult_file)
+            # no idea why '3' is the column with multipliers and 'parval1_3' isn't
+            # what is the purpose of 'parval1_3'?
+            parval_col = '3'
+            mult_df[parval_col] = mult
+            mult_df.to_csv(mult_file, index=False)
+            # apply the multiplier
+            pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+            # model file should have been remade by apply_list_and_array_pars
+            assert model_file.exists()
+            result = pd.read_csv(model_file, sep=r'\s+')
+            # results should be the same with default multipliers of 1
+            # assume details of parameterization are handled by other tests
+            assert np.allclose(result['flux'], self.list_data['flux'] * mult)
 
             # revert to original wd
             os.chdir(self.tmp_path)
-        except Exception as e:
-            os.chdir(self.original_wd)
-            raise e
+        new_list = self.list_data.copy()
+        new_list[['x', 'y']] = new_list[['i', 'j']].apply(
+            lambda r: pd.Series(
+                [self.pf._spatial_reference.ycentergrid[r.i - 1, r.j - 1],
+                 self.pf._spatial_reference.xcentergrid[r.i - 1, r.j - 1]]
+            ), axis=1)
+        new_list.to_csv(Path(self.dest_ws, "xylist.csv"), index=False, header=False)
+        self.pf.add_parameters(filenames="xylist.csv", par_type='grid',
+                               par_name_base="xywel",
+                               index_cols={'lay': 0, 'x': 4, 'y': 5},
+                               use_cols=[3],
+                               pargp=f'xywel',
+                               geostruct=self.grid_gs,
+                               rebuild_pst=True
+                               )
+        cov = self.pf.build_prior()
+        x = cov.as_2d[-3:, -3:]
+        assert np.count_nonzero(x - np.diag(np.diagonal(x))) == 6
+        assert np.sum(x < np.diag(x)) == 6
+
+
+    def test_add_array_parameters_pps_grid(self):
+        """test setting up array parameters with a list of array text
+        files in a subfolder.
+        """
+        tag = 'hk'
+        par_styles = ['multiplier', #'direct'
+                      ]
+        array_files = ['hk_{}_{}.dat', 'external/hk_{}_{}.dat']
+        for par_style in par_styles:
+            mult2model_row = 0
+            for j, array_file in enumerate(array_files):
+
+                par_types = {'pilotpoints': 'pp',
+                             'grid': 'gr'}
+                for i, (par_type, suffix) in enumerate(par_types.items()):
+                    # (re)create the file
+                    dest_file = array_file.format(mult2model_row, suffix)
+                    shutil.copy(self.array_file, Path(self.dest_ws, dest_file))
+                    # add the parameters
+                    par_name_base = f'{tag}_{suffix}'
+                    self.pf.add_parameters(filenames=dest_file, par_type=par_type,
+                                           zone_array=self.zone_array,
+                                           par_name_base=par_name_base,
+                                           pargp=f'{tag}_zone',
+                                           pp_space=1, geostruct=self.grid_gs,
+                                           par_style=par_style
+                                           )
+                    if par_type != 'pilotpoints':
+                        template_file = (self.pf.tpl_d / f'{par_name_base}_inst0_grid.csv.tpl')
+                        assert template_file.exists()
+                    else:
+                        template_file = (self.pf.tpl_d / f'{par_name_base}_inst0pp.dat.tpl')
+                        assert template_file.exists()
+
+                    # make the PEST control file
+                    pst = self.pf.build_pst()
+                    rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
+                    assert rel_tpl in pst.template_files
+
+                    # check the mult2model info
+                    df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+                    mult_file = Path(df['mlt_file'].values[mult2model_row])
+
+                    # check applying the parameters (in the dest or template ws)
+                    os.chdir(self.dest_ws)
+                    # first delete the model file in the template ws
+                    model_file = df['model_file'].values[mult2model_row]
+                    os.remove(model_file)
+                    # manually apply a multipler
+                    mult = 4
+                    if par_type != "pilotpoints":
+                        mult_values = np.loadtxt(mult_file)
+                        mult_values[:] = mult
+                        np.savetxt(mult_file, mult_values)
+                    else:
+                        ppdata = pp_file_to_dataframe(df['pp_file'].values[mult2model_row])
+                        ppdata['parval1'] = mult
+                        write_pp_file(df['pp_file'].values[mult2model_row], ppdata)
+                    # apply the multiplier
+                    pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+                    # model files should have been remade by apply_list_and_array_pars
+                    for model_file in df['model_file']:
+                        assert os.path.exists(model_file)
+                        result = np.loadtxt(model_file)
+                        # results should be the same with default multipliers of 1
+                        # assume details of parameterization are handled by other tests
+
+                        # not sure why zone 2 is coming back as invalid (1e30)
+                        zone1 = self.zone_array == 1
+                        assert np.allclose(result[zone1], self.array_data[zone1] * mult)
+
+                    # revert to original wd
+                    os.chdir(self.tmp_path)
+                    mult2model_row += 1
+
+
+    def test_add_direct_array_parameters(self):
+        """test setting up array parameters with a list of array text
+        files in a subfolder.
+        """
+        tag = 'hk'
+        par_styles = ['direct', #'direct'
+                      ]
+        array_files = ['hk_{}_{}.dat', 'external/hk_{}_{}.dat']
+        for par_style in par_styles:
+            mult2model_row = 0
+            for j, array_file in enumerate(array_files):
+
+                par_types = {#'constant': 'cn',
+                             'zone': 'zn',
+                             'grid': 'gr'}
+                for i, (par_type, suffix) in enumerate(par_types.items()):
+                    # (re)create the file
+                    dest_file = array_file.format(mult2model_row, suffix)
+
+                    # make a new input array file with initial values
+                    arr = np.loadtxt(self.array_file)
+                    parval = 8
+                    arr[:] = parval
+                    np.savetxt(Path(self.dest_ws, dest_file), arr)
+
+                    # add the parameters
+                    par_name_base = f'{tag}_{suffix}'
+                    self.pf.add_parameters(filenames=dest_file, par_type=par_type,
+                                           zone_array=self.zone_array,
+                                           par_name_base=par_name_base,
+                                           pargp=f'{tag}_zone',
+                                           par_style=par_style
+                                           )
+                    template_file = (self.pf.tpl_d / f'{Path(dest_file).name}.tpl')
+                    assert template_file.exists()
+
+                    # make the PEST control file
+                    pst = self.pf.build_pst()
+                    rel_tpl = pyemu.utils.pst_from.get_relative_filepath(self.pf.new_d, template_file)
+                    assert rel_tpl in pst.template_files
+
+                    # check the mult2model info
+                    df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+
+                    # check applying the parameters (in the dest or template ws)
+                    os.chdir(self.dest_ws)
+
+                    # first delete the model file that was in the template ws
+                    model_file = df['model_file'].values[mult2model_row]
+                    assert Path(model_file) == Path(dest_file), (f"model_file: {model_file} "
+                                                     f"differs from dest_file {dest_file}")
+                    os.remove(model_file)
+
+                    # pretend that PEST created the input files
+                    # values from dest_file above formed basis for parval in PEST control data
+                    # PEST input file is set up as the org/ version
+                    # apply_list_and_array_pars then takes the org/ version and writes model_file
+                    np.savetxt(pst.input_files[mult2model_row], arr)
+
+                    pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+                    # model files should have been remade by apply_list_and_array_pars
+                    for model_file in df['model_file']:
+                        assert os.path.exists(model_file)
+                        result = np.loadtxt(model_file)
+                        # results should be the same with default multipliers of 1
+                        # assume details of parameterization are handled by other tests
+
+                        # not sure why zone 2 is coming back as invalid (1e30)
+                        zone1 = self.zone_array == 1
+                        assert np.allclose(result[zone1], parval)
+
+                    # revert to original wd
+                    os.chdir(self.tmp_path)
+                    mult2model_row += 1
+
+
+    def test_add_array_parameters_to_file_list(self):
+        """test setting up array parameters with a list of array text
+        files in a subfolder.
+        """
+        tag = 'r'
+        array_file_input = ['external/r0.dat',
+                            'external/r1.dat',
+                            'external/r2.dat']
+        for file in array_file_input:
+            shutil.copy(self.array_file, Path(self.dest_ws, file))
+
+        # single 2D zone array applied to each file in filesnames
+        self.pf.add_parameters(filenames=array_file_input, par_type='zone',
+                               zone_array=self.zone_array,
+                               par_name_base=tag,  # basename for parameters that are set up
+                               pargp=f'{tag}_zone',  # Parameter group to assign pars to.
+                               )
+        # make the PEST control file
+        pst = self.pf.build_pst()
+        # check the mult2model info
+        df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+        mult_file = Path(df['mlt_file'].values[0])
+
+        # check applying the parameters (in the dest or template ws)
+        os.chdir(self.dest_ws)
+        # first delete the model file in the template ws
+        for model_file in df['model_file']:
+            os.remove(model_file)
+        # manually apply a multipler
+        mult = 4
+        mult_values = np.loadtxt(mult_file)
+        mult_values[:] = mult
+        np.savetxt(mult_file, mult_values)
+        # apply the multiplier
+        pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+        # model files should have been remade by apply_list_and_array_pars
+        for model_file in df['model_file']:
+            assert os.path.exists(model_file)
+            result = np.loadtxt(model_file)
+            # results should be the same with default multipliers of 1
+            # assume details of parameterization are handled by other tests
+            assert np.allclose(result, self.array_data * mult)
+
+        # revert to original wd
+        os.chdir(self.tmp_path)
+
 
     def test_add_array_parameters_alt_inst_str_none_m(self):
         """Given a list of text file arrays, test setting up
@@ -3315,31 +3260,28 @@ class TestPstFrom():
         TODO: switch to pytest so that we could simply use one function 
         for this with multiple parameters
         """
-        try:
-            tag = 'r'
-            array_file_input = ['external/r0.dat',
-                                'external/r1.dat',
-                                'external/r2.dat']
-            for file in array_file_input:
-                shutil.copy(self.array_file, Path(self.dest_ws, file))
-            for array_file in array_file_input:
-                self.pf.add_parameters(filenames=array_file, par_type='zone',
-                                        par_style="multiplier",
-                                        zone_array=self.zone_array,
-                                        par_name_base=tag,  # basename for parameters that are set up
-                                        pargp=f'{tag}_zone',  # Parameter group to assign pars to.
-                                        alt_inst_str=None
-                                        )
-            pst = self.pf.build_pst()
-            # the parameter data section should have
-            # only 2 parameters, for zones 1 and 2
-            parzones = sorted(pst.parameter_data.zone.astype(float).astype(int).tolist())
-            assert parzones == [1, 2]
-            assert len(pst.template_files) == 3
-            assert len(self.pf.mult_files) == 3
-        except Exception as e:
-            os.chdir(self.original_wd)
-            raise e
+        tag = 'r'
+        array_file_input = ['external/r0.dat',
+                            'external/r1.dat',
+                            'external/r2.dat']
+        for file in array_file_input:
+            shutil.copy(self.array_file, Path(self.dest_ws, file))
+        for array_file in array_file_input:
+            self.pf.add_parameters(filenames=array_file, par_type='zone',
+                                    par_style="multiplier",
+                                    zone_array=self.zone_array,
+                                    par_name_base=tag,  # basename for parameters that are set up
+                                    pargp=f'{tag}_zone',  # Parameter group to assign pars to.
+                                    alt_inst_str=None
+                                    )
+        pst = self.pf.build_pst()
+        # the parameter data section should have
+        # only 2 parameters, for zones 1 and 2
+        parzones = sorted(pst.parameter_data.zone.astype(float).astype(int).tolist())
+        assert parzones == [1, 2]
+        assert len(pst.template_files) == 3
+        assert len(self.pf.mult_files) == 3
+
 
     def test_add_array_parameters_alt_inst_str_0_d(self):
         """Given a list of text file arrays, test setting up
@@ -3351,31 +3293,27 @@ class TestPstFrom():
         
         Test alt_inst_str="" and par_style="direct"
         """
-        try:
-            tag = 'r'
-            array_file_input = ['external/r0.dat',
-                                'external/r1.dat',
-                                'external/r2.dat']
-            for file in array_file_input:
-                shutil.copy(self.array_file, Path(self.dest_ws, file))
-            # test both None and "" for alt_inst_str
-            for array_file in array_file_input:
-                self.pf.add_parameters(filenames=array_file, par_type='zone',
-                                        par_style="direct",
-                                        zone_array=self.zone_array,
-                                        par_name_base=tag,  # basename for parameters that are set up
-                                        pargp=f'{tag}_zone',  # Parameter group to assign pars to.
-                                        alt_inst_str=""
-                                        )
-            pst = self.pf.build_pst()
-            # the parameter data section should have
-            # only 2 parameters, for zones 1 and 2
-            parzones = sorted(pst.parameter_data.zone.astype(float).astype(int).tolist())
-            assert parzones == [1, 2]
-            assert len(pst.template_files) == 3
-        except Exception as e:
-            os.chdir(self.original_wd)
-            raise e
+        tag = 'r'
+        array_file_input = ['external/r0.dat',
+                            'external/r1.dat',
+                            'external/r2.dat']
+        for file in array_file_input:
+            shutil.copy(self.array_file, Path(self.dest_ws, file))
+        # test both None and "" for alt_inst_str
+        for array_file in array_file_input:
+            self.pf.add_parameters(filenames=array_file, par_type='zone',
+                                    par_style="direct",
+                                    zone_array=self.zone_array,
+                                    par_name_base=tag,  # basename for parameters that are set up
+                                    pargp=f'{tag}_zone',  # Parameter group to assign pars to.
+                                    alt_inst_str=""
+                                    )
+        pst = self.pf.build_pst()
+        # the parameter data section should have
+        # only 2 parameters, for zones 1 and 2
+        parzones = sorted(pst.parameter_data.zone.astype(float).astype(int).tolist())
+        assert parzones == [1, 2]
+        assert len(pst.template_files) == 3
 
 
 def test_get_filepath():
@@ -3538,131 +3476,126 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
-    bd = Path.cwd()
+
     os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        m = sim.get_model("freyberg6")
-        sim.set_all_data_external(check_data=False)
-        sim.write_simulation()
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
 
-        # to by pass the issues with flopy
-        # shutil.copytree(org_model_ws,tmp_model_ws)
-        # sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
-        # m = sim.get_model("freyberg6")
+    # to by pass the issues with flopy
+    # shutil.copytree(org_model_ws,tmp_model_ws)
+    # sim = flopy.mf6.MFSimulation.load(sim_ws=org_model_ws)
+    # m = sim.get_model("freyberg6")
 
-        # SETUP pest stuff...
-        os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
-        template_ws = "new_temp"
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        # sr0 = m.sr
-        # sr = pyemu.helpers.SpatialReference.from_namfile(
-        #     os.path.join(tmp_model_ws, "freyberg6.nam"),
-        #     delr=m.dis.delr.array, delc=m.dis.delc.array)
-        sr = m.modelgrid
-        # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False, start_datetime="1-1-2018")
+    template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    # sr0 = m.sr
+    # sr = pyemu.helpers.SpatialReference.from_namfile(
+    #     os.path.join(tmp_model_ws, "freyberg6.nam"),
+    #     delr=m.dis.delr.array, delc=m.dis.delc.array)
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018")
 
-        list_file = "freyberg6.wel_stress_period_data_1.txt"
-        df = pd.read_csv(os.path.join(template_ws, list_file), header=None, sep=r'\s+')
-        df.loc[:,4] = 4
-        df.loc[:,5] = 5
-        df.to_csv(os.path.join(template_ws,list_file),sep=" ",index=False,header=False)
-        pf.add_observations(list_file, index_cols=[0, 1, 2], use_cols=[3,5], ofile_skip=0, includes_header=False,
-                            prefix="welobs")
+    list_file = "freyberg6.wel_stress_period_data_1.txt"
+    df = pd.read_csv(os.path.join(template_ws, list_file), header=None, sep=r'\s+')
+    df.loc[:,4] = 4
+    df.loc[:,5] = 5
+    df.to_csv(os.path.join(template_ws,list_file),sep=" ",index=False,header=False)
+    pf.add_observations(list_file, index_cols=[0, 1, 2], use_cols=[3,5], ofile_skip=0, includes_header=False,
+                        prefix="welobs")
 
-        with open(os.path.join(template_ws,"badlistcall.txt"), "w") as fp:
-            fp.write("this is actually a header\n")
-            fp.write("entry 0 10 100.4 2\n")
-            fp.write("entry 1 10 2.4 5.0")
-        pf.add_observations("badlistcall.txt", index_cols=[0, 1], use_cols=[3, 4],
-                            ofile_skip=0, includes_header=False,
-                            prefix="badlistcall")
-
-
-        v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
-        gr_gs = pyemu.geostats.GeoStruct(variograms=v)
-        rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
-        pf.extra_py_imports.append('flopy')
-        ib = m.dis.idomain[0].array
-        tags = {"npf_k_": [0.1, 10.]}
-        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-        print(dts)
-        arr_dict = {}
-        for tag, bnd in tags.items():
-            lb, ub = bnd[0], bnd[1]
-            arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-            for arr_file in arr_files:
-                #pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
-                #                  pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                #                  geostruct=gr_gs)
-                pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
-                                  pargp=arr_file.split('.')[1] + "_cn", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                                  transform="fixed")
-                pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
-                                  pargp=arr_file.split('.')[1] + "_cn", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                                  transform="log")
+    with open(os.path.join(template_ws,"badlistcall.txt"), "w") as fp:
+        fp.write("this is actually a header\n")
+        fp.write("entry 0 10 100.4 2\n")
+        fp.write("entry 1 10 2.4 5.0")
+    pf.add_observations("badlistcall.txt", index_cols=[0, 1], use_cols=[3, 4],
+                        ofile_skip=0, includes_header=False,
+                        prefix="badlistcall")
 
 
-                pf.add_observations(arr_file,zone_array=ib)
-                arr_dict[arr_file] = np.loadtxt(pf.new_d / arr_file)
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+    rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {"npf_k_": [0.1, 10.]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+    arr_dict = {}
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        for arr_file in arr_files:
+            #pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base=arr_file.split('.')[1] + "_gr",
+            #                  pargp=arr_file.split('.')[1] + "_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                  geostruct=gr_gs)
+            pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
+                              pargp=arr_file.split('.')[1] + "_cn", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                              transform="fixed")
+            pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
+                              pargp=arr_file.split('.')[1] + "_cn", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                              transform="log")
 
-        # add model run command
-        pf.mod_sys_cmds.append("mf6")
-        print(pf.mult_files)
-        print(pf.org_files)
 
-        # build pest
-        pst = pf.build_pst('freyberg.pst')
-        pe = pf.draw(100,use_specsim=True)
-        cov = pf.build_prior()
-        scnames = set(cov.row_names)
-        print(pst.npar_adj,pst.npar,pe.shape)
-        par = pst.parameter_data
-        fpar = set(par.loc[par.partrans=="fixed","parnme"].tolist())
-        spe = set(list(pe.columns))
-        assert len(fpar.intersection(spe)) == 0,str(fpar.intersection(spe))
-        assert len(fpar.intersection(scnames)) == 0, str(fpar.intersection(scnames))
-        pst.try_parse_name_metadata()
-        obs = pst.observation_data
-        for fname,arr in arr_dict.items():
+            pf.add_observations(arr_file,zone_array=ib)
+            arr_dict[arr_file] = np.loadtxt(pf.new_d / arr_file)
 
-            fobs = obs.loc[obs.obsnme.str.contains(Path(fname).stem), :]
-            #print(fobs)
-            fobs = fobs.astype({c: int for c in ['i', 'j']})
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
 
-            pval = fobs.loc[fobs.apply(lambda x: x.i==3 and x.j==1,axis=1),"obsval"]
-            assert len(pval) == 1
-            pval = pval.iloc[0]
-            aval = arr[3,1]
-            print(fname,pval,aval)
-            assert pval == aval,"{0},{1},{2}".format(fname,pval,aval)
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+    pe = pf.draw(100,use_specsim=True)
+    cov = pf.build_prior()
+    scnames = set(cov.row_names)
+    print(pst.npar_adj,pst.npar,pe.shape)
+    par = pst.parameter_data
+    fpar = set(par.loc[par.partrans=="fixed","parnme"].tolist())
+    spe = set(list(pe.columns))
+    assert len(fpar.intersection(spe)) == 0,str(fpar.intersection(spe))
+    assert len(fpar.intersection(scnames)) == 0, str(fpar.intersection(scnames))
+    pst.try_parse_name_metadata()
+    obs = pst.observation_data
+    for fname,arr in arr_dict.items():
 
-        df = pd.read_csv(os.path.join(template_ws, list_file),
-                         header=None, sep=r'\s+')
-        print(df)
-        wobs = obs.loc[obs.obsnme.str.contains("welobs"),:]
-        print(wobs)
-        fvals = df.iloc[:,3]
-        pvals = wobs.loc[:,"obsval"].iloc[:df.shape[0]]
-        d = fvals.values - pvals.values
-        print(d)
-        assert d.sum() == 0
-        fvals = df.iloc[:, 5]
-        pvals = wobs.loc[:, "obsval"].iloc[df.shape[0]:]
-        d = fvals.values - pvals.values
-        print(d)
-        assert d.sum() == 0
-    except Exception as e:
-        os.chdir(bd)
-        raise e
-    os.chdir(bd)
+        fobs = obs.loc[obs.obsnme.str.contains(Path(fname).stem), :]
+        #print(fobs)
+        fobs = fobs.astype({c: int for c in ['i', 'j']})
+
+        pval = fobs.loc[fobs.apply(lambda x: x.i==3 and x.j==1,axis=1),"obsval"]
+        assert len(pval) == 1
+        pval = pval.iloc[0]
+        aval = arr[3,1]
+        print(fname,pval,aval)
+        assert pval == aval,"{0},{1},{2}".format(fname,pval,aval)
+
+    df = pd.read_csv(os.path.join(template_ws, list_file),
+                     header=None, sep=r'\s+')
+    print(df)
+    wobs = obs.loc[obs.obsnme.str.contains("welobs"),:]
+    print(wobs)
+    fvals = df.iloc[:,3]
+    pvals = wobs.loc[:,"obsval"].iloc[:df.shape[0]]
+    d = fvals.values - pvals.values
+    print(d)
+    assert d.sum() == 0
+    fvals = df.iloc[:, 5]
+    pvals = wobs.loc[:, "obsval"].iloc[df.shape[0]:]
+    d = fvals.values - pvals.values
+    print(d)
+    assert d.sum() == 0
 
 
 def mf6_freyberg_pp_locs_test(tmp_path):
@@ -3676,131 +3609,130 @@ def mf6_freyberg_pp_locs_test(tmp_path):
     #except:
     #    return
 
-    import sys
-    sys.path.insert(0,os.path.join("..","..","pypestutils"))
+    # import sys
+    # sys.path.insert(0,os.path.join("..","..","pypestutils"))
     import pypestutils as ppu
 
-    org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+    pf, sim = setup_freyberg_mf6(tmp_path, chunk_len=1)
+    m = sim.get_model()
+    template_ws = pf.new_d
+    # org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
+    # tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
 
-    bd = Path.cwd()
-    os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        m = sim.get_model("freyberg6")
-        sim.set_all_data_external(check_data=False)
-        sim.write_simulation()
-
-        # SETUP pest stuff...
-        os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
-
-        template_ws = "new_temp"
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        sr = m.modelgrid
+    # bd = Path.cwd()
+    # os.chdir(tmp_path)
+    # try:
+    #     tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    #     sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    #     m = sim.get_model("freyberg6")
+    #     sim.set_all_data_external(check_data=False)
+    #     sim.write_simulation()
+    #
+    #     SETUP pest stuff...
+        # os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+        #
+    # template_ws = "new_temp"
+        # if os.path.exists(template_ws):
+        #     shutil.rmtree(template_ws)
+        # sr = m.modelgrid
         # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False, start_datetime="1-1-2018",
-                     chunk_len=1)
+        # pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+        #              remove_existing=True,
+        #              longnames=True, spatial_reference=sr,
+        #              zero_based=False, start_datetime="1-1-2018",
+        #              chunk_len=1)
 
         # pf.post_py_cmds.append("generic_function()")
-        df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
-        pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
-        v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
-        pp_gs = pyemu.geostats.GeoStruct(variograms=v)
-        pf.extra_py_imports.append('flopy')
-        ib = m.dis.idomain[0].array
-        tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
-        #         "rch_recharge": [.5, 1.5]}
-        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-        print(dts)
+        # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+        # pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
+    pp_gs = pyemu.geostats.GeoStruct(variograms=v)
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
+    #         "rch_recharge": [.5, 1.5]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
 
-        xmn = m.modelgrid.xvertices.min()
-        xmx = m.modelgrid.xvertices.max()
-        ymn = m.modelgrid.yvertices.min()
-        ymx = m.modelgrid.yvertices.max()
+    xmn = m.modelgrid.xvertices.min()
+    xmx = m.modelgrid.xvertices.max()
+    ymn = m.modelgrid.yvertices.min()
+    ymx = m.modelgrid.yvertices.max()
 
-        numpp = 20
-        xvals = np.random.uniform(xmn,xmx,numpp)
-        yvals = np.random.uniform(ymn, ymx, numpp)
-        pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
-        pp_locs.loc[:,"zone"] = 1
-        pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
-        pp_locs.loc[:,"parval1"] = 1.0
+    numpp = 20
+    xvals = np.random.uniform(xmn,xmx,numpp)
+    yvals = np.random.uniform(ymn, ymx, numpp)
+    pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
+    pp_locs.loc[:,"zone"] = 1
+    pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
+    pp_locs.loc[:,"parval1"] = 1.0
 
-        pyemu.pp_utils.write_pp_shapfile(pp_locs,os.path.join(template_ws,"pp_locs.shp"))
-        df = pyemu.pp_utils.pilot_points_from_shapefile(os.path.join(template_ws,"pp_locs.shp"))
+    pyemu.pp_utils.write_pp_shapfile(pp_locs,os.path.join(template_ws,"pp_locs.shp"))
+    df = pyemu.pp_utils.pilot_points_from_shapefile(os.path.join(template_ws,"pp_locs.shp"))
 
-        #pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
-        #pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
-        pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
-        pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
-        pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
+    #pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
+    #pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
+    pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
+    pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
+    pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
 
-        for tag, bnd in tags.items():
-            lb, ub = bnd[0], bnd[1]
-            arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-            if "rch" in tag:
-                pass
-                # pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
-                #                   pargp="rch_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                #                   geostruct=gr_gs)
-                # for arr_file in arr_files:
-                #     kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-                #     pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
-                #                       pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                #                       geostruct=rch_temporal_gs,
-                #                       datetime=dts[kper])
-            else:
-                for i,arr_file in enumerate(arr_files):
-                    if i < len(pp_container):
-                        pp_opt = pp_container[i]
-                    else:
-                        pp_opt = pp_locs
-                    pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
-                                      par_name_base=arr_file.split('.')[1] + "_pp",
-                                      pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
-                                      upper_bound=ub, lower_bound=lb,pp_space=pp_opt,apply_order=i)
-                    
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(template_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            pass
+            # pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
+            #                   pargp="rch_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                   geostruct=gr_gs)
+            # for arr_file in arr_files:
+            #     kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+            #     pf.add_parameters(filenames=arr_file, par_type="constant", par_name_base=arr_file.split('.')[1] + "_cn",
+            #                       pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                       geostruct=rch_temporal_gs,
+            #                       datetime=dts[kper])
+        else:
+            for i,arr_file in enumerate(arr_files):
+                if i < len(pp_container):
+                    pp_opt = pp_container[i]
+                else:
+                    pp_opt = pp_locs
+                pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
+                                  par_name_base=arr_file.split('.')[1] + "_pp",
+                                  pargp=arr_file.split('.')[1] + "_pp", zone_array=ib,
+                                  upper_bound=ub, lower_bound=lb,pp_space=pp_opt,apply_order=i)
 
-        # add model run command
-        pf.mod_sys_cmds.append("mf6")
-        print(pf.mult_files)
-        print(pf.org_files)
 
-        # build pest
-        pst = pf.build_pst('freyberg.pst')
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
 
-        num_reals = 10
-        pe = pf.draw(num_reals, use_specsim=True)
-        pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
 
-        pst.parameter_data.loc[:,"partrans"] = "fixed"
-        pst.parameter_data.loc[::10, "partrans"] = "log"
-        pst.control_data.noptmax = -1
-        pst.write(os.path.join(template_ws,"freyberg.pst"))
+    num_reals = 10
+    pe = pf.draw(num_reals, use_specsim=True)
+    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
 
-        #pyemu.os_utils.run("{0} freyberg.pst".format("pestpp-glm"),cwd=template_ws)
-        m_d = "master_glm"
-        port = _get_port()
-        print(f"Running ies on port: {port}")
-        print(pp_exe_path)
-        pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,
-                                     worker_root=tmp_path,
-                                     master_dir=m_d, port=port)
+    pst.parameter_data.loc[:,"partrans"] = "fixed"
+    pst.parameter_data.loc[::10, "partrans"] = "log"
+    pst.control_data.noptmax = -1
+    pst.write(os.path.join(template_ws,"freyberg.pst"))
 
-        sen_df = pd.read_csv(os.path.join(m_d,"freyberg.isen"),index_col=0).loc[:,pst.adj_par_names]
-        print(sen_df.T)
-        mn = sen_df.values.min()
-        print(mn)
-        assert mn > 0.0
-    except Exception as e:
-        os.chdir(bd)
-        raise e
-    os.chdir(bd)
+    #pyemu.os_utils.run("{0} freyberg.pst".format("pestpp-glm"),cwd=template_ws)
+    m_d = "master_glm"
+    port = _get_port()
+    print(f"Running ies on port: {port}")
+    print(pp_exe_path)
+    pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,
+                                 worker_root=tmp_path,
+                                 master_dir=m_d, port=port)
+
+    sen_df = pd.read_csv(os.path.join(m_d,"freyberg.isen"),index_col=0).loc[:,pst.adj_par_names]
+    print(sen_df.T)
+    mn = sen_df.values.min()
+    print(mn)
+    assert mn > 0.0
 
 
 def usg_freyberg_test(tmp_path):
@@ -3816,207 +3748,201 @@ def usg_freyberg_test(tmp_path):
     org_model_ws = os.path.join('..', 'examples', 'freyberg_usg')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
 
-    bd = Path.cwd()
     os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-        # flopy is not liking the rch package in unstruct, so allow it to fail and keep going...
-        m = flopy.mfusg.MfUsg.load("freyberg.usg.nam", model_ws=tmp_model_ws,
-                                   verbose=True, forgive=True, check=False)
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    # flopy is not liking the rch package in unstruct, so allow it to fail and keep going...
+    m = flopy.mfusg.MfUsg.load("freyberg.usg.nam", model_ws=tmp_model_ws,
+                               verbose=True, forgive=True, check=False)
 
-        #convert to all open/close
-        m.external_path = "."
-        m.write_input()
+    #convert to all open/close
+    m.external_path = "."
+    m.write_input()
 
-        nam_file = os.path.join(tmp_model_ws,"freyberg.usg.nam")
+    nam_file = os.path.join(tmp_model_ws,"freyberg.usg.nam")
 
-        #make sure the model runs in the new dir with all external formats
-        pyemu.os_utils.run("{0} freyberg.usg.nam".format(usg_exe_path), cwd=tmp_model_ws)
+    #make sure the model runs in the new dir with all external formats
+    pyemu.os_utils.run("{0} freyberg.usg.nam".format(usg_exe_path), cwd=tmp_model_ws)
 
-        # for usg, we need to do some trickery to support the unstructured by layers concept
-        # this is just for array-based parameters, list-based pars are g2g because they have an index
-        gsf = pyemu.gw_utils.GsfReader(os.path.join(tmp_model_ws,"freyberg.usg.gsf"))
-        df = gsf.get_node_data()
-        df.loc[:,"xy"] = df.apply(lambda x: (x.x, x.y),axis=1)
-        # these need to be zero based since they are with zero-based array indices later...
-        df.loc[:,"node"] -= 1
-        # process each layer
-        layers = df.layer.unique()
-        layers.sort()
-        sr_dict_by_layer = {}
-        for layer in layers:
-            df_lay = df.loc[df.layer==layer,:].copy()
-            df_lay.sort_values(by="node")
-            #substract off the min node number so that each layers node dict starts at zero
-            df_lay.loc[:,"node"] = df_lay.node - df_lay.node.min()
-            print(df_lay)
-            srd = {n:xy for n,xy in zip(df_lay.node.values,df_lay.xy.values)}
-            sr_dict_by_layer[layer] = srd
+    # for usg, we need to do some trickery to support the unstructured by layers concept
+    # this is just for array-based parameters, list-based pars are g2g because they have an index
+    gsf = pyemu.gw_utils.GsfReader(os.path.join(tmp_model_ws,"freyberg.usg.gsf"))
+    df = gsf.get_node_data()
+    df.loc[:,"xy"] = df.apply(lambda x: (x.x, x.y),axis=1)
+    # these need to be zero based since they are with zero-based array indices later...
+    df.loc[:,"node"] -= 1
+    # process each layer
+    layers = df.layer.unique()
+    layers.sort()
+    sr_dict_by_layer = {}
+    for layer in layers:
+        df_lay = df.loc[df.layer==layer,:].copy()
+        df_lay.sort_values(by="node")
+        #substract off the min node number so that each layers node dict starts at zero
+        df_lay.loc[:,"node"] = df_lay.node - df_lay.node.min()
+        print(df_lay)
+        srd = {n:xy for n,xy in zip(df_lay.node.values,df_lay.xy.values)}
+        sr_dict_by_layer[layer] = srd
 
-        # gen up a fake zone array
-        zone_array_k0 = np.ones((1, len(sr_dict_by_layer[1])))
-        zone_array_k0[:, 200:420] = 2
-        zone_array_k0[:, 600:1000] = 3
+    # gen up a fake zone array
+    zone_array_k0 = np.ones((1, len(sr_dict_by_layer[1])))
+    zone_array_k0[:, 200:420] = 2
+    zone_array_k0[:, 600:1000] = 3
 
-        zone_array_k2 = np.ones((1, len(sr_dict_by_layer[3])))
-        zone_array_k2[:, 200:420] = 2
-        zone_array_k2[:, 500:1000:3] = 3
-        zone_array_k2[:,:100] = 4
+    zone_array_k2 = np.ones((1, len(sr_dict_by_layer[3])))
+    zone_array_k2[:, 200:420] = 2
+    zone_array_k2[:, 500:1000:3] = 3
+    zone_array_k2[:,:100] = 4
 
-        #gen up some fake pp locs
-        np.random.seed(pyemu.en.SEED)
-        num_pp = 20
-        data = {"name":[],"x":[],"y":[],"zone":[]}
-        visited = set()
-        for i in range(num_pp):
-            while True:
-                idx = np.random.randint(0,len(sr_dict_by_layer[1]))
-                if idx  not in visited:
-                    break
-            x,y = sr_dict_by_layer[1][idx]
-            data["name"].append("pp_{0}".format(i))
-            data["x"].append(x)
-            data["y"].append(y)
-            data["zone"].append(zone_array_k2[0,idx])
-            visited.add(idx)
-        # harded coded to get a zone 3 pp
-        idx = 500
-        assert zone_array_k2[0,idx] == 3,zone_array_k2[0,idx]
-
-        x, y = sr_dict_by_layer[1][idx]
-        data["name"].append("pp_{0}".format(i+1))
+    #gen up some fake pp locs
+    np.random.seed(pyemu.en.SEED)
+    num_pp = 20
+    data = {"name":[],"x":[],"y":[],"zone":[]}
+    visited = set()
+    for i in range(num_pp):
+        while True:
+            idx = np.random.randint(0,len(sr_dict_by_layer[1]))
+            if idx  not in visited:
+                break
+        x,y = sr_dict_by_layer[1][idx]
+        data["name"].append("pp_{0}".format(i))
         data["x"].append(x)
         data["y"].append(y)
-        data["zone"].append(zone_array_k2[0, idx])
-        pp_df = pd.DataFrame(data=data,index=data["name"])
+        data["zone"].append(zone_array_k2[0,idx])
+        visited.add(idx)
+    # harded coded to get a zone 3 pp
+    idx = 500
+    assert zone_array_k2[0,idx] == 3,zone_array_k2[0,idx]
 
-        # a geostruct that describes spatial continuity for properties
-        # this is used for all props and for both grid and pilot point
-        # pars cause Im lazy...
-        v = pyemu.geostats.ExpVario(contribution=1.0,a=500)
-        gs = pyemu.geostats.GeoStruct(variograms=v)
+    x, y = sr_dict_by_layer[1][idx]
+    data["name"].append("pp_{0}".format(i+1))
+    data["x"].append(x)
+    data["y"].append(y)
+    data["zone"].append(zone_array_k2[0, idx])
+    pp_df = pd.DataFrame(data=data,index=data["name"])
 
-        # we pass the full listing of node coord info to the constructor for use
-        # with list-type parameters
-        template_d = Path(tmp_path, "template")
-        pf = pyemu.utils.PstFrom(tmp_model_ws,template_d,longnames=True,remove_existing=True,
-                                 zero_based=False,spatial_reference=gsf.get_node_coordinates(zero_based=True))
+    # a geostruct that describes spatial continuity for properties
+    # this is used for all props and for both grid and pilot point
+    # pars cause Im lazy...
+    v = pyemu.geostats.ExpVario(contribution=1.0,a=500)
+    gs = pyemu.geostats.GeoStruct(variograms=v)
 
-        pf.add_parameters("hk_Layer_3.ref", par_type="pilotpoints",
-                          par_name_base="hk3_pp", pp_space=pp_df,
-                          geostruct=gs, spatial_reference=sr_dict_by_layer[3],
-                          upper_bound=2.0, lower_bound=0.5,
-                          zone_array=zone_array_k2,apply_order=10)
+    # we pass the full listing of node coord info to the constructor for use
+    # with list-type parameters
+    template_d = Path(tmp_path, "template")
+    pf = pyemu.utils.PstFrom(tmp_model_ws,template_d,longnames=True,remove_existing=True,
+                             zero_based=False,spatial_reference=gsf.get_node_coordinates(zero_based=True))
 
-        # we pass layer specific sr dict for each "array" type that is spatially distributed
-        pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_Gr",geostruct=gs,
-                          spatial_reference=sr_dict_by_layer[1],
-                          upper_bound=2.0,lower_bound=0.5,apply_order=0)
-        pf.add_parameters("sy_Layer_1.ref", par_type="zone", par_name_base="sy1_zn",zone_array=zone_array_k0,
-                          upper_bound=1.5,lower_bound=0.5,ult_ubound=0.35,apply_order=100)
+    pf.add_parameters("hk_Layer_3.ref", par_type="pilotpoints",
+                      par_name_base="hk3_pp", pp_space=pp_df,
+                      geostruct=gs, spatial_reference=sr_dict_by_layer[3],
+                      upper_bound=2.0, lower_bound=0.5,
+                      zone_array=zone_array_k2,apply_order=10)
 
-
-
-        # add a multiplier par for each well for each stress period
-        wel_files = [f for f in os.listdir(tmp_model_ws) if f.lower().startswith("wel_") and f.lower().endswith(".dat")]
-        for wel_file in wel_files:
-            pf.add_parameters(wel_file,par_type="grid",par_name_base=wel_file.lower().split('.')[0],index_cols=[0],use_cols=[1],
-                              geostruct=gs,lower_bound=0.5,upper_bound=1.5,apply_order=10)
-
-        # add pest "observations" for each active node for each stress period
-        hds_runline, df = pyemu.gw_utils.setup_hds_obs(
-            os.path.join(pf.new_d, "freyberg.usg.hds"), kperk_pairs=None,
-            prefix="hds", include_path=False, text="headu", skip=-1.0e+30)
-        pyemu.gw_utils.apply_hds_obs(os.path.join(pf.new_d, "freyberg.usg.hds"),
-                                     precision='single', text='headu')
-        pf.add_observations_from_ins(os.path.join(pf.new_d, "freyberg.usg.hds.dat.ins"), pst_path=".")
-        pf.post_py_cmds.append(hds_runline)
-
-        # the command the run the model
-        pf.mod_sys_cmds.append("{0} freyberg.usg.nam".format(usg_exe_path))
-
-        #build the control file and draw the prior par ensemble
-        pf.build_pst()
-        pst = pf.pst
-        par = pst.parameter_data
-
-        gr_hk_pars = par.loc[par.parnme.str.contains("hk1_gr"),"parnme"]
-        pf.pst.parameter_data.loc[gr_hk_pars,"parubnd"] = np.random.random(gr_hk_pars.shape[0]) * 5
-        pf.pst.parameter_data.loc[gr_hk_pars, "parlbnd"] = np.random.random(gr_hk_pars.shape[0]) * 0.2
-        pe = pf.draw(num_reals=100)
-        pe.enforce()
-        pe.to_csv(os.path.join(pf.new_d,"prior.csv"))
-        cov = pf.build_prior(filename=None)
-        #make sure the prior cov has off diagonals
-        cov = pf.build_prior(sigma_range=6)
-        covx = cov.x.copy()
-        covx[np.abs(covx)>1.0e-7] = 1.0
-        assert covx.sum() > pf.pst.npar_adj + 1
-        dcov = pyemu.Cov.from_parameter_data(pf.pst,sigma_range=6)
-        dcov = dcov.get(cov.row_names)
-        diag = np.diag(cov.x)
-        diff = np.abs(diag.flatten() - dcov.x.flatten())
-        print(diag)
-        print(dcov.x)
-        print(diff)
-        print(diff.max())
-        assert np.isclose(diff.max(), 0), diff.close()
-
-        # test that the arr hds obs process is working
-        pyemu.gw_utils.apply_hds_obs(os.path.join(pf.new_d, "freyberg.usg.hds"),
-                                     precision='single', text='headu')
-
-        # run the full process once using the initial par values in the control file
-        # since we are using only multipliers, the initial values are all 1's so
-        # the phi should be pretty close to zero
-        pf.pst.control_data.noptmax = 0
-        pf.pst.write(os.path.join(pf.new_d,"freyberg.usg.pst"),version=2)
-        pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path),cwd=pf.new_d)
-        pst = pyemu.Pst(os.path.join(pf.new_d,"freyberg.usg.pst"))
-        assert np.isclose(pst.phi, 0), pst.phi
-
-        #make sure the processed model input arrays are veru similar to the org arrays (again 1s for mults)
-        for arr_file in ["hk_Layer_1.ref","hk_Layer_3.ref"]:
-            in_arr = np.loadtxt(os.path.join(pf.new_d,arr_file))
-            org_arr = np.loadtxt(os.path.join(pf.new_d,"org",arr_file))
-            d = np.abs(in_arr - org_arr)
-            print(d.sum())
-            assert np.isclose(d.sum(), 0), arr_file
+    # we pass layer specific sr dict for each "array" type that is spatially distributed
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_Gr",geostruct=gs,
+                      spatial_reference=sr_dict_by_layer[1],
+                      upper_bound=2.0,lower_bound=0.5,apply_order=0)
+    pf.add_parameters("sy_Layer_1.ref", par_type="zone", par_name_base="sy1_zn",zone_array=zone_array_k0,
+                      upper_bound=1.5,lower_bound=0.5,ult_ubound=0.35,apply_order=100)
 
 
-        # now run a random realization from the prior par en and make sure things have changed
-        pst.parameter_data.loc[pe.columns,"parval1"] = pe.iloc[0,:].values
-        pst.write(os.path.join(pf.new_d, "freyberg.usg.pst"), version=2)
-        pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path), cwd=pf.new_d)
 
-        pst = pyemu.Pst(os.path.join(pf.new_d, "freyberg.usg.pst"))
-        assert pst.phi > 1.0e-3, pst.phi
+    # add a multiplier par for each well for each stress period
+    wel_files = [f for f in os.listdir(tmp_model_ws) if f.lower().startswith("wel_") and f.lower().endswith(".dat")]
+    for wel_file in wel_files:
+        pf.add_parameters(wel_file,par_type="grid",par_name_base=wel_file.lower().split('.')[0],index_cols=[0],use_cols=[1],
+                          geostruct=gs,lower_bound=0.5,upper_bound=1.5,apply_order=10)
 
-        for arr_file in ["hk_Layer_1.ref", "hk_Layer_3.ref"]:
-            in_arr = np.loadtxt(os.path.join(pf.new_d, arr_file))
-            org_arr = np.loadtxt(os.path.join(pf.new_d, "org", arr_file))
-            d = np.abs(in_arr - org_arr)
-            print(d.sum())
-            assert d.sum() > 1.0e-3, arr_file
+    # add pest "observations" for each active node for each stress period
+    hds_runline, df = pyemu.gw_utils.setup_hds_obs(
+        os.path.join(pf.new_d, "freyberg.usg.hds"), kperk_pairs=None,
+        prefix="hds", include_path=False, text="headu", skip=-1.0e+30)
+    pyemu.gw_utils.apply_hds_obs(os.path.join(pf.new_d, "freyberg.usg.hds"),
+                                 precision='single', text='headu')
+    pf.add_observations_from_ins(os.path.join(pf.new_d, "freyberg.usg.hds.dat.ins"), pst_path=".")
+    pf.post_py_cmds.append(hds_runline)
 
-        # check that the pilot point process is respecting the zone array
-        par = pst.parameter_data
-        pp_par = par.loc[par.parnme.str.contains("pp"),:]
-        pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.apply(np.float64)
-        pst.control_data.noptmax = 0
-        pst.write(os.path.join(pf.new_d,"freyberg.usg.pst"),version=2)
-        #pst.write_input_files(pf.new_d)
-        pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path), cwd=pf.new_d)
-        arr = np.loadtxt(os.path.join(pf.new_d,"mult","hk3_pp_inst0_pilotpoints.csv"))
-        arr[zone_array_k2[0,:]==0] = 0
-        d = np.abs(arr - zone_array_k2)
-        print(d)
+    # the command the run the model
+    pf.mod_sys_cmds.append("{0} freyberg.usg.nam".format(usg_exe_path))
+
+    #build the control file and draw the prior par ensemble
+    pf.build_pst()
+    pst = pf.pst
+    par = pst.parameter_data
+
+    gr_hk_pars = par.loc[par.parnme.str.contains("hk1_gr"),"parnme"]
+    pf.pst.parameter_data.loc[gr_hk_pars,"parubnd"] = np.random.random(gr_hk_pars.shape[0]) * 5
+    pf.pst.parameter_data.loc[gr_hk_pars, "parlbnd"] = np.random.random(gr_hk_pars.shape[0]) * 0.2
+    pe = pf.draw(num_reals=100)
+    pe.enforce()
+    pe.to_csv(os.path.join(pf.new_d,"prior.csv"))
+    cov = pf.build_prior(filename=None)
+    #make sure the prior cov has off diagonals
+    cov = pf.build_prior(sigma_range=6)
+    covx = cov.x.copy()
+    covx[np.abs(covx)>1.0e-7] = 1.0
+    assert covx.sum() > pf.pst.npar_adj + 1
+    dcov = pyemu.Cov.from_parameter_data(pf.pst,sigma_range=6)
+    dcov = dcov.get(cov.row_names)
+    diag = np.diag(cov.x)
+    diff = np.abs(diag.flatten() - dcov.x.flatten())
+    print(diag)
+    print(dcov.x)
+    print(diff)
+    print(diff.max())
+    assert np.isclose(diff.max(), 0), diff.close()
+
+    # test that the arr hds obs process is working
+    pyemu.gw_utils.apply_hds_obs(os.path.join(pf.new_d, "freyberg.usg.hds"),
+                                 precision='single', text='headu')
+
+    # run the full process once using the initial par values in the control file
+    # since we are using only multipliers, the initial values are all 1's so
+    # the phi should be pretty close to zero
+    pf.pst.control_data.noptmax = 0
+    pf.pst.write(os.path.join(pf.new_d,"freyberg.usg.pst"),version=2)
+    pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path),cwd=pf.new_d)
+    pst = pyemu.Pst(os.path.join(pf.new_d,"freyberg.usg.pst"))
+    assert np.isclose(pst.phi, 0), pst.phi
+
+    #make sure the processed model input arrays are veru similar to the org arrays (again 1s for mults)
+    for arr_file in ["hk_Layer_1.ref","hk_Layer_3.ref"]:
+        in_arr = np.loadtxt(os.path.join(pf.new_d,arr_file))
+        org_arr = np.loadtxt(os.path.join(pf.new_d,"org",arr_file))
+        d = np.abs(in_arr - org_arr)
         print(d.sum())
-        assert d.sum() == 0.0,d.sum()
-    except Exception as e:
-        os.chdir(bd)
-        raise e
-    os.chdir(bd)
+        assert np.isclose(d.sum(), 0), arr_file
+
+
+    # now run a random realization from the prior par en and make sure things have changed
+    pst.parameter_data.loc[pe.columns,"parval1"] = pe.iloc[0,:].values
+    pst.write(os.path.join(pf.new_d, "freyberg.usg.pst"), version=2)
+    pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path), cwd=pf.new_d)
+
+    pst = pyemu.Pst(os.path.join(pf.new_d, "freyberg.usg.pst"))
+    assert pst.phi > 1.0e-3, pst.phi
+
+    for arr_file in ["hk_Layer_1.ref", "hk_Layer_3.ref"]:
+        in_arr = np.loadtxt(os.path.join(pf.new_d, arr_file))
+        org_arr = np.loadtxt(os.path.join(pf.new_d, "org", arr_file))
+        d = np.abs(in_arr - org_arr)
+        print(d.sum())
+        assert d.sum() > 1.0e-3, arr_file
+
+    # check that the pilot point process is respecting the zone array
+    par = pst.parameter_data
+    pp_par = par.loc[par.parnme.str.contains("pp"),:]
+    pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.apply(np.float64)
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(pf.new_d,"freyberg.usg.pst"),version=2)
+    #pst.write_input_files(pf.new_d)
+    pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path), cwd=pf.new_d)
+    arr = np.loadtxt(os.path.join(pf.new_d,"mult","hk3_pp_inst0_pilotpoints.csv"))
+    arr[zone_array_k2[0,:]==0] = 0
+    d = np.abs(arr - zone_array_k2)
+    print(d)
+    print(d.sum())
+    assert d.sum() == 0.0,d.sum()
 
 
 def mf6_add_various_obs_test(tmp_path):
@@ -4024,63 +3950,57 @@ def mf6_add_various_obs_test(tmp_path):
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
 
-    bd = Path.cwd()
     os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
 
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        m = sim.get_model("freyberg6")
-        sim.set_all_data_external(check_data=False)
-        sim.write_simulation()
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
 
-        # SETUP pest stuff...
-        os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
-        template_ws = "new_temp"
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        sr = m.modelgrid
-        # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False, start_datetime="1-1-2018",
-                     chunk_len=1)
+    template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018",
+                 chunk_len=1)
 
-        # blind obs add
-        pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols='time',
-                            ofile_sep=',')
-        pf.add_observations("heads.csv", index_cols=0, obsgp='hds')
-        pf.add_observations("freyberg6.npf_k_layer1.txt",
-                            obsgp='hk1', zone_array=m.dis.idomain.array[0])
-        pf.add_observations("freyberg6.npf_k_layer2.txt",
-                            zone_array=m.dis.idomain.array[0],
-                            prefix='lay2k')
-        pf.add_observations("freyberg6.npf_k_layer3.txt",
-                            zone_array=m.dis.idomain.array[0])
+    # blind obs add
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols='time',
+                        ofile_sep=',')
+    pf.add_observations("heads.csv", index_cols=0, obsgp='hds')
+    pf.add_observations("freyberg6.npf_k_layer1.txt",
+                        obsgp='hk1', zone_array=m.dis.idomain.array[0])
+    pf.add_observations("freyberg6.npf_k_layer2.txt",
+                        zone_array=m.dis.idomain.array[0],
+                        prefix='lay2k')
+    pf.add_observations("freyberg6.npf_k_layer3.txt",
+                        zone_array=m.dis.idomain.array[0])
 
-        linelen = 10000
-        _add_big_obsffile(pf, profile=True, nchar=linelen)
+    linelen = 10000
+    _add_big_obsffile(pf, profile=True, nchar=linelen)
 
-        # TODO more variations on the theme
-        # add single par so we can run
-        pf.add_parameters(["freyberg6.npf_k_layer1.txt",
-                           "freyberg6.npf_k_layer2.txt",
-                           "freyberg6.npf_k_layer3.txt"],par_type='constant')
-        pf.mod_sys_cmds.append("mf6")
-        pf.add_py_function(
-            __file__,
-            f"_add_big_obsffile('.', profile=False, nchar={linelen})",
-            is_pre_cmd=False)
-        pst = pf.build_pst('freyberg.pst', version=2)
-        # pst.write(os.path.join(pf.new_d, "freyberg.usg.pst"), version=2)
-        pyemu.os_utils.run("{0} {1}".format(ies_exe_path, pst.filename.name),
-                           cwd=pf.new_d)
-    except Exception as e:
-        os.chdir(bd)
-        raise e
-    os.chdir(bd)
+    # TODO more variations on the theme
+    # add single par so we can run
+    pf.add_parameters(["freyberg6.npf_k_layer1.txt",
+                       "freyberg6.npf_k_layer2.txt",
+                       "freyberg6.npf_k_layer3.txt"],par_type='constant')
+    pf.mod_sys_cmds.append("mf6")
+    pf.add_py_function(
+        __file__,
+        f"_add_big_obsffile('.', profile=False, nchar={linelen})",
+        is_pre_cmd=False)
+    pst = pf.build_pst('freyberg.pst', version=2)
+    # pst.write(os.path.join(pf.new_d, "freyberg.usg.pst"), version=2)
+    pyemu.os_utils.run("{0} {1}".format(ies_exe_path, pst.filename.name),
+                       cwd=pf.new_d)
 
 
 def _add_big_obsffile(pf, profile=False, nchar=50000):
@@ -4119,310 +4039,305 @@ def mf6_subdir_test(tmp_path):
     except:
         return
 
-    import sys
-    sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
+    # import sys
+    # sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
     import pypestutils as ppu
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     sd = "sub_dir"
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path, sub=sd)
 
-    bd = Path.cwd()
     os.chdir(tmp_path)
-    try:
-        # get model dir relative to temp path
-        tmp2_ws = tmp_model_ws.relative_to(tmp_path)
-        tmp_model_ws = tmp2_ws.parents[tmp2_ws.parts.index(sd) - 1]
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp2_ws))
-        m = sim.get_model("freyberg6")
-        sim.set_all_data_external(check_data=False)
-        sim.write_simulation()
+    # get model dir relative to temp path
+    tmp2_ws = tmp_model_ws.relative_to(tmp_path)
+    tmp_model_ws = tmp2_ws.parents[tmp2_ws.parts.index(sd) - 1]
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp2_ws))
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
 
-        # SETUP pest stuff...
-        if bin_path == '':
-            exe = mf6_exe_path  # bit of flexibility for local/server run
+    # SETUP pest stuff...
+    if bin_path == '':
+        exe = mf6_exe_path  # bit of flexibility for local/server run
+    else:
+        exe = os.path.join('..', mf6_exe_path)
+    os_utils.run("{0} ".format(exe), cwd=tmp2_ws)
+    # call generic once so that the output file exists
+    df = generic_function(tmp2_ws)
+    template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    # sr0 = m.sr
+    # sr = pyemu.helpers.SpatialReference.from_namfile(
+    #     os.path.join(tmp_model_ws, "freyberg6.nam"),
+    #     delr=m.dis.delr.array, delc=m.dis.delc.array)
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False,start_datetime="1-1-2018",
+                 chunk_len=1)
+    # obs
+    #   using tabular style model output
+    #   (generated by pyemu.gw_utils.setup_hds_obs())
+    # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
+    #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
+
+    # add the values in generic to the ctl file
+    pf.add_observations(
+        os.path.join(sd, "generic.csv"),
+        insfile="generic.csv.ins",
+        index_cols=["datetime", "index_2"],
+        use_cols=["simval1", "simval2"]
+    )
+    # add the function call to make generic to the forward run script
+    pf.add_py_function(__file__, f"generic_function('{sd}')",is_pre_cmd=False)
+
+    # add a function that isnt going to be called directly
+    pf.add_py_function(__file__, "another_generic_function(some_arg)",is_pre_cmd=None)
+
+    # pf.post_py_cmds.append("generic_function()")
+    df = pd.read_csv(os.path.join(template_ws, sd, "sfr.csv"), index_col=0)
+    pf.add_observations(os.path.join(sd, "sfr.csv"), index_cols="time", use_cols=list(df.columns.values))
+    pf.add_observations(os.path.join(sd, "freyberg6.npf_k_layer1.txt"),
+                        zone_array=m.dis.idomain.array[0])
+
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+    rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0,a=60))
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
+    print(dts)
+    for tag,bnd in tags.items():
+        lb,ub = bnd[0],bnd[1]
+        arr_files = [os.path.join(sd, f) for f in os.listdir(os.path.join(tmp_model_ws, sd)) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
+                              pargp="rch_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
+                              geostruct=gr_gs)
+            for arr_file in arr_files:
+                kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+                pf.add_parameters(filenames=arr_file,par_type="constant",par_name_base=arr_file.split('.')[1]+"_cn",
+                                  pargp="rch_const",zone_array=ib,upper_bound=ub,lower_bound=lb,geostruct=rch_temporal_gs,
+                                  datetime=dts[kper])
         else:
-            exe = os.path.join('..', mf6_exe_path)
-        os_utils.run("{0} ".format(exe), cwd=tmp2_ws)
-        # call generic once so that the output file exists
-        df = generic_function(tmp2_ws)
-        template_ws = "new_temp"
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        # sr0 = m.sr
-        # sr = pyemu.helpers.SpatialReference.from_namfile(
-        #     os.path.join(tmp_model_ws, "freyberg6.nam"),
-        #     delr=m.dis.delr.array, delc=m.dis.delc.array)
-        sr = m.modelgrid
-        # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False,start_datetime="1-1-2018",
-                     chunk_len=1)
-        # obs
-        #   using tabular style model output
-        #   (generated by pyemu.gw_utils.setup_hds_obs())
-        # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
-        #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
+            for arr_file in arr_files:
 
-        # add the values in generic to the ctl file
-        pf.add_observations(
-            os.path.join(sd, "generic.csv"),
-            insfile="generic.csv.ins",
-            index_cols=["datetime", "index_2"],
-            use_cols=["simval1", "simval2"]
-        )
-        # add the function call to make generic to the forward run script
-        pf.add_py_function(__file__, f"generic_function('{sd}')",is_pre_cmd=False)
+                # these ult bounds are used later in an assert
+                # and also are used so that the initial input array files
+                # are preserved
+                ult_lb = None
+                ult_ub = None
+                if "npf_k_" in arr_file:
+                   ult_ub = 31.0
+                   ult_lb = -1.3
+                pf.add_parameters(filenames=arr_file,par_type="grid",par_name_base=arr_file.split('.')[1]+"_gr",
+                                  pargp=arr_file.split('.')[1]+"_gr",zone_array=ib,upper_bound=ub,lower_bound=lb,
+                                  geostruct=gr_gs,ult_ubound=None if ult_ub is None else ult_ub + 1,
+                                  ult_lbound=None if ult_lb is None else ult_lb + 1)
+                # use a slightly lower ult bound here
+                pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
+                                  pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,
+                                  ult_ubound=None if ult_ub is None else ult_ub - 1,
+                                  ult_lbound=None if ult_lb is None else ult_lb - 1)
+    #
+    #
+    # add SP1 spatially constant, but temporally correlated wel flux pars
+    kper = 0
+    list_file = os.path.join(
+        sd, "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
+    )
+    pf.add_parameters(filenames=list_file, par_type="constant",
+                      par_name_base="twel_mlt_{0}".format(kper),
+                      pargp="twel_mlt".format(kper), index_cols=[0, 1, 2],
+                      use_cols=[3], upper_bound=1.5, lower_bound=0.5,
+                      datetime=dts[kper], geostruct=rch_temporal_gs,
+                      mfile_skip=1)
+    #
+    # # add temporally indep, but spatially correlated wel flux pars
+    # pf.add_parameters(filenames=list_file, par_type="grid",
+    #                   par_name_base="wel_grid_{0}".format(kper),
+    #                   pargp="wel_{0}".format(kper), index_cols=[0, 1, 2],
+    #                   use_cols=[3], upper_bound=1.5, lower_bound=0.5,
+    #                   geostruct=gr_gs, mfile_skip=1)
+    # kper = 1
+    # list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
+    # pf.add_parameters(filenames=list_file, par_type="constant",
+    #                   par_name_base="twel_mlt_{0}".format(kper),
+    #                   pargp="twel_mlt".format(kper), index_cols=[0, 1, 2],
+    #                   use_cols=[3], upper_bound=1.5, lower_bound=0.5,
+    #                   datetime=dts[kper], geostruct=rch_temporal_gs,
+    #                   mfile_skip='#')
+    # # add temporally indep, but spatially correlated wel flux pars
+    # pf.add_parameters(filenames=list_file, par_type="grid",
+    #                   par_name_base="wel_grid_{0}".format(kper),
+    #                   pargp="wel_{0}".format(kper), index_cols=[0, 1, 2],
+    #                   use_cols=[3], upper_bound=1.5, lower_bound=0.5,
+    #                   geostruct=gr_gs, mfile_skip='#')
+    # kper = 2
+    # list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
+    # pf.add_parameters(filenames=list_file, par_type="constant",
+    #                   par_name_base="twel_mlt_{0}".format(kper),
+    #                   pargp="twel_mlt".format(kper), index_cols=['#k', 'i', 'j'],
+    #                   use_cols=['flux'], upper_bound=1.5, lower_bound=0.5,
+    #                   datetime=dts[kper], geostruct=rch_temporal_gs)
+    # # add temporally indep, but spatially correlated wel flux pars
+    # pf.add_parameters(filenames=list_file, par_type="grid",
+    #                   par_name_base="wel_grid_{0}".format(kper),
+    #                   pargp="wel_{0}".format(kper), index_cols=['#k', 'i', 'j'],
+    #                   use_cols=['flux'], upper_bound=1.5, lower_bound=0.5,
+    #                   geostruct=gr_gs)
+    # kper = 3
+    # list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
+    # pf.add_parameters(filenames=list_file, par_type="constant",
+    #                   par_name_base="twel_mlt_{0}".format(kper),
+    #                   pargp="twel_mlt".format(kper), index_cols=['#k', 'i', 'j'],
+    #                   use_cols=['flux'], upper_bound=1.5, lower_bound=0.5,
+    #                   datetime=dts[kper], geostruct=rch_temporal_gs,
+    #                   mfile_skip=1)
+    # # add temporally indep, but spatially correlated wel flux pars
+    # pf.add_parameters(filenames=list_file, par_type="grid",
+    #                   par_name_base="wel_grid_{0}".format(kper),
+    #                   pargp="wel_{0}".format(kper), index_cols=['#k', 'i', 'j'],
+    #                   use_cols=['flux'], upper_bound=1.5, lower_bound=0.5,
+    #                   geostruct=gr_gs, mfile_skip=1)
+    # list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
+    #               for t in range(5, m.nper+1)]
+    # for list_file in list_files:
+    #     kper = int(list_file.split(".")[1].split('_')[-1]) - 1
+    #     # add spatially constant, but temporally correlated wel flux pars
+    #     pf.add_parameters(filenames=list_file,par_type="constant",par_name_base="twel_mlt_{0}".format(kper),
+    #                       pargp="twel_mlt".format(kper),index_cols=[0,1,2],use_cols=[3],
+    #                       upper_bound=1.5,lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
+    #
+    #     # add temporally indep, but spatially correlated wel flux pars
+    #     pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
+    #                       pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
+    #                       upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
+    #
+    # # test non spatial idx in list like
+    # pf.add_parameters(filenames="freyberg6.sfr_packagedata_test.txt", par_name_base="sfr_rhk",
+    #                   pargp="sfr_rhk", index_cols=['#rno'], use_cols=['rhk'], upper_bound=10.,
+    #                   lower_bound=0.1,
+    #                   par_type="grid")
+    #
+    # # add model run command
+    pf.pre_py_cmds.append(f"os.chdir('{sd}')")
+    pf.mod_sys_cmds.append("mf6")
+    pf.post_py_cmds.insert(0, "os.chdir('..')")
+    print(pf.mult_files)
+    print(pf.org_files)
 
-        # add a function that isnt going to be called directly
-        pf.add_py_function(__file__, "another_generic_function(some_arg)",is_pre_cmd=None)
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
 
-        # pf.post_py_cmds.append("generic_function()")
-        df = pd.read_csv(os.path.join(template_ws, sd, "sfr.csv"), index_col=0)
-        pf.add_observations(os.path.join(sd, "sfr.csv"), index_cols="time", use_cols=list(df.columns.values))
-        pf.add_observations(os.path.join(sd, "freyberg6.npf_k_layer1.txt"),
-                            zone_array=m.dis.idomain.array[0])
+    # # quick check of write and apply method
+    # pars = pst.parameter_data
+    # # set reach 1 hk to 100
+    # sfr_pars = pars.loc[pars.parnme.str.startswith('sfr')].index
+    # pars.loc[sfr_pars, 'parval1'] = np.random.random(len(sfr_pars)) * 10
+    #
+    # sfr_pars = pars.loc[sfr_pars].copy()
+    # sfr_pars[['inst', 'usecol', '#rno']] = sfr_pars.parnme.apply(
+    #     lambda x: pd.DataFrame([s.split(':') for s in x.split('_')
+    #                             if ':' in s]).set_index(0)[1])
+    #
+    # sfr_pars['#rno'] = sfr_pars['#rno'] .astype(int)
+    # os.chdir(pf.new_d)
+    # pst.write_input_files()
+    # try:
+    #     pyemu.helpers.apply_list_and_array_pars()
+    # except Exception as e:
+    #     os.chdir('..')
+    #     raise e
+    # os.chdir('..')
+    # # verify apply
+    # df = pd.read_csv(os.path.join(
+    #     pf.new_d, "freyberg6.sfr_packagedata_test.txt"),
+    #     delim_whitespace=True, index_col=0)
+    # df.index = df.index - 1
+    # print(df.rhk)
+    # print((sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
+    #              sfr_pars.set_index('#rno').loc[df.index, 'parval1']))
+    # assert np.isclose(
+    #     df.rhk, (sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
+    #              sfr_pars.set_index('#rno').loc[df.index, 'parval1'])).all()
+    # pars.loc[sfr_pars.index, 'parval1'] = 1.0
+    #
+    # # add more:
+    # pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="sfr_rhk",
+    #                   pargp="sfr_rhk", index_cols={'k': 1, 'i': 2, 'j': 3}, use_cols=[9], upper_bound=10.,
+    #                   lower_bound=0.1,
+    #                   par_type="grid", rebuild_pst=True)
+    #
+    # df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
+    pf.add_observations(os.path.join(sd, "heads.csv"),
+                        insfile=os.path.join(sd, "heads.csv.ins"),
+                        index_cols="time",
+                        prefix="hds",
+                        rebuild_pst=True)
+    #
+    # # test par mults are working
+    bd1 = os.getcwd()
+    os.chdir(pf.new_d)
+    pst.write_input_files()
+    pyemu.helpers.apply_list_and_array_pars(
+        arr_par_file="mult2model_info.csv",chunk_len=1)
+    os.chdir(bd1)
+    #
+    # cov = pf.build_prior(fmt="none").to_dataframe()
+    # twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
+    # twcov = cov.loc[twel_pars,twel_pars]
+    # dsum = np.diag(twcov.values).sum()
+    # assert twcov.sum().sum() > dsum
+    #
+    # rch_cn = [p for p in pst.par_names if "_cn" in p]
+    # print(rch_cn)
+    # rcov = cov.loc[rch_cn,rch_cn]
+    # dsum = np.diag(rcov.values).sum()
+    # assert rcov.sum().sum() > dsum
+    #
+    # num_reals = 100
+    # pe = pf.draw(num_reals, use_specsim=True)
+    # pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+    # assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
+    # assert pe.shape[0] == num_reals
+    #
+    #
+    pst.control_data.noptmax = 0
+    pst.pestpp_options["additional_ins_delimiters"] = ","
+    #
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    #
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    # print(pst.phi)
+    assert np.isclose(pst.phi, 0), pst.phi
+    #
+    # check mult files are in pst input files
+    csv = os.path.join(template_ws, "mult2model_info.csv")
+    df = pd.read_csv(csv, index_col=0)
+    pst_input_files = {str(f) for f in pst.input_files}
+    mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
+                                pst_input_files) -
+                               set(df.loc[df.pp_file.notna()].mlt_file))
+    assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
-        v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
-        gr_gs = pyemu.geostats.GeoStruct(variograms=v)
-        rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0,a=60))
-        pf.extra_py_imports.append('flopy')
-        ib = m.dis.idomain[0].array
-        tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
-        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
-        print(dts)
-        for tag,bnd in tags.items():
-            lb,ub = bnd[0],bnd[1]
-            arr_files = [os.path.join(sd, f) for f in os.listdir(os.path.join(tmp_model_ws, sd)) if tag in f and f.endswith(".txt")]
-            if "rch" in tag:
-                pf.add_parameters(filenames=arr_files, par_type="grid", par_name_base="rch_gr",
-                                  pargp="rch_gr", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                                  geostruct=gr_gs)
-                for arr_file in arr_files:
-                    kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-                    pf.add_parameters(filenames=arr_file,par_type="constant",par_name_base=arr_file.split('.')[1]+"_cn",
-                                      pargp="rch_const",zone_array=ib,upper_bound=ub,lower_bound=lb,geostruct=rch_temporal_gs,
-                                      datetime=dts[kper])
-            else:
-                for arr_file in arr_files:
+    # make sure the appropriate ult bounds have made it thru
+    # df = pd.read_csv(os.path.join(template_ws,"mult2model_info.csv"))
+    # print(df.columns)
+    # df = df.loc[df.model_file.apply(lambda x: "npf_k_" in x),:]
+    # print(df)
+    # print(df.upper_bound)
+    # print(df.lower_bound)
+    # assert np.abs(float(df.upper_bound.min()) - 30.) < 1.0e-6,df.upper_bound.min()
+    # assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
 
-                    # these ult bounds are used later in an assert
-                    # and also are used so that the initial input array files
-                    # are preserved
-                    ult_lb = None
-                    ult_ub = None
-                    if "npf_k_" in arr_file:
-                       ult_ub = 31.0
-                       ult_lb = -1.3
-                    pf.add_parameters(filenames=arr_file,par_type="grid",par_name_base=arr_file.split('.')[1]+"_gr",
-                                      pargp=arr_file.split('.')[1]+"_gr",zone_array=ib,upper_bound=ub,lower_bound=lb,
-                                      geostruct=gr_gs,ult_ubound=None if ult_ub is None else ult_ub + 1,
-                                      ult_lbound=None if ult_lb is None else ult_lb + 1)
-                    # use a slightly lower ult bound here
-                    pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
-                                      pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,
-                                      ult_ubound=None if ult_ub is None else ult_ub - 1,
-                                      ult_lbound=None if ult_lb is None else ult_lb - 1)
-        #
-        #
-        # add SP1 spatially constant, but temporally correlated wel flux pars
-        kper = 0
-        list_file = os.path.join(
-            sd, "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
-        )
-        pf.add_parameters(filenames=list_file, par_type="constant",
-                          par_name_base="twel_mlt_{0}".format(kper),
-                          pargp="twel_mlt".format(kper), index_cols=[0, 1, 2],
-                          use_cols=[3], upper_bound=1.5, lower_bound=0.5,
-                          datetime=dts[kper], geostruct=rch_temporal_gs,
-                          mfile_skip=1)
-        #
-        # # add temporally indep, but spatially correlated wel flux pars
-        # pf.add_parameters(filenames=list_file, par_type="grid",
-        #                   par_name_base="wel_grid_{0}".format(kper),
-        #                   pargp="wel_{0}".format(kper), index_cols=[0, 1, 2],
-        #                   use_cols=[3], upper_bound=1.5, lower_bound=0.5,
-        #                   geostruct=gr_gs, mfile_skip=1)
-        # kper = 1
-        # list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
-        # pf.add_parameters(filenames=list_file, par_type="constant",
-        #                   par_name_base="twel_mlt_{0}".format(kper),
-        #                   pargp="twel_mlt".format(kper), index_cols=[0, 1, 2],
-        #                   use_cols=[3], upper_bound=1.5, lower_bound=0.5,
-        #                   datetime=dts[kper], geostruct=rch_temporal_gs,
-        #                   mfile_skip='#')
-        # # add temporally indep, but spatially correlated wel flux pars
-        # pf.add_parameters(filenames=list_file, par_type="grid",
-        #                   par_name_base="wel_grid_{0}".format(kper),
-        #                   pargp="wel_{0}".format(kper), index_cols=[0, 1, 2],
-        #                   use_cols=[3], upper_bound=1.5, lower_bound=0.5,
-        #                   geostruct=gr_gs, mfile_skip='#')
-        # kper = 2
-        # list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
-        # pf.add_parameters(filenames=list_file, par_type="constant",
-        #                   par_name_base="twel_mlt_{0}".format(kper),
-        #                   pargp="twel_mlt".format(kper), index_cols=['#k', 'i', 'j'],
-        #                   use_cols=['flux'], upper_bound=1.5, lower_bound=0.5,
-        #                   datetime=dts[kper], geostruct=rch_temporal_gs)
-        # # add temporally indep, but spatially correlated wel flux pars
-        # pf.add_parameters(filenames=list_file, par_type="grid",
-        #                   par_name_base="wel_grid_{0}".format(kper),
-        #                   pargp="wel_{0}".format(kper), index_cols=['#k', 'i', 'j'],
-        #                   use_cols=['flux'], upper_bound=1.5, lower_bound=0.5,
-        #                   geostruct=gr_gs)
-        # kper = 3
-        # list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
-        # pf.add_parameters(filenames=list_file, par_type="constant",
-        #                   par_name_base="twel_mlt_{0}".format(kper),
-        #                   pargp="twel_mlt".format(kper), index_cols=['#k', 'i', 'j'],
-        #                   use_cols=['flux'], upper_bound=1.5, lower_bound=0.5,
-        #                   datetime=dts[kper], geostruct=rch_temporal_gs,
-        #                   mfile_skip=1)
-        # # add temporally indep, but spatially correlated wel flux pars
-        # pf.add_parameters(filenames=list_file, par_type="grid",
-        #                   par_name_base="wel_grid_{0}".format(kper),
-        #                   pargp="wel_{0}".format(kper), index_cols=['#k', 'i', 'j'],
-        #                   use_cols=['flux'], upper_bound=1.5, lower_bound=0.5,
-        #                   geostruct=gr_gs, mfile_skip=1)
-        # list_files = ["freyberg6.wel_stress_period_data_{0}.txt".format(t)
-        #               for t in range(5, m.nper+1)]
-        # for list_file in list_files:
-        #     kper = int(list_file.split(".")[1].split('_')[-1]) - 1
-        #     # add spatially constant, but temporally correlated wel flux pars
-        #     pf.add_parameters(filenames=list_file,par_type="constant",par_name_base="twel_mlt_{0}".format(kper),
-        #                       pargp="twel_mlt".format(kper),index_cols=[0,1,2],use_cols=[3],
-        #                       upper_bound=1.5,lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
-        #
-        #     # add temporally indep, but spatially correlated wel flux pars
-        #     pf.add_parameters(filenames=list_file, par_type="grid", par_name_base="wel_grid_{0}".format(kper),
-        #                       pargp="wel_{0}".format(kper), index_cols=[0, 1, 2], use_cols=[3],
-        #                       upper_bound=1.5, lower_bound=0.5, geostruct=gr_gs)
-        #
-        # # test non spatial idx in list like
-        # pf.add_parameters(filenames="freyberg6.sfr_packagedata_test.txt", par_name_base="sfr_rhk",
-        #                   pargp="sfr_rhk", index_cols=['#rno'], use_cols=['rhk'], upper_bound=10.,
-        #                   lower_bound=0.1,
-        #                   par_type="grid")
-        #
-        # # add model run command
-        pf.pre_py_cmds.append(f"os.chdir('{sd}')")
-        pf.mod_sys_cmds.append("mf6")
-        pf.post_py_cmds.insert(0, "os.chdir('..')")
-        print(pf.mult_files)
-        print(pf.org_files)
-
-        # build pest
-        pst = pf.build_pst('freyberg.pst')
-
-        # # quick check of write and apply method
-        # pars = pst.parameter_data
-        # # set reach 1 hk to 100
-        # sfr_pars = pars.loc[pars.parnme.str.startswith('sfr')].index
-        # pars.loc[sfr_pars, 'parval1'] = np.random.random(len(sfr_pars)) * 10
-        #
-        # sfr_pars = pars.loc[sfr_pars].copy()
-        # sfr_pars[['inst', 'usecol', '#rno']] = sfr_pars.parnme.apply(
-        #     lambda x: pd.DataFrame([s.split(':') for s in x.split('_')
-        #                             if ':' in s]).set_index(0)[1])
-        #
-        # sfr_pars['#rno'] = sfr_pars['#rno'] .astype(int)
-        # os.chdir(pf.new_d)
-        # pst.write_input_files()
-        # try:
-        #     pyemu.helpers.apply_list_and_array_pars()
-        # except Exception as e:
-        #     os.chdir('..')
-        #     raise e
-        # os.chdir('..')
-        # # verify apply
-        # df = pd.read_csv(os.path.join(
-        #     pf.new_d, "freyberg6.sfr_packagedata_test.txt"),
-        #     delim_whitespace=True, index_col=0)
-        # df.index = df.index - 1
-        # print(df.rhk)
-        # print((sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
-        #              sfr_pars.set_index('#rno').loc[df.index, 'parval1']))
-        # assert np.isclose(
-        #     df.rhk, (sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
-        #              sfr_pars.set_index('#rno').loc[df.index, 'parval1'])).all()
-        # pars.loc[sfr_pars.index, 'parval1'] = 1.0
-        #
-        # # add more:
-        # pf.add_parameters(filenames="freyberg6.sfr_packagedata.txt", par_name_base="sfr_rhk",
-        #                   pargp="sfr_rhk", index_cols={'k': 1, 'i': 2, 'j': 3}, use_cols=[9], upper_bound=10.,
-        #                   lower_bound=0.1,
-        #                   par_type="grid", rebuild_pst=True)
-        #
-        # df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
-        pf.add_observations(os.path.join(sd, "heads.csv"),
-                            insfile=os.path.join(sd, "heads.csv.ins"),
-                            index_cols="time",
-                            prefix="hds",
-                            rebuild_pst=True)
-        #
-        # # test par mults are working
-        bd1 = os.getcwd()
-        os.chdir(pf.new_d)
-        pst.write_input_files()
-        pyemu.helpers.apply_list_and_array_pars(
-            arr_par_file="mult2model_info.csv",chunk_len=1)
-        os.chdir(bd1)
-        #
-        # cov = pf.build_prior(fmt="none").to_dataframe()
-        # twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
-        # twcov = cov.loc[twel_pars,twel_pars]
-        # dsum = np.diag(twcov.values).sum()
-        # assert twcov.sum().sum() > dsum
-        #
-        # rch_cn = [p for p in pst.par_names if "_cn" in p]
-        # print(rch_cn)
-        # rcov = cov.loc[rch_cn,rch_cn]
-        # dsum = np.diag(rcov.values).sum()
-        # assert rcov.sum().sum() > dsum
-        #
-        # num_reals = 100
-        # pe = pf.draw(num_reals, use_specsim=True)
-        # pe.to_binary(os.path.join(template_ws, "prior.jcb"))
-        # assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[0], pst.npar_adj)
-        # assert pe.shape[0] == num_reals
-        #
-        #
-        pst.control_data.noptmax = 0
-        pst.pestpp_options["additional_ins_delimiters"] = ","
-        #
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-        #
-        res_file = os.path.join(pf.new_d, "freyberg.base.rei")
-        assert os.path.exists(res_file), res_file
-        pst.set_res(res_file)
-        # print(pst.phi)
-        assert np.isclose(pst.phi, 0), pst.phi
-        #
-        # check mult files are in pst input files
-        csv = os.path.join(template_ws, "mult2model_info.csv")
-        df = pd.read_csv(csv, index_col=0)
-        pst_input_files = {str(f) for f in pst.input_files}
-        mults_not_linked_to_pst = ((set(df.mlt_file.unique()) -
-                                    pst_input_files) -
-                                   set(df.loc[df.pp_file.notna()].mlt_file))
-        assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
-
-        # make sure the appropriate ult bounds have made it thru
-        # df = pd.read_csv(os.path.join(template_ws,"mult2model_info.csv"))
-        # print(df.columns)
-        # df = df.loc[df.model_file.apply(lambda x: "npf_k_" in x),:]
-        # print(df)
-        # print(df.upper_bound)
-        # print(df.lower_bound)
-        # assert np.abs(float(df.upper_bound.min()) - 30.) < 1.0e-6,df.upper_bound.min()
-        # assert np.abs(float(df.lower_bound.max()) - -0.3) < 1.0e-6,df.lower_bound.max()
-    except Exception as e:
-        os.chdir(bd)
-        raise Exception(str(e))
-    os.chdir(bd)
 
 
 def shortname_conversion_test(tmp_path):
@@ -4443,169 +4358,162 @@ def shortname_conversion_test(tmp_path):
     os.mkdir(tmp_model_ws)
     bd = Path.cwd()
     os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-        dims = (20,60)
-        np.savetxt(os.path.join(tmp_model_ws,"parfile1"), np.ones(dims))
-        np.savetxt(os.path.join(tmp_model_ws, "parfile2"), np.ones(dims))
-        np.savetxt(os.path.join(tmp_model_ws, "parfile3"), np.ones(dims))
-        np.savetxt(os.path.join(tmp_model_ws, "parfile4"), np.ones(dims))
-        np.savetxt(os.path.join(tmp_model_ws, "parfile5"), np.ones(dims))
-        np.savetxt(os.path.join(tmp_model_ws, "parfile6"), np.ones(dims))
-        np.savetxt(os.path.join(tmp_model_ws, "obsfile1"), np.ones(dims))
-        np.savetxt(os.path.join(tmp_model_ws, "obsfile2"), np.ones(dims))
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    dims = (20,60)
+    np.savetxt(os.path.join(tmp_model_ws,"parfile1"), np.ones(dims))
+    np.savetxt(os.path.join(tmp_model_ws, "parfile2"), np.ones(dims))
+    np.savetxt(os.path.join(tmp_model_ws, "parfile3"), np.ones(dims))
+    np.savetxt(os.path.join(tmp_model_ws, "parfile4"), np.ones(dims))
+    np.savetxt(os.path.join(tmp_model_ws, "parfile5"), np.ones(dims))
+    np.savetxt(os.path.join(tmp_model_ws, "parfile6"), np.ones(dims))
+    np.savetxt(os.path.join(tmp_model_ws, "obsfile1"), np.ones(dims))
+    np.savetxt(os.path.join(tmp_model_ws, "obsfile2"), np.ones(dims))
 
-        np.savetxt(os.path.join(tmp_model_ws, "parfile7"), np.ones(dims))
-        np.savetxt(os.path.join(tmp_model_ws, "obsfile3"), np.ones(dims))
-        # SETUP pest stuff...
+    np.savetxt(os.path.join(tmp_model_ws, "parfile7"), np.ones(dims))
+    np.savetxt(os.path.join(tmp_model_ws, "obsfile3"), np.ones(dims))
+    # SETUP pest stuff...
 
-        template_ws = "new_temp"
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        # set up PstFrom object
-        # obs
-        #   using tabular style model output
-        #   (generated by pyemu.gw_utils.setup_hds_obs())
-        # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
-        #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
-        sr = pyemu.helpers.SpatialReference(delr=[10]*dims[1],
-                                            delc=[10]*dims[0],
-                                            rotation=0,
-                                            epsg=3070,
-                                            xul=0.,
-                                            yul=0.,
-                                            units='meters',  # gis units of meters?
-                                            lenuni=2  # model units of meters
-                                            )
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=False,
-                     zero_based=False,
-                     spatial_reference=sr,
-                     pp_solve_num_threads=1)
+    template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    # set up PstFrom object
+    # obs
+    #   using tabular style model output
+    #   (generated by pyemu.gw_utils.setup_hds_obs())
+    # pf.add_observations('freyberg.hds.dat', insfile='freyberg.hds.dat.ins2',
+    #                     index_cols='obsnme', use_cols='obsval', prefix='hds')
+    sr = pyemu.helpers.SpatialReference(delr=[10]*dims[1],
+                                        delc=[10]*dims[0],
+                                        rotation=0,
+                                        epsg=3070,
+                                        xul=0.,
+                                        yul=0.,
+                                        units='meters',  # gis units of meters?
+                                        lenuni=2  # model units of meters
+                                        )
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=False,
+                 zero_based=False,
+                 spatial_reference=sr,
+                 pp_solve_num_threads=1)
 
-        v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
-        gr_gs = pyemu.geostats.GeoStruct(variograms=v)
-        c = 0
-        parfiles = [f.name for f in Path(template_ws).glob("parfile*")][0:3]
-        for f in parfiles:
-            c += 1
-            pf.add_parameters(filenames=f, par_type="grid",
-                              par_name_base=f"par{c}",
-                              pargp=f"pargp{c}", upper_bound=0.1, lower_bound=10.0,
-                              geostruct=gr_gs)
-        pf.add_parameters(filenames=parfiles,
-                          par_type="constant", par_name_base="cpar",
-                          pargp="cpargp", upper_bound=0.1, lower_bound=10.0,
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+    c = 0
+    parfiles = [f.name for f in Path(template_ws).glob("parfile*")][0:3]
+    for f in parfiles:
+        c += 1
+        pf.add_parameters(filenames=f, par_type="grid",
+                          par_name_base=f"par{c}",
+                          pargp=f"pargp{c}", upper_bound=0.1, lower_bound=10.0,
                           geostruct=gr_gs)
-        pf.add_parameters(filenames=parfiles,
-                          par_type="pilotpoints", par_name_base="pppar",
-                          pargp="pppargp", upper_bound=0.1, lower_bound=10.0,
-                          geostruct=gr_gs)
+    pf.add_parameters(filenames=parfiles,
+                      par_type="constant", par_name_base="cpar",
+                      pargp="cpargp", upper_bound=0.1, lower_bound=10.0,
+                      geostruct=gr_gs)
+    pf.add_parameters(filenames=parfiles,
+                      par_type="pilotpoints", par_name_base="pppar",
+                      pargp="pppargp", upper_bound=0.1, lower_bound=10.0,
+                      geostruct=gr_gs)
 
-        pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
-        pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
-        pf.add_parameters(filenames=parfiles,
-                          par_type="pilotpoints", par_name_base="pppar2",
-                          pargp="pppargp2", upper_bound=0.1, lower_bound=10.0,
-                          geostruct=gr_gs,pp_space=pp_locs)
-
-
-
-        pf.add_observations(
-            "obsfile1",
-            prefix="longobservationname",
-            rebuild_pst=False,
-            obsgp="longobservationgroup",
-            includes_header=False
-        )
-        pf.add_observations(
-            "obsfile2",
-            prefix="longobservationname2",
-            rebuild_pst=False,
-            obsgp="longobservationgroup2",
-            includes_header=False
-        )
-        pf.add_observations(
-            "obsfile3",
-            prefix="longobservationname-lt",
-            rebuild_pst=False,
-            obsgp="less_longobservationgroup",
-            includes_header=False,
-            insfile="lt_obsfile3.ins"
-        )
-        pf.add_observations(
-            "obsfile3",
-            prefix="longobservationname-gt",
-            rebuild_pst=False,
-            obsgp="greater_longobservationgroup",
-            includes_header=False,
-            insfile="gt_obsfile3.ins"
-        )
-        pst = pf.build_pst()
-        obs = set(pst.observation_data.obsnme)
-        trie = pyemu.helpers.Trie()
-        [trie.add(ob) for ob in obs]
-        rex = re.compile(trie.pattern())
-        for ins in pst.instruction_files:
-            with open(os.path.join(pf.new_d, ins), "rt") as f:
-                obsin = set(rex.findall(f.read()))
-            obs = obs - obsin
-        assert len(obs) == 0, f"{len(obs)} obs not found in insfiles: {obs[:100]}..."
-
-        par = set(pst.parameter_data.parnme)
-        trie = pyemu.helpers.Trie()
-        [trie.add(p) for p in par]
-        rex = re.compile(trie.pattern())
-        for tpl in pst.template_files:
-            with open(os.path.join(pf.new_d, tpl), "rt") as f:
-                parin = set(rex.findall(f.read()))
-            par = par - parin
-        assert len(par) == 0, f"{len(par)} pars not found in tplfiles: {par}..."
-        # test update/rebuild
-        pf.add_observations(
-            "obsfile3",
-            prefix="longobservationname3",
-            rebuild_pst=True,
-            obsgp="longobservationgroup3",
-            includes_header=False
-        )
-        pf.add_parameters(filenames="parfile7",
-                          par_type="grid", par_name_base="par7",
-                          pargp="par7", upper_bound=0.1, lower_bound=10.0,
-                          geostruct=gr_gs,
-                          rebuild_pst=True)
-
-        obs = set(pst.observation_data.obsnme)
-        trie = pyemu.helpers.Trie()
-        [trie.add(ob) for ob in obs]
-        rex = re.compile(trie.pattern())
-        for ins in pst.instruction_files:
-            with open(os.path.join(pf.new_d, ins), "rt") as f:
-                obsin = set(rex.findall(f.read()))
-            obs = obs - obsin
-        assert len(obs) == 0, f"{len(obs)} obs not found in insfiles: {obs[:100]}..."
-
-        par = set(pst.parameter_data.parnme)
-        parin = set()
-        trie = pyemu.helpers.Trie()
-        [trie.add(p) for p in par]
-        rex = re.compile(trie.pattern())
-        for tpl in pst.template_files:
-            with open(os.path.join(pf.new_d, tpl), "rt") as f:
-                parin = set(rex.findall(f.read()))
-            par = par - parin
-        assert len(par) == 0, f"{len(par)} pars not found in tplfiles: {par[:100]}..."
-    except Exception as e:
-        os.chdir(bd)
-        raise Exception(str(e))
-
-    os.chdir(bd)
+    pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
+    pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
+    pf.add_parameters(filenames=parfiles,
+                      par_type="pilotpoints", par_name_base="pppar2",
+                      pargp="pppargp2", upper_bound=0.1, lower_bound=10.0,
+                      geostruct=gr_gs,pp_space=pp_locs)
 
 
-@pytest.mark.parametrize("setup_freyberg_mf6", ['freyberg_quadtree'], indirect=True)
-def vertex_grid_test(setup_freyberg_mf6):
-    pf, sim = setup_freyberg_mf6
+
+    pf.add_observations(
+        "obsfile1",
+        prefix="longobservationname",
+        rebuild_pst=False,
+        obsgp="longobservationgroup",
+        includes_header=False
+    )
+    pf.add_observations(
+        "obsfile2",
+        prefix="longobservationname2",
+        rebuild_pst=False,
+        obsgp="longobservationgroup2",
+        includes_header=False
+    )
+    pf.add_observations(
+        "obsfile3",
+        prefix="longobservationname-lt",
+        rebuild_pst=False,
+        obsgp="less_longobservationgroup",
+        includes_header=False,
+        insfile="lt_obsfile3.ins"
+    )
+    pf.add_observations(
+        "obsfile3",
+        prefix="longobservationname-gt",
+        rebuild_pst=False,
+        obsgp="greater_longobservationgroup",
+        includes_header=False,
+        insfile="gt_obsfile3.ins"
+    )
+    pst = pf.build_pst()
+    obs = set(pst.observation_data.obsnme)
+    trie = pyemu.helpers.Trie()
+    [trie.add(ob) for ob in obs]
+    rex = re.compile(trie.pattern())
+    for ins in pst.instruction_files:
+        with open(os.path.join(pf.new_d, ins), "rt") as f:
+            obsin = set(rex.findall(f.read()))
+        obs = obs - obsin
+    assert len(obs) == 0, f"{len(obs)} obs not found in insfiles: {obs[:100]}..."
+
+    par = set(pst.parameter_data.parnme)
+    trie = pyemu.helpers.Trie()
+    [trie.add(p) for p in par]
+    rex = re.compile(trie.pattern())
+    for tpl in pst.template_files:
+        with open(os.path.join(pf.new_d, tpl), "rt") as f:
+            parin = set(rex.findall(f.read()))
+        par = par - parin
+    assert len(par) == 0, f"{len(par)} pars not found in tplfiles: {par}..."
+    # test update/rebuild
+    pf.add_observations(
+        "obsfile3",
+        prefix="longobservationname3",
+        rebuild_pst=True,
+        obsgp="longobservationgroup3",
+        includes_header=False
+    )
+    pf.add_parameters(filenames="parfile7",
+                      par_type="grid", par_name_base="par7",
+                      pargp="par7", upper_bound=0.1, lower_bound=10.0,
+                      geostruct=gr_gs,
+                      rebuild_pst=True)
+
+    obs = set(pst.observation_data.obsnme)
+    trie = pyemu.helpers.Trie()
+    [trie.add(ob) for ob in obs]
+    rex = re.compile(trie.pattern())
+    for ins in pst.instruction_files:
+        with open(os.path.join(pf.new_d, ins), "rt") as f:
+            obsin = set(rex.findall(f.read()))
+        obs = obs - obsin
+    assert len(obs) == 0, f"{len(obs)} obs not found in insfiles: {obs[:100]}..."
+
+    par = set(pst.parameter_data.parnme)
+    parin = set()
+    trie = pyemu.helpers.Trie()
+    [trie.add(p) for p in par]
+    rex = re.compile(trie.pattern())
+    for tpl in pst.template_files:
+        with open(os.path.join(pf.new_d, tpl), "rt") as f:
+            parin = set(rex.findall(f.read()))
+        par = par - parin
+    assert len(par) == 0, f"{len(par)} pars not found in tplfiles: {par[:100]}..."
+
+
+def vertex_grid_test(tmp_path):
+    pf, sim = setup_freyberg_mf6(tmp_path, "freyberg_quadtree")
     m = sim.get_model()
     mg = m.modelgrid
     # the model grid is vertex type
@@ -4750,37 +4658,32 @@ def test_defaults(tmp_path):
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
-    bd = Path.cwd()
-    os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        m = sim.get_model()
-        sim.set_all_data_external(check_data=False)
-        sim.write_simulation()
 
-        # SETUP pest stuff...
-        os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
-        template_ws = "new_temp"
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        # sr0 = m.sr
-        # sr = pyemu.helpers.SpatialReference.from_namfile(
-        #     os.path.join(tmp_model_ws, "freyberg6.nam"),
-        #     delr=m.dis.delr.array, delc=m.dis.delc.array)
-        sr = m.modelgrid
-        # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws)
-        kper = 0
-        list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper + 1)
-        pf.add_parameters(list_file, par_type="grid", index_cols=[0, 1, 2],
-                      use_cols=[3])
-        pf.add_observations("heads.csv", index_cols="time")
-        pst = pf.build_pst()
-    except Exception as e:
-        os.chdir(bd)
-        raise Exception(str(e))
-    os.chdir(bd)
+    os.chdir(tmp_path)
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    m = sim.get_model()
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
+
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+    template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    # sr0 = m.sr
+    # sr = pyemu.helpers.SpatialReference.from_namfile(
+    #     os.path.join(tmp_model_ws, "freyberg6.nam"),
+    #     delr=m.dis.delr.array, delc=m.dis.delc.array)
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws)
+    kper = 0
+    list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper + 1)
+    pf.add_parameters(list_file, par_type="grid", index_cols=[0, 1, 2],
+                  use_cols=[3])
+    pf.add_observations("heads.csv", index_cols="time")
+    pst = pf.build_pst()
 
 
 def list_float_int_index_test(tmp_path):
@@ -4845,15 +4748,8 @@ def list_float_int_index_test(tmp_path):
     bpar = par.parnme.str.contains("ghbcondN")
     bparval1 = np.linspace(0.1, 10, sum(bpar))
     par.loc[bpar, "parval1"] = bparval1
-    pst.write_input_files(pf.new_d)
-    bd = os.getcwd()
-    os.chdir(pf.new_d)
-    try:
-        pyemu.helpers.apply_list_and_array_pars(chunk_len=1000)
-    except Exception as e:
-        os.chdir(bd)
-        raise e
-    os.chdir(bd)
+    check_apply(pf, 1000)
+
     faultdf_n = pd.read_csv(os.path.join(pf.new_d, "ppoints.faults.csv"))
     idxcheck = faultdf_n.set_index(faultidx).index.difference(faultdf_o.set_index(faultidx).index)
     assert len(idxcheck) == 0, idxcheck
@@ -4879,8 +4775,8 @@ def mf6_freyberg_thresh_test(tmp_path):
     import flopy
     # except:
     #     return
-    import sys
-    sys.path.insert(0,os.path.join("..","..","pypestutils"))
+    # import sys
+    # sys.path.insert(0,os.path.join("..","..","pypestutils"))
     import pypestutils as ppu
 
 
@@ -4889,306 +4785,302 @@ def mf6_freyberg_thresh_test(tmp_path):
 
 
     tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-    bd = os.getcwd()
+
     os.chdir(tmp_path)
-    try:
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        m = sim.get_model("freyberg6")
-        sim.set_all_data_external()
-        sim.write_simulation()
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external()
+    sim.write_simulation()
 
 
 
-        # SETUP pest stuff...
-        os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-        template_ws = Path(tmp_path, "new_temp_thresh")
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        sr = m.modelgrid
-        # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False, start_datetime="1-1-2018")
+    template_ws = Path(tmp_path, "new_temp_thresh")
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018")
 
-        df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
-        pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
-                            use_cols=list(df.columns.values),
-                            prefix="hds", rebuild_pst=True)
+    df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
+    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
+                        use_cols=list(df.columns.values),
+                        prefix="hds", rebuild_pst=True)
 
-        # Add stream flow observation
-        # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
-        pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
-                            use_cols=["GAGE_1", "HEADWATER", "TAILWATER"], ofile_sep=",")
+    # Add stream flow observation
+    # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
+                        use_cols=["GAGE_1", "HEADWATER", "TAILWATER"], ofile_sep=",")
 
-        # Setup geostruct for spatial pars
-        gr_v = pyemu.geostats.ExpVario(contribution=1.0, a=500)
-        gr_gs = pyemu.geostats.GeoStruct(variograms=gr_v, transform="log")
-        pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
-        pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
-        rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
-        pf.extra_py_imports.append('flopy')
-        ib = m.dis.idomain[0].array
-        #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
-        #        "rch_recharge": [.5, 1.5]}
-        tags = {"npf_k_": [0.1, 10.],"rch_recharge": [.5, 1.5]}
-        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-        print(dts)
-        # ib = m.dis.idomain.array[0,:,:]
-        # setup from array style pars
-        num_cat_arrays = 0
-        for tag, bnd in tags.items():
-            lb, ub = bnd[0], bnd[1]
-            arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-            if "rch" in tag:
-                pass
-                # for arr_file in arr_files:
-                #     # indy direct grid pars for each array type file
-                #     recharge_files = ["recharge_1.txt", "recharge_2.txt", "recharge_3.txt"]
-                #     pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
-                #                       pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
-                #                       par_style="direct")
-                #     # additional constant mults
-                #     kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
-                #     pf.add_parameters(filenames=arr_file, par_type="constant",
-                #                       par_name_base=arr_file.split('.')[1] + "_cn",
-                #                       pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
-                #                       geostruct=rch_temporal_gs,
-                #                       datetime=dts[kper])
-            else:
-                for arr_file in arr_files:
-                    print(arr_file)
-                    k = int(arr_file.split(".")[1][-1]) - 1
-                    if k == 1:
-                        arr_file = arr_file.replace("_k_","_k33_")
-                    pth_arr_file = os.path.join(pf.new_d,arr_file)
-                    arr = np.loadtxt(pth_arr_file)
-                    cat_dict = {1:[0.4,arr.mean()],2:[0.6,arr.mean()]}
-                    thresharr,threshcsv = pyemu.helpers.setup_threshold_pars(pth_arr_file,cat_dict=cat_dict,
-                                                                             testing_workspace=pf.new_d,inact_arr=ib)
-                    
-                    pf.pre_py_cmds.append("pyemu.helpers.apply_threshold_pars('{0}')".format(os.path.split(threshcsv)[1]))
-                    prefix = arr_file.split('.')[1].replace("_","-")
-                    pf.add_parameters(filenames=os.path.split(thresharr)[1],par_type="grid",transform="none",
-                                      par_name_base=prefix+"-threshgr_k:{0}".format(k),
-                                      pargp=prefix + "-threshgr_k:{0}".format(k),
-                                      lower_bound=0.0,upper_bound=1.0,geostruct=gr_gs,par_style="d")
+    # Setup geostruct for spatial pars
+    gr_v = pyemu.geostats.ExpVario(contribution=1.0, a=500)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=gr_v, transform="log")
+    pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
+    pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
+    rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
+    #        "rch_recharge": [.5, 1.5]}
+    tags = {"npf_k_": [0.1, 10.],"rch_recharge": [.5, 1.5]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+    # ib = m.dis.idomain.array[0,:,:]
+    # setup from array style pars
+    num_cat_arrays = 0
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            pass
+            # for arr_file in arr_files:
+            #     # indy direct grid pars for each array type file
+            #     recharge_files = ["recharge_1.txt", "recharge_2.txt", "recharge_3.txt"]
+            #     pf.add_parameters(filenames=arr_file, par_type="grid", par_name_base="rch_gr",
+            #                       pargp="rch_gr", zone_array=ib, upper_bound=1.0e-3, lower_bound=1.0e-7,
+            #                       par_style="direct")
+            #     # additional constant mults
+            #     kper = int(arr_file.split('.')[1].split('_')[-1]) - 1
+            #     pf.add_parameters(filenames=arr_file, par_type="constant",
+            #                       par_name_base=arr_file.split('.')[1] + "_cn",
+            #                       pargp="rch_const", zone_array=ib, upper_bound=ub, lower_bound=lb,
+            #                       geostruct=rch_temporal_gs,
+            #                       datetime=dts[kper])
+        else:
+            for arr_file in arr_files:
+                print(arr_file)
+                k = int(arr_file.split(".")[1][-1]) - 1
+                if k == 1:
+                    arr_file = arr_file.replace("_k_","_k33_")
+                pth_arr_file = os.path.join(pf.new_d,arr_file)
+                arr = np.loadtxt(pth_arr_file)
+                cat_dict = {1:[0.4,arr.mean()],2:[0.6,arr.mean()]}
+                thresharr,threshcsv = pyemu.helpers.setup_threshold_pars(pth_arr_file,cat_dict=cat_dict,
+                                                                         testing_workspace=pf.new_d,inact_arr=ib)
 
-
-                    pf.add_parameters(filenames=os.path.split(thresharr)[1],par_type="pilotpoints",transform="none",
-                                      par_name_base=prefix+"-threshpp_k:{0}".format(k),
-                                      pargp=prefix + "-threshpp_k:{0}".format(k),
-                                      lower_bound=0.0,upper_bound=2.0,geostruct=pp_gs,par_style="m",
-                                      pp_space=3,pp_options={"try_use_ppu":True}
-                                      )
+                pf.pre_py_cmds.append("pyemu.helpers.apply_threshold_pars('{0}')".format(os.path.split(threshcsv)[1]))
+                prefix = arr_file.split('.')[1].replace("_","-")
+                pf.add_parameters(filenames=os.path.split(thresharr)[1],par_type="grid",transform="none",
+                                  par_name_base=prefix+"-threshgr_k:{0}".format(k),
+                                  pargp=prefix + "-threshgr_k:{0}".format(k),
+                                  lower_bound=0.0,upper_bound=1.0,geostruct=gr_gs,par_style="d")
 
 
-                    pf.add_parameters(filenames=os.path.split(threshcsv)[1], par_type="grid",index_cols=["threshcat"],
-                                      use_cols=["threshproportion","threshfill"],
-                                      par_name_base=[prefix+"threshproportion_k:{0}".format(k),prefix+"threshfill_k:{0}".format(k)],
-                                      pargp=[prefix+"threshproportion_k:{0}".format(k),prefix+"threshfill_k:{0}".format(k)],
-                                      lower_bound=[0.1,0.1],upper_bound=[10.0,10.0],transform="none",par_style='d')
-
-                    pf.add_observations(arr_file,prefix="hkarr-"+prefix+"_k:{0}".format(k),
-                                        obsgp="hkarr-"+prefix+"_k:{0}".format(k),zone_array=ib)
-
-                    pf.add_observations(arr_file+".threshcat.dat", prefix="tcatarr-" + prefix+"_k:{0}".format(k),
-                                        obsgp="tcatarr-" + prefix+"_k:{0}".format(k),zone_array=ib)
-
-                    pf.add_observations(arr_file + ".thresharr.dat",
-                                        prefix="tarr-" +prefix+"_k:{0}".format(k),
-                                        obsgp="tarr-" + prefix + "_k:{0}".format(k), zone_array=ib)
-
-                    df = pd.read_csv(threshcsv.replace(".csv","_results.csv"),index_col=0)
-
-                    pf.add_observations(os.path.split(threshcsv)[1].replace(".csv","_results.csv"),index_cols="threshcat",use_cols=df.columns.tolist(),prefix=prefix+"-results_k:{0}".format(k),
-                                        obsgp=prefix+"-results_k:{0}".format(k),ofile_sep=",")
-                    num_cat_arrays += 1
-        
-        # add model run command
-        pf.mod_sys_cmds.append("mf6")
-        print(pf.mult_files)
-        print(pf.org_files)
-
-        # build pest
-        pst = pf.build_pst('freyberg.pst')
-        #cov = pf.build_prior(fmt="none")
-        #cov.to_coo(os.path.join(template_ws, "prior.jcb"))
-        pst.try_parse_name_metadata()
-
-        pst.control_data.noptmax = 0
-        pst.pestpp_options["additional_ins_delimiters"] = ","
-
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-
-        res_file = os.path.join(pf.new_d, "freyberg.base.rei")
-        assert os.path.exists(res_file), res_file
-        pst.set_res(res_file)
-        print(pst.phi)
-        assert pst.phi < 0.1, pst.phi
+                pf.add_parameters(filenames=os.path.split(thresharr)[1],par_type="pilotpoints",transform="none",
+                                  par_name_base=prefix+"-threshpp_k:{0}".format(k),
+                                  pargp=prefix + "-threshpp_k:{0}".format(k),
+                                  lower_bound=0.0,upper_bound=2.0,geostruct=pp_gs,par_style="m",
+                                  pp_space=3,pp_options={"try_use_ppu":True}
+                                  )
 
 
-        #set the initial and bounds for the fill values
-        par = pst.parameter_data
-        cat1par = par.loc[par.apply(lambda x: x.threshcat=="0" and x.usecol=="threshfill",axis=1),"parnme"]
-        cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
-        print(cat1par,cat2par)
-        assert cat1par.shape[0] == num_cat_arrays
-        assert cat2par.shape[0] == num_cat_arrays
+                pf.add_parameters(filenames=os.path.split(threshcsv)[1], par_type="grid",index_cols=["threshcat"],
+                                  use_cols=["threshproportion","threshfill"],
+                                  par_name_base=[prefix+"threshproportion_k:{0}".format(k),prefix+"threshfill_k:{0}".format(k)],
+                                  pargp=[prefix+"threshproportion_k:{0}".format(k),prefix+"threshfill_k:{0}".format(k)],
+                                  lower_bound=[0.1,0.1],upper_bound=[10.0,10.0],transform="none",par_style='d')
 
-        cat1parhk = [p for p in cat1par if "k:1" not in p]
-        cat2parhk = [p for p in cat2par if "k:1" not in p]
-        cat1parvk = [p for p in cat1par if "k:1" in p]
-        cat2parvk = [p for p in cat2par if "k:1" in p]
-        for lst in [cat2parvk,cat2parhk,cat1parhk,cat1parvk]:
-            assert len(lst) > 0
-        par.loc[cat1parhk,"parval1"] = 0.1
-        par.loc[cat1parhk, "parubnd"] = 1.0
-        par.loc[cat1parhk, "parlbnd"] = 0.01
-        par.loc[cat1parhk, "partrans"] = "log"
-        par.loc[cat2parhk, "parval1"] = 10
-        par.loc[cat2parhk, "parubnd"] = 100
-        par.loc[cat2parhk, "parlbnd"] = 1
-        par.loc[cat2parhk, "partrans"] = "log"
+                pf.add_observations(arr_file,prefix="hkarr-"+prefix+"_k:{0}".format(k),
+                                    obsgp="hkarr-"+prefix+"_k:{0}".format(k),zone_array=ib)
 
-        par.loc[cat1parvk, "parval1"] = 0.0001
-        par.loc[cat1parvk, "parubnd"] = 0.01
-        par.loc[cat1parvk, "parlbnd"] = 0.00001
-        par.loc[cat1parvk, "partrans"] = "log"
-        par.loc[cat2parvk, "parval1"] = 0.1
-        par.loc[cat2parvk, "parubnd"] = 1
-        par.loc[cat2parvk, "parlbnd"] = 0.01
-        par.loc[cat2parvk, "partrans"] = "log"
+                pf.add_observations(arr_file+".threshcat.dat", prefix="tcatarr-" + prefix+"_k:{0}".format(k),
+                                    obsgp="tcatarr-" + prefix+"_k:{0}".format(k),zone_array=ib)
 
+                pf.add_observations(arr_file + ".thresharr.dat",
+                                    prefix="tarr-" +prefix+"_k:{0}".format(k),
+                                    obsgp="tarr-" + prefix + "_k:{0}".format(k), zone_array=ib)
 
-        cat1par = par.loc[par.apply(lambda x: x.threshcat == "0" and x.usecol == "threshproportion", axis=1), "parnme"]
-        cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshproportion", axis=1), "parnme"]
+                df = pd.read_csv(threshcsv.replace(".csv","_results.csv"),index_col=0)
 
-        print(cat1par, cat2par)
-        assert cat1par.shape[0] == num_cat_arrays
-        assert cat2par.shape[0] == num_cat_arrays
+                pf.add_observations(os.path.split(threshcsv)[1].replace(".csv","_results.csv"),index_cols="threshcat",use_cols=df.columns.tolist(),prefix=prefix+"-results_k:{0}".format(k),
+                                    obsgp=prefix+"-results_k:{0}".format(k),ofile_sep=",")
+                num_cat_arrays += 1
 
-        par.loc[cat1par, "parval1"] = 0.5
-        par.loc[cat1par, "parubnd"] = 1.0
-        par.loc[cat1par, "parlbnd"] = 0.0001
-        par.loc[cat1par,"partrans"] = "none"
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
 
-        # since the apply method only looks that first proportion, we can just fix this one
-        par.loc[cat2par, "parval1"] = 1
-        par.loc[cat2par, "parubnd"] = 1
-        par.loc[cat2par, "parlbnd"] = 1
-        par.loc[cat2par,"partrans"] = "fixed"
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+    #cov = pf.build_prior(fmt="none")
+    #cov.to_coo(os.path.join(template_ws, "prior.jcb"))
+    pst.try_parse_name_metadata()
 
-        assert par.loc[par.parnme.str.contains("threshgr"),:].shape[0] > 0
-        #par.loc[par.parnme.str.contains("threshgr"),"parval1"] = 0.5
-        par.loc[par.parnme.str.contains("threshgr"),"partrans"] = "fixed"
-        
-        print(pst.adj_par_names)
-        print(pst.npar,pst.npar_adj)
+    pst.control_data.noptmax = 0
+    pst.pestpp_options["additional_ins_delimiters"] = ","
 
-        org_par = par.copy()
-        num_reals = 100
-        np.random.seed()
-        pe = pf.draw(num_reals, use_specsim=False)
-        pe.enforce()
-        print(pe.shape)
-        assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[1], pst.npar_adj)
-        assert pe.shape[0] == num_reals
-        
-        # cat1par = cat1par[0]
-        # pe = pe.loc[pe.loc[:,cat1par].values>0.35,:]
-        # pe = pe.loc[pe.loc[:, cat1par].values < 0.5, :]
-        # cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
-        # cat2par = cat2par[0]
-        # pe = pe.loc[pe.loc[:, cat2par].values > 10, :]
-        # pe = pe.loc[pe.loc[:, cat2par].values < 50, :]
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
-        print(pe.shape)
-        assert pe.shape[0] > 0
-        #print(pe.loc[:,cat1par].describe())
-        #print(pe.loc[:, cat2par].describe())
-        #return
-        truth_idx = pe.index[0]
-        pe = pe.loc[pe.index.map(lambda x: x != truth_idx),:]
-        pe.to_dense(os.path.join(template_ws, "prior.jcb"))
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+    assert pst.phi < 0.1, pst.phi
 
 
-        # just use a real as the truth...
-        pst.parameter_data.loc[pst.adj_par_names,"parval1"] = pe.loc[pe.index[1],pst.adj_par_names].values
-        pst.control_data.noptmax = 0
-        pst.write(os.path.join(pf.new_d,"truth.pst"),version=2)
-        pyemu.os_utils.run("{0} truth.pst".format(ies_exe_path),cwd=pf.new_d)
+    #set the initial and bounds for the fill values
+    par = pst.parameter_data
+    cat1par = par.loc[par.apply(lambda x: x.threshcat=="0" and x.usecol=="threshfill",axis=1),"parnme"]
+    cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
+    print(cat1par,cat2par)
+    assert cat1par.shape[0] == num_cat_arrays
+    assert cat2par.shape[0] == num_cat_arrays
 
-        pst = pyemu.Pst(os.path.join(pf.new_d,"truth.pst"))
+    cat1parhk = [p for p in cat1par if "k:1" not in p]
+    cat2parhk = [p for p in cat2par if "k:1" not in p]
+    cat1parvk = [p for p in cat1par if "k:1" in p]
+    cat2parvk = [p for p in cat2par if "k:1" in p]
+    for lst in [cat2parvk,cat2parhk,cat1parhk,cat1parvk]:
+        assert len(lst) > 0
+    par.loc[cat1parhk,"parval1"] = 0.1
+    par.loc[cat1parhk, "parubnd"] = 1.0
+    par.loc[cat1parhk, "parlbnd"] = 0.01
+    par.loc[cat1parhk, "partrans"] = "log"
+    par.loc[cat2parhk, "parval1"] = 10
+    par.loc[cat2parhk, "parubnd"] = 100
+    par.loc[cat2parhk, "parlbnd"] = 1
+    par.loc[cat2parhk, "partrans"] = "log"
 
-        obs = pst.observation_data
-        obs["weight"] = 1.0
-        obs["obsval"] = pst.res.loc[pst.obs_names,"modelled"].values
-        pst.write(os.path.join(pf.new_d, "truth2.pst"), version=2)
-        pyemu.os_utils.run("{0} truth2.pst".format(ies_exe_path), cwd=pf.new_d)
-        pst2 = pyemu.Pst(os.path.join(pf.new_d, "truth2.pst"))
-        print(pst2.phi)
-        assert pst2.phi < 0.1
+    par.loc[cat1parvk, "parval1"] = 0.0001
+    par.loc[cat1parvk, "parubnd"] = 0.01
+    par.loc[cat1parvk, "parlbnd"] = 0.00001
+    par.loc[cat1parvk, "partrans"] = "log"
+    par.loc[cat2parvk, "parval1"] = 0.1
+    par.loc[cat2parvk, "parubnd"] = 1
+    par.loc[cat2parvk, "parlbnd"] = 0.01
+    par.loc[cat2parvk, "partrans"] = "log"
 
-        obs.loc[:,"weight"] = 0.0
-        obs.loc[:,"standard_deviation"] = np.nan
-        onames = obs.loc[obs.obsnme.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"obsnme"].values
-        #obs.loc[obs.oname=="hds","weight"] = 1.0
-        #obs.loc[obs.oname == "hds", "standard_deviation"] = 0.001
-        snames = [o for o in onames if "gage" in o]
-        obs.loc[onames,"weight"] = 1.0
-        obs.loc[snames,"weight"] = 1./(obs.loc[snames,"obsval"] * 0.2).values
-        #obs.loc[onames,"obsval"] = truth.values
-        #obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.01,onames.shape[0])
 
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-        pst = pyemu.Pst(os.path.join(pf.new_d,"freyberg.pst"))
-        assert pst.phi < 0.01,str(pst.phi)
+    cat1par = par.loc[par.apply(lambda x: x.threshcat == "0" and x.usecol == "threshproportion", axis=1), "parnme"]
+    cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshproportion", axis=1), "parnme"]
 
-        # reset away from the truth...
-        pst.parameter_data.loc[:,"parval1"] = org_par.parval1.values.copy()
+    print(cat1par, cat2par)
+    assert cat1par.shape[0] == num_cat_arrays
+    assert cat2par.shape[0] == num_cat_arrays
 
-        pst.control_data.noptmax = 2
-        pst.pestpp_options["ies_par_en"] = "prior.jcb"
-        pst.pestpp_options["ies_num_reals"] = 30
-        pst.pestpp_options["ies_subset_size"] = -10
-        pst.pestpp_options["ies_no_noise"] = True
-        #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
-        pst.pestpp_options["overdue_giveup_fac"] = 100.0
-        #pst.pestpp_options["panther_agent_freeze_on_fail"] = True
+    par.loc[cat1par, "parval1"] = 0.5
+    par.loc[cat1par, "parubnd"] = 1.0
+    par.loc[cat1par, "parlbnd"] = 0.0001
+    par.loc[cat1par,"partrans"] = "none"
 
-        #pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        #pyemu.os_utils.start_workers(pf.new_d,ies_exe_path,"freyberg.pst",worker_root=".",master_dir="master_thresh",num_workers=15)
+    # since the apply method only looks that first proportion, we can just fix this one
+    par.loc[cat2par, "parval1"] = 1
+    par.loc[cat2par, "parubnd"] = 1
+    par.loc[cat2par, "parlbnd"] = 1
+    par.loc[cat2par,"partrans"] = "fixed"
 
-        #num_reals = 100
-        #pe = pf.draw(num_reals, use_specsim=False)
-        #pe.enforce()
-        #pe.to_dense(os.path.join(template_ws, "prior.jcb"))
-        #pst.pestpp_options["ies_par_en"] = "prior.jcb"
-        
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
-        m_d = "master_thresh"
-        pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
-                                     num_workers=10)
-        phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
-        print(phidf["mean"])
+    assert par.loc[par.parnme.str.contains("threshgr"),:].shape[0] > 0
+    #par.loc[par.parnme.str.contains("threshgr"),"parval1"] = 0.5
+    par.loc[par.parnme.str.contains("threshgr"),"partrans"] = "fixed"
 
-        assert phidf["mean"].min() < phidf["mean"].max()
+    print(pst.adj_par_names)
+    print(pst.npar,pst.npar_adj)
 
-        #pst.pestpp_options["ies_multimodal_alpha"] = 0.99
-        
-        #pst.pestpp_options["ies_num_threads"] = 6
-        #pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
+    org_par = par.copy()
+    num_reals = 100
+    np.random.seed()
+    pe = pf.draw(num_reals, use_specsim=False)
+    pe.enforce()
+    print(pe.shape)
+    assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[1], pst.npar_adj)
+    assert pe.shape[0] == num_reals
 
-        #pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir="master_thresh_mm",
-        #                             num_workers=40)
-    except Exception as e:
-        os.chdir(bd)
-        raise Exception(e)
-    os.chdir(bd)
+    # cat1par = cat1par[0]
+    # pe = pe.loc[pe.loc[:,cat1par].values>0.35,:]
+    # pe = pe.loc[pe.loc[:, cat1par].values < 0.5, :]
+    # cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
+    # cat2par = cat2par[0]
+    # pe = pe.loc[pe.loc[:, cat2par].values > 10, :]
+    # pe = pe.loc[pe.loc[:, cat2par].values < 50, :]
+
+    print(pe.shape)
+    assert pe.shape[0] > 0
+    #print(pe.loc[:,cat1par].describe())
+    #print(pe.loc[:, cat2par].describe())
+    #return
+    truth_idx = pe.index[0]
+    pe = pe.loc[pe.index.map(lambda x: x != truth_idx),:]
+    pe.to_dense(os.path.join(template_ws, "prior.jcb"))
+
+
+    # just use a real as the truth...
+    pst.parameter_data.loc[pst.adj_par_names,"parval1"] = pe.loc[pe.index[1],pst.adj_par_names].values
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(pf.new_d,"truth.pst"),version=2)
+    pyemu.os_utils.run("{0} truth.pst".format(ies_exe_path),cwd=pf.new_d)
+
+    pst = pyemu.Pst(os.path.join(pf.new_d,"truth.pst"))
+
+    obs = pst.observation_data
+    obs["weight"] = 1.0
+    obs["obsval"] = pst.res.loc[pst.obs_names,"modelled"].values
+    pst.write(os.path.join(pf.new_d, "truth2.pst"), version=2)
+    pyemu.os_utils.run("{0} truth2.pst".format(ies_exe_path), cwd=pf.new_d)
+    pst2 = pyemu.Pst(os.path.join(pf.new_d, "truth2.pst"))
+    print(pst2.phi)
+    assert pst2.phi < 0.1
+
+    obs.loc[:,"weight"] = 0.0
+    obs.loc[:,"standard_deviation"] = np.nan
+    onames = obs.loc[obs.obsnme.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"obsnme"].values
+    #obs.loc[obs.oname=="hds","weight"] = 1.0
+    #obs.loc[obs.oname == "hds", "standard_deviation"] = 0.001
+    snames = [o for o in onames if "gage" in o]
+    obs.loc[onames,"weight"] = 1.0
+    obs.loc[snames,"weight"] = 1./(obs.loc[snames,"obsval"] * 0.2).values
+    #obs.loc[onames,"obsval"] = truth.values
+    #obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.01,onames.shape[0])
+
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    pst = pyemu.Pst(os.path.join(pf.new_d,"freyberg.pst"))
+    assert pst.phi < 0.01,str(pst.phi)
+
+    # reset away from the truth...
+    pst.parameter_data.loc[:,"parval1"] = org_par.parval1.values.copy()
+
+    pst.control_data.noptmax = 2
+    pst.pestpp_options["ies_par_en"] = "prior.jcb"
+    pst.pestpp_options["ies_num_reals"] = 30
+    pst.pestpp_options["ies_subset_size"] = -10
+    pst.pestpp_options["ies_no_noise"] = True
+    #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
+    pst.pestpp_options["overdue_giveup_fac"] = 100.0
+    #pst.pestpp_options["panther_agent_freeze_on_fail"] = True
+
+    #pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    #pyemu.os_utils.start_workers(pf.new_d,ies_exe_path,"freyberg.pst",worker_root=".",master_dir="master_thresh",num_workers=15)
+
+    #num_reals = 100
+    #pe = pf.draw(num_reals, use_specsim=False)
+    #pe.enforce()
+    #pe.to_dense(os.path.join(template_ws, "prior.jcb"))
+    #pst.pestpp_options["ies_par_en"] = "prior.jcb"
+
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
+    m_d = "master_thresh"
+    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
+                                 num_workers=10)
+    phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
+    print(phidf["mean"])
+
+    assert phidf["mean"].min() < phidf["mean"].max()
+
+    #pst.pestpp_options["ies_multimodal_alpha"] = 0.99
+
+    #pst.pestpp_options["ies_num_threads"] = 6
+    #pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
+
+    #pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir="master_thresh_mm",
+    #                             num_workers=40)
+
 
 def plot_thresh(m_d):
     import flopy
@@ -5457,20 +5349,180 @@ def test_array_fmt_pst_from(tmp_path):
     arr3 = np.loadtxt(Path(tmp_path, "weird_tmp", "ar3.arr"))
 
 
+def hyperpars_test(tmp_path):
+    tdir = os.getcwd()
+    pf, sim = setup_freyberg_mf6(tmp_path)
+    shutil.copy(Path(tdir, 'utils', 'ppuref.txt'), tmp_path)
+    m = sim.get_model()
+    template_ws = pf.new_d
+
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
+    pp_gs = pyemu.geostats.GeoStruct(variograms=v)
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+
+    xmn = m.modelgrid.xvertices.min()
+    xmx = m.modelgrid.xvertices.max()
+    ymn = m.modelgrid.yvertices.min()
+    ymx = m.modelgrid.yvertices.max()
+
+    numpp = 20
+    xvals = np.random.uniform(xmn, xmx, numpp)
+    yvals = np.random.uniform(ymn, ymx, numpp)
+    pp_locs = pd.DataFrame({"x": xvals, "y": yvals})
+    pp_locs.loc[:, "zone"] = 1
+    pp_locs.loc[:, "name"] = ["pp_{0}".format(i) for i in range(numpp)]
+    pp_locs.loc[:, "parval1"] = 1.0
+
+    # pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
+    # pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
+    # pp_locs.to_csv(os.path.join(template_ws, "pp.csv"))
+    value_v = pyemu.geostats.ExpVario(contribution=1, a=3000, anisotropy=5, bearing=0.0)
+    value_gs = pyemu.geostats.GeoStruct(variograms=value_v)
+    bearing_v = pyemu.geostats.ExpVario(contribution=1, a=10000, anisotropy=3, bearing=90.0)
+    bearing_gs = pyemu.geostats.GeoStruct(variograms=bearing_v)
+    aniso_v = pyemu.geostats.ExpVario(contribution=1, a=10000, anisotropy=3, bearing=45.0)
+    aniso_gs = pyemu.geostats.GeoStruct(variograms=aniso_v)
+    tag = "npf_k_"
+    bnd = [0.1, 10.]
+    lb, ub = bnd[0], bnd[1]
+    arr_files = [f for f in os.listdir(template_ws) if tag in f and f.endswith(".txt")]
+    for i, arr_file in enumerate(arr_files):
+        if 'layer1' not in arr_file:
+            continue
+        ppu_file = arr_file + ".ppu"
+        shutil.copy(os.path.join(template_ws,arr_file), os.path.join(template_ws, ppu_file))
+        tag = arr_file.split('.')[1].replace("_", "-") + "_pp"
+        tagppu = tag+"-ppu"
+        ppdf = pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
+                                 par_name_base=tag,
+                                 pargp=tag, zone_array=ib,
+                                 upper_bound=ub, lower_bound=lb, pp_space=4,
+                                 pp_options={"try_use_ppu": False, "prep_hyperpars": True},
+                                 apply_order=2, geostruct=value_gs)
+
+        pf.add_parameters(filenames=ppu_file, par_type="pilotpoints",
+                          par_name_base=tagppu,
+                          pargp=tagppu, zone_array=ib,
+                          upper_bound=ub, lower_bound=lb, pp_space=4,
+                          pp_options={"try_use_ppu": True, "prep_hyperpars": True},
+                          apply_order=2, geostruct=value_gs)
+
+        tag = arr_file.split('.')[1].replace("_", "-")
+        tagppu = tag+"-ppu"
+        pf.add_observations(arr_file, prefix=tag + "input", obsgp=tag + "input")
+        pf.add_observations(ppu_file, prefix=tagppu + "input", obsgp=tagppu + "input")
+
+        tfiles = [f for f in os.listdir(pf.new_d) if tag in f]
+        afile = [f for f in tfiles if "aniso" in f][0]
+        # pf.add_parameters(afile,par_type="pilotpoints",par_name_base=tag+"aniso",
+        #                   pargp=tag+"aniso",pp_space=5,lower_bound=-1.0,upper_bound=1.0,
+        #                   pp_options={"try_use_ppu":True},apply_order=1,geostruct=aniso_gs,
+        #                   par_style="a",transform="none",initial_value=0.0)
+        pf.add_parameters(afile, par_type="constant", par_name_base=tag + "aniso",
+                          pargp=tag + "aniso", lower_bound=-1.0, upper_bound=1.0,
+                          apply_order=1,
+                          par_style="a", transform="none", initial_value=0.0)
+        pf.add_observations(afile, prefix=tag + "aniso", obsgp=tag + "aniso")
+        # one set of pilot point hyperpars across multiple bearing arrays
+        bfiles = [f for f in tfiles if "bearing" in f]
+        pf.add_parameters(bfiles, par_type="pilotpoints", par_name_base=tag + "bearing",
+                          pargp=tag + "bearing", pp_space=5, lower_bound=-45, upper_bound=45,
+                          par_style="a", transform="none", zone_array=ib,
+                          pp_options={"try_use_ppu": True, "use_pp_zones":True},
+                          apply_order=1, geostruct=bearing_gs)
+        for f in bfiles:
+            if 'ppu' in f:
+                tagf = tagppu
+            else:
+                tagf = tag
+            pf.add_observations(f, prefix=tagf + "bearing", obsgp=tagf + "bearing")
+
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+
+    par = pst.parameter_data
+    apar = par.loc[par.pname.str.contains("aniso"), :]
+    bpar = par.loc[par.pname.str.contains("bearing"), :]
+    basepar = par.loc[par.pargp == "npf-k-layer1_pp", :]
+    testpar = par.loc[par.pargp == "npf-k-layer1_pp-ppu", :]
+    assert len(basepar)==len(testpar)
+    bpar[['i','j']] = bpar[['i','j']].astype(int)
+    basepar[['i', 'j']] = basepar[['i', 'j']].astype(int)
+    testpar[['i', 'j']] = testpar[['i', 'j']].astype(int)
+
+    mid = ib.shape[1]//2
+    mx = 100
+    mn = 0.01
+    c = mid / np.sqrt(-2 * np.log(mn / mx))
+    # bearing as a function of column
+    par.loc[bpar.parnme,'parval1'] = -45+(90*(bpar.i-bpar.i.min())/(bpar.i.max()-bpar.i.min())).values
+    # pp mult as a function of column
+    par.loc[testpar.parnme, 'parval1'] = mx * np.exp(-((testpar.j - mid) ** 2) / (2 * c ** 2))
+    par.loc[basepar.parnme, 'parval1'] = mx * np.exp(-((basepar.j - mid) ** 2) / (2 * c ** 2))
+
+    check_apply(pf)
+
+    # testing
+    # start by checking that arrays are equiv -- they should be as the bearing hyperpar files were set up with the same
+    # pars
+    ppuk = np.loadtxt(os.path.join(template_ws, "freyberg6.npf_k_layer1.txt.ppu"))
+    assert np.isclose(
+        ppuk,
+        np.loadtxt(os.path.join(template_ws, "freyberg6.npf_k_layer1.txt"))
+    ).all()
+    # check against reference file
+    # org file = ppu
+    refk = np.loadtxt(Path(tmp_path, 'ppuref.txt'))
+    assert np.isclose(
+        ppuk,
+        refk).all()
+
+    bearef = np.loadtxt(Path(template_ws, "npf-k-layer1_pp-ppu.bearing.dat"))
+
+    # switch bearing
+    par.loc[bpar.parnme,'parval1'] = 45-(90*(bpar.i-bpar.i.min())/(bpar.i.max()-bpar.i.min())).values
+    check_apply(pf)
+
+    bear2 = np.loadtxt(Path(template_ws, "npf-k-layer1_pp-ppu.bearing.dat"))
+    assert (bearef == bear2*-1).all()
+
+    ppuk2 = np.loadtxt(os.path.join(template_ws, "freyberg6.npf_k_layer1.txt.ppu"))
+    assert (ppuk != ppuk2*-1).all()
+
+    # mg = m.modelgrid
+    # from matplotlib import use
+    # import matplotlib.pyplot as plt
+    # use('qt5agg')
+    # fig, axs = plt.subplots(1,3, figsize=(10,5), layout='constrained')
+    # for ax, f in zip(axs, ["npf-k-layer1_pp-ppu.aniso.dat", "npf-k-layer1_pp-ppu.bearing.dat",
+    #                        "freyberg6.npf_k_layer1.txt"]):
+    #     if f == "freyberg6.npf_k_layer1.txt":
+    #         from matplotlib.colors import LogNorm
+    #         norm = LogNorm()
+    #         ppf = "npf-k-layer1_pp-ppu_inst0pp.dat"
+    #     else:
+    #         norm = None
+    #         ppf = "npf-k-layer1bearing_inst0pp.dat"
+    #     ppdf = pd.read_csv(Path(template_ws, ppf),
+    #                        names=['ppname', 'x', 'y', 'zone', 'val'],
+    #                        sep=r'\s+').set_index('ppname')
+    #     ppdf[['i', 'j']] = pd.DataFrame(ppdf.apply(lambda x: mg.intersect(x.x, x.y), axis=1).to_list(), index=ppdf.index)
+    #     im = ax.imshow(np.loadtxt(Path(template_ws, f)), norm=norm)
+    #     plt.colorbar(im, ax=ax)
+    #     ax.scatter(ppdf.j, ppdf.i, marker='o', fc='none', ec='r')
+    #     ax.set_title(Path(f).stem)
+
+
 def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     import numpy as np
     import pandas as pd
-    
-    import sys
     import os
     import matplotlib.pyplot as plt
+
     import pyemu
     
-    import flopy
-
-    sys.path.insert(0,os.path.join("..","..","pypestutils"))
-
-
+    # sys.path.insert(0,os.path.join("..","..","pypestutils"))
     import pypestutils as ppu
 
     pd.set_option('display.max_rows', 500)
@@ -5484,202 +5536,195 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
 
-    bd = Path.cwd()
     os.chdir(tmp_path)
-    try:
-        tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        m = sim.get_model("freyberg6")
-        sim.set_all_data_external(check_data=False)
-        sim.write_simulation()
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external(check_data=False)
+    sim.write_simulation()
 
-        # SETUP pest stuff...
-        os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
-        template_ws = "new_temp"
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        sr = m.modelgrid
-        # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False, start_datetime="1-1-2018",
-                     chunk_len=1)
+    template_ws = "new_temp"
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018",
+                 chunk_len=1)
 
-        wfiles = [f for f in os.listdir(pf.new_d) if ".wel_stress_period_data_" in f and f.endswith(".txt")]
-        pf.add_parameters(wfiles,par_type='grid',index_cols=[0,1,2],use_cols=[3],pargp="welgrid",par_name_base="welgrid",
-                          upper_bound=1.2,lower_bound=0.8)
-        
-
-        # pf.post_py_cmds.append("generic_function()")
-        df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
-        pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
-        v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
-        pp_gs = pyemu.geostats.GeoStruct(variograms=v)
-        pf.extra_py_imports.append('flopy')
-        ib = m.dis.idomain[0].array
-        tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
-        #         "rch_recharge": [.5, 1.5]}
-        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-        print(dts)
-
-        xmn = m.modelgrid.xvertices.min()
-        xmx = m.modelgrid.xvertices.max()
-        ymn = m.modelgrid.yvertices.min()
-        ymx = m.modelgrid.yvertices.max()
-
-        numpp = 20
-        xvals = np.random.uniform(xmn,xmx,numpp)
-        yvals = np.random.uniform(ymn, ymx, numpp)
-        pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
-        pp_locs.loc[:,"zone"] = 1
-        pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
-        pp_locs.loc[:,"parval1"] = 1.0
-
-        pyemu.pp_utils.write_pp_shapfile(pp_locs,os.path.join(template_ws,"pp_locs.shp"))
-        df = pyemu.pp_utils.pilot_points_from_shapefile(os.path.join(template_ws,"pp_locs.shp"))
-
-        #pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
-        #pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
-        pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
-        pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
-        pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
-        value_v = pyemu.geostats.ExpVario(contribution=1, a=5000, anisotropy=5, bearing=0.0)
-        value_gs = pyemu.geostats.GeoStruct(variograms=value_v)
-        bearing_v = pyemu.geostats.ExpVario(contribution=1,a=10000,anisotropy=3,bearing=90.0)
-        bearing_gs = pyemu.geostats.GeoStruct(variograms=bearing_v)
-        aniso_v = pyemu.geostats.ExpVario(contribution=1, a=10000, anisotropy=3, bearing=45.0)
-        aniso_gs = pyemu.geostats.GeoStruct(variograms=aniso_v)
-        for tag, bnd in tags.items():
-            lb, ub = bnd[0], bnd[1]
-            arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-            if "rch" in tag:
-                pass
-            else:
-                for i,arr_file in enumerate(arr_files):
-                    if i < len(pp_container):
-                        pp_opt = pp_container[i]
-                    else:
-                        pp_opt = pp_locs
-
-                    pth_arr_file = os.path.join(pf.new_d,arr_file)
-                    arr = np.loadtxt(pth_arr_file)
-
-                    tag = arr_file.split('.')[1].replace("_","-") + "_pp"
-                    
-                    pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
-                                      par_name_base=tag,
-                                      pargp=tag, zone_array=ib,
-                                      upper_bound=ub, lower_bound=lb,pp_space=5,
-                                      pp_options={"try_use_ppu":False,"prep_hyperpars":True},
-                                      apply_order=2,geostruct=value_gs)
-                    
+    wfiles = [f for f in os.listdir(pf.new_d) if ".wel_stress_period_data_" in f and f.endswith(".txt")]
+    pf.add_parameters(wfiles,par_type='grid',index_cols=[0,1,2],use_cols=[3],pargp="welgrid",par_name_base="welgrid",
+                      upper_bound=1.2,lower_bound=0.8)
 
 
-                    tag = arr_file.split('.')[1].replace("_","-")
-                    pf.add_observations(arr_file,prefix=tag+"input",obsgp=tag+"input")
-                    tfiles = [f for f in os.listdir(pf.new_d) if tag in f]
-                    afile = [f for f in tfiles if "aniso" in f][0]
-                    # pf.add_parameters(afile,par_type="pilotpoints",par_name_base=tag+"aniso",
-                    #                   pargp=tag+"aniso",pp_space=5,lower_bound=-1.0,upper_bound=1.0,
-                    #                   pp_options={"try_use_ppu":True},apply_order=1,geostruct=aniso_gs,
-                    #                   par_style="a",transform="none",initial_value=0.0)
-                    pf.add_parameters(afile,par_type="constant",par_name_base=tag+"aniso",
-                                      pargp=tag+"aniso",lower_bound=-1.0,upper_bound=1.0,
-                                      apply_order=1,
-                                      par_style="a",transform="none",initial_value=0.0)
-                    pf.add_observations(afile, prefix=tag+"aniso", obsgp=tag+"aniso")
-                    bfile = [f for f in tfiles if "bearing" in f][0]
-                    pf.add_parameters(bfile, par_type="pilotpoints", par_name_base=tag + "bearing",
-                                      pargp=tag + "bearing", pp_space=6,lower_bound=-45,upper_bound=45,
-                                      par_style="a",transform="none",
-                                      pp_options={"try_use_ppu":True},
-                                      apply_order=1,geostruct=bearing_gs)
-                    pf.add_observations(bfile, prefix=tag + "bearing", obsgp=tag + "bearing")
+    # pf.post_py_cmds.append("generic_function()")
+    df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time", use_cols=list(df.columns.values))
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=5000)
+    pp_gs = pyemu.geostats.GeoStruct(variograms=v)
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
+    #         "rch_recharge": [.5, 1.5]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
 
-                   
+    xmn = m.modelgrid.xvertices.min()
+    xmx = m.modelgrid.xvertices.max()
+    ymn = m.modelgrid.yvertices.min()
+    ymx = m.modelgrid.yvertices.max()
 
-        # this is just for local prelim testing
-        pf.pre_py_cmds.insert(0,"import sys")
-        pf.pre_py_cmds.insert(1,"sys.path.append(os.path.join('..','..', '..', 'pypestutils'))")
+    numpp = 20
+    xvals = np.random.uniform(xmn,xmx,numpp)
+    yvals = np.random.uniform(ymn, ymx, numpp)
+    pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
+    pp_locs.loc[:,"zone"] = 1
+    pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
+    pp_locs.loc[:,"parval1"] = 1.0
+
+    pyemu.pp_utils.write_pp_shapfile(pp_locs,os.path.join(template_ws,"pp_locs.shp"))
+    df = pyemu.pp_utils.pilot_points_from_shapefile(os.path.join(template_ws,"pp_locs.shp"))
+
+    #pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
+    #pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
+    pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
+    pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
+    pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
+    value_v = pyemu.geostats.ExpVario(contribution=1, a=5000, anisotropy=5, bearing=0.0)
+    value_gs = pyemu.geostats.GeoStruct(variograms=value_v)
+    bearing_v = pyemu.geostats.ExpVario(contribution=1,a=10000,anisotropy=3,bearing=90.0)
+    bearing_gs = pyemu.geostats.GeoStruct(variograms=bearing_v)
+    aniso_v = pyemu.geostats.ExpVario(contribution=1, a=10000, anisotropy=3, bearing=45.0)
+    aniso_gs = pyemu.geostats.GeoStruct(variograms=aniso_v)
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            pass
+        else:
+            for i,arr_file in enumerate(arr_files):
+                if i < len(pp_container):
+                    pp_opt = pp_container[i]
+                else:
+                    pp_opt = pp_locs
+
+                pth_arr_file = os.path.join(pf.new_d,arr_file)
+                arr = np.loadtxt(pth_arr_file)
+
+                tag = arr_file.split('.')[1].replace("_","-") + "_pp"
+
+                pf.add_parameters(filenames=arr_file, par_type="pilotpoints",
+                                  par_name_base=tag,
+                                  pargp=tag, zone_array=ib,
+                                  upper_bound=ub, lower_bound=lb,pp_space=5,
+                                  pp_options={"try_use_ppu":False,"prep_hyperpars":True},
+                                  apply_order=2,geostruct=value_gs)
 
 
-        # add model run command
-        pf.mod_sys_cmds.append("mf6")
-        print(pf.mult_files)
-        print(pf.org_files)
 
-        # build pest
-        pst = pf.build_pst('freyberg.pst')
-
-        pst.control_data.noptmax = 0
-        pst.write(os.path.join(template_ws, "freyberg.pst"),version=2)
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path),cwd=template_ws)
-        pst = pyemu.Pst(os.path.join(template_ws, "freyberg.pst"))
-        
-
-        par = pst.parameter_data
-        apar = par.loc[par.pname.str.contains("aniso"),:]
-        bpar = par.loc[par.pname.str.contains("bearing"), :]
-        par.loc[apar.parnme,"parval1"] = 0
-        par.loc[apar.parnme,"parlbnd"] = -2
-        par.loc[apar.parnme,"parubnd"] = 2
-
-        par.loc[bpar.parnme,"parval1"] = 90
-        par.loc[bpar.parnme,"parlbnd"] = -75
-        par.loc[bpar.parnme,"parubnd"] = 75
+                tag = arr_file.split('.')[1].replace("_","-")
+                pf.add_observations(arr_file,prefix=tag+"input",obsgp=tag+"input")
+                tfiles = [f for f in os.listdir(pf.new_d) if tag in f]
+                afile = [f for f in tfiles if "aniso" in f][0]
+                # pf.add_parameters(afile,par_type="pilotpoints",par_name_base=tag+"aniso",
+                #                   pargp=tag+"aniso",pp_space=5,lower_bound=-1.0,upper_bound=1.0,
+                #                   pp_options={"try_use_ppu":True},apply_order=1,geostruct=aniso_gs,
+                #                   par_style="a",transform="none",initial_value=0.0)
+                pf.add_parameters(afile,par_type="constant",par_name_base=tag+"aniso",
+                                  pargp=tag+"aniso",lower_bound=-1.0,upper_bound=1.0,
+                                  apply_order=1,
+                                  par_style="a",transform="none",initial_value=0.0)
+                pf.add_observations(afile, prefix=tag+"aniso", obsgp=tag+"aniso")
+                bfile = [f for f in tfiles if "bearing" in f][0]
+                pf.add_parameters(bfile, par_type="pilotpoints", par_name_base=tag + "bearing",
+                                  pargp=tag + "bearing", pp_space=6,lower_bound=-45,upper_bound=45,
+                                  par_style="a",transform="none",
+                                  pp_options={"try_use_ppu":True},
+                                  apply_order=1,geostruct=bearing_gs)
+                pf.add_observations(bfile, prefix=tag + "bearing", obsgp=tag + "bearing")
 
 
-        num_reals = 10
-        pe = pf.draw(num_reals, use_specsim=True)
-        pe.to_binary(os.path.join(template_ws, "prior.jcb"))
-        pst.parameter_data["parval1"] = pe._df.loc[pe.index[0],pst.par_names]
 
-        pst.control_data.noptmax = 0
-        pst.write(os.path.join(template_ws, "freyberg.pst"),version=2)
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=template_ws)
-        pst = pyemu.Pst(os.path.join(template_ws, "freyberg.pst"))
+    # this is just for local prelim testing
+    pf.pre_py_cmds.insert(0,"import sys")
+    pf.pre_py_cmds.insert(1,"sys.path.append(os.path.join('..','..', '..', 'pypestutils'))")
 
-        obs = pst.observation_data
-        aobs = obs.loc[obs.otype=="arr",:].copy()
-        aobs["i"] = aobs.i.astype(int)
-        aobs["j"] = aobs.j.astype(int)
-        hk0 = aobs.loc[aobs.oname=="npf-k-layer1input",:].copy()
-        bearing0 = aobs.loc[aobs.oname=="npf-k-layer1bearing",:].copy()
-        aniso0 = aobs.loc[aobs.oname == "npf-k-layer1aniso", :].copy()
-        fig,axes = plt.subplots(1,3,figsize=(10,5))
-        nrow = hk0.i.max()+1
-        ncol = hk0.j.max()+1
-        for ax,name,df in zip(axes,["aniso","bearing","input"],[aniso0,bearing0,hk0]):
-            arr = np.zeros((nrow,ncol))
-            arr[df.i,df.j] = pst.res.loc[df.obsnme,"modelled"].values
-            if name == "input":
-                arr = np.log10(arr)
-            cb = ax.imshow(arr)
-            plt.colorbar(cb,ax=ax)
-            ax.set_title(name,loc="left")
-        plt.tight_layout()
-        plt.savefig("hyper.pdf")
-        plt.close(fig)
-    
-        pst.pestpp_options["ies_par_en"] = "prior.jcb"
-        pst.control_data.noptmax = -1
-        pst.write(os.path.join(template_ws,"freyberg.pst"))
 
-        #pyemu.os_utils.run("{0} freyberg.pst".format("pestpp-glm"),cwd=template_ws)
-        m_d = "master_ies"
-        port = _get_port()
-        print(f"Running ies on port: {port}")
-        pyemu.os_utils.start_workers(template_ws,ies_exe_path,"freyberg.pst",num_workers=5,
-                                     worker_root=tmp_path,
-                                     master_dir=m_d, port=port)
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
 
-        
-    except Exception as e:
-        os.chdir(bd)
-        raise(e)
-    os.chdir(bd)
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(template_ws, "freyberg.pst"),version=2)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path),cwd=template_ws)
+    pst = pyemu.Pst(os.path.join(template_ws, "freyberg.pst"))
+
+
+    par = pst.parameter_data
+    apar = par.loc[par.pname.str.contains("aniso"),:]
+    bpar = par.loc[par.pname.str.contains("bearing"), :]
+    par.loc[apar.parnme,"parval1"] = 0
+    par.loc[apar.parnme,"parlbnd"] = -2
+    par.loc[apar.parnme,"parubnd"] = 2
+
+    par.loc[bpar.parnme,"parval1"] = 90
+    par.loc[bpar.parnme,"parlbnd"] = -75
+    par.loc[bpar.parnme,"parubnd"] = 75
+
+
+    num_reals = 10
+    pe = pf.draw(num_reals, use_specsim=True)
+    pe.to_binary(os.path.join(template_ws, "prior.jcb"))
+    pst.parameter_data["parval1"] = pe._df.loc[pe.index[0],pst.par_names]
+
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(template_ws, "freyberg.pst"),version=2)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=template_ws)
+    pst = pyemu.Pst(os.path.join(template_ws, "freyberg.pst"))
+
+    obs = pst.observation_data
+    aobs = obs.loc[obs.otype=="arr",:].copy()
+    aobs["i"] = aobs.i.astype(int)
+    aobs["j"] = aobs.j.astype(int)
+    hk0 = aobs.loc[aobs.oname=="npf-k-layer1input",:].copy()
+    bearing0 = aobs.loc[aobs.oname=="npf-k-layer1bearing",:].copy()
+    aniso0 = aobs.loc[aobs.oname == "npf-k-layer1aniso", :].copy()
+    fig,axes = plt.subplots(1,3,figsize=(10,5))
+    nrow = hk0.i.max()+1
+    ncol = hk0.j.max()+1
+    for ax,name,df in zip(axes,["aniso","bearing","input"],[aniso0,bearing0,hk0]):
+        arr = np.zeros((nrow,ncol))
+        arr[df.i,df.j] = pst.res.loc[df.obsnme,"modelled"].values
+        if name == "input":
+            arr = np.log10(arr)
+        cb = ax.imshow(arr)
+        plt.colorbar(cb,ax=ax)
+        ax.set_title(name,loc="left")
+    plt.tight_layout()
+    plt.savefig("hyper.pdf")
+    plt.close(fig)
+
+    pst.pestpp_options["ies_par_en"] = "prior.jcb"
+    pst.control_data.noptmax = -1
+    pst.write(os.path.join(template_ws,"freyberg.pst"))
+
+    #pyemu.os_utils.run("{0} freyberg.pst".format("pestpp-glm"),cwd=template_ws)
+    m_d = "master_ies"
+    port = _get_port()
+    print(f"Running ies on port: {port}")
+    pyemu.os_utils.start_workers(template_ws,ies_exe_path,"freyberg.pst",num_workers=5,
+                                 worker_root=tmp_path,
+                                 master_dir=m_d, port=port)
+
 
 def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
@@ -5692,9 +5737,8 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     import flopy
     # except:
     #     return
-    import sys
-    sys.path.insert(0,os.path.join("..","..","pypestutils"))
-
+    # import sys
+    # sys.path.insert(0,os.path.join("..","..","pypestutils"))
 
     import pypestutils as ppu
 
@@ -5703,386 +5747,381 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
 
     tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-    bd = os.getcwd()
+
     os.chdir(tmp_path)
-    try:
-        sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-        m = sim.get_model("freyberg6")
-        sim.set_all_data_external()
-        sim.write_simulation()
+    sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
+    m = sim.get_model("freyberg6")
+    sim.set_all_data_external()
+    sim.write_simulation()
 
-        # SETUP pest stuff...
-        os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
+    # SETUP pest stuff...
+    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
 
-        template_ws = Path(tmp_path, "new_temp_thresh")
-        if os.path.exists(template_ws):
-            shutil.rmtree(template_ws)
-        sr = m.modelgrid
-        # set up PstFrom object
-        pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-                     remove_existing=True,
-                     longnames=True, spatial_reference=sr,
-                     zero_based=False, start_datetime="1-1-2018")
+    template_ws = Path(tmp_path, "new_temp_thresh")
+    if os.path.exists(template_ws):
+        shutil.rmtree(template_ws)
+    sr = m.modelgrid
+    # set up PstFrom object
+    pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr,
+                 zero_based=False, start_datetime="1-1-2018")
 
-        pf.pre_py_cmds.insert(0,"import sys")
-        pf.pre_py_cmds.insert(1,"sys.path.append(os.path.join('..','..', '..', 'pypestutils'))")
-
-
-        df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
-        pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
-                            use_cols=list(df.columns.values),
-                            prefix="hds", rebuild_pst=True)
-
-        # Add stream flow observation
-        # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
-        pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
-                            use_cols=["GAGE_1", "HEADWATER", "TAILWATER"], ofile_sep=",")
-
-        # Setup geostruct for spatial pars
-        pf.extra_py_imports.append('flopy')
-        ib = m.dis.idomain[0].array
-        #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
-        #        "rch_recharge": [.5, 1.5]}
-        tags = {"npf_k_": [0.1, 10.]}
-        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-        print(dts)
-        # ib = m.dis.idomain.array[0,:,:]
-        # setup from array style pars
-        pf.extra_py_imports.append('flopy')
-        ib = m.dis.idomain[0].array
-        tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
-        #         "rch_recharge": [.5, 1.5]}
-        dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-        print(dts)
-
-        xmn = m.modelgrid.xvertices.min()
-        xmx = m.modelgrid.xvertices.max()
-        ymn = m.modelgrid.yvertices.min()
-        ymx = m.modelgrid.yvertices.max()
-
-        numpp = 20
-        xvals = np.random.uniform(xmn,xmx,numpp)
-        yvals = np.random.uniform(ymn, ymx, numpp)
-        pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
-        pp_locs.loc[:,"zone"] = 1
-        pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
-        pp_locs.loc[:,"parval1"] = 1.0
-
-        pyemu.pp_utils.write_pp_shapfile(pp_locs,os.path.join(template_ws,"pp_locs.shp"))
-        df = pyemu.pp_utils.pilot_points_from_shapefile(os.path.join(template_ws,"pp_locs.shp"))
-
-        #pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
-        #pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
-        pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
-        pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
-        pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
-        value_v = pyemu.geostats.ExpVario(contribution=1, a=5000, anisotropy=5, bearing=0.0)
-        value_gs = pyemu.geostats.GeoStruct(variograms=value_v)
-        bearing_v = pyemu.geostats.ExpVario(contribution=1,a=5000,anisotropy=3,bearing=0.0)
-        bearing_gs = pyemu.geostats.GeoStruct(variograms=bearing_v)
-        aniso_v = pyemu.geostats.ExpVario(contribution=1, a=10000, anisotropy=3, bearing=45.0)
-        aniso_gs = pyemu.geostats.GeoStruct(variograms=aniso_v)
-        num_cat_arrays = 0
-        for tag, bnd in tags.items():
-            lb, ub = bnd[0], bnd[1]
-            arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
-            if "rch" in tag:
-                pass
-            else:
-                for i,arr_file in enumerate(arr_files):
-                    print(arr_file)
-                    k = int(arr_file.split(".")[1][-1]) - 1
-                    if k == 1:
-                        arr_file = arr_file.replace("_k_","_k33_")
-                    pth_arr_file = os.path.join(pf.new_d,arr_file)
-                    arr = np.loadtxt(pth_arr_file)
-                    cat_dict = {1:[0.4,arr.mean()],2:[0.6,arr.mean()]}
-                    thresharr,threshcsv = pyemu.helpers.setup_threshold_pars(pth_arr_file,cat_dict=cat_dict,
-                                                                             testing_workspace=pf.new_d,inact_arr=ib)
-
-                    pf.pre_py_cmds.append("pyemu.helpers.apply_threshold_pars('{0}')".format(os.path.split(threshcsv)[1]))
-                    prefix = arr_file.split('.')[1].replace("_","-")
-                    
-
-                    if i < len(pp_container):
-                        pp_opt = pp_container[i]
-                    else:
-                        pp_opt = pp_locs
-
-                    pth_arr_file = os.path.join(pf.new_d,arr_file)
-                    arr = np.loadtxt(pth_arr_file)
-
-                    tag = arr_file.split('.')[1].replace("_","-") + "_pp"
-                    prefix = arr_file.split('.')[1].replace("_","-")
-                    
-                    pf.add_parameters(filenames=os.path.split(thresharr)[1],par_type="pilotpoints",transform="none",
-                                      par_name_base=tag+"-threshpp_k:{0}".format(k),
-                                      pargp=tag + "-threshpp_k:{0}".format(k),
-                                      lower_bound=0.0,upper_bound=2.0,par_style="m",
-                                      pp_space=5,pp_options={"try_use_ppu":False,"prep_hyperpars":True},
-                                      apply_order=2,geostruct=value_gs
-                                      )
-
-                    tag = arr_file.split('.')[1].replace("_","-")
-                    
-                    tfiles = [f for f in os.listdir(pf.new_d) if tag in f]
-                    afile = [f for f in tfiles if "aniso" in f][0]
-                    # pf.add_parameters(afile,par_type="pilotpoints",par_name_base=tag+"aniso",
-                    #                   pargp=tag+"aniso",pp_space=5,lower_bound=-1.0,upper_bound=1.0,
-                    #                   pp_options={"try_use_ppu":True},apply_order=1,geostruct=aniso_gs,
-                    #                   par_style="a",transform="none",initial_value=0.0)
-                    pf.add_parameters(afile,par_type="constant",par_name_base=tag+"aniso",
-                                      pargp=tag+"aniso",lower_bound=-1.0,upper_bound=1.0,
-                                      apply_order=1,
-                                      par_style="a",transform="none",initial_value=0.0)
-                    pf.add_observations(afile, prefix=tag+"aniso", obsgp=tag+"aniso")
-                    bfile = [f for f in tfiles if "bearing" in f][0]
-                    pf.add_parameters(bfile, par_type="pilotpoints", par_name_base=tag + "bearing",
-                                      pargp=tag + "bearing", pp_space=6,lower_bound=-45,upper_bound=45,
-                                      par_style="a",transform="none",
-                                      pp_options={"try_use_ppu":True},
-                                      apply_order=1,geostruct=bearing_gs)
-                    pf.add_observations(bfile, prefix=tag + "bearing", obsgp=tag + "bearing")                
+    pf.pre_py_cmds.insert(0,"import sys")
+    pf.pre_py_cmds.insert(1,"sys.path.append(os.path.join('..','..', '..', 'pypestutils'))")
 
 
-                    pf.add_parameters(filenames=os.path.split(threshcsv)[1], par_type="grid",index_cols=["threshcat"],
-                                      use_cols=["threshproportion","threshfill"],
-                                      par_name_base=[prefix+"threshproportion_k:{0}".format(k),prefix+"threshfill_k:{0}".format(k)],
-                                      pargp=[prefix+"threshproportion_k:{0}".format(k),prefix+"threshfill_k:{0}".format(k)],
-                                      lower_bound=[0.1,0.1],upper_bound=[10.0,10.0],transform="none",par_style='d')
+    df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
+    pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time",
+                        use_cols=list(df.columns.values),
+                        prefix="hds", rebuild_pst=True)
 
-                    pf.add_observations(arr_file,prefix="hkarr-"+prefix+"_k:{0}".format(k),
-                                        obsgp="hkarr-"+prefix+"_k:{0}".format(k),zone_array=ib)
+    # Add stream flow observation
+    # df = pd.read_csv(os.path.join(tmp_model_ws, "sfr.csv"), index_col=0)
+    pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols="time",
+                        use_cols=["GAGE_1", "HEADWATER", "TAILWATER"], ofile_sep=",")
 
-                    pf.add_observations(arr_file+".threshcat.dat", prefix="tcatarr-" + prefix+"_k:{0}".format(k),
-                                        obsgp="tcatarr-" + prefix+"_k:{0}".format(k),zone_array=ib)
+    # Setup geostruct for spatial pars
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
+    #        "rch_recharge": [.5, 1.5]}
+    tags = {"npf_k_": [0.1, 10.]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
+    # ib = m.dis.idomain.array[0,:,:]
+    # setup from array style pars
+    pf.extra_py_imports.append('flopy')
+    ib = m.dis.idomain[0].array
+    tags = {"npf_k_": [0.1, 10.]}#, "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
+    #         "rch_recharge": [.5, 1.5]}
+    dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
+    print(dts)
 
-                    pf.add_observations(arr_file + ".thresharr.dat",
-                                        prefix="tarr-" +prefix+"_k:{0}".format(k),
-                                        obsgp="tarr-" + prefix + "_k:{0}".format(k), zone_array=ib)
+    xmn = m.modelgrid.xvertices.min()
+    xmx = m.modelgrid.xvertices.max()
+    ymn = m.modelgrid.yvertices.min()
+    ymx = m.modelgrid.yvertices.max()
 
-                    df = pd.read_csv(threshcsv.replace(".csv","_results.csv"),index_col=0)
-                    pf.add_observations(os.path.split(threshcsv)[1].replace(".csv","_results.csv"),index_cols="threshcat",use_cols=df.columns.tolist(),prefix=prefix+"-results_k:{0}".format(k),
-                                        obsgp=prefix+"-results_k:{0}".format(k),ofile_sep=",")
-                    num_cat_arrays += 1
+    numpp = 20
+    xvals = np.random.uniform(xmn,xmx,numpp)
+    yvals = np.random.uniform(ymn, ymx, numpp)
+    pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
+    pp_locs.loc[:,"zone"] = 1
+    pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
+    pp_locs.loc[:,"parval1"] = 1.0
 
-        # add model run command
-        pf.mod_sys_cmds.append("mf6")
-        print(pf.mult_files)
-        print(pf.org_files)
+    pyemu.pp_utils.write_pp_shapfile(pp_locs,os.path.join(template_ws,"pp_locs.shp"))
+    df = pyemu.pp_utils.pilot_points_from_shapefile(os.path.join(template_ws,"pp_locs.shp"))
 
-        # build pest
-        pst = pf.build_pst('freyberg.pst')
-        #cov = pf.build_prior(fmt="none")
-        #cov.to_coo(os.path.join(template_ws, "prior.jcb"))
-        pst.try_parse_name_metadata()
+    #pp_locs = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,prefix_dict={0:"pps_1"})
+    #pp_locs = pp_locs.loc[:,["name","x","y","zone","parval1"]]
+    pp_locs.to_csv(os.path.join(template_ws,"pp.csv"))
+    pyemu.pp_utils.write_pp_file(os.path.join(template_ws,"pp_file.dat"),pp_locs)
+    pp_container = ["pp_file.dat","pp.csv","pp_locs.shp"]
+    value_v = pyemu.geostats.ExpVario(contribution=1, a=5000, anisotropy=5, bearing=0.0)
+    value_gs = pyemu.geostats.GeoStruct(variograms=value_v)
+    bearing_v = pyemu.geostats.ExpVario(contribution=1,a=5000,anisotropy=3,bearing=0.0)
+    bearing_gs = pyemu.geostats.GeoStruct(variograms=bearing_v)
+    aniso_v = pyemu.geostats.ExpVario(contribution=1, a=10000, anisotropy=3, bearing=45.0)
+    aniso_gs = pyemu.geostats.GeoStruct(variograms=aniso_v)
+    num_cat_arrays = 0
+    for tag, bnd in tags.items():
+        lb, ub = bnd[0], bnd[1]
+        arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
+        if "rch" in tag:
+            pass
+        else:
+            for i,arr_file in enumerate(arr_files):
+                print(arr_file)
+                k = int(arr_file.split(".")[1][-1]) - 1
+                if k == 1:
+                    arr_file = arr_file.replace("_k_","_k33_")
+                pth_arr_file = os.path.join(pf.new_d,arr_file)
+                arr = np.loadtxt(pth_arr_file)
+                cat_dict = {1:[0.4,arr.mean()],2:[0.6,arr.mean()]}
+                thresharr,threshcsv = pyemu.helpers.setup_threshold_pars(pth_arr_file,cat_dict=cat_dict,
+                                                                         testing_workspace=pf.new_d,inact_arr=ib)
 
-        pst.control_data.noptmax = 0
-        pst.pestpp_options["additional_ins_delimiters"] = ","
-
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-
-        res_file = os.path.join(pf.new_d, "freyberg.base.rei")
-        assert os.path.exists(res_file), res_file
-        pst.set_res(res_file)
-        print(pst.phi)
-        #assert pst.phi < 0.1, pst.phi
-
-        #set the initial and bounds for the fill values
-        par = pst.parameter_data
-        
-        apar = par.loc[par.pname.str.contains("aniso"),:]
-        bpar = par.loc[par.pname.str.contains("bearing"), :]
-        par.loc[apar.parnme,"parval1"] = 5
-        par.loc[apar.parnme,"parlbnd"] = 4
-        par.loc[apar.parnme,"parubnd"] = 6
-
-        par.loc[bpar.parnme,"parval1"] = 0
-        par.loc[bpar.parnme,"parlbnd"] = -90
-        par.loc[bpar.parnme,"parubnd"] = 90
-
-        cat1par = par.loc[par.apply(lambda x: x.threshcat=="0" and x.usecol=="threshfill",axis=1),"parnme"]
-        cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
-        print(cat1par,cat2par)
-        assert cat1par.shape[0] == num_cat_arrays
-        assert cat2par.shape[0] == num_cat_arrays
-
-        cat1parhk = [p for p in cat1par if "k:1" not in p]
-        cat2parhk = [p for p in cat2par if "k:1" not in p]
-        cat1parvk = [p for p in cat1par if "k:1" in p]
-        cat2parvk = [p for p in cat2par if "k:1" in p]
-        for lst in [cat2parvk,cat2parhk,cat1parhk,cat1parvk]:
-            assert len(lst) > 0
-        par.loc[cat1parhk,"parval1"] = 0.1
-        par.loc[cat1parhk, "parubnd"] = 1.0
-        par.loc[cat1parhk, "parlbnd"] = 0.01
-        par.loc[cat1parhk, "partrans"] = "log"
-        par.loc[cat2parhk, "parval1"] = 10
-        par.loc[cat2parhk, "parubnd"] = 100
-        par.loc[cat2parhk, "parlbnd"] = 1
-        par.loc[cat2parhk, "partrans"] = "log"
-
-        par.loc[cat1parvk, "parval1"] = 0.0001
-        par.loc[cat1parvk, "parubnd"] = 0.01
-        par.loc[cat1parvk, "parlbnd"] = 0.000001
-        par.loc[cat1parvk, "partrans"] = "log"
-        par.loc[cat2parvk, "parval1"] = 0.1
-        par.loc[cat2parvk, "parubnd"] = 1
-        par.loc[cat2parvk, "parlbnd"] = 0.01
-        par.loc[cat2parvk, "partrans"] = "log"
+                pf.pre_py_cmds.append("pyemu.helpers.apply_threshold_pars('{0}')".format(os.path.split(threshcsv)[1]))
+                prefix = arr_file.split('.')[1].replace("_","-")
 
 
-        cat1par = par.loc[par.apply(lambda x: x.threshcat == "0" and x.usecol == "threshproportion", axis=1), "parnme"]
-        cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshproportion", axis=1), "parnme"]
+                if i < len(pp_container):
+                    pp_opt = pp_container[i]
+                else:
+                    pp_opt = pp_locs
 
-        print(cat1par, cat2par)
-        assert cat1par.shape[0] == num_cat_arrays
-        assert cat2par.shape[0] == num_cat_arrays
+                pth_arr_file = os.path.join(pf.new_d,arr_file)
+                arr = np.loadtxt(pth_arr_file)
 
-        par.loc[cat1par, "parval1"] = 0.8
-        par.loc[cat1par, "parubnd"] = 1.0
-        par.loc[cat1par, "parlbnd"] = 0.6
-        par.loc[cat1par,"partrans"] = "none"
+                tag = arr_file.split('.')[1].replace("_","-") + "_pp"
+                prefix = arr_file.split('.')[1].replace("_","-")
 
-        # since the apply method only looks that first proportion, we can just fix this one
-        par.loc[cat2par, "parval1"] = 1
-        par.loc[cat2par, "parubnd"] = 1
-        par.loc[cat2par, "parlbnd"] = 1
-        par.loc[cat2par,"partrans"] = "fixed"
+                pf.add_parameters(filenames=os.path.split(thresharr)[1],par_type="pilotpoints",transform="none",
+                                  par_name_base=tag+"-threshpp_k:{0}".format(k),
+                                  pargp=tag + "-threshpp_k:{0}".format(k),
+                                  lower_bound=0.0,upper_bound=2.0,par_style="m",
+                                  pp_space=5,pp_options={"try_use_ppu":False,"prep_hyperpars":True},
+                                  apply_order=2,geostruct=value_gs
+                                  )
 
-        #assert par.loc[par.parnme.str.contains("threshgr"),:].shape[0] > 0
-        #par.loc[par.parnme.str.contains("threshgr"),"parval1"] = 0.5
-        #par.loc[par.parnme.str.contains("threshgr"),"partrans"] = "fixed"
-        
-        print(pst.adj_par_names)
-        print(pst.npar,pst.npar_adj)
+                tag = arr_file.split('.')[1].replace("_","-")
 
-        org_par = par.copy()
-        num_reals = 100
-        pe = pf.draw(num_reals, use_specsim=False)
-        pe.enforce()
-        print(pe.shape)
-        assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[1], pst.npar_adj)
-        assert pe.shape[0] == num_reals
-        
-        # cat1par = cat1par[0]
-        # pe = pe.loc[pe.loc[:,cat1par].values>0.35,:]
-        # pe = pe.loc[pe.loc[:, cat1par].values < 0.5, :]
-        # cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
-        # cat2par = cat2par[0]
-        # pe = pe.loc[pe.loc[:, cat2par].values > 10, :]
-        # pe = pe.loc[pe.loc[:, cat2par].values < 50, :]
-
-        print(pe.shape)
-        assert pe.shape[0] > 0
-        #print(pe.loc[:,cat1par].describe())
-        #print(pe.loc[:, cat2par].describe())
-        #return
-        #pe._df.index = np.arange(pe.shape[0])
-
-        truth_idx = 1
+                tfiles = [f for f in os.listdir(pf.new_d) if tag in f]
+                afile = [f for f in tfiles if "aniso" in f][0]
+                # pf.add_parameters(afile,par_type="pilotpoints",par_name_base=tag+"aniso",
+                #                   pargp=tag+"aniso",pp_space=5,lower_bound=-1.0,upper_bound=1.0,
+                #                   pp_options={"try_use_ppu":True},apply_order=1,geostruct=aniso_gs,
+                #                   par_style="a",transform="none",initial_value=0.0)
+                pf.add_parameters(afile,par_type="constant",par_name_base=tag+"aniso",
+                                  pargp=tag+"aniso",lower_bound=-1.0,upper_bound=1.0,
+                                  apply_order=1,
+                                  par_style="a",transform="none",initial_value=0.0)
+                pf.add_observations(afile, prefix=tag+"aniso", obsgp=tag+"aniso")
+                bfile = [f for f in tfiles if "bearing" in f][0]
+                pf.add_parameters(bfile, par_type="pilotpoints", par_name_base=tag + "bearing",
+                                  pargp=tag + "bearing", pp_space=6,lower_bound=-45,upper_bound=45,
+                                  par_style="a",transform="none",
+                                  pp_options={"try_use_ppu":True},
+                                  apply_order=1,geostruct=bearing_gs)
+                pf.add_observations(bfile, prefix=tag + "bearing", obsgp=tag + "bearing")
 
 
-        #pe = pe._df
+                pf.add_parameters(filenames=os.path.split(threshcsv)[1], par_type="grid",index_cols=["threshcat"],
+                                  use_cols=["threshproportion","threshfill"],
+                                  par_name_base=[prefix+"threshproportion_k:{0}".format(k),prefix+"threshfill_k:{0}".format(k)],
+                                  pargp=[prefix+"threshproportion_k:{0}".format(k),prefix+"threshfill_k:{0}".format(k)],
+                                  lower_bound=[0.1,0.1],upper_bound=[10.0,10.0],transform="none",par_style='d')
 
-        # just use a real as the truth...
-        pst.parameter_data.loc[pst.adj_par_names,"parval1"] = pe.loc[truth_idx,pst.adj_par_names].values
-        pe = pe.loc[pe.index.map(lambda x: x != truth_idx), :]
-        pe.to_dense(os.path.join(template_ws, "prior.jcb"))
-        pst.control_data.noptmax = 0
-        pst.write(os.path.join(pf.new_d,"truth.pst"),version=2)
-        pyemu.os_utils.run("{0} truth.pst".format(ies_exe_path),cwd=pf.new_d)
+                pf.add_observations(arr_file,prefix="hkarr-"+prefix+"_k:{0}".format(k),
+                                    obsgp="hkarr-"+prefix+"_k:{0}".format(k),zone_array=ib)
 
-        pst = pyemu.Pst(os.path.join(pf.new_d,"truth.pst"))
+                pf.add_observations(arr_file+".threshcat.dat", prefix="tcatarr-" + prefix+"_k:{0}".format(k),
+                                    obsgp="tcatarr-" + prefix+"_k:{0}".format(k),zone_array=ib)
 
-        obs = pst.observation_data
-        obs.loc[:,"obsval"] = pst.res.loc[pst.obs_names,"modelled"].values
-        obs.loc[:,"weight"] = 0.0
-        obs.loc[:,"standard_deviation"] = np.nan
-        onames = obs.loc[obs.obsnme.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"obsnme"].values
-        #obs.loc[obs.oname=="hds","weight"] = 1.0
-        #obs.loc[obs.oname == "hds", "standard_deviation"] = 0.001
-        snames = [o for o in onames if "gage" in o]
-        obs.loc[onames,"weight"] = 1.0
-        obs.loc[onames, "standard_deviation"] = 0.5
+                pf.add_observations(arr_file + ".thresharr.dat",
+                                    prefix="tarr-" +prefix+"_k:{0}".format(k),
+                                    obsgp="tarr-" + prefix + "_k:{0}".format(k), zone_array=ib)
 
-        obs.loc[snames,"weight"] = 1./(obs.loc[snames,"obsval"] * 0.2).values
-        obs.loc[snames, "standard_deviation"] = (obs.loc[snames, "obsval"] * 0.2).values
+                df = pd.read_csv(threshcsv.replace(".csv","_results.csv"),index_col=0)
+                pf.add_observations(os.path.split(threshcsv)[1].replace(".csv","_results.csv"),index_cols="threshcat",use_cols=df.columns.tolist(),prefix=prefix+"-results_k:{0}".format(k),
+                                    obsgp=prefix+"-results_k:{0}".format(k),ofile_sep=",")
+                num_cat_arrays += 1
 
-        #obs.loc[onames,"obsval"] = truth.values
-        #obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.01,onames.shape[0])
+    # add model run command
+    pf.mod_sys_cmds.append("mf6")
+    print(pf.mult_files)
+    print(pf.org_files)
 
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
-        pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
-        pst = pyemu.Pst(os.path.join(pf.new_d,"freyberg.pst"))
-        assert pst.phi < 0.01,str(pst.phi)
+    # build pest
+    pst = pf.build_pst('freyberg.pst')
+    #cov = pf.build_prior(fmt="none")
+    #cov.to_coo(os.path.join(template_ws, "prior.jcb"))
+    pst.try_parse_name_metadata()
 
-        # reset away from the truth...
-        pst.parameter_data.loc[:,"parval1"] = org_par.parval1.values.copy()
+    pst.control_data.noptmax = 0
+    pst.pestpp_options["additional_ins_delimiters"] = ","
 
-        pst.control_data.noptmax = 1
-        pst.pestpp_options["ies_par_en"] = "prior.jcb"
-        pst.pestpp_options["ies_num_reals"] = 30
-        pst.pestpp_options["ies_subset_size"] = -10
-        pst.pestpp_options["ies_no_noise"] = True
-        #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
-        pst.pestpp_options["overdue_giveup_fac"] = 100.0
-        pst.pestpp_options["ies_multimodal_alpha"] = 0.99
-        #pst.pestpp_options["panther_agent_freeze_on_fail"] = True
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
 
-        #pst.write(os.path.join(pf.new_d, "freyberg.pst"))
-        #pyemu.os_utils.start_workers(pf.new_d,ies_exe_path,"freyberg.pst",worker_root=".",master_dir="master_thresh",num_workers=15)
+    res_file = os.path.join(pf.new_d, "freyberg.base.rei")
+    assert os.path.exists(res_file), res_file
+    pst.set_res(res_file)
+    print(pst.phi)
+    #assert pst.phi < 0.1, pst.phi
 
-        #num_reals = 100
-        #pe = pf.draw(num_reals, use_specsim=False)
-        #pe.enforce()
-        #pe.to_dense(os.path.join(template_ws, "prior.jcb"))
-        #pst.pestpp_options["ies_par_en"] = "prior.jcb"
-        
-        pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
-        m_d = "master_thresh_nonstat"
-        pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
-                                     num_workers=15)
-        phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
-        print(phidf["mean"])
+    #set the initial and bounds for the fill values
+    par = pst.parameter_data
 
-        assert phidf["mean"].min() < phidf["mean"].max()
+    apar = par.loc[par.pname.str.contains("aniso"),:]
+    bpar = par.loc[par.pname.str.contains("bearing"), :]
+    par.loc[apar.parnme,"parval1"] = 5
+    par.loc[apar.parnme,"parlbnd"] = 4
+    par.loc[apar.parnme,"parubnd"] = 6
+
+    par.loc[bpar.parnme,"parval1"] = 0
+    par.loc[bpar.parnme,"parlbnd"] = -90
+    par.loc[bpar.parnme,"parubnd"] = 90
+
+    cat1par = par.loc[par.apply(lambda x: x.threshcat=="0" and x.usecol=="threshfill",axis=1),"parnme"]
+    cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
+    print(cat1par,cat2par)
+    assert cat1par.shape[0] == num_cat_arrays
+    assert cat2par.shape[0] == num_cat_arrays
+
+    cat1parhk = [p for p in cat1par if "k:1" not in p]
+    cat2parhk = [p for p in cat2par if "k:1" not in p]
+    cat1parvk = [p for p in cat1par if "k:1" in p]
+    cat2parvk = [p for p in cat2par if "k:1" in p]
+    for lst in [cat2parvk,cat2parhk,cat1parhk,cat1parvk]:
+        assert len(lst) > 0
+    par.loc[cat1parhk,"parval1"] = 0.1
+    par.loc[cat1parhk, "parubnd"] = 1.0
+    par.loc[cat1parhk, "parlbnd"] = 0.01
+    par.loc[cat1parhk, "partrans"] = "log"
+    par.loc[cat2parhk, "parval1"] = 10
+    par.loc[cat2parhk, "parubnd"] = 100
+    par.loc[cat2parhk, "parlbnd"] = 1
+    par.loc[cat2parhk, "partrans"] = "log"
+
+    par.loc[cat1parvk, "parval1"] = 0.0001
+    par.loc[cat1parvk, "parubnd"] = 0.01
+    par.loc[cat1parvk, "parlbnd"] = 0.000001
+    par.loc[cat1parvk, "partrans"] = "log"
+    par.loc[cat2parvk, "parval1"] = 0.1
+    par.loc[cat2parvk, "parubnd"] = 1
+    par.loc[cat2parvk, "parlbnd"] = 0.01
+    par.loc[cat2parvk, "partrans"] = "log"
+
+
+    cat1par = par.loc[par.apply(lambda x: x.threshcat == "0" and x.usecol == "threshproportion", axis=1), "parnme"]
+    cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshproportion", axis=1), "parnme"]
+
+    print(cat1par, cat2par)
+    assert cat1par.shape[0] == num_cat_arrays
+    assert cat2par.shape[0] == num_cat_arrays
+
+    par.loc[cat1par, "parval1"] = 0.8
+    par.loc[cat1par, "parubnd"] = 1.0
+    par.loc[cat1par, "parlbnd"] = 0.6
+    par.loc[cat1par,"partrans"] = "none"
+
+    # since the apply method only looks that first proportion, we can just fix this one
+    par.loc[cat2par, "parval1"] = 1
+    par.loc[cat2par, "parubnd"] = 1
+    par.loc[cat2par, "parlbnd"] = 1
+    par.loc[cat2par,"partrans"] = "fixed"
+
+    #assert par.loc[par.parnme.str.contains("threshgr"),:].shape[0] > 0
+    #par.loc[par.parnme.str.contains("threshgr"),"parval1"] = 0.5
+    #par.loc[par.parnme.str.contains("threshgr"),"partrans"] = "fixed"
+
+    print(pst.adj_par_names)
+    print(pst.npar,pst.npar_adj)
+
+    org_par = par.copy()
+    num_reals = 100
+    pe = pf.draw(num_reals, use_specsim=False)
+    pe.enforce()
+    print(pe.shape)
+    assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[1], pst.npar_adj)
+    assert pe.shape[0] == num_reals
+
+    # cat1par = cat1par[0]
+    # pe = pe.loc[pe.loc[:,cat1par].values>0.35,:]
+    # pe = pe.loc[pe.loc[:, cat1par].values < 0.5, :]
+    # cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
+    # cat2par = cat2par[0]
+    # pe = pe.loc[pe.loc[:, cat2par].values > 10, :]
+    # pe = pe.loc[pe.loc[:, cat2par].values < 50, :]
+
+    print(pe.shape)
+    assert pe.shape[0] > 0
+    #print(pe.loc[:,cat1par].describe())
+    #print(pe.loc[:, cat2par].describe())
+    #return
+    #pe._df.index = np.arange(pe.shape[0])
+
+    truth_idx = 1
+
+
+    #pe = pe._df
+
+    # just use a real as the truth...
+    pst.parameter_data.loc[pst.adj_par_names,"parval1"] = pe.loc[truth_idx,pst.adj_par_names].values
+    pe = pe.loc[pe.index.map(lambda x: x != truth_idx), :]
+    pe.to_dense(os.path.join(template_ws, "prior.jcb"))
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(pf.new_d,"truth.pst"),version=2)
+    pyemu.os_utils.run("{0} truth.pst".format(ies_exe_path),cwd=pf.new_d)
+
+    pst = pyemu.Pst(os.path.join(pf.new_d,"truth.pst"))
+
+    obs = pst.observation_data
+    obs.loc[:,"obsval"] = pst.res.loc[pst.obs_names,"modelled"].values
+    obs.loc[:,"weight"] = 0.0
+    obs.loc[:,"standard_deviation"] = np.nan
+    onames = obs.loc[obs.obsnme.apply(lambda x: ("trgw" in x or "gage" in x) and ("hdstd" not in x and "sfrtd" not in x)),"obsnme"].values
+    #obs.loc[obs.oname=="hds","weight"] = 1.0
+    #obs.loc[obs.oname == "hds", "standard_deviation"] = 0.001
+    snames = [o for o in onames if "gage" in o]
+    obs.loc[onames,"weight"] = 1.0
+    obs.loc[onames, "standard_deviation"] = 0.5
+
+    obs.loc[snames,"weight"] = 1./(obs.loc[snames,"obsval"] * 0.2).values
+    obs.loc[snames, "standard_deviation"] = (obs.loc[snames, "obsval"] * 0.2).values
+
+    #obs.loc[onames,"obsval"] = truth.values
+    #obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.01,onames.shape[0])
+
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
+    pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
+    pst = pyemu.Pst(os.path.join(pf.new_d,"freyberg.pst"))
+    assert pst.phi < 0.01,str(pst.phi)
+
+    # reset away from the truth...
+    pst.parameter_data.loc[:,"parval1"] = org_par.parval1.values.copy()
+
+    pst.control_data.noptmax = 1
+    pst.pestpp_options["ies_par_en"] = "prior.jcb"
+    pst.pestpp_options["ies_num_reals"] = 30
+    pst.pestpp_options["ies_subset_size"] = -10
+    pst.pestpp_options["ies_no_noise"] = True
+    #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
+    pst.pestpp_options["overdue_giveup_fac"] = 100.0
+    pst.pestpp_options["ies_multimodal_alpha"] = 0.99
+    #pst.pestpp_options["panther_agent_freeze_on_fail"] = True
+
+    #pst.write(os.path.join(pf.new_d, "freyberg.pst"))
+    #pyemu.os_utils.start_workers(pf.new_d,ies_exe_path,"freyberg.pst",worker_root=".",master_dir="master_thresh",num_workers=15)
+
+    #num_reals = 100
+    #pe = pf.draw(num_reals, use_specsim=False)
+    #pe.enforce()
+    #pe.to_dense(os.path.join(template_ws, "prior.jcb"))
+    #pst.pestpp_options["ies_par_en"] = "prior.jcb"
+
+    pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
+    m_d = "master_thresh_nonstat"
+    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
+                                 num_workers=15)
+    phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
+    print(phidf["mean"])
+
+    assert phidf["mean"].min() < phidf["mean"].max()
 
 
 
-        # pst.pestpp_options["ies_n_iter_mean"] = 3
-        #
-        # #pst.pestpp_options["ies_num_threads"] = 6
-        # pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
-        #
-        # m_d = "master_thresh_nonstat_nim"
-        # pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
-        #                              num_workers=15)
-        # phidf = pd.read_csv(os.path.join(m_d, "freyberg.phi.actual.csv"))
-        # print(phidf["mean"])
-        #
-        # assert phidf["mean"].min() < phidf["mean"].max()
-    except Exception as e:
-        os.chdir(bd)
-        raise Exception(e)
-    os.chdir(bd)
+    # pst.pestpp_options["ies_n_iter_mean"] = 3
+    #
+    # #pst.pestpp_options["ies_num_threads"] = 6
+    # pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
+    #
+    # m_d = "master_thresh_nonstat_nim"
+    # pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
+    #                              num_workers=15)
+    # phidf = pd.read_csv(os.path.join(m_d, "freyberg.phi.actual.csv"))
+    # print(phidf["mean"])
+    #
+    # assert phidf["mean"].min() < phidf["mean"].max()
 
 
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")
-    #mf6_freyberg_ppu_hyperpars_invest(".")
-    mf6_freyberg_ppu_hyperpars_thresh_invest(".")
+    mf6_freyberg_ppu_hyperpars_invest(".")
+    # mf6_freyberg_ppu_hyperpars_thresh_invest(".")
     #while True:
     #    mf6_freyberg_thresh_test(".")
-    #plot_thresh("master_thresh_nonstat")
+    plot_thresh("master_thresh_nonstat")
     #mf6_freyberg_thresh_test(".")
     plot_thresh("master_thresh_nonstat")
     #plot_thresh("master_thresh_nonstat_nim")
 
     # invest()
-    #test_add_array_parameters_pps_grid()
+    # test_add_array_parameters_pps_grid()
     #freyberg_test(os.path.abspath("."))
     # freyberg_prior_build_test()
     #mf6_freyberg_test(os.path.abspath("."))

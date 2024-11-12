@@ -391,6 +391,7 @@ def pp_to_shapefile_test(tmp_path):
     shutil.copy(o_pp_file, pp_file)
     shp_file = os.path.join(tmp_path, "points1.dat.shp")
     pyemu.pp_utils.write_pp_shapfile(pp_file, shp_file)
+    df = pyemu.pp_utils.pilot_points_from_shapefile(shp_file)
 
 
 def write_tpl_test(tmp_path):
@@ -2062,31 +2063,6 @@ def run_sp_success_test():
         pyemu.os_utils.run("ls", use_sp=True, shell=True)
     assert True
 
-def test_fake_frun_sp(setup_freyberg_mf6):
-    from pst_from_tests import ies_exe_path
-    pf, sim = setup_freyberg_mf6
-    v = pyemu.geostats.ExpVario(contribution=1.0, a=500)
-    gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
-    pf.add_parameters(
-        "freyberg6.npf_k_layer1.txt",
-        par_type="grid",
-        geostruct=gs,
-        pargp=f"hk_k:{0}"
-    )
-    pf.add_observations(
-        "heads.csv",
-        index_cols=['time'],
-        obsgp="head"
-    )
-    pst = pf.build_pst()
-    pst = pyemu.utils.setup_fake_forward_run(pst, "fake.pst", pf.new_d,
-                                             new_cwd=pf.new_d)
-    pyemu.os_utils.run(f"{ies_exe_path} fake.pst", 
-                       use_sp=True, cwd=pf.new_d)
-    bd = Path.cwd()
-    os.chdir(pf.new_d)
-    pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
-
 def run_sp_failure_test():
     with pytest.raises(Exception):
         pyemu.os_utils.run("junk_command", use_sp=True, 
@@ -2471,9 +2447,9 @@ def ac_draw_test(tmp_path):
     # plt.show()
 
 
-def test_fake_frun(setup_freyberg_mf6):
-    from pst_from_tests import ies_exe_path
-    pf, sim = setup_freyberg_mf6
+def test_fake_frun(tmp_path):
+    from pst_from_tests import ies_exe_path, setup_freyberg_mf6
+    pf, sim = setup_freyberg_mf6(tmp_path)
     v = pyemu.geostats.ExpVario(contribution=1.0, a=500)
     gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
     pf.add_parameters(
@@ -2492,6 +2468,10 @@ def test_fake_frun(setup_freyberg_mf6):
                                              new_cwd=pf.new_d)
     pyemu.os_utils.run(f"{ies_exe_path} fake.pst", cwd=pf.new_d)
     bd = Path.cwd()
+    os.chdir(pf.new_d)
+    pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
+    os.chdir(bd)
+    pyemu.os_utils.run(f"{ies_exe_path} fake.pst", cwd=pf.new_d, use_sp=True)
     os.chdir(pf.new_d)
     pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
 
