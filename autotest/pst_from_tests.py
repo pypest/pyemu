@@ -626,12 +626,7 @@ def freyberg_prior_build_test(tmp_path):
                                set(df.loc[df.pp_file.notna()].mlt_file))
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
-    pst.write_input_files(pst_path=pf.new_d)
-    # test par mults are working
-    os.chdir(pf.new_d)
-    pyemu.helpers.apply_list_and_array_pars(
-        arr_par_file="mult2model_info.csv")
-    os.chdir(tmp_path)
+    check_apply(pf)
 
     pst.control_data.noptmax = 0
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
@@ -1055,10 +1050,7 @@ def mf6_freyberg_test(tmp_path):
     pars = pst.parameter_data
     pst.parameter_data.loc[pars.index.str.contains('_pp'), 'parval1'] = dummymult
     check_apply(pf)
-    # os.chdir(pf.new_d)
-    # pst.write_input_files()
-    # pyemu.helpers.apply_list_and_array_pars()
-    # os.chdir(tmp_path)
+
     # verify apply
     inflow2_df = pd.read_csv(Path(pf.new_d, "inflow2.txt"),
                              header=None, sep=' ', skiprows=1)
@@ -1484,11 +1476,7 @@ def mf6_freyberg_da_test(tmp_path):
     assert pe.shape[0] == num_reals
 
     # test par mults are working
-    os.chdir(pf.new_d)
-    pst.write_input_files()
-    pyemu.helpers.apply_list_and_array_pars(
-        arr_par_file="mult2model_info.csv")
-    os.chdir(tmp_path)
+    check_apply(pf)
 
     pst.control_data.noptmax = 0
     pst.pestpp_options["additional_ins_delimiters"] = ","
@@ -2725,26 +2713,20 @@ def mf6_freyberg_short_direct_test(tmp_path):
                         prefix="hds", rebuild_pst=True)
 
     # test par mults are working
-
-    os.chdir(pf.new_d)
-    pst.write_input_files()
-    pyemu.helpers.apply_list_and_array_pars(
-        arr_par_file="mult2model_info.csv", chunk_len=10)
+    check_apply(pf, 10)
 
     # TODO Some checks on resultant par files...
-    list_files = [f for f in os.listdir('.')
-                  if f.startswith('new_') and f.endswith('txt')]
+    list_files = list(Path(pf.new_d).glob("new_*txt"))
     # check on that those dummy pars compare to the model versions.
     for f in list_files:
         n_df = pd.read_csv(f, sep=r"\s+")
-        o_df = pd.read_csv(f.strip('new_'), sep=r"\s+", header=None)
+        o_df = pd.read_csv(f.with_name(f.name.strip('new_')), sep=r"\s+", header=None)
         o_df.columns = ['k', 'i', 'j', 'flx']
         assert np.allclose(o_df.values,
                            n_df.loc[:, o_df.columns].values,
                            rtol=1e-4), (
             f"Something broke with alternative style model file: {f}"
         )
-    os.chdir(tmp_path)
 
     num_reals = 100
     pe = pf.draw(num_reals, use_specsim=True)
@@ -3599,7 +3581,6 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
     assert d.sum() == 0
 
 
-# @pytest.mark.skip("temp skip to see if affects failing dsi tests")
 def mf6_freyberg_pp_locs_test(tmp_path):
     import numpy as np
     import pandas as pd
@@ -4283,12 +4264,8 @@ def mf6_subdir_test(tmp_path):
                         rebuild_pst=True)
     #
     # # test par mults are working
-    bd1 = os.getcwd()
-    os.chdir(pf.new_d)
-    pst.write_input_files()
-    pyemu.helpers.apply_list_and_array_pars(
-        arr_par_file="mult2model_info.csv",chunk_len=10)
-    os.chdir(bd1)
+    check_apply(pf, 10)
+
     #
     # cov = pf.build_prior(fmt="none").to_dataframe()
     # twel_pars = [p for p in pst.par_names if "twel_mlt" in p]

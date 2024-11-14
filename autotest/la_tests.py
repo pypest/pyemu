@@ -58,20 +58,6 @@ def schur_test_nonpest():
     sc = Schur(jco=jco, forecasts=ffile, parcov=parcov, obscov=obscov)
 
 
-# def setup_tmp(od, tmp_d, sub=None):
-#     basename = Path(od).name
-#     if sub is not None:
-#         new_d = Path(tmp_d, basename, sub)
-#     else:
-#         new_d = Path(tmp_d, basename)
-#     if new_d.exists():
-#         shutil.rmtree(new_d)
-#     Path(tmp_d).mkdir(exist_ok=True)
-#     # creation functionality
-#     shutil.copytree(od, new_d)
-#     return new_d
-
-
 def schur_test(tmp_path):
     import os
     import numpy as np
