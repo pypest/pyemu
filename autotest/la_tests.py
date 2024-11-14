@@ -2,6 +2,7 @@ import os
 import copy
 from pathlib import Path
 import shutil
+from pst_from_tests import setup_tmp, ies_exe_path
 
 import pytest
 
@@ -75,7 +76,6 @@ def schur_test(tmp_path):
     import os
     import numpy as np
     from pyemu import Schur, Cov, Pst
-    from pst_from_tests import setup_tmp
     w_dir = os.path.join("..","verification","henry")
     w_dir = setup_tmp(w_dir, tmp_path)
     forecasts = ["pd_ten","c_obs10_2"]
@@ -612,7 +612,6 @@ def ends_freyberg_test(tmp_path):
 def ends_run_freyberg_dsi(tmp_d, nst=False, nst_extrap=None, ztz=False, energy=1.0):
     import pyemu
     import os
-    from pst_from_tests import setup_tmp, ies_exe_path
     test_d = "ends_master"
     test_d = setup_tmp(test_d, tmp_d)
     case = "freyberg6_run_ies"
