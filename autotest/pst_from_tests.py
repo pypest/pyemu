@@ -5067,8 +5067,10 @@ def mf6_freyberg_thresh_test(tmp_path):
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
     m_d = "master_thresh"
-    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
-                                 num_workers=10)
+    port = _get_port()
+    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst",
+                                 worker_root=".", master_dir=m_d, num_workers=10,
+                                 port=port)
     phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
     print(phidf["mean"])
 
@@ -6086,8 +6088,10 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
     m_d = "master_thresh_nonstat"
-    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
-                                 num_workers=15)
+    port = _get_port()
+    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst",
+                                 worker_root=".", master_dir=m_d,
+                                 num_workers=15, port=port)
     phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
     print(phidf["mean"])
 
