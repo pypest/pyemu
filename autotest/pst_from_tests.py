@@ -78,15 +78,15 @@ def _gen_dummy_obs_file(ws='.', sep=',', ext=None):
     return fnme, df
 
 
-def setup_tmp(od, tmp_path, sub=None):
+def setup_tmp(od, tmp_d, sub=None):
     basename = Path(od).name
     if sub is not None:
-        new_d = Path(tmp_path, basename, sub)
+        new_d = Path(tmp_d, basename, sub)
     else:
-        new_d = Path(tmp_path, basename)
+        new_d = Path(tmp_d, basename)
     if new_d.exists():
         shutil.rmtree(new_d)
-    Path(tmp_path).mkdir(exist_ok=True)
+    Path(tmp_d).mkdir(exist_ok=True)
     # creation functionality
     assert Path(od).exists(), f"can't find {Path(od).absolute()}"
     shutil.copytree(od, new_d)
