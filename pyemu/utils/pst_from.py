@@ -1,20 +1,21 @@
-from __future__ import print_function, division
+from __future__ import division, print_function
+
+import copy
 import os
-from pathlib import Path
-import warnings
 import platform
 import string
 import warnings
+from inspect import getsource
 from pathlib import Path
 from typing import Callable, Union
+
 import numpy as np
 import pandas as pd
-import pyemu
-from ..pyemu_warnings import PyemuWarning
-import copy
-import string
 
+import pyemu
 from pyemu.utils.helpers import _try_pdcol_numeric
+
+from ..pyemu_warnings import PyemuWarning
 
 # the tolerable percent difference (100 * (max - min)/mean)
 # used when checking that constant and zone type parameters are in fact constant (within
