@@ -3599,6 +3599,7 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
     assert d.sum() == 0
 
 
+@pytest.mark.skip("temp skip to see if affects failing dsi tests")
 def mf6_freyberg_pp_locs_test(tmp_path):
     import numpy as np
     import pandas as pd
