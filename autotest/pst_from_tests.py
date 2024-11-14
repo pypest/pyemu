@@ -3599,7 +3599,7 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
     assert d.sum() == 0
 
 
-@pytest.mark.skip("temp skip to see if affects failing dsi tests")
+# @pytest.mark.skip("temp skip to see if affects failing dsi tests")
 def mf6_freyberg_pp_locs_test(tmp_path):
     import numpy as np
     import pandas as pd
@@ -3615,7 +3615,7 @@ def mf6_freyberg_pp_locs_test(tmp_path):
     # sys.path.insert(0,os.path.join("..","..","pypestutils"))
     import pypestutils as ppu
 
-    pf, sim = setup_freyberg_mf6(tmp_path, chunk_len=1)
+    pf, sim = setup_freyberg_mf6(tmp_path)
     m = sim.get_model()
     template_ws = pf.new_d
     # org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
