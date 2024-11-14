@@ -3707,7 +3707,8 @@ def mf6_freyberg_pp_locs_test(tmp_path):
     port = _get_port()
     print(f"Running ies on port: {port}")
     print(pp_exe_path)
-    pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,
+    pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",
+                                 num_workers=5,
                                  worker_root=tmp_path,
                                  master_dir=m_d, port=port)
 

@@ -629,7 +629,8 @@ def ends_run_freyberg_dsi(tmp_d, nst=False, nst_extrap=None, ztz=False, energy=1
     #pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
     m_d = t_d.replace("template","master")
     port = _get_port()
-    pyemu.os_utils.start_workers(t_d,"pestpp-ies","dsi.pst",
+    pyemu.os_utils.start_workers(t_d, ies_exe_path,"dsi.pst",
+                                 worker_root=tmp_d,
                                  master_dir=m_d, num_workers=10, port=port)
     #read in the results
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=os.path.join(m_d,"dsi.0.obs.csv"))
