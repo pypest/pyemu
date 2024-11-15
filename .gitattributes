@@ -10,3 +10,6 @@ pyemu/_version.py export-subst
 *.dsp linguist-vendored # ignore because recognized as Faust
 *.spc linguist-vendored # ignore because recognized as PLSQL
 *.bat linguist-vendored # ignore because recognized as Batchfile
+*.arr linguist-vendored # ignore because recognized as Pyret
+*.mps linguist-vendored # ignore because recognized as JetBrains MPS
+
