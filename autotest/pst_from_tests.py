@@ -78,15 +78,15 @@ def _gen_dummy_obs_file(ws='.', sep=',', ext=None):
     return fnme, df
 
 
-def setup_tmp(od, tmp_path, sub=None):
+def setup_tmp(od, tmp_d, sub=None):
     basename = Path(od).name
     if sub is not None:
-        new_d = Path(tmp_path, basename, sub)
+        new_d = Path(tmp_d, basename, sub)
     else:
-        new_d = Path(tmp_path, basename)
+        new_d = Path(tmp_d, basename)
     if new_d.exists():
         shutil.rmtree(new_d)
-    Path(tmp_path).mkdir(exist_ok=True)
+    Path(tmp_d).mkdir(exist_ok=True)
     # creation functionality
     assert Path(od).exists(), f"can't find {Path(od).absolute()}"
     shutil.copytree(od, new_d)
@@ -626,12 +626,7 @@ def freyberg_prior_build_test(tmp_path):
                                set(df.loc[df.pp_file.notna()].mlt_file))
     assert len(mults_not_linked_to_pst) == 0, print(mults_not_linked_to_pst)
 
-    pst.write_input_files(pst_path=pf.new_d)
-    # test par mults are working
-    os.chdir(pf.new_d)
-    pyemu.helpers.apply_list_and_array_pars(
-        arr_par_file="mult2model_info.csv")
-    os.chdir(tmp_path)
+    check_apply(pf)
 
     pst.control_data.noptmax = 0
     pst.write(os.path.join(pf.new_d, "freyberg.pst"))
@@ -909,7 +904,8 @@ def mf6_freyberg_test(tmp_path):
                 pf.add_parameters(filenames=arr_file, par_type="pilotpoints", par_name_base=arr_file.split('.')[1]+"_pp",
                                   pargp=arr_file.split('.')[1]+"_pp", zone_array=ib,upper_bound=ub,lower_bound=lb,
                                   ult_ubound=None if ult_ub is None else ult_ub - 1,
-                                  ult_lbound=None if ult_lb is None else ult_lb - 1,geostruct=gr_gs)
+                                  ult_lbound=None if ult_lb is None else ult_lb - 1,geostruct=gr_gs,
+                                  pp_options=dict(try_use_ppu=False))
 
                 # use a slightly lower ult bound here
                 pf.add_parameters(filenames=arr_file, par_type="constant",
@@ -1054,10 +1050,7 @@ def mf6_freyberg_test(tmp_path):
     pars = pst.parameter_data
     pst.parameter_data.loc[pars.index.str.contains('_pp'), 'parval1'] = dummymult
     check_apply(pf)
-    # os.chdir(pf.new_d)
-    # pst.write_input_files()
-    # pyemu.helpers.apply_list_and_array_pars()
-    # os.chdir(tmp_path)
+
     # verify apply
     inflow2_df = pd.read_csv(Path(pf.new_d, "inflow2.txt"),
                              header=None, sep=' ', skiprows=1)
@@ -1483,11 +1476,7 @@ def mf6_freyberg_da_test(tmp_path):
     assert pe.shape[0] == num_reals
 
     # test par mults are working
-    os.chdir(pf.new_d)
-    pst.write_input_files()
-    pyemu.helpers.apply_list_and_array_pars(
-        arr_par_file="mult2model_info.csv")
-    os.chdir(tmp_path)
+    check_apply(pf)
 
     pst.control_data.noptmax = 0
     pst.pestpp_options["additional_ins_delimiters"] = ","
@@ -1579,7 +1568,7 @@ def build_direct(pf):
     return pf, pst
 
 
-def check_apply(pf, chunklen=100):
+def check_apply(pf, chunklen=50):
     # test par mults are working
     bd = Path.cwd()
     os.chdir(pf.new_d)
@@ -2218,7 +2207,7 @@ def mf6_freyberg_direct_test(tmp_path):
     os.chdir(pf.new_d)
     pst.write_input_files()
     pyemu.helpers.apply_list_and_array_pars(
-        arr_par_file="mult2model_info.csv", chunk_len=1)
+        arr_par_file="mult2model_info.csv", chunk_len=10)
     # TODO Some checks on resultant par files...
     list_files = [f for f in os.listdir('.')
                   if f.startswith('new_') and f.endswith('txt')]
@@ -2724,26 +2713,20 @@ def mf6_freyberg_short_direct_test(tmp_path):
                         prefix="hds", rebuild_pst=True)
 
     # test par mults are working
-
-    os.chdir(pf.new_d)
-    pst.write_input_files()
-    pyemu.helpers.apply_list_and_array_pars(
-        arr_par_file="mult2model_info.csv", chunk_len=1)
+    check_apply(pf, 10)
 
     # TODO Some checks on resultant par files...
-    list_files = [f for f in os.listdir('.')
-                  if f.startswith('new_') and f.endswith('txt')]
+    list_files = list(Path(pf.new_d).glob("new_*txt"))
     # check on that those dummy pars compare to the model versions.
     for f in list_files:
         n_df = pd.read_csv(f, sep=r"\s+")
-        o_df = pd.read_csv(f.strip('new_'), sep=r"\s+", header=None)
+        o_df = pd.read_csv(f.with_name(f.name.strip('new_')), sep=r"\s+", header=None)
         o_df.columns = ['k', 'i', 'j', 'flx']
         assert np.allclose(o_df.values,
                            n_df.loc[:, o_df.columns].values,
                            rtol=1e-4), (
             f"Something broke with alternative style model file: {f}"
         )
-    os.chdir(tmp_path)
 
     num_reals = 100
     pe = pf.draw(num_reals, use_specsim=True)
@@ -3613,7 +3596,7 @@ def mf6_freyberg_pp_locs_test(tmp_path):
     # sys.path.insert(0,os.path.join("..","..","pypestutils"))
     import pypestutils as ppu
 
-    pf, sim = setup_freyberg_mf6(tmp_path, chunk_len=1)
+    pf, sim = setup_freyberg_mf6(tmp_path)
     m = sim.get_model()
     template_ws = pf.new_d
     # org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
@@ -3724,7 +3707,8 @@ def mf6_freyberg_pp_locs_test(tmp_path):
     port = _get_port()
     print(f"Running ies on port: {port}")
     print(pp_exe_path)
-    pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",num_workers=5,
+    pyemu.os_utils.start_workers(template_ws,pp_exe_path,"freyberg.pst",
+                                 num_workers=5,
                                  worker_root=tmp_path,
                                  master_dir=m_d, port=port)
 
@@ -3970,7 +3954,7 @@ def mf6_add_various_obs_test(tmp_path):
                  remove_existing=True,
                  longnames=True, spatial_reference=sr,
                  zero_based=False, start_datetime="1-1-2018",
-                 chunk_len=1)
+                 chunk_len=50)
 
     # blind obs add
     pf.add_observations("sfr.csv", insfile="sfr.csv.ins", index_cols='time',
@@ -4077,7 +4061,7 @@ def mf6_subdir_test(tmp_path):
                  remove_existing=True,
                  longnames=True, spatial_reference=sr,
                  zero_based=False,start_datetime="1-1-2018",
-                 chunk_len=1)
+                 chunk_len=50)
     # obs
     #   using tabular style model output
     #   (generated by pyemu.gw_utils.setup_hds_obs())
@@ -4281,12 +4265,8 @@ def mf6_subdir_test(tmp_path):
                         rebuild_pst=True)
     #
     # # test par mults are working
-    bd1 = os.getcwd()
-    os.chdir(pf.new_d)
-    pst.write_input_files()
-    pyemu.helpers.apply_list_and_array_pars(
-        arr_par_file="mult2model_info.csv",chunk_len=1)
-    os.chdir(bd1)
+    check_apply(pf, 10)
+
     #
     # cov = pf.build_prior(fmt="none").to_dataframe()
     # twel_pars = [p for p in pst.par_names if "twel_mlt" in p]
@@ -5067,8 +5047,10 @@ def mf6_freyberg_thresh_test(tmp_path):
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
     m_d = "master_thresh"
-    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
-                                 num_workers=10)
+    port = _get_port()
+    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst",
+                                 worker_root=".", master_dir=m_d, num_workers=10,
+                                 port=port)
     phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
     print(phidf["mean"])
 
@@ -5556,7 +5538,7 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
                  remove_existing=True,
                  longnames=True, spatial_reference=sr,
                  zero_based=False, start_datetime="1-1-2018",
-                 chunk_len=1)
+                 chunk_len=10)
 
     wfiles = [f for f in os.listdir(pf.new_d) if ".wel_stress_period_data_" in f and f.endswith(".txt")]
     pf.add_parameters(wfiles,par_type='grid',index_cols=[0,1,2],use_cols=[3],pargp="welgrid",par_name_base="welgrid",
@@ -6086,8 +6068,10 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"), version=2)
     m_d = "master_thresh_nonstat"
-    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst", worker_root=".", master_dir=m_d,
-                                 num_workers=15)
+    port = _get_port()
+    pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst",
+                                 worker_root=".", master_dir=m_d,
+                                 num_workers=15, port=port)
     phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
     print(phidf["mean"])
 

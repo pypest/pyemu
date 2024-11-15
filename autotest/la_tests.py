@@ -2,6 +2,7 @@ import os
 import copy
 from pathlib import Path
 import shutil
+from pst_from_tests import setup_tmp, ies_exe_path, _get_port
 
 import pytest
 
@@ -55,20 +56,6 @@ def schur_test_nonpest():
     forecasts.to_binary(ffile)
 
     sc = Schur(jco=jco, forecasts=ffile, parcov=parcov, obscov=obscov)
-
-
-def setup_tmp(od, tmp_path, sub=None):
-    basename = Path(od).name
-    if sub is not None:
-        new_d = Path(tmp_path, basename, sub)
-    else:
-        new_d = Path(tmp_path, basename)
-    if new_d.exists():
-        shutil.rmtree(new_d)
-    Path(tmp_path).mkdir(exist_ok=True)
-    # creation functionality
-    shutil.copytree(od, new_d)
-    return new_d
 
 
 def schur_test(tmp_path):
@@ -599,7 +586,7 @@ def ends_freyberg_test(tmp_path):
     ends = pyemu.EnDS(pst=pst_name, sim_ensemble=oe_name,predictions=predictions)
     cov = pyemu.Cov.from_observation_data(pst)
     cov.to_uncfile(os.path.join(test_d, "obs.unc"), covmat_file=None)
-    cov.to_binary(os.path.join(test_d, "cov.jcb"))
+    cov.to_coo(os.path.join(test_d, "cov.jcb"))
     cov.to_ascii(os.path.join(test_d, "cov.mat"))
 
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe, obscov=cov,predictions=predictions)
@@ -608,11 +595,11 @@ def ends_freyberg_test(tmp_path):
 
 
 
-def ends_run_freyberg_dsi(tmp_path,nst=False,nst_extrap=None,ztz=False,energy=1.0):
+def ends_run_freyberg_dsi(tmp_d, nst=False, nst_extrap=None, ztz=False, energy=1.0):
     import pyemu
-    import os 
+    import os
     test_d = "ends_master"
-    test_d = setup_tmp(test_d, tmp_path)
+    test_d = setup_tmp(test_d, tmp_d)
     case = "freyberg6_run_ies"
     pst_name = os.path.join(test_d, case + ".pst")
     pst = pyemu.Pst(pst_name)
@@ -623,7 +610,7 @@ def ends_run_freyberg_dsi(tmp_path,nst=False,nst_extrap=None,ztz=False,energy=1.
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
 
     ends = pyemu.EnDS(pst=pst, sim_ensemble=oe,verbose=True)
-    t_d = os.path.join(tmp_path,"dsi_template")
+    t_d = os.path.join(tmp_d, "dsi_template")
 
     ends.prep_for_dsi(t_d=t_d,
                       use_ztz=ztz,
@@ -639,10 +626,14 @@ def ends_run_freyberg_dsi(tmp_path,nst=False,nst_extrap=None,ztz=False,energy=1.
     pst.control_data.noptmax = -1
     pst.pestpp_options["overdue_giveup_fac"] = 1000
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
-    pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
-
+    #pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
+    m_d = t_d.replace("template","master")
+    port = _get_port()
+    pyemu.os_utils.start_workers(t_d, ies_exe_path,"dsi.pst",
+                                 worker_root=tmp_d,
+                                 master_dir=m_d, num_workers=10, port=port)
     #read in the results
-    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=os.path.join(t_d,"dsi.0.obs.csv"))
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=os.path.join(m_d,"dsi.0.obs.csv"))
     assert oe.shape[0]==50, f"{50-oe.shape[0]} failed runs"
     phi_vector = oe.phi_vector.sort_values().values
     assert phi_vector[0] != phi_vector[1],phi_vector
@@ -751,6 +742,8 @@ def dsi_normscoretransform_test():
 if __name__ == "__main__":
     #dsi_normscoretransform_test()
     ends_freyberg_test("temp")
+    #ends_freyberg_dsi_test("temp")
+    #ends_freyberg_dev()
     #ends_freyberg_dsi_test("temp")
     #plot_freyberg_dsi()
     #obscomp_test()

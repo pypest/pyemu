@@ -16,7 +16,8 @@ collect_ignore = [
     # "metrics_tests.py",
     # "moouu_tests.py",
     # "mat_tests.py",
-    # "da_tests.py"
+    # "da_tests.py",
+    # "get_pestpp_tests.py"
 ]
 
 @pytest.fixture(autouse=True)

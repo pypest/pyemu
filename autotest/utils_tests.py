@@ -5,6 +5,7 @@ import pytest
 #     os.mkdir("temp")
 from pathlib import Path
 import pyemu
+from pst_from_tests import _get_port
 
 def add_pi_obj_func_test(tmp_path):
     import os
@@ -442,7 +443,7 @@ def master_and_workers(tmp_path):  # not run?!?
         os.mkdir(master_dir)
     assert os.path.exists(worker_dir)
     pyemu.helpers.start_workers(worker_dir,"pestpp","pest.pst",1,
-                               worker_root=tmp_path,master_dir=master_dir, port=4009)
+                               worker_root=tmp_path,master_dir=master_dir, port=_get_port())
 
     #now try it from within the master dir
     base_cwd = os.getcwd()
@@ -450,7 +451,7 @@ def master_and_workers(tmp_path):  # not run?!?
     worker_dir = Path(worker_dir).relative_to(master_dir)
     pyemu.helpers.start_workers(worker_dir,
                               "pestpp","pest.pst",3,
-                              master_dir='.', port=4009)
+                              master_dir='.', port=_get_port())
     os.chdir(base_cwd)
 
 

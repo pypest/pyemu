@@ -15,13 +15,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest] # , macos-latest] 
+        os: [windows-latest, ubuntu-latest]
         python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
         run-type: [std]
         test-path: ["."]
         include:
           - os: macos-latest
-            python-version: "3.11"
+            python-version: 3.11
+
     steps:
     - name: Checkout repo
       uses:  actions/checkout@v4 # checksout this repo
