@@ -1,16 +1,21 @@
-from __future__ import print_function, division
+from __future__ import division, print_function
+
+import copy
 import os
-from pathlib import Path
-import warnings
 import platform
+import string
+import warnings
+from inspect import getsource
+from pathlib import Path
+from typing import Callable, Union
+
 import numpy as np
 import pandas as pd
-import pyemu
-from ..pyemu_warnings import PyemuWarning
-import copy
-import string
 
+import pyemu
 from pyemu.utils.helpers import _try_pdcol_numeric
+
+from ..pyemu_warnings import PyemuWarning
 
 # the tolerable percent difference (100 * (max - min)/mean)
 # used when checking that constant and zone type parameters are in fact constant (within
@@ -1194,13 +1199,16 @@ class PstFrom(object):
         return self._prefix_count[prefix]
 
     def add_py_function(
-            self, file_name, call_str=None, is_pre_cmd=True,
-            function_name=None
+        self,
+        file_name: Union[str, Callable],
+        call_str: Union[None, str] = None,
+        is_pre_cmd: Union[bool, None] = True,
+        function_name=None,
     ):
         """add a python function to the forward run script
 
         Args:
-            file_name (`str`): a python source file
+            file_name (`str` or `callable`): a python source file or function/callable
             call_str (`str`): the call string for python function in
                 `file_name`.
                 `call_str` will be added to the forward run script, as is.
@@ -1256,12 +1264,6 @@ class PstFrom(object):
             self.logger.lraise(
                 "add_py_function(): No function call string passed in arg " "'call_str'"
             )
-        if not os.path.exists(file_name):
-            self.logger.lraise(
-                "add_py_function(): couldnt find python source file '{0}'".format(
-                    file_name
-                )
-            )
         if "(" not in call_str or ")" not in call_str:
             self.logger.lraise(
                 "add_py_function(): call_str '{0}' missing paretheses".format(call_str)
@@ -1277,7 +1279,16 @@ class PstFrom(object):
                 f"original will be maintained",
                 PyemuWarning,
             )
+        if callable(file_name):
+            func_lines = getsource(file_name).splitlines(keepends=True)
+            self._function_lines_list.append(func_lines)
         else:
+            if not os.path.exists(file_name):
+                self.logger.lraise(
+                    "add_py_function(): couldnt find python source file '{0}'".format(
+                        file_name
+                    )
+                )
             func_lines = []
             search_str = "def " + function_name + "("
             abet_set = set(string.printable) - {' '}
