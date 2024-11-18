@@ -22,4 +22,5 @@ dependencies:
   - flopy
   - modflow-devtools
   - scikit-learn
-#  - pip
+  - pip
+  - ffmpeg
