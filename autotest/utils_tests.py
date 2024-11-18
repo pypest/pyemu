@@ -2619,6 +2619,26 @@ def ppu_geostats_test(tmp_path):
     # plt.show()
     # exit()
 
+def pypestworker_invest():
+
+    host = "localhost"
+    port = 4004
+
+    ppw = pyemu.os_utils.PyPestWorker("pest.pst",host,port)
+    obs = ppw._pst.observation_data
+    count = 0
+    # todo: handle shutdown message
+    # todo: handle kill run message
+    while True:
+        parameters = ppw.get_parameters()
+        if count == 1:
+            ppw.send_failed_run(desc="sad")
+            ppw.par_values = None
+            ppw.request_more_pars()
+        else:
+            ppw.send_observations(obs.obsval,parvals=None)
+        count += 1
+
 
 if __name__ == "__main__":
     #ppu_geostats_test(".")
