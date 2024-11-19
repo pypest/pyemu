@@ -2679,6 +2679,7 @@ def gpr_compare_invest():
     pop_size = 100
     num_workers = 100
     noptmax_full = 10
+    noptmax_inner = 5
     port = 4554
     pst.control_data.noptmax = noptmax_full 
     pst.pestpp_options["mou_population_size"] = pop_size
@@ -2738,7 +2739,7 @@ def gpr_compare_invest():
         complex_m_d_iter = t_d.replace("template", "master_complex_retrain_outeriter{0}".format(iouter))
         if os.path.exists(gpr_m_d_iter):
             shutil.rmtree(gpr_m_d_iter)
-        pyemu.os_utils.start_workers(gpr_t_d_iter, exe_path,  case+".pst", num_workers, worker_root="mou_tests",
+        pyemu.os_utils.start_workers(gpr_t_d_iter, mou_exe_path,  case+".pst", num_workers, worker_root=".",
                                         master_dir=gpr_m_d_iter, verbose=True, port=port)
         o2 = pd.read_csv(os.path.join(gpr_m_d_iter,case+".{0}.obs_pop.csv".format(gpst.control_data.noptmax)))
 
@@ -2775,7 +2776,7 @@ def gpr_compare_invest():
         pst.control_data.noptmax = -1
         pst.write(os.path.join(t_d,case+".pst"),version=2)
 
-        pyemu.os_utils.start_workers(t_d, exe_path,  case+".pst", num_workers, worker_root="mou_tests",
+        pyemu.os_utils.start_workers(t_d, mou_exe_path,  case+".pst", num_workers, worker_root=".",
                                     master_dir=complex_m_d_iter, verbose=True, port=port)
 
         # plot the complex model results...
