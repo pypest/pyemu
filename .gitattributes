@@ -1,15 +1,26 @@
 pyemu/_version.py export-subst
-*.rei linguist-vendored # ignore because recognized as Reason
-*.ins linguist-vendored # ignore because recognized as LaTex
-*.aux linguist-vendored # ignore because recognized as LaTex
-*.tex linguist-vendored # ignore because recognized as LaTex
-*.go linguist-vendored # ignore because recognized as Go
-*.tpl linguist-vendored # ignore because recognized as Smarty
-*.bas linguist-vendored # ignore because recognized as VBA
-*.res linguist-vendored # ignore because recognized as ReScript
-*.dsp linguist-vendored # ignore because recognized as Faust
-*.spc linguist-vendored # ignore because recognized as PLSQL
-*.bat linguist-vendored # ignore because recognized as Batchfile
-*.arr linguist-vendored # ignore because recognized as Pyret
-*.mps linguist-vendored # ignore because recognized as JetBrains MPS
+# ignore .rei because recognized as Reason
+*.rei linguist-vendored
+# ignore .ins, .aux, .tex because recognized as LaTex
+*.ins linguist-vendored
+*.aux linguist-vendored
+*.tex linguist-vendored
+# ignore .go because recognized as Go
+*.go linguist-vendored
+# ignore .tpl because recognized as Smarty
+*.tpl linguist-vendored
+# ignore .bas because recognized as VBA
+*.bas linguist-vendored
+# ignore .res because recognized as ReScript
+*.res linguist-vendored
+# ignore .dsp because recognized as Faust
+*.dsp linguist-vendored
+# ignore .spc because recognized as PLSQL
+*.spc linguist-vendored
+# ignore .bat because recognized as Batchfile
+*.bat linguist-vendored
+# ignore .arr because recognized as Pyret
+*.arr linguist-vendored
+# ignore .mps because recognized as JetBrains MPS
+*.mps linguist-vendored
 
