@@ -4033,7 +4033,7 @@ def apply_threshold_pars(csv_file):
 
 
 def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_kernel=None,nverf=0,
-                 plot_fits=False,apply_standard_scalar=False):
+                 plot_fits=False,apply_standard_scalar=False, include_emulated_std_obs=False):
     """helper function to setup a gaussian-process-regression emulator for outputs of interest.  This
     is primarily targeted at low-dimensional settings like those encountered in PESTPP-MOU
 
@@ -4248,7 +4248,10 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
     with open(ins_fname,'w') as f:
         f.write("pif ~\nl1\n")
         for output_name in output_names:
-            f.write("l1 ~,~ !{0}!\n".format(output_name))
+            if include_emulated_std_obs:
+                f.write("l1 ~,~ !{0}! ~,~ !{0}_gprstd!\n".format(output_name))
+            else:
+                f.write("l1 ~,~ !{0}!\n".format(output_name))
     tpl_list = [tpl_fname]
     if aux_tpl_fname is not None:
         tpl_list.append(aux_tpl_fname)
@@ -4258,10 +4261,24 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
     par_names = pst.par_names
     assert len(set(par_names).symmetric_difference(set(gpst.par_names))) == 0
     for col in pst.parameter_data.columns:
+        # this gross thing is to avoid a future error warning in pandas - 
+        # why is it getting so strict?!  isnt python duck-typed?
+        if col in gpst.parameter_data.columns and\
+           gpst.parameter_data.dtypes[col] != pst.parameter_data.dtypes[col]:
+            gpst.parameter_data[col] = gpst.parameter_data[col].astype(pst.parameter_data.dtypes[col])
         gpst.parameter_data.loc[par_names,col] = pst.parameter_data.loc[par_names,col].values
 
     for col in pst.observation_data.columns:
+        # this gross thing is to avoid a future error warning in pandas -
+        # why is it getting so strict?!  isnt python duck-typed?
+        if col in gpst.observation_data.columns and \
+                gpst.observation_data.dtypes[col] != pst.observation_data.dtypes[col]:
+            gpst.observation_data[col] = gpst.obsveration_data[col].astype(pst.observation_data.dtypes[col])
         gpst.observation_data.loc[output_names,col] = pst.observation_data.loc[output_names,col].values
+    if include_emulated_std_obs:
+        stdobs = [o for o in gpst.obs_names if o.endswith("_gprstd")]
+        assert len(stdobs) > 0
+        gpst.observation_data.loc[stdobs,"weight"] = 0.0
     gpst.pestpp_options = pst.pestpp_options
     gpst.prior_information = pst.prior_information.copy()
     lines = [line[4:] for line in inspect.getsource(gpr_forward_run).split("\n")][1:]
@@ -4295,12 +4312,14 @@ def gpr_forward_run():
     input_df = pd.read_csv("gpr_input.csv",index_col=0)
     mdf = pd.read_csv(os.path.join("gprmodel_info.csv"),index_col=0)
     mdf.loc[:,"sim"] = np.nan
+    mdf.loc[:,"sim_std"] = np.nan
     for output_name,model_fname in zip(mdf.output_name,mdf.model_fname):
         guassian_process = pickle.load(open(model_fname,'rb'))
-        sim = guassian_process.predict(np.atleast_2d(input_df.parval1.values))
-        print(output_name,sim)
-        mdf.loc[output_name,"sim"] = sim
-    mdf.loc[:,["output_name","sim"]].to_csv("gpr_output.csv",index=False)
+        sim = guassian_process.predict(np.atleast_2d(input_df.parval1.values),return_std=True)
+        mdf.loc[output_name,"sim"] = sim[0]
+        mdf.loc[output_name,"sim_std"] = sim[1]
+        
+    mdf.loc[:,["output_name","sim","sim_std"]].to_csv("gpr_output.csv",index=False)
 
 
 def randrealgen_optimized(nreal, tol=1e-7, max_samples=1000000):

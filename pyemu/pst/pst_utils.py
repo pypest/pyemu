@@ -916,7 +916,7 @@ def try_process_output_pst(pst):
                     ins_file, str(e)
                 )
             )
-            df = _try_run_inschek(ins_file, out_file)
+            #df = _try_run_inschek(ins_file, out_file)
         if df is not None:
             pst.observation_data.loc[df.index, "obsval"] = df.obsval
 
