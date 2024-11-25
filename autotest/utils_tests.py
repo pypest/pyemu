@@ -2982,11 +2982,75 @@ def gpr_constr_test():
     assert 1.0 in psum.obj_2.values
     
 
+def gpr_zdt1_test():
+    import numpy as np
+    from sklearn.gaussian_process import GaussianProcessRegressor
+    case = "zdt1"
+    use_chances = False
+    m_d = os.path.join(case + "_gpr_baseline")
+    org_d = os.path.join("utils", case + "_template")
+    t_d = case + "_template"
+    if os.path.exists(t_d):
+        shutil.rmtree(t_d)
+    shutil.copytree(org_d, t_d)
+    if os.path.exists(m_d):
+        shutil.rmtree(m_d)
+
+    pst = pyemu.Pst(os.path.join(t_d, case + ".pst"))
+    pst.pestpp_options["mou_generator"] = "pso"
+    if use_chances:
+        pst.pestpp_options["opt_risk"] = 0.95
+        pst.pestpp_options["opt_stack_size"] = 50
+        pst.pestpp_options["opt_recalc_chance_every"] = 10000
+        pst.pestpp_options["opt_chance_points"] = "single"
+    else:
+        pst.pestpp_options["opt_risk"] = 0.5
+
+    pop_size = 20
+    num_workers = 20
+    noptmax_full = 15
+    
+    port = 4554
+    pst.control_data.noptmax = -1
+    pst.pestpp_options["mou_population_size"] = pop_size
+    pst.pestpp_options["mou_save_population_every"] = 1
+    pst.write(os.path.join(t_d, case + ".pst"))
+    if not os.path.exists(m_d):
+        pyemu.os_utils.start_workers(t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
+                                     master_dir=m_d, verbose=True, port=port)
+    
+    dv_pops = [os.path.join(m_d, "{0}.0.dv_pop.csv".format(case))]
+    obs_pops = [f.replace("dv_", "obs_") for f in dv_pops]
+
+    pst_fname = os.path.join(m_d, case + ".pst")
+    gpr_t_d = os.path.join(case + "_gpr_template")
+    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
+                               plot_fits=True, apply_standard_scalar=False, include_emulated_std_obs=True)
+    gpst = pyemu.Pst(os.path.join(gpr_t_d, case + ".pst"))
+    shutil.copy2(os.path.join(m_d, case + ".0.dv_pop.csv"), os.path.join(gpr_t_d, "initial_dv_pop.csv"))
+    gpst.pestpp_options["mou_dv_population_file"] = "initial_dv_pop.csv"
+    gpst.control_data.noptmax = noptmax_full
+    gpst.write(os.path.join(gpr_t_d, case + ".pst"), version=2)
+    gpr_m_d = gpr_t_d.replace("template", "master")
+    if os.path.exists(gpr_m_d):
+        shutil.rmtree(gpr_m_d)
+    pyemu.os_utils.start_workers(gpr_t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
+                                 master_dir=gpr_m_d, verbose=True, port=port)
+
+   
+    psum_fname = os.path.join(gpr_m_d,case+".pareto.archive.summary.csv")
+    assert os.path.exists(psum_fname)
+    psum = pd.read_csv(psum_fname)
+    print(psum.obj_1.min())
+    print(psum.obj_2.min())
+    assert psum.obj_1.min() < 0.05
+    
 
 if __name__ == "__main__":
     #ppu_geostats_test(".")
     #gpr_compare_invest()
-    gpr_constr_test()
+    #gpr_constr_test()
+    gpr_zdt1_test()
     #while True:
     #    thresh_pars_test()
     #obs_ensemble_quantile_test()
