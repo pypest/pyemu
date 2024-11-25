@@ -2838,21 +2838,23 @@ def gpr_constr_test():
     else:
         pst.pestpp_options["opt_risk"] = 0.5
 
-    pop_size = 10
-    num_workers = 10
-    noptmax_full = 5
+    pop_size = 20
+    num_workers = 20
+    noptmax_full = 3
     noptmax_inner = 3
     noptmax_outer = 3
     port = 4554
-    pst.control_data.noptmax = noptmax_full
+    pst.control_data.noptmax = -1
     pst.pestpp_options["mou_population_size"] = pop_size
     pst.pestpp_options["mou_save_population_every"] = 1
     pst.write(os.path.join(t_d, case + ".pst"))
-    if not os.path.exists(m_d):
-        pyemu.os_utils.start_workers(t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
-                                     master_dir=m_d, verbose=True, port=port)
-    # shutil.copytree(t_d,m_d)
-    # pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=m_d)
+    #if not os.path.exists(m_d):
+    #    pyemu.os_utils.start_workers(t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
+    #                                 master_dir=m_d, verbose=True, port=port)
+    if os.path.exists(m_d):
+        shutil.rmtree(m_d)
+    shutil.copytree(t_d,m_d)
+    pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=m_d)
     # use the initial population files for training
     dv_pops = [os.path.join(m_d, "{0}.0.dv_pop.csv".format(case))]
     obs_pops = [f.replace("dv_", "obs_") for f in dv_pops]
@@ -2871,9 +2873,11 @@ def gpr_constr_test():
     gpr_m_d = gpr_t_d.replace("template", "master")
     if os.path.exists(gpr_m_d):
         shutil.rmtree(gpr_m_d)
-    pyemu.os_utils.start_workers(gpr_t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
-                                 master_dir=gpr_m_d, verbose=True, port=port)
-
+    #pyemu.os_utils.start_workers(gpr_t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
+    #                             master_dir=gpr_m_d, verbose=True, port=port)
+    shutil.copytree(gpr_t_d,gpr_m_d)
+    pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=gpr_m_d)
+    
     # o1 = pd.read_csv(os.path.join(m_d,case+".{0}.obs_pop.csv".format(max(0,pst.control_data.noptmax))))
     o1 = pd.read_csv(os.path.join(m_d, case + ".pareto.archive.summary.csv"))
     o1 = o1.loc[o1.generation == o1.generation.max(), :]
@@ -2903,8 +2907,13 @@ def gpr_constr_test():
         complex_m_d_iter = t_d.replace("template", "master_complex_retrain_outeriter{0}".format(iouter))
         if os.path.exists(gpr_m_d_iter):
             shutil.rmtree(gpr_m_d_iter)
-        pyemu.os_utils.start_workers(gpr_t_d_iter, mou_exe_path, case + ".pst", num_workers, worker_root=".",
-                                     master_dir=gpr_m_d_iter, verbose=True, port=port)
+        shutil.copytree(gpr_t_d_iter,gpr_m_d_iter)
+
+        pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=gpr_m_d_iter)
+    
+        #pyemu.os_utils.start_workers(gpr_t_d_iter, mou_exe_path, case + ".pst", num_workers, worker_root=".",
+        #                             master_dir=gpr_m_d_iter, verbose=True, port=port)
+        
         o2 = pd.read_csv(os.path.join(gpr_m_d_iter, case + ".{0}.obs_pop.csv".format(gpst.control_data.noptmax)))
 
         # now run the final dv pop thru the "complex" model
@@ -2940,10 +2949,13 @@ def gpr_constr_test():
         pst.pestpp_options["mou_dv_population_file"] = os.path.split(complex_model_dvpop_fname)[1]
         pst.control_data.noptmax = -1
         pst.write(os.path.join(t_d, case + ".pst"), version=2)
-
-        pyemu.os_utils.start_workers(t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
-                                     master_dir=complex_m_d_iter, verbose=True, port=port)
-
+        if os.path.exists(complex_m_d_iter):
+            shutil.rmtree(complex_m_d_iter)
+        shutil.copytree(t_d,complex_m_d_iter)
+        #pyemu.os_utils.start_workers(t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
+        #                             master_dir=complex_m_d_iter, verbose=True, port=port)
+        pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=complex_m_d_iter)
+    
         # plot the complex model results...
         o2 = pd.read_csv(os.path.join(complex_m_d_iter, case + ".pareto.archive.summary.csv"))
         o2 = o2.loc[o2.generation == o2.generation.max(), :]
@@ -3054,8 +3066,8 @@ def gpr_zdt1_test():
 if __name__ == "__main__":
     #ppu_geostats_test(".")
     #gpr_compare_invest()
-    #gpr_constr_test()
-    gpr_zdt1_test()
+    gpr_constr_test()
+    #gpr_zdt1_test()
     #while True:
     #    thresh_pars_test()
     #obs_ensemble_quantile_test()
