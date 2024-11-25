@@ -2838,11 +2838,11 @@ def gpr_constr_test():
     else:
         pst.pestpp_options["opt_risk"] = 0.5
 
-    pop_size = 20
-    num_workers = 20
-    noptmax_full = 10
-    noptmax_inner = 5
-    noptmax_outer = 5
+    pop_size = 10
+    num_workers = 10
+    noptmax_full = 5
+    noptmax_inner = 3
+    noptmax_outer = 3
     port = 4554
     pst.control_data.noptmax = noptmax_full
     pst.pestpp_options["mou_population_size"] = pop_size
@@ -2862,8 +2862,10 @@ def gpr_constr_test():
     pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
                                plot_fits=True, apply_standard_scalar=False, include_emulated_std_obs=True)
     gpst = pyemu.Pst(os.path.join(gpr_t_d, case + ".pst"))
-    shutil.copy2(os.path.join(m_d, case + ".0.dv_pop.csv"), os.path.join(gpr_t_d, "initial_dv_pop.csv"))
-    gpst.pestpp_options["mou_dv_population_file"] = "initial_dv_pop.csv"
+    #shutil.copy2(os.path.join(m_d, case + ".0.dv_pop.csv"), os.path.join(gpr_t_d, "initial_dv_pop.csv"))
+    #gpst.pestpp_options["mou_dv_population_file"] = "initial_dv_pop.csv"
+    gpst.pestpp_options.pop("mou_dv_population_file",None) #= "initial_dv_pop.csv"
+    
     gpst.control_data.noptmax = noptmax_full
     gpst.write(os.path.join(gpr_t_d, case + ".pst"), version=2)
     gpr_m_d = gpr_t_d.replace("template", "master")
@@ -2967,11 +2969,11 @@ def gpr_constr_test():
         gpst_iter = pyemu.Pst(os.path.join(gpr_t_d_iter, case + ".pst"))
         # aggdf = pd.read_csv(os.path.join(gpr_t_d,"gpr_aggregate_training_data.csv"),index_col=0)
         # aggdf.index = ["outeriter{0}_member{1}".format(iouter,i) for i in range(aggdf.shape[0])]
-        restart_gpr_dvpop_fname = "gpr_restart_dvpop_outeriter{0}.csv".format(iouter)
+        #restart_gpr_dvpop_fname = "gpr_restart_dvpop_outeriter{0}.csv".format(iouter)
         # aggdf.to_csv(os.path.join(gpr_t_d_iter,restart_gpr_dvpop_fname))
-        shutil.copy2(os.path.join(complex_m_d_iter, case + ".0.dv_pop.csv"),
-                     os.path.join(gpr_t_d_iter, restart_gpr_dvpop_fname))
-        gpst_iter.pestpp_options["mou_dv_population_file"] = restart_gpr_dvpop_fname
+        #shutil.copy2(os.path.join(complex_m_d_iter, case + ".0.dv_pop.csv"),
+        #             os.path.join(gpr_t_d_iter, restart_gpr_dvpop_fname))
+        gpst_iter.pestpp_options.pop("mou_dv_population_file",None)# = restart_gpr_dvpop_fname
         gpst_iter.control_data.noptmax = gpst.control_data.noptmax
         gpst_iter.write(os.path.join(gpr_t_d_iter, case + ".pst"), version=2)
 
@@ -3006,9 +3008,9 @@ def gpr_zdt1_test():
     else:
         pst.pestpp_options["opt_risk"] = 0.5
 
-    pop_size = 20
-    num_workers = 20
-    noptmax_full = 15
+    pop_size = 10
+    num_workers = 10
+    noptmax_full = 5
     
     port = 4554
     pst.control_data.noptmax = -1
@@ -3049,8 +3051,8 @@ def gpr_zdt1_test():
 if __name__ == "__main__":
     #ppu_geostats_test(".")
     #gpr_compare_invest()
-    #gpr_constr_test()
-    gpr_zdt1_test()
+    gpr_constr_test()
+    #gpr_zdt1_test()
     #while True:
     #    thresh_pars_test()
     #obs_ensemble_quantile_test()
