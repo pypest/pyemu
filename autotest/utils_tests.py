@@ -3017,10 +3017,12 @@ def gpr_zdt1_test():
     pst.pestpp_options["mou_population_size"] = pop_size
     pst.pestpp_options["mou_save_population_every"] = 1
     pst.write(os.path.join(t_d, case + ".pst"))
-    if not os.path.exists(m_d):
-        pyemu.os_utils.start_workers(t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
-                                     master_dir=m_d, verbose=True, port=port)
-    
+    #if not os.path.exists(m_d):
+    #    pyemu.os_utils.start_workers(t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
+    #                                 master_dir=m_d, verbose=True, port=port)
+   
+    pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=t_d)
+    m_d = t_d
     dv_pops = [os.path.join(m_d, "{0}.0.dv_pop.csv".format(case))]
     obs_pops = [f.replace("dv_", "obs_") for f in dv_pops]
 
@@ -3036,9 +3038,10 @@ def gpr_zdt1_test():
     gpr_m_d = gpr_t_d.replace("template", "master")
     if os.path.exists(gpr_m_d):
         shutil.rmtree(gpr_m_d)
-    pyemu.os_utils.start_workers(gpr_t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
-                                 master_dir=gpr_m_d, verbose=True, port=port)
-
+    #pyemu.os_utils.start_workers(gpr_t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
+    #                             master_dir=gpr_m_d, verbose=True, port=port)
+    pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=gpr_t_d)
+    gpr_m_d = gpr_t_d
    
     psum_fname = os.path.join(gpr_m_d,case+".pareto.archive.summary.csv")
     assert os.path.exists(psum_fname)
@@ -3051,8 +3054,8 @@ def gpr_zdt1_test():
 if __name__ == "__main__":
     #ppu_geostats_test(".")
     #gpr_compare_invest()
-    gpr_constr_test()
-    #gpr_zdt1_test()
+    #gpr_constr_test()
+    gpr_zdt1_test()
     #while True:
     #    thresh_pars_test()
     #obs_ensemble_quantile_test()
