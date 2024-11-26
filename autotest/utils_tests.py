@@ -2653,25 +2653,84 @@ def ppu_geostats_test(tmp_path):
     # plt.show()
     # exit()
 
-def pypestworker_invest():
-
+def pypestworker_test():
+    from datetime import datetime
+    import numpy as np
+    import subprocess as sp
     host = "localhost"
     port = 4004
+    org_d = os.path.join("utils","zdt1_template")
+    t_d = "zdt1_ppw_template"
+    if os.path.exists(t_d):
+        shutil.rmtree(t_d)
+    shutil.copytree(org_d,t_d)
+    pst = pyemu.Pst(os.path.join(t_d,"zdt1.pst"))
+    pst.pestpp_options["mou_population_size"] = 20
+    pst.control_data.noptmax = 5
+    pst.write(os.path.join(t_d,"zdt1.pst"),version=2)
+    import sys
+    sys.path.insert(0,t_d)
+    from forward_run import helper as frun
 
-    ppw = pyemu.os_utils.PyPestWorker("pest.pst",host,port)
+    m_d = "zdt1_ppw_master"
+    
+    if os.path.exists(m_d):
+        shutil.rmtree(m_d)
+    shutil.copytree(t_d,m_d)
+    
+    start = datetime.now()
+    b_d = os.getcwd()
+    os.chdir(m_d)
+    p = sp.Popen([mou_exe_path,"zdt1.pst","/h",":{0}".format(port)])
+    os.chdir(b_d)
+    #p.wait()
+    #return
+
+    ppw = pyemu.os_utils.PyPestWorker(os.path.join(t_d,"zdt1.pst"),host,port,verbose=False)
+    
     obs = ppw._pst.observation_data
     count = 0
+    par = pst.parameter_data
+    dpar = par.loc[par.parnme.str.startswith("dv"),:]
+    dpar["count"] = dpar.parnme.apply(lambda x: int(x.split('_')[1]))
+    dpar.sort_values(by="count",inplace=True)
+    pnames = dpar.parnme.tolist()
+    #pnames.extend(pst.par_names[-2:])
     # todo: handle shutdown message
     # todo: handle kill run message
     while True:
         parameters = ppw.get_parameters()
-        if count == 1:
-            ppw.send_failed_run(desc="sad")
-            ppw.par_values = None
-            ppw.request_more_pars()
-        else:
-            ppw.send_observations(obs.obsval,parvals=None)
-        count += 1
+        if parameters is None:
+            print("no more parameters...")
+            break
+        #print("parameters",parameters.loc[pnames])
+        #print("got parameters:",parameters.values)
+        objs,constr = frun(pvals=parameters.loc[pnames].values)
+        #print("objs and constraints:",objs,constr)
+        obs.loc[["obj_1","obj_2"],"obsval"] = np.array(objs)
+        #print(obs)
+        ppw.send_observations(obs.obsval.loc[ppw.obs_names].values)
+        #input("press any key")
+    finish = datetime.now()
+
+    print("all done, took",(finish-start).total_seconds())
+    m_d2 = m_d+"_base"
+    start2 = datetime.now()
+    pyemu.os_utils.start_workers(t_d,mou_exe_path,"zdt1.pst",num_workers=10,worker_root='.',master_dir=m_d2)
+    finish2 = datetime.now()
+    print("ppw took",(finish-start).total_seconds())
+    print("org took",(finish2-start2).total_seconds())
+    arc1 = pd.read_csv(os.path.join(m_d,"zdt1.pareto.archive.summary.csv"))
+    arc2 = pd.read_csv(os.path.join(m_d2,"zdt1.pareto.archive.summary.csv"))
+    diff1 = np.abs((arc1["obj_1"] - arc2["obj_1"]).values)
+    diff2 = np.abs((arc1["obj_2"] - arc2["obj_2"]).values)
+    print(diff1.max())
+    print(diff2.max())
+    assert diff1.max() < 1.0e-6
+    assert diff2.max() < 1.0e-6
+    
+    
+    
 
 def gpr_compare_invest():
     import numpy as np
@@ -3086,7 +3145,8 @@ def gpr_zdt1_test():
 if __name__ == "__main__":
     #ppu_geostats_test(".")
     #gpr_compare_invest()
-    gpr_constr_test()
+    #gpr_constr_test()
+    pypestworker_test()
     #gpr_zdt1_test()
     #while True:
     #    thresh_pars_test()

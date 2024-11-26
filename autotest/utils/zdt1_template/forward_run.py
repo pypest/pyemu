@@ -5,10 +5,11 @@ def zdt1(x):
     g = 1 + 9 * np.sum(x[1:]) / (len(x) - 1)
     return (x[0]*10, g * (1 - np.sqrt(x[0] / g))*10),[]
 
-def helper(func):
-    pdf = pd.read_csv("dv.dat",delim_whitespace=True,index_col=0, header=None, names=["parnme","parval1"])
+def helper(func=zdt1,pvals=None):
+    if pvals is None:
+        pvals = pd.read_csv("dv.dat",delim_whitespace=True,index_col=0, header=None, names=["parnme","parval1"]).values
     #obj1,obj2 = func(pdf.values)
-    objs,constrs = func(pdf.values)
+    objs,constrs = func(pvals)
     
     if os.path.exists("additive_par.dat"):
         obj1,obj2 = objs[0],objs[1]

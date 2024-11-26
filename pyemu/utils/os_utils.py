@@ -488,7 +488,7 @@ class NetPack(object):
         23: "FINISH_FILE_WRKR2MSTR"}
     sec_message = [1, 3, 5, 7, 9]
 
-    def __init__(self,timeout=0.1):
+    def __init__(self,timeout=0.1,verbose=True):
         self.header_size = 8 + 4 + 8 + 8 + 1001
         self.buf_size = None
         self.buf_idx = (0, 8)
@@ -506,6 +506,7 @@ class NetPack(object):
         self.data_pak = None
 
         self.timeout = float(timeout)
+        self.verbose = bool(verbose)
 
         self.sec_message_buf = bytearray()
         for sm in NetPack.sec_message:
@@ -591,7 +592,8 @@ class NetPack(object):
         elif isinstance(data,np.ndarray):
             return data.tobytes()
         elif isinstance(data,int):
-            print("warning: casting int to float to serialize")
+            if self.verbose:
+                print("warning: casting int to float to serialize")
             return struct.pack('d',float(data))
         elif isinstance(data,float):
             return struct.pack('d', data)
@@ -623,15 +625,15 @@ class NetPack(object):
 class PyPestWorker(object):
 
 
-    def __init__(self, pst, host, port, timeout=0.25):
+    def __init__(self, pst, host, port, timeout=0.01,verbose=True):
         self.host = host
         self.port = port
         self._pst_arg = pst
         self._pst = None
         self.s = None
         self.timeout = float(timeout)
-        self.net_pack = NetPack(timeout=timeout)
-
+        self.net_pack = NetPack(timeout=timeout,verbose=verbose)
+        self.verbose = bool(verbose)
         self.par_names = None
         self.obs_names = None
 
@@ -676,7 +678,8 @@ class PyPestWorker(object):
                 continue
 
     def message(self,msg):
-        print(str(datetime.now())+" : "+msg)
+        if self.verbose:
+            print(str(datetime.now())+" : "+msg)
 
 
     def recv(self,dtype=None):
@@ -738,15 +741,20 @@ class PyPestWorker(object):
                               "ping back")
                     if self._send_lock is not None:
                         self._send_lock.release()
+                elif self.net_pack.mtype == 14:
+                    print("recv'd terminate signal")
+                    return
                 else:
-
-                    self.message("WARNING: unsupported request recieved: {0}".format(NetPack.netpack_type[self.net_pack.mtype]))
+                    print("WARNING: unsupported request recieved: {0}".format(NetPack.netpack_type[self.net_pack.mtype]))
 
 
     def get_parameters(self):
         pars = None
         while True:
             self._lock.acquire()
+            if self.net_pack.mtype == 14:
+                self._lock.release()
+                return None
             if self.par_values is not None:
                 pars = self.par_values
                 self._lock.release()
