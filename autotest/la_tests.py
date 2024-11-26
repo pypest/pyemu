@@ -741,9 +741,10 @@ def dsi_normscoretransform_test():
 
 if __name__ == "__main__":
     #dsi_normscoretransform_test()
+    ends_freyberg_test("temp")
+    #ends_freyberg_dsi_test("temp")
     #ends_freyberg_dev()
     #ends_freyberg_dsi_test("temp")
-    ends_freyberg_dsi_ztz_test('temp')
     #plot_freyberg_dsi()
     #obscomp_test()
     #alternative_dw()

@@ -4744,6 +4744,7 @@ def list_float_int_index_test(tmp_path):
     assert np.isclose(diff,bparval1).all(), diff.loc[~np.isclose(diff,bparval1)]
 
 
+#def mf6_freyberg_thresh_invest(setup_freyberg_mf6):
 def mf6_freyberg_thresh_test(tmp_path):
 
     import numpy as np
@@ -5168,6 +5169,7 @@ def plot_thresh(m_d):
                     prarr = np.zeros((nrow,ncol)) - 1
                     prarr[kobs.i,kobs.j] = pr_oe.loc[real,kobs.obsnme]
                     prarr[ib==0] = np.nan
+                    print(pt_oe)
                     ptarr = np.zeros((nrow, ncol)) - 1
                     ptarr[kobs.i, kobs.j] = pt_oe.loc[real, kobs.obsnme]
                     ptarr[ib == 0] = np.nan
@@ -5719,8 +5721,8 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     import flopy
     # except:
     #     return
-    # import sys
-    # sys.path.insert(0,os.path.join("..","..","pypestutils"))
+    import sys
+    sys.path.insert(0,os.path.join("..","..","pypestutils"))
 
     import pypestutils as ppu
 
@@ -5785,7 +5787,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     ymn = m.modelgrid.yvertices.min()
     ymx = m.modelgrid.yvertices.max()
 
-    numpp = 20
+    numpp = 30
     xvals = np.random.uniform(xmn,xmx,numpp)
     yvals = np.random.uniform(ymn, ymx, numpp)
     pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
@@ -5965,9 +5967,9 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     assert cat1par.shape[0] == num_cat_arrays
     assert cat2par.shape[0] == num_cat_arrays
 
-    par.loc[cat1par, "parval1"] = 0.8
+    par.loc[cat1par, "parval1"] = 0.9
     par.loc[cat1par, "parubnd"] = 1.0
-    par.loc[cat1par, "parlbnd"] = 0.6
+    par.loc[cat1par, "parlbnd"] = 0.8
     par.loc[cat1par,"partrans"] = "none"
 
     # since the apply method only looks that first proportion, we can just fix this one
@@ -5984,7 +5986,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     print(pst.npar,pst.npar_adj)
 
     org_par = par.copy()
-    num_reals = 100
+    num_reals = 200
     pe = pf.draw(num_reals, use_specsim=False)
     pe.enforce()
     print(pe.shape)
@@ -6046,14 +6048,17 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     # reset away from the truth...
     pst.parameter_data.loc[:,"parval1"] = org_par.parval1.values.copy()
 
-    pst.control_data.noptmax = 1
+    pst.control_data.noptmax = 13
     pst.pestpp_options["ies_par_en"] = "prior.jcb"
-    pst.pestpp_options["ies_num_reals"] = 30
+    pst.pestpp_options["ies_num_reals"] = 200
     pst.pestpp_options["ies_subset_size"] = -10
     pst.pestpp_options["ies_no_noise"] = True
-    #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
+    pst.pestpp_options["ies_bad_phi_sigma"] = 1.5
     pst.pestpp_options["overdue_giveup_fac"] = 100.0
     pst.pestpp_options["ies_multimodal_alpha"] = 0.99
+    pst.pestpp_options["ies_n_iter_reinflate"] = 3
+
+    
     #pst.pestpp_options["panther_agent_freeze_on_fail"] = True
 
     #pst.write(os.path.join(pf.new_d, "freyberg.pst"))
@@ -6092,16 +6097,17 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     # assert phidf["mean"].min() < phidf["mean"].max()
 
 
+
 if __name__ == "__main__":
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")
-    mf6_freyberg_ppu_hyperpars_invest(".")
-    # mf6_freyberg_ppu_hyperpars_thresh_invest(".")
+    #mf6_freyberg_ppu_hyperpars_invest(".")
+    #mf6_freyberg_ppu_hyperpars_thresh_invest(".")
     #while True:
     #    mf6_freyberg_thresh_test(".")
     plot_thresh("master_thresh_nonstat")
     #mf6_freyberg_thresh_test(".")
-    plot_thresh("master_thresh_nonstat")
+    #plot_thresh("master_thresh_nonstat")
     #plot_thresh("master_thresh_nonstat_nim")
 
     # invest()
