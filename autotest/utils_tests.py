@@ -6,6 +6,8 @@ import platform
 #     os.mkdir("temp")
 from pathlib import Path
 import pandas as pd
+import sys
+sys.path.append("..")
 import pyemu
 from pst_from_tests import _get_port
 
@@ -2686,7 +2688,7 @@ def pypestworker_test():
     #p.wait()
     #return
 
-    ppw = pyemu.os_utils.PyPestWorker(os.path.join(t_d,"zdt1.pst"),host,port,verbose=False)
+    ppw = pyemu.os_utils.PyPestWorker(os.path.join(t_d,"zdt1.pst"),host,port,verbose=False,timeout=0.05)
     
     obs = ppw._pst.observation_data
     count = 0
