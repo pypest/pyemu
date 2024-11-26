@@ -4034,7 +4034,7 @@ def apply_threshold_pars(csv_file):
 
 def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_kernel=None,nverf=0,
                  plot_fits=False,apply_standard_scalar=False, include_emulated_std_obs=False):
-    """helper function to setup a gaussian-process-regression emulator for outputs of interest.  This
+    """helper function to setup a gaussian-process-regression (GPR) emulator for outputs of interest.  This
     is primarily targeted at low-dimensional settings like those encountered in PESTPP-MOU
 
     Parameters:
@@ -4047,6 +4047,12 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
             is created and used
         nverf (int): the number of input-output pairs to hold back for a simple verification test
         plot_fits (bool): flag to plot the fit GPRs
+        apply_standard_scalar (bool): flag to apply sklearn.preprocessing.StandardScaler transform before 
+            training/executing the emulator.  Default is False
+        include_emulated_std_obs (bool): flag to include the estimated standard deviation in the predicted
+            response of each GPR emulator.  If True, additional obserations are added to the GPR pest interface
+            , one for each nominated observation quantity.  Can be very useful for designing in-filling strategies
+
     Returns:
         None
 
