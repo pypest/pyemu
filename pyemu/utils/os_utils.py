@@ -520,9 +520,19 @@ class NetPack(object):
     #     while total < num_bytes:
     #          data += s.recv()
 
+    def recv_all(self,s,msg_len):
+        # Helper function to recv n bytes or return None if EOF is hit
+        data = bytearray()
+        while len(data) < msg_len:
+            packet = s.recv(msg_len - len(data))
+            if not packet:
+                return None
+            data.extend(packet)
+        return data
+
     def nonblocking_recv(self,s,msg_len):
         try:
-            msg = s.recv(msg_len)
+            msg = self.recv_all(s,msg_len)
         except socket.timeout as e:
             emess = e.args[0]
             if emess == 'timed out':

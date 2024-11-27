@@ -2667,7 +2667,7 @@ def pypestworker_test():
         shutil.rmtree(t_d)
     shutil.copytree(org_d,t_d)
     pst = pyemu.Pst(os.path.join(t_d,"zdt1.pst"))
-    pst.pestpp_options["mou_population_size"] = 20
+    pst.pestpp_options["mou_population_size"] = 200
     pst.control_data.noptmax = 5
     pst.write(os.path.join(t_d,"zdt1.pst"),version=2)
     import sys
@@ -2688,7 +2688,7 @@ def pypestworker_test():
     #p.wait()
     #return
 
-    ppw = pyemu.os_utils.PyPestWorker(os.path.join(t_d,"zdt1.pst"),host,port,verbose=False,timeout=0.05)
+    ppw = pyemu.os_utils.PyPestWorker(os.path.join(t_d,"zdt1.pst"),host,port,verbose=False,timeout=0.01)
     
     obs = ppw._pst.observation_data
     count = 0
