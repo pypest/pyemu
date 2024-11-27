@@ -29,6 +29,7 @@ def run_notebook(fn):
     #pth = os.path.join(nbdir, fn)
     pth = fn
     cmd = 'jupyter ' + 'nbconvert ' + \
+          '--ServerApp.iopub_data_rate_limit=1e10 ' + \
           '--ExecutePreprocessor.kernel_name=python ' + \
           '--ExecutePreprocessor.timeout=6000 ' + '--to ' + 'notebook ' + \
           '--execute ' + '{} '.format(pth) + \

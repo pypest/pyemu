@@ -20,3 +20,6 @@ def helper(func=hosaki,pvals=None):
     with open('sim.csv','w') as f:
         f.write('obsnme,obsval\n')
         f.write('sim,'+str(sim)+'\n')
+
+if __name__ == "__main__":
+    helper()

@@ -2718,6 +2718,7 @@ def pypestworker_test():
         shutil.rmtree(m_d)
     shutil.copytree(t_d,m_d)
     
+    # start the master
     start = datetime.now()
     b_d = os.getcwd()
     os.chdir(m_d)
@@ -2727,15 +2728,21 @@ def pypestworker_test():
     #return
 
     num_workers=20
- 
+    
+    # looper over and start the workers - in this
+    # case they dont need unique dirs since they arent writing
+    # anything
     procs = []
     for i in range(num_workers):
         pp = mp.Process(target=ppw_worker,args=(i,case,t_d,host,port,frun))
         pp.start()
         procs.append(pp)
+    # if everyhing worked, the the workers should recieve the 
+    # shutdown signal from the master and exit gracefully...
     for pp in procs:
         pp.join()
 
+    # wait for the master to finish...but should already be finished
     p.wait()
     finish = datetime.now()
     print("all done, took",(finish-start).total_seconds())
