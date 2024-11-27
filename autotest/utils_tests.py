@@ -2655,14 +2655,15 @@ def ppu_geostats_test(tmp_path):
     # plt.show()
     # exit()
 
-def ppw_worker(id_num,t_d,host,port,frun):
+def ppw_worker(id_num,case,t_d,host,port,frun):
     import numpy as np
-    ppw = pyemu.os_utils.PyPestWorker(os.path.join(t_d,"zdt1.pst"),host,port,verbose=False,timeout=0.01)
+    ppw = pyemu.os_utils.PyPestWorker(os.path.join(t_d,"{0}.pst".format(case)),host,port,verbose=False,timeout=0.01)
     
     obs = ppw._pst.observation_data
     count = 0
     par = ppw._pst.parameter_data
-    dpar = par.loc[par.parnme.str.startswith("dv"),:]
+    dpar = par.loc[par.parnme.str.startswith("dv"),:].copy()
+    assert len(dpar) > 0
     dpar["count"] = dpar.parnme.apply(lambda x: int(x.split('_')[1]))
     dpar.sort_values(by="count",inplace=True)
     pnames = dpar.parnme.tolist()
@@ -2691,25 +2692,26 @@ def pypestworker_test():
     import multiprocessing as mp
     host = "localhost"
     port = 4004
-    org_d = os.path.join("utils","zdt1_template")
-    t_d = "zdt1_ppw_template"
+    case = "constr"
+    org_d = os.path.join("utils","{0}_template".format(case))
+    t_d = "{0}_ppw_template".format(case)
     if os.path.exists(t_d):
         shutil.rmtree(t_d)
     shutil.copytree(org_d,t_d)
-    pst = pyemu.Pst(os.path.join(t_d,"zdt1.pst"))
-    pst.pestpp_options["mou_population_size"] = 200
+    pst = pyemu.Pst(os.path.join(t_d,"{0}.pst".format(case)))
+    pst.pestpp_options["mou_population_size"] = 20
     #need these options bc the py workers run so fast, even slight 
     #delays show up as timeouts...
     pst.pestpp_options["overdue_giveup_fac"] = 1e10
     pst.pestpp_options["overdue_resched_fac"] = 1e10
     
     pst.control_data.noptmax = 5
-    pst.write(os.path.join(t_d,"zdt1.pst"),version=2)
+    pst.write(os.path.join(t_d,"{0}.pst".format(case)),version=2)
     import sys
     sys.path.insert(0,t_d)
     from forward_run import helper as frun
 
-    m_d = "zdt1_ppw_master"
+    m_d = "{0}_ppw_master".format(case)
     
     if os.path.exists(m_d):
         shutil.rmtree(m_d)
@@ -2718,14 +2720,16 @@ def pypestworker_test():
     start = datetime.now()
     b_d = os.getcwd()
     os.chdir(m_d)
-    p = sp.Popen([mou_exe_path,"zdt1.pst","/h",":{0}".format(port)])
+    p = sp.Popen([mou_exe_path,"{0}.pst".format(case),"/h",":{0}".format(port)])
     os.chdir(b_d)
     #p.wait()
     #return
+
+    num_workers=10
  
     procs = []
-    for i in range(10):
-        pp = mp.Process(target=ppw_worker,args=(i,t_d,host,port,frun))
+    for i in range(num_workers):
+        pp = mp.Process(target=ppw_worker,args=(i,case,t_d,host,port,frun))
         pp.start()
         procs.append(pp)
     for pp in procs:
@@ -2738,12 +2742,12 @@ def pypestworker_test():
 
     m_d2 = m_d+"_base"
     start2 = datetime.now()
-    pyemu.os_utils.start_workers(t_d,mou_exe_path,"zdt1.pst",num_workers=10,worker_root='.',master_dir=m_d2)
+    pyemu.os_utils.start_workers(t_d,mou_exe_path,"{0}.pst".format(case),num_workers=num_workers,worker_root='.',master_dir=m_d2)
     finish2 = datetime.now()
     print("ppw took",(finish-start).total_seconds())
     print("org took",(finish2-start2).total_seconds())
-    arc1 = pd.read_csv(os.path.join(m_d,"zdt1.pareto.archive.summary.csv"))
-    arc2 = pd.read_csv(os.path.join(m_d2,"zdt1.pareto.archive.summary.csv"))
+    arc1 = pd.read_csv(os.path.join(m_d,"{0}.pareto.archive.summary.csv".format(case)))
+    arc2 = pd.read_csv(os.path.join(m_d2,"{0}.pareto.archive.summary.csv".format(case)))
     diff1 = np.abs((arc1["obj_1"] - arc2["obj_1"]).values)
     diff2 = np.abs((arc1["obj_2"] - arc2["obj_2"]).values)
     print(diff1.max())
