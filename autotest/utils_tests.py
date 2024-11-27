@@ -2658,7 +2658,7 @@ def ppu_geostats_test(tmp_path):
 def ppw_worker(id_num,case,t_d,host,port,frun):
     import numpy as np
     ppw = pyemu.os_utils.PyPestWorker(os.path.join(t_d,"{0}.pst".format(case)),
-                                      host,port,verbose=False,timeout=0.1)
+                                      host,port,verbose=False)
     
     obs = ppw._pst.observation_data
     count = 0
@@ -3175,6 +3175,12 @@ if __name__ == "__main__":
     #ppu_geostats_test(".")
     #gpr_compare_invest()
     #gpr_constr_test()
+    # import sys
+    # t_d = "constr_ppw_template"
+    # case = "constr"
+    # sys.path.insert(0,t_d)
+    # from forward_run import helper as frun
+    # ppw_worker(0,case,t_d,"localhost",4004,frun)
     pypestworker_test()
     #gpr_zdt1_test()
     #while True:

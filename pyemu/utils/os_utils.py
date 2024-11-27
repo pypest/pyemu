@@ -543,6 +543,8 @@ class NetPack(object):
             # Something else happened, handle error, exit, etc.
             raise Exception(e)
         else:
+            if msg is None:
+                return None
             if len(msg) == 0:
                 return None
             else:
@@ -707,8 +709,12 @@ class PyPestWorker(object):
         self.s.settimeout(self.timeout)
         while True:
             time.sleep(self.timeout)
+            try:
+                n = self.recv()
+            except Exception as e:
+                print("WARNING: recv exception:"+str(e)+"...trying to reconnect...")
+                self.connect()
 
-            n = self.recv()
             if n > 0:
                 # need to sync here
                 if self.net_pack.mtype == 10:
@@ -730,9 +736,18 @@ class PyPestWorker(object):
 
                 elif self.net_pack.mtype == 8:
                     self.par_names = self.net_pack.data_pak
-
+                    diff = set(self.par_names).symmetric_difference(set(self._pst.par_names))
+                    if len(diff) > 0:
+                        print("WARNING: pst par names != master par names")
+                        self.message("WARNING: the following par names are not common\n"+\
+                                    " between the control file and the master:{0}".format(','.join(diff)))
                 elif self.net_pack.mtype == 9:
                     self.obs_names = self.net_pack.data_pak
+                    diff = set(self.obs_names).symmetric_difference(set(self._pst.obs_names))
+                    if len(diff) > 0:
+                        print("WARNING: pst obs names != master obs names")
+                        self.message("WARNING: the following obs names are not common\n"+\
+                                    " between the control file and the master:{0}".format(','.join(diff)))
 
                 elif self.net_pack.mtype == 6:
                     if self._send_lock is not None:
@@ -753,7 +768,12 @@ class PyPestWorker(object):
                         self._send_lock.release()
                 elif self.net_pack.mtype == 14:
                     print("recv'd terminate signal")
+                    self.message("recv'd terminate signal")
                     return
+                elif self.net_pack.mtype == 16:
+                    print("master is requesting run kill...")
+                    self.message("master is requesting run kill...")
+
                 else:
                     print("WARNING: unsupported request recieved: {0}".format(NetPack.netpack_type[self.net_pack.mtype]))
 
