@@ -2657,7 +2657,7 @@ def ppu_geostats_test(tmp_path):
 
 def ppw_worker(id_num,case,t_d,host,port,frun):
     import numpy as np
-    ppw = pyemu.os_utils.PyPestWorker(os.path.join(t_d,"{0}.pst".format(case)),host,port,verbose=False,timeout=0.01)
+    ppw = pyemu.os_utils.PyPestWorker(os.path.join(t_d,"{0}.pst".format(case)),host,port,verbose=False,timeout=0.1)
     
     obs = ppw._pst.observation_data
     count = 0
@@ -2699,7 +2699,7 @@ def pypestworker_test():
         shutil.rmtree(t_d)
     shutil.copytree(org_d,t_d)
     pst = pyemu.Pst(os.path.join(t_d,"{0}.pst".format(case)))
-    pst.pestpp_options["mou_population_size"] = 20
+    pst.pestpp_options["mou_population_size"] = 200
     #need these options bc the py workers run so fast, even slight 
     #delays show up as timeouts...
     pst.pestpp_options["overdue_giveup_fac"] = 1e10
