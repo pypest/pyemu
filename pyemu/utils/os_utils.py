@@ -635,7 +635,7 @@ class NetPack(object):
 class PyPestWorker(object):
 
 
-    def __init__(self, pst, host, port, timeout=0.01,verbose=True):
+    def __init__(self, pst, host, port, timeout=0.1,verbose=True):
         self.host = host
         self.port = port
         self._pst_arg = pst
