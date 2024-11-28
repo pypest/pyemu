@@ -2746,7 +2746,6 @@ def pypestworker_test():
     p.wait()
     finish = datetime.now()
     print("all done, took",(finish-start).total_seconds())
-    
 
     m_d2 = m_d+"_base"
     start2 = datetime.now()
@@ -3178,6 +3177,14 @@ def gpr_zdt1_test():
     assert psum.obj_1.min() < 0.05
 
 
+def gpr_zdt1_ppw():
+    t_d = "zdt1_gpr_template"
+    os.chdir(t_d)
+    pst_name = "zdt1.pst"
+    ppw = pyemu.helpers.gpr_pyworker(pst_name,"localhost",4004)
+    os.chdir("..")
+
+
 if __name__ == "__main__":
     #ppu_geostats_test(".")
     #gpr_compare_invest()
@@ -3188,8 +3195,9 @@ if __name__ == "__main__":
     # sys.path.insert(0,t_d)
     # from forward_run import helper as frun
     # ppw_worker(0,case,t_d,"localhost",4004,frun)
-    pypestworker_test()
-    #gpr_zdt1_test()
+    #pypestworker_test()
+    gpr_zdt1_test()
+
     #while True:
     #    thresh_pars_test()
     #obs_ensemble_quantile_test()
