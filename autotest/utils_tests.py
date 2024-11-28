@@ -3112,6 +3112,9 @@ def gpr_constr_test():
 
 def gpr_zdt1_test():
     import numpy as np
+    import subprocess as sp
+    import multiprocessing as mp
+    from datetime import datetime
     from sklearn.gaussian_process import GaussianProcessRegressor
     case = "zdt1"
     use_chances = False
@@ -3138,7 +3141,7 @@ def gpr_zdt1_test():
     num_workers = 10
     noptmax_full = 5
     
-    port = 4554
+    port = 4569
     pst.control_data.noptmax = -1
     pst.pestpp_options["mou_population_size"] = pop_size
     pst.pestpp_options["mou_save_population_every"] = 1
@@ -3146,8 +3149,11 @@ def gpr_zdt1_test():
     #if not os.path.exists(m_d):
     #    pyemu.os_utils.start_workers(t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
     #                                 master_dir=m_d, verbose=True, port=port)
-   
+    start = datetime.now()
     pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=t_d)
+    finish = datetime.now()
+    duration1 = (finish - start).total_seconds()
+
     m_d = t_d
     dv_pops = [os.path.join(m_d, "{0}.0.dv_pop.csv".format(case))]
     obs_pops = [f.replace("dv_", "obs_") for f in dv_pops]
@@ -3176,12 +3182,53 @@ def gpr_zdt1_test():
     print(psum.obj_2.min())
     assert psum.obj_1.min() < 0.05
 
+    t = gpr_t_d + "_ppw"
+    if os.path.exists(t):
+        shutil.rmtree(t)
+    shutil.copytree(gpr_t_d,t)
+    gpr_t_d = t
+    start = datetime.now()
+    b_d = os.getcwd()
+    os.chdir(gpr_t_d)
+    p = sp.Popen([mou_exe_path,"{0}.pst".format(case),"/h",":{0}".format(port)])
+    os.chdir(b_d)
+    #p.wait()
+    #return
+
+    num_workers=1
+    
+    # looper over and start the workers - in this
+    # case they dont need unique dirs since they arent writing
+    # anything
+    procs = []
+    for i in range(num_workers):
+        pp = mp.Process(target=gpr_zdt1_ppw)
+        pp.start()
+        procs.append(pp)
+    # if everyhing worked, the the workers should recieve the 
+    # shutdown signal from the master and exit gracefully...
+    for pp in procs:
+        pp.join()
+
+    # wait for the master to finish...but should already be finished
+    p.wait()
+    finish = datetime.now()
+    print("ppw` took",(finish-start).total_seconds())
+    print("org took",duration1)
+
+    arcppw = pd.read_csv(os.path.join(gpr_t_d,"zdt1.archive.obs_pop.csv"),index_col=0)
+    arcorg = pd.read_csv(os.path.join(gpr_t_d.replace("_ppw",""),"zdt1.archive.obs_pop.csv"),index_col=0)
+    diff = np.abs(arcppw.values - arcorg.values)
+    print(diff.max())
+    assert diff.max() < 1e-6
+        
+
 
 def gpr_zdt1_ppw():
     t_d = "zdt1_gpr_template"
     os.chdir(t_d)
     pst_name = "zdt1.pst"
-    ppw = pyemu.helpers.gpr_pyworker(pst_name,"localhost",4004)
+    ppw = pyemu.helpers.gpr_pyworker(pst_name,"localhost",4569)
     os.chdir("..")
 
 
@@ -3197,7 +3244,6 @@ if __name__ == "__main__":
     # ppw_worker(0,case,t_d,"localhost",4004,frun)
     #pypestworker_test()
     gpr_zdt1_test()
-
     #while True:
     #    thresh_pars_test()
     #obs_ensemble_quantile_test()
