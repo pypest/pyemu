@@ -3129,6 +3129,8 @@ def gpr_zdt1_test():
 
     pst = pyemu.Pst(os.path.join(t_d, case + ".pst"))
     pst.pestpp_options["mou_generator"] = "pso"
+    pst.pestpp_options["overdue_giveup_fac"] = 1e10
+    pst.pestpp_options["overdue_resched_fac"] = 1e10
     if use_chances:
         pst.pestpp_options["opt_risk"] = 0.95
         pst.pestpp_options["opt_stack_size"] = 50
