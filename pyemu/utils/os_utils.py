@@ -270,7 +270,7 @@ def start_workers(
     reuse_master=False,
     restart=False,
     ppw_function=None,
-    ppw_kwargs=None
+    ppw_kwargs={}
 ):
     """start a group of pest(++) workers on the local machine
 
@@ -316,7 +316,7 @@ def start_workers(
             memory.  The first three arguments to this function must be `pst_rel_path`, `host`, and `port`.
             Default is None.
         ppw_kwargs (dict): keyword arguments to pass to `ppw_function`.
-            Default is None.
+            Default is empty dict.
 
     Notes:
         If all workers (and optionally master) exit gracefully, then the worker
@@ -791,7 +791,7 @@ class PyPestWorker(object):
                     if self._send_lock is not None:
                         self._send_lock.release()
                 elif self.net_pack.mtype == 14:
-                    print("recv'd terminate signal")
+                    #print("recv'd terminate signal")
                     self.message("recv'd terminate signal")
                     return
                 elif self.net_pack.mtype == 16:

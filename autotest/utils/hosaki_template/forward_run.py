@@ -14,12 +14,29 @@ def hosaki(x):
 def helper(func=hosaki,pvals=None):
     if pvals is None:
         pvals = pd.read_csv('par.csv',index_col=0).values
-    print(pvals)
     sim = hosaki(pvals)
-
     with open('sim.csv','w') as f:
         f.write('obsnme,obsval\n')
         f.write('sim,'+str(sim.item())+'\n')
+    return sim
+
+def hosaki_ppw_worker(pst_name,host,port):
+    import pyemu
+    ppw = pyemu.os_utils.PyPestWorker(pst_name,host,port,verbose=False)
+    pvals = ppw.get_parameters()
+    if pvals is None:
+        return
+    pvals.sort_index(inplace=True)
+
+    while True:
+
+        sim = helper(pvals=pvals.values)
+        ppw.send_observations(np.array([sim]))
+        pvals = ppw.get_parameters()
+        if pvals is None:
+            break
+        pvals.sort_index(inplace=True)
+
 
 if __name__ == "__main__":
     helper()

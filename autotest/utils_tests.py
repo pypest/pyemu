@@ -3169,13 +3169,14 @@ def gpr_zdt1_test():
     gpr_m_d = gpr_t_d.replace("template", "master")
     if os.path.exists(gpr_m_d):
         shutil.rmtree(gpr_m_d)
+    start = datetime.now()
     #pyemu.os_utils.start_workers(gpr_t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
     #                             master_dir=gpr_m_d, verbose=True, port=port)
-    start = datetime.now()
     pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=gpr_t_d)
+    gpr_m_d = gpr_t_d
+
     finish = datetime.now()
     duration1 = (finish - start).total_seconds()
-    gpr_m_d = gpr_t_d
     arcorg = pd.read_csv(os.path.join(gpr_m_d,"zdt1.archive.obs_pop.csv"),index_col=0)
     
 
@@ -3221,6 +3222,8 @@ def gpr_zdt1_test():
     # case they dont need unique dirs since they arent writing
     # anything
     procs = []
+    # try this test with 1 worker as an edge case
+    num_workers = 1
     for i in range(num_workers):
         pp = mp.Process(target=gpr_zdt1_ppw)
         pp.start()
