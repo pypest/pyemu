@@ -51,5 +51,5 @@ def test_notebooks_test():
 if __name__ == '__main__':
     shutil.copy2(os.path.join("..","examples","helpers.py"),"helpers.py")
     files = get_notebooks()
-    for fn in files:
+    for fn in files:    
         run_notebook(fn)
