@@ -624,7 +624,7 @@ def ends_run_freyberg_dsi(tmp_d, nst=False, nst_extrap=None, ztz=False, energy=1
         os.remove(filename)
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
     pst.control_data.noptmax = -1
-    pst.pestpp_options["overdue_giveup_fac"] = 1000
+    pst.pestpp_options["overdue_giveup_fac"] = 100000000
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     #pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
     m_d = t_d.replace("template","master")
