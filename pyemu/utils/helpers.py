@@ -4344,32 +4344,54 @@ def gpr_pyworker(pst,host,port,input_df=None,mdf=None):
     import pandas as pd
     import numpy as np
     import pickle
+
+    # if explicit args werent passed, get the default ones...
     if input_df is None:
         input_df = pd.read_csv("gpr_input.csv",index_col=0)
     if mdf is None:
         mdf = pd.read_csv("gprmodel_info.csv",index_col=0)
     gpr_model_dict = get_gpr_model_dict(mdf)
     ppw = PyPestWorker(pst,host,port,verbose=False)
+
+    # we can only get parameters once the worker has initialize and 
+    # is ready to run, so getting the first of pars here
+    # essentially blocks until the worker is ready
     parameters = ppw.get_parameters()
+    # if its  None, the master already quit...
     if parameters is None:
         return
+
     obs = ppw._pst.observation_data.copy()
-    obs = obs.loc[ppw.obs_names,:]
+    # align the obsval series with the order sent from the master
+    obs = obs.loc[ppw.obs_names,"obsval"]
+    
+    # work out which par values sent from the master we need to run the emulator
     par = ppw._pst.parameter_data.copy()
-    usepar = par.loc[par.parnme.isin(input_df.index.values),"parnme"].values
-    parameters = parameters.loc[usepar]
+    usepar_idx = []
+    ppw_par_names = list(ppw.par_names)
+    for i,pname in enumerate(input_df.index.values):
+        usepar_idx.append(ppw_par_names.index(pname))
+    
+
     while True:
-        indf = input_df.copy()
-        indf.loc[parameters.index,"parval1"] = parameters.values
-        simdf = emulate_with_gpr(indf,mdf,gpr_model_dict)
-        obs.loc[simdf.index,"obsval"] = simdf.sim.values
-        obs.loc[simdf.index.map(lambda x: x+"_gprstd"),"obsval"] = simdf.sim_std.values
-        ppw.send_observations(obs.obsval.values)
+        # map the current dv values in parameters into the 
+        # df needed to run the emulator
+        input_df["parval1"] = parameters.values[usepar_idx]
+        # do the emulation
+        simdf = emulate_with_gpr(input_df,mdf,gpr_model_dict)
+
+        # replace the emulated quantites in the obs series
+        obs.loc[simdf.index] = simdf.sim.values
+        obs.loc[simdf.index.map(lambda x: x+"_gprstd")] = simdf.sim_std.values
+        #send the obs series to the master
+        ppw.send_observations(obs.values)
+
+        #try to get more pars
         parameters = ppw.get_parameters()
+        # if None, we are done
         if parameters is None:
             break
-        parameters = parameters.loc[usepar]
-
+        
 
 
 def gpr_forward_run():

@@ -3137,7 +3137,7 @@ def gpr_zdt1_test():
     else:
         pst.pestpp_options["opt_risk"] = 0.5
 
-    pop_size = 10
+    pop_size = 20
     num_workers = 10
     noptmax_full = 5
     
@@ -3149,10 +3149,9 @@ def gpr_zdt1_test():
     #if not os.path.exists(m_d):
     #    pyemu.os_utils.start_workers(t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
     #                                 master_dir=m_d, verbose=True, port=port)
-    start = datetime.now()
+    
     pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=t_d)
-    finish = datetime.now()
-    duration1 = (finish - start).total_seconds()
+    
 
     m_d = t_d
     dv_pops = [os.path.join(m_d, "{0}.0.dv_pop.csv".format(case))]
@@ -3172,7 +3171,10 @@ def gpr_zdt1_test():
         shutil.rmtree(gpr_m_d)
     #pyemu.os_utils.start_workers(gpr_t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
     #                             master_dir=gpr_m_d, verbose=True, port=port)
+    start = datetime.now()
     pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=gpr_t_d)
+    finish = datetime.now()
+    duration1 = (finish - start).total_seconds()
     gpr_m_d = gpr_t_d
    
     psum_fname = os.path.join(gpr_m_d,case+".pareto.archive.summary.csv")
@@ -3195,7 +3197,7 @@ def gpr_zdt1_test():
     #p.wait()
     #return
 
-    num_workers=1
+    num_workers=3
     
     # looper over and start the workers - in this
     # case they dont need unique dirs since they arent writing
