@@ -268,7 +268,9 @@ def start_workers(
     verbose=False,
     silent_master=False,
     reuse_master=False,
-    restart=False
+    restart=False,
+    ppw_function=None,
+    ppw_kwargs=None
 ):
     """start a group of pest(++) workers on the local machine
 
@@ -307,6 +309,14 @@ def start_workers(
             process started in it by this function.
         restart (`bool`): flag to add a restart flag to the master start. If `True`, this will include
             `/r` in the master call string.
+        ppw_function (function): a function pointer that uses PyPestWorker to execute model runs.  
+            This is to help speed up pure-python and really fast running forward models and the
+            way its implemented in `start_workers` assumes each `PyPestWorker` instance does not need
+            a separate set of model+files, that is, these workers are assumed to execute entirely in 
+            memory.  The first three arguments to this function must be `pst_rel_path`, `host`, and `port`.
+            Default is None.
+        ppw_kwargs (dict): keyword arguments to pass to `ppw_function`.
+            Default is None.
 
     Notes:
         If all workers (and optionally master) exit gracefully, then the worker
@@ -390,41 +400,51 @@ def start_workers(
             os.chdir(base_dir)
         except Exception as e:
             raise Exception("error starting master instance: {0}".format(str(e)))
-        time.sleep(1.5)  # a few cycles to let the master get ready
+        time.sleep(0.5)  # a few cycles to let the master get ready
 
-    tcp_arg = "{0}:{1}".format(hostname, port)
+
     procs = []
     worker_dirs = []
-    for i in range(num_workers):
-        new_worker_dir = os.path.join(worker_root, "worker_{0}".format(i))
-        if os.path.exists(new_worker_dir):
-            _try_remove_existing(new_worker_dir)
-        _try_copy_dir(worker_dir, new_worker_dir)
-        try:
-            if exe_verf:
-                # if rel_path is not None:
-                #     exe_path = os.path.join(rel_path,exe_rel_path)
-                # else:
-                exe_path = exe_rel_path
-            else:
-                exe_path = exe_rel_path
-            args = [exe_path, pst_rel_path, "/h", tcp_arg]
-            # print("starting worker in {0} with args: {1}".format(new_worker_dir,args))
-            if rel_path is not None:
-                cwd = os.path.join(new_worker_dir, rel_path)
-            else:
-                cwd = new_worker_dir
-
-            os.chdir(cwd)
-            if verbose:
-                print("worker:{0} in {1}".format(" ".join(args), cwd))
-            with open(os.devnull, "w") as f:
-                p = sp.Popen(args, stdout=f, stderr=f)
+    if ppw_function is not None:
+        args = (os.path.join(worker_dir,pst_rel_path),hostname,port)
+        for i in range(num_workers):
+            p = mp.Process(target=ppw_function,args=args,kwargs=ppw_kwargs)
+            p.start()
             procs.append(p)
-            os.chdir(base_dir)
-        except Exception as e:
-            raise Exception("error starting worker: {0}".format(str(e)))
-        worker_dirs.append(new_worker_dir)
+
+    else:
+        tcp_arg = "{0}:{1}".format(hostname, port)
+        
+        for i in range(num_workers):
+            new_worker_dir = os.path.join(worker_root, "worker_{0}".format(i))
+            if os.path.exists(new_worker_dir):
+                _try_remove_existing(new_worker_dir)
+            _try_copy_dir(worker_dir, new_worker_dir)
+            try:
+                if exe_verf:
+                    # if rel_path is not None:
+                    #     exe_path = os.path.join(rel_path,exe_rel_path)
+                    # else:
+                    exe_path = exe_rel_path
+                else:
+                    exe_path = exe_rel_path
+                args = [exe_path, pst_rel_path, "/h", tcp_arg]
+                # print("starting worker in {0} with args: {1}".format(new_worker_dir,args))
+                if rel_path is not None:
+                    cwd = os.path.join(new_worker_dir, rel_path)
+                else:
+                    cwd = new_worker_dir
+
+                os.chdir(cwd)
+                if verbose:
+                    print("worker:{0} in {1}".format(" ".join(args), cwd))
+                with open(os.devnull, "w") as f:
+                    p = sp.Popen(args, stdout=f, stderr=f)
+                procs.append(p)
+                os.chdir(base_dir)
+            except Exception as e:
+                raise Exception("error starting worker: {0}".format(str(e)))
+            worker_dirs.append(new_worker_dir)
 
     if master_dir is not None:
         # while True:
@@ -444,14 +464,18 @@ def start_workers(
                 time.sleep(5)
         else:
             master_p.wait()
-            time.sleep(1.5)  # a few cycles to let the workers end gracefully
+            time.sleep(0.5)  # a few cycles to let the workers end gracefully
 
         # kill any remaining workers
         for p in procs:
             p.kill()
     # this waits for sweep to finish, but pre/post/model (sub)subprocs may take longer
+    
     for p in procs:
-        p.wait()
+        if ppw_function is not None:
+            p.join()
+        else:
+            p.wait()
     if cleanup:
         cleanit = 0
         removed = set()

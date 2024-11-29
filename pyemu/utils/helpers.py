@@ -4397,24 +4397,11 @@ def gpr_pyworker(pst,host,port,input_df=None,mdf=None):
 def gpr_forward_run():
     """the function to evaluate a set of inputs thru the GPR emulators.\
     This function gets added programmatically to the forward run process"""
-    #import os
     import pandas as pd
-    #import numpy as np
-    #import pickle
-    #from sklearn.gaussian_process import GaussianProcessRegressor
     input_df = pd.read_csv("gpr_input.csv",index_col=0)
     mdf = pd.read_csv("gprmodel_info.csv",index_col=0)
     gpr_model_dict = get_gpr_model_dict(mdf)
-    mdf = emulate_with_gpr(input_df,mdf,gpr_model_dict)
-
-    # mdf.loc[:,"sim"] = np.nan
-    # mdf.loc[:,"sim_std"] = np.nan
-    # for output_name,model_fname in zip(mdf.output_name,mdf.model_fname):
-    #     guassian_process = pickle.load(open(model_fname,'rb'))
-    #     sim = guassian_process.predict(np.atleast_2d(input_df.parval1.values),return_std=True)
-    #     mdf.loc[output_name,"sim"] = sim[0]
-    #     mdf.loc[output_name,"sim_std"] = sim[1]
-        
+    mdf = emulate_with_gpr(input_df,mdf,gpr_model_dict)    
     mdf.loc[:,["output_name","sim","sim_std"]].to_csv("gpr_output.csv",index=False)
     return mdf
 

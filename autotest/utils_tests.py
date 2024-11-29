@@ -3139,7 +3139,7 @@ def gpr_zdt1_test():
 
     pop_size = 20
     num_workers = 10
-    noptmax_full = 5
+    noptmax_full = 1
     
     port = 4569
     pst.control_data.noptmax = -1
@@ -3176,7 +3176,9 @@ def gpr_zdt1_test():
     finish = datetime.now()
     duration1 = (finish - start).total_seconds()
     gpr_m_d = gpr_t_d
-   
+    arcorg = pd.read_csv(os.path.join(gpr_m_d,"zdt1.archive.obs_pop.csv"),index_col=0)
+    
+
     psum_fname = os.path.join(gpr_m_d,case+".pareto.archive.summary.csv")
     assert os.path.exists(psum_fname)
     psum = pd.read_csv(psum_fname)
@@ -3184,20 +3186,36 @@ def gpr_zdt1_test():
     print(psum.obj_2.min())
     assert psum.obj_1.min() < 0.05
 
-    t = gpr_t_d + "_ppw"
-    if os.path.exists(t):
-        shutil.rmtree(t)
-    shutil.copytree(gpr_t_d,t)
-    gpr_t_d = t
+    gpr_t_d2 = gpr_t_d + "_ppw"
+    if os.path.exists(gpr_t_d2):
+        shutil.rmtree(gpr_t_d2)
+    shutil.copytree(gpr_t_d,gpr_t_d2)
+
+    gpr_m_d2 = gpr_t_d2.replace("template","master")
+
+    input_df = pd.read_csv(os.path.join(gpr_t_d2,"gpr_input.csv"),index_col=0)
+    mdf = pd.read_csv(os.path.join(gpr_t_d2,"gprmodel_info.csv"),index_col=0)
+    mdf["model_fname"] = mdf.model_fname.apply(lambda x: os.path.join(gpr_t_d2,x))
+    pyemu.os_utils.start_workers(gpr_t_d2, mou_exe_path, case + ".pst", num_workers, worker_root=".",
+                                 master_dir=gpr_m_d2, verbose=True, port=port,
+                                 ppw_function=pyemu.helpers.gpr_pyworker,
+                                 ppw_kwargs={"input_df":input_df,
+                                            "mdf":mdf})
+    
+    
+    arcppw = pd.read_csv(os.path.join(gpr_m_d2,"zdt1.archive.obs_pop.csv"),index_col=0)
+    diff = np.abs(arcppw.values - arcorg.values)
+    print(diff.max())
+    assert diff.max() < 1e-6
+        
+
     start = datetime.now()
     b_d = os.getcwd()
-    os.chdir(gpr_t_d)
+    os.chdir(gpr_t_d2)
     p = sp.Popen([mou_exe_path,"{0}.pst".format(case),"/h",":{0}".format(port)])
     os.chdir(b_d)
     #p.wait()
     #return
-
-    num_workers=3
     
     # looper over and start the workers - in this
     # case they dont need unique dirs since they arent writing
@@ -3218,8 +3236,7 @@ def gpr_zdt1_test():
     print("ppw` took",(finish-start).total_seconds())
     print("org took",duration1)
 
-    arcppw = pd.read_csv(os.path.join(gpr_t_d,"zdt1.archive.obs_pop.csv"),index_col=0)
-    arcorg = pd.read_csv(os.path.join(gpr_t_d.replace("_ppw",""),"zdt1.archive.obs_pop.csv"),index_col=0)
+    arcppw = pd.read_csv(os.path.join(gpr_t_d2,"zdt1.archive.obs_pop.csv"),index_col=0)
     diff = np.abs(arcppw.values - arcorg.values)
     print(diff.max())
     assert diff.max() < 1e-6
