@@ -2375,7 +2375,7 @@ def ac_draw_test(tmp_path):
     import numpy as np
     #import matplotlib.pyplot as plt
 
-    obs_per_group = 1000
+    obs_per_group = 20
     avals = [1,180,365,3650]
     ngrp = len(avals)
 
@@ -3267,7 +3267,8 @@ if __name__ == "__main__":
     # from forward_run import helper as frun
     # ppw_worker(0,case,t_d,"localhost",4004,frun)
     #pypestworker_test()
-    gpr_zdt1_test()
+    #gpr_zdt1_test()
+    ac_draw_test(".")
     #while True:
     #    thresh_pars_test()
     #obs_ensemble_quantile_test()
