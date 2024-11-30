@@ -2952,7 +2952,7 @@ def gpr_constr_test():
     else:
         pst.pestpp_options["opt_risk"] = 0.5
 
-    pop_size = 10
+    pop_size = 15
     num_workers = 5
     noptmax_full = 3
     noptmax_inner = 2
@@ -3266,10 +3266,10 @@ if __name__ == "__main__":
     # sys.path.insert(0,t_d)
     # from forward_run import helper as frun
     # ppw_worker(0,case,t_d,"localhost",4004,frun)
-    pypestworker_test()
+    #pypestworker_test()
     gpr_constr_test()
     #gpr_zdt1_test()
-    ac_draw_test(".")
+    #ac_draw_test(".")
     #while True:
     #    thresh_pars_test()
     #obs_ensemble_quantile_test()
