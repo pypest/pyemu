@@ -2928,7 +2928,7 @@ def gpr_compare_invest():
         gpst_iter.write(os.path.join(gpr_t_d_iter,case+".pst"),version=2)
 
 
-def gpr_constr_test():
+def gpr_constr_invest():
     import numpy as np
     from sklearn.gaussian_process import GaussianProcessRegressor
     case = "constr"
