@@ -101,7 +101,7 @@ def test_get_release(repo):
 
     expected_assets = [
         f"pestpp-{release_tag_name}-linux.tar.gz",
-        f"pestpp-{release_tag_name}-imac.tar.gz",
+        f"pestpp-{release_tag_name}-mac.tar.gz",
         f"pestpp-{release_tag_name}-iwin.zip",
     ]
     expected_ostags = [a.replace(".zip", "") for a in expected_assets]
@@ -255,7 +255,7 @@ def test_script(function_tmpdir, owner, repo, downloads_dir):
     paths = list(function_tmpdir.glob("*"))
     names = [p.name for p in paths]
     expected_names = [append_ext(p) for p in repo_options[repo]]
-    assert set(names) >= set(expected_names)
+    assert set(names) >= set(expected_names),'{0} vs {1}'.format(str(names),set(expected_names))
 
 
 @flaky
@@ -273,4 +273,4 @@ def test_python_api(function_tmpdir, owner, repo, downloads_dir):
     paths = list(function_tmpdir.glob("*"))
     names = [p.name for p in paths]
     expected_names = [append_ext(p) for p in repo_options[repo]]
-    assert set(names) >= set(expected_names)
+    assert set(names) >= set(expected_names),'{0} vs {1}'.format(str(names),set(expected_names))
