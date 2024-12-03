@@ -2411,7 +2411,10 @@ class PstFrom(object):
                 if zone_array is None:  # but need dummy zone array
                     nr, nc = file_dict[list(file_dict.keys())[0]].shape
                     zone_array = np.ones((nr, nc), dtype=int)
-
+                    use_zone_array = False
+                else:
+                    use_zone_array = True
+                # print(zone_array.shape)
                 # don't want to have to pass too much in on this pp_options dict,
                 # so define pp_filename here
                 pp_options['pp_filename'] = "{0}pp.dat".format(par_name_store)  # todo could also be a pp_kwarg
@@ -2672,7 +2675,7 @@ class PstFrom(object):
                         else:
                             # put the sr dict info into a df
                             # but we only want to use the n
-                            if zone_array is not None:
+                            if use_zone_array:
                                 for zone in np.unique(zone_array):
                                     if int(zone) == 0:
                                         continue
