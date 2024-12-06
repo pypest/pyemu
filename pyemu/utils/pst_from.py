@@ -1291,7 +1291,7 @@ class PstFrom(object):
                 )
             func_lines = []
             search_str = "def " + function_name + "("
-            abet_set = set(string.printable) - {' '}
+            abet_set = set(string.printable) - {' ','\n','\t'}
             with open(file_name, "r") as f:
                 while True:
                     line = f.readline()
@@ -1313,7 +1313,6 @@ class PstFrom(object):
                                 break
                             func_lines.append(line)
                         break
-
             self._function_lines_list.append(func_lines)
         if is_pre_cmd is True:
             self.pre_py_cmds.append(call_str)
@@ -2676,6 +2675,7 @@ class PstFrom(object):
                             # put the sr dict info into a df
                             # but we only want to use the n
                             if use_zone_array:
+                                print(np.unique(zone_array))
                                 for zone in np.unique(zone_array):
                                     if int(zone) == 0:
                                         continue
