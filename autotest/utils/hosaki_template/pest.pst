@@ -1,0 +1,30 @@
+pcf
+* control data
+             restart          estimation
+         2         1         1         0         1
+         1         1              single               point         1
+   2.000000E+01  -3.000000E+00   3.000000E-01   1.000000E-02        -7
+   1.000000E+01   1.000000E+01   1.000000E-03
+   1.000000E-01
+        25   1.000000E-02         3      1000   1.000000E-02         3
+         0         0         0
+* singular value decomposition
+         1
+  10000000    1.000000E-06
+1
+* parameter groups
+pargp                  relative              1.0000000000E-02      0.0 switch                2.0000000000E+00      parabolic             1.0000000000E-05      5.0000000000E-01      smaller              
+* parameter data
+par1                  none                  relative              2.5000000000E+00      0.0000000000E+00      5.0000000000E+00      pargp                 1.0000000000E+00      0.0000000000E+00      1          
+par2                  none                  relative              2.5000000000E+00      0.0000000000E+00      5.0000000000E+00      pargp                 1.0000000000E+00      0.0000000000E+00      1          
+* observation groups
+obgnme               
+* observation data
+sim                   -2.3458115761E+00     1.0000000000E+02      less_than              
+* model command line
+python forward_run.py
+* model input/output
+./par.csv.tpl ./par.csv
+./sim.csv.ins ./sim.csv
+++overdue_giveup_fac(1e10)
+++overdue_resched_fac(1e10)

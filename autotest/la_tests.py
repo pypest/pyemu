@@ -624,7 +624,7 @@ def ends_run_freyberg_dsi(tmp_d, nst=False, nst_extrap=None, ztz=False, energy=1
         os.remove(filename)
     pst = pyemu.Pst(os.path.join(t_d,"dsi.pst"))
     pst.control_data.noptmax = -1
-    pst.pestpp_options["overdue_giveup_fac"] = 1000
+    pst.pestpp_options["overdue_giveup_fac"] = 100000000
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     #pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
     m_d = t_d.replace("template","master")
@@ -741,9 +741,10 @@ def dsi_normscoretransform_test():
 
 if __name__ == "__main__":
     #dsi_normscoretransform_test()
+    ends_freyberg_test("temp")
+    #ends_freyberg_dsi_test("temp")
     #ends_freyberg_dev()
     #ends_freyberg_dsi_test("temp")
-    ends_freyberg_dsi_ztz_test('temp')
     #plot_freyberg_dsi()
     #obscomp_test()
     #alternative_dw()
