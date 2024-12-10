@@ -732,7 +732,7 @@ class EnDS(object):
                 vals[np.where(log_trans==1)] = 10**vals[np.where(log_trans==1)]
                 vals-= offset
                 sim_vals.loc[:,'mn'] = vals
-            print(sim_vals)
+            #print(sim_vals)
             sim_vals.to_csv("dsi_sim_vals.csv")
 
         self.logger.log("test run")

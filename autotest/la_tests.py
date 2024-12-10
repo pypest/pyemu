@@ -598,6 +598,8 @@ def ends_freyberg_test(tmp_path):
 def ends_run_freyberg_dsi(tmp_d, nst=False, nst_extrap=None, ztz=False, energy=1.0):
     import pyemu
     import os
+    import pandas as pd
+    import numpy as np
     test_d = "ends_master"
     test_d = setup_tmp(test_d, tmp_d)
     case = "freyberg6_run_ies"
@@ -627,11 +629,19 @@ def ends_run_freyberg_dsi(tmp_d, nst=False, nst_extrap=None, ztz=False, energy=1
     pst.pestpp_options["overdue_giveup_fac"] = 100000000
     pst.write(os.path.join(t_d,"dsi.pst"),version=2)
     #pyemu.os_utils.run("pestpp-ies dsi.pst",cwd=t_d)
+
+    pvals = pd.read_csv(os.path.join(t_d,"dsi_pars.csv"),index_col=0)
+    pmat = np.load(os.path.join(t_d,"dsi_proj_mat.npy"))
+    ovals = pd.read_csv(os.path.join(t_d,"dsi_pr_mean.csv"),index_col=0)
+
+
     m_d = t_d.replace("template","master")
     port = _get_port()
     pyemu.os_utils.start_workers(t_d, ies_exe_path,"dsi.pst",
                                  worker_root=tmp_d,
-                                 master_dir=m_d, num_workers=10, port=port)
+                                 master_dir=m_d, num_workers=10, port=port,
+                                ppw_function=pyemu.helpers.dsi_pyworker,
+                                ppw_kwargs={"pmat":pmat,"ovals":ovals,"pvals":pvals})
     #read in the results
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=os.path.join(m_d,"dsi.0.obs.csv"))
     assert oe.shape[0]==50, f"{50-oe.shape[0]} failed runs"
@@ -741,8 +751,8 @@ def dsi_normscoretransform_test():
 
 if __name__ == "__main__":
     #dsi_normscoretransform_test()
-    ends_freyberg_test("temp")
-    #ends_freyberg_dsi_test("temp")
+    #ends_freyberg_test("temp")
+    ends_freyberg_dsi_test("temp")
     #ends_freyberg_dev()
     #ends_freyberg_dsi_test("temp")
     #plot_freyberg_dsi()

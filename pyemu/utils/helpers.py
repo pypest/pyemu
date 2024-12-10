@@ -4405,6 +4405,118 @@ def gpr_forward_run():
     mdf.loc[:,["output_name","sim","sim_std"]].to_csv("gpr_output.csv",index=False)
     return mdf
 
+
+def dsi_forward_run(pmat=None,ovals=None,pvals=None,
+                    write_csv=True
+                    
+                    ):
+
+    if pvals is None:
+        pvals = pd.read_csv("dsi_pars.csv",index_col=0)
+    if pmat is None:
+        pmat = np.load("dsi_proj_mat.npy")
+    if ovals is None:
+        ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
+
+    try:
+        offset = np.load("dsi_obs_offset.npy")
+    except:
+        #print("no offset file found, assuming no offset")
+        offset = np.zeros(ovals.shape[0])
+    try:
+        log_trans = np.load("dsi_obs_log.npy")
+    except:
+        #print("no log-tansform file found, assuming no log-transform")
+        log_trans = np.zeros(ovals.shape[0])
+
+    try:
+        backtransformvals = np.load("dsi_obs_backtransformvals.npy")
+        backtransformobsnmes = np.load("dsi_obs_backtransformobsnmes.npy",allow_pickle=True)
+        backtransform=True
+    except:
+        #print("no back-transform file found, assuming no back-transform")
+        backtransform=False
+
+
+    sim_vals = ovals + np.dot(pmat,pvals.values)
+
+    if backtransform:
+        #print("applying back-transform")
+        obsnmes = np.unique(backtransformobsnmes)
+        back_vals = [
+                    inverse_normal_score_transform(
+                                        backtransformvals[np.where(backtransformobsnmes==o)][:,1],
+                                        backtransformvals[np.where(backtransformobsnmes==o)][:,0],
+                                        sim_vals.loc[o].mn,
+                                        extrap=None
+                                        )[0] 
+                    for o in obsnmes
+                    ]     
+        sim_vals.loc[obsnmes,'mn'] = back_vals
+
+    #print("reversing offset and log-transform")
+    assert log_trans.shape[0] == sim_vals.mn.values.shape[0], f"log transform shape mismatch: {log_trans.shape[0]},{sim_vals.mn.values.shape[0]}"
+    assert offset.shape[0] == sim_vals.mn.values.shape[0], f"offset transform shape mismatch: {offset.shape[0]},{sim_vals.mn.values.shape[0]}"
+    vals = sim_vals.mn.values
+    vals[np.where(log_trans==1)] = 10**vals[np.where(log_trans==1)]
+    vals-= offset
+    sim_vals.loc[:,'mn'] = vals
+    #print(sim_vals)
+    if write_csv:
+        sim_vals.to_csv("dsi_sim_vals.csv")
+    return sim_vals
+
+
+def dsi_pyworker(pst,host,port,pmat=None,ovals=None,pvals=None):
+    
+    import os
+    import pandas as pd
+    import numpy as np
+
+
+    # if explicit args werent passed, get the default ones...
+    if pvals is None:
+        pvals = pd.read_csv("dsi_pars.csv",index_col=0)
+    if pmat is None:
+        pmat = np.load("dsi_proj_mat.npy")
+    if ovals is None:
+        ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
+
+
+    ppw = PyPestWorker(pst,host,port,verbose=False)
+
+    # we can only get parameters once the worker has initialize and 
+    # is ready to run, so getting the first of pars here
+    # essentially blocks until the worker is ready
+    parameters = ppw.get_parameters()
+    # if its  None, the master already quit...
+    if parameters is None:
+        return
+
+    obs = ppw._pst.observation_data.copy()
+    # align the obsval series with the order sent from the master
+    obs = obs.loc[ppw.obs_names,"obsval"]
+
+    while True:
+        # map the current par values in parameters into the 
+        # df needed to run the emulator
+        pvals.parval1 = parameters.loc[pvals.index]
+        # do the emulation
+        simdf = dsi_forward_run(pmat=pmat,ovals=ovals,pvals=pvals,write_csv=False)
+
+        # replace the emulated quantites in the obs series
+        obs.loc[simdf.index] = simdf.mn.values
+
+        #send the obs series to the master
+        ppw.send_observations(obs.values)
+
+        #try to get more pars
+        parameters = ppw.get_parameters()
+        # if None, we are done
+        if parameters is None:
+            break
+
+
 def randrealgen_optimized(nreal, tol=1e-7, max_samples=1000000):
     """
     Generate a set of random realizations with a normal distribution.
