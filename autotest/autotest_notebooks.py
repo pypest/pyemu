@@ -29,6 +29,7 @@ def run_notebook(fn):
     #pth = os.path.join(nbdir, fn)
     pth = fn
     cmd = 'jupyter ' + 'nbconvert ' + \
+          '--ServerApp.iopub_data_rate_limit=1e10 ' + \
           '--ExecutePreprocessor.kernel_name=python ' + \
           '--ExecutePreprocessor.timeout=6000 ' + '--to ' + 'notebook ' + \
           '--execute ' + '{} '.format(pth) + \
@@ -50,5 +51,5 @@ def test_notebooks_test():
 if __name__ == '__main__':
     shutil.copy2(os.path.join("..","examples","helpers.py"),"helpers.py")
     files = get_notebooks()
-    for fn in files:
+    for fn in files:    
         run_notebook(fn)

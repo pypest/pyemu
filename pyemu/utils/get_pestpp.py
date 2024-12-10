@@ -58,7 +58,7 @@ def get_ostag() -> str:
         return "linux"
     elif sys.platform.startswith("win"):
         return "win"
-    elif sys.platform.startswith("darwin"):
+    elif sys.platform.startswith("darwin") or sys.platform.startswith("mac"):
         return "mac"
     raise ValueError(f"platform {sys.platform!r} not supported")
 
@@ -408,7 +408,7 @@ def run_main(
 
     inconsistent_ostag_dict = {
         "win": "iwin",
-        "mac": "imac",
+        "mac": "mac",
         "linux": "linux",
     }
 
