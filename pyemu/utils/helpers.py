@@ -1833,6 +1833,8 @@ def _process_array_file(model_file, df):
             if pd.isna(mlt):
                 continue
             mlt_data = np.loadtxt(mlt, ndmin=2)
+            if 1 in list(mlt_data.shape): # if 1d arrays
+                org_arr = org_arr.reshape(mlt_data.shape)
             if org_arr.shape != mlt_data.shape:
                 raise Exception(
                     "shape of org file {}:{} differs from mlt file {}:{}".format(
