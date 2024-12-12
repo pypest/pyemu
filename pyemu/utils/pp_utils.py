@@ -41,7 +41,7 @@ def setup_pilotpoints_grid(
     """setup a regularly-spaced (gridded) pilot point parameterization
 
     Args:
-        ml (`flopy.mbase`, optional): a flopy mbase dervied type.  If None, `sr` must not be None.
+        ml (`flopy.mbase`, optional): a flopy mbase derived type.  If None, `sr` must not be None.
         sr (`flopy.utils.reference.SpatialReference`, optional):  a spatial reference use to
             locate the model grid in space.  If None, `ml` must not be None.  Default is None
         ibound (`numpy.ndarray`, optional): the modflow ibound integer array.  THis is used to
@@ -642,9 +642,9 @@ def get_zoned_ppoints_for_vertexgrid(spacing, zone_array, mg, zone_number=None, 
         spacing (`float`): spacing in model length units between pilot points. 
         zone_array (`numpy.ndarray`): the modflow 6 idomain integer array.  This is used to
             set pilot points only in active areas and to assign zone numbers. 
-        mg  (`flopy.discretization.vertexgrid.VertexGrid`): a VertexGrid flopy discretization dervied type.
+        mg  (`flopy.discretization.vertexgrid.VertexGrid`): a VertexGrid flopy discretization derived type.
         zone_number (`int`): zone number 
-        add_buffer (`boolean`): specifies whether pilot points ar eplaced wihtin a buffer zone of size `distance` around the zone/active domain
+        add_buffer (`boolean`): specifies whether pilot points ar eplaced within a buffer zone of size `distance` around the zone/active domain
 
     Returns:
         `list`: a list of tuples with pilot point x and y coordinates

@@ -48,7 +48,7 @@ class KrigingFactors(object):
         # get zone map
         self.pp_zones = np.loadtxt(zonefile, dtype=int)
 
-        # keep track of number of points to interpolate to and search radius and current zone of iterest
+        # keep track of number of points to interpolate to and search radius and current zone of interest
         self.minpts_interp = minpts_interp
         self.maxpts_interp = maxpts_interp
         self.search_radius = search_radius

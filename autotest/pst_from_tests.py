@@ -299,7 +299,7 @@ def freyberg_test(tmp_path):
     sfodf_c.columns = sfodf_c.columns.str.lower()
     assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
                                     sfrobs_p.columns]).all().all(), (
-        "Mis-match between expected and processed obs values\n",
+        "Mismatch between expected and processed obs values\n",
         sfrobs_p.head(),
         sfodf_c.loc[sfrobs_p.index, sfrobs_p.columns].head())
 
@@ -338,7 +338,7 @@ def freyberg_test(tmp_path):
     sfodf_c.columns = sfodf_c.columns.str.lower()
     assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
                                     sfrobs_p.columns]).all().all(), (
-        "Mis-match between expected and processed obs values")
+        "Mismatch between expected and processed obs values")
     obsnmes = pd.concat([df.obgnme for df in pf.obs_dfs]).unique()
     assert all([gp in obsnmes for gp in ['qaquifer', 'qout']])
     pf.post_py_cmds.append(
@@ -758,7 +758,7 @@ def mf6_freyberg_test(tmp_path):
     # add the function call to make generic to the forward run script
     pf.add_py_function(__file__, "generic_function()", is_pre_cmd=False)
 
-    # add a function that isnt going to be called directly
+    # add a function that isn't going to be called directly
     pf.add_py_function(__file__, "another_generic_function(some_arg)",
                        is_pre_cmd=None)
 
@@ -2913,7 +2913,7 @@ class TestPstFrom():
             os.chdir(self.dest_ws)
             # first delete the model file in the template ws
             model_file.unlink()
-            # manually apply a multipler
+            # manually apply a multiplier
             mult = 4
             mult_values = np.loadtxt(mult_file)
             mult_values[:] = mult
@@ -2991,7 +2991,7 @@ class TestPstFrom():
             os.chdir(self.dest_ws)
             # first delete the model file in the template ws
             model_file.unlink()
-            # manually apply a multipler
+            # manually apply a multiplier
             mult = 4
             mult_df = pd.read_csv(mult_file)
             # no idea why '3' is the column with multipliers and 'parval1_3' isn't
@@ -3079,7 +3079,7 @@ class TestPstFrom():
                     # first delete the model file in the template ws
                     model_file = df['model_file'].values[mult2model_row]
                     os.remove(model_file)
-                    # manually apply a multipler
+                    # manually apply a multiplier
                     mult = 4
                     if par_type != "pilotpoints":
                         mult_values = np.loadtxt(mult_file)
@@ -3194,7 +3194,7 @@ class TestPstFrom():
         for file in array_file_input:
             shutil.copy(self.array_file, Path(self.dest_ws, file))
 
-        # single 2D zone array applied to each file in filesnames
+        # single 2D zone array applied to each file in filenames
         self.pf.add_parameters(filenames=array_file_input, par_type='zone',
                                zone_array=self.zone_array,
                                par_name_base=tag,  # basename for parameters that are set up
@@ -3211,7 +3211,7 @@ class TestPstFrom():
         # first delete the model file in the template ws
         for model_file in df['model_file']:
             os.remove(model_file)
-        # manually apply a multipler
+        # manually apply a multiplier
         mult = 4
         mult_values = np.loadtxt(mult_file)
         mult_values[:] = mult
@@ -3761,7 +3761,7 @@ def usg_freyberg_test(tmp_path):
     for layer in layers:
         df_lay = df.loc[df.layer==layer,:].copy()
         df_lay.sort_values(by="node")
-        #substract off the min node number so that each layers node dict starts at zero
+        #subtract off the min node number so that each layers node dict starts at zero
         df_lay.loc[:,"node"] = df_lay.node - df_lay.node.min()
         print(df_lay)
         srd = {n:xy for n,xy in zip(df_lay.node.values,df_lay.xy.values)}
@@ -4078,7 +4078,7 @@ def mf6_subdir_test(tmp_path):
     # add the function call to make generic to the forward run script
     pf.add_py_function(__file__, f"generic_function('{sd}')",is_pre_cmd=False)
 
-    # add a function that isnt going to be called directly
+    # add a function that isn't going to be called directly
     pf.add_py_function(__file__, "another_generic_function(some_arg)",is_pre_cmd=None)
 
     # pf.post_py_cmds.append("generic_function()")
@@ -5218,7 +5218,7 @@ def plot_thresh(m_d):
 
 def test_array_fmt(tmp_path):
     from pyemu.utils.pst_from import _load_array_get_fmt
-    # psuedo ff option
+    # pseudo ff option
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("       3.000      3.0000      03.000\n"
                  "         3.0      3.0000      03.000")
@@ -5239,14 +5239,14 @@ def test_array_fmt(tmp_path):
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == ''.join([" %11.8F"] * 3)
     assert arr.sum(axis=1).sum() == 18
-    # tru space delim option -- sep passed
+    # true space delim option -- sep passed
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.000 3.00000 03.000\n"
                  "3.0 3.0000 03.000")
     arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=' ')
     assert fmt == "%7.5F"
     assert arr.sum(axis=1).sum() == 18
-    # tru space delim option with sep None
+    # true space delim option with sep None
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.000 3.00000 03.000\n"
                  "3.0 3.0000 03.000")

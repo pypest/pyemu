@@ -175,7 +175,7 @@ def smp_to_dataframe(smp_filename, datetime_format=None):
     """load an smp file into a pandas dataframe
 
     Args:
-        smp_filename (`str`): path and nane of existing smp filename to load
+        smp_filename (`str`): path and name of existing smp filename to load
         datetime_format (`str`, optional): The format of the datetime strings
             in the smp file. Can be either "%m/%d/%Y %H:%M:%S" or "%d/%m/%Y %H:%M:%S"
             If None, then we will try to deduce the format for you, which

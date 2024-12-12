@@ -887,9 +887,9 @@ class OrdinaryKrige(object):
                 entries with a zone value not found in zone_array will be skipped.
                 If None, then all `point_data` will (potentially) be used for
                 interpolating each grid node. Default is None
-            minpts_interp (`int`): minimum number of `point_data` entires to use for interpolation at
+            minpts_interp (`int`): minimum number of `point_data` entries to use for interpolation at
                 a given grid node.  grid nodes with less than `minpts_interp`
-                `point_data` found will be skipped (assigned np.nan).  Defaut is 1
+                `point_data` found will be skipped (assigned np.nan).  Default is 1
             maxpts_interp (`int`) maximum number of `point_data` entries to use for interpolation at
                 a given grid node.  A larger `maxpts_interp` will yield "smoother"
                 interplation, but using a large `maxpts_interp` will slow the
@@ -901,7 +901,7 @@ class OrdinaryKrige(object):
                 Default is False
             var_filename (`str`): a filename to save the kriging variance for each interpolated grid node.
                 Default is None.
-            forgive (`bool`):  flag to continue if inversion of the kriging matrix failes at one or more
+            forgive (`bool`):  flag to continue if inversion of the kriging matrix fails at one or more
                 grid nodes.  Inversion usually fails if the kriging matrix is singular,
                 resulting from `point_data` entries closer than EPSILON distance.  If True,
                 warnings are issued for each failed inversion.  If False, an exception
@@ -978,7 +978,7 @@ class OrdinaryKrige(object):
                 znt = zone_array.ravel().astype(int)
             
             #reset any missing values in znt to a zns value - 
-            # doesnt matter in the end, just results in more nodes 
+            # doesn't matter in the end, just results in more nodes 
             # being solved for...
             znt_unique = np.unique(znt)
             zns_unique = np.unique(zns)
@@ -1209,10 +1209,10 @@ class OrdinaryKrige(object):
         Args:
             x ([`float`]):  x-coordinates to calculate kriging factors for
             y (([`float`]): y-coordinates to calculate kriging factors for
-            minpts_interp (`int`): minimum number of point_data entires to use for interpolation at
+            minpts_interp (`int`): minimum number of point_data entries to use for interpolation at
                 a given x,y interplation point.  interpolation points with less
                 than `minpts_interp` `point_data` found will be skipped
-                (assigned np.nan).  Defaut is 1
+                (assigned np.nan).  Default is 1
             maxpts_interp (`int`): maximum number of point_data entries to use for interpolation at
                 a given x,y interpolation point.  A larger `maxpts_interp` will
                 yield "smoother" interplation, but using a large `maxpts_interp`
@@ -1222,7 +1222,7 @@ class OrdinaryKrige(object):
                 interpolation point to search for `point_data` entries. Default is 1.0e+10
             verbose (`bool`): a flag to  echo process to stdout during the interpolatino process.
                 Default is False
-            forgive (`bool`): flag to continue if inversion of the kriging matrix failes at one or more
+            forgive (`bool`): flag to continue if inversion of the kriging matrix fails at one or more
                 interpolation points.  Inversion usually fails if the kriging matrix is singular,
                 resulting from `point_data` entries closer than EPSILON distance.  If True,
                 warnings are issued for each failed inversion.  If False, an exception
@@ -1800,7 +1800,7 @@ class Vario2d(object):
 
     @property
     def rotation_coefs(self):
-        """get the rotation coefficents in radians
+        """get the rotation coefficients in radians
 
         Returns:
             [`float`]: the rotation coefficients implied by `Vario2d.bearing`
@@ -1954,7 +1954,7 @@ class Vario2d(object):
         return self._h_function(h)
 
     def covariance(self, pt0, pt1):
-        """get the covarince between two points implied by Vario2d
+        """get the covariance between two points implied by Vario2d
 
         Args:
             pt0 : ([`float`]): first point x and y

@@ -402,7 +402,7 @@ class Ensemble(object):
 
         Note:
             back transforms `ParameterEnsemble` before writing so that
-            values are in arithmatic space
+            values are in arithmetic space
 
         """
 
@@ -732,7 +732,7 @@ class ObservationEnsemble(Ensemble):
                 assumes no correlation (covariates) between observation groups.
             fill (`bool`): flag to fill in zero-weighted observations with control file
                 values.  Default is False.
-            factor (`str`): how to factorize `cov` to form the projectin matrix.  Can
+            factor (`str`): how to factorize `cov` to form the projection matrix.  Can
                 be "eigen" or "svd". The "eigen" option is default and is faster.  But
                 for (nearly) singular cov matrices (such as those generated empirically
                 from ensembles), "svd" is the only way.  Ignored for diagonal `cov`.
@@ -1534,7 +1534,7 @@ class ParameterEnsemble(Ensemble):
                     base = pyemu.pst_utils.read_parfile(center_on)
                 except:
                     raise Exception(
-                        "'center_on' arg not found in index and couldnt be loaded as a '.par' file"
+                        "'center_on' arg not found in index and couldn't be loaded as a '.par' file"
                     )
             else:
                 raise Exception(

@@ -83,7 +83,7 @@ def _load_array_get_fmt(fname, sep=None, fullfile=False, logger=None):
         lens.append(ilens)
         prec.append(iprec)
     N = np.sum(~np.isnan(arr[:len(lines)]))
-    # try to catch if file is infact fixed format (like old mt3d files)
+    # try to catch if file is in fact fixed format (like old mt3d files)
     firsts = np.ravel([line.pop(0) for line in lens])  # first entry on each line
     rest = np.array(lens).ravel()  # the len of the rest of the entries
     # if input file is fake free-format (actually fixed) then:
@@ -95,7 +95,7 @@ def _load_array_get_fmt(fname, sep=None, fullfile=False, logger=None):
     #  space + sign + unit + dec + 4(for exp)
     # if float format -- we can't know the width.precision relationship that
     # will leave us with enough space for space and sign. precision needs to be
-    # max width-3 but this wont allow for any growth of the LHS for float.
+    # max width-3 but this won't allow for any growth of the LHS for float.
     fmax = max(firsts)  # max of first column
     rmax = max(rest) if len(rest) > 0 else 0  # max of rest of cols
     width = max([fmax, rmax])  # max len to max of these
@@ -180,7 +180,7 @@ class PstFrom(object):
         new_d (`str` or Path): the path to where the model files and PEST interface files will be copied/built
         longnames (`bool`): flag to use longer-than-PEST-likes parameter and observation names.  Default is True
         remove_existing (`bool`): flag to destroy any existing files and folders in `new_d`.  Default is False
-        spatial_reference (varies): an object that faciliates geo-locating model cells based on index.  Default is None
+        spatial_reference (varies): an object that facilitates geo-locating model cells based on index.  Default is None
         zero_based (`bool`): flag if the model uses zero-based indices, Default is True
         start_datetime (`str` or Timestamp): a string that can be case to a datatime instance the represents the starting datetime
             of the model
@@ -686,12 +686,12 @@ class PstFrom(object):
     def build_pst(self, filename=None, update=False, version=1):
         """Build control file from i/o files in PstFrom object.
         Warning: This builds a pest control file from scratch, overwriting
-        anything already in self.pst object and anything already writen to `filename`
+        anything already in self.pst object and anything already written to `filename`
 
         Args:
             filename (`str`): the filename to save the control file to.
                 If None, the name is formed from the `PstFrom.original_d`
-                ,the orginal directory name from which the forward model
+                ,the original directory name from which the forward model
                 was extracted.  Default is None.
                 The control file is saved in the `PstFrom.new_d` directory.
             update (`bool`) or (str): flag to add to existing Pst object and
@@ -704,7 +704,7 @@ class PstFrom(object):
                 again before running.
         Note:
             This builds a pest control file from scratch, overwriting anything already
-            in self.pst object and anything already writen to `filename`
+            in self.pst object and anything already written to `filename`
 
             The new pest control file is assigned an NOPTMAX value of 0
 
@@ -747,7 +747,7 @@ class PstFrom(object):
             uupdate = False
             pst = pyemu.Pst(filename, load=False)
 
-        # TODO should this be under an if:? incase updating and prior info has been set
+        # TODO should this be under an if:? in case updating and prior info has been set
         pst.prior_information = pst.null_prior.merge(pd.DataFrame(
             data=[], columns=pst.prior_fieldnames))
 
@@ -779,7 +779,7 @@ class PstFrom(object):
             shtmx = 0
             gshtmx = 0
             if pst.parameter_data is not None:
-                # copy existing par data (incase it has been edited)
+                # copy existing par data (in case it has been edited)
                 par_data_orig = pst.parameter_data.copy()
                 if "longname" in par_data_orig.columns:
                     # Support existing long names mapping
@@ -864,7 +864,7 @@ class PstFrom(object):
             shtmx = 0
             gshtmx = 0
             if pst.observation_data is not None:
-                # copy existing obs data (incase it has been edited)
+                # copy existing obs data (in case it has been edited)
                 obs_data_orig = pst.observation_data.copy()
                 if "longname" in obs_data_orig.columns:
                     # Support existing long names mapping
@@ -1266,11 +1266,11 @@ class PstFrom(object):
             )
         if "(" not in call_str or ")" not in call_str:
             self.logger.lraise(
-                "add_py_function(): call_str '{0}' missing paretheses".format(call_str)
+                "add_py_function(): call_str '{0}' missing parentheses".format(call_str)
             )
         function_name = call_str[
             : call_str.find("(")
-        ]  # strip to first occurance of '('
+        ]  # strip to first occurrence of '('
         if function_name in self.py_functions:
             # todo: could add more duplication options here: override, increment
             warnings.warn(
@@ -1285,7 +1285,7 @@ class PstFrom(object):
         else:
             if not os.path.exists(file_name):
                 self.logger.lraise(
-                    "add_py_function(): couldnt find python source file '{0}'".format(
+                    "add_py_function(): couldn't find python source file '{0}'".format(
                         file_name
                     )
                 )
@@ -1440,7 +1440,7 @@ class PstFrom(object):
         Args:
             filename (`str`): model output file name(s) to set up
                 as observations. By default filename should give relative
-                loction from top level of pest template directory
+                location from top level of pest template directory
                 (`new_d` as passed to `PstFrom()`).
             insfile (`str`): desired instructions file filename
             index_cols (`list`-like or `int`): columns to denote are indices for obs
@@ -1573,7 +1573,7 @@ class PstFrom(object):
                 inssep = [inssep]
             # rectify df?
             # if iloc[0] are strings and index_cols are ints,
-            #   can we assume that there were infact column headers?
+            #   can we assume that there were in fact column headers?
             if all(isinstance(c, str) for c in df.iloc[0]) and all(
                 isinstance(a, (int, np.integer)) for a in index_cols
             ):
@@ -1635,7 +1635,7 @@ class PstFrom(object):
                 if obsgp is not None:
                     if use_cols_psd is None:  # no use_cols defined (all are setup)
                         if len([obsgp] if isinstance(obsgp, str) else obsgp) == 1:
-                            # only 1 group provided, assume passed obsgp applys
+                            # only 1 group provided, assume passed obsgp applies
                             # to all use_cols
                             fill = "first"
                         else:
@@ -1857,7 +1857,7 @@ class PstFrom(object):
 
         Args:
             filenames (`str`): Model input filenames to parameterize. By default filename should give relative
-                loction from top level of pest template directory
+                location from top level of pest template directory
                 (`new_d` as passed to `PstFrom()`).
             par_type (`str`): One of `grid` - for every element, `constant` - for single
                 parameter applied to every element, `zone` - for zone-based
@@ -1880,13 +1880,13 @@ class PstFrom(object):
             index_cols (`list`-like): if not None, will attempt to parameterize
                 expecting a tabular-style model input file. `index_cols`
                 defines the unique columns used to set up pars. If passed as a
-                list of `str`, stings are expected to denote the columns
+                list of `str`, strings are expected to denote the columns
                 headers in tabular-style parameter files; if `i` and `j` in
                 list, these columns will be used to define spatial position for
                 spatial correlations (if required). WARNING: If passed as list
                 of `int`, `i` and `j` will be assumed to be in last two entries
                 in the list. Can be passed as a dictionary using the keys
-                `i` and `j` to explicitly speficy the columns that relate to
+                `i` and `j` to explicitly specify the columns that relate to
                 model rows and columns to be identified and processed to x,y.
             use_cols (`list`-like or `int`): for tabular-style model input file,
                 defines the columns to be parameterised
@@ -1896,7 +1896,7 @@ class PstFrom(object):
                 If ndim(use_rows) < 2: use_rows is assumed to represent the row number, index slicer (equiv df.iloc),
                 for all passed files (after headers stripped). So use_rows=[0,3,5], will parameterise the
                 1st, 4th and 6th rows of each passed list-like file.
-                If ndim(use_rows) = 2: use_rows represent the index value to paramterise according to index_cols.
+                If ndim(use_rows) = 2: use_rows represent the index value to parameterise according to index_cols.
                 e.g. [(3,5,6)] or [[3,5,6]] would attempt to set parameters where the model file
                 values for 3 `index_cols` are 3,5,6. N.B. values in tuple are the actual
                 model file entry values.
@@ -1911,7 +1911,7 @@ class PstFrom(object):
                 DEPRECATED : use pp_options['pp_space'] instead.
             use_pp_zones (`bool`): a flag to use the greater-than-zero values
                 DEPRECATED : use pp_options['use_pp_zones'] instead.
-            num_eig_kl: TODO - impliment with KL pars
+            num_eig_kl: TODO - implement with KL pars
             spatial_reference (`pyemu.helpers.SpatialReference`): If different
                 spatial reference required for pilotpoint setup.
                 If None spatial reference passed to `PstFrom()` will be used
@@ -1926,7 +1926,7 @@ class PstFrom(object):
                 when reading and reapply when writing. Can optionally be `str` in which case `mf_skip` will be treated
                 as a `comment_char`.
             mfile_sep (`str`): separator/delimiter in model input file.
-                If None, separator will be interpretted from file name extension.
+                If None, separator will be interpreted from file name extension.
                 `.csv` is assumed to be comma separator. Default is None
             ult_ubound (`float`): Ultimate upper bound for model input
                 parameter once all mults are applied - ensure physical model par vals. If not passed,
@@ -2023,12 +2023,12 @@ class PstFrom(object):
             if par_style in ["a", "add", "addend"]:
                 transform = 'none'
                 self.logger.statement(
-                    "par_style is 'add' and transform was not passed, setting tranform to 'none'"
+                    "par_style is 'add' and transform was not passed, setting transform to 'none'"
                 )
             else:
                 transform = 'log'
                 self.logger.statement(
-                    "transform was not passed, setting default tranform to 'log'"
+                    "transform was not passed, setting default transform to 'log'"
                 )
         if transform.lower().strip() not in ["none", "log", "fixed"]:
             self.logger.lraise(
@@ -2038,7 +2038,7 @@ class PstFrom(object):
             )
         if transform == "fixed" and geostruct is not None:
             self.logger.lraise(
-                "geostruct is not 'None', cant draw values for fixed pars"
+                "geostruct is not 'None', can't draw values for fixed pars"
             )
 
         # some checks for direct parameters
@@ -2121,7 +2121,7 @@ class PstFrom(object):
                 self.logger.warn(
                     "-) Better to pass an appropriately transformed geostruct"
                 )
-        # big sr and zone dependancy checker here: todo - tidy?
+        # big sr and zone dependency checker here: todo - tidy?
         checker = (
                 self._spatial_reference is not None
                 and not isinstance(self._spatial_reference, dict)
@@ -2209,7 +2209,7 @@ class PstFrom(object):
                 f"len use_cols, not '{str(par_name_base)}'"
             )
 
-        # otherewise, things get tripped up in the ensemble/cov stuff
+        # otherwise, things get tripped up in the ensemble/cov stuff
         if pargp is not None:
             if isinstance(pargp, list):
                 pargp = [pg.lower() for pg in pargp]
@@ -2849,7 +2849,7 @@ class PstFrom(object):
                         self.par_struct_dict[geostruct].update({gp: gppars})
                     else:
                         # if gp already assigned to this geostruct append par
-                        # list to approprate group key
+                        # list to appropriate group key
                         self.par_struct_dict[geostruct][gp].extend(gppars)
                 # self.par_struct_dict_l[geostruct].extend(list(gp_dict.values()))
         else:  # TODO some rules for if geostruct is not passed....
@@ -2990,7 +2990,7 @@ class PstFrom(object):
             if isinstance(pp_kwargs['spatial_reference'], dict): # then we are unstructured and need pp_locs
                 self.logger.lraise(
                     "pilot point type parameters with an unstructured grid requires 'pp_space' "
-                    "contain explict pilot point information"
+                    "contain explicit pilot point information"
                 )
         else:  # check pp_locs (if not None)
             cols = pp_locs.columns.tolist()
@@ -3238,19 +3238,19 @@ class PstFrom(object):
         reading options and setup columns for passing sequentially to
         load_listtype
         Args:
-            filenames (`str`) or (`list`): names for files ot eventually read
-            fmts (`str`) or (`list`): of column formaters for input file.
+            filenames (`str`) or (`list`): names for files to eventually read
+            fmts (`str`) or (`list`): of column formatters for input file.
                 If `None`, free-formatting is assumed
             seps (`str`) or (`list`): column separator free formatter files.
                 If `None`, a list of `None`s is returned and the delimiter
                 is eventually governed by the file extension (`,` for .csv)
             skip_rows (`str`) or (`list`): Number of rows in file header to not
                 form part of the dataframe
-            index_cols (`int`) or (`list`): Columns in tabular file to use as indicies
+            index_cols (`int`) or (`list`): Columns in tabular file to use as indices
             use_cols (`int`) or (`list`): Columns in tabular file to
                 use as par or obs cols
         Returns:
-            algined lists of:
+            aligned lists of:
             filenames, fmts, seps, skip_rows, index_cols, use_cols
             for squentially passing to `_load_listtype_file()`
 
@@ -3355,7 +3355,7 @@ def write_list_tpl(
             If None, pars are set up for all columns apart from index cols.
         use_rows (`list` of `int` or `tuple`): Setup parameters for only
             specific rows in list-style model input file.
-            If list of `int` -- assumed to be a row index selction (zero-based).
+            If list of `int` -- assumed to be a row index selection (zero-based).
             If list of `tuple` -- assumed to be selection based `index_cols`
                 values. e.g. [(3,5,6)] would attempt to set parameters where the
                 model file values for 3 `index_cols` are 3,5,6. N.B. values in
@@ -3369,7 +3369,7 @@ def write_list_tpl(
         suffix (`str`): Optional par name suffix
         zone_array (`np.ndarray`): Array defining zone divisions.
             If not None and `par_type` is `grid` or `zone` it is expected that
-            `index_cols` provide the indicies for
+            `index_cols` provide the indices for
             querying `zone_array`. Therefore, array dimension should equal
             `len(index_cols)`.
         get_xy (`pyemu.PstFrom` method): Can be specified to get real-world xy
@@ -3377,7 +3377,7 @@ def write_list_tpl(
         ij_in_idx (`list` or `array`): defining which `index_cols` contain i,j
         xy_in_idx (`list` or `array`): defining which `index_cols` contain x,y
         zero_based (`boolean`): IMPORTANT - pass as False if `index_cols`
-            are NOT zero-based indicies (e.g. MODFLOW row/cols).
+            are NOT zero-based indices (e.g. MODFLOW row/cols).
             If False 1 with be subtracted from `index_cols`.
         input_filename (`str`): Path to input file (paired with tpl file)
         par_style (`str`): either 'd','a', or 'm'
@@ -3436,7 +3436,7 @@ def write_list_tpl(
         )
         df_tpl = df_tpl.loc[use_rows, :]  # direct pars done in direct function
         # can we just slice df_tpl here
-    for col in use_cols:  # corellations flagged using pargp
+    for col in use_cols:  # correlations flagged using pargp
         df_tpl["covgp{0}".format(col)] = df_tpl.loc[:, "pargp{0}".format(col)].values
     # needs modifying if colocated pars in same group
     if par_type == "grid" and "x" in df_tpl.columns:
@@ -3554,7 +3554,7 @@ def _write_direct_df_tpl(
         tpl_filename (`str` ): template filename
         df (`pandas.DataFrame`): DataFrame of list-style input file
         name (`str`): Parameter name prefix
-        index_cols (`str` or `list`): columns of dataframes to use as indicies
+        index_cols (`str` or `list`): columns of dataframes to use as indices
         typ (`str`): 'constant','zone', or 'grid' used in parname generation.
             If `constant`, one par is set up for each `use_cols`.
             If `zone`, one par is set up for each zone for each `use_cols`.
@@ -3565,14 +3565,14 @@ def _write_direct_df_tpl(
         suffix (`str`): Optional par name suffix.
         zone_array (`np.ndarray`): Array defining zone divisions.
             If not None and `par_type` is `grid` or `zone` it is expected that
-            `index_cols` provide the indicies for querying `zone_array`.
+            `index_cols` provide the indices for querying `zone_array`.
             Therefore, array dimension should equal `len(index_cols)`.
         get_xy (`pyemu.PstFrom` method): Can be specified to get real-world xy
             from `index_cols` passed (to include in obs/par name)
         ij_in_idx (`list` or `array`): defining which `index_cols` contain i,j
         xy_in_idx (`list` or `array`): defining which `index_cols` contain x,y
         zero_based (`boolean`): IMPORTANT - pass as False if `index_cols`
-            are NOT zero-based indicies (e.g. MODFLOW row/cols).
+            are NOT zero-based indices (e.g. MODFLOW row/cols).
             If False 1 with be subtracted from `index_cols`.
 
     Returns:
@@ -3583,11 +3583,11 @@ def _write_direct_df_tpl(
 
     """
     from pyemu.utils.helpers import _try_pdcol_numeric
-    # TODO much of this duplicates what is in _get_tpl_or_ins_df() -- could posssibly be consolidated
+    # TODO much of this duplicates what is in _get_tpl_or_ins_df() -- could possibly be consolidated
     # work out the union of indices across all dfs
 
     df_ti = df[index_cols].copy()
-    # adjust int-like indicies to zero-base
+    # adjust int-like indices to zero-base
     df_ti = df_ti.apply(_try_pdcol_numeric,
                         intadj=0 if zero_based else -1,
                         downcast='integer')
@@ -3654,7 +3654,7 @@ def _get_use_rows(tpldf, idxcolvals, use_rows, zero_based, fnme,
         use_rows = [tuple(r) for r in use_rows]
     nxs = [len(set(use_rows).intersection(idx)) for idx in idxcolvals]
     orig_use_rows = use_rows.copy()
-    if not zero_based:  # assume passed indicies are 1 based
+    if not zero_based:  # assume passed indices are 1 based
         use_rows = [
             tuple([i - 1 if isinstance(i, (int, np.integer)) else i for i in r])
             if not isinstance(r, str)
@@ -3885,7 +3885,7 @@ def _get_tpl_or_ins_df(
         dfs (`pandas.DataFrame` or `list`): DataFrames (can be list of DataFrames)
             to set up parameters or observations
         name (`str`): Parameter name or Observation name prefix
-        index_cols (`str` or `list`): columns of dataframes to use as indicies
+        index_cols (`str` or `list`): columns of dataframes to use as indices
         typ (`str`): 'obs' to set up observation names or,
             'constant','zone', or 'grid' used in parname generation.
             If `constant`, one par is set up for each `use_cols`.
@@ -3895,17 +3895,17 @@ def _get_tpl_or_ins_df(
         use_cols (`list`): Columns to parameterise. If None, pars are set up
             for all columns apart from index cols. Not used if `typ`==`obs`.
         suffix (`str`): Optional par name suffix. Not used if `typ`==`obs`.
-        zone_array (`np.ndarray`): Only used for paremeters (`typ` != `obs`).
+        zone_array (`np.ndarray`): Only used for parameters (`typ` != `obs`).
             Array defining zone divisions.
             If not None and `par_type` is `grid` or `zone` it is expected that
-            `index_cols` provide the indicies for querying `zone_array`.
+            `index_cols` provide the indices for querying `zone_array`.
             Therefore, array dimension should equal `len(index_cols)`.
         get_xy (`pyemu.PstFrom` method): Can be specified to get real-world xy
             from `index_cols` passed (to include in obs/par name)
         ij_in_idx (`list` or `array`): defining which `index_cols` contain i,j
         xy_in_idx (`list` or `array`): defining which `index_cols` contain x,y
         zero_based (`boolean`): IMPORTANT - pass as False if `index_cols`
-            are NOT zero-based indicies (e.g. MODFLOW row/cols).
+            are NOT zero-based indices (e.g. MODFLOW row/cols).
             If False 1 with be subtracted from `index_cols`.=
         par_fill_value (float): value to use as `parval1`,Default is 1.0
 
@@ -3927,7 +3927,7 @@ def _get_tpl_or_ins_df(
     # order matters for obs
     idxs = [df[index_cols] for df in dfs]
     df_ti = pd.concat(idxs).drop_duplicates()
-    # adjust int-like indicies to zero-base
+    # adjust int-like indices to zero-base
     df_ti = df_ti.apply(_try_pdcol_numeric,
                         intadj=0 if zero_based else -1,
                         downcast='integer')
