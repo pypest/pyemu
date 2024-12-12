@@ -418,7 +418,7 @@ def geostatistical_draws(
         scale_offset (`bool`,optional): flag to apply scale and offset to parameter bounds
             when calculating variances - this is passed through to `pyemu.Cov.from_parameter_data()`.
             Default is True.
-        subset (`array-like`, optional): list, array, set or pandas index defining subset of paramters
+        subset (`array-like`, optional): list, array, set or pandas index defining subset of parameters
             for draw.
 
     Returns
@@ -770,7 +770,7 @@ def calc_observation_ensemble_quantiles(
         tuple containing
 
         - **pandas DataFrame**: same ens object that was input but with quantile realizations
-                                appended as new rows labelled with 'q_#' where '#' is the slected quantile
+                                appended as new rows labelled with 'q_#' where '#' is the selected quantile
         - **dict**: dictionary with keys being quantiles and values being realizations
                     corresponding to each realization
     """
@@ -1631,7 +1631,7 @@ def pst_from_io_files(
 
     Returns:
         `Pst`: new control file instance with parameter and observation names
-        found in `tpl_files` and `ins_files`, repsectively.
+        found in `tpl_files` and `ins_files`, respectively.
 
     Note:
         calls `pyemu.helpers.pst_from_io_files()`
@@ -1885,7 +1885,7 @@ def _process_array_file(model_file, df):
 
 
 def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
-    """a function to apply array-based multipler parameters.
+    """a function to apply array-based multiplier parameters.
 
     Args:
         arr_par (`str` or `pandas.DataFrame`): if type `str`,
@@ -2038,8 +2038,8 @@ def setup_temporal_diff_obs(*args, **kwargs):
             the differencing.  The order of the observations matters for the differencing.  If False, then
             the control file order is used.  If observation names have a datetime suffix, make sure the format is
             year-month-day to use this sorting.  Default is True
-        long_names (`bool`, optional): flag to use long, descriptive names by concating the two observation names
-            that are being differenced.  This will produce names that are too long for tradtional PEST(_HP).
+        long_names (`bool`, optional): flag to use long, descriptive names by concatenating the two observation names
+            that are being differenced.  This will produce names that are too long for traditional PEST(_HP).
             Default is True.
         prefix (`str`, optional): prefix to prepend to observation names and group names.  Default is "dif".
 
@@ -2314,7 +2314,7 @@ def _process_list_file(model_file, df):
             lambda x: [str(i) for i in x]
         )
 
-    # if writen by PstFrom this should always be comma delim - tidy
+    # if written by PstFrom this should always be comma delim - tidy
     org_data = pd.read_csv(org_file, skiprows=datastrtrow,
                            header=header, dtype='object')
     # mult columns will be string type, so to make sure they align
@@ -2427,10 +2427,10 @@ def build_jac_test_csv(pst, num_steps, par_names=None, forward=True):
 
     Args:
         pst (`pyemu.Pst`): existing control file
-        num_steps (`int`): number of pertubation steps for each parameter
+        num_steps (`int`): number of perturbation steps for each parameter
         par_names [`str`]: list of parameter names of pars to test.
             If None, all adjustable pars are used. Default is None
-        forward (`bool`): flag to start with forward pertubations.
+        forward (`bool`): flag to start with forward perturbations.
             Default is True
 
     Returns:
@@ -2631,7 +2631,7 @@ class SpatialReference(object):
     """
     a class to locate a structured model grid in x-y space.
     Lifted wholesale from Flopy, and preserved here...
-    ...maybe slighlty over-engineered for here
+    ...maybe slightly over-engineered for here
 
     Args:
 
@@ -3830,7 +3830,7 @@ def parse_rmr_file(rmr_file):
 
 
 def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=None):
-    """setup a thresholding 2-category binary array prcoess.
+    """setup a thresholding 2-category binary array process.
 
     Parameters:
         orgarr_file (`str`): the input array that will ultimately be created at runtime
@@ -3850,7 +3850,7 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
 
     """
     assert os.path.exists(orgarr_file)
-    #atleast 2d for xsections
+    #at least 2d for xsections
     org_arr = np.atleast_2d(np.loadtxt(orgarr_file))
 
     if len(cat_dict) != 2:
@@ -3904,9 +3904,9 @@ def setup_threshold_pars(orgarr_file,cat_dict,testing_workspace=".",inact_arr=No
 def apply_threshold_pars(csv_file):
     """apply the thresholding process.  everything keys off of csv_file name...
 
-    Note: if the standard deviation of the continous thresholding array is too low,
+    Note: if the standard deviation of the continuous thresholding array is too low,
     the line search will fail.  Currently, if this stdev is less than 1.e-10,
-    then a homogenous array of the first category fill value will be created.  User
+    then a homogeneous array of the first category fill value will be created.  User
     beware!
 
     """
@@ -3945,7 +3945,7 @@ def apply_threshold_pars(csv_file):
     if tarr.std() < 1e-5:
 
         print("WARNING: thresholding array {0} has very low standard deviation".format(thresarr_file))
-        print("         using a homogenous array with first category fill value {0}".format(tfill[0]))
+        print("         using a homogeneous array with first category fill value {0}".format(tfill[0]))
 
         farr = np.zeros_like(tarr) + tfill[0]
         if iarr is not None:
@@ -4224,7 +4224,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
             vdf = pd.DataFrame({"y_verf":y_verf,"y_pred":pred_mean,"y_pred_std":pred_std})
             verf_fname = os.path.join(gpr_t_d,"{0}_gpr_verf.csv".format(output_name))
             vdf.to_csv(verf_fname)
-            print("saved ",output_fname,"verfication csv to",verf_fname)
+            print("saved ",output_fname,"verification csv to",verf_fname)
             mabs = np.abs(vdf.y_verf - vdf.y_pred).mean()
             print("...mean abs error",mabs)
     if plot_fits:
@@ -4270,7 +4270,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
     assert len(set(par_names).symmetric_difference(set(gpst.par_names))) == 0
     for col in pst.parameter_data.columns:
         # this gross thing is to avoid a future error warning in pandas - 
-        # why is it getting so strict?!  isnt python duck-typed?
+        # why is it getting so strict?!  isn't python duck-typed?
         if col in gpst.parameter_data.columns and\
            gpst.parameter_data.dtypes[col] != pst.parameter_data.dtypes[col]:
             gpst.parameter_data[col] = gpst.parameter_data[col].astype(pst.parameter_data.dtypes[col])
@@ -4278,7 +4278,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
 
     for col in pst.observation_data.columns:
         # this gross thing is to avoid a future error warning in pandas -
-        # why is it getting so strict?!  isnt python duck-typed?
+        # why is it getting so strict?!  isn't python duck-typed?
         if col in gpst.observation_data.columns and \
                 gpst.observation_data.dtypes[col] != pst.observation_data.dtypes[col]:
             gpst.observation_data[col] = gpst.obsveration_data[col].astype(pst.observation_data.dtypes[col])
@@ -4347,7 +4347,7 @@ def gpr_pyworker(pst,host,port,input_df=None,mdf=None):
     import numpy as np
     import pickle
 
-    # if explicit args werent passed, get the default ones...
+    # if explicit args weren't passed, get the default ones...
     if input_df is None:
         input_df = pd.read_csv("gpr_input.csv",index_col=0)
     if mdf is None:
@@ -4382,7 +4382,7 @@ def gpr_pyworker(pst,host,port,input_df=None,mdf=None):
         # do the emulation
         simdf = emulate_with_gpr(input_df,mdf,gpr_model_dict)
 
-        # replace the emulated quantites in the obs series
+        # replace the emulated quantities in the obs series
         obs.loc[simdf.index] = simdf.sim.values
         obs.loc[simdf.index.map(lambda x: x+"_gprstd")] = simdf.sim_std.values
         #send the obs series to the master
@@ -4476,7 +4476,7 @@ def dsi_pyworker(pst,host,port,pmat=None,ovals=None,pvals=None):
     import numpy as np
 
 
-    # if explicit args werent passed, get the default ones...
+    # if explicit args weren't passed, get the default ones...
     if pvals is None:
         pvals = pd.read_csv("dsi_pars.csv",index_col=0)
     if pmat is None:
@@ -4506,7 +4506,7 @@ def dsi_pyworker(pst,host,port,pmat=None,ovals=None,pvals=None):
         # do the emulation
         simdf = dsi_forward_run(pmat=pmat,ovals=ovals,pvals=pvals,write_csv=False)
 
-        # replace the emulated quantites in the obs series
+        # replace the emulated quantities in the obs series
         obs.loc[simdf.index] = simdf.mn.values
 
         #send the obs series to the master
@@ -4599,7 +4599,7 @@ def normal_score_transform(nstval, val, value):
     rank = np.searchsorted(val, value, side='right') - 1
     if rank == len(val) - 1:
         return nstval[-1], len(val)
-    # if the value conincides with a value in the table, return the corresponding normal score
+    # if the value coincides with a value in the table, return the corresponding normal score
     nstdiff = nstval[rank + 1] - nstval[rank]
     diff = val[rank + 1] - val[rank]
     if nstdiff <= 0.0 or diff <= 0.0:

@@ -23,7 +23,7 @@ class ErrVar(LinearAnalysis):
             the noise covariance matrix is loaded from a file using
             the file extension (".jcb"/".jco" for binary, ".cov"/".mat" for PEST-style ASCII matrix,
             or ".unc" for uncertainty files).  If `None`, the noise covariance matrix is
-            constructed from the obsevation weights in `LinearAnalysis.pst`.  Can also be a `pyemu.Cov` instance
+            constructed from the observation weights in `LinearAnalysis.pst`.  Can also be a `pyemu.Cov` instance
         forecasts (varies, optional): forecast sensitivity vectors.  If `str`, first an observation name is assumed (a row
             in `LinearAnalysis.jco`).  If that is not found, a filename is assumed and predictions are
             loaded from a file using the file extension.  If [`str`], a list of observation names is assumed.
@@ -301,7 +301,7 @@ class ErrVar(LinearAnalysis):
 
         Returns:
             `pandas.DataFrame`: a multi-indexed pandas dataframe summarizing each of the
-            error variance terms for each nominated forecast. Rows are the singluar values
+            error variance terms for each nominated forecast. Rows are the singular values
             tested, columns are a multi-index of forecast name and error variance term number
             (e.g. 1,2 or (optionally) 3).
 
@@ -360,7 +360,7 @@ class ErrVar(LinearAnalysis):
 
     def variance_at(self, singular_value):
         """get the error variance of all three error variance terms at a
-         given singluar value
+         given singular value
 
         Args:
             singular_value (`int`): singular value to test

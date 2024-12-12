@@ -106,7 +106,7 @@ class MonteCarlo(LinearAnalysis):
         ----------
         nsing: int
             optional number of singular components to use
-            If Nonte, then nsing is determined from
+            If None, then nsing is determined from
             call to MonteCarlo.get_nsing()
 
         Returns

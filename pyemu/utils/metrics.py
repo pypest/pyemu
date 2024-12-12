@@ -295,7 +295,7 @@ def calc_metric_res(res, metric="all", bygroups=True, drop_zero_weight=True):
 
     ret_df = pd.DataFrame(index=["single_realization"])
 
-    # calculate the matrics
+    # calculate the metrics
     for cm in metric:
         f = ALLMETRICS[cm.lower()]
         ret_df["{}_total".format(cm.upper())] = [

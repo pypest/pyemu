@@ -2136,7 +2136,7 @@ def maha_pdc_summary_test(tmp_path):  # todo add back in? currently super slowww
     import pyemu
     Path(tmp_path).mkdir(exist_ok=True)
     l1_critical_value = 6.4 #chi squared value at df=1,p=0.01
-    l2_critical_value = 9.2 #chi sqaured value at df=2,p=0.01
+    l2_critical_value = 9.2 #chi squared value at df=2,p=0.01
     pst_file = os.path.join("la", "pest.pst")
     shutil.copy(pst_file, tmp_path)
     pst = pyemu.Pst(os.path.join(tmp_path, "pest.pst"))
@@ -2730,14 +2730,14 @@ def pypestworker_test():
     num_workers=5
     
     # looper over and start the workers - in this
-    # case they dont need unique dirs since they arent writing
+    # case they dont need unique dirs since they aren't writing
     # anything
     procs = []
     for i in range(num_workers):
         pp = mp.Process(target=ppw_worker,args=(i,case,t_d,host,port,frun))
         pp.start()
         procs.append(pp)
-    # if everyhing worked, the the workers should recieve the 
+    # if everything worked, the the workers should receive the 
     # shutdown signal from the master and exit gracefully...
     for pp in procs:
         pp.join()
@@ -3221,7 +3221,7 @@ def gpr_zdt1_test():
     #return
     
     # looper over and start the workers - in this
-    # case they dont need unique dirs since they arent writing
+    # case they dont need unique dirs since they aren't writing
     # anything
     procs = []
     # try this test with 1 worker as an edge case
@@ -3230,7 +3230,7 @@ def gpr_zdt1_test():
         pp = mp.Process(target=gpr_zdt1_ppw)
         pp.start()
         procs.append(pp)
-    # if everyhing worked, the the workers should recieve the 
+    # if everything worked, the the workers should receive the 
     # shutdown signal from the master and exit gracefully...
     for pp in procs:
         pp.join()
