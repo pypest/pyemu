@@ -61,7 +61,7 @@ class Pst(object):
 
     """
 
-    def __init__(self, filename, load=True, resfile=None):
+    def __init__(self, filename, load=True, resfile=None, parse_metadata=True):
 
         self.parameter_data = None
         """pandas.DataFrame:  '* parameter data' information.  Columns are 
@@ -136,7 +136,7 @@ class Pst(object):
             if not os.path.exists(filename):
                 raise Exception("pst file not found:{0}".format(filename))
 
-            self.load(filename)
+            self.load(filename, parse_metadata=parse_metadata)
 
     def __setattr__(self, key, value):
         if key == "model_command":
@@ -1238,7 +1238,7 @@ class Pst(object):
                 "'* model input/output cant be used with '* model input' or '* model output'"
             )
 
-    def load(self, filename):
+    def load(self, filename, parse_metadata=True):
         """entry point load the pest control file.
 
         Args:
@@ -1271,7 +1271,8 @@ class Pst(object):
 
         self._load_version2(filename)
         self._try_load_longnames()
-        self.try_parse_name_metadata()
+        if parse_metadata:
+            self.try_parse_name_metadata()
         self._reset_file_paths_os()
 
     def _reset_file_paths_os(self):
