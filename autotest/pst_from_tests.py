@@ -5307,6 +5307,12 @@ def test_array_fmt(tmp_path):
     assert fmt == "%12.10G"
     assert arr.sum(axis=1).sum() == 18
 
+    shutil.copy(Path('utils','arrayskip', "AWC_subset.txt"), tmp_path)
+    arr, fmt = _load_array_get_fmt(Path(tmp_path, "AWC_subset.txt"), skip=6)
+
+    arr, fmt = _load_array_get_fmt(Path(tmp_path, "AWC_subset.txt"), fullfile=True, skip=6)
+
+
 
 def test_array_fmt_pst_from(tmp_path):
     pf = PstFrom(Path("utils",'weird_array'),
@@ -6095,6 +6101,14 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     # print(phidf["mean"])
     #
     # assert phidf["mean"].min() < phidf["mean"].max()
+
+
+def arrayskip_test(tmp_path):
+    from pathlib import Path
+    pf = pyemu.utils.PstFrom(Path('utils','arrayskip'), Path(tmp_path, "template"))
+    pf.add_parameters("AWC_subset.txt", 'grid', mfile_skip=6)
+    assert pf.par_dfs[0].shape[0] == 81*57
+    pass
 
 
 

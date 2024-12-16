@@ -49,11 +49,12 @@ def _check_var_len(var, n, fill=None):
     return var
 
 
-def _load_array_get_fmt(fname, sep=None, fullfile=False, logger=None):
+def _load_array_get_fmt(fname, sep=None, fullfile=False, skip=0, logger=None):
     splitsep = sep  # sep for splitting string for fmt (need to count mult delim.)
     if sep is None:  # need to split line with space and count multiple
         splitsep = ' '
     with open(fname, 'r') as fp:  # load file or line
+        _ = [fp.readline() for _ in range(skip)]
         if fullfile:
             lines = [line for line in fp.readlines()]
             arr = np.genfromtxt(lines, delimiter=sep, ndmin=2)
@@ -62,7 +63,7 @@ def _load_array_get_fmt(fname, sep=None, fullfile=False, logger=None):
             if splitsep not in lines[0]:
                 return _load_array_get_fmt(fname, sep, True)
             fp.seek(0)  # reset pointer
-            arr = np.loadtxt(fp, delimiter=sep, ndmin=2)  # read array
+            arr = np.loadtxt(fp, delimiter=sep, ndmin=2, skiprows=skip)  # read array
     n = 0  # counter for repeat delim when sep is None
     lens, prec = [], []  # container for fmt length and precision
     exps = 0  # exponential counter (could be bool)
@@ -1154,7 +1155,7 @@ class PstFrom(object):
                 if not dest_filepath.exists():
                     self.logger.lraise(f"par filename '{dest_filepath}' not found ")
                 # read array type input file
-                arr, infmt = _load_array_get_fmt(dest_filepath, sep=sep,
+                arr, infmt = _load_array_get_fmt(dest_filepath, sep=sep, skip=skip,
                                                  logger=self.logger)
                 # arr = np.loadtxt(dest_filepath, delimiter=sep, ndmin=2)
                 self.logger.log(f"loading array {dest_filepath}")
