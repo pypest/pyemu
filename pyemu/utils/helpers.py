@@ -1819,14 +1819,21 @@ def _process_chunk_array_files(chunk, i, df):
 
 def _process_array_file(model_file, df):
     if "operator" not in df.columns:
-        df.loc[:, "operator"] = "m"
+        df["operator"] = "m"
     # find all mults that need to be applied to this array
     df_mf = df.loc[df.model_file == model_file, :]
     results = []
     org_file = df_mf.org_file.unique()
     if org_file.shape[0] != 1:
         raise Exception("wrong number of org_files for {0}".format(model_file))
-    org_arr = np.loadtxt(org_file[0], ndmin=2)
+    if "head_rows" not in df.columns:
+        skip = 0
+    else:
+        skip = df_mf.head_rows.values[0]
+    with open(org_file[0], 'r') as fp:
+         header = [fp.readline() for _ in range(skip)]
+    org_arr = np.loadtxt(org_file[0], ndmin=2, skiprows=skip)
+
 
     if "mlt_file" in df_mf.columns:
         for mlt, operator in zip(df_mf.mlt_file, df_mf.operator):
@@ -1881,7 +1888,9 @@ def _process_array_file(model_file, df):
         sep = df_mf.sep.fillna(' ').iloc[0]
     except AttributeError:
         sep = ' '
-    np.savetxt(model_file, np.atleast_2d(org_arr), fmt=fmt, delimiter=sep)
+    with open(model_file, 'w') as fp:
+        fp.writelines(header)
+        np.savetxt(fp, np.atleast_2d(org_arr), fmt=fmt, delimiter=sep)
 
 
 def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
