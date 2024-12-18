@@ -2365,8 +2365,8 @@ class PstFrom(object):
                     tpl_filename=tpl_filename,
                     suffix="",
                     par_type=par_type,
-                    zone_array=zone_array,
                     data_array=file_dict[filenames[0]],
+                    zone_array=zone_array,
                     get_xy=self.get_xy,
                     fill_value=initial_value if initial_value is not None else 1.0,
                     gpname=pargp,
@@ -3963,7 +3963,7 @@ def write_array_tpl(
         tpl_filename,
         suffix,
         par_type,
-        data_array=None,
+        data_array=None, # todo reintroduce shape tuple flexibility
         zone_array=None,
         gpname=None,
         fill_value=1.0,
@@ -3980,10 +3980,10 @@ def write_array_tpl(
         tpl_filename (`str`): the template file to write - include path
         suffix (`str`): suffix to append to par names
         par_type (`str`): type of parameter
+        data_array (`numpy.ndarray`): original data array
         zone_array (`numpy.ndarray`): an array used to skip inactive cells. Values less than 1 are
             not parameterized and are assigned a value of fill_value. Default is None.
         gpname (`str`): pargp filed in dataframe
-        shape (`tuple`): dimensions of array to write
         fill_value:
         get_xy:
         input_filename:
