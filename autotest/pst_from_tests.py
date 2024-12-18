@@ -5223,48 +5223,48 @@ def test_array_fmt(tmp_path):
         fp.write("       3.000      3.0000      03.000\n"
                  "         3.0      3.0000      03.000")
     # will be converted to Exp format -- only safe option
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == ''.join([" %11.4F"] * 3)
     assert arr.sum(axis=1).sum() == 18
     # actually space delim but could be fixed (first col is 1 wider)
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.000 3.00 03.0\n"
                  "  3.0  3.0  03.")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == ''.join([" %4.1F"] * 3)
     # actually space delim but could be fixed (first col is 1 wider)
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write(" 3.000000000        3.00        03.0\n"
                  "         3.0         3.0         03.")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == ''.join([" %11.8F"] * 3)
     assert arr.sum(axis=1).sum() == 18
     # true space delim option -- sep passed
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.000 3.00000 03.000\n"
                  "3.0 3.0000 03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=' ')
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=' ')
     assert fmt == "%7.5F"
     assert arr.sum(axis=1).sum() == 18
     # true space delim option with sep None
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.000 3.00000 03.000\n"
                  "3.0 3.0000 03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == "%7.5F"
     assert arr.sum(axis=1).sum() == 18
     # comma delim option
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.000, 3.00000, 03.000\n"
                  " 3.0, 3.0000,03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=',')
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=',')
     assert fmt == "%8.5F"
     assert arr.sum(axis=1).sum() == 18
     # partial sci note option (fixed format) but short
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write(" 00.3E01 30.0E-1   03.00\n"
                  "     3.0    3.00  03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == ''.join([" %7.0E"] * 3)
     assert arr.sum(axis=1).sum() == 18
     try:
@@ -5272,7 +5272,7 @@ def test_array_fmt(tmp_path):
         with open(Path(tmp_path, "test.dat"), 'w') as fp:
             fp.write(" 0.3E01 3.0E-1  03.00\n"
                      "    3.0   3.00 03.000")
-        arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+        arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     except ValueError:
         # should fail
         pass
@@ -5280,14 +5280,14 @@ def test_array_fmt(tmp_path):
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("      3.0E00  30.0000E-1       03.00\n"
                  "         3.0        3.00      03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == ''.join([" %11.4E"] * 3)
     assert arr.sum(axis=1).sum() == 18
     # free but not passing delim
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write(" 0.3E01   30.0E-1 03.00\n"
                  "3.0 3.00  03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"),
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"),
                                    fullfile=True)
     assert fmt == "%9.3G"
     assert arr.sum(axis=1).sum() == 18
@@ -5295,22 +5295,22 @@ def test_array_fmt(tmp_path):
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write(" 00.3E01,30.0E-1, 03.00\n"
                  "3.0, 3.00,03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"),
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"),
                                    fullfile=True, sep=',')
     assert fmt == "%8.3G"
     assert arr.sum(axis=1).sum() == 18
     # 1 col option
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.0000000000\n30.000000E-1\n03.00000\n3.0\n3.00\n03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert arr.shape == (6,1)
     assert fmt == "%12.10G"
     assert arr.sum(axis=1).sum() == 18
 
     shutil.copy(Path('utils','arrayskip', "AWC_subset.txt"), tmp_path)
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "AWC_subset.txt"), skip=6)
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "AWC_subset.txt"), skip=6)
 
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "AWC_subset.txt"), fullfile=True, skip=6)
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "AWC_subset.txt"), fullfile=True, skip=6)
 
 
 
@@ -6105,9 +6105,37 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
 def arrayskip_test(tmp_path):
     from pathlib import Path
-    pf = pyemu.utils.PstFrom(Path('utils','arrayskip'), Path(tmp_path, "template"))
-    pf.add_parameters("AWC_subset.txt", 'grid', mfile_skip=6)
+    sr = pyemu.SpatialReference(delr=[1000]*81, delc=[1000]*57, xll=841955, yll=2208285)
+    pf = pyemu.utils.PstFrom(Path('utils','arrayskip'), Path(tmp_path, "template"),
+                             spatial_reference=sr)
+    shutil.copy(Path(pf.new_d, "AWC_subset.txt"), Path(pf.new_d, "AWC_subset_1.txt"))
+    pf.add_parameters(["AWC_subset.txt",  "AWC_subset_1.txt"], 'grid', mfile_skip=6)
+    shutil.copy(Path(pf.new_d, "AWC_subset.txt"), Path(pf.new_d, "d_AWC_subset.txt"))
+    pf.add_parameters("d_AWC_subset.txt", 'grid', par_style='d', mfile_skip=6)
     assert pf.par_dfs[0].shape[0] == 81*57
+    assert pf.par_dfs[1].shape[0] == 81 * 57
+
+    shutil.copy(Path(pf.new_d, "AWC_subset.txt"), Path(pf.new_d, "pp0_AWC_subset.txt"))
+    # shutil.copy(Path(pf.new_d, "AWC_subset.txt"), Path(pf.new_d, "ppd_AWC_subset.txt"))
+    pf.add_parameters("pp0_AWC_subset.txt", 'pp', mfile_skip=6,
+                      pp_options={'pp_space':4, 'try_use_ppu': True})
+    # pf.add_parameters("ppd_AWC_subset.txt", 'pp', mfile_skip=6, par_style='d',
+    #                   pp_options={'pp_space':4, 'try_use_ppu': True})
+
+    pst = pf.build_pst()
+
+    pars = pst.parameter_data
+    pars.loc[pars.pargp=='p_inst:0', 'parval1'] = 10
+    pars.loc[pars.pargp == 'p_inst:1', 'parval1'] *= 10
+    pars.loc[pars.pargp == 'p_inst:2', 'parval1'] = 10
+    check_apply(pf)
+    a0 = np.loadtxt(Path(pf.new_d, "AWC_subset.txt"), skiprows=6)
+    a1 = np.loadtxt(Path(pf.new_d, "AWC_subset_1.txt"), skiprows=6)
+    assert (a0 == a1).all()
+    a2 = np.loadtxt(Path(pf.new_d, "d_AWC_subset.txt"), skiprows=6)
+    assert (a1 == a2).all()
+    a3 = np.loadtxt(Path(pf.new_d, "pp0_AWC_subset.txt"), skiprows=6)
+    assert (a2 == a3).all()
     pass
 
 
