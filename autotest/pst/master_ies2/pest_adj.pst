@@ -1,0 +1,42 @@
+pcf version=2
+* control data keyword
+pestmode                                 estimation
+relparmax                         5.000000E+00
+facparmax                         5.000000E+00
+noptmax                                 2
+phiredstp                         5.000000E-03
+nphistp                                 4
+nphinored                               4
+relparstp                         5.000000E-03
+svdmode                                 1
+maxsing                                 1
+eigthresh                           0.001
+eigwrite                                0
+ies_num_reals                  10
+ies_use_approx                 false
+ies_use_prior_scaling          true
+ies_initial_lambda             1000.0
+ies_group_draws                false
+ies_no_noise                   False
+ies_lambda_mults               0.1,1.0
+lambda_scale_fac               0.7,1.0
+ies_save_lambda_en             True
+ies_upgrades_in_memory         False
+ies_debug_fail_remainder       False
+save_binary                    True
+ies_verbose_level              4
+ies_bad_phi_sigma              -95
+ies_drop_conflicts             False
+ies_phi_factor_file            phi.csv
+* parameter groups external
+pest_adj.pargp_data.csv
+* parameter data external
+pest_adj.par_data.csv
+* observation data external
+pest_adj.obs_data.csv
+* model command line
+mfnwt 10par_xsec.nam
+* model input external
+pest_adj.tplfile_data.csv
+* model output external
+pest_adj.insfile_data.csv

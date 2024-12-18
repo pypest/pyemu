@@ -1,0 +1,443 @@
+             pestpp-ies - a GLM iterative Ensemble Smoother
+                      for PEST(++) datasets 
+
+                 by the PEST++ developement team
+
+
+
+
+
+version: 5.2.11
+binary compiled on Apr 30 2024 at 09:54:39
+
+using control file: "pest_binary_nz.pst"
+in directory: "/Users/jwhite/Dev/pestpp/pestpp-ies_benchmarks/ies_10par_xsec/test_template"
+on host: "jwhites-MacBook-Pro.local"
+started at 04/30/24 10:56:17
+
+Note: 3 unused lines in pest control file:
+  -->  line number 6: '1.000000E-01  -4.000000E+00   3.000000E-01   3.000000E-02        10' 
+  -->  line number 10: '1         1         1' 
+  -->  line number 12: '1' 
+
+    This software has been approved for release by the
+    U.S.Geological Survey(USGS).Although the software has 
+    been subjected to rigorous review, the USGS reserves the
+    right to update the software as needed pursuant to further
+    analysisand review.No warranty, expressed or implied, is 
+    made by the USGS or the U.S.Government as to the
+    functionality of the softwareand related material nor shall
+    the fact of release constitute any such warranty.
+    Furthermore, the software is released on condition that
+    neither the USGS nor the U.S.Government shall be held
+    liable for any damages resulting from its authorized 
+    or unauthorized use.
+
+
+Case dimensions:- 
+    Number of parameters = 11
+    Number of adjustable parameters = 9
+    Number of observations = 20
+    Number of non-zero weighted observations = 2
+    Number of prior estimates = 0
+
+PEST Control Information
+    relparmax = 5
+    facparmax = 5
+    facorig = 0.001
+    phiredswh = 0.1
+    noptmax = -1
+    phiredstp = 0.005
+    nphistp = 4
+    nphinored = 4
+    relparstp = 0.005
+    nrelpar = 4
+
+
+    PEST++ OPTIONS: 
+
+...general options (used in multiple tools): 
+svd_pack: redsvd
+lambda_scale_fac: 0.75,1,1.1,
+forgive_unknown_args: 0
+max_run_fail: 3
+panther_poll_interval: 1
+parameter_covariance: 
+observation_covariance: 
+hotstart_resfile: 
+overdue_resched_fac: 1.15
+overdue_giveup_fac: 100
+overdue_giveup_minutes: 1e+30
+condor_submit_file: 
+tie_by_group: 0
+par_sigma_range: 4
+enforce_tied_bounds: 0
+debug_parse_only: 0
+check_tplins: 1
+fill_tpl_zeros: 0
+tpl_force_decimal: 0
+additional_ins_delimiters: 
+random_seed: 358183147
+num_tpl_ins_threads: 1
+save_binary: 0
+ensemble_output_precision: 6
+panther_echo: 1
+panther_agent_restart_on_error: 0
+panther_agent_no_ping_timeout_secs: -1
+panther_debug_loop: 0
+debug_check_par_en_consistency: 0
+panther_agent_freeze_on_fail: 0
+panther_transfer_on_finish: 
+panther_transfer_on_fail: 
+
+...pestpp-glm specific options:
+max_n_super: 1000000
+super_eigthresh: 1e-06
+n_iter_base: 1000000
+n_iter_super: 0
+super_relparmax: 0.1
+max_super_frz_iter: 20
+max_reg_iter: 20
+lambdas: 0.1,1,10,100,1000,
+iteration_summary: 0
+der_forgive: 1
+uncertainty: 1
+forecasts: 
+base_jacobian: 
+glm_num_reals: 0
+jac_scale: 1
+glm_normal_form: DIAG
+glm_debug_der_fail: 0
+glm_debug_lamb_fail: 0
+glm_debug_real_fail: 0
+glm_accept_mc_phi: 0
+glm_rebase_super: 0
+glm_iter_mc: 0
+glm_high_2nd_iter_phi: 0
+
+...pestpp-swp options:
+sweep_parameter_csv_file: 
+sweep_output_csv_file: sweep_out.csv
+sweep_chunk: 500
+sweep_forgive: 0
+sweep_base_run: 0
+sweep_include_regul_phi: 0
+
+...pestpp-opt options:
+opt_objective_function: 
+opt_coin_log: 1
+opt_skip_final: 0
+opt_std_weights: 0
+opt_stack_size: 0
+opt_par_stack: 
+opt_obs_stack: 
+opt_decision_variable_groups: 
+opt_external_variable_groups: 
+opt_constraint_groups: 
+opt_risk: 0.5
+opt_iter_derinc_fac: 1
+opt_direction: 1
+opt_iter_tol: 0.001
+opt_recalc_fosm_every: 1
+opt_chance_points: SINGLE
+opt_chance_schedule: 
+
+...pestpp-sqp options:
+sqp_dv_en: 
+sqp_obs_restart_en: 
+sqp_num_reals: -1
+sqp_update_hessian: 0
+sqp_scale_facs:
+  1e-05
+  0.0001
+  0.0005
+  0.001
+  0.0025
+  0.005
+  0.01
+  0.05
+  0.075
+  0.1
+  0.25
+  0.5
+  1
+  2
+  5
+  10
+
+...pestpp-mou options:
+mou_generator: PSO
+mou_population_size: 100
+mou_dv_population_file: 
+mou_obs_population_restart_file: 
+mou_objectives: 
+mou_max_archive_size: 500
+mou_risk_objective: 0
+mou_verbose_level: 1
+mou_env_selector: NSGA
+mou_mating_selector: TOURNAMENT
+mou_crossover_prob: 0.75
+mou_mutation_prob: -999
+mou_de_f: 0.8
+mou_save_population_every: -1
+mou_pso_omega: 0.7
+mou_pso_social_const: 2
+mou_pso_cognitive: 2
+mou_population_schedule: 
+mou_simplex_reflections:10
+mou_simplex_factors: 
+ 0.5
+ 0.6
+ 0.7
+ 0.8
+mou_simplex_mutation: 0
+mou_use_multigen:0
+mou_shuffle_fixed_pars: 0
+
+...shared pestpp-ies/pestpp-da options:
+(note: 'da' args override 'ies' args when using pestpp-da)
+ies_parameter_ensemble: restart_failed_par.csv
+ies_observation_ensemble: noise.jcb
+ies_weights_ensemble: 
+ies_restart_parameter_ensemble: 
+ies_restart_observation_ensemble: restart_failed.csv
+ies_use_approximate_solution: 1
+ies_lambda_mults: 0.1,1,10,
+ies_initial_lambda: 0
+ies_use_approx: 1
+ies_subset_size: 10
+ies_reg_factor: 0
+ies_verbose_level: 1
+ies_use_prior_scaling: 0
+ies_num_reals: 5
+ies_bad_phi: 1000
+ies_bad_phi_sigma: 1.79769e+308
+ies_include_base: 1
+ies_use_empirical_prior: 0
+ies_group_draws: 0
+ies_enforce_bounds: 1
+ies_localizer: 
+ies_accept_phi_fac: 1.05
+ies_lambda_inc_fac: 10
+ies_lambda_dec_fac: 0.75
+ies_save_lambda_ensembles: 0
+ies_subset_how: RANDOM
+ies_localize_how: PARAMETERS
+ies_num_threads: -1
+ies_debug_fail_subset: 0
+ies_debug_fail_remainder: 0
+ies_debug_bad_phi: 0
+ies_debug_upgrade_only: 0
+ies_debug_high_subset_phi: 0
+ies_debug_high_upgrade_phi: 0
+ies_csv_by_reals: 1
+ies_autoadaloc: 0
+ies_autoadaloc_sigma_dist: 1
+ies_enforce_chglim: 0
+ies_center_on: 
+ies_no_noise: 0
+ies_drop_conflicts: 0
+ies_save_rescov:0
+ies_pdc_sigma_distance: -1
+ies_use_mda: 0
+ies_mda_init_fac: 10
+ies_mda_dec_fac: 0.5
+ies_localization_type: LOCAL
+ies_upgrades_in_memory: 1
+ies_ordered_binary: 1
+ies_multimodal_alpha: 1
+ies_localizer_forgive_extra: 0
+ies_phi_factors_file: 
+ies_phi_factors_by_real: 0
+ies_n_iter_mean: 0
+
+pestpp-sen options: 
+gsa_method: MORRIS
+gsa_morris_pooled_obs: 0
+gsa_morris_obs_sen: 1
+gsa_morris_p: 4
+gsa_morris_r: 4
+gsa_morris_delta: 0.6666
+gsa_sobol_samples: 4
+gsa_sobol_par_dist: norm
+
+pestpp-da options (those not shared with pestpp-ies):
+da_parameter_cycle_table: 
+da_observation_cycle_table: 
+da_hotstart_cycle: 0
+da_stop_cycle: 1000000000
+da_use_simulated_states: 1
+da_noptmax_schedule: 
+
+
+
+Model command line(s):- 
+    mfnwt 10par_xsec.nam
+
+Model interface files:-
+    template files:
+      hk_Layer_1.ref.tpl
+      strt_Layer_1.ref.tpl
+    model input files:
+      hk_Layer_1.ref
+      strt_Layer_1.ref
+
+    instruction files:
+      10par_xsec.hds.ins
+    model output files:
+      10par_xsec.hds
+
+
+Parameter group information
+NAME          INCREMENT TYPE     DERIVATIVE INCREMENT    INCREMENT LOWER BOUND  FORCE CENTRAL     INCREMENT MULTIPLIER
+k                   RELATIVE                     0.01                        0         SWITCH                        2
+
+
+
+Parameter information
+NAME         TRANSFORMATION        CHANGE LIMIT  INITIAL VALUE    LOWER BOUND    UPPER BOUND        GROUP          SCALE         OFFSET  DERIVATIVE COMMAND
+stage        fixed                   FACTOR              1            0.1              3            k              1              0                   1
+k_01         fixed                   FACTOR            2.5           0.25             25            k              1              0                   1
+k_02         log                     FACTOR            2.5           0.25             25            k              1              0                   1
+k_03         log                     FACTOR            2.5           0.25             25            k              1              0                   1
+k_04         log                     FACTOR            2.5           0.25             25            k              1              0                   1
+k_05         log                     FACTOR            2.5           0.25             25            k              1              0                   1
+k_06         log                     FACTOR            2.5           0.25             25            k              1              0                   1
+k_07         log                     FACTOR            2.5           0.25             25            k              1              0                   1
+k_08         log                     FACTOR            2.5           0.25             25            k              1              0                   1
+k_09         log                     FACTOR            2.5           0.25             25            k              1              0                   1
+k_10         log                     FACTOR            2.5           0.25             25            k              1              0                   1
+
+
+
+Observation information
+NAME                                VALUE                GROUP              WEIGHT
+h01_01                                1.5                 head                   0
+h01_02                                1.7                 head                   0
+h01_03                                1.9                 head                   0
+h01_04                                2.1                 head                   1
+h01_05                                2.3                 head                   0
+h01_06                                2.5                 head                   1
+h01_07                                2.7                 head                   0
+h01_08                                2.9                 head                   0
+h01_09                                3.1                 head                   0
+h01_10                                3.3                 head                   0
+h02_01                                1.5                 head                   0
+h02_02                                1.9                 head                   0
+h02_03                                2.3                 head                   0
+h02_04                                2.7                 head                   0
+h02_05                                3.1                 head                   0
+h02_06                                3.5                 head                   0
+h02_07                                3.9                 head                   0
+h02_08                                4.3                 head                   0
+h02_09                                4.7                 head                   0
+h02_10                                5.1                 head                   0
+
+
+
+Prior information
+
+   no prior information provided
+
+
+
+PEST SVD Information
+    maxsing = 1
+    eigthresh = 0.001
+
+
+
+
+
+...resetting max_run_fail to 1
+...resetting overdue_giveup_fac to 2.0
+...resetting overdue_resched_fac to 1.15
+
+  ---  initializing  ---  
+...using glm algorithm
+...using REDSVD for truncated svd solve
+...maxsing: 1
+...eigthresh:  0.001
+...initializing localizer
+...not using localization
+...using lambda multipliers: 0.1 , 1 , 10 , 
+...using lambda scaling factors: 0.75 , 1 , 1.1 , 
+...acceptable phi factor:  1.05
+...lambda increase factor:  10
+...lambda decrease factor:  0.75
+...max run fail:  1
+...initializing prior parameter covariance matrix
+...parcov loaded  from parameter bounds, using par_sigma_range 4
+...initializing observation noise covariance matrix
+WARNING: Cov::try_from(): 18 extra elements in covariance matrix being drop - these are probably for fixed parameters and/or zero-weight observations
+
+...obscov loaded  from observation weights
+...using reg_factor:  0
+...using bad_phi:  1000
+...loading par ensemble from csv file restart_failed_par.csv
+...ies_num_reals arg passed, truncated parameter ensemble to  5
+...Warning: even though ies_enforce_bounds is true, a restart obs en was passed, so bounds will not be enforced on the initial par en
+...not using prior parameter covariance matrix scaling
+...loading obs ensemble from binary file noise.jcb
+...ies_num_reals arg passed, truncated observation ensemble to  5
+...setting weights ensemble from control file weights
+...saved weight ensemble to  pest_binary_nz.weights.csv
+checking for denormal values in weights ensemble
+...Warning: even though `ies_include_base` is true, you passed a restart obs en, not adding 'base' realization...
+checking for denormal values in pe
+...saved initial parameter ensemble to  pest_binary_nz.0.par.csv
+checking for denormal values in obs + noise ensemble
+...saved obs+noise observation ensemble (obsval + noise realizations) to  pest_binary_nz.obs+noise.csv
+...restarting with existing obs ensemble restart_failed.csv
+...loading restart obs ensemble from csv file restart_failed.csv
+...ies_num_reals arg passed, truncated restart obs ensemble to  5
+reordering oe_base to align with restart obs en,num reals: 5
+reordering pe_base to align with restart par en,num reals: 5
+...centering on ensemble mean vector
+...saved initial obs ensemble to pest_binary_nz.0.obs.csv
+
+  ---  pre-drop initial phi summary  ---  
+       phi type           mean            std            min            max
+       measured        4.69186         3.1402       0.736152         8.1558
+         actual        1.30859        1.74083       0.059866        4.35168
+     note: 'measured' phi reported above includes 
+           realizations of measurement noise, 
+           'actual' phi does not.
+  ---  observation group phi summary ---  
+       (computed using 'actual' phi)
+           (sorted by mean phi)
+group      mean       std       min       max   percent       std
+head       1.31      1.74    0.0599      4.35       100         0
+    Note: 'percent' is the percentage of the actual phi for each realization.
+
+
+
+...checking for prior-data conflict...
+
+  ---  WARNING: less than 10 active realizations...might not be enough  ---  
+
+  ---  initial phi summary  ---  
+       phi type           mean            std            min            max
+       measured        4.69186         3.1402       0.736152         8.1558
+         actual        1.30859        1.74083       0.059866        4.35168
+     note: 'measured' phi reported above includes 
+           realizations of measurement noise, 
+           'actual' phi does not.
+  ---  observation group phi summary ---  
+       (computed using 'actual' phi)
+           (sorted by mean phi)
+group      mean       std       min       max   percent       std
+head       1.31      1.74    0.0599      4.35       100         0
+    Note: 'percent' is the percentage of the actual phi for each realization.
+
+
+
+...current lambda: 1
+
+  ---  initialization complete  ---  
+
+
+pestpp-ies analysis complete...
+started at 04/30/24 10:56:17
+finished at 04/30/24 10:56:17
+took 0 minutes
