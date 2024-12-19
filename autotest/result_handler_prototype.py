@@ -55,7 +55,6 @@ class ResultHandler(object):
             elif filename.lower().endswith(".jcb") or filename.lower().endswith(".jco") or filename.lower().endswith(".bin"):
                 df = pyemu.Matrix.from_binary(filename).to_dataframe()
             self.results_loaded[filename] = df
-
             return df
 
 
@@ -225,7 +224,7 @@ class Results(object):
         else:
             raise Exception()
 
-def basic_ies_1_test():
+def results_ies_1_test():
     r = Results(m_d=os.path.join("pst", "master_ies1"))
     # get all change sum files in an multiindex df
     df = r.ies.pcs
@@ -262,7 +261,7 @@ def basic_ies_1_test():
     assert df is not None
 
 
-def basic_ies_2_test():
+def results_ies_2_test():
     for case in ["test","test2"]:
         r = Results(m_d=os.path.join("pst", "master_ies2"), case=case)
         # get all change sum files in an multiindex df
@@ -300,6 +299,6 @@ def basic_ies_2_test():
         assert df is not None
 
 if __name__ == "__main__":
-    basic_ies_1_test()
-    basic_ies_2_test()
+    results_ies_1_test()
+    results_ies_2_test()
 
