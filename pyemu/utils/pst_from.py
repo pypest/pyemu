@@ -54,7 +54,7 @@ def _load_array_get_fmt(fname, sep=None, fullfile=False, skip=0, logger=None):
     if sep is None:  # need to split line with space and count multiple
         splitsep = ' '
     with open(fname, 'r') as fp:  # load file or line
-        _ = [fp.readline() for _ in range(skip)]
+        header = [fp.readline() for _ in range(skip)]
         if fullfile:
             lines = [line for line in fp.readlines()]
             arr = np.genfromtxt(lines, delimiter=sep, ndmin=2)
@@ -170,7 +170,7 @@ def _load_array_get_fmt(fname, sep=None, fullfile=False, skip=0, logger=None):
         else:
             typ = "F"
         fmt = f"%{width}.{prec}{typ}"
-    return arr, fmt
+    return arr, fmt, header
 
 
 class PstFrom(object):
@@ -1155,8 +1155,8 @@ class PstFrom(object):
                 if not dest_filepath.exists():
                     self.logger.lraise(f"par filename '{dest_filepath}' not found ")
                 # read array type input file
-                arr, infmt = _load_array_get_fmt(dest_filepath, sep=sep, skip=skip,
-                                                 logger=self.logger)
+                arr, infmt, storehead = _load_array_get_fmt(dest_filepath, sep=sep, skip=skip,
+                                                            logger=self.logger)
                 # arr = np.loadtxt(dest_filepath, delimiter=sep, ndmin=2)
                 self.logger.log(f"loading array {dest_filepath}")
                 self.logger.statement(
@@ -1165,7 +1165,9 @@ class PstFrom(object):
                 # save copy of input file to `org` dir
                 # make any subfolders if they don't exist
                 # this will be python auto precision
-                np.savetxt(self.original_file_d / rel_filepath.name, arr)
+                with open(self.original_file_d / rel_filepath.name, 'w') as fp:
+                    fp.writelines(storehead)
+                    np.savetxt(fp, arr)
                 file_dict[rel_filepath] = arr
                 fmt_dict[rel_filepath] = infmt
                 sep_dict[rel_filepath] = sep
@@ -2363,13 +2365,14 @@ class PstFrom(object):
                     tpl_filename=tpl_filename,
                     suffix="",
                     par_type=par_type,
+                    data_array=file_dict[filenames[0]],
                     zone_array=zone_array,
-                    shape=shp,
                     get_xy=self.get_xy,
                     fill_value=initial_value if initial_value is not None else 1.0,
                     gpname=pargp,
                     input_filename=in_fileabs,
                     par_style=par_style,
+                    headerlines=headerlines
                 )
                 self.logger.log(
                     "writing template file"
@@ -3956,17 +3959,18 @@ def _get_tpl_or_ins_df(
 
 
 def write_array_tpl(
-    name,
-    tpl_filename,
-    suffix,
-    par_type,
-    zone_array=None,
-    gpname=None,
-    shape=None,
-    fill_value=1.0,
-    get_xy=None,
-    input_filename=None,
-    par_style="m",
+        name,
+        tpl_filename,
+        suffix,
+        par_type,
+        data_array=None, # todo reintroduce shape tuple flexibility
+        zone_array=None,
+        gpname=None,
+        fill_value=1.0,
+        get_xy=None,
+        input_filename=None,
+        par_style="m",
+        headerlines=None
 ):
     """
     write a template file for a 2D array.
@@ -3976,10 +3980,10 @@ def write_array_tpl(
         tpl_filename (`str`): the template file to write - include path
         suffix (`str`): suffix to append to par names
         par_type (`str`): type of parameter
+        data_array (`numpy.ndarray`): original data array
         zone_array (`numpy.ndarray`): an array used to skip inactive cells. Values less than 1 are
             not parameterized and are assigned a value of fill_value. Default is None.
         gpname (`str`): pargp filed in dataframe
-        shape (`tuple`): dimensions of array to write
         fill_value:
         get_xy:
         input_filename:
@@ -3992,19 +3996,23 @@ def write_array_tpl(
         This function is called by `PstFrom` programmatically
 
     """
-
-    if shape is None and zone_array is None:
+    if headerlines is None:
+        headerlines = []
+    if data_array is None and zone_array is None:
         raise Exception(
-            "write_array_tpl() error: must pass either zone_array " "or shape"
+            "write_array_tpl() error: must pass either zone_array " "or data_array"
         )
-    elif shape is not None and zone_array is not None:
-        if shape != zone_array.shape:
-            raise Exception(
-                "write_array_tpl() error: passed "
-                "shape {0} != zone_array.shape {1}".format(shape, zone_array.shape)
-            )
-    elif shape is None:
+    elif data_array is not None:
+        shape = data_array.shape
+        if zone_array is not None:
+            if data_array.shape != zone_array.shape:
+                raise Exception(
+                    "write_array_tpl() error: passed "
+                    "shape {0} != zone_array.shape {1}".format(data_array.shape, zone_array.shape)
+                )
+    else:
         shape = zone_array.shape
+
     if len(shape) != 2:
         raise Exception(
             "write_array_tpl() error: shape '{0}' not 2D" "".format(str(shape))
@@ -4012,6 +4020,7 @@ def write_array_tpl(
 
     par_style = par_style.lower()
     if par_style == "d":
+        assert data_array is not None
         if not os.path.exists(input_filename):
             raise Exception(
                 "write_array_tpl() error: couldn't find input file "
@@ -4019,7 +4028,7 @@ def write_array_tpl(
                     input_filename
                 )
             )
-        org_arr = np.loadtxt(input_filename, ndmin=2)
+        org_arr = data_array
         if par_type == "grid":
             pass
         elif par_type == "constant":
@@ -4089,6 +4098,8 @@ def write_array_tpl(
     xx, yy, ii, jj = [], [], [], []
     with open(tpl_filename, "w") as f:
         f.write("ptf ~\n")
+        if par_style == 'd':
+            f.writelines(headerlines)
         for i in range(shape[0]):
             for j in range(shape[1]):
                 if zone_array is not None and zone_array[i, j] < 1:
