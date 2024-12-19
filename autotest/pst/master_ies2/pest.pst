@@ -65,3 +65,5 @@ strt_Layer_1.ref.tpl strt_Layer_1.ref
 ++ies_debug_fail_remainder(True)
 ++ies_debug_fail_subset(True)
 ++ies_no_noise(False)
+++save_binary(True)
+++save_dense(True)

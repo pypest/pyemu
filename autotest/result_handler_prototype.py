@@ -52,7 +52,7 @@ class ResultHandler(object):
         else:
             if filename.lower().endswith(".csv"):
                 df = pd.read_csv(filename, index_col=0)
-            elif filename.lower().endswith(".jcb"):
+            elif filename.lower().endswith(".jcb") or filename.lower().endswith(".jco") or filename.lower().endswith(".bin"):
                 df = pyemu.Matrix.from_binary(filename).to_dataframe()
             self.results_loaded[filename] = df
 
@@ -64,7 +64,6 @@ class ResultIesHandler(ResultHandler):
 
     def __getattr__(self,tag):
         tag = tag.lower().strip()
-        print(tag)
         if tag.startswith("par_en") or tag.startswith("obs_en"):
             itr = self.get_ensemble_iter(tag)
             ttag = tag.split("_")[0]
@@ -72,7 +71,6 @@ class ResultIesHandler(ResultHandler):
             if itr is None:
                 file_tag = ".{0}.".format(ttag)
                 files = self.get_ensemble_files(file_tag)
-                print(files)
                 if len(files) == 0:
                     raise Exception()
                 itrs = [int(os.path.split(f)[1].split('.')[1]) for f in files]
@@ -89,6 +87,7 @@ class ResultIesHandler(ResultHandler):
                 files = self.get_ensemble_files(file_tag)
                 if len(files) != 1:
                     #todo something here...
+                    print(files)
                     raise Exception()
 
                 df = self.get_or_load_ensemble_file(files[0])
@@ -121,7 +120,6 @@ class ResultIesHandler(ResultHandler):
             if itr is None:
                 file_tag = ".{0}.".format(ttag)
                 files = self.get_ensemble_files(file_tag)
-                print(files)
                 if len(files) == 0:
                     raise Exception()
                 itrs = [int(os.path.split(f)[1].split('.')[1]) for f in files]
@@ -130,7 +128,6 @@ class ResultIesHandler(ResultHandler):
                 dfs = []
                 for itr in itrs:
                     df = self.get_or_load_csv_file(d[itr],index_col=0)
-                    print(df)
                     dfs.append(df)
                 df = pd.concat(dfs, keys=itrs, names=["iteration", "name"])
                 return df
@@ -151,7 +148,6 @@ class ResultIesHandler(ResultHandler):
             if itr is None:
                 file_tag = ".{0}.".format(ttag)
                 files = self.get_ensemble_files(file_tag)
-                print(files)
                 if len(files) == 0:
                     raise Exception()
                 itrs = [int(os.path.split(f)[1].split('.')[1]) for f in files]
@@ -160,7 +156,6 @@ class ResultIesHandler(ResultHandler):
                 dfs = []
                 for itr in itrs:
                     df = self.get_or_load_csv_file(d[itr],index_col=0)
-                    print(df)
                     dfs.append(df)
                 df = pd.concat(dfs, keys=itrs, names=["iteration", "group"])
                 return df
@@ -204,8 +199,17 @@ class ResultMouHandler(ResultHandler):
 
 class Results(object):
     def __init__(self,m_d,case=None):
-        #todo: if case is none, look for one and only one control file in m_d
-
+        if not os.path.exists(m_d):
+            raise Exception("m_d '{0}' not found".format(m_d))
+        if not os.path.isdir(m_d):
+            raise Exception("m_d '{0}' is not directory".format(m_d))
+        if case is None:
+            pst_files = [f for f in os.listdir(m_d) if f.endswith(".pst")]
+            if len(pst_files) == 0:
+                raise Exception("no .pst files found in m_d '{0}'".format(m_d))
+            elif len(pst_files) > 1:
+                raise Exception("multiple .pst files found in m_d '{0}'".format(m_d))
+            case = pst_files[0].replace(".pst","")
         self.m_d = m_d
         self.case = case
         self.ieshand = ResultIesHandler(self.m_d,self.case)
@@ -221,21 +225,81 @@ class Results(object):
         else:
             raise Exception()
 
+def basic_ies_1_test():
+    r = Results(m_d=os.path.join("pst", "master_ies1"))
+    # get all change sum files in an multiindex df
+    df = r.ies.pcs
+    assert df is not None
 
-r = Results(m_d=os.path.join("pst","master_ies1"),case="pest")
-#get all change sum files in an multiindex df
-print(r.ies.pcs)
-# same for conflicts across iterations
-print(r.ies.pdc)
-print(r.ies.weight_en)
-print(r.ies.phi_lambda)
-print(r.ies.phi_group)
-print(r.ies.phi_actual)
-print(r.ies.phi_meas)
-print(r.ies.noise_en)
-#get the prior par en
-print(r.ies.par_en0)
-# get the 1st iter obs en
-print(r.ies.obs_ensemble1)
-#get the combined par en across all iters
-print(r.ies.par_en)
+    # same for conflicts across iterations
+    df = r.ies.pdc
+    assert df is not None
+
+    # weights
+    df = r.ies.weight_en
+    assert df is not None
+
+    # various phi dfs
+    df = r.ies.phi_lambda
+    assert df is not None
+    df = r.ies.phi_group
+    assert df is not None
+    df = r.ies.phi_actual
+    assert df is not None
+    df = r.ies.phi_meas
+    assert df is not None
+    # noise
+    df = r.ies.noise_en
+    assert df is not None
+    # get the prior par en
+    df = r.ies.par_en0
+    assert df is not None
+    # get the 1st iter obs en
+    df = r.ies.obs_ensemble1
+    assert df is not None
+    # get the combined par en across all iters
+    df = r.ies.par_en
+    assert df is not None
+
+
+def basic_ies_2_test():
+    for case in ["test","test2"]:
+        r = Results(m_d=os.path.join("pst", "master_ies2"), case=case)
+        # get all change sum files in an multiindex df
+        df = r.ies.pcs
+        assert df is not None
+
+        # same for conflicts across iterations
+        df = r.ies.pdc
+        assert df is not None
+
+        # weights
+        df = r.ies.weight_en
+        assert df is not None
+
+        # various phi dfs
+        df = r.ies.phi_lambda
+        assert df is not None
+        df = r.ies.phi_group
+        assert df is not None
+        df = r.ies.phi_actual
+        assert df is not None
+        df = r.ies.phi_meas
+        assert df is not None
+        # noise
+        df = r.ies.noise_en
+        assert df is not None
+        # get the prior par en
+        df = r.ies.par_en0
+        assert df is not None
+        # get the 1st iter obs en
+        df = r.ies.obs_ensemble1
+        assert df is not None
+        # get the combined par en across all iters
+        df = r.ies.par_en
+        assert df is not None
+
+if __name__ == "__main__":
+    basic_ies_1_test()
+    basic_ies_2_test()
+

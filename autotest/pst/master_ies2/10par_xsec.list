@@ -238,7 +238,7 @@
 
                TOTAL OUT =           0.5000                 TOTAL OUT =           0.5000
 
-                IN - OUT =       5.5511E-17                  IN - OUT =       5.5511E-17
+                IN - OUT =           0.0000                  IN - OUT =           0.0000
 
      PERCENT DISCREPANCY =           0.00         PERCENT DISCREPANCY =           0.00
 
@@ -316,6 +316,6 @@
          TOTAL TIME 1.72800E+05  2880.0      48.000      2.0000     5.47570E-03
 1
 
- Run end date and time (yyyy/mm/dd hh:mm:ss): 2024/12/16 10:20:37
+ Run end date and time (yyyy/mm/dd hh:mm:ss): 2024/12/19 10:20:56
  Elapsed run time:  0.007 Seconds
 
