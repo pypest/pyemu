@@ -14,9 +14,51 @@ class ResultHandler(object):
         self.case = case
         self.path2files = [os.path.join(self.m_d,f.lower()) for f in os.listdir(self.m_d)]
         self.results_loaded = {}
+        self.failed2load_files = []
         #todo: check that m_ds are infact valid master dirs
 
-    def get_ensemble_files(self,tag):
+
+
+    def get_or_load_csv_file(self,filename,index_col=None):
+        if len(os.path.split(filename)[0]) == 0:
+            filename = os.path.join(self.m_d,filename)
+        if filename in self.results_loaded:
+            return self.results_loaded[filename]
+        else:
+            df = None
+            try:
+                df = pd.read_csv(filename,index_col=index_col)
+                self.results_loaded[filename] = df
+            except Exception as e:
+                print("error loading file '{0}': {1}".format(filename, str(e)))
+                self.failed2load_files.append([filename, str(e)])
+            return df
+
+    def get_or_load_ensemble_file(self, filename):
+        if len(os.path.split(filename)) == 1:
+            filename = os.path.join(self.m_d,filename)
+        if filename in self.results_loaded:
+            return self.results_loaded[filename]
+        else:
+            df = None
+            try:
+                if filename.lower().endswith(".csv"):
+                    df = pd.read_csv(filename, index_col=0)
+                elif filename.lower().endswith(".jcb") or filename.lower().endswith(".jco") or filename.lower().endswith(".bin"):
+                    df = pyemu.Matrix.from_binary(filename).to_dataframe()
+                self.results_loaded[filename] = df
+            except Exception as e:
+                print("error loading file '{0}': {1}".format(filename,str(e)))
+                self.failed2load_files.append([filename,str(e)])
+            return df
+
+
+
+
+
+class ResultIesHandler(ResultHandler):
+
+    def get_files(self,tag):
         files = []
         case_tag = self.case + tag
 
@@ -34,42 +76,30 @@ class ResultHandler(object):
                 files.append(f)
         return files
 
-    def get_or_load_csv_file(self,filename,index_col=None):
-        if len(os.path.split(filename)[0]) == 0:
-            filename = os.path.join(self.m_d,filename)
-        if filename in self.results_loaded:
-            return self.results_loaded[filename]
+    def parse_iter_from_tag(self,tag):
+        if "ensemble" in tag:
+            itr = tag.split("ensemble")[1]
+        elif "en" in tag:
+            itr = tag.split("en")[1]
+        elif tag == "pdc":
+            itr = tag.split("pdc")[1]
+        elif tag == "pcs":
+            itr = tag.split("pcs")[1]
         else:
-            df = pd.read_csv(filename,index_col=index_col)
-            self.results_loaded[filename] = df
-            return df
-
-    def get_or_load_ensemble_file(self, filename):
-        if len(os.path.split(filename)) == 1:
-            filename = os.path.join(self.m_d,filename)
-        if filename in self.results_loaded:
-            return self.results_loaded[filename]
-        else:
-            if filename.lower().endswith(".csv"):
-                df = pd.read_csv(filename, index_col=0)
-            elif filename.lower().endswith(".jcb") or filename.lower().endswith(".jco") or filename.lower().endswith(".bin"):
-                df = pyemu.Matrix.from_binary(filename).to_dataframe()
-            self.results_loaded[filename] = df
-            return df
-
-
-
-class ResultIesHandler(ResultHandler):
+            raise Exception("parse_iter_from_tag: unrecognized tag: '{0}'".format(tag))
+        if itr == "":
+            itr = None
+        return itr
 
     def __getattr__(self,tag):
         tag = tag.lower().strip()
         if tag.startswith("par_en") or tag.startswith("obs_en"):
-            itr = self.get_ensemble_iter(tag)
+            itr = self.parse_iter_from_tag(tag)
             ttag = tag.split("_")[0]
             #load the combined ensemble
             if itr is None:
                 file_tag = ".{0}.".format(ttag)
-                files = self.get_ensemble_files(file_tag)
+                files = self.get_files(file_tag)
                 if len(files) == 0:
                     raise Exception()
                 itrs = [int(os.path.split(f)[1].split('.')[1]) for f in files]
@@ -83,7 +113,7 @@ class ResultIesHandler(ResultHandler):
                 return df
             else:
                 file_tag = ".{0}.{1}.".format(itr,ttag)
-                files = self.get_ensemble_files(file_tag)
+                files = self.get_files(file_tag)
                 if len(files) != 1:
                     #todo something here...
                     print(files)
@@ -100,25 +130,25 @@ class ResultIesHandler(ResultHandler):
             return df
 
         elif tag.startswith("noise_en"):
-            files = self.get_ensemble_files(".obs+noise.")
+            files = self.get_files(".obs+noise.")
             if len(files) != 1:
                 raise Exception()
             df = self.get_or_load_ensemble_file(files[0])
             return df
         elif tag.startswith("weight_en"):
-            files = self.get_ensemble_files(".weights.")
+            files = self.get_files(".weights.")
             if len(files) != 1:
                 raise Exception()
             df = self.get_or_load_ensemble_file(files[0])
             return df
 
         elif tag.startswith("pdc"):
-            itr = self.get_ensemble_iter(tag)
+            itr = self.parse_iter_from_tag(tag)
             ttag = tag.split("_")[0]
             # load the combined ensemble
             if itr is None:
                 file_tag = ".{0}.".format(ttag)
-                files = self.get_ensemble_files(file_tag)
+                files = self.get_files(file_tag)
                 if len(files) == 0:
                     raise Exception()
                 itrs = [int(os.path.split(f)[1].split('.')[1]) for f in files]
@@ -132,7 +162,7 @@ class ResultIesHandler(ResultHandler):
                 return df
             else:
                 file_tag = ".{0}.{1}.".format(itr, ttag)
-                files = self.get_ensemble_files(file_tag)
+                files = self.get_files(file_tag)
                 if len(files) != 1:
                     # todo something here...
                     raise Exception()
@@ -141,12 +171,12 @@ class ResultIesHandler(ResultHandler):
                 return df
 
         elif tag.startswith("pcs"):
-            itr = self.get_ensemble_iter(tag)
+            itr = self.parse_iter_from_tag(tag)
             ttag = tag.split("_")[0]
             # load the combined ensemble
             if itr is None:
                 file_tag = ".{0}.".format(ttag)
-                files = self.get_ensemble_files(file_tag)
+                files = self.get_files(file_tag)
                 if len(files) == 0:
                     raise Exception()
                 itrs = [int(os.path.split(f)[1].split('.')[1]) for f in files]
@@ -160,7 +190,7 @@ class ResultIesHandler(ResultHandler):
                 return df
             else:
                 file_tag = ".{0}.{1}.".format(itr, ttag)
-                files = self.get_ensemble_files(file_tag)
+                files = self.get_files(file_tag)
                 if len(files) != 1:
                     # todo something here...
                     raise Exception()
@@ -174,26 +204,120 @@ class ResultIesHandler(ResultHandler):
             raise Exception("tag: '{0}' not recognized".format(tag))
 
 
-    def get_ensemble_iter(self,tag):
-        if "ensemble" in tag:
-            itr = tag.split("ensemble")[1]
-        elif "en" in tag:
-            itr = tag.split("en")[1]
-        elif tag == "pdc":
-            itr = tag.split("pdc")[1]
-        elif tag == "pcs":
-            itr = tag.split("pcs")[1]
+
+
+class ResultMouHandler(ResultHandler):
+
+    def get_files(self,tag):
+        files = []
+        case_tag = self.case + tag
+
+        for f in self.path2files:
+            if tag in f.lower() and\
+                os.path.split(f)[1].lower().startswith(self.case+"."):
+                try:
+                    itr = int(os.path.split(f)[1].split(".")[1])
+                except Exception as e:
+                    pass
+                else:
+                    files.append(f)
+        return files
+
+    def parse_iter_from_tag(self,tag):
+        if "dvpop" in tag:
+            itr = tag.split("dvpop")[1]
+        elif "obspop" in tag:
+            itr = tag.split("obspop")[1]
+        elif tag == "stack_summary":
+            itr = tag.split("stack_summary")[1]
+        elif "archive" in tag:
+            itr = tag.split("archive")[1]
         else:
-            raise Exception()
+            raise Exception("parse_iter_from_tag: unrecognized tag: '{0}'".format(tag))
         if itr == "":
             itr = None
         return itr
 
-class ResultMouHandler(ResultHandler):
+
     def __getattr__(self,tag):
-        print(tag)
-        #return ResultFile(tag)
-        pass
+        tag = tag.lower().strip()
+
+        if (tag.startswith("dvpop") or tag.startswith("obspop") or \
+                tag.startswith("archivedvpop") or tag.startswith("archiveobspop") \
+                or tag.startswith("chancedvpop") or tag.startswith("chanceobspop")):
+            itr = self.parse_iter_from_tag(tag)
+            ttag = "dv_pop"
+            if "obs" in tag:
+                ttag = "obs_pop"
+            if "archive" in tag:
+                ttag = "archive."+ttag
+            elif "chance" in tag:
+                ttag = "chance."+ttag
+            # load the combined ensemble
+            if itr is None:
+                file_tag = ".{0}.".format(ttag)
+                files = self.get_files(file_tag)
+                if len(files) == 0:
+                    raise Exception("no files found for tag '{0}'".format(file_tag))
+                itrs = [int(os.path.split(f)[1].split('.')[1]) for f in files]
+                d = {i: f for i, f in zip(itrs, files)}
+                itrs.sort()
+                dfs = []
+                for itr in itrs:
+                    df = self.get_or_load_ensemble_file(d[itr])
+                    dfs.append(df)
+                df = pd.concat(dfs, keys=itrs, names=["iteration", "real_name"])
+                return df
+            else:
+                file_tag = ".{0}.{1}.".format(itr, ttag)
+                files = self.get_files(file_tag)
+                if len(files) != 1:
+                    # todo something here...
+                    print(files)
+                    raise Exception()
+
+                df = self.get_or_load_ensemble_file(files[0])
+                return df
+
+
+        elif tag == "paretosum_archive" or tag == "paretosum":
+
+            csv_filename = "{0}.pareto.summary.csv".format(self.case)
+            if "archive" in tag:
+                csv_filename = "{0}.pareto.archive.summary.csv".format(self.case)
+            df = self.get_or_load_csv_file(csv_filename)
+            return df
+
+        elif tag.startswith("stack_summary"):
+            itr = self.parse_iter_from_tag(tag)
+            ttag = "population_stack_summary"
+            # load the combined ensemble
+            if itr is None:
+                file_tag = ".{0}.".format(ttag)
+                files = self.get_files(file_tag)
+                if len(files) == 0:
+                    raise Exception()
+                itrs = [int(os.path.split(f)[1].split('.')[1]) for f in files]
+                d = {i: f for i, f in zip(itrs, files)}
+                itrs.sort()
+                dfs = []
+                for itr in itrs:
+                    df = self.get_or_load_csv_file(d[itr], index_col=0)
+                    dfs.append(df)
+                df = pd.concat(dfs, keys=itrs, names=["generation", "member"])
+                return df
+            else:
+                file_tag = ".{0}.{1}.".format(itr, ttag)
+                files = self.get_files(file_tag)
+                if len(files) != 1:
+                    # todo something here...
+                    raise Exception()
+
+                df = self.get_or_load_csv_file(files[0])
+                return df
+
+        else:
+            raise Exception("tag: '{0}' not recognized".format(tag))
 
 
 class Results(object):
@@ -298,7 +422,62 @@ def results_ies_2_test():
         df = r.ies.par_en
         assert df is not None
 
-if __name__ == "__main__":
-    results_ies_1_test()
-    results_ies_2_test()
+def results_mou_1_test():
+    r = Results(m_d=os.path.join("pst", "zdt1_ascii"))
 
+    df = r.mou.stack_summary
+
+
+    df = r.mou.chanceobspop1
+    print(df)
+    assert df is not None
+
+    df = r.mou.chanceobspop
+    print(df)
+    assert df is not None
+
+    df = r.mou.chancedvpop1
+    print(df)
+    assert df is not None
+
+    df = r.mou.chancedvpop
+    #print(df)
+    assert df is not None
+
+    df = r.mou.dvpop
+    assert df is not None
+
+    df = r.mou.dvpop0
+    #print(df)
+    assert df is not None
+
+    df = r.mou.obspop
+    #print(df)
+    assert df is not None
+
+    df = r.mou.obspop5
+    # print(df)
+    assert df is not None
+
+    df = r.mou.paretosum_archive
+    #print(df)
+    assert df is not None
+
+    df = r.mou.paretosum
+    #print(df)
+    assert df is not None
+
+    df = r.mou.archivedvpop
+    #print(df)
+    assert df is not None
+
+    df = r.mou.archiveobspop
+    #print(df)
+    assert df is not None
+
+
+
+if __name__ == "__main__":
+    #results_ies_1_test()
+    #results_ies_2_test()
+    results_mou_1_test()
