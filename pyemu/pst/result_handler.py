@@ -1,11 +1,6 @@
 import os
 import pandas as pd
-import pyemu 
-# class ResultFile(object):
-# 	def __init__(self,resulttype):
-# 		if resulttype == "par_ensembles":
-# 			print(resulttype)
-# 		#print(stuff)
+import pyemu
 
 
 class ResultHandler(object):
@@ -18,6 +13,12 @@ class ResultHandler(object):
         #todo: check that m_ds are infact valid master dirs
 
 
+    @property
+    def files_loaded(self):
+        files = list(self.results_loaded.keys())
+        files.sort()
+        return files
+    
 
     def get_or_load_csv_file(self,filename,index_col=None):
         if len(os.path.split(filename)[0]) == 0:
@@ -78,7 +79,8 @@ class ResultHandler(object):
         if len(digits) == 0:
             return None
         digits = digits[::-1]
-        itr = int(''.join(digits))
+        #itr = int(''.join(digits))
+        itr = ''.join(digits)
         return itr
 
 class ResultIesHandler(ResultHandler):
@@ -104,15 +106,16 @@ class ResultIesHandler(ResultHandler):
 
     def __getattr__(self,tag):
         tag = tag.lower().strip()
-        if tag.startswith("par_en") or tag.startswith("obs_en"):
+        if tag.startswith("paren") or tag.startswith("obsen"):
             itr = self.parse_iter_from_tag(tag)
-            ttag = tag.split("_")[0]
+            ttag = tag[:3]
             #load the combined ensemble
             if itr is None:
                 file_tag = ".{0}.".format(ttag)
                 files = self.get_files(file_tag)
                 if len(files) == 0:
-                    raise Exception()
+                    raise Exception("ResultsIesHandler: no files found for tag '{0}' using file_tag '{1}'".\
+                                    format(tag,file_tag))
                 itrs = [int(os.path.split(f)[1].split('.')[1]) for f in files]
                 self.check_dup_iters(itrs,files)
                 d = {i:f for i,f in zip(itrs,files)}
@@ -129,7 +132,7 @@ class ResultIesHandler(ResultHandler):
                     df = dfs[0]
                 return df
             else:
-                file_tag = ".{0}.{1}.".format(itr,ttag)
+                file_tag = ".{0}.{1}.".format(int(itr),ttag)
                 files = self.get_files(file_tag)
                 if len(files) != 1:
                     #todo something here...
@@ -146,22 +149,26 @@ class ResultIesHandler(ResultHandler):
             df = self.get_or_load_csv_file(csv_filename)
             return df
 
-        elif tag.startswith("noise_en"):
+        elif tag.startswith("noise"):
             files = self.get_files(".obs+noise.")
             if len(files) != 1:
-                raise Exception()
+                raise Exception("expected 1 noise ensemble file, found {0}: {1}".\
+                                format(len(files),','.join(files)))
             df = self.get_or_load_ensemble_file(files[0])
             return df
-        elif tag.startswith("weight_en"):
+        elif tag.startswith("weights"):
             files = self.get_files(".weights.")
             if len(files) != 1:
-                raise Exception()
+                raise Exception("expected 1 weight ensemble file, found {0}: {1}". \
+                                format(len(files), ','.join(files)))
             df = self.get_or_load_ensemble_file(files[0])
             return df
 
         elif tag.startswith("pdc"):
             itr = self.parse_iter_from_tag(tag)
-            ttag = tag.split("_")[0]
+            ttag = tag
+            if itr is not None:
+                ttag = tag.replace(itr,"")
             # load the combined ensemble
             if itr is None:
                 file_tag = ".{0}.".format(ttag)
@@ -184,18 +191,22 @@ class ResultIesHandler(ResultHandler):
                     df = dfs[0]
                 return df
             else:
-                file_tag = ".{0}.{1}.".format(itr, ttag)
+                file_tag = ".{0}.{1}.".format(int(itr), ttag)
                 files = self.get_files(file_tag)
                 if len(files) != 1:
                     # todo something here...
-                    raise Exception()
+                    print(files)
+                    raise Exception("expecting to find 1 file for tag '{0}', iter {1} (org tag {2})"\
+                                    .format(ttag,itr,tag))
 
                 df = self.get_or_load_ensemble_file(files[0])
                 return df
 
         elif tag.startswith("pcs"):
             itr = self.parse_iter_from_tag(tag)
-            ttag = tag.split("_")[0]
+            ttag = tag
+            if itr is not None:
+                ttag = tag.replace(itr, "")
             # load the combined ensemble
             if itr is None:
                 file_tag = ".{0}.".format(ttag)
@@ -218,7 +229,7 @@ class ResultIesHandler(ResultHandler):
                     df = dfs[0]
                 return df
             else:
-                file_tag = ".{0}.{1}.".format(itr, ttag)
+                file_tag = ".{0}.{1}.".format(int(itr), ttag)
                 files = self.get_files(file_tag)
                 if len(files) != 1:
                     # todo something here...
@@ -230,7 +241,7 @@ class ResultIesHandler(ResultHandler):
 
 
         else:
-            raise Exception("tag: '{0}' not recognized".format(tag))
+            raise Exception("ResultIesHandler has no attribute '{0}'".format(tag))
 
 
 
@@ -298,7 +309,7 @@ class ResultMouHandler(ResultHandler):
                     df = dfs[0]
                 return df
             else:
-                file_tag = ".{0}.{1}.".format(itr, ttag)
+                file_tag = ".{0}.{1}.".format(int(itr), ttag)
                 files = self.get_files(file_tag)
                 if len(files) != 1:
                     # todo something here...
@@ -356,7 +367,7 @@ class ResultMouHandler(ResultHandler):
 
                 return df
             else:
-                file_tag = ".{0}.{1}.".format(itr, ttag)
+                file_tag = ".{0}.{1}.".format(int(itr), ttag)
                 files = self.get_files(file_tag)
                 if len(files) != 1:
                     # todo something here...
@@ -395,7 +406,7 @@ class ResultMouHandler(ResultHandler):
                     df = dfs[0]
                 return df
             else:
-                file_tag = ".{0}.{1}.".format(itr, ttag)
+                file_tag = ".{0}.{1}.".format(int(itr), ttag)
                 files = self.get_files(file_tag)
                 if len(files) != 1:
                     # todo something here...
@@ -405,7 +416,7 @@ class ResultMouHandler(ResultHandler):
                 return df
 
         else:
-            raise Exception("tag: '{0}' not recognized".format(tag))
+            raise Exception("ResultMouHandler has no attribute '{0}'".format(tag))
 
 
 class Results(object):

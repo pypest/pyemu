@@ -923,7 +923,7 @@ def results_ies_1_test():
     assert df is not None
 
     # weights
-    df = r.ies.weight_en
+    df = r.ies.weights
     #print(df)
     assert df is not None
 
@@ -938,16 +938,16 @@ def results_ies_1_test():
     df = r.ies.phi_meas
     assert df is not None
     # noise
-    df = r.ies.noise_en
+    df = r.ies.noise
     assert df is not None
     # get the prior par en
-    df = r.ies.par_en0
+    df = r.ies.paren0
     assert df is not None
     # get the 1st iter obs en
-    df = r.ies.obs_ensemble1
+    df = r.ies.obsen1
     assert df is not None
     # get the combined par en across all iters
-    df = r.ies.par_en
+    df = r.ies.paren
     assert df is not None
     #print(df)
 
@@ -974,8 +974,14 @@ def results_ies_3_test():
     else:
         raise Exception("should have failed...")
 
+    pst = pyemu.Pst(os.path.join(m_d1, "pest.pst"))
+    pst.add_results([m_d1,m_d2],cases=["pest","test"])
+    print(pst.r0.ies.paren)
+    #print(pst.r0.ies.obsen)
+    #print(pst.r1.ies.files_loaded)
+    #print(pst.r1.ies.obsen)
 
-
+    #print(pst.r1.ies.files_loaded)
 
 def results_ies_2_test():
     import pyemu
@@ -993,7 +999,7 @@ def results_ies_2_test():
         assert df is not None
 
         # weights
-        df = r.ies.weight_en
+        df = r.ies.weights
         assert df is not None
 
         # various phi dfs
@@ -1006,16 +1012,16 @@ def results_ies_2_test():
         df = r.ies.phi_meas
         assert df is not None
         # noise
-        df = r.ies.noise_en
+        df = r.ies.noise
         assert df is not None
         # get the prior par en
-        df = r.ies.par_en0
+        df = r.ies.paren0
         assert df is not None
         # get the 1st iter obs en
-        df = r.ies.obs_ensemble1
+        df = r.ies.obsen1
         assert df is not None
         # get the combined par en across all iters
-        df = r.ies.par_en
+        df = r.ies.paren
         assert df is not None
 
 def results_mou_1_test():

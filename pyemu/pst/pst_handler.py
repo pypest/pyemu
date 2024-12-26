@@ -141,6 +141,10 @@ class Pst(object):
 
             self.load(filename, parse_metadata=parse_metadata)
 
+    def __repr__(self):
+        return "npar:{0}, npar_adj:{1}, nobs:{2}, nnzobs:{3}, filename:{4}".\
+            format(self.npar, self.npar_adj,self.nobs,self.nnz_obs,self.filename)
+
     def __setattr__(self, key, value):
         if key == "model_command":
             if isinstance(value, str):
@@ -176,13 +180,21 @@ class Pst(object):
         raise Exception("Pst has no attribute: '{0}'".format(tag))
 
 
-    def add_results(self,m_ds):
+    def add_results(self,m_ds,cases=None):
         if not isinstance(m_ds,list):
             m_ds = [m_ds]
-        for m_d in m_ds:
+        if cases is not None and not isinstance(cases,list):
+            cases = [cases]
+        if cases is not None:
+            if len(cases) != len(m_ds):
+                raise Exception("len(cases) != len(m_ds)")
+        for i,m_d in enumerate(m_ds):
             if m_d in self.results:
                 raise Exception("results directory '{0}' already registered")
-            self.results[m_d] = Results(m_d,case=os.path.split(self.filename)[1].replace(".pst",""))
+            case = os.path.split(self.filename)[1].replace(".pst","")
+            if cases is not None:
+                case = cases[i]
+            self.results[m_d] = Results(m_d,case=case)
             self.result_dirs.append(m_d)
 
     @classmethod
