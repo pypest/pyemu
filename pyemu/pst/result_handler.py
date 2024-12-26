@@ -46,6 +46,9 @@ class ResultHandler(object):
                     df = pd.read_csv(filename, index_col=0)
                 elif filename.lower().endswith(".jcb") or filename.lower().endswith(".jco") or filename.lower().endswith(".bin"):
                     df = pyemu.Matrix.from_binary(filename).to_dataframe()
+                else:
+                    raise Exception("unrecognized ensemble/population file extension: '{0}', should be csv, jcb/jco, or bin".\
+                                    format(filename))
                 df.index.name = index_name
                 self.results_loaded[filename] = df
             except Exception as e:
@@ -65,6 +68,18 @@ class ResultHandler(object):
             raise Exception("duplicate iteration tags found")
 
 
+    def parse_iter_from_tag(self,tag):
+        rtag = tag[::-1]
+        digits = []
+        for d in rtag:
+            if str.isalpha(d):
+                break
+            digits.append(d)
+        if len(digits) == 0:
+            return None
+        digits = digits[::-1]
+        itr = int(''.join(digits))
+        return itr
 
 class ResultIesHandler(ResultHandler):
 
@@ -86,20 +101,6 @@ class ResultIesHandler(ResultHandler):
                 files.append(f)
         return files
 
-    def parse_iter_from_tag(self,tag):
-        if "ensemble" in tag:
-            itr = tag.split("ensemble")[1]
-        elif "en" in tag:
-            itr = tag.split("en")[1]
-        elif tag == "pdc":
-            itr = tag.split("pdc")[1]
-        elif tag == "pcs":
-            itr = tag.split("pcs")[1]
-        else:
-            raise Exception("parse_iter_from_tag: unrecognized tag: '{0}'".format(tag))
-        if itr == "":
-            itr = None
-        return itr
 
     def __getattr__(self,tag):
         tag = tag.lower().strip()
@@ -257,22 +258,8 @@ class ResultMouHandler(ResultHandler):
                     files.append(f)
         return files
 
-    def parse_iter_from_tag(self,tag):
-        if "dvpop" in tag:
-            itr = tag.split("dvpop")[1]
-        elif "obspop" in tag:
-            itr = tag.split("obspop")[1]
-        elif "stack_summary" in tag:
-            itr = tag.split("stack_summary")[1]
-        elif "archive" in tag:
-            itr = tag.split("archive")[1]
-        elif "stack" in tag:
-            itr = tag.split("stack")[1]
-        else:
-            raise Exception("parse_iter_from_tag: unrecognized tag: '{0}'".format(tag))
-        if itr == "":
-            itr = None
-        return itr
+
+
 
 
     def __getattr__(self,tag):
@@ -451,149 +438,5 @@ class Results(object):
 
 
 
-def results_ies_1_test():
-    r = Results(m_d=os.path.join("pst", "master_ies1"))
-    # get all change sum files in an multiindex df
-    df = r.ies.pcs
-    assert df is not None
-
-    # same for conflicts across iterations
-    df = r.ies.pdc
-    assert df is not None
-
-    # weights
-    df = r.ies.weight_en
-    #print(df)
-    assert df is not None
-
-    # various phi dfs
-    df = r.ies.phi_lambda
-    assert df is not None
-    df = r.ies.phi_group
-    assert df is not None
-    df = r.ies.phi_actual
-    assert df is not None
-    print(df)
-    df = r.ies.phi_meas
-    assert df is not None
-    # noise
-    df = r.ies.noise_en
-    assert df is not None
-    # get the prior par en
-    df = r.ies.par_en0
-    assert df is not None
-    # get the 1st iter obs en
-    df = r.ies.obs_ensemble1
-    assert df is not None
-    # get the combined par en across all iters
-    df = r.ies.par_en
-    assert df is not None
-    #print(df)
 
 
-def results_ies_2_test():
-    for case in ["test","test2"]:
-        r = Results(m_d=os.path.join("pst", "master_ies2"), case=case)
-        # get all change sum files in an multiindex df
-        df = r.ies.pcs
-        assert df is not None
-
-        # same for conflicts across iterations
-        df = r.ies.pdc
-        assert df is not None
-
-        # weights
-        df = r.ies.weight_en
-        assert df is not None
-
-        # various phi dfs
-        df = r.ies.phi_lambda
-        assert df is not None
-        df = r.ies.phi_group
-        assert df is not None
-        df = r.ies.phi_actual
-        assert df is not None
-        df = r.ies.phi_meas
-        assert df is not None
-        # noise
-        df = r.ies.noise_en
-        assert df is not None
-        # get the prior par en
-        df = r.ies.par_en0
-        assert df is not None
-        # get the 1st iter obs en
-        df = r.ies.obs_ensemble1
-        assert df is not None
-        # get the combined par en across all iters
-        df = r.ies.par_en
-        assert df is not None
-
-def results_mou_1_test():
-    for m_d in [os.path.join("pst", "zdt1_bin"),os.path.join("pst", "zdt1_ascii")]:
-        r = Results(m_d=m_d)
-
-        df = r.mou.nestedparstack
-        #print(df)
-
-        assert df is not None
-
-        df = r.mou.parstack0
-        #print(df)
-        assert df is not None
-
-        df = r.mou.stack_summary0
-        #print(df)
-        assert df is not None
-
-
-        df = r.mou.chanceobspop1
-        #print(df)
-        assert df is not None
-
-        df = r.mou.chanceobspop
-        #print(df)
-        assert df is not None
-
-        df = r.mou.chancedvpop1
-        #print(df)
-        assert df is not None
-
-        df = r.mou.chancedvpop
-        #print(df)
-        assert df is not None
-
-        df = r.mou.dvpop
-        assert df is not None
-
-        df = r.mou.dvpop0
-        #print(df)
-        assert df is not None
-
-        df = r.mou.obspop
-        #print(df)
-        assert df is not None
-
-        df = r.mou.obspop5
-        # print(df)
-        assert df is not None
-
-        df = r.mou.paretosum_archive
-        #print(df)
-        assert df is not None
-
-        df = r.mou.paretosum
-        #print(df)
-        assert df is not None
-
-        df = r.mou.archivedvpop
-        print(df)
-        assert df is not None
-
-        df = r.mou.archiveobspop
-        #print(df)
-        assert df is not None
-
-if __name__ == "__main__":
-    results_ies_1_test()
-    results_ies_2_test()
-    results_mou_1_test()

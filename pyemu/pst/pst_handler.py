@@ -16,6 +16,7 @@ from ..pyemu_warnings import PyemuWarning
 from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
 from pyemu.pst import pst_utils
 from pyemu.plot import plot_utils
+from pyemu.pst.result_handler import Results,ResultMouHandler, ResultIesHandler
 
 # from pyemu.utils.os_utils import run
 
@@ -98,6 +99,8 @@ class Pst(object):
         self.comments = {}
         self.other_sections = {}
         self.new_filename = None
+        self.results = {}
+        self.result_dirs = []
         for key, value in pst_utils.pst_config.items():
             self.__setattr__(key, copy.copy(value))
         # self.tied = None
@@ -143,6 +146,42 @@ class Pst(object):
             if isinstance(value, str):
                 value = [value]
         super(Pst, self).__setattr__(key, value)
+
+    def __getattr__(self,tag):
+        if len(self.results) == 0:
+            raise Exception("Pst has no attribute: '{0}'".format(tag))
+        if tag == "ies":
+            if len(self.results) == 1:
+                return self.results[self.result_dirs[0]].ies
+            else:
+                return [self.results[r].ies for r in self.result_dirs]
+        elif tag == "mou":
+            if len(self.results) == 1:
+                return self.results[self.result_dirs[0]].mou
+            else:
+                return [self.results[r].mou for r in self.result_dirs]
+        elif tag in [os.path.split(r)[1] for r in self.result_dirs]:
+            results = [os.path.split(r)[1] for r in self.result_dirs]
+            idx = results.index(tag)
+            return self.results[self.result_dirs[idx]]
+        elif tag.startswith("r"):
+            try:
+                idx = int(tag[1:])
+            except Exception as e:
+                pass
+            else:
+                return self.results[self.result_dirs[idx]]
+        raise Exception("Pst has no attribute: '{0}'".format(tag))
+
+
+    def add_results(self,m_ds):
+        if not isinstance(m_ds,list):
+            m_ds = [m_ds]
+        for m_d in m_ds:
+            if m_d in self.results:
+                raise Exception("results directory '{0}' already registered")
+            self.results[m_d] = Results(m_d,case=os.path.split(self.filename)[1].replace(".pst",""))
+            self.result_dirs.append(m_d)
 
     @classmethod
     def from_par_obs_names(cls, par_names=["par1"], obs_names=["obs1"]):
