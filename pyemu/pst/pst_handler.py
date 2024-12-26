@@ -148,6 +148,8 @@ class Pst(object):
         super(Pst, self).__setattr__(key, value)
 
     def __getattr__(self,tag):
+        if tag == "parameter_groups":
+            return None
         if len(self.results) == 0:
             raise Exception("Pst has no attribute: '{0}'".format(tag))
         if tag == "ies":
@@ -1329,7 +1331,8 @@ class Pst(object):
                 df['longname'] = df.index.map(mapr.to_dict())
             except Exception:
                 pass
-        if hasattr(self, "parameter_groups"):
+        #if hasattr(self, "parameter_groups"):
+        if self.parameter_groups is not None:
             df, fnme = (self.parameter_groups, "pglongname.map")
             try:
                 mapr = pd.read_csv(Path(d, fnme), index_col=0,low_memory=False)['longname']
@@ -1402,7 +1405,8 @@ class Pst(object):
         # print(pdata_groups)
         need_groups = []
 
-        if hasattr(self, "parameter_groups"):
+        #if hasattr(self, "parameter_groups"):
+        if self.parameter_groups is not None:
             existing_groups = list(self.parameter_groups.pargpnme)
         else:
             existing_groups = []

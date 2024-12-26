@@ -6105,7 +6105,7 @@ if __name__ == "__main__":
     #mf6_freyberg_ppu_hyperpars_thresh_invest(".")
     #while True:
     #    mf6_freyberg_thresh_test(".")
-    plot_thresh("master_thresh_nonstat")
+    #plot_thresh("master_thresh_nonstat")
     #mf6_freyberg_thresh_test(".")
     #plot_thresh("master_thresh_nonstat")
     #plot_thresh("master_thresh_nonstat_nim")
@@ -6118,7 +6118,7 @@ if __name__ == "__main__":
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
-    #mf6_freyberg_direct_test()
+    mf6_freyberg_direct_test(".")
     #freyberg_test()
     #mf6_freyberg_thresh_test(".")
     #mf6_freyberg_test()
