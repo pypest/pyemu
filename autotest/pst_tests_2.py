@@ -914,6 +914,8 @@ def results_ies_1_test():
     ies = pst.ies
     mou = pst.mou
 
+    pst = pyemu.Pst(os.path.join(m_d, "pest.pst"),result_dir=m_d)
+
     # get all change sum files in an multiindex df
     df = r.ies.pcs
     assert df is not None
@@ -1091,8 +1093,8 @@ def results_mou_1_test():
         assert df is not None
 
 if __name__ == "__main__":
-    results_ies_3_test()
-    #results_ies_1_test()
+    #results_ies_3_test()
+    results_ies_1_test()
     #results_ies_2_test()
     #results_mou_1_test()
     #at_bounds_test()

@@ -62,7 +62,8 @@ class Pst(object):
 
     """
 
-    def __init__(self, filename, load=True, resfile=None, parse_metadata=True):
+    def __init__(self, filename, load=True, resfile=None, parse_metadata=True,
+                 result_dir=None):
 
         self.parameter_data = None
         """pandas.DataFrame:  '* parameter data' information.  Columns are 
@@ -140,6 +141,8 @@ class Pst(object):
                 raise Exception("pst file not found:{0}".format(filename))
 
             self.load(filename, parse_metadata=parse_metadata)
+        if result_dir is not None:
+            self.add_results(result_dir)
 
     def __repr__(self):
         return "npar:{0}, npar_adj:{1}, nobs:{2}, nnzobs:{3}, filename:{4}".\
@@ -191,7 +194,9 @@ class Pst(object):
         for i,m_d in enumerate(m_ds):
             if m_d in self.results:
                 raise Exception("results directory '{0}' already registered")
-            case = os.path.split(self.filename)[1].replace(".pst","")
+            case = None
+            if self.filename is not None:
+                case = os.path.split(self.filename)[1].replace(".pst","")
             if cases is not None:
                 case = cases[i]
             self.results[m_d] = Results(m_d,case=case)
