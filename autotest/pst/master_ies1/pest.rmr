@@ -1,0 +1,237 @@
+
+PANTHER master listening on socket:0.0.0.0:4005 (IPv4)
+running model 15 times
+01/02/25 11:22:24->waiting for agents to appear
+
+01/02/25 11:22:24->new connection from:localhost:49717
+01/02/25 11:22:24->new connection from:localhost:49718
+01/02/25 11:22:24->new connection from:localhost:49719
+01/02/25 11:22:24->initializing new agent connection from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 socket:localhost:49717 number of agents:3
+01/02/25 11:22:25->new connection from:localhost:49720
+01/02/25 11:22:25->initializing new agent connection from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 socket:localhost:49718 number of agents:4
+01/02/25 11:22:25->initializing new agent connection from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 socket:localhost:49719 number of agents:4
+01/02/25 11:22:25->initializing new agent connection from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 socket:localhost:49720 number of agents:4
+01/02/25 11:22:26->new agent ready:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 socket:localhost:49717
+01/02/25 11:22:26->Sending run_id:0 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:2  da_cycle:-9999   iteration:0  realization:REAL10_ITR1 concurrent:1)
+01/02/25 11:22:26->new agent ready:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 socket:localhost:49718
+01/02/25 11:22:26->Sending run_id:1 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:2  da_cycle:-9999   iteration:0  realization:REAL3_ITR1 concurrent:1)
+01/02/25 11:22:26->new agent ready:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 socket:localhost:49719
+01/02/25 11:22:26->Sending run_id:2 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:2  da_cycle:-9999   iteration:0  realization:REAL4_ITR1 concurrent:1)
+01/02/25 11:22:26->new agent ready:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 socket:localhost:49720
+01/02/25 11:22:26->Sending run_id:3 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:2  da_cycle:-9999   iteration:0  realization:REAL5_ITR1 concurrent:1)
+01/02/25 11:22:39-> run_id:0 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.21805  avg_run_time:0.21805 group_id:2  da_cycle:-9999   iteration:0  realization:real10_itr1  worker_time:0.21555 concurrent:1
+01/02/25 11:22:39->run 0 processed
+01/02/25 11:22:39->Sending run_id:4 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:2  da_cycle:-9999   iteration:0  realization:REAL6_ITR1 concurrent:1)
+01/02/25 11:22:39-> run_id:2 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.219867  avg_run_time:0.218958 group_id:2  da_cycle:-9999   iteration:0  realization:real4_itr1  worker_time:0.217317 concurrent:1
+01/02/25 11:22:40->run 2 processed
+01/02/25 11:22:40-> run_id:3 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.221767  avg_run_time:0.219894 group_id:2  da_cycle:-9999   iteration:0  realization:real5_itr1  worker_time:0.21895 concurrent:1
+01/02/25 11:22:40->run 3 processed
+01/02/25 11:22:40->Sending run_id:5 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:2  da_cycle:-9999   iteration:0  realization:REAL10_ITR0 concurrent:1)
+01/02/25 11:22:40-> run_id:1 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.226817  avg_run_time:0.221625 group_id:2  da_cycle:-9999   iteration:0  realization:real3_itr1  worker_time:0.220933 concurrent:1
+01/02/25 11:22:40->run 1 processed
+01/02/25 11:22:40->Sending run_id:6 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:2  da_cycle:-9999   iteration:0  realization:REAL3_ITR0 concurrent:1)
+01/02/25 11:22:40->Sending run_id:7 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:2  da_cycle:-9999   iteration:0  realization:REAL12_ITR1 concurrent:1)
+01/02/25 11:22:52-> run_id:4 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.213967  avg_run_time:0.220604 group_id:2  da_cycle:-9999   iteration:0  realization:real6_itr1  worker_time:0.20895 concurrent:1
+01/02/25 11:22:52->run 4 processed
+01/02/25 11:22:52->Sending run_id:8 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:2  da_cycle:-9999   iteration:0  realization:REALBASE_ITR1 concurrent:1)
+01/02/25 11:22:53-> run_id:5 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.216567  avg_run_time:0.219779 group_id:2  da_cycle:-9999   iteration:0  realization:real10_itr0  worker_time:0.212467 concurrent:1
+01/02/25 11:22:53->run 5 processed
+01/02/25 11:22:53-> run_id:7 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.22  avg_run_time:0.218075 group_id:2  da_cycle:-9999   iteration:0  realization:real12_itr1  worker_time:0.212083 concurrent:1
+01/02/25 11:22:53->run 7 processed
+01/02/25 11:22:53->Sending run_id:9 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:2  da_cycle:-9999   iteration:0  realization:REAL0_ITR0 concurrent:1)
+01/02/25 11:22:53->Sending run_id:10 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:2  da_cycle:-9999   iteration:0  realization:REAL0_ITR1 concurrent:1)
+01/02/25 11:22:53-> run_id:6 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.220433  avg_run_time:0.217742 group_id:2  da_cycle:-9999   iteration:0  realization:real3_itr0  worker_time:0.218183 concurrent:1
+01/02/25 11:22:53->run 6 processed
+01/02/25 11:22:53->Sending run_id:11 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:2  da_cycle:-9999   iteration:0  realization:REAL11_ITR1 concurrent:1)
+01/02/25 11:23:05-> run_id:8 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.211967  avg_run_time:0.217242 group_id:2  da_cycle:-9999   iteration:0  realization:realbase_itr1  worker_time:0.208917 concurrent:1
+01/02/25 11:23:05->run 8 processed
+01/02/25 11:23:05->Sending run_id:12 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:2  da_cycle:-9999   iteration:0  realization:REAL2_ITR0 concurrent:1)
+01/02/25 11:23:06-> run_id:10 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.2166  avg_run_time:0.216392 group_id:2  da_cycle:-9999   iteration:0  realization:real0_itr1  worker_time:0.2123 concurrent:1
+01/02/25 11:23:06->run 10 processed
+01/02/25 11:23:06->Sending run_id:13 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:2  da_cycle:-9999   iteration:0  realization:REAL8_ITR1 concurrent:1)
+01/02/25 11:23:06-> run_id:11 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.21675  avg_run_time:0.215471 group_id:2  da_cycle:-9999   iteration:0  realization:real11_itr1  worker_time:0.212217 concurrent:1
+01/02/25 11:23:06->run 11 processed
+01/02/25 11:23:06-> run_id:9 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.219617  avg_run_time:0.216233 group_id:2  da_cycle:-9999   iteration:0  realization:real0_itr0  worker_time:0.221767 concurrent:1
+01/02/25 11:23:07->run 9 processed
+01/02/25 11:23:07->Sending run_id:14 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:2  da_cycle:-9999   iteration:0  realization:BASE concurrent:1)
+01/02/25 11:23:18-> run_id:12 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.213033  avg_run_time:0.2165 group_id:2  da_cycle:-9999   iteration:0  realization:real2_itr0  worker_time:0.213333 concurrent:1
+01/02/25 11:23:18->run 12 processed
+01/02/25 11:23:18-> run_id:13 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.2101  avg_run_time:0.214875 group_id:2  da_cycle:-9999   iteration:0  realization:real8_itr1  worker_time:0.202867 concurrent:1
+01/02/25 11:23:18->run 13 processed
+01/02/25 11:23:19-> run_id:14 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.2093  avg_run_time:0.213013 group_id:2  da_cycle:-9999   iteration:0  realization:base  worker_time:0.2011 concurrent:1
+01/02/25 11:23:19->run 14 processed
+
+---------------------
+   15 runs complete :  0 runs failed
+   0.213 avg run time (min) : 0.907 run mgr time (min)
+   4 agents connected
+
+
+
+01/02/25 11:23:19->Started idle ping thread.
+01/02/25 11:23:19->Panther idle ping thread resumed.
+01/02/25 11:23:31->Panther idle ping thread paused prior to scheduling runs.
+running model 36 times
+01/02/25 11:23:31->    4 agents ready
+
+01/02/25 11:23:31->Sending run_id:0 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:0.75 iteration:1  realization:REAL3_ITR1 concurrent:1)
+01/02/25 11:23:31->Sending run_id:1 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:0.75 iteration:1  realization:REAL6_ITR1 concurrent:1)
+01/02/25 11:23:31->Sending run_id:2 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:0.75 iteration:1  realization:REAL10_ITR0 concurrent:1)
+01/02/25 11:23:31->Sending run_id:3 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:0.75 iteration:1  realization:BASE concurrent:1)
+01/02/25 11:23:44-> run_id:0 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.21545  avg_run_time:0.21545 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:0.75 iteration:1  realization:real3_itr1  worker_time:0.214633 concurrent:1
+01/02/25 11:23:44->run 0 processed
+01/02/25 11:23:44-> run_id:1 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.218983  avg_run_time:0.217217 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:0.75 iteration:1  realization:real6_itr1  worker_time:0.21745 concurrent:1
+01/02/25 11:23:44->run 1 processed
+01/02/25 11:23:44-> run_id:2 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.222267  avg_run_time:0.2189 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:0.75 iteration:1  realization:real10_itr0  worker_time:0.215967 concurrent:1
+01/02/25 11:23:45->run 2 processed
+01/02/25 11:23:45-> run_id:3 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.2255  avg_run_time:0.22055 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:0.75 iteration:1  realization:base  worker_time:0.215683 concurrent:1
+01/02/25 11:23:45->run 3 processed
+01/02/25 11:23:45->Sending run_id:4 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1 iteration:1  realization:REAL3_ITR1 concurrent:1)
+01/02/25 11:23:45->Sending run_id:5 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1 iteration:1  realization:REAL6_ITR1 concurrent:1)
+01/02/25 11:23:45->Sending run_id:6 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1 iteration:1  realization:REAL10_ITR0 concurrent:1)
+01/02/25 11:23:45->Sending run_id:7 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1 iteration:1  realization:BASE concurrent:1)
+01/02/25 11:23:58-> run_id:4 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.215333  avg_run_time:0.220521 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1 iteration:1  realization:real3_itr1  worker_time:0.214417 concurrent:1
+01/02/25 11:23:58->run 4 processed
+01/02/25 11:23:58-> run_id:5 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.21875  avg_run_time:0.220463 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1 iteration:1  realization:real6_itr1  worker_time:0.216717 concurrent:1
+01/02/25 11:23:58->run 5 processed
+01/02/25 11:23:58-> run_id:6 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.222017  avg_run_time:0.2204 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1 iteration:1  realization:real10_itr0  worker_time:0.216717 concurrent:1
+01/02/25 11:23:58->run 6 processed
+01/02/25 11:23:58-> run_id:7 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.225233  avg_run_time:0.220333 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1 iteration:1  realization:base  worker_time:0.216483 concurrent:1
+01/02/25 11:23:58->run 7 processed
+01/02/25 11:23:58->Sending run_id:8 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1.1 iteration:1  realization:REAL3_ITR1 concurrent:1)
+01/02/25 11:23:58->Sending run_id:9 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1.1 iteration:1  realization:REAL6_ITR1 concurrent:1)
+01/02/25 11:23:58->Sending run_id:10 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1.1 iteration:1  realization:REAL10_ITR0 concurrent:1)
+01/02/25 11:23:58->Sending run_id:11 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1.1 iteration:1  realization:BASE concurrent:1)
+01/02/25 11:24:11-> run_id:11 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.2203  avg_run_time:0.2191 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1.1 iteration:1  realization:base  worker_time:0.21455 concurrent:1
+01/02/25 11:24:12->run 11 processed
+01/02/25 11:24:12-> run_id:10 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.220367  avg_run_time:0.218687 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1.1 iteration:1  realization:real10_itr0  worker_time:0.216217 concurrent:1
+01/02/25 11:24:12->run 10 processed
+01/02/25 11:24:12->Sending run_id:12 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:3  da_cycle:-9999   lambda:1 scale_fac:0.75 iteration:1  realization:REAL3_ITR1 concurrent:1)
+01/02/25 11:24:12-> run_id:8 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.218783  avg_run_time:0.21955 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1.1 iteration:1  realization:real3_itr1  worker_time:0.218083 concurrent:1
+01/02/25 11:24:12->run 8 processed
+01/02/25 11:24:12-> run_id:9 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.222133  avg_run_time:0.220396 group_id:3  da_cycle:-9999   lambda:0.1 scale_fac:1.1 iteration:1  realization:real6_itr1  worker_time:0.218067 concurrent:1
+01/02/25 11:24:12->run 9 processed
+01/02/25 11:24:12->Sending run_id:13 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:3  da_cycle:-9999   lambda:1 scale_fac:0.75 iteration:1  realization:REAL6_ITR1 concurrent:1)
+01/02/25 11:24:12->Sending run_id:14 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:3  da_cycle:-9999   lambda:1 scale_fac:0.75 iteration:1  realization:REAL10_ITR0 concurrent:1)
+01/02/25 11:24:12->Sending run_id:15 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:3  da_cycle:-9999   lambda:1 scale_fac:0.75 iteration:1  realization:BASE concurrent:1)
+01/02/25 11:24:25-> run_id:12 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.216917  avg_run_time:0.21955 group_id:3  da_cycle:-9999   lambda:1 scale_fac:0.75 iteration:1  realization:real3_itr1  worker_time:0.212767 concurrent:1
+01/02/25 11:24:25->run 12 processed
+01/02/25 11:24:25->Sending run_id:16 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1 iteration:1  realization:REAL3_ITR1 concurrent:1)
+01/02/25 11:24:25-> run_id:14 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.2164  avg_run_time:0.218954 group_id:3  da_cycle:-9999   lambda:1 scale_fac:0.75 iteration:1  realization:real10_itr0  worker_time:0.212983 concurrent:1
+01/02/25 11:24:25->run 14 processed
+01/02/25 11:24:25-> run_id:15 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.21985  avg_run_time:0.218383 group_id:3  da_cycle:-9999   lambda:1 scale_fac:0.75 iteration:1  realization:base  worker_time:0.2141 concurrent:1
+01/02/25 11:24:25->run 15 processed
+01/02/25 11:24:25-> run_id:13 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.22065  avg_run_time:0.218454 group_id:3  da_cycle:-9999   lambda:1 scale_fac:0.75 iteration:1  realization:real6_itr1  worker_time:0.216283 concurrent:1
+01/02/25 11:24:26->run 13 processed
+01/02/25 11:24:26->Sending run_id:17 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1 iteration:1  realization:REAL6_ITR1 concurrent:1)
+01/02/25 11:24:26->Sending run_id:18 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1 iteration:1  realization:REAL10_ITR0 concurrent:1)
+01/02/25 11:24:26->Sending run_id:19 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1 iteration:1  realization:BASE concurrent:1)
+01/02/25 11:24:37-> run_id:16 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.214417  avg_run_time:0.217829 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1 iteration:1  realization:real3_itr1  worker_time:0.211133 concurrent:1
+01/02/25 11:24:38->run 16 processed
+01/02/25 11:24:38->Sending run_id:20 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1.1 iteration:1  realization:REAL3_ITR1 concurrent:1)
+01/02/25 11:24:39-> run_id:18 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.218467  avg_run_time:0.217483 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1 iteration:1  realization:real10_itr0  worker_time:0.216183 concurrent:1
+01/02/25 11:24:39->run 18 processed
+01/02/25 11:24:39-> run_id:17 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.21845  avg_run_time:0.217996 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1 iteration:1  realization:real6_itr1  worker_time:0.21665 concurrent:1
+01/02/25 11:24:39->run 17 processed
+01/02/25 11:24:39-> run_id:19 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.2223  avg_run_time:0.218408 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1 iteration:1  realization:base  worker_time:0.216317 concurrent:1
+01/02/25 11:24:39->run 19 processed
+01/02/25 11:24:39->Sending run_id:21 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1.1 iteration:1  realization:REAL6_ITR1 concurrent:1)
+01/02/25 11:24:39->Sending run_id:22 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1.1 iteration:1  realization:REAL10_ITR0 concurrent:1)
+01/02/25 11:24:39->Sending run_id:23 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1.1 iteration:1  realization:BASE concurrent:1)
+01/02/25 11:24:50-> run_id:20 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.2136  avg_run_time:0.218204 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1.1 iteration:1  realization:real3_itr1  worker_time:0.21185 concurrent:1
+01/02/25 11:24:51->run 20 processed
+01/02/25 11:24:51->Sending run_id:24 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:3  da_cycle:-9999   lambda:10 scale_fac:0.75 iteration:1  realization:REAL3_ITR1 concurrent:1)
+01/02/25 11:24:52-> run_id:22 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.2185  avg_run_time:0.218217 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1.1 iteration:1  realization:real10_itr0  worker_time:0.217733 concurrent:1
+01/02/25 11:24:53->run 22 processed
+01/02/25 11:24:53-> run_id:21 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.220233  avg_run_time:0.218658 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1.1 iteration:1  realization:real6_itr1  worker_time:0.219183 concurrent:1
+01/02/25 11:24:53->run 21 processed
+01/02/25 11:24:53-> run_id:23 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.22385  avg_run_time:0.219046 group_id:3  da_cycle:-9999   lambda:1 scale_fac:1.1 iteration:1  realization:base  worker_time:0.218867 concurrent:1
+01/02/25 11:24:53->run 23 processed
+01/02/25 11:24:53->Sending run_id:25 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:3  da_cycle:-9999   lambda:10 scale_fac:0.75 iteration:1  realization:REAL6_ITR1 concurrent:1)
+01/02/25 11:24:53->Sending run_id:26 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:3  da_cycle:-9999   lambda:10 scale_fac:0.75 iteration:1  realization:REAL10_ITR0 concurrent:1)
+01/02/25 11:24:53->Sending run_id:27 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:3  da_cycle:-9999   lambda:10 scale_fac:0.75 iteration:1  realization:BASE concurrent:1)
+01/02/25 11:25:03-> run_id:24 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.2116  avg_run_time:0.218546 group_id:3  da_cycle:-9999   lambda:10 scale_fac:0.75 iteration:1  realization:real3_itr1  worker_time:0.2088 concurrent:1
+01/02/25 11:25:03->run 24 processed
+01/02/25 11:25:03->Sending run_id:28 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1 iteration:1  realization:REAL3_ITR1 concurrent:1)
+01/02/25 11:25:06-> run_id:27 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.2195  avg_run_time:0.217458 group_id:3  da_cycle:-9999   lambda:10 scale_fac:0.75 iteration:1  realization:base  worker_time:0.214267 concurrent:1
+01/02/25 11:25:06->run 27 processed
+01/02/25 11:25:06-> run_id:25 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.218567  avg_run_time:0.217475 group_id:3  da_cycle:-9999   lambda:10 scale_fac:0.75 iteration:1  realization:real6_itr1  worker_time:0.2145 concurrent:1
+01/02/25 11:25:06->run 25 processed
+01/02/25 11:25:06-> run_id:26 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.221117  avg_run_time:0.217696 group_id:3  da_cycle:-9999   lambda:10 scale_fac:0.75 iteration:1  realization:real10_itr0  worker_time:0.21615 concurrent:1
+01/02/25 11:25:06->run 26 processed
+01/02/25 11:25:06->Sending run_id:29 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1 iteration:1  realization:REAL6_ITR1 concurrent:1)
+01/02/25 11:25:06->Sending run_id:30 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1 iteration:1  realization:REAL10_ITR0 concurrent:1)
+01/02/25 11:25:06->Sending run_id:31 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1 iteration:1  realization:BASE concurrent:1)
+01/02/25 11:25:16-> run_id:28 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.211233  avg_run_time:0.217604 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1 iteration:1  realization:real3_itr1  worker_time:0.21005 concurrent:1
+01/02/25 11:25:16->run 28 processed
+01/02/25 11:25:16->Sending run_id:32 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1.1 iteration:1  realization:REAL3_ITR1 concurrent:1)
+01/02/25 11:25:19-> run_id:30 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.216483  avg_run_time:0.217083 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1 iteration:1  realization:real10_itr0  worker_time:0.21345 concurrent:1
+01/02/25 11:25:20->run 30 processed
+01/02/25 11:25:20-> run_id:31 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.219517  avg_run_time:0.216683 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1 iteration:1  realization:base  worker_time:0.21365 concurrent:1
+01/02/25 11:25:20->run 31 processed
+01/02/25 11:25:20-> run_id:29 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.220333  avg_run_time:0.216892 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1 iteration:1  realization:real6_itr1  worker_time:0.21495 concurrent:1
+01/02/25 11:25:20->run 29 processed
+01/02/25 11:25:20->Sending run_id:33 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1.1 iteration:1  realization:REAL6_ITR1 concurrent:1)
+01/02/25 11:25:20->Sending run_id:34 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1.1 iteration:1  realization:REAL10_ITR0 concurrent:1)
+01/02/25 11:25:20->Sending run_id:35 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1.1 iteration:1  realization:BASE concurrent:1)
+01/02/25 11:25:29-> run_id:32 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.209067  avg_run_time:0.21635 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1.1 iteration:1  realization:real3_itr1  worker_time:0.206133 concurrent:1
+01/02/25 11:25:29->run 32 processed
+01/02/25 11:25:33-> run_id:35 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.218433  avg_run_time:0.215875 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1.1 iteration:1  realization:base  worker_time:0.215433 concurrent:1
+01/02/25 11:25:33->run 35 processed
+01/02/25 11:25:33-> run_id:33 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.218083  avg_run_time:0.216275 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1.1 iteration:1  realization:real6_itr1  worker_time:0.2156 concurrent:1
+01/02/25 11:25:33->run 33 processed
+01/02/25 11:25:33-> run_id:34 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.22125  avg_run_time:0.216708 group_id:3  da_cycle:-9999   lambda:10 scale_fac:1.1 iteration:1  realization:real10_itr0  worker_time:0.2156 concurrent:1
+01/02/25 11:25:34->run 34 processed
+
+---------------------
+   36 runs complete :  0 runs failed
+   0.217 avg run time (min) : 2.04 run mgr time (min)
+   4 agents connected
+
+
+
+01/02/25 11:25:34->Panther idle ping thread resumed.
+01/02/25 11:25:47->Panther idle ping thread paused prior to scheduling runs.
+running model 10 times
+01/02/25 11:25:47->    4 agents ready
+
+01/02/25 11:25:47->Sending run_id:0 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:4  da_cycle:-9999   iteration:1  realization:REAL10_ITR1 concurrent:1)
+01/02/25 11:25:47->Sending run_id:1 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:4  da_cycle:-9999   iteration:1  realization:REAL4_ITR1 concurrent:1)
+01/02/25 11:25:47->Sending run_id:2 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:4  da_cycle:-9999   iteration:1  realization:REAL5_ITR1 concurrent:1)
+01/02/25 11:25:47->Sending run_id:3 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:4  da_cycle:-9999   iteration:1  realization:REAL3_ITR0 concurrent:1)
+01/02/25 11:25:59-> run_id:2 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.21255  avg_run_time:0.21255 group_id:4  da_cycle:-9999   iteration:1  realization:real5_itr1  worker_time:0.211767 concurrent:1
+01/02/25 11:26:00->run 2 processed
+01/02/25 11:26:00-> run_id:0 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.2159  avg_run_time:0.214225 group_id:4  da_cycle:-9999   iteration:1  realization:real10_itr1  worker_time:0.214867 concurrent:1
+01/02/25 11:26:00->run 0 processed
+01/02/25 11:26:00-> run_id:1 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.21905  avg_run_time:0.215833 group_id:4  da_cycle:-9999   iteration:1  realization:real4_itr1  worker_time:0.213 concurrent:1
+01/02/25 11:26:00->run 1 processed
+01/02/25 11:26:00->Sending run_id:4 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:4  da_cycle:-9999   iteration:1  realization:REAL12_ITR1 concurrent:1)
+01/02/25 11:26:00-> run_id:3 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.222167  avg_run_time:0.217417 group_id:4  da_cycle:-9999   iteration:1  realization:real3_itr0  worker_time:0.215 concurrent:1
+01/02/25 11:26:00->run 3 processed
+01/02/25 11:26:00->Sending run_id:5 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:4  da_cycle:-9999   iteration:1  realization:REALBASE_ITR1 concurrent:1)
+01/02/25 11:26:00->Sending run_id:6 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1 group_id:4  da_cycle:-9999   iteration:1  realization:REAL0_ITR0 concurrent:1)
+01/02/25 11:26:00->Sending run_id:7 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3 group_id:4  da_cycle:-9999   iteration:1  realization:REAL11_ITR1 concurrent:1)
+01/02/25 11:26:13-> run_id:4 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.21655  avg_run_time:0.218417 group_id:4  da_cycle:-9999   iteration:1  realization:real12_itr1  worker_time:0.219767 concurrent:1
+01/02/25 11:26:13->run 4 processed
+01/02/25 11:26:13-> run_id:5 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.218317  avg_run_time:0.219021 group_id:4  da_cycle:-9999   iteration:1  realization:realbase_itr1  worker_time:0.21965 concurrent:1
+01/02/25 11:26:14->run 5 processed
+01/02/25 11:26:14-> run_id:6 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_1  run_time:0.2215  avg_run_time:0.219633 group_id:4  da_cycle:-9999   iteration:1  realization:real0_itr0  worker_time:0.217767 concurrent:1
+01/02/25 11:26:14->run 6 processed
+01/02/25 11:26:14-> run_id:7 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_3  run_time:0.224667  avg_run_time:0.220258 group_id:4  da_cycle:-9999   iteration:1  realization:real11_itr1  worker_time:0.219633 concurrent:1
+01/02/25 11:26:14->run 7 processed
+01/02/25 11:26:14->Sending run_id:8 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2 group_id:4  da_cycle:-9999   iteration:1  realization:REAL2_ITR0 concurrent:1)
+01/02/25 11:26:14->Sending run_id:9 to:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0 group_id:4  da_cycle:-9999   iteration:1  realization:REAL8_ITR1 concurrent:1)
+01/02/25 11:26:26-> run_id:8 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_2  run_time:0.2071  avg_run_time:0.217896 group_id:4  da_cycle:-9999   iteration:1  realization:real2_itr0  worker_time:0.196717 concurrent:1
+01/02/25 11:26:26->run 8 processed
+01/02/25 11:26:26-> run_id:9 received from:localhost$/Users/jwhite/Dev/1D_CSUB/J88/worker_0  run_time:0.209583  avg_run_time:0.215713 group_id:4  da_cycle:-9999   iteration:1  realization:real8_itr1  worker_time:0.196817 concurrent:1
+01/02/25 11:26:26->run 9 processed
+
+---------------------
+   10 runs complete :  0 runs failed
+   0.216 avg run time (min) : 0.66 run mgr time (min)
+   4 agents connected
+
+
+
+01/02/25 11:26:26->Panther idle ping thread resumed.
+01/02/25 11:26:34->Stopped idle ping thread, as Panther manager is shutting down.

@@ -4,7 +4,17 @@ import pyemu
 
 
 class ResultHandler(object):
+    """the result handling parent class - should not be instantiated directly
+
+    """
     def __init__(self,m_d,case):
+        """ constructor
+
+        Args:
+            m_d (str): results directory
+            case (str): the pest++ case name
+
+        """
         self.m_d = m_d
         self.case = case
         self.path2files = [os.path.join(self.m_d,f.lower()) for f in os.listdir(self.m_d)]
@@ -15,12 +25,24 @@ class ResultHandler(object):
 
     @property
     def files_loaded(self):
+        """get a sorted list of all the result files that have been loaded so far
+        """
         files = list(self.results_loaded.keys())
         files.sort()
         return files
     
 
     def get_or_load_csv_file(self,filename,index_col=None):
+        """ get or optionally load a dataframe from a csv file
+
+        Args:
+            fileanme (str): full path filename
+            index_col (int): optional column in the csv file to make the index
+
+        Returns:
+            pd.DataFrame
+
+        """
         if len(os.path.split(filename)[0]) == 0:
             filename = os.path.join(self.m_d,filename)
         if filename in self.results_loaded:
@@ -36,6 +58,16 @@ class ResultHandler(object):
             return df
 
     def get_or_load_ensemble_file(self, filename,index_name="realization"):
+        """get or optionally load an ensemble file into a pandas dataframe
+
+        Args:
+            filename (str): full path filename
+            index_name (str): optional name to give the index in the dataframe
+
+        Returns:
+            pd.DataFrame
+
+        """
         if len(os.path.split(filename)) == 1:
             filename = os.path.join(self.m_d,filename)
         if filename in self.results_loaded:
@@ -58,6 +90,14 @@ class ResultHandler(object):
             return df
 
     def check_dup_iters(self,itrs, files):
+        """check that a sequence of results files does not have the same
+        iteration tag in the filename.  Raises exception of true
+
+        Args:
+            itrs (list): iteration numbers
+            files (files): associated list of filenames
+
+        """
         dup_itrs,dup_files = [],[]
         for i,itr in enumerate(itrs[:-1]):
             if itr in itrs[i+1:]:
@@ -70,6 +110,15 @@ class ResultHandler(object):
 
 
     def parse_iter_from_tag(self,tag):
+        """get the integer iteration/generation number for a user-supplied attr str
+
+        Args:
+            tag (str): user supplied attr string
+
+        Returns:
+            int
+
+        """
         rtag = tag[::-1]
         digits = []
         for d in rtag:
@@ -83,12 +132,41 @@ class ResultHandler(object):
         itr = ''.join(digits)
         return itr
 
+
+    def get_or_load_rmr_file(self,rmr_file):
+        """special handling for parsing the rmr file into a dataframe
+
+        Args:
+            rmr_file (str): full path rmr filename
+
+        Returns:
+            pd.DataFrame
+
+        """
+        if rmr_file in self.results_loaded:
+            return self.results_loaded[rmr_file]
+        df = pyemu.helpers.parse_rmr_file(rmr_file)
+        self.results_loaded[rmr_file] = df
+        return df
+
+
 class ResultIesHandler(ResultHandler):
+    """pestpp-ies child result class
+
+    """
 
     def get_files(self,tag):
+        """find all files that contain the user-supplied attr string
+
+        Args:
+            tag (str): user supplied attr string
+
+        Returns:
+            list(str): list of filenames
+
+        """
         files = []
         case_tag = self.case + tag
-
         for f in self.path2files:
             if tag in f.lower() and\
                 os.path.split(f)[1].lower().startswith(self.case+".") and \
@@ -105,7 +183,29 @@ class ResultIesHandler(ResultHandler):
 
 
     def __getattr__(self,tag):
+        """overload of the get-attribute class method to make things super
+        easy to use. your welcome
+
+        Args:
+            tag (str): the attribute string
+
+        Returns:
+            varies
+
+        Note:
+            raises lots of exceptions
+        """
+
         tag = tag.lower().strip()
+        if tag == 'rmr':
+            ttag = ".rmr"
+            rmr_files = self.get_files(ttag)
+            print(rmr_files)
+            if len(rmr_files) != 1:
+                raise Exception("ResultsIesHandler: only 1 rmr file expected, found {0}: {1}".\
+                                format(len(rmr_files),",".join(rmr_files)))
+            return self.get_or_load_rmr_file(rmr_files[0])
+
         if tag.startswith("paren") or tag.startswith("obsen"):
             itr = self.parse_iter_from_tag(tag)
             ttag = tag[:3]
@@ -141,7 +241,6 @@ class ResultIesHandler(ResultHandler):
 
                 df = self.get_or_load_ensemble_file(files[0])
                 return df
-
 
         elif tag.startswith("phi"):
             phi_type = tag.split("_")[1]
@@ -238,8 +337,6 @@ class ResultIesHandler(ResultHandler):
                 df = self.get_or_load_ensemble_file(files[0])
                 return df
 
-
-
         else:
             raise Exception("ResultIesHandler has no attribute '{0}'".format(tag))
 
@@ -247,8 +344,20 @@ class ResultIesHandler(ResultHandler):
 
 
 class ResultMouHandler(ResultHandler):
+    """pestpp-mou child result class
 
-    def get_files(self,tag):
+    """
+
+    def get_files(self, tag):
+        """find all files that contain the user-supplied attr string
+
+        Args:
+            tag (str): user supplied attr string
+
+        Returns:
+            list(str): list of filenames
+
+        """
         files = []
         case_tag = self.case + tag
 
@@ -274,7 +383,26 @@ class ResultMouHandler(ResultHandler):
 
 
     def __getattr__(self,tag):
+        """overload of the get-attribute class method to make things super
+        easy to use. your welcome
+
+        Args:
+            tag (str): the attribute string
+
+        Returns:
+            varies
+
+        Note:
+            raises lots of exceptions
+        """
         tag = tag.lower().strip()
+        if tag == 'rmr':
+            ttag = ".rmr"
+            rmr_files = self.get_files(ttag)
+            if len(rmr_files) != 1:
+                raise Exception("ResultsIesHandler: only 1 rmr file expected, found {0}: {1}".\
+                                format(len(rmr_files),",".join(rmr_files)))
+            return self.get_or_load_rmr_file(rmr_files[0])
 
         if (tag.startswith("dvpop") or tag.startswith("obspop") or \
                 tag.startswith("archivedvpop") or tag.startswith("archiveobspop") \
@@ -420,7 +548,18 @@ class ResultMouHandler(ResultHandler):
 
 
 class Results(object):
+    """high level result designed so that multiple
+    results dirs can be handled at once
+    """
     def __init__(self,m_d,case=None):
+        """constructor
+
+        Args:
+            m_d (str): results directory
+            case (str): optional pest++ case.  If None, a single .pst control file
+                in `m_d` is sought.  If not found, then exception is raised.
+
+        """
         if not os.path.exists(m_d):
             raise Exception("m_d '{0}' not found".format(m_d))
         if not os.path.isdir(m_d):

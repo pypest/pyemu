@@ -916,6 +916,10 @@ def results_ies_1_test():
 
     pst = pyemu.Pst(os.path.join(m_d, "pest.pst"),result_dir=m_d)
 
+    df = r.ies.rmr
+    print(df)
+    assert df is not None
+
     # get all change sum files in an multiindex df
     df = r.ies.pcs
     assert df is not None
@@ -936,7 +940,7 @@ def results_ies_1_test():
     assert df is not None
     df = r.ies.phi_actual
     assert df is not None
-    print(df)
+    #print(df)
     df = r.ies.phi_meas
     assert df is not None
     # noise
@@ -978,7 +982,7 @@ def results_ies_3_test():
 
     pst = pyemu.Pst(os.path.join(m_d1, "pest.pst"))
     pst.add_results([m_d1,m_d2],cases=["pest","test"])
-    print(pst.r0.ies.paren)
+    #print(pst.r0.ies.paren)
     #print(pst.r0.ies.obsen)
     #print(pst.r1.ies.files_loaded)
     #print(pst.r1.ies.obsen)
@@ -1085,7 +1089,7 @@ def results_mou_1_test():
         assert df is not None
 
         df = r.mou.archivedvpop
-        print(df)
+        #print(df)
         assert df is not None
 
         df = r.mou.archiveobspop
@@ -1095,8 +1099,8 @@ def results_mou_1_test():
 if __name__ == "__main__":
     #results_ies_3_test()
     results_ies_1_test()
-    #results_ies_2_test()
-    #results_mou_1_test()
+    results_ies_2_test()
+    results_mou_1_test()
     #at_bounds_test()
 
     #pst_from_flopy_geo_draw_test()
