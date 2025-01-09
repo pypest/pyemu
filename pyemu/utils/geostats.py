@@ -879,9 +879,12 @@ class OrdinaryKrige(object):
         """calculate kriging factors (weights) for a structured grid.
 
         Args:
-            spatial_reference (`flopy.utils.reference.SpatialReference`): a spatial
+            spatial_reference (`pyemu.helpers.SpatialReference` or
+            `flopy.ModelGrid`): a spatial
                 reference that describes the orientation and
-                spatail projection of the the structured grid
+                spatial projection of the model grid. Needs attributes:
+                [`xcentergrid`, `ycentergrid`, `nrow`, `ncol`,
+                 `grid_type`,  and `ncpl` (only if grid type=='vertex')].
             zone_array (`numpy.ndarray`): an integer array of zones to use for kriging.
                 If not None, then `point_data` must also contain a "zone" column.  `point_data`
                 entries with a zone value not found in zone_array will be skipped.
