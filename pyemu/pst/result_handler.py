@@ -243,7 +243,7 @@ class ResultIesHandler(ResultHandler):
                 return df
 
         elif tag.startswith("phi"):
-            phi_type = tag.split("_")[1]
+            phi_type = tag.replace("phi","")
             csv_filename = "{0}.phi.{1}.csv".format(self.case,phi_type)
             df = self.get_or_load_csv_file(csv_filename)
             return df

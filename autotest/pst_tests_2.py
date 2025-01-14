@@ -934,14 +934,14 @@ def results_ies_1_test():
     assert df is not None
 
     # various phi dfs
-    df = r.ies.phi_lambda
+    df = r.ies.philambda
     assert df is not None
-    df = r.ies.phi_group
+    df = r.ies.phigroup
     assert df is not None
-    df = r.ies.phi_actual
+    df = r.ies.phiactual
     assert df is not None
     #print(df)
-    df = r.ies.phi_meas
+    df = r.ies.phimeas
     assert df is not None
     # noise
     df = r.ies.noise
@@ -1009,13 +1009,13 @@ def results_ies_2_test():
         assert df is not None
 
         # various phi dfs
-        df = r.ies.phi_lambda
+        df = r.ies.philambda
         assert df is not None
-        df = r.ies.phi_group
+        df = r.ies.phigroup
         assert df is not None
-        df = r.ies.phi_actual
+        df = r.ies.phiactual
         assert df is not None
-        df = r.ies.phi_meas
+        df = r.ies.phimeas
         assert df is not None
         # noise
         df = r.ies.noise
