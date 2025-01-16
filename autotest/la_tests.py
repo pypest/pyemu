@@ -477,7 +477,7 @@ def ends_freyberg_dev():
     ax.set_xlabel("new obs group")
     ax.set_title("ensemble variance analysis for three Freyberg predictions",loc="left")
     plt.tight_layout()
-    plt.savefig("precent.pdf")
+    plt.savefig("percent.pdf")
     plt.close("all")
 
 

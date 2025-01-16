@@ -594,7 +594,7 @@ class NetPack(object):
         #    return -1
         data = self.nonblocking_recv(s,self.header_size)
         if data is None:
-            raise Exception("didnt recv header after security message")
+            raise Exception("didn't recv header after security message")
         self.buf_size = int.from_bytes(data[self.buf_idx[0]:self.buf_idx[1]], "little")
         self.mtype = int.from_bytes(data[self.type_idx[0]:self.type_idx[1]], "little")
         self.group = int.from_bytes(data[self.group_idx[0]:self.group_idx[1]], "little")
@@ -605,7 +605,7 @@ class NetPack(object):
         if data_len > 0:
             raw_data = self.nonblocking_recv(s,data_len)
             if raw_data is None:
-                raise Exception("didnt recv data pack after header of {0} bytes".format(data_len))
+                raise Exception("didn't recv data pack after header of {0} bytes".format(data_len))
             if dtype is None and self.mtype == 10:
                 dtype = float
             self.data_pak = self.deserialize_data(raw_data,dtype)
@@ -842,7 +842,7 @@ class PyPestWorker(object):
                     self.message("master is requesting run kill...")
 
                 else:
-                    print("WARNING: unsupported request recieved: {0}".format(NetPack.netpack_type[self.net_pack.mtype]))
+                    print("WARNING: unsupported request received: {0}".format(NetPack.netpack_type[self.net_pack.mtype]))
 
 
     def get_parameters(self):

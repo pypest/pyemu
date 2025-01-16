@@ -49,7 +49,7 @@ def add_pi_obj_func(pst, obj_func_dict=None, out_pst_name=None):
 
 # def get_added_obs_importance(pst,obslist_dict=None,base_obslist=None,
 #                              reset_zero_weight=1.0):
-#     """get a dataframe fo the objective function
+#     """get a dataframe of the objective function
 #         as a results of added some observations
 #         Parameters
 #         ----------
@@ -208,7 +208,7 @@ def add_pi_obj_func(pst, obj_func_dict=None, out_pst_name=None):
 #         const_groups = [grp for grp in pst.obs_groups if grp.lower() in OPERATOR_WORDS]
 #         if len(const_groups) == 0:
 #             raise Exception("to_mps(): obs_constraint_sense is None and no "+\
-#                             "obseravtion groups in {0}".format(','.join(pst.obs_groups)))
+#                             "observation groups in {0}".format(','.join(pst.obs_groups)))
 #         obs_constraint_sense = {}
 #         obs_groups = pst.observation_data.groupby(pst.observation_data.obgnme).groups
 #         for og,obs_names in obs_groups.items():
@@ -240,7 +240,7 @@ def add_pi_obj_func(pst, obj_func_dict=None, out_pst_name=None):
 #         obs_constraint_sense[obs_name.lower()] = obs_constraint_sense.\
 #                                                  pop(obs_name)
 #
-#     #build a list of constaint names in order WRT jco row order
+#     #build a list of constraint names in order WRT jco row order
 #     # order_obs_constraints = [name for name in jco.row_names if name in
 #     #                          obs_constraint_sense]
 #
