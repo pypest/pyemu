@@ -141,6 +141,9 @@ class Pst(object):
                 raise Exception("pst file not found:{0}".format(filename))
 
             self.load(filename, parse_metadata=parse_metadata)
+        if result_dir is None and os.path.exists(filename):
+            result_dir = os.path.split(os.path.abspath(filename))[0]
+
         if result_dir is not None:
             self.add_results(result_dir)
 
@@ -192,8 +195,9 @@ class Pst(object):
             if len(cases) != len(m_ds):
                 raise Exception("len(cases) != len(m_ds)")
         for i,m_d in enumerate(m_ds):
+            m_d = os.path.abspath(m_d)
             if m_d in self.results:
-                raise Exception("results directory '{0}' already registered")
+                raise Exception("results directory '{0}' already registered".format(m_d))
             case = None
             if self.filename is not None:
                 case = os.path.split(self.filename)[1].replace(".pst","")
