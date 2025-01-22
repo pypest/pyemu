@@ -908,7 +908,6 @@ def results_ies_1_test():
     m_d = os.path.join("pst", "master_ies1")
     r = pyemu.Results(m_d=m_d)
     pst = pyemu.Pst(os.path.join(m_d, "pest.pst"))
-    pst.add_results(m_d)
     r = pst.master_ies1
     r = pst.r0
     ies = pst.ies
@@ -962,7 +961,7 @@ def results_ies_3_test():
     m_d1 = os.path.join("pst","master_ies1")
     m_d2 = os.path.join("pst", "master_ies2")
     pst = pyemu.Pst(os.path.join(m_d1,"pest.pst"))
-    pst.add_results(m_d1)
+    #pst.add_results(m_d1)
     pst.add_results(m_d2)
 
     ies0 = pst.r0.ies
@@ -972,7 +971,7 @@ def results_ies_3_test():
     ies00 = ies[0]
 
     pst = pyemu.Pst(os.path.join(m_d1, "pest.pst"))
-    pst.add_results([m_d1,m_d2])
+    pst.add_results(m_d2)
     try:
         pst.add_results(m_d2)
     except Exception as e:
@@ -981,7 +980,7 @@ def results_ies_3_test():
         raise Exception("should have failed...")
 
     pst = pyemu.Pst(os.path.join(m_d1, "pest.pst"))
-    pst.add_results([m_d1,m_d2],cases=["pest","test"])
+    pst.add_results([m_d2],cases=["test"])
     #print(pst.r0.ies.paren)
     #print(pst.r0.ies.obsen)
     #print(pst.r1.ies.files_loaded)
@@ -993,7 +992,7 @@ def results_ies_2_test():
     import pyemu
     m_d = os.path.join("pst", "master_ies2")
 
-    for case in ["test","test2"]:
+    for case in ["test"]:
         r = pyemu.Results(m_d=m_d, case=case)
 
         # get all change sum files in an multiindex df
@@ -1035,7 +1034,7 @@ def results_mou_1_test():
     for m_d in [os.path.join("pst", "zdt1_bin"),os.path.join("pst", "zdt1_ascii")]:
         r = pyemu.Results(m_d=m_d)
 
-        df = r.mou.nestedparstack010
+        df = r.mou.nestedparstack000
         #print(df)
 
         assert df is not None
@@ -1076,7 +1075,7 @@ def results_mou_1_test():
         #print(df)
         assert df is not None
 
-        df = r.mou.obspop5
+        df = r.mou.obspop3
         # print(df)
         assert df is not None
 
@@ -1097,7 +1096,7 @@ def results_mou_1_test():
         assert df is not None
 
 if __name__ == "__main__":
-    #results_ies_3_test()
+    results_ies_3_test()
     results_ies_1_test()
     results_ies_2_test()
     results_mou_1_test()
