@@ -16,6 +16,7 @@ from ..pyemu_warnings import PyemuWarning
 from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
 from pyemu.pst import pst_utils
 from pyemu.plot import plot_utils
+from pyemu.pst.result_handler import Results,ResultMouHandler, ResultIesHandler
 
 # from pyemu.utils.os_utils import run
 
@@ -61,7 +62,8 @@ class Pst(object):
 
     """
 
-    def __init__(self, filename, load=True, resfile=None):
+    def __init__(self, filename, load=True, resfile=None, parse_metadata=True,
+                 result_dir=None):
 
         self.parameter_data = None
         """pandas.DataFrame:  '* parameter data' information.  Columns are 
@@ -98,6 +100,8 @@ class Pst(object):
         self.comments = {}
         self.other_sections = {}
         self.new_filename = None
+        self.results = {}
+        self.result_dirs = []
         for key, value in pst_utils.pst_config.items():
             self.__setattr__(key, copy.copy(value))
         # self.tied = None
@@ -136,13 +140,71 @@ class Pst(object):
             if not os.path.exists(filename):
                 raise Exception("pst file not found:{0}".format(filename))
 
-            self.load(filename)
+            self.load(filename, parse_metadata=parse_metadata)
+        if result_dir is None and os.path.exists(filename):
+            result_dir = os.path.split(os.path.abspath(filename))[0]
+
+        if result_dir is not None:
+            self.add_results(result_dir)
+
+    def __repr__(self):
+        return "npar:{0}, npar_adj:{1}, nobs:{2}, nnzobs:{3}, filename:{4}".\
+            format(self.npar, self.npar_adj,self.nobs,self.nnz_obs,self.filename)
 
     def __setattr__(self, key, value):
         if key == "model_command":
             if isinstance(value, str):
                 value = [value]
         super(Pst, self).__setattr__(key, value)
+
+    def __getattr__(self,tag):
+        if tag == "parameter_groups":
+            return None
+        if len(self.results) == 0:
+            raise Exception("Pst has no attribute: '{0}'".format(tag))
+        if tag == "ies":
+            if len(self.results) == 1:
+                return self.results[self.result_dirs[0]].ies
+            else:
+                return [self.results[r].ies for r in self.result_dirs]
+        elif tag == "mou":
+            if len(self.results) == 1:
+                return self.results[self.result_dirs[0]].mou
+            else:
+                return [self.results[r].mou for r in self.result_dirs]
+        elif tag in [os.path.split(r)[1] for r in self.result_dirs]:
+            results = [os.path.split(r)[1] for r in self.result_dirs]
+            idx = results.index(tag)
+            return self.results[self.result_dirs[idx]]
+        elif tag.startswith("r"):
+            try:
+                idx = int(tag[1:])
+            except Exception as e:
+                pass
+            else:
+                return self.results[self.result_dirs[idx]]
+        raise Exception("Pst has no attribute: '{0}'".format(tag))
+
+
+    def add_results(self,m_ds,cases=None):
+        if not isinstance(m_ds,list):
+            m_ds = [m_ds]
+        if cases is not None and not isinstance(cases,list):
+            cases = [cases]
+        if cases is not None:
+            if len(cases) != len(m_ds):
+                raise Exception("len(cases) != len(m_ds)")
+        for i,m_d in enumerate(m_ds):
+            m_d = os.path.abspath(m_d)
+            if m_d in self.results:
+                raise Exception("results directory '{0}' already registered".format(m_d))
+            case = None
+            if self.filename is not None:
+                case = os.path.split(self.filename)[1].replace(".pst","")
+            if cases is not None:
+                case = cases[i]
+            self.results[m_d] = Results(m_d,case=case)
+            self.result_dirs.append(m_d)
 
     @classmethod
     def from_par_obs_names(cls, par_names=["par1"], obs_names=["obs1"]):
@@ -1238,7 +1300,7 @@ class Pst(object):
                 "'* model input/output can't be used with '* model input' or '* model output'"
             )
 
-    def load(self, filename):
+    def load(self, filename, parse_metadata=True):
         """entry point load the pest control file.
 
         Args:
@@ -1271,7 +1333,8 @@ class Pst(object):
 
         self._load_version2(filename)
         self._try_load_longnames()
-        self.try_parse_name_metadata()
+        if parse_metadata:
+            self.try_parse_name_metadata()
         self._reset_file_paths_os()
 
     def _reset_file_paths_os(self):
@@ -1289,7 +1352,8 @@ class Pst(object):
                 df['longname'] = df.index.map(mapr.to_dict())
             except Exception:
                 pass
-        if hasattr(self, "parameter_groups"):
+        #if hasattr(self, "parameter_groups"):
+        if self.parameter_groups is not None:
             df, fnme = (self.parameter_groups, "pglongname.map")
             try:
                 mapr = pd.read_csv(Path(d, fnme), index_col=0,low_memory=False)['longname']
@@ -1362,7 +1426,8 @@ class Pst(object):
         # print(pdata_groups)
         need_groups = []
 
-        if hasattr(self, "parameter_groups"):
+        #if hasattr(self, "parameter_groups"):
+        if self.parameter_groups is not None:
             existing_groups = list(self.parameter_groups.pargpnme)
         else:
             existing_groups = []

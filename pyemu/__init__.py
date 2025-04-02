@@ -16,7 +16,7 @@ from .logger import Logger
 # from .inf import Influence
 from .mat import Cov, Jco, Matrix
 from .plot import plot_utils
-from .pst import Pst, pst_utils
+from .pst import Pst, pst_utils, Results
 from .sc import Schur
 from .utils import (geostats, gw_utils, helpers, metrics, optimization,
                     os_utils, pp_utils, smp_utils)
