@@ -409,6 +409,7 @@ def start_workers(
         args = (os.path.join(worker_dir,pst_rel_path),hostname,port)
         for i in range(num_workers):
             p = mp.Process(target=ppw_function,args=args,kwargs=ppw_kwargs)
+            p.daemon = True
             p.start()
             procs.append(p)
 
@@ -674,13 +675,14 @@ class PyPestWorker(object):
         self.obs_names = None
 
         self.par_values = None
-
+        self.max_reconnect_attempts = 10
         self._process_pst()
         self.connect()
         self._lock = threading.Lock()
         self._send_lock = threading.Lock()
         self._listen_thread = threading.Thread(target=self.listen,args=(self._lock,self._send_lock))
         self._listen_thread.start()
+
 
     def _process_pst(self):
         if isinstance(self._pst_arg,str):
@@ -692,7 +694,7 @@ class PyPestWorker(object):
                             format(type(self._pst_arg)))
 
 
-    def connect(self):
+    def connect(self,is_reconnect=False):
         self.message("trying to connect to {0}:{1}...".format(self.host,self.port))
         self.s = None
         c = 0
@@ -703,6 +705,10 @@ class PyPestWorker(object):
                 c += 1
                 if c % 75 == 0:
                     print('')
+                print(c)
+                if is_reconnect and c > self.max_reconnect_attempts:
+                    print("max reconnect attempts reached...")
+                    return False
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.host, self.port))
                 self.message("connected to {0}:{1}".format(self.host,self.port))
@@ -712,6 +718,10 @@ class PyPestWorker(object):
                 continue
             except Exception as e:
                 continue
+            
+        self.net_pack = NetPack(timeout=self.timeout,verbose=self.verbose)
+        return True
+
 
     def message(self,msg):
         if self.verbose:
@@ -726,18 +736,31 @@ class PyPestWorker(object):
 
 
     def send(self,mtype,group,runid,desc="",data=0):
-        self.net_pack.send(self.s,mtype,group,runid,desc,data)
+        try:
+            self.net_pack.send(self.s,mtype,group,runid,desc,data)
+        except Exception as e:
+            print("WARNING: error sending message:{0}".format(str(e)))
+            return False
         self.message("sent message type:{0}".format(NetPack.netpack_type[mtype]))
+        return True
 
     def listen(self,lock=None,send_lock=None):
         self.s.settimeout(self.timeout)
+        failed_reconnect = False
         while True:
             time.sleep(self.timeout)
             try:
                 n = self.recv()
             except Exception as e:
                 print("WARNING: recv exception:"+str(e)+"...trying to reconnect...")
-                self.connect()
+                success = self.connect(is_reconnect=True)
+                if not success:
+                    print("...exiting")
+                    time.sleep(self.timeout)
+                    return
+                else:
+                    print("...reconnect successfully...")
+                    continue
 
             if n > 0:
                 # need to sync here
@@ -776,20 +799,40 @@ class PyPestWorker(object):
                 elif self.net_pack.mtype == 6:
                     if self._send_lock is not None:
                         self._send_lock.acquire()
-                    self.send(7, self.net_pack.group,
+                    success = self.send(7, self.net_pack.group,
                               self.net_pack.runid,
                               "fake linpack result", data=1)
                     if self._send_lock is not None:
                         self._send_lock.release()
+                    if not success:
+                        print("...trying to reconnect...")
+                        success = self.connect(is_reconnect=True)
+                        if not success:
+                            print("...exiting")
+                            time.sleep(self.timeout)
+                            return
+                        else:
+                            print("reconnect successfully...")
+                            continue
 
                 elif self.net_pack.mtype == 15:
                     if self._send_lock is not None:
                         self._send_lock.acquire()
-                    self.send(15, self.net_pack.group,
+                    sucess = self.send(15, self.net_pack.group,
                               self.net_pack.runid,
                               "ping back")
                     if self._send_lock is not None:
                         self._send_lock.release()
+                    if not success:
+                        print("...trying to reconnect...")
+                        success = self.connect(is_reconnect=True)
+                        if not success:
+                            print("...exiting")
+                            time.sleep(self.timeout)
+                            return
+                        else:
+                            print("reconnect successfully...")
+                            continue
                 elif self.net_pack.mtype == 14:
                     #print("recv'd terminate signal")
                     self.message("recv'd terminate signal")
@@ -818,6 +861,7 @@ class PyPestWorker(object):
         if len(pars) != len(self.par_names):
             raise Exception("len(par vals) {0} != len(par names)".format(len(pars),len(self.par_names)))
         return pd.Series(data=pars,index=self.par_names)
+
 
     def send_observations(self,obsvals,parvals=None,request_more_pars=True):
         if len(obsvals) != len(self.obs_names):
@@ -862,10 +906,12 @@ class PyPestWorker(object):
             self.send(3,0,0,"ready for next run",data=0)
         self._send_lock.release()
 
+
     def request_more_pars(self):
         self._send_lock.acquire()
         self.send(3, 0, 0, "ready for next run", data=0.0)
         self._send_lock.release()
+
 
     def send_failed_run(self,group=None,runid=None,desc="failed"):
         if group is None:
@@ -875,6 +921,7 @@ class PyPestWorker(object):
         self._send_lock.acquire()
         self.send(12, int(group), int(runid), desc, data=0.0)
         self._send_lock.release()
+
 
     def send_killed_run(self,group=None,runid=None,desc="killed"):
         if group is None:

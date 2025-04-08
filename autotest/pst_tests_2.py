@@ -903,7 +903,203 @@ def test_pstfromflopy_deprecation():
         pass
 
 
+def results_ies_1_test():
+    import pyemu
+    m_d = os.path.join("pst", "master_ies1")
+    r = pyemu.Results(m_d=m_d)
+    pst = pyemu.Pst(os.path.join(m_d, "pest.pst"))
+    r = pst.master_ies1
+    r = pst.r0
+    ies = pst.ies
+    mou = pst.mou
+
+    pst = pyemu.Pst(os.path.join(m_d, "pest.pst"),result_dir=m_d)
+
+    df = r.ies.rmr
+    print(df)
+    assert df is not None
+
+    # get all change sum files in an multiindex df
+    df = r.ies.pcs
+    assert df is not None
+
+    # same for conflicts across iterations
+    df = r.ies.pdc
+    assert df is not None
+
+    # weights
+    df = r.ies.weights
+    #print(df)
+    assert df is not None
+
+    # various phi dfs
+    df = r.ies.philambda
+    assert df is not None
+    df = r.ies.phigroup
+    assert df is not None
+    df = r.ies.phiactual
+    assert df is not None
+    #print(df)
+    df = r.ies.phimeas
+    assert df is not None
+    # noise
+    df = r.ies.noise
+    assert df is not None
+    # get the prior par en
+    df = r.ies.paren0
+    assert df is not None
+    # get the 1st iter obs en
+    df = r.ies.obsen1
+    assert df is not None
+    # get the combined par en across all iters
+    df = r.ies.paren
+    assert df is not None
+    #print(df)
+
+
+def results_ies_3_test():
+    m_d1 = os.path.join("pst","master_ies1")
+    m_d2 = os.path.join("pst", "master_ies2")
+    pst = pyemu.Pst(os.path.join(m_d1,"pest.pst"))
+    #pst.add_results(m_d1)
+    pst.add_results(m_d2)
+
+    ies0 = pst.r0.ies
+    ies1 = pst.r1.ies
+    ies = pst.ies
+    assert len(ies) == 2
+    ies00 = ies[0]
+
+    pst = pyemu.Pst(os.path.join(m_d1, "pest.pst"))
+    pst.add_results(m_d2)
+    try:
+        pst.add_results(m_d2)
+    except Exception as e:
+        pass
+    else:
+        raise Exception("should have failed...")
+
+    pst = pyemu.Pst(os.path.join(m_d1, "pest.pst"))
+    pst.add_results([m_d2],cases=["test"])
+    #print(pst.r0.ies.paren)
+    #print(pst.r0.ies.obsen)
+    #print(pst.r1.ies.files_loaded)
+    #print(pst.r1.ies.obsen)
+
+    #print(pst.r1.ies.files_loaded)
+
+def results_ies_2_test():
+    import pyemu
+    m_d = os.path.join("pst", "master_ies2")
+
+    for case in ["test"]:
+        r = pyemu.Results(m_d=m_d, case=case)
+
+        # get all change sum files in an multiindex df
+        df = r.ies.pcs
+        assert df is not None
+
+        # same for conflicts across iterations
+        df = r.ies.pdc
+        assert df is not None
+
+        # weights
+        df = r.ies.weights
+        assert df is not None
+
+        # various phi dfs
+        df = r.ies.philambda
+        assert df is not None
+        df = r.ies.phigroup
+        assert df is not None
+        df = r.ies.phiactual
+        assert df is not None
+        df = r.ies.phimeas
+        assert df is not None
+        # noise
+        df = r.ies.noise
+        assert df is not None
+        # get the prior par en
+        df = r.ies.paren0
+        assert df is not None
+        # get the 1st iter obs en
+        df = r.ies.obsen1
+        assert df is not None
+        # get the combined par en across all iters
+        df = r.ies.paren
+        assert df is not None
+
+def results_mou_1_test():
+    import pyemu
+    for m_d in [os.path.join("pst", "zdt1_bin"),os.path.join("pst", "zdt1_ascii")]:
+        r = pyemu.Results(m_d=m_d)
+
+        df = r.mou.nestedparstack000
+        #print(df)
+
+        assert df is not None
+
+        df = r.mou.parstack0
+        #print(df)
+        assert df is not None
+
+        df = r.mou.stack_summary0
+        #print(df)
+        assert df is not None
+
+
+        df = r.mou.chanceobspop1
+        #print(df)
+        assert df is not None
+
+        df = r.mou.chanceobspop
+        #print(df)
+        assert df is not None
+
+        df = r.mou.chancedvpop1
+        #print(df)
+        assert df is not None
+
+        df = r.mou.chancedvpop
+        #print(df)
+        assert df is not None
+
+        df = r.mou.dvpop
+        assert df is not None
+
+        df = r.mou.dvpop0
+        #print(df)
+        assert df is not None
+
+        df = r.mou.obspop
+        #print(df)
+        assert df is not None
+
+        df = r.mou.obspop3
+        # print(df)
+        assert df is not None
+
+        df = r.mou.paretosum_archive
+        #print(df)
+        assert df is not None
+
+        df = r.mou.paretosum
+        #print(df)
+        assert df is not None
+
+        df = r.mou.archivedvpop
+        #print(df)
+        assert df is not None
+
+        df = r.mou.archiveobspop
+        #print(df)
+        assert df is not None
+
 if __name__ == "__main__":
+    results_ies_3_test()
+    results_ies_1_test()
+    results_ies_2_test()
+    results_mou_1_test()
     #at_bounds_test()
 
     #pst_from_flopy_geo_draw_test()
@@ -912,7 +1108,7 @@ if __name__ == "__main__":
     # from_flopy_zone_pars()
     #from_flopy_pp_test()
     #from_flopy()
-    parrep_test(".")
+    #parrep_test(".")
     #from_flopy_kl_test()
     #from_flopy_reachinput()
     #ineq_phi_test()
