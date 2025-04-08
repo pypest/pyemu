@@ -673,17 +673,17 @@ def another_generic_function(some_arg):
 
 
 def black_formatted_generic_function(
-    well_id: str = "W1",
-    start_date: str | None = None,
-    end_date: str | None = None,
-    threshold: float = 1.0,
-    include_outliers: bool = False,
-    save_path: str | None = None,
-    interpolation_method: str = "linear",
-    smoothing_window: int = 5,
-    resample_interval: str = "1D",
-    verbose: bool = True,
-) -> dict:
+    well_id = "W1",
+    start_date = None,
+    end_date = None,
+    threshold = 1.0,
+    include_outliers = False,
+    save_path = None,
+    interpolation_method = "linear",
+    smoothing_window = 5,
+    resample_interval = "1D",
+    verbose = True,
+):
     print("This is in body of black_formatted_generic_function()...")
     return {}
 
