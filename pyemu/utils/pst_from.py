@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import ast
 import copy
 import os
 import platform
@@ -1292,30 +1293,7 @@ class PstFrom(object):
                         file_name
                     )
                 )
-            func_lines = []
-            search_str = "def " + function_name + "("
-            abet_set = set(string.printable) - {' ','\n','\t'}
-            with open(file_name, "r") as f:
-                while True:
-                    line = f.readline()
-                    if line == "":
-                        self.logger.lraise(
-                            "add_py_function(): EOF while searching for function '{0}'".format(
-                                search_str
-                            )
-                        )
-                    if line.startswith(
-                        search_str
-                    ):  # case sens and no strip since 'def' should be flushed left
-                        func_lines.append(line)
-                        while True:
-                            line = f.readline()
-                            if line == "":
-                                break
-                            if line[0] in abet_set:
-                                break
-                            func_lines.append(line)
-                        break
+            func_lines = extract_function_source(file_name, function_name)
             self._function_lines_list.append(func_lines)
         if is_pre_cmd is True:
             self.pre_py_cmds.append(call_str)
@@ -4174,3 +4152,21 @@ def get_relative_filepath(folder, filename):
     return path for filename relative to folder.
     """
     return get_filepath(folder, filename).relative_to(folder)
+
+
+def extract_function_source(file_path, function_name):
+    with open(file_path, "r") as f:
+        source = f.read()
+
+    # parse tree
+    tree = ast.parse(source, filename=file_path)
+    lines = source.splitlines(keepends=True)
+
+    # search tree for the function definition
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == function_name:
+            start = node.lineno - 1  # lineno is 1-based
+            end = node.end_lineno
+            return lines[start:end]
+
+    raise ValueError(f"Function '{function_name}' not found in {file_path}.")
