@@ -1,0 +1,77 @@
+pcf
+* control data
+             restart          estimation
+        33         2         2         1         2
+         3         1              single               point         1
+   2.000000E+01  -3.000000E+00   3.000000E-01   1.000000E-02        -7
+   1.000000E+01   1.000000E+01   1.000000E-03
+   1.000000E-01
+        11   1.000000E-02         3         3   1.000000E-02         3
+         0         0         0
+* singular value decomposition
+         1
+  10000000    1.000000E-06
+1
+* parameter groups
+decvars                relative              1.0000000000E-02      0.0 switch                2.0000000000E+00      parabolic             1.0000000000E-05      5.0000000000E-01      smaller              
+obj_add                absolute              1.0000000000E-02      0.0 switch                2.0000000000E+00      parabolic             1.0000000000E-05      5.0000000000E-01      smaller              
+* parameter data
+dv_0                  none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_1                  none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_10                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_11                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_12                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_13                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_14                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_15                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_16                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_17                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_18                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_19                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_2                  none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_20                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_21                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_22                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_23                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_24                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_25                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_26                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_27                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_28                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_29                 none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_3                  none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_4                  none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_5                  none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_6                  none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_7                  none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_8                  none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+dv_9                  none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+obj2_add_par          none                  relative              0.0000000000E+00      -5.0000000000E-01     5.0000000000E-01      obj_add               1.0000000000E+00      0.0000000000E+00      1          
+obj1_add_par          none                  relative              0.0000000000E+00      -5.0000000000E-01     5.0000000000E-01      obj_add               1.0000000000E+00      0.0000000000E+00      1          
+_risk_                none                  relative              5.0000000000E-01      0.0000000000E+00      1.0000000000E+00      decvars               1.0000000000E+00      0.0000000000E+00      1          
+* observation groups
+less_than            
+greater_than         
+* observation data
+obj_1                 5.0000000000E+00      1.0000000000E+00      less_than            
+obj_2                 3.8416876048E+01      1.0000000000E+00      less_than            
+* model command line
+python forward_run.py
+* model input/output
+./dv.dat.tpl ./dv.dat
+./additive_par.dat.tpl ./additive_par.dat
+./risk.dat.tpl ./risk.dat
+./obj.dat.ins ./obj.dat
+* prior information
+_risk_                1.0 * _risk_ = 0.0 1.0000000000E+00     greater_than         
+++opt_dec_var_groups(decvars)
+++mou_objectives(obj_1,obj_2,_risk_)
+++mou_risk_objective(true)
+++opt_recalc_chance_every(10000)
+++opt_chance_schedule(chance_schedule.dat)
+++mou_save_population_every(1)
+++mou_generator(de)
+++mou_population_size(10)
+++opt_stack_size(5)
+++opt_risk(0.95)
+++opt_chance_points(all)
