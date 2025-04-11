@@ -672,6 +672,55 @@ def another_generic_function(some_arg):
     print(some_arg)
 
 
+def black_formatted_generic_function(
+    well_id = "W1",
+    start_date = None,
+    end_date = None,
+    threshold = 1.0,
+    include_outliers = False,
+    save_path = None,
+    interpolation_method = "linear",
+    smoothing_window = 5,
+    resample_interval = "1D",
+    verbose = True,
+):
+    print("This is in body of black_formatted_generic_function()...")
+    return {}
+
+
+def add_py_function_test(tmp_path):
+    """Ensure add_py_function works for Black-formatted functions that previously
+    broke the parser"""
+    org_model_ws = os.path.join('..', 'examples', "freyberg_mf6")
+    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    pst_file = "add_py_function_test.pst"
+    pf = PstFrom(org_model_ws, tmp_model_ws, remove_existing=True)
+
+    pf.add_py_function(__file__, "generic_function()", is_pre_cmd=False)
+    pf.add_py_function(__file__, "another_generic_function()", is_pre_cmd=None)
+    pf.add_py_function(__file__, "black_formatted_generic_function()", is_pre_cmd=None)
+
+    pf.build_pst(pst_file)
+    python_output_file = pf.new_d / "forward_run.py"
+    assert python_output_file.exists(), "Expected forward_run.py was not created"
+
+    search_strs = [ # (func_name, expected_body_line)
+        ("generic_function", 'df = pd.DataFrame({"index_2":np.arange(100),"simval1":1,"simval2":2,"datetime":onames})'),
+        ("another_generic_function", 'print(some_arg)'),
+        # Black-formatted function that previously broke the parser
+        ("black_formatted_generic_function", 'print("This is in body of black_formatted_generic_function()...")'),
+    ]
+    with open(python_output_file, 'r') as f:
+        lines = f.readlines()
+    for func_name, expected_body_line in search_strs:
+        expected_func_name = f"def {func_name}("
+        func_name_found = any(expected_func_name in line for line in lines)
+        func_body_found = any(expected_body_line in line for line in lines)
+        assert func_name_found and func_body_found, f"add_py_function failed to add {func_name}()"
+
+
+
 def mf6_freyberg_test(tmp_path):
     # import sys
     # sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
@@ -761,6 +810,9 @@ def mf6_freyberg_test(tmp_path):
     # add a function that isn't going to be called directly
     pf.add_py_function(__file__, "another_generic_function(some_arg)",
                        is_pre_cmd=None)
+    
+    # add a function that could break formatting
+    pf.add_py_function(__file__, "black_formatted_generic_function()", is_pre_cmd=None)
 
     #pf.post_py_cmds.append("generic_function()")
     # df = pd.read_csv(Path(template_ws, "sfr.csv"), index_col=0)
@@ -6141,6 +6193,7 @@ def arrayskip_test(tmp_path):
 
 
 if __name__ == "__main__":
+    #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")
     #mf6_freyberg_ppu_hyperpars_invest(".")
