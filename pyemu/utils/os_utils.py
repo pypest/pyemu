@@ -651,7 +651,7 @@ class NetPack(object):
         full_desc = desc + fill_desc
         buf += full_desc.encode()
         buf += sdata
-        s.send(buf)
+        s.sendall(buf)
 
 
     def _check_sec_message(self,recv_sec_message):
@@ -662,7 +662,7 @@ class NetPack(object):
 class PyPestWorker(object):
 
 
-    def __init__(self, pst, host, port, timeout=0.1,verbose=True):
+    def __init__(self, pst, host, port, timeout=0.25,verbose=True):
         self.host = host
         self.port = port
         self._pst_arg = pst
@@ -695,23 +695,19 @@ class PyPestWorker(object):
 
 
     def connect(self,is_reconnect=False):
-        self.message("trying to connect to {0}:{1}...".format(self.host,self.port))
+        self.message("trying to connect to {0}:{1}...".format(self.host,self.port),echo=True)
         self.s = None
         c = 0
         while True:
             try:
                 time.sleep(self.timeout)
-                print(".", end='')
                 c += 1
-                if c % 75 == 0:
-                    print('')
-                print(c)
                 if is_reconnect and c > self.max_reconnect_attempts:
                     print("max reconnect attempts reached...")
                     return False
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.host, self.port))
-                self.message("connected to {0}:{1}".format(self.host,self.port))
+                self.message("connected to {0}:{1}".format(self.host,self.port),echo=True)
                 break
 
             except ConnectionRefusedError:
@@ -723,8 +719,8 @@ class PyPestWorker(object):
         return True
 
 
-    def message(self,msg):
-        if self.verbose:
+    def message(self,msg,echo=False):
+        if self.verbose or echo:
             print(str(datetime.now())+" : "+msg)
 
 
@@ -757,9 +753,13 @@ class PyPestWorker(object):
                 if not success:
                     print("...exiting")
                     time.sleep(self.timeout)
+                    # set the teminate flag so that the get_pars() look will exit
+                    self._lock.acquire()
+                    self.net_pack.mtype = 14
+                    self._lock.release()
                     return
                 else:
-                    print("...reconnect successfully...")
+                    print("...reconnected successfully...")
                     continue
 
             if n > 0:
