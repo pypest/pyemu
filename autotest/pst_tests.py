@@ -272,7 +272,7 @@ def derivative_increment_test():
     import pyemu
 
     pst = pyemu.Pst(os.path.join("pst", "inctest.pst"))
-    pst.calculate_pertubations()
+    pst.calculate_perturbations()
 
 
 def pestpp_args_test(tmp_path):

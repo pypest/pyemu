@@ -299,7 +299,7 @@ def freyberg_test(tmp_path):
     sfodf_c.columns = sfodf_c.columns.str.lower()
     assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
                                     sfrobs_p.columns]).all().all(), (
-        "Mis-match between expected and processed obs values\n",
+        "Mismatch between expected and processed obs values\n",
         sfrobs_p.head(),
         sfodf_c.loc[sfrobs_p.index, sfrobs_p.columns].head())
 
@@ -338,7 +338,7 @@ def freyberg_test(tmp_path):
     sfodf_c.columns = sfodf_c.columns.str.lower()
     assert (sfrobs_p == sfodf_c.loc[sfrobs_p.index,
                                     sfrobs_p.columns]).all().all(), (
-        "Mis-match between expected and processed obs values")
+        "Mismatch between expected and processed obs values")
     obsnmes = pd.concat([df.obgnme for df in pf.obs_dfs]).unique()
     assert all([gp in obsnmes for gp in ['qaquifer', 'qout']])
     pf.post_py_cmds.append(
@@ -672,6 +672,55 @@ def another_generic_function(some_arg):
     print(some_arg)
 
 
+def black_formatted_generic_function(
+    well_id = "W1",
+    start_date = None,
+    end_date = None,
+    threshold = 1.0,
+    include_outliers = False,
+    save_path = None,
+    interpolation_method = "linear",
+    smoothing_window = 5,
+    resample_interval = "1D",
+    verbose = True,
+):
+    print("This is in body of black_formatted_generic_function()...")
+    return {}
+
+
+def add_py_function_test(tmp_path):
+    """Ensure add_py_function works for Black-formatted functions that previously
+    broke the parser"""
+    org_model_ws = os.path.join('..', 'examples', "freyberg_mf6")
+    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    pst_file = "add_py_function_test.pst"
+    pf = PstFrom(org_model_ws, tmp_model_ws, remove_existing=True)
+
+    pf.add_py_function(__file__, "generic_function()", is_pre_cmd=False)
+    pf.add_py_function(__file__, "another_generic_function()", is_pre_cmd=None)
+    pf.add_py_function(__file__, "black_formatted_generic_function()", is_pre_cmd=None)
+
+    pf.build_pst(pst_file)
+    python_output_file = pf.new_d / "forward_run.py"
+    assert python_output_file.exists(), "Expected forward_run.py was not created"
+
+    search_strs = [ # (func_name, expected_body_line)
+        ("generic_function", 'df = pd.DataFrame({"index_2":np.arange(100),"simval1":1,"simval2":2,"datetime":onames})'),
+        ("another_generic_function", 'print(some_arg)'),
+        # Black-formatted function that previously broke the parser
+        ("black_formatted_generic_function", 'print("This is in body of black_formatted_generic_function()...")'),
+    ]
+    with open(python_output_file, 'r') as f:
+        lines = f.readlines()
+    for func_name, expected_body_line in search_strs:
+        expected_func_name = f"def {func_name}("
+        func_name_found = any(expected_func_name in line for line in lines)
+        func_body_found = any(expected_body_line in line for line in lines)
+        assert func_name_found and func_body_found, f"add_py_function failed to add {func_name}()"
+
+
+
 def mf6_freyberg_test(tmp_path):
     # import sys
     # sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
@@ -758,9 +807,12 @@ def mf6_freyberg_test(tmp_path):
     # add the function call to make generic to the forward run script
     pf.add_py_function(__file__, "generic_function()", is_pre_cmd=False)
 
-    # add a function that isnt going to be called directly
+    # add a function that isn't going to be called directly
     pf.add_py_function(__file__, "another_generic_function(some_arg)",
                        is_pre_cmd=None)
+    
+    # add a function that could break formatting
+    pf.add_py_function(__file__, "black_formatted_generic_function()", is_pre_cmd=None)
 
     #pf.post_py_cmds.append("generic_function()")
     # df = pd.read_csv(Path(template_ws, "sfr.csv"), index_col=0)
@@ -2913,7 +2965,7 @@ class TestPstFrom():
             os.chdir(self.dest_ws)
             # first delete the model file in the template ws
             model_file.unlink()
-            # manually apply a multipler
+            # manually apply a multiplier
             mult = 4
             mult_values = np.loadtxt(mult_file)
             mult_values[:] = mult
@@ -2991,7 +3043,7 @@ class TestPstFrom():
             os.chdir(self.dest_ws)
             # first delete the model file in the template ws
             model_file.unlink()
-            # manually apply a multipler
+            # manually apply a multiplier
             mult = 4
             mult_df = pd.read_csv(mult_file)
             # no idea why '3' is the column with multipliers and 'parval1_3' isn't
@@ -3079,7 +3131,7 @@ class TestPstFrom():
                     # first delete the model file in the template ws
                     model_file = df['model_file'].values[mult2model_row]
                     os.remove(model_file)
-                    # manually apply a multipler
+                    # manually apply a multiplier
                     mult = 4
                     if par_type != "pilotpoints":
                         mult_values = np.loadtxt(mult_file)
@@ -3194,7 +3246,7 @@ class TestPstFrom():
         for file in array_file_input:
             shutil.copy(self.array_file, Path(self.dest_ws, file))
 
-        # single 2D zone array applied to each file in filesnames
+        # single 2D zone array applied to each file in filenames
         self.pf.add_parameters(filenames=array_file_input, par_type='zone',
                                zone_array=self.zone_array,
                                par_name_base=tag,  # basename for parameters that are set up
@@ -3211,7 +3263,7 @@ class TestPstFrom():
         # first delete the model file in the template ws
         for model_file in df['model_file']:
             os.remove(model_file)
-        # manually apply a multipler
+        # manually apply a multiplier
         mult = 4
         mult_values = np.loadtxt(mult_file)
         mult_values[:] = mult
@@ -3761,7 +3813,7 @@ def usg_freyberg_test(tmp_path):
     for layer in layers:
         df_lay = df.loc[df.layer==layer,:].copy()
         df_lay.sort_values(by="node")
-        #substract off the min node number so that each layers node dict starts at zero
+        #subtract off the min node number so that each layers node dict starts at zero
         df_lay.loc[:,"node"] = df_lay.node - df_lay.node.min()
         print(df_lay)
         srd = {n:xy for n,xy in zip(df_lay.node.values,df_lay.xy.values)}
@@ -4078,7 +4130,7 @@ def mf6_subdir_test(tmp_path):
     # add the function call to make generic to the forward run script
     pf.add_py_function(__file__, f"generic_function('{sd}')",is_pre_cmd=False)
 
-    # add a function that isnt going to be called directly
+    # add a function that isn't going to be called directly
     pf.add_py_function(__file__, "another_generic_function(some_arg)",is_pre_cmd=None)
 
     # pf.post_py_cmds.append("generic_function()")
@@ -5218,53 +5270,53 @@ def plot_thresh(m_d):
 
 def test_array_fmt(tmp_path):
     from pyemu.utils.pst_from import _load_array_get_fmt
-    # psuedo ff option
+    # pseudo ff option
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("       3.000      3.0000      03.000\n"
                  "         3.0      3.0000      03.000")
     # will be converted to Exp format -- only safe option
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == ''.join([" %11.4F"] * 3)
     assert arr.sum(axis=1).sum() == 18
     # actually space delim but could be fixed (first col is 1 wider)
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.000 3.00 03.0\n"
                  "  3.0  3.0  03.")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == ''.join([" %4.1F"] * 3)
     # actually space delim but could be fixed (first col is 1 wider)
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write(" 3.000000000        3.00        03.0\n"
                  "         3.0         3.0         03.")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == ''.join([" %11.8F"] * 3)
     assert arr.sum(axis=1).sum() == 18
-    # tru space delim option -- sep passed
+    # true space delim option -- sep passed
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.000 3.00000 03.000\n"
                  "3.0 3.0000 03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=' ')
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=' ')
     assert fmt == "%7.5F"
     assert arr.sum(axis=1).sum() == 18
-    # tru space delim option with sep None
+    # true space delim option with sep None
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.000 3.00000 03.000\n"
                  "3.0 3.0000 03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == "%7.5F"
     assert arr.sum(axis=1).sum() == 18
     # comma delim option
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.000, 3.00000, 03.000\n"
                  " 3.0, 3.0000,03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=',')
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"), sep=',')
     assert fmt == "%8.5F"
     assert arr.sum(axis=1).sum() == 18
     # partial sci note option (fixed format) but short
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write(" 00.3E01 30.0E-1   03.00\n"
                  "     3.0    3.00  03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == ''.join([" %7.0E"] * 3)
     assert arr.sum(axis=1).sum() == 18
     try:
@@ -5272,7 +5324,7 @@ def test_array_fmt(tmp_path):
         with open(Path(tmp_path, "test.dat"), 'w') as fp:
             fp.write(" 0.3E01 3.0E-1  03.00\n"
                      "    3.0   3.00 03.000")
-        arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+        arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     except ValueError:
         # should fail
         pass
@@ -5280,14 +5332,14 @@ def test_array_fmt(tmp_path):
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("      3.0E00  30.0000E-1       03.00\n"
                  "         3.0        3.00      03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert fmt == ''.join([" %11.4E"] * 3)
     assert arr.sum(axis=1).sum() == 18
     # free but not passing delim
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write(" 0.3E01   30.0E-1 03.00\n"
                  "3.0 3.00  03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"),
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"),
                                    fullfile=True)
     assert fmt == "%9.3G"
     assert arr.sum(axis=1).sum() == 18
@@ -5295,17 +5347,23 @@ def test_array_fmt(tmp_path):
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write(" 00.3E01,30.0E-1, 03.00\n"
                  "3.0, 3.00,03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"),
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"),
                                    fullfile=True, sep=',')
     assert fmt == "%8.3G"
     assert arr.sum(axis=1).sum() == 18
     # 1 col option
     with open(Path(tmp_path, "test.dat"), 'w') as fp:
         fp.write("3.0000000000\n30.000000E-1\n03.00000\n3.0\n3.00\n03.000")
-    arr, fmt = _load_array_get_fmt(Path(tmp_path, "test.dat"))
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "test.dat"))
     assert arr.shape == (6,1)
     assert fmt == "%12.10G"
     assert arr.sum(axis=1).sum() == 18
+
+    shutil.copy(Path('utils','arrayskip', "AWC_subset.txt"), tmp_path)
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "AWC_subset.txt"), skip=6)
+
+    arr, fmt, h = _load_array_get_fmt(Path(tmp_path, "AWC_subset.txt"), fullfile=True, skip=6)
+
 
 
 def test_array_fmt_pst_from(tmp_path):
@@ -6097,15 +6155,52 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     # assert phidf["mean"].min() < phidf["mean"].max()
 
 
+def arrayskip_test(tmp_path):
+    from pathlib import Path
+    sr = pyemu.SpatialReference(delr=[1000]*81, delc=[1000]*57, xll=841955, yll=2208285)
+    pf = pyemu.utils.PstFrom(Path('utils','arrayskip'), Path(tmp_path, "template"),
+                             spatial_reference=sr)
+    shutil.copy(Path(pf.new_d, "AWC_subset.txt"), Path(pf.new_d, "AWC_subset_1.txt"))
+    pf.add_parameters(["AWC_subset.txt",  "AWC_subset_1.txt"], 'grid', mfile_skip=6)
+    shutil.copy(Path(pf.new_d, "AWC_subset.txt"), Path(pf.new_d, "d_AWC_subset.txt"))
+    pf.add_parameters("d_AWC_subset.txt", 'grid', par_style='d', mfile_skip=6)
+    assert pf.par_dfs[0].shape[0] == 81*57
+    assert pf.par_dfs[1].shape[0] == 81 * 57
+
+    shutil.copy(Path(pf.new_d, "AWC_subset.txt"), Path(pf.new_d, "pp0_AWC_subset.txt"))
+    # shutil.copy(Path(pf.new_d, "AWC_subset.txt"), Path(pf.new_d, "ppd_AWC_subset.txt"))
+    pf.add_parameters("pp0_AWC_subset.txt", 'pp', mfile_skip=6,
+                      pp_options={'pp_space':4, 'try_use_ppu': True})
+    # pf.add_parameters("ppd_AWC_subset.txt", 'pp', mfile_skip=6, par_style='d',
+    #                   pp_options={'pp_space':4, 'try_use_ppu': True})
+
+    pst = pf.build_pst()
+
+    pars = pst.parameter_data
+    pars.loc[pars.pargp=='p_inst:0', 'parval1'] = 10
+    pars.loc[pars.pargp == 'p_inst:1', 'parval1'] *= 10
+    pars.loc[pars.pargp == 'p_inst:2', 'parval1'] = 10
+    check_apply(pf)
+    a0 = np.loadtxt(Path(pf.new_d, "AWC_subset.txt"), skiprows=6)
+    a1 = np.loadtxt(Path(pf.new_d, "AWC_subset_1.txt"), skiprows=6)
+    assert (a0 == a1).all()
+    a2 = np.loadtxt(Path(pf.new_d, "d_AWC_subset.txt"), skiprows=6)
+    assert (a1 == a2).all()
+    a3 = np.loadtxt(Path(pf.new_d, "pp0_AWC_subset.txt"), skiprows=6)
+    assert (a2 == a3).all()
+    pass
+
+
 
 if __name__ == "__main__":
+    #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")
     #mf6_freyberg_ppu_hyperpars_invest(".")
     #mf6_freyberg_ppu_hyperpars_thresh_invest(".")
     #while True:
     #    mf6_freyberg_thresh_test(".")
-    plot_thresh("master_thresh_nonstat")
+    #plot_thresh("master_thresh_nonstat")
     #mf6_freyberg_thresh_test(".")
     #plot_thresh("master_thresh_nonstat")
     #plot_thresh("master_thresh_nonstat_nim")
@@ -6118,7 +6213,7 @@ if __name__ == "__main__":
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
-    #mf6_freyberg_direct_test()
+    mf6_freyberg_direct_test(".")
     #freyberg_test()
     #mf6_freyberg_thresh_test(".")
     #mf6_freyberg_test()

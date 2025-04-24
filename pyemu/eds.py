@@ -379,7 +379,7 @@ class EnDS(object):
             - **dict**: dictionary of first-moment dataframes. Keys are `obslist_dict` keys.  If `include_first_moment`
                 is None, this is an empty dict.
             - **pd.DataFrame**: prediction standard deviation summary
-            - **pd.DataFrame**: precent prediction standard deviation reduction summary
+            - **pd.DataFrame**: percent prediction standard deviation reduction summary
 
 
         Example::
@@ -447,7 +447,7 @@ class EnDS(object):
             dd += self.obscov.get(onames,onames).x
             self.logger.log("adding noise cov to data block")
 
-            #todo: test for inveribility and shrink if needed...
+            #todo: test for invertibility and shrink if needed...
             self.logger.log("inverting data cov block")
             dd = np.linalg.inv(dd)
             self.logger.log("inverting data cov block")
@@ -514,7 +514,7 @@ class EnDS(object):
             use_ztz (`bool`): flag to use the condensed ZtZ matrix for SVD. The ZtZ matrix has dimensions nreal*nreal, instead of the nreal*nobs dimensions of Z. 
                 This makes the SVD computation faster and more memory efficient when nobs >> nreal. 
                 Default is `False`
-            energy (`float`): energy threshold for truncating the sqrt(C) matrix.  Default is `1.0` which applys no truncation. 
+            energy (`float`): energy threshold for truncating the sqrt(C) matrix.  Default is `1.0` which applies no truncation. 
 
         Example::
 
@@ -559,7 +559,7 @@ class EnDS(object):
             #make sure names are ordered
             obs = obs.loc[names,:]
             #TODO: deal with "scale" and user-specified "offset"
-            obs["offset"] = 0.0 #TODO: more elegant? incase all 'none' are passed...
+            obs["offset"] = 0.0 #TODO: more elegant? in case all 'none' are passed...
             obsnmes = obs.loc[obs.obstransform=='log'].obsnme.values
             if len(obsnmes) > 0:
                 for name in obsnmes:
@@ -883,7 +883,7 @@ def moving_average_with_endpoints(y_values, window_size):
     # Handle the middle part with full window
     for i in range(half_window, len(y_values) - half_window):
         smoothed_y[i] = np.mean(y_values[i - half_window:i + half_window])
-    #Enforce endoints
+    #Enforce endpoints
     smoothed_y[0] = y_values[0]
     smoothed_y[-1] = y_values[-1]
     # Ensure uniqueness by adding small increments if values are duplicated
