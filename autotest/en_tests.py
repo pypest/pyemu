@@ -671,6 +671,19 @@ def binary_test(tmp_path):
     e2 = datetime.now()
     print((e1 - s1).total_seconds())
     print((e2 - s2).total_seconds())
+    pe3 = pd.DataFrame(np.random.rand(10, int(1e7)))
+    pe3.columns = "parameter_number_" + pe3.columns.astype(str)
+    pe3 = pe3.rename(index={9:'base'})
+    pst = pyemu.Pst.from_par_obs_names(pe3.columns, obs_names)
+    pe3 = pyemu.ParameterEnsemble(pst=pst, df=pe3)
+    fname = pe3.to_binary("paren.jcb")
+    assert fname.endswith('bin')
+    pe4 = pyemu.ParameterEnsemble.from_binary(pst=pst, filename=fname)
+    assert pe4.shape == pe3.shape
+    d = (pe4._df - pe4._df).abs()
+    print(d.max().max())
+    assert d.max().max() < 1.0e-10
+    pass
 
 
 def mixed_par_draw_2_test():
@@ -763,9 +776,9 @@ if __name__ == "__main__":
     #fill_test()
     #factor_draw_test()
     #emp_cov_test()
-    emp_cov_draw_test()
+    # emp_cov_draw_test()
     #mixed_par_draw_2_test()
-    #binary_test()
+    binary_test()
     #get_phi_vector_noise_obs_test()
     #factor_draw_test()
     #enforce_test()
