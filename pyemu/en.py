@@ -366,6 +366,9 @@ class Ensemble(object):
         Args:
             filename (`str`): file to write
 
+        Returns:
+            `str`: the filename written (may be modified from input)
+
         Example::
 
             pst = pyemu.Pst("my.pst")
@@ -377,16 +380,28 @@ class Ensemble(object):
             values are in arithmetic space
 
         """
-
+        from pathlib import Path
         retrans = False
         if self.istransformed:
             self.back_transform()
             retrans = True
         if self._df.isnull().values.any():
-            warnings.warn("NaN in ensemble", PyemuWarning)
-        pyemu.Matrix.from_dataframe(self._df).to_coo(filename)
+            warnings.warn( "Ensemble.to_binary() warning: NaN in ensemble", PyemuWarning)
+        # if the nobs or npar is large, save as dense binary
+        if self._df.shape[1] > 1e6:
+            # if the filename doesn't have a .bin suffix, warn and add it
+            if Path(filename).suffix != ".bin":
+                warnings.warn(
+                    "Ensemble.to_binary() warning: large ensemble dimension, will save as "
+                    + "dense binary format... adding '.bin' suffix", PyemuWarning
+                )
+                filename += ".bin"
+            self.to_dense(filename)
+        else:
+            pyemu.Matrix.from_dataframe(self._df).to_coo(filename)
         if retrans:
             self.transform()
+        return filename
 
     def to_dense(self, filename):
         """write `Ensemble` to a dense-format binary file
