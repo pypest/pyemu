@@ -6191,6 +6191,38 @@ def arrayskip_test(tmp_path):
     pass
 
 
+def test_sr_dict(tmp_path):
+    xs = np.arange(1000, 2000, 10)
+    ys = np.arange(2000, 3000, 10)
+    sr_dict = {(i, j): (x,y) for i, y in enumerate(ys) for j, x in enumerate(xs)}
+    gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1, a=250))
+
+    parfile = pd.DataFrame(sr_dict.keys(), columns=['i', 'j'])
+    parfile['q'] = range(len(parfile.index))
+
+    md = Path(tmp_path, 'eg')
+    md.mkdir(parents=True, exist_ok=True)
+    parfile.to_csv(Path(md, "parfile.csv"), index=False, header=False)
+    parfile.to_csv(Path(md, "obsfile.csv"), index=False, header=True)
+    pf = PstFrom(original_d=md, new_d=Path(tmp_path, 'template'),
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr_dict,
+                 zero_based=True)
+    pf.add_parameters("parfile.csv",
+                      par_type="grid",
+                      index_cols=[0, 1],
+                      use_cols=[2],
+                      geostruct=gs)
+    pf.add_observations("obsfile.csv",
+                        insfile="obsfile.csv.ins",
+                        prefix="obs_file",
+                        index_cols=['i','j'],
+                        use_cols='q',
+                        ofile_sep=',')
+    pass
+
+
+
 
 if __name__ == "__main__":
     #add_py_function_test('.')
@@ -6235,9 +6267,9 @@ if __name__ == "__main__":
     # # pstfrom_profile()
     # mf6_freyberg_arr_obs_and_headerless_test()
     #usg_freyberg_test(".")
-    #vertex_grid_test()
+    # vertex_grid_test('.')
     #direct_quickfull_test()
-    #list_float_int_index_test()
+    # list_float_int_index_test('.')
     #freyberg_test()
 
 
