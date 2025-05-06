@@ -62,6 +62,7 @@ class Pst(object):
 
     """
 
+
     def __init__(self, filename, load=True, resfile=None, parse_metadata=True,
                  result_dir=None):
 
@@ -141,6 +142,7 @@ class Pst(object):
                 raise Exception("pst file not found:{0}".format(filename))
 
             self.load(filename, parse_metadata=parse_metadata)
+
         if result_dir is None and os.path.exists(filename):
             result_dir = os.path.split(os.path.abspath(filename))[0]
 
