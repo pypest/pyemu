@@ -721,7 +721,7 @@ def add_py_function_test(tmp_path):
 
 
 
-def mf6_freyberg_test(tmp_path):
+def test_mf6_freyberg(tmp_path):
     # import sys
     # sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
     import pypestutils as ppu
@@ -925,7 +925,7 @@ def mf6_freyberg_test(tmp_path):
                       pargp="tmp2", mfile_sep=',', par_style='direct',apply_order=0)
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
-    print(dts)
+    # print(dts)
     for tag, bnd in tags.items():
         lb, ub = bnd[0], bnd[1]
         arr_files = [f for f in os.listdir(template_ws) if tag in f and f.endswith(".txt")]
@@ -1058,7 +1058,7 @@ def mf6_freyberg_test(tmp_path):
     d = {s: f for s, f in zip(sp, files)}
     sp.sort()
     files = [d[s] for s in sp]
-    print(files)
+    # print(files)
     for f in files:
         # get the stress period number from the file name
         kper = int(f.split('.')[1].split('_')[-1]) - 1
@@ -1078,8 +1078,8 @@ def mf6_freyberg_test(tmp_path):
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
-    print(pf.mult_files)
-    print(pf.org_files)
+    # print(pf.mult_files)
+    # print(pf.org_files)
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
@@ -1091,7 +1091,7 @@ def mf6_freyberg_test(tmp_path):
     pars.loc[sfr_pars, 'parval1'] = np.random.random(len(sfr_pars)) * 10
 
     sfr_pars = pars.loc[sfr_pars].copy()
-    print(sfr_pars)
+    # print(sfr_pars)
     sfr_pars[["name",'inst',"ptype", 'usecol',"pstyle", '#rno']] = sfr_pars.parnme.apply(
         lambda x: pd.DataFrame([s.split(':') for s in x.split('_')
                                 if ':' in s]).set_index(0)[1])
@@ -1138,9 +1138,9 @@ def mf6_freyberg_test(tmp_path):
     df = pd.read_csv(Path(pf.new_d, "freyberg6.sfr_packagedata_test.txt"),
                      sep=r'\s+', index_col=0)
     df.index = df.index - 1
-    print(df.rhk)
-    print((sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
-                 sfr_pars.set_index('#rno').loc[df.index, 'parval1']))
+    # print(df.rhk)
+    # print((sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
+    #              sfr_pars.set_index('#rno').loc[df.index, 'parval1']))
     assert np.isclose(
         df.rhk, (sfr_pkgdf.set_index('rno').loc[df.index, 'rhk'] *
                  sfr_pars.set_index('#rno').loc[df.index, 'parval1'])).all()
@@ -1168,7 +1168,7 @@ def mf6_freyberg_test(tmp_path):
     assert twcov.sum().sum() > dsum
 
     rch_cn = [p for p in pst.par_names if "_cn" in p]
-    print(rch_cn)
+    # print(rch_cn)
     rcov = cov.loc[rch_cn,rch_cn]
     dsum = np.diag(rcov.values).sum()
     assert rcov.sum().sum() > dsum
@@ -1436,7 +1436,7 @@ def mf6_freyberg_da_test(tmp_path):
     ib = m.dis.idomain[0].array
     tags = {"npf_k_":[0.1,10.],"npf_k33_":[.1,10],"sto_ss":[.1,10],"sto_sy":[.9,1.1],"rch_recharge":[.5,1.5]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]),unit="d")
-    print(dts)
+    # print(dts)
     for tag,bnd in tags.items():
         lb,ub = bnd[0],bnd[1]
         arr_files = [f for f in os.listdir(tmp_model_ws) if tag in f and f.endswith(".txt")]
@@ -1477,8 +1477,8 @@ def mf6_freyberg_da_test(tmp_path):
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
-    print(pf.mult_files)
-    print(pf.org_files)
+    # print(pf.mult_files)
+    # print(pf.org_files)
 
     # build pest
     pst = pf.build_pst('freyberg.pst', version=2)
@@ -1493,7 +1493,7 @@ def mf6_freyberg_da_test(tmp_path):
     hobs.loc[:, "j"] = hobs.obsnme.apply(lambda x: int(x.split(':')[1].split("_")[3]))
     hobs_set = set(hobs.obsnme.to_list())
     ic_files = [f for f in os.listdir(template_ws) if "ic_strt" in f and f.endswith(".txt")]
-    print(ic_files)
+    # print(ic_files)
     ib = m.dis.idomain[0].array
     tpl_files = []
     for ic_file in ic_files:
@@ -1509,8 +1509,8 @@ def mf6_freyberg_da_test(tmp_path):
                         f.write(" -1.0e+30 ")
                     else:
                         pname = "hds_usecol:trgw_{0}_{1}_{2}_time:31.0".format(k,i,j)
-                        if pname not in hobs_set and ib[i,j] > 0:
-                            print(k,i,j,pname,ib[i,j])
+                        # if pname not in hobs_set and ib[i,j] > 0:
+                            # print(k,i,j,pname,ib[i,j])
                         f.write(" ~  {0}   ~".format(pname))
                         vals.append(org_arr[i,j])
                         names.append(pname)
@@ -1539,7 +1539,7 @@ def mf6_freyberg_da_test(tmp_path):
     res_file = os.path.join(pf.new_d, "freyberg.base.rei")
     assert os.path.exists(res_file), res_file
     pst.set_res(res_file)
-    print(pst.phi)
+    # print(pst.phi)
     assert np.isclose(pst.phi, 0), pst.phi
 
     # check mult files are in pst input files
@@ -1760,7 +1760,7 @@ def direct_multadd_combo_test(tmp_path):
                           sep=r'\s+',
                           header=None, names=["l", "r", "c", "stage", "cond"])
     d = org_ghb.stage - new_ghb.stage
-    print(d)
+    # print(d)
     assert d.sum() == 0, d.sum()
 
     # test the additive ghb stage pars
@@ -1798,9 +1798,9 @@ def direct_multadd_combo_test(tmp_path):
         header=None, names=["l", "r", "c", "stage", "cond"]
     )
     d = org_ghb.stage - new_ghb.stage
-    print(new_ghb.stage)
-    print(org_ghb.stage)
-    print(d)
+    # print(new_ghb.stage)
+    # print(org_ghb.stage)
+    # print(d)
     assert d.sum() == 0.0, d.sum()
 
     # check the interaction with multiplicative ghb stage, direct ghb stage and additive ghb stage
@@ -1817,9 +1817,9 @@ def direct_multadd_combo_test(tmp_path):
         sep=r'\s+',
         header=None, names=["l", "r", "c", "stage", "cond"])
     d = (org_ghb.stage * 1.1) - new_ghb.stage
-    print(new_ghb.stage)
-    print(org_ghb.stage)
-    print(d)
+    # print(new_ghb.stage)
+    # print(org_ghb.stage)
+    # print(d)
     assert d.sum() == 0.0, d.sum()
 
 
@@ -2032,7 +2032,7 @@ def direct_listpars_test(tmp_path):
     lst = flopy.utils.Mf6ListBudget(os.path.join(pf.new_d, "freyberg6.lst"))
     flx, cum = lst.get_dataframes(diff=True)
     wel_tot = flx.wel.apply(np.abs).sum()
-    print(flx.wel)
+    # print(flx.wel)
     assert wel_tot < 1.0e-6, wel_tot
 
 
@@ -2817,7 +2817,7 @@ def mf6_freyberg_short_direct_test(tmp_path):
     lst = flopy.utils.Mf6ListBudget(os.path.join(pf.new_d, "freyberg6.lst"))
     flx, cum = lst.get_dataframes(diff=True)
     wel_tot = flx.wel.apply(np.abs).sum()
-    print(flx.wel)
+    # print(flx.wel)
     assert np.isclose(wel_tot, 0), wel_tot
 
     # shortpars so not going to be able to get ij easily
@@ -3618,18 +3618,18 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
 
     df = pd.read_csv(os.path.join(template_ws, list_file),
                      header=None, sep=r'\s+')
-    print(df)
+    # print(df)
     wobs = obs.loc[obs.obsnme.str.contains("welobs"),:]
-    print(wobs)
+    # print(wobs)
     fvals = df.iloc[:,3]
     pvals = wobs.loc[:,"obsval"].iloc[:df.shape[0]]
     d = fvals.values - pvals.values
-    print(d)
+    # print(d)
     assert d.sum() == 0
     fvals = df.iloc[:, 5]
     pvals = wobs.loc[:, "obsval"].iloc[df.shape[0]:]
     d = fvals.values - pvals.values
-    print(d)
+    # print(d)
     assert d.sum() == 0
 
 
@@ -3765,7 +3765,7 @@ def mf6_freyberg_pp_locs_test(tmp_path):
                                  master_dir=m_d, port=port)
 
     sen_df = pd.read_csv(os.path.join(m_d,"freyberg.isen"),index_col=0).loc[:,pst.adj_par_names]
-    print(sen_df.T)
+    # print(sen_df.T)
     mn = sen_df.values.min()
     print(mn)
     assert mn > 0.0
@@ -3922,10 +3922,10 @@ def usg_freyberg_test(tmp_path):
     dcov = dcov.get(cov.row_names)
     diag = np.diag(cov.x)
     diff = np.abs(diag.flatten() - dcov.x.flatten())
-    print(diag)
-    print(dcov.x)
-    print(diff)
-    print(diff.max())
+    # print(diag)
+    # print(dcov.x)
+    # print(diff)
+    # print(diff.max())
     assert np.isclose(diff.max(), 0), diff.close()
 
     # test that the arr hds obs process is working
@@ -3946,7 +3946,7 @@ def usg_freyberg_test(tmp_path):
         in_arr = np.loadtxt(os.path.join(pf.new_d,arr_file))
         org_arr = np.loadtxt(os.path.join(pf.new_d,"org",arr_file))
         d = np.abs(in_arr - org_arr)
-        print(d.sum())
+        # print(d.sum())
         assert np.isclose(d.sum(), 0), arr_file
 
 
@@ -3962,7 +3962,7 @@ def usg_freyberg_test(tmp_path):
         in_arr = np.loadtxt(os.path.join(pf.new_d, arr_file))
         org_arr = np.loadtxt(os.path.join(pf.new_d, "org", arr_file))
         d = np.abs(in_arr - org_arr)
-        print(d.sum())
+        # print(d.sum())
         assert d.sum() > 1.0e-3, arr_file
 
     # check that the pilot point process is respecting the zone array
@@ -3976,8 +3976,8 @@ def usg_freyberg_test(tmp_path):
     arr = np.loadtxt(os.path.join(pf.new_d,"mult","hk3_pp_inst0_pilotpoints.csv"))
     arr[zone_array_k2[0,:]==0] = 0
     d = np.abs(arr - zone_array_k2)
-    print(d)
-    print(d.sum())
+    # print(d)
+    # print(d.sum())
     assert d.sum() == 0.0,d.sum()
 
 
@@ -4021,7 +4021,7 @@ def mf6_add_various_obs_test(tmp_path):
                         zone_array=m.dis.idomain.array[0])
 
     linelen = 10000
-    _add_big_obsffile(pf, profile=True, nchar=linelen)
+    _add_big_obsffile(pf, profile=False, nchar=linelen)
 
     # TODO more variations on the theme
     # add single par so we can run
@@ -4264,8 +4264,8 @@ def mf6_subdir_test(tmp_path):
     pf.pre_py_cmds.append(f"os.chdir('{sd}')")
     pf.mod_sys_cmds.append("mf6")
     pf.post_py_cmds.insert(0, "os.chdir('..')")
-    print(pf.mult_files)
-    print(pf.org_files)
+    # print(pf.mult_files)
+    # print(pf.org_files)
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
@@ -4862,7 +4862,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     #        "rch_recharge": [.5, 1.5]}
     tags = {"npf_k_": [0.1, 10.],"rch_recharge": [.5, 1.5]}
     dts = pd.to_datetime("1-1-2018") + pd.to_timedelta(np.cumsum(sim.tdis.perioddata.array["perlen"]), unit="d")
-    print(dts)
+    # print(dts)
     # ib = m.dis.idomain.array[0,:,:]
     # setup from array style pars
     num_cat_arrays = 0
@@ -4936,8 +4936,8 @@ def mf6_freyberg_thresh_test(tmp_path):
 
     # add model run command
     pf.mod_sys_cmds.append("mf6")
-    print(pf.mult_files)
-    print(pf.org_files)
+    # print(pf.mult_files)
+    # print(pf.org_files)
 
     # build pest
     pst = pf.build_pst('freyberg.pst')
@@ -4954,7 +4954,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     res_file = os.path.join(pf.new_d, "freyberg.base.rei")
     assert os.path.exists(res_file), res_file
     pst.set_res(res_file)
-    print(pst.phi)
+    # print(pst.phi)
     assert pst.phi < 0.1, pst.phi
 
 
@@ -4962,7 +4962,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     par = pst.parameter_data
     cat1par = par.loc[par.apply(lambda x: x.threshcat=="0" and x.usecol=="threshfill",axis=1),"parnme"]
     cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshfill", axis=1), "parnme"]
-    print(cat1par,cat2par)
+    # print(cat1par,cat2par)
     assert cat1par.shape[0] == num_cat_arrays
     assert cat2par.shape[0] == num_cat_arrays
 
@@ -4994,7 +4994,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     cat1par = par.loc[par.apply(lambda x: x.threshcat == "0" and x.usecol == "threshproportion", axis=1), "parnme"]
     cat2par = par.loc[par.apply(lambda x: x.threshcat == "1" and x.usecol == "threshproportion", axis=1), "parnme"]
 
-    print(cat1par, cat2par)
+    # print(cat1par, cat2par)
     assert cat1par.shape[0] == num_cat_arrays
     assert cat2par.shape[0] == num_cat_arrays
 
@@ -5013,15 +5013,15 @@ def mf6_freyberg_thresh_test(tmp_path):
     #par.loc[par.parnme.str.contains("threshgr"),"parval1"] = 0.5
     par.loc[par.parnme.str.contains("threshgr"),"partrans"] = "fixed"
 
-    print(pst.adj_par_names)
-    print(pst.npar,pst.npar_adj)
+    # print(pst.adj_par_names)
+    # print(pst.npar,pst.npar_adj)
 
     org_par = par.copy()
     num_reals = 100
     np.random.seed()
     pe = pf.draw(num_reals, use_specsim=False)
     pe.enforce()
-    print(pe.shape)
+    # print(pe.shape)
     assert pe.shape[1] == pst.npar_adj, "{0} vs {1}".format(pe.shape[1], pst.npar_adj)
     assert pe.shape[0] == num_reals
 
@@ -5057,7 +5057,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     pst.write(os.path.join(pf.new_d, "truth2.pst"), version=2)
     pyemu.os_utils.run("{0} truth2.pst".format(ies_exe_path), cwd=pf.new_d)
     pst2 = pyemu.Pst(os.path.join(pf.new_d, "truth2.pst"))
-    print(pst2.phi)
+    # print(pst2.phi)
     assert pst2.phi < 0.1
 
     obs.loc[:,"weight"] = 0.0
@@ -5104,7 +5104,7 @@ def mf6_freyberg_thresh_test(tmp_path):
                                  worker_root=".", master_dir=m_d, num_workers=10,
                                  port=port)
     phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
-    print(phidf["mean"])
+    # print(phidf["mean"])
 
     assert phidf["mean"].min() < phidf["mean"].max()
 
@@ -6192,8 +6192,8 @@ def arrayskip_test(tmp_path):
 
 
 def test_sr_dict(tmp_path):
-    xs = np.arange(1000, 2000, 10)
-    ys = np.arange(2000, 3000, 10)
+    xs = np.arange(1000, 2000, 100)
+    ys = np.arange(2000, 3000, 100)
     sr_dict = {(i, j): (x,y) for i, y in enumerate(ys) for j, x in enumerate(xs)}
     gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1, a=250))
 
@@ -6219,9 +6219,92 @@ def test_sr_dict(tmp_path):
                         index_cols=['i','j'],
                         use_cols='q',
                         ofile_sep=',')
+
+
+def test_dup_idxs(tmp_path):
+    xs = np.arange(1000, 2000, 100)
+    ys = np.arange(2000, 3000, 100)
+    sr_dict = {(i, j): (x, y) for i, y in enumerate(ys) for j, x in enumerate(xs)}
+    gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1, a=250))
+
+    parfile = pd.DataFrame(sr_dict.keys(), columns=['i', 'j'])
+    parfile['q'] = range(len(parfile.index))
+
+    md = Path(tmp_path, 'eg')
+    md.mkdir(parents=True, exist_ok=True)
+    parfile.to_csv(Path(md, "parfile.csv"), index=False, header=False)
+    parfile.to_csv(Path(md, "obsfile.csv"), index=False, header=True)
+    parfile = pd.concat([parfile, parfile.iloc[[0], :]]).reset_index(drop=True)
+    parfile.to_csv(Path(md, "parfile2.csv"), index=False, header=False)
+    parfile.to_csv(Path(md, "obsfile2.csv"), index=False, header=True)
+    parfile.to_csv(Path(md, "parfile3.csv"), index=False, header=False)
+    pf = PstFrom(original_d=md, new_d=Path(tmp_path, 'template'),
+                 remove_existing=True,
+                 longnames=True, spatial_reference=sr_dict,
+                 zero_based=True)
+    # par with duplicate i,j
+    pf.add_parameters("parfile.csv",
+                      par_type="grid",
+                      index_cols=[0, 1],
+                      use_cols=[2],
+                      geostruct=gs)
+    pf.add_parameters("parfile2.csv",
+                      par_type="grid",
+                      index_cols=[0, 1],
+                      use_cols=[2],
+                      geostruct=gs,
+                      use_rows=range(len(parfile.index)))
+    # par with duplicate i,j (direct)
+    pf.add_parameters("parfile3.csv",
+                      par_type="grid",
+                      index_cols=[0, 1],
+                      use_cols=[2],
+                      geostruct=gs,
+                      use_rows=range(len(parfile.index)),
+                      par_style="d")
+    pf.add_observations("parfile.csv",
+                        insfile="parfile.csv.ins",
+                        prefix="pars",
+                        index_cols=[0,1],
+                        use_cols=2,
+                        ofile_sep=',',
+                        includes_header=False)
+    pf.add_observations("obsfile.csv",
+                        insfile="obsfile.csv.ins",
+                        prefix="obs",
+                        index_cols=['i','j'],
+                        use_cols='q',
+                        ofile_sep=',')
+    try:
+        # obs with duplicate i,j -- should raise (constructive error)
+        pf.add_observations("obsfile2.csv",
+                            insfile="obsfile2.csv.ins",
+                            index_cols=['i', 'j'],
+                            use_cols='q',
+                            ofile_sep=',')
+    except Exception as e:
+        pass
+    else:
+        raise Exception("Expected error not raised")
+    pst = pf.build_pst('freyberg.pst')
+    pars = pst.parameter_data
+    pars.parval1 *= 10
+    check_apply(pf)
+    outputs = pst.process_output_files(pf.new_d)
+    obs = pst.observation_data
+    obs['obsval'] = outputs
+    pfile = pd.read_csv(Path(pf.new_d, "parfile.csv"), header=None).set_index([0,1])
+    pfile2 = pd.read_csv(Path(pf.new_d, "parfile2.csv"), header=None).set_index([0,1])
+    pfile3 = pd.read_csv(Path(pf.new_d, "parfile3.csv"), header=None).set_index([0,1])
+    assert (pfile.loc[pfile2.index] == pfile2).all().all()
+    assert (pfile3 == pfile2).all().all()
+
+    opvals = obs.loc[obs.oname=='pars'].astype({c: int for c in ['idx0', 'idx1']}).set_index(['idx0', 'idx1']).obsval
+    assert (opvals == pfile[2]).all()
+
+    orgvals = obs.loc[obs.oname=='obs'].astype({c: int for c in ['i', 'j']}).set_index(['i', 'j']).obsval
+    assert (pfile[2]==orgvals*10).all()
     pass
-
-
 
 
 if __name__ == "__main__":
