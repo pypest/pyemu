@@ -651,7 +651,7 @@ class NetPack(object):
         full_desc = desc + fill_desc
         buf += full_desc.encode()
         buf += sdata
-        s.send(buf)
+        s.sendall(buf)
 
 
     def _check_sec_message(self,recv_sec_message):
@@ -660,9 +660,21 @@ class NetPack(object):
                             format(recv_sec_message,self.sec_message))
 
 class PyPestWorker(object):
+    """a pure python worker for pest++.  the pest++ master doesnt even know...
 
+    Args:
+        pst (str or pyemu.Pst): something about a control file
+        host (str): master hostname or IPv4 address
+        port (int): port number that the master is listening on
+        timeout (float): number of seconds to sleep at different points in the process.  
+            if you have lots of pars and/obs, a longer sleep can be helpful, but if you make this smaller,
+            the worker responds faster...'it depends'
+        verbose (bool): flag to echo what's going on to stdout
+        socket_timeout (float): number of seconds that the socket should wait before giving up. 
+            generally, this can be a big number...
+    """
 
-    def __init__(self, pst, host, port, timeout=0.1,verbose=True):
+    def __init__(self, pst, host, port, timeout=0.25,verbose=True, socket_timeout=None):
         self.host = host
         self.port = port
         self._pst_arg = pst
@@ -673,7 +685,9 @@ class PyPestWorker(object):
         self.verbose = bool(verbose)
         self.par_names = None
         self.obs_names = None
-
+        if socket_timeout is None:
+            socket_timeout = timeout * 100
+        self.socket_timeout = socket_timeout
         self.par_values = None
         self.max_reconnect_attempts = 10
         self._process_pst()
@@ -695,23 +709,19 @@ class PyPestWorker(object):
 
 
     def connect(self,is_reconnect=False):
-        self.message("trying to connect to {0}:{1}...".format(self.host,self.port))
+        self.message("trying to connect to {0}:{1}...".format(self.host,self.port),echo=True)
         self.s = None
         c = 0
         while True:
             try:
                 time.sleep(self.timeout)
-                print(".", end='')
                 c += 1
-                if c % 75 == 0:
-                    print('')
-                print(c)
                 if is_reconnect and c > self.max_reconnect_attempts:
                     print("max reconnect attempts reached...")
                     return False
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.host, self.port))
-                self.message("connected to {0}:{1}".format(self.host,self.port))
+                self.message("connected to {0}:{1}".format(self.host,self.port),echo=True)
                 break
 
             except ConnectionRefusedError:
@@ -723,8 +733,8 @@ class PyPestWorker(object):
         return True
 
 
-    def message(self,msg):
-        if self.verbose:
+    def message(self,msg,echo=False):
+        if self.verbose or echo:
             print(str(datetime.now())+" : "+msg)
 
 
@@ -745,7 +755,7 @@ class PyPestWorker(object):
         return True
 
     def listen(self,lock=None,send_lock=None):
-        self.s.settimeout(self.timeout)
+        self.s.settimeout(self.socket_timeout)
         failed_reconnect = False
         while True:
             time.sleep(self.timeout)
@@ -757,9 +767,13 @@ class PyPestWorker(object):
                 if not success:
                     print("...exiting")
                     time.sleep(self.timeout)
+                    # set the teminate flag so that the get_pars() look will exit
+                    self._lock.acquire()
+                    self.net_pack.mtype = 14
+                    self._lock.release()
                     return
                 else:
-                    print("...reconnect successfully...")
+                    print("...reconnected successfully...")
                     continue
 
             if n > 0:
