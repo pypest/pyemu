@@ -852,7 +852,8 @@ def _read_infile_with_tplfile(tpl_file, input_file):
     return df
 
 
-def try_process_output_file(ins_file, output_file=None):
+def try_process_output_file(ins_file, output_file=None,
+                            logger=None):
     """attempt to process a model output file using a PEST-style instruction file
 
     Args:
@@ -881,7 +882,14 @@ def try_process_output_file(ins_file, output_file=None):
     try:
         df = i.read_output_file(output_file)
     except Exception as e:
-        print("error processing instruction/output file pair: {0}".format(str(e)))
+        if logger is not None:
+            logger.warn(
+                "error processing instruction file {0}, trying inschek: {1}".format(
+                    ins_file, str(e)
+                )
+            )
+        else:
+            PyemuWarning("error processing instruction/output file pair: {0}".format(str(e)))
     return df
 
 
