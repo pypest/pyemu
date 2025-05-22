@@ -181,6 +181,20 @@ class ResultIesHandler(ResultHandler):
                 files.append(f)
         return files
 
+    def get(self,tag,*args):
+        """helper to call __getattr__() with programatic args
+
+        Args:
+            tag (str): string for the item of interest (eg "paren", "dvpop", etc)
+            *args (list): optional args to str concatenate with tag when passed to
+                __getattr__().  for example tag could be "paren" and args could 0,
+                so that what is passed to __getattr__() is "paren0".
+        Returns:
+            "it depends"
+
+        """
+        ttag = tag + "".join([str(a) for a in args])
+        return self.__getattr__(ttag)
 
     def __getattr__(self,tag):
         """overload of the get-attribute class method to make things super
