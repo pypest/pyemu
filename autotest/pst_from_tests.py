@@ -412,7 +412,7 @@ def freyberg_test(tmp_path):
     assert np.isclose(pst.phi, 0.), pst.phi
 
 
-def freyberg_prior_build_test(tmp_path):
+def test_freyberg_prior_build(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -4544,7 +4544,7 @@ def shortname_conversion_test(tmp_path):
     assert len(par) == 0, f"{len(par)} pars not found in tplfiles: {par[:100]}..."
 
 
-def vertex_grid_test(tmp_path):
+def test_vertex_grid(tmp_path):
     pf, sim = setup_freyberg_mf6(tmp_path, "freyberg_quadtree")
     m = sim.get_model()
     mg = m.modelgrid
@@ -6307,6 +6307,52 @@ def test_dup_idxs(tmp_path):
     pass
 
 
+def invest_vertexpp_setup_speed():
+    import flopy
+    from flopy.utils.gridgen import Gridgen
+    from pathlib import Path
+    from shapely import Polygon
+    import cProfile
+    sim = flopy.mf6.MFSimulation(sim_name="test", sim_ws="test", exe_name="mf6")
+    gwf = flopy.mf6.ModflowGwf(sim, modelname="test")
+
+    dis = flopy.mf6.ModflowGwfdis(
+        gwf,
+        nlay=1,
+        nrow=400,
+        ncol=400,
+        delr=10,
+        delc=10,
+        top=1,
+        botm=0,
+    )
+    g = Gridgen(gwf.modelgrid, model_ws='test',
+                exe_name=Path('~', "Projects", 'dev',"gridgen.1.0.02", 'bin', 'gridgen').expanduser().as_posix())
+    polys = [Polygon([(1500, 1500), (2500, 1500), (2500, 2500), (1500, 2500)])]
+    g.add_refinement_features(polys, "polygon", 2, range(1))
+    g.build()
+    gridprops_vg = g.get_gridprops_vertexgrid()
+    vgrid = flopy.discretization.VertexGrid(**gridprops_vg)
+    # vgrid.plot()
+    np.savetxt(Path('test', 'testfile.csv'), np.ones(vgrid.shape[-1]))
+
+    pf = PstFrom(original_d='test', new_d='testtmp',
+                 spatial_reference=vgrid,
+                 remove_existing=True)
+    pr = cProfile.Profile()
+    pr.enable()
+    pf.add_parameters("testfile.csv", par_type="pp",
+                      geostruct=pyemu.geostats.GeoStruct(
+                          variograms=pyemu.geostats.ExpVario(contribution=1, a=100)),
+                      pp_options={"try_use_ppu": True,
+                                  "pp_space": 25},
+                      par_style="m",
+                      transform="log")
+    pr.disable()
+    pr.print_stats(sort="cumtime")
+    pass
+
+
 if __name__ == "__main__":
     #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
@@ -6328,7 +6374,7 @@ if __name__ == "__main__":
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
-    mf6_freyberg_direct_test(".")
+    # mf6_freyberg_direct_test(".")
     #freyberg_test()
     #mf6_freyberg_thresh_test(".")
     #mf6_freyberg_test()
@@ -6354,6 +6400,7 @@ if __name__ == "__main__":
     #direct_quickfull_test()
     # list_float_int_index_test('.')
     #freyberg_test()
+    invest_vertexpp_setup_speed()
 
 
 
