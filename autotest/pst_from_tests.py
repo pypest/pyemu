@@ -974,6 +974,15 @@ def test_mf6_freyberg(tmp_path):
     #                   upper_bound=10, lower_bound=0.1)
 
     # add SP1 spatially constant, but temporally correlated wel flux pars
+    kper = 5
+    list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper)
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base="twel_mlt_{0}".format(kper),
+                      pargp="twel_mlt_{0}".format(kper), index_cols=[0, 1, 2],
+                      use_cols=[3], upper_bound=1.5, lower_bound=0.5,
+                      geostruct=gr_gs,
+                      mfile_sep=r'\s+')
+
     kper = 0
     list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
     pf.add_parameters(filenames=list_file, par_type="constant",
