@@ -2462,7 +2462,7 @@ class PstFrom(object):
                 pp_df = self._setup_pp_df(**pp_options)
                 # set par group -- already defined above
                 pp_df.loc[:, "pargp"] = pargp
-                self.logger.statement("pilot point 'pargp':{0}".format(",".join(pargp)))
+                self.logger.statement("pilot point 'pargp': {0}".format(pargp))
                 self.logger.log("setting up pilot point parameters")
 
                 # start working on interp factor calcs

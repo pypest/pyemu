@@ -3,6 +3,7 @@ import copy
 import warnings
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 import pyemu
 from .pyemu_warnings import PyemuWarning
@@ -364,7 +365,7 @@ class Ensemble(object):
         """write `Ensemble` to a PEST-style binary file
 
         Args:
-            filename (`str`): file to write
+            filename (`str` or `Path`): file to write
 
         Returns:
             `str`: the filename written (may be modified from input)
@@ -380,7 +381,11 @@ class Ensemble(object):
             values are in arithmetic space
 
         """
-        from pathlib import Path
+        if isinstance(filename, Path):
+            returnpath = True
+        else:
+            filename = Path(filename)
+            returnpath = False
         retrans = False
         if self.istransformed:
             self.back_transform()
@@ -388,26 +393,29 @@ class Ensemble(object):
         if self._df.isnull().values.any():
             warnings.warn( "Ensemble.to_binary() warning: NaN in ensemble", PyemuWarning)
         # if the nobs or npar is large, save as dense binary
-        if self._df.shape[1] > 1e6:
+        if self._df.shape[1] > 1e6 or filename.suffix == ".bin":
             # if the filename doesn't have a .bin suffix, warn and add it
-            if Path(filename).suffix != ".bin":
+            if filename.suffix != ".bin":
                 warnings.warn(
                     "Ensemble.to_binary() warning: large ensemble dimension, will save as "
                     + "dense binary format... adding '.bin' suffix", PyemuWarning
                 )
-                filename += ".bin"
+                filename = filename.with_suffix(".bin")
             self.to_dense(filename)
         else:
             pyemu.Matrix.from_dataframe(self._df).to_coo(filename)
         if retrans:
             self.transform()
-        return filename
+        if returnpath:
+            return filename
+        else:
+            return filename.as_posix()
 
     def to_dense(self, filename):
         """write `Ensemble` to a dense-format binary file
 
         Args:
-            filename (`str`): file to write
+            filename (`str` or `Path`): file to write
 
         Example::
 
