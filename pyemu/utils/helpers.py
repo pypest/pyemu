@@ -4043,7 +4043,7 @@ def apply_threshold_pars(csv_file):
     return thresh, prop
 
 
-def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_kernel=None,nverf=0,
+def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",t_d="template",gp_kernel=None,nverf=0,
                  plot_fits=False,apply_standard_scalar=False, include_emulated_std_obs=False):
     """helper function to setup a gaussian-process-regression (GPR) emulator for outputs of interest.  This
     is primarily targeted at low-dimensional settings like those encountered in PESTPP-MOU
@@ -4054,6 +4054,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
         output_fnames (str | list[str]): usually a list of observation population files that
             corresponds to the simulation results associated with `input_fnames`
         gpr_t_d (str): the template file dir to create that will hold the GPR emulators
+        t_d (str): the template dir containing the PESTPP-MOU outputs that the GPR emulators are trained on
         gp_kernel (sklearn GaussianProcess kernel): the kernel to use.  if None, a standard RBF kernel
             is created and used
         nverf (int): the number of input-output pairs to hold back for a simple verification test
@@ -4221,7 +4222,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
 
 
 
-        model_fname = os.path.split(pst_fname)[1].split('.')[0]+"."+output_name.split(':')[1].split('.')[0]+".pkl" #shortened to not exceed windoze path char limit
+        model_fname = os.path.split(pst_fname)[1].split('.')[0]+"."+output_name.split(':')[1].split('.')[0]+".pkl"
         if os.path.exists(os.path.join(gpr_t_d,model_fname)):
             print("WARNING: model_fname '{0}' exists, overwriting...".format(model_fname))
         with open(os.path.join(gpr_t_d,model_fname),'wb') as f:
@@ -4323,6 +4324,12 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
     gpst_fname = os.path.split(pst_fname)[1]
     gpst.write(os.path.join(gpr_t_d,gpst_fname),version=2)
     print("saved gpr pst:",gpst_fname,"in gpr_t_d",gpr_t_d)
+
+    #if it exists, copy pestpp mou bin from t_d over to gpr_t_d. otherwise, we assume bin is in path
+    mou_bin = [f for f in os.listdir(t_d) if 'pestpp-mou' in f]
+    if len(mou_bin)>0:
+        shutil.copy2(os.path.join(t_d,mou_bin[0]),os.path.join(gpr_t_d,mou_bin))
+
     try:
         pyemu.os_utils.run("pestpp-mou {0}".format(gpst_fname),cwd=gpr_t_d)
     except Exception as e:
