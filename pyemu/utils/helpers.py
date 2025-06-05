@@ -4221,7 +4221,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
 
 
 
-        model_fname = os.path.split(pst_fname)[1]+"."+output_name+".pkl"
+        model_fname = os.path.split(pst_fname)[1].split('.')[0]+"."+output_name.split(':')[1].split('.')[0]+".pkl" #shortened to not exceed windoze path char limit
         if os.path.exists(os.path.join(gpr_t_d,model_fname)):
             print("WARNING: model_fname '{0}' exists, overwriting...".format(model_fname))
         with open(os.path.join(gpr_t_d,model_fname),'wb') as f:
