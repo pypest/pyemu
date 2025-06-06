@@ -4181,7 +4181,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",t_d
         import matplotlib.pyplot as plt
         from matplotlib.backends.backend_pdf import PdfPages
         pdf = PdfPages(os.path.join(gpr_t_d,"gpr_fits.pdf"))
-    for output_name in output_names:
+    for i,output_name in enumerate(output_names):
 
         y_verf = df.loc[:,output_name].values.copy()[cut:]
         y_train = df.loc[:, output_name].values.copy()[:cut]
@@ -4221,8 +4221,8 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",t_d
                 plt.close(fig)
 
 
-
-        model_fname = os.path.split(pst_fname)[1].split('.')[0]+"."+output_name.split(':')[1].split('.')[0]+".pkl"
+        objname = f'obj_{i}'
+        model_fname = os.path.split(pst_fname)[1]+"."+objname+".pkl"
         if os.path.exists(os.path.join(gpr_t_d,model_fname)):
             print("WARNING: model_fname '{0}' exists, overwriting...".format(model_fname))
         with open(os.path.join(gpr_t_d,model_fname),'wb') as f:
