@@ -4325,10 +4325,11 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",t_d
     gpst.write(os.path.join(gpr_t_d,gpst_fname),version=2)
     print("saved gpr pst:",gpst_fname,"in gpr_t_d",gpr_t_d)
 
-    #if it exists, copy pestpp mou bin from t_d over to gpr_t_d. otherwise, we assume bin is in path
-    mou_bin = [f for f in os.listdir(t_d) if 'pestpp-mou' in f]
-    if len(mou_bin)>0:
-        shutil.copy2(os.path.join(t_d,mou_bin[0]),os.path.join(gpr_t_d,mou_bin))
+    #if they exist, copy pestpp bins from t_d over to gpr_t_d. otherwise, we assume bin is in path
+    pp_bins = [f for f in os.listdir(t_d) if 'pestpp-' in f]
+    if len(pp_bins)>0:
+        for pp_bin in pp_bins:
+            shutil.copy2(os.path.join(t_d,pp_bin),os.path.join(gpr_t_d,pp_bin))
 
     try:
         pyemu.os_utils.run("pestpp-mou {0}".format(gpst_fname),cwd=gpr_t_d)
