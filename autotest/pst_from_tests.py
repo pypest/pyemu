@@ -2844,21 +2844,21 @@ def mf6_freyberg_short_direct_test(tmp_path):
 class TestPstFrom():
     """Test class for some PstFrom functionality
     """
-    @classmethod
+    # @classmethod
     @pytest.fixture(autouse=True)
-    def setup(cls, tmp_path):
+    def setup_method(self, tmp_path):
         # record the original wd
-        cls.original_wd = Path().cwd()
+        self.original_wd = Path().cwd()
 
-        cls.sim_ws = Path(tmp_path, 'pst-from-small')
-        external_files_folders = [cls.sim_ws / 'external',
-                                  cls.sim_ws / '../external_files']
+        self.sim_ws = Path(tmp_path, 'pst-from-small')
+        external_files_folders = [self.sim_ws / 'external',
+                                  self.sim_ws / '../external_files']
         for folder in external_files_folders:
             folder.mkdir(parents=True, exist_ok=True)
 
-        cls.dest_ws = Path(tmp_path, 'pst-from-small-template')
+        self.dest_ws = Path(tmp_path, 'pst-from-small-template')
 
-        cls.sr = pyemu.helpers.SpatialReference(delr=np.ones(3),
+        self.sr = pyemu.helpers.SpatialReference(delr=np.ones(3),
                                             delc=np.ones(3),
                                             rotation=0,
                                             epsg=3070,
@@ -2869,38 +2869,38 @@ class TestPstFrom():
                                             )
         # make some fake external data
         # array data
-        cls.array_file = cls.sim_ws / 'hk.dat'
-        cls.array_data = np.ones((3, 3))
-        np.savetxt(cls.array_file, cls.array_data)
+        self.array_file = self.sim_ws / 'hk.dat'
+        self.array_data = np.ones((3, 3))
+        np.savetxt(self.array_file, self.array_data)
         # list data
-        cls.list_file = cls.sim_ws / 'wel.dat'
-        cls.list_data = pd.DataFrame({'#k': [1, 1, 1],
+        self.list_file = self.sim_ws / 'wel.dat'
+        self.list_data = pd.DataFrame({'#k': [1, 1, 1],
                                       'i': [2, 3, 3],
                                       'j': [2, 2, 1],
                                       'flux': [1., 10., 100.]
                                       }, columns=['#k', 'i', 'j', 'flux'])
-        cls.list_data.to_csv(cls.list_file, sep=' ', index=False)
+        self.list_data.to_csv(self.list_file, sep=' ', index=False)
 
         # set up the zones
         zone_array = np.ones((3, 3))  # default of zone 1
         zone_array[2:, 2:] = 0  # position 3, 3 is not parametrized (no zone)
         #zone_array[0, :2] = 2  # 0, 0 and 0, 1 are in zone 2
         zone_array[1, 1] = 2  # 1, 1 is in zone 2
-        cls.zone_array = zone_array
+        self.zone_array = zone_array
 
         # "geostatistical structure(s)"
         v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
-        cls.grid_gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
-        cls.tmp_path = tmp_path
+        self.grid_gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
+        self.tmp_path = tmp_path
         os.chdir(tmp_path)
-        cls.sim_ws = cls.sim_ws.relative_to(tmp_path)
-        cls.dest_ws = cls.dest_ws.relative_to(tmp_path)
-        cls.pf = pyemu.utils.PstFrom(original_d=cls.sim_ws, new_d=cls.dest_ws,
+        self.sim_ws = self.sim_ws.relative_to(tmp_path)
+        self.dest_ws = self.dest_ws.relative_to(tmp_path)
+        self.pf = pyemu.utils.PstFrom(original_d=self.sim_ws, new_d=self.dest_ws,
                                  remove_existing=True,
-                                 longnames=True, spatial_reference=cls.sr,
+                                 longnames=True, spatial_reference=self.sr,
                                  zero_based=False, tpl_subfolder='tpl')
         yield
-        os.chdir(cls.original_wd)
+        os.chdir(self.original_wd)
 
     def test_add_array_parameters(self):
         """test setting up array parameters with different external file
