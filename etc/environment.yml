@@ -24,3 +24,6 @@ dependencies:
   - scikit-learn
   - pip
   - ffmpeg
+  - jupyter
+  - jupytext
+  - jupyterlab
