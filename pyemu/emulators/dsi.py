@@ -80,7 +80,7 @@ class DSI(Emulator):
 
         super().__init__(verbose=verbose)
 
-        self.__org_observation_data = pst.observation_data.copy() if pst is not None else None
+        self.observation_data = pst.observation_data.copy() if pst is not None else None
         #self.__org_parameter_data = pst.parameter_data.copy() if pst is not None else None
         #self.__org_control_data = pst.control_data.copy() #breaks pickling
         if isinstance(sim_ensemble, ObservationEnsemble):
@@ -102,35 +102,31 @@ class DSI(Emulator):
                     # check for quadratic_extrapolation
                     if 'quadratic_extrapolation' in t:
                         assert isinstance(t['quadratic_extrapolation'], bool), "'quadratic_extrapolation' must be a boolean"
-            self.transforms = transforms
+        self.transforms = transforms
         self.fitted = False
         self.data_transformed = None
         self.decision_variable_names = None #used for DSIVC
         
     def prepare_training_data(self, data=None):
         """
-        Prepare training data by applying transformations and computing the projection matrix.
-        
-        This method follows these steps:
-        1. Apply feature transformations (log transform, normal score transform)
-        2. Compute projection matrix using SVD
+        Prepare and transform training data for model fitting.
         
         Parameters
         ----------
         data : pandas.DataFrame, optional
-            Data to prepare. If None, uses self.data.
+            Raw training data. If None, uses self.data.
             
         Returns
         -------
-        pandas.DataFrame
-            The prepared data.
+        tuple
+            Processed data ready for model fitting.
         """
         if data is None:
             data = self.data
-            
         if data is None:
             raise ValueError("No data provided and no data stored in the emulator")
-        
+
+        self.logger.statement("applying feature transforms")
         # Always use the base class transformation method for consistency
         if self.transforms is not None:
             self.data_transformed = self.apply_feature_transforms(data, self.transforms)
@@ -342,8 +338,10 @@ class DSI(Emulator):
 
         obs = pst.observation_data
 
-        if observation_data is None:
-            observation_data = self.__org_observation_data
+        if observation_data is not None:
+            self.observation_data = observation_data
+        else:
+            observation_data = self.observation_data
         assert isinstance(observation_data, pd.DataFrame), "observation_data must be a pandas DataFrame"
         for col in observation_data.columns:
             obs.loc[sim_vals.index,col] = observation_data.loc[:,col]
@@ -382,7 +380,7 @@ class DSI(Emulator):
             pickle.dump(self,f)
         return pst
         
-    def prepare_dsivc(self, decvar_names, t_d=None, pst=None, oe=None, track_stack=False, dsi_args=None, percentiles=[0.25,0.75,0.5], mou_population_size=None):
+    def prepare_dsivc(self, decvar_names, t_d=None, pst=None, oe=None, track_stack=False, dsi_args=None, percentiles=[0.25,0.75,0.5], mou_population_size=None,ies_exe_path="pestpp-ies"):
         """
         Prepare Data Space Inversion Variable Control (DSIVC) control files.
         
@@ -532,6 +530,7 @@ class DSI(Emulator):
         par.loc[decvar_names,"partrans"] = "none"
         par.loc[decvar_names,"parubnd"] = self.data.loc[:,decvar_names].max()
         par.loc[decvar_names,"parlbnd"] = self.data.loc[:,decvar_names].min()
+        par.loc[decvar_names,"parval1"] = self.data.loc[:,decvar_names].quantile(.5)
         
         self.logger.statement(f"zero-weighting observation data...")
         # prepemtpively set obs weights 0.0
@@ -545,6 +544,9 @@ class DSI(Emulator):
             obs.loc[obs.obsnme.str.startswith(o), columns] = obsorg.loc[obsorg.obsnme==o, columns].values
 
         obs.loc[stack_stats.index,"obgnme"] = "stack_stats"
+        obs.loc[stack_stats.index,"org_obsnme"] = [i.split("_stat:")[0] for i in stack_stats.index.values]
+        pst_dsivc.try_parse_name_metadata()
+
         #obs.loc[stack.index,"obgnme"] = "stack"
 
         self.logger.statement(f"building dsivc_forward_run.py...")
@@ -555,7 +557,7 @@ class DSI(Emulator):
             file.write(function_source)
             file.write("\n\n")
             file.write("if __name__ == \"__main__\":\n")
-            file.write(f"    {function_source.split('(')[0].split('def ')[1]}()\n")
+            file.write(f"    {function_source.split('(')[0].split('def ')[1]}(ies_exe_path='{ies_exe_path}')\n")
 
         self.logger.statement(f"preparing nominal initial population...")
         if mou_population_size is None:
