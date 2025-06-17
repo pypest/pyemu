@@ -4426,7 +4426,7 @@ def dsi_forward_run(pvals,dsi,write_csv=False):
         sim_vals.to_csv("dsi_sim_vals.csv")
     return sim_vals
 
-def dsivc_forward_run(md_ies="."):
+def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies"):
     import pandas as pd
     import pyemu
     import os
@@ -4487,7 +4487,7 @@ def dsivc_forward_run(md_ies="."):
     worker_root="."
     dsi = pickle.load(open(os.path.join(md_ies,"dsi.pickle"),"rb"))
     num_workers = dsi.dsivc_args.get("num_pyworkers",1)
-    pyemu.os_utils.start_workers(md_ies,"pestpp-ies","dsi.pst",
+    pyemu.os_utils.start_workers(md_ies,ies_exe_path,"dsi.pst",
                                 num_workers=num_workers,
                                 worker_root=worker_root,
                                 port = PortManager().get_available_port(),
