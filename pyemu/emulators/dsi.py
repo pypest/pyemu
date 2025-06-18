@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import inspect
 from pyemu.utils.helpers import dsi_forward_run, series_to_insfile
-import pickle
 import os
 import shutil
 from pyemu.pst.pst_handler import Pst
@@ -351,9 +350,8 @@ class DSI(Emulator):
         pst.write(os.path.join(t_d,"dsi.pst"),version=2)
         self.logger.statement("saved pst to {0}".format(os.path.join(t_d,"dsi.pst")))
         
-        #self.pst_dsi = pst #breaks pickling #TODO: add save/load methods to Emulator class
-        with open(os.path.join(t_d,"dsi.pickle"),"wb") as f:
-            pickle.dump(self,f)
+        self.logger.statement("pickling dsi object to {0}".format(os.path.join(t_d,"dsi.pickle")))
+        self.save(os.path.join(t_d,"dsi.pickle"))
         return pst
         
     def prepare_dsivc(self, decvar_names, t_d=None, pst=None, oe=None, track_stack=False, dsi_args=None, percentiles=[0.25,0.75,0.5], mou_population_size=None,ies_exe_path="pestpp-ies"):
@@ -570,8 +568,7 @@ class DSI(Emulator):
         self.logger.statement("overwriting dsi.pickle file...")
         self.decision_variable_names = decvar_names
         # re-pickle dsi to track dsivc args
-        with open(os.path.join(t_d,"dsi.pickle"),"wb") as f:
-            pickle.dump(self,f)
+        self.save(os.path.join(t_d,"dsi.pickle"))
 
         self.logger.statement("DSIVC control files created...the user still needs to specify objectives and constraints...")
         return pst_dsivc
