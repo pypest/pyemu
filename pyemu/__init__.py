@@ -20,7 +20,13 @@ from .pst import Pst, pst_utils, Results
 from .sc import Schur
 from .utils import (geostats, gw_utils, helpers, metrics, optimization,
                     os_utils, pp_utils, smp_utils)
-from .emulators import (Emulator, BaseTransformer, Log10Transformer,
+from .emulators import (
+                      #emulators
+                      Emulator, DSI,
+                    
+                      
+                      #transformers
+                      BaseTransformer, Log10Transformer,
                       RowWiseMinMaxScaler, StandardScalerTransformer, NormalScoreTransformer,
                       TransformerPipeline, AutobotsAssemble)
 #from .prototypes import *
