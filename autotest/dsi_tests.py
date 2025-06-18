@@ -81,10 +81,11 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
 
     # history match
     obsdata = pst.observation_data.copy()
-    if "quadratic_extrapolation" in transforms[0].keys():
-        nzobs = obsdata.loc[obsdata.weight>0].obsnme.tolist()
-        ovals = oe.loc[:,nzobs].max(axis=0) * 1.1
-        obsdata.loc[nzobs,"obsval"] = ovals.values
+    if transforms is not None:
+        if "quadratic_extrapolation" in transforms[0].keys():
+            nzobs = obsdata.loc[obsdata.weight>0].obsnme.tolist()
+            ovals = oe.loc[:,nzobs].max(axis=0) * 1.1
+            obsdata.loc[nzobs,"obsval"] = ovals.values
 
     td = "template_dsi"
     pstdsi = dsi.prepare_pestpp(td,observation_data=obsdata)
@@ -157,7 +158,8 @@ def test_dsivc_freyberg():
                                     "noptmax":3,
                                     "decvar_weight":10.0,
                                     "num_pyworkers":1,
-                                }
+                                },
+                                ies_exe_path=ies_exe_path,
                                 )
 
     obs = pstdsivc.observation_data
