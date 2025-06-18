@@ -99,7 +99,8 @@ class Emulator:
     def apply_feature_transforms(self, data=None, transforms=None):
         """
         Apply feature transformations to data with customizable transformer sequence.
-        
+        This function is not intended to be used directly by users.
+
         Parameters
         ----------
         data : pandas.DataFrame, optional
