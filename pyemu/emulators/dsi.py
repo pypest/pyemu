@@ -402,7 +402,8 @@ class DSI(Emulator):
             Percentiles to calculate. Default is [0.25, 0.75, 0.5].
         mou_population_size : int, optional
             Population size for multi-objective optimization.
-            
+        ies_exe_path : str, optional
+            Path to the PEST++ IES executable. Default is "pestpp-ies".
         Returns
         -------
         Pst

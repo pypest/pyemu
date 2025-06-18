@@ -60,7 +60,7 @@ from pyemu.emulators import DSI
 #        else:  # Should be unchanged
 #            assert np.isclose(transformed_means[col], orig_means[col])
 
-def test_dsi_freyberg(tmp_d):
+def dsi_freyberg(tmp_d,transforms=None,tag=""):
 
     test_d = "ends_master"
     test_d = setup_tmp(test_d, tmp_d)
@@ -75,21 +75,26 @@ def test_dsi_freyberg(tmp_d):
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
     data = oe._df.copy()
 
-    dsi = DSI(sim_ensemble=data)
+    dsi = DSI(sim_ensemble=data,transforms=transforms)
     dsi.apply_feature_transforms()
     dsi.fit()
 
     # history match
     obsdata = pst.observation_data.copy()
+    if "quadratic_extrapolation" in transforms[0].keys():
+        nzobs = obsdata.loc[obsdata.weight>0].obsnme.tolist()
+        ovals = oe.loc[:,nzobs].max(axis=0) * 1.1
+        obsdata.loc[nzobs,"obsval"] = ovals.values
+
     td = "template_dsi"
     pstdsi = dsi.prepare_pestpp(td,observation_data=obsdata)
-    pstdsi.control_data.noptmax = 3
+    pstdsi.control_data.noptmax = 1
     pstdsi.pestpp_options["ies_num_reals"] = 100
     pstdsi.write(os.path.join(td, "dsi.pst"),version=2)
 
     pvals = pd.read_csv(os.path.join(td, "dsi_pars.csv"), index_col=0)
-    md = "master_dsi"
-    num_workers= 3
+    md = f"master_dsi{tag}"
+    num_workers = 1
     worker_root = "."
     pyemu.os_utils.start_workers(
         td,ies_exe_path,"dsi.pst", num_workers=num_workers,
@@ -99,10 +104,95 @@ def test_dsi_freyberg(tmp_d):
             "dsi": dsi, "pvals": pvals,
         }
     )
-
-
     return
+
+def test_dsi_basic(tmp_d="temp"):
+    dsi_freyberg(tmp_d,transforms=None)
+    return
+
+def test_dsi_nst(tmp_d="temp"):
+    transforms = [
+        {"type": "normal_score", }
+    ]
+    dsi_freyberg(tmp_d,transforms=transforms)
+    return
+
+def test_dsi_nst_extrap(tmp_d="temp"):
+    transforms = [
+        {"type": "normal_score", "quadratic_extrapolation":True}
+    ]
+    dsi_freyberg(tmp_d,transforms=transforms)
+    return
+
+def test_dsi_mixed(tmp_d="temp"):
+    transforms = [
+        {"type": "log10", "columns": ["headwater_20171130", "tailwater_20161130"]},
+        {"type": "normal_score", }
+    ]
+    dsi_freyberg(tmp_d,transforms=transforms)
+    return
+
+def test_dsivc_freyberg():
+
+    md_hm = "master_dsi"
+    assert os.path.exists(md_hm), f"Master directory {md_hm} does not exist."
+    td = "template_dsivc"
+    if os.path.exists(td):
+        shutil.rmtree(td)
+    shutil.copytree(md_hm, td)
+
+    dsi = DSI.load(os.path.join(td, "dsi.pickle"))
+
+    pst = pyemu.Pst(os.path.join(td, "dsi.pst"))
+    oe = pyemu.ObservationEnsemble.from_binary(pst,os.path.join(td, "dsi.1.obs.jcb"))
+
+    obsdata = dsi.observation_data
+    decvars = obsdata.loc[obsdata.obgnme=="out_wel"].obsnme.tolist()
+    pstdsivc = dsi.prepare_dsivc(t_d=td,
+                                oe=oe,
+                                decvar_names=decvars,
+                                track_stack=False,
+                                percentiles=[0.05, 0.25, 0.5, 0.75, 0.95],
+                                dsi_args={
+                                    "noptmax":3,
+                                    "decvar_weight":10.0,
+                                    "num_pyworkers":1,
+                                }
+                                )
+
+    obs = pstdsivc.observation_data
+    obs.org_obsnme.unique()
+
+    obsnme = obsdata.loc[obsdata.obgnme=="tailwater"].obsnme.tolist()[-1]
+    mou_objectives = obs.loc[(obs.org_obsnme==obsnme) & (obs.stat=="50%")].obsnme.tolist()
+
+    pstdsivc.pestpp_options["mou_objectives"] = mou_objectives
+    obs.loc[mou_objectives, "weight"] = 1.0
+    obs.loc[mou_objectives, "obgnme"] = "less_than_obj"
+
+    pstdsivc.control_data.noptmax = 1 #just for testing
+    pstdsivc.pestpp_options["mou_population_size"] = 10 #just for testing 
+
+    pstdsivc.write(os.path.join(td, "dsivc.pst"),version=2)
+
+    md = "master_dsivc"
+    num_workers = 1
+    worker_root = "."
+
+    pyemu.os_utils.start_workers(td,
+                                 "pestpp-mou",
+                                    "dsivc.pst",
+                                    num_workers=num_workers,
+                                    worker_root=worker_root,
+                                    master_dir=md,
+                                    port=_get_port(),)
+
+
 
 
 if __name__ == "__main__":
-    test_dsi_freyberg("temp")
+    #test_dsi_basic()
+    #test_dsi_nst()
+    #test_dsi_nst_extrap()
+    #test_dsi_mixed()
+    test_dsivc_freyberg()
