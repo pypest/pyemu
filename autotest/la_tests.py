@@ -597,7 +597,7 @@ def ends_freyberg_test(tmp_path):
 
 
 if __name__ == "__main__":
-    #ends_freyberg_test("temp")
+    ends_freyberg_test("temp")
     #ends_freyberg_dev()
     #obscomp_test()
     #alternative_dw()
