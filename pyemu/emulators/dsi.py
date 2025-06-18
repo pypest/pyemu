@@ -15,33 +15,9 @@ from .base import Emulator
 
 class DSI(Emulator):
     """
-    Data Space Inversion emulator class.
-    
-    #TODO: add more docstring details
-    
-    Parameters
-    ----------
-    pst : Pst, optional
-        A Pst object. If provided, the emulator will be initialized with the
-        information from the Pst object.
-    sim_ensemble : ObservationEnsemble, optional
-        An ensemble of simulated observations. If provided, the emulator will
-        be initialized with the information from the ensemble.
-    transforms : list of dict, optional
-        List of transformation specifications. Each dict should have:
-        - 'type': str - Type of transformation (e.g.,'log10', 'normal_score').
-        - 'columns': list of str,optional - Columns to apply the transformation to. If not supplied, transformation is applied to all columns.
-        - Additional kwargs for the transformation (e.g., 'quadratic_extrapolation' for normal score transform).
-        Example:
-        transforms = [
-            {'type': 'log10', 'columns': ['obs1', 'obs2']},
-            {'type': 'normal_score', 'quadratic_extrapolation': True}
-        ]
-        Default is None, which means no transformations will be applied.
-    energy_threshold : float, optional 
-        The energy threshold for the SVD. Default is 1.0, no truncation.
-    verbose : bool, optional
-        If True, enable verbose logging. Default is False.
+    Data Space Inversion (DS) emulator class. Based on DSI as described in Sun &
+    Durlofsky (2017) and Sun et al (2017).
+        
     """
 
     def __init__(self, 
