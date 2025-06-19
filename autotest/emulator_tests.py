@@ -10,55 +10,6 @@ from pst_from_tests import setup_tmp, ies_exe_path, _get_port
 from pyemu.emulators import DSI
 
 
-#def test_dsi_feature_transforms():
-#    """Test feature transforms in DSI emulator"""
-#    # Create test data simulating an ensemble
-#    np.random.seed(42)
-#    n_reals = 10
-#    n_obs = 5
-#    sim_names = [f"obs{i}" for i in range(n_obs)]
-#    sim_data = np.random.lognormal(mean=0, sigma=1, size=(n_reals, n_obs))
-#    sim_ensemble = pd.DataFrame(sim_data, columns=sim_names)
-#    
-#    # Create DSI emulator
-#    pst = pyemu.Pst.from_par_obs_names(["p1"], sim_names)
-#    dsi = pyemu.emulators.DSI(
-#        pst=pst,
-#        sim_ensemble=sim_ensemble,
-#        transforms = [{"type": "log10", "columns": sim_names},
-#                        {"type": "normal_score", "columns": sim_names}],
-#        
-#    )
-#    
-#    # Test feature transforms
-#    dsi.apply_feature_transforms()
-#    
-#    # Check that transformed data exists
-#    assert dsi.data_transformed is not None
-#    
-#    # Check log transform was applied (values should be smaller than original lognormal data)
-#    assert dsi.data_transformed.mean().mean() < sim_ensemble.mean().mean()
-#    
-#    # Check the feature transformer object exists
-#    assert hasattr(dsi, "feature_transformer")
-#    
-#    # Test with specific columns for log transform
-#    dsi2 = pyemu.emulators.DSI(
-#        pst=pst,
-#        sim_ensemble=sim_ensemble,
-#        transforms = [{"type": "log10", "columns": sim_names[:2]}]
-#                            )
-#    dsi2.apply_feature_transforms()
-#    
-#    # Check only specified columns were log transformed
-#    orig_means = sim_ensemble.mean()
-#    transformed_means = dsi2.data_transformed.mean()
-#    
-#    for i, col in enumerate(sim_names):
-#        if i < 2:  # Should be log transformed
-#            assert transformed_means[col] < orig_means[col]
-#        else:  # Should be unchanged
-#            assert np.isclose(transformed_means[col], orig_means[col])
 
 def dsi_freyberg(tmp_d,transforms=None,tag=""):
 
@@ -190,6 +141,57 @@ def test_dsivc_freyberg():
                                     port=_get_port(),)
 
 
+def plot_freyberg_dsi():
+    import pandas as pd
+    import pyemu
+    import matplotlib.pyplot as plt
+
+    test_d = "ends_master"
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d, case + ".pst")
+    pst = pyemu.Pst(pst_name)
+    predictions = ["headwater_20171130", "tailwater_20161130", "trgw_0_9_1_20161130"]
+    oe_name = pst_name.replace(".pst", ".0.obs.csv")
+    pr_oe = pd.read_csv(os.path.join(test_d,"freyberg6_run_ies.0.obs.csv"),index_col=0)
+    #pt_oe = pd.read_csv(os.path.join(test_d, "freyberg6_run_ies.3.obs.csv"), index_col=0)
+    pt_oe = pr_oe.copy()
+
+
+    m_d = os.path.join( "master_dsi")
+    pst = pyemu.Pst(os.path.join(m_d,"dsi.pst"))
+    pr_oe_dsi = pyemu.ObservationEnsemble.from_binary(pst=pst, filename=os.path.join(m_d,"dsi.0.obs.jcb"))._df
+    pt_oe_dsi = pyemu.ObservationEnsemble.from_binary(pst=pst, filename=os.path.join(m_d,"dsi.1.obs.jcb"))._df
+
+    pv = pyemu.ObservationEnsemble(pst=pst,df=pt_oe).phi_vector
+    pv_dsi = pyemu.ObservationEnsemble(pst=pst, df=pt_oe_dsi).phi_vector
+    #print(pt_oe.shape)
+    pt_oe = pt_oe.loc[pv<25, :]
+    pt_oe_dsi = pt_oe_dsi.loc[pv_dsi < 25, :]
+
+    # print(pt_oe.shape)
+    # fig,ax = plt.subplots(1,1,figsize=(5,5))
+    # ax.hist(pv,bins=10,facecolor="b",alpha=0.5,density=True)
+    # ax.hist(pv_dsi, bins=10, facecolor="m", alpha=0.5,density=True)
+    # ax.set_yticks([])
+    # plt.tight_layout()
+    # plt.show()
+
+
+
+    fig,axes = plt.subplots(len(predictions),1,figsize=(10,10))
+    for p,ax in zip(predictions,axes):
+        ax.hist(pr_oe.loc[:,p].values,bins=10,alpha=0.5,facecolor="0.5",density=True,label="prior")
+        ax.hist(pt_oe.loc[:, p].values, bins=10, alpha=0.5, facecolor="b",density=True,label="posterior")
+        ax.hist(pr_oe_dsi.loc[:, p].values, bins=10, facecolor="none",hatch="/",edgecolor="0.5",
+                lw=2.5,density=True,label="dsi prior")
+        ax.hist(pt_oe_dsi.loc[:, p].values, bins=10, facecolor="none",density=True,hatch="/",edgecolor="b",lw=2.5,
+                label="dsi posterior")
+        ax.set_title(p,loc="left")
+        ax.legend(loc="upper right")
+        ax.set_yticks([])
+    plt.tight_layout()
+    plt.savefig("dsi_pred.pdf")
+
 
 
 if __name__ == "__main__":
@@ -197,4 +199,5 @@ if __name__ == "__main__":
     #test_dsi_nst()
     #test_dsi_nst_extrap()
     #test_dsi_mixed()
-    test_dsivc_freyberg()
+    #test_dsivc_freyberg()
+    plot_freyberg_dsi()
