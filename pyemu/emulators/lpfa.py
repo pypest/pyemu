@@ -1,5 +1,5 @@
 """
-Learning-based pattern-data-driven forecast approach (LDFA) emulator implementation.
+Learning-based pattern-data-driven forecast approach (LPFA) emulator implementation.
 
 """
 from __future__ import print_function, division
@@ -13,9 +13,9 @@ from .base import Emulator
 from .transformers import RowWiseMinMaxScaler
 
 # Define scikit-learn based model class
-class LDFAModel:
+class LPFAModel:
     """
-    Scikit-learn MLPRegressor wrapper for LDFA neural network model.
+    Scikit-learn MLPRegressor wrapper for LPFA neural network model.
     """
     def __init__(self, input_dim, output_dim, hidden_units=None, activation='relu', 
                  dropout_rate=0.0, learning_rate=0.01, max_iter=200, early_stopping=True):
@@ -59,7 +59,7 @@ class LDFAModel:
         return getattr(self.model, 'loss_curve_', [])
     
 
-class LDFA(Emulator):
+class LPFA(Emulator):
     """
     Class for the Learning-based pattern-data-driven forecast approach from Kim et al (2025).
     
@@ -252,11 +252,32 @@ class LDFA(Emulator):
         
         # Apply PCA to reduce the dimensionality of the data
         self.logger.statement("applying PCA dimensionality reduction")
-        self.pcaX = PCA()#n_components=X_test.shape[1])
-        self.pcay = PCA()#n_components=y_test.shape[1])
+        self.pcaX = PCA()
+        self.pcay = PCA()
 
-        self.X = self.pcaX.fit_transform(X_train)
-        self.y = self.pcay.fit_transform(y_train)
+        X_transformed = self.pcaX.fit_transform(X_train)
+        y_transformed = self.pcay.fit_transform(y_train)
+        
+        # Apply energy-based truncation
+        if self.energy_threshold < 1.0:
+            self.logger.statement("applying energy-based PCA truncation")
+            # For input PCA
+            explained_var_ratio_X = np.cumsum(self.pcaX.explained_variance_ratio_)
+            n_components_X = np.argmax(explained_var_ratio_X >= self.energy_threshold) + 1
+            self.pcaX = PCA(n_components=n_components_X)
+            X_transformed = self.pcaX.fit_transform(X_train)
+            
+            # For output PCA
+            explained_var_ratio_y = np.cumsum(self.pcay.explained_variance_ratio_)
+            n_components_y = np.argmax(explained_var_ratio_y >= self.energy_threshold) + 1
+            self.pcay = PCA(n_components=n_components_y)
+            y_transformed = self.pcay.fit_transform(y_train)
+            
+            self.logger.statement(f"Reduced X from {X_train.shape[1]} to {n_components_X} components")
+            self.logger.statement(f"Reduced y from {y_train.shape[1]} to {n_components_y} components")
+        
+        self.X = X_transformed
+        self.y = y_transformed
         
         self.X_test = self.pcaX.transform(X_test)
         self.y_test = self.pcay.transform(y_test)
@@ -288,7 +309,7 @@ class LDFA(Emulator):
             
         Returns
         -------
-        LDFAModel
+        LPFAModel
             The scikit-learn MLPRegressor wrapper instance.
         """
         if params is None:
@@ -306,7 +327,7 @@ class LDFA(Emulator):
         output_dim = self.y.shape[1]
         
         # Create the model architecture
-        model = LDFAModel(
+        model = LPFAModel(
             input_dim=input_dim,
             output_dim=output_dim,
             hidden_units=params['hidden_units'],
@@ -329,7 +350,7 @@ class LDFA(Emulator):
             
         Returns
         -------
-        self : LDFA
+        self : LPFA
             The emulator instance with model created.
         """
         self.model = self._build_model(params)
@@ -346,7 +367,7 @@ class LDFA(Emulator):
             
         Returns
         -------
-        self : LDFA
+        self : LPFA
             The emulator instance with noise model added.
         """
         # Create noise model
@@ -385,7 +406,7 @@ class LDFA(Emulator):
             
         Returns
         -------
-        self : LDFA
+        self : LPFA
             The fitted emulator.
         """
         if prepare_data and (X is None or self.X is None):
@@ -500,6 +521,6 @@ class LDFA(Emulator):
         predictions.loc[:, self.forecast_names] = pred_transformed.loc[:, self.forecast_names]
         
         # Finally, inverse the transform pipeline if it was applied (was the first transform)
-        predictions = self.feature_transformer.inverse_transform(predictions)
+        predictions = self.feature_transformer.inverse(predictions)
         
         return predictions

@@ -22,7 +22,7 @@ from .utils import (geostats, gw_utils, helpers, metrics, optimization,
                     os_utils, pp_utils, smp_utils)
 from .emulators import (
                       #emulators
-                      Emulator, DSI,
+                      Emulator, DSI, LPFA,
                     
                       
                       #transformers
