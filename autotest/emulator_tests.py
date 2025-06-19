@@ -193,7 +193,7 @@ def plot_freyberg_dsi():
     plt.savefig("dsi_pred.pdf")
 
 
-def test_lpfa(tmp_d,transforms=None):
+def lpfa_freyberg(tmp_d="temp",transforms=None):
 
     test_d = "ends_master"
     test_d = setup_tmp(test_d, tmp_d)
@@ -307,6 +307,15 @@ def test_lpfa(tmp_d,transforms=None):
 
     return
 
+def test_lpfa_basic():
+    lpfa_freyberg(tmp_d="temp",transforms=None)
+    return
+
+def test_lpfa_std():
+    lpfa_freyberg(tmp_d="temp",transforms=[
+        {"type": "standard_scaler"}
+    ])
+    return
 
 if __name__ == "__main__":
     #test_dsi_basic()
@@ -315,4 +324,4 @@ if __name__ == "__main__":
     #test_dsi_mixed()
     #test_dsivc_freyberg()
     #plot_freyberg_dsi()
-    test_lpfa(tmp_d="temp",)
+    test_lpfa_std()
