@@ -4043,7 +4043,7 @@ def apply_threshold_pars(csv_file):
     return thresh, prop
 
 
-def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_kernel=None,nverf=0,
+def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",t_d="template",gp_kernel=None,nverf=0,
                  plot_fits=False,apply_standard_scalar=False, include_emulated_std_obs=False):
     """helper function to setup a gaussian-process-regression (GPR) emulator for outputs of interest.  This
     is primarily targeted at low-dimensional settings like those encountered in PESTPP-MOU
@@ -4054,6 +4054,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
         output_fnames (str | list[str]): usually a list of observation population files that
             corresponds to the simulation results associated with `input_fnames`
         gpr_t_d (str): the template file dir to create that will hold the GPR emulators
+        t_d (str): the template dir containing the PESTPP-MOU outputs that the GPR emulators are trained on
         gp_kernel (sklearn GaussianProcess kernel): the kernel to use.  if None, a standard RBF kernel
             is created and used
         nverf (int): the number of input-output pairs to hold back for a simple verification test
@@ -4180,7 +4181,7 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
         import matplotlib.pyplot as plt
         from matplotlib.backends.backend_pdf import PdfPages
         pdf = PdfPages(os.path.join(gpr_t_d,"gpr_fits.pdf"))
-    for output_name in output_names:
+    for i,output_name in enumerate(output_names):
 
         y_verf = df.loc[:,output_name].values.copy()[cut:]
         y_train = df.loc[:, output_name].values.copy()[:cut]
@@ -4220,8 +4221,8 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
                 plt.close(fig)
 
 
-
-        model_fname = os.path.split(pst_fname)[1]+"."+output_name+".pkl"
+        objname = f'obj_{i}'
+        model_fname = os.path.split(pst_fname)[1]+"."+objname+".pkl"
         if os.path.exists(os.path.join(gpr_t_d,model_fname)):
             print("WARNING: model_fname '{0}' exists, overwriting...".format(model_fname))
         with open(os.path.join(gpr_t_d,model_fname),'wb') as f:
@@ -4323,6 +4324,13 @@ def prep_for_gpr(pst_fname,input_fnames,output_fnames,gpr_t_d="gpr_template",gp_
     gpst_fname = os.path.split(pst_fname)[1]
     gpst.write(os.path.join(gpr_t_d,gpst_fname),version=2)
     print("saved gpr pst:",gpst_fname,"in gpr_t_d",gpr_t_d)
+
+    #if they exist, copy pestpp bins from t_d over to gpr_t_d. otherwise, we assume bin is in path
+    pp_bins = [f for f in os.listdir(t_d) if 'pestpp-' in f]
+    if len(pp_bins)>0:
+        for pp_bin in pp_bins:
+            shutil.copy2(os.path.join(t_d,pp_bin),os.path.join(gpr_t_d,pp_bin))
+
     try:
         pyemu.os_utils.run("pestpp-mou {0}".format(gpst_fname),cwd=gpr_t_d)
     except Exception as e:

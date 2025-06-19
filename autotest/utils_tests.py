@@ -2812,7 +2812,7 @@ def gpr_compare_invest():
 
     pst_fname = os.path.join(m_d,case+".pst")
     gpr_t_d = os.path.join(case+"_gpr_template")
-    pyemu.helpers.prep_for_gpr(pst_fname,dv_pops,obs_pops,gpr_t_d=gpr_t_d,nverf=int(pop_size*.1),\
+    pyemu.helpers.prep_for_gpr(pst_fname,dv_pops,obs_pops,t_d=m_d,gpr_t_d=gpr_t_d,nverf=int(pop_size*.1),\
                                plot_fits=True,apply_standard_scalar=False,include_emulated_std_obs=True)
     gpst = pyemu.Pst(os.path.join(gpr_t_d,case+".pst"))
     shutil.copy2(os.path.join(m_d,case+".0.dv_pop.csv"),os.path.join(gpr_t_d,"initial_dv_pop.csv"))
@@ -2915,7 +2915,7 @@ def gpr_compare_invest():
         dv_pops.append(os.path.join(complex_m_d_iter,case+".0.dv_pop.csv"))
         obs_pops.append(os.path.join(complex_m_d_iter,case+".0.obs_pop.csv"))
         gpr_t_d_iter = gpr_t_d+"_outeriter{0}".format(iouter)
-        pyemu.helpers.prep_for_gpr(pst_fname,dv_pops,obs_pops,gpr_t_d=gpr_t_d_iter,nverf=int(pop_size*.1),
+        pyemu.helpers.prep_for_gpr(pst_fname,dv_pops,obs_pops,t_d=gpr_t_d,gpr_t_d=gpr_t_d_iter,nverf=int(pop_size*.1),
                                    plot_fits=True,apply_standard_scalar=False,include_emulated_std_obs=True)
         gpst_iter = pyemu.Pst(os.path.join(gpr_t_d_iter,case+".pst"))
         #aggdf = pd.read_csv(os.path.join(gpr_t_d,"gpr_aggregate_training_data.csv"),index_col=0)
@@ -2975,7 +2975,7 @@ def gpr_constr_invest():
 
     pst_fname = os.path.join(m_d, case + ".pst")
     gpr_t_d = os.path.join(case + "_gpr_template")
-    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
+    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops,t_d=m_d, gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
                                plot_fits=True, apply_standard_scalar=False, include_emulated_std_obs=True)
     gpst = pyemu.Pst(os.path.join(gpr_t_d, case + ".pst"))
     #shutil.copy2(os.path.join(m_d, case + ".0.dv_pop.csv"), os.path.join(gpr_t_d, "initial_dv_pop.csv"))
@@ -3090,7 +3090,7 @@ def gpr_constr_invest():
         dv_pops.append(os.path.join(complex_m_d_iter, case + ".0.dv_pop.csv"))
         obs_pops.append(os.path.join(complex_m_d_iter, case + ".0.obs_pop.csv"))
         gpr_t_d_iter = gpr_t_d + "_outeriter{0}".format(iouter)
-        pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, gpr_t_d=gpr_t_d_iter, nverf=int(pop_size * .1),
+        pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, t_d=gpr_t_d,gpr_t_d=gpr_t_d_iter, nverf=int(pop_size * .1),
                                    plot_fits=True, apply_standard_scalar=False, include_emulated_std_obs=True)
         gpst_iter = pyemu.Pst(os.path.join(gpr_t_d_iter, case + ".pst"))
         # aggdf = pd.read_csv(os.path.join(gpr_t_d,"gpr_aggregate_training_data.csv"),index_col=0)
@@ -3161,7 +3161,7 @@ def gpr_zdt1_test():
 
     pst_fname = os.path.join(m_d, case + ".pst")
     gpr_t_d = os.path.join(case + "_gpr_template")
-    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
+    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, t_d=m_d,gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
                                plot_fits=True, apply_standard_scalar=False, include_emulated_std_obs=True)
     gpst = pyemu.Pst(os.path.join(gpr_t_d, case + ".pst"))
     shutil.copy2(os.path.join(m_d, case + ".0.dv_pop.csv"), os.path.join(gpr_t_d, "initial_dv_pop.csv"))
@@ -3258,7 +3258,7 @@ def gpr_zdt1_ppw():
 
 if __name__ == "__main__":
     #ppu_geostats_test(".")
-    #gpr_compare_invest()
+    gpr_compare_invest()
     #gpr_constr_test()
     # import sys
     # t_d = "constr_ppw_template"
@@ -3267,7 +3267,7 @@ if __name__ == "__main__":
     # from forward_run import helper as frun
     # ppw_worker(0,case,t_d,"localhost",4004,frun)
     #pypestworker_test()
-    gpr_constr_test()
+    # gpr_constr_test()
     #gpr_zdt1_test()
     #ac_draw_test(".")
     #while True:

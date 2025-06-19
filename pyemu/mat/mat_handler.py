@@ -3,6 +3,7 @@ import os
 import copy
 import struct
 import warnings
+from pathlib import Path
 import numpy as np
 import pandas as pd
 
@@ -1863,7 +1864,7 @@ class Matrix(object):
         the read with `Matrix.from_binary()`.
 
         Args:
-            filename (`str`): filename to save binary file
+            filename (`str` or `Path`): filename to save binary file
             droptol (`float`): absolute value tolerance to make values
                 smaller `droptol` than zero.  Default is None (no dropping)
             chunk (`int`): number of elements to write in a single pass.
@@ -1983,9 +1984,7 @@ class Matrix(object):
         """
         row_names = [str(r) for r in row_names]
         col_names = [str(c) for c in col_names]
-        
-
-        if isinstance(filename, str):
+        if isinstance(filename, (str, Path)):
             f = open(filename, "wb")
             header = np.array(
                 (0, -len(col_names), -len(col_names)), dtype=Matrix.binary_header_dt

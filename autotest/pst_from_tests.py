@@ -412,7 +412,7 @@ def freyberg_test(tmp_path):
     assert np.isclose(pst.phi, 0.), pst.phi
 
 
-def freyberg_prior_build_test(tmp_path):
+def test_freyberg_prior_build(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -974,6 +974,15 @@ def test_mf6_freyberg(tmp_path):
     #                   upper_bound=10, lower_bound=0.1)
 
     # add SP1 spatially constant, but temporally correlated wel flux pars
+    kper = 5
+    list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper)
+    pf.add_parameters(filenames=list_file, par_type="grid",
+                      par_name_base="twel_mlt_{0}".format(kper),
+                      pargp="twel_mlt_{0}".format(kper), index_cols=[0, 1, 2],
+                      use_cols=[3], upper_bound=1.5, lower_bound=0.5,
+                      geostruct=gr_gs,
+                      mfile_sep=r'\s+')
+
     kper = 0
     list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
     pf.add_parameters(filenames=list_file, par_type="constant",
@@ -2835,21 +2844,21 @@ def mf6_freyberg_short_direct_test(tmp_path):
 class TestPstFrom():
     """Test class for some PstFrom functionality
     """
-    @classmethod
+    # @classmethod
     @pytest.fixture(autouse=True)
-    def setup(cls, tmp_path):
+    def setup_method(self, tmp_path):
         # record the original wd
-        cls.original_wd = Path().cwd()
+        self.original_wd = Path().cwd()
 
-        cls.sim_ws = Path(tmp_path, 'pst-from-small')
-        external_files_folders = [cls.sim_ws / 'external',
-                                  cls.sim_ws / '../external_files']
+        self.sim_ws = Path(tmp_path, 'pst-from-small')
+        external_files_folders = [self.sim_ws / 'external',
+                                  self.sim_ws / '../external_files']
         for folder in external_files_folders:
             folder.mkdir(parents=True, exist_ok=True)
 
-        cls.dest_ws = Path(tmp_path, 'pst-from-small-template')
+        self.dest_ws = Path(tmp_path, 'pst-from-small-template')
 
-        cls.sr = pyemu.helpers.SpatialReference(delr=np.ones(3),
+        self.sr = pyemu.helpers.SpatialReference(delr=np.ones(3),
                                             delc=np.ones(3),
                                             rotation=0,
                                             epsg=3070,
@@ -2860,38 +2869,38 @@ class TestPstFrom():
                                             )
         # make some fake external data
         # array data
-        cls.array_file = cls.sim_ws / 'hk.dat'
-        cls.array_data = np.ones((3, 3))
-        np.savetxt(cls.array_file, cls.array_data)
+        self.array_file = self.sim_ws / 'hk.dat'
+        self.array_data = np.ones((3, 3))
+        np.savetxt(self.array_file, self.array_data)
         # list data
-        cls.list_file = cls.sim_ws / 'wel.dat'
-        cls.list_data = pd.DataFrame({'#k': [1, 1, 1],
+        self.list_file = self.sim_ws / 'wel.dat'
+        self.list_data = pd.DataFrame({'#k': [1, 1, 1],
                                       'i': [2, 3, 3],
                                       'j': [2, 2, 1],
                                       'flux': [1., 10., 100.]
                                       }, columns=['#k', 'i', 'j', 'flux'])
-        cls.list_data.to_csv(cls.list_file, sep=' ', index=False)
+        self.list_data.to_csv(self.list_file, sep=' ', index=False)
 
         # set up the zones
         zone_array = np.ones((3, 3))  # default of zone 1
         zone_array[2:, 2:] = 0  # position 3, 3 is not parametrized (no zone)
         #zone_array[0, :2] = 2  # 0, 0 and 0, 1 are in zone 2
         zone_array[1, 1] = 2  # 1, 1 is in zone 2
-        cls.zone_array = zone_array
+        self.zone_array = zone_array
 
         # "geostatistical structure(s)"
         v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
-        cls.grid_gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
-        cls.tmp_path = tmp_path
+        self.grid_gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
+        self.tmp_path = tmp_path
         os.chdir(tmp_path)
-        cls.sim_ws = cls.sim_ws.relative_to(tmp_path)
-        cls.dest_ws = cls.dest_ws.relative_to(tmp_path)
-        cls.pf = pyemu.utils.PstFrom(original_d=cls.sim_ws, new_d=cls.dest_ws,
+        self.sim_ws = self.sim_ws.relative_to(tmp_path)
+        self.dest_ws = self.dest_ws.relative_to(tmp_path)
+        self.pf = pyemu.utils.PstFrom(original_d=self.sim_ws, new_d=self.dest_ws,
                                  remove_existing=True,
-                                 longnames=True, spatial_reference=cls.sr,
+                                 longnames=True, spatial_reference=self.sr,
                                  zero_based=False, tpl_subfolder='tpl')
         yield
-        os.chdir(cls.original_wd)
+        os.chdir(self.original_wd)
 
     def test_add_array_parameters(self):
         """test setting up array parameters with different external file
@@ -4544,7 +4553,7 @@ def shortname_conversion_test(tmp_path):
     assert len(par) == 0, f"{len(par)} pars not found in tplfiles: {par[:100]}..."
 
 
-def vertex_grid_test(tmp_path):
+def test_vertex_grid(tmp_path):
     pf, sim = setup_freyberg_mf6(tmp_path, "freyberg_quadtree")
     m = sim.get_model()
     mg = m.modelgrid
@@ -6307,6 +6316,52 @@ def test_dup_idxs(tmp_path):
     pass
 
 
+def invest_vertexpp_setup_speed():
+    import flopy
+    from flopy.utils.gridgen import Gridgen
+    from pathlib import Path
+    from shapely import Polygon
+    import cProfile
+    sim = flopy.mf6.MFSimulation(sim_name="test", sim_ws="test", exe_name="mf6")
+    gwf = flopy.mf6.ModflowGwf(sim, modelname="test")
+
+    dis = flopy.mf6.ModflowGwfdis(
+        gwf,
+        nlay=1,
+        nrow=400,
+        ncol=400,
+        delr=10,
+        delc=10,
+        top=1,
+        botm=0,
+    )
+    g = Gridgen(gwf.modelgrid, model_ws='test',
+                exe_name=Path('~', "Projects", 'dev',"gridgen.1.0.02", 'bin', 'gridgen').expanduser().as_posix())
+    polys = [Polygon([(1500, 1500), (2500, 1500), (2500, 2500), (1500, 2500)])]
+    g.add_refinement_features(polys, "polygon", 2, range(1))
+    g.build()
+    gridprops_vg = g.get_gridprops_vertexgrid()
+    vgrid = flopy.discretization.VertexGrid(**gridprops_vg)
+    # vgrid.plot()
+    np.savetxt(Path('test', 'testfile.csv'), np.ones(vgrid.shape[-1]))
+
+    pf = PstFrom(original_d='test', new_d='testtmp',
+                 spatial_reference=vgrid,
+                 remove_existing=True)
+    pr = cProfile.Profile()
+    pr.enable()
+    pf.add_parameters("testfile.csv", par_type="pp",
+                      geostruct=pyemu.geostats.GeoStruct(
+                          variograms=pyemu.geostats.ExpVario(contribution=1, a=100)),
+                      pp_options={"try_use_ppu": True,
+                                  "pp_space": 25},
+                      par_style="m",
+                      transform="log")
+    pr.disable()
+    pr.print_stats(sort="cumtime")
+    pass
+
+
 if __name__ == "__main__":
     #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
@@ -6328,7 +6383,7 @@ if __name__ == "__main__":
     #$mf6_freyberg_da_test()
     #shortname_conversion_test()
     #mf6_freyberg_shortnames_test()
-    mf6_freyberg_direct_test(".")
+    # mf6_freyberg_direct_test(".")
     #freyberg_test()
     #mf6_freyberg_thresh_test(".")
     #mf6_freyberg_test()
@@ -6354,6 +6409,7 @@ if __name__ == "__main__":
     #direct_quickfull_test()
     # list_float_int_index_test('.')
     #freyberg_test()
+    invest_vertexpp_setup_speed()
 
 
 
