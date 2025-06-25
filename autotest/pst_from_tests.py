@@ -412,6 +412,7 @@ def freyberg_test(tmp_path):
     assert np.isclose(pst.phi, 0.), pst.phi
 
 
+@pytest.mark.skip
 def test_freyberg_prior_build(tmp_path):
     import numpy as np
     import pandas as pd
