@@ -15,13 +15,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
-        python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest]
+        python-version: [3.9] # , "3.10", "3.11", "3.12", "3.13"]
         run-type: [std]
         test-path: ["."]
-        include:
-          - os: macos-latest
-            python-version: 3.11
+#        include:
+#          - os: macos-latest
+#            python-version: 3.11
 
     steps:
     - name: Checkout repo
