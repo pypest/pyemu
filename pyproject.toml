@@ -47,6 +47,7 @@ test = [
     "flaky",
     "nbmake",
     "modflow-devtools",
+    "pytest-timeout",
 ]
 docs = [
     "pyemu[optional]",
