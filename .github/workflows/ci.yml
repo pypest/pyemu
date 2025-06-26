@@ -124,7 +124,7 @@ jobs:
           --capture=no \
           -v \
           --timeout=400 \
-          --timeout-method=thread \
+          --timeout-method=signal \
           --tb=short \
           --durations=20 \
           --cov=pyemu \
