@@ -123,8 +123,7 @@ jobs:
           -rx \
           --capture=no \
           -v \
-          -n=auto \
-          --timeout=600 \
+          --timeout=400 \
           --timeout-method=thread \
           --tb=short \
           --durations=20 \
