@@ -4,6 +4,7 @@ channels:
 dependencies:
   # required
   - python>=3.9
+  - libopenblas < "0.3.30"
   - numpy
   - pandas
   # optional
