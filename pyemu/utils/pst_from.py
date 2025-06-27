@@ -1048,7 +1048,7 @@ class PstFrom(object):
                         sep = " "
                         if rel_filepath.suffix.lower() == ".csv":
                             sep = ","
-                    elif sep == '\s+':
+                    elif sep == r'\s+':
                         sep = " " # sep for saving
                 if pd.api.types.is_integer_dtype(df.columns):  # df.columns.is_integer(): # really!???
                     hheader = False
