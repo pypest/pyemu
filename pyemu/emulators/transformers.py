@@ -4,6 +4,8 @@ Transformer classes for data transformations in emulators.
 from __future__ import print_function, division
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
 
 class BaseTransformer:
     """Base class for all transformers providing a consistent interface."""
@@ -56,6 +58,7 @@ class RowWiseMinMaxScaler(BaseTransformer):
     groups : dict or None, default=None
         Dict mapping group names to lists of column names to be scaled together (entire timeseries for that group).
         If None, all columns will be treated as a single group.
+        Example: {'group1': ['col1', 'col2'], 'group2': ['col3', 'col4']}
     fit_groups : dict or None, default=None
         Dict mapping group names to lists of column names (subset of groups) used to compute row-wise min and max.
         If None, defaults to using the same columns as in groups.
@@ -315,40 +318,61 @@ class MinMaxScaler(BaseTransformer):
         return result
 
 class StandardScalerTransformer(BaseTransformer):
-    """Apply standard scaling (zero mean, unit variance) to data."""
-
-    def __init__(self):
-        self.means = {}
-        self.stds = {}
-
+    def __init__(self, with_mean=True, with_std=True, copy=True):
+        self.with_mean = with_mean
+        self.with_std = with_std  
+        self.copy = copy
+        self._sklearn_scaler = None
+        self._columns = None
+        
     def fit(self, X):
-        """Compute mean and standard deviation for each feature."""
-        for col in X.columns:
-            self.means[col] = X[col].mean()
-            self.stds[col] = X[col].std()
-            if self.stds[col] == 0:
-                self.stds[col] = 1.0  # Avoid division by zero
+        # Store column names for DataFrame reconstruction
+        self._columns = X.columns.tolist()
+        
+        # Create sklearn StandardScaler
+        self._sklearn_scaler = StandardScaler(
+            with_mean=self.with_mean,
+            with_std=self.with_std,
+            copy=self.copy
+        )
+        
+        # Fit on numpy array (sklearn expects this)
+        self._sklearn_scaler.fit(X.values)
         return self
-
+        
     def transform(self, X):
-        """Transform the data using mean and std from fit."""
-        result = X.copy()
-        for col in X.columns:
-            if col in self.means:
-                mean = self.means[col]
-                std = self.stds[col]
-                result[col] = (X[col] - mean) / std
-        return result
-
+        if self._sklearn_scaler is None:
+            raise ValueError("Transformer must be fitted before transform")
+            
+        # Transform using sklearn
+        transformed_values = self._sklearn_scaler.transform(X.values)
+        
+        # Reconstruct DataFrame with original structure
+        if isinstance(X, pd.DataFrame):
+            return pd.DataFrame(
+                transformed_values, 
+                index=X.index, 
+                columns=X.columns
+            )
+        else:
+            return transformed_values
+            
     def inverse_transform(self, X):
-        """Inverse transform data back to original scale."""
-        result = X.copy()
-        for col in X.columns:
-            if col in self.means:
-                mean = self.means[col]
-                std = self.stds[col]
-                result[col] = (X[col] * std) + mean
-        return result
+        if self._sklearn_scaler is None:
+            raise ValueError("Transformer must be fitted before inverse_transform")
+            
+        # Inverse transform using sklearn
+        inverse_values = self._sklearn_scaler.inverse_transform(X.values)
+        
+        # Reconstruct DataFrame
+        if isinstance(X, pd.DataFrame):
+            return pd.DataFrame(
+                inverse_values,
+                index=X.index,
+                columns=X.columns
+            )
+        else:
+            return inverse_values
 
 class NormalScoreTransformer(BaseTransformer):
     """A transformer for normal score transformation."""
