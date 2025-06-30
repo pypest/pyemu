@@ -198,7 +198,7 @@ class MinMaxScaler(BaseTransformer):
     
     Parameters
     ----------
-    feature_range : tuple (min, max), default=(0, 1)
+    feature_range : tuple (min, max), default=(-1, 1)
         The range to scale features into.
     columns : list, optional
         List of column names to be scaled. If None, all columns will be scaled.
