@@ -14,14 +14,14 @@ from .base import Emulator
 
 class DSI(Emulator):
     """
-    Data Space Inversion (DS) emulator class. Based on DSI as described in Sun &
+    Data Space Inversion (DSI) emulator class. Based on DSI as described in Sun &
     Durlofsky (2017) and Sun et al (2017).
         
     """
 
     def __init__(self, 
                 pst=None,
-                sim_ensemble=None,
+                data=None,
                 transforms=None,
                 energy_threshold=1.0,
                 verbose=False):
@@ -33,7 +33,7 @@ class DSI(Emulator):
         pst : Pst, optional
             A Pst object. If provided, the emulator will be initialized with the
             information from the Pst object.
-        sim_ensemble : ObservationEnsemble, optional
+        data : DataFrame or ObservationEnsemble, optional
             An ensemble of simulated observations. If provided, the emulator will
             be initialized with the information from the ensemble.
         transforms : list of dict, optional
@@ -58,11 +58,12 @@ class DSI(Emulator):
         self.observation_data = pst.observation_data.copy() if pst is not None else None
         #self.__org_parameter_data = pst.parameter_data.copy() if pst is not None else None
         #self.__org_control_data = pst.control_data.copy() #breaks pickling
-        if isinstance(sim_ensemble, ObservationEnsemble):
-            sim_ensemble = sim_ensemble._df.copy()
-        #self.__org_sim_ensemble = sim_ensemble.copy() if sim_ensemble is not None else None
-        self.data = sim_ensemble.copy() if sim_ensemble is not None else None
-        #self.feature_scaler = None
+        if isinstance(data, ObservationEnsemble):
+            data = data._df.copy()
+        # set all data to be floats
+        data = data.astype(float) if data is not None else None
+        #self.__org_data = data.copy() if data is not None else None
+        self.data = data.copy() if data is not None else None
         self.energy_threshold = energy_threshold
         assert isinstance(transforms, list) or transforms is None, "transforms must be a list of dicts or None"
         if transforms is not None:
@@ -79,32 +80,31 @@ class DSI(Emulator):
                         assert isinstance(t['quadratic_extrapolation'], bool), "'quadratic_extrapolation' must be a boolean"
         self.transforms = transforms
         self.fitted = False
-        self.data_transformed = None
+        self.data_transformed = self._prepare_training_data()
         self.decision_variable_names = None #used for DSIVC
         
-    def prepare_training_data(self, data=None):
+    def _prepare_training_data(self):
         """
         Prepare and transform training data for model fitting.
         
         Parameters
         ----------
-        data : pandas.DataFrame, optional
-            Raw training data. If None, uses self.data.
+        self : DSI
+            The DSI emulator instance.
             
         Returns
         -------
         tuple
             Processed data ready for model fitting.
         """
+        data = self.data
         if data is None:
-            data = self.data
-        if data is None:
-            raise ValueError("No data provided and no data stored in the emulator")
+            raise ValueError("No data stored in the emulator")
 
         self.logger.statement("applying feature transforms")
         # Always use the base class transformation method for consistency
         if self.transforms is not None:
-            self.data_transformed = self.apply_feature_transforms(data, self.transforms)
+            self.data_transformed = self._fit_transformer_pipeline(data, self.transforms)
         else:
             # Still need to set up a dummy transformer for inverse operations
             from .transformers import AutobotsAssemble
@@ -164,30 +164,24 @@ class DSI(Emulator):
         self.s = s
         return
     
-    def fit(self, X=None, y=None):
+    def fit(self):
         """
         Fit the emulator to training data.
         
         Parameters
         ----------
-        X : pandas.DataFrame
-            Input data to fit the emulator on.
-        y : None
-            Not used, present for API consistency.
+        self : DSI
+            The DSI emulator instance.
             
         Returns
         -------
         self : DSI
             The fitted emulator.
         """
-        if X is not None:
-            self.data = X
-            self.logger.statement("transforming new training data")
-            self.data_transformed = self.prepare_training_data()
         
         if self.data_transformed is None:
             self.logger.statement("transforming training data")
-            self.data_transformed = self.prepare_training_data()
+            self.data_transformed = self._prepare_training_data()
 
         # Compute projection matrix
         self.compute_projection_matrix()
@@ -211,7 +205,7 @@ class DSI(Emulator):
         if not self.fitted:
             raise ValueError("Emulator must be fitted before prediction")
             
-        if not hasattr(self, 'feature_transformer') or self.feature_transformer is None:
+        if not hasattr(self, 'transformer_pipeline') or self.transformer_pipeline is None:
             raise ValueError("Emulator must be fitted and have valid transformations before prediction")
         
         if isinstance(pvals, pd.Series):
@@ -221,8 +215,8 @@ class DSI(Emulator):
         pmat = self.pmat
         ovals = self.ovals
         sim_vals = ovals + np.dot(pmat,pvals)
-        ft = self.feature_transformer
-        sim_vals = ft.inverse(sim_vals)
+        pipeline = self.transformer_pipeline
+        sim_vals = pipeline.inverse(sim_vals)
         sim_vals.index.name = 'obsnme'
         sim_vals.name = "obsval"
         self.sim_vals = sim_vals

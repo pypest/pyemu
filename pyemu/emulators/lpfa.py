@@ -70,36 +70,46 @@ class LPFA(Emulator):
     ----------
     data : pandas.DataFrame
         The training data with input and forecast columns.
-    input_cols : list
+    input_names : list
         List of column names to use as inputs.
     groups : dict
         Dictionary mapping group names to lists of column names. Used for row-wise min-max scaling.
     fit_groups : dict
         Dictionary mapping group names to lists of column names used to fit the scaling.
-    forecast_names : list, optional
-        List of column names to forecast. If None, all columns in data will be used.
+    output_names : list, optional
+        List of column names to forecast. If None, all columns not in input_names are used.
     energy_threshold : float, optional
         Energy threshold for the PCA. Default is 1.0.
     seed : int, optional
         Random seed for reproducibility. Default is None.
     early_stop : bool, optional
         Whether to use early stopping during training. Default is True.
-    apply_std_scaler : bool, optional
-        Whether to apply standard scaling before min-max scaling. Default is False.
+    transforms : list of dict, optional
+        List of transformation specifications. Each dict should have:
+        - 'type': str - Type of transformation (e.g., 'log10', 'normal_score').
+        - 'columns': list of str, optional - Columns to apply the transformation to. If not supplied, transformation is applied to all columns.
+        - Additional kwargs for the transformation (e.g., 'quadratic_extrapolation' for normal score transform).
+        Example:
+        transforms = [
+            {'type': 'log10', 'columns': ['obs1', 'obs2']},
+            {'type': 'normal_score', 'quadratic_extrapolation': True}   
+        ]
+        Default is None, which means no transformations will be applied.
     verbose : bool, optional
         If True, enable verbose logging. Default is True.
     """
 
     def __init__(self,
                  data,
-                 input_cols,
+                 input_names,
                  groups,
                  fit_groups,
-                 forecast_names=None,
+                 output_names=None,
                  energy_threshold=1.0,
                  seed=None,
                  early_stop=True,
                  transforms=None,
+                 test_size=0.2,
                  verbose=True):
         """
         Initialize the Learning-based pattern-data-driven NN emulator.
@@ -108,13 +118,13 @@ class LPFA(Emulator):
         ----------
         data : pandas.DataFrame
             The training data with input and forecast columns.
-        input_cols : list
+        input_names : list
             List of column names to use as inputs.
         groups : dict
             Dictionary mapping group names to lists of column names. Used for row-wise min-max scaling.
         fit_groups : dict
             Dictionary mapping group names to lists of column names used to fit the scaling.
-        forecast_names : list, optional
+        output_names : list, optional
             List of column names to forecast. If None, all columns in data will be used.
         energy_threshold : float, optional
             Energy threshold for the PCA. Default is 1.0.
@@ -133,6 +143,8 @@ class LPFA(Emulator):
                 {'type': 'normal_score', 'quadratic_extrapolation': True}
             ]
             Default is None, which means no transformations will be applied.
+        test_size : float, optional
+            Fraction of data to use for testing. Default is 0.2.
         verbose : bool, optional
             If True, enable verbose logging. Default is True.
         """
@@ -142,13 +154,13 @@ class LPFA(Emulator):
 
         self.seed = seed
         self.data = data
-        self.input_cols = input_cols
+        self.input_names = input_names
         self.groups = groups
         self.fit_groups = fit_groups
         
-        if forecast_names is None:
-            forecast_names = data.columns
-        self.forecast_names = forecast_names
+        if output_names is None:
+            output_names = data.columns
+        self.output_names = output_names
         
         self.energy_threshold = energy_threshold
         
@@ -160,8 +172,13 @@ class LPFA(Emulator):
         self.model = None
         self.train_data = None
         self.test_data = None
+        self.test_size = test_size
+
+        # Prepare the training data
         
-    def prepare_training_data(self, data=None, test_size=0.2):
+        self._prepare_training_data()
+        
+    def _prepare_training_data(self):
         """
         Prepare the training data for model fitting.
         
@@ -187,36 +204,36 @@ class LPFA(Emulator):
             - X_test: Input testing data after transformation and PCA
             - y_test: Target testing data after transformation and PCA
         """
-        if data is None:
-            data = self.data
-            
+        
+        self.logger.statement("preparing training data")
+        data = self.data
         if data is None:
             raise ValueError("No data provided and no data stored in the emulator")
             
         # Split the data into training and test sets
         train, test = train_test_split(
             data, 
-            test_size=test_size, 
+            test_size=self.test_size, 
             random_state=self.seed
         )
         
-        self.logger.statement("preparing training data: data split complete")
+        self.logger.statement("train/test data split complete")
         
         # Store for later use
         self.train_data = train.copy()
         self.test_data = test.copy()
         
-        
-        # TODO: Apply feature transformations if specified
+        self.logger.statement("applying feature transformation pipeline")
+        # Apply feature transformations if specified
         # Always use the base class transformation method for consistency
         if self.transforms is None:
             from .transformers import AutobotsAssemble
-            self.feature_transformer = AutobotsAssemble(train.copy())
+            self.transformer_pipeline = AutobotsAssemble(train.copy())
             train_transformed = train
             test_transformed = test
         else:
-            train_transformed = self.apply_feature_transforms(train, self.transforms)
-            test_transformed = self.feature_transformer.transform(test)
+            train_transformed = self._fit_transformer_pipeline(train, self.transforms)
+            test_transformed = self.transformer_pipeline.transform(test)
 
         
         # Apply row-wise min-max scaling directly (not through the pipeline)
@@ -244,11 +261,11 @@ class LPFA(Emulator):
         self.logger.statement("row-wise min-max scaling complete")
         
         # Split datasets into input (X) and target (y) variables
-        X_train = train_scaled.loc[:, self.input_cols].copy()
-        y_train = train_scaled.loc[:, self.forecast_names].copy()
+        X_train = train_scaled.loc[:, self.input_names].copy()
+        y_train = train_scaled.loc[:, self.output_names].copy()
         
-        X_test = test_scaled.loc[:, self.input_cols].copy()
-        y_test = test_scaled.loc[:, self.forecast_names].copy()
+        X_test = test_scaled.loc[:, self.input_names].copy()
+        y_test = test_scaled.loc[:, self.output_names].copy()
         
         # Apply PCA to reduce the dimensionality of the data
         self.logger.statement("applying PCA dimensionality reduction")
@@ -386,7 +403,7 @@ class LPFA(Emulator):
         
         return self
 
-    def fit(self, epochs=200, batch_size=32, X=None, y=None, prepare_data=True):
+    def fit(self, epochs=200):
         """
         Fit the model to the training data.
         
@@ -394,23 +411,14 @@ class LPFA(Emulator):
         ----------
         epochs : int, optional
             Number of training epochs. Default is 200.
-        batch_size : int, optional
-            Batch size for training. Default is 32.
-        X : pandas.DataFrame, optional
-            Input data for training. If None and prepare_data is True,
-            will run prepare_training_data(). Default is None.
-        y : pandas.DataFrame, optional
-            Not used directly but included for API consistency. Default is None.
-        prepare_data : bool, optional
-            Whether to prepare training data if not already done. Default is True.
-            
         Returns
         -------
         self : LPFA
             The fitted emulator.
         """
-        if prepare_data and (X is None or self.X is None):
-            self.prepare_training_data()
+        if self.data_transformed is None:
+            self.logger.statement("transforming training data")
+            self.data_transformed = self._prepare_training_data()
             
         if self.model is None:
             self.create_model()
@@ -421,7 +429,7 @@ class LPFA(Emulator):
         # Simple fit - scikit-learn handles batching, early stopping, etc.
         self.logger.statement(f"fitting model with MLPRegressor: {epochs} epochs")
         
-        X_train = self.X if X is None else X
+        X_train = self.X 
         y_train = self.y
         
         # Fit the model
@@ -472,7 +480,7 @@ class LPFA(Emulator):
         self.logger.statement("applying transformations to input data")
         
         # Apply transfrom pipeline if it was used during training
-        truth_transformed = self.feature_transformer.transform(truth)
+        truth_transformed = self.transformer_pipeline.transform(truth)
 
         
         # Apply row-wise min-max scaling
@@ -486,8 +494,8 @@ class LPFA(Emulator):
         truth_scaled = forecast_rowwise_mm_scaler.transform(truth_transformed)
         
         # Extract input columns and apply PCA transformation
-        X_truth = truth_scaled.loc[:, self.input_cols].copy()
-        y_truth = truth_scaled.loc[:, self.forecast_names].copy()
+        X_truth = truth_scaled.loc[:, self.input_names].copy()
+        y_truth = truth_scaled.loc[:, self.output_names].copy()
         
         # Apply PCA transform
         truth_pca = self.pcaX.transform(X_truth.values)
@@ -518,9 +526,9 @@ class LPFA(Emulator):
         pred_transformed = forecast_rowwise_mm_scaler.inverse_transform(pred_scaled)
         
         # Assign predictions to output
-        predictions.loc[:, self.forecast_names] = pred_transformed.loc[:, self.forecast_names]
+        predictions.loc[:, self.output_names] = pred_transformed.loc[:, self.output_names]
         
         # Finally, inverse the transform pipeline if it was applied (was the first transform)
-        predictions = self.feature_transformer.inverse(predictions)
+        predictions = self.transformer_pipeline.inverse(predictions)
         
         return predictions

@@ -7,7 +7,7 @@ import pandas as pd
 import platform
 import pyemu
 from pst_from_tests import setup_tmp, ies_exe_path, _get_port
-from pyemu.emulators import DSI, LPFA
+from pyemu.emulators import DSI, LPFA, GPR
 
 
 
@@ -26,8 +26,8 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
     oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
     data = oe._df.copy()
 
-    dsi = DSI(sim_ensemble=data,transforms=transforms)
-    dsi.apply_feature_transforms()
+    dsi = DSI(data=data,transforms=transforms)
+    #dsi._fit_transformer_pipeline()
     dsi.fit()
 
     # history match
@@ -225,10 +225,10 @@ def lpfa_freyberg(tmp_d="temp",transforms=None):
     # Create LPFA emulator
     lpfa = LPFA(
         data=data,
-        input_cols=input_cols,
+        input_names=input_cols,
         groups=groups,
         fit_groups=fit_groups,
-        forecast_names=forecast_names,
+        output_names=forecast_names,
         energy_threshold=0.9999,  # Keep most variance in PCA
         seed=42,
         early_stop=True,
@@ -237,7 +237,7 @@ def lpfa_freyberg(tmp_d="temp",transforms=None):
         verbose=True
     )
 
-    training_data = lpfa.prepare_training_data(test_size=0.2)
+    #training_data = lpfa.prepare_training_data(test_size=0.2)
 
     # Define model parameters
     model_params = {
@@ -312,6 +312,7 @@ def test_lpfa_basic():
     return
 
 def test_lpfa_std():
+    #NOTE: fit with standard scaler transform are worse than without
     lpfa_freyberg(tmp_d="temp",transforms=[
         {"type": "standard_scaler"}
     ])
