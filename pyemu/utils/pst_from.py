@@ -2606,7 +2606,7 @@ class PstFrom(object):
                     #if "pypestutils" not in self.extra_py_imports:
                     #    self.extra_py_imports.append("pypestutils")
                     print(config_df_filename)
-                    config_func_str = "pyemu.utils.pp_utils.apply_ppu_hyperpars('{0}')".\
+                    config_func_str = "pyemu.utils.pp_utils.apply_ppu_hyperpars_tensor('{0}')".\
                                       format(config_df_filename)
                     pp_mult_dict["pre_apply_function"] = config_func_str
                 else:
