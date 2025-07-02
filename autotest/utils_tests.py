@@ -3161,7 +3161,7 @@ def gpr_zdt1_test():
 
     pst_fname = os.path.join(m_d, case + ".pst")
     gpr_t_d = os.path.join(case + "_gpr_template")
-    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, t_d=m_d,gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
+    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
                                plot_fits=True, apply_standard_scalar=False, include_emulated_std_obs=True)
     gpst = pyemu.Pst(os.path.join(gpr_t_d, case + ".pst"))
     shutil.copy2(os.path.join(m_d, case + ".0.dv_pop.csv"), os.path.join(gpr_t_d, "initial_dv_pop.csv"))
