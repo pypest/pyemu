@@ -280,47 +280,7 @@ class GPR(Emulator):
             return predictions_df
 
 
-    def scrape_pst_dir(self,pst_dir,casename):
 
-        if not os.path.exists(pst_dir):
-            raise FileNotFoundError(f"PEST control file {pst_dir} does not exist")
-        
-        pst = Pst(os.path.join(pst_dir,casename + ".pst"))
-
-        # work out input variable names
-        input_groups = pst.pestpp_options.get("opt_dec_var_groups",None)
-        par = pst.parameter_data
-        if input_groups is None:
-            print("using all adjustable parameters as inputs")
-            input_names = pst.adj_par_names
-        else:
-            input_groups = set([i.strip() for i in input_groups.lower().strip().split(",")])
-            print("input groups:",input_groups)
-            adj_par = par.loc[pst.adj_par_names,:].copy()
-            adj_par = adj_par.loc[adj_par.pargp.apply(lambda x: x in input_groups),:]
-            input_names = adj_par.parnme.tolist()
-        print("input names:",input_names)
-
-        #work out constraints and objectives
-        ineq_names = pst.less_than_obs_constraints.tolist()
-        ineq_names.extend(pst.greater_than_obs_constraints.tolist())
-        obs = pst.observation_data
-        objs = pst.pestpp_options.get("mou_objectives",None)
-        constraints = []
-
-        if objs is None:
-            print("'mou_objectives' not found in ++ options, using all ineq tagged non-zero weighted obs as objectives")
-            objs = ineq_names
-        else:
-            objs = objs.lower().strip().split(',')
-            constraints = [n for n in ineq_names if n not in objs]
-
-        print("objectives:",objs)
-        print("constraints:",constraints)
-        output_names = objs
-        output_names.extend(constraints)
-
-        return pst, input_names, output_names, objs, constraints
         
 
     def prepare_pestpp(self,pst_dir,casename,gpr_t_d="gpr_template"):
@@ -350,7 +310,7 @@ class GPR(Emulator):
         # 3. which obs are objectives; subset of output_names
         # 4. which obs are constraints; subset of output_names
 
-        pst, input_names, output_names, objs, constraints = self.scrape_pst_dir(pst_dir,casename)
+        pst, input_names, output_names, objs, constraints = scrape_pst_dir(pst_dir,casename)
 
 
         # check that all input_names ar ein par data
@@ -381,9 +341,6 @@ class GPR(Emulator):
         self.logger.statement(f"Creating template directory {gpr_t_d}")
         os.makedirs(gpr_t_d)
 
-        # pickle
-        self.save(os.path.join(gpr_t_d, "gpr_emulator.pkl"))
-        self.logger.statement(f"Saved GPR emulator to {os.path.join(gpr_t_d, 'gpr_emulator.pkl')}")
 
         # preapre template files
         self.logger.statement("Preparing PEST++ template files")
@@ -457,7 +414,9 @@ class GPR(Emulator):
             f.write("if __name__ == '__main__':\n")
             f.write("    gpr_forward_run()\n")
 
-
+        # pickle
+        self.save(os.path.join(gpr_t_d, "gpr_emulator.pkl"))
+        self.logger.statement(f"Saved GPR emulator to {os.path.join(gpr_t_d, 'gpr_emulator.pkl')}")
         
         gpst.control_data.noptmax = 0
         
@@ -471,6 +430,8 @@ class GPR(Emulator):
         gpst.control_data.noptmax = pst.control_data.noptmax
         gpst.write(os.path.join(gpr_t_d, gpst_fname), version=2)
 
+
+
         return
     
 def gpr_forward_run():
@@ -478,18 +439,58 @@ def gpr_forward_run():
     This function gets added programmatically to the forward run process"""
     import pandas as pd
     from pyemu.emulators import GPR
-    input_df = pd.read_csv("gpr_input.csv",index_col=0).T
-
+    input_df = pd.read_csv("gpr_input.csv",index_col=0)
     gpr = GPR.load("gpr_emulator.pkl")
-    df = pd.DataFrame(index=gpr.output_names,
-                    columns=["sim","sim_std"])
-    df.index.name = "output_name"
+    simdf = pd.DataFrame(index=gpr.output_names,columns=["sim","sim_std"])
+    simdf.index.name = "output_name"
     if gpr.return_std:
-        predmean,predstdv = gpr.predict(input_df.loc[:,gpr.input_names], return_std=True)
-        df.loc[:,"sim"] = predmean[df.index].values
-        df.loc[:,"sim_std"] = predstdv[df.index].values
+        predmean,predstdv = gpr.predict(input_df.loc[gpr.input_names].T, return_std=True)
+        simdf.loc[:,"sim"] = predmean[simdf.index].values
+        simdf.loc[:,"sim_std"] = predstdv[simdf.index].values
     else:
-        predmean = gpr.predict(input_df.loc[:,gpr.input_names])
-        df.loc[:,"sim"] = predmean[df.index].values
-    df.to_csv("gpr_output.csv",index=True)
-    return df
+        predmean = gpr.predict(input_df.loc[gpr.input_names].T)
+        simdf.loc[:,"sim"] = predmean[simdf.index].values
+    simdf.to_csv("gpr_output.csv",index=True)
+    return simdf
+
+def scrape_pst_dir(self,pst_dir,casename):
+
+    if not os.path.exists(pst_dir):
+        raise FileNotFoundError(f"PEST control file {pst_dir} does not exist")
+    
+    pst = Pst(os.path.join(pst_dir,casename + ".pst"))
+
+    # work out input variable names
+    input_groups = pst.pestpp_options.get("opt_dec_var_groups",None)
+    par = pst.parameter_data
+    if input_groups is None:
+        print("using all adjustable parameters as inputs")
+        input_names = pst.adj_par_names
+    else:
+        input_groups = set([i.strip() for i in input_groups.lower().strip().split(",")])
+        print("input groups:",input_groups)
+        adj_par = par.loc[pst.adj_par_names,:].copy()
+        adj_par = adj_par.loc[adj_par.pargp.apply(lambda x: x in input_groups),:]
+        input_names = adj_par.parnme.tolist()
+    print("input names:",input_names)
+
+    #work out constraints and objectives
+    ineq_names = pst.less_than_obs_constraints.tolist()
+    ineq_names.extend(pst.greater_than_obs_constraints.tolist())
+    obs = pst.observation_data
+    objs = pst.pestpp_options.get("mou_objectives",None)
+    constraints = []
+
+    if objs is None:
+        print("'mou_objectives' not found in ++ options, using all ineq tagged non-zero weighted obs as objectives")
+        objs = ineq_names
+    else:
+        objs = objs.lower().strip().split(',')
+        constraints = [n for n in ineq_names if n not in objs]
+
+    print("objectives:",objs)
+    print("constraints:",constraints)
+    output_names = objs
+    output_names.extend(constraints)
+
+    return pst, input_names, output_names, objs, constraints
