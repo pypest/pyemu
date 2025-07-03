@@ -4406,72 +4406,73 @@ def gpr_pyworker_legacy(pst,host,port,input_df=None,mdf=None):
 
 def gpr_pyworker(pst,host,port,input_df=None,mdf=None,gpr=False):
 
-    if gpr == False:
+    if gpr is False:
         print("WARNING: using legacy gpr_pyworker function, which is deprecated")
         gpr_pyworker_legacy(pst,host,port,input_df=input_df,mdf=mdf)
-    elif gpr == True:
-        gpr = GPR.load("gpr_emulator.pkl")
     else:
+        if gpr is True:
+            gpr = GPR.load("gpr_emulator.pkl")
+
         assert isinstance(gpr, GPR), "gpr must be a GPR object or True to load from 'gpr_emulator.pkl'"
         
-    import pandas as pd
-    from pyemu.emulators import GPR
-    
-    # if explicit args weren't passed, get the default ones...
-    if input_df is None:
-        input_df = pd.read_csv("gpr_input.csv",index_col=0)
+        import pandas as pd
+        from pyemu.emulators import GPR
+        
+        # if explicit args weren't passed, get the default ones...
+        if input_df is None:
+            input_df = pd.read_csv("gpr_input.csv",index_col=0)
 
-    simdf = pd.DataFrame(index=gpr.output_names,columns=["sim","sim_std"],dtype=float)
-    simdf.index.name = "output_name"
+        simdf = pd.DataFrame(index=gpr.output_names,columns=["sim","sim_std"],dtype=float)
+        simdf.index.name = "output_name"
 
-    ppw = PyPestWorker(pst,host,port,verbose=False)
+        ppw = PyPestWorker(pst,host,port,verbose=False)
 
-    # we can only get parameters once the worker has initialize and 
-    # is ready to run, so getting the first of pars here
-    # essentially blocks until the worker is ready
-    parameters = ppw.get_parameters()
-    # if its  None, the master already quit...
-    if parameters is None:
-        return
-
-    obs = ppw._pst.observation_data.copy()
-    # align the obsval series with the order sent from the master
-    obs = obs.loc[ppw.obs_names,"obsval"]
-    
-    # work out which par values sent from the master we need to run the emulator
-    par = ppw._pst.parameter_data.copy()
-    usepar_idx = []
-    ppw_par_names = list(ppw.par_names)
-    for i,pname in enumerate(input_df.index.values):
-        usepar_idx.append(ppw_par_names.index(pname))
-    
-
-    while True:
-        # map the current dv values in parameters into the 
-        # df needed to run the emulator
-        input_df["parval1"] = parameters.values[usepar_idx]
-        # do the emulation
-        if gpr.return_std:
-            predmean,predstdv = gpr.predict(input_df.loc[gpr.input_names].T, return_std=True)
-            simdf.loc[:,"sim"] = predmean[simdf.index].values
-            simdf.loc[:,"sim_std"] = predstdv[simdf.index].values
-        else:
-            predmean = gpr.predict(input_df.loc[gpr.input_names].T)
-            simdf.loc[:,"sim"] = predmean[simdf.index].values
-
-
-        # replace the emulated quantities in the obs series
-        obs.loc[simdf.index] = simdf.sim.values
-        obs.loc[simdf.index.map(lambda x: x+"_gprstd")] = simdf.sim_std.values
-
-        #send the obs series to the master
-        ppw.send_observations(obs.values)
-
-        #try to get more pars
+        # we can only get parameters once the worker has initialize and 
+        # is ready to run, so getting the first of pars here
+        # essentially blocks until the worker is ready
         parameters = ppw.get_parameters()
-        # if None, we are done
+        # if its  None, the master already quit...
         if parameters is None:
-            break
+            return
+
+        obs = ppw._pst.observation_data.copy()
+        # align the obsval series with the order sent from the master
+        obs = obs.loc[ppw.obs_names,"obsval"]
+        
+        # work out which par values sent from the master we need to run the emulator
+        par = ppw._pst.parameter_data.copy()
+        usepar_idx = []
+        ppw_par_names = list(ppw.par_names)
+        for i,pname in enumerate(input_df.index.values):
+            usepar_idx.append(ppw_par_names.index(pname))
+        
+
+        while True:
+            # map the current dv values in parameters into the 
+            # df needed to run the emulator
+            input_df["parval1"] = parameters.values[usepar_idx]
+            # do the emulation
+            if gpr.return_std:
+                predmean,predstdv = gpr.predict(input_df.loc[gpr.input_names].T, return_std=True)
+                simdf.loc[:,"sim"] = predmean[simdf.index].values
+                simdf.loc[:,"sim_std"] = predstdv[simdf.index].values
+            else:
+                predmean = gpr.predict(input_df.loc[gpr.input_names].T)
+                simdf.loc[:,"sim"] = predmean[simdf.index].values
+
+
+            # replace the emulated quantities in the obs series
+            obs.loc[simdf.index] = simdf.sim.values
+            obs.loc[simdf.index.map(lambda x: x+"_gprstd")] = simdf.sim_std.values
+
+            #send the obs series to the master
+            ppw.send_observations(obs.values)
+
+            #try to get more pars
+            parameters = ppw.get_parameters()
+            # if None, we are done
+            if parameters is None:
+                break
         
 
 
