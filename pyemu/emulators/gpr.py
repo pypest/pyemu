@@ -453,7 +453,7 @@ def gpr_forward_run():
     simdf.to_csv("gpr_output.csv",index=True)
     return simdf
 
-def scrape_pst_dir(self,pst_dir,casename):
+def scrape_pst_dir(pst_dir,casename):
 
     if not os.path.exists(pst_dir):
         raise FileNotFoundError(f"PEST control file {pst_dir} does not exist")
