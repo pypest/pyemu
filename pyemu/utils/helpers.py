@@ -4406,11 +4406,13 @@ def gpr_pyworker_legacy(pst,host,port,input_df=None,mdf=None):
 
 def gpr_pyworker(pst,host,port,input_df=None,mdf=None,gpr=False):
 
-    if gpr is False:
+    if gpr == False:
         print("WARNING: using legacy gpr_pyworker function, which is deprecated")
         gpr_pyworker_legacy(pst,host,port,input_df=input_df,mdf=mdf)
-    elif gpr is True:
-        gpr = None
+    elif gpr == True:
+        gpr = GPR.load("gpr_emulator.pkl")
+    else:
+        assert isinstance(gpr, GPR), "gpr must be a GPR object or True to load from 'gpr_emulator.pkl'"
         
     import pandas as pd
     from pyemu.emulators import GPR
@@ -4418,8 +4420,7 @@ def gpr_pyworker(pst,host,port,input_df=None,mdf=None,gpr=False):
     # if explicit args weren't passed, get the default ones...
     if input_df is None:
         input_df = pd.read_csv("gpr_input.csv",index_col=0)
-    if gpr is None:
-        gpr = GPR.load("gpr_emulator.pkl")
+
     simdf = pd.DataFrame(index=gpr.output_names,columns=["sim","sim_std"],dtype=float)
     simdf.index.name = "output_name"
 
