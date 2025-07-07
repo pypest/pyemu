@@ -2692,7 +2692,7 @@ def pypestworker_test():
     import subprocess as sp
     import multiprocessing as mp
     host = "localhost"
-    port = 4004
+    port = 4111
     case = "constr"
     org_d = os.path.join("utils","{0}_template".format(case))
     t_d = "{0}_ppw_template".format(case)
@@ -3256,7 +3256,8 @@ def gpr_zdt1_ppw():
 
 if __name__ == "__main__":
     #ppu_geostats_test(".")
-    gpr_zdt1_test()
+    pypestworker_test()
+    #gpr_zdt1_test()
     #gpr_compare_invest()
     #gpr_constr_test()
     # import sys
