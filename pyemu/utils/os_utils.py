@@ -958,7 +958,7 @@ class PyPestWorker(object):
 class PortManager(object):
     """Cross-platform port manager for parallel processes."""
     def __init__(self,
-                 port_range=(4004, 65535),
+                 port_range=(4004, 4999),
                  lock_dir=None,
                  max_retries=50,
                  lock_timeout=5,
