@@ -190,10 +190,8 @@ class LPFA(Emulator):
         
         Parameters
         ----------
-        data : pandas.DataFrame, optional
-            Data to prepare. If None, uses self.data. Default is None.
-        test_size : float, optional
-            Fraction of data to use for testing. Default is 0.2.
+        self: LPFA
+            The emulator instance containing the data and configuration.
             
         Returns
         -------

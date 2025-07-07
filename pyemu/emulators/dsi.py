@@ -108,7 +108,7 @@ class DSI(Emulator):
         else:
             # Still need to set up a dummy transformer for inverse operations
             from .transformers import AutobotsAssemble
-            self.feature_transformer = AutobotsAssemble(data.copy())
+            self.transformer_pipeline = AutobotsAssemble(data.copy())
             self.data_transformed = data.copy()
     
         return self.data_transformed
@@ -387,7 +387,7 @@ class DSI(Emulator):
 
         #track dsivc args for forward run
         self.dsivc_args = {"percentiles":percentiles,
-                        "decvar_names":decvar_names,
+                            "decvar_names":decvar_names,
                             "track_stack":track_stack,
                         }
 
@@ -403,8 +403,7 @@ class DSI(Emulator):
             assert os.path.exists(os.path.join(t_d,"dsi.pst")), f"dsi.pst not found in {t_d}"
             pst = Pst(os.path.join(t_d,"dsi.pst"))
         if oe is None:
-            self.logger.statement("no posterior DSI observation ensemble provided, using dsi.3.obs.jcb in DSI template dir...")
-            self.logger.statement(f"using dsi.{dsi_args['noptmax']}.obs.jcb in DSI template dir...")
+            self.logger.statement(f"no posterior DSI observation ensemble provided, using dsi.{dsi_args['noptmax']}.obs.jcb in DSI template dir...")
             assert os.path.exists(os.path.join(t_d,f"dsi.{dsi_args['noptmax']}.obs.jcb")), f"dsi.{dsi_args['noptmax']}.obs.jcb not found in {t_d}"
             oe = ObservationEnsemble.from_binary(pst,os.path.join(t_d,f"dsi.{dsi_args['noptmax']}.obs.jcb"))
         else:
@@ -429,13 +428,22 @@ class DSI(Emulator):
                             }
         # ensure it's a dict
         if dsi_args is None:
-            dsi_args = {}
+            dsi_args = default_dsi_args
         elif not isinstance(dsi_args, dict):
             raise TypeError("Expected a dictionary for 'options'")
         # merge with defaults (user values override defaults)
-        dsi_args = {**default_dsi_args, **dsi_args}
+        #dsi_args = {**default_dsi_args, **dsi_args}
+        else:
+            for key, value in default_dsi_args.items():
+                if key not in dsi_args:
+                    dsi_args[key] = value
 
-
+        # check that dsi_args has the required keys
+        required_keys = ["noptmax", "decvar_weight", "num_pyworkers"]
+        for key in required_keys:
+            if key not in dsi_args:
+                raise KeyError(f"Missing required key '{key}' in 'dsi_args'")
+        self.dsi_args = dsi_args
         out_files = []
 
         self.logger.statement(f"preparing stack stats observations...")
@@ -556,6 +564,9 @@ class DSI(Emulator):
         self.logger.statement("overwriting dsi.pst file...")
         pst.observation_data.loc[decvar_names, "weight"] = dsi_args["decvar_weight"]
         pst.control_data.noptmax = dsi_args["noptmax"]
+
+        #TODO: ensure no noise for dvars obs
+
         pst.write(os.path.join(t_d,"dsi.pst"), version=2)
         
         
@@ -563,6 +574,6 @@ class DSI(Emulator):
         self.decision_variable_names = decvar_names
         # re-pickle dsi to track dsivc args
         self.save(os.path.join(t_d,"dsi.pickle"))
-
+  
         self.logger.statement("DSIVC control files created...the user still needs to specify objectives and constraints...")
         return pst_dsivc
