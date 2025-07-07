@@ -3158,10 +3158,10 @@ def gpr_zdt1_test():
     m_d = t_d
     dv_pops = [os.path.join(m_d, "{0}.0.dv_pop.csv".format(case))]
     obs_pops = [f.replace("dv_", "obs_") for f in dv_pops]
-
+ 
     pst_fname = os.path.join(m_d, case + ".pst")
     gpr_t_d = os.path.join(case + "_gpr_template")
-    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, t_d=m_d,gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
+    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops,t_d=m_d,gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
                                plot_fits=True, apply_standard_scalar=False, include_emulated_std_obs=True)
     gpst = pyemu.Pst(os.path.join(gpr_t_d, case + ".pst"))
     shutil.copy2(os.path.join(m_d, case + ".0.dv_pop.csv"), os.path.join(gpr_t_d, "initial_dv_pop.csv"))
@@ -3176,26 +3176,25 @@ def gpr_zdt1_test():
     #                             master_dir=gpr_m_d, verbose=True, port=port)
     pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=gpr_t_d)
     gpr_m_d = gpr_t_d
-
+ 
     finish = datetime.now()
     duration1 = (finish - start).total_seconds()
     arcorg = pd.read_csv(os.path.join(gpr_m_d,"zdt1.archive.obs_pop.csv"),index_col=0)
     
-
+ 
     psum_fname = os.path.join(gpr_m_d,case+".pareto.archive.summary.csv")
     assert os.path.exists(psum_fname)
     psum = pd.read_csv(psum_fname)
     print(psum.obj_1.min())
     print(psum.obj_2.min())
-    assert psum.obj_1.min() < 0.05
-
+    assert psum.obj_1.min() < 0.05 
     gpr_t_d2 = gpr_t_d + "_ppw"
     if os.path.exists(gpr_t_d2):
         shutil.rmtree(gpr_t_d2)
     shutil.copytree(gpr_t_d,gpr_t_d2)
-
+ 
     gpr_m_d2 = gpr_t_d2.replace("template","master")
-
+ 
     input_df = pd.read_csv(os.path.join(gpr_t_d2,"gpr_input.csv"),index_col=0)
     mdf = pd.read_csv(os.path.join(gpr_t_d2,"gprmodel_info.csv"),index_col=0)
     mdf["model_fname"] = mdf.model_fname.apply(lambda x: os.path.join(gpr_t_d2,x))
@@ -3210,8 +3209,7 @@ def gpr_zdt1_test():
     diff = np.abs(arcppw.values - arcorg.values)
     print(diff.max())
     assert diff.max() < 1e-6
-        
-
+         
     start = datetime.now()
     b_d = os.getcwd()
     os.chdir(gpr_t_d2)
@@ -3234,13 +3232,13 @@ def gpr_zdt1_test():
     # shutdown signal from the master and exit gracefully...
     for pp in procs:
         pp.join()
-
+ 
     # wait for the master to finish...but should already be finished
     p.wait()
     finish = datetime.now()
     print("ppw` took",(finish-start).total_seconds())
     print("org took",duration1)
-
+ 
     arcppw = pd.read_csv(os.path.join(gpr_t_d2,"zdt1.archive.obs_pop.csv"),index_col=0)
     diff = np.abs(arcppw.values - arcorg.values)
     print(diff.max())
@@ -3258,7 +3256,8 @@ def gpr_zdt1_ppw():
 
 if __name__ == "__main__":
     #ppu_geostats_test(".")
-    gpr_compare_invest()
+    gpr_zdt1_test()
+    #gpr_compare_invest()
     #gpr_constr_test()
     # import sys
     # t_d = "constr_ppw_template"
