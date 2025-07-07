@@ -107,7 +107,7 @@ def test_dsivc_freyberg():
                                 track_stack=False,
                                 percentiles=[0.05, 0.25, 0.5, 0.75, 0.95],
                                 dsi_args={
-                                    "noptmax":3,
+                                    "noptmax":1,
                                     "decvar_weight":10.0,
                                     "num_pyworkers":1,
                                 },
@@ -124,13 +124,13 @@ def test_dsivc_freyberg():
     obs.loc[mou_objectives, "weight"] = 1.0
     obs.loc[mou_objectives, "obgnme"] = "less_than_obj"
 
-    pstdsivc.control_data.noptmax = 1 #just for testing
-    pstdsivc.pestpp_options["mou_population_size"] = 10 #just for testing 
+    pstdsivc.control_data.noptmax = -1 #just for testing
+    pstdsivc.pestpp_options["mou_population_size"] = 3 #just for testing 
 
     pstdsivc.write(os.path.join(td, "dsivc.pst"),version=2)
 
     md = "master_dsivc"
-    num_workers = 1
+    num_workers = 3
     worker_root = "."
 
     pyemu.os_utils.start_workers(td,
