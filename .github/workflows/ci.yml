@@ -118,7 +118,7 @@ jobs:
       shell: bash -l {0}
       working-directory: ./autotest
       run: |
-        pytest -rP -rx --capture=no -v -n=1 --tb=native --durations=20 --cov=pyemu --cov-report=lcov ${{ matrix.test-path }}
+        pytest -rP -rx --capture=no -v --tb=native --durations=20 --cov=pyemu --cov-report=lcov ${{ matrix.test-path }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
