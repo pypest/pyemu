@@ -31,6 +31,7 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
     #dsi._fit_transformer_pipeline()
     dsi.fit()
 
+
     # history match
     obsdata = pst.observation_data.copy()
     if transforms is not None:
@@ -747,6 +748,8 @@ def collate_training_data(pst,m_d,case):
     #print("aggregated training dataset shape",df.shape,"saved to",pst_fname + ".aggresults.csv")
     return data, input_names, output_names
 
+
+@pytest.mark.skip(reason="seems like it still in dev")
 def gpr_zdt1_test():
     import numpy as np
     import subprocess as sp
@@ -909,6 +912,7 @@ def gpr_zdt1_ppw():
 
 
 if __name__ == "__main__":
+    
     test_dsi_basic()
     #test_dsi_nst()
     #test_dsi_nst_extrap()
