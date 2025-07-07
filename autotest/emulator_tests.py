@@ -909,12 +909,12 @@ def gpr_zdt1_ppw():
 
 
 if __name__ == "__main__":
-    #test_dsi_basic()
+    test_dsi_basic()
     #test_dsi_nst()
     #test_dsi_nst_extrap()
     #test_dsi_mixed()
     #test_dsivc_freyberg()
     #plot_freyberg_dsi()
     #test_lpfa_std()
-    gpr_zdt1_test()
+    #gpr_zdt1_test()
 
