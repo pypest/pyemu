@@ -3110,7 +3110,7 @@ def gpr_constr_invest():
     #assert 1.0 in psum.obj_2.values
     
 
-def gpr_zdt1_test():
+def gpr_zdt1_invest():
     import numpy as np
     import subprocess as sp
     import multiprocessing as mp
