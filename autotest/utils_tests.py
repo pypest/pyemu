@@ -2706,7 +2706,7 @@ def pypestworker_test():
     pst.pestpp_options["overdue_giveup_fac"] = 1e10
     pst.pestpp_options["overdue_resched_fac"] = 1e10
     
-    pst.control_data.noptmax = 5
+    pst.control_data.noptmax = 2
     pst.write(os.path.join(t_d,"{0}.pst".format(case)),version=2)
     import sys
     sys.path.insert(0,t_d)
@@ -3255,6 +3255,7 @@ def gpr_zdt1_ppw():
 
 
 if __name__ == "__main__":
+    maha_pdc_test('.')
     #ppu_geostats_test(".")
     pypestworker_test()
     #gpr_zdt1_test()

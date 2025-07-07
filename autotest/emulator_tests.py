@@ -777,7 +777,7 @@ def gpr_zdt1_test():
         pst.pestpp_options["opt_risk"] = 0.5
 
     pop_size = 20
-    num_workers = 10
+    num_workers = 3
     noptmax_full = 1
     
     port = 4569
