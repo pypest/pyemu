@@ -97,7 +97,7 @@ def test_dsivc_freyberg():
     dsi = DSI.load(os.path.join(td, "dsi.pickle"))
 
     pst = pyemu.Pst(os.path.join(td, "dsi.pst"))
-    oe = pyemu.ObservationEnsemble.from_binary(pst,os.path.join(td, "dsi.1.obs.jcb"))
+    oe = pyemu.ObservationEnsemble.from_binary(pst,os.path.join(td, "dsi.0.obs.jcb"))
 
     obsdata = dsi.observation_data
     decvars = obsdata.loc[obsdata.obgnme=="out_wel"].obsnme.tolist()
@@ -107,7 +107,7 @@ def test_dsivc_freyberg():
                                 track_stack=False,
                                 percentiles=[0.05, 0.25, 0.5, 0.75, 0.95],
                                 dsi_args={
-                                    "noptmax":3,
+                                    "noptmax":-1, #just for testing
                                     "decvar_weight":10.0,
                                     "num_pyworkers":1,
                                 },
@@ -125,7 +125,7 @@ def test_dsivc_freyberg():
     obs.loc[mou_objectives, "obgnme"] = "less_than_obj"
 
     pstdsivc.control_data.noptmax = 1 #just for testing
-    pstdsivc.pestpp_options["mou_population_size"] = 10 #just for testing 
+    pstdsivc.pestpp_options["mou_population_size"] = 1 #just for testing 
 
     pstdsivc.write(os.path.join(td, "dsivc.pst"),version=2)
 
