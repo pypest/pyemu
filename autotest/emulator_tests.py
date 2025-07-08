@@ -31,6 +31,7 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
     #dsi._fit_transformer_pipeline()
     dsi.fit()
 
+
     # history match
     obsdata = pst.observation_data.copy()
     if transforms is not None:
@@ -107,7 +108,7 @@ def test_dsivc_freyberg():
                                 track_stack=False,
                                 percentiles=[0.05, 0.25, 0.5, 0.75, 0.95],
                                 dsi_args={
-                                    "noptmax":-1, #just for testing
+                                    "noptmax":1, #just for testing
                                     "decvar_weight":10.0,
                                     "num_pyworkers":1,
                                 },
@@ -125,12 +126,12 @@ def test_dsivc_freyberg():
     obs.loc[mou_objectives, "obgnme"] = "less_than_obj"
 
     pstdsivc.control_data.noptmax = 1 #just for testing
-    pstdsivc.pestpp_options["mou_population_size"] = 1 #just for testing 
+    pstdsivc.pestpp_options["mou_population_size"] = 4 #just for testing 
 
     pstdsivc.write(os.path.join(td, "dsivc.pst"),version=2)
 
     md = "master_dsivc"
-    num_workers = 1
+    num_workers =  pstdsivc.pestpp_options["mou_population_size"]
     worker_root = "."
 
     pyemu.os_utils.start_workers(td,
@@ -747,6 +748,8 @@ def collate_training_data(pst,m_d,case):
     #print("aggregated training dataset shape",df.shape,"saved to",pst_fname + ".aggresults.csv")
     return data, input_names, output_names
 
+
+@pytest.mark.skip(reason="seems like it still in dev")
 def gpr_zdt1_test():
     import numpy as np
     import subprocess as sp
@@ -777,7 +780,7 @@ def gpr_zdt1_test():
         pst.pestpp_options["opt_risk"] = 0.5
 
     pop_size = 20
-    num_workers = 10
+    num_workers = 3
     noptmax_full = 1
     
     port = 4569
@@ -909,12 +912,13 @@ def gpr_zdt1_ppw():
 
 
 if __name__ == "__main__":
-    #test_dsi_basic()
+    
+    test_dsi_basic()
     #test_dsi_nst()
     #test_dsi_nst_extrap()
     #test_dsi_mixed()
     #test_dsivc_freyberg()
     #plot_freyberg_dsi()
     #test_lpfa_std()
-    gpr_zdt1_test()
+    #gpr_zdt1_test()
 

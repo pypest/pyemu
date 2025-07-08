@@ -205,7 +205,7 @@ class DSI(Emulator):
         if not self.fitted:
             raise ValueError("Emulator must be fitted before prediction")
             
-        if not hasattr(self, 'transformer_pipeline') or self.transformer_pipeline is None:
+        if self.transforms is not None and (not hasattr(self, 'transformer_pipeline') or self.transformer_pipeline is None):
             raise ValueError("Emulator must be fitted and have valid transformations before prediction")
         
         if isinstance(pvals, pd.Series):
@@ -215,8 +215,9 @@ class DSI(Emulator):
         pmat = self.pmat
         ovals = self.ovals
         sim_vals = ovals + np.dot(pmat,pvals)
-        pipeline = self.transformer_pipeline
-        sim_vals = pipeline.inverse(sim_vals)
+        if self.transforms is not None:
+            pipeline = self.transformer_pipeline
+            sim_vals = pipeline.inverse(sim_vals)
         sim_vals.index.name = 'obsnme'
         sim_vals.name = "obsval"
         self.sim_vals = sim_vals
@@ -274,6 +275,7 @@ class DSI(Emulator):
 
         # run once to get the dsi_pars.csv file
         pvals = np.zeros_like(self.s)
+
         sim_vals = self.predict(pvals)
         
         self.logger.log("creating ins file")

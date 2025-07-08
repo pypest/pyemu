@@ -4515,6 +4515,8 @@ def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies",num_workers=1):
     # load the dsi pest control file
     pst_dsi = pyemu.Pst(os.path.join(md_ies,"dsi.pst"))
     noptmax = pst_dsi.control_data.noptmax
+    if noptmax==-1:
+        noptmax=0
 
     try:
         os.remove("dsi.noise.jcb")

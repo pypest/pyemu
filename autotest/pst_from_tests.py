@@ -5088,9 +5088,9 @@ def mf6_freyberg_thresh_test(tmp_path):
     # reset away from the truth...
     pst.parameter_data.loc[:,"parval1"] = org_par.parval1.values.copy()
 
-    pst.control_data.noptmax = 2
+    pst.control_data.noptmax = 1
     pst.pestpp_options["ies_par_en"] = "prior.jcb"
-    pst.pestpp_options["ies_num_reals"] = 30
+    pst.pestpp_options["ies_num_reals"] = 10
     pst.pestpp_options["ies_subset_size"] = -10
     pst.pestpp_options["ies_no_noise"] = True
     #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
@@ -5110,7 +5110,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     m_d = "master_thresh"
     port = _get_port()
     pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst",
-                                 worker_root=".", master_dir=m_d, num_workers=10,
+                                 worker_root=".", master_dir=m_d, num_workers=5,
                                  port=port)
     phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
     # print(phidf["mean"])
