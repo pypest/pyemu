@@ -142,7 +142,7 @@ def validate_grid_coordinates(grid_coords, shape):
 # MAIN ENTRY POINT
 # ============================================================================
 
-def main(conceptual_points_file, grid_file, zone_file=None,
+def main(conceptual_points_file, grid_file, zone_file=None, iids_file=None,
          field_name=['field'], layer_mode=True, save_path='.'):
     """
     Generate spatially correlated fields using tensor-based geostatistics.
@@ -189,6 +189,17 @@ def main(conceptual_points_file, grid_file, zone_file=None,
     shape = infer_grid_shape(grid_coords)
     print(f"Grid shape: {shape} (nz, ny, nx)")
 
+    if iids_file is not None:
+        os.path.join(os.path.dirname(conceptual_points_file), 'iids.arr')
+        iids = np.loadtxt(iids_file)
+    else:
+        print("  Generating correlated noise...")
+        np.random.seed(42)
+        iids = np.random.randn(*shape)
+        for i in range(iids.shape[0]):
+            iids_file = os.path.join(os.path.dirname(conceptual_points_file), f'iids_layer{i+1}.arr')
+            np.savetxt(iids_file, iids[i])
+
     # Validate grid coordinates
     if not validate_grid_coordinates(grid_coords, shape):
         raise ValueError(f"Grid coordinates ({len(grid_coords)} points) don't match inferred shape {shape}")
@@ -208,7 +219,7 @@ def main(conceptual_points_file, grid_file, zone_file=None,
         if layer_mode and 'layer' in conceptual_points.columns:
             # Process by layer
             cols = cols + ['layer']
-            field = generate_field_by_layer(conceptual_points[cols], grid_coords,
+            field = generate_field_by_layer(conceptual_points[cols], grid_coords, iids,
                                             shape, zones=zones, save_path=save_path)
         else:
             # Process full 3D
@@ -226,7 +237,8 @@ def main(conceptual_points_file, grid_file, zone_file=None,
         print(f"Field statistics: mean={np.mean(field):.3f}, std={np.std(field):.3f}")
 
 
-def generate_field_by_layer(conceptual_points, grid_coords, shape, zones=None, save_path='.'):
+def generate_field_by_layer(conceptual_points, grid_coords, iids,
+                            shape, zones=None, save_path='.'):
     """
     Generate field processing each layer independently.
 
@@ -256,10 +268,11 @@ def generate_field_by_layer(conceptual_points, grid_coords, shape, zones=None, s
     for layer_idx in unique_layers:
         print(f"\nProcessing layer {layer_idx}/{len(unique_layers)}")
 
-        # Get grid points for this layer
+        # Get grid points and iids for this layer
         layer_grid = grid_3d[layer_idx].reshape(-1, 3)
-        layer_coords_2d = layer_grid[:, :2]  # Just x, y
+        layer_coords = layer_grid[:, :2]  # Just x, y
         layer_shape = (ny, nx)  # Shape for this layer
+        layer_iids = iids[layer_idx]
 
         if 'layer' in conceptual_points.columns:
             layer_cp = conceptual_points[conceptual_points['layer']-1 == layer_idx]
@@ -279,10 +292,10 @@ def generate_field_by_layer(conceptual_points, grid_coords, shape, zones=None, s
             # zones are already guaranteed to be 2D from standardize_input_arrays()
 
         # Generate field for this layer - now returns 2D
-        layer_field_2d, geological_tensors = generate_single_layer_zone_based(layer_cp, layer_coords_2d,
-                                                          zones=layer_zones, shape=layer_shape,
+        layer_field_2d, geological_tensors = generate_single_layer_zone_based(layer_cp, layer_coords,
+                                                          layer_iids, zones=layer_zones, shape=layer_shape,
                                                           save_path=save_path)
-        visualize_geological_tensors(geological_tensors, layer_coords_2d, layer_shape, zones=layer_zones,
+        visualize_geological_tensors(geological_tensors, layer_coords, layer_shape, zones=layer_zones,
                                      conceptual_points=layer_cp, subsample=4,
                                      save_path=save_path, title_suf=f'layer {layer_idx+1}')
 
@@ -292,7 +305,7 @@ def generate_field_by_layer(conceptual_points, grid_coords, shape, zones=None, s
     return field_3d  # Return as 3D array, NOT flattened
 
 
-def generate_single_layer_zone_based(conceptual_points, grid_coords_2d,
+def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
                                      zones=None, shape=None, save_path='.'):
     """
     Modified generate_single_layer with zone-based tensor interpolation.
@@ -376,9 +389,7 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d,
 
     # Step 6: Generate correlated noise - work with 1D for noise generation, then reshape
     print("  Generating correlated noise...")
-    np.random.seed(420)
-    white_noise = np.random.randn(len(grid_coords_2d))
-    correlated_noise_1d = generate_correlated_noise_2d(grid_coords_2d, geological_tensors, white_noise)
+    correlated_noise_1d = generate_correlated_noise_2d(grid_coords_2d, geological_tensors, iids)
     correlated_noise_2d = correlated_noise_1d.reshape(shape)
 
     # Step 7: Combine into lognormal field - all operations in 2D
@@ -1065,7 +1076,7 @@ def tensor_aware_kriging_1d_output(cp_coords, cp_values, grid_coords):
     return interp_values
 
 
-def generate_correlated_noise_2d(grid_coords, tensors, white_noise,
+def generate_correlated_noise_2d(grid_coords, tensors, iids,
                                  n_neighbors=50, anisotropy_strength=1.0):
     """Generate spatially correlated noise respecting tensor anisotropy."""
     n_points = len(grid_coords)
@@ -1098,13 +1109,13 @@ def generate_correlated_noise_2d(grid_coords, tensors, white_noise,
             # Use anisotropic distance instead of actual distance for weight calculation
             # This respects the tensor-defined correlation structure
             weight = np.exp(-(aniso_distances[j]) ** 2)
-            weighted_sum += weight * white_noise[j]
+            weighted_sum += weight * iids.flatten()[j]
             sum_weights += weight
 
         if sum_weights > 1e-10:
             correlated_noise[i] = weighted_sum / sum_weights
         else:
-            correlated_noise[i] = white_noise[i]
+            correlated_noise[i] = iids[i]
 
     return correlated_noise
 
@@ -1230,16 +1241,20 @@ def plot_layer(field, layer=0, field_name='field', save_path='.', transform='log
         field = np.log10(field)
 
     colors = [
-        (0.00, 'white'),
+        (0.00, 'ghostwhite'),
         (0.05, 'lightblue'),
-        (0.15, 'skyblue'),  # intermediate between lightblue and darkblue
+        (0.15, 'skyblue'),
         (0.25, 'blue'),
-        (0.35, 'teal'),  # softer transition out of dark blue
+        (0.35, 'teal'),
         (0.45, 'green'),
-        (0.60, 'yellowgreen'),  # bridge between green and yellow
-        (0.70, 'yellow'),
+        (0.50, 'limegreen'),
+        (0.55, 'yellowgreen'),
+        (0.65, 'yellow'),
+        (0.75, 'gold'),
         (0.85, 'orange'),
-        (1.00, 'red'),
+        (0.90, 'darkorange'),
+        (0.95, 'peru'),
+        (1.00, 'sienna')
     ]
 
     custom_cmap = mcolors.LinearSegmentedColormap.from_list('custom', colors, N=256)
