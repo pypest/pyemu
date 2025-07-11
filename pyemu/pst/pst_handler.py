@@ -326,7 +326,7 @@ class Pst(object):
         ogroups = self.observation_data.groupby("obgnme").groups
         self.res.index = self.res.name
         obs = self.observation_data[['obsval','weight']]
-        if (not self.control_data.pestmode.startswith("reg")
+        if (self.control_data.pestmode.startswith("reg")
             and self.prior_information.shape[0] > 0):
             pi_ogroups = self.prior_information.groupby("obgnme").groups
             pi_df = self.prior_information
