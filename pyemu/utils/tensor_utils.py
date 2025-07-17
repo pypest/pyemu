@@ -10,7 +10,7 @@ import os
 
 
 # ============================================================================
-# UTILITY FUNCTIONS FOR CONSISTENT 2D ARRAY HANDLING
+# UTILITY FUNCTIONS FOR CONSISTENT ARRAY HANDLING
 # ============================================================================
 
 def standardize_input_arrays(zones_raw, grid_coords, shape):
@@ -138,18 +138,14 @@ def validate_grid_coordinates(grid_coords, shape):
     return grid_coords.shape[0] == expected_points
 
 
-# ============================================================================
-# MAIN ENTRY POINT
-# ============================================================================
 
-def main(conceptual_points_file, grid_file, zone_file=None, iids_file=None,
-         field_name=['field'], layer_mode=True, save_path='.'):
+def generate_fields_from_files(conceptual_points_file, grid_file, zone_file=None, iids_file=None,
+         field_name=['field'], layer_mode=True, save_path='.', tensor_interp='idw'):
     """
     Generate spatially correlated fields using tensor-based geostatistics.
 
-    This is the main entry point for tensor-based field generation. It reads
-    conceptual points (control points) with anisotropy parameters and generates
-    correlated fields on a specified grid.
+    This reads conceptual points (control points) with anisotropy parameters from files
+    and generates tensor-based correlated fields on a specified regular grid.
 
     Parameters
     ----------
@@ -161,10 +157,18 @@ def main(conceptual_points_file, grid_file, zone_file=None, iids_file=None,
         Path to whitespace-delimited file with grid coordinates (columns: x, y, z)
     zone_file : str, optional
         Path to whitespace-delimited array file with zones
+    iids_file : str, optional
+        Path to independent identically distributed noise file. If None,
+        auto-generates correlated noise and saves as iids_layer{N}.arr files
     field_name : list of str, default ['field']
         Name(s) of field(s) to generate. Must match column prefixes in conceptual_points
     layer_mode : bool, default True
         If True, process each layer independently (recommended for 3D grids)
+    save_path : str, default '.'
+        Directory path to save output files
+    tensor_interp : str, default 'idw'
+        Tensor interpolation method: 'idw' (inverse distance weighting),
+        'krig' (kriging), or 'nearest' (zone-based nearest neighbor)
 
     Returns
     -------
@@ -173,9 +177,12 @@ def main(conceptual_points_file, grid_file, zone_file=None, iids_file=None,
 
     Examples
     --------
-    >>> main('my_points.csv', 'my_grid.dat', field_name=['kh'], layer_mode=True)
+    >>> generate_fields_from_files('my_points.csv', 'my_grid.dat',
+    ...                             field_name=['kh'], layer_mode=True)
     """
-    print("=== Tensor-Based Non-Stationary Field Generation ===")
+    print(f"=== Tensor-Based Non-Stationary Field Generation from  {conceptual_points_file}===")
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
 
     # Load data
     conceptual_points = pd.read_csv(conceptual_points_file)
@@ -185,7 +192,7 @@ def main(conceptual_points_file, grid_file, zone_file=None, iids_file=None,
     print(f"Loaded {len(conceptual_points)} conceptual points")
     print(f"Loaded {len(grid_coords)} grid points")
 
-    # Infer grid structure FIRST
+    # Infer grid structure FIRST, for the lazy amongst us
     shape = infer_grid_shape(grid_coords)
     print(f"Grid shape: {shape} (nz, ny, nx)")
 
@@ -204,7 +211,7 @@ def main(conceptual_points_file, grid_file, zone_file=None, iids_file=None,
     if not validate_grid_coordinates(grid_coords, shape):
         raise ValueError(f"Grid coordinates ({len(grid_coords)} points) don't match inferred shape {shape}")
 
-    # NOW we can standardize zones using the shape
+    # standardize zones using the shape
     zones = None
 
     if zone_file:
@@ -220,7 +227,8 @@ def main(conceptual_points_file, grid_file, zone_file=None, iids_file=None,
             # Process by layer
             cols = cols + ['layer']
             field = generate_field_by_layer(conceptual_points[cols], grid_coords, iids,
-                                            shape, zones=zones, save_path=save_path)
+                                            shape, zones=zones, save_path=save_path,
+                                            tensor_interp=tensor_interp)
         else:
             # Process full 3D
             cols = cols + ['z']
@@ -238,7 +246,8 @@ def main(conceptual_points_file, grid_file, zone_file=None, iids_file=None,
 
 
 def generate_field_by_layer(conceptual_points, grid_coords, iids,
-                            shape, zones=None, save_path='.'):
+                            shape, zones=None, save_path='.',
+                            tensor_interp='idw'):
     """
     Generate field processing each layer independently.
 
@@ -248,13 +257,21 @@ def generate_field_by_layer(conceptual_points, grid_coords, iids,
         Conceptual points with tensor and statistical parameters
     grid_coords : np.ndarray
         Grid coordinates, shape (n_points, 3)
+    iids : np.ndarray
+        Independent identically distributed random noise, shape (nz, ny, nx)
     shape : tuple
         Grid shape as (nz, ny, nx)
+    zones : np.ndarray, optional
+        Zone IDs for zone-based processing, shape (ny, nx)
+    save_path : str, default '.'
+        Directory path to save output files
+    tensor_interp : str, default 'idw'
+        Tensor interpolation method: 'idw', 'krig', or 'nearest'
 
     Returns
     -------
     np.ndarray
-        Flattened field values
+        Field values, shape (nz, ny, nx)
     """
     nz, ny, nx = shape
     field_3d = np.zeros(shape)
@@ -294,7 +311,7 @@ def generate_field_by_layer(conceptual_points, grid_coords, iids,
         # Generate field for this layer - now returns 2D
         layer_field_2d, geological_tensors = generate_single_layer_zone_based(layer_cp, layer_coords,
                                                           layer_iids, zones=layer_zones, shape=layer_shape,
-                                                          save_path=save_path)
+                                                          save_path=save_path, tensor_interp=tensor_interp)
         visualize_geological_tensors(geological_tensors, layer_coords, layer_shape, zones=layer_zones,
                                      conceptual_points=layer_cp, subsample=4,
                                      save_path=save_path, title_suf=f'layer {layer_idx+1}')
@@ -306,9 +323,34 @@ def generate_field_by_layer(conceptual_points, grid_coords, iids,
 
 
 def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
-                                     zones=None, shape=None, save_path='.'):
+                                     zones=None, shape=None, save_path='.',
+                                     tensor_interp='idw'):
     """
     Modified generate_single_layer with zone-based tensor interpolation.
+
+    Parameters
+    ----------
+    conceptual_points : pd.DataFrame
+        Conceptual points with tensor and statistical parameters
+    grid_coords_2d : np.ndarray
+        Grid coordinates for single layer, shape (n_points, 2) or (n_points, 3)
+    iids : np.ndarray
+        Independent identically distributed random noise for this layer
+    zones : np.ndarray, optional
+        Zone IDs, shape (ny, nx)
+    shape : tuple, optional
+        Grid shape (ny, nx). If None, inferred from grid_coords_2d
+    save_path : str, default '.'
+        Directory path to save output files
+    tensor_interp : str, default 'idw'
+        Tensor interpolation method: 'idw', 'krig', or 'nearest'
+
+    Returns
+    -------
+    tuple
+        (field_2d, geological_tensors) where:
+        - field_2d: Generated field, shape (ny, nx)
+        - geological_tensors: Interpolated tensors, shape (n_points, 2, 2)
     """
     cp_coords = conceptual_points[['x', 'y']].values
     cp_means = conceptual_points.filter(like='mean').values.flatten()
@@ -345,15 +387,16 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
         extracted_bearing = get_tensor_bearing(cp_tensors[i], original_bearing)
         print(f"    Point {i}: Input bearing={original_bearing:.1f}°, Extracted={extracted_bearing:.1f}°")
 
-    # Step 2: Zone-based tensor interpolation
+    # Step 2: Interpolate tensors, can be fast/coarse zone based
     if zones is not None:
         print("  Interpolating geological tensors by zone...")
-        geological_tensors = interpolate_tensors_by_zone_nearest(
-            cp_coords, cp_tensors, grid_coords_2d, zones
+        geological_tensors = interpolate_tensors_by_zone(
+            cp_coords, cp_tensors, grid_coords_2d, zones, tensor_interp=tensor_interp
         )
     else:
         print("  Interpolating geological tensors globally...")
-        geological_tensors = interpolate_tensors_2d(cp_coords, cp_tensors, grid_coords_2d)
+        geological_tensors = interpolate_tensors_2d(cp_coords, cp_tensors, grid_coords_2d,
+                                                    tensor_interp=tensor_interp)
 
     # Step 3: Interpolate means using zone-aware kriging - returns 2D
     print("  Interpolating means with geological structure...")
@@ -398,7 +441,7 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
     return field_2d, geological_tensors
 
 
-def interpolate_tensors_by_zone_nearest(cp_coords, cp_tensors, grid_coords, zones):
+def _nearest_interpolation(cp_coords, cp_tensors, grid_coords, zones):
     """Zone-based nearest neighbor tensor assignment - no interpolation.
 
     Parameters
@@ -434,7 +477,7 @@ def interpolate_tensors_by_zone_nearest(cp_coords, cp_tensors, grid_coords, zone
             if zones[row, col] == zone_id:
                 zone_grid_indices.append(i)
 
-        zone_grid_indices = np.array(zone_grid_indices)
+        zone_grid_indices = np.array(zone_grid_indices, dtype=int)
 
         if len(zone_cp_coords) > 0:
             # Assign nearest neighbor tensor (no interpolation)
@@ -506,7 +549,6 @@ def create_boundary_modified_scalar(base_field_2d, zones,
     return modified
 
 
-
 def create_boundary_enhanced_tensors(geological_tensors, zones,
                                      boundary_anisotropy=10.0, boundary_major_scale=2.0,
                                      transition_cells=3):
@@ -514,17 +556,20 @@ def create_boundary_enhanced_tensors(geological_tensors, zones,
     Enhance geological tensors at zone boundaries with increased anisotropy.
     Uses distance-based transition from geological to boundary behavior.
 
+    Note: Alternative boundary enhancement method. Implemented but found to be
+    suboptimal compared to create_boundary_modified_scalar(). Kept for reference.
+
     Parameters
     ----------
     geological_tensors : np.ndarray
         Base geological tensors, shape (n_points, 2, 2)
     zones : np.ndarray
-        Zone IDs, shape (ny, nx) - GUARANTEED to be 2D from entry point
-    boundary_anisotropy : float
+        Zone IDs, shape (ny, nx)
+    boundary_anisotropy : float, default 10.0
         Anisotropy ratio at boundaries (major/minor)
-    boundary_major_scale : float
+    boundary_major_scale : float, default 2.0
         Scale factor for major axis at boundaries
-    transition_cells : int
+    transition_cells : int, default 3
         Number of cells over which to transition from geological to boundary
 
     Returns
@@ -625,14 +670,14 @@ def detect_zone_boundaries(zones):
     Parameters
     ----------
     zones : np.ndarray
-        Zone IDs, shape (ny, nx) - GUARANTEED to be 2D
+        Zone IDs, shape (ny, nx)
 
     Returns
     -------
     tuple
         (boundary_mask, boundary_directions) where:
-        - boundary_mask: bool array, shape (ny, nx)
-        - boundary_directions: direction vectors, shape (ny, nx, 2)
+        - boundary_mask: Boolean array indicating boundary points, shape (ny, nx)
+        - boundary_directions: Direction vectors at boundaries, shape (ny, nx, 2)
     """
     ny, nx = zones.shape
     boundary_mask = np.zeros((ny, nx), dtype=bool)
@@ -747,13 +792,39 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
 
     Parameters
     ----------
+    cp_coords : np.ndarray
+        Conceptual point coordinates, shape (n_cp, 2)
+    cp_values : np.ndarray
+        Values at conceptual points, shape (n_cp,)
+    grid_coords : np.ndarray
+        Grid coordinates, shape (n_grid, 2) or (n_grid, 3)
+    interp_tensors : np.ndarray
+        Interpolated tensors at grid points, shape (n_grid, 2, 2)
+    variogram_model : str, default 'exponential'
+        Variogram model: 'exponential', 'gaussian', or 'spherical'
+    sill : float, default 1.0
+        Variogram sill parameter
+    nugget : float, default 0.01
+        Variogram nugget parameter
+    background_value : float, default 0.0
+        Default value for points with insufficient neighbors
+    max_search_radius : float, default 1e20
+        Maximum search radius for neighbors
+    min_points : int, default 1
+        Minimum number of points required for interpolation
+    max_neighbors : int, default 4
+        Maximum number of neighbors to use
+    transform : str, optional
+        Data transformation: 'log' for log-transform, None for no transform
+    min_value : float, default 1e-8
+        Minimum value for log transform
     zones : np.ndarray, optional
-        Zone IDs, shape (ny, nx) - 2D array
+        Zone IDs for zone-aware kriging, shape (ny, nx)
 
     Returns
     -------
     np.ndarray
-        Interpolated values, shape (ny, nx) - ALWAYS 2D
+        Interpolated values, shape (ny, nx)
     """
     n_grid = len(grid_coords)
 
@@ -884,189 +955,69 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
     return interp_values_1d.reshape(shape)
 
 
-def create_2d_tensors(theta, major, minor):
-    """Create 2x2 anisotropy tensors from geostatistical parameters."""
-    theta = np.atleast_1d(theta)
-    major = np.atleast_1d(major)
-    minor = np.atleast_1d(minor)
-
-    n = len(theta)
-    tensors = np.zeros((n, 2, 2))
-
-    for i in range(n):
-        # For geological bearing (clockwise from north):
-        # North = [0, 1], East = [1, 0]
-        # Bearing 5° should give direction [x, y] = [sin(5°), cos(5°)] = [0.087, 0.996]
-
-        bearing_rad = theta[i]
-
-        # Direction vector for this bearing
-        east_comp = np.sin(bearing_rad)  # X component
-        north_comp = np.cos(bearing_rad)  # Y component
-
-        # Create rotation matrix to align [1,0] with bearing direction
-        cos_t = north_comp
-        sin_t = east_comp
-
-        # clockwise rotation by angle theta
-        R = np.array([[cos_t, sin_t],
-                      [-sin_t, cos_t]])
-        S = np.diag([minor[i] ** 2, major[i] ** 2])
-        tensors[i] = R @ S @ R.T
-
-    return tensors.squeeze() if n == 1 else tensors
-
-
-def get_tensor_bearing(tensor, expected_bearing=None):
-    """Extract geological bearing from tensor."""
-    eigenvals, eigenvecs = np.linalg.eigh(tensor)
-    max_idx = np.argmax(eigenvals)
-    major_eigenvec = eigenvecs[:, max_idx]
-
-    # Swap components to match geological convention: [north, east] instead of [east, north]
-    north_component = major_eigenvec[1]  # y-component is north
-    east_component = major_eigenvec[0]  # x-component is east
-
-    # Calculate bearing from north (geological convention)
-    angle1 = np.degrees(np.arctan2(east_component, north_component))
-    if angle1 < 0:
-        angle1 += 360
-    angle2 = (angle1 + 180) % 360
-
-    # Choose correct direction if expected bearing provided
-    if expected_bearing is not None:
-        diff1 = min(abs(angle1 - expected_bearing), abs(angle1 - expected_bearing + 360),
-                    abs(angle1 - expected_bearing - 360))
-        diff2 = min(abs(angle2 - expected_bearing), abs(angle2 - expected_bearing + 360),
-                    abs(angle2 - expected_bearing - 360))
-        return angle1 if diff1 < diff2 else angle2
-
-    return angle1
-
-
-def assign_conceptual_points_to_zones(cp_coords, grid_coords, zones):
+def interpolate_tensors_2d(cp_coords, cp_tensors, grid_coords, tensor_interp='idw', zones=None):
     """
-    Extract zone assignment logic from tensor_aware_kriging into reusable function.
-
-    Parameters
-    ----------
-    zones : np.ndarray
-        Zone IDs, shape (ny, nx) - GUARANTEED to be 2D from entry point
-    """
-    ny, nx = zones.shape
-
-    cp_zones = []
-    for coord in cp_coords:
-        # Find closest grid point to get zone
-        distances = np.sum((grid_coords - coord) ** 2, axis=1)
-        closest_idx = np.argmin(distances)
-        row, col = divmod(closest_idx, nx)
-        cp_zones.append(zones[row, col])
-
-    return np.array(cp_zones)
-
-
-def interpolate_tensors_by_zone(cp_coords, cp_tensors, grid_coords, zones):
-    """
-    Zone-aware tensor interpolation - interpolate tensors within each zone separately.
+    Interpolate 2x2 tensors using log-Euclidean approach.
 
     Parameters
     ----------
     cp_coords : np.ndarray
-        Conceptual point coordinates
+        Conceptual point coordinates, shape (n_cp, 2)
     cp_tensors : np.ndarray
-        Conceptual point tensors
+        Tensors at conceptual points, shape (n_cp, 2, 2)
     grid_coords : np.ndarray
-        Grid coordinates
-    zones : np.ndarray
-        Zone array, shape (ny, nx) - GUARANTEED to be 2D from entry point
+        Grid coordinates, shape (n_grid, 2) or (n_grid, 3)
+    tensor_interp : str, default 'idw'
+        Interpolation method: 'idw', 'krig', or 'nearest'
+    zones : np.ndarray, optional
+        Zone IDs for zone-based nearest neighbor, shape (ny, nx)
 
     Returns
     -------
     np.ndarray
         Interpolated tensors, shape (n_grid, 2, 2)
     """
-    n_grid = len(grid_coords)
-    ny, nx = zones.shape
-
-    # Get zone for each conceptual point
-    cp_zones = assign_conceptual_points_to_zones(cp_coords, grid_coords, zones)
-
-    # Initialize output tensors
-    geological_tensors = np.zeros((n_grid, 2, 2))
-
-    # Get unique zones
-    unique_zones = np.unique(zones)
-
-    for zone_id in unique_zones:
-        print(f"    Interpolating tensors for zone {zone_id}")
-
-        # Find conceptual points in this zone
-        zone_cp_mask = cp_zones == zone_id
-        zone_cp_coords = cp_coords[zone_cp_mask]
-        zone_cp_tensors = cp_tensors[zone_cp_mask]
-
-        # Find grid points in this zone
-        zone_grid_indices = []
-        for i in range(n_grid):
-            row, col = divmod(i, nx)
-            if zones[row, col] == zone_id:
-                zone_grid_indices.append(i)
-
-        zone_grid_indices = np.array(zone_grid_indices)
-        zone_grid_coords = grid_coords[zone_grid_indices]
-
-        if len(zone_cp_coords) > 0:
-            # Interpolate tensors within zone using only zone's conceptual points
-            zone_tensors = interpolate_tensors_2d(zone_cp_coords, zone_cp_tensors, zone_grid_coords,
-                                                  (len(zone_grid_coords), 2))
-            geological_tensors[zone_grid_indices] = zone_tensors
-        else:
-            # No conceptual points in zone - use default tensor or nearest zone
-            print(f"      Warning: No conceptual points in zone {zone_id}, using default tensor")
-            default_tensor = np.eye(2) * 1000 ** 2  # Default 1000m correlation length
-            geological_tensors[zone_grid_indices] = default_tensor
-
-    return geological_tensors
-
-
-def interpolate_tensors_2d(cp_coords, cp_tensors, grid_coords):
-    """
-    Interpolate 2x2 tensors using log-Euclidean approach.
-    """
-    shape = infer_grid_shape(grid_coords)
+    #shape = infer_grid_shape(grid_coords)
     n_grid = len(grid_coords)
     interp_tensors = np.zeros((n_grid, 2, 2))
 
-    log_tensors = np.array([logm(t) for t in cp_tensors])
+    # simplest
+    if tensor_interp == 'nearest' and zones is not None:
+        interp_tensors = _nearest_interpolation(cp_coords, cp_tensors, grid_coords, zones)
+    else:
+        log_tensors = np.array([logm(t) for t in cp_tensors])
+        for i in range(2):
+            for j in range(i, 2):
+                values = log_tensors[:, i, j].real
+                # idw interp
+                if tensor_interp=='idw':
+                    interp_values_2d = _idw_interpolation(cp_coords, values, grid_coords)
+                # krig alternatively krig each of "values" separately with pypest utils
+                elif tensor_interp=='krig':
+                    interp_values_2d = ordinary_kriging(cp_coords, values, grid_coords,
+                                     variogram_model='exponential', range_param=10000,
+                                     sill=1.0, nugget=0.1, background_value=0.0,
+                                     max_search_radius=1e20, min_points=1,
+                                     transform=None, min_value=1e-8, max_neighbors=5)
+                interp_tensors[:, i, j] = interp_values_2d.flatten()
+                if i != j:
+                    interp_tensors[:, j, i] = interp_values_2d.flatten()
 
-    for i in range(2):
-        for j in range(i, 2):
-            values = log_tensors[:, i, j].real
-            # Use tensor_aware_kriging with shape for 2D output, but we need 1D for tensor interpolation
-            # This is a special case - convert back to 1D for tensor component interpolation
-            interp_values_2d = tensor_aware_kriging_1d_output(cp_coords, values, grid_coords, shape)
-            interp_tensors[:, i, j] = interp_values_2d.flatten()
-            if i != j:
-                interp_tensors[:, j, i] = interp_values_2d.flatten()
-
-    for i in range(n_grid):
-        interp_tensors[i] = expm(interp_tensors[i])
+        for i in range(n_grid):
+            interp_tensors[i] = expm(interp_tensors[i])
 
     return interp_tensors
 
 
-def tensor_aware_kriging_1d_output(cp_coords, cp_values, grid_coords):
+def _idw_interpolation(cp_coords, cp_values, grid_coords):
     """
-    Special version of kriging for tensor interpolation that returns 1D output.
+    Special version of idw for tensor interpolation that returns 1D output.
     This is only used internally for tensor component interpolation.
     """
-    shape = infer_grid_shape(grid_coords)
-    ny, nx = shape
     n_grid = len(grid_coords)
     interp_values = np.full(n_grid, 0.0)
 
-    # Simple ordinary kriging for tensor components
+    # Simple idw tensor components
     for i in range(n_grid):
         distances = np.linalg.norm(cp_coords - grid_coords[i], axis=1)
         weights = np.exp(-distances / 1000)  # Simple exponential weights
@@ -1198,17 +1149,244 @@ def generate_field_3d(conceptual_points, grid_coords, shape):
     raise NotImplementedError("Use layer_mode=True for now")
 
 
+
+def create_2d_tensors(theta, major, minor):
+    """Create 2x2 anisotropy tensors from geostatistical parameters."""
+    theta = np.atleast_1d(theta)
+    major = np.atleast_1d(major)
+    minor = np.atleast_1d(minor)
+
+    n = len(theta)
+    tensors = np.zeros((n, 2, 2))
+
+    for i in range(n):
+        # For geological bearing (clockwise from north):
+        # North = [0, 1], East = [1, 0]
+        # Bearing 5° should give direction [x, y] = [sin(5°), cos(5°)] = [0.087, 0.996]
+
+        bearing_rad = theta[i]
+
+        # Direction vector for this bearing
+        east_comp = np.sin(bearing_rad)  # X component
+        north_comp = np.cos(bearing_rad)  # Y component
+
+        # Create rotation matrix to align [1,0] with bearing direction
+        cos_t = north_comp
+        sin_t = east_comp
+
+        # clockwise rotation by angle theta
+        R = np.array([[cos_t, sin_t],
+                      [-sin_t, cos_t]])
+        S = np.diag([minor[i] ** 2, major[i] ** 2])
+        tensors[i] = R @ S @ R.T
+
+    return tensors.squeeze() if n == 1 else tensors
+
+
+def create_3d_tensors(bearing, dip, major, intermediate, minor):
+    """
+    Create 3x3 anisotropy tensors from geostatistical parameters using geological convention.
+
+    Parameters:
+    -----------
+    bearing : float or array
+        Bearing angle in radians, clockwise from north (0 = north, π/2 = east)
+    dip : float or array
+        Dip angle in radians, downward from horizontal (0 = horizontal, π/2 = vertical down)
+    major : float or array
+        Major axis magnitude (σ₁)
+    intermediate : float or array
+        Intermediate axis magnitude (σ₂)
+    minor : float or array
+        Minor axis magnitude (σ₃)
+
+    Convention:
+    -----------
+    - Bearing: Clockwise rotation around vertical axis, north = 0°
+    - Dip: Clockwise rotation around minor horizontal axis, horizontal = 0°
+    - This constrains the minor axis to remain horizontal
+
+    Returns:
+    --------
+    tensors : ndarray
+        3x3 tensor(s) with shape (3,3) for single input or (n,3,3) for arrays
+    """
+    bearing = np.atleast_1d(bearing)
+    dip = np.atleast_1d(dip)
+    major = np.atleast_1d(major)
+    intermediate = np.atleast_1d(intermediate)
+    minor = np.atleast_1d(minor)
+
+    n = len(bearing)
+    tensors = np.zeros((n, 3, 3))
+
+    for i in range(n):
+        # Step 1: Create diagonal tensor in principal axes coordinate system
+        # [minor_horizontal, major, intermediate]
+        S = np.diag([minor[i] ** 2, major[i] ** 2, intermediate[i] ** 2])
+
+        # Step 2: Rotation around vertical (z) axis by bearing
+        # This rotates in horizontal plane, geological convention (clockwise from north)
+        cos_bearing = np.cos(bearing[i])
+        sin_bearing = np.sin(bearing[i])
+
+        # For geological bearing: north=[0,1,0], east=[1,0,0]
+        # Bearing direction = [sin(bearing), cos(bearing), 0]
+        R_bearing = np.array([
+            [cos_bearing, sin_bearing, 0],
+            [-sin_bearing, cos_bearing, 0],
+            [0, 0, 1]
+        ])
+
+        # Step 3: Rotation around minor horizontal axis by dip
+        # This tilts the major/intermediate plane down from horizontal
+        cos_dip = np.cos(dip[i])
+        sin_dip = np.sin(dip[i])
+
+        # Clockwise rotation around x-axis (minor horizontal axis)
+        R_dip = np.array([
+            [1, 0, 0],
+            [0, cos_dip, sin_dip],
+            [0, -sin_dip, cos_dip]
+        ])
+
+        # Step 4: Combine rotations - apply dip first, then bearing
+        R_total = R_bearing @ R_dip
+
+        # Step 5: Transform tensor
+        tensors[i] = R_total @ S @ R_total.T
+
+    return tensors.squeeze() if n == 1 else tensors
+
+
+def get_tensor_bearing(tensor, expected_bearing=None):
+    """Extract geological bearing from tensor."""
+    eigenvals, eigenvecs = np.linalg.eigh(tensor)
+    max_idx = np.argmax(eigenvals)
+    major_eigenvec = eigenvecs[:, max_idx]
+
+    # Swap components to match geological convention: [north, east] instead of [east, north]
+    north_component = major_eigenvec[1]  # y-component is north
+    east_component = major_eigenvec[0]  # x-component is east
+
+    # Calculate bearing from north (geological convention)
+    angle1 = np.degrees(np.arctan2(east_component, north_component))
+    if angle1 < 0:
+        angle1 += 360
+    angle2 = (angle1 + 180) % 360
+
+    # Choose correct direction if expected bearing provided
+    if expected_bearing is not None:
+        diff1 = min(abs(angle1 - expected_bearing), abs(angle1 - expected_bearing + 360),
+                    abs(angle1 - expected_bearing - 360))
+        diff2 = min(abs(angle2 - expected_bearing), abs(angle2 - expected_bearing + 360),
+                    abs(angle2 - expected_bearing - 360))
+        return angle1 if diff1 < diff2 else angle2
+
+    return angle1
+
+
+def assign_conceptual_points_to_zones(cp_coords, grid_coords, zones):
+    """
+    Extract zone assignment logic from tensor_aware_kriging into reusable function.
+
+    Parameters
+    ----------
+    zones : np.ndarray
+        Zone IDs, shape (ny, nx) - GUARANTEED to be 2D from entry point
+    """
+    ny, nx = zones.shape
+
+    cp_zones = []
+    for coord in cp_coords:
+        # Find closest grid point to get zone
+        distances = np.sum((grid_coords - coord) ** 2, axis=1)
+        closest_idx = np.argmin(distances)
+        row, col = divmod(closest_idx, nx)
+        cp_zones.append(zones[row, col])
+
+    return np.array(cp_zones)
+
+
+def interpolate_tensors_by_zone(cp_coords, cp_tensors, grid_coords, zones, tensor_interp='idw'):
+    """
+    Zone-aware tensor interpolation - interpolate tensors within each zone separately.
+
+    Parameters
+    ----------
+    cp_coords : np.ndarray
+        Conceptual point coordinates
+    cp_tensors : np.ndarray
+        Conceptual point tensors
+    grid_coords : np.ndarray
+        Grid coordinates
+    zones : np.ndarray
+        Zone array, shape (ny, nx) - GUARANTEED to be 2D from entry point
+
+    Returns
+    -------
+    np.ndarray
+        Interpolated tensors, shape (n_grid, 2, 2)
+    """
+    n_grid = len(grid_coords)
+    ny, nx = zones.shape
+
+    # Get zone for each conceptual point
+    cp_zones = assign_conceptual_points_to_zones(cp_coords, grid_coords, zones)
+
+    # Initialize output tensors
+    geological_tensors = np.zeros((n_grid, 2, 2))
+
+    # Get unique zones
+    unique_zones = np.unique(zones)
+
+    for zone_id in unique_zones:
+        print(f"    Interpolating tensors for zone {zone_id}")
+
+        # Find conceptual points in this zone
+        zone_cp_mask = cp_zones == zone_id
+        zone_cp_coords = cp_coords[zone_cp_mask]
+        zone_cp_tensors = cp_tensors[zone_cp_mask]
+
+        # Find grid points in this zone
+        zone_grid_indices = []
+        for i in range(n_grid):
+            row, col = divmod(i, nx)
+            if zones[row, col] == zone_id:
+                zone_grid_indices.append(i)
+
+        zone_grid_indices = np.array(zone_grid_indices)
+        zone_grid_coords = grid_coords[zone_grid_indices]
+
+        if len(zone_cp_coords) > 0:
+            # Interpolate tensors within zone using only zone's conceptual points
+            zone_tensors = interpolate_tensors_2d(zone_cp_coords, zone_cp_tensors, zone_grid_coords,
+                                                  tensor_interp=tensor_interp, zones=zones)
+            geological_tensors[zone_grid_indices] = zone_tensors
+        else:
+            # No conceptual points in zone - use default tensor or nearest zone
+            print(f"      Warning: 1 or fewer points in zone {zone_id}, using default tensor")
+            default_tensor = np.eye(2) * 1000 ** 2  # Default 1000m correlation length
+            geological_tensors[zone_grid_indices] = default_tensor
+
+    return geological_tensors
+
+
 def infer_grid_shape(grid_coords):
     """Infer grid dimensions from coordinate array."""
-    x_unique = np.unique(grid_coords[:, 0])
-    y_unique = np.unique(grid_coords[:, 1])
-    z_unique = np.unique(grid_coords[:, 2])
-
-    nx = len(x_unique)
-    ny = len(y_unique)
-    nz = len(grid_coords) // (nx * ny)
-
-    return (nz, ny, nx)
+    if grid_coords.shape[1] == 2:
+        x_unique = np.unique(grid_coords[:, 0])
+        y_unique = np.unique(grid_coords[:, 1])
+        ny, nx = len(y_unique), len(x_unique)
+        return (1, ny, nx)
+    elif grid_coords.shape[1] == 3:
+        x_unique = np.unique(grid_coords[:, 0])
+        y_unique = np.unique(grid_coords[:, 1])
+        z_unique = np.unique(grid_coords[:, 2])
+        nx = len(x_unique)
+        ny = len(y_unique)
+        nz = len(grid_coords) // (nx * ny)
+        return(nz, ny, nx)
 
 
 def save_layer(field, layer, field_name, save_path='.'):
@@ -1240,27 +1418,8 @@ def plot_layer(field, layer=0, field_name='field', save_path='.', transform='log
     if transform=='log':
         field = np.log10(field)
 
-    colors = [
-        (0.00, 'ghostwhite'),
-        (0.05, 'lightblue'),
-        (0.15, 'skyblue'),
-        (0.25, 'blue'),
-        (0.35, 'teal'),
-        (0.45, 'green'),
-        (0.50, 'limegreen'),
-        (0.55, 'yellowgreen'),
-        (0.65, 'yellow'),
-        (0.75, 'gold'),
-        (0.85, 'orange'),
-        (0.90, 'darkorange'),
-        (0.95, 'peru'),
-        (1.00, 'sienna')
-    ]
-
-    custom_cmap = mcolors.LinearSegmentedColormap.from_list('custom', colors, N=256)
-
-    plt.figure(figsize=(10, 8))
-    plt.imshow(field, cmap=custom_cmap)
+    plt.figure(figsize=(14, 12))
+    plt.imshow(field)
     plt.colorbar(label='Parameter Value')
     plt.title(f'{field_name} for layer {layer}')
     plt.xlabel('X')
@@ -1454,7 +1613,7 @@ import matplotlib.patches as patches
 
 def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=None,
                                  conceptual_points=None, subsample=4, scale_factor=20,
-                                 figsize=(12, 10), title_suf=None, save_path='.'):
+                                 figsize=(14, 12), title_suf=None, save_path='.'):
     """
     Visualize geological tensors as ellipses overlaid on zones, with conceptual points as oriented lines.
 
@@ -1467,13 +1626,29 @@ def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=N
     shape : tuple
         Grid shape (ny, nx)
     zones : np.ndarray, optional
-        Zone array for background
+        Zone array for background, shape (ny, nx)
     conceptual_points : pd.DataFrame, optional
         Conceptual points with x, y, bearing, major columns
-    subsample : int
+    subsample : int, default 4
         Show every Nth tensor (for readability)
-    scale_factor : float
+    scale_factor : float, default 20
         Scale ellipses for visibility
+    figsize : tuple, default (14, 12)
+        Figure size
+    title_suf : str, optional
+        Suffix for plot title
+    save_path : str, default '.'
+        Directory to save plot
+
+    Returns
+    -------
+    None
+        Saves visualization as PNG file
+
+    Examples
+    --------
+    >>> visualize_geological_tensors(tensors, coords, (100, 150),
+    ...                               subsample=8, title_suf='layer_1')
     """
     ny, nx = shape
 
@@ -1639,8 +1814,19 @@ def analyze_cp_tensor_alignment(conceptual_points, geological_tensors, grid_coor
 
     Parameters
     ----------
+    conceptual_points : pd.DataFrame
+        Conceptual points with x, y, bearing columns
+    geological_tensors : np.ndarray
+        Interpolated tensor field, shape (n_points, 2, 2)
+    grid_coords : np.ndarray
+        Grid coordinates, shape (n_points, 2) or (n_points, 3)
     zones : np.ndarray
-        Zone IDs, shape (ny, nx) - GUARANTEED to be 2D from entry point
+        Zone IDs, shape (ny, nx)
+
+    Returns
+    -------
+    None
+        Prints comparison table to console
     """
     shape = zones.shape
     ny, nx = shape
@@ -1698,8 +1884,17 @@ def analyze_tensor_statistics(geological_tensors, grid_coords, zones):
 
     Parameters
     ----------
+    geological_tensors : np.ndarray
+        Tensor field, shape (n_points, 2, 2)
+    grid_coords : np.ndarray
+        Grid coordinates, shape (n_points, 2) or (n_points, 3)
     zones : np.ndarray
-        Zone IDs, shape (ny, nx) - GUARANTEED to be 2D from entry point
+        Zone IDs, shape (ny, nx)
+
+    Returns
+    -------
+    None
+        Prints statistical analysis to console
     """
     shape = zones.shape
     ny, nx = shape
@@ -1769,11 +1964,12 @@ if __name__ == "__main__":
     - zones: Can be passed to generate_single_layer() as numpy array
       with integer zone IDs, shape (n_points,) or (ny, nx)
     """
-    main(
+    generate_fields_from_files(
         conceptual_points_file=r'C:\modelling\sva_ds\data\conceptual_points.csv',
         grid_file=r'C:\modelling\sva_ds\data\grid.dat',
         zone_file=r'C:\modelling\sva_ds\data\waq_arr.geoclass_simple.arr',
         field_name=['kh'],
         layer_mode=True,
-        save_path=r'C:\modelling\sva_ds\data\output'
+        save_path=r'C:\modelling\sva_ds\data\output_nearest',
+        tensor_interp='nearest'
     )
