@@ -138,91 +138,137 @@ def validate_grid_coordinates(grid_coords, shape):
     return grid_coords.shape[0] == expected_points
 
 
-
-def generate_fields_from_files(conceptual_points_file, grid_file, zone_file=None, iids_file=None,
-         field_name=['field'], layer_mode=True, save_path='.', tensor_interp='idw'):
+def generate_fields_from_files(sim_ws, conceptual_points_file, grid_file, zone_file=None, iids_file=None,
+                               field_name=['field'], layer_mode=True, save_path='.', tensor_interp='idw'):
     """
     Generate spatially correlated fields using tensor-based geostatistics.
 
-    This reads conceptual points (control points) with anisotropy parameters from files
-    and generates tensor-based correlated fields on a specified regular grid.
-
     Parameters
     ----------
+    sim_ws: str
+        Path to files
     conceptual_points_file : str
-        Path to CSV file containing conceptual points with columns:
-        x, y, major, anisotropy, bearing, mean_{field_name}, sd_{field_name}
-        Optional: layer (for layer-by-layer processing)
+        CSV file containing conceptual points
     grid_file : str
-        Path to whitespace-delimited file with grid coordinates (columns: x, y, z)
-    zone_file : str, optional
-        Path to whitespace-delimited array file with zones
-    iids_file : str, optional
-        Path to independent identically distributed noise file. If None,
-        auto-generates correlated noise and saves as iids_layer{N}.arr files
+        whitespace-delimited file with grid coordinates (columns: x, y, z)
+    zone_file : str or list of str, optional
+        zone file(s):
+        - Single string: One zone file used for all layers (2D zones)
+        - List of strings: One zone file per layer (creates 3D zones)
+    iids_file : str or list of str, optional
+        noise file(s):
+        - Single string: Assumes pattern like "iids_layer{N}.arr"
+        - List of strings: Explicit paths to each layer's noise file
+        - None: Auto-generates noise and saves as iids_layer{N}.arr files
     field_name : list of str, default ['field']
-        Name(s) of field(s) to generate. Must match column prefixes in conceptual_points
+        Name(s) of field(s) to generate
     layer_mode : bool, default True
-        If True, process each layer independently (recommended for 3D grids)
+        If True, process each layer independently
     save_path : str, default '.'
         Directory path to save output files
     tensor_interp : str, default 'idw'
-        Tensor interpolation method: 'idw' (inverse distance weighting),
-        'krig' (kriging), or 'nearest' (zone-based nearest neighbor)
+        Tensor interpolation method
 
     Returns
     -------
     None
-        Saves results to output/ directory as layer files and plots
-
-    Examples
-    --------
-    >>> generate_fields_from_files('my_points.csv', 'my_grid.dat',
-    ...                             field_name=['kh'], layer_mode=True)
+        Saves results to output/ directory
     """
-    print(f"=== Tensor-Based Non-Stationary Field Generation from  {conceptual_points_file}===")
-    if not os.path.exists(save_path):
-        os.mkdir(save_path)
+    print(f"=== Tensor-Based Non-Stationary Field Generation from {conceptual_points_file} ===")
+    if not os.path.exists(os.path.join(sim_ws, save_path)):
+        os.mkdir(os.path.join(sim_ws, save_path))
 
     # Load data
-    conceptual_points = pd.read_csv(conceptual_points_file)
-    grid = pd.read_csv(grid_file, sep=r'\s+')
+    conceptual_points = pd.read_csv(os.path.join(sim_ws, conceptual_points_file))
+    grid = pd.read_csv(os.path.join(sim_ws, grid_file), sep=r'\s+')
     grid_coords = grid[['x', 'y', 'z']].values
 
     print(f"Loaded {len(conceptual_points)} conceptual points")
     print(f"Loaded {len(grid_coords)} grid points")
 
-    # Infer grid structure FIRST, for the lazy amongst us
+    # Infer grid structure
     shape = infer_grid_shape(grid_coords)
+    nz, ny, nx = shape
     print(f"Grid shape: {shape} (nz, ny, nx)")
 
+    # Load or generate iids (always layer-specific)
     if iids_file is not None:
-        os.path.join(os.path.dirname(conceptual_points_file), 'iids.arr')
-        iids = np.loadtxt(iids_file)
+        if isinstance(iids_file, list):
+            # Explicit list of files
+            if len(iids_file) != nz:
+                raise ValueError(f"Number of iids files ({len(iids_file)}) must match number of layers ({nz})")
+            iids = np.zeros(shape)
+            for i, file_path in enumerate(iids_file):
+                layer_iids = np.loadtxt(os.path.join(sim_ws, file_path))
+                iids[i] = layer_iids.reshape(ny, nx)
+                print(f"  Loaded iids layer {i + 1} from {os.path.join(sim_ws, file_path)}")
+        else:
+            if '{' in iids_name:
+                # Pattern like "iids_layer{}.arr"
+                pattern = os.path.join(sim_ws, iids_name)
+            else:
+                # Assume pattern from filename
+                name, ext = os.path.splitext(iids_name)
+                pattern = os.path.join(sim_ws, f"{name}_layer{{}}{ext}")
+
+            iids = np.zeros(shape)
+            for i in range(nz):
+                file_path = pattern.format(i + 1)
+                try:
+                    layer_iids = np.loadtxt(file_path)
+                    iids[i] = layer_iids.reshape(ny, nx)
+                    print(f"  Loaded iids layer {i + 1} from {file_path}")
+                except FileNotFoundError:
+                    print(f"  Warning: Could not find {file_path}, generating random noise")
+                    iids[i] = np.random.randn(ny, nx)
     else:
         print("  Generating correlated noise...")
         np.random.seed(42)
         iids = np.random.randn(*shape)
-        for i in range(iids.shape[0]):
-            iids_file = os.path.join(os.path.dirname(conceptual_points_file), f'iids_layer{i+1}.arr')
-            np.savetxt(iids_file, iids[i])
+        for i in range(nz):
+            iids_file_path = os.path.join(sim_ws, f'iids_layer{i + 1}.arr')
+            np.savetxt(iids_file_path, iids[i])
+            print(f"  Saved iids layer {i + 1} to {iids_file_path}")
 
     # Validate grid coordinates
     if not validate_grid_coordinates(grid_coords, shape):
         raise ValueError(f"Grid coordinates ({len(grid_coords)} points) don't match inferred shape {shape}")
 
-    # standardize zones using the shape
+    # Load zones with flexible handling
     zones = None
+    zones_3d = None
 
     if zone_file:
-        zones_raw = np.loadtxt(zone_file)
-        zones, _, original_zones_shape = standardize_input_arrays(zones_raw, grid_coords, shape)
-        print(
-            f"Loaded zones: original shape {original_zones_shape}, standardized to 2D {zones.shape if zones is not None else None}")
+        if isinstance(zone_file, list):
+            # Multiple zone files - create 3D zones
+            if len(zone_file) != nz:
+                raise ValueError(f"Number of zone files ({len(zone_file)}) must match number of layers ({nz})")
 
+            zones_list = []
+            for i, file in enumerate(zone_file):
+                layer_zones = np.loadtxt(os.path.join(sim_ws, file)).astype(np.int64)
+                zones_list.append(layer_zones)
+                print(f"  Loaded zones layer {i + 1} from {os.path.join(sim_ws, file)}, shape: {layer_zones.shape}")
+
+            zones_3d = np.array(zones_list)
+            print(f"  Created 3D zones array: {zones_3d.shape}")
+
+        else:
+            # Single zone file - use for all layers
+            zones_raw = np.loadtxt(os.path.join(sim_ws, zone_file)).astype(np.int64)
+            zones, _, original_zones_shape = standardize_input_arrays(zones_raw, grid_coords, shape)
+            print(f"  Loaded single zone file: original shape {original_zones_shape}, standardized to 2D {zones.shape}")
+
+            # Convert to 3D by replication
+            if zones is not None:
+                zones_3d = np.tile(zones[np.newaxis, :, :], (nz, 1, 1))
+                print(f"  Replicated 2D zones to 3D: {zones.shape} -> {zones_3d.shape}")
+
+    # Process each field
     for fn in field_name:
         cols = ['name', 'x', 'y', 'major', 'transverse', 'bearing']
         cols = cols + [_ for _ in conceptual_points.columns if f'_{fn}' in _]
+
         if layer_mode and 'layer' in conceptual_points.columns:
             # Process by layer
             cols = cols + ['layer']
@@ -230,18 +276,19 @@ def generate_fields_from_files(conceptual_points_file, grid_file, zone_file=None
                                             shape, zones=zones, save_path=save_path,
                                             tensor_interp=tensor_interp)
         else:
-            # Process full 3D
+            # Process full 3D - pass the 3D zones
             cols = cols + ['z', 'normal', 'dip']
-            field = generate_field_3d(conceptual_points[cols], grid_coords, iids, shape, save_path=save_path)
+            field = generate_field_3d(conceptual_points[cols], grid_coords, iids,
+                                      shape, zones=zones_3d, save_path=save_path,
+                                      tensor_interp=tensor_interp)
 
-        # Save results - field is now array or original shape
+        # Save and plot results
         for i in conceptual_points.layer.unique():
-            save_layer(field[i-1], layer=i, field_name=fn, save_path=save_path)
-        # Plot based on layer in conceptual points
-        for i in conceptual_points.layer.unique():
-            plot_layer(np.where(zones==0,np.nan, field[i-1]), layer=i, field_name=fn, save_path=save_path)
+            save_layer(field[i - 1], layer=i, field_name=fn, save_path=save_path)
+            plot_layer(np.where(zones == 0, np.nan, field[i - 1]), layer=i, field_name=fn, save_path=save_path)
+
         print("\n=== Complete ===")
-        print(f"Field shape: {field.shape}")  # Now shows (nz, ny, nx)
+        print(f"Field shape: {field.shape}")
         print(f"Field statistics: mean={np.mean(field):.3f}, std={np.std(field):.3f}")
 
 
@@ -325,7 +372,7 @@ def generate_field_by_layer(conceptual_points, grid_coords, iids,
 def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
                       save_path='.', tensor_interp='idw'):
     """
-    Generate field using full 3D tensor processing.
+    Generate field using full 3D tensor processing with zone-based interpolation.
 
     Parameters
     ----------
@@ -357,15 +404,6 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
     # Extract conceptual point data
     cp_coords = conceptual_points[['x', 'y', 'z']].values
 
-    # Create 3D tensors from geological parameters
-    bearing = np.radians(conceptual_points['bearing'].values)
-    dip = np.radians(conceptual_points['dip'].values)
-    major = conceptual_points['major'].values
-    transverse = conceptual_points['transverse'].values
-    normal = conceptual_points['normal'].values
-
-    cp_tensors_3d = create_3d_tensors(bearing, dip, major, transverse, normal)
-
     # Get field statistics
     field_cols = [col for col in conceptual_points.columns if col.startswith('mean_') or col.startswith('sd_')]
     if field_cols:
@@ -378,55 +416,111 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
         cp_means = np.ones(len(cp_coords))
         cp_sds = np.ones(len(cp_coords)) * 0.5
 
-    # Interpolate 3D tensors to grid points
-    print("  Interpolating 3D tensors...")
-    interp_tensors_3d = interpolate_tensors_3d(cp_coords, cp_tensors_3d, grid_coords,
-                                               tensor_interp=tensor_interp, zones=zones)
-
     # Handle zones for 3D
     zones_3d = None
     if zones is not None:
         if len(zones.shape) == 2:
             # 2D zones - replicate for each layer
             zones_3d = np.tile(zones[np.newaxis, :, :], (nz, 1, 1))
+            print(f"  Using 2D zones replicated to 3D: {zones.shape} -> {zones_3d.shape}")
         else:
             # Already 3D zones
             zones_3d = zones
+            print(f"  Using 3D zones: {zones_3d.shape}")
 
-    # Interpolate mean field using tensor-aware kriging
-    print("  Interpolating mean field with 3D tensor-aware kriging...")
+    # Step 1: Create geological tensors from conceptual points
+    print("  Creating 3D geological correlation tensors...")
+    bearing = np.radians(conceptual_points['bearing'].values)
+    dip = np.radians(conceptual_points['dip'].values)
+    major = conceptual_points['major'].values
+    transverse = conceptual_points['transverse'].values
+    normal = conceptual_points['normal'].values
+
+    cp_tensors_3d = create_3d_tensors(bearing, dip, major, transverse, normal)
+
+    # Debug: Test tensor creation with first few points
+    print("  Tensor creation verification:")
+    for i in range(min(3, len(cp_tensors_3d))):
+        eigenvals = np.linalg.eigvals(cp_tensors_3d[i])
+        print(f"    Point {i}: Eigenvalues={eigenvals}, All positive={np.all(eigenvals > 0)}")
+
+    # Step 2: Interpolate tensors using zone-based approach
+    if zones_3d is not None:
+        print("  Interpolating 3D geological tensors by zone...")
+        geological_tensors_3d = interpolate_tensors_by_zone(
+            cp_coords, cp_tensors_3d, grid_coords, zones_3d, tensor_interp=tensor_interp
+        )
+    else:
+        print("  Interpolating 3D geological tensors globally...")
+        geological_tensors_3d = interpolate_tensors_3d(
+            cp_coords, cp_tensors_3d, grid_coords, tensor_interp=tensor_interp
+        )
+
+    # Step 3: Interpolate means using zone-aware kriging
+    print("  Interpolating mean field with 3D geological structure...")
     mean_field_1d = tensor_aware_kriging(
-        cp_coords, cp_means, grid_coords, interp_tensors_3d,
+        cp_coords, cp_means, grid_coords, geological_tensors_3d,
         variogram_model='exponential', sill=1.0, nugget=0.01,
+        background_value=np.mean(cp_means), max_search_radius=1e20,
+        min_points=3, transform='log', min_value=1e-8, max_neighbors=8,
         zones=zones_3d
     )
     mean_field_3d = mean_field_1d.reshape(shape)
 
-    # Interpolate standard deviation field
+    # Apply boundary smoothing if zones are present
+    if zones_3d is not None:
+        print("  Smoothing values at geological boundaries...")
+        mean_field_3d = create_boundary_modified_scalar(
+            mean_field_3d, zones_3d,
+            transition_cells=3, mode='smooth'
+        )
+
+    # Step 4: Interpolate standard deviation using geological tensors
     print("  Interpolating standard deviation field...")
     sd_field_1d = tensor_aware_kriging(
-        cp_coords, cp_sds, grid_coords, interp_tensors_3d,
+        cp_coords, cp_sds, grid_coords, geological_tensors_3d,
         variogram_model='exponential', sill=0.5, nugget=0.01,
+        background_value=np.mean(cp_sds), max_search_radius=1e20,
+        min_points=3, transform=None, min_value=1e-8, max_neighbors=8,
         zones=zones_3d
     )
     sd_field_3d = sd_field_1d.reshape(shape)
 
-    # Generate correlated noise using 3D tensors
-    print("  Generating 3D correlated noise...")
-    # Flatten for noise generation, then reshape
-    grid_coords_flat = grid_coords
-    tensors_flat = interp_tensors_3d
-    iids_flat = iids.flatten()
+    # Apply boundary enhancement if zones are present
+    if zones_3d is not None:
+        print("  Enhancing variance at geological boundaries...")
+        sd_field_3d = create_boundary_modified_scalar(
+            sd_field_3d, zones_3d,
+            peak_increase=1, transition_cells=3, mode='enhance'
+        )
 
-    correlated_noise_flat = generate_correlated_noise_3d(
-        grid_coords_flat, tensors_flat, iids_flat,
+    # Step 5: Generate correlated noise using 3D tensors
+    print("  Generating 3D correlated noise...")
+    # Work with 1D for noise generation, then reshape
+    iids_flat = iids.flatten()
+    correlated_noise_1d = generate_correlated_noise_3d(
+        grid_coords, geological_tensors_3d, iids_flat,
         n_neighbors=50, anisotropy_strength=1.0
     )
-    correlated_noise_3d = correlated_noise_flat.reshape(shape)
+    correlated_noise_3d = correlated_noise_1d.reshape(shape)
 
-    # Combine mean, scaled noise
+    # Step 6: Combine into log-normal field
+    print("  Combining fields using log-normal formulation...")
+    print(f"  Mean field shape: {mean_field_3d.shape}")
+    print(f"  SD field shape: {sd_field_3d.shape}")
+    print(f"  Noise shape: {correlated_noise_3d.shape}")
+
+    # Check if correlated noise has proper statistics (should be ~N(0,1))
+    noise_mean = np.mean(correlated_noise_3d)
+    noise_std = np.std(correlated_noise_3d)
+    print(f"  Correlated noise stats: mean={noise_mean:.6f}, std={noise_std:.6f}")
+
+    # Log-normal field generation: field = 10^(log10(mean) + noise * sd)
     log_mean_field = np.log10(np.maximum(mean_field_3d, 1e-8))  # Avoid log(0)
     field_3d = 10 ** (log_mean_field + correlated_noise_3d * sd_field_3d)
+
+    print(f"  Log-mean field range: [{np.min(log_mean_field):.3f}, {np.max(log_mean_field):.3f}]")
+    print(f"  Generated field range: [{np.min(field_3d):.3e}, {np.max(field_3d):.3e}]")
 
     print(f"  Generated 3D field with shape {field_3d.shape}")
     print(f"  Field stats: mean={np.mean(field_3d):.3f}, std={np.std(field_3d):.3f}")
@@ -434,13 +528,13 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
     # Export to ParaView
     export_3d_results_to_paraview(
         field_3d=field_3d,
-        tensors_3d=interp_tensors_3d,
+        tensors_3d=geological_tensors_3d,
         grid_coords=grid_coords,
         shape=shape,
         zones=zones,
         conceptual_points=conceptual_points,
         save_path=save_path,
-        field_name='permeability'
+        field_name='conductivity'
     )
 
     return field_3d
@@ -605,7 +699,7 @@ def _nearest_interpolation(cp_coords, cp_tensors, grid_coords, zones):
             if zones[row, col] == zone_id:
                 zone_grid_indices.append(i)
 
-        zone_grid_indices = np.array(zone_grid_indices, dtype=int)
+        zone_grid_indices = np.array(zone_grid_indices).astype(np.int64)
 
         if len(zone_cp_coords) > 0:
             # Assign nearest neighbor tensor (no interpolation)
@@ -614,25 +708,28 @@ def _nearest_interpolation(cp_coords, cp_tensors, grid_coords, zones):
                 nearest_cp = np.argmin(distances)
                 geological_tensors[grid_idx] = zone_cp_tensors[nearest_cp]
         else:
-            # No conceptual points in zone - use default tensor
             print(f"      Warning: No conceptual points in zone {zone_id}, using default tensor")
-            default_tensor = np.eye(2) * 1000 ** 2
+            if tensor_size == 2:
+                default_tensor = np.eye(2) * 1000 ** 2  # Default 1000m correlation length
+            else:
+                default_tensor = np.eye(3) * 1000 ** 2  # Default 1000m correlation length
             geological_tensors[zone_grid_indices] = default_tensor
 
     return geological_tensors
 
 
-def create_boundary_modified_scalar(base_field_2d, zones,
+def create_boundary_modified_scalar(base_field, zones,
                                     peak_increase=0.3, transition_cells=5, mode="enhance"):
     """
     Modify scalar field values near geological zone boundaries with either enhancement or smoothing.
+    Supports both 2D and 3D fields/zones.
 
     Parameters
     ----------
-    base_field_2d : np.ndarray
-        Base scalar values
+    base_field : np.ndarray
+        Base scalar values, shape (ny, nx) for 2D or (nz, ny, nx) for 3D
     zones : np.ndarray
-        Zone IDs
+        Zone IDs, shape (ny, nx) for 2D or (nz, ny, nx) for 3D
     peak_increase : float
         Max enhancement or smoothing strength
     transition_cells : int
@@ -643,37 +740,88 @@ def create_boundary_modified_scalar(base_field_2d, zones,
     Returns
     -------
     np.ndarray
-        Modified scalar field
+        Modified scalar field, same shape as input
     """
-    from scipy.ndimage import distance_transform_edt
+    from scipy.ndimage import distance_transform_edt, gaussian_filter
 
     if mode not in ("enhance", "smooth"):
         raise ValueError("mode must be 'enhance' or 'smooth'")
 
-    boundary_mask, _ = detect_zone_boundaries(zones)
-    distance = distance_transform_edt(~boundary_mask)
-    transition_mask = distance <= transition_cells
+    # Determine if we're working with 2D or 3D
+    is_3d = len(base_field.shape) == 3
 
-    modified = base_field_2d.copy()
+    if is_3d:
+        # 3D case
+        nz, ny, nx = base_field.shape
+        if zones.shape != base_field.shape:
+            raise ValueError(f"Zones shape {zones.shape} must match field shape {base_field.shape}")
 
-    if mode == "enhance":
-        # Linear enhancement near boundaries
-        factor = 1 - distance[transition_mask] / transition_cells
-        enhancement = peak_increase * factor
-        modified[transition_mask] += enhancement
+        # Process each layer separately for better boundary detection
+        modified = base_field.copy()
+        total_modified_points = 0
 
-    elif mode == "smooth":
-        # Smooth field with Gaussian filter as the target blending value
-        smoothed_field = gaussian_filter(base_field_2d, sigma=transition_cells / 2)
+        for layer in range(nz):
+            layer_field = base_field[layer]
+            layer_zones = zones[layer]
 
-        # Blend with original based on distance to boundary
-        weight = 1 - distance[transition_mask] / transition_cells
-        modified[transition_mask] = (
-            weight * smoothed_field[transition_mask] +
-            (1 - weight) * base_field_2d[transition_mask]
-        )
+            # Detect boundaries in this layer
+            boundary_mask, _ = detect_zone_boundaries(layer_zones)
+            distance = distance_transform_edt(~boundary_mask)
+            transition_mask = distance <= transition_cells
 
-    print(f"    {'Enhanced' if mode == 'enhance' else 'Smoothed'} {np.count_nonzero(transition_mask)} points near boundaries")
+            if mode == "enhance":
+                # Linear enhancement near boundaries
+                factor = 1 - distance[transition_mask] / transition_cells
+                enhancement = peak_increase * factor
+                modified[layer][transition_mask] += enhancement
+
+            elif mode == "smooth":
+                # Smooth field with Gaussian filter as the target blending value
+                smoothed_field = gaussian_filter(layer_field, sigma=transition_cells / 2)
+
+                # Blend with original based on distance to boundary
+                weight = 1 - distance[transition_mask] / transition_cells
+                modified[layer][transition_mask] = (
+                        weight * smoothed_field[transition_mask] +
+                        (1 - weight) * layer_field[transition_mask]
+                )
+
+            total_modified_points += np.count_nonzero(transition_mask)
+
+        print(
+            f"    {'Enhanced' if mode == 'enhance' else 'Smoothed'} {total_modified_points} points near boundaries across {nz} layers")
+
+    else:
+        # 2D case - original logic
+        if zones.shape != base_field.shape:
+            raise ValueError(f"Zones shape {zones.shape} must match field shape {base_field.shape}")
+
+        boundary_mask, _ = detect_zone_boundaries(zones)
+        distance = distance_transform_edt(~boundary_mask)
+        transition_mask = distance <= transition_cells
+
+        modified = base_field.copy()
+
+        if mode == "enhance":
+            # Linear enhancement near boundaries
+            factor = 1 - distance[transition_mask] / transition_cells
+            enhancement = peak_increase * factor
+            modified[transition_mask] += enhancement
+
+        elif mode == "smooth":
+            # Smooth field with Gaussian filter as the target blending value
+            smoothed_field = gaussian_filter(base_field, sigma=transition_cells / 2)
+
+            # Blend with original based on distance to boundary
+            weight = 1 - distance[transition_mask] / transition_cells
+            modified[transition_mask] = (
+                    weight * smoothed_field[transition_mask] +
+                    (1 - weight) * base_field[transition_mask]
+            )
+
+        print(
+            f"    {'Enhanced' if mode == 'enhance' else 'Smoothed'} {np.count_nonzero(transition_mask)} points near boundaries")
+
     return modified
 
 
@@ -808,7 +956,7 @@ def detect_zone_boundaries(zones):
         - boundary_directions: Direction vectors at boundaries, shape (ny, nx, 2)
     """
     ny, nx = zones.shape
-    boundary_mask = np.zeros((ny, nx), dtype=bool)
+    boundary_mask = np.zeros((ny, nx)).astype(bool)
     boundary_directions = np.zeros((ny, nx, 2))
 
     # Find boundary points (any point with different-zone neighbors)
@@ -1172,7 +1320,14 @@ def interpolate_tensors_3d(cp_coords, cp_tensors, grid_coords, tensor_interp='id
     interp_tensors = np.zeros((n_grid, 3, 3))
 
     if tensor_interp == 'nearest' and zones is not None:
+        # Zone-based nearest neighbor (requires zones)
         interp_tensors = _nearest_interpolation_3d(cp_coords, cp_tensors, grid_coords, zones)
+    elif tensor_interp == 'nearest' and zones is None:
+        # Simple nearest neighbor without zones
+        from scipy.spatial.distance import cdist
+        distances = cdist(grid_coords, cp_coords)
+        nearest_indices = np.argmin(distances, axis=1)
+        interp_tensors = cp_tensors[nearest_indices]
     else:
         # Log-Euclidean approach - ensure positive definiteness first
         log_tensors = np.zeros_like(cp_tensors)
@@ -1540,54 +1695,134 @@ def get_tensor_bearing(tensor, expected_bearing=None):
 
 def assign_conceptual_points_to_zones(cp_coords, grid_coords, zones):
     """
-    Extract zone assignment logic from tensor_aware_kriging into reusable function.
+    Assign conceptual points to zones based on nearest grid point.
+    Supports both 2D and 3D zones.
 
     Parameters
     ----------
+    cp_coords : np.ndarray
+        Conceptual point coordinates, shape (n_cp, 2) or (n_cp, 3)
+    grid_coords : np.ndarray
+        Grid coordinates, shape (n_grid, 2) or (n_grid, 3)
     zones : np.ndarray
-        Zone IDs, shape (ny, nx) - GUARANTEED to be 2D from entry point
+        Zone array, shape (ny, nx) for 2D or (nz, ny, nx) for 3D
+
+    Returns
+    -------
+    np.ndarray
+        Zone IDs for each conceptual point, shape (n_cp,)
     """
-    ny, nx = zones.shape
+    n_cp = len(cp_coords)
+    cp_zones = np.zeros(n_cp).astype(np.int64)
 
-    cp_zones = []
-    for coord in cp_coords:
-        # Find closest grid point to get zone
-        distances = np.sum((grid_coords - coord) ** 2, axis=1)
+    # Determine zone dimensions
+    if len(zones.shape) == 2:
+        # 2D zones
+        ny, nx = zones.shape
+
+        def get_zone_from_index(grid_index):
+            row, col = divmod(grid_index, nx)
+            return zones[row, col]
+
+    else:
+        # 3D zones
+        nz, ny, nx = zones.shape
+
+        def get_zone_from_index(grid_index):
+            layer = grid_index // (ny * nx)
+            remainder = grid_index % (ny * nx)
+            row = remainder // nx
+            col = remainder % nx
+            return zones[layer, row, col]
+
+    # For each conceptual point, find nearest grid point and get its zone
+    for i, cp_coord in enumerate(cp_coords):
+        # Find closest grid point
+        distances = np.sum((grid_coords - cp_coord) ** 2, axis=1)
         closest_idx = np.argmin(distances)
-        row, col = divmod(closest_idx, nx)
-        cp_zones.append(zones[row, col])
 
-    return np.array(cp_zones)
+        # Get zone ID from closest grid point
+        cp_zones[i] = get_zone_from_index(closest_idx)
+
+    return cp_zones
+
+
+# def assign_conceptual_points_to_zones(cp_coords, grid_coords, zones):
+#     """
+#     Extract zone assignment logic from tensor_aware_kriging into reusable function.
+#
+#     Parameters
+#     ----------
+#     zones : np.ndarray
+#         Zone IDs, shape (ny, nx) - GUARANTEED to be 2D from entry point
+#     """
+#     ny, nx = zones.shape
+#
+#     cp_zones = []
+#     for coord in cp_coords:
+#         # Find closest grid point to get zone
+#         distances = np.sum((grid_coords - coord) ** 2, axis=1)
+#         closest_idx = np.argmin(distances)
+#         row, col = divmod(closest_idx, nx)
+#         cp_zones.append(zones[row, col])
+#
+#     return np.array(cp_zones)
 
 
 def interpolate_tensors_by_zone(cp_coords, cp_tensors, grid_coords, zones, tensor_interp='idw'):
     """
     Zone-aware tensor interpolation - interpolate tensors within each zone separately.
+    Supports both 2D and 3D zones.
 
     Parameters
     ----------
     cp_coords : np.ndarray
-        Conceptual point coordinates
+        Conceptual point coordinates, shape (n_cp, 2) for 2D or (n_cp, 3) for 3D
     cp_tensors : np.ndarray
-        Conceptual point tensors
+        Conceptual point tensors, shape (n_cp, 2, 2) for 2D or (n_cp, 3, 3) for 3D
     grid_coords : np.ndarray
-        Grid coordinates
+        Grid coordinates, shape (n_grid, 2) for 2D or (n_grid, 3) for 3D
     zones : np.ndarray
-        Zone array, shape (ny, nx) - GUARANTEED to be 2D from entry point
+        Zone array, shape (ny, nx) for 2D or (nz, ny, nx) for 3D
+    tensor_interp : str, default 'idw'
+        Tensor interpolation method
 
     Returns
     -------
     np.ndarray
-        Interpolated tensors, shape (n_grid, 2, 2)
+        Interpolated tensors, shape (n_grid, 2, 2) for 2D or (n_grid, 3, 3) for 3D
     """
     n_grid = len(grid_coords)
-    ny, nx = zones.shape
+    n_dims = cp_coords.shape[1]  # 2 for 2D, 3 for 3D
+    tensor_size = cp_tensors.shape[-1]  # 2 for 2D tensors, 3 for 3D tensors
+
+    # Determine if we're working with 2D or 3D zones
+    if len(zones.shape) == 2:
+        # 2D zones
+        ny, nx = zones.shape
+        is_3d = False
+
+        def get_zone_id(grid_index):
+            row, col = divmod(grid_index, nx)
+            return zones[row, col]
+
+    else:
+        # 3D zones
+        nz, ny, nx = zones.shape
+        is_3d = True
+
+        def get_zone_id(grid_index):
+            layer = grid_index // (ny * nx)
+            remainder = grid_index % (ny * nx)
+            row = remainder // nx
+            col = remainder % nx
+            return zones[layer, row, col]
 
     # Get zone for each conceptual point
     cp_zones = assign_conceptual_points_to_zones(cp_coords, grid_coords, zones)
 
     # Initialize output tensors
-    geological_tensors = np.zeros((n_grid, 2, 2))
+    geological_tensors = np.zeros((n_grid, tensor_size, tensor_size))
 
     # Get unique zones
     unique_zones = np.unique(zones)
@@ -1603,22 +1838,32 @@ def interpolate_tensors_by_zone(cp_coords, cp_tensors, grid_coords, zones, tenso
         # Find grid points in this zone
         zone_grid_indices = []
         for i in range(n_grid):
-            row, col = divmod(i, nx)
-            if zones[row, col] == zone_id:
+            if get_zone_id(i) == zone_id:
                 zone_grid_indices.append(i)
 
         zone_grid_indices = np.array(zone_grid_indices)
+
+        if len(zone_grid_indices) == 0:
+            continue
+
         zone_grid_coords = grid_coords[zone_grid_indices]
 
         if len(zone_cp_coords) > 0:
             # Interpolate tensors within zone using only zone's conceptual points
-            zone_tensors = interpolate_tensors_2d(zone_cp_coords, zone_cp_tensors, zone_grid_coords,
-                                                  tensor_interp=tensor_interp, zones=zones)
+            if n_dims == 2:
+                zone_tensors = interpolate_tensors_2d(zone_cp_coords, zone_cp_tensors, zone_grid_coords,
+                                                      tensor_interp=tensor_interp, zones=None)
+            else:
+                zone_tensors = interpolate_tensors_3d(zone_cp_coords, zone_cp_tensors, zone_grid_coords,
+                                                      tensor_interp=tensor_interp, zones=None)
             geological_tensors[zone_grid_indices] = zone_tensors
         else:
             # No conceptual points in zone - use default tensor or nearest zone
-            print(f"      Warning: 1 or fewer points in zone {zone_id}, using default tensor")
-            default_tensor = np.eye(2) * 1000 ** 2  # Default 1000m correlation length
+            print(f"      Warning: No conceptual points in zone {zone_id}, using default tensor")
+            if tensor_size == 2:
+                default_tensor = np.eye(2) * 1000 ** 2  # Default 1000m correlation length
+            else:
+                default_tensor = np.eye(3) * 1000 ** 2  # Default 1000m correlation length
             geological_tensors[zone_grid_indices] = default_tensor
 
     return geological_tensors
@@ -2442,12 +2687,14 @@ if __name__ == "__main__":
     - zones: Can be passed to generate_single_layer() as numpy array
       with integer zone IDs, shape (n_points,) or (ny, nx)
     """
-    generate_fields_from_files(
-        conceptual_points_file=r'C:\modelling\sva_ds\data\conceptual_points.csv',
-        grid_file=r'C:\modelling\sva_ds\data\grid.dat',
-        zone_file=r'C:\modelling\sva_ds\data\waq_arr.geoclass_simple.arr',
+    sim_ws = r'C:\modelling\sva_ds\data'
+    zone_files = [f'waq_arr.geoclass_layer{z+1}.arr' for z in range(13)]
+    generate_fields_from_files(sim_ws,
+        conceptual_points_file='conceptual_points.csv',
+        grid_file='grid.dat',
+        zone_file=zone_files,
         field_name=['kh'],
         layer_mode=False,
-        save_path=r'C:\modelling\sva_ds\data\output_nearest',
+        save_path='output_nearest',
         tensor_interp='nearest'
     )
