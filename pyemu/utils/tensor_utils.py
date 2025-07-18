@@ -221,7 +221,7 @@ def generate_fields_from_files(conceptual_points_file, grid_file, zone_file=None
             f"Loaded zones: original shape {original_zones_shape}, standardized to 2D {zones.shape if zones is not None else None}")
 
     for fn in field_name:
-        cols = ['name', 'x', 'y', 'major', 'anisotropy', 'bearing']
+        cols = ['name', 'x', 'y', 'major', 'transverse', 'bearing']
         cols = cols + [_ for _ in conceptual_points.columns if f'_{fn}' in _]
         if layer_mode and 'layer' in conceptual_points.columns:
             # Process by layer
@@ -231,8 +231,8 @@ def generate_fields_from_files(conceptual_points_file, grid_file, zone_file=None
                                             tensor_interp=tensor_interp)
         else:
             # Process full 3D
-            cols = cols + ['z']
-            field = generate_field_3d(conceptual_points[cols], grid_coords, shape)
+            cols = cols + ['z', 'normal', 'dip']
+            field = generate_field_3d(conceptual_points[cols], grid_coords, iids, shape, save_path=save_path)
 
         # Save results - field is now array or original shape
         for i in conceptual_points.layer.unique():
@@ -302,13 +302,13 @@ def generate_field_by_layer(conceptual_points, grid_coords, iids,
         # Prepare zones for this layer (all zones now consistently 2D)
         layer_zones = None
         if zones is not None:
-            if len(zones.shape) == 3:  # 3D zones - not supported yet, but keeping logic
+            if len(zones.shape) == 3:  # 3D zones
                 layer_zones = zones[layer_idx]
             else:  # 2D zones (standard case), use for all layers
                 layer_zones = zones
             # zones are already guaranteed to be 2D from standardize_input_arrays()
 
-        # Generate field for this layer - now returns 2D
+        # Generate field for this layer
         layer_field_2d, geological_tensors = generate_single_layer_zone_based(layer_cp, layer_coords,
                                                           layer_iids, zones=layer_zones, shape=layer_shape,
                                                           save_path=save_path, tensor_interp=tensor_interp)
@@ -320,6 +320,132 @@ def generate_field_by_layer(conceptual_points, grid_coords, iids,
         field_3d[layer_idx] = layer_field_2d
 
     return field_3d  # Return as 3D array, NOT flattened
+
+
+def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
+                      save_path='.', tensor_interp='idw'):
+    """
+    Generate field using full 3D tensor processing.
+
+    Parameters
+    ----------
+    conceptual_points : pd.DataFrame
+        Conceptual points with 3D tensor and statistical parameters
+        Must include columns: x, y, z, major, transverse, normal, bearing, dip, mean_{field}, sd_{field}
+    grid_coords : np.ndarray
+        Grid coordinates, shape (n_points, 3)
+    iids : np.ndarray
+        Independent identically distributed random noise, shape (nz, ny, nx)
+    shape : tuple
+        Grid shape as (nz, ny, nx)
+    zones : np.ndarray, optional
+        Zone IDs for zone-based processing. Shape (ny, nx) for 2D zones applied to all layers,
+        or (nz, ny, nx) for 3D zones
+    save_path : str, default '.'
+        Directory path to save output files
+    tensor_interp : str, default 'idw'
+        Tensor interpolation method: 'idw', 'krig', or 'nearest'
+
+    Returns
+    -------
+    np.ndarray
+        Field values, shape (nz, ny, nx)
+    """
+    print("Generating 3D field with full tensor processing...")
+    nz, ny, nx = shape
+
+    # Extract conceptual point data
+    cp_coords = conceptual_points[['x', 'y', 'z']].values
+
+    # Create 3D tensors from geological parameters
+    bearing = np.radians(conceptual_points['bearing'].values)
+    dip = np.radians(conceptual_points['dip'].values)
+    major = conceptual_points['major'].values
+    transverse = conceptual_points['transverse'].values
+    normal = conceptual_points['normal'].values
+
+    cp_tensors_3d = create_3d_tensors(bearing, dip, major, transverse, normal)
+
+    # Get field statistics
+    field_cols = [col for col in conceptual_points.columns if col.startswith('mean_') or col.startswith('sd_')]
+    if field_cols:
+        mean_col = [col for col in field_cols if col.startswith('mean_')][0]
+        sd_col = [col for col in field_cols if col.startswith('sd_')][0]
+        cp_means = conceptual_points[mean_col].values
+        cp_sds = conceptual_points[sd_col].values
+    else:
+        # Default values if not specified
+        cp_means = np.ones(len(cp_coords))
+        cp_sds = np.ones(len(cp_coords)) * 0.5
+
+    # Interpolate 3D tensors to grid points
+    print("  Interpolating 3D tensors...")
+    interp_tensors_3d = interpolate_tensors_3d(cp_coords, cp_tensors_3d, grid_coords,
+                                               tensor_interp=tensor_interp, zones=zones)
+
+    # Handle zones for 3D
+    zones_3d = None
+    if zones is not None:
+        if len(zones.shape) == 2:
+            # 2D zones - replicate for each layer
+            zones_3d = np.tile(zones[np.newaxis, :, :], (nz, 1, 1))
+        else:
+            # Already 3D zones
+            zones_3d = zones
+
+    # Interpolate mean field using tensor-aware kriging
+    print("  Interpolating mean field with 3D tensor-aware kriging...")
+    mean_field_1d = tensor_aware_kriging(
+        cp_coords, cp_means, grid_coords, interp_tensors_3d,
+        variogram_model='exponential', sill=1.0, nugget=0.01,
+        zones=zones_3d
+    )
+    mean_field_3d = mean_field_1d.reshape(shape)
+
+    # Interpolate standard deviation field
+    print("  Interpolating standard deviation field...")
+    sd_field_1d = tensor_aware_kriging(
+        cp_coords, cp_sds, grid_coords, interp_tensors_3d,
+        variogram_model='exponential', sill=0.5, nugget=0.01,
+        zones=zones_3d
+    )
+    sd_field_3d = sd_field_1d.reshape(shape)
+
+    # Generate correlated noise using 3D tensors
+    print("  Generating 3D correlated noise...")
+    # Flatten for noise generation, then reshape
+    grid_coords_flat = grid_coords
+    tensors_flat = interp_tensors_3d
+    iids_flat = iids.flatten()
+
+    correlated_noise_flat = generate_correlated_noise_3d(
+        grid_coords_flat, tensors_flat, iids_flat,
+        n_neighbors=50, anisotropy_strength=1.0
+    )
+    correlated_noise_3d = correlated_noise_flat.reshape(shape)
+
+    # Combine mean, scaled noise
+    log_mean_field = np.log10(np.maximum(mean_field_3d, 1e-8))  # Avoid log(0)
+    field_3d = 10 ** (log_mean_field + correlated_noise_3d * sd_field_3d)
+
+    print(f"  Generated 3D field with shape {field_3d.shape}")
+    print(f"  Field stats: mean={np.mean(field_3d):.3f}, std={np.std(field_3d):.3f}")
+
+    # Export to ParaView
+    export_3d_results_to_paraview(
+        field_3d=field_3d,
+        tensors_3d=interp_tensors_3d,
+        grid_coords=grid_coords,
+        shape=shape,
+        zones=zones,
+        conceptual_points=conceptual_points,
+        save_path=save_path,
+        field_name='permeability'
+    )
+
+    return field_3d
+
+
 
 
 def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
@@ -367,7 +493,7 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
     # Step 1: Create geological tensors from conceptual points
     print("  Creating geological correlation tensors...")
     major = conceptual_points['major'].values
-    minor = major / conceptual_points['anisotropy'].values
+    minor = conceptual_points['transverse'].values
 
     # Better normalization that preserves direction
     def normalize_bearing(bearing):
@@ -436,7 +562,9 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
     correlated_noise_2d = correlated_noise_1d.reshape(shape)
 
     # Step 7: Combine into lognormal field - all operations in 2D
-    field_2d = 10 ** (np.log10(interp_means_2d) + correlated_noise_2d * interp_sd_2d)
+
+    log_mean_field = np.log10(np.maximum(interp_means_2d, 1e-8))  # Avoid log(0)
+    field_2d = 10 ** (log_mean_field + correlated_noise_2d * interp_sd_2d)
 
     return field_2d, geological_tensors
 
@@ -782,6 +910,7 @@ def estimate_boundary_direction(zones, center_i, center_j, radius=2):
     return boundary_direction
 
 
+
 def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
                          variogram_model='exponential', sill=1.0, nugget=0.01,
                          background_value=0.0, max_search_radius=1e20, min_points=1,
@@ -793,13 +922,13 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
     Parameters
     ----------
     cp_coords : np.ndarray
-        Conceptual point coordinates, shape (n_cp, 2)
+        Conceptual point coordinates, shape (n_cp, 2) for 2D or (n_cp, 3) for 3D
     cp_values : np.ndarray
         Values at conceptual points, shape (n_cp,)
     grid_coords : np.ndarray
-        Grid coordinates, shape (n_grid, 2) or (n_grid, 3)
+        Grid coordinates, shape (n_grid, 2) for 2D or (n_grid, 3) for 3D
     interp_tensors : np.ndarray
-        Interpolated tensors at grid points, shape (n_grid, 2, 2)
+        Interpolated tensors at grid points, shape (n_grid, 2, 2) for 2D or (n_grid, 3, 3) for 3D
     variogram_model : str, default 'exponential'
         Variogram model: 'exponential', 'gaussian', or 'spherical'
     sill : float, default 1.0
@@ -819,25 +948,44 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
     min_value : float, default 1e-8
         Minimum value for log transform
     zones : np.ndarray, optional
-        Zone IDs for zone-aware kriging, shape (ny, nx)
+        Zone IDs for zone-aware kriging. Shape (ny, nx) for 2D or (nz, ny, nx) for 3D
 
     Returns
     -------
     np.ndarray
-        Interpolated values, shape (ny, nx)
+        Interpolated values. Shape (ny, nx) for 2D grids or (nz, ny, nx) for 3D grids
     """
     n_grid = len(grid_coords)
+    n_dims = grid_coords.shape[1]
 
     # Get shape from zones if provided, or infer from grid
     if zones is not None:
         shape = zones.shape
-        ny, nx = shape
+        if n_dims == 2:
+            ny, nx = shape
+        else:  # 3D zones would be (nz, ny, nx)
+            nz, ny, nx = shape
     else:
-        # Infer shape from grid coordinates
-        x_unique = np.unique(grid_coords[:, 0])
-        y_unique = np.unique(grid_coords[:, 1])
-        ny, nx = len(y_unique), len(x_unique)
-        shape = (ny, nx)
+        # Use existing function to infer shape
+        shape = infer_grid_shape(grid_coords)
+        if n_dims == 2:
+            ny, nx = shape[1], shape[2]  # shape is (1, ny, nx)
+        else:
+            nz, ny, nx = shape
+
+    # Define index conversion functions based on dimensions
+    if n_dims == 3:
+        def get_indices(idx):
+            layer = idx // (ny * nx)
+            remainder = idx % (ny * nx)
+            row = remainder // nx
+            col = remainder % nx
+            return layer, row, col
+    else:
+        def get_indices(idx):
+            row = idx // nx
+            col = idx % nx
+            return row, col
 
     interp_values_1d = np.full(n_grid, background_value)
 
@@ -848,16 +996,24 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
             # Find closest grid point to get zone
             distances = np.sum((grid_coords - coord) ** 2, axis=1)
             closest_idx = np.argmin(distances)
-            row, col = divmod(closest_idx, nx)
-            cp_zones.append(zones[row, col])
+            if n_dims == 3:
+                layer, row, col = get_indices(closest_idx)
+                cp_zones.append(zones[layer, row, col])
+            else:
+                row, col = get_indices(closest_idx)
+                cp_zones.append(zones[row, col])
         cp_zones = np.array(cp_zones)
 
     for i in range(n_grid):
         local_tensor = interp_tensors[i]
         if zones is not None:
             # Get current zone and filter conceptual points
-            row, col = divmod(i, nx)
-            current_zone = zones[row, col]
+            if n_dims == 3:
+                layer, row, col = get_indices(i)
+                current_zone = zones[layer, row, col]
+            else:
+                row, col = get_indices(i)
+                current_zone = zones[row, col]
 
             # Filter to same zone, fallback to all if insufficient points found
             zone_mask = cp_zones == current_zone
@@ -951,7 +1107,6 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
     if transform == 'log':
         interp_values_1d = 10 ** interp_values_1d
 
-    # ALWAYS convert to 2D - no exceptions
     return interp_values_1d.reshape(shape)
 
 
@@ -1009,6 +1164,70 @@ def interpolate_tensors_2d(cp_coords, cp_tensors, grid_coords, tensor_interp='id
     return interp_tensors
 
 
+def interpolate_tensors_3d(cp_coords, cp_tensors, grid_coords, tensor_interp='idw', zones=None):
+    """
+    Interpolate 3x3 tensors using log-Euclidean approach (same as 2D but for 3x3).
+    """
+    n_grid = len(grid_coords)
+    interp_tensors = np.zeros((n_grid, 3, 3))
+
+    if tensor_interp == 'nearest' and zones is not None:
+        interp_tensors = _nearest_interpolation_3d(cp_coords, cp_tensors, grid_coords, zones)
+    else:
+        # Log-Euclidean approach - ensure positive definiteness first
+        log_tensors = np.zeros_like(cp_tensors)
+
+        for i, tensor in enumerate(cp_tensors):
+            # Ensure positive definiteness by eigenvalue regularization
+            eigenvals, eigenvecs = np.linalg.eigh(tensor)
+            min_eigenval = 1e-8  # Minimum eigenvalue to ensure positive definiteness
+            eigenvals_reg = np.maximum(eigenvals, min_eigenval)
+
+            # Reconstruct positive definite tensor
+            tensor_reg = eigenvecs @ np.diag(eigenvals_reg) @ eigenvecs.T
+
+            # Take matrix logarithm
+            log_tensors[i] = logm(tensor_reg)
+
+        # Interpolate each independent component of the symmetric log tensor
+        # For a 3x3 symmetric matrix, we have 6 independent components
+        interp_log_tensors = np.zeros((n_grid, 3, 3))
+
+        for i in range(3):
+            for j in range(i, 3):  # Only upper triangle (symmetric)
+                values = log_tensors[:, i, j].real  # Take real part to handle numerical errors
+
+                if tensor_interp == 'idw':
+                    interp_values = _idw_interpolation(cp_coords, values, grid_coords)
+                elif tensor_interp == 'krig':
+                    interp_values = ordinary_kriging(cp_coords, values, grid_coords,
+                                                     variogram_model='exponential', range_param=10000,
+                                                     sill=1.0, nugget=0.1)
+
+                interp_log_tensors[:, i, j] = interp_values
+                if i != j:  # Fill symmetric part
+                    interp_log_tensors[:, j, i] = interp_values
+
+        # Convert back from log space, ensuring positive definiteness
+        for i in range(n_grid):
+            try:
+                # Matrix exponential
+                tensor_exp = expm(interp_log_tensors[i])
+
+                # Ensure the result is positive definite (numerical stability)
+                eigenvals, eigenvecs = np.linalg.eigh(tensor_exp)
+                min_eigenval = 1e-8
+                eigenvals_reg = np.maximum(eigenvals, min_eigenval)
+
+                interp_tensors[i] = eigenvecs @ np.diag(eigenvals_reg) @ eigenvecs.T
+
+            except Exception as e:
+                print(f"Warning: Matrix exponential failed at grid point {i}, using identity: {e}")
+                interp_tensors[i] = np.eye(3)
+
+    return interp_tensors
+
+
 def _idw_interpolation(cp_coords, cp_values, grid_coords):
     """
     Special version of idw for tensor interpolation that returns 1D output.
@@ -1059,6 +1278,62 @@ def generate_correlated_noise_2d(grid_coords, tensors, iids,
         for j in neighbor_indices:
             # Use anisotropic distance instead of actual distance for weight calculation
             # This respects the tensor-defined correlation structure
+            weight = np.exp(-(aniso_distances[j]) ** 2)
+            weighted_sum += weight * iids.flatten()[j]
+            sum_weights += weight
+
+        if sum_weights > 1e-10:
+            correlated_noise[i] = weighted_sum / sum_weights
+        else:
+            correlated_noise[i] = iids[i]
+
+    return correlated_noise
+
+
+def generate_correlated_noise_3d(grid_coords, tensors, iids,
+                                 n_neighbors=50, anisotropy_strength=1.0):
+    """Generate spatially correlated noise respecting 3D tensor anisotropy."""
+    n_points = len(grid_coords)
+    correlated_noise = np.zeros(n_points)
+
+    for i in range(n_points):
+        evals, evecs = np.linalg.eigh(tensors[i])
+
+        # Sort eigenvalues/vectors by magnitude (largest to smallest)
+        sort_idx = np.argsort(evals)[::-1]
+        evals = evals[sort_idx]
+        evecs = evecs[:, sort_idx]
+
+        # Extract correlation lengths (sqrt of eigenvalues)
+        major_corr_length = np.sqrt(evals[0])  # Largest eigenvalue
+        intermediate_corr_length = np.sqrt(evals[1])  # Middle eigenvalue
+        minor_corr_length = np.sqrt(evals[2])  # Smallest eigenvalue
+
+        # Apply anisotropy strength scaling
+        scale_major = major_corr_length * anisotropy_strength
+        scale_intermediate = intermediate_corr_length  # Keep intermediate neutral
+        scale_minor = minor_corr_length / anisotropy_strength
+
+        # Create 3D transformation matrix
+        transform = evecs @ np.diag([scale_major, scale_intermediate, scale_minor])
+
+        # Transform all grid points relative to current point
+        all_dx = grid_coords - grid_coords[i]
+        try:
+            inv_transform = np.linalg.inv(transform)
+            dx_transformed = all_dx @ inv_transform.T
+            aniso_distances = np.linalg.norm(dx_transformed, axis=1)
+        except np.linalg.LinAlgError:
+            # Fallback to Euclidean distance if transform is singular
+            aniso_distances = np.linalg.norm(all_dx, axis=1)
+
+        neighbor_indices = np.argsort(aniso_distances)[:min(n_neighbors, n_points)]
+
+        weighted_sum = 0.0
+        sum_weights = 0.0
+
+        for j in neighbor_indices:
+            # Use anisotropic distance for weight calculation
             weight = np.exp(-(aniso_distances[j]) ** 2)
             weighted_sum += weight * iids.flatten()[j]
             sum_weights += weight
@@ -1144,11 +1419,6 @@ def ordinary_kriging(cp_coords, cp_values, grid_coords,
     return interp_values
 
 
-def generate_field_3d(conceptual_points, grid_coords, shape):
-    """Placeholder for full 3D field generation (not implemented)."""
-    raise NotImplementedError("Use layer_mode=True for now")
-
-
 
 def create_2d_tensors(theta, major, minor):
     """Create 2x2 anisotropy tensors from geostatistical parameters."""
@@ -1183,67 +1453,46 @@ def create_2d_tensors(theta, major, minor):
     return tensors.squeeze() if n == 1 else tensors
 
 
-def create_3d_tensors(bearing, dip, major, intermediate, minor):
+def create_3d_tensors(bearing, dip, major, transverse, normal):
     """
     Create 3x3 anisotropy tensors from geostatistical parameters using geological convention.
 
-    Parameters:
-    -----------
-    bearing : float or array
-        Bearing angle in radians, clockwise from north (0 = north, π/2 = east)
-    dip : float or array
-        Dip angle in radians, downward from horizontal (0 = horizontal, π/2 = vertical down)
-    major : float or array
-        Major axis magnitude (σ₁)
-    intermediate : float or array
-        Intermediate axis magnitude (σ₂)
-    minor : float or array
-        Minor axis magnitude (σ₃)
-
-    Convention:
-    -----------
-    - Bearing: Clockwise rotation around vertical axis, north = 0°
-    - Dip: Clockwise rotation around minor horizontal axis, horizontal = 0°
-    - This constrains the minor axis to remain horizontal
-
-    Returns:
-    --------
-    tensors : ndarray
-        3x3 tensor(s) with shape (3,3) for single input or (n,3,3) for arrays
+    [Same docstring as original]
     """
     bearing = np.atleast_1d(bearing)
     dip = np.atleast_1d(dip)
     major = np.atleast_1d(major)
-    intermediate = np.atleast_1d(intermediate)
-    minor = np.atleast_1d(minor)
+    transverse = np.atleast_1d(transverse)
+    normal = np.atleast_1d(normal)
 
     n = len(bearing)
     tensors = np.zeros((n, 3, 3))
 
     for i in range(n):
+        # Ensure minimum values to prevent numerical issues
+        min_axis = 1e-6
+        major_val = max(major[i], min_axis)
+        transverse_val = max(transverse[i], min_axis)
+        normal_val = max(normal[i], min_axis)
+
         # Step 1: Create diagonal tensor in principal axes coordinate system
-        # [minor_horizontal, major, intermediate]
-        S = np.diag([minor[i] ** 2, major[i] ** 2, intermediate[i] ** 2])
+        # Order: [transverse, major, normal]
+        S = np.diag([transverse_val ** 2, major_val ** 2, normal_val ** 2])
 
         # Step 2: Rotation around vertical (z) axis by bearing
-        # This rotates in horizontal plane, geological convention (clockwise from north)
         cos_bearing = np.cos(bearing[i])
         sin_bearing = np.sin(bearing[i])
 
-        # For geological bearing: north=[0,1,0], east=[1,0,0]
-        # Bearing direction = [sin(bearing), cos(bearing), 0]
         R_bearing = np.array([
             [cos_bearing, sin_bearing, 0],
             [-sin_bearing, cos_bearing, 0],
             [0, 0, 1]
         ])
 
-        # Step 3: Rotation around minor horizontal axis by dip
-        # This tilts the major/intermediate plane down from horizontal
+        # Step 3: Rotation around transverse axis (x-axis) by dip
         cos_dip = np.cos(dip[i])
         sin_dip = np.sin(dip[i])
 
-        # Clockwise rotation around x-axis (minor horizontal axis)
         R_dip = np.array([
             [1, 0, 0],
             [0, cos_dip, sin_dip],
@@ -1255,6 +1504,9 @@ def create_3d_tensors(bearing, dip, major, intermediate, minor):
 
         # Step 5: Transform tensor
         tensors[i] = R_total @ S @ R_total.T
+
+        # Ensure symmetry (handle numerical errors)
+        tensors[i] = 0.5 * (tensors[i] + tensors[i].T)
 
     return tensors.squeeze() if n == 1 else tensors
 
@@ -1947,8 +2199,234 @@ def analyze_tensor_statistics(geological_tensors, grid_coords, zones):
         print()
 
 
+def export_to_paraview(grid_coords, shape, field_data=None, tensor_data=None,
+                       zones=None, conceptual_points=None, save_path='.',
+                       filename='field_3d'):
+    """
+    Export 3D field and tensor data to ParaView-compatible VTK files.
+
+    Parameters
+    ----------
+    grid_coords : np.ndarray
+        Grid coordinates, shape (n_points, 3)
+    shape : tuple
+        Grid shape (nz, ny, nx)
+    field_data : dict, optional
+        Dictionary of field arrays to export, e.g. {'permeability': field_array}
+        Each array should have shape (nz, ny, nx)
+    tensor_data : np.ndarray, optional
+        Tensor field, shape (n_points, 3, 3)
+    zones : np.ndarray, optional
+        Zone array, shape (nz, ny, nx) or (ny, nx)
+    conceptual_points : pd.DataFrame, optional
+        Conceptual points with x, y, z, bearing, dip columns
+    save_path : str, default '.'
+        Directory to save VTK files
+    filename : str, default 'field_3d'
+        Base filename for output files
+
+    Returns
+    -------
+    None
+        Saves .vtr (structured grid) and .vtp (point cloud) files
+    """
+    try:
+        import vtk
+        from vtk.util import numpy_support
+    except ImportError:
+        print("VTK not installed. Install with: pip install vtk")
+        return
+
+    nz, ny, nx = shape
+
+    # Create structured grid for field data
+    if field_data is not None or tensor_data is not None or zones is not None:
+        grid = vtk.vtkStructuredGrid()
+        grid.SetDimensions(nx, ny, nz)
+
+        # Set points
+        points = vtk.vtkPoints()
+        grid_coords_reshaped = grid_coords.reshape(shape + (3,))
+
+        # VTK expects points in a specific order (k varies fastest, then j, then i)
+        for k in range(nz):
+            for j in range(ny):
+                for i in range(nx):
+                    x, y, z = grid_coords_reshaped[k, j, i]
+                    points.InsertNextPoint(x, y, z)
+
+        grid.SetPoints(points)
+
+        # Add field data
+        if field_data is not None:
+            for field_name, field_array in field_data.items():
+                # Reshape and reorder for VTK
+                field_flat = field_array.flatten(order='F')  # Fortran order for VTK
+                field_vtk = numpy_support.numpy_to_vtk(field_flat)
+                field_vtk.SetName(field_name)
+                grid.GetPointData().AddArray(field_vtk)
+                if grid.GetPointData().GetScalars() is None:
+                    grid.GetPointData().SetScalars(field_vtk)
+
+        # Add zones
+        if zones is not None:
+            if len(zones.shape) == 2:
+                # 2D zones - replicate for each layer
+                zones_3d = np.tile(zones[np.newaxis, :, :], (nz, 1, 1))
+            else:
+                zones_3d = zones
+
+            zones_flat = zones_3d.flatten(order='F')
+            zones_vtk = numpy_support.numpy_to_vtk(zones_flat)
+            zones_vtk.SetName('zones')
+            grid.GetPointData().AddArray(zones_vtk)
+
+        # Add tensor data
+        if tensor_data is not None:
+            # Convert 3x3 tensors to VTK format (symmetric tensors)
+            n_points = len(tensor_data)
+            tensor_array = np.zeros((n_points, 6))  # VTK uses 6-component symmetric tensors
+
+            for i in range(n_points):
+                tensor = tensor_data[i]
+                # VTK tensor format: [xx, yy, zz, xy, yz, xz]
+                tensor_array[i] = [tensor[0, 0], tensor[1, 1], tensor[2, 2],
+                                   tensor[0, 1], tensor[1, 2], tensor[0, 2]]
+
+            # Reorder for VTK grid
+            tensor_reordered = np.zeros_like(tensor_array)
+            idx = 0
+            for k in range(nz):
+                for j in range(ny):
+                    for i in range(nx):
+                        grid_idx = k * ny * nx + j * nx + i
+                        tensor_reordered[idx] = tensor_array[grid_idx]
+                        idx += 1
+
+            tensor_vtk = numpy_support.numpy_to_vtk(tensor_reordered)
+            tensor_vtk.SetName('tensors')
+            tensor_vtk.SetNumberOfComponents(6)
+            grid.GetPointData().SetTensors(tensor_vtk)
+
+        # Write structured grid
+        writer = vtk.vtkXMLStructuredGridWriter()
+        grid_filename = os.path.join(save_path, f'{filename}_grid.vts')
+        writer.SetFileName(grid_filename)
+        writer.SetInputData(grid)
+        writer.Write()
+        print(f"Saved structured grid to {grid_filename}")
+
+    # Create point cloud for conceptual points
+    if conceptual_points is not None:
+        points = vtk.vtkPoints()
+        polydata = vtk.vtkPolyData()
+
+        # Add points
+        for idx, row in conceptual_points.iterrows():
+            x, y = row['x'], row['y']
+            z = row.get('z', 0)  # Default z=0 if not provided
+            points.InsertNextPoint(x, y, z)
+
+        polydata.SetPoints(points)
+
+        # Create vertices
+        vertices = vtk.vtkCellArray()
+        for i in range(points.GetNumberOfPoints()):
+            vertices.InsertNextCell(1)
+            vertices.InsertCellPoint(i)
+        polydata.SetVerts(vertices)
+
+        # Add conceptual point data
+        for col in conceptual_points.columns:
+            if col in ['x', 'y', 'z']:
+                continue
+
+            values = conceptual_points[col].values
+            if np.issubdtype(values.dtype, np.number):
+                vtk_array = numpy_support.numpy_to_vtk(values)
+                vtk_array.SetName(col)
+                polydata.GetPointData().AddArray(vtk_array)
+
+        # Add tensor glyphs if we have bearing/dip data
+        if 'bearing' in conceptual_points.columns and 'dip' in conceptual_points.columns:
+            # Create orientation vectors for visualization
+            n_cp = len(conceptual_points)
+            orientations = np.zeros((n_cp, 3))
+
+            for i, (_, row) in enumerate(conceptual_points.iterrows()):
+                bearing_rad = np.radians(row['bearing'])
+                dip_rad = np.radians(row.get('dip', 0))
+
+                # Convert geological convention to cartesian
+                # Bearing: CW from north, Dip: down from horizontal
+                x_comp = np.sin(bearing_rad) * np.cos(dip_rad)
+                y_comp = np.cos(bearing_rad) * np.cos(dip_rad)
+                z_comp = -np.sin(dip_rad)  # Negative because dip is down
+
+                orientations[i] = [x_comp, y_comp, z_comp]
+
+            orientation_vtk = numpy_support.numpy_to_vtk(orientations)
+            orientation_vtk.SetName('orientations')
+            orientation_vtk.SetNumberOfComponents(3)
+            polydata.GetPointData().SetVectors(orientation_vtk)
+
+        # Write point cloud
+        writer = vtk.vtkXMLPolyDataWriter()
+        points_filename = os.path.join(save_path, f'{filename}_conceptual_points.vtp')
+        writer.SetFileName(points_filename)
+        writer.SetInputData(polydata)
+        writer.Write()
+        print(f"Saved conceptual points to {points_filename}")
+
+    print("\nParaView visualization tips:")
+    print("1. Load both .vts and .vtp files in ParaView")
+    print("2. For field data: Use 'Volume' or 'Slice' representation")
+    print("3. For tensors: Add 'Tensor Glyph' filter to show ellipsoids")
+    print("4. For conceptual points: Use 'Glyph' filter with 'Arrow' glyphs")
+    print("5. Use 'Clip' or 'Slice' filters to see inside the 3D volume")
+
+
+# Helper function to integrate with your existing workflow
+def export_3d_results_to_paraview(field_3d, tensors_3d, grid_coords, shape,
+                                  zones=None, conceptual_points=None,
+                                  save_path='.', field_name='permeability'):
+    """
+    Convenience function to export your 3D results to ParaView.
+
+    Parameters
+    ----------
+    field_3d : np.ndarray
+        Field values, shape (nz, ny, nx)
+    tensors_3d : np.ndarray
+        3D tensors, shape (n_points, 3, 3)
+    grid_coords : np.ndarray
+        Grid coordinates, shape (n_points, 3)
+    shape : tuple
+        Grid shape (nz, ny, nx)
+    zones : np.ndarray, optional
+        Zone data
+    conceptual_points : pd.DataFrame, optional
+        Conceptual points
+    save_path : str
+        Output directory
+    field_name : str
+        Name for the field data
+    """
+    field_data = {field_name: field_3d}
+
+    export_to_paraview(
+        grid_coords=grid_coords,
+        shape=shape,
+        field_data=field_data,
+        tensor_data=tensors_3d,
+        zones=zones,
+        conceptual_points=conceptual_points,
+        save_path=save_path,
+        filename=f'{field_name}_3d'
+    )
+
 # ============================================================================
-# EXAMPLE USAGE - UNCHANGED FUNCTIONALITY
+# EXAMPLE USAGE
 # ============================================================================
 
 # Example usage
@@ -1969,7 +2447,7 @@ if __name__ == "__main__":
         grid_file=r'C:\modelling\sva_ds\data\grid.dat',
         zone_file=r'C:\modelling\sva_ds\data\waq_arr.geoclass_simple.arr',
         field_name=['kh'],
-        layer_mode=True,
+        layer_mode=False,
         save_path=r'C:\modelling\sva_ds\data\output_nearest',
         tensor_interp='nearest'
     )
