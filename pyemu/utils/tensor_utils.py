@@ -202,12 +202,12 @@ def generate_fields_from_files(data_dir, conceptual_points_file, grid_file, zone
                 iids[i] = layer_iids.reshape(ny, nx)
                 print(f"  Loaded iids layer {i + 1} from {os.path.join(data_dir, file_path)}")
         else:
-            if '{' in iids_name:
+            if '{' in iids_file:
                 # Pattern like "iids_layer{}.arr"
-                pattern = os.path.join(data_dir, iids_name)
+                pattern = os.path.join(data_dir, iids_file)
             else:
                 # Assume pattern from filename
-                name, ext = os.path.splitext(iids_name)
+                name, ext = os.path.splitext(iids_file)
                 pattern = os.path.join(data_dir, f"{name}_layer{{}}{ext}")
 
             iids = np.zeros(shape)
@@ -272,7 +272,7 @@ def generate_fields_from_files(data_dir, conceptual_points_file, grid_file, zone
             # Process by layer
             cols = cols + ['layer']
             field = generate_field_by_layer(conceptual_points[cols], grid_coords, iids,
-                                            shape, zones=zones, save_path=save_path,
+                                            shape, zones=zones_3d, save_path=save_path,
                                             tensor_interp=tensor_interp)
         else:
             # Process full 3D - pass the 3D zones
@@ -444,16 +444,8 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
         print(f"    Point {i}: Eigenvalues={eigenvals}, All positive={np.all(eigenvals > 0)}")
 
     # Step 2: Interpolate tensors using zone-based approach
-    if zones_3d is not None:
-        print("  Interpolating 3D geological tensors by zone...")
-        geological_tensors_3d = interpolate_tensors_by_zone(
-            cp_coords, cp_tensors_3d, grid_coords, zones_3d, tensor_interp=tensor_interp
-        )
-    else:
-        print("  Interpolating 3D geological tensors globally...")
-        geological_tensors_3d = interpolate_tensors_3d(
-            cp_coords, cp_tensors_3d, grid_coords, tensor_interp=tensor_interp
-        )
+    geological_tensors_3d = interpolate_tensors(cp_coords, cp_tensors_3d, grid_coords,
+                                                zones=zones_3d, method=tensor_interp)
 
     # Step 3: Interpolate means using zone-aware kriging
     print("  Interpolating mean field with 3D geological structure...")
@@ -605,16 +597,9 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
         extracted_bearing = get_tensor_bearing(cp_tensors[i], original_bearing)
         print(f"    Point {i}: Input bearing={original_bearing:.1f}°, Extracted={extracted_bearing:.1f}°")
 
-    # Step 2: Interpolate tensors, can be fast/coarse zone based
-    if zones is not None:
-        print("  Interpolating geological tensors by zone...")
-        geological_tensors = interpolate_tensors_by_zone(
-            cp_coords, cp_tensors, grid_coords_2d, zones, tensor_interp=tensor_interp
-        )
-    else:
-        print("  Interpolating geological tensors globally...")
-        geological_tensors = interpolate_tensors_2d(cp_coords, cp_tensors, grid_coords_2d,
-                                                    tensor_interp=tensor_interp)
+    # Step 2: Interpolate tensors, various methods
+    geological_tensors = interpolate_tensors(cp_coords, cp_tensors, grid_coords_2d,
+                                             zones=zones, method=tensor_interp)
 
     # Step 3: Interpolate means using zone-aware kriging - returns 2D
     print("  Interpolating means with geological structure...")
@@ -661,88 +646,232 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
     return field_2d, geological_tensors
 
 
-def _nearest_interpolation(cp_coords, cp_tensors, grid_coords, zones):
-    """Zone-based nearest neighbor tensor assignment - no interpolation.
+def interpolate_tensors(cp_coords, cp_tensors, grid_coords, zones=None, method='idw'):
+    """
+    Single tensor interpolation function - replaces all the variants.
 
     Parameters
     ----------
-    cp_coords : np.ndarray
-        Conceptual point coordinates, shape (n_cp, ndim)
-    cp_tensors : np.ndarray
-        Conceptual point tensors, shape (n_cp, ndim, ndim)
-    grid_coords : np.ndarray
-        Grid coordinates, shape (n_grid, ndim)
-    zones : np.ndarray
-        Zone IDs, shape (ny, nx) for 2D or (nz, ny, nx) for 3D
+    zones : np.ndarray, optional
+        If provided, interpolation is done within zones
+    method : str, default 'idw'
+        'nearest', 'idw', or 'krig'
     """
-    shape = zones.shape
-    ndim = len(shape)  # 2 for 2D, 3 for 3D
-    n_grid = len(grid_coords)
-
-    # Handle 2D and 3D cases
-    if ndim == 2:
-        ny, nx = shape
-    elif ndim == 3:
-        nz, ny, nx = shape
+    if zones is not None:
+        return _interpolate_by_zone(cp_coords, cp_tensors, grid_coords, zones, method)
     else:
-        raise ValueError(f"zones must be 2D or 3D, got shape {shape}")
+        return _interpolate_global(cp_coords, cp_tensors, grid_coords, method)
 
-    # Get zone for each conceptual point
+
+def _interpolate_by_zone(cp_coords, cp_tensors, grid_coords, zones, method):
+    """Handle zone-based interpolation."""
+    n_grid = len(grid_coords)
+    tensor_size = cp_tensors.shape[-1]
+    result = np.zeros((n_grid, tensor_size, tensor_size))
+
+    # Get zone assignment function based on zones shape
+    if len(zones.shape) == 2:
+        ny, nx = zones.shape
+        get_zone = lambda i: zones[divmod(i, nx)]
+    else:
+        nz, ny, nx = zones.shape
+        get_zone = lambda i: zones[i // (ny * nx), (i % (ny * nx)) // nx, i % nx]
+
+    # Assign conceptual points to zones
     cp_zones = assign_conceptual_points_to_zones(cp_coords, grid_coords, zones)
 
-    # Initialize output tensors - infer tensor size from cp_tensors
-    tensor_size = cp_tensors.shape[-1]  # Last dimension gives tensor size
-    geological_tensors = np.zeros((n_grid, tensor_size, tensor_size))
-
-    # Get unique zones
-    unique_zones = np.unique(zones)
-
-    for zone_id in unique_zones:
-        print(f"    Assigning nearest neighbor tensors for zone {zone_id}")
-
-        # Find conceptual points in this zone
+    # Process each zone
+    for zone_id in np.unique(zones):
         zone_cp_mask = cp_zones == zone_id
         zone_cp_coords = cp_coords[zone_cp_mask]
         zone_cp_tensors = cp_tensors[zone_cp_mask]
 
-        # Find grid points in this zone
-        zone_indices = []
+        zone_indices = [i for i in range(n_grid) if get_zone(i) == zone_id]
 
-        if ndim == 2:
-            # 2D case
-            for i in range(n_grid):
-                row, col = divmod(i, nx)
-                if zones[row, col] == zone_id:
-                    zone_indices.append(i)
+        if len(zone_cp_coords) > 0 and len(zone_indices) > 0:
+            zone_grid_coords = grid_coords[zone_indices]
+            zone_tensors = _interpolate_global(zone_cp_coords, zone_cp_tensors,
+                                               zone_grid_coords, method)
+            result[zone_indices] = zone_tensors
+        elif len(zone_indices) > 0:
+            # Default tensor for zones without conceptual points
+            default_tensor = np.eye(tensor_size) * 1000 ** 2
+            result[zone_indices] = default_tensor
+
+    return result
+
+
+def _interpolate_global(cp_coords, cp_tensors, grid_coords, method):
+    """Handle global interpolation without zones."""
+    if method == 'nearest':
+        return _nearest_method(cp_coords, cp_tensors, grid_coords)
+    elif method == 'idw':
+        return _idw_method(cp_coords, cp_tensors, grid_coords)
+    elif method == 'krig':
+        return _kriging_method(cp_coords, cp_tensors, grid_coords)
+    else:
+        raise ValueError(f"Unknown method: {method}")
+
+
+def _nearest_method(cp_coords, cp_tensors, grid_coords):
+    """Nearest neighbor interpolation."""
+    from scipy.spatial.distance import cdist
+    distances = cdist(grid_coords, cp_coords)
+    nearest_indices = np.argmin(distances, axis=1)
+    return cp_tensors[nearest_indices]
+
+
+def _idw_method(cp_coords, cp_tensors, grid_coords):
+    """IDW using log-Euclidean approach."""
+    n_grid = len(grid_coords)
+    tensor_size = cp_tensors.shape[-1]
+
+    # Convert to log space
+    log_tensors = np.array([logm(_ensure_positive_definite(tensor))
+                            for tensor in cp_tensors])
+
+    # Interpolate each component
+    result_log = np.zeros((n_grid, tensor_size, tensor_size))
+
+    for i in range(tensor_size):
+        for j in range(i, tensor_size):
+            values = log_tensors[:, i, j].real
+            interp_values = _idw_interpolation(cp_coords, values, grid_coords)
+            result_log[:, i, j] = interp_values
+            if i != j:
+                result_log[:, j, i] = interp_values
+
+    # Convert back from log space
+    result = np.array([_ensure_positive_definite(expm(log_tensor))
+                       for log_tensor in result_log])
+    return result
+
+
+def _kriging_method(cp_coords, cp_tensors, grid_coords):
+    """Kriging using log-Euclidean approach."""
+    n_grid = len(grid_coords)
+    tensor_size = cp_tensors.shape[-1]
+
+    # Convert to log space
+    log_tensors = np.array([logm(_ensure_positive_definite(tensor))
+                            for tensor in cp_tensors])
+
+    # Interpolate each component
+    result_log = np.zeros((n_grid, tensor_size, tensor_size))
+
+    for i in range(tensor_size):
+        for j in range(i, tensor_size):
+            values = log_tensors[:, i, j].real
+            interp_values = ordinary_kriging(cp_coords, values, grid_coords,
+                                             variogram_model='exponential', range_param=10000,
+                                             sill=1.0, nugget=0.1, background_value=0.0,
+                                             max_search_radius=1e20, min_points=1,
+                                             transform=None, min_value=1e-8, max_neighbors=5)
+            result_log[:, i, j] = interp_values
+            if i != j:
+                result_log[:, j, i] = interp_values
+
+    # Convert back from log space
+    result = np.array([_ensure_positive_definite(expm(log_tensor))
+                       for log_tensor in result_log])
+    return result
+
+def ordinary_kriging(cp_coords, cp_values, grid_coords,
+                     variogram_model='exponential', range_param=10000,
+                     sill=1.0, nugget=0.1, background_value=0.0,
+                     max_search_radius=1e20, min_points=1,
+                     transform=None, min_value=1e-8, max_neighbors=5):
+    """
+    Standard ordinary kriging with variogram models and search controls.
+
+    Returns
+    -------
+    np.ndarray
+        Interpolated values (1D array) - kept as 1D since this is a utility function
+    """
+    n_grid = len(grid_coords)
+    interp_values = np.full(n_grid, background_value)
+
+    def variogram(h):
+        if variogram_model == 'exponential':
+            return nugget + (sill - nugget) * (1 - np.exp(-h / range_param))
+        elif variogram_model == 'gaussian':
+            return nugget + (sill - nugget) * (1 - np.exp(-(h ** 2) / (range_param ** 2)))
+        else:  # spherical
+            return np.where(h <= range_param,
+                            nugget + (sill - nugget) * (1.5 * h / range_param - 0.5 * (h / range_param) ** 3),
+                            sill)
+
+    for i in range(n_grid):
+        distances = np.linalg.norm(cp_coords - grid_coords[i], axis=1)
+        sorted_indices = np.argsort(distances)
+        n_candidates = min(max_neighbors or len(distances),
+                           np.sum(distances <= max_search_radius))
+
+        if n_candidates < min_points:
+            continue
+
+        closest_indices = sorted_indices[:n_candidates]
+        nearby_values = cp_values[closest_indices]
+        nearby_coords = cp_coords[closest_indices]
+        nearby_distances = distances[closest_indices]
+
+        if transform == 'log':
+            if min_value is None:
+                positive_values = nearby_values[nearby_values > 0]
+                min_value = np.min(positive_values) * 0.01
+            nearby_values_transformed = np.log10(np.maximum(nearby_values, min_value))
         else:
-            # 3D case
-            for i in range(n_grid):
-                # Convert linear index to 3D coordinates
-                z_idx = i // (ny * nx)
-                remainder = i % (ny * nx)
-                row = remainder // nx
-                col = remainder % nx
-                if zones[z_idx, row, col] == zone_id:
-                    zone_indices.append(i)
+            nearby_values_transformed = nearby_values.copy()
 
-        zone_indices = np.array(zone_indices).astype(np.int64)
+        C = np.zeros((n_candidates + 1, n_candidates + 1))
+        c = np.zeros(n_candidates + 1)
 
-        if len(zone_cp_coords) > 0:
-            # Assign nearest neighbor tensor using tensor space distances
-            for idx in zone_indices:
-                # Calculate distances in tensor space (using the coordinate space)
-                coord_diff = zone_cp_coords - grid_coords[idx]
-                distances = np.linalg.norm(coord_diff, axis=1)
-                nearest_cp = np.argmin(distances)
-                geological_tensors[idx] = zone_cp_tensors[nearest_cp]
+        for j in range(n_candidates):
+            for k in range(n_candidates):
+                h = np.linalg.norm(nearby_coords[j] - nearby_coords[k])
+                C[j, k] = variogram(h)
+            C[j, -1] = 1
+            C[-1, j] = 1
+            c[j] = variogram(nearby_distances[j])
+        c[-1] = 1
+
+        try:
+            weights = solve(C, c)[:-1]
+            interp_values[i] = np.sum(weights * nearby_values_transformed)
+        except:
+            weights = np.exp(-nearby_distances / range_param)
+            interp_values[i] = np.sum(weights * nearby_values_transformed) / np.sum(weights)
+
+    if transform == 'log':
+        interp_values = 10 ** interp_values
+
+    return interp_values
+
+
+def _idw_interpolation(cp_coords, cp_values, grid_coords, power=1.0, radius=1000):
+    """Simple IDW interpolation for scalar values."""
+    n_grid = len(grid_coords)
+    interp_values = np.zeros(n_grid)
+
+    for i in range(n_grid):
+        distances = np.linalg.norm(cp_coords - grid_coords[i], axis=1)
+        weights = np.exp(-distances / radius)  # Exponential decay weights
+
+        if np.sum(weights) > 1e-10:
+            interp_values[i] = np.sum(weights * cp_values) / np.sum(weights)
         else:
-            print(f"      Warning: No conceptual points in zone {zone_id}, using default tensor")
-            # Create default tensor based on inferred tensor size
-            default_tensor = np.eye(tensor_size) * 1000 ** 2  # Default 1000m correlation length
-            geological_tensors[zone_indices] = default_tensor
+            interp_values[i] = np.mean(cp_values)  # Fallback
 
-    return geological_tensors
+    return interp_values
 
+
+
+def _ensure_positive_definite(tensor, min_eigenval=1e-8):
+    """Ensure tensor is positive definite."""
+    eigenvals, eigenvecs = np.linalg.eigh(tensor)
+    eigenvals_reg = np.maximum(eigenvals, min_eigenval)
+    return eigenvecs @ np.diag(eigenvals_reg) @ eigenvecs.T
 
 def create_boundary_modified_scalar(base_field, zones,
                                     peak_increase=0.3, transition_cells=5, mode="enhance"):
@@ -1284,154 +1413,6 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
     return interp_values_1d.reshape(shape)
 
 
-def interpolate_tensors_2d(cp_coords, cp_tensors, grid_coords, tensor_interp='idw', zones=None):
-    """
-    Interpolate 2x2 tensors using log-Euclidean approach.
-
-    Parameters
-    ----------
-    cp_coords : np.ndarray
-        Conceptual point coordinates, shape (n_cp, 2)
-    cp_tensors : np.ndarray
-        Tensors at conceptual points, shape (n_cp, 2, 2)
-    grid_coords : np.ndarray
-        Grid coordinates, shape (n_grid, 2) or (n_grid, 3)
-    tensor_interp : str, default 'idw'
-        Interpolation method: 'idw', 'krig', or 'nearest'
-    zones : np.ndarray, optional
-        Zone IDs for zone-based nearest neighbor, shape (ny, nx)
-
-    Returns
-    -------
-    np.ndarray
-        Interpolated tensors, shape (n_grid, 2, 2)
-    """
-    #shape = infer_grid_shape(grid_coords)
-    n_grid = len(grid_coords)
-    interp_tensors = np.zeros((n_grid, 2, 2))
-
-    # simplest
-    if tensor_interp == 'nearest' and zones is not None:
-        interp_tensors = _nearest_interpolation(cp_coords, cp_tensors, grid_coords, zones)
-    elif tensor_interp == 'nearest' and zones is None:
-        # Simple nearest neighbor without zones
-        from scipy.spatial.distance import cdist
-        distances = cdist(grid_coords, cp_coords)
-        nearest_indices = np.argmin(distances, axis=1)
-        interp_tensors = cp_tensors[nearest_indices]
-    else:
-        log_tensors = np.array([logm(t) for t in cp_tensors])
-        for i in range(2):
-            for j in range(i, 2):
-                values = log_tensors[:, i, j].real
-                # idw interp
-                if tensor_interp=='idw':
-                    interp_values_2d = _idw_interpolation(cp_coords, values, grid_coords)
-                # krig alternatively krig each of "values" separately with pypest utils
-                elif tensor_interp=='krig':
-                    interp_values_2d = ordinary_kriging(cp_coords, values, grid_coords,
-                                     variogram_model='exponential', range_param=10000,
-                                     sill=1.0, nugget=0.1, background_value=0.0,
-                                     max_search_radius=1e20, min_points=1,
-                                     transform=None, min_value=1e-8, max_neighbors=5)
-                interp_tensors[:, i, j] = interp_values_2d.flatten()
-                if i != j:
-                    interp_tensors[:, j, i] = interp_values_2d.flatten()
-
-        for i in range(n_grid):
-            interp_tensors[i] = expm(interp_tensors[i])
-
-    return interp_tensors
-
-
-def interpolate_tensors_3d(cp_coords, cp_tensors, grid_coords, tensor_interp='idw', zones=None):
-    """
-    Interpolate 3x3 tensors using log-Euclidean approach (same as 2D but for 3x3).
-    """
-    n_grid = len(grid_coords)
-    interp_tensors = np.zeros((n_grid, 3, 3))
-
-    if tensor_interp == 'nearest' and zones is not None:
-        # Zone-based nearest neighbor (requires zones)
-        interp_tensors = _nearest_interpolation(cp_coords, cp_tensors, grid_coords, zones)
-    elif tensor_interp == 'nearest' and zones is None:
-        # Simple nearest neighbor without zones
-        from scipy.spatial.distance import cdist
-        distances = cdist(grid_coords, cp_coords)
-        nearest_indices = np.argmin(distances, axis=1)
-        interp_tensors = cp_tensors[nearest_indices]
-    else:
-        # Log-Euclidean approach - ensure positive definiteness first
-        log_tensors = np.zeros_like(cp_tensors)
-
-        for i, tensor in enumerate(cp_tensors):
-            # Ensure positive definiteness by eigenvalue regularization
-            eigenvals, eigenvecs = np.linalg.eigh(tensor)
-            min_eigenval = 1e-8  # Minimum eigenvalue to ensure positive definiteness
-            eigenvals_reg = np.maximum(eigenvals, min_eigenval)
-
-            # Reconstruct positive definite tensor
-            tensor_reg = eigenvecs @ np.diag(eigenvals_reg) @ eigenvecs.T
-
-            # Take matrix logarithm
-            log_tensors[i] = logm(tensor_reg)
-
-        # Interpolate each independent component of the symmetric log tensor
-        # For a 3x3 symmetric matrix, we have 6 independent components
-        interp_log_tensors = np.zeros((n_grid, 3, 3))
-
-        for i in range(3):
-            for j in range(i, 3):  # Only upper triangle (symmetric)
-                values = log_tensors[:, i, j].real  # Take real part to handle numerical errors
-
-                if tensor_interp == 'idw':
-                    interp_values = _idw_interpolation(cp_coords, values, grid_coords)
-                elif tensor_interp == 'krig':
-                    interp_values = ordinary_kriging(cp_coords, values, grid_coords,
-                                                     variogram_model='exponential', range_param=10000,
-                                                     sill=1.0, nugget=0.1)
-
-                interp_log_tensors[:, i, j] = interp_values
-                if i != j:  # Fill symmetric part
-                    interp_log_tensors[:, j, i] = interp_values
-
-        # Convert back from log space, ensuring positive definiteness
-        for i in range(n_grid):
-            try:
-                # Matrix exponential
-                tensor_exp = expm(interp_log_tensors[i])
-
-                # Ensure the result is positive definite (numerical stability)
-                eigenvals, eigenvecs = np.linalg.eigh(tensor_exp)
-                min_eigenval = 1e-8
-                eigenvals_reg = np.maximum(eigenvals, min_eigenval)
-
-                interp_tensors[i] = eigenvecs @ np.diag(eigenvals_reg) @ eigenvecs.T
-
-            except Exception as e:
-                print(f"Warning: Matrix exponential failed at grid point {i}, using identity: {e}")
-                interp_tensors[i] = np.eye(3)
-
-    return interp_tensors
-
-
-def _idw_interpolation(cp_coords, cp_values, grid_coords):
-    """
-    Special version of idw for tensor interpolation that returns 1D output.
-    This is only used internally for tensor component interpolation.
-    """
-    n_grid = len(grid_coords)
-    interp_values = np.full(n_grid, 0.0)
-
-    # Simple idw tensor components
-    for i in range(n_grid):
-        distances = np.linalg.norm(cp_coords - grid_coords[i], axis=1)
-        weights = np.exp(-distances / 1000)  # Simple exponential weights
-        if np.sum(weights) > 1e-10:
-            interp_values[i] = np.sum(weights * cp_values) / np.sum(weights)
-
-    return interp_values
-
 
 def generate_correlated_noise_2d(grid_coords, tensors, iids,
                                  n_neighbors=50, anisotropy_strength=1.0):
@@ -1531,79 +1512,6 @@ def generate_correlated_noise_3d(grid_coords, tensors, iids,
             correlated_noise[i] = iids[i]
 
     return correlated_noise
-
-
-def ordinary_kriging(cp_coords, cp_values, grid_coords,
-                     variogram_model='exponential', range_param=10000,
-                     sill=1.0, nugget=0.1, background_value=0.0,
-                     max_search_radius=1e20, min_points=1,
-                     transform=None, min_value=1e-8, max_neighbors=5):
-    """
-    Standard ordinary kriging with variogram models and search controls.
-
-    Returns
-    -------
-    np.ndarray
-        Interpolated values (1D array) - kept as 1D since this is a utility function
-    """
-    n_grid = len(grid_coords)
-    interp_values = np.full(n_grid, background_value)
-
-    def variogram(h):
-        if variogram_model == 'exponential':
-            return nugget + (sill - nugget) * (1 - np.exp(-h / range_param))
-        elif variogram_model == 'gaussian':
-            return nugget + (sill - nugget) * (1 - np.exp(-(h ** 2) / (range_param ** 2)))
-        else:  # spherical
-            return np.where(h <= range_param,
-                            nugget + (sill - nugget) * (1.5 * h / range_param - 0.5 * (h / range_param) ** 3),
-                            sill)
-
-    for i in range(n_grid):
-        distances = np.linalg.norm(cp_coords - grid_coords[i], axis=1)
-        sorted_indices = np.argsort(distances)
-        n_candidates = min(max_neighbors or len(distances),
-                           np.sum(distances <= max_search_radius))
-
-        if n_candidates < min_points:
-            continue
-
-        closest_indices = sorted_indices[:n_candidates]
-        nearby_values = cp_values[closest_indices]
-        nearby_coords = cp_coords[closest_indices]
-        nearby_distances = distances[closest_indices]
-
-        if transform == 'log':
-            if min_value is None:
-                positive_values = nearby_values[nearby_values > 0]
-                min_value = np.min(positive_values) * 0.01
-            nearby_values_transformed = np.log10(np.maximum(nearby_values, min_value))
-        else:
-            nearby_values_transformed = nearby_values.copy()
-
-        C = np.zeros((n_candidates + 1, n_candidates + 1))
-        c = np.zeros(n_candidates + 1)
-
-        for j in range(n_candidates):
-            for k in range(n_candidates):
-                h = np.linalg.norm(nearby_coords[j] - nearby_coords[k])
-                C[j, k] = variogram(h)
-            C[j, -1] = 1
-            C[-1, j] = 1
-            c[j] = variogram(nearby_distances[j])
-        c[-1] = 1
-
-        try:
-            weights = solve(C, c)[:-1]
-            interp_values[i] = np.sum(weights * nearby_values_transformed)
-        except:
-            weights = np.exp(-nearby_distances / range_param)
-            interp_values[i] = np.sum(weights * nearby_values_transformed) / np.sum(weights)
-
-    if transform == 'log':
-        interp_values = 10 ** interp_values
-
-    return interp_values
 
 
 
@@ -1777,128 +1685,6 @@ def assign_conceptual_points_to_zones(cp_coords, grid_coords, zones):
         cp_zones[i] = get_zone_from_index(closest_idx)
 
     return cp_zones
-
-
-# def assign_conceptual_points_to_zones(cp_coords, grid_coords, zones):
-#     """
-#     Extract zone assignment logic from tensor_aware_kriging into reusable function.
-#
-#     Parameters
-#     ----------
-#     zones : np.ndarray
-#         Zone IDs, shape (ny, nx) - GUARANTEED to be 2D from entry point
-#     """
-#     ny, nx = zones.shape
-#
-#     cp_zones = []
-#     for coord in cp_coords:
-#         # Find closest grid point to get zone
-#         distances = np.sum((grid_coords - coord) ** 2, axis=1)
-#         closest_idx = np.argmin(distances)
-#         row, col = divmod(closest_idx, nx)
-#         cp_zones.append(zones[row, col])
-#
-#     return np.array(cp_zones)
-
-
-def interpolate_tensors_by_zone(cp_coords, cp_tensors, grid_coords, zones, tensor_interp='idw'):
-    """
-    Zone-aware tensor interpolation - interpolate tensors within each zone separately.
-    Supports both 2D and 3D zones.
-
-    Parameters
-    ----------
-    cp_coords : np.ndarray
-        Conceptual point coordinates, shape (n_cp, 2) for 2D or (n_cp, 3) for 3D
-    cp_tensors : np.ndarray
-        Conceptual point tensors, shape (n_cp, 2, 2) for 2D or (n_cp, 3, 3) for 3D
-    grid_coords : np.ndarray
-        Grid coordinates, shape (n_grid, 2) for 2D or (n_grid, 3) for 3D
-    zones : np.ndarray
-        Zone array, shape (ny, nx) for 2D or (nz, ny, nx) for 3D
-    tensor_interp : str, default 'idw'
-        Tensor interpolation method
-
-    Returns
-    -------
-    np.ndarray
-        Interpolated tensors, shape (n_grid, 2, 2) for 2D or (n_grid, 3, 3) for 3D
-    """
-    n_grid = len(grid_coords)
-    n_dims = cp_coords.shape[1]  # 2 for 2D, 3 for 3D
-    tensor_size = cp_tensors.shape[-1]  # 2 for 2D tensors, 3 for 3D tensors
-
-    # Determine if we're working with 2D or 3D zones
-    if len(zones.shape) == 2:
-        # 2D zones
-        ny, nx = zones.shape
-        is_3d = False
-
-        def get_zone_id(index):
-            row, col = divmod(index, nx)
-            return zones[row, col]
-
-    else:
-        # 3D zones
-        nz, ny, nx = zones.shape
-        is_3d = True
-
-        def get_zone_id(index):
-            layer = index // (ny * nx)
-            remainder = index % (ny * nx)
-            row = remainder // nx
-            col = remainder % nx
-            return zones[layer, row, col]
-
-    # Get zone for each conceptual point
-    cp_zones = assign_conceptual_points_to_zones(cp_coords, grid_coords, zones)
-
-    # Initialize output tensors
-    geological_tensors = np.zeros((n_grid, tensor_size, tensor_size))
-
-    # Get unique zones
-    unique_zones = np.unique(zones)
-
-    for zone_id in unique_zones:
-        print(f"    Interpolating tensors for zone {zone_id}")
-
-        # Find conceptual points in this zone
-        zone_cp_mask = cp_zones == zone_id
-        zone_cp_coords = cp_coords[zone_cp_mask]
-        zone_cp_tensors = cp_tensors[zone_cp_mask]
-
-        # Find grid points in this zone
-        zone_indices = []
-        for i in range(n_grid):
-            if get_zone_id(i) == zone_id:
-                zone_indices.append(i)
-
-        zone_indices = np.array(zone_indices)
-
-        if len(zone_indices) == 0:
-            continue
-
-        zone_grid_coords = grid_coords[zone_indices]
-
-        if len(zone_cp_coords) > 0:
-            # Interpolate tensors within zone using only zone's conceptual points
-            if n_dims == 2:
-                zone_tensors = interpolate_tensors_2d(zone_cp_coords, zone_cp_tensors, zone_grid_coords,
-                                                      tensor_interp=tensor_interp, zones=None)
-            else:
-                zone_tensors = interpolate_tensors_3d(zone_cp_coords, zone_cp_tensors, zone_grid_coords,
-                                                      tensor_interp=tensor_interp, zones=None)
-            geological_tensors[zone_indices] = zone_tensors
-        else:
-            # No conceptual points in zone - use default tensor or nearest zone
-            print(f"      Warning: No conceptual points in zone {zone_id}, using default tensor")
-            if tensor_size == 2:
-                default_tensor = np.eye(2) * 1000 ** 2  # Default 1000m correlation length
-            else:
-                default_tensor = np.eye(3) * 1000 ** 2  # Default 1000m correlation length
-            geological_tensors[zone_indices] = default_tensor
-
-    return geological_tensors
 
 
 def infer_grid_shape(grid_coords):
@@ -2395,7 +2181,7 @@ if __name__ == "__main__":
     """
     data_dir = r'..\..\examples\Wairau'
     zone_files = [f'waq_arr.geoclass_layer{z+1}.arr' for z in range(13)]
-    save_path = os.path.join(data_dir, 'output_nearest_3d')
+    save_path = os.path.join(data_dir, 'output_idw_3d')
 
     if not os.path.exists(save_path):
         os.mkdir(save_path)
@@ -2407,5 +2193,5 @@ if __name__ == "__main__":
         field_name=['kh'],
         layer_mode=False,
         save_path=save_path,
-        tensor_interp='nearest'
+        tensor_interp='idw'
     )
