@@ -19,7 +19,7 @@ from .plot import plot_utils
 from .pst import Pst, pst_utils
 from .sc import Schur
 from .utils import (geostats, gw_utils, helpers, metrics, optimization,
-                    os_utils, pp_utils, smp_utils)
+                    os_utils, pp_utils, smp_utils, tensor_utils)
 
 #from .prototypes import *
 try:
@@ -53,5 +53,6 @@ __all__ = [
     "smp_utils",
     "plot_utils",
     "metrics",
+    "tensor_utils"
 ]
 # del get_versions

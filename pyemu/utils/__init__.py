@@ -13,5 +13,6 @@ from .os_utils import *
 from .pp_utils import *
 from .pst_from import *
 from .smp_utils import *
+from .tensor_utils import *
 
 get_pestpp = get_pestpp_module.run_main

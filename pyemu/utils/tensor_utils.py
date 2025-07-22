@@ -3,6 +3,7 @@ import pandas as pd
 from scipy.linalg import logm, expm, solve
 from scipy.ndimage import distance_transform_edt, gaussian_filter
 import matplotlib as mpl
+from pyemu.plot import plot_utils as pu
 
 mpl.use('Tkagg')
 import matplotlib.pyplot as plt
@@ -12,6 +13,33 @@ import os
 # ============================================================================
 # UTILITY FUNCTIONS FOR CONSISTENT ARRAY HANDLING
 # ============================================================================
+
+def convert_output_to_original_format(field_2d, original_zones_shape):
+    """
+    Convert 2D field back to original input format.
+
+    Parameters
+    ----------
+    field_2d : np.ndarray
+        Field in 2D format, shape (ny, nx)
+    original_zones_shape : tuple or None
+        Original input array shape
+
+    Returns
+    -------
+    np.ndarray
+        Field in original format (1D or 2D)
+    """
+    if original_zones_shape is None:
+        return field_2d
+
+    if len(original_zones_shape) == 1:
+        # Original was 1D, return flattened
+        return field_2d.flatten()
+    else:
+        # Original was 2D, return as-is
+        return field_2d
+
 
 def standardize_input_arrays(zones_raw, grid_coords, shape):
     """
@@ -56,33 +84,6 @@ def standardize_input_arrays(zones_raw, grid_coords, shape):
             raise ValueError(f"Zone array shape {zones_raw.shape} incompatible with grid shape {layer_shape}")
 
     return zones, grid_coords, original_zones_shape
-
-
-def convert_output_to_original_format(field_2d, original_zones_shape):
-    """
-    Convert 2D field back to original input format.
-
-    Parameters
-    ----------
-    field_2d : np.ndarray
-        Field in 2D format, shape (ny, nx)
-    original_zones_shape : tuple or None
-        Original input array shape
-
-    Returns
-    -------
-    np.ndarray
-        Field in original format (1D or 2D)
-    """
-    if original_zones_shape is None:
-        return field_2d
-
-    if len(original_zones_shape) == 1:
-        # Original was 1D, return flattened
-        return field_2d.flatten()
-    else:
-        # Original was 2D, return as-is
-        return field_2d
 
 
 def ensure_2d_for_processing(arr, shape):
@@ -138,14 +139,14 @@ def validate_grid_coordinates(grid_coords, shape):
     return grid_coords.shape[0] == expected_points
 
 
-def generate_fields_from_files(sim_ws, conceptual_points_file, grid_file, zone_file=None, iids_file=None,
+def generate_fields_from_files(data_dir, conceptual_points_file, grid_file, zone_file=None, iids_file=None,
                                field_name=['field'], layer_mode=True, save_path='.', tensor_interp='idw'):
     """
     Generate spatially correlated fields using tensor-based geostatistics.
 
     Parameters
     ----------
-    sim_ws: str
+    data_dir: str
         Path to files
     conceptual_points_file : str
         CSV file containing conceptual points
@@ -175,12 +176,10 @@ def generate_fields_from_files(sim_ws, conceptual_points_file, grid_file, zone_f
         Saves results to output/ directory
     """
     print(f"=== Tensor-Based Non-Stationary Field Generation from {conceptual_points_file} ===")
-    if not os.path.exists(os.path.join(sim_ws, save_path)):
-        os.mkdir(os.path.join(sim_ws, save_path))
 
     # Load data
-    conceptual_points = pd.read_csv(os.path.join(sim_ws, conceptual_points_file))
-    grid = pd.read_csv(os.path.join(sim_ws, grid_file), sep=r'\s+')
+    conceptual_points = pd.read_csv(os.path.join(data_dir, conceptual_points_file))
+    grid = pd.read_csv(os.path.join(data_dir, grid_file), sep=r'\s+')
     grid_coords = grid[['x', 'y', 'z']].values
 
     print(f"Loaded {len(conceptual_points)} conceptual points")
@@ -199,17 +198,17 @@ def generate_fields_from_files(sim_ws, conceptual_points_file, grid_file, zone_f
                 raise ValueError(f"Number of iids files ({len(iids_file)}) must match number of layers ({nz})")
             iids = np.zeros(shape)
             for i, file_path in enumerate(iids_file):
-                layer_iids = np.loadtxt(os.path.join(sim_ws, file_path))
+                layer_iids = np.loadtxt(os.path.join(data_dir, file_path))
                 iids[i] = layer_iids.reshape(ny, nx)
-                print(f"  Loaded iids layer {i + 1} from {os.path.join(sim_ws, file_path)}")
+                print(f"  Loaded iids layer {i + 1} from {os.path.join(data_dir, file_path)}")
         else:
             if '{' in iids_name:
                 # Pattern like "iids_layer{}.arr"
-                pattern = os.path.join(sim_ws, iids_name)
+                pattern = os.path.join(data_dir, iids_name)
             else:
                 # Assume pattern from filename
                 name, ext = os.path.splitext(iids_name)
-                pattern = os.path.join(sim_ws, f"{name}_layer{{}}{ext}")
+                pattern = os.path.join(data_dir, f"{name}_layer{{}}{ext}")
 
             iids = np.zeros(shape)
             for i in range(nz):
@@ -226,7 +225,7 @@ def generate_fields_from_files(sim_ws, conceptual_points_file, grid_file, zone_f
         np.random.seed(42)
         iids = np.random.randn(*shape)
         for i in range(nz):
-            iids_file_path = os.path.join(sim_ws, f'iids_layer{i + 1}.arr')
+            iids_file_path = os.path.join(data_dir, f'iids_layer{i + 1}.arr')
             np.savetxt(iids_file_path, iids[i])
             print(f"  Saved iids layer {i + 1} to {iids_file_path}")
 
@@ -246,16 +245,16 @@ def generate_fields_from_files(sim_ws, conceptual_points_file, grid_file, zone_f
 
             zones_list = []
             for i, file in enumerate(zone_file):
-                layer_zones = np.loadtxt(os.path.join(sim_ws, file)).astype(np.int64)
+                layer_zones = np.loadtxt(os.path.join(data_dir, file)).astype(np.int64)
                 zones_list.append(layer_zones)
-                print(f"  Loaded zones layer {i + 1} from {os.path.join(sim_ws, file)}, shape: {layer_zones.shape}")
+                print(f"  Loaded zones layer {i + 1} from {os.path.join(data_dir, file)}, shape: {layer_zones.shape}")
 
             zones_3d = np.array(zones_list)
             print(f"  Created 3D zones array: {zones_3d.shape}")
 
         else:
             # Single zone file - use for all layers
-            zones_raw = np.loadtxt(os.path.join(sim_ws, zone_file)).astype(np.int64)
+            zones_raw = np.loadtxt(os.path.join(data_dir, zone_file)).astype(np.int64)
             zones, _, original_zones_shape = standardize_input_arrays(zones_raw, grid_coords, shape)
             print(f"  Loaded single zone file: original shape {original_zones_shape}, standardized to 2D {zones.shape}")
 
@@ -285,7 +284,7 @@ def generate_fields_from_files(sim_ws, conceptual_points_file, grid_file, zone_f
         # Save and plot results
         for i in conceptual_points.layer.unique():
             save_layer(field[i - 1], layer=i, field_name=fn, save_path=save_path)
-            plot_layer(np.where(zones == 0, np.nan, field[i - 1]), layer=i, field_name=fn, save_path=save_path)
+            pu.plot_layer(np.where(zones == 0, np.nan, field[i - 1]), layer=i, field_name=fn, save_path=save_path)
 
         print("\n=== Complete ===")
         print(f"Field shape: {field.shape}")
@@ -359,7 +358,7 @@ def generate_field_by_layer(conceptual_points, grid_coords, iids,
         layer_field_2d, geological_tensors = generate_single_layer_zone_based(layer_cp, layer_coords,
                                                           layer_iids, zones=layer_zones, shape=layer_shape,
                                                           save_path=save_path, tensor_interp=tensor_interp)
-        visualize_geological_tensors(geological_tensors, layer_coords, layer_shape, zones=layer_zones,
+        pu.visualize_geological_tensors(geological_tensors, layer_coords, layer_shape, zones=layer_zones,
                                      conceptual_points=layer_cp, subsample=4,
                                      save_path=save_path, title_suf=f'layer {layer_idx+1}')
 
@@ -541,7 +540,6 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
 
 
 
-
 def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
                                      zones=None, shape=None, save_path='.',
                                      tensor_interp='idw'):
@@ -668,18 +666,33 @@ def _nearest_interpolation(cp_coords, cp_tensors, grid_coords, zones):
 
     Parameters
     ----------
+    cp_coords : np.ndarray
+        Conceptual point coordinates, shape (n_cp, ndim)
+    cp_tensors : np.ndarray
+        Conceptual point tensors, shape (n_cp, ndim, ndim)
+    grid_coords : np.ndarray
+        Grid coordinates, shape (n_grid, ndim)
     zones : np.ndarray
-        Zone IDs, shape (ny, nx) - GUARANTEED to be 2D from entry point
+        Zone IDs, shape (ny, nx) for 2D or (nz, ny, nx) for 3D
     """
     shape = zones.shape
+    ndim = len(shape)  # 2 for 2D, 3 for 3D
     n_grid = len(grid_coords)
-    ny, nx = shape
+
+    # Handle 2D and 3D cases
+    if ndim == 2:
+        ny, nx = shape
+    elif ndim == 3:
+        nz, ny, nx = shape
+    else:
+        raise ValueError(f"zones must be 2D or 3D, got shape {shape}")
 
     # Get zone for each conceptual point
     cp_zones = assign_conceptual_points_to_zones(cp_coords, grid_coords, zones)
 
-    # Initialize output tensors
-    geological_tensors = np.zeros((n_grid, 2, 2))
+    # Initialize output tensors - infer tensor size from cp_tensors
+    tensor_size = cp_tensors.shape[-1]  # Last dimension gives tensor size
+    geological_tensors = np.zeros((n_grid, tensor_size, tensor_size))
 
     # Get unique zones
     unique_zones = np.unique(zones)
@@ -693,27 +706,40 @@ def _nearest_interpolation(cp_coords, cp_tensors, grid_coords, zones):
         zone_cp_tensors = cp_tensors[zone_cp_mask]
 
         # Find grid points in this zone
-        zone_grid_indices = []
-        for i in range(n_grid):
-            row, col = divmod(i, nx)
-            if zones[row, col] == zone_id:
-                zone_grid_indices.append(i)
+        zone_indices = []
 
-        zone_grid_indices = np.array(zone_grid_indices).astype(np.int64)
+        if ndim == 2:
+            # 2D case
+            for i in range(n_grid):
+                row, col = divmod(i, nx)
+                if zones[row, col] == zone_id:
+                    zone_indices.append(i)
+        else:
+            # 3D case
+            for i in range(n_grid):
+                # Convert linear index to 3D coordinates
+                z_idx = i // (ny * nx)
+                remainder = i % (ny * nx)
+                row = remainder // nx
+                col = remainder % nx
+                if zones[z_idx, row, col] == zone_id:
+                    zone_indices.append(i)
+
+        zone_indices = np.array(zone_indices).astype(np.int64)
 
         if len(zone_cp_coords) > 0:
-            # Assign nearest neighbor tensor (no interpolation)
-            for grid_idx in zone_grid_indices:
-                distances = np.linalg.norm(zone_cp_coords - grid_coords[grid_idx], axis=1)
+            # Assign nearest neighbor tensor using tensor space distances
+            for idx in zone_indices:
+                # Calculate distances in tensor space (using the coordinate space)
+                coord_diff = zone_cp_coords - grid_coords[idx]
+                distances = np.linalg.norm(coord_diff, axis=1)
                 nearest_cp = np.argmin(distances)
-                geological_tensors[grid_idx] = zone_cp_tensors[nearest_cp]
+                geological_tensors[idx] = zone_cp_tensors[nearest_cp]
         else:
             print(f"      Warning: No conceptual points in zone {zone_id}, using default tensor")
-            if tensor_size == 2:
-                default_tensor = np.eye(2) * 1000 ** 2  # Default 1000m correlation length
-            else:
-                default_tensor = np.eye(3) * 1000 ** 2  # Default 1000m correlation length
-            geological_tensors[zone_grid_indices] = default_tensor
+            # Create default tensor based on inferred tensor size
+            default_tensor = np.eye(tensor_size) * 1000 ** 2  # Default 1000m correlation length
+            geological_tensors[zone_indices] = default_tensor
 
     return geological_tensors
 
@@ -1287,6 +1313,12 @@ def interpolate_tensors_2d(cp_coords, cp_tensors, grid_coords, tensor_interp='id
     # simplest
     if tensor_interp == 'nearest' and zones is not None:
         interp_tensors = _nearest_interpolation(cp_coords, cp_tensors, grid_coords, zones)
+    elif tensor_interp == 'nearest' and zones is None:
+        # Simple nearest neighbor without zones
+        from scipy.spatial.distance import cdist
+        distances = cdist(grid_coords, cp_coords)
+        nearest_indices = np.argmin(distances, axis=1)
+        interp_tensors = cp_tensors[nearest_indices]
     else:
         log_tensors = np.array([logm(t) for t in cp_tensors])
         for i in range(2):
@@ -1321,7 +1353,7 @@ def interpolate_tensors_3d(cp_coords, cp_tensors, grid_coords, tensor_interp='id
 
     if tensor_interp == 'nearest' and zones is not None:
         # Zone-based nearest neighbor (requires zones)
-        interp_tensors = _nearest_interpolation_3d(cp_coords, cp_tensors, grid_coords, zones)
+        interp_tensors = _nearest_interpolation(cp_coords, cp_tensors, grid_coords, zones)
     elif tensor_interp == 'nearest' and zones is None:
         # Simple nearest neighbor without zones
         from scipy.spatial.distance import cdist
@@ -1720,17 +1752,17 @@ def assign_conceptual_points_to_zones(cp_coords, grid_coords, zones):
         # 2D zones
         ny, nx = zones.shape
 
-        def get_zone_from_index(grid_index):
-            row, col = divmod(grid_index, nx)
+        def get_zone_from_index(index):
+            row, col = divmod(index, nx)
             return zones[row, col]
 
     else:
         # 3D zones
         nz, ny, nx = zones.shape
 
-        def get_zone_from_index(grid_index):
-            layer = grid_index // (ny * nx)
-            remainder = grid_index % (ny * nx)
+        def get_zone_from_index(index):
+            layer = index // (ny * nx)
+            remainder = index % (ny * nx)
             row = remainder // nx
             col = remainder % nx
             return zones[layer, row, col]
@@ -1802,8 +1834,8 @@ def interpolate_tensors_by_zone(cp_coords, cp_tensors, grid_coords, zones, tenso
         ny, nx = zones.shape
         is_3d = False
 
-        def get_zone_id(grid_index):
-            row, col = divmod(grid_index, nx)
+        def get_zone_id(index):
+            row, col = divmod(index, nx)
             return zones[row, col]
 
     else:
@@ -1811,9 +1843,9 @@ def interpolate_tensors_by_zone(cp_coords, cp_tensors, grid_coords, zones, tenso
         nz, ny, nx = zones.shape
         is_3d = True
 
-        def get_zone_id(grid_index):
-            layer = grid_index // (ny * nx)
-            remainder = grid_index % (ny * nx)
+        def get_zone_id(index):
+            layer = index // (ny * nx)
+            remainder = index % (ny * nx)
             row = remainder // nx
             col = remainder % nx
             return zones[layer, row, col]
@@ -1836,17 +1868,17 @@ def interpolate_tensors_by_zone(cp_coords, cp_tensors, grid_coords, zones, tenso
         zone_cp_tensors = cp_tensors[zone_cp_mask]
 
         # Find grid points in this zone
-        zone_grid_indices = []
+        zone_indices = []
         for i in range(n_grid):
             if get_zone_id(i) == zone_id:
-                zone_grid_indices.append(i)
+                zone_indices.append(i)
 
-        zone_grid_indices = np.array(zone_grid_indices)
+        zone_indices = np.array(zone_indices)
 
-        if len(zone_grid_indices) == 0:
+        if len(zone_indices) == 0:
             continue
 
-        zone_grid_coords = grid_coords[zone_grid_indices]
+        zone_grid_coords = grid_coords[zone_indices]
 
         if len(zone_cp_coords) > 0:
             # Interpolate tensors within zone using only zone's conceptual points
@@ -1856,7 +1888,7 @@ def interpolate_tensors_by_zone(cp_coords, cp_tensors, grid_coords, zones, tenso
             else:
                 zone_tensors = interpolate_tensors_3d(zone_cp_coords, zone_cp_tensors, zone_grid_coords,
                                                       tensor_interp=tensor_interp, zones=None)
-            geological_tensors[zone_grid_indices] = zone_tensors
+            geological_tensors[zone_indices] = zone_tensors
         else:
             # No conceptual points in zone - use default tensor or nearest zone
             print(f"      Warning: No conceptual points in zone {zone_id}, using default tensor")
@@ -1864,7 +1896,7 @@ def interpolate_tensors_by_zone(cp_coords, cp_tensors, grid_coords, zones, tenso
                 default_tensor = np.eye(2) * 1000 ** 2  # Default 1000m correlation length
             else:
                 default_tensor = np.eye(3) * 1000 ** 2  # Default 1000m correlation length
-            geological_tensors[zone_grid_indices] = default_tensor
+            geological_tensors[zone_indices] = default_tensor
 
     return geological_tensors
 
@@ -1904,29 +1936,12 @@ def save_layer(field, layer, field_name, save_path='.'):
     if isinstance(field_name, list):
         field_name = field_name[0]
 
-    os.makedirs(save_path, exist_ok=True)
-
     filename = os.path.join(save_path, f'{field_name}_layer_{layer + 1:02d}.arr')
     np.savetxt(filename, field, fmt='%.6f')
     print(f"Saved layer {layer} to '{filename}'")
 
-def plot_layer(field, layer=0, field_name='field', save_path='.', transform='log'):
-    import matplotlib.colors as mcolors
-    if transform=='log':
-        field = np.log10(field)
 
-    plt.figure(figsize=(14, 12))
-    plt.imshow(field)
-    plt.colorbar(label='Parameter Value')
-    plt.title(f'{field_name} for layer {layer}')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-
-    os.makedirs('output', exist_ok=True)
-    plt.savefig(os.path.join(save_path, f'{field_name}_layer_{layer:02d}.png'), dpi=150)
-    plt.close()
-
-def add_grid_indices_to_conceptual_points(conceptual_points, grid_coords, shape):
+def add_indices_to_conceptual_points(conceptual_points, grid_coords, shape):
     """
     Add i,j grid indices to conceptual points dataframe.
 
@@ -1942,13 +1957,13 @@ def add_grid_indices_to_conceptual_points(conceptual_points, grid_coords, shape)
     Returns
     -------
     pd.DataFrame
-        Conceptual points with added 'grid_i' and 'grid_j' columns
+        Conceptual points with added 'i' and 'j' columns
     """
     ny, nx = shape
     cp_coords = conceptual_points[['x', 'y']].values
 
-    grid_i_list = []
-    grid_j_list = []
+    i_list = []
+    j_list = []
 
     for coord in cp_coords:
         # Find closest grid point
@@ -1956,122 +1971,15 @@ def add_grid_indices_to_conceptual_points(conceptual_points, grid_coords, shape)
         closest_idx = np.argmin(distances)
         row, col = divmod(closest_idx, nx)
 
-        grid_i_list.append(row)
-        grid_j_list.append(col)
+        i_list.append(row)
+        j_list.append(col)
 
     # Add to dataframe
     conceptual_points_copy = conceptual_points.copy()
-    conceptual_points_copy['grid_i'] = grid_i_list
-    conceptual_points_copy['grid_j'] = grid_j_list
+    conceptual_points_copy['i'] = i_list
+    conceptual_points_copy['j'] = j_list
 
     return conceptual_points_copy
-
-
-def plot_zones_with_conceptual_points(zones, conceptual_points, grid_coords,
-                                      figsize=(12, 10), save_path='.'):
-    """
-    Plot geology zones with conceptual points overlaid and labeled.
-
-    Parameters
-    ----------
-    zones : np.ndarray
-        Zone array, shape (n_points,) or (ny, nx)
-    conceptual_points : pd.DataFrame
-        Must have columns: x, y, grid_i, grid_j
-    grid_coords : np.ndarray
-        Grid coordinates for coordinate transformation
-    shape : tuple
-        Grid shape (ny, nx)
-    figsize : tuple
-        Figure size
-    save_path : str, optional
-        Path to save figure
-    """
-    import matplotlib.pyplot as plt
-    import matplotlib.patches as patches
-
-    shape = zones.shape
-    ny, nx = shape
-
-    # Get grid bounds for coordinate transformation
-    x_coords = grid_coords[:, 0].reshape(shape[0], shape[1])
-    y_coords = grid_coords[:, 1].reshape(shape[0], shape[1])
-
-    x_min, x_max = x_coords.min(), x_coords.max()
-    y_min, y_max = y_coords.min(), y_coords.max()
-
-    fig, ax = plt.subplots(figsize=figsize)
-
-    # Plot zones with better color handling
-    unique_zones = np.unique(zones)
-    n_zones = len(unique_zones)
-
-    # Create a mapping from zone values to sequential colors
-    zone_to_color = {zone: i for i, zone in enumerate(unique_zones)}
-    zones_remapped = np.zeros_like(zones)
-    for zone_val, color_idx in zone_to_color.items():
-        zones_remapped[zones == zone_val] = color_idx
-
-    # Plot zones - flip the array itself to match real-world orientation
-    zones_flipped = np.flipud(zones_remapped)
-
-    im = ax.imshow(zones_flipped, extent=[x_min, x_max, y_min, y_max],
-                   origin='lower', cmap='tab10', alpha=0.7,
-                   vmin=0, vmax=n_zones - 1)
-
-    # Add colorbar with actual zone values
-    cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label('Zone ID')
-    cbar.set_ticks(range(n_zones))
-    cbar.set_ticklabels([f'{int(z)}' for z in unique_zones])
-
-    # Plot conceptual points
-    for idx, row in conceptual_points.iterrows():
-        x, y = row['x'], row['y']
-        grid_i, grid_j = row['grid_i'], row['grid_j']
-        name = conceptual_points.loc[idx, 'name']
-
-        # Plot point
-        ax.plot(x, y, 'ro', markersize=8, markeredgecolor='black', markeredgewidth=1)
-
-        # Add label with index and grid position
-        ax.annotate(f'{name}\n({grid_i},{grid_j})',
-                    (x, y), xytext=(5, 5), textcoords='offset points',
-                    fontsize=8, fontweight='bold',
-                    bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
-
-        # Draw line to corresponding grid cell center
-        grid_i_int, grid_j_int = int(grid_i), int(grid_j)
-        if 0 <= grid_i_int < ny and 0 <= grid_j_int < nx:
-            grid_x = x_coords[grid_i_int, grid_j_int]
-            grid_y = y_coords[grid_i_int, grid_j_int]
-            ax.plot([x, grid_x], [y, grid_y], 'r--', alpha=0.5, linewidth=1)
-
-            # Mark grid cell center
-            ax.plot(grid_x, grid_y, 'r+', markersize=10, markeredgewidth=2)
-
-    ax.set_xlabel('X (NZTM)')
-    ax.set_ylabel('Y (NZTM)')
-    ax.set_title('Geology Zones with Conceptual Points\n(Red dots = CP locations, + = assigned grid cells)')
-    ax.grid(True, alpha=0.3)
-
-    # Add legend
-    legend_elements = [
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='r',
-                   markersize=8, label='Conceptual Points'),
-        plt.Line2D([0], [0], marker='+', color='r', markersize=10,
-                   label='Assigned Grid Cells'),
-        plt.Line2D([0], [0], color='r', linestyle='--',
-                   label='CP to Grid Assignment')
-    ]
-    ax.legend(handles=legend_elements, loc='upper right')
-
-    plt.tight_layout()
-
-    plt.savefig(os.path.join(save_path, f'conceptual_points.png'), dpi=150, bbox_inches='tight')
-    print(f"Plot saved to: {os.path.join(save_path, f'{save_path}/conceptual_points.png')}")
-
-    plt.close()
 
 
 def debug_zone_assignments(conceptual_points, grid_coords, zones, shape, save_path='.'):
@@ -2079,7 +1987,7 @@ def debug_zone_assignments(conceptual_points, grid_coords, zones, shape, save_pa
     Complete workflow to debug zone assignments.
     """
     # Add grid indices
-    cp_with_indices = add_grid_indices_to_conceptual_points(
+    cp_with_indices = add_indices_to_conceptual_points(
         conceptual_points, grid_coords, shape
     )
 
@@ -2088,221 +1996,20 @@ def debug_zone_assignments(conceptual_points, grid_coords, zones, shape, save_pa
     print("=" * 50)
     for idx, row in cp_with_indices.iterrows():
         ny, nx = shape
-        grid_i, grid_j = int(row['grid_i']), int(row['grid_j'])
+        i, j = int(row['i']), int(row['j'])
 
         # zones are guaranteed to be 2D from entry point
-        zone_id = zones[grid_i, grid_j]
+        zone_id = zones[i, j]
 
         print(f"CP {idx}: ({row['x']:.1f}, {row['y']:.1f}) -> "
-              f"grid[{grid_i},{grid_j}] -> zone {zone_id}")
+              f"grid[{i},{j}] -> zone {zone_id}")
 
     # Create plot
-    plot_zones_with_conceptual_points(
-        zones, cp_with_indices, grid_coords, shape,
+    pu.plot_zones_with_conceptual_points(
+        zones, cp_with_indices, grid_coords,
         save_path=os.path.join(save_path, f'zone_debug.png'))
 
     return cp_with_indices
-
-
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-
-
-def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=None,
-                                 conceptual_points=None, subsample=4, scale_factor=20,
-                                 figsize=(14, 12), title_suf=None, save_path='.'):
-    """
-    Visualize geological tensors as ellipses overlaid on zones, with conceptual points as oriented lines.
-
-    Parameters
-    ----------
-    geological_tensors : np.ndarray
-        Tensor field, shape (n_points, 2, 2)
-    grid_coords : np.ndarray
-        Grid coordinates, shape (n_points, 2) or (n_points, 3)
-    shape : tuple
-        Grid shape (ny, nx)
-    zones : np.ndarray, optional
-        Zone array for background, shape (ny, nx)
-    conceptual_points : pd.DataFrame, optional
-        Conceptual points with x, y, bearing, major columns
-    subsample : int, default 4
-        Show every Nth tensor (for readability)
-    scale_factor : float, default 20
-        Scale ellipses for visibility
-    figsize : tuple, default (14, 12)
-        Figure size
-    title_suf : str, optional
-        Suffix for plot title
-    save_path : str, default '.'
-        Directory to save plot
-
-    Returns
-    -------
-    None
-        Saves visualization as PNG file
-
-    Examples
-    --------
-    >>> visualize_geological_tensors(tensors, coords, (100, 150),
-    ...                               subsample=8, title_suf='layer_1')
-    """
-    ny, nx = shape
-
-    fig, ax = plt.subplots(figsize=figsize)
-
-    # Prepare zone data but don't plot yet
-    if zones is not None:
-        # zones are guaranteed to be 2D from entry point
-
-        # Create zone color mapping
-        unique_zones = np.unique(zones)
-        zone_to_color = {zone: i for i, zone in enumerate(unique_zones)}
-        zones_remapped = np.zeros_like(zones)
-        for zone_val, color_idx in zone_to_color.items():
-            zones_remapped[zones == zone_val] = color_idx
-
-        # Get coordinate bounds
-        x_coords = grid_coords[:, 0].reshape(shape)
-        y_coords = grid_coords[:, 1].reshape(shape)
-        x_min, x_max = x_coords.min(), x_coords.max()
-        y_min, y_max = y_coords.min(), y_coords.max()
-
-        zones_flipped = np.flipud(zones_remapped)
-        # Plot zones as background with low alpha
-        im = ax.imshow(zones_flipped, extent=[x_min, x_max, y_min, y_max],
-                       origin='lower', cmap='tab10', alpha=0.2, zorder=0,
-                       vmin=0, vmax=len(unique_zones) - 1)
-
-    # Plot conceptual points as oriented lines
-    if conceptual_points is not None:
-        for idx, row in conceptual_points.iterrows():
-            x, y = row['x'], row['y']
-            bearing = row['bearing']
-            major = row['major']
-
-            # Scale line length for visibility (similar to ellipse scaling)
-            line_length = major / (scale_factor * 2)  # Adjust scaling as needed
-
-            # Convert geological bearing (CW from N) to math angle for plotting
-            # Geological: 0°=N, 90°=E; Math: 0°=E, 90°=N
-            math_angle_rad = np.radians(90 - bearing)
-
-            # Calculate line endpoints
-            dx = line_length * np.cos(math_angle_rad) / 2
-            dy = line_length * np.sin(math_angle_rad) / 2
-
-            # Plot line centered on point
-            ax.plot([x - dx, x + dx], [y - dy, y + dy],
-                    'r-', linewidth=3, alpha=0.9, zorder=4)
-
-            # Plot center point
-            ax.plot(x, y, 'ro', markersize=4, markeredgecolor='black',
-                    markeredgewidth=1, alpha=0.9, zorder=5)
-
-            # Add label with bearing
-            ax.annotate(f'{bearing:.0f}°', (x, y), xytext=(8, 8),
-                        textcoords='offset points', fontsize=8, fontweight='bold',
-                        bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.7),
-                        zorder=6)
-
-    # Subsample points for visualization
-    indices = np.arange(0, len(geological_tensors), subsample)
-
-    print(f"Plotting {len(indices)} tensors out of {len(geological_tensors)}")
-
-    default_count = 0
-    ellipse_count = 0
-
-    for i in indices:
-        tensor = geological_tensors[i]
-        x, y = grid_coords[i, 0], grid_coords[i, 1]
-
-        # Check for default tensor (indicates no interpolation happened)
-        if np.allclose(tensor, np.eye(2) * 1000000):
-            # Plot as red circle for default tensors with high zorder
-            ax.plot(x, y, 'ko', markersize=2, alpha=0.3, zorder=1)  # Make less prominent
-            default_count += 1
-            continue
-
-        try:
-            # Eigendecomposition to get ellipse parameters
-            eigenvals, eigenvecs = np.linalg.eigh(tensor)
-
-            # Sort by eigenvalue magnitude
-            idx = np.argsort(eigenvals)[::-1]
-            eigenvals = eigenvals[idx]
-            eigenvecs = eigenvecs[:, idx]
-
-            # Ellipse dimensions (correlation lengths) - make them more visible
-            major_axis = 2 * np.sqrt(eigenvals[0]) / scale_factor
-            minor_axis = 2 * np.sqrt(eigenvals[1]) / scale_factor
-
-            # Make sure ellipses are visible
-            if major_axis < 30:  # Smaller minimum to avoid overwhelming CP lines
-                major_axis = 30
-            if minor_axis < 15:
-                minor_axis = 15
-
-            # Ellipse orientation (angle of major axis)
-            angle = np.degrees(np.arctan2(eigenvecs[1, 0], eigenvecs[0, 0]))
-
-            # Create ellipse with lower prominence than CP lines
-            ellipse = patches.Ellipse((x, y), major_axis, minor_axis,
-                                      angle=angle, linewidth=1,
-                                      edgecolor='blue', facecolor='none', alpha=0.6, zorder=2)
-            ax.add_patch(ellipse)
-            ellipse_count += 1
-
-        except:
-            # If tensor is problematic, plot as yellow point with high zorder
-            ax.plot(x, y, 'yo', markersize=2, zorder=3)
-
-    print(f"Plotted {default_count} default tensors (black circles) and {ellipse_count} ellipses")
-
-    ax.set_xlabel('X (NZTM)')
-    ax.set_ylabel('Y (NZTM)')
-
-    # Update title and legend
-    title_parts = [f'Geological Tensors (subsampled 1:{subsample})\n']
-    if title_suf is not None:
-        title_parts += [f'{title_suf}']
-    # more like legend?
-    if conceptual_points is not None:
-        title_parts.append('Red lines = conceptual points (bearing)')
-    title_parts.append('Blue ellipses = interpolated tensors')
-    ax.set_title('\n'.join(title_parts))
-
-    ax.set_aspect('equal', adjustable='box')
-
-    # Add colorbar for zones if present
-    if zones is not None:
-        cbar = plt.colorbar(im, ax=ax, shrink=0.8)
-        cbar.set_label('Zone ID')
-        cbar.set_ticks(range(len(unique_zones)))
-        cbar.set_ticklabels([f'{int(z)}' for z in unique_zones])
-
-    # Add legend
-    legend_elements = []
-    if conceptual_points is not None:
-        legend_elements.extend([
-            plt.Line2D([0], [0], color='red', linewidth=3, label='Conceptual Point Bearings'),
-            plt.Line2D([0], [0], marker='o', color='red', markersize=6,
-                       markeredgecolor='black', label='Conceptual Points', linestyle='None')
-        ])
-    legend_elements.extend([
-        patches.Patch(facecolor='none', edgecolor='blue', label='Interpolated Tensors'),
-        plt.Line2D([0], [0], marker='o', color='black', markersize=4,
-                   label='Default Tensors', linestyle='None', alpha=0.3)
-    ])
-
-    if legend_elements:
-        ax.legend(handles=legend_elements, loc='upper right', fontsize=9)
-
-    plt.tight_layout()
-    plt.savefig(os.path.join(save_path, f'intrpolated_tensors_{title_suf}.png'), dpi=150, bbox_inches='tight')
-    print(f"Saved tensor visualization to {os.path.join(save_path, f'intrpolated_tensors_{title_suf}.png')}")
-    plt.close()
 
 
 def analyze_cp_tensor_alignment(conceptual_points, geological_tensors, grid_coords, zones):
@@ -2544,8 +2251,8 @@ def export_to_paraview(grid_coords, shape, field_data=None, tensor_data=None,
             for k in range(nz):
                 for j in range(ny):
                     for i in range(nx):
-                        grid_idx = k * ny * nx + j * nx + i
-                        tensor_reordered[idx] = tensor_array[grid_idx]
+                        idx = k * ny * nx + j * nx + i
+                        tensor_reordered[idx] = tensor_array[idx]
                         idx += 1
 
             tensor_vtk = numpy_support.numpy_to_vtk(tensor_reordered)
@@ -2631,12 +2338,11 @@ def export_to_paraview(grid_coords, shape, field_data=None, tensor_data=None,
     print("5. Use 'Clip' or 'Slice' filters to see inside the 3D volume")
 
 
-# Helper function to integrate with your existing workflow
 def export_3d_results_to_paraview(field_3d, tensors_3d, grid_coords, shape,
                                   zones=None, conceptual_points=None,
                                   save_path='.', field_name='permeability'):
     """
-    Convenience function to export your 3D results to ParaView.
+    Convenience function to export 3D results to ParaView.
 
     Parameters
     ----------
@@ -2687,14 +2393,19 @@ if __name__ == "__main__":
     - zones: Can be passed to generate_single_layer() as numpy array
       with integer zone IDs, shape (n_points,) or (ny, nx)
     """
-    sim_ws = r'C:\modelling\sva_ds\data'
+    data_dir = r'..\..\examples\Wairau'
     zone_files = [f'waq_arr.geoclass_layer{z+1}.arr' for z in range(13)]
-    generate_fields_from_files(sim_ws,
+    save_path = os.path.join(data_dir, 'output_nearest_3d')
+
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
+
+    generate_fields_from_files(data_dir,
         conceptual_points_file='conceptual_points.csv',
         grid_file='grid.dat',
         zone_file=zone_files,
         field_name=['kh'],
         layer_mode=False,
-        save_path='output_nearest',
+        save_path=save_path,
         tensor_interp='nearest'
     )
