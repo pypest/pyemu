@@ -4,7 +4,16 @@ Transformer classes for data transformations in emulators.
 from __future__ import print_function, division
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
+
+
+# Check sklearn availability at module level
+try:
+    from sklearn.preprocessing import StandardScaler
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+    # Create dummy classes or set to None
+    StandardScaler = None
 
 
 class BaseTransformer:
@@ -27,14 +36,24 @@ class BaseTransformer:
         raise NotImplementedError
 
 class Log10Transformer(BaseTransformer):
-    """Apply log10 transformation."""
+    """Apply log10 transformation.
+    
+    Parameters
+    ----------
+    columns : list, optional
+        List of column names to be transformed. If None, all columns will be transformed.
+    """
 
-    def __init__(self):
+    def __init__(self, columns=None):
+        self.columns = columns
         self.shifts = {}
 
     def transform(self, X):
         result = X.copy()
-        for col in X.columns:
+        columns = self.columns if self.columns is not None else X.columns
+        columns = [col for col in columns if col in X.columns]
+        
+        for col in columns:
             min_val = X[col].min()
             shift = -min_val + 1e-6 if min_val <= 0 else 0
             self.shifts[col] = shift
@@ -43,9 +62,10 @@ class Log10Transformer(BaseTransformer):
 
     def inverse_transform(self, X):
         result = X.copy()
-        for col in X.columns:
-            shift = self.shifts.get(col, 0)
-            result[col] = (10 ** X[col]) - shift
+        for col in self.shifts.keys():
+            if col in X.columns:
+                shift = self.shifts.get(col, 0)
+                result[col] = (10 ** X[col]) - shift
         return result
 
 class RowWiseMinMaxScaler(BaseTransformer):
@@ -318,16 +338,33 @@ class MinMaxScaler(BaseTransformer):
         return result
 
 class StandardScalerTransformer(BaseTransformer):
-    def __init__(self, with_mean=True, with_std=True, copy=True):
+    """Wrapper around sklearn's StandardScaler for DataFrame compatibility.
+    
+    Parameters
+    ----------
+    with_mean : bool, default=True
+        If True, center the data before scaling.
+    with_std : bool, default=True
+        If True, scale the data to unit variance.
+    copy : bool, default=True
+        If True, a copy of X will be created. If False, centering and scaling happen in-place.
+    columns : list, optional
+        List of column names to be transformed. If None, all columns will be transformed.
+    """
+    
+    def __init__(self, with_mean=True, with_std=True, copy=True, columns=None):
         self.with_mean = with_mean
         self.with_std = with_std  
         self.copy = copy
+        self.columns = columns
         self._sklearn_scaler = None
-        self._columns = None
+        self._fitted_columns = None
         
     def fit(self, X):
-        # Store column names for DataFrame reconstruction
-        self._columns = X.columns.tolist()
+        # Determine which columns to fit
+        columns = self.columns if self.columns is not None else X.columns
+        columns = [col for col in columns if col in X.columns]
+        self._fitted_columns = columns
         
         # Create sklearn StandardScaler
         self._sklearn_scaler = StandardScaler(
@@ -337,56 +374,69 @@ class StandardScalerTransformer(BaseTransformer):
         )
         
         # Fit on numpy array (sklearn expects this)
-        self._sklearn_scaler.fit(X.values)
+        if columns:
+            self._sklearn_scaler.fit(X[columns].values)
         return self
         
     def transform(self, X):
         if self._sklearn_scaler is None:
             raise ValueError("Transformer must be fitted before transform")
-            
-        # Transform using sklearn
-        transformed_values = self._sklearn_scaler.transform(X.values)
         
-        # Reconstruct DataFrame with original structure
-        if isinstance(X, pd.DataFrame):
-            return pd.DataFrame(
-                transformed_values, 
-                index=X.index, 
-                columns=X.columns
-            )
-        else:
-            return transformed_values
+        result = X.copy()
+        
+        if self._fitted_columns:
+            # Transform using sklearn
+            transformed_values = self._sklearn_scaler.transform(X[self._fitted_columns].values)
+            
+            # Update only the fitted columns in the result
+            result[self._fitted_columns] = transformed_values
+            
+        return result
             
     def inverse_transform(self, X):
         if self._sklearn_scaler is None:
             raise ValueError("Transformer must be fitted before inverse_transform")
-            
-        # Inverse transform using sklearn
-        inverse_values = self._sklearn_scaler.inverse_transform(X.values)
         
-        # Reconstruct DataFrame
-        if isinstance(X, pd.DataFrame):
-            return pd.DataFrame(
-                inverse_values,
-                index=X.index,
-                columns=X.columns
-            )
-        else:
-            return inverse_values
+        result = X.copy()
+        
+        if self._fitted_columns:
+            # Inverse transform using sklearn
+            inverse_values = self._sklearn_scaler.inverse_transform(X[self._fitted_columns].values)
+            
+            # Update only the fitted columns in the result
+            result[self._fitted_columns] = inverse_values
+            
+        return result
 
 class NormalScoreTransformer(BaseTransformer):
-    """A transformer for normal score transformation."""
+    """A transformer for normal score transformation.
+    
+    Parameters
+    ----------
+    tol : float, default=1e-7
+        Tolerance for convergence in random generation.
+    max_samples : int, default=1000000
+        Maximum number of samples for random generation.
+    quadratic_extrapolation : bool, default=False
+        Whether to use quadratic extrapolation for values outside the fitted range.
+    columns : list, optional
+        List of column names to be transformed. If None, all columns will be transformed.
+    """
 
-    def __init__(self, tol=1e-7, max_samples=1000000, quadratic_extrapolation=False):
+    def __init__(self, tol=1e-7, max_samples=1000000, quadratic_extrapolation=False, columns=None):
         self.tol = tol
         self.max_samples = max_samples
         self.quadratic_extrapolation = quadratic_extrapolation
+        self.columns = columns
         self.column_parameters = {}
         self.shared_z_scores = {}
 
     def fit(self, X):
         """Fit the transformer to the data."""
-        for col in X.columns:
+        columns = self.columns if self.columns is not None else X.columns
+        columns = [col for col in columns if col in X.columns]
+        
+        for col in columns:
             values = X[col].values
             sorted_vals = np.sort(values)
             smoothed_vals = self._moving_average_with_endpoints(sorted_vals)
@@ -417,7 +467,10 @@ class NormalScoreTransformer(BaseTransformer):
             The transformed DataFrame with normal scores.
         """
         result = X.copy()
-        for col in X.columns:
+        for col in self.column_parameters.keys():
+            if col not in X.columns:
+                continue
+                
             params = self.column_parameters.get(col, {})
             z_scores = params.get('z_scores', [])
             originals = params.get('originals', [])
@@ -476,7 +529,10 @@ class NormalScoreTransformer(BaseTransformer):
             The inverse-transformed DataFrame.
         """
         result = X.copy()
-        for col in X.columns:
+        for col in self.column_parameters.keys():
+            if col not in X.columns:
+                continue
+                
             params = self.column_parameters.get(col, {})
             z_scores = params.get('z_scores', [])
             originals = params.get('originals', [])
@@ -747,13 +803,13 @@ class AutobotsAssemble:
     def _create_transformer(self, transform_type, **kwargs):
         """Factory method to create appropriate transformer."""
         if transform_type == "log10":
-            return Log10Transformer()
+            return Log10Transformer(**kwargs)
         elif transform_type == "normal_score":
             return NormalScoreTransformer(**kwargs)
         elif transform_type == "row_wise_minmax":
             return RowWiseMinMaxScaler(**kwargs)
         elif transform_type == "standard_scaler":
-            return StandardScalerTransformer()
+            return StandardScalerTransformer(**kwargs)
         elif transform_type == "minmax_scaler":
             return MinMaxScaler(**kwargs)
         else:
