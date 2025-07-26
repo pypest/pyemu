@@ -3,11 +3,22 @@ Learning-based pattern-data-driven forecast approach (LPFA) emulator implementat
 
 """
 from __future__ import print_function, division
+
+# Check sklearn availability at module level
+try:
+    from sklearn.model_selection import train_test_split
+    from sklearn.decomposition import PCA
+    from sklearn.neural_network import MLPRegressor
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+    # Create dummy classes or set to None
+    train_test_split = None
+    PCA = None
+    MLPRegressor = None
+
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.decomposition import PCA
-from sklearn.neural_network import MLPRegressor
 
 from .base import Emulator
 from .transformers import RowWiseMinMaxScaler

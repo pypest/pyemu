@@ -310,7 +310,7 @@ class GPR(Emulator):
         # 3. which obs are objectives; subset of output_names
         # 4. which obs are constraints; subset of output_names
 
-        pst, input_names, output_names, objs, constraints = scrape_pst_dir(self,pst_dir,casename)
+        pst, input_names, output_names, objs, constraints = scrape_pst_dir(pst_dir,casename)
 
 
         # check that all input_names ar ein par data
