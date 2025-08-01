@@ -10,6 +10,7 @@ import copy
 import warnings
 import numpy as np
 import pandas
+import re
 from ..pyemu_warnings import PyemuWarning
 
 pandas.options.display.max_colwidth = 100
@@ -316,7 +317,8 @@ class ControlData(object):
                 t = np.float64
                 f = FFMT
             except Exception as ee:
-                v = value.lower()
+                #string with list to lower and space stripped
+                v = value.lower().replace(" ", "")
                 t = str
                 f = SFMT
         return v, t, f
@@ -334,11 +336,11 @@ class ControlData(object):
 
             extra = {}
             for line in lines:
-                raw = line.strip().split()
+                # split in two: keys and values
+                raw = line.strip().split(None, 1)
                 if len(raw) == 0 or raw[0] == "#":
                     continue
                 name = raw[0].strip().lower()
-
                 value = raw[1].strip()
                 v, t, f = self._parse_value(value)
                 if name not in self._df.index:
