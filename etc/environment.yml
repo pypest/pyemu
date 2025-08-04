@@ -1,6 +1,7 @@
 name: pyemu
 channels:
   - conda-forge
+  - nodefaults
 dependencies:
   # required
   - python>=3.9
