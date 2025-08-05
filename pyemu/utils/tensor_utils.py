@@ -372,7 +372,7 @@ def generate_field_by_layer(conceptual_points, grid_coords, iids,
 
 
 def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
-                      save_path='.', tensor_interp='idw'):
+                      save_path='.', transform='log', tensor_interp='idw'):
     """
     Generate field using full 3D tensor processing with zone-based interpolation.
 
@@ -456,7 +456,7 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
         cp_coords, cp_means, grid_coords, geological_tensors_3d,
         variogram_model='exponential', sill=1.0, nugget=0.01,
         background_value=np.mean(cp_means), max_search_radius=1e20,
-        min_points=3, transform='log', min_value=1e-8, max_neighbors=8,
+        min_points=3, transform=transform, min_value=1e-8, max_neighbors=8,
         zones=zones_3d
     )
     mean_field_3d = mean_field_1d.reshape(shape)
@@ -475,7 +475,7 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
         cp_coords, cp_sds, grid_coords, geological_tensors_3d,
         variogram_model='exponential', sill=0.5, nugget=0.01,
         background_value=np.mean(cp_sds), max_search_radius=1e20,
-        min_points=3, transform='log', min_value=1e-8, max_neighbors=8,
+        min_points=3, transform=transform, min_value=1e-8, max_neighbors=8,
         zones=zones_3d
     )
     sd_field_3d = sd_field_1d.reshape(shape)
@@ -509,12 +509,21 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
     noise_std = np.std(correlated_noise_3d)
     print(f"  Correlated noise stats: mean={noise_mean:.6f}, std={noise_std:.6f}")
 
-    # Log-normal field generation: field = 10^(log10(mean) + noise * sd)
-    mean_field = np.maximum(mean_field_3d, 1e-8)  # Avoid log(0)
-    sd_field = np.maximum(sd_field_3d, 1e-8)
-    field_3d = mean_field + correlated_noise_3d * sd_field
+    # Step 6: Combine fields with transform handling
+    if transform == 'log':
+        print("  Combining fields using log-normal formulation...")
+        # Convert to lognormal parameters
+        variance_2d = sd_field_3d ** 2
+        mu_2d = np.log(mean_field_3d ** 2 / np.sqrt(variance_2d + mean_field_3d ** 2))
+        sigma_2d = np.sqrt(np.log(1 + variance_2d / mean_field_3d ** 2))
+        normal_field = mu_2d + correlated_noise_3d * sigma_2d
+        field_3d = np.exp(normal_field)
+    else:
+        print("  Combining fields using normal formulation...")
+        field_3d = mean_field_3d + correlated_noise_3d * sd_field_3d
 
-    print(f"  Log-mean field range: [{np.min(mean_field):.3f}, {np.max(mean_field):.3f}]")
+
+    print(f"  Log-mean field range: [{np.min(field_3d):.3f}, {np.max(field_3d):.3f}]")
     print(f"  Generated field range: [{np.min(field_3d):.3e}, {np.max(field_3d):.3e}]")
 
     print(f"  Generated 3D field with shape {field_3d.shape}")
@@ -538,7 +547,7 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
 
 def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
                                      zones=None, shape=None, save_path='.',
-                                     tensor_interp='idw'):
+                                     tensor_interp='idw', transform='log'):
     """
     Modified generate_single_layer with zone-based tensor interpolation.
 
@@ -611,7 +620,7 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
         cp_coords, cp_means, grid_coords_2d, geological_tensors,
         variogram_model='exponential', sill=1.0, nugget=0.1,
         background_value=np.mean(cp_means), max_search_radius=1e20,
-        min_points=3, transform='log', min_value=1e-8, max_neighbors=4,
+        min_points=3, transform=transform, min_value=1e-8, max_neighbors=4,
         zones=zones
     )
     if zones is not None:
@@ -627,7 +636,7 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
         cp_coords, cp_sd, grid_coords_2d, geological_tensors,  # Use geological tensors
         variogram_model='exponential', sill=1.0, nugget=0.1,
         background_value=np.mean(cp_sd), max_search_radius=1e20,
-        min_points=3, transform='log', min_value=1e-8, max_neighbors=4,
+        min_points=3, transform=transform, min_value=1e-8, max_neighbors=4,
         zones=zones
     )
     if zones is not None:
@@ -642,11 +651,18 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
     correlated_noise_1d = generate_correlated_noise_2d(grid_coords_2d, geological_tensors, iids)
     correlated_noise_2d = correlated_noise_1d.reshape(shape)
 
-    # Step 7: Combine into lognormal field - all operations in 2D
-
-    mean_field = np.maximum(interp_means_2d, 1e-8) # Avoid log(0)
-    sd_field = np.maximum(interp_sd_2d, 1e-8)
-    field_2d = mean_field + correlated_noise_2d * sd_field
+    # Step 7: Combine fields with transform handling
+    if transform == 'log':
+        print("  Combining fields using log-normal formulation...")
+        # Convert to lognormal parameters
+        variance_2d = interp_sd_2d ** 2
+        mu_2d = np.log(interp_means_2d ** 2 / np.sqrt(variance_2d + interp_means_2d ** 2))
+        sigma_2d = np.sqrt(np.log(1 + variance_2d / interp_means_2d ** 2))
+        normal_field = mu_2d + correlated_noise_2d * sigma_2d
+        field_2d = np.exp(normal_field)
+    else:
+        print("  Combining fields using normal formulation...")
+        field_2d = interp_means_2d + correlated_noise_2d * interp_sd_2d
 
     return field_2d, geological_tensors
 
