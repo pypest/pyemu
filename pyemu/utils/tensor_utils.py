@@ -494,7 +494,7 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
     iids_flat = iids.flatten()
     correlated_noise_1d = generate_correlated_noise_3d(
         grid_coords, geological_tensors_3d, iids_flat,
-        n_neighbors=50, anisotropy_strength=1.0
+        n_neighbors=10, anisotropy_strength=1.0
     )
     correlated_noise_3d = correlated_noise_1d.reshape(shape)
 
@@ -510,11 +510,11 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
     print(f"  Correlated noise stats: mean={noise_mean:.6f}, std={noise_std:.6f}")
 
     # Log-normal field generation: field = 10^(log10(mean) + noise * sd)
-    log_mean_field = np.log10(np.maximum(mean_field_3d, 1e-8))  # Avoid log(0)
-    log_sd_field = np.log10(np.maximum(sd_field_3d, 1e-8))
-    field_3d = 10 ** (log_mean_field + correlated_noise_3d * log_sd_field)
+    mean_field = np.maximum(mean_field_3d, 1e-8)  # Avoid log(0)
+    sd_field = np.maximum(sd_field_3d, 1e-8)
+    field_3d = mean_field + correlated_noise_3d * sd_field
 
-    print(f"  Log-mean field range: [{np.min(log_mean_field):.3f}, {np.max(log_mean_field):.3f}]")
+    print(f"  Log-mean field range: [{np.min(mean_field):.3f}, {np.max(mean_field):.3f}]")
     print(f"  Generated field range: [{np.min(field_3d):.3e}, {np.max(field_3d):.3e}]")
 
     print(f"  Generated 3D field with shape {field_3d.shape}")
@@ -611,7 +611,7 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
         cp_coords, cp_means, grid_coords_2d, geological_tensors,
         variogram_model='exponential', sill=1.0, nugget=0.1,
         background_value=np.mean(cp_means), max_search_radius=1e20,
-        min_points=3, transform='log', min_value=1e-8, max_neighbors=8,
+        min_points=3, transform='log', min_value=1e-8, max_neighbors=4,
         zones=zones
     )
     if zones is not None:
@@ -627,7 +627,7 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
         cp_coords, cp_sd, grid_coords_2d, geological_tensors,  # Use geological tensors
         variogram_model='exponential', sill=1.0, nugget=0.1,
         background_value=np.mean(cp_sd), max_search_radius=1e20,
-        min_points=3, transform='log', min_value=1e-8, max_neighbors=8,
+        min_points=3, transform='log', min_value=1e-8, max_neighbors=4,
         zones=zones
     )
     if zones is not None:
@@ -644,9 +644,9 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
 
     # Step 7: Combine into lognormal field - all operations in 2D
 
-    log_mean_field = np.log10(np.maximum(interp_means_2d, 1e-8))  # Avoid log(0)
-    log_sd_field = np.log10(np.maximum(interp_sd_2d, 1e-8))
-    field_2d = 10 ** (log_mean_field + correlated_noise_2d * log_sd_field)
+    mean_field = np.maximum(interp_means_2d, 1e-8) # Avoid log(0)
+    sd_field = np.maximum(interp_sd_2d, 1e-8)
+    field_2d = mean_field + correlated_noise_2d * sd_field
 
     return field_2d, geological_tensors
 
@@ -771,7 +771,7 @@ def _kriging_method(cp_coords, cp_tensors, grid_coords):
                                              variogram_model='exponential', range_param=10000,
                                              sill=1.0, nugget=0.1, background_value=0.0,
                                              max_search_radius=1e20, min_points=1,
-                                             transform=None, min_value=1e-8, max_neighbors=5)
+                                             transform=None, min_value=1e-8, max_neighbors=8)
             result_log[:, i, j] = interp_values
             if i != j:
                 result_log[:, j, i] = interp_values
@@ -1218,7 +1218,6 @@ def estimate_boundary_direction(zones, center_i, center_j, radius=2):
     return boundary_direction
 
 
-
 def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
                          variogram_model='exponential', sill=1.0, nugget=0.01,
                          background_value=0.0, max_search_radius=1e20, min_points=1,
@@ -1226,42 +1225,6 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
                          zones=None):
     """
     Ordinary kriging using tensor-aware anisotropic distances.
-
-    Parameters
-    ----------
-    cp_coords : np.ndarray
-        Conceptual point coordinates, shape (n_cp, 2) for 2D or (n_cp, 3) for 3D
-    cp_values : np.ndarray
-        Values at conceptual points, shape (n_cp,)
-    grid_coords : np.ndarray
-        Grid coordinates, shape (n_grid, 2) for 2D or (n_grid, 3) for 3D
-    interp_tensors : np.ndarray
-        Interpolated tensors at grid points, shape (n_grid, 2, 2) for 2D or (n_grid, 3, 3) for 3D
-    variogram_model : str, default 'exponential'
-        Variogram model: 'exponential', 'gaussian', or 'spherical'
-    sill : float, default 1.0
-        Variogram sill parameter
-    nugget : float, default 0.01
-        Variogram nugget parameter
-    background_value : float, default 0.0
-        Default value for points with insufficient neighbors
-    max_search_radius : float, default 1e20
-        Maximum search radius for neighbors
-    min_points : int, default 1
-        Minimum number of points required for interpolation
-    max_neighbors : int, default 4
-        Maximum number of neighbors to use
-    transform : str, optional
-        Data transformation: 'log' for log-transform, None for no transform
-    min_value : float, default 1e-8
-        Minimum value for log transform
-    zones : np.ndarray, optional
-        Zone IDs for zone-aware kriging. Shape (ny, nx) for 2D or (nz, ny, nx) for 3D
-
-    Returns
-    -------
-    np.ndarray
-        Interpolated values. Shape (ny, nx) for 2D grids or (nz, ny, nx) for 3D grids
     """
     n_grid = len(grid_coords)
     n_dims = grid_coords.shape[1]
@@ -1295,6 +1258,17 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
             col = idx % nx
             return row, col
 
+    # MOVE VARIOGRAM FUNCTION OUTSIDE THE LOOP!
+    def variogram(h):
+        if variogram_model == 'exponential':
+            return nugget + (sill - nugget) * (1 - np.exp(-h))
+        elif variogram_model == 'gaussian':
+            return nugget + (sill - nugget) * (1 - np.exp(-(h ** 2)))
+        else:  # spherical
+            return np.where(h <= 1.0,
+                            nugget + (sill - nugget) * (1.5 * h - 0.5 * h ** 3),
+                            sill)
+
     interp_values_1d = np.full(n_grid, background_value)
 
     # Calculate zone for each conceptual point (once, outside the main loop)
@@ -1312,8 +1286,16 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
                 cp_zones.append(zones[row, col])
         cp_zones = np.array(cp_zones)
 
+    # PRE-COMPUTE LOG TRANSFORMATION IF NEEDED
+    if transform == 'log':
+        if min_value is None:
+            positive_values = cp_values[cp_values > 0]
+            min_value = np.min(positive_values) * 0.01 if len(positive_values) > 0 else 1e-8
+
+    # MAIN GRID LOOP - This is doing kriging for each grid point individually
     for i in range(n_grid):
         local_tensor = interp_tensors[i]
+
         if zones is not None:
             # Get current zone and filter conceptual points
             if n_dims == 3:
@@ -1335,17 +1317,12 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
             cp_coords_filtered = cp_coords
             cp_values_filtered = cp_values
 
+        # COMPUTE ANISOTROPIC DISTANCES
         try:
             tensor_inv = np.linalg.inv(local_tensor)
-            aniso_distances = []
-
-            for j in range(len(cp_coords_filtered)):
-                dx = cp_coords_filtered[j] - grid_coords[i]
-                aniso_dist = np.sqrt(dx.T @ tensor_inv @ dx)
-                aniso_distances.append(aniso_dist)
-
-            aniso_distances = np.array(aniso_distances)
-
+            # VECTORIZE THIS INSTEAD OF LOOP!
+            dx = cp_coords_filtered - grid_coords[i]  # Broadcasting
+            aniso_distances = np.sqrt(np.sum(dx @ tensor_inv * dx, axis=1))
         except np.linalg.LinAlgError:
             aniso_distances = np.linalg.norm(cp_coords_filtered - grid_coords[i], axis=1)
 
@@ -1361,27 +1338,18 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
         nearby_coords = cp_coords_filtered[closest_indices]
         nearby_distances = aniso_distances[closest_indices]
 
+        # APPLY LOG TRANSFORM IF NEEDED
         if transform == 'log':
-            if min_value is None:
-                positive_values = nearby_values[nearby_values > 0]
-                min_value = np.min(positive_values) * 0.01
             nearby_values_transformed = np.log10(np.maximum(nearby_values, min_value))
         else:
             nearby_values_transformed = nearby_values.copy()
 
-        def variogram(h):
-            if variogram_model == 'exponential':
-                return nugget + (sill - nugget) * (1 - np.exp(-h))
-            elif variogram_model == 'gaussian':
-                return nugget + (sill - nugget) * (1 - np.exp(-(h ** 2)))
-            else:  # spherical
-                return np.where(h <= 1.0,
-                                nugget + (sill - nugget) * (1.5 * h - 0.5 * h ** 3),
-                                sill)
-
+        # KRIGING SYSTEM SETUP AND SOLVE
+        # TODO: use gwutils
         C = np.zeros((n_candidates + 1, n_candidates + 1))
         c = np.zeros(n_candidates + 1)
 
+        # BUILD COVARIANCE MATRIX - Could potentially vectorize this too
         for j in range(n_candidates):
             for k in range(n_candidates):
                 dx = nearby_coords[j] - nearby_coords[k]
@@ -1397,6 +1365,7 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
 
         c[-1] = 1
 
+        # SOLVE KRIGING SYSTEM
         try:
             cond_num = np.linalg.cond(C)
             if cond_num > 1e12:  # Matrix is poorly conditioned
@@ -1412,6 +1381,7 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
             weights = np.exp(-nearby_distances)
             interp_values_1d[i] = np.sum(weights * nearby_values_transformed) / np.sum(weights)
 
+    # BACK-TRANSFORM IF NEEDED
     if transform == 'log':
         interp_values_1d = 10 ** interp_values_1d
 
@@ -1423,7 +1393,7 @@ from scipy.spatial import cKDTree
 
 
 def generate_correlated_noise_2d(grid_coords, tensors, iids,
-                                           n_neighbors=8, anisotropy_strength=1.0):
+                                           n_neighbors=4, anisotropy_strength=1.0):
     """Generate spatially correlated noise respecting tensor anisotropy - optimized version."""
     n_points = len(grid_coords)
 
@@ -1511,7 +1481,7 @@ def generate_correlated_noise_2d(grid_coords, tensors, iids,
 
 
 def generate_correlated_noise_2d_batch(grid_coords, tensors, iids,
-                                       n_neighbors=8, anisotropy_strength=1.0,
+                                       n_neighbors=4, anisotropy_strength=1.0,
                                        batch_size=1000):
     """Batch processing version for very large datasets."""
     n_points = len(grid_coords)
@@ -1564,7 +1534,7 @@ from scipy.spatial import cKDTree
 
 
 def generate_correlated_noise_3d(grid_coords, tensors, iids,
-                                           n_neighbors=50, anisotropy_strength=1.0):
+                                           n_neighbors=10, anisotropy_strength=1.0):
     """Generate spatially correlated noise respecting 3D tensor anisotropy - optimized version."""
     n_points = len(grid_coords)
 
@@ -1679,7 +1649,7 @@ def generate_correlated_noise_3d(grid_coords, tensors, iids,
 
 
 def generate_correlated_noise_3d_batch(grid_coords, tensors, iids,
-                                       n_neighbors=50, anisotropy_strength=1.0,
+                                       n_neighbors=10, anisotropy_strength=1.0,
                                        batch_size=500):
     """Batch processing version for very large 3D datasets."""
     n_points = len(grid_coords)
@@ -1745,7 +1715,7 @@ def generate_correlated_noise_3d_batch(grid_coords, tensors, iids,
 
 
 def generate_correlated_noise_3d_parallel(grid_coords, tensors, iids,
-                                          n_neighbors=50, anisotropy_strength=1.0,
+                                          n_neighbors=10, anisotropy_strength=1.0,
                                           n_jobs=-1):
     """Parallel processing version using joblib (install with: pip install joblib)."""
     try:
@@ -2578,10 +2548,13 @@ if __name__ == "__main__":
     - zones: Can be passed to generate_single_layer() as numpy array
       with integer zone IDs, shape (n_points,) or (ny, nx)
     """
-    data_dir = r'..\..\examples\bridgepa'
+    import time
+    start_time = time.perf_counter()
+
+    data_dir = r'..\..\examples\Hawkes_Bay'
     zone_files = [f'idomain.arr' for z in range(1)]
-    con_pts_file = 'Bridgpa_skytem_sva.csv'
-    save_path = os.path.join(data_dir, f'{con_pts_file}_output')
+    con_pts_file = 'Bridgpa_skytem_sva_0.csv'
+    save_path = os.path.join(data_dir, f'{con_pts_file}_output_fixedlog')
 
     if not os.path.exists(save_path):
         os.mkdir(save_path)
@@ -2595,3 +2568,7 @@ if __name__ == "__main__":
         save_path=save_path,
         tensor_interp='idw'
     )
+
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+    print(f"Execution time: {elapsed_time:.4f} seconds")
