@@ -819,10 +819,9 @@ def new_format2_test(tmp_path):
         raise Exception("fail:"+str(e))
     os.chdir(b_d)
 
-def new_format_pestpp_options_test(tmp_path):
+def new_format_pestpp_options_test():
     import pyemu
     pst_dir = "newpst"
-    pst_target = ""
     pestpp_expected = {
                 'lambdas':'1, 2, 10, 999',
                 'opt_dec_var_groups':'dv_drcq,   dv_irrig',
@@ -830,7 +829,7 @@ def new_format_pestpp_options_test(tmp_path):
                 'ies_n_iter_reinflate':'3, 5,  999',
                 'ies_reinflate_factor':'0.1 , 0.05,0.1',
                 }
-    pst = pyemu.Pst(os.path.join("newpst","test_pestpp_options.pst"))
+    pst = pyemu.Pst(os.path.join(pst_dir,"test_pestpp_options.pst"))
 
     try:
         for key, expected in pestpp_expected.items():

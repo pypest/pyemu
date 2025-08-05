@@ -10,7 +10,6 @@ import copy
 import warnings
 import numpy as np
 import pandas
-import re
 from ..pyemu_warnings import PyemuWarning
 
 pandas.options.display.max_colwidth = 100
