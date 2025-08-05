@@ -2253,7 +2253,6 @@ def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=N
 
 
 def plot_layer(field, layer=0, field_name='field', transform='log', save_path='.'):
-    import matplotlib.colors as mcolors
     if transform=='log':
         field = np.log10(field)
 

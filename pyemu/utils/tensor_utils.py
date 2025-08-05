@@ -182,6 +182,8 @@ def generate_fields_from_files(data_dir, conceptual_points_file, grid_file, zone
     grid = pd.read_csv(os.path.join(data_dir, grid_file), sep=r'\s+')
     grid_coords = grid[['x', 'y', 'z']].values
 
+    if 'transverse' not in conceptual_points.columns and 'anisotropy' in conceptual_points.columns:
+        conceptual_points.loc[:, 'transverse'] = conceptual_points.loc[:, 'major'] / conceptual_points.loc[:, 'anisotropy']
     print(f"Loaded {len(conceptual_points)} conceptual points")
     print(f"Loaded {len(grid_coords)} grid points")
 
@@ -284,7 +286,8 @@ def generate_fields_from_files(data_dir, conceptual_points_file, grid_file, zone
         # Save and plot results
         for i in conceptual_points.layer.unique():
             save_layer(field[i - 1], layer=i, field_name=fn, save_path=save_path)
-            pu.plot_layer(np.where(zones == 0, np.nan, field[i - 1]), layer=i, field_name=fn, save_path=save_path)
+            pu.plot_layer(np.where((zones_3d[0] == 0), np.nan, field[i - 1]), layer=i,
+                          transform='log', field_name=fn, save_path=save_path)
 
         print("\n=== Complete ===")
         print(f"Field shape: {field.shape}")
@@ -359,7 +362,7 @@ def generate_field_by_layer(conceptual_points, grid_coords, iids,
                                                           layer_iids, zones=layer_zones, shape=layer_shape,
                                                           save_path=save_path, tensor_interp=tensor_interp)
         pu.visualize_geological_tensors(geological_tensors, layer_coords, layer_shape, zones=layer_zones,
-                                     conceptual_points=layer_cp, subsample=4,
+                                     conceptual_points=layer_cp, subsample=8,
                                      save_path=save_path, title_suf=f'layer {layer_idx+1}')
 
         # layer_field_2d is already 2D
@@ -472,7 +475,7 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
         cp_coords, cp_sds, grid_coords, geological_tensors_3d,
         variogram_model='exponential', sill=0.5, nugget=0.01,
         background_value=np.mean(cp_sds), max_search_radius=1e20,
-        min_points=3, transform=None, min_value=1e-8, max_neighbors=8,
+        min_points=3, transform='log', min_value=1e-8, max_neighbors=8,
         zones=zones_3d
     )
     sd_field_3d = sd_field_1d.reshape(shape)
@@ -508,7 +511,8 @@ def generate_field_3d(conceptual_points, grid_coords, iids, shape, zones=None,
 
     # Log-normal field generation: field = 10^(log10(mean) + noise * sd)
     log_mean_field = np.log10(np.maximum(mean_field_3d, 1e-8))  # Avoid log(0)
-    field_3d = 10 ** (log_mean_field + correlated_noise_3d * sd_field_3d)
+    log_sd_field = np.log10(np.maximum(sd_field_3d, 1e-8))
+    field_3d = 10 ** (log_mean_field + correlated_noise_3d * log_sd_field)
 
     print(f"  Log-mean field range: [{np.min(log_mean_field):.3f}, {np.max(log_mean_field):.3f}]")
     print(f"  Generated field range: [{np.min(field_3d):.3e}, {np.max(field_3d):.3e}]")
@@ -623,7 +627,7 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
         cp_coords, cp_sd, grid_coords_2d, geological_tensors,  # Use geological tensors
         variogram_model='exponential', sill=1.0, nugget=0.1,
         background_value=np.mean(cp_sd), max_search_radius=1e20,
-        min_points=3, transform=None, min_value=1e-8, max_neighbors=8,
+        min_points=3, transform='log', min_value=1e-8, max_neighbors=8,
         zones=zones
     )
     if zones is not None:
@@ -641,7 +645,8 @@ def generate_single_layer_zone_based(conceptual_points, grid_coords_2d, iids,
     # Step 7: Combine into lognormal field - all operations in 2D
 
     log_mean_field = np.log10(np.maximum(interp_means_2d, 1e-8))  # Avoid log(0)
-    field_2d = 10 ** (log_mean_field + correlated_noise_2d * interp_sd_2d)
+    log_sd_field = np.log10(np.maximum(interp_sd_2d, 1e-8))
+    field_2d = 10 ** (log_mean_field + correlated_noise_2d * log_sd_field)
 
     return field_2d, geological_tensors
 
@@ -1413,105 +1418,499 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
     return interp_values_1d.reshape(shape)
 
 
+import numpy as np
+from scipy.spatial import cKDTree
+
 
 def generate_correlated_noise_2d(grid_coords, tensors, iids,
-                                 n_neighbors=50, anisotropy_strength=1.0):
-    """Generate spatially correlated noise respecting tensor anisotropy."""
+                                           n_neighbors=8, anisotropy_strength=1.0):
+    """Generate spatially correlated noise respecting tensor anisotropy - optimized version."""
     n_points = len(grid_coords)
+
+    # Vectorized eigendecomposition for all tensors at once
+    evals, evecs = np.linalg.eigh(tensors)
+
+    # Ensure consistent ordering (largest eigenvalue first)
+    swap_mask = evals[:, 1] < evals[:, 0]
+    evals[swap_mask] = evals[swap_mask, ::-1]
+    evecs[swap_mask] = evecs[swap_mask, :, ::-1]
+
+    # Vectorized computation of correlation lengths and scaling
+    major_corr_length = np.sqrt(evals[:, 1])
+    minor_corr_length = np.sqrt(evals[:, 0])
+    scale_minor = minor_corr_length / anisotropy_strength
+    scale_major = major_corr_length * anisotropy_strength
+
+    # Create transformation matrices for all points
+    scales = np.stack([scale_minor, scale_major], axis=1)
+    transforms = evecs * scales[:, np.newaxis, :]
+
+    # Pre-compute inverse transforms
+    inv_transforms = np.linalg.inv(transforms)
+
     correlated_noise = np.zeros(n_points)
+    iids_flat = iids.flatten()
 
-    for i in range(n_points):
-        evals, evecs = np.linalg.eigh(tensors[i])
-        if evals[1] < evals[0]:
-            evals, evecs = evals[::-1], evecs[:, ::-1]
+    # Use spatial indexing for faster neighbor finding when beneficial
+    if n_points > 1000:  # Threshold where spatial indexing becomes beneficial
+        tree = cKDTree(grid_coords)
+        # Use a reasonable search radius to limit candidates
+        max_search_radius = np.percentile(np.sqrt(evals.max(axis=1)), 95) * anisotropy_strength * 3
 
-        major_corr_length = np.sqrt(evals[1])
-        minor_corr_length = np.sqrt(evals[0])
+        for i in range(n_points):
+            # Get candidates within search radius
+            candidates = tree.query_ball_point(grid_coords[i], max_search_radius)
+            if len(candidates) <= n_neighbors:
+                neighbor_indices = candidates
+            else:
+                # Transform and compute anisotropic distances only for candidates
+                dx_candidates = grid_coords[candidates] - grid_coords[i]
+                dx_transformed = dx_candidates @ inv_transforms[i].T
+                aniso_distances = np.linalg.norm(dx_transformed, axis=1)
+                neighbor_indices = np.array(candidates)[np.argsort(aniso_distances)[:n_neighbors]]
 
-        scale_for_minor_axis = minor_corr_length / anisotropy_strength
-        scale_for_major_axis = major_corr_length * anisotropy_strength
+            # Compute final weights and weighted sum
+            if len(neighbor_indices) > 0:
+                dx_final = grid_coords[neighbor_indices] - grid_coords[i]
+                dx_transformed_final = dx_final @ inv_transforms[i].T
+                aniso_distances_final = np.linalg.norm(dx_transformed_final, axis=1)
+                weights = np.exp(-(aniso_distances_final) ** 2)
 
-        transform = evecs @ np.diag([scale_for_minor_axis, scale_for_major_axis])
+                weighted_sum = np.sum(weights * iids_flat[neighbor_indices])
+                sum_weights = np.sum(weights)
 
-        all_dx = grid_coords - grid_coords[i]
-        inv_transform = np.linalg.inv(transform)
-        dx_transformed = all_dx @ inv_transform.T
-        aniso_distances = np.linalg.norm(dx_transformed, axis=1)
+                if sum_weights > 1e-10:
+                    correlated_noise[i] = weighted_sum / sum_weights
+                else:
+                    correlated_noise[i] = iids_flat[i]
+            else:
+                correlated_noise[i] = iids_flat[i]
+    else:
+        # For smaller datasets, direct computation is still faster
+        for i in range(n_points):
+            # Vectorized distance computation for all points
+            all_dx = grid_coords - grid_coords[i]
+            dx_transformed = all_dx @ inv_transforms[i].T
+            aniso_distances = np.linalg.norm(dx_transformed, axis=1)
 
-        neighbor_indices = np.argsort(aniso_distances)[:min(n_neighbors, n_points)]
+            # Get k nearest neighbors
+            neighbor_indices = np.argpartition(aniso_distances, min(n_neighbors - 1, n_points - 1))[
+                               :min(n_neighbors, n_points)]
 
-        weighted_sum = 0.0
-        sum_weights = 0.0
+            # Compute weights vectorized
+            weights = np.exp(-(aniso_distances[neighbor_indices]) ** 2)
+            weighted_sum = np.sum(weights * iids_flat[neighbor_indices])
+            sum_weights = np.sum(weights)
 
-        for j in neighbor_indices:
-            # Use anisotropic distance instead of actual distance for weight calculation
-            # This respects the tensor-defined correlation structure
-            weight = np.exp(-(aniso_distances[j]) ** 2)
-            weighted_sum += weight * iids.flatten()[j]
-            sum_weights += weight
-
-        if sum_weights > 1e-10:
-            correlated_noise[i] = weighted_sum / sum_weights
-        else:
-            correlated_noise[i] = iids[i]
+            if sum_weights > 1e-10:
+                correlated_noise[i] = weighted_sum / sum_weights
+            else:
+                correlated_noise[i] = iids_flat[i]
 
     return correlated_noise
+
+
+def generate_correlated_noise_2d_batch(grid_coords, tensors, iids,
+                                       n_neighbors=8, anisotropy_strength=1.0,
+                                       batch_size=1000):
+    """Batch processing version for very large datasets."""
+    n_points = len(grid_coords)
+
+    # Same vectorized preprocessing
+    evals, evecs = np.linalg.eigh(tensors)
+    swap_mask = evals[:, 1] < evals[:, 0]
+    evals[swap_mask] = evals[swap_mask, ::-1]
+    evecs[swap_mask] = evecs[swap_mask, :, ::-1]
+
+    major_corr_length = np.sqrt(evals[:, 1])
+    minor_corr_length = np.sqrt(evals[:, 0])
+    scale_minor = minor_corr_length / anisotropy_strength
+    scale_major = major_corr_length * anisotropy_strength
+
+    scales = np.stack([scale_minor, scale_major], axis=1)
+    transforms = evecs * scales[:, np.newaxis, :]
+    inv_transforms = np.linalg.inv(transforms)
+
+    correlated_noise = np.zeros(n_points)
+    iids_flat = iids.flatten()
+
+    # Process in batches to manage memory
+    for batch_start in range(0, n_points, batch_size):
+        batch_end = min(batch_start + batch_size, n_points)
+        batch_indices = np.arange(batch_start, batch_end)
+
+        for i in batch_indices:
+            all_dx = grid_coords - grid_coords[i]
+            dx_transformed = all_dx @ inv_transforms[i].T
+            aniso_distances = np.linalg.norm(dx_transformed, axis=1)
+
+            neighbor_indices = np.argpartition(aniso_distances, min(n_neighbors - 1, n_points - 1))[
+                               :min(n_neighbors, n_points)]
+
+            weights = np.exp(-(aniso_distances[neighbor_indices]) ** 2)
+            weighted_sum = np.sum(weights * iids_flat[neighbor_indices])
+            sum_weights = np.sum(weights)
+
+            if sum_weights > 1e-10:
+                correlated_noise[i] = weighted_sum / sum_weights
+            else:
+                correlated_noise[i] = iids_flat[i]
+
+    return correlated_noise
+
+
+import numpy as np
+from scipy.spatial import cKDTree
 
 
 def generate_correlated_noise_3d(grid_coords, tensors, iids,
-                                 n_neighbors=50, anisotropy_strength=1.0):
-    """Generate spatially correlated noise respecting 3D tensor anisotropy."""
+                                           n_neighbors=50, anisotropy_strength=1.0):
+    """Generate spatially correlated noise respecting 3D tensor anisotropy - optimized version."""
     n_points = len(grid_coords)
-    correlated_noise = np.zeros(n_points)
+
+    # Vectorized eigendecomposition for all tensors at once
+    evals, evecs = np.linalg.eigh(tensors)
+
+    # Sort eigenvalues/vectors by magnitude (largest to smallest) for all tensors
+    sort_indices = np.argsort(evals, axis=1)[:, ::-1]  # Descending order
+    # Use advanced indexing to sort both evals and evecs
+    evals = np.take_along_axis(evals, sort_indices, axis=1)
+    evecs = np.take_along_axis(evecs, sort_indices[:, np.newaxis, :], axis=2)
+
+    # Vectorized computation of correlation lengths
+    major_corr_length = np.sqrt(evals[:, 0])  # Largest eigenvalue
+    intermediate_corr_length = np.sqrt(evals[:, 1])  # Middle eigenvalue
+    minor_corr_length = np.sqrt(evals[:, 2])  # Smallest eigenvalue
+
+    # Apply anisotropy strength scaling
+    scale_major = major_corr_length * anisotropy_strength
+    scale_intermediate = intermediate_corr_length  # Keep intermediate neutral
+    scale_minor = minor_corr_length / anisotropy_strength
+
+    # Create 3D transformation matrices for all points
+    scales = np.stack([scale_major, scale_intermediate, scale_minor], axis=1)
+    transforms = evecs * scales[:, np.newaxis, :]
+
+    # Pre-compute inverse transforms with singularity handling
+    inv_transforms = np.zeros_like(transforms)
+    singular_mask = np.zeros(n_points, dtype=bool)
 
     for i in range(n_points):
-        evals, evecs = np.linalg.eigh(tensors[i])
-
-        # Sort eigenvalues/vectors by magnitude (largest to smallest)
-        sort_idx = np.argsort(evals)[::-1]
-        evals = evals[sort_idx]
-        evecs = evecs[:, sort_idx]
-
-        # Extract correlation lengths (sqrt of eigenvalues)
-        major_corr_length = np.sqrt(evals[0])  # Largest eigenvalue
-        intermediate_corr_length = np.sqrt(evals[1])  # Middle eigenvalue
-        minor_corr_length = np.sqrt(evals[2])  # Smallest eigenvalue
-
-        # Apply anisotropy strength scaling
-        scale_major = major_corr_length * anisotropy_strength
-        scale_intermediate = intermediate_corr_length  # Keep intermediate neutral
-        scale_minor = minor_corr_length / anisotropy_strength
-
-        # Create 3D transformation matrix
-        transform = evecs @ np.diag([scale_major, scale_intermediate, scale_minor])
-
-        # Transform all grid points relative to current point
-        all_dx = grid_coords - grid_coords[i]
         try:
-            inv_transform = np.linalg.inv(transform)
-            dx_transformed = all_dx @ inv_transform.T
-            aniso_distances = np.linalg.norm(dx_transformed, axis=1)
+            inv_transforms[i] = np.linalg.inv(transforms[i])
         except np.linalg.LinAlgError:
-            # Fallback to Euclidean distance if transform is singular
-            aniso_distances = np.linalg.norm(all_dx, axis=1)
+            singular_mask[i] = True
+            inv_transforms[i] = np.eye(3)  # Fallback to identity
 
-        neighbor_indices = np.argsort(aniso_distances)[:min(n_neighbors, n_points)]
+    correlated_noise = np.zeros(n_points)
+    iids_flat = iids.flatten()
 
-        weighted_sum = 0.0
-        sum_weights = 0.0
+    # Use spatial indexing for faster neighbor finding when beneficial
+    if n_points > 1000:  # Threshold where spatial indexing becomes beneficial
+        tree = cKDTree(grid_coords)
+        # Use a reasonable search radius to limit candidates (more conservative for 3D)
+        max_search_radius = np.percentile(np.sqrt(evals.max(axis=1)), 90) * anisotropy_strength * 2.5
 
-        for j in neighbor_indices:
-            # Use anisotropic distance for weight calculation
-            weight = np.exp(-(aniso_distances[j]) ** 2)
-            weighted_sum += weight * iids.flatten()[j]
-            sum_weights += weight
+        for i in range(n_points):
+            # Get candidates within search radius
+            candidates = tree.query_ball_point(grid_coords[i], max_search_radius)
 
-        if sum_weights > 1e-10:
-            correlated_noise[i] = weighted_sum / sum_weights
-        else:
-            correlated_noise[i] = iids[i]
+            if len(candidates) <= n_neighbors:
+                neighbor_indices = candidates
+            else:
+                # Transform and compute anisotropic distances only for candidates
+                dx_candidates = grid_coords[candidates] - grid_coords[i]
+                if singular_mask[i]:
+                    # Use Euclidean distance for singular transforms
+                    aniso_distances = np.linalg.norm(dx_candidates, axis=1)
+                else:
+                    dx_transformed = dx_candidates @ inv_transforms[i].T
+                    aniso_distances = np.linalg.norm(dx_transformed, axis=1)
+
+                neighbor_indices = np.array(candidates)[np.argsort(aniso_distances)[:n_neighbors]]
+
+            # Compute final weights and weighted sum
+            if len(neighbor_indices) > 0:
+                dx_final = grid_coords[neighbor_indices] - grid_coords[i]
+                if singular_mask[i]:
+                    aniso_distances_final = np.linalg.norm(dx_final, axis=1)
+                else:
+                    dx_transformed_final = dx_final @ inv_transforms[i].T
+                    aniso_distances_final = np.linalg.norm(dx_transformed_final, axis=1)
+
+                weights = np.exp(-(aniso_distances_final) ** 2)
+                weighted_sum = np.sum(weights * iids_flat[neighbor_indices])
+                sum_weights = np.sum(weights)
+
+                if sum_weights > 1e-10:
+                    correlated_noise[i] = weighted_sum / sum_weights
+                else:
+                    correlated_noise[i] = iids_flat[i]
+            else:
+                correlated_noise[i] = iids_flat[i]
+    else:
+        # For smaller datasets, direct computation is still faster
+        for i in range(n_points):
+            # Vectorized distance computation for all points
+            all_dx = grid_coords - grid_coords[i]
+
+            if singular_mask[i]:
+                # Use Euclidean distance for singular transforms
+                aniso_distances = np.linalg.norm(all_dx, axis=1)
+            else:
+                dx_transformed = all_dx @ inv_transforms[i].T
+                aniso_distances = np.linalg.norm(dx_transformed, axis=1)
+
+            # Get k nearest neighbors
+            neighbor_indices = np.argpartition(aniso_distances, min(n_neighbors - 1, n_points - 1))[
+                               :min(n_neighbors, n_points)]
+
+            # Compute weights vectorized
+            weights = np.exp(-(aniso_distances[neighbor_indices]) ** 2)
+            weighted_sum = np.sum(weights * iids_flat[neighbor_indices])
+            sum_weights = np.sum(weights)
+
+            if sum_weights > 1e-10:
+                correlated_noise[i] = weighted_sum / sum_weights
+            else:
+                correlated_noise[i] = iids_flat[i]
 
     return correlated_noise
+
+
+def generate_correlated_noise_3d_batch(grid_coords, tensors, iids,
+                                       n_neighbors=50, anisotropy_strength=1.0,
+                                       batch_size=500):
+    """Batch processing version for very large 3D datasets."""
+    n_points = len(grid_coords)
+
+    # Same vectorized preprocessing as above
+    evals, evecs = np.linalg.eigh(tensors)
+    sort_indices = np.argsort(evals, axis=1)[:, ::-1]
+    evals = np.take_along_axis(evals, sort_indices, axis=1)
+    evecs = np.take_along_axis(evecs, sort_indices[:, np.newaxis, :], axis=2)
+
+    major_corr_length = np.sqrt(evals[:, 0])
+    intermediate_corr_length = np.sqrt(evals[:, 1])
+    minor_corr_length = np.sqrt(evals[:, 2])
+
+    scale_major = major_corr_length * anisotropy_strength
+    scale_intermediate = intermediate_corr_length
+    scale_minor = minor_corr_length / anisotropy_strength
+
+    scales = np.stack([scale_major, scale_intermediate, scale_minor], axis=1)
+    transforms = evecs * scales[:, np.newaxis, :]
+
+    # Pre-compute inverse transforms with singularity handling
+    inv_transforms = np.zeros_like(transforms)
+    singular_mask = np.zeros(n_points, dtype=bool)
+
+    for i in range(n_points):
+        try:
+            inv_transforms[i] = np.linalg.inv(transforms[i])
+        except np.linalg.LinAlgError:
+            singular_mask[i] = True
+            inv_transforms[i] = np.eye(3)
+
+    correlated_noise = np.zeros(n_points)
+    iids_flat = iids.flatten()
+
+    # Process in batches to manage memory (smaller batches for 3D due to higher memory usage)
+    for batch_start in range(0, n_points, batch_size):
+        batch_end = min(batch_start + batch_size, n_points)
+        batch_indices = np.arange(batch_start, batch_end)
+
+        for i in batch_indices:
+            all_dx = grid_coords - grid_coords[i]
+
+            if singular_mask[i]:
+                aniso_distances = np.linalg.norm(all_dx, axis=1)
+            else:
+                dx_transformed = all_dx @ inv_transforms[i].T
+                aniso_distances = np.linalg.norm(dx_transformed, axis=1)
+
+            neighbor_indices = np.argpartition(aniso_distances, min(n_neighbors - 1, n_points - 1))[
+                               :min(n_neighbors, n_points)]
+
+            weights = np.exp(-(aniso_distances[neighbor_indices]) ** 2)
+            weighted_sum = np.sum(weights * iids_flat[neighbor_indices])
+            sum_weights = np.sum(weights)
+
+            if sum_weights > 1e-10:
+                correlated_noise[i] = weighted_sum / sum_weights
+            else:
+                correlated_noise[i] = iids_flat[i]
+
+    return correlated_noise
+
+
+def generate_correlated_noise_3d_parallel(grid_coords, tensors, iids,
+                                          n_neighbors=50, anisotropy_strength=1.0,
+                                          n_jobs=-1):
+    """Parallel processing version using joblib (install with: pip install joblib)."""
+    try:
+        from joblib import Parallel, delayed
+    except ImportError:
+        raise ImportError("joblib is required for parallel processing. Install with: pip install joblib")
+
+    n_points = len(grid_coords)
+
+    # Same preprocessing
+    evals, evecs = np.linalg.eigh(tensors)
+    sort_indices = np.argsort(evals, axis=1)[:, ::-1]
+    evals = np.take_along_axis(evals, sort_indices, axis=1)
+    evecs = np.take_along_axis(evecs, sort_indices[:, np.newaxis, :], axis=2)
+
+    major_corr_length = np.sqrt(evals[:, 0])
+    intermediate_corr_length = np.sqrt(evals[:, 1])
+    minor_corr_length = np.sqrt(evals[:, 2])
+
+    scale_major = major_corr_length * anisotropy_strength
+    scale_intermediate = intermediate_corr_length
+    scale_minor = minor_corr_length / anisotropy_strength
+
+    scales = np.stack([scale_major, scale_intermediate, scale_minor], axis=1)
+    transforms = evecs * scales[:, np.newaxis, :]
+
+    inv_transforms = np.zeros_like(transforms)
+    singular_mask = np.zeros(n_points, dtype=bool)
+
+    for i in range(n_points):
+        try:
+            inv_transforms[i] = np.linalg.inv(transforms[i])
+        except np.linalg.LinAlgError:
+            singular_mask[i] = True
+            inv_transforms[i] = np.eye(3)
+
+    iids_flat = iids.flatten()
+
+    def process_point(i):
+        all_dx = grid_coords - grid_coords[i]
+
+        if singular_mask[i]:
+            aniso_distances = np.linalg.norm(all_dx, axis=1)
+        else:
+            dx_transformed = all_dx @ inv_transforms[i].T
+            aniso_distances = np.linalg.norm(dx_transformed, axis=1)
+
+        neighbor_indices = np.argpartition(aniso_distances, min(n_neighbors - 1, n_points - 1))[
+                           :min(n_neighbors, n_points)]
+
+        weights = np.exp(-(aniso_distances[neighbor_indices]) ** 2)
+        weighted_sum = np.sum(weights * iids_flat[neighbor_indices])
+        sum_weights = np.sum(weights)
+
+        if sum_weights > 1e-10:
+            return weighted_sum / sum_weights
+        else:
+            return iids_flat[i]
+
+    # Process points in parallel
+    correlated_noise = np.array(
+        Parallel(n_jobs=n_jobs)(delayed(process_point)(i) for i in range(n_points))
+    )
+
+    return correlated_noise
+
+
+# def generate_correlated_noise_2d(grid_coords, tensors, iids,
+#                                  n_neighbors=8, anisotropy_strength=1.0):
+#     """Generate spatially correlated noise respecting tensor anisotropy."""
+#     n_points = len(grid_coords)
+#     correlated_noise = np.zeros(n_points)
+#
+#     for i in range(n_points):
+#         evals, evecs = np.linalg.eigh(tensors[i])
+#         if evals[1] < evals[0]:
+#             evals, evecs = evals[::-1], evecs[:, ::-1]
+#
+#         major_corr_length = np.sqrt(evals[1])
+#         minor_corr_length = np.sqrt(evals[0])
+#
+#         scale_for_minor_axis = minor_corr_length / anisotropy_strength
+#         scale_for_major_axis = major_corr_length * anisotropy_strength
+#
+#         transform = evecs @ np.diag([scale_for_minor_axis, scale_for_major_axis])
+#
+#         all_dx = grid_coords - grid_coords[i]
+#         inv_transform = np.linalg.inv(transform)
+#         dx_transformed = all_dx @ inv_transform.T
+#         aniso_distances = np.linalg.norm(dx_transformed, axis=1)
+#
+#         neighbor_indices = np.argsort(aniso_distances)[:min(n_neighbors, n_points)]
+#
+#         weighted_sum = 0.0
+#         sum_weights = 0.0
+#
+#         for j in neighbor_indices:
+#             # Use anisotropic distance instead of actual distance for weight calculation
+#             # This respects the tensor-defined correlation structure
+#             weight = np.exp(-(aniso_distances[j]) ** 2)
+#             weighted_sum += weight * iids.flatten()[j]
+#             sum_weights += weight
+#
+#         if sum_weights > 1e-10:
+#             correlated_noise[i] = weighted_sum / sum_weights
+#         else:
+#             correlated_noise[i] = iids[i]
+#
+#     return correlated_noise
+
+
+# def generate_correlated_noise_3d(grid_coords, tensors, iids,
+#                                  n_neighbors=50, anisotropy_strength=1.0):
+#     """Generate spatially correlated noise respecting 3D tensor anisotropy."""
+#     n_points = len(grid_coords)
+#     correlated_noise = np.zeros(n_points)
+#
+#     for i in range(n_points):
+#         evals, evecs = np.linalg.eigh(tensors[i])
+#
+#         # Sort eigenvalues/vectors by magnitude (largest to smallest)
+#         sort_idx = np.argsort(evals)[::-1]
+#         evals = evals[sort_idx]
+#         evecs = evecs[:, sort_idx]
+#
+#         # Extract correlation lengths (sqrt of eigenvalues)
+#         major_corr_length = np.sqrt(evals[0])  # Largest eigenvalue
+#         intermediate_corr_length = np.sqrt(evals[1])  # Middle eigenvalue
+#         minor_corr_length = np.sqrt(evals[2])  # Smallest eigenvalue
+#
+#         # Apply anisotropy strength scaling
+#         scale_major = major_corr_length * anisotropy_strength
+#         scale_intermediate = intermediate_corr_length  # Keep intermediate neutral
+#         scale_minor = minor_corr_length / anisotropy_strength
+#
+#         # Create 3D transformation matrix
+#         transform = evecs @ np.diag([scale_major, scale_intermediate, scale_minor])
+#
+#         # Transform all grid points relative to current point
+#         all_dx = grid_coords - grid_coords[i]
+#         try:
+#             inv_transform = np.linalg.inv(transform)
+#             dx_transformed = all_dx @ inv_transform.T
+#             aniso_distances = np.linalg.norm(dx_transformed, axis=1)
+#         except np.linalg.LinAlgError:
+#             # Fallback to Euclidean distance if transform is singular
+#             aniso_distances = np.linalg.norm(all_dx, axis=1)
+#
+#         neighbor_indices = np.argsort(aniso_distances)[:min(n_neighbors, n_points)]
+#
+#         weighted_sum = 0.0
+#         sum_weights = 0.0
+#
+#         for j in neighbor_indices:
+#             # Use anisotropic distance for weight calculation
+#             weight = np.exp(-(aniso_distances[j]) ** 2)
+#             weighted_sum += weight * iids.flatten()[j]
+#             sum_weights += weight
+#
+#         if sum_weights > 1e-10:
+#             correlated_noise[i] = weighted_sum / sum_weights
+#         else:
+#             correlated_noise[i] = iids[i]
+#
+#     return correlated_noise
 
 
 
@@ -1722,8 +2121,8 @@ def save_layer(field, layer, field_name, save_path='.'):
     if isinstance(field_name, list):
         field_name = field_name[0]
 
-    filename = os.path.join(save_path, f'{field_name}_layer_{layer + 1:02d}.arr')
-    np.savetxt(filename, field, fmt='%.6f')
+    filename = os.path.join(save_path, f'{field_name}_layer_{layer:02d}.arr')
+    np.savetxt(filename, field, fmt='%.6e')
     print(f"Saved layer {layer} to '{filename}'")
 
 
@@ -2179,19 +2578,20 @@ if __name__ == "__main__":
     - zones: Can be passed to generate_single_layer() as numpy array
       with integer zone IDs, shape (n_points,) or (ny, nx)
     """
-    data_dir = r'..\..\examples\Wairau'
-    zone_files = [f'waq_arr.geoclass_layer{z+1}.arr' for z in range(13)]
-    save_path = os.path.join(data_dir, 'output_idw_3d')
+    data_dir = r'..\..\examples\bridgepa'
+    zone_files = [f'idomain.arr' for z in range(1)]
+    con_pts_file = 'Bridgpa_skytem_sva.csv'
+    save_path = os.path.join(data_dir, f'{con_pts_file}_output')
 
     if not os.path.exists(save_path):
         os.mkdir(save_path)
 
     generate_fields_from_files(data_dir,
-        conceptual_points_file='conceptual_points.csv',
+        conceptual_points_file=con_pts_file,
         grid_file='grid.dat',
         zone_file=zone_files,
         field_name=['kh'],
-        layer_mode=False,
+        layer_mode=True,
         save_path=save_path,
         tensor_interp='idw'
     )
