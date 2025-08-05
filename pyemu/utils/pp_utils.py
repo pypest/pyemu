@@ -290,15 +290,15 @@ def setup_pilotpoints_grid(
             shp = shapefile.Writer(shapeType=shapefile.POINT)
         for name, dtype in par_info.dtypes.items():
             if dtype == object:
-                shp.field(name=name, fieldType="C", size=50)
+                shp.field(name, "C", size=50)
             elif dtype in [int]:#, np.int64, np.int32]:
-                shp.field(name=name, fieldType="N", size=50, decimal=0)
+                shp.field(name, "N", size=50, decimal=0)
             elif dtype in [float, np.float32, np.float64]:
-                shp.field(name=name, fieldType="N", size=50, decimal=10)
+                shp.field(name, "N", size=50, decimal=10)
             else:
                 try:
                     if dtype in [np.int64, np.int32]:
-                        shp.field(name=name, fieldType="N", size=50, decimal=0)
+                        shp.field(name, "N", size=50, decimal=0)
                     else:
                         raise Exception(
                             "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
@@ -472,15 +472,15 @@ def write_pp_shapfile(pp_df, shapename=None):
         shp = shapefile.Writer(target=shapename, shapeType=shapefile.POINT)
     for name, dtype in dfs[0].dtypes.items():
         if dtype == object:
-            shp.field(name=name, fieldType="C", size=50)
+            shp.field(name, "C", size=50)
         elif dtype in [int]:#, np.int, np.int64, np.int32]:
-            shp.field(name=name, fieldType="N", size=50, decimal=0)
+            shp.field(name, "N", size=50, decimal=0)
         elif dtype in [float, np.float32, np.float32]:
-            shp.field(name=name, fieldType="N", size=50, decimal=8)
+            shp.field(name, "N", size=50, decimal=8)
         else:
             try:
                 if dtype in [np.int64, np.int32]:
-                    shp.field(name=name, fieldType="N", size=50, decimal=0)
+                    shp.field(name, "N", size=50, decimal=0)
                 else:
                     raise Exception(
                         "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
