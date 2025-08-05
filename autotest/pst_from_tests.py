@@ -5088,9 +5088,9 @@ def mf6_freyberg_thresh_test(tmp_path):
     # reset away from the truth...
     pst.parameter_data.loc[:,"parval1"] = org_par.parval1.values.copy()
 
-    pst.control_data.noptmax = 2
+    pst.control_data.noptmax = 1
     pst.pestpp_options["ies_par_en"] = "prior.jcb"
-    pst.pestpp_options["ies_num_reals"] = 30
+    pst.pestpp_options["ies_num_reals"] = 10
     pst.pestpp_options["ies_subset_size"] = -10
     pst.pestpp_options["ies_no_noise"] = True
     #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
@@ -5110,7 +5110,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     m_d = "master_thresh"
     port = _get_port()
     pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst",
-                                 worker_root=".", master_dir=m_d, num_workers=10,
+                                 worker_root=".", master_dir=m_d, num_workers=5,
                                  port=port)
     phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
     # print(phidf["mean"])
@@ -6362,7 +6362,63 @@ def invest_vertexpp_setup_speed():
     pass
 
 
+def xsec_pars_as_obs_test(tmp_path):
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'xsec')
+    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+    # SETUP pest stuff...
+    nam_file = "10par_xsec.nam"
+    os_utils.run("{0} {1}".format(mf_exe_path,nam_file), cwd=tmp_model_ws)
+
+    os.chdir(tmp_path)
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    m = flopy.modflow.Modflow.load(nam_file,model_ws=tmp_model_ws,version="mfnwt")
+    sr = m.modelgrid
+    t_d = "template_xsec"
+    pf = pyemu.utils.PstFrom(tmp_model_ws,t_d,remove_existing=True,spatial_reference=sr)
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_style="direct",upper_bound=25,
+                      lower_bound=0.25)
+    pf.add_parameters("hk_Layer_1.ref", par_type="grid", par_style="multiplier", upper_bound=10.0,
+                      lower_bound=0.1)
+
+    hds_arr = np.loadtxt(os.path.join(t_d,"10par_xsec.hds"))
+    with open(os.path.join(t_d,"10par_xsec.hds.ins"),'w')  as f:
+        f.write("pif ~\n")
+        for kper in range(hds_arr.shape[0]):
+            f.write("l1 ")
+            for j in range(hds_arr.shape[1]):
+                oname = "hds_{0}_{1}".format(kper,j)
+                f.write(" !{0}! ".format(oname))
+            f.write("\n")
+    pf.add_observations_from_ins(os.path.join(t_d,"10par_xsec.hds.ins"),pst_path=".")
+
+    pf.mod_sys_cmds.append("mfnwt {0}".format(nam_file))
+
+    pst = pf.build_pst(None)
+    pst.add_pars_as_obs(pst_path=t_d)
+    diff = set(pst.par_names) - set(pst.obs_names)
+    print(diff)
+    assert len(diff) == 0
+
+    pst.write(os.path.join(t_d,"pest.pst"))
+
+    pyemu.os_utils.run("{0} {1}".format(ies_exe_path,"pest.pst"),cwd=t_d)
+    pst = pyemu.Pst(os.path.join(t_d,"pest.pst"))
+    print(pst.phi)
+    assert np.isclose(pst.phi, 0), pst.phi
+
+
 if __name__ == "__main__":
+    xsec_pars_as_obs_test(".")
     #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")
@@ -6409,7 +6465,7 @@ if __name__ == "__main__":
     #direct_quickfull_test()
     # list_float_int_index_test('.')
     #freyberg_test()
-    invest_vertexpp_setup_speed()
+    #invest_vertexpp_setup_speed()
 
 
 
