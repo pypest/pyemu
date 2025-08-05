@@ -13,6 +13,12 @@ import warnings
 import socket
 import time
 from datetime import datetime
+import random
+import logging
+import tempfile
+from contextlib import contextmanager
+import json
+import uuid
 
 import numpy as np
 import pandas as pd
@@ -948,10 +954,180 @@ class PyPestWorker(object):
 
 
 
+
+class PortManager(object):
+    """Cross-platform port manager for parallel processes."""
+    def __init__(self,
+                 port_range=(4004, 4999),
+                 lock_dir=None,
+                 max_retries=50,
+                 lock_timeout=5,
+                 log_level=logging.INFO):
+        """
+        Initialize the port manager.
+        Args:
+            port_range: Tuple of (min_port, max_port) to search within
+            lock_dir: Directory to store lock files (default: system temp dir)
+            max_retries: Maximum attempts to find an available port
+            lock_timeout: Time in seconds after which a lock is considered stale
+        """
+        # Set up instance-specific logger
+        self.logger = logging.getLogger(f"{__name__}.PortManager.{id(self)}")
+        self.logger.setLevel(log_level)
+        # Add a handler if none exists
+        if not self.logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter(
+                '%(asctime)s - %(processName)s - %(levelname)s - %(message)s'
+            )
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+        self.min_port, self.max_port = port_range
+        self.lock_dir = lock_dir or os.path.join(tempfile.gettempdir(), "port_locks")
+        self.max_retries = max_retries
+        self.lock_timeout = lock_timeout
+        # Ensure lock directory exists
+        os.makedirs(self.lock_dir, exist_ok=True)
+        # Generate a unique ID for this process instance
+        self.instance_id = str(uuid.uuid4())
+    
+    def _is_port_available(self, port):
+        """Check if a port is available by attempting to bind to it."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                # Set socket to reuse address to handle TIME_WAIT state
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                s.bind(('localhost', port))
+                return True
+            except (socket.error, OSError):
+                return False
+    
+    def _get_lock_file(self, port):
+        """Get the path to the lock file for a specific port."""
+        return os.path.join(self.lock_dir, f"port_{port}.lock")
+    
+    def _clean_stale_locks(self):
+        """Remove stale lock files based on timeout."""
+        now = time.time()
+        try:
+            for filename in os.listdir(self.lock_dir):
+                if filename.startswith("port_") and filename.endswith(".lock"):
+                    lock_path = os.path.join(self.lock_dir, filename)
+                    if os.path.exists(lock_path):
+                        # Check if lock is stale
+                        if now - os.path.getmtime(lock_path) > self.lock_timeout:
+                            try:
+                                os.remove(lock_path)
+                                self.logger.debug(f"Removed stale lock file: {lock_path}")
+                            except OSError:
+                                # Another process might have removed it already
+                                pass
+        except Exception as e:
+            self.logger.warning(f"Error cleaning stale locks: {e}")
+    
+    @contextmanager
+    def _try_lock_port(self, port):
+        """
+        Try to create a lock file for a port using a cross-platform approach.
+        Uses atomic file creation to implement locking.
+        """
+        lock_file = self._get_lock_file(port)
+        lock_acquired = False
+        try:
+            # Try to create the lock file - will only succeed if it doesn't exist
+            lock_data = {
+                "pid": os.getpid(),
+                "instance_id": self.instance_id,
+                "timestamp": time.time()
+            }
+            try:
+                # Try exclusive creation of the file (atomic operation)
+                with open(lock_file, 'x') as f:
+                    json.dump(lock_data, f)
+                lock_acquired = True
+                yield True
+            except FileExistsError:
+                # Lock file already exists
+                try:
+                    # Check if lock file is stale
+                    if os.path.exists(lock_file):
+                        if time.time() - os.path.getmtime(lock_file) > self.lock_timeout:
+                            # Lock is stale, try to replace it
+                            try:
+                                os.remove(lock_file)
+                                with open(lock_file, 'x') as f:
+                                    json.dump(lock_data, f)
+                                lock_acquired = True
+                                yield True
+                                return
+                            except (FileExistsError, OSError):
+                                # Failed to acquire lock
+                                pass
+                except OSError:
+                    pass
+                yield False
+        finally:
+            # Clean up the lock file if we created it
+            if lock_acquired:
+                try:
+                    if os.path.exists(lock_file):
+                        os.remove(lock_file)
+                except OSError as e:
+                    self.logger.warning(f"Error removing lock file for port {port}: {e}")
+    
+    def get_available_port(self):
+        """
+        Find and reserve an available port.
+        Returns:
+            An available port number.
+        Raises:
+            RuntimeError: If no available port can be found after max_retries.
+        """
+        # Clean up stale locks first
+        self._clean_stale_locks()
+        # Shuffle port range to distribute port selection
+        port_list = list(range(self.min_port, self.max_port + 1))
+        random.shuffle(port_list)
+        attempts = 0
+        while attempts < self.max_retries:
+            # Pick a random port from our shuffled list
+            if not port_list:
+                raise RuntimeError("Exhausted all ports in range")
+            port = port_list.pop(0)
+            attempts += 1
+            # First check if port is available
+            if not self._is_port_available(port):
+                continue
+            # Try to acquire a lock
+            with self._try_lock_port(port) as locked:
+                if not locked:
+                    # Another process got this port
+                    continue
+                # Double-check port is still available after locking
+                if self._is_port_available(port):
+                    self.logger.info(f"Reserved port {port} for process {os.getpid()}")
+                    return port
+        raise RuntimeError(f"Could not find available port after {self.max_retries} attempts")
+    
+    @contextmanager
+    def reserved_port(self):
+        """Context manager that reserves a port and releases it after use."""
+        port = self.get_available_port()
+        lock_file = self._get_lock_file(port)
+        try:
+            yield port
+        finally:
+            # Release the port by removing the lock file
+            if os.path.exists(lock_file):
+                try:
+                    os.remove(lock_file)
+                    self.logger.info(f"Released port {port}")
+                except OSError as e:
+                    self.logger.warning(f"Error releasing port {port}: {e}")
+
+
 if __name__ == "__main__":
     host = "localhost"
-    port = 4004
+    port = PortManager().get_available_port()
     ppw = PyPestWorker(None,host,port)
     #ppw.initialize()
-
-
