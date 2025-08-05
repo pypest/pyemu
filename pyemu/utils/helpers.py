@@ -4357,13 +4357,13 @@ def emulate_with_gpr(input_df,mdf,gpr_model_dict):
         mdf.loc[output_name,"sim_std"] = sim[1]
     return mdf
 
-
-def gpr_pyworker(pst,host,port,input_df=None,mdf=None):
+def gpr_pyworker_legacy(pst,host,port,input_df=None,mdf=None):
     import os
     import pandas as pd
     import numpy as np
     import pickle
 
+    
     # if explicit args weren't passed, get the default ones...
     if input_df is None:
         input_df = pd.read_csv("gpr_input.csv",index_col=0)
@@ -4410,6 +4410,77 @@ def gpr_pyworker(pst,host,port,input_df=None,mdf=None):
         # if None, we are done
         if parameters is None:
             break
+
+
+def gpr_pyworker(pst,host,port,input_df=None,mdf=None,gpr=False):
+
+    if gpr is False:
+        print("WARNING: using legacy gpr_pyworker function, which is deprecated")
+        gpr_pyworker_legacy(pst,host,port,input_df=input_df,mdf=mdf)
+    else:
+        if gpr is True:
+            gpr = GPR.load("gpr_emulator.pkl")
+
+        assert isinstance(gpr, GPR), "gpr must be a GPR object or True to load from 'gpr_emulator.pkl'"
+        
+        import pandas as pd
+        from pyemu.emulators import GPR
+        
+        # if explicit args weren't passed, get the default ones...
+        if input_df is None:
+            input_df = pd.read_csv("gpr_input.csv",index_col=0)
+
+        simdf = pd.DataFrame(index=gpr.output_names,columns=["sim","sim_std"],dtype=float)
+        simdf.index.name = "output_name"
+
+        ppw = PyPestWorker(pst,host,port,verbose=False)
+
+        # we can only get parameters once the worker has initialize and 
+        # is ready to run, so getting the first of pars here
+        # essentially blocks until the worker is ready
+        parameters = ppw.get_parameters()
+        # if its  None, the master already quit...
+        if parameters is None:
+            return
+
+        obs = ppw._pst.observation_data.copy()
+        # align the obsval series with the order sent from the master
+        obs = obs.loc[ppw.obs_names,"obsval"]
+        
+        # work out which par values sent from the master we need to run the emulator
+        par = ppw._pst.parameter_data.copy()
+        usepar_idx = []
+        ppw_par_names = list(ppw.par_names)
+        for i,pname in enumerate(input_df.index.values):
+            usepar_idx.append(ppw_par_names.index(pname))
+        
+
+        while True:
+            # map the current dv values in parameters into the 
+            # df needed to run the emulator
+            input_df["parval1"] = parameters.values[usepar_idx]
+            # do the emulation
+            if gpr.return_std:
+                predmean,predstdv = gpr.predict(input_df.loc[gpr.input_names].T, return_std=True)
+                simdf.loc[:,"sim"] = predmean[simdf.index].values
+                simdf.loc[:,"sim_std"] = predstdv[simdf.index].values
+            else:
+                predmean = gpr.predict(input_df.loc[gpr.input_names].T)
+                simdf.loc[:,"sim"] = predmean[simdf.index].values
+
+
+            # replace the emulated quantities in the obs series
+            obs.loc[simdf.index] = simdf.sim.values
+            obs.loc[simdf.index.map(lambda x: x+"_gprstd")] = simdf.sim_std.values
+
+            #send the obs series to the master
+            ppw.send_observations(obs.values)
+
+            #try to get more pars
+            parameters = ppw.get_parameters()
+            # if None, we are done
+            if parameters is None:
+                break
         
 
 
@@ -4425,82 +4496,126 @@ def gpr_forward_run():
     return mdf
 
 
-def dsi_forward_run(pmat=None,ovals=None,pvals=None,
-                    write_csv=True
-                    
-                    ):
-
-    if pvals is None:
-        pvals = pd.read_csv("dsi_pars.csv",index_col=0)
-    if pmat is None:
-        pmat = np.load("dsi_proj_mat.npy")
-    if ovals is None:
-        ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
-
-    try:
-        offset = np.load("dsi_obs_offset.npy")
-    except:
-        #print("no offset file found, assuming no offset")
-        offset = np.zeros(ovals.shape[0])
-    try:
-        log_trans = np.load("dsi_obs_log.npy")
-    except:
-        #print("no log-tansform file found, assuming no log-transform")
-        log_trans = np.zeros(ovals.shape[0])
-
-    try:
-        backtransformvals = np.load("dsi_obs_backtransformvals.npy")
-        backtransformobsnmes = np.load("dsi_obs_backtransformobsnmes.npy",allow_pickle=True)
-        backtransform=True
-    except:
-        #print("no back-transform file found, assuming no back-transform")
-        backtransform=False
-
-
-    sim_vals = ovals + np.dot(pmat,pvals.values)
-
-    if backtransform:
-        #print("applying back-transform")
-        obsnmes = np.unique(backtransformobsnmes)
-        back_vals = [
-                    inverse_normal_score_transform(
-                                        backtransformvals[np.where(backtransformobsnmes==o)][:,1],
-                                        backtransformvals[np.where(backtransformobsnmes==o)][:,0],
-                                        sim_vals.loc[o].mn,
-                                        extrap=None
-                                        )[0] 
-                    for o in obsnmes
-                    ]     
-        sim_vals.loc[obsnmes,'mn'] = back_vals
-
-    #print("reversing offset and log-transform")
-    assert log_trans.shape[0] == sim_vals.mn.values.shape[0], f"log transform shape mismatch: {log_trans.shape[0]},{sim_vals.mn.values.shape[0]}"
-    assert offset.shape[0] == sim_vals.mn.values.shape[0], f"offset transform shape mismatch: {offset.shape[0]},{sim_vals.mn.values.shape[0]}"
-    vals = sim_vals.mn.values
-    vals[np.where(log_trans==1)] = 10**vals[np.where(log_trans==1)]
-    vals-= offset
-    sim_vals.loc[:,'mn'] = vals
-    #print(sim_vals)
+def dsi_forward_run(pvals,dsi,write_csv=False):
+    assert isinstance(dsi,pyemu.emulators.DSI), "dsi must be a pyemu DSI object" 
+    if isinstance(pvals,pd.DataFrame):
+        pvals = pvals.parval1
+    sim_vals = dsi.predict(pvals)
     if write_csv:
         sim_vals.to_csv("dsi_sim_vals.csv")
     return sim_vals
 
-
-def dsi_pyworker(pst,host,port,pmat=None,ovals=None,pvals=None):
-    
-    import os
+def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies",num_workers=1):
     import pandas as pd
-    import numpy as np
+    import pyemu
+    import os
+    import pickle
+    from pyemu.utils.os_utils import PortManager
+
+    # load the dsi pest control file
+    pst_dsi = pyemu.Pst(os.path.join(md_ies,"dsi.pst"))
+    noptmax = pst_dsi.control_data.noptmax
+    if noptmax==-1:
+        noptmax=0
+
+    try:
+        os.remove("dsi.noise.jcb")
+    except:
+        print("dsi.noise.jcb not found, continuing...")
+    try:
+        os.remove("dsi.stack.csv")
+    except:
+        print("dsi.stack.csv not found, continuing...")
+    try:
+        os.remove("dsi.stack_stats.csv")
+    except:
+        print("dsi.stack_stats.csv not found, continuing...")
+    try:
+        os.remove(f"dsi.{noptmax}.obs.jcb")
+    except:
+        print(f"dsi.{noptmax}.obs.jcb not found, continuing...")
+
+    # load decvars
+    decvars = pd.read_csv(os.path.join(md_ies, "dsivc_pars.csv"),index_col=0)
+    assert decvars.shape[0]>0, "no decvars found in dsivc_pars.csv"
 
 
+
+    # update the decavar obs values in the observation data
+    obs = pst_dsi.observation_data
+    assert obs.loc[decvars.index].shape[0] == decvars.shape[0], "not all decvars found in obs data"
+    assert all(obs.loc[decvars.index].weight > 0.0), "decvar weights should be > 0.0"
+    obs.loc[decvars.index,"obsval"] = decvars.values
+
+    # update the obs+noise file with the decvar values to ensure NO NOISE on the decvars
+    noise = pyemu.ObservationEnsemble.from_binary(pst_dsi,os.path.join(md_ies,"dsi.obs+noise.jcb"))
+    # check that all of decvars.index are in noise.columns
+    assert len([i for i in decvars.index if i not in noise.columns.tolist()]) == 0, "some decvars not in noise columns"
+    # update columns in noise if column name in decvars.index
+    for col in decvars.index:
+        noise.loc[:,col] = noise.loc[:,col].astype(float)
+        noise.loc[:,col] = decvars.loc[col].values[0]
+    # record noise 
+    noise.to_binary(os.path.join(md_ies,"dsi.noise.jcb"))
+    # make sure pestpp options 
+    pst_dsi.pestpp_options["ies_observation_ensemble"] = "dsi.noise.jcb"
+    # rewrite the dsi.pst file 
+    pst_dsi.write(os.path.join(md_ies,"dsi.pst"),version=2)
+
+    # deploy dsi...
+    pvals = pd.read_csv(os.path.join(md_ies,"dsi_pars.csv"),index_col=0)
+    
+    worker_root="."
+    dsi = pickle.load(open(os.path.join(md_ies,"dsi.pickle"),"rb"))
+    num_workers = dsi.dsi_args.get("num_pyworkers",1)
+    print(num_workers,"workers requested for dsi")
+    pyemu.os_utils.start_workers(md_ies,ies_exe_path,"dsi.pst",
+                                num_workers=num_workers,
+                                worker_root=worker_root,
+                                port = PortManager().get_available_port(),
+                                    master_dir=md_ies,
+                                    reuse_master =True,
+                                    ppw_function=pyemu.helpers.dsi_pyworker,
+                                    ppw_kwargs={"dsi":dsi,"pvals":pvals})    
+    assert os.path.exists(os.path.join(md_ies,f"dsi.{noptmax}.obs.jcb")), f"dsi.{noptmax}.obs.jcb not found...pst failed?"
+
+
+    #TODO: checks on PDC or Eulerian distance to training data?
+
+    #postprocess stack
+    oe = pyemu.ObservationEnsemble.from_binary(pst_dsi,os.path.join(md_ies,f"dsi.{noptmax}.obs.jcb"))
+    assert oe.shape[0] == noise.shape[0], "stack and noise shapes do not match; failed runs?"
+    if dsi.dsivc_args.get("track_stack",False):
+        # write long form oe
+        stack = oe._df.reset_index().melt(id_vars="real_name")
+        stack.rename(columns={"value":"obsval"},inplace=True)
+        stack['obsnme'] = stack.apply(lambda x: x.variable+"_real:"+x.real_name,axis=1)
+        stack.set_index("obsnme",inplace=True)
+        stack = stack.obsval
+        out_file = os.path.join(md_ies,"dsi.stack.csv")
+        stack.to_csv(out_file,float_format="%.6e")
+    #write stats
+    #get user-specified quantiles
+    percentiles = dsi.dsivc_args.get("percentiles",[0.25,0.75,0.5])
+    stack_stats = oe._df.describe(percentiles=percentiles).reset_index().melt(id_vars="index")
+    stack_stats.rename(columns={"value":"obsval","index":"stat"},inplace=True)
+    stack_stats['obsnme'] = stack_stats.apply(lambda x: x.variable+"_stat:"+x.stat,axis=1)
+    stack_stats.set_index("obsnme",inplace=True)
+    stack_stats = stack_stats.obsval
+    out_file = os.path.join(md_ies,"dsi.stack_stats.csv")
+    stack_stats.to_csv(out_file,float_format="%.6e")
+
+    return
+
+def dsi_pyworker(pst,host,port,dsi=None,pvals=None):
+    
+    import pandas as pd
     # if explicit args weren't passed, get the default ones...
     if pvals is None:
         pvals = pd.read_csv("dsi_pars.csv",index_col=0)
-    if pmat is None:
-        pmat = np.load("dsi_proj_mat.npy")
-    if ovals is None:
-        ovals = pd.read_csv("dsi_pr_mean.csv",index_col=0)
-
+    if dsi is None:
+        import pickle
+        dsi = pickle.load(open("dsi.pickle","rb"))
 
     ppw = PyPestWorker(pst,host,port,verbose=False)
 
@@ -4521,10 +4636,10 @@ def dsi_pyworker(pst,host,port,pmat=None,ovals=None,pvals=None):
         # df needed to run the emulator
         pvals.parval1 = parameters.loc[pvals.index]
         # do the emulation
-        simdf = dsi_forward_run(pmat=pmat,ovals=ovals,pvals=pvals,write_csv=False)
+        simdf = dsi_forward_run(dsi=dsi,pvals=pvals,write_csv=False)
 
         # replace the emulated quantities in the obs series
-        obs.loc[simdf.index] = simdf.mn.values
+        obs.loc[simdf.index] = simdf.values
 
         #send the obs series to the master
         ppw.send_observations(obs.values)
@@ -4535,171 +4650,27 @@ def dsi_pyworker(pst,host,port,pmat=None,ovals=None,pvals=None):
         if parameters is None:
             break
 
-
-def randrealgen_optimized(nreal, tol=1e-7, max_samples=1000000):
+def series_to_insfile(out_file,ins_file=None):
     """
-    Generate a set of random realizations with a normal distribution.
-    
-    Parameters:
-    nreal : int
-        The number of realizations to generate.
-    tol : float
-        Tolerance for the stopping criterion.
-    max_samples : int
-        Maximum number of samples to use.
-        
-    Returns:
-    numpy.ndarray
-        An array of nreal random realizations.
+    convert a Pandas Series to an ins file
+    Parameters
+    ----------
+    out_file : str
+        name of the output file to convert to ins file
+    ins_file : str
+        name of the ins file to create. if None, then out_file+".ins" is used
+    Returns
+    -------
+    None
     """
-    rval = np.zeros(nreal)
-    nsamp = 0
-    # if nreal is even add 1
-    if nreal % 2 == 0:
-        numsort = (nreal + 1) // 2
-    else:
-        numsort = nreal // 2
-    while nsamp < max_samples:
-        nsamp += 1
-        work1 = np.random.normal(size=nreal)
-        work1.sort()
-        
-        if nsamp > 1:
-            previous_mean = rval[:numsort] / (nsamp - 1)
-            rval[:numsort] += work1[:numsort]
-            current_mean = rval[:numsort] / nsamp
-            max_diff = np.max(np.abs(current_mean - previous_mean))
-            
-            if max_diff <= tol:
-                break
-        else:
-            rval[:numsort] = work1[:numsort]
-    
-    rval[:numsort] /= nsamp
-    if nreal % 2 == 0:
-        rval[numsort:] = -rval[:numsort][::-1]
-    else:
-        rval[numsort+1:] = -rval[:numsort][::-1]
-    
-    return rval
-
-
-def normal_score_transform(nstval, val, value):
-    """
-    Transform a value to its normal score using a normal score transform table.
-    
-    Parameters:
-    nstval : array-like
-        Normal score transform table values.
-    val : array-like
-        Original values corresponding to the normal score transform table.
-    value : float
-        The value to transform.
-        
-    Returns:
-    float
-        The normal score of the value.
-    int
-        The index of the value in the normal score transform table."""
-    
-    # make sure the input is numpy arrays
-    val = np.asarray(val)
-    nstval = np.asarray(nstval)
-    
-    # if the value is outside the range of the table, return the first or last value
-    assert value >= val[0], "Value is below the minimum value in the table."
-    assert value <= val[-1], "Value is greater than the maximum value in the table."
-    # ensure that val is sorted
-    assert np.all(np.diff(val) > 0), f"Values in the table must be sorted in ascending order:{list(zip(np.diff(val)>0,val))}"
-
-    # find the rank of the value in the table
-    rank = np.searchsorted(val, value, side='right') - 1
-    if rank == len(val) - 1:
-        return nstval[-1], len(val)
-    # if the value coincides with a value in the table, return the corresponding normal score
-    nstdiff = nstval[rank + 1] - nstval[rank]
-    diff = val[rank + 1] - val[rank]
-    if nstdiff <= 0.0 or diff <= 0.0:
-        return nstval[rank], rank
-    
-    # otherwise, interpolate to get the normal score
-    dist = value - val[rank]
-    interpolated_value = nstval[rank] + (dist / diff) * nstdiff
-    return interpolated_value, rank
-
-
-def inverse_normal_score_transform(nstval, val, value, extrap='quadratic'):
-    nreal = len(val)
-    # check that nstval is sorted
-    assert np.all(np.diff(nstval) > 0), "Values in the table must be sorted in ascending order"
-    # check that val is sorted
-    assert np.all(np.diff(val) > 0), "Values in the table must be sorted in ascending order"
-    
-    def linear_extrapolate(x0, y0, x1, y1, x):
-        if x1 != x0:
-            return y0 + (y1 - y0) / (x1 - x0) * (x - x0)
-        return y0
-
-    def quadratic_extrapolate(x1, y1, x2, y2, x3, y3, x4):
-        y12=y1-y2
-        x23=x2-x3
-        y23=y2-y3
-        x12=x1-x2
-        x13=x1-x3
-        if x12==0 or x23==0 or x13==0:
-            raise ValueError("Input x values must be distinct")
-        a = (y12*x23-y23*x12)
-        den = x12*x23*x13
-        a = a/den
-        b = y23/x23 - a*(x2+x3)
-        c=y1-x1*(a*x1+b)
-        y4 = a*x4**2 + b*x4 + c
-        return y4
-
-    ilim = 0
-    if value in nstval:
-        rank = np.searchsorted(nstval, value)
-        value = val[rank]
-
-    elif value < nstval[0]:
-        ilim = -1
-        if extrap is None:
-            value = val[0]
-        elif extrap == 'linear':
-            value = linear_extrapolate(nstval[0], val[0], nstval[1], val[1], value)
-            #value = min(value, val[0])
-        elif extrap == 'quadratic' and nreal >= 3:
-            y_vals = np.unique(val)[:3]
-            idxs = np.searchsorted(val,y_vals)
-            x_vals = nstval[idxs]
-            value = quadratic_extrapolate(x_vals[-3], y_vals[-3], x_vals[-2], y_vals[-2], x_vals[-1], y_vals[-1], value)
-            #value = min(value, val[0])
-        else:
-            value = val[0]
-
-    elif value > nstval[-1]:
-        ilim = 1
-        if extrap is None:
-            value = val[-1]
-        elif extrap == 'linear':
-            value = linear_extrapolate(nstval[-2], val[-2], nstval[-1], val[-1], value)
-            #value = max(value, val[-1])
-        elif extrap == 'quadratic' and nreal >= 3:
-            y_vals = np.unique(val)[-3:]
-            idxs = np.searchsorted(val,y_vals)
-            x_vals = nstval[idxs]
-            value = quadratic_extrapolate(x_vals[-3], y_vals[-3], x_vals[-2], y_vals[-2], x_vals[-1], y_vals[-1], value)
-            #value = max(value, val[-1])
-        else:
-            value = val[-1]
-
-    else:
-        rank = np.searchsorted(nstval, value) - 1
-        # Get the bounding x and y values
-        x0, x1 = nstval[rank], nstval[rank + 1]
-        y0, y1 = val[rank], val[rank + 1]
-        # Perform linear interpolation
-        value = y0 + (y1 - y0) * (value - x0) / (x1 - x0)
-    
-    return value, ilim
-
+    if ins_file is None:
+        ins_file = out_file+".ins"
+    sdf = pd.read_csv(out_file,index_col=0)
+    assert sdf.shape[1] == 1, "only one column allowed"
+    sdf = sdf.iloc[:,0]
+    with open(ins_file,'w') as f:
+        f.write("pif ~\n")
+        f.write("l1\n")
+        for oname in sdf.index.values:
+            f.write("l1 ~,~ !{0}!\n".format(oname))
+    return
