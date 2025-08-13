@@ -2055,28 +2055,29 @@ def plot_zones_with_conceptual_points(zones, conceptual_points, grid_coords,
     plt.close()
 
 
-def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=None,
-                                 conceptual_points=None, subsample=4, scale_factor=20,
-                                 figsize=(14, 12), title_suf=None, save_path='.'):
+def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
+                      conceptual_points=None, subsample=4, scale_factor=1,
+                      figsize=(14, 12), title_suf=None, save_path='.'):
     """
-    Visualize geological tensors as ellipses overlaid on zones, with conceptual points as oriented lines.
+    Visualize tensors as ellipses overlaid on zones, with conceptual points as oriented lines.
+    Uses PyEMU-consistent inputs.
 
     Parameters
     ----------
-    geological_tensors : np.ndarray
-        Tensor field, shape (n_points, 2, 2)
-    grid_coords : np.ndarray
-        Grid coordinates, shape (n_points, 2) or (n_points, 3)
-    shape : tuple
-        Grid shape (ny, nx)
+    tensors : np.ndarray
+        Tensor field, shape (ny*nx, 2, 2) - flattened in row-major order
+    xcentergrid : np.ndarray
+        X-coordinates from pyemu SpatialReference, shape (ny, nx)
+    ycentergrid : np.ndarray
+        Y-coordinates from pyemu SpatialReference, shape (ny, nx)
     zones : np.ndarray, optional
         Zone array for background, shape (ny, nx)
-    conceptual_points : pd.DataFrame, optional
-        Conceptual points with x, y, bearing, major columns
+    conceptual_points : pd.DataFrame or str, optional
+        Conceptual points DataFrame or path to CSV with x, y, bearing, major columns
     subsample : int, default 4
         Show every Nth tensor (for readability)
     scale_factor : float, default 20
-        Scale ellipses for visibility
+        Scale ellipses for visibility (larger = smaller ellipses)
     figsize : tuple, default (14, 12)
         Figure size
     title_suf : str, optional
@@ -2091,16 +2092,44 @@ def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=N
 
     Examples
     --------
-    >>> visualize_geological_tensors(tensors, coords, (100, 150),
-    ...                               subsample=8, title_suf='layer_1')
+    >>> visualize_tensors(tensors, xcentergrid, ycentergrid,
+    ...                  zones=zones, subsample=8, title_suf='layer_1')
     """
-    from matplotlib import patches
+    from matplotlib.patches import Ellipse
+
+    # Get grid dimensions
+    ny, nx = xcentergrid.shape
+
+    # Verify tensor shape consistency
+    expected_size = ny * nx
+    if tensors.shape[0] != expected_size:
+        raise ValueError(f"Tensor array size {tensors.shape[0]} doesn't match grid size {expected_size}")
+
+    # Create grid coordinates array for compatibility
+    grid_coords = np.column_stack([xcentergrid.flatten(), ycentergrid.flatten()])
+
+    # Load conceptual points if needed
+    if isinstance(conceptual_points, str):
+        import pandas as pd
+        conceptual_points = pd.read_csv(conceptual_points)
 
     fig, ax = plt.subplots(figsize=figsize)
 
-    # Prepare zone data but don't plot yet
+    # Get coordinate bounds first to set proper limits
+    x_min, x_max = xcentergrid.min(), xcentergrid.max()
+    y_min, y_max = ycentergrid.min(), ycentergrid.max()
+
+    print(f"Grid bounds: X=[{x_min:.1f}, {x_max:.1f}], Y=[{y_min:.1f}, {y_max:.1f}]")
+
+    # Set axis limits explicitly
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+
+    # Plot zones as background if provided
     if zones is not None:
-        # zones are guaranteed to be 2D from entry point
+        # Validate zones shape
+        if zones.shape != (ny, nx):
+            raise ValueError(f"Zones shape {zones.shape} doesn't match grid shape {(ny, nx)}")
 
         # Create zone color mapping
         unique_zones = np.unique(zones)
@@ -2109,13 +2138,9 @@ def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=N
         for zone_val, color_idx in zone_to_color.items():
             zones_remapped[zones == zone_val] = color_idx
 
-        # Get coordinate bounds
-        x_coords = grid_coords[:, 0].reshape(shape)
-        y_coords = grid_coords[:, 1].reshape(shape)
-        x_min, x_max = x_coords.min(), x_coords.max()
-        y_min, y_max = y_coords.min(), y_coords.max()
-
+        # Flip zones for proper display (matplotlib convention)
         zones_flipped = np.flipud(zones_remapped)
+
         # Plot zones as background with low alpha
         im = ax.imshow(zones_flipped, extent=[x_min, x_max, y_min, y_max],
                        origin='lower', cmap='tab10', alpha=0.2, zorder=0,
@@ -2128,8 +2153,9 @@ def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=N
             bearing = row['bearing']
             major = row['major']
 
-            # Scale line length for visibility (similar to ellipse scaling)
-            line_length = major / (scale_factor * 2)  # Adjust scaling as needed
+            # Scale line length for visibility relative to grid
+            grid_scale = max(x_max - x_min, y_max - y_min)
+            line_length = grid_scale / 50  # Make lines 2% of grid span
 
             # Convert geological bearing (CW from N) to math angle for plotting
             # Geological: 0°=N, 90°=E; Math: 0°=E, 90°=N
@@ -2154,21 +2180,47 @@ def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=N
                         zorder=6)
 
     # Subsample points for visualization
-    indices = np.arange(0, len(geological_tensors), subsample)
+    indices = np.arange(0, len(tensors), subsample)
 
-    print(f"Plotting {len(indices)} tensors out of {len(geological_tensors)}")
+    print(f"Plotting {len(indices)} tensors out of {len(tensors)}")
 
     default_count = 0
     ellipse_count = 0
 
+    # Calculate overall scale for ellipses based on grid
+    grid_scale = max(x_max - x_min, y_max - y_min)
+
+    # Sample some tensors to get typical eigenvalue scale
+    sample_tensors = tensors[indices[:min(100, len(indices))]]
+    sample_eigenvals = []
+    for tensor in sample_tensors:
+        if not np.allclose(tensor, np.eye(2) * 1000000):
+            try:
+                eigenvals, _ = np.linalg.eigh(tensor)
+                if np.all(eigenvals > 0):  # Valid eigenvalues
+                    sample_eigenvals.extend(eigenvals)
+            except:
+                continue
+
+    if sample_eigenvals:
+        typical_eigenval = np.median(sample_eigenvals)
+        typical_length = np.sqrt(typical_eigenval)
+        # Use scale_factor parameter - larger scale_factor = larger ellipses
+        ellipse_scale = (grid_scale * scale_factor) / typical_length
+        print(
+            f"Typical eigenvalue: {typical_eigenval:.1e}, length: {typical_length:.1f}, scale_factor: {scale_factor}, final scale: {ellipse_scale:.1e}")
+    else:
+        ellipse_scale = scale_factor
+        print(f"No valid sample eigenvalues found, using scale_factor: {scale_factor}")
+
     for i in indices:
-        tensor = geological_tensors[i]
+        tensor = tensors[i]
         x, y = grid_coords[i, 0], grid_coords[i, 1]
 
         # Check for default tensor (indicates no interpolation happened)
         if np.allclose(tensor, np.eye(2) * 1000000):
-            # Plot as red circle for default tensors with high zorder
-            ax.plot(x, y, 'ko', markersize=2, alpha=0.3, zorder=1)  # Make less prominent
+            # Plot as black circle for default tensors
+            ax.plot(x, y, 'ko', markersize=2, alpha=0.3, zorder=1)
             default_count += 1
             continue
 
@@ -2176,50 +2228,58 @@ def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=N
             # Eigendecomposition to get ellipse parameters
             eigenvals, eigenvecs = np.linalg.eigh(tensor)
 
+            # Check for valid eigenvalues
+            if not np.all(eigenvals > 0):
+                ax.plot(x, y, 'ro', markersize=2, zorder=3)
+                continue
+
             # Sort by eigenvalue magnitude
-            idx = np.argsort(eigenvals)[::-1]
-            eigenvals = eigenvals[idx]
-            eigenvecs = eigenvecs[:, idx]
+            idx_sort = np.argsort(eigenvals)[::-1]
+            eigenvals = eigenvals[idx_sort]
+            eigenvecs = eigenvecs[:, idx_sort]
 
-            # Ellipse dimensions (correlation lengths) - make them more visible
-            major_axis = 2 * np.sqrt(eigenvals[0]) / scale_factor
-            minor_axis = 2 * np.sqrt(eigenvals[1]) / scale_factor
+            # Ellipse dimensions from correlation lengths
+            major_length = np.sqrt(eigenvals[0])
+            minor_length = np.sqrt(eigenvals[1])
 
-            # Make sure ellipses are visible
-            if major_axis < 30:  # Smaller minimum to avoid overwhelming CP lines
-                major_axis = 30
-            if minor_axis < 15:
-                minor_axis = 15
+            # Apply scaling
+            major_axis = major_length * ellipse_scale
+            minor_axis = minor_length * ellipse_scale
 
             # Ellipse orientation (angle of major axis)
             angle = np.degrees(np.arctan2(eigenvecs[1, 0], eigenvecs[0, 0]))
 
-            # Create ellipse with lower prominence than CP lines
-            ellipse = patches.Ellipse((x, y), major_axis, minor_axis,
-                                      angle=angle, linewidth=1,
-                                      edgecolor='blue', facecolor='none', alpha=0.6, zorder=2)
+            # Create ellipse
+            ellipse = Ellipse((x, y), major_axis, minor_axis,
+                              angle=angle, linewidth=1,
+                              edgecolor='blue', facecolor='none', alpha=0.6, zorder=2)
             ax.add_patch(ellipse)
             ellipse_count += 1
 
-        except:
-            # If tensor is problematic, plot as yellow point with high zorder
+        except Exception as e:
+            # If tensor is problematic, plot as yellow point
             ax.plot(x, y, 'yo', markersize=2, zorder=3)
 
     print(f"Plotted {default_count} default tensors (black circles) and {ellipse_count} ellipses")
 
-    ax.set_xlabel('X (NZTM)')
-    ax.set_ylabel('Y (NZTM)')
+    ax.set_xlabel('X Coordinate')
+    ax.set_ylabel('Y Coordinate')
 
     # Update title and legend
-    title_parts = [f'Geological Tensors (subsampled 1:{subsample})\n']
+    title_parts = [f'Tensors (subsampled 1:{subsample})']
     if title_suf is not None:
-        title_parts += [f'{title_suf}']
-    # more like legend?
-    if conceptual_points is not None:
-        title_parts.append('Red lines = conceptual points (bearing)')
-    title_parts.append('Blue ellipses = interpolated tensors')
-    ax.set_title('\n'.join(title_parts))
+        title_parts.append(f'{title_suf}')
 
+    # Add informational subtitle
+    subtitle_parts = []
+    if conceptual_points is not None:
+        subtitle_parts.append('Red lines = conceptual points (bearing)')
+    subtitle_parts.append('Blue ellipses = interpolated tensors')
+
+    if subtitle_parts:
+        title_parts.append('\n'.join(subtitle_parts))
+
+    ax.set_title('\n'.join(title_parts))
     ax.set_aspect('equal', adjustable='box')
 
     # Add colorbar for zones if present
@@ -2237,8 +2297,11 @@ def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=N
             plt.Line2D([0], [0], marker='o', color='red', markersize=6,
                        markeredgecolor='black', label='Conceptual Points', linestyle='None')
         ])
+
+    # Create legend patches without importing patches
+    import matplotlib.lines as mlines
     legend_elements.extend([
-        patches.Patch(facecolor='none', edgecolor='blue', label='Interpolated Tensors'),
+        mlines.Line2D([], [], color='blue', label='Interpolated Tensors'),
         plt.Line2D([0], [0], marker='o', color='black', markersize=4,
                    label='Default Tensors', linestyle='None', alpha=0.3)
     ])
@@ -2247,8 +2310,19 @@ def visualize_geological_tensors(geological_tensors, grid_coords, shape, zones=N
         ax.legend(handles=legend_elements, loc='upper right', fontsize=9)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(save_path, f'intrpolated_tensors_{title_suf}.png'), dpi=150, bbox_inches='tight')
-    print(f"Saved tensor visualization to {os.path.join(save_path, f'intrpolated_tensors_{title_suf}.png')}")
+
+    # Save plot
+    if title_suf:
+        filename = f'interpolated_tensors_{title_suf}.png'
+    else:
+        filename = 'interpolated_tensors.png'
+
+    save_path_full = os.path.join(save_path, filename)
+    plt.savefig(save_path_full, dpi=150, bbox_inches='tight')
+    print(f"Saved tensor visualization to {save_path_full}")
+
+    # Show the plot for interactive backends
+    plt.show()
     plt.close()
 
 
