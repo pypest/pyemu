@@ -22,7 +22,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                                vartransform='log', n_realizations=1, ml=None, sr=None):
     """
     Generate spatially correlated fields using tensor-based geostatistics.
-    Follows PyEMU pattern for model workspace and spatial reference handling.
+    CLEAN version that works with flexible property columns.
 
     Parameters
     ----------
@@ -33,14 +33,9 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
     conceptual_points_file : str
         CSV file containing conceptual points
     zone_file : str or list of str, optional
-        zone file(s):
-        - Single string: One zone file used for all layers (2D zones)
-        - List of strings: One zone file per layer (creates 3D zones)
+        zone file(s)
     iids_file : str or list of str, optional
-        noise file(s):
-        - Single string: Assumes pattern like "iids_layer{N}.arr"
-        - List of strings: Explicit paths to each layer's noise file
-        - None: Auto-generates noise and saves as iids_layer{N}.arr files
+        noise file(s)
     field_name : list of str, default ['field']
         Name(s) of field(s) to generate
     layer_mode : bool, default True
@@ -79,7 +74,6 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
 
     # Setup spatial reference following PyEMU pattern
     if ml is None and sr is None:
-        # Load model from workspace
         print("Loading flopy model...")
         try:
             # Try MF6 first - only load DIS package for efficiency
@@ -95,70 +89,47 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
             except Exception as e:
                 raise ValueError(f"Could not load model {model_name} from {tmp_model_ws}: {e}")
 
-    if sr is None:
-        # Create spatial reference from model
-        print("Creating spatial reference...")
-        if hasattr(ml, 'dis'):
-            # MF6 or MODFLOW with DIS
-            try:
-                sr = pyemu.helpers.SpatialReference.from_namfile(
-                    os.path.join(tmp_model_ws, f"{model_name}.nam"),
-                    delr=ml.dis.delr.array, delc=ml.dis.delc.array
-                )
-            except:
-                # Alternative approach for MF6
-                sr = pyemu.helpers.SpatialReference(
-                    delr=ml.dis.delr.array, delc=ml.dis.delc.array,
-                    xul=0, yul=0
-                )
-        else:
-            raise ValueError("Could not determine grid spacing from model")
-
-        print(f"Spatial reference: {sr}")
-
     # Get grid coordinates
     try:
-        xcentergrid = sr.xcentergrid
-        ycentergrid = sr.ycentergrid
-    except AttributeError:
-        try:
-            xcentergrid = sr.xcellcenters
-            ycentergrid = sr.ycellcenters
-        except AttributeError as e:
-            raise Exception(f"Could not get grid centers from spatial reference: {e}")
+        xcentergrid = ml.modelgrid.xcellcenters
+        ycentergrid = ml.modelgrid.ycellcenters
+    except AttributeError as e:
+        raise Exception(f"Could not get grid centers from spatial reference: {e}")
 
     ny, nx = xcentergrid.shape
     print(f"Grid dimensions: {ny} x {nx}")
-    cell_area = np.outer(sr.delr, sr.delc)
+    print(
+        f"Grid extent: X=[{xcentergrid.min():.1f}, {xcentergrid.max():.1f}], Y=[{ycentergrid.min():.1f}, {ycentergrid.max():.1f}]")
+
+    # Get cell areas for area parameter
+    cell_area = np.outer(ml.dis.delc.array, ml.dis.delr.array)
+
     # Load conceptual points
     conceptual_points = pd.read_csv(os.path.join(tmp_model_ws, conceptual_points_file))
+    print(f"Loaded {len(conceptual_points)} conceptual points")
+    print(
+        f"Conceptual points extent: X=[{conceptual_points['x'].min():.1f}, {conceptual_points['x'].max():.1f}], Y=[{conceptual_points['y'].min():.1f}, {conceptual_points['y'].max():.1f}]")
 
     # Add transverse if missing
     if 'transverse' not in conceptual_points.columns and 'anisotropy' in conceptual_points.columns:
-        conceptual_points.loc[:, 'transverse'] = conceptual_points.loc[:, 'major'] / conceptual_points.loc[:,
-                                                                                     'anisotropy']
-
-    print(f"Loaded {len(conceptual_points)} conceptual points")
+        conceptual_points['transverse'] = conceptual_points['major'] / conceptual_points['anisotropy']
 
     # Load zones
     zones = None
     if zone_file:
         if isinstance(zone_file, str):
-            # Single zone file
             zones = np.loadtxt(os.path.join(tmp_model_ws, zone_file)).astype(np.int64)
             if zones.shape != (ny, nx):
-                # Try to reshape if possible
                 if zones.size == ny * nx:
                     zones = zones.reshape(ny, nx)
                 else:
                     raise ValueError(f"Zone file shape {zones.shape} doesn't match grid {(ny, nx)}")
             print(f"Loaded zones from {zone_file}, shape: {zones.shape}")
         else:
-            # Multiple zone files - for now just use the first one
             zones = np.loadtxt(os.path.join(tmp_model_ws, zone_file[0])).astype(np.int64)
             print(f"Loaded zones from {zone_file[0]} (multi-layer support TODO)")
 
-    # Determine the total number of layers in the model
+    # Determine layers
     if hasattr(ml, 'dis'):
         if hasattr(ml.dis, 'nlay'):
             total_layers = ml.dis.nlay.array if hasattr(ml.dis.nlay, 'array') else ml.dis.nlay
@@ -171,70 +142,21 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
 
     print(f"Model has {total_layers} layers")
 
-    # Handle IIDs for PEST parameterization - generate for ALL model layers
-    iids_dict = {}
-
-    # Determine which layers have conceptual points
+    # Handle layers in conceptual points
     if 'layer' in conceptual_points.columns:
         available_cp_layers = sorted(conceptual_points['layer'].unique())
         print(f"Conceptual points available for layers: {available_cp_layers}")
     else:
-        available_cp_layers = []
-        print("No 'layer' column in conceptual points - will propagate to all layers")
+        available_cp_layers = [1]
+        print("No 'layer' column in conceptual points - using layer 1")
 
     # Generate IIDs for all model layers
+    iids_dict = {}
     for layer_num in range(total_layers):
-        layer_1based = layer_num + 1  # Convert to 1-based indexing
+        layer_1based = layer_num + 1
         iids_dict[layer_1based] = _load_or_generate_iids(
             tmp_model_ws, iids_file, layer_num, ny, nx, n_realizations
         )
-
-    # Propagate conceptual points to missing layers if needed
-    if layer_mode and 'layer' in conceptual_points.columns:
-        # Check if all layers are covered
-        missing_layers = []
-        for layer_num in range(1, total_layers + 1):  # 1-based
-            if layer_num not in available_cp_layers:
-                missing_layers.append(layer_num)
-
-        if missing_layers:
-            print(f"Missing conceptual points for layers: {missing_layers}")
-            print("Propagating conceptual points from available layers...")
-
-            # Find the best layer to propagate from (prefer middle layers)
-            if available_cp_layers:
-                # Use the layer closest to the middle of available layers
-                middle_idx = len(available_cp_layers) // 2
-                source_layer = available_cp_layers[middle_idx]
-                print(f"Using layer {source_layer} as source for propagation")
-
-                # Create propagated conceptual points
-                source_cp = conceptual_points[conceptual_points['layer'] == source_layer].copy()
-
-                for missing_layer in missing_layers:
-                    propagated_cp = source_cp.copy()
-                    propagated_cp['layer'] = missing_layer
-
-                    # Optionally modify some properties for different layers
-                    # (could add depth-dependent scaling here if needed)
-
-                    # Append to conceptual points
-                    conceptual_points = pd.concat([conceptual_points, propagated_cp], ignore_index=True)
-                    print(f"  Propagated {len(source_cp)} points to layer {missing_layer}")
-
-            # Update available layers
-            available_cp_layers = sorted(conceptual_points['layer'].unique())
-            print(f"Updated conceptual points now cover layers: {available_cp_layers}")
-
-    # Process each field for each layer
-    all_results = {}
-
-    # If layer_mode is True, process each layer separately
-    if layer_mode and 'layer' in conceptual_points.columns:
-        layers_to_process = available_cp_layers
-    else:
-        # Single layer mode - use layer 1
-        layers_to_process = [1]
 
     # Process each field
     all_results = {}
@@ -242,93 +164,114 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
     for fn in field_name:
         print(f"\n=== Processing field: {fn} ===")
 
-        # Filter conceptual points for this field
-        cols = ['name', 'x', 'y', 'major', 'transverse', 'bearing']
-        field_cols = [col for col in conceptual_points.columns if f'_{fn}' in col]
+        # SIMPLIFIED: Look for columns with field name pattern
+        mean_col = None
+        sd_col = None
 
-        if not field_cols:
-            # Look for generic mean/sd columns
-            mean_cols = [col for col in conceptual_points.columns if 'mean' in col.lower()]
-            sd_cols = [col for col in conceptual_points.columns if 'sd' in col.lower()]
+        # First, try field-specific columns
+        if f'mean_{fn}' in conceptual_points.columns:
+            mean_col = f'mean_{fn}'
+            sd_col = f'sd_{fn}'
+        elif f'{fn}_mean' in conceptual_points.columns:
+            mean_col = f'{fn}_mean'
+            sd_col = f'{fn}_sd'
+        else:
+            # Look for generic columns
+            mean_candidates = [col for col in conceptual_points.columns if 'mean' in col.lower()]
+            sd_candidates = [col for col in conceptual_points.columns if 'sd' in col.lower()]
 
-            if mean_cols and sd_cols:
-                # Rename to expected format
-                field_cp = conceptual_points.copy()
-                field_cp[f'mean_{fn}'] = field_cp[mean_cols[0]]
-                field_cp[f'sd_{fn}'] = field_cp[sd_cols[0]]
-                cols.extend([f'mean_{fn}', f'sd_{fn}'])
+            if mean_candidates and sd_candidates:
+                mean_col = mean_candidates[0]  # Use first match
+                sd_col = sd_candidates[0]
+                print(f"Using generic columns: mean='{mean_col}', sd='{sd_col}'")
             else:
-                raise ValueError(f"No columns found for field '{fn}' (expected mean_{fn}, sd_{fn})")
-        else:
-            cols.extend(field_cols)
+                raise ValueError(f"No mean/sd columns found for field '{fn}'")
 
-        # Auto-detect layers and select target layer
-        target_layer = None
+        # Verify columns exist
+        if mean_col not in conceptual_points.columns:
+            raise ValueError(f"Mean column '{mean_col}' not found")
+        if sd_col not in conceptual_points.columns:
+            raise ValueError(f"SD column '{sd_col}' not found")
+
+        # Handle layer processing
         if layer_mode and 'layer' in conceptual_points.columns:
-            cols.append('layer')
-            # Auto-detect available layers
-            available_layers = sorted(conceptual_points['layer'].unique())
-            print(f"Available layers: {available_layers}")
+            # Process each available layer
+            for target_layer in available_cp_layers:
+                print(f"\n--- Processing layer {target_layer} ---")
 
-            # Use first available layer instead of hardcoded 0
-            target_layer = available_layers[0]
-            field_cp = conceptual_points[conceptual_points['layer'] == target_layer][cols].copy()
+                # Filter conceptual points for this layer
+                layer_cp = conceptual_points[conceptual_points['layer'] == target_layer].copy()
 
-            if len(field_cp) == 0:
-                print(f"No conceptual points for layer {target_layer}, using all points")
-                field_cp = conceptual_points[cols].copy()
-                target_layer = None
+                if len(layer_cp) == 0:
+                    print(f"No conceptual points for layer {target_layer}, skipping")
+                    continue
+
+                # Check data ranges
+                print(f"Conceptual point data for layer {target_layer}:")
+                print(f"  {mean_col}: [{layer_cp[mean_col].min():.2f}, {layer_cp[mean_col].max():.2f}]")
+                print(f"  {sd_col}: [{layer_cp[sd_col].min():.2f}, {layer_cp[sd_col].max():.2f}]")
+
+                # Get IIDs for this layer
+                layer_iids = iids_dict.get(target_layer, iids_dict[1])
+
+                # apply_ppu_hyperpars
+                results = apply_ppu_hyperpars(
+                    layer_cp, xcentergrid, ycentergrid,
+                    area=cell_area,
+                    zones=zones,
+                    n_realizations=n_realizations,
+                    layer=target_layer - 1,  # Convert to 0-based for internal use
+                    vartransform=vartransform,
+                    tensor_method=tensor_interp,
+                    out_filename=os.path.join(save_path, f"{fn}_layer_{target_layer}"),
+                    iids=layer_iids,
+                    mean_col=mean_col,  # Pass column names
+                    sd_col=sd_col,
+                    active=ml.dis.idomain.array[target_layer].flatten()
+                )
+
+                # Store results with layer key
+                result_key = f"{fn}_layer_{target_layer}"
+                all_results[result_key] = results
+
+                # Save results
+                if results['fields'] is not None:
+                    for i, field in enumerate(results['fields']):
+                        save_layer(field, layer=target_layer - 1,
+                                   field_name=f"{fn}_real_{i + 1}", save_path=save_path)
+
+                save_layer(results['mean'], layer=target_layer - 1,
+                           field_name=f"{fn}_mean", save_path=save_path)
+                save_layer(results['sd'], layer=target_layer - 1,
+                           field_name=f"{fn}_sd", save_path=save_path)
+
+                print(f"Results for layer {target_layer}:")
+                print(f"  Mean field: [{results['mean'].min():.3f}, {results['mean'].max():.3f}]")
+                print(f"  SD field: [{results['sd'].min():.3f}, {results['sd'].max():.3f}]")
+
         else:
-            field_cp = conceptual_points[cols].copy()
+            # Single layer mode
+            target_layer = 1
 
-        # Rename columns to match apply_ppu_hyperpars function expectations
-        if f'mean_{fn}' in field_cp.columns:
-            field_cp = field_cp.rename(columns={f'mean_{fn}': 'mean_kh', f'sd_{fn}': 'sd_kh'})
-        elif 'mean' in field_cp.columns:
-            field_cp = field_cp.rename(columns={'mean': 'mean_kh', 'sd': 'sd_kh'})
+            # Get IIDs for this layer
+            layer_iids = iids_dict.get(1, None)
 
-        # Get IIDs for this layer
-        layer_key = target_layer if target_layer is not None else 0
-        layer_iids = iids_dict.get(layer_key, iids_dict)
-
-        # Use workflow
-        results = apply_ppu_hyperpars(
-            field_cp, xcentergrid, ycentergrid,
-            area=cell_area,
-            zones=zones,
-            n_realizations=n_realizations,
-            layer=target_layer if target_layer is not None else 0,
-            vartransform=vartransform,
-            tensor_method=tensor_interp,
-            out_filename=os.path.join(save_path, f"{fn}"),
-            iids=layer_iids  # Pass the IIDs
-        )
-
-        all_results[fn] = results
-
-        # Save and visualize results
-        if results['fields'] is not None:
-            for i, field in enumerate(results['fields']):
-                save_layer(field, layer=target_layer if target_layer is not None else 0,
-                           field_name=f"{fn}_real_{i + 1}", save_path=save_path)
-
-        # Save mean and SD
-        save_layer(results['mean'], layer=target_layer if target_layer is not None else 0,
-                   field_name=f"{fn}_mean", save_path=save_path)
-        save_layer(results['sd'], layer=target_layer if target_layer is not None else 0,
-                   field_name=f"{fn}_sd", save_path=save_path)
-
-        # Visualize tensors - check if visualization module is available
-        try:
-            from tensor_visualization import visualize_tensors
-            visualize_tensors(
-                results['tensors'], xcentergrid, ycentergrid,
-                zones=zones, conceptual_points=field_cp,
-                subsample=8, title_suf=f'{fn}_layer_{target_layer if target_layer is not None else 0}',
-                save_path=save_path
+            # Use workflow
+            results = apply_ppu_hyperpars(
+                conceptual_points, xcentergrid, ycentergrid,
+                area=cell_area,
+                zones=zones,
+                n_realizations=n_realizations,
+                layer=0,
+                vartransform=vartransform,
+                tensor_method=tensor_interp,
+                out_filename=os.path.join(save_path, f"{fn}"),
+                iids=layer_iids,
+                mean_col=mean_col,
+                sd_col=sd_col
             )
-        except ImportError:
-            print("  Warning: tensor_visualization module not available, skipping visualization")
+
+            all_results[fn] = results
 
     print("\n=== Complete ===")
     return all_results
@@ -337,6 +280,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
 def _load_or_generate_iids(tmp_model_ws, iids_file, layer_num, ny, nx, n_realizations):
     """
     Load IIDs from file or generate and save new ones for PEST parameterization.
+    FIXED version with proper array handling.
 
     Parameters
     ----------
@@ -436,238 +380,10 @@ def _load_or_generate_iids(tmp_model_ws, iids_file, layer_num, ny, nx, n_realiza
                    header=f"IIDs for layer {layer_1based}, shape: {ny * nx} x {n_realizations}")
 
     return iids
-    """
-    Generate spatially correlated fields using tensor-based geostatistics.
-    Follows PyEMU pattern for model workspace and spatial reference handling.
-
-    Parameters
-    ----------
-    tmp_model_ws : str
-        Path to model workspace containing flopy model files
-    model_name : str
-        Name of the flopy model (e.g., 'freyberg6')
-    conceptual_points_file : str
-        CSV file containing conceptual points
-    zone_file : str or list of str, optional
-        zone file(s):
-        - Single string: One zone file used for all layers (2D zones)
-        - List of strings: One zone file per layer (creates 3D zones)
-    iids_file : str or list of str, optional
-        noise file(s):
-        - Single string: Assumes pattern like "iids_layer{N}.arr"
-        - List of strings: Explicit paths to each layer's noise file
-        - None: Auto-generates noise and saves as iids_layer{N}.arr files
-    field_name : list of str, default ['field']
-        Name(s) of field(s) to generate
-    layer_mode : bool, default True
-        If True, process each layer independently
-    save_path : str, optional
-        Directory path to save output files (default: tmp_model_ws)
-    tensor_interp : str, default 'krig'
-        Tensor interpolation method
-    vartransform : str, default 'log'
-        Transformation: 'log' or 'none'
-    n_realizations : int, default 1
-        Number of stochastic realizations
-    ml : flopy.mbase, optional
-        A flopy mbase derived type. If None, sr must not be None.
-    sr : flopy.utils.reference.SpatialReference, optional
-        A spatial reference to locate the model grid. If None, ml must not be None.
-
-    Returns
-    -------
-    dict
-        Results from workflow
-    """
-    try:
-        import flopy
-        import pyemu
-    except ImportError as e:
-        raise ImportError(f"flopy and pyemu are required: {e}")
-
-    print(f"=== Tensor-Based Field Generation ===")
-    print(f"Model workspace: {tmp_model_ws}")
-    print(f"Model name: {model_name}")
-
-    # Set default save path
-    if save_path is None:
-        save_path = tmp_model_ws
-
-    # Setup spatial reference following PyEMU pattern
-    if ml is None and sr is None:
-        # Load model from workspace
-        print("Loading flopy model...")
-        try:
-            # Try MF6 first - only load DIS package for efficiency
-            sim = flopy.mf6.MFSimulation.load(sim_ws=tmp_model_ws, load_only=['dis'])
-            ml = sim.get_model(model_name)
-            print(f"Loaded MF6 model: {model_name} (DIS package only)")
-        except:
-            try:
-                # Fall back to MODFLOW-2005 - only load DIS package
-                ml = flopy.modflow.Modflow.load(f"{model_name}.nam", model_ws=tmp_model_ws,
-                                                load_only=['dis'])
-                print(f"Loaded MODFLOW-2005 model: {model_name} (DIS package only)")
-            except Exception as e:
-                raise ValueError(f"Could not load model {model_name} from {tmp_model_ws}: {e}")
-
-    if sr is None:
-        # Create spatial reference from model
-        print("Creating spatial reference...")
-        if hasattr(ml, 'dis'):
-            # MF6 or MODFLOW with DIS
-            try:
-                sr = pyemu.helpers.SpatialReference.from_namfile(
-                    os.path.join(tmp_model_ws, f"{model_name}.nam"),
-                    delr=ml.dis.delr.array, delc=ml.dis.delc.array
-                )
-            except:
-                # Alternative approach for MF6
-                sr = pyemu.helpers.SpatialReference(
-                    delr=ml.dis.delr.array, delc=ml.dis.delc.array,
-                    xul=0, yul=0
-                )
-        else:
-            raise ValueError("Could not determine grid spacing from model")
-
-        print(f"Spatial reference: {sr}")
-
-    # Get grid coordinates
-    try:
-        xcentergrid = sr.xcentergrid
-        ycentergrid = sr.ycentergrid
-    except AttributeError:
-        try:
-            xcentergrid = sr.xcellcenters
-            ycentergrid = sr.ycellcenters
-        except AttributeError as e:
-            raise Exception(f"Could not get grid centers from spatial reference: {e}")
-
-    ny, nx = xcentergrid.shape
-    print(f"Grid dimensions: {ny} x {nx}")
-
-    # Load conceptual points
-    conceptual_points = pd.read_csv(os.path.join(tmp_model_ws, conceptual_points_file))
-
-    # Add transverse if missing
-    if 'transverse' not in conceptual_points.columns and 'anisotropy' in conceptual_points.columns:
-        conceptual_points.loc[:, 'transverse'] = conceptual_points.loc[:, 'major'] / conceptual_points.loc[:,
-                                                                                     'anisotropy']
-
-    print(f"Loaded {len(conceptual_points)} conceptual points")
-
-    # Load zones
-    zones = None
-    if zone_file:
-        if isinstance(zone_file, str):
-            # Single zone file
-            zones = np.loadtxt(os.path.join(tmp_model_ws, zone_file)).astype(np.int64)
-            if zones.shape != (ny, nx):
-                # Try to reshape if possible
-                if zones.size == ny * nx:
-                    zones = zones.reshape(ny, nx)
-                else:
-                    raise ValueError(f"Zone file shape {zones.shape} doesn't match grid {(ny, nx)}")
-            print(f"Loaded zones from {zone_file}, shape: {zones.shape}")
-        else:
-            # Multiple zone files - for now just use the first one
-            zones = np.loadtxt(os.path.join(tmp_model_ws, zone_file[0])).astype(np.int64)
-            print(f"Loaded zones from {zone_file[0]} (multi-layer support TODO)")
-
-    # Process each field
-    all_results = {}
-
-    for fn in field_name:
-        print(f"\n=== Processing field: {fn} ===")
-
-        # Filter conceptual points for this field
-        cols = ['name', 'x', 'y', 'major', 'transverse', 'bearing']
-        field_cols = [col for col in conceptual_points.columns if f'_{fn}' in col]
-
-        if not field_cols:
-            # Look for generic mean/sd columns
-            mean_cols = [col for col in conceptual_points.columns if 'mean' in col.lower()]
-            sd_cols = [col for col in conceptual_points.columns if 'sd' in col.lower()]
-
-            if mean_cols and sd_cols:
-                # Rename to expected format
-                field_cp = conceptual_points.copy()
-                field_cp[f'mean_{fn}'] = field_cp[mean_cols[0]]
-                field_cp[f'sd_{fn}'] = field_cp[sd_cols[0]]
-                cols.extend([f'mean_{fn}', f'sd_{fn}'])
-            else:
-                raise ValueError(f"No columns found for field '{fn}' (expected mean_{fn}, sd_{fn})")
-        else:
-            cols.extend(field_cols)
-
-        # Auto-detect layers and select target layer
-        target_layer = None
-        if layer_mode and 'layer' in conceptual_points.columns:
-            cols.append('layer')
-            # Auto-detect available layers
-            available_layers = sorted(conceptual_points['layer'].unique())
-            print(f"Available layers: {available_layers}")
-
-            # Use first available layer instead of hardcoded 0
-            target_layer = available_layers[0]
-            field_cp = conceptual_points[conceptual_points['layer'] == target_layer][cols].copy()
-
-            if len(field_cp) == 0:
-                print(f"No conceptual points for layer {target_layer}, using all points")
-                field_cp = conceptual_points[cols].copy()
-                target_layer = None
-        else:
-            field_cp = conceptual_points[cols].copy()
-
-        # Rename columns to match apply_ppu_hyperpars function expectations
-        if f'mean_{fn}' in field_cp.columns:
-            field_cp = field_cp.rename(columns={f'mean_{fn}': 'mean_kh', f'sd_{fn}': 'sd_kh'})
-        elif 'mean' in field_cp.columns:
-            field_cp = field_cp.rename(columns={'mean': 'mean_kh', 'sd': 'sd_kh'})
-
-        # Use workflow
-        results = apply_ppu_hyperpars(
-            field_cp, xcentergrid, ycentergrid,
-            zones=zones,
-            n_realizations=n_realizations,
-            layer=target_layer if target_layer is not None else 0,
-            vartransform=vartransform,
-            tensor_method=tensor_interp,
-            out_filename=os.path.join(save_path, f"{fn}")
-        )
-
-        all_results[fn] = results
-
-        # Save and visualize results
-        if results['fields'] is not None:
-            for i, field in enumerate(results['fields']):
-                save_layer(field, layer=target_layer if target_layer is not None else 0,
-                           field_name=f"{fn}_real_{i + 1}", save_path=save_path)
-
-        # Save mean and SD
-        save_layer(results['mean'], layer=target_layer if target_layer is not None else 0,
-                   field_name=f"{fn}_mean", save_path=save_path)
-        save_layer(results['sd'], layer=target_layer if target_layer is not None else 0,
-                   field_name=f"{fn}_sd", save_path=save_path)
-
-        # Visualize tensors - check if visualization module is available
-        try:
-            from tensor_visualization import visualize_tensors
-            visualize_tensors(
-                results['tensors'], xcentergrid, ycentergrid,
-                zones=zones, conceptual_points=field_cp,
-                subsample=8, title_suf=f'{fn}_layer_{target_layer if target_layer is not None else 0}',
-                save_path=save_path
-            )
-        except ImportError:
-            print("  Warning: tensor_visualization module not available, skipping visualization")
-
-    print("\n=== Complete ===")
-    return all_results
 
 
 def generate_single_layer(cp_file, xcentergrid, ycentergrid, iids=None,
-                          zones=None, save_path='.', tensor_interp='krig',
+                          zones=None, save_path='.', tensor_interp='idw',
                           vartransform='log', boundary_smooth=True,
                           boundary_enhance=True):
     """

@@ -141,7 +141,7 @@ def load_conceptual_points(cp_file):
 
 
 def interpolate_tensors(cp_file, xcentergrid, ycentergrid, zones=None,
-                        method='krig', layer=0, config_dict=None):
+                        method='idw', layer=0, config_dict=None):
     """
     Tensor field interpolation using NSAF log-Euclidean mathematics
     with pypestutils kriging engine.
@@ -178,7 +178,7 @@ def interpolate_tensors(cp_file, xcentergrid, ycentergrid, zones=None,
 
     # Filter to current layer
     if 'layer' in cp_df.columns:
-        layer_cp = cp_df[cp_df['layer'] == layer].copy()
+        layer_cp = cp_df[cp_df['layer'] - 1 == layer].copy()
     else:
         layer_cp = cp_df.copy()
 
@@ -347,7 +347,10 @@ def _krig_component_pypestutils(cp_x, cp_y, cp_values, grid_x, grid_y, config_di
     grid_zones = np.ones(len(grid_x), dtype=int)
 
     # Use isotropic parameters for component interpolation
-    corrlen = np.full(len(grid_x), 1000.0)  # Default correlation length
+    x_extent = np.max(grid_x) - np.min(grid_x)
+    y_extent = np.max(grid_y) - np.min(grid_y)
+    domain_extent = max(x_extent, y_extent)
+    corrlen = np.full(len(grid_x), np.max(10000.0, domain_extent/3))
     aniso = np.ones(len(grid_x))  # Isotropic
     bearing = np.zeros(len(grid_x))  # No rotation
 
@@ -358,7 +361,7 @@ def _krig_component_pypestutils(cp_x, cp_y, cp_values, grid_x, grid_y, config_di
             int(config_dict.get("vartype", 2)),  # Exponential
             int(config_dict.get("krigtype", 1)),  # Ordinary kriging
             corrlen, aniso, bearing,
-            config_dict.get("search_radius", 1e10),
+            config_dict.get("search_radius", 1e20),
             config_dict.get("maxpts_interp", 20),
             config_dict.get("minpts_interp", 1),
             fac_fname, fac_ftype
@@ -495,10 +498,13 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
                         out_filename=None, n_realizations=1, layer=0,
                         vartransform="none", boundary_smooth=True,
                         boundary_enhance=True, tensor_method='krig',
-                        config_dict=None, iids=None, area=None, **kwargs):
+                        config_dict=None, iids=None, area=None,
+                        mean_col='mean', sd_col='sd', **kwargs):
     """
     Parameter interpolation and field generation combining NSAF tensor mathematics
     with pypestutils FIELDGEN2D_SVA for spatially correlated noise.
+
+    FLEXIBLE version that works with any property by specifying column names.
 
     Parameters
     ----------
@@ -528,6 +534,12 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
         Configuration parameters for pypestutils
     iids : np.ndarray, optional
         Pre-generated IIDs with shape (ny*nx, n_realizations)
+    area : np.ndarray, optional
+        Cell areas with shape (ny, nx)
+    mean_col : str, default 'mean'
+        Name of the mean column in conceptual points
+    sd_col : str, default 'sd'
+        Name of the standard deviation column in conceptual points
 
     Returns
     -------
@@ -544,12 +556,31 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
     # Load conceptual points
     cp_df = load_conceptual_points(cp_file)
     if 'layer' in cp_df.columns:
-        layer_cp = cp_df[cp_df['layer'] == layer].copy()
+        layer_cp = cp_df[cp_df['layer'] - 1 == layer].copy()
     else:
         layer_cp = cp_df.copy()
 
     if len(layer_cp) == 0:
         raise ValueError(f"No conceptual points found for layer {layer}")
+
+    # Validate required columns
+    required_base_cols = ['x', 'y', 'major', 'bearing']
+    missing_cols = [col for col in required_base_cols if col not in layer_cp.columns]
+    if missing_cols:
+        raise ValueError(f"Missing required columns: {missing_cols}")
+
+    # Check for transverse/anisotropy
+    if 'transverse' not in layer_cp.columns:
+        if 'anisotropy' in layer_cp.columns:
+            layer_cp['transverse'] = layer_cp['major'] / layer_cp['anisotropy']
+        else:
+            raise ValueError("Must have either 'transverse' or 'anisotropy' column")
+
+    # Validate mean and sd columns
+    if mean_col not in layer_cp.columns:
+        raise ValueError(f"Mean column '{mean_col}' not found in conceptual points")
+    if sd_col not in layer_cp.columns:
+        raise ValueError(f"Standard deviation column '{sd_col}' not found in conceptual points")
 
     # Get grid dimensions and coordinates
     ny, nx = xcentergrid.shape
@@ -557,6 +588,7 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
 
     print(f"Processing layer {layer} with {len(layer_cp)} conceptual points")
     print(f"Grid dimensions: {ny} x {nx} = {ny * nx} cells")
+    print(f"Using columns: mean='{mean_col}', sd='{sd_col}'")
 
     # Step 1: Interpolate tensors
     print("\nStep 1: Interpolating tensor field...")
@@ -572,8 +604,12 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
 
     # Step 3: Prepare conceptual point data
     cp_coords = np.column_stack([layer_cp['x'].values, layer_cp['y'].values])
-    cp_means = layer_cp['mean_kh'].values
-    cp_sd = layer_cp['sd_kh'].values
+    cp_means = layer_cp[mean_col].values
+    cp_sd = layer_cp[sd_col].values.clip(1e-8,None)
+
+    print(f"Conceptual point data ranges:")
+    print(f"  {mean_col}: [{cp_means.min():.3f}, {cp_means.max():.3f}]")
+    print(f"  {sd_col}: [{cp_sd.min():.3f}, {cp_sd.max():.3f}]")
 
     # Step 4: Interpolate mean and sd using tensor-aware kriging
     print("\nStep 4: Interpolating mean and standard deviation fields...")
@@ -581,8 +617,8 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
     # Configure kriging parameters
     if config_dict is None:
         config_dict = {
-            'vartype': 2,  # Exponential variogram
-            'krigtype': 1,  # Ordinary kriging
+            'vartype': 'gaussian',
+            'krigtype': 1,
             'search_radius': 1e10,
             'maxpts_interp': 20,
             'minpts_interp': 1
@@ -628,6 +664,10 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
             peak_increase=1.0, transition_cells=3, mode='enhance'
         )
 
+    print(f"Interpolated field ranges:")
+    print(f"  Mean: [{interp_means_2d.min():.3f}, {interp_means_2d.max():.3f}]")
+    print(f"  SD: [{interp_sd_2d.min():.3f}, {interp_sd_2d.max():.3f}]")
+
     # Step 5: Generate stochastic fields using FIELDGEN2D_SVA approach
     print(f"\nStep 5: Generating {n_realizations} stochastic realizations...")
 
@@ -641,12 +681,13 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
             corrlen=corrlen_major,
             zones=zones,
             n_realizations=n_realizations,
-            vartransform=vartransform,
+            vartransform='n',
             config_dict=config_dict,
             ny=ny,
             nx=nx,
             area=area,
-            iids=iids
+            iids=iids,
+            active=kwargs.get('active', None)
         )
     else:
         fields = None
@@ -722,12 +763,25 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
                          max_neighbors=4, transform=None, min_value=1e-8,
                          zones=None):
     """
-    Tensor-aware kriging using anisotropic distances.
-    (Implementation from the NSAF code provided earlier)
+    Tensor-aware kriging using pypestutils with anisotropic correlation structures.
+    Clean version without automatic transform detection.
     """
+    try:
+        from pypestutils.pestutilslib import PestUtilsLib
+    except Exception as e:
+        raise Exception(f"Error importing pypestutils: {e}")
+
     # Get grid shape
     n_grid = len(grid_coords)
     n_dims = grid_coords.shape[1]
+
+    print(f"    Tensor-aware kriging: {len(cp_coords)} conceptual points -> {n_grid} grid points")
+    print(
+        f"    Conceptual points range: X=[{cp_coords[:, 0].min():.1f}, {cp_coords[:, 0].max():.1f}], Y=[{cp_coords[:, 1].min():.1f}, {cp_coords[:, 1].max():.1f}]")
+    print(
+        f"    Grid points range: X=[{grid_coords[:, 0].min():.1f}, {grid_coords[:, 0].max():.1f}], Y=[{grid_coords[:, 1].min():.1f}, {grid_coords[:, 1].max():.1f}]")
+    print(f"    Value range: [{cp_values.min():.6f}, {cp_values.max():.6f}], background: {background_value:.6f}")
+    print(f"    Transform requested: {transform}")
 
     # Handle zones shape inference
     if zones is not None:
@@ -736,179 +790,155 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
             ny, nx = shape
         else:
             nz, ny, nx = shape
+        print(f"    Using zones with shape: {shape}")
     else:
-        # Simple rectangular grid assumption
-        grid_span_x = grid_coords[:, 0].max() - grid_coords[:, 0].min()
-        grid_span_y = grid_coords[:, 1].max() - grid_coords[:, 1].min()
+        # Infer grid dimensions
+        x_coords = grid_coords[:, 0]
+        y_coords = grid_coords[:, 1]
 
-        # Estimate grid dimensions
-        unique_x = len(np.unique(grid_coords[:, 0]))
-        unique_y = len(np.unique(grid_coords[:, 1]))
+        unique_x = np.unique(x_coords)
+        unique_y = np.unique(y_coords)
+        nx = len(unique_x)
+        ny = len(unique_y)
 
-        if unique_x * unique_y == n_grid:
-            nx, ny = unique_x, unique_y
+        if nx * ny != n_grid:
+            side_length = int(np.sqrt(n_grid))
+            nx = ny = side_length
+            print(f"    Warning: Could not infer grid dimensions, using square grid {nx}x{ny}")
         else:
-            # Fallback to square root
-            nx = ny = int(np.sqrt(n_grid))
+            print(f"    Inferred grid dimensions: ny={ny}, nx={nx}")
 
         shape = (ny, nx)
 
-    # Define index conversion functions
-    if n_dims == 3:
-        def get_indices(idx):
-            layer = idx // (ny * nx)
-            remainder = idx % (ny * nx)
-            row = remainder // nx
-            col = remainder % nx
-            return layer, row, col
-    else:
-        def get_indices(idx):
-            row = idx // nx
-            col = idx % nx
-            return row, col
+    # Convert tensors to geostatistical parameters for pypestutils
+    print("    Converting tensors to geostatistical parameters...")
+    bearing_deg, anisotropy_ratios, corrlen_major = _tensors_to_geostat_params(interp_tensors)
 
-    # Variogram function
-    def variogram(h):
-        if variogram_model == 'exponential':
-            return nugget + (sill - nugget) * (1 - np.exp(-h))
-        elif variogram_model == 'gaussian':
-            return nugget + (sill - nugget) * (1 - np.exp(-(h ** 2)))
-        else:  # spherical
-            return np.where(h <= 1.0,
-                            nugget + (sill - nugget) * (1.5 * h - 0.5 * h ** 3),
-                            sill)
+    # Prepare grid coordinates
+    grid_x = grid_coords[:, 0]
+    grid_y = grid_coords[:, 1]
 
-    interp_values_1d = np.full(n_grid, background_value)
-
-    # Calculate zone for each conceptual point if zones provided
+    # Handle zones
     if zones is not None:
-        cp_zones = []
-        for coord in cp_coords:
-            distances = np.sum((grid_coords - coord) ** 2, axis=1)
-            closest_idx = np.argmin(distances)
-            if n_dims == 3:
-                layer, row, col = get_indices(closest_idx)
-                cp_zones.append(zones[layer, row, col])
-            else:
-                row, col = get_indices(closest_idx)
-                cp_zones.append(zones[row, col])
-        cp_zones = np.array(cp_zones)
+        zones_flat = zones.flatten().astype(int)
+        cp_zones = _assign_cp_to_zones(cp_coords, grid_x, grid_y, zones_flat, nx)
+    else:
+        zones_flat = np.ones(len(grid_x), dtype=int)
+        cp_zones = np.ones(len(cp_coords), dtype=int)
 
-    # Pre-compute log transformation if needed
+    # Handle transformation - NO automatic detection, just pass through
+    cp_values_transformed = cp_values.copy()  # Always use values as-is
+
+    # Set pypestutils transform flag
     if transform == 'log':
-        if min_value is None:
-            positive_values = cp_values[cp_values > 0]
-            min_value = np.min(positive_values) * 0.01 if len(positive_values) > 0 else 1e-8
+        transform_flag = "log"
+        print(f"    Using log transform in pypestutils")
+    else:
+        transform_flag = "none"
+        print(f"    Using no transform in pypestutils")
 
-    # Main kriging loop
-    for i in range(n_grid):
-        local_tensor = interp_tensors[i]
+    print(f"    Input values to pypestutils: [{cp_values_transformed.min():.6f}, {cp_values_transformed.max():.6f}]")
 
-        if zones is not None:
-            # Get current zone and filter conceptual points
-            if n_dims == 3:
-                layer, row, col = get_indices(i)
-                current_zone = zones[layer, row, col]
-            else:
-                row, col = get_indices(i)
-                current_zone = zones[row, col]
+    # Use pypestutils for kriging
+    print("    Calling pypestutils for tensor-aware kriging...")
 
-            # Filter to same zone
-            zone_mask = cp_zones == current_zone
-            if np.sum(zone_mask) >= min_points:
-                cp_coords_filtered = cp_coords[zone_mask]
-                cp_values_filtered = cp_values[zone_mask]
-            else:
-                cp_coords_filtered = cp_coords
-                cp_values_filtered = cp_values
+    try:
+        lib = PestUtilsLib()
+
+        # Create temporary factor file
+        fac_fname = "temp_tensor_aware_kriging.fac"
+        if os.path.exists(fac_fname):
+            os.remove(fac_fname)
+        fac_ftype = "text"
+
+        # Set up variogram type
+        if variogram_model == 'exponential':
+            vartype = 2
+        elif variogram_model == 'gaussian':
+            vartype = 3
+        elif variogram_model == 'spherical':
+            vartype = 1
         else:
-            cp_coords_filtered = cp_coords
-            cp_values_filtered = cp_values
+            vartype = 2  # Default to exponential
 
-        # Compute anisotropic distances
-        try:
-            tensor_inv = np.linalg.inv(local_tensor)
-            dx = cp_coords_filtered - grid_coords[i]
-            aniso_distances = np.sqrt(np.sum(dx @ tensor_inv * dx, axis=1))
-        except np.linalg.LinAlgError:
-            aniso_distances = np.linalg.norm(cp_coords_filtered - grid_coords[i], axis=1)
+        print(f"    Pypestutils parameters:")
+        print(f"      Variogram: {variogram_model} (type {vartype})")
+        print(f"      Transform: {transform_flag}")
+        print(f"      Search radius: {max_search_radius}")
+        print(f"      Max neighbors: {max_neighbors}")
 
-        # Get neighbors within search radius
-        valid_mask = aniso_distances <= max_search_radius
-        if np.sum(valid_mask) < min_points:
-            continue
+        # Calculate kriging factors using tensor-derived anisotropy
+        npts = lib.calc_kriging_factors_2d(
+            cp_coords[:, 0], cp_coords[:, 1], cp_zones,
+            grid_x, grid_y, zones_flat,
+            vartype,  # Variogram type
+            1,  # Ordinary kriging
+            corrlen_major,  # Correlation lengths from tensors
+            anisotropy_ratios,  # Anisotropy ratios from tensors
+            bearing_deg,  # Bearings from tensors
+            max_search_radius,
+            max_neighbors,
+            min_points,
+            fac_fname, fac_ftype
+        )
 
-        # Sort and limit to max_neighbors
-        sorted_indices = np.argsort(aniso_distances[valid_mask])
-        n_candidates = min(max_neighbors or len(sorted_indices), len(sorted_indices))
+        print(f"    Pypestutils kriging factors calculated for {npts} interpolation points")
 
-        if n_candidates < min_points:
-            continue
+        # Apply kriging
+        result = lib.krige_using_file(
+            fac_fname, fac_ftype,
+            len(grid_x),
+            1,  # Ordinary kriging
+            transform_flag,  # Pass through the transform flag as specified
+            cp_values_transformed,  # Use values exactly as provided
+            background_value,  # Use background exactly as provided
+            background_value  # Use no-interpolation value exactly as provided
+        )
 
-        closest_indices = np.where(valid_mask)[0][sorted_indices[:n_candidates]]
-        nearby_values = cp_values_filtered[closest_indices]
-        nearby_coords = cp_coords_filtered[closest_indices]
-        nearby_distances = aniso_distances[closest_indices]
+        # Clean up
+        if os.path.exists(fac_fname):
+            os.remove(fac_fname)
+        lib.free_all_memory()
 
-        # Apply log transform if needed
-        if transform == 'log':
-            nearby_values_transformed = np.log10(np.maximum(nearby_values, min_value))
-        else:
-            nearby_values_transformed = nearby_values.copy()
+        # Get results - NO back-transformation here, pypestutils handles it
+        interp_values_1d = result["targval"]
 
-        # Set up and solve kriging system
-        n_pts = len(nearby_values_transformed)
-        C = np.zeros((n_pts + 1, n_pts + 1))
-        c = np.zeros(n_pts + 1)
+        print(f"    Pypestutils kriging complete")
+        print(f"    Result range: [{interp_values_1d.min():.6f}, {interp_values_1d.max():.6f}]")
 
-        # Build covariance matrix
-        for j in range(n_pts):
-            for k in range(n_pts):
-                dx = nearby_coords[j] - nearby_coords[k]
-                try:
-                    h = np.sqrt(dx.T @ tensor_inv @ dx)
-                except:
-                    h = np.linalg.norm(dx)
-                C[j, k] = variogram(h)
+        return interp_values_1d.reshape(shape)
 
-            C[j, -1] = 1
-            C[-1, j] = 1
-            c[j] = variogram(nearby_distances[j])
+    except Exception as e:
+        print(f"    Error: Pypestutils kriging failed: {e}")
+        print(f"    Falling back to simple IDW interpolation...")
 
-        c[-1] = 1
+        # Fallback to simple IDW
+        interp_values_1d = np.full(n_grid, background_value)
 
-        # Solve kriging system
-        try:
-            cond_num = np.linalg.cond(C)
-            if cond_num > 1e12:
-                # Fall back to IDW
-                weights = np.exp(-nearby_distances)
-                weights = weights / np.sum(weights)
-                interp_values_1d[i] = np.sum(weights * nearby_values_transformed)
-            else:
-                weights = np.linalg.solve(C, c)[:-1]
-                interp_values_1d[i] = np.sum(weights * nearby_values_transformed)
-        except:
-            # IDW fallback
-            weights = np.exp(-nearby_distances)
-            interp_values_1d[i] = np.sum(weights * nearby_values_transformed) / np.sum(weights)
+        for i in range(n_grid):
+            distances = np.linalg.norm(cp_coords - grid_coords[i], axis=1)
+            distances = np.maximum(distances, 1e-10)
 
-    # Back-transform if needed
-    if transform == 'log':
-        interp_values_1d = 10 ** interp_values_1d
+            # Simple IDW weights
+            weights = 1.0 / (distances ** 2)
+            weights = weights / np.sum(weights)
 
-    return interp_values_1d.reshape(shape)
+            interp_values_1d[i] = np.sum(weights * cp_values_transformed)
+
+        print(f"    IDW fallback complete")
+        print(f"    Result range: [{interp_values_1d.min():.6f}, {interp_values_1d.max():.6f}]")
+
+        return interp_values_1d.reshape(shape)
 
 
 def _generate_stochastic_fields(grid_coords, mean_field, sd_field,
                                 bearing, anisotropy, corrlen,
                                 zones, n_realizations, vartransform,
-                                config_dict, ny, nx, iids=None, area=None):
+                                config_dict, ny, nx, iids=None, area=None,
+                                active=None):
     """
     Generate stochastic fields using pypestutils FIELDGEN2D_SVA.
-
-    This creates temporary files as required by FIELDGEN2D_SVA and then calls
-    the pypestutils wrapper.
+    FINAL FIXED version with correct reshaping logic.
     """
     try:
         from pypestutils.pestutilslib import PestUtilsLib
@@ -922,24 +952,24 @@ def _generate_stochastic_fields(grid_coords, mean_field, sd_field,
     x_coords = grid_coords[:, 0]
     y_coords = grid_coords[:, 1]
 
-    # Flatten fields
-    mean_flat = mean_field.flatten()
-    variance_flat = (sd_field.flatten()) ** 2  # Convert SD to variance
+    # Flatten fields - ENSURE PROPER ORDERING
+    mean_flat = mean_field.flatten().clip(1e-8, None)
+    variance_native = sd_field.flatten() ** 2
+    log_variance_flat = np.log(1 + variance_native / mean_flat ** 2)
+    trans_flag = 1  # Log domain
 
     # Geostatistical parameters from tensors
     aa_values = corrlen.flatten()
     aniso_values = anisotropy.flatten()
     bearing_values = bearing.flatten()
 
-    # domain based on zones
-    if zones is None:
-        domain = np.ones((ny,nx))
-    else:
-        domain = np.where(zones>1,1,0)
+    # FIXED: domain based on zones
+    if active is None:
+        active = np.ones(n_points, dtype=int)
     if area is None:
-        area = domain.copy()
-    domain = domain.flatten().astype(int)
-    area = area.flatten()
+        area = np.ones(n_points)
+    else:
+        area = area.flatten()
 
     # Generate or use provided IIDs
     if iids is None:
@@ -950,87 +980,72 @@ def _generate_stochastic_fields(grid_coords, mean_field, sd_field,
         if iids.shape != (n_points, n_realizations):
             raise ValueError(f"IIDs shape {iids.shape} doesn't match expected {(n_points, n_realizations)}")
 
-    # Create temporary files for FIELDGEN2D_SVA
-    node_file = "temp_nodes_2d.dat"
-    avgfunc_file = "temp_avgfunc_2d.dat"
-    output_file = "temp_output_2d.csv"
-
     try:
-        # Create 2D node specifications file
-        # _create_node_spec_file(node_file, x_coords, y_coords, zones_flat)
-        #
-        # # Create 2D averaging function specification file
-        # _create_avgfunc_spec_file(avgfunc_file, mean_flat, variance_flat,
-        #                           aa_values, aniso_values, bearing_values)
-
         # Set up pypestutils parameters
         lib = PestUtilsLib()
         lib.initialize_randgen(11235813)
 
-        # Determine transformation type
-        if vartransform == 'log':
-            trans_flag = 'log'  # Log domain
-        else:
-            trans_flag = 'none'  # Natural domain
-
         # Averaging function type
-        avg_func = config_dict.get('averaging_function', 'exponential')
+        avg_func = config_dict.get('averaging_function', 'gaussian')
         if isinstance(avg_func, dict):
-            if avg_func == 'pow':
+            if 'pow' in avg_func:
+                avg_flag = 4
+                power_value = avg_func['pow']
+            else:
                 avg_flag, power_value = next(iter(avg_func.items()))
         else:
             power_value = 0
-        if avg_func == 'exponential':
-            avg_flag = 'exp'
-        elif avg_func == 'gaussian':
-            avg_flag = 'gauss'
-        elif avg_func == 'spherical':
-            avg_flag = 'spher'
-        else:
-            avg_flag = 'exp'  # Default to exponential
+            if avg_func == 'exponential':
+                avg_flag = 2
+            elif avg_func == 'gaussian':
+                avg_flag = 3
+            elif avg_func == 'spherical':
+                avg_flag = 1
+            else:
+                avg_flag = 2  # Default to exponential
 
         # Call FIELDGEN2D_SVA through pypestutils interface
         print(f"    Calling FIELDGEN2D_SVA for {n_realizations} realizations...")
 
-        # This is the correct way to call FIELDGEN2D_SVA in pypestutils
-        success = lib.fieldgen2d_sva(
-                    x_coords, y_coords,
-                    area=area,
-                    active=domain,
-                    mean=mean_flat,
-                    var=variance_flat,
-                    aa=corrlen,
-                    anis=anisotropy,
-                    bearing=bearing,
-                    transtype=trans_flag,  # e.g., 'n' or 'l'
-                    avetype=avg_flag,      # 's', 'x', 'g', or 'p'
-                    power=power_value,     # only needed if avetype='p'
-                    nreal=n_realizations,
+        fields = lib.fieldgen2d_sva(
+            x_coords, y_coords,
+            area=area,
+            active=active,
+            mean=mean_flat,
+            var=log_variance_flat,
+            aa=aa_values,
+            anis=aniso_values,
+            bearing=bearing_values,
+            transtype=trans_flag,
+            avetype=avg_flag,
+            power=power_value,
+            nreal=n_realizations,
+        )
 
-                )
+        # Handle the output format from FIELDGEN2D_SVA
+        if fields.shape == (n_points, n_realizations):
+            # Output is (n_points, n_realizations) - transpose to (n_realizations, n_points)
+            fields = fields.T  # Now shape is (n_realizations, n_points)
+            # Reshape each realization to (ny, nx)
+            fields = fields.reshape((n_realizations, ny, nx))
 
-        if not success:
-            raise Exception("FIELDGEN2D_SVA execution failed")
+        elif fields.shape == (n_realizations * n_points,):
+            # Output is flattened - reshape directly
+            fields = fields.reshape((n_realizations, ny, nx))
 
-        # Read results from CSV file
-        print("    Reading FIELDGEN2D_SVA results...")
-        results_df = pd.read_csv(output_file)
+        elif fields.shape == (n_realizations, n_points):
+            # Output is already (n_realizations, n_points) - just reshape spatial dimensions
+            fields = fields.reshape((n_realizations, ny, nx))
 
-        # Extract field values - assume columns are named 'real_001', 'real_002', etc.
-        fields = np.zeros((n_realizations, ny, nx))
+        else:
+            raise ValueError(f"Unexpected fieldgen2d_sva output shape: {fields.shape}")
 
-        for real in range(n_realizations):
-            col_name = f"real_{real + 1:03d}"
-            if col_name in results_df.columns:
-                field_values = results_df[col_name].values
-                fields[real] = field_values.reshape(ny, nx)
-            else:
-                # Fallback column naming
-                field_values = results_df.iloc[:, real].values
-                fields[real] = field_values.reshape(ny, nx)
+        print(f"    Successfully generated {n_realizations} realizations with shape {fields.shape}")
 
         # Clean up
         lib.free_all_memory()
+
+        return fields
 
     except Exception as e:
         print(f"    Warning: FIELDGEN2D_SVA failed: {e}")
@@ -1041,19 +1056,13 @@ def _generate_stochastic_fields(grid_coords, mean_field, sd_field,
         for real in range(n_realizations):
             current_iids = iids[:, real]
             field_values = _generate_simple_field(
-                grid_coords, mean_flat, variance_flat,
+                grid_coords, mean_flat, log_variance_flat,
                 aa_values, aniso_values, bearing_values,
                 vartransform, current_iids, ny, nx
             )
             fields[real] = field_values.reshape(ny, nx)
 
-    finally:
-        # Clean up temporary files
-        for temp_file in [node_file, avgfunc_file, output_file]:
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-
-    return fields
+        return fields
 
 
 # def _create_node_spec_file(filename, x_coords, y_coords, zones):
@@ -1098,36 +1107,88 @@ def _generate_simple_field(grid_coords, mean_flat, variance_flat,
                            aa_values, aniso_values, bearing_values,
                            vartransform, iids, ny, nx):
     """
-    Simple fallback field generation if FIELDGEN2D_SVA fails.
+    IMPROVED simple fallback field generation if FIELDGEN2D_SVA fails.
+    Fixed to eliminate checkering and provide proper spatial correlation.
     """
-    print("    Using simple correlated field generation fallback...")
+    print("    Using improved simple correlated field generation fallback...")
 
     n_points = len(grid_coords)
 
-    # Scale by local standard deviation
-    stochastic_component = iids * np.sqrt(variance_flat)
+    # Convert bearing from degrees to radians for calculations
+    bearing_rad = np.radians(bearing_values)
 
-    # Apply simple spatial correlation using distance-based averaging
-    smoothed_component = np.zeros_like(stochastic_component)
+    # Create spatially correlated field using moving average approach
+    correlated_field = np.zeros(n_points)
 
-    for i in range(n_points):
+    # For computational efficiency, use a subset of points for correlation
+    # This prevents the O(n²) complexity from being too slow
+    max_correlation_points = min(2000, n_points)
+
+    if n_points > max_correlation_points:
+        # Sample points for correlation calculation
+        correlation_indices = np.random.choice(n_points, max_correlation_points, replace=False)
+        correlation_indices = np.sort(correlation_indices)
+    else:
+        correlation_indices = np.arange(n_points)
+
+    # Apply spatial correlation
+    for i in correlation_indices:
+        # Get local correlation parameters
         local_aa = aa_values[i]
+        local_aniso = aniso_values[i]
+        local_bearing = bearing_rad[i]
 
-        # Simple correlation based on distance
-        distances = np.linalg.norm(grid_coords - grid_coords[i], axis=1)
-        weights = np.exp(-distances / (local_aa + 1e-10))  # Avoid division by zero
-        weights = weights / np.sum(weights)
+        # Calculate distances to all points
+        dx = grid_coords[:, 0] - grid_coords[i, 0]
+        dy = grid_coords[:, 1] - grid_coords[i, 1]
 
-        # Apply weighted average
-        smoothed_component[i] = np.sum(weights * stochastic_component)
+        # Apply anisotropic transformation
+        # Rotate coordinates to align with anisotropy ellipse
+        cos_bear = np.cos(local_bearing)
+        sin_bear = np.sin(local_bearing)
 
-    # Combine with mean
+        # Rotate to principal axes (geological bearing: 0° = North, clockwise positive)
+        dx_rot = dx * sin_bear + dy * cos_bear  # East component (major axis)
+        dy_rot = -dx * cos_bear + dy * sin_bear  # North component (minor axis)
+
+        # Scale by anisotropy (major axis has length aa, minor axis has length aa/aniso)
+        minor_aa = local_aa / local_aniso
+        dx_scaled = dx_rot / local_aa
+        dy_scaled = dy_rot / minor_aa
+
+        # Calculate anisotropic distance
+        aniso_distances = np.sqrt(dx_scaled ** 2 + dy_scaled ** 2)
+
+        # Exponential correlation function
+        correlation_weights = np.exp(-aniso_distances)
+
+        # Normalize weights
+        correlation_weights = correlation_weights / np.sum(correlation_weights)
+
+        # Apply correlation to the random field
+        correlated_field[i] = np.sum(correlation_weights * iids)
+
+    # For points not in correlation_indices, use interpolation
+    if n_points > max_correlation_points:
+        # Simple interpolation for remaining points
+        remaining_indices = np.setdiff1d(np.arange(n_points), correlation_indices)
+
+        for i in remaining_indices:
+            # Find nearest correlation points
+            distances_to_corr = np.sum((grid_coords[correlation_indices] - grid_coords[i]) ** 2, axis=1)
+            nearest_corr_idx = correlation_indices[np.argmin(distances_to_corr)]
+            correlated_field[i] = correlated_field[nearest_corr_idx]
+
+    # Scale by local standard deviation
+    stochastic_component = correlated_field * np.sqrt(variance_flat)
+
+    # Combine with mean field
     if vartransform == 'log':
         # Log domain: mean * exp(stochastic_component)
-        field_values = mean_flat * np.exp(smoothed_component)
+        field_values = mean_flat * np.exp(stochastic_component)
     else:
         # Normal domain: mean + stochastic_component
-        field_values = mean_flat + smoothed_component
+        field_values = mean_flat + stochastic_component
 
     return field_values
 
@@ -1284,16 +1345,20 @@ def example_usage():
 
 
 def example_workflow():
-    """Example of complete workflow."""
+    """Example of complete workflow with FIXED grid handling."""
     import matplotlib.pyplot as plt
 
-    # Create example data
-    nx, ny = 50, 40
+    # Create example data - FIXED grid creation
+    nx, ny = 50, 40  # nx = columns, ny = rows
     x = np.linspace(0, 5000, nx)
     y = np.linspace(0, 4000, ny)
-    xcentergrid, ycentergrid = np.meshgrid(x, y, indexing='xy')
-    xcentergrid = xcentergrid.T
-    ycentergrid = ycentergrid.T
+
+    # Use consistent indexing - 'ij' indexing is clearer for grid applications
+    # This creates ycentergrid with shape (ny, nx) and xcentergrid with shape (ny, nx)
+    ycentergrid, xcentergrid = np.meshgrid(y, x, indexing='ij')
+
+    # Now ycentergrid.shape = (40, 50) and xcentergrid.shape = (40, 50)
+    # Row 0 corresponds to y[0], Column 0 corresponds to x[0]
 
     # Example conceptual points
     cp_data = {
@@ -1310,7 +1375,7 @@ def example_workflow():
     }
     cp_df = pd.DataFrame(cp_data)
 
-    # Example zones
+    # Example zones - shape (ny, nx) = (40, 50)
     zones = np.ones((ny, nx), dtype=int)
     zones[:ny // 2, :] = 1
     zones[ny // 2:, :] = 2
@@ -1318,34 +1383,56 @@ def example_workflow():
     # Run workflow
     results = apply_ppu_hyperpars(
         cp_df, xcentergrid, ycentergrid,
-        zones=zones, n_realizations=3,
+        zones=zones, n_realizations=1,
         out_filename="example",
         vartransform="none"
     )
 
-    # Quick visualization
+    # Verify shapes
+    print(f"Grid shapes: xcentergrid {xcentergrid.shape}, ycentergrid {ycentergrid.shape}")
+    print(f"Results shapes: mean {results['mean'].shape}, zones {zones.shape}")
+    print(f"Expected: ({ny}, {nx}) = (40, 50)")
+
+    # Check for problematic values in realizations
+    if results['fields'] is not None:
+        for i, field in enumerate(results['fields']):
+            n_zeros = np.sum(field == 0)
+            n_total = field.size
+            print(f"Realization {i}: {n_zeros}/{n_total} zero values ({100 * n_zeros / n_total:.1f}%)")
+            print(f"  Min: {field.min():.3f}, Max: {field.max():.3f}, Mean: {field.mean():.3f}")
+
+    # Quick visualization with proper coordinate mapping
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
 
     # Mean field
-    im1 = axes[0, 0].imshow(results['mean'], origin='lower')
+    im1 = axes[0, 0].imshow(results['mean'], origin='lower', extent=[0, 5000, 0, 4000])
     axes[0, 0].set_title('Mean Field')
+    axes[0, 0].set_xlabel('X (m)')
+    axes[0, 0].set_ylabel('Y (m)')
     plt.colorbar(im1, ax=axes[0, 0])
 
     # SD field
-    im2 = axes[0, 1].imshow(results['sd'], origin='lower')
+    im2 = axes[0, 1].imshow(results['sd'], origin='lower', extent=[0, 5000, 0, 4000])
     axes[0, 1].set_title('Standard Deviation')
+    axes[0, 1].set_xlabel('X (m)')
+    axes[0, 1].set_ylabel('Y (m)')
     plt.colorbar(im2, ax=axes[0, 1])
 
     # Anisotropy field
-    im3 = axes[0, 2].imshow(results['anisotropy'], origin='lower')
+    im3 = axes[0, 2].imshow(results['anisotropy'], origin='lower', extent=[0, 5000, 0, 4000])
     axes[0, 2].set_title('Anisotropy Ratio')
+    axes[0, 2].set_xlabel('X (m)')
+    axes[0, 2].set_ylabel('Y (m)')
     plt.colorbar(im3, ax=axes[0, 2])
 
     # First three realizations
-    for i in range(3):
-        im = axes[1, i].imshow(results['fields'][i], origin='lower')
-        axes[1, i].set_title(f'Realization {i + 1}')
-        plt.colorbar(im, ax=axes[1, i])
+    if results['fields'] is not None:
+        for i in range(min(3, len(results['fields']))):
+            im = axes[1, i].imshow(results['fields'][i], origin='lower', extent=[0, 5000, 0, 4000])
+            axes[1, i].set_title(f'Realization {i + 1}')
+            axes[1, i].set_xlabel('X (m)')
+            axes[1, i].set_ylabel('Y (m)')
+            plt.colorbar(im, ax=axes[1, i])
 
     plt.tight_layout()
     plt.savefig('workflow_results.png', dpi=150, bbox_inches='tight')
@@ -1353,3 +1440,6 @@ def example_workflow():
 
     print("Example workflow complete!")
     return results
+
+if __name__ == "__main__":
+    example_workflow()

@@ -2056,7 +2056,7 @@ def plot_zones_with_conceptual_points(zones, conceptual_points, grid_coords,
 
 
 def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
-                      conceptual_points=None, subsample=4, scale_factor=1,
+                      conceptual_points=None, subsample=4, scale_factor=0.1,
                       figsize=(14, 12), title_suf=None, save_path='.'):
     """
     Visualize tensors as ellipses overlaid on zones, with conceptual points as oriented lines.
@@ -2322,7 +2322,7 @@ def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
     print(f"Saved tensor visualization to {save_path_full}")
 
     # Show the plot for interactive backends
-    plt.show()
+    #plt.show()
     plt.close()
 
 
@@ -2331,7 +2331,7 @@ def plot_layer(field, layer=0, field_name='field', transform='log', save_path='.
         field = np.log10(field)
 
     plt.figure(figsize=(14, 12))
-    plt.imshow(field)
+    plt.imshow(field[layer])
     plt.colorbar(label='Parameter Value')
     plt.title(f'{field_name} for layer {layer}')
     plt.xlabel('X')
