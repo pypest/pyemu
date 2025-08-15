@@ -350,7 +350,7 @@ def _krig_component_pypestutils(cp_x, cp_y, cp_values, grid_x, grid_y, config_di
     x_extent = np.max(grid_x) - np.min(grid_x)
     y_extent = np.max(grid_y) - np.min(grid_y)
     domain_extent = max(x_extent, y_extent)
-    corrlen = np.full(len(grid_x), np.max(10000.0, domain_extent/3))
+    corrlen = np.full(len(grid_x), np.max([10000.0, domain_extent/3]))
     aniso = np.ones(len(grid_x))  # Isotropic
     bearing = np.zeros(len(grid_x))  # No rotation
 
@@ -842,6 +842,64 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
     # Use pypestutils for kriging
     print("    Calling pypestutils for tensor-aware kriging...")
 
+    def fix_zones_for_pypestutils(zones_flat, cp_zones, min_points):
+        """
+        Ensure every zone in the grid either:
+        1) Has >= min_points control points, OR
+        2) Gets merged with a viable neighboring zone
+        """
+        zones_fixed = zones_flat.copy()
+        cp_zones_fixed = cp_zones.copy()
+
+        unique_grid_zones = np.unique(zones_flat)
+
+        zones_to_eliminate = []
+
+        for zone in unique_grid_zones:
+            cp_count = np.sum(cp_zones == zone)
+            grid_count = np.sum(zones_flat == zone)
+
+            if cp_count < min_points:
+                print(f"    Zone {zone}: {cp_count} CPs, {grid_count} grid cells - ELIMINATING")
+                zones_to_eliminate.append(zone)
+
+        if zones_to_eliminate:
+            # Find the zone with the most control points to use as the "receiver"
+            viable_zones = [z for z in unique_grid_zones if z not in zones_to_eliminate]
+            if viable_zones:
+                # Pick the zone with most control points
+                best_zone = max(viable_zones, key=lambda z: np.sum(cp_zones == z))
+                print(f"    Consolidating {len(zones_to_eliminate)} bad zones into zone {best_zone}")
+
+                for bad_zone in zones_to_eliminate:
+                    # Move all grid cells from bad zone to best zone
+                    zones_fixed[zones_flat == bad_zone] = best_zone
+                    # Move any control points (though there shouldn't be many)
+                    cp_zones_fixed[cp_zones == bad_zone] = best_zone
+            else:
+                # All zones are bad - just make everything zone 1
+                print("    All zones insufficient - making single zone")
+                zones_fixed = np.ones_like(zones_flat)
+                cp_zones_fixed = np.ones_like(cp_zones)
+
+        # Final verification
+        final_zones = np.unique(zones_fixed)
+        print(f"    Final zones: {final_zones}")
+        for zone in final_zones:
+            cp_count = np.sum(cp_zones_fixed == zone)
+            grid_count = np.sum(zones_fixed == zone)
+            print(f"      Zone {zone}: {cp_count} CPs, {grid_count} grid cells")
+
+            if cp_count < min_points:
+                print(f"      WARNING: Zone {zone} still has insufficient points!")
+
+        return zones_fixed, cp_zones_fixed
+
+    # Use it:
+    zones_for_kriging, cp_zones_for_kriging = fix_zones_for_pypestutils(
+        zones_flat, cp_zones, min_points
+    )
+
     try:
         lib = PestUtilsLib()
 
@@ -867,20 +925,29 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
         print(f"      Search radius: {max_search_radius}")
         print(f"      Max neighbors: {max_neighbors}")
 
-        # Calculate kriging factors using tensor-derived anisotropy
+        # Then use the modified zones in kriging
         npts = lib.calc_kriging_factors_2d(
-            cp_coords[:, 0], cp_coords[:, 1], cp_zones,
-            grid_x, grid_y, zones_flat,
-            vartype,  # Variogram type
-            1,  # Ordinary kriging
-            corrlen_major,  # Correlation lengths from tensors
-            anisotropy_ratios,  # Anisotropy ratios from tensors
-            bearing_deg,  # Bearings from tensors
-            max_search_radius,
-            max_neighbors,
-            min_points,
+            cp_coords[:, 0], cp_coords[:, 1], cp_zones_for_kriging,  # Modified zones
+            grid_x, grid_y, zones_for_kriging,  # Modified zones
+            vartype, 1, corrlen_major, anisotropy_ratios, bearing_deg,
+            max_search_radius, max_neighbors, min_points,
             fac_fname, fac_ftype
         )
+
+        # Calculate kriging factors using tensor-derived anisotropy
+        # npts = lib.calc_kriging_factors_2d(
+        #     cp_coords[:, 0], cp_coords[:, 1], cp_zones,
+        #     grid_x, grid_y, zones_flat,
+        #     vartype,  # Variogram type
+        #     1,  # Ordinary kriging
+        #     corrlen_major,  # Correlation lengths from tensors
+        #     anisotropy_ratios,  # Anisotropy ratios from tensors
+        #     bearing_deg,  # Bearings from tensors
+        #     max_search_radius,
+        #     max_neighbors,
+        #     min_points,
+        #     fac_fname, fac_ftype
+        # )
 
         print(f"    Pypestutils kriging factors calculated for {npts} interpolation points")
 
@@ -1290,156 +1357,3 @@ def _save_results(results, out_filename, vartransform):
             np.savetxt(field_file, field, fmt="%20.8E")
 
         print(f"  Saved {len(results['fields'])} realizations")
-
-
-# Example usage function
-def example_usage():
-    """Example of how to use the tensor interpolation."""
-
-    # Create example conceptual points DataFrame
-    cp_data = {
-        'name': ['cp1', 'cp2', 'cp3', 'cp4'],
-        'x': [1000, 3000, 1000, 3000],
-        'y': [1000, 1000, 3000, 3000],
-        'z': [0, 0, 0, 0],
-        'mean_kh': [1.0, 1.0, 1.0, 1.0],
-        'sd_kh': [0.1, 0.1, 0.1, 0.1],
-        'major': [2000, 1500, 1800, 2200],
-        'anisotropy': [3.0, 2.5, 4.0, 2.0],
-        'bearing': [45, 90, 135, 0],  # Degrees
-        'layer': [0, 0, 0, 0]
-    }
-    cp_df = pd.DataFrame(cp_data)
-
-    # Create example grid (pyemu style)
-    nx, ny = 50, 40
-    x = np.linspace(0, 5000, nx)
-    y = np.linspace(0, 4000, ny)
-    xcentergrid, ycentergrid = np.meshgrid(x, y)
-
-    # Example zones
-    zones = np.ones((ny, nx), dtype=int)
-    zones[:ny // 2, :] = 1
-    zones[ny // 2:, :] = 2
-
-    # Configuration
-    config = {
-        'vartype': 2,  # Exponential
-        'krigtype': 1,  # Ordinary kriging
-        'search_radius': 10000,
-        'maxpts_interp': 10,
-        'minpts_interp': 1
-    }
-
-    # Interpolate tensors
-    tensors = interpolate_tensors(
-        cp_df, xcentergrid, ycentergrid,
-        zones=zones, method='krig',
-        layer=0, config_dict=config
-    )
-
-    print(f"Interpolated tensor field shape: {tensors.shape}")
-    print(f"Sample tensor at grid point 0:\n{tensors[0]}")
-
-    return tensors
-
-
-def example_workflow():
-    """Example of complete workflow with FIXED grid handling."""
-    import matplotlib.pyplot as plt
-
-    # Create example data - FIXED grid creation
-    nx, ny = 50, 40  # nx = columns, ny = rows
-    x = np.linspace(0, 5000, nx)
-    y = np.linspace(0, 4000, ny)
-
-    # Use consistent indexing - 'ij' indexing is clearer for grid applications
-    # This creates ycentergrid with shape (ny, nx) and xcentergrid with shape (ny, nx)
-    ycentergrid, xcentergrid = np.meshgrid(y, x, indexing='ij')
-
-    # Now ycentergrid.shape = (40, 50) and xcentergrid.shape = (40, 50)
-    # Row 0 corresponds to y[0], Column 0 corresponds to x[0]
-
-    # Example conceptual points
-    cp_data = {
-        'name': ['cp1', 'cp2', 'cp3', 'cp4'],
-        'x': [1000, 3000, 1000, 3000],
-        'y': [1000, 1000, 3000, 3000],
-        'z': [0, 0, 0, 0],
-        'mean_kh': [1.5, 2.0, 1.8, 1.2],
-        'sd_kh': [0.3, 0.4, 0.2, 0.5],
-        'major': [2000, 1500, 1800, 2200],
-        'anisotropy': [3.0, 2.5, 4.0, 2.0],
-        'bearing': [45, 90, 135, 0],
-        'layer': [0, 0, 0, 0]
-    }
-    cp_df = pd.DataFrame(cp_data)
-
-    # Example zones - shape (ny, nx) = (40, 50)
-    zones = np.ones((ny, nx), dtype=int)
-    zones[:ny // 2, :] = 1
-    zones[ny // 2:, :] = 2
-
-    # Run workflow
-    results = apply_ppu_hyperpars(
-        cp_df, xcentergrid, ycentergrid,
-        zones=zones, n_realizations=1,
-        out_filename="example",
-        vartransform="none"
-    )
-
-    # Verify shapes
-    print(f"Grid shapes: xcentergrid {xcentergrid.shape}, ycentergrid {ycentergrid.shape}")
-    print(f"Results shapes: mean {results['mean'].shape}, zones {zones.shape}")
-    print(f"Expected: ({ny}, {nx}) = (40, 50)")
-
-    # Check for problematic values in realizations
-    if results['fields'] is not None:
-        for i, field in enumerate(results['fields']):
-            n_zeros = np.sum(field == 0)
-            n_total = field.size
-            print(f"Realization {i}: {n_zeros}/{n_total} zero values ({100 * n_zeros / n_total:.1f}%)")
-            print(f"  Min: {field.min():.3f}, Max: {field.max():.3f}, Mean: {field.mean():.3f}")
-
-    # Quick visualization with proper coordinate mapping
-    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-
-    # Mean field
-    im1 = axes[0, 0].imshow(results['mean'], origin='lower', extent=[0, 5000, 0, 4000])
-    axes[0, 0].set_title('Mean Field')
-    axes[0, 0].set_xlabel('X (m)')
-    axes[0, 0].set_ylabel('Y (m)')
-    plt.colorbar(im1, ax=axes[0, 0])
-
-    # SD field
-    im2 = axes[0, 1].imshow(results['sd'], origin='lower', extent=[0, 5000, 0, 4000])
-    axes[0, 1].set_title('Standard Deviation')
-    axes[0, 1].set_xlabel('X (m)')
-    axes[0, 1].set_ylabel('Y (m)')
-    plt.colorbar(im2, ax=axes[0, 1])
-
-    # Anisotropy field
-    im3 = axes[0, 2].imshow(results['anisotropy'], origin='lower', extent=[0, 5000, 0, 4000])
-    axes[0, 2].set_title('Anisotropy Ratio')
-    axes[0, 2].set_xlabel('X (m)')
-    axes[0, 2].set_ylabel('Y (m)')
-    plt.colorbar(im3, ax=axes[0, 2])
-
-    # First three realizations
-    if results['fields'] is not None:
-        for i in range(min(3, len(results['fields']))):
-            im = axes[1, i].imshow(results['fields'][i], origin='lower', extent=[0, 5000, 0, 4000])
-            axes[1, i].set_title(f'Realization {i + 1}')
-            axes[1, i].set_xlabel('X (m)')
-            axes[1, i].set_ylabel('Y (m)')
-            plt.colorbar(im, ax=axes[1, i])
-
-    plt.tight_layout()
-    plt.savefig('workflow_results.png', dpi=150, bbox_inches='tight')
-    plt.show()
-
-    print("Example workflow complete!")
-    return results
-
-if __name__ == "__main__":
-    example_workflow()

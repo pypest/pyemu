@@ -21,19 +21,19 @@ if __name__ == "__main__":
     import time
     start_time = time.perf_counter()
 
-    data_dir = r'..\..\examples\Hawkes_Bay\gwf'
-    # zone_files = [f'idomain_{i}.arr' for i in range(0,9)]
-    con_pts_file = 'Bridgpa_skytem_sva_0.csv'
-    save_path = os.path.join(data_dir, f'{con_pts_file}_output')
+    data_dir = r'..\..\examples\Wairau\waq_arr'
+    zone_files = [f'waq_arr.geoclass_layer{i+1}.arr' for i in range(0,13)]
+    con_pts_file = 'conceptual_points.csv'
+    save_dir = os.path.join(data_dir, f'{con_pts_file}_output')
 
-    if not os.path.exists(save_path):
-        os.mkdir(save_path)
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
 
-    nsaf_helpers.generate_fields_from_files(data_dir, 'hpm_mf6', con_pts_file,
-                                            zone_file=None,
+    nsaf_helpers.generate_fields_from_files(data_dir, 'waq_arr', con_pts_file,
+                                            zone_file=zone_files,
                                             field_name=['kh'],
                                             layer_mode=True,
-                                            save_path=save_path,
+                                            save_dir=save_dir,
                                             tensor_interp='idw')
 
 

@@ -2340,3 +2340,63 @@ def plot_layer(field, layer=0, field_name='field', transform='log', save_path='.
     os.makedirs('output', exist_ok=True)
     plt.savefig(os.path.join(save_path, f'{field_name}_layer_{layer:02d}.png'), dpi=150)
     plt.close()
+
+
+def visualize_nsaf(field_2d, cp_df, x, y):
+    # Visualize results
+    fig, axes = plt.subplots(2, 2, figsize=(12, 12))
+
+    # Field
+    im1 = axes[0, 0].imshow(np.log10(field_2d), origin='lower', cmap='RdYlBu_r')
+    axes[0, 0].set_title('Generated Tangential Field')
+    axes[0, 0].set_aspect('equal')
+    plt.colorbar(im1, ax=axes[0, 0])
+
+    # Field with conceptual points
+    im2 = axes[0, 1].imshow(np.log10(field_2d), origin='lower', cmap='RdYlBu_r', alpha=0.8)
+
+    for idx, row in cp_df.iterrows():
+        x_idx = np.argmin(np.abs(x - row['x']))
+        y_idx = np.argmin(np.abs(y - row['y']))
+        axes[0, 1].plot(x_idx, y_idx, 'ko', markersize=3)
+
+        # Draw bearing direction
+        bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
+        dx = 4 * np.cos(bearing_rad)
+        dy = 4 * np.sin(bearing_rad)
+        axes[0, 1].arrow(x_idx, y_idx, dx, dy, head_width=1, head_length=1,
+                         fc='red', ec='red', alpha=0.8)
+
+    axes[0, 1].set_title('Field with Tangential Vectors')
+    axes[0, 1].set_aspect('equal')
+    plt.colorbar(im2, ax=axes[0, 1])
+
+    # Field statistics
+    axes[1, 0].hist(field_2d.flatten(), bins=50, alpha=0.7, color='purple')
+    axes[1, 0].set_title('Field Distribution')
+    axes[1, 0].set_xlabel('Value')
+    axes[1, 0].set_ylabel('Frequency')
+
+    # Bearing vectors only
+    for idx, row in cp_df.iterrows():
+        x_idx = np.argmin(np.abs(x - row['x']))
+        y_idx = np.argmin(np.abs(y - row['y']))
+
+        bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
+        dx = 3 * np.cos(bearing_rad)
+        dy = 3 * np.sin(bearing_rad)
+        axes[1, 1].arrow(x_idx, y_idx, dx, dy, head_width=1, head_length=1,
+                         fc='blue', ec='blue', alpha=0.6)
+
+    axes[1, 1].set_title('Tangential Bearing Vectors')
+    axes[1, 1].set_xlim(0, field_2d.shape[1] - 1)
+    axes[1, 1].set_ylim(0, field_2d.shape[1] - 1)
+    axes[1, 1].set_aspect('equal')
+
+    plt.tight_layout()
+    plt.savefig('tangential_field_example.png', dpi=150, bbox_inches='tight')
+    plt.show()
+
+    print(f"Field statistics: mean={np.mean(field_2d):.3f}, std={np.std(field_2d):.3f}")
+    print(f"Number of conceptual points: {len(cp_df)}")
+    print("Tangential field generation complete!")
