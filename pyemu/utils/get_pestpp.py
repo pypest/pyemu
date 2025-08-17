@@ -157,7 +157,6 @@ def get_release(owner=None, repo=None, tag="latest", quiet=False) -> dict:
             with urllib.request.urlopen(request, timeout=10) as resp:
                 result = resp.read()
                 remaining = resp.headers.get("x-ratelimit-remaining",None)
-                
                 if remaining is not None and int(remaining) <= 10:
                     warnings.warn(
                         f"Only {remaining} GitHub API requests remaining "
@@ -376,13 +375,17 @@ def run_main(
     exe_suffix, lib_suffix = get_suffixes(ostag)
 
     # select bindir if path not provided
-    if bindir.startswith(":"):
-        bindir = select_bindir(
-            bindir, previous=prev_bindir, quiet=quiet, is_cli=_is_cli
-        )
-    elif not isinstance(bindir, (str, Path)):
+    if isinstance(bindir, str):
+        if bindir.startswith(":"):
+            bindir = select_bindir(
+                bindir, previous=prev_bindir, quiet=quiet, is_cli=_is_cli
+            )  # returns resolved Path
+        else:
+            bindir = Path(bindir).resolve()
+    elif isinstance(bindir, Path):
+        bindir = bindir.resolve()
+    else:
         raise ValueError("Invalid bindir option (expected string or Path)")
-    bindir = Path(bindir).resolve()
 
     # make sure bindir exists
     if bindir == pyemu_bin:
