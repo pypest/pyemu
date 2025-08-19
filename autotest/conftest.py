@@ -1,5 +1,7 @@
 from pathlib import Path
 import pytest
+import shutil
+import platform
 # from pst_from_tests import setup_freyberg_mf6
 
 pytest_plugins = ["modflow_devtools.fixtures"]
@@ -17,8 +19,54 @@ collect_ignore = [
     # "moouu_tests.py",
     # "mat_tests.py",
     # "da_tests.py",
-    # "get_pestpp_tests.py"
+    # "get_pestpp_tests.py",
 ]
+
+def get_project_root_path():
+    """
+    Get the root path of the project.
+    """
+    return Path(__file__).parent.parent
+
+
+def get_exe_path(exe_name, forgive=True):
+    """
+    Get the absolute path to an executable in the project.
+    """
+    if shutil.which(exe_name) is not None:
+        return exe_name
+    root_path = get_project_root_path()
+    exe_path = root_path / "bin"
+    if not (exe_path / exe_name).exists():
+        if "linux" in platform.system().lower():
+            exe_path = Path(exe_path, "linux")
+        elif "darwin" in platform.system().lower():
+            exe_path = Path(exe_path, "mac")
+        else:
+            exe_path = Path(exe_path, "win")
+    if not (exe_path / exe_name).exists():
+        if forgive:
+            print(f"Executable {exe_name} not found in {exe_path}, returning None")
+        else:
+            raise FileNotFoundError(f"Executable {exe_name} not found in system PATH or fallback path:"
+                                    f" {exe_path}")
+        return None
+    return exe_path / exe_name
+
+
+def full_exe_ref_dict():
+    """
+    Get a dictionary of executable references for the project.
+    """
+    d = {}
+    for exe_name in [
+        "mfnwt", "mt3dusgs", "mfusg_gsi", "mf6",
+        "pestpp-ies", "pestpp-sen", "pestpp-opt", "pestpp-glm",
+        "pestpp-mou", "pestpp-da", "pestpp-sqp", "pestpp-swp"
+    ]:
+        d[exe_name] = get_exe_path(exe_name)
+    return d
+
 
 @pytest.fixture(autouse=True)
 def _ch2testdir(monkeypatch):

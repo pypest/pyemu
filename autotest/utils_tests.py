@@ -11,37 +11,15 @@ sys.path.append("..")
 import pyemu
 from pst_from_tests import _get_port
 
-ext = ''
-local_bins = False  # change if wanting to test with local binary exes
-if local_bins:
-    bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.system().lower():
-        pass
-        bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.system().lower():
-        pass
-        bin_path = os.path.join(bin_path, "mac")
-    else:
-        bin_path = os.path.join(bin_path, "win")
-        ext = '.exe'
-else:
-    bin_path = ''
-    if "windows" in platform.system().lower():
-        ext = '.exe'
+from autotest.conftest import full_exe_ref_dict
 
-mf_exe_path = os.path.join(bin_path, "mfnwt")
-mt_exe_path = os.path.join(bin_path, "mt3dusgs")
-usg_exe_path = os.path.join(bin_path, "mfusg_gsi")
-mf6_exe_path = os.path.join(bin_path, "mf6")
-pp_exe_path = os.path.join(bin_path, "pestpp-glm")
-ies_exe_path = os.path.join(bin_path, "pestpp-ies")
-mou_exe_path = os.path.join(bin_path, "pestpp-mou")
-swp_exe_path = os.path.join(bin_path, "pestpp-swp")
-
-mf_exe_name = os.path.basename(mf_exe_path)
-mf6_exe_name = os.path.basename(mf6_exe_path)
-
-
+exepath_dict = full_exe_ref_dict()
+ies_exe_path = exepath_dict['pestpp-ies']
+mf_exe_path = exepath_dict['mfnwt']
+mf6_exe_path = exepath_dict['mf6']
+pp_exe_path = exepath_dict['pestpp-glm']
+usg_exe_path = exepath_dict["mfusg_gsi"]
+mou_exe_path = exepath_dict["pestpp-mou"]
 
 def add_pi_obj_func_test(tmp_path):
     import os
