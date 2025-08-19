@@ -2331,7 +2331,7 @@ def plot_layer(field, layer=0, field_name='field', transform='log', save_path='.
         field = np.log10(field)
 
     plt.figure(figsize=(14, 12))
-    plt.imshow(field[layer])
+    plt.imshow(field)
     plt.colorbar(label='Parameter Value')
     plt.title(f'{field_name} for layer {layer}')
     plt.xlabel('X')
