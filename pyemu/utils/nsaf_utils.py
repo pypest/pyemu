@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 
 def get_tensor_bearing(tensor, expected_bearing=None):
-    """Extract geological bearing from tensor."""
+    """Extract geological bearing from tensor - NO CHANGES to math."""
     eigenvals, eigenvecs = np.linalg.eigh(tensor)
     max_idx = np.argmax(eigenvals)
     major_eigenvec = eigenvecs[:, max_idx]
@@ -36,14 +36,14 @@ def get_tensor_bearing(tensor, expected_bearing=None):
 
 
 def _ensure_positive_definite(tensor, min_eigenval=1e-8):
-    """Ensure tensor is positive definite."""
+    """Ensure tensor is positive definite - NO CHANGES."""
     eigenvals, eigenvecs = np.linalg.eigh(tensor)
     eigenvals_reg = np.maximum(eigenvals, min_eigenval)
     return eigenvecs @ np.diag(eigenvals_reg) @ eigenvecs.T
 
 
 def create_2d_tensors(theta, major, minor):
-    """Create 2x2 anisotropy tensors from geostatistical parameters.
+    """Create 2x2 anisotropy tensors from geostatistical parameters - NO CHANGES to math.
 
     Parameters
     ----------
@@ -87,7 +87,7 @@ def create_2d_tensors(theta, major, minor):
 
 
 def load_conceptual_points(cp_file):
-    """Load conceptual points from CSV file or DataFrame.
+    """Load conceptual points from CSV file or DataFrame - SIMPLIFIED.
 
     Parameters
     ----------
@@ -106,7 +106,7 @@ def load_conceptual_points(cp_file):
     else:
         raise TypeError(f"cp_file must be string path or pandas DataFrame, got {type(cp_file)}")
 
-    #  Validate required columns (excluding anisotropy/transverse for now)
+    # Validate required columns (excluding anisotropy/transverse for now)
     required_cols = ['x', 'y', 'major', 'bearing']
     missing_cols = [col for col in required_cols if col not in cp_df.columns]
     if missing_cols:
@@ -140,23 +140,108 @@ def load_conceptual_points(cp_file):
     return cp_df
 
 
-def interpolate_tensors(cp_file, xcentergrid, ycentergrid, zones=None,
-                        method='idw', layer=0, config_dict=None):
+def _extract_grid_info(modelgrid):
+    """Extract grid information from flopy modelgrid object.
+
+    Parameters
+    ----------
+    modelgrid : flopy.discretization.grid
+        Flopy modelgrid object
+
+    Returns
+    -------
+    dict
+        Dictionary with grid information including:
+        - xcentergrid: X coordinates of cell centers
+        - ycentergrid: Y coordinates of cell centers  
+        - nx, ny: Grid dimensions
+        - area: Cell areas
+        - grid_type: Type of grid
     """
-    Tensor field interpolation using NSAF log-Euclidean mathematics
-    with pypestutils kriging engine.
+    grid_info = {}
+
+    # Get grid type
+    grid_info['grid_type'] = modelgrid.grid_type
+
+    # Get cell centers
+    if hasattr(modelgrid, 'xcellcenters'):
+        grid_info['xcentergrid'] = modelgrid.xcellcenters
+        grid_info['ycentergrid'] = modelgrid.ycellcenters
+    else:
+        raise AttributeError("modelgrid missing xcellcenters/ycellcenters")
+
+    # Get dimensions
+    if modelgrid.grid_type == 'structured':
+        grid_info['ny'] = modelgrid.nrow
+        grid_info['nx'] = modelgrid.ncol
+        # Calculate areas from delr, delc
+        if hasattr(modelgrid, 'delr') and hasattr(modelgrid, 'delc'):
+            delr = modelgrid.delr
+            delc = modelgrid.delc
+            grid_info['area'] = np.outer(delc, delr)
+        else:
+            # Uniform area assumption
+            grid_info['area'] = np.ones((grid_info['ny'], grid_info['nx']))
+    elif modelgrid.grid_type == 'vertex':
+        # Vertex grid - reshape if needed
+        xc = grid_info['xcentergrid']
+        yc = grid_info['ycentergrid']
+        if len(xc.shape) == 1:
+            grid_info['xcentergrid'] = xc.reshape(-1, 1)
+            grid_info['ycentergrid'] = yc.reshape(-1, 1)
+            grid_info['nx'] = 1
+            grid_info['ny'] = xc.shape[0]
+        else:
+            grid_info['ny'], grid_info['nx'] = xc.shape
+        # Calculate areas for vertex grid
+        grid_info['area'] = _calculate_vertex_areas(modelgrid)
+    else:
+        # Fallback for other grid types
+        xc = grid_info['xcentergrid']
+        grid_info['ny'], grid_info['nx'] = xc.shape
+        grid_info['area'] = np.ones((grid_info['ny'], grid_info['nx']))
+
+    return grid_info
+
+
+def _calculate_vertex_areas(modelgrid):
+    """Calculate cell areas for vertex grid using shoelace formula."""
+    ncpl = modelgrid.ncpl if hasattr(modelgrid, 'ncpl') else len(modelgrid.xcellcenters)
+    areas = np.zeros(ncpl)
+
+    for i in range(ncpl):
+        try:
+            verts = modelgrid.get_cell_vertices(i)
+            # Shoelace formula
+            x = [v[0] for v in verts]
+            y = [v[1] for v in verts]
+            area = 0.5 * abs(sum(x[j] * y[j + 1] - x[j + 1] * y[j] for j in range(-1, len(x) - 1)))
+            areas[i] = area
+        except:
+            areas[i] = 1.0  # Default area
+
+    # Reshape if needed
+    if hasattr(modelgrid, 'ncpl'):
+        return areas.reshape(-1, 1)
+    else:
+        return areas.reshape(modelgrid.nrow, modelgrid.ncol)
+
+
+def interpolate_tensors(cp_file, modelgrid, zones=None, method='idw',
+                        layer=0, config_dict=None):
+    """
+    Tensor field interpolation using NSAF log-Euclidean mathematics.
+    REFACTORED to use modelgrid consistently.
 
     Parameters
     ----------
     cp_file : str or pd.DataFrame
         Conceptual points file path or DataFrame
-    xcentergrid : np.ndarray
-        2D array of x-coordinates from pyemu SpatialReference (ny, nx)
-    ycentergrid : np.ndarray
-        2D array of y-coordinates from pyemu SpatialReference (ny, nx)
+    modelgrid : flopy.discretization.grid
+        Flopy modelgrid object
     zones : np.ndarray, optional
         2D zone array (ny, nx)
-    method : str, default 'krig'
+    method : str, default 'idw'
         Interpolation method: 'krig', 'idw', or 'nearest'
     layer : int, default 0
         Layer number to process
@@ -173,12 +258,19 @@ def interpolate_tensors(cp_file, xcentergrid, ycentergrid, zones=None,
     except Exception as e:
         raise Exception(f"Error importing pypestutils: {e}")
 
+    # Extract grid info
+    grid_info = _extract_grid_info(modelgrid)
+    xcentergrid = grid_info['xcentergrid']
+    ycentergrid = grid_info['ycentergrid']
+    ny = grid_info['ny']
+    nx = grid_info['nx']
+
     # Load and filter conceptual points
     cp_df = load_conceptual_points(cp_file)
 
     # Filter to current layer
     if 'layer' in cp_df.columns:
-        layer_cp = cp_df[cp_df['layer'] - 1 == layer].copy()
+        layer_cp = cp_df[cp_df['layer'] == layer].copy()
     else:
         layer_cp = cp_df.copy()
 
@@ -196,9 +288,8 @@ def interpolate_tensors(cp_file, xcentergrid, ycentergrid, zones=None,
         }
 
     # Prepare grid coordinates
-    ny, nx = xcentergrid.shape
-    grid_x = xcentergrid.flatten()
-    grid_y = ycentergrid.flatten()
+    xcentergrid = xcentergrid.flatten()
+    ycentergrid = ycentergrid.flatten()
 
     # Prepare conceptual point data
     cp_coords = np.column_stack([layer_cp['x'].values, layer_cp['y'].values])
@@ -216,28 +307,28 @@ def interpolate_tensors(cp_file, xcentergrid, ycentergrid, zones=None,
     # Handle zones
     if zones is not None:
         zones_flat = zones.flatten().astype(int)
-        cp_zones = _assign_cp_to_zones(cp_coords, grid_x, grid_y, zones_flat, nx)
+        cp_zones = _assign_cp_to_zones(cp_coords, xcentergrid, ycentergrid, zones_flat, nx)
     else:
-        zones_flat = np.ones(len(grid_x), dtype=int)
+        zones_flat = np.ones(len(xcentergrid), dtype=int)
         cp_zones = np.ones(len(layer_cp), dtype=int)
 
     # Interpolate tensors using log-Euclidean approach
     if method == 'krig':
         interp_tensors = _interpolate_tensors_kriging(
             cp_coords, cp_tensors, cp_zones,
-            grid_x, grid_y, zones_flat,
+            xcentergrid, ycentergrid, zones_flat,
             config_dict, nx, ny
         )
     elif method == 'idw':
         interp_tensors = _interpolate_tensors_idw(
             cp_coords, cp_tensors, cp_zones,
-            grid_x, grid_y, zones_flat,
+            xcentergrid, ycentergrid, zones_flat,
             nx, ny
         )
     elif method == 'nearest':
         interp_tensors = _interpolate_tensors_nearest(
             cp_coords, cp_tensors, cp_zones,
-            grid_x, grid_y, zones_flat,
+            xcentergrid, ycentergrid, zones_flat,
             nx, ny
         )
     else:
@@ -245,29 +336,15 @@ def interpolate_tensors(cp_file, xcentergrid, ycentergrid, zones=None,
 
     return interp_tensors
 
-
-def _assign_cp_to_zones(cp_coords, grid_x, grid_y, zones_flat, nx):
-    """Assign conceptual points to zones based on nearest grid point."""
-    grid_coords = np.column_stack([grid_x, grid_y])
-    cp_zones = np.zeros(len(cp_coords), dtype=int)
-
-    for i, cp_coord in enumerate(cp_coords):
-        distances = np.sum((grid_coords - cp_coord) ** 2, axis=1)
-        closest_idx = np.argmin(distances)
-        cp_zones[i] = zones_flat[closest_idx]
-
-    return cp_zones
-
-
 def _interpolate_tensors_kriging(cp_coords, cp_tensors, cp_zones,
-                                 grid_x, grid_y, zones_flat, config_dict, nx, ny):
+                                 xcentergrid, ycentergrid, zones_flat, config_dict, nx, ny):
     """Interpolate tensors using pypestutils kriging with log-Euclidean approach."""
     try:
         from pypestutils.pestutilslib import PestUtilsLib
     except Exception as e:
         raise Exception(f"Error importing pypestutils: {e}")
 
-    n_grid = len(grid_x)
+    n_grid = len(xcentergrid)
     result_tensors = np.zeros((n_grid, 2, 2))
 
     # Convert tensors to log space
@@ -294,8 +371,8 @@ def _interpolate_tensors_kriging(cp_coords, cp_tensors, cp_zones,
 
         zone_cp_coords = cp_coords[cp_mask]
         zone_log_tensors = log_tensors[cp_mask]
-        zone_grid_x = grid_x[zone_indices]
-        zone_grid_y = grid_y[zone_indices]
+        zone_xcentergrid = xcentergrid[zone_indices]
+        zone_ycentergrid = ycentergrid[zone_indices]
 
         # Interpolate each tensor component separately
         zone_tensors = np.zeros((len(zone_indices), 2, 2))
@@ -307,7 +384,7 @@ def _interpolate_tensors_kriging(cp_coords, cp_tensors, cp_zones,
                 # Use pypestutils for kriging
                 interp_component = _krig_component_pypestutils(
                     zone_cp_coords[:, 0], zone_cp_coords[:, 1],
-                    component_values, zone_grid_x, zone_grid_y,
+                    component_values, zone_xcentergrid, zone_ycentergrid,
                     config_dict
                 )
 
@@ -327,7 +404,7 @@ def _interpolate_tensors_kriging(cp_coords, cp_tensors, cp_zones,
     return result_tensors
 
 
-def _krig_component_pypestutils(cp_x, cp_y, cp_values, grid_x, grid_y, config_dict):
+def _krig_component_pypestutils(cp_x, cp_y, cp_values, xcentergrid, ycentergrid, config_dict):
     """Use pypestutils to krig a single tensor component."""
     try:
         from pypestutils.pestutilslib import PestUtilsLib
@@ -344,20 +421,20 @@ def _krig_component_pypestutils(cp_x, cp_y, cp_values, grid_x, grid_y, config_di
 
     # All points in same zone for component interpolation
     cp_zones = np.ones(len(cp_x), dtype=int)
-    grid_zones = np.ones(len(grid_x), dtype=int)
+    grid_zones = np.ones(len(xcentergrid), dtype=int)
 
     # Use isotropic parameters for component interpolation
-    x_extent = np.max(grid_x) - np.min(grid_x)
-    y_extent = np.max(grid_y) - np.min(grid_y)
+    x_extent = np.max(xcentergrid) - np.min(xcentergrid)
+    y_extent = np.max(ycentergrid) - np.min(ycentergrid)
     domain_extent = max(x_extent, y_extent)
-    corrlen = np.full(len(grid_x), np.max([10000.0, domain_extent/3]))
-    aniso = np.ones(len(grid_x))  # Isotropic
-    bearing = np.zeros(len(grid_x))  # No rotation
+    corrlen = np.full(len(xcentergrid), np.max([10000.0, domain_extent/3]))
+    aniso = np.ones(len(xcentergrid))  # Isotropic
+    bearing = np.zeros(len(xcentergrid))  # No rotation
 
     try:
         npts = lib.calc_kriging_factors_2d(
             cp_x, cp_y, cp_zones,
-            grid_x, grid_y, grid_zones,
+            xcentergrid, ycentergrid, grid_zones,
             int(config_dict.get("vartype", 2)),  # Exponential
             int(config_dict.get("krigtype", 1)),  # Ordinary kriging
             corrlen, aniso, bearing,
@@ -370,7 +447,7 @@ def _krig_component_pypestutils(cp_x, cp_y, cp_values, grid_x, grid_y, config_di
         # Apply kriging using the component values
         result = lib.krige_using_file(
             fac_fname, fac_ftype,
-            len(grid_x),
+            len(xcentergrid),
             int(config_dict.get("krigtype", 1)),
             "none",  # No transformation for individual components
             cp_values,
@@ -392,15 +469,15 @@ def _krig_component_pypestutils(cp_x, cp_y, cp_values, grid_x, grid_y, config_di
         lib.free_all_memory()
 
         # Simple IDW fallback
-        return _idw_component(cp_x, cp_y, cp_values, grid_x, grid_y)
+        return _idw_component(cp_x, cp_y, cp_values, xcentergrid, ycentergrid)
 
 
-def _idw_component(cp_x, cp_y, cp_values, grid_x, grid_y, power=2):
+def _idw_component(cp_x, cp_y, cp_values, xcentergrid, ycentergrid, power=2):
     """Inverse distance weighting fallback for component interpolation."""
-    result = np.zeros(len(grid_x))
+    result = np.zeros(len(xcentergrid))
 
-    for i in range(len(grid_x)):
-        distances = np.sqrt((cp_x - grid_x[i]) ** 2 + (cp_y - grid_y[i]) ** 2)
+    for i in range(len(xcentergrid)):
+        distances = np.sqrt((cp_x - xcentergrid[i]) ** 2 + (cp_y - ycentergrid[i]) ** 2)
         distances = np.maximum(distances, 1e-10)  # Avoid division by zero
 
         weights = 1.0 / (distances ** power)
@@ -410,9 +487,9 @@ def _idw_component(cp_x, cp_y, cp_values, grid_x, grid_y, power=2):
 
 
 def _interpolate_tensors_idw(cp_coords, cp_tensors, cp_zones,
-                             grid_x, grid_y, zones_flat, nx, ny):
+                             xcentergrid, ycentergrid, zones_flat, nx, ny):
     """IDW interpolation using log-Euclidean approach."""
-    n_grid = len(grid_x)
+    n_grid = len(xcentergrid)
     result_tensors = np.zeros((n_grid, 2, 2))
 
     # Convert to log space
@@ -439,7 +516,7 @@ def _interpolate_tensors_idw(cp_coords, cp_tensors, cp_zones,
         zone_log_tensors = log_tensors[cp_mask]
 
         for idx in zone_indices:
-            gx, gy = grid_x[idx], grid_y[idx]
+            gx, gy = xcentergrid[idx], ycentergrid[idx]
             distances = np.sqrt((zone_cp_coords[:, 0] - gx) ** 2 +
                                 (zone_cp_coords[:, 1] - gy) ** 2)
             distances = np.maximum(distances, 1e-10)
@@ -460,9 +537,9 @@ def _interpolate_tensors_idw(cp_coords, cp_tensors, cp_zones,
 
 
 def _interpolate_tensors_nearest(cp_coords, cp_tensors, cp_zones,
-                                 grid_x, grid_y, zones_flat, nx, ny):
+                                 xcentergrid, ycentergrid, zones_flat, nx, ny):
     """Nearest neighbor interpolation."""
-    n_grid = len(grid_x)
+    n_grid = len(xcentergrid)
     result_tensors = np.zeros((n_grid, 2, 2))
 
     # Process each zone
@@ -485,7 +562,7 @@ def _interpolate_tensors_nearest(cp_coords, cp_tensors, cp_zones,
         zone_cp_tensors = cp_tensors[cp_mask]
 
         for idx in zone_indices:
-            gx, gy = grid_x[idx], grid_y[idx]
+            gx, gy = xcentergrid[idx], ycentergrid[idx]
             distances = np.sqrt((zone_cp_coords[:, 0] - gx) ** 2 +
                                 (zone_cp_coords[:, 1] - gy) ** 2)
             nearest_idx = np.argmin(distances)
@@ -494,26 +571,41 @@ def _interpolate_tensors_nearest(cp_coords, cp_tensors, cp_zones,
     return result_tensors
 
 
-def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
-                        out_filename=None, n_realizations=1, layer=0,
-                        vartransform="none", boundary_smooth=True,
-                        boundary_enhance=True, tensor_method='krig',
-                        config_dict=None, iids=None, area=None,
-                        mean_col='mean', sd_col='sd', **kwargs):
+def _assign_cp_to_zones(cp_coords, xcentergrid, ycentergrid, zones_flat, nx):
+    """Assign conceptual points to zones based on nearest grid point."""
+    grid_coords = np.column_stack([xcentergrid.flatten(), ycentergrid.flatten()])
+    cp_zones = np.zeros(len(cp_coords), dtype=int)
+
+    for i, cp_coord in enumerate(cp_coords):
+        distances = np.sum((grid_coords - cp_coord) ** 2, axis=1)
+        closest_idx = np.argmin(distances)
+        cp_zones[i] = zones_flat[closest_idx]
+
+    return cp_zones
+
+
+"""
+NSAF Utils - Main API functions refactored to use modelgrid consistently
+"""
+
+
+def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=None,
+                         n_realizations=1, layer=0, vartransform="none",
+                         boundary_smooth=True, boundary_enhance=True,
+                         tensor_method='krig', config_dict=None, iids=None,
+                         mean_col='mean', sd_col='sd', **kwargs):
     """
     Parameter interpolation and field generation combining NSAF tensor mathematics
     with pypestutils FIELDGEN2D_SVA for spatially correlated noise.
 
-    FLEXIBLE version that works with any property by specifying column names.
+    REFACTORED to use modelgrid consistently throughout.
 
     Parameters
     ----------
-    cp_file : str or pd.DataFrame
-        Conceptual points file or DataFrame
-    xcentergrid : np.ndarray
-        X-coordinates from pyemu SpatialReference, shape (ny, nx)
-    ycentergrid : np.ndarray
-        Y-coordinates from pyemu SpatialReference, shape (ny, nx)
+    conceptual_points : pd.DataFrame
+        Conceptual points DataFrame
+    modelgrid : flopy.discretization.grid
+        Flopy modelgrid object containing grid information
     zones : np.ndarray, optional
         Zone array, shape (ny, nx)
     out_filename : str, optional
@@ -534,8 +626,6 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
         Configuration parameters for pypestutils
     iids : np.ndarray, optional
         Pre-generated IIDs with shape (ny*nx, n_realizations)
-    area : np.ndarray, optional
-        Cell areas with shape (ny, nx)
     mean_col : str, default 'mean'
         Name of the mean column in conceptual points
     sd_col : str, default 'sd'
@@ -553,12 +643,16 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
 
     print("=== Parameter Interpolation and Field Generation ===")
 
+    # Extract grid information from modelgrid
+    grid_info = _extract_grid_info(modelgrid)
+    ny = grid_info['ny']
+    nx = grid_info['nx']
+
     # Load conceptual points
-    cp_df = load_conceptual_points(cp_file)
-    if 'layer' in cp_df.columns:
-        layer_cp = cp_df[cp_df['layer'] - 1 == layer].copy()
+    if 'layer' in conceptual_points.columns:
+        layer_cp = conceptual_points[conceptual_points['layer'] == layer].copy()
     else:
-        layer_cp = cp_df.copy()
+        layer_cp = conceptual_points.copy()
 
     if len(layer_cp) == 0:
         raise ValueError(f"No conceptual points found for layer {layer}")
@@ -582,10 +676,6 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
     if sd_col not in layer_cp.columns:
         raise ValueError(f"Standard deviation column '{sd_col}' not found in conceptual points")
 
-    # Get grid dimensions and coordinates
-    ny, nx = xcentergrid.shape
-    grid_coords_2d = np.column_stack([xcentergrid.flatten(), ycentergrid.flatten()])
-
     print(f"Processing layer {layer} with {len(layer_cp)} conceptual points")
     print(f"Grid dimensions: {ny} x {nx} = {ny * nx} cells")
     print(f"Using columns: mean='{mean_col}', sd='{sd_col}'")
@@ -593,9 +683,9 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
     # Step 1: Interpolate tensors
     print("\nStep 1: Interpolating tensor field...")
     tensors = interpolate_tensors(
-        layer_cp, xcentergrid, ycentergrid,
-        zones=zones, method=tensor_method,
-        layer=layer, config_dict=config_dict
+        layer_cp, modelgrid, zones=zones,
+        method=tensor_method, layer=layer,
+        config_dict=config_dict
     )
 
     # Step 2: Convert tensors to geostatistical parameters
@@ -605,7 +695,7 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
     # Step 3: Prepare conceptual point data
     cp_coords = np.column_stack([layer_cp['x'].values, layer_cp['y'].values])
     cp_means = layer_cp[mean_col].values
-    cp_sd = layer_cp[sd_col].values.clip(1e-8,None)
+    cp_sd = layer_cp[sd_col].values.clip(1e-8, None)
 
     print(f"Conceptual point data ranges:")
     print(f"  {mean_col}: [{cp_means.min():.3f}, {cp_means.max():.3f}]")
@@ -626,15 +716,17 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
 
     # Transform for log-domain if needed
     transform = 'log' if vartransform == 'log' else None
-    min_value = 1e-8 if vartransform == 'log' else None
+    min_mean = 1e-8 if vartransform == 'log' else None
+    max_mean = 1e8 if vartransform == 'log' else None
+    bounds = (min_mean, max_mean)
 
     # Interpolate mean
     print("  Interpolating mean...")
     interp_means_2d = tensor_aware_kriging(
-        cp_coords, cp_means, grid_coords_2d, tensors,
-        variogram_model='exponential', sill=1.0, nugget=0.1,
+        cp_coords, cp_means, modelgrid, tensors,
+        variogram_model='exponential',
         background_value=np.mean(cp_means), max_search_radius=1e20,
-        min_points=3, transform=transform, min_value=min_value,
+        min_points=3, transform=transform, bounds=bounds,
         max_neighbors=4, zones=zones
     )
 
@@ -646,14 +738,18 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
             transition_cells=3, mode='smooth'
         )
 
+    min_sd = 1e-8 if vartransform == 'log' else None
+    max_sd = 1e8 if vartransform == 'log' else None
+    bounds = (min_sd, max_sd)
+
     # Interpolate standard deviation
     print("  Interpolating standard deviation...")
     interp_sd_2d = tensor_aware_kriging(
-        cp_coords, cp_sd, grid_coords_2d, tensors,
-        variogram_model='exponential', sill=1.0, nugget=0.1,
+        cp_coords, cp_sd, modelgrid, tensors,
+        variogram_model='exponential',
         background_value=np.mean(cp_sd), max_search_radius=1e20,
-        min_points=3, transform=transform, min_value=min_value,
-        max_neighbors=4, zones=zones
+        min_points=3, transform=transform, bounds=bounds,
+        max_neighbors=4, zones=zones,
     )
 
     # Apply boundary enhancement to sd
@@ -672,22 +768,22 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
     print(f"\nStep 5: Generating {n_realizations} stochastic realizations...")
 
     if n_realizations > 0:
+        # Get active cells if available
+        active = kwargs.get('active', None)
+        if active is None and hasattr(modelgrid, 'idomain'):
+            active = modelgrid.idomain[layer-1].flatten() if modelgrid.idomain.ndim == 3 else (modelgrid.idomain.flatten())
+
         fields = _generate_stochastic_fields(
-            grid_coords=grid_coords_2d,
+            modelgrid=modelgrid,
             mean_field=interp_means_2d,
             sd_field=interp_sd_2d,
             bearing=bearing_deg,
             anisotropy=anisotropy,
             corrlen=corrlen_major,
-            zones=zones,
             n_realizations=n_realizations,
             vartransform='n',
             config_dict=config_dict,
-            ny=ny,
-            nx=nx,
-            area=area,
-            iids=iids,
-            active=kwargs.get('active', None)
+            active=active
         )
     else:
         fields = None
@@ -705,10 +801,242 @@ def apply_ppu_hyperpars(cp_file, xcentergrid, ycentergrid, zones=None,
 
     # Save to files if requested
     if out_filename is not None:
-        _save_results(results, out_filename, vartransform)
+        save_results(results, out_filename, vartransform)
 
     print("=== Interpolation complete ===")
     return results
+
+def _generate_stochastic_fields(modelgrid, mean_field, sd_field,
+                                bearing, anisotropy, corrlen,
+                                n_realizations, vartransform,
+                                config_dict, iids=None, area=None,
+                                active=None):
+    """
+    Generate stochastic fields using pypestutils FIELDGEN2D_SVA.
+    FINAL FIXED version with correct reshaping logic.
+    """
+    try:
+        from pypestutils.pestutilslib import PestUtilsLib
+    except Exception as e:
+        raise Exception(f"Error importing pypestutils: {e}")
+
+    print("  Generating stochastic fields using FIELDGEN2D_SVA...")
+
+    # Prepare grid data
+    grid_info = _extract_grid_info(modelgrid)
+    xcentergrid = grid_info['xcentergrid']
+    ycentergrid = grid_info['ycentergrid']
+    ny = grid_info['ny']
+    nx = grid_info['nx']
+    area = grid_info['area']
+
+    n_points = ny * nx
+
+    # Flatten fields - ENSURE PROPER ORDERING
+    mean_flat = mean_field.flatten().clip(1e-8, None)
+    variance_native = sd_field.flatten() ** 2
+    log_variance_flat = np.log(1 + variance_native / mean_flat ** 2)
+    trans_flag = 1  # Log domain
+
+    # Geostatistical parameters from tensors
+    aa_values = corrlen.flatten()
+    aniso_values = anisotropy.flatten()
+    bearing_values = bearing.flatten()
+
+    # FIXED: domain based on zones
+    if active is None:
+        active = np.ones(n_points)
+    active = active.astype(int)
+    if area is None:
+        area = np.ones(n_points)
+    else:
+        area = area.flatten()
+
+    # Generate or use provided IIDs
+    if iids is None:
+        print("  Generating new IIDs...")
+        iids = np.random.normal(0, 1, size=(n_points, n_realizations))
+    else:
+        print("  Using provided IIDs...")
+        if iids.shape != (n_points, n_realizations):
+            raise ValueError(f"IIDs shape {iids.shape} doesn't match expected {(n_points, n_realizations)}")
+
+    try:
+        # Set up pypestutils parameters
+        lib = PestUtilsLib()
+        lib.initialize_randgen(11235813)
+
+        # Averaging function type
+        avg_func = config_dict.get('averaging_function', 'gaussian')
+        if isinstance(avg_func, dict):
+            if 'pow' in avg_func:
+                avg_flag = 4
+                power_value = avg_func['pow']
+            else:
+                avg_flag, power_value = next(iter(avg_func.items()))
+        else:
+            power_value = 0
+            if avg_func == 'exponential':
+                avg_flag = 2
+            elif avg_func == 'gaussian':
+                avg_flag = 3
+            elif avg_func == 'spherical':
+                avg_flag = 1
+            else:
+                avg_flag = 2  # Default to exponential
+
+        # Call FIELDGEN2D_SVA through pypestutils interface, does not take iid file
+        # Need FIELDGEN2D_SVA1 to pass iid files, but can't access in current ppu
+        print(f"    Calling FIELDGEN2D_SVA for {n_realizations} realizations...")
+
+        fields = lib.fieldgen2d_sva(
+            xcentergrid.flatten(), ycentergrid.flatten(),
+            area=area,
+            active=active,
+            mean=mean_flat,
+            var=log_variance_flat,
+            aa=aa_values,
+            anis=aniso_values,
+            bearing=bearing_values,
+            transtype=trans_flag,
+            avetype=avg_flag,
+            power=power_value,
+            nreal=n_realizations,
+        )
+
+        # Handle the output format from FIELDGEN2D_SVA
+        if fields.shape == (n_points, n_realizations):
+            # Output is (n_points, n_realizations) - transpose to (n_realizations, n_points)
+            fields = fields.T  # Now shape is (n_realizations, n_points)
+            # Reshape each realization to (ny, nx)
+            fields = fields.reshape((n_realizations, ny, nx))
+
+        elif fields.shape == (n_realizations * n_points,):
+            # Output is flattened - reshape directly
+            fields = fields.reshape((n_realizations, ny, nx))
+
+        elif fields.shape == (n_realizations, n_points):
+            # Output is already (n_realizations, n_points) - just reshape spatial dimensions
+            fields = fields.reshape((n_realizations, ny, nx))
+
+        else:
+            raise ValueError(f"Unexpected fieldgen2d_sva output shape: {fields.shape}")
+
+        print(f"    Successfully generated {n_realizations} realizations with shape {fields.shape}")
+
+        # Clean up
+        lib.free_all_memory()
+
+        return fields
+
+    except Exception as e:
+        print(f"    Warning: FIELDGEN2D_SVA failed: {e}")
+        print(f"    Using fallback method...")
+
+        # Fallback to simple field generation
+        fields = np.zeros((n_realizations, ny, nx))
+        for real in range(n_realizations):
+            current_iids = iids[:, real]
+            field_values = _generate_simple_field(
+                modelgrid, mean_flat, log_variance_flat,
+                aa_values, aniso_values, bearing_values,
+                vartransform, current_iids
+            )
+            fields[real] = field_values.reshape(ny, nx)
+
+        return fields
+
+def _generate_simple_field(modelgrid, mean_flat, variance_flat,
+                           aa_values, aniso_values, bearing_values,
+                           vartransform, iids):
+    """
+    IMPROVED simple fallback field generation if FIELDGEN2D_SVA fails.
+    Fixed to eliminate checkering and provide proper spatial correlation.
+    """
+    print("    Using improved simple correlated field generation fallback...")
+    grid_info = _extract_grid_info(modelgrid)
+    xcentergrid = grid_info['xcentergrid']
+    ycentergrid = grid_info['ycentergrid']
+    grid_coords = np.stack([xcentergrid, ycentergrid])
+    n_points = len(xcentergrid)
+
+    # Convert bearing from degrees to radians for calculations
+    bearing_rad = np.radians(bearing_values)
+
+    # Create spatially correlated field using moving average approach
+    correlated_field = np.zeros(n_points)
+
+    # For computational efficiency, use a subset of points for correlation
+    # This prevents the O(n²) complexity from being too slow
+    max_correlation_points = min(2000, n_points)
+
+    if n_points > max_correlation_points:
+        # Sample points for correlation calculation
+        correlation_indices = np.random.choice(n_points, max_correlation_points, replace=False)
+        correlation_indices = np.sort(correlation_indices)
+    else:
+        correlation_indices = np.arange(n_points)
+
+    # Apply spatial correlation
+    for i in correlation_indices:
+        # Get local correlation parameters
+        local_aa = aa_values[i]
+        local_aniso = aniso_values[i]
+        local_bearing = bearing_rad[i]
+
+        # Calculate distances to all points
+        dx = xcentergrid[:] - xcentergrid[i]
+        dy = ycentergrid[:] - ycentergrid[i]
+
+        # Apply anisotropic transformation
+        # Rotate coordinates to align with anisotropy ellipse
+        cos_bear = np.cos(local_bearing)
+        sin_bear = np.sin(local_bearing)
+
+        # Rotate to principal axes (geological bearing: 0° = North, clockwise positive)
+        dx_rot = dx * sin_bear + dy * cos_bear  # East component (major axis)
+        dy_rot = -dx * cos_bear + dy * sin_bear  # North component (minor axis)
+
+        # Scale by anisotropy (major axis has length aa, minor axis has length aa/aniso)
+        minor_aa = local_aa / local_aniso
+        dx_scaled = dx_rot / local_aa
+        dy_scaled = dy_rot / minor_aa
+
+        # Calculate anisotropic distance
+        aniso_distances = np.sqrt(dx_scaled ** 2 + dy_scaled ** 2)
+
+        # Exponential correlation function
+        correlation_weights = np.exp(-aniso_distances)
+
+        # Normalize weights
+        correlation_weights = correlation_weights / np.sum(correlation_weights)
+
+        # Apply correlation to the random field
+        correlated_field[i] = np.sum(correlation_weights.flatten() * iids)
+
+    # For points not in correlation_indices, use interpolation
+    if n_points > max_correlation_points:
+        # Simple interpolation for remaining points
+        remaining_indices = np.setdiff1d(np.arange(n_points), correlation_indices)
+
+        for i in remaining_indices:
+            # Find nearest correlation points
+            distances_to_corr = np.sum((grid_coords[correlation_indices] - grid_coords[i]) ** 2, axis=1)
+            nearest_corr_idx = correlation_indices[np.argmin(distances_to_corr)]
+            correlated_field[i] = correlated_field[nearest_corr_idx]
+
+    # Scale by local standard deviation
+    stochastic_component = correlated_field * np.sqrt(variance_flat)
+
+    # Combine with mean field
+    if vartransform == 'log':
+        # Log domain: mean * exp(stochastic_component)
+        field_values = mean_flat * np.exp(stochastic_component)
+    else:
+        # Normal domain: mean + stochastic_component
+        field_values = mean_flat + stochastic_component
+
+    return field_values
 
 
 def _tensors_to_geostat_params(tensors):
@@ -756,12 +1084,82 @@ def _tensors_to_geostat_params(tensors):
 
     return bearing_deg, anisotropy, corrlen_major
 
+def generate_single_layer(conceptual_points, modelgrid, iids=None, zones=None,
+                          tensor_interp='idw', vartransform='log', layer=0,
+                          boundary_smooth=True, boundary_enhance=True,
+                          mean_col='mean', sd_col='sd', n_realizations=1):
+    """
+    Generate single layer using NSAF approach with boundary adjustments.
+    REFACTORED to use modelgrid and call apply_nsaf_hyperpars internally.
 
-def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
-                         variogram_model='exponential', sill=1.0, nugget=0.01,
+    Parameters
+    ----------
+    conceptual_points : pd.DataFrame
+        Conceptual points DataFrame
+    modelgrid : flopy.discretization.grid
+        Flopy modelgrid object
+    iids : np.ndarray, optional
+        Pre-generated noise, shape (ny*nx, n_realizations)
+    zones : np.ndarray, optional
+        Zone IDs, shape (ny, nx)
+    tensor_interp : str, default 'idw'
+        Tensor interpolation method
+    vartransform : str, default 'log'
+        Transformation: 'log' or 'none'
+    boundary_smooth : bool, default True
+        Apply smoothing to mean at zone boundaries
+    boundary_enhance : bool, default True
+        Apply variance enhancement at zone boundaries
+    mean_col : str, default 'mean'
+        Name of mean column in conceptual points
+    sd_col : str, default 'sd'
+        Name of sd column in conceptual points
+    n_realizations : int, default 1
+        Number of realizations to generate
+
+    Returns
+    -------
+    tuple
+        (fields, results_dict) where:
+        - fields: Generated field(s), shape (n_realizations, ny, nx) or (ny, nx) if n_realizations=1
+        - results_dict: Full results dictionary from apply_nsaf_hyperpars
+    """
+
+    # Call the main function with single layer settings
+    results = apply_nsaf_hyperpars(
+        conceptual_points=conceptual_points,
+        modelgrid=modelgrid,
+        zones=zones,
+        out_filename=None,
+        n_realizations=n_realizations,
+        layer=layer,
+        vartransform=vartransform,
+        boundary_smooth=boundary_smooth,
+        boundary_enhance=boundary_enhance,
+        tensor_method=tensor_interp,
+        config_dict=None,
+        iids=iids,
+        mean_col=mean_col,
+        sd_col=sd_col
+    )
+
+    # Extract fields
+    if results['fields'] is not None:
+        if n_realizations == 1:
+            fields = results['fields'][0]  # Return 2D array for single realization
+        else:
+            fields = results['fields']  # Return 3D array for multiple realizations
+    else:
+        # If no stochastic fields, return mean field
+        fields = results['mean']
+
+    return fields, results
+
+def tensor_aware_kriging(cp_coords, cp_values, modelgrid, interp_tensors,
+                         variogram_model='exponential',
                          background_value=0.0, max_search_radius=1e20, min_points=1,
-                         max_neighbors=4, transform=None, min_value=1e-8,
-                         zones=None):
+                         max_neighbors=4, transform=None, bounds=(1e-8, 1e8),
+                         zones=None, n_dims=2):
     """
     Tensor-aware kriging using pypestutils with anisotropic correlation structures.
     Clean version without automatic transform detection.
@@ -772,14 +1170,16 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
         raise Exception(f"Error importing pypestutils: {e}")
 
     # Get grid shape
-    n_grid = len(grid_coords)
-    n_dims = grid_coords.shape[1]
+    grid_info = _extract_grid_info(modelgrid)
+    xcentergrid = grid_info['xcentergrid']
+    ycentergrid = grid_info['ycentergrid']
+    n_grid = len(xcentergrid) * len(ycentergrid)
 
-    print(f"    Tensor-aware kriging: {len(cp_coords)} conceptual points -> {n_grid} grid points")
+    print(f"    Tensor-aware kriging: {len(cp_coords)} conceptual points -> {len(xcentergrid)} grid points")
     print(
         f"    Conceptual points range: X=[{cp_coords[:, 0].min():.1f}, {cp_coords[:, 0].max():.1f}], Y=[{cp_coords[:, 1].min():.1f}, {cp_coords[:, 1].max():.1f}]")
     print(
-        f"    Grid points range: X=[{grid_coords[:, 0].min():.1f}, {grid_coords[:, 0].max():.1f}], Y=[{grid_coords[:, 1].min():.1f}, {grid_coords[:, 1].max():.1f}]")
+        f"    Grid points range: X=[{xcentergrid[0].min():.1f}, {xcentergrid[0].max():.1f}], Y=[{ycentergrid[1].min():.1f}, {ycentergrid[1].max():.1f}]")
     print(f"    Value range: [{cp_values.min():.6f}, {cp_values.max():.6f}], background: {background_value:.6f}")
     print(f"    Transform requested: {transform}")
 
@@ -792,12 +1192,8 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
             nz, ny, nx = shape
         print(f"    Using zones with shape: {shape}")
     else:
-        # Infer grid dimensions
-        x_coords = grid_coords[:, 0]
-        y_coords = grid_coords[:, 1]
-
-        unique_x = np.unique(x_coords)
-        unique_y = np.unique(y_coords)
+        unique_x = np.unique(xcentergrid)
+        unique_y = np.unique(ycentergrid)
         nx = len(unique_x)
         ny = len(unique_y)
 
@@ -814,16 +1210,12 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
     print("    Converting tensors to geostatistical parameters...")
     bearing_deg, anisotropy_ratios, corrlen_major = _tensors_to_geostat_params(interp_tensors)
 
-    # Prepare grid coordinates
-    grid_x = grid_coords[:, 0]
-    grid_y = grid_coords[:, 1]
-
     # Handle zones
     if zones is not None:
         zones_flat = zones.flatten().astype(int)
-        cp_zones = _assign_cp_to_zones(cp_coords, grid_x, grid_y, zones_flat, nx)
+        cp_zones = _assign_cp_to_zones(cp_coords, xcentergrid, ycentergrid, zones_flat, nx)
     else:
-        zones_flat = np.ones(len(grid_x), dtype=int)
+        zones_flat = np.ones(len(xcentergrid)*len(xcentergrid), dtype=int)
         cp_zones = np.ones(len(cp_coords), dtype=int)
 
     # Handle transformation - NO automatic detection, just pass through
@@ -928,33 +1320,18 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
         # Then use the modified zones in kriging
         npts = lib.calc_kriging_factors_2d(
             cp_coords[:, 0], cp_coords[:, 1], cp_zones_for_kriging,  # Modified zones
-            grid_x, grid_y, zones_for_kriging,  # Modified zones
+            xcentergrid.flatten(), ycentergrid.flatten(), zones_for_kriging,  # Modified zones
             vartype, 1, corrlen_major, anisotropy_ratios, bearing_deg,
             max_search_radius, max_neighbors, min_points,
             fac_fname, fac_ftype
         )
-
-        # Calculate kriging factors using tensor-derived anisotropy
-        # npts = lib.calc_kriging_factors_2d(
-        #     cp_coords[:, 0], cp_coords[:, 1], cp_zones,
-        #     grid_x, grid_y, zones_flat,
-        #     vartype,  # Variogram type
-        #     1,  # Ordinary kriging
-        #     corrlen_major,  # Correlation lengths from tensors
-        #     anisotropy_ratios,  # Anisotropy ratios from tensors
-        #     bearing_deg,  # Bearings from tensors
-        #     max_search_radius,
-        #     max_neighbors,
-        #     min_points,
-        #     fac_fname, fac_ftype
-        # )
 
         print(f"    Pypestutils kriging factors calculated for {npts} interpolation points")
 
         # Apply kriging
         result = lib.krige_using_file(
             fac_fname, fac_ftype,
-            len(grid_x),
+            len(xcentergrid.flatten()),
             1,  # Ordinary kriging
             transform_flag,  # Pass through the transform flag as specified
             cp_values_transformed,  # Use values exactly as provided
@@ -973,6 +1350,9 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
         print(f"    Pypestutils kriging complete")
         print(f"    Result range: [{interp_values_1d.min():.6f}, {interp_values_1d.max():.6f}]")
 
+        if bounds is not None:
+            interp_values_1d = np.clip(interp_values_1d, min=bounds[0], max=bounds[1])
+
         return interp_values_1d.reshape(shape)
 
     except Exception as e:
@@ -982,8 +1362,8 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
         # Fallback to simple IDW
         interp_values_1d = np.full(n_grid, background_value)
 
-        for i in range(n_grid):
-            distances = np.linalg.norm(cp_coords - grid_coords[i], axis=1)
+        for i in range(len(ycentergrid.flatten())):
+            distances = np.linalg.norm(cp_coords - np.stack([xcentergrid.flatten(), ycentergrid.flatten()]).T[i], axis=1)
             distances = np.maximum(distances, 1e-10)
 
             # Simple IDW weights
@@ -996,269 +1376,6 @@ def tensor_aware_kriging(cp_coords, cp_values, grid_coords, interp_tensors,
         print(f"    Result range: [{interp_values_1d.min():.6f}, {interp_values_1d.max():.6f}]")
 
         return interp_values_1d.reshape(shape)
-
-
-def _generate_stochastic_fields(grid_coords, mean_field, sd_field,
-                                bearing, anisotropy, corrlen,
-                                zones, n_realizations, vartransform,
-                                config_dict, ny, nx, iids=None, area=None,
-                                active=None):
-    """
-    Generate stochastic fields using pypestutils FIELDGEN2D_SVA.
-    FINAL FIXED version with correct reshaping logic.
-    """
-    try:
-        from pypestutils.pestutilslib import PestUtilsLib
-    except Exception as e:
-        raise Exception(f"Error importing pypestutils: {e}")
-
-    print("  Generating stochastic fields using FIELDGEN2D_SVA...")
-
-    # Prepare grid data
-    n_points = ny * nx
-    x_coords = grid_coords[:, 0]
-    y_coords = grid_coords[:, 1]
-
-    # Flatten fields - ENSURE PROPER ORDERING
-    mean_flat = mean_field.flatten().clip(1e-8, None)
-    variance_native = sd_field.flatten() ** 2
-    log_variance_flat = np.log(1 + variance_native / mean_flat ** 2)
-    trans_flag = 1  # Log domain
-
-    # Geostatistical parameters from tensors
-    aa_values = corrlen.flatten()
-    aniso_values = anisotropy.flatten()
-    bearing_values = bearing.flatten()
-
-    # FIXED: domain based on zones
-    if active is None:
-        active = np.ones(n_points, dtype=int)
-    if area is None:
-        area = np.ones(n_points)
-    else:
-        area = area.flatten()
-
-    # Generate or use provided IIDs
-    if iids is None:
-        print("  Generating new IIDs...")
-        iids = np.random.normal(0, 1, size=(n_points, n_realizations))
-    else:
-        print("  Using provided IIDs...")
-        if iids.shape != (n_points, n_realizations):
-            raise ValueError(f"IIDs shape {iids.shape} doesn't match expected {(n_points, n_realizations)}")
-
-    try:
-        # Set up pypestutils parameters
-        lib = PestUtilsLib()
-        lib.initialize_randgen(11235813)
-
-        # Averaging function type
-        avg_func = config_dict.get('averaging_function', 'gaussian')
-        if isinstance(avg_func, dict):
-            if 'pow' in avg_func:
-                avg_flag = 4
-                power_value = avg_func['pow']
-            else:
-                avg_flag, power_value = next(iter(avg_func.items()))
-        else:
-            power_value = 0
-            if avg_func == 'exponential':
-                avg_flag = 2
-            elif avg_func == 'gaussian':
-                avg_flag = 3
-            elif avg_func == 'spherical':
-                avg_flag = 1
-            else:
-                avg_flag = 2  # Default to exponential
-
-        # Call FIELDGEN2D_SVA through pypestutils interface
-        print(f"    Calling FIELDGEN2D_SVA for {n_realizations} realizations...")
-
-        fields = lib.fieldgen2d_sva(
-            x_coords, y_coords,
-            area=area,
-            active=active,
-            mean=mean_flat,
-            var=log_variance_flat,
-            aa=aa_values,
-            anis=aniso_values,
-            bearing=bearing_values,
-            transtype=trans_flag,
-            avetype=avg_flag,
-            power=power_value,
-            nreal=n_realizations,
-        )
-
-        # Handle the output format from FIELDGEN2D_SVA
-        if fields.shape == (n_points, n_realizations):
-            # Output is (n_points, n_realizations) - transpose to (n_realizations, n_points)
-            fields = fields.T  # Now shape is (n_realizations, n_points)
-            # Reshape each realization to (ny, nx)
-            fields = fields.reshape((n_realizations, ny, nx))
-
-        elif fields.shape == (n_realizations * n_points,):
-            # Output is flattened - reshape directly
-            fields = fields.reshape((n_realizations, ny, nx))
-
-        elif fields.shape == (n_realizations, n_points):
-            # Output is already (n_realizations, n_points) - just reshape spatial dimensions
-            fields = fields.reshape((n_realizations, ny, nx))
-
-        else:
-            raise ValueError(f"Unexpected fieldgen2d_sva output shape: {fields.shape}")
-
-        print(f"    Successfully generated {n_realizations} realizations with shape {fields.shape}")
-
-        # Clean up
-        lib.free_all_memory()
-
-        return fields
-
-    except Exception as e:
-        print(f"    Warning: FIELDGEN2D_SVA failed: {e}")
-        print(f"    Using fallback method...")
-
-        # Fallback to simple field generation
-        fields = np.zeros((n_realizations, ny, nx))
-        for real in range(n_realizations):
-            current_iids = iids[:, real]
-            field_values = _generate_simple_field(
-                grid_coords, mean_flat, log_variance_flat,
-                aa_values, aniso_values, bearing_values,
-                vartransform, current_iids, ny, nx
-            )
-            fields[real] = field_values.reshape(ny, nx)
-
-        return fields
-
-
-# def _create_node_spec_file(filename, x_coords, y_coords, zones):
-#     """Create 2D node specifications file for FIELDGEN2D_SVA."""
-#     n_points = len(x_coords)
-#
-#     with open(filename, 'w') as f:
-#         # Header
-#         f.write(f"{n_points}\n")  # Number of nodes
-#
-#         # Node data: node_id, x, y, zone, active_flag
-#         for i in range(n_points):
-#             node_id = i + 1  # 1-based indexing
-#             x = x_coords[i]
-#             y = y_coords[i]
-#             zone = zones[i]
-#             active = 1  # All nodes active
-#             f.write(f"{node_id:8d} {x:15.6f} {y:15.6f} {zone:6d} {active:2d}\n")
-#
-#
-# def _create_avgfunc_spec_file(filename, mean_vals, variance_vals, aa_vals, aniso_vals, bearing_vals):
-#     """Create 2D averaging function specification file for FIELDGEN2D_SVA."""
-#     n_points = len(mean_vals)
-#
-#     with open(filename, 'w') as f:
-#         # Header
-#         f.write(f"{n_points}\n")  # Number of nodes
-#
-#         # Averaging function data: node_id, mean, variance, aa, anisotropy, bearing
-#         for i in range(n_points):
-#             node_id = i + 1  # 1-based indexing
-#             mean = mean_vals[i]
-#             variance = variance_vals[i]
-#             aa = aa_vals[i]  # Correlation length (major axis)
-#             aniso = aniso_vals[i]  # Anisotropy ratio
-#             bearing = bearing_vals[i]  # Bearing in degrees
-#
-#             f.write(f"{node_id:8d} {mean:15.6f} {variance:15.6f} {aa:15.6f} {aniso:10.4f} {bearing:10.2f}\n")
-
-
-def _generate_simple_field(grid_coords, mean_flat, variance_flat,
-                           aa_values, aniso_values, bearing_values,
-                           vartransform, iids, ny, nx):
-    """
-    IMPROVED simple fallback field generation if FIELDGEN2D_SVA fails.
-    Fixed to eliminate checkering and provide proper spatial correlation.
-    """
-    print("    Using improved simple correlated field generation fallback...")
-
-    n_points = len(grid_coords)
-
-    # Convert bearing from degrees to radians for calculations
-    bearing_rad = np.radians(bearing_values)
-
-    # Create spatially correlated field using moving average approach
-    correlated_field = np.zeros(n_points)
-
-    # For computational efficiency, use a subset of points for correlation
-    # This prevents the O(n²) complexity from being too slow
-    max_correlation_points = min(2000, n_points)
-
-    if n_points > max_correlation_points:
-        # Sample points for correlation calculation
-        correlation_indices = np.random.choice(n_points, max_correlation_points, replace=False)
-        correlation_indices = np.sort(correlation_indices)
-    else:
-        correlation_indices = np.arange(n_points)
-
-    # Apply spatial correlation
-    for i in correlation_indices:
-        # Get local correlation parameters
-        local_aa = aa_values[i]
-        local_aniso = aniso_values[i]
-        local_bearing = bearing_rad[i]
-
-        # Calculate distances to all points
-        dx = grid_coords[:, 0] - grid_coords[i, 0]
-        dy = grid_coords[:, 1] - grid_coords[i, 1]
-
-        # Apply anisotropic transformation
-        # Rotate coordinates to align with anisotropy ellipse
-        cos_bear = np.cos(local_bearing)
-        sin_bear = np.sin(local_bearing)
-
-        # Rotate to principal axes (geological bearing: 0° = North, clockwise positive)
-        dx_rot = dx * sin_bear + dy * cos_bear  # East component (major axis)
-        dy_rot = -dx * cos_bear + dy * sin_bear  # North component (minor axis)
-
-        # Scale by anisotropy (major axis has length aa, minor axis has length aa/aniso)
-        minor_aa = local_aa / local_aniso
-        dx_scaled = dx_rot / local_aa
-        dy_scaled = dy_rot / minor_aa
-
-        # Calculate anisotropic distance
-        aniso_distances = np.sqrt(dx_scaled ** 2 + dy_scaled ** 2)
-
-        # Exponential correlation function
-        correlation_weights = np.exp(-aniso_distances)
-
-        # Normalize weights
-        correlation_weights = correlation_weights / np.sum(correlation_weights)
-
-        # Apply correlation to the random field
-        correlated_field[i] = np.sum(correlation_weights * iids)
-
-    # For points not in correlation_indices, use interpolation
-    if n_points > max_correlation_points:
-        # Simple interpolation for remaining points
-        remaining_indices = np.setdiff1d(np.arange(n_points), correlation_indices)
-
-        for i in remaining_indices:
-            # Find nearest correlation points
-            distances_to_corr = np.sum((grid_coords[correlation_indices] - grid_coords[i]) ** 2, axis=1)
-            nearest_corr_idx = correlation_indices[np.argmin(distances_to_corr)]
-            correlated_field[i] = correlated_field[nearest_corr_idx]
-
-    # Scale by local standard deviation
-    stochastic_component = correlated_field * np.sqrt(variance_flat)
-
-    # Combine with mean field
-    if vartransform == 'log':
-        # Log domain: mean * exp(stochastic_component)
-        field_values = mean_flat * np.exp(stochastic_component)
-    else:
-        # Normal domain: mean + stochastic_component
-        field_values = mean_flat + stochastic_component
-
-    return field_values
-
 
 def create_boundary_modified_scalar(base_field, zones,
                                     peak_increase=0.3, transition_cells=5, mode="enhance"):
@@ -1331,7 +1448,8 @@ def detect_zone_boundaries(zones):
     return boundary_mask, boundary_directions
 
 
-def _save_results(results, out_filename, vartransform):
+
+def save_results(results, out_filename):
     """Save results to files in PyEMU-compatible format."""
 
     # Save mean field

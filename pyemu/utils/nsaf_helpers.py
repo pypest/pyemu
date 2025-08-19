@@ -1,18 +1,17 @@
+"""
+NSAF Helpers - High-level API functions for field generation from files
+Refactored to use modelgrid consistently and reduce redundancy
+"""
 import numpy as np
 import pandas as pd
 import os
-from scipy.ndimage import distance_transform_edt, gaussian_filter
+from pyemu import plot_utils as pu
 
-# Import from our Chunk 1 and 2
+# Import from refactored nsaf_utils
 from nsaf_utils import (
-    interpolate_tensors,
-    load_conceptual_points,
-    create_2d_tensors,
-    get_tensor_bearing,
-    apply_ppu_hyperpars,
-    tensor_aware_kriging,
-    create_boundary_modified_scalar,
-    detect_zone_boundaries
+    generate_single_layer,
+    detect_zone_boundaries,
+    _extract_grid_info
 )
 
 
@@ -22,7 +21,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                                vartransform='log', n_realizations=1, ml=None, sr=None):
     """
     Generate spatially correlated fields using tensor-based geostatistics.
-    CLEAN version that works with flexible property columns.
+    REFACTORED to use modelgrid consistently and call generate_single_layer.
 
     Parameters
     ----------
@@ -56,7 +55,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
     Returns
     -------
     dict
-        Results from workflow
+        fieldresult from workflow
     """
     try:
         import flopy
@@ -85,26 +84,26 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
             except Exception as e:
                 raise ValueError(f"Could not load model {model_name} from {tmp_model_ws}: {e}")
 
-    # Get grid coordinates
-    try:
-        xcentergrid = ml.modelgrid.xcellcenters
-        ycentergrid = ml.modelgrid.ycellcenters
-    except AttributeError as e:
-        raise Exception(f"Could not get grid centers from spatial reference: {e}")
+    # Get modelgrid from the model
+    modelgrid = ml.modelgrid
 
-    ny, nx = xcentergrid.shape
+    # Extract grid info for display
+    grid_info = _extract_grid_info(modelgrid)
+    ny = grid_info['ny']
+    nx = grid_info['nx']
+    xcentergrid = grid_info['xcentergrid']
+    ycentergrid = grid_info['ycentergrid']
+
     print(f"Grid dimensions: {ny} x {nx}")
-    print(
-        f"Grid extent: X=[{xcentergrid.min():.1f}, {xcentergrid.max():.1f}], Y=[{ycentergrid.min():.1f}, {ycentergrid.max():.1f}]")
-
-    # Get cell areas for area parameter
-    cell_area = np.outer(ml.dis.delc.array, ml.dis.delr.array)
+    print(f"Grid extent: X=[{xcentergrid.min():.1f}, {xcentergrid.max():.1f}], "
+          f"Y=[{ycentergrid.min():.1f}, {ycentergrid.max():.1f}]")
 
     # Load conceptual points
     conceptual_points = pd.read_csv(os.path.join(tmp_model_ws, conceptual_points_file))
     print(f"Loaded {len(conceptual_points)} conceptual points")
-    print(
-        f"Conceptual points extent: X=[{conceptual_points['x'].min():.1f}, {conceptual_points['x'].max():.1f}], Y=[{conceptual_points['y'].min():.1f}, {conceptual_points['y'].max():.1f}]")
+    print(f"Conceptual points extent: X=[{conceptual_points['x'].min():.1f}, "
+          f"{conceptual_points['x'].max():.1f}], Y=[{conceptual_points['y'].min():.1f}, "
+          f"{conceptual_points['y'].max():.1f}]")
 
     # Add transverse if missing
     if 'transverse' not in conceptual_points.columns and 'anisotropy' in conceptual_points.columns:
@@ -122,8 +121,15 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                     raise ValueError(f"Zone file shape {zones.shape} doesn't match grid {(ny, nx)}")
             print(f"Loaded zones from {zone_file}, shape: {zones.shape}")
         else:
-            zones = np.loadtxt(os.path.join(tmp_model_ws, zone_file[0])).astype(np.int64)
-            print(f"Loaded zones from {zone_file[0]} (multi-layer support TODO)")
+            # Handle list of zone files for multiple layers
+            zones = []
+            for zf in zone_file:
+                z = np.loadtxt(os.path.join(tmp_model_ws, zf)).astype(np.int64)
+                if z.shape != (ny, nx):
+                    if z.size == ny * nx:
+                        z = z.reshape(ny, nx)
+                zones.append(z)
+            print(f"Loaded {len(zones)} zone arrays from multiple files")
 
     # Determine layers
     if hasattr(ml, 'dis'):
@@ -146,7 +152,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
         available_cp_layers = [1]
         print("No 'layer' column in conceptual points - using layer 1")
 
-    # Generate IIDs for all model layers
+    # Generate or load IIDs for all model layers
     iids_dict = {}
     for layer_num in range(total_layers):
         layer_1based = layer_num + 1
@@ -210,46 +216,48 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                 # Get IIDs for this layer
                 layer_iids = iids_dict.get(target_layer, iids_dict[1])
 
-                # Set outfile
-                if save_dir is None:
-                    outfile = os.path.join(tmp_model_ws, f"{fn}_layer_{target_layer}.arr")
-                else: # TODO: ability to pass file basename
-                    outfile = os.path.join(save_dir, f"{fn}_layer_{target_layer}.arr")
+                # Get zones for this layer if available
+                layer_zones = None
+                if zones is not None:
+                    if isinstance(zones, list):
+                        if target_layer - 1 < len(zones):
+                            layer_zones = zones[target_layer - 1]
+                    else:
+                        layer_zones = zones
 
-                # apply_ppu_hyperpars
-                results = apply_ppu_hyperpars(
-                    layer_cp, xcentergrid, ycentergrid,
-                    area=cell_area,
-                    zones=zones,
-                    n_realizations=n_realizations,
-                    layer=target_layer - 1,  # Convert to 0-based for internal use
-                    vartransform=vartransform,
-                    tensor_method=tensor_interp,
-                    out_filename=outfile,
+                # Use generate_single_layer which internally calls apply_nsaf_hyperpars
+                field, result = generate_single_layer(
+                    conceptual_points=layer_cp,
+                    modelgrid=modelgrid,
                     iids=layer_iids,
-                    mean_col=mean_col,  # Pass column names
+                    zones=layer_zones,
+                    layer=target_layer,
+                    tensor_interp=tensor_interp,
+                    vartransform=vartransform,
+                    boundary_smooth=True,
+                    boundary_enhance=True,
+                    mean_col=mean_col,
                     sd_col=sd_col,
-                    active=ml.dis.idomain.array[target_layer-1].flatten()
+                    n_realizations=n_realizations
                 )
 
-                # Store results with layer key, already done via pypest utils
+                # todo: better file name handling
+                if save_dir is not None:
+                    outfile = os.path.join(save_dir, f"{fn}_layer{target_layer}.arr")
+                    np.savetxt(outfile, field, fmt="%20.8E")
+                    pu.visualize_tensors(result['tensors'], xcentergrid, ycentergrid, zones=layer_zones,
+                                         conceptual_points=layer_cp, subsample=4, scale_factor=0.1,
+                                         figsize=(14, 12), title_suf=None, save_path=save_dir)
+                    pu.plot_layer(field, layer=target_layer, field_name=fn, transform='log', save_path=save_dir)
+
+                # Store results
                 result_key = f"{fn}_layer_{target_layer}"
-                all_results[result_key] = results
+                all_results[result_key] = result
 
-                # # Save results
-                # if results['fields'] is not None:
-                #     for i, field in enumerate(results['fields']):
-                #         save_layer(field, layer=target_layer - 1,
-                #                    field_name=f"{fn}_real_{i + 1}", save_path=save_path)
-                #
-                # save_layer(results['mean'], layer=target_layer - 1,
-                #            field_name=f"{fn}_mean", save_path=save_path)
-                # save_layer(results['sd'], layer=target_layer - 1,
-                #            field_name=f"{fn}_sd", save_path=save_path)
+                print(f"fieldresult for layer {target_layer}:")
+                print(f"  Mean field: [{result['mean'].min():.3f}, {result['mean'].max():.3f}]")
+                print(f"  SD field: [{result['sd'].min():.3f}, {result['sd'].max():.3f}]")
 
-                print(f"Results for layer {target_layer}:")
-                print(f"  Mean field: [{results['mean'].min():.3f}, {results['mean'].max():.3f}]")
-                print(f"  SD field: [{results['sd'].min():.3f}, {results['sd'].max():.3f}]")
 
         else:
             # Single layer mode
@@ -258,26 +266,360 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
             # Get IIDs for this layer
             layer_iids = iids_dict.get(1, None)
 
-            # Use workflow
-            results = apply_ppu_hyperpars(
-                conceptual_points, xcentergrid, ycentergrid,
-                area=cell_area,
-                zones=zones,
-                n_realizations=n_realizations,
-                layer=target_layer-1,
-                vartransform=vartransform,
-                tensor_method=tensor_interp,
-                out_filename=outfile,
+            # Get zones (single layer)
+            layer_zones = zones[0] if isinstance(zones, list) else zones
+
+            # Use generate_single_layer
+            field, result = generate_single_layer(
+                cp_file=conceptual_points,
+                modelgrid=modelgrid,
                 iids=layer_iids,
+                zones=layer_zones,
+                tensor_interp=tensor_interp,
+                vartransform=vartransform,
+                boundary_smooth=True,
+                boundary_enhance=True,
                 mean_col=mean_col,
-                sd_col=sd_col
+                sd_col=sd_col,
+                n_realizations=n_realizations
             )
 
-            all_results[fn] = results
+            # Save results if needed
+            # todo: better file name handling
+            if save_dir is not None:
+                for i, f in enumerate(field):
+                    outfile = os.path.join(save_dir, f"{fn}_layer{i+1}.arr")
+                    np.savetxt(outfile, field, fmt="%20.8E")
 
+            all_results[fn] = result
     print("\n=== Complete ===")
     return all_results
 
+"""
+Final helper functions for NSAF Utils
+These complete the implementation with field generation and boundary functions
+"""
+
+# Add these to nsaf_utils.py
+
+def _generate_stochastic_field(grid_coords, mean_field, sd_field,
+                                bearing, anisotropy, corrlen,
+                                zones, n_realizations, vartransform,
+                                config_dict, ny, nx, iids=None, area=None,
+                                active=None):
+    """
+    Generate stochastic field using pypestutils FIELDGEN2D_SVA.
+    """
+    try:
+        from pypestutils.pestutilslib import PestUtilsLib
+    except Exception as e:
+        raise Exception(f"Error importing pypestutils: {e}")
+
+    print("  Generating stochastic field using FIELDGEN2D_SVA...")
+
+    # Prepare grid data
+    n_points = ny * nx
+    x_coords = grid_coords[:, 0]
+    y_coords = grid_coords[:, 1]
+
+    # Flatten fields - ENSURE PROPER ORDERING
+    mean_flat = mean_field.flatten().clip(1e-8, None)
+    variance_native = sd_field.flatten() ** 2
+    log_variance_flat = np.log(1 + variance_native / mean_flat ** 2)
+    trans_flag = 1  # Log domain
+
+    # Geostatistical parameters from tensors
+    aa_values = corrlen.flatten()
+    aniso_values = anisotropy.flatten()
+    bearing_values = bearing.flatten()
+
+    # Set defaults
+    if active is None:
+        active = np.ones(n_points, dtype=int)
+    if area is None:
+        area = np.ones(n_points)
+    else:
+        if area.ndim > 1:
+            area = area.flatten()
+
+    # Generate or use provided IIDs
+    if iids is None:
+        print("  Generating new IIDs...")
+        iids = np.random.normal(0, 1, size=(n_points, n_realizations))
+    else:
+        print("  Using provided IIDs...")
+        if iids.shape != (n_points, n_realizations):
+            raise ValueError(f"IIDs shape {iids.shape} doesn't match expected {(n_points, n_realizations)}")
+
+    try:
+        # Set up pypestutils parameters
+        lib = PestUtilsLib()
+        lib.initialize_randgen(11235813)
+
+        # Averaging function type
+        avg_func = config_dict.get('averaging_function', 'gaussian')
+        if isinstance(avg_func, dict):
+            if 'pow' in avg_func:
+                avg_flag = 4
+                power_value = avg_func['pow']
+            else:
+                avg_flag, power_value = next(iter(avg_func.items()))
+        else:
+            power_value = 0
+            if avg_func == 'exponential':
+                avg_flag = 2
+            elif avg_func == 'gaussian':
+                avg_flag = 3
+            elif avg_func == 'spherical':
+                avg_flag = 1
+            else:
+                avg_flag = 2  # Default to exponential
+
+        # Call FIELDGEN2D_SVA through pypestutils interface
+        print(f"    Calling FIELDGEN2D_SVA for {n_realizations} realizations...")
+
+        field = lib.fieldgen2d_sva(
+            x_coords, y_coords,
+            area=area,
+            active=active,
+            mean=mean_flat,
+            var=log_variance_flat,
+            aa=aa_values,
+            anis=aniso_values,
+            bearing=bearing_values,
+            transtype=trans_flag,
+            avetype=avg_flag,
+            power=power_value,
+            nreal=n_realizations,
+        )
+
+        # Handle the output format from FIELDGEN2D_SVA
+        if field.shape == (n_points, n_realizations):
+            # Output is (n_points, n_realizations) - transpose to (n_realizations, n_points)
+            field = field.T  # Now shape is (n_realizations, n_points)
+            # Reshape each realization to (ny, nx)
+            field = field.reshape((n_realizations, ny, nx))
+
+        elif field.shape == (n_realizations * n_points,):
+            # Output is flattened - reshape directly
+            field = field.reshape((n_realizations, ny, nx))
+
+        elif field.shape == (n_realizations, n_points):
+            # Output is already (n_realizations, n_points) - just reshape spatial dimensions
+            field = field.reshape((n_realizations, ny, nx))
+
+        else:
+            raise ValueError(f"Unexpected fieldgen2d_sva output shape: {field.shape}")
+
+        print(f"    Successfully generated {n_realizations} realizations with shape {field.shape}")
+
+        # Clean up
+        lib.free_all_memory()
+
+        return field
+
+    except Exception as e:
+        print(f"    Warning: FIELDGEN2D_SVA failed: {e}")
+        print(f"    Using fallback method...")
+
+        # Fallback to simple field generation
+        field = np.zeros((n_realizations, ny, nx))
+        for real in range(n_realizations):
+            current_iids = iids[:, real]
+            field_values = _generate_simple_field(
+                grid_coords, mean_flat, log_variance_flat,
+                aa_values, aniso_values, bearing_values,
+                vartransform, current_iids, ny, nx
+            )
+            field[real] = field_values.reshape(ny, nx)
+
+        return field
+
+
+def _generate_simple_field(grid_coords, mean_flat, variance_flat,
+                           aa_values, aniso_values, bearing_values,
+                           vartransform, iids, ny, nx):
+    """
+    Simple fallback field generation if FIELDGEN2D_SVA fails.
+    """
+    print("    Using improved simple correlated field generation fallback...")
+
+    n_points = len(grid_coords)
+
+    # Convert bearing from degrees to radians for calculations
+    bearing_rad = np.radians(bearing_values)
+
+    # Create spatially correlated field using moving average approach
+    correlated_field = np.zeros(n_points)
+
+    # For computational efficiency, use a subset of points for correlation
+    max_correlation_points = min(2000, n_points)
+
+    if n_points > max_correlation_points:
+        # Sample points for correlation calculation
+        correlation_indices = np.random.choice(n_points, max_correlation_points, replace=False)
+        correlation_indices = np.sort(correlation_indices)
+    else:
+        correlation_indices = np.arange(n_points)
+
+    # Apply spatial correlation
+    for i in correlation_indices:
+        # Get local correlation parameters
+        local_aa = aa_values[i]
+        local_aniso = aniso_values[i]
+        local_bearing = bearing_rad[i]
+
+        # Calculate distances to all points
+        dx = grid_coords[:, 0] - grid_coords[i, 0]
+        dy = grid_coords[:, 1] - grid_coords[i, 1]
+
+        # Apply anisotropic transformation
+        cos_bear = np.cos(local_bearing)
+        sin_bear = np.sin(local_bearing)
+
+        # Rotate to principal axes (geological bearing: 0° = North, clockwise positive)
+        dx_rot = dx * sin_bear + dy * cos_bear  # East component (major axis)
+        dy_rot = -dx * cos_bear + dy * sin_bear  # North component (minor axis)
+
+        # Scale by anisotropy
+        minor_aa = local_aa / local_aniso
+        dx_scaled = dx_rot / local_aa
+        dy_scaled = dy_rot / minor_aa
+
+        # Calculate anisotropic distance
+        aniso_distances = np.sqrt(dx_scaled ** 2 + dy_scaled ** 2)
+
+        # Exponential correlation function
+        correlation_weights = np.exp(-aniso_distances)
+
+        # Normalize weights
+        correlation_weights = correlation_weights / np.sum(correlation_weights)
+
+        # Apply correlation to the random field
+        correlated_field[i] = np.sum(correlation_weights * iids)
+
+    # For points not in correlation_indices, use interpolation
+    if n_points > max_correlation_points:
+        remaining_indices = np.setdiff1d(np.arange(n_points), correlation_indices)
+
+        for i in remaining_indices:
+            # Find nearest correlation points
+            distances_to_corr = np.sum((grid_coords[correlation_indices] - grid_coords[i]) ** 2, axis=1)
+            nearest_corr_idx = correlation_indices[np.argmin(distances_to_corr)]
+            correlated_field[i] = correlated_field[nearest_corr_idx]
+
+    # Scale by local standard deviation
+    stochastic_component = correlated_field * np.sqrt(variance_flat)
+
+    # Combine with mean field
+    if vartransform == 'log':
+        # Log domain: mean * exp(stochastic_component)
+        field_values = mean_flat * np.exp(stochastic_component)
+    else:
+        # Normal domain: mean + stochastic_component
+        field_values = mean_flat + stochastic_component
+
+    return field_values
+
+
+def create_boundary_modified_scalar(base_field, zones,
+                                    peak_increase=0.3, transition_cells=5, mode="enhance"):
+    """
+    Modify scalar field values near geological zone boundaries.
+    """
+    from scipy.ndimage import distance_transform_edt, gaussian_filter
+
+    if mode not in ("enhance", "smooth"):
+        raise ValueError("mode must be 'enhance' or 'smooth'")
+
+    # 2D case only for now
+    if zones.shape != base_field.shape:
+        raise ValueError(f"Zones shape {zones.shape} must match field shape {base_field.shape}")
+
+    boundary_mask, _ = detect_zone_boundaries(zones)
+    distance = distance_transform_edt(~boundary_mask)
+    transition_mask = distance <= transition_cells
+
+    modified = base_field.copy()
+
+    if mode == "enhance":
+        # Linear enhancement near boundaries
+        factor = 1 - distance[transition_mask] / transition_cells
+        enhancement = peak_increase * factor
+        modified[transition_mask] += enhancement
+
+    elif mode == "smooth":
+        # Smooth field with Gaussian filter
+        smoothed_field = gaussian_filter(base_field, sigma=transition_cells / 2)
+
+        # Blend with original based on distance to boundary
+        weight = 1 - distance[transition_mask] / transition_cells
+        modified[transition_mask] = (
+                weight * smoothed_field[transition_mask] +
+                (1 - weight) * base_field[transition_mask]
+        )
+
+    print(f"    {'Enhanced' if mode == 'enhance' else 'Smoothed'} "
+          f"{np.count_nonzero(transition_mask)} points near boundaries")
+
+    return modified
+
+
+def detect_zone_boundaries(zones):
+    """Detect boundaries between geological zones."""
+    ny, nx = zones.shape
+    boundary_mask = np.zeros((ny, nx)).astype(bool)
+    boundary_directions = np.zeros((ny, nx, 2))
+
+    # Find boundary points
+    for i in range(ny):
+        for j in range(nx):
+            current_zone = zones[i, j]
+
+            # Check 8-connected neighbors
+            for di in [-1, 0, 1]:
+                for dj in [-1, 0, 1]:
+                    if di == 0 and dj == 0:
+                        continue
+                    ni, nj = i + di, j + dj
+                    if 0 <= ni < ny and 0 <= nj < nx:
+                        if zones[ni, nj] != current_zone:
+                            boundary_mask[i, j] = True
+                            break
+                if boundary_mask[i, j]:
+                    break
+
+    return boundary_mask, boundary_directions
+
+
+def save_results(result, out_filename, vartransform):
+    """Save results to files in PyEMU-compatible format."""
+
+    # todo: better file name handling
+
+    # Save mean field
+    mean_file = f"{out_filename}_mean.txt"
+    np.savetxt(mean_file, result['mean'], fmt="%20.8E")
+    print(f"  Saved mean field to {mean_file}")
+
+    # Save standard deviation field
+    sd_file = f"{out_filename}_sd.txt"
+    np.savetxt(sd_file, result['sd'], fmt="%20.8E")
+    print(f"  Saved SD field to {sd_file}")
+
+    # Save geostatistical parameter field
+    for param in ['bearing', 'anisotropy', 'corrlen']:
+        param_file = f"{out_filename}_{param}.txt"
+        np.savetxt(param_file, result[param], fmt="%20.8E")
+        print(f"  Saved {param} field to {param_file}")
+
+    # Save stochastic realizations
+    if result['field'] is not None:
+        for i, field in enumerate(result['field']):
+            field_file = f"{out_filename}_real_{i + 1:03d}.txt"
+            np.savetxt(field_file, field, fmt="%20.8E")
+
+        print(f"  Saved {len(result['field'])} realizations")
 
 def _load_or_generate_iids(tmp_model_ws, iids_file, layer_num, ny, nx, n_realizations):
     """
@@ -384,253 +726,38 @@ def _load_or_generate_iids(tmp_model_ws, iids_file, layer_num, ny, nx, n_realiza
     return iids
 
 
-def generate_single_layer(cp_file, xcentergrid, ycentergrid, iids=None,
-                          zones=None, tensor_interp='idw',
-                          vartransform='log', boundary_smooth=True,
-                          boundary_enhance=True):
-    """
-    Generate single layer using approach with boundary adjustments.
-    Replaces the NSAF generate_single_layer_zone_based function.
-
-    Parameters
-    ----------
-    cp_file : str or pd.DataFrame
-        Conceptual points file or DataFrame
-    xcentergrid : np.ndarray
-        X-coordinates from pyemu SpatialReference, shape (ny, nx)
-    ycentergrid : np.ndarray
-        Y-coordinates from pyemu SpatialReference, shape (ny, nx)
-    iids : np.ndarray, optional
-        Pre-generated noise, shape (ny, nx)
-    zones : np.ndarray, optional
-        Zone IDs, shape (ny, nx)
-    tensor_interp : str, default 'krig'
-        Tensor interpolation method
-    vartransform : str, default 'log'
-        Transformation: 'log' or 'none'
-    boundary_smooth : bool, default True
-        Apply smoothing to mean at zone boundaries
-    boundary_enhance : bool, default True
-        Apply variance enhancement at zone boundaries
-
-    Returns
-    -------
-    tuple
-        (field_2d, tensors) where:
-        - field_2d: Generated field, shape (ny, nx)
-        - tensors: Interpolated tensors, shape (ny*nx, 2, 2)
-    """
-
-    # Load conceptual points
-    cp_df = load_conceptual_points(cp_file)
-
-    print("=== Single Layer Generation ===")
-    print(f"Processing {len(cp_df)} conceptual points")
-
-    ny, nx = xcentergrid.shape
-
-    # Step 1: Create geological tensors from conceptual points
-    print("  Creating geological correlation tensors...")
-    cp_coords = cp_df[['x', 'y']].values
-
-    # Get mean and sd columns
-    mean_cols = [col for col in cp_df.columns if 'mean' in col.lower()]
-    sd_cols = [col for col in cp_df.columns if 'sd' in col.lower()]
-
-    if not mean_cols or not sd_cols:
-        raise ValueError("Conceptual points must have mean and sd columns")
-
-    cp_means = cp_df[mean_cols[0]].values
-    cp_sd = cp_df[sd_cols[0]].values
-
-    # Create tensors
-    major = cp_df['major'].values
-    minor = cp_df['transverse'].values
-
-    def normalize_bearing(bearing):
-        return bearing % 360
-
-    bearings_normalized = [normalize_bearing(b) for b in cp_df['bearing'].values]
-    bearing_rad = np.radians(bearings_normalized)
-    cp_tensors = create_2d_tensors(bearing_rad, major, minor)
-
-    # Debug tensor creation
-    print("  Tensor creation verification:")
-    for i in range(min(3, len(cp_tensors))):
-        original_bearing = cp_df['bearing'].values[i]
-        extracted_bearing = get_tensor_bearing(cp_tensors[i], original_bearing)
-        print(f"    Point {i}: Input bearing={original_bearing:.1f}°, Extracted={extracted_bearing:.1f}°")
-
-    # Step 2: Interpolate tensors
-    print(f"  Interpolating tensors using {tensor_interp} method...")
-    tensors = interpolate_tensors(
-        cp_df, xcentergrid, ycentergrid,
-        zones=zones, method=tensor_interp, layer=0
-    )
-
-    # Step 3: Interpolate means and sd with boundary adjustments
-    print("  Interpolating means with geological structure...")
-    grid_coords_2d = np.column_stack([xcentergrid.flatten(), ycentergrid.flatten()])
-
-    # Configure kriging
-    transform = 'log' if vartransform == 'log' else None
-    min_value = 1e-8 if vartransform == 'log' else None
-
-    # Interpolate mean
-    interp_means_2d = tensor_aware_kriging(
-        cp_coords, cp_means, grid_coords_2d, tensors,
-        variogram_model='exponential', sill=1.0, nugget=0.1,
-        background_value=np.mean(cp_means), max_search_radius=1e20,
-        min_points=3, transform=transform, min_value=min_value,
-        max_neighbors=4, zones=zones
-    )
-
-    # Apply boundary smoothing
-    if boundary_smooth and zones is not None:
-        print("  Smoothing values at geological boundaries...")
-        interp_means_2d = create_boundary_modified_scalar(
-            interp_means_2d, zones, transition_cells=3, mode='smooth'
-        )
-
-    # Interpolate standard deviation
-    print("  Interpolating standard deviation...")
-    interp_sd_2d = tensor_aware_kriging(
-        cp_coords, cp_sd, grid_coords_2d, tensors,
-        variogram_model='exponential', sill=1.0, nugget=0.1,
-        background_value=np.mean(cp_sd), max_search_radius=1e20,
-        min_points=3, transform=transform, min_value=min_value,
-        max_neighbors=4, zones=zones
-    )
-
-    # Apply boundary enhancement
-    if boundary_enhance and zones is not None:
-        print("  Enhancing variance at geological boundaries...")
-        interp_sd_2d = create_boundary_modified_scalar(
-            interp_sd_2d, zones, peak_increase=1.0, transition_cells=3, mode='enhance'
-        )
-
-    # Step 4: Generate stochastic field using FIELDGEN2D_SVA approach
-    print("  Generating stochastic field using FIELDGEN2D_SVA methodology...")
-
-    # Convert tensors to geostatistical parameters for FIELDGEN2D_SVA
-    from nsaf_utils import _tensors_to_geostat_params, _generate_stochastic_fields
-
-    bearing_deg, anisotropy, corrlen_major = _tensors_to_geostat_params(tensors)
-
-    # Prepare grid coordinates
-    grid_coords_2d = np.column_stack([xcentergrid.flatten(), ycentergrid.flatten()])
-
-    # Configuration for field generation
-    config_dict = {
-        'averaging_function': 'exponential',
-        'vartype': 2,
-        'krigtype': 1
-    }
-
-    # Generate one realization
-    n_realizations = 1
-    fields = _generate_stochastic_fields(
-        grid_coords_2d, interp_means_2d, interp_sd_2d,
-        bearing_deg, anisotropy, corrlen_major,
-        zones, n_realizations, vartransform,
-        config_dict, ny, nx
-    )
-
-    field_2d = fields[0]  # Extract the single realization
-
-    print("=== Single layer generation complete ===")
-    return field_2d, tensors
-
-
-def save_layer(field_2d, layer, field_name, save_path='.'):
-    """
-    Save layer to file in PyEMU-compatible format.
-
-    Parameters
-    ----------
-    field_2d : np.ndarray
-        Field values, shape (ny, nx)
-    layer : int
-        Layer number
-    field_name : str
-        Field name for filename
-    save_path : str
-        Directory to save files
-    """
-    os.makedirs(save_path, exist_ok=True)
-    filename = os.path.join(save_path, f"{field_name}_layer_{layer + 1}.txt")
-    np.savetxt(filename, field_2d, fmt="%20.8E")
-    print(f"  Saved {field_name} layer {layer + 1} to {filename}")
-
-
-def validate_grid_coordinates(xcentergrid, ycentergrid):
-    """
-    Validate PyEMU grid coordinates.
-
-    Parameters
-    ----------
-    xcentergrid : np.ndarray
-        X-coordinates, shape (ny, nx)
-    ycentergrid : np.ndarray
-        Y-coordinates, shape (ny, nx)
-
-    Returns
-    -------
-    bool
-        True if valid
-    """
-    if xcentergrid.shape != ycentergrid.shape:
-        print(f"ERROR: Grid coordinate shapes don't match: {xcentergrid.shape} vs {ycentergrid.shape}")
-        return False
-
-    ny, nx = xcentergrid.shape
-    print(f"Grid validation: {ny} x {nx} = {ny * nx} points")
-
-    # Check for regular grid structure
-    x_unique = len(np.unique(xcentergrid))
-    y_unique = len(np.unique(ycentergrid))
-
-    if x_unique == nx and y_unique == ny:
-        print("  ✓ Regular rectangular grid detected")
-        return True
-    else:
-        print(f"  ⚠ Irregular grid: {x_unique} unique x, {y_unique} unique y")
-        return True  # Still valid, just not regular
-
-
-def infer_grid_shape(xcentergrid, ycentergrid):
-    """
-    Infer grid shape from PyEMU coordinate arrays.
-
-    Parameters
-    ----------
-    xcentergrid : np.ndarray
-        X-coordinates, shape (ny, nx)
-    ycentergrid : np.ndarray
-        Y-coordinates, shape (ny, nx)
-
-    Returns
-    -------
-    tuple
-        Grid shape (nz, ny, nx) - nz=1 for 2D
-    """
-    ny, nx = xcentergrid.shape
-    return (1, ny, nx)
-
-
 def example_field_generation():
     """Example using concentric circles of tangentially-oriented anisotropic tensors."""
+    import flopy
     import matplotlib.pyplot as plt
     import numpy as np
     import pandas as pd
 
     # Create example PyEMU grid - square domain
     nx, ny = 100, 100
-    x = np.linspace(0, 5000, nx)
-    y = np.linspace(0, 5000, ny)
+    xmax = 5000
+    ymax = 5000
+    x = np.linspace(0, xmax, nx)
+    y = np.linspace(0, ymax, ny)
+
+    # Correct: delr is row spacing (y-direction), delc is column spacing (x-direction)
+    delr = np.full(ny, ymax / ny)  # Cell height (y-direction, row spacing)
+    delc = np.full(nx, xmax / nx)  # Cell width (x-direction, column spacing)
+
     xcentergrid, ycentergrid = np.meshgrid(x, y, indexing='xy')
     xcentergrid = xcentergrid.T
     ycentergrid = ycentergrid.T
+
+    modelgrid = flopy.discretization.StructuredGrid(
+        delc=delc,  # Column spacing (x-direction)
+        delr=delr,  # Row spacing (y-direction)
+        top=np.ones((ny, nx)),
+        botm=np.zeros((1, ny, nx)),
+        xoff=x[0] - delc[0] / 2,  # Use delc for x offset
+        yoff=y[0] - delr[0] / 2,  # Use delr for y offset
+        angrot=0.0,
+        idomain=np.ones((ny, nx)),
+    )
 
     # Define circle center and radius
     center_x = 2500
@@ -666,8 +793,8 @@ def example_field_generation():
                 'name': f'cp_circle{circle_idx}_point{i}',
                 'x': cp_x,
                 'y': cp_y,
-                'mean_kh': mean_kh,
-                'sd_kh': mean_kh * 0.1,
+                'mean': mean_kh,
+                'sd': mean_kh * 0.1,
                 'major': major_length,
                 'anisotropy': 4.0,
                 'bearing': bearing,
@@ -680,10 +807,10 @@ def example_field_generation():
     # Generate field
     print("=== Testing tangential field generation ===")
     field_2d, tensors = generate_single_layer(
-        cp_df, xcentergrid, ycentergrid,
+        cp_df, modelgrid,
         zones=None,
         tensor_interp='krig',
-        vartransform='None'
+        vartransform='None',
     )
 
     # Visualize results
@@ -737,7 +864,7 @@ def example_field_generation():
     axes[1, 1].set_aspect('equal')
 
     plt.tight_layout()
-    plt.savefig('tangential_field_example.png', dpi=150, bbox_inches='tight')
+    plt.savefig(os.path.join('..','..','examples', 'tangential_field_example.png'), dpi=150, bbox_inches='tight')
     plt.show()
 
     print(f"Field statistics: mean={np.mean(field_2d):.3f}, std={np.std(field_2d):.3f}")
