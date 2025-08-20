@@ -266,7 +266,7 @@ def start_workers(
     pst_rel_path,
     num_workers=None,
     worker_root="..",
-    port=4004,
+    port=None,
     rel_path=None,
     local=True,
     cleanup=True,
@@ -362,6 +362,13 @@ def start_workers(
     else:
         if not os.path.exists(os.path.join(worker_dir, pst_rel_path)):
             raise Exception("pst_rel_path not found from worker_dir")
+
+    if port is None:
+        if master_dir is None:
+            port = 4004 # the 'ole standard
+        else:
+            port = PortManager().get_available_port()
+
     if isinstance(local, str):
         hostname = local
     elif local:

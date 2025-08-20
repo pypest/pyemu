@@ -819,6 +819,24 @@ def new_format2_test(tmp_path):
         raise Exception("fail:"+str(e))
     os.chdir(b_d)
 
+def new_format_pestpp_options_test():
+    import pyemu
+    pst_dir = "newpst"
+    pestpp_expected = {
+                'lambdas':'1, 2, 10, 999',
+                'opt_dec_var_groups':'dv_drcq,   dv_irrig',
+                'panther_transfer_on_finish':'file1,file2,file3',
+                'ies_n_iter_reinflate':'3, 5,  999',
+                'ies_reinflate_factor':'0.1 , 0.05,0.1',
+                }
+    pst = pyemu.Pst(os.path.join(pst_dir,"test_pestpp_options.pst"))
+
+    try:
+        for key, expected in pestpp_expected.items():
+            actual = pst.pestpp_options.get(key)
+            assert actual == expected.replace(" ", ""), f"{key}: got '{actual}', expected '{expected}'"
+    except Exception as e:
+        raise Exception("fail:"+str(e))
 
 def new_format_test(tmp_path):
     import numpy as np

@@ -51,7 +51,10 @@ class ResultHandler(object):
             df = None
             try:
                 df = pd.read_csv(filename,index_col=index_col)
+                df.index = df.index.astype(str)
+                df.columns = df.columns.astype(str)
                 self.results_loaded[filename] = df
+
             except Exception as e:
                 print("error loading file '{0}': {1}".format(filename, str(e)))
                 self.failed2load_files.append([filename, str(e)])
@@ -83,6 +86,8 @@ class ResultHandler(object):
                     raise Exception("unrecognized ensemble/population file extension: '{0}', should be csv, jcb/jco, or bin".\
                                     format(filename))
                 df.index.name = index_name
+                df.index = df.index.astype(str)
+                df.columns = df.columns.astype(str)
                 self.results_loaded[filename] = df
             except Exception as e:
                 print("error loading file '{0}': {1}".format(filename,str(e)))

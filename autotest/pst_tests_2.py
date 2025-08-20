@@ -916,6 +916,7 @@ def results_ies_1_test():
     pst = pyemu.Pst(os.path.join(m_d, "pest.pst"),result_dir=m_d)
 
     df = pst.ies.get("paren",0)
+    
     df = r.ies.rmr
     print(df)
     assert df is not None
@@ -930,8 +931,9 @@ def results_ies_1_test():
 
     # weights
     df = r.ies.weights
-    #print(df)
+    
     assert df is not None
+    assert df.index.dtype=='object'
 
     # various phi dfs
     df = r.ies.philambda
@@ -1097,10 +1099,10 @@ def results_mou_1_test():
         assert df is not None
 
 if __name__ == "__main__":
-    #results_ies_3_test()
+    results_ies_3_test()
     results_ies_1_test()
-    #results_ies_2_test()
-    #results_mou_1_test()
+    results_ies_2_test()
+    results_mou_1_test()
     #at_bounds_test()
 
     #pst_from_flopy_geo_draw_test()
