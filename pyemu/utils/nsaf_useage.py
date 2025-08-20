@@ -24,7 +24,7 @@ if __name__ == "__main__":
     data_dir = r'..\..\examples\Wairau\waq_arr'
     zone_files = [f'waq_arr.geoclass_layer{i+1}.arr' for i in range(0,13)]
     con_pts_file = 'conceptual_points.csv'
-    save_dir = os.path.join(data_dir, f'{con_pts_file}_output')
+    save_dir = os.path.join(data_dir)
 
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
@@ -34,7 +34,11 @@ if __name__ == "__main__":
                                             field_name=['kh'],
                                             layer_mode=True,
                                             save_dir=save_dir,
-                                            tensor_interp='idw')
+                                            tensor_interp='idw',
+                                            boundary_smooth={'transition_cells': 5},
+                                            boundary_enhance={'transition_cells': 5,
+                                                              'peak_increase': 0.1}
+                                            )
 
 
     end_time = time.perf_counter()

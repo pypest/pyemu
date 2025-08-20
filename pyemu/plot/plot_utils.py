@@ -1913,7 +1913,7 @@ def plot_zones_with_conceptual_points(zones, conceptual_points, grid_coords,
             zones_flipped = np.flipud(zones_remapped)
 
             im = ax.imshow(zones_flipped, extent=[x_min, x_max, y_min, y_max],
-                           origin='lower', cmap='tab10', alpha=0.7,
+                           origin='upper', cmap='tab10', alpha=0.7,
                            vmin=0, vmax=n_zones - 1)
 
             # Filter conceptual points for this layer
@@ -1995,7 +1995,7 @@ def plot_zones_with_conceptual_points(zones, conceptual_points, grid_coords,
         zones_flipped = np.flipud(zones_remapped)
 
         im = ax.imshow(zones_flipped, extent=[x_min, x_max, y_min, y_max],
-                       origin='lower', cmap='tab10', alpha=0.7,
+                       origin='upper', cmap='tab10', alpha=0.7,
                        vmin=0, vmax=n_zones - 1)
 
         # Add colorbar with actual zone values
@@ -2056,7 +2056,7 @@ def plot_zones_with_conceptual_points(zones, conceptual_points, grid_coords,
 
 
 def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
-                      conceptual_points=None, subsample=4, scale_factor=0.1,
+                      conceptual_points=None, subsample=4, max_ellipse_size=0.1,
                       figsize=(14, 12), title_suf=None, save_path='.'):
     """
     Visualize tensors as ellipses overlaid on zones, with conceptual points as oriented lines.
@@ -2076,8 +2076,8 @@ def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
         Conceptual points DataFrame or path to CSV with x, y, bearing, major columns
     subsample : int, default 4
         Show every Nth tensor (for readability)
-    scale_factor : float, default 20
-        Scale ellipses for visibility (larger = smaller ellipses)
+    max_ellipse_size : float, default 0.1
+        Maximum ellipse size as fraction of domain extent (0-1)
     figsize : tuple, default (14, 12)
         Figure size
     title_suf : str, optional
@@ -2093,9 +2093,11 @@ def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
     Examples
     --------
     >>> visualize_tensors(tensors, xcentergrid, ycentergrid,
-    ...                  zones=zones, subsample=8, title_suf='layer_1')
+    ...                  zones=zones, subsample=8, max_ellipse_size=0.05)
     """
     from matplotlib.patches import Ellipse
+    from matplotlib.patches import Rectangle
+    import matplotlib.patches as patches
 
     # Get grid dimensions
     ny, nx = xcentergrid.shape
@@ -2115,11 +2117,17 @@ def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
 
     fig, ax = plt.subplots(figsize=figsize)
 
-    # Get coordinate bounds first to set proper limits
+    # Get coordinate bounds and calculate domain extents
     x_min, x_max = xcentergrid.min(), xcentergrid.max()
     y_min, y_max = ycentergrid.min(), ycentergrid.max()
 
+    # Calculate domain extents
+    ew_extent = x_max - x_min  # East-West extent
+    ns_extent = y_max - y_min  # North-South extent
+    max_domain_length = max(ew_extent, ns_extent)
+
     print(f"Grid bounds: X=[{x_min:.1f}, {x_max:.1f}], Y=[{y_min:.1f}, {y_max:.1f}]")
+    print(f"Domain extents: E-W={ew_extent:.1f}, N-S={ns_extent:.1f}, Max={max_domain_length:.1f}")
 
     # Set axis limits explicitly
     ax.set_xlim(x_min, x_max)
@@ -2154,8 +2162,7 @@ def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
             major = row['major']
 
             # Scale line length for visibility relative to grid
-            grid_scale = max(x_max - x_min, y_max - y_min)
-            line_length = grid_scale / 50  # Make lines 2% of grid span
+            line_length = max_domain_length / 50  # Make lines 2% of max domain extent
 
             # Convert geological bearing (CW from N) to math angle for plotting
             # Geological: 0°=N, 90°=E; Math: 0°=E, 90°=N
@@ -2187,31 +2194,58 @@ def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
     default_count = 0
     ellipse_count = 0
 
-    # Calculate overall scale for ellipses based on grid
-    grid_scale = max(x_max - x_min, y_max - y_min)
+    # Sample ALL valid tensors to get statistics for scaling
+    all_eigenvals = []
+    valid_tensor_count = 0
 
-    # Sample some tensors to get typical eigenvalue scale
-    sample_tensors = tensors[indices[:min(100, len(indices))]]
-    sample_eigenvals = []
-    for tensor in sample_tensors:
+    for tensor in tensors:
         if not np.allclose(tensor, np.eye(2) * 1000000):
             try:
                 eigenvals, _ = np.linalg.eigh(tensor)
                 if np.all(eigenvals > 0):  # Valid eigenvalues
-                    sample_eigenvals.extend(eigenvals)
+                    all_eigenvals.extend(eigenvals)
+                    valid_tensor_count += 1
             except:
                 continue
 
-    if sample_eigenvals:
-        typical_eigenval = np.median(sample_eigenvals)
-        typical_length = np.sqrt(typical_eigenval)
-        # Use scale_factor parameter - larger scale_factor = larger ellipses
-        ellipse_scale = (grid_scale * scale_factor) / typical_length
-        print(
-            f"Typical eigenvalue: {typical_eigenval:.1e}, length: {typical_length:.1f}, scale_factor: {scale_factor}, final scale: {ellipse_scale:.1e}")
+    if all_eigenvals:
+        all_eigenvals = np.array(all_eigenvals)
+        max_eigenval = np.max(all_eigenvals)
+        percentile_95 = np.percentile(all_eigenvals, 95)
+        median_eigenval = np.median(all_eigenvals)
+
+        max_correlation_length = np.sqrt(max_eigenval)
+        p95_correlation_length = np.sqrt(percentile_95)
+        median_correlation_length = np.sqrt(median_eigenval)
+
+        print(f"Eigenvalue statistics from {valid_tensor_count} valid tensors:")
+        print(f"  Max eigenvalue: {max_eigenval:.1e} -> correlation length: {max_correlation_length:.1f}")
+        print(f"  95th percentile: {percentile_95:.1e} -> correlation length: {p95_correlation_length:.1f}")
+        print(f"  Median eigenvalue: {median_eigenval:.1e} -> correlation length: {median_correlation_length:.1f}")
+
+        # Option 1: Scale to max (might be outlier)
+        target_max_size = max_ellipse_size * max_domain_length
+        ellipse_scale_max = target_max_size / max_correlation_length
+
+        # Option 2: Scale to 95th percentile (more robust)
+        ellipse_scale_p95 = target_max_size / p95_correlation_length
+
+        print(f"Target max ellipse size: {target_max_size:.1f}")
+        print(f"Scale factor using max: {ellipse_scale_max:.1e}")
+        print(f"Scale factor using 95th percentile: {ellipse_scale_p95:.1e}")
+        print(f"Max correlation length / domain length ratio: {max_correlation_length / max_domain_length:.3f}")
+
+        # Use the true maximum for scaling (not 95th percentile)
+        ellipse_scale = target_max_size / max_correlation_length
+        scaling_reference = max_correlation_length
+
+        print(f"Using true maximum for scaling: {ellipse_scale:.1e}")
+        print(f"This ensures largest ellipse will be exactly {target_max_size:.1f} units")
+
     else:
-        ellipse_scale = scale_factor
-        print(f"No valid sample eigenvalues found, using scale_factor: {scale_factor}")
+        ellipse_scale = max_ellipse_size * max_domain_length
+        scaling_reference = 1.0  # fallback
+        print(f"No valid eigenvalues found, using fallback scale: {ellipse_scale}")
 
     for i in indices:
         tensor = tensors[i]
@@ -2266,7 +2300,7 @@ def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
     ax.set_ylabel('Y Coordinate')
 
     # Update title and legend
-    title_parts = [f'Tensors (subsampled 1:{subsample})']
+    title_parts = [f'Tensors (subsampled 1:{subsample}, max size = {max_ellipse_size:.1%} of domain)']
     if title_suf is not None:
         title_parts.append(f'{title_suf}')
 
@@ -2313,90 +2347,150 @@ def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
 
     # Save plot
     if title_suf:
-        filename = f'interpolated_tensors_{title_suf}.png'
-    else:
-        filename = 'interpolated_tensors.png'
+        save_path = save_path.replace('.png', f'_{title_suf}.png')
 
-    save_path_full = os.path.join(save_path, filename)
-    plt.savefig(save_path_full, dpi=150, bbox_inches='tight')
-    print(f"Saved tensor visualization to {save_path_full}")
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    print(f"Saved tensor visualization to {save_path}")
 
     # Show the plot for interactive backends
-    #plt.show()
+    # plt.show()
     plt.close()
 
 
-def plot_layer(field, layer=0, field_name='field', transform='log', save_path='.'):
-    if transform=='log':
+def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
+                   transform=None, title_suf=None, save_path='nsaf_visualization.png'):
+    # Apply transform if specified
+    if transform == 'log':
+        field = np.where(results['fields'][0]==0,np.nan,results['fields'][0])
         field = np.log10(field)
+        sd = np.where(results['sd'] == 0, np.nan, results['sd'])
+        sd = np.log10(sd)
+        mean = np.where(results['mean'] == 0, np.nan, results['mean'])
+        mean = np.log10(mean)
+        field_label = 'log10(Field)'
+    else:
+        field = results['field'][0]
+        sd = results['sd']
+        mean = results['mean']
+        field_label = 'Field'
 
-    plt.figure(figsize=(14, 12))
-    plt.imshow(field)
-    plt.colorbar(label='Parameter Value')
-    plt.title(f'{field_name} for layer {layer}')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-
-    os.makedirs('output', exist_ok=True)
-    plt.savefig(os.path.join(save_path, f'{field_name}_layer_{layer:02d}.png'), dpi=150)
-    plt.close()
-
-
-def visualize_nsaf(field_2d, cp_df, x, y):
     # Visualize results
-    fig, axes = plt.subplots(2, 2, figsize=(12, 12))
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 
-    # Field
-    im1 = axes[0, 0].imshow(np.log10(field_2d), origin='lower', cmap='RdYlBu_r')
-    axes[0, 0].set_title('Generated Tangential Field')
+    # Field with conceptual points using real coordinates
+    im1 = axes[0, 0].imshow(field, origin='upper', cmap='RdYlBu_r',
+                            extent=[xcentergrid.min(), xcentergrid.max(),
+                                    ycentergrid.min(), ycentergrid.max()])
+    for idx, row in cp_df.iterrows():
+        x, y = row['x'], row['y']
+
+        # Plot point
+        axes[0, 0].plot(x, y, 'ko', markersize=5, markeredgecolor='white', markeredgewidth=1)
+
+        # Draw bearing direction - scale arrow based on domain size
+        domain_scale = max(xcentergrid.max() - xcentergrid.min(),
+                           ycentergrid.max() - ycentergrid.min())
+        arrow_length = domain_scale * 0.02  # 2% of domain size
+
+        bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
+        dx = arrow_length * np.cos(bearing_rad)
+        dy = arrow_length * np.sin(bearing_rad)
+
+        axes[0, 0].arrow(x, y, dx, dy,
+                         head_width=domain_scale * 0.01, head_length=domain_scale * 0.01,
+                         fc='red', ec='red', alpha=0.8, linewidth=2)
+
+    axes[0, 0].set_title('Field with Conceptual Point Vectors')
+    axes[0, 0].set_xlabel('X Coordinate')
+    axes[0, 0].set_ylabel('Y Coordinate')
     axes[0, 0].set_aspect('equal')
-    plt.colorbar(im1, ax=axes[0, 0])
+    plt.colorbar(im1, ax=axes[0, 0], label=field_label)
 
-    # Field with conceptual points
-    im2 = axes[0, 1].imshow(np.log10(field_2d), origin='lower', cmap='RdYlBu_r', alpha=0.8)
+    # mean field
+    im2 = axes[0, 1].imshow(results['mean'], origin='upper', cmap='RdYlBu_r',
+                            extent=[xcentergrid.min(), xcentergrid.max(),
+                                    ycentergrid.min(), ycentergrid.max()])
+    axes[0, 1].set_title(f'Mean field for {field_label} {title_suf or ""}')
+    axes[0, 1].set_xlabel('X Coordinate')
+    axes[0, 1].set_ylabel('Y Coordinate')
+    plt.colorbar(im2, ax=axes[0, 1], label=field_label)
+
+    # sd field
+    im3 = axes[1, 0].imshow(results['sd'], origin='upper', cmap='RdYlBu_r', alpha=0.8,
+                            extent=[xcentergrid.min(), xcentergrid.max(),
+                                    ycentergrid.min(), ycentergrid.max()])
+    axes[1, 0].set_title(f'Standard Deviation field for {field_label} {title_suf or ""}')
+    axes[1, 0].set_xlabel('X Coordinate')
+    axes[1, 0].set_ylabel('Y Coordinate')
+    plt.colorbar(im3, ax=axes[1, 0], label=field_label)
+
+
+    # Field statistics histogram
+    axes[1, 1].hist(field.flatten(), bins=50, alpha=0.7, color='purple', edgecolor='black')
+    axes[1, 1].set_title(f'{field_label} Distribution')
+    axes[1, 1].set_xlabel(f'{field_label} Value')
+    axes[1, 1].set_ylabel('Frequency')
+    axes[1, 1].grid(True, alpha=0.3)
+
+    # Add statistics text
+    mean_val = np.mean(field)
+    std_val = np.std(field)
+    axes[1, 0].axvline(mean_val, color='red', linestyle='--', alpha=0.7, label=f'Mean: {mean_val:.3f}')
+    axes[1, 0].axvline(mean_val + std_val, color='orange', linestyle='--', alpha=0.7,
+                       label=f'+1σ: {mean_val + std_val:.3f}')
+    axes[1, 0].axvline(mean_val - std_val, color='orange', linestyle='--', alpha=0.7,
+                       label=f'-1σ: {mean_val - std_val:.3f}')
+    axes[1, 0].legend()
+
+    # Conceptual points layout - show bearing vectors in domain coordinates
+    axes[1, 1].set_xlim(xcentergrid.min(), xcentergrid.max())
+    axes[1, 1].set_ylim(ycentergrid.min(), ycentergrid.max())
 
     for idx, row in cp_df.iterrows():
-        x_idx = np.argmin(np.abs(x - row['x']))
-        y_idx = np.argmin(np.abs(y - row['y']))
-        axes[0, 1].plot(x_idx, y_idx, 'ko', markersize=3)
+        x, y = row['x'], row['y']
+
+        # Plot point
+        axes[1, 1].plot(x, y, 'bo', markersize=6, markeredgecolor='black', markeredgewidth=1, alpha=0.8)
 
         # Draw bearing direction
-        bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
-        dx = 4 * np.cos(bearing_rad)
-        dy = 4 * np.sin(bearing_rad)
-        axes[0, 1].arrow(x_idx, y_idx, dx, dy, head_width=1, head_length=1,
-                         fc='red', ec='red', alpha=0.8)
-
-    axes[0, 1].set_title('Field with Tangential Vectors')
-    axes[0, 1].set_aspect('equal')
-    plt.colorbar(im2, ax=axes[0, 1])
-
-    # Field statistics
-    axes[1, 0].hist(field_2d.flatten(), bins=50, alpha=0.7, color='purple')
-    axes[1, 0].set_title('Field Distribution')
-    axes[1, 0].set_xlabel('Value')
-    axes[1, 0].set_ylabel('Frequency')
-
-    # Bearing vectors only
-    for idx, row in cp_df.iterrows():
-        x_idx = np.argmin(np.abs(x - row['x']))
-        y_idx = np.argmin(np.abs(y - row['y']))
+        domain_scale = max(xcentergrid.max() - xcentergrid.min(),
+                           ycentergrid.max() - ycentergrid.min())
+        arrow_length = domain_scale * 0.05  # 5% of domain size for visibility
 
         bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
-        dx = 3 * np.cos(bearing_rad)
-        dy = 3 * np.sin(bearing_rad)
-        axes[1, 1].arrow(x_idx, y_idx, dx, dy, head_width=1, head_length=1,
-                         fc='blue', ec='blue', alpha=0.6)
+        dx = arrow_length * np.cos(bearing_rad)
+        dy = arrow_length * np.sin(bearing_rad)
 
-    axes[1, 1].set_title('Tangential Bearing Vectors')
-    axes[1, 1].set_xlim(0, field_2d.shape[1] - 1)
-    axes[1, 1].set_ylim(0, field_2d.shape[1] - 1)
+        axes[1, 1].arrow(x, y, dx, dy,
+                         head_width=domain_scale * 0.015, head_length=domain_scale * 0.015,
+                         fc='blue', ec='blue', alpha=0.7, linewidth=2)
+
+        # Add bearing label
+        axes[1, 1].annotate(f'{row["bearing"]:.0f}°',
+                            (x, y), xytext=(5, 5), textcoords='offset points',
+                            fontsize=8, alpha=0.8)
+
+    # Fix the title string formatting
+    stats_title = (f'Conceptual Points Layout\n'
+                   f'Stats: mean={mean_val:.3f}, std={std_val:.3f}\n'
+                   f'Number of conceptual points: {len(cp_df)}')
+
+    axes[1, 1].set_title(stats_title)
+    axes[1, 1].set_xlabel('X Coordinate')
+    axes[1, 1].set_ylabel('Y Coordinate')
     axes[1, 1].set_aspect('equal')
+    axes[1, 1].grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig('tangential_field_example.png', dpi=150, bbox_inches='tight')
-    plt.show()
 
-    print(f"Field statistics: mean={np.mean(field_2d):.3f}, std={np.std(field_2d):.3f}")
-    print(f"Number of conceptual points: {len(cp_df)}")
-    print("Tangential field generation complete!")
+    # Save plot
+    if title_suf:
+        base_name = save_path.replace('.png', '')
+        save_path = f"{base_name}_{title_suf}.png"
+
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    print(f"Saved NSAF visualization to {save_path}")
+
+    # Show the plot for interactive backends
+    # plt.show()
+    plt.close()

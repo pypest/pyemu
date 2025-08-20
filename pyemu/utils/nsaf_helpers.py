@@ -5,7 +5,6 @@ Refactored to use modelgrid consistently and reduce redundancy
 import numpy as np
 import pandas as pd
 import os
-from pyemu import plot_utils as pu
 
 # Import from refactored nsaf_utils
 from nsaf_utils import (
@@ -18,7 +17,8 @@ from nsaf_utils import (
 def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                                zone_file=None, iids_file=None, field_name=['field'],
                                layer_mode=True, save_dir=None, tensor_interp='krig',
-                               vartransform='log', n_realizations=1, ml=None, sr=None):
+                               transform='log', n_realizations=1, ml=None, sr=None,
+                               boundary_enhance=False, boundary_smooth=False):
     """
     Generate spatially correlated fields using tensor-based geostatistics.
     REFACTORED to use modelgrid consistently and call generate_single_layer.
@@ -43,7 +43,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
         Directory path to save output files (default: tmp_model_ws)
     tensor_interp : str, default 'krig'
         Tensor interpolation method
-    vartransform : str, default 'log'
+    transform : str, default 'log'
         Transformation: 'log' or 'none'
     n_realizations : int, default 1
         Number of stochastic realizations
@@ -110,7 +110,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
         conceptual_points['transverse'] = conceptual_points['major'] / conceptual_points['anisotropy']
 
     # Load zones
-    zones = None
+    zones = modelgrid.idomain
     if zone_file:
         if isinstance(zone_file, str):
             zones = np.loadtxt(os.path.join(tmp_model_ws, zone_file)).astype(np.int64)
@@ -219,79 +219,59 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                 # Get zones for this layer if available
                 layer_zones = None
                 if zones is not None:
-                    if isinstance(zones, list):
+                    if isinstance(zones, list) or (isinstance(zones, np.ndarray) & (len(zones.shape)==3)):
                         if target_layer - 1 < len(zones):
                             layer_zones = zones[target_layer - 1]
                     else:
                         layer_zones = zones
 
                 # Use generate_single_layer which internally calls apply_nsaf_hyperpars
-                field, result = generate_single_layer(
+                field, results = generate_single_layer(
                     conceptual_points=layer_cp,
                     modelgrid=modelgrid,
                     iids=layer_iids,
                     zones=layer_zones,
                     layer=target_layer,
                     tensor_interp=tensor_interp,
-                    vartransform=vartransform,
-                    boundary_smooth=True,
-                    boundary_enhance=True,
+                    transform=transform,
+                    boundary_smooth=boundary_smooth,
+                    boundary_enhance=boundary_enhance,
                     mean_col=mean_col,
                     sd_col=sd_col,
                     n_realizations=n_realizations
                 )
 
-                # todo: better file name handling
-                if save_dir is not None:
-                    outfile = os.path.join(save_dir, f"{fn}_layer{target_layer}.arr")
-                    np.savetxt(outfile, field, fmt="%20.8E")
-                    pu.visualize_tensors(result['tensors'], xcentergrid, ycentergrid, zones=layer_zones,
-                                         conceptual_points=layer_cp, subsample=4, scale_factor=0.1,
-                                         figsize=(14, 12), title_suf=None, save_path=save_dir)
-                    pu.plot_layer(field, layer=target_layer, field_name=fn, transform='log', save_path=save_dir)
-
                 # Store results
                 result_key = f"{fn}_layer_{target_layer}"
-                all_results[result_key] = result
+                all_results[result_key] = results
 
                 print(f"fieldresult for layer {target_layer}:")
-                print(f"  Mean field: [{result['mean'].min():.3f}, {result['mean'].max():.3f}]")
-                print(f"  SD field: [{result['sd'].min():.3f}, {result['sd'].max():.3f}]")
+                print(f"  Mean field: [{results['mean'].min():.3f}, {results['mean'].max():.3f}]")
+                print(f"  SD field: [{results['sd'].min():.3f}, {results['sd'].max():.3f}]")
+                # todo: better file name handling
+                if save_dir is not None:
+                    from pyemu import plot_utils as pu
+                    grid_info = _extract_grid_info(modelgrid)
+                    xcentergrid = grid_info['xcentergrid']
+                    ycentergrid = grid_info['ycentergrid']
+                    fname = f"layer{target_layer}.arr"
+                    np.savetxt(os.path.join(save_dir, fname), field, fmt="%20.8E")
+                    fig_path = os.path.join(save_dir, 'figure')
+                    if not os.path.exists(fig_path):
+                        os.mkdir(fig_path)
+                    pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones[target_layer-1],
+                                         conceptual_points=layer_cp, subsample=4, max_ellipse_size=0.1,
+                                         figsize=(14, 12), title_suf=mean_col,
+                                         save_path=os.path.join(fig_path, fname.replace('.arr', '_tensors.png')))
+
+                    pu.visualize_nsaf(field, layer_cp, xcentergrid, ycentergrid,
+                                      transform='log', title_suf=mean_col,
+                                      save_path=os.path.join(fig_path, fname.replace('.arr', '.png')))
 
 
         else:
-            # Single layer mode
-            target_layer = 1
-
-            # Get IIDs for this layer
-            layer_iids = iids_dict.get(1, None)
-
-            # Get zones (single layer)
-            layer_zones = zones[0] if isinstance(zones, list) else zones
-
-            # Use generate_single_layer
-            field, result = generate_single_layer(
-                cp_file=conceptual_points,
-                modelgrid=modelgrid,
-                iids=layer_iids,
-                zones=layer_zones,
-                tensor_interp=tensor_interp,
-                vartransform=vartransform,
-                boundary_smooth=True,
-                boundary_enhance=True,
-                mean_col=mean_col,
-                sd_col=sd_col,
-                n_realizations=n_realizations
-            )
-
-            # Save results if needed
-            # todo: better file name handling
-            if save_dir is not None:
-                for i, f in enumerate(field):
-                    outfile = os.path.join(save_dir, f"{fn}_layer{i+1}.arr")
-                    np.savetxt(outfile, field, fmt="%20.8E")
-
-            all_results[fn] = result
+            # todo 3d
+            pass
     print("\n=== Complete ===")
     return all_results
 
@@ -304,7 +284,7 @@ These complete the implementation with field generation and boundary functions
 
 def _generate_stochastic_field(grid_coords, mean_field, sd_field,
                                 bearing, anisotropy, corrlen,
-                                zones, n_realizations, vartransform,
+                                zones, n_realizations, transform,
                                 config_dict, ny, nx, iids=None, area=None,
                                 active=None):
     """
@@ -429,7 +409,7 @@ def _generate_stochastic_field(grid_coords, mean_field, sd_field,
             field_values = _generate_simple_field(
                 grid_coords, mean_flat, log_variance_flat,
                 aa_values, aniso_values, bearing_values,
-                vartransform, current_iids, ny, nx
+                transform, current_iids, ny, nx
             )
             field[real] = field_values.reshape(ny, nx)
 
@@ -438,7 +418,7 @@ def _generate_stochastic_field(grid_coords, mean_field, sd_field,
 
 def _generate_simple_field(grid_coords, mean_flat, variance_flat,
                            aa_values, aniso_values, bearing_values,
-                           vartransform, iids, ny, nx):
+                           transform, iids, ny, nx):
     """
     Simple fallback field generation if FIELDGEN2D_SVA fails.
     """
@@ -512,7 +492,7 @@ def _generate_simple_field(grid_coords, mean_flat, variance_flat,
     stochastic_component = correlated_field * np.sqrt(variance_flat)
 
     # Combine with mean field
-    if vartransform == 'log':
+    if transform == 'log':
         # Log domain: mean * exp(stochastic_component)
         field_values = mean_flat * np.exp(stochastic_component)
     else:
@@ -592,7 +572,7 @@ def detect_zone_boundaries(zones):
     return boundary_mask, boundary_directions
 
 
-def save_results(result, out_filename, vartransform):
+def save_results(result, out_filename, transform):
     """Save results to files in PyEMU-compatible format."""
 
     # todo: better file name handling
@@ -737,41 +717,53 @@ def example_field_generation():
     nx, ny = 100, 100
     xmax = 5000
     ymax = 5000
-    x = np.linspace(0, xmax, nx)
-    y = np.linspace(0, ymax, ny)
 
     # Correct: delr is row spacing (y-direction), delc is column spacing (x-direction)
     delr = np.full(ny, ymax / ny)  # Cell height (y-direction, row spacing)
     delc = np.full(nx, xmax / nx)  # Cell width (x-direction, column spacing)
 
-    xcentergrid, ycentergrid = np.meshgrid(x, y, indexing='xy')
-    xcentergrid = xcentergrid.T
-    ycentergrid = ycentergrid.T
-
     modelgrid = flopy.discretization.StructuredGrid(
-        delc=delc,  # Column spacing (x-direction)
-        delr=delr,  # Row spacing (y-direction)
+        delc=delc, delr=delr,
         top=np.ones((ny, nx)),
         botm=np.zeros((1, ny, nx)),
-        xoff=x[0] - delc[0] / 2,  # Use delc for x offset
-        yoff=y[0] - delr[0] / 2,  # Use delr for y offset
+        xoff=0,
+        yoff=0,
         angrot=0.0,
         idomain=np.ones((ny, nx)),
     )
 
-    # Define circle center and radius
+    grid_info = _extract_grid_info(modelgrid)
+    xcentergrid = grid_info['xcentergrid']
+    ycentergrid = grid_info['ycentergrid']
+
     center_x = 2500
     center_y = 2500
-    max_radius = 1500
+    zones = np.ones((ny, nx))
+    zones[(ycentergrid < center_y) & (xcentergrid > center_x)] = 2  # SE
+    zones[(ycentergrid < center_y) & (xcentergrid < center_x)] = 3  # SW
+    zones[(ycentergrid > center_y) & (xcentergrid < center_x)] = 4  # NE
+    # Define circle center and radius
+
+    max_radius = 2500*np.sqrt(2)
 
     # Create conceptual points on concentric circles
     cp_list = []
-    n_circles = 6
+    n_circles = 4
+
+    # Define zone-specific mean values
+    zone_mean_multipliers = {
+        1: 1.0,  # NW quadrant - baseline
+        2: 2.0,  # SE quadrant - 2x higher
+        3: 3.0,  # SW quadrant - 2x lower
+        4: 4.0  # NE quadrant - 4x higher
+    }
 
     for circle_idx in range(n_circles):
         radius_fraction = (circle_idx + 0.3) / n_circles
         cp_radius = max_radius * radius_fraction
-        n_points = 12 + circle_idx * 3
+        n_points = 6 + circle_idx * 4
+        base_mean_kh = 2 ** (circle_idx - n_circles)  # Base value from circle
+        major_length = 500 + 50 * radius_fraction
 
         for i in range(n_points):
             angle = 2 * np.pi * i / n_points
@@ -780,25 +772,34 @@ def example_field_generation():
             cp_x = center_x + cp_radius * np.cos(angle)
             cp_y = center_y + cp_radius * np.sin(angle)
 
-            # Tangential bearing in geological convention (N=0°, clockwise positive)
-            # Convert angle to geological bearing, then add 90° for tangent
+            # Determine which zone this point is in
+            if cp_y > center_y and cp_x > center_x:
+                point_zone = 1  # NW
+            elif cp_y < center_y and cp_x > center_x:
+                point_zone = 2  # SE
+            elif cp_y < center_y and cp_x < center_x:
+                point_zone = 3  # SW
+            else:  # cp_y > center_y and cp_x < center_x
+                point_zone = 4  # NE
+
+            # Apply zone-specific multiplier
+            zone_multiplier = zone_mean_multipliers[point_zone]
+            mean_kh = base_mean_kh * zone_multiplier
+
+            # Tangential bearing calculation
             geo_radial = np.degrees(np.arctan2(cp_x - center_x, cp_y - center_y))
             bearing = (geo_radial + 90) % 360
 
-            # Each circle gets unique value
-            mean_kh = 10 * (circle_idx + 1)
-            major_length = 150 + 50 * radius_fraction
-
             cp_list.append({
-                'name': f'cp_circle{circle_idx}_point{i}',
+                'name': f'cp_circle{circle_idx}_point{i}_zone{point_zone}',
                 'x': cp_x,
                 'y': cp_y,
                 'mean': mean_kh,
-                'sd': mean_kh * 0.1,
+                'sd': mean_kh * 0.2,
                 'major': major_length,
                 'anisotropy': 4.0,
                 'bearing': bearing,
-                'layer': 1
+                'zone': point_zone  # Optional: track which zone
             })
 
     cp_df = pd.DataFrame(cp_list)
@@ -806,72 +807,43 @@ def example_field_generation():
 
     # Generate field
     print("=== Testing tangential field generation ===")
-    field_2d, tensors = generate_single_layer(
+    results = generate_single_layer(
         cp_df, modelgrid,
-        zones=None,
+        zones=zones,
         tensor_interp='krig',
-        vartransform='None',
+        #transform='log',
+        boundary_smooth={'transition_cells': 5},
+        boundary_enhance={'transition_cells': 5,
+                          'peak_increase': 2}
     )
 
-    # Visualize results
-    fig, axes = plt.subplots(2, 2, figsize=(12, 12))
-
-    # Field
-    im1 = axes[0, 0].imshow(np.log10(field_2d), origin='lower', cmap='RdYlBu_r')
-    axes[0, 0].set_title('Generated Tangential Field')
-    axes[0, 0].set_aspect('equal')
-    plt.colorbar(im1, ax=axes[0, 0])
-
-    # Field with conceptual points
-    im2 = axes[0, 1].imshow(np.log10(field_2d), origin='lower', cmap='RdYlBu_r', alpha=0.8)
-
-    for idx, row in cp_df.iterrows():
-        x_idx = np.argmin(np.abs(x - row['x']))
-        y_idx = np.argmin(np.abs(y - row['y']))
-        axes[0, 1].plot(x_idx, y_idx, 'ko', markersize=3)
-
-        # Draw bearing direction
-        bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
-        dx = 4 * np.cos(bearing_rad)
-        dy = 4 * np.sin(bearing_rad)
-        axes[0, 1].arrow(x_idx, y_idx, dx, dy, head_width=1, head_length=1,
-                         fc='red', ec='red', alpha=0.8)
-
-    axes[0, 1].set_title('Field with Tangential Vectors')
-    axes[0, 1].set_aspect('equal')
-    plt.colorbar(im2, ax=axes[0, 1])
-
-    # Field statistics
-    axes[1, 0].hist(field_2d.flatten(), bins=50, alpha=0.7, color='purple')
-    axes[1, 0].set_title('Field Distribution')
-    axes[1, 0].set_xlabel('Value')
-    axes[1, 0].set_ylabel('Frequency')
-
-    # Bearing vectors only
-    for idx, row in cp_df.iterrows():
-        x_idx = np.argmin(np.abs(x - row['x']))
-        y_idx = np.argmin(np.abs(y - row['y']))
-
-        bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
-        dx = 3 * np.cos(bearing_rad)
-        dy = 3 * np.sin(bearing_rad)
-        axes[1, 1].arrow(x_idx, y_idx, dx, dy, head_width=1, head_length=1,
-                         fc='blue', ec='blue', alpha=0.6)
-
-    axes[1, 1].set_title('Tangential Bearing Vectors')
-    axes[1, 1].set_xlim(0, nx - 1)
-    axes[1, 1].set_ylim(0, ny - 1)
-    axes[1, 1].set_aspect('equal')
-
-    plt.tight_layout()
-    plt.savefig(os.path.join('..','..','examples', 'tangential_field_example.png'), dpi=150, bbox_inches='tight')
-    plt.show()
-
-    print(f"Field statistics: mean={np.mean(field_2d):.3f}, std={np.std(field_2d):.3f}")
+    print(f"Field statistics: mean={np.mean(results['fields'][0]):.3f}, std={np.std(results['fields'][0]):.3f}")
     print(f"Number of conceptual points: {len(cp_df)}")
     print("Tangential field generation complete!")
 
-    return field_2d, tensors, cp_df
+    save_dir = os.path.join('..','..','examples','tangential_nsaf')
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
+    if save_dir is not None:
+        from pyemu import plot_utils as pu
+        grid_info = _extract_grid_info(modelgrid)
+        xcentergrid = grid_info['xcentergrid']
+        ycentergrid = grid_info['ycentergrid']
+        fname = f"tangential_example.arr"
+        np.savetxt(os.path.join(save_dir, fname), results['fields'][0], fmt="%20.8E")
+        fig_path = os.path.join(save_dir, 'figure')
+        if not os.path.exists(fig_path):
+            os.mkdir(fig_path)
+        pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones,
+                             conceptual_points=cp_df, subsample=4, max_ellipse_size=0.1,
+                             figsize=(14, 12), title_suf='tangential',
+                             save_path=os.path.join(fig_path, fname.replace('.arr', '_tensors.png')))
+
+        pu.visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
+                          transform='log', title_suf='tangential',
+                          save_path=os.path.join(fig_path, fname.replace('.arr', '.png')))
+
+    return results, cp_df
 
 if __name__ == "__main__":
     example_field_generation()

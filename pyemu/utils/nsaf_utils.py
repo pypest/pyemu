@@ -344,7 +344,7 @@ def _interpolate_tensors_kriging(cp_coords, cp_tensors, cp_zones,
     except Exception as e:
         raise Exception(f"Error importing pypestutils: {e}")
 
-    n_grid = len(xcentergrid)
+    n_grid = np.prod(xcentergrid.shape)
     result_tensors = np.zeros((n_grid, 2, 2))
 
     # Convert tensors to log space
@@ -489,7 +489,7 @@ def _idw_component(cp_x, cp_y, cp_values, xcentergrid, ycentergrid, power=2):
 def _interpolate_tensors_idw(cp_coords, cp_tensors, cp_zones,
                              xcentergrid, ycentergrid, zones_flat, nx, ny):
     """IDW interpolation using log-Euclidean approach."""
-    n_grid = len(xcentergrid)
+    n_grid = np.prod(xcentergrid.shape)
     result_tensors = np.zeros((n_grid, 2, 2))
 
     # Convert to log space
@@ -539,7 +539,7 @@ def _interpolate_tensors_idw(cp_coords, cp_tensors, cp_zones,
 def _interpolate_tensors_nearest(cp_coords, cp_tensors, cp_zones,
                                  xcentergrid, ycentergrid, zones_flat, nx, ny):
     """Nearest neighbor interpolation."""
-    n_grid = len(xcentergrid)
+    n_grid = np.prod(xcentergrid.shape)
     result_tensors = np.zeros((n_grid, 2, 2))
 
     # Process each zone
@@ -590,8 +590,8 @@ NSAF Utils - Main API functions refactored to use modelgrid consistently
 
 
 def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=None,
-                         n_realizations=1, layer=0, vartransform="none",
-                         boundary_smooth=True, boundary_enhance=True,
+                         n_realizations=1, layer=0, transform="none",
+                         boundary_smooth=False, boundary_enhance=False,
                          tensor_method='krig', config_dict=None, iids=None,
                          mean_col='mean', sd_col='sd', **kwargs):
     """
@@ -614,9 +614,9 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
         Number of stochastic realizations to generate
     layer : int, default 0
         Layer number to process
-    vartransform : str, default "none"
+    transform : str, default "none"
         Transformation: "none" or "log"
-    boundary_smooth : bool, default True
+    boundary_smooth : bool, or dict default False
         Apply smoothing to mean at zone boundaries
     boundary_enhance : bool, default True
         Apply variance enhancement at zone boundaries
@@ -715,9 +715,9 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
         }
 
     # Transform for log-domain if needed
-    transform = 'log' if vartransform == 'log' else None
-    min_mean = 1e-8 if vartransform == 'log' else None
-    max_mean = 1e8 if vartransform == 'log' else None
+    transform = 'log' if transform == 'log' else None
+    min_mean = 1e-8 if transform == 'log' else None
+    max_mean = 1e8 if transform == 'log' else None
     bounds = (min_mean, max_mean)
 
     # Interpolate mean
@@ -732,14 +732,20 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
 
     # Apply boundary smoothing to mean
     if boundary_smooth and zones is not None:
+        if isinstance(boundary_smooth, dict):
+            smooth_params = {**boundary_smooth, **boundary_smooth}
+        else:  # Must be True (boolean)
+            smooth_params = boundary_smooth
+
         print("  Smoothing mean at geological boundaries...")
         interp_means_2d = create_boundary_modified_scalar(
-            interp_means_2d, zones,
-            transition_cells=3, mode='smooth'
+            interp_means_2d, zones, transform=transform,
+            transition_cells=smooth_params['transition_cells'],
+            mode='smooth'
         )
 
-    min_sd = 1e-8 if vartransform == 'log' else None
-    max_sd = 1e8 if vartransform == 'log' else None
+    min_sd = 1e-8 if transform == 'log' else None
+    max_sd = 1e8 if transform == 'log' else None
     bounds = (min_sd, max_sd)
 
     # Interpolate standard deviation
@@ -754,10 +760,16 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
 
     # Apply boundary enhancement to sd
     if boundary_enhance and zones is not None:
+        if isinstance(boundary_smooth, dict):
+            smooth_params = {**boundary_enhance, **boundary_smooth}
+        else:  # Must be True (boolean)
+            smooth_params = boundary_enhance
         print("  Enhancing variance at geological boundaries...")
         interp_sd_2d = create_boundary_modified_scalar(
-            interp_sd_2d, zones,
-            peak_increase=1.0, transition_cells=3, mode='enhance'
+            interp_sd_2d, zones, transform=transform,
+            peak_increase=smooth_params['peak_increase'],
+            transition_cells=smooth_params['transition_cells'],
+            mode='enhance'
         )
 
     print(f"Interpolated field ranges:")
@@ -781,7 +793,7 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
             anisotropy=anisotropy,
             corrlen=corrlen_major,
             n_realizations=n_realizations,
-            vartransform='n',
+            transform='n',
             config_dict=config_dict,
             active=active
         )
@@ -801,16 +813,15 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
 
     # Save to files if requested
     if out_filename is not None:
-        save_results(results, out_filename, vartransform)
+        save_results(results, out_filename, transform)
 
     print("=== Interpolation complete ===")
     return results
 
 def _generate_stochastic_fields(modelgrid, mean_field, sd_field,
                                 bearing, anisotropy, corrlen,
-                                n_realizations, vartransform,
-                                config_dict, iids=None, area=None,
-                                active=None):
+                                transform, config_dict, iids=None, area=None,
+                                n_realizations=1, active=None):
     """
     Generate stochastic fields using pypestutils FIELDGEN2D_SVA.
     FINAL FIXED version with correct reshaping logic.
@@ -904,7 +915,7 @@ def _generate_stochastic_fields(modelgrid, mean_field, sd_field,
             nreal=n_realizations,
         )
 
-        # Handle the output format from FIELDGEN2D_SVA
+        # FIELDGEN2D_SVA returns n_realizations, we use 1
         if fields.shape == (n_points, n_realizations):
             # Output is (n_points, n_realizations) - transpose to (n_realizations, n_points)
             fields = fields.T  # Now shape is (n_realizations, n_points)
@@ -940,7 +951,7 @@ def _generate_stochastic_fields(modelgrid, mean_field, sd_field,
             field_values = _generate_simple_field(
                 modelgrid, mean_flat, log_variance_flat,
                 aa_values, aniso_values, bearing_values,
-                vartransform, current_iids
+                transform, current_iids
             )
             fields[real] = field_values.reshape(ny, nx)
 
@@ -948,7 +959,7 @@ def _generate_stochastic_fields(modelgrid, mean_field, sd_field,
 
 def _generate_simple_field(modelgrid, mean_flat, variance_flat,
                            aa_values, aniso_values, bearing_values,
-                           vartransform, iids):
+                           transform, iids):
     """
     IMPROVED simple fallback field generation if FIELDGEN2D_SVA fails.
     Fixed to eliminate checkering and provide proper spatial correlation.
@@ -1029,7 +1040,7 @@ def _generate_simple_field(modelgrid, mean_flat, variance_flat,
     stochastic_component = correlated_field * np.sqrt(variance_flat)
 
     # Combine with mean field
-    if vartransform == 'log':
+    if transform == 'log':
         # Log domain: mean * exp(stochastic_component)
         field_values = mean_flat * np.exp(stochastic_component)
     else:
@@ -1085,9 +1096,9 @@ def _tensors_to_geostat_params(tensors):
     return bearing_deg, anisotropy, corrlen_major
 
 def generate_single_layer(conceptual_points, modelgrid, iids=None, zones=None,
-                          tensor_interp='idw', vartransform='log', layer=0,
-                          boundary_smooth=True, boundary_enhance=True,
-                          mean_col='mean', sd_col='sd', n_realizations=1):
+                          tensor_interp='idw', transform='log', layer=1,
+                          boundary_smooth=False, boundary_enhance=False,
+                          mean_col='mean', sd_col='sd', n_realizations=1, save_dir='.'):
     """
     Generate single layer using NSAF approach with boundary adjustments.
     REFACTORED to use modelgrid and call apply_nsaf_hyperpars internally.
@@ -1104,7 +1115,7 @@ def generate_single_layer(conceptual_points, modelgrid, iids=None, zones=None,
         Zone IDs, shape (ny, nx)
     tensor_interp : str, default 'idw'
         Tensor interpolation method
-    vartransform : str, default 'log'
+    transform : str, default 'log'
         Transformation: 'log' or 'none'
     boundary_smooth : bool, default True
         Apply smoothing to mean at zone boundaries
@@ -1133,7 +1144,7 @@ def generate_single_layer(conceptual_points, modelgrid, iids=None, zones=None,
         out_filename=None,
         n_realizations=n_realizations,
         layer=layer,
-        vartransform=vartransform,
+        transform=transform,
         boundary_smooth=boundary_smooth,
         boundary_enhance=boundary_enhance,
         tensor_method=tensor_interp,
@@ -1143,17 +1154,7 @@ def generate_single_layer(conceptual_points, modelgrid, iids=None, zones=None,
         sd_col=sd_col
     )
 
-    # Extract fields
-    if results['fields'] is not None:
-        if n_realizations == 1:
-            fields = results['fields'][0]  # Return 2D array for single realization
-        else:
-            fields = results['fields']  # Return 3D array for multiple realizations
-    else:
-        # If no stochastic fields, return mean field
-        fields = results['mean']
-
-    return fields, results
+    return results
 
 def tensor_aware_kriging(cp_coords, cp_values, modelgrid, interp_tensors,
                          variogram_model='exponential',
@@ -1173,7 +1174,7 @@ def tensor_aware_kriging(cp_coords, cp_values, modelgrid, interp_tensors,
     grid_info = _extract_grid_info(modelgrid)
     xcentergrid = grid_info['xcentergrid']
     ycentergrid = grid_info['ycentergrid']
-    n_grid = len(xcentergrid) * len(ycentergrid)
+    n_grid = np.prod(xcentergrid.shape)
 
     print(f"    Tensor-aware kriging: {len(cp_coords)} conceptual points -> {len(xcentergrid)} grid points")
     print(
@@ -1215,7 +1216,7 @@ def tensor_aware_kriging(cp_coords, cp_values, modelgrid, interp_tensors,
         zones_flat = zones.flatten().astype(int)
         cp_zones = _assign_cp_to_zones(cp_coords, xcentergrid, ycentergrid, zones_flat, nx)
     else:
-        zones_flat = np.ones(len(xcentergrid)*len(xcentergrid), dtype=int)
+        zones_flat = np.ones(n_grid, dtype=int)
         cp_zones = np.ones(len(cp_coords), dtype=int)
 
     # Handle transformation - NO automatic detection, just pass through
@@ -1378,17 +1379,16 @@ def tensor_aware_kriging(cp_coords, cp_values, modelgrid, interp_tensors,
         return interp_values_1d.reshape(shape)
 
 def create_boundary_modified_scalar(base_field, zones,
-                                    peak_increase=0.3, transition_cells=5, mode="enhance"):
+                                    peak_increase=0.3, transition_cells=5, mode="enhance",
+                                    transform=None):
     """
     Modify scalar field values near geological zone boundaries.
-    (Implementation from the provided NSAF code)
     """
     from scipy.ndimage import distance_transform_edt, gaussian_filter
 
     if mode not in ("enhance", "smooth"):
         raise ValueError("mode must be 'enhance' or 'smooth'")
 
-    # 2D case only for now
     if zones.shape != base_field.shape:
         raise ValueError(f"Zones shape {zones.shape} must match field shape {base_field.shape}")
 
@@ -1399,25 +1399,19 @@ def create_boundary_modified_scalar(base_field, zones,
     modified = base_field.copy()
 
     if mode == "enhance":
-        # Linear enhancement near boundaries
         factor = 1 - distance[transition_mask] / transition_cells
-        enhancement = peak_increase * factor
-        modified[transition_mask] += enhancement
+        modified[transition_mask] *= (1 + peak_increase * factor)
 
     elif mode == "smooth":
         # Smooth field with Gaussian filter
-        smoothed_field = gaussian_filter(base_field, sigma=transition_cells / 2)
-
-        # Blend with original based on distance to boundary
+        smoothed_field = gaussian_filter(base_field, sigma=transition_cells)
         weight = 1 - distance[transition_mask] / transition_cells
         modified[transition_mask] = (
                 weight * smoothed_field[transition_mask] +
                 (1 - weight) * base_field[transition_mask]
         )
 
-    print(
-        f"    {'Enhanced' if mode == 'enhance' else 'Smoothed'} {np.count_nonzero(transition_mask)} points near boundaries")
-
+    print(f"    {'Enhanced' if mode == 'enhance' else 'Smoothed'} {np.count_nonzero(transition_mask)} points near boundaries")
     return modified
 
 
