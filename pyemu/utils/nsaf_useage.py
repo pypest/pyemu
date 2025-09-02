@@ -25,7 +25,7 @@ if __name__ == "__main__":
     data_dir = r'..\..\examples\HBHP\hpm_mf6'
     # need to ensure proper name structure for zone files here
     zone_files = None #[f'{model_name}.geoclass_layer{i+1}.arr' for i in range(0,13)]
-    con_pts_file = 'conceptual_points.csv'
+    con_pts_file = 'Bridgpa_HU2_sva.csv'
     save_dir = os.path.join(data_dir)
 
     if not os.path.exists(save_dir):

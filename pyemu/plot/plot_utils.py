@@ -2381,26 +2381,26 @@ def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
     im1 = axes[0, 0].imshow(field, origin='upper', cmap='RdYlBu_r',
                             extent=[xcentergrid.min(), xcentergrid.max(),
                                     ycentergrid.min(), ycentergrid.max()])
-    for idx, row in cp_df.iterrows():
-        x, y = row['x'], row['y']
+    # for idx, row in cp_df.iterrows():
+        # x, y = row['x'], row['y']
+        #
+        # # Plot point
+        # axes[0, 0].plot(x, y, 'ko', markersize=5, markeredgecolor='white', markeredgewidth=1)
+        #
+        # # Draw bearing direction - scale arrow based on domain size
+        # domain_scale = max(xcentergrid.max() - xcentergrid.min(),
+        #                    ycentergrid.max() - ycentergrid.min())
+        # arrow_length = domain_scale * 0.02  # 2% of domain size
+        #
+        # bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
+        # dx = arrow_length * np.cos(bearing_rad)
+        # dy = arrow_length * np.sin(bearing_rad)
+        #
+        # axes[0, 0].arrow(x, y, dx, dy,
+        #                  head_width=domain_scale * 0.01, head_length=domain_scale * 0.01,
+        #                  fc='red', ec='red', alpha=0.8, linewidth=2)
 
-        # Plot point
-        axes[0, 0].plot(x, y, 'ko', markersize=5, markeredgecolor='white', markeredgewidth=1)
-
-        # Draw bearing direction - scale arrow based on domain size
-        domain_scale = max(xcentergrid.max() - xcentergrid.min(),
-                           ycentergrid.max() - ycentergrid.min())
-        arrow_length = domain_scale * 0.02  # 2% of domain size
-
-        bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
-        dx = arrow_length * np.cos(bearing_rad)
-        dy = arrow_length * np.sin(bearing_rad)
-
-        axes[0, 0].arrow(x, y, dx, dy,
-                         head_width=domain_scale * 0.01, head_length=domain_scale * 0.01,
-                         fc='red', ec='red', alpha=0.8, linewidth=2)
-
-    axes[0, 0].set_title('Field with Conceptual Point Vectors')
+    axes[0, 0].set_title('Field')# with Conceptual Point Vectors')
     axes[0, 0].set_xlabel('X Coordinate')
     axes[0, 0].set_ylabel('Y Coordinate')
     axes[0, 0].set_aspect('equal')

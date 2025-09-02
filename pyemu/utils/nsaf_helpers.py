@@ -226,7 +226,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                         layer_zones = zones
 
                 # Use generate_single_layer which internally calls apply_nsaf_hyperpars
-                field, results = generate_single_layer(
+                results = generate_single_layer(
                     conceptual_points=layer_cp,
                     modelgrid=modelgrid,
                     iids=layer_iids,
@@ -240,6 +240,8 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                     sd_col=sd_col,
                     n_realizations=n_realizations
                 )
+
+                field = results['fields']
 
                 # Store results
                 result_key = f"{fn}_layer_{target_layer}"
@@ -255,16 +257,16 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                     xcentergrid = grid_info['xcentergrid']
                     ycentergrid = grid_info['ycentergrid']
                     fname = f"layer{target_layer}.arr"
-                    np.savetxt(os.path.join(save_dir, fname), field, fmt="%20.8E")
+                    np.savetxt(os.path.join(save_dir, fname), results['fields'][0], fmt="%20.8E")
                     fig_path = os.path.join(save_dir, 'figure')
                     if not os.path.exists(fig_path):
                         os.mkdir(fig_path)
                     pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones[target_layer-1],
-                                         conceptual_points=layer_cp, subsample=4, max_ellipse_size=0.1,
+                                         conceptual_points=layer_cp, subsample=10, max_ellipse_size=0.1,
                                          figsize=(14, 12), title_suf=mean_col,
                                          save_path=os.path.join(fig_path, fname.replace('.arr', '_tensors.png')))
 
-                    pu.visualize_nsaf(field, layer_cp, xcentergrid, ycentergrid,
+                    pu.visualize_nsaf(results, layer_cp, xcentergrid, ycentergrid,
                                       transform='log', title_suf=mean_col,
                                       save_path=os.path.join(fig_path, fname.replace('.arr', '.png')))
 
