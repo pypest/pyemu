@@ -2382,7 +2382,7 @@ def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
         x, y = row['x'], row['y']
 
         # Plot point
-        axes[0, 0].plot(x, y, 'ko', markersize=2) #, markeredgecolor='white', markeredgewidth=0.1)
+        # axes[0, 0].plot(x, y, 'ko', markersize=2) #, markeredgecolor='white', markeredgewidth=0.1)
 
         # Draw bearing direction - scale arrow based on domain size
         domain_scale = max(xcentergrid.max() - xcentergrid.min(),
