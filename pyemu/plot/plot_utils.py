@@ -2360,18 +2360,15 @@ def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
 def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
                    transform=None, title_suf=None, save_path='nsaf_visualization.png'):
     # Apply transform if specified
+    field = np.where(results['fields'][0] == 0, np.nan, results['fields'][0])
+    sd = np.where(results['fields'][0] == 0, np.nan, results['sd'])
+    mean = np.where(results['fields'][0] == 0, np.nan, results['mean'])
     if transform == 'log':
-        field = np.where(results['fields'][0]==0,np.nan,results['fields'][0])
         field = np.log10(field)
-        sd = np.where(results['sd'] == 0, np.nan, results['sd'])
         sd = np.log10(sd)
-        mean = np.where(results['mean'] == 0, np.nan, results['mean'])
         mean = np.log10(mean)
         field_label = 'log10(Field)'
     else:
-        field = results['field'][0]
-        sd = results['sd']
-        mean = results['mean']
         field_label = 'Field'
 
     # Visualize results
@@ -2407,7 +2404,7 @@ def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
     plt.colorbar(im1, ax=axes[0, 0], label=field_label)
 
     # mean field
-    im2 = axes[0, 1].imshow(results['mean'], origin='upper', cmap='RdYlBu_r',
+    im2 = axes[0, 1].imshow(mean, origin='upper', cmap='RdYlBu_r',
                             extent=[xcentergrid.min(), xcentergrid.max(),
                                     ycentergrid.min(), ycentergrid.max()])
     axes[0, 1].set_title(f'Mean field for {field_label} {title_suf or ""}')
@@ -2416,7 +2413,7 @@ def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
     plt.colorbar(im2, ax=axes[0, 1], label=field_label)
 
     # sd field
-    im3 = axes[1, 0].imshow(results['sd'], origin='upper', cmap='RdYlBu_r', alpha=0.8,
+    im3 = axes[1, 0].imshow(sd, origin='upper', cmap='RdYlBu_r', alpha=0.8,
                             extent=[xcentergrid.min(), xcentergrid.max(),
                                     ycentergrid.min(), ycentergrid.max()])
     axes[1, 0].set_title(f'Standard Deviation field for {field_label} {title_suf or ""}')
