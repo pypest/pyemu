@@ -2378,24 +2378,24 @@ def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
     im1 = axes[0, 0].imshow(field, origin='upper', cmap='RdYlBu_r',
                             extent=[xcentergrid.min(), xcentergrid.max(),
                                     ycentergrid.min(), ycentergrid.max()])
-    # for idx, row in cp_df.iterrows():
-        # x, y = row['x'], row['y']
-        #
-        # # Plot point
-        # axes[0, 0].plot(x, y, 'ko', markersize=5, markeredgecolor='white', markeredgewidth=1)
-        #
-        # # Draw bearing direction - scale arrow based on domain size
-        # domain_scale = max(xcentergrid.max() - xcentergrid.min(),
-        #                    ycentergrid.max() - ycentergrid.min())
-        # arrow_length = domain_scale * 0.02  # 2% of domain size
-        #
-        # bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
-        # dx = arrow_length * np.cos(bearing_rad)
-        # dy = arrow_length * np.sin(bearing_rad)
-        #
-        # axes[0, 0].arrow(x, y, dx, dy,
-        #                  head_width=domain_scale * 0.01, head_length=domain_scale * 0.01,
-        #                  fc='red', ec='red', alpha=0.8, linewidth=2)
+    for idx, row in cp_df.iterrows():
+        x, y = row['x'], row['y']
+
+        # Plot point
+        axes[0, 0].plot(x, y, 'ko', markersize=2) #, markeredgecolor='white', markeredgewidth=0.1)
+
+        # Draw bearing direction - scale arrow based on domain size
+        domain_scale = max(xcentergrid.max() - xcentergrid.min(),
+                           ycentergrid.max() - ycentergrid.min())
+        arrow_length = domain_scale * 0.02  # 2% of domain size
+
+        bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
+        dx = arrow_length * np.cos(bearing_rad)
+        dy = arrow_length * np.sin(bearing_rad)
+
+        axes[0, 0].arrow(x, y, dx, dy,
+                         head_width=domain_scale * 0.005, head_length=domain_scale * 0.005,
+                         fc='black', ec='black', alpha=0.8, linewidth=0.5)
 
     axes[0, 0].set_title('Field')# with Conceptual Point Vectors')
     axes[0, 0].set_xlabel('X Coordinate')
@@ -2440,43 +2440,43 @@ def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
     axes[1, 0].legend()
 
     # Conceptual points layout - show bearing vectors in domain coordinates
-    axes[1, 1].set_xlim(xcentergrid.min(), xcentergrid.max())
-    axes[1, 1].set_ylim(ycentergrid.min(), ycentergrid.max())
-
-    for idx, row in cp_df.iterrows():
-        x, y = row['x'], row['y']
-
-        # Plot point
-        axes[1, 1].plot(x, y, 'bo', markersize=6, markeredgecolor='black', markeredgewidth=1, alpha=0.8)
-
-        # Draw bearing direction
-        domain_scale = max(xcentergrid.max() - xcentergrid.min(),
-                           ycentergrid.max() - ycentergrid.min())
-        arrow_length = domain_scale * 0.05  # 5% of domain size for visibility
-
-        bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
-        dx = arrow_length * np.cos(bearing_rad)
-        dy = arrow_length * np.sin(bearing_rad)
-
-        axes[1, 1].arrow(x, y, dx, dy,
-                         head_width=domain_scale * 0.015, head_length=domain_scale * 0.015,
-                         fc='blue', ec='blue', alpha=0.7, linewidth=2)
-
-        # Add bearing label
-        axes[1, 1].annotate(f'{row["bearing"]:.0f}°',
-                            (x, y), xytext=(5, 5), textcoords='offset points',
-                            fontsize=8, alpha=0.8)
-
-    # Fix the title string formatting
-    stats_title = (f'Conceptual Points Layout\n'
-                   f'Stats: mean={mean_val:.3f}, std={std_val:.3f}\n'
-                   f'Number of conceptual points: {len(cp_df)}')
-
-    axes[1, 1].set_title(stats_title)
-    axes[1, 1].set_xlabel('X Coordinate')
-    axes[1, 1].set_ylabel('Y Coordinate')
-    axes[1, 1].set_aspect('equal')
-    axes[1, 1].grid(True, alpha=0.3)
+    # axes[1, 1].set_xlim(xcentergrid.min(), xcentergrid.max())
+    # axes[1, 1].set_ylim(ycentergrid.min(), ycentergrid.max())
+    #
+    # for idx, row in cp_df.iterrows():
+    #     x, y = row['x'], row['y']
+    #
+    #     # Plot point
+    #     axes[1, 1].plot(x, y, 'bo', markersize=6, markeredgecolor='black', markeredgewidth=1, alpha=0.8)
+    #
+    #     # Draw bearing direction
+    #     domain_scale = max(xcentergrid.max() - xcentergrid.min(),
+    #                        ycentergrid.max() - ycentergrid.min())
+    #     arrow_length = domain_scale * 0.05  # 5% of domain size for visibility
+    #
+    #     bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
+    #     dx = arrow_length * np.cos(bearing_rad)
+    #     dy = arrow_length * np.sin(bearing_rad)
+    #
+    #     axes[1, 1].arrow(x, y, dx, dy,
+    #                      head_width=domain_scale * 0.01, head_length=domain_scale * 0.01,
+    #                      fc='blue', ec='blue', alpha=0.7, linewidth=0.7)
+    #
+    #     # Add bearing label
+    #     axes[1, 1].annotate(f'{row["bearing"]:.0f}°',
+    #                         (x, y), xytext=(5, 5), textcoords='offset points',
+    #                         fontsize=8, alpha=0.8)
+    #
+    # # Fix the title string formatting
+    # stats_title = (f'Conceptual Points Layout\n'
+    #                f'Stats: mean={mean_val:.3f}, std={std_val:.3f}\n'
+    #                f'Number of conceptual points: {len(cp_df)}')
+    #
+    # axes[1, 1].set_title(stats_title)
+    # axes[1, 1].set_xlabel('X Coordinate')
+    # axes[1, 1].set_ylabel('Y Coordinate')
+    # axes[1, 1].set_aspect('equal')
+    # axes[1, 1].grid(True, alpha=0.3)
 
     plt.tight_layout()
 

@@ -261,10 +261,10 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                     fig_path = os.path.join(save_dir, 'figure')
                     if not os.path.exists(fig_path):
                         os.mkdir(fig_path)
-                    pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones[target_layer-1],
-                                         conceptual_points=layer_cp, subsample=10, max_ellipse_size=0.1,
-                                         figsize=(14, 12), title_suf=mean_col,
-                                         save_path=os.path.join(fig_path, fname.replace('.arr', '_tensors.png')))
+                    # pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones[target_layer-1],
+                    #                      conceptual_points=layer_cp, subsample=20, max_ellipse_size=0.1,
+                    #                      figsize=(14, 12), title_suf=mean_col,
+                    #                      save_path=os.path.join(fig_path, fname.replace('.arr', '_tensors.png')))
 
                     pu.visualize_nsaf(results, layer_cp, xcentergrid, ycentergrid,
                                       transform='log', title_suf=mean_col,
