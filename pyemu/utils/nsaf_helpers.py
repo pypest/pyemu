@@ -253,6 +253,9 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                 print(f"  SD field: [{results['sd'].min():.3f}, {results['sd'].max():.3f}]")
                 # todo: better file name handling
                 if save_dir is not None:
+                    fig_path = os.path.join(save_dir, 'figure')
+                    if not os.path.exists(fig_path):
+                        os.mkdir(fig_path)
                     from pyemu import plot_utils as pu
                     xul = modelgrid.xoffset
                     yul = modelgrid.yoffset # + np.sum(modelgrid.delr)
@@ -266,12 +269,10 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                     fname = f"layer{target_layer}.arr"
                     np.savetxt(os.path.join(save_dir, fname), results['fields'][0], fmt="%20.8E")
                     arr_to_rast(results['fields'][0],
-                                os.path.join(save_dir, fname.replace('.arr','.tif')),
+                                os.path.join(fig_path, fname.replace('.arr','.tif')),
                                 xul, yul,
                                 np.mean(modelgrid.delc), np.mean(modelgrid.delr), epsg)
-                    fig_path = os.path.join(save_dir, 'figure')
-                    if not os.path.exists(fig_path):
-                        os.mkdir(fig_path)
+
                     # pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones[target_layer-1],
                     #                      conceptual_points=layer_cp, subsample=20, max_ellipse_size=0.1,
                     #                      figsize=(14, 12), title_suf=mean_col,
