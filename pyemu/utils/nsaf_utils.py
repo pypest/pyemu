@@ -1469,3 +1469,49 @@ def save_results(results, out_filename):
             np.savetxt(field_file, field, fmt="%20.8E")
 
         print(f"  Saved {len(results['fields'])} realizations")
+
+
+import numpy as np
+from osgeo import gdal, osr
+
+
+def arr_to_rast(arr, outrast, x_min, y_min, dx, dy, epsg):
+    '''
+    Create a georeferenced raster from a NumPy array.
+
+    Parameters:
+    - arr: 2D or 3D numpy array (if 3D: (bands, rows, cols))
+    - outrast: output raster filepath
+    - x_min, y_min: LOWER-LEFT corner coordinates  # Changed from y_max
+    - dx, dy: cell size (both positive for standard coordinate system)
+    - epsg: EPSG code for coordinate reference system
+    '''
+    # Calculate top-left corner from lower-left
+    rows = arr.shape[-2] if arr.ndim == 3 else arr.shape[0]
+    y_max = y_min + (rows * dy)  # Top edge = bottom + (rows * cell_height)
+
+    # Build affine transform (dy becomes negative for north-up raster)
+    geotransform = (x_min, dx, 0, y_max, 0, -dy)  # Note: -dy here
+
+    # Rest of function stays the same...
+    driver = gdal.GetDriverByName("GTiff")
+    if arr.ndim == 2:
+        bands, rows, cols = 1, *arr.shape
+        arr = np.expand_dims(arr, 0)
+    else:
+        bands, rows, cols = arr.shape
+
+    ds = driver.Create(outrast, cols, rows, bands, gdal.GDT_Float32)
+    ds.SetGeoTransform(geotransform)
+
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(epsg)
+    ds.SetProjection(srs.ExportToWkt())
+
+    for i in range(bands):
+        band = ds.GetRasterBand(i + 1)
+        band.SetNoDataValue(np.nan)
+        band.WriteArray(arr[i])
+
+    ds.FlushCache()
+    ds = None

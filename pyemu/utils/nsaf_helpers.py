@@ -10,7 +10,8 @@ import os
 from nsaf_utils import (
     generate_single_layer,
     detect_zone_boundaries,
-    _extract_grid_info
+    _extract_grid_info,
+    arr_to_rast
 )
 
 
@@ -253,11 +254,21 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                 # todo: better file name handling
                 if save_dir is not None:
                     from pyemu import plot_utils as pu
+                    xul = modelgrid.xoffset
+                    yul = modelgrid.yoffset # + np.sum(modelgrid.delr)
+                    if modelgrid.epsg is None:
+                        epsg = 2193
+                    else:
+                        epsg = modelgrid.epsg
                     grid_info = _extract_grid_info(modelgrid)
                     xcentergrid = grid_info['xcentergrid']
                     ycentergrid = grid_info['ycentergrid']
                     fname = f"layer{target_layer}.arr"
                     np.savetxt(os.path.join(save_dir, fname), results['fields'][0], fmt="%20.8E")
+                    arr_to_rast(results['fields'][0],
+                                os.path.join(save_dir, fname.replace('.arr','.tif')),
+                                xul, yul,
+                                np.mean(modelgrid.delc), np.mean(modelgrid.delr), epsg)
                     fig_path = os.path.join(save_dir, 'figure')
                     if not os.path.exists(fig_path):
                         os.mkdir(fig_path)
@@ -574,7 +585,7 @@ def detect_zone_boundaries(zones):
     return boundary_mask, boundary_directions
 
 
-def save_results(result, out_filename, transform):
+def save_results(result, out_filename):
     """Save results to files in PyEMU-compatible format."""
 
     # todo: better file name handling
