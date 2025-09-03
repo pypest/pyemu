@@ -82,6 +82,20 @@ def fac2real_test(tmp_path):
     # plt.colorbar(p)
     # plt.show()
 
+def fac2real_wrapped_test(tmp_path):
+    import os
+    import numpy as np
+    # pp_file = os.path.join("utils","points1.dat")
+    # factors_file = os.path.join("utils","factors1.dat")
+    # pyemu.utils.gw_utils.fac2real(pp_file,factors_file,
+    #                               out_file=os.path.join("utils","test.ref"))
+
+    pp_file = os.path.join("misc", "pp.pts")
+    factors_file = os.path.join("misc", "pp.fac")
+    pyemu.geostats.fac2real(pp_file, factors_file,
+                            out_file=os.path.join(tmp_path, "test.ref"))
+
+
 
 def vario_test():
     import numpy as np
@@ -3255,9 +3269,10 @@ def gpr_zdt1_ppw():
 
 
 if __name__ == "__main__":
-    maha_pdc_test('.')
+    fac2real_wrapped_test('.')
+    #maha_pdc_test('.')
     #ppu_geostats_test(".")
-    pypestworker_test()
+    #pypestworker_test()
     #gpr_zdt1_test()
     #gpr_compare_invest()
     #gpr_constr_test()
