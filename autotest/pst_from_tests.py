@@ -6417,8 +6417,158 @@ def xsec_pars_as_obs_test(tmp_path):
     assert np.isclose(pst.phi, 0), pst.phi
 
 
+def draw_consistency_test(tmp_path):
+    import flopy
+    org_d = os.path.join("tests",'synthdewater')
+    tmp_d = os.path.join(os.path.join(tmp_path,'tmp'))
+
+    if os.path.exists(tmp_d):
+        shutil.rmtree(tmp_d)
+    shutil.copytree(org_d,tmp_d)
+
+    # load simulation
+    sim = flopy.mf6.MFSimulation.load(sim_ws=tmp_d)
+    # load flow model
+    gwf = sim.get_model()
+
+
+    sr = pyemu.helpers.SpatialReference.from_namfile(
+            os.path.join(tmp_d, "model.nam"),
+            delr=gwf.dis.delr.get_data(), delc=gwf.dis.delc.get_data())
+    sr
+    template_ws = os.path.join(tmp_path,"pst_template")
+    start_datetime = sim.tdis.start_date_time.get_data()
+    # instantiate PstFrom
+    pf = pyemu.utils.PstFrom(original_d=tmp_d, # where the model is stored
+                                new_d=template_ws, # the PEST template folder
+                                remove_existing=True, # ensures a clean start
+                                longnames=True, # set False if using PEST/PEST_HP
+                                spatial_reference=sr, #the spatial reference we generated earlier
+                                zero_based=False, # does the MODEL use zero based indices? For example, MODFLOW does NOT
+                                start_datetime=start_datetime, # required when specifying temporal correlation between parameters
+                                echo=False) # to stop PstFrom from writing lots of information to the notebook; experiment by setting it as True to see the difference; useful for troubleshooting
+
+
+    v_pp = pyemu.geostats.ExpVario(contribution=1.0, #sill
+                                        a=1000, # range of correlation; length units of the model. In our case 'meters'
+                                        anisotropy=3.0, #name says it all
+                                        bearing=90.0 #angle in degrees East of North corresponding to anisotropy ellipse
+                                        )
+
+    pp_gs = pyemu.geostats.GeoStruct(variograms=v_pp, transform='log') 
+    v = pyemu.utils.geostats.ExpVario(a=3000,contribution=1.0)
+
+    tag = "npf_k"
+    files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
+
+
+    ib = gwf.dis.idomain.get_data()[0]
+
+
+    f = 'model.npf_k.txt'
+
+    # df_cst = pf.add_parameters(f,
+    #                     zone_array=ib,
+    #                     par_type="constant",
+    #                     par_name_base=f.split('.')[1].replace("_","")+"cn",
+    #                     pargp=f.split('.')[1].replace("_","")+"cn",
+    #                     lower_bound=0.5,upper_bound=2.0,
+    #                     ult_ubound=100, ult_lbound=0.01)
+
+    # df_cst = pf.add_parameters(f,
+    #                     par_type="grid",
+    #                     par_name_base=f.split('.')[1].replace("_","")+"gr",
+    #                     pargp=f.split('.')[1].replace("_","")+"gr",
+    #                     lower_bound=0.5,upper_bound=2.0,
+    #                     ult_ubound=100, ult_lbound=0.01)
+
+    df_pp = pf.add_parameters(f,
+                        zone_array=ib,
+                        par_type="pilotpoints",
+                        geostruct=pp_gs,
+                        par_name_base=f.split('.')[1].replace("_","")+"pp",
+                        pargp=f.split('.')[1].replace("_","")+"pp",
+                        lower_bound=0.1,upper_bound=10.0,
+                        ult_ubound=100, ult_lbound=0.01,
+                        pp_options={"prep_hyperpars":True,"pp_space":10}
+                        ) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
+    #
+    #
+    # tag="npfkpp"
+    #
+    # hyperpar_files = [f for f in os.listdir(pf.new_d) if tag in f]
+    #
+    # bearing_v = pyemu.geostats.ExpVario(contribution=1,a=1000,anisotropy=3,bearing=90.0)
+    # bearing_gs = pyemu.geostats.GeoStruct(variograms=bearing_v)
+    #
+    # afile = tag+'.aniso.dat'
+    # atag = afile.split('.')[0].replace("_","-")+"-aniso"
+    # pf.add_parameters(afile,par_type="constant",par_name_base=atag,
+    #                   pargp=atag,lower_bound=-2.0,upper_bound=2.0,
+    #                   apply_order=1,
+    #                   par_style="a",transform="none",initial_value=0.0)
+    # pf.add_observations(afile, prefix=atag, obsgp=atag)
+    #
+    #
+    # bfile = tag+'.bearing.dat'
+    # btag = bfile.split('.')[0].replace("_","-")+"-bearing"
+    # pf.add_parameters(bfile, par_type="pilotpoints", par_name_base=btag,
+    #                   pargp=btag, lower_bound=-65,upper_bound=65,
+    #                   par_style="a",transform="none",
+    #                   pp_options={"pp_space":15,"try_use_ppu":True},
+    #                   apply_order=1,geostruct=bearing_gs)
+    # pf.add_observations(bfile, prefix=btag, obsgp=btag)
+    #
+
+
+    # def add_mult_pars(f, lb=0.2, ub=5.0, ulb=0.01, uub=100, add_coarse=True):
+    #     if isinstance(f,str):
+    #         base = f.split(".")[1].replace("_","")
+    #     else:
+    #         base = f[0].split(".")[1]
+
+    #     # pilot point (medium) scale parameters
+    #     pf.add_parameters(f,
+    #                         zone_array=ib,
+    #                         par_type="pilotpoints",
+    #                         geostruct=pp_gs,
+    #                         par_name_base=base+"pp",
+    #                         pargp=base+"pp",
+    #                         lower_bound=lb, upper_bound=ub,
+    #                         ult_ubound=uub, ult_lbound=ulb,
+    #                         pp_options={"pp_space":10}) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
+    #     if add_coarse==True:
+    #         # constant (coarse) scale parameters
+    #         pf.add_parameters(f,
+    #                             zone_array=ib,
+    #                             par_type="constant",
+    #                             par_name_base=base+"cn",
+    #                             pargp=base+"cn",
+    #                             lower_bound=lb, upper_bound=ub,
+    #                             ult_ubound=uub, ult_lbound=ulb)
+    #     return
+
+
+    pst = pf.build_pst()
+
+    # par = pf.pst.parameter_data
+    # wpar = par.loc[(par.parnme.str.contains("mar")) | (par.parnme.str.contains("dewater")),:]
+    # assert wpar.shape[0] > 0
+    # print(wpar.shape)
+    # par.loc[wpar.parnme,"partrans"] = "fixed"
+    # pst = pf.pst
+    # wpar
+    # pf.pst.npar,pf.pst.npar_adj
+
+    np.random.seed(111)
+    pe = pf.draw(num_reals=1000, use_specsim=False) # draw parameters from the prior distribution
+    #pe.enforce() # enforces parameter bounds
+    #pe.to_binary(os.path.join(template_ws,"prior_pe.jcb")) #writes the parameter ensemble to binary 
+    pe.to_csv(os.path.join(template_ws,"temp.csv"))
+
 if __name__ == "__main__":
-    xsec_pars_as_obs_test(".")
+    draw_consistency_test('.')
+    #xsec_pars_as_obs_test(".")
     #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")
