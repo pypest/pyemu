@@ -6535,6 +6535,7 @@ def draw_consistency_test(tmp_path):
     par.loc[gpar.parnme,"partrans"] = "fixed"
     np.random.seed(111)
     pe = pf.draw(num_reals=10, use_specsim=False) # draw parameters from the prior distribution
+    print(pe.values.max())
     #pe.to_csv(os.path.join(template_ws,"temp.csv"))
     print(pe.index)
     print(bc.index)
