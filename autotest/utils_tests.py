@@ -924,6 +924,7 @@ def geostat_draws_test(tmp_path):
     np.random.seed(pyemu.en.SEED)
     pe2 = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
                                           sigma_range=4)
+    pe.to_csv(os.path.join(os.path.join("utils","geostat_pe.csv")))
 
     diff = pe - pe2
     print(diff.max())
@@ -3269,7 +3270,8 @@ def gpr_zdt1_ppw():
 
 
 if __name__ == "__main__":
-    fac2real_wrapped_test('.')
+    geostat_draws_test('.')
+    #fac2real_wrapped_test('.')
     #maha_pdc_test('.')
     #ppu_geostats_test(".")
     #pypestworker_test()
