@@ -455,7 +455,7 @@ class Ensemble(object):
 
     @staticmethod
     def _gaussian_draw(
-        cov, mean_values, num_reals, grouper=None, fill=True, factor="eigen"
+        cov, mean_values, num_reals, grouper=None, fill=True, factor="svd"
     ):
 
         factor = factor.lower()
@@ -564,10 +564,13 @@ class Ensemble(object):
         u = u[:, :maxsing]
         s = s[:maxsing]
         v = v[:, :maxsing]
+        if s.shape[0] < x.shape[0]:
+            print("SVD projection matrix truncated from {0} to {1}".\
+                format(x.shape[0],s.shape[0]))
 
         # fill in full size svd component matrices
         s_full = np.zeros(x.shape)
-        s_full[: s.shape[0], : s.shape[1]] = np.sqrt(
+        s_full[: s.shape[0], :s.shape[0]] = np.sqrt(
             s
         )  # sqrt since sing vals are eigvals**2
         v_full = np.zeros_like(s_full)
