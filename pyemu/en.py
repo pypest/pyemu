@@ -455,7 +455,7 @@ class Ensemble(object):
 
     @staticmethod
     def _gaussian_draw(
-        cov, mean_values, num_reals, grouper=None, fill=True, factor="svd"
+        cov, mean_values, num_reals, grouper=None, fill=True, factor="eigen"
     ):
 
         factor = factor.lower()
