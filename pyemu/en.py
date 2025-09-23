@@ -455,11 +455,11 @@ class Ensemble(object):
 
     @staticmethod
     def _gaussian_draw(
-        cov, mean_values, num_reals, grouper=None, fill=True, factor="svd"
+        cov, mean_values, num_reals, grouper=None, fill=True, factor="cholesky"
     ):
 
         factor = factor.lower()
-        if factor not in ["eigen", "svd"]:
+        if factor not in ["eigen", "svd", "cholesky"]:
             raise Exception(
                 "Ensemble._gaussian_draw() error: unrecognized"
                 + "'factor': {0}".format(factor)
@@ -541,6 +541,8 @@ class Ensemble(object):
                 snv = np.random.randn(num_reals, cov.shape[0])
                 if factor == "eigen":
                     a, i = Ensemble._get_eigen_projection_matrix(cov.as_2d)
+                elif factor == "cholesky":
+                    a,i = Ensemble._get_cholesky_projection_matrix(cov.as_2d)
                 elif factor == "svd":
                     a, i = Ensemble._get_svd_projection_matrix(cov.as_2d)
                     snv[:, i:] = 0.0
@@ -548,16 +550,27 @@ class Ensemble(object):
                 idxs = [mv_map[name] for name in cov.row_names]
                 for i in range(num_reals):
                     reals[i, idxs] = cov_mean_values + np.dot(a, snv[i, :])
+                    #print(np.dot(a, snv[i, :]).max())
         df = pd.DataFrame(reals, columns=mean_values.index.values)
         df.dropna(inplace=True, axis=1)
         return df
+
+    @staticmethod
+    def _get_cholesky_projection_matrix(x):
+        if x.shape[0] != x.shape[1]:
+            raise Exception("matrix not square")
+        return np.linalg.cholesky(x),x.shape[0]
 
     @staticmethod
     def _get_svd_projection_matrix(x, maxsing=None, eigthresh=1.0e-7):
         if x.shape[0] != x.shape[1]:
             raise Exception("matrix not square")
         u, s, vt = np.linalg.svd(x, full_matrices=True)
-        
+        print(x)
+        import matplotlib.pyplot as plt
+        plt.imshow(x)
+        plt.show()
+        print(s)
         if maxsing is None:
             maxsing = pyemu.Matrix.get_maxsing_from_s(s, eigthresh=eigthresh)
         if maxsing < x.shape[0]:  
@@ -571,6 +584,7 @@ class Ensemble(object):
         # sqrt bc we need the sqrt matrix of s
         s_full[: s.shape[0], : s.shape[0]] = np.sqrt(s)  
         proj = np.dot(u, s_full)
+        print(proj)
         return proj, maxsing
 
     @staticmethod
