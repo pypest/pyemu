@@ -6474,13 +6474,13 @@ def draw_consistency_test(tmp_path):
 
     f = 'model.npf_k.txt'
 
-    # df_cst = pf.add_parameters(f,
-    #                     zone_array=ib,
-    #                     par_type="constant",
-    #                     par_name_base=f.split('.')[1].replace("_","")+"cn",
-    #                     pargp=f.split('.')[1].replace("_","")+"cn",
-    #                     lower_bound=0.5,upper_bound=2.0,
-    #                     ult_ubound=100, ult_lbound=0.01)
+    df_cst = pf.add_parameters(f,
+                        zone_array=ib,
+                        par_type="constant",
+                        par_name_base=f.split('.')[1].replace("_","")+"cn",
+                        pargp=f.split('.')[1].replace("_","")+"cn",
+                        lower_bound=0.5,upper_bound=2.0,
+                        ult_ubound=100, ult_lbound=0.01)
     
     # df_cst = pf.add_parameters(f,
     #                     par_type="grid",
