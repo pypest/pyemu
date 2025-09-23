@@ -6500,16 +6500,16 @@ def draw_consistency_test(tmp_path):
                         pp_options={"pp_space":50}
                         ) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
     
-    # df_pp = pf.add_parameters(f,
-    #                     zone_array=ib,
-    #                     par_type="pilotpoints",
-    #                     geostruct=pp_gs,
-    #                     par_name_base=f.split('.')[1].replace("_","")+"pp2",
-    #                     pargp=f.split('.')[1].replace("_","")+"pp2",
-    #                     lower_bound=0.1,upper_bound=10.0,
-    #                     ult_ubound=100, ult_lbound=0.01,
-    #                     pp_options={"pp_space":20}
-    #                     ) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
+    df_pp = pf.add_parameters(f,
+                        zone_array=ib,
+                        par_type="pilotpoints",
+                        geostruct=pp_gs,
+                        par_name_base=f.split('.')[1].replace("_","")+"pp2",
+                        pargp=f.split('.')[1].replace("_","")+"pp2",
+                        lower_bound=0.1,upper_bound=10.0,
+                        ult_ubound=100, ult_lbound=0.01,
+                        pp_options={"pp_space":20}
+                        ) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
     
 
     pst = pf.build_pst()
