@@ -6482,12 +6482,19 @@ def draw_consistency_test(tmp_path):
                         lower_bound=0.5,upper_bound=2.0,
                         ult_ubound=100, ult_lbound=0.01)
     
-    # df_cst = pf.add_parameters(f,
-    #                     par_type="grid",
-    #                     par_name_base=f.split('.')[1].replace("_","")+"gr",
-    #                     pargp=f.split('.')[1].replace("_","")+"gr",
-    #                     lower_bound=0.5,upper_bound=2.0,
-    #                     ult_ubound=100, ult_lbound=0.01)
+    df_cst = pf.add_parameters(f,
+                        par_type="grid",
+                        par_name_base=f.split('.')[1].replace("_","")+"gr",
+                        pargp=f.split('.')[1].replace("_","")+"gr",
+                        lower_bound=0.5,upper_bound=2.0,
+                        ult_ubound=100, ult_lbound=0.01)
+
+    df_cst = pf.add_parameters(f,
+                        par_type="grid",
+                        par_name_base=f.split('.')[1].replace("_","")+"fix",
+                        pargp=f.split('.')[1].replace("_","")+"fix",
+                        lower_bound=0.5,upper_bound=2.0,
+                        ult_ubound=100, ult_lbound=0.01)
 
     df_pp = pf.add_parameters(f,
                         zone_array=ib,
@@ -6515,11 +6522,11 @@ def draw_consistency_test(tmp_path):
     pst = pf.build_pst()
 
     par = pf.pst.parameter_data
-    #gpar = par.loc[par.parnme.str.contains("gr"),:]
-    #assert gpar.shape[0] == gwf.dis.nrow.data * gwf.dis.ncol.data
-    #par.loc[gpar.parnme,"partrans"] = "fixed"
+    gpar = par.loc[par.parnme.str.contains("fix"),:]
+    assert gpar.shape[0] == gwf.dis.nrow.data * gwf.dis.ncol.data
+    par.loc[gpar.parnme,"partrans"] = "fixed"
     np.random.seed(111)
-    pe = pf.draw(num_reals=10, use_specsim=False) # draw parameters from the prior distribution
+    pe = pf.draw(num_reals=10, use_specsim=True) # draw parameters from the prior distribution
     print("abs max:",np.nanmax(np.abs(pe.values)))
     # no bs values...
     assert np.nanmax(np.abs(pe.values)) < 100000
@@ -6527,14 +6534,18 @@ def draw_consistency_test(tmp_path):
     
     pe.to_dense(os.path.join(template_ws,"basecase_pe.bin"))
     diff = np.abs(pe - bc)
+
     print("pe",diff.values.max())
-    #assert diff.values.max() < 1e-6
+    assert np.all(~np.isnan(diff))
+    assert diff.values.max() < 1e-6
     pe.enforce() # enforces parameter bounds
     pe.to_dense(os.path.join(template_ws,"basecase_pe_enforce.bin"))
     diff = np.abs(pe - bce)
     print("pe enforced",diff.values.max())
-    #assert diff.values.max() < 1e-6
-
+    assert np.all(~np.isnan(diff))
+    assert diff.values.max() < 1e-6
+    
+    
 if __name__ == "__main__":
     draw_consistency_test('.')
     #xsec_pars_as_obs_test(".")
