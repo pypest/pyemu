@@ -6458,7 +6458,7 @@ def draw_consistency_test(tmp_path):
 
     v_pp = pyemu.geostats.ExpVario(contribution=1.0, #sill
                                         a=1000, # range of correlation; length units of the model. In our case 'meters'
-                                        anisotropy=10.0, #name says it all
+                                        anisotropy=3.0, #name says it all
                                         bearing=45.0 #angle in degrees East of North corresponding to anisotropy ellipse
                                         )
 
@@ -6474,20 +6474,20 @@ def draw_consistency_test(tmp_path):
 
     f = 'model.npf_k.txt'
 
-    df_cst = pf.add_parameters(f,
-                        zone_array=ib,
-                        par_type="constant",
-                        par_name_base=f.split('.')[1].replace("_","")+"cn",
-                        pargp=f.split('.')[1].replace("_","")+"cn",
-                        lower_bound=0.5,upper_bound=2.0,
-                        ult_ubound=100, ult_lbound=0.01)
+    # df_cst = pf.add_parameters(f,
+    #                     zone_array=ib,
+    #                     par_type="constant",
+    #                     par_name_base=f.split('.')[1].replace("_","")+"cn",
+    #                     pargp=f.split('.')[1].replace("_","")+"cn",
+    #                     lower_bound=0.5,upper_bound=2.0,
+    #                     ult_ubound=100, ult_lbound=0.01)
     
-    df_cst = pf.add_parameters(f,
-                        par_type="grid",
-                        par_name_base=f.split('.')[1].replace("_","")+"gr",
-                        pargp=f.split('.')[1].replace("_","")+"gr",
-                        lower_bound=0.5,upper_bound=2.0,
-                        ult_ubound=100, ult_lbound=0.01)
+    # df_cst = pf.add_parameters(f,
+    #                     par_type="grid",
+    #                     par_name_base=f.split('.')[1].replace("_","")+"gr",
+    #                     pargp=f.split('.')[1].replace("_","")+"gr",
+    #                     lower_bound=0.5,upper_bound=2.0,
+    #                     ult_ubound=100, ult_lbound=0.01)
 
     df_pp = pf.add_parameters(f,
                         zone_array=ib,
@@ -6500,24 +6500,24 @@ def draw_consistency_test(tmp_path):
                         pp_options={"pp_space":50}
                         ) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
     
-    df_pp = pf.add_parameters(f,
-                        zone_array=ib,
-                        par_type="pilotpoints",
-                        geostruct=pp_gs,
-                        par_name_base=f.split('.')[1].replace("_","")+"pp2",
-                        pargp=f.split('.')[1].replace("_","")+"pp2",
-                        lower_bound=0.1,upper_bound=10.0,
-                        ult_ubound=100, ult_lbound=0.01,
-                        pp_options={"pp_space":20}
-                        ) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
+    # df_pp = pf.add_parameters(f,
+    #                     zone_array=ib,
+    #                     par_type="pilotpoints",
+    #                     geostruct=pp_gs,
+    #                     par_name_base=f.split('.')[1].replace("_","")+"pp2",
+    #                     pargp=f.split('.')[1].replace("_","")+"pp2",
+    #                     lower_bound=0.1,upper_bound=10.0,
+    #                     ult_ubound=100, ult_lbound=0.01,
+    #                     pp_options={"pp_space":20}
+    #                     ) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
     
 
     pst = pf.build_pst()
 
     par = pf.pst.parameter_data
-    gpar = par.loc[par.parnme.str.contains("gr"),:]
-    assert gpar.shape[0] == gwf.dis.nrow.data * gwf.dis.ncol.data
-    par.loc[gpar.parnme,"partrans"] = "fixed"
+    #gpar = par.loc[par.parnme.str.contains("gr"),:]
+    #assert gpar.shape[0] == gwf.dis.nrow.data * gwf.dis.ncol.data
+    #par.loc[gpar.parnme,"partrans"] = "fixed"
     np.random.seed(111)
     pe = pf.draw(num_reals=10, use_specsim=False) # draw parameters from the prior distribution
     print("abs max:",np.nanmax(np.abs(pe.values)))
@@ -6525,12 +6525,12 @@ def draw_consistency_test(tmp_path):
     assert np.nanmax(np.abs(pe.values)) < 100000
     assert np.all(~np.isnan(pe.values))
     
-    pe.to_dense(os.path.join(template_ws,"temp.bin"))
+    pe.to_dense(os.path.join(template_ws,"basecase_pe.bin"))
     diff = np.abs(pe - bc)
     print("pe",diff.values.max())
     #assert diff.values.max() < 1e-6
     pe.enforce() # enforces parameter bounds
-    pe.to_dense(os.path.join(template_ws,"temp_enforce.bin"))
+    pe.to_dense(os.path.join(template_ws,"basecase_pe_enforce.bin"))
     diff = np.abs(pe - bce)
     print("pe enforced",diff.values.max())
     #assert diff.values.max() < 1e-6

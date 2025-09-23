@@ -563,9 +563,12 @@ class SpecSim2d(object):
             mx_ubnd = gp_par.parubnd_trans.max()
             mn_lbnd = gp_par.parlbnd_trans.min()
             var = ((mx_ubnd - mn_lbnd) / sigma_range) ** 2
-
+            print("...speccim group:",gr_grp," mx upper:", mx_ubnd, "min lower:",mn_lbnd)
+            
+            print("...speccim group:",gr_grp," variance:", var, "new var:",new_var)
             # update the geostruct
             self.geostruct.variograms[0].contribution = var * new_var
+            print("...speccim group:",gr_grp," contrib:", self.geostruct.variograms[0].contribution)
             self.geostruct.nugget = var * new_nug
             # print(gr_grp, var,new_var,mx_ubnd,mn_lbnd)
             # reinitialize and draw
