@@ -455,7 +455,7 @@ class Ensemble(object):
 
     @staticmethod
     def _gaussian_draw(
-        cov, mean_values, num_reals, grouper=None, fill=True, factor="eigen"
+        cov, mean_values, num_reals, grouper=None, fill=True, factor="svd"
     ):
 
         factor = factor.lower()
@@ -556,31 +556,28 @@ class Ensemble(object):
     def _get_svd_projection_matrix(x, maxsing=None, eigthresh=1.0e-7):
         if x.shape[0] != x.shape[1]:
             raise Exception("matrix not square")
-        u, s, v = np.linalg.svd(x, full_matrices=True)
-        v = v.transpose()
-
+        u, s, vt = np.linalg.svd(x, full_matrices=True)
+        
         if maxsing is None:
             maxsing = pyemu.Matrix.get_maxsing_from_s(s, eigthresh=eigthresh)
+        if maxsing < x.shape[0]:  
+            print("truncating projection matrix at {0} of {1} dimensions".\
+                format(maxsing,x.shape[0]))
         u = u[:, :maxsing]
         s = s[:maxsing]
-        v = v[:, :maxsing]
-        if s.shape[0] < x.shape[0]:
-            print("SVD projection matrix truncated from {0} to {1}".\
-                format(x.shape[0],s.shape[0]))
-
+        
         # fill in full size svd component matrices
         s_full = np.zeros(x.shape)
-        s_full[: s.shape[0], :s.shape[0]] = np.sqrt(
-            s
-        )  # sqrt since sing vals are eigvals**2
-        v_full = np.zeros_like(s_full)
-        v_full[: v.shape[0], : v.shape[1]] = v
-        # form the projection matrix
-        proj = np.dot(v_full, s_full)
+        # sqrt bc we need the sqrt matrix of s
+        s_full[: s.shape[0], : s.shape[0]] = np.sqrt(s)  
+        proj = np.dot(u, s_full)
         return proj, maxsing
 
     @staticmethod
     def _get_eigen_projection_matrix(x):
+        print("WARNING: np.linalg.eigh() produces different"+\
+        " results on different platforms when matrixes are near"+\
+        " singular...")
         # eigen factorization
         v, w = np.linalg.eigh(x)
 
