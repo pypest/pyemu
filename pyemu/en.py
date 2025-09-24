@@ -532,6 +532,8 @@ class Ensemble(object):
                         elif factor == "svd":
                             a, i = Ensemble._get_svd_projection_matrix(cov_grp.as_2d)
                             snv[:, i:] = 0.0
+                        elif factor == "cholesky":
+                            a,i = Ensemble._get_cholesky_projection_matrix(cov_grp.as_2d)
                         # process each realization
                         group_mean_values = mean_values.loc[cnames]
                         for i in range(num_reals):
@@ -566,11 +568,6 @@ class Ensemble(object):
         if x.shape[0] != x.shape[1]:
             raise Exception("matrix not square")
         u, s, vt = np.linalg.svd(x, full_matrices=True)
-        print(x)
-        import matplotlib.pyplot as plt
-        plt.imshow(x)
-        plt.show()
-        print(s)
         if maxsing is None:
             maxsing = pyemu.Matrix.get_maxsing_from_s(s, eigthresh=eigthresh)
         if maxsing < x.shape[0]:  
@@ -584,7 +581,6 @@ class Ensemble(object):
         # sqrt bc we need the sqrt matrix of s
         s_full[: s.shape[0], : s.shape[0]] = np.sqrt(s)  
         proj = np.dot(u, s_full)
-        print(proj)
         return proj, maxsing
 
     @staticmethod
@@ -751,7 +747,7 @@ class ObservationEnsemble(Ensemble):
 
     @classmethod
     def from_gaussian_draw(
-        cls, pst, cov=None, num_reals=100, by_groups=True, fill=False, factor="eigen"
+        cls, pst, cov=None, num_reals=100, by_groups=True, fill=False, factor="cholesky"
     ):
         """generate an `ObservationEnsemble` from a (multivariate) gaussian
         distribution
@@ -770,9 +766,9 @@ class ObservationEnsemble(Ensemble):
             fill (`bool`): flag to fill in zero-weighted observations with control file
                 values.  Default is False.
             factor (`str`): how to factorize `cov` to form the projection matrix.  Can
-                be "eigen" or "svd". The "eigen" option is default and is faster.  But
+                be "eigen", "svd", or "cholesky. The "cholesky" option is default and is faster.  But
                 for (nearly) singular cov matrices (such as those generated empirically
-                from ensembles), "svd" is the only way.  Ignored for diagonal `cov`.
+                from ensembles), "svd" and/or "eigen" might be required.  Ignored for diagonal `cov`.
 
         Returns:
             `ObservationEnsemble`: the realized `ObservationEnsemble` instance
@@ -963,7 +959,7 @@ class ParameterEnsemble(Ensemble):
 
     @classmethod
     def from_gaussian_draw(
-        cls, pst, cov=None, num_reals=100, by_groups=True, fill=True, factor="eigen"
+        cls, pst, cov=None, num_reals=100, by_groups=True, fill=True, factor="cholesky"
     ):
         """generate a `ParameterEnsemble` from a (multivariate) (log) gaussian
         distribution
@@ -984,9 +980,9 @@ class ParameterEnsemble(Ensemble):
             fill (`bool`): flag to fill in fixed and/or tied parameters with control file
                 values.  Default is True.
             factor (`str`): how to factorize `cov` to form the projection matrix.  Can
-                be "eigen" or "svd". The "eigen" option is default and is faster.  But
+                be "eigen", "svd", or "cholesky". The "cholesky" option is default and is faster.  But
                 for (nearly) singular cov matrices (such as those generated empirically
-                from ensembles), "svd" is the only way.  Ignored for diagonal `cov`.
+                from ensembles), "svd" and/or "eigen" might be required.  Ignored for diagonal `cov`.
 
         Returns:
             `ParameterEnsemble`: the parameter ensemble realized from the gaussian
@@ -1036,6 +1032,7 @@ class ParameterEnsemble(Ensemble):
             num_reals=num_reals,
             grouper=grouper,
             fill=fill,
+            factor=factor
         )
         df.loc[:, li] = 10.0 ** df.loc[:, li]
         return cls(pst, df, istransformed=False)
