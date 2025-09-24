@@ -128,8 +128,7 @@ jobs:
       working-directory: ./examples
       run: |
         micromamba install --name pyemu jupyter jupytext
-        pytest -v -s --nbmake --cov=pyemu --cov-report=lcov:../autotest/coverage.lcov \
-          --cov-config=../autotest/.coveragerc *.ipynb
+        pytest -v -s --nbmake *.ipynb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
