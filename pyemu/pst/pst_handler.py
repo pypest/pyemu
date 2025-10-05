@@ -3985,6 +3985,42 @@ class Pst(object):
         self.add_parameters(tpl_fname,in_fname,pst_path='.')
         self.add_observations(ins_fname,in_fname,pst_path='.')
 
+    def dialate_par_bounds(self,dialate_factor,center=True):
+        """ increase the distance between the parameter bounds while respecting the 
+            log transformation status
+
+        Args:
+            dialate_factor (varies): a factor to increase the distance between parameter
+                bounds.  Can be a float or a dict of str-float pars.
+            center (bool): flag to dialate from the center point between the bounds.  If 
+                False, then the dialation is WRT the `parval1` values
+        """
+
+        if isinstance(dialate_factor,float):
+            temp = {}
+            for name in self.par_names:
+                temp[name] = dialate_factor
+            dialate_factor = temp
+            temp = None
+        self.add_transform_columns()
+
+        par = self.parameter_data
+        par['dialat_factor'] = [dialate_factor.get(name,1.0) for name in par.parnme.values]
+        log_idx = par.partrans == "log"
+        if center:
+            par["center_point"] = ((par.parubnd_trans - par.parlbnd_trans) / 2.0)
+        else:
+            par["center_point"] = par.parval1_trans.copy()
+        
+        par["parubnd_org"] = par.parubnd.copy()
+        par["ubdist"] = par.parubnd_trans - par.center_point
+        par["parubnd"] = par.center_point + (par.ubdist * par.dialate_factor)
+        par["parlbnd_org"] = par.parlbnd.copy()
+        par["lbdist"] = par.center_point - par.parlbnd_trans
+        par["parubnd"] = par.center_point - (par.lbdist * par.dialate_factor)
+
+
+
 
 def _replace_str_in_files(filelist, name_dict, file_obsparmap=None, pst_path='.'):
     import multiprocessing as mp
