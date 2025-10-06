@@ -3952,7 +3952,7 @@ class Pst(object):
                               file_obsparmap=insmap, pst_path=pst_path)
 
 
-    def add_pars_as_obs(self,pst_path='.'):
+    def add_pars_as_obs(self,pst_path='.',par_sigma_range=4):
         """add all parameter values as observation values by creating a new
         template and instruction file and adding them to the control file
 
@@ -3960,6 +3960,9 @@ class Pst(object):
             pst_path (str): the path to the control file from where python
                 is running.  Default is "." (python is running in the
                 same directory as the control file)
+            par_sigma_range (int):  number of standard deviations implied by the 
+                distance between the parameter bounds.  Used to set the weights
+                for the range observations
 
 
         """
@@ -3983,7 +3986,23 @@ class Pst(object):
             for name in parval1.index:
                 f.write("l1 ~,~  !{0}!\n".format(name))
         self.add_parameters(tpl_fname,in_fname,pst_path='.')
-        self.add_observations(ins_fname,in_fname,pst_path='.')
+        df = self.add_observations(ins_fname,in_fname,pst_path='.')
+        self.add_transform_columns()
+        obs = self.observation_data
+        par = self.parameter_data
+        if "greater_than" not in obs.columns:
+            obs["greater_than"] = np.nan
+        if "less_than" not in obs.columns:
+            obs["less_than"] = np.nan
+
+        obs.loc[df.obsnme,"greater_than"] = par.loc[df.obsnme,"parlbnd"]
+        obs.loc[df.obsnme,"less_than"] = par.loc[df.obsnme,"parubnd"]
+
+        log_idx = par.loc[df.obsnme,"partrans"] == "log"
+        stdev = (par.loc[df.obsnme,"parubnd_trans"] - par.loc[df.obsnme,"parlbnd_trans"]) / par_sigma_range
+        stdev.loc[log_idx] = 10**stdev.loc[log_idx]
+        obs.loc[df.obsnme,"weight"] = 1.0 / stdev.values 
+        
 
     def dialate_par_bounds(self,dialate_factor,center=True):
         """ increase the distance between the parameter bounds while respecting the 
@@ -3993,7 +4012,7 @@ class Pst(object):
             dialate_factor (varies): a factor to increase the distance between parameter
                 bounds.  Can be a float or a dict of str-float pars.
             center (bool): flag to dialate from the center point between the bounds.  If 
-                False, then the dialation is WRT the `parval1` values
+                False, then the dialation is from the `parval1` values
         """
 
         if isinstance(dialate_factor,float):
@@ -4007,19 +4026,22 @@ class Pst(object):
         par = self.parameter_data
         par['dialat_factor'] = [dialate_factor.get(name,1.0) for name in par.parnme.values]
         log_idx = par.partrans == "log"
+        par["bnd_center"] = ((par.parubnd_trans - par.parlbnd_trans) / 2.0)
         if center:
-            par["center_point"] = ((par.parubnd_trans - par.parlbnd_trans) / 2.0)
+            par["center_point"] = par["bnd_center"] 
         else:
             par["center_point"] = par.parval1_trans.copy()
         
         par["parubnd_org"] = par.parubnd.copy()
-        par["ubdist"] = par.parubnd_trans - par.center_point
+        par["ubdist"] = par.parubnd_trans - par.bnd_center
         par["parubnd"] = par.center_point + (par.ubdist * par.dialate_factor)
+
         par["parlbnd_org"] = par.parlbnd.copy()
-        par["lbdist"] = par.center_point - par.parlbnd_trans
-        par["parubnd"] = par.center_point - (par.lbdist * par.dialate_factor)
-
-
+        par["lbdist"] = par.bnd_center - par.parlbnd_trans
+        par["parlbnd"] = par.center_point - (par.lbdist * par.dialate_factor)
+        
+        par.loc[log_idx,"parubnd"] = 10**par.loc[log_idx,"parubnd"]
+        par.loc[log_idx,"parlbnd"] = 10**par.loc[log_idx,"parlbnd"]
 
 
 def _replace_str_in_files(filelist, name_dict, file_obsparmap=None, pst_path='.'):
