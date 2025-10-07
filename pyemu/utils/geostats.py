@@ -563,9 +563,12 @@ class SpecSim2d(object):
             mx_ubnd = gp_par.parubnd_trans.max()
             mn_lbnd = gp_par.parlbnd_trans.min()
             var = ((mx_ubnd - mn_lbnd) / sigma_range) ** 2
-
+            print("...speccim group:",gr_grp," mx upper:", mx_ubnd, "min lower:",mn_lbnd)
+            
+            print("...speccim group:",gr_grp," variance:", var, "new var:",new_var)
             # update the geostruct
             self.geostruct.variograms[0].contribution = var * new_var
+            print("...speccim group:",gr_grp," contrib:", self.geostruct.variograms[0].contribution)
             self.geostruct.nugget = var * new_nug
             # print(gr_grp, var,new_var,mx_ubnd,mn_lbnd)
             # reinitialize and draw
@@ -2486,18 +2489,14 @@ def fac2real(
         pp_dict_log = np.log10(pp_data.parval1).to_dict()
     except:
         pp_dict_log = {}
-    # for i in range(nrow):
-    #    for j in range(ncol):
     while True:
         line = f_fac.readline()
         if len(line) == 0:
-            # raise Exception("unexpected EOF in factors file")
             break
         try:
-            inode, itrans, fac_data = _parse_factor_line(line)
+            inode, itrans, fac_data = _parse_factor_line(line,f_fac)
         except Exception as e:
             raise Exception("error parsing factor line {0}:{1}".format(line, str(e)))
-        # fac_prods = [pp_data.loc[pp,"value"]*fac_data[pp] for pp in fac_data]
         if itrans == 0:
             fac_sum = sum([pp_dict[pp] * fac_data[pp] for pp in fac_data])
         else:
@@ -2513,29 +2512,29 @@ def fac2real(
     arr[arr < lower_lim] = lower_lim
     arr[arr > upper_lim] = upper_lim
 
-    # print(out_file,arr.min(),pp_data.parval1.min(),lower_lim)
-
     if out_file is not None:
         np.savetxt(out_file, arr, fmt="%15.6E", delimiter="")
         return out_file
     return arr
 
 
-def _parse_factor_line(line):
+def _parse_factor_line(first_line,f_fac):
     """function to parse a factor file line.  Used by fac2real()"""
-
-    raw = line.strip().split()
+    
+    raw = first_line.strip().split()
     inode, itrans, nfac = [int(i) for i in raw[:3]]
-    fac_data = {
-        int(raw[ifac]) - 1: float(raw[ifac + 1]) for ifac in range(4, 4 + nfac * 2, 2)
-    }
-    # fac_data = {}
-    # for ifac in range(4,4+nfac*2,2):
-    #     pnum = int(raw[ifac]) - 1 #zero based to sync with pandas
-    #     fac = float(raw[ifac+1])
-    #     fac_data[pnum] = fac
+    nitems = nfac * 2
+    items = raw[4:]
+    while len(items) < nitems:
+        line = f_fac.readline()
+        if len(line) == 0:
+            raise Exception("fac2real error: Eof while reading terrible wrapped format")
+        raw = line.strip().split()
+        items.extend(raw)
+    if nitems != len(items):
+        raise Exception("fac2real error: error dealing with terrible wrapped format")
+    fac_data = {int(items[i])-1:float(items[i+1]) for i in range(0,len(items),2)}    
     return inode, itrans, fac_data
-
 
 def reformat_factorfile(nrow,ncol,point_data,geostruct,ppu_factor_filename):
     f_in = open(ppu_factor_filename,'r')

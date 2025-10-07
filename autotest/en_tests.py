@@ -486,7 +486,7 @@ def emp_cov_test():
     print(pst.npar, cov.shape)
     num_reals = 5000
 
-    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
+    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
     emp_cov = pe_eig.covariance_matrix()
     assert isinstance(emp_cov,pyemu.Cov)
     assert emp_cov.row_names == pst.adj_par_names
@@ -507,31 +507,40 @@ def factor_draw_test():
     cov = pyemu.Cov.from_binary(os.path.join("en","cov.jcb"))
     print(pst.npar,cov.shape)
     num_reals = 5000
+    pe_cho = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
     pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov=cov,num_reals=num_reals,factor="eigen")
     pe_svd = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="svd")
+    
+    
     pe_eig.transform()
     pe_svd.transform()
+    pe_cho.transform()
+    
     mn_eig = pe_eig.mean()
     mn_svd = pe_svd.mean()
+    mn_cho = pe_cho.mean()
 
     sd_eig = pe_eig.std()
     sd_svd = pe_svd.std()
+    sd_cho = pe_cho.std()
 
     pst.add_transform_columns()
     par = pst.parameter_data
     df = cov.to_dataframe()
     for p in pst.adj_par_names:
         print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_svd[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_svd[p])
-    d = (mn_eig - mn_svd).apply(np.abs)
+    d = (mn_eig - mn_cho).apply(np.abs)
+    print(d.max())
     assert d.max() < 0.5,d.sort_values()
-    d = (sd_eig - sd_svd).apply(np.abs)
+    d = (sd_eig - sd_cho).apply(np.abs)
+    print(d.max())
     assert d.max() < 0.5,d.sort_values()
 
     num_reals = 1000
-    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
+    pe_cho2 = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals)
 
     emp_cov = pe_eig.covariance_matrix()
-    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals, factor="eigen")
+    pe_cho3 = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals)
 
 
 def emp_cov_draw_test():
@@ -542,28 +551,28 @@ def emp_cov_draw_test():
     pst = pyemu.Pst(os.path.join("en","pest.pst"))
     cov = pyemu.Cov.from_binary(os.path.join("en","cov.jcb"))
     num_reals = 1000
-    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
+    pe_cho = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
 
-    emp_cov = pe_eig.covariance_matrix()
+    emp_cov = pe_cho.covariance_matrix()
     num_reals = 1000
     pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals, factor="eigen")
-    pe_svd = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals, factor="svd")
+    pe_cho = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals, factor="cholesky")
     pe_eig.transform()
-    pe_svd.transform()
+    pe_cho.transform()
     mn_eig = pe_eig.mean()
-    mn_svd = pe_svd.mean()
+    mn_cho = pe_cho.mean()
 
     sd_eig = pe_eig.std()
-    sd_svd = pe_svd.std()
+    sd_cho = pe_cho.std()
 
     pst.add_transform_columns()
     par = pst.parameter_data
     df = cov.to_dataframe()
     for p in pst.adj_par_names:
-        print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_svd[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_svd[p])
-    d = (mn_eig - mn_svd).apply(np.abs)
+        print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_cho[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_cho[p])
+    d = (mn_eig - mn_cho).apply(np.abs)
     assert d.max() < 0.5,d.sort_values()
-    d = (sd_eig - sd_svd).apply(np.abs)
+    d = (sd_eig - sd_cho).apply(np.abs)
     assert d.max() < 0.5,d.sort_values()
 
 def mixed_par_draw_test():
@@ -775,10 +784,10 @@ if __name__ == "__main__":
     # uniform_draw_test()
     #fill_test()
     #factor_draw_test()
-    #emp_cov_test()
-    # emp_cov_draw_test()
+    emp_cov_test()
+    #emp_cov_draw_test()
     #mixed_par_draw_2_test()
-    binary_test()
+    #binary_test()
     #get_phi_vector_noise_obs_test()
     #factor_draw_test()
     #enforce_test()

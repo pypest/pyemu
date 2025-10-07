@@ -534,7 +534,7 @@ def geostatistical_draws(
                     continue
 
                 # df_zone.sort_values(by="parnme",inplace=True)
-                df_zone.sort_index(inplace=True)
+                #df_zone.sort_index(inplace=True)
                 if verbose:
                     print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x, df_zone.y, df_zone.parnme)
