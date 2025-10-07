@@ -6417,8 +6417,138 @@ def xsec_pars_as_obs_test(tmp_path):
     assert np.isclose(pst.phi, 0), pst.phi
 
 
+def draw_consistency_test(tmp_path):
+    import flopy
+    org_d = os.path.join("tests",'synthdewater')
+    tmp_d = os.path.join(os.path.join(tmp_path,'tmp'))
+
+    if os.path.exists(tmp_d):
+        shutil.rmtree(tmp_d)
+    shutil.copytree(org_d,tmp_d)
+
+    # load simulation
+    sim = flopy.mf6.MFSimulation.load(sim_ws=tmp_d)
+    # load flow model
+    gwf = sim.get_model()
+
+    #load basecases
+    bc = pyemu.ParameterEnsemble.from_binary(pst=None,filename=os.path.join(tmp_d,"basecase_pe.bin"))._df
+    bce = pyemu.ParameterEnsemble.from_binary(pst=None,filename=os.path.join(tmp_d,"basecase_pe_enforce.bin"))._df
+    bc.index = bc.index.astype(int)
+    bce.index = bce.index.astype(int)
+    
+
+
+    sr = pyemu.helpers.SpatialReference.from_namfile(
+            os.path.join(tmp_d, "model.nam"),
+            delr=gwf.dis.delr.get_data(), delc=gwf.dis.delc.get_data())
+    sr
+    template_ws = os.path.join(tmp_path,"pst_template")
+    start_datetime = sim.tdis.start_date_time.get_data()
+    # instantiate PstFrom
+    pf = pyemu.utils.PstFrom(original_d=tmp_d, # where the model is stored
+                                new_d=template_ws, # the PEST template folder
+                                remove_existing=True, # ensures a clean start
+                                longnames=True, # set False if using PEST/PEST_HP
+                                spatial_reference=sr, #the spatial reference we generated earlier
+                                zero_based=False, # does the MODEL use zero based indices? For example, MODFLOW does NOT
+                                start_datetime=start_datetime, # required when specifying temporal correlation between parameters
+                                echo=False) # to stop PstFrom from writing lots of information to the notebook; experiment by setting it as True to see the difference; useful for troubleshooting
+
+
+    v_pp = pyemu.geostats.ExpVario(contribution=1.0, #sill
+                                        a=1000, # range of correlation; length units of the model. In our case 'meters'
+                                        anisotropy=3.0, #name says it all
+                                        bearing=45.0 #angle in degrees East of North corresponding to anisotropy ellipse
+                                        )
+
+    pp_gs = pyemu.geostats.GeoStruct(variograms=v_pp, transform='log') 
+    v = pyemu.utils.geostats.ExpVario(a=3000,contribution=1.0)
+
+    tag = "npf_k"
+    files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
+
+
+    ib = gwf.dis.idomain.get_data()[0]
+
+
+    f = 'model.npf_k.txt'
+
+    df_cst = pf.add_parameters(f,
+                        zone_array=ib,
+                        par_type="constant",
+                        par_name_base=f.split('.')[1].replace("_","")+"cn",
+                        pargp=f.split('.')[1].replace("_","")+"cn",
+                        lower_bound=0.5,upper_bound=2.0,
+                        ult_ubound=100, ult_lbound=0.01)
+    
+    df_cst = pf.add_parameters(f,
+                        par_type="grid",
+                        par_name_base=f.split('.')[1].replace("_","")+"gr",
+                        pargp=f.split('.')[1].replace("_","")+"gr",
+                        lower_bound=0.5,upper_bound=2.0,
+                        ult_ubound=100, ult_lbound=0.01)
+
+    df_cst = pf.add_parameters(f,
+                        par_type="grid",
+                        par_name_base=f.split('.')[1].replace("_","")+"fix",
+                        pargp=f.split('.')[1].replace("_","")+"fix",
+                        lower_bound=0.5,upper_bound=2.0,
+                        ult_ubound=100, ult_lbound=0.01)
+
+    df_pp = pf.add_parameters(f,
+                        zone_array=ib,
+                        par_type="pilotpoints",
+                        geostruct=pp_gs,
+                        par_name_base=f.split('.')[1].replace("_","")+"pp1",
+                        pargp=f.split('.')[1].replace("_","")+"pp1",
+                        lower_bound=0.1,upper_bound=10.0,
+                        ult_ubound=100, ult_lbound=0.01,
+                        pp_options={"pp_space":50}
+                        ) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
+    
+    df_pp = pf.add_parameters(f,
+                        zone_array=ib,
+                        par_type="pilotpoints",
+                        geostruct=pp_gs,
+                        par_name_base=f.split('.')[1].replace("_","")+"pp2",
+                        pargp=f.split('.')[1].replace("_","")+"pp2",
+                        lower_bound=0.1,upper_bound=10.0,
+                        ult_ubound=100, ult_lbound=0.01,
+                        pp_options={"pp_space":20}
+                        ) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
+    
+
+    pst = pf.build_pst()
+
+    par = pf.pst.parameter_data
+    gpar = par.loc[par.parnme.str.contains("fix"),:]
+    assert gpar.shape[0] == gwf.dis.nrow.data * gwf.dis.ncol.data
+    par.loc[gpar.parnme,"partrans"] = "fixed"
+    np.random.seed(111)
+    pe = pf.draw(num_reals=10, use_specsim=True) # draw parameters from the prior distribution
+    print("abs max:",np.nanmax(np.abs(pe.values)))
+    # no bs values...
+    assert np.nanmax(np.abs(pe.values)) < 100000
+    assert np.all(~np.isnan(pe.values))
+    
+    pe.to_dense(os.path.join(template_ws,"basecase_pe.bin"))
+    diff = np.abs(pe - bc)
+
+    print("pe",diff.values.max())
+    assert np.all(~np.isnan(diff))
+    assert diff.values.max() < 1e-6
+    pe.enforce() # enforces parameter bounds
+    pe.to_dense(os.path.join(template_ws,"basecase_pe_enforce.bin"))
+    diff = np.abs(pe - bce)
+    print("pe enforced",diff.values.max())
+    assert np.all(~np.isnan(diff))
+    assert diff.values.max() < 1e-6
+    
+    
 if __name__ == "__main__":
-    xsec_pars_as_obs_test(".")
+    draw_consistency_test('.')
+    #xsec_pars_as_obs_test(".")
     #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")

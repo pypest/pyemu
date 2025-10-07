@@ -455,11 +455,11 @@ class Ensemble(object):
 
     @staticmethod
     def _gaussian_draw(
-        cov, mean_values, num_reals, grouper=None, fill=True, factor="eigen"
+        cov, mean_values, num_reals, grouper=None, fill=True, factor="cholesky"
     ):
 
         factor = factor.lower()
-        if factor not in ["eigen", "svd"]:
+        if factor not in ["eigen", "svd", "cholesky"]:
             raise Exception(
                 "Ensemble._gaussian_draw() error: unrecognized"
                 + "'factor': {0}".format(factor)
@@ -532,6 +532,8 @@ class Ensemble(object):
                         elif factor == "svd":
                             a, i = Ensemble._get_svd_projection_matrix(cov_grp.as_2d)
                             snv[:, i:] = 0.0
+                        elif factor == "cholesky":
+                            a,i = Ensemble._get_cholesky_projection_matrix(cov_grp.as_2d)
                         # process each realization
                         group_mean_values = mean_values.loc[cnames]
                         for i in range(num_reals):
@@ -541,6 +543,8 @@ class Ensemble(object):
                 snv = np.random.randn(num_reals, cov.shape[0])
                 if factor == "eigen":
                     a, i = Ensemble._get_eigen_projection_matrix(cov.as_2d)
+                elif factor == "cholesky":
+                    a,i = Ensemble._get_cholesky_projection_matrix(cov.as_2d)
                 elif factor == "svd":
                     a, i = Ensemble._get_svd_projection_matrix(cov.as_2d)
                     snv[:, i:] = 0.0
@@ -548,36 +552,42 @@ class Ensemble(object):
                 idxs = [mv_map[name] for name in cov.row_names]
                 for i in range(num_reals):
                     reals[i, idxs] = cov_mean_values + np.dot(a, snv[i, :])
+                    #print(np.dot(a, snv[i, :]).max())
         df = pd.DataFrame(reals, columns=mean_values.index.values)
         df.dropna(inplace=True, axis=1)
         return df
 
     @staticmethod
+    def _get_cholesky_projection_matrix(x):
+        if x.shape[0] != x.shape[1]:
+            raise Exception("matrix not square")
+        return np.linalg.cholesky(x),x.shape[0]
+
+    @staticmethod
     def _get_svd_projection_matrix(x, maxsing=None, eigthresh=1.0e-7):
         if x.shape[0] != x.shape[1]:
             raise Exception("matrix not square")
-        u, s, v = np.linalg.svd(x, full_matrices=True)
-        v = v.transpose()
-
+        u, s, vt = np.linalg.svd(x, full_matrices=True)
         if maxsing is None:
             maxsing = pyemu.Matrix.get_maxsing_from_s(s, eigthresh=eigthresh)
+        if maxsing < x.shape[0]:  
+            print("truncating projection matrix at {0} of {1} dimensions".\
+                format(maxsing,x.shape[0]))
         u = u[:, :maxsing]
         s = s[:maxsing]
-        v = v[:, :maxsing]
-
+        
         # fill in full size svd component matrices
         s_full = np.zeros(x.shape)
-        s_full[: s.shape[0], : s.shape[1]] = np.sqrt(
-            s
-        )  # sqrt since sing vals are eigvals**2
-        v_full = np.zeros_like(s_full)
-        v_full[: v.shape[0], : v.shape[1]] = v
-        # form the projection matrix
-        proj = np.dot(v_full, s_full)
+        # sqrt bc we need the sqrt matrix of s
+        s_full[: s.shape[0], : s.shape[0]] = np.sqrt(s)  
+        proj = np.dot(u, s_full)
         return proj, maxsing
 
     @staticmethod
     def _get_eigen_projection_matrix(x):
+        print("WARNING: np.linalg.eigh() produces different"+\
+        " results on different platforms when matrixes are near"+\
+        " singular...")
         # eigen factorization
         v, w = np.linalg.eigh(x)
 
@@ -737,7 +747,7 @@ class ObservationEnsemble(Ensemble):
 
     @classmethod
     def from_gaussian_draw(
-        cls, pst, cov=None, num_reals=100, by_groups=True, fill=False, factor="eigen"
+        cls, pst, cov=None, num_reals=100, by_groups=True, fill=False, factor="cholesky"
     ):
         """generate an `ObservationEnsemble` from a (multivariate) gaussian
         distribution
@@ -756,9 +766,9 @@ class ObservationEnsemble(Ensemble):
             fill (`bool`): flag to fill in zero-weighted observations with control file
                 values.  Default is False.
             factor (`str`): how to factorize `cov` to form the projection matrix.  Can
-                be "eigen" or "svd". The "eigen" option is default and is faster.  But
+                be "eigen", "svd", or "cholesky. The "cholesky" option is default and is faster.  But
                 for (nearly) singular cov matrices (such as those generated empirically
-                from ensembles), "svd" is the only way.  Ignored for diagonal `cov`.
+                from ensembles), "svd" and/or "eigen" might be required.  Ignored for diagonal `cov`.
 
         Returns:
             `ObservationEnsemble`: the realized `ObservationEnsemble` instance
@@ -949,7 +959,7 @@ class ParameterEnsemble(Ensemble):
 
     @classmethod
     def from_gaussian_draw(
-        cls, pst, cov=None, num_reals=100, by_groups=True, fill=True, factor="eigen"
+        cls, pst, cov=None, num_reals=100, by_groups=True, fill=True, factor="cholesky"
     ):
         """generate a `ParameterEnsemble` from a (multivariate) (log) gaussian
         distribution
@@ -970,9 +980,9 @@ class ParameterEnsemble(Ensemble):
             fill (`bool`): flag to fill in fixed and/or tied parameters with control file
                 values.  Default is True.
             factor (`str`): how to factorize `cov` to form the projection matrix.  Can
-                be "eigen" or "svd". The "eigen" option is default and is faster.  But
+                be "eigen", "svd", or "cholesky". The "cholesky" option is default and is faster.  But
                 for (nearly) singular cov matrices (such as those generated empirically
-                from ensembles), "svd" is the only way.  Ignored for diagonal `cov`.
+                from ensembles), "svd" and/or "eigen" might be required.  Ignored for diagonal `cov`.
 
         Returns:
             `ParameterEnsemble`: the parameter ensemble realized from the gaussian
@@ -1022,6 +1032,7 @@ class ParameterEnsemble(Ensemble):
             num_reals=num_reals,
             grouper=grouper,
             fill=fill,
+            factor=factor
         )
         df.loc[:, li] = 10.0 ** df.loc[:, li]
         return cls(pst, df, istransformed=False)
