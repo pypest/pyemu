@@ -4002,6 +4002,7 @@ class Pst(object):
         stdev = (par.loc[df.obsnme,"parubnd_trans"] - par.loc[df.obsnme,"parlbnd_trans"]) / par_sigma_range
         stdev.loc[log_idx] = 10**stdev.loc[log_idx]
         obs.loc[df.obsnme,"weight"] = 1.0 / stdev.values 
+        obs.loc[df.obsnme,"obgnme"] = "parbounds"
         
 
     def dialate_par_bounds(self,dialate_factor,center=True):
@@ -4012,7 +4013,8 @@ class Pst(object):
             dialate_factor (varies): a factor to increase the distance between parameter
                 bounds.  Can be a float or a dict of str-float pars.
             center (bool): flag to dialate from the center point between the bounds.  If 
-                False, then the dialation is from the `parval1` values
+                False, then the dialation is from the `parval1` values.  Beware that using
+                center False can have produce the some strange results...
         """
 
         if isinstance(dialate_factor,float):
