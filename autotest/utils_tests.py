@@ -11,7 +11,7 @@ sys.path.append("..")
 import pyemu
 from pst_from_tests import _get_port
 
-from autotest.conftest import full_exe_ref_dict
+from conftest import full_exe_ref_dict
 
 exepath_dict = full_exe_ref_dict()
 ies_exe_path = exepath_dict['pestpp-ies']

@@ -10,7 +10,7 @@ from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
 import pytest
 
-from autotest.conftest import full_exe_ref_dict
+from conftest import full_exe_ref_dict
 
 exepath_dict = full_exe_ref_dict()
 ies_exe_path = exepath_dict['pestpp-ies']
