@@ -4024,9 +4024,9 @@ class Pst(object):
         self.add_transform_columns()
 
         par = self.parameter_data
-        par['dialat_factor'] = [dialate_factor.get(name,1.0) for name in par.parnme.values]
+        par['dialate_factor'] = [dialate_factor.get(name,1.0) for name in par.parnme.values]
         log_idx = par.partrans == "log"
-        par["bnd_center"] = ((par.parubnd_trans - par.parlbnd_trans) / 2.0)
+        par["bnd_center"] = par.parlbnd_trans + ((par.parubnd_trans - par.parlbnd_trans) / 2.0)
         if center:
             par["center_point"] = par["bnd_center"] 
         else:

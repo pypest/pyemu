@@ -112,6 +112,10 @@ def res_test(tmp_path):
 
 def pst_manip_test(tmp_path):
     import os
+
+    if os.path.exists(tmp_path):
+        shutil.rmtree(tmp_path)
+    os.makedirs(tmp_path)
     from pyemu import Pst
     pst_dir = os.path.join("pst")
     org_path = os.path.join(pst_dir, "pest.pst")
@@ -127,9 +131,46 @@ def pst_manip_test(tmp_path):
     new_pst = Pst(new_path)
     assert all(new_pst.observation_data.obsval == pst.observation_data.obsval)
     assert all(new_pst.parameter_data.parval1 == pst.parameter_data.parval1)
+    org_par = pst.parameter_data.copy()
+    pst.dialate_par_bounds(1.0)
+    diff = np.abs(org_par.parubnd - pst.parameter_data.parubnd).sum()
+    assert diff < 1e-7
+    diff = np.abs(org_par.parlbnd - pst.parameter_data.parlbnd).sum()
+    assert diff < 1e-7
+    pst.dialate_par_bounds(1.0)
+    diff = np.abs(org_par.parubnd - pst.parameter_data.parubnd).sum()
+    assert diff < 1e-7
+    diff = np.abs(org_par.parlbnd - pst.parameter_data.parlbnd).sum()
+    assert diff < 1e-7
+    pst.dialate_par_bounds(2.0)
+    print(pst.parameter_data.loc[:,["parubnd","parubnd_org"]])
+    pst.write(new_path)
+    pst = Pst(new_path)
+    pst.write(new_path, version=2)
+    new_pst = Pst(new_path)
+    new_par = new_pst.parameter_data
+    assert np.all(new_par.parubnd.values > org_par.parubnd.values)
+    assert np.all(new_par.parlbnd.values < org_par.parlbnd.values)
 
+    pst.dialate_par_bounds(0.5)
+    new_par = pst.parameter_data
+    #print(new_par.parubnd)
+    #print(org_par.parubnd)
+    assert np.isclose(np.abs(new_par.parubnd - org_par.parubnd).sum(),0)
+    assert np.isclose(np.abs(new_par.parlbnd - org_par.parlbnd).sum(), 0)
+
+    pst.parameter_data["parval1"] = pst.parameter_data.parubnd
+    pst.dialate_par_bounds(2.0)
+    pst.dialate_par_bounds(0.5)
+    new_par = pst.parameter_data
+    assert np.isclose(np.abs(new_par.parubnd - org_par.parubnd).sum(), 0)
+    assert np.isclose(np.abs(new_par.parlbnd - org_par.parlbnd).sum(), 0)
 
 def load_test(tmp_path):
+    import os
+    if os.path.exists(tmp_path):
+        shutil.rmtree(tmp_path)
+    os.makedirs(tmp_path)
     from pyemu import Pst
     pst_dir = setup_tmp("pst", tmp_path)
     # just testing all sorts of different pst files
@@ -176,6 +217,14 @@ def load_test(tmp_path):
             except Exception as e:
                 exceptions.append(pst_file + " v2 reload fail: " + str(e))
                 continue
+
+            org_par = p.parameter_data.copy()
+            p.dialate_par_bounds(1.0)
+            diff = np.abs(org_par.parubnd - p.parameter_data.parubnd).sum()
+            assert diff < 1e-5
+            diff = np.abs(org_par.parlbnd - p.parameter_data.parlbnd).sum()
+            print(diff)
+            assert diff < 1e-5
 
 
     # with open("load_fails.txt",'w') as f:
@@ -1533,7 +1582,9 @@ if __name__ == "__main__":
     with this.
     """
     d = 'temp'
-    parrep_test(d)
+    #load_test(d)
+    pst_manip_test(d)
+    #parrep_test(d)
     #interface_check_test()
     # new_format_test_2()
     #write2_nan_test()

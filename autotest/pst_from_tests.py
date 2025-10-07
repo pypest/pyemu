@@ -6385,8 +6385,8 @@ def xsec_pars_as_obs_test(tmp_path):
     sr = m.modelgrid
     t_d = "template_xsec"
     pf = pyemu.utils.PstFrom(tmp_model_ws,t_d,remove_existing=True,spatial_reference=sr)
-    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_style="direct",upper_bound=25,
-                      lower_bound=0.25)
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_style="direct",upper_bound=3,
+                      lower_bound=2,transform="none")
     pf.add_parameters("hk_Layer_1.ref", par_type="grid", par_style="multiplier", upper_bound=10.0,
                       lower_bound=0.1)
 
@@ -6404,17 +6404,37 @@ def xsec_pars_as_obs_test(tmp_path):
     pf.mod_sys_cmds.append("mfnwt {0}".format(nam_file))
 
     pst = pf.build_pst(None)
-    pst.add_pars_as_obs(pst_path=t_d)
+    par_sigma_range = 1
+    pst.add_pars_as_obs(pst_path=t_d,par_sigma_range=par_sigma_range)
     diff = set(pst.par_names) - set(pst.obs_names)
     print(diff)
     assert len(diff) == 0
 
-    pst.write(os.path.join(t_d,"pest.pst"))
+    pst.write(os.path.join(t_d,"pest.pst"),version=2)
 
     pyemu.os_utils.run("{0} {1}".format(ies_exe_path,"pest.pst"),cwd=t_d)
     pst = pyemu.Pst(os.path.join(t_d,"pest.pst"))
     print(pst.phi)
     assert np.isclose(pst.phi, 0), pst.phi
+    par = pst.parameter_data
+    obs = pst.observation_data.loc[par.parnme,:]
+    assert len(par) == len(obs)
+    print(obs)
+    assert np.isclose(np.abs((obs["less_than"] - par["parubnd"]).sum()),0)
+    assert np.isclose(np.abs((obs["greater_than"] - par["parlbnd"]).sum()), 0)
+
+    logidx = par.partrans == "log"
+    obs.loc[logidx,"greater_than"] = np.log10(obs.loc[logidx,"greater_than"])
+    obs.loc[logidx, "less_than"] = np.log10(obs.loc[logidx, "less_than"])
+    obs["dist"] = obs.less_than - obs.greater_than
+    print(obs.dist)
+    obs.dist / par_sigma_range
+    obs.loc[logidx,"dist"] = 10**(obs.loc[logidx,"dist"])
+    weight = 1/(obs.dist/par_sigma_range)
+    print(weight)
+    print(obs.weight)
+    assert np.isclose(np.abs(weight-obs.weight).sum(),0)
+
 
 
 if __name__ == "__main__":
