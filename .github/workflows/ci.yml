@@ -70,7 +70,7 @@ jobs:
 
     - name: Build pypestutils (Windows)
       if: runner.os == 'Windows'
-      shell: bash
+      shell: bash -l {0}
       working-directory: pypestutils
       env:
         LDFLAGS: -static-libgcc -static-libgfortran -static-libquadmath -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive
@@ -79,19 +79,19 @@ jobs:
 
     - name: Build pypestutils (non-Windows)
       if: runner.os != 'Windows'
-      shell: bash
+      shell: bash -l {0}
       working-directory: pypestutils
       run: |
         scripts/build_lib.sh
 
     - name: Install pypestutils
-      shell: bash
+      shell: bash -l {0}
       working-directory: pypestutils
       run: |
         pip install -e .
 
     - name: Install pyemu
-      shell: bash
+      shell: bash -l {0}
       run: |
         pip install -e .
         micromamba list
@@ -108,14 +108,15 @@ jobs:
 
     # order matters for this step - after setting path to executables
     - name: Install PEST++ suite using get-pestpp
-      shell: bash
+      shell: bash -l {0}
       run: |
         get-pestpp :home
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
-      shell: bash
+      shell: bash -l {0}
+      working-directory: ./autotest
       run: |
         pytest -rP -rx --capture=no -v --tb=native --durations=20 --cov=pyemu --cov-report=lcov:autotest/coverage.lcov ${{ matrix.test-path }}
       env:
@@ -123,7 +124,7 @@ jobs:
 
     - name: Test Notebooks
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
-      shell: bash
+      shell: bash -l {0}
       run: |
         micromamba install --name pyemu jupyter jupytext
         pytest -v -s --nbmake --cov=pyemu --cov-config=autotest/.coveragerc --cov-report=lcov:autotest/coverage.lcov examples/*.ipynb
