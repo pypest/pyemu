@@ -129,8 +129,8 @@ jobs:
       shell: bash -l {0}
       working-directory: examples
       run: |
-        micromamba install --name pyemu jupyter jupytext
-        pytest -v -s --nbmake --cov=pyemu --cov-config=../autotest/.coveragerc --cov-report=lcov:../autotest/coverage.lcov *.ipynb
+        micromamba install --name jupyter jupytext
+        pytest -v -s --nbmake --cov=pyemu --cov-config=../autotest/.coveragerc --cov-report=lcov:coverage.lcov *.ipynb
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -140,7 +140,7 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         flag-name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
         parallel: true
-        path-to-lcov: autotest/coverage.lcov
+#        path-to-lcov: autotest/coverage.lcov
 
   coveralls_finish:
     needs: pyemuCI
@@ -151,4 +151,4 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         parallel-finished: true
-        path-to-lcov: autotest/coverage.lcov
+#        path-to-lcov: autotest/coverage.lcov
