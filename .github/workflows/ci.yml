@@ -22,8 +22,8 @@ jobs:
         include:
           - os: macos-latest
             python-version: 3.12
-            run-type: [ std ]
-            test-path: [ "autotest" ]
+            run-type: std
+            test-path: "autotest"
 
     steps:
     - name: Checkout repo
