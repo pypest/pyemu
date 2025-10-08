@@ -64,7 +64,7 @@ jobs:
 ##          mingw-w64-x86_64-ninja
 
     - name: Install meson and gfortran (for ppu)
-      shell: bash
+      shell: bash -l {0}
       run: |
         micromamba install meson gfortran
 
