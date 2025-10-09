@@ -16,7 +16,7 @@ dependencies:
   - coveralls
   - flaky
   - pytest
-  - pytest-cov
+  - pytest-cov < 7.0
   - pytest-xdist
   - nbmake
   - shapely
