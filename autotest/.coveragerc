@@ -1,5 +1,6 @@
 [run]
 source = pyemu
+patch = subprocess
 parallel = True
 relative_files = True
 omit =
