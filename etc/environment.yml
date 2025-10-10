@@ -4,7 +4,7 @@ channels:
   - nodefaults
 dependencies:
   # required
-  - python >= 3.10
+  - python >= 3.9
   - libopenblas < 0.3.30
   - numpy
   - pandas
