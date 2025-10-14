@@ -1898,10 +1898,7 @@ class Pst(object):
         print(vstring)
 
         if version is None:
-            if self.npar > 10000:
-                version = 2
-            else:
-                version = 1
+            version = self._decide_version()
 
         if version == 1:
             return self._write_version1(new_filename=new_filename)
@@ -1911,6 +1908,22 @@ class Pst(object):
             raise Exception(
                 "Pst.write() error: version must be 1 or 2, not '{0}'".format(version)
             )
+
+    def _decide_version(self):
+        if self.npar > 10000:
+            return 2
+        if self.nobs > 10000:
+            return 2
+        key_cols = ["standard_deviation","upper_bound","lower_bound", 
+                    "cycle", "state_par_link","drop_violations",
+                    "greater_than","less_than","link_to"]
+        for col in key_cols:
+            if col in self.parameter_data.columns:
+                return 2
+            if col in self.observation_data.columns:
+                return 2
+
+        return 1
 
     def _rectify_parchglim(self):
         """private method to just fix the parchglim vs cross zero issue"""
