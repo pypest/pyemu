@@ -2452,7 +2452,7 @@ class PstFrom(object):
                         orgdata = ar.shape
                         for i, chk in checkref.items():
                             assert orgdata[i] == chk[1], (
-                                f"Spatial reference {chk[0]} not equal to original data {chk[0]} for\n"
+                                f"Spatial reference {chk[1]} not equal to original data {orgdata[i]} for\n"
                                 + os.path.join(
                                     *os.path.split(self.original_file_d)[1:], mod_file
                                 )
