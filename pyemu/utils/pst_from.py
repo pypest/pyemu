@@ -2120,6 +2120,10 @@ class PstFrom(object):
         )
         if checker:
             zone_array = np.reshape(zone_array, (zone_array.shape[0], 1))
+        # when accesing ib for a 1layer model, the returned array has shape (1,ncpl)
+        elif len(zone_array.shape) == 2 and zone_array.shape[0] == 1 and zone_array.shape[1] > 1:
+            zone_array = np.reshape(zone_array, (zone_array.shape[1], 1))
+
 
         # Get useful variables from arguments passed
         # if index_cols passed as a dictionary that maps i,j information
