@@ -4603,15 +4603,16 @@ def test_vertex_grid(tmp_path):
         df_pp = pf.add_parameters(f,
                             zone_array=ib[layer],
                             par_type="pilotpoints",
-                            use_pp_zones=True,
+                            #use_pp_zones=True,
                             geostruct=grid_gs,
                             par_name_base=f.split('.')[1].replace("_","")+"pp",
                             pargp=f.split('.')[1].replace("_","")+"pp",
                             lower_bound=0.2,upper_bound=5.0,
                             ult_ubound=100, ult_lbound=0.01,
-                            pp_options={"prep_hyperpars":True,
+                            pp_options={"prep_hyperpars":False,
                                         "pp_space":500,
-                                        "try_use_ppu":True}) # `
+                                        "try_use_ppu":False,
+                                        "pp_zones":True}) # `
 
     tag = "sfr_packagedata"
     files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
@@ -4683,9 +4684,14 @@ def test_vertex_grid(tmp_path):
         k = int(f.split('_layer')[-1].split('.')[0]) - 1
         a = np.loadtxt(os.path.join(template_ws, f))
         a_org = np.loadtxt(os.path.join(template_ws,'org', f))
+        assert a.shape == a_org.shape, (a.shape, a_org.shape)
+        assert np.isclose(a, a_org).all(), a-a_org
         # weak check
-        for zone in npfpar.loc[npfpar.pname.str.contains(f'layer{k+1}')].zone.unique():
-            assert np.isclose(abs((a/a_org)[ib[k]==int(zone)]-int(zone)).max(), 0)
+        zones = npfpar.loc[npfpar.pname.str.contains(f'layer{k+1}')].zone.unique()
+        # check all of zones are in ib[k]
+        assert set(zones).issubset(set(np.unique(ib[k]))), f"not all zones in ib for {f}"
+        for zone in zones:
+            assert np.isclose(abs((a/a_org)[ib[k]==int(zone)]-1).max(), 0), f"{f} zone {zone} failed check"
     return
 
 def test_defaults(tmp_path):
