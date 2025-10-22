@@ -2118,10 +2118,19 @@ class PstFrom(object):
                 and zone_array is not None
                 and len(zone_array.shape) == 1
         )
+        checker2 = (
+                self._spatial_reference is not None
+                and not isinstance(self._spatial_reference, dict)
+                and self._spatial_reference.grid_type == 'vertex'
+                and zone_array is not None
+                and len(zone_array.shape) == 2
+                and zone_array.shape[0] == 1
+                and zone_array.shape[1] > 1
+        )
         if checker:
             zone_array = np.reshape(zone_array, (zone_array.shape[0], 1))
         # when accesing ib for a 1layer model, the returned array has shape (1,ncpl)
-        elif len(zone_array.shape) == 2 and zone_array.shape[0] == 1 and zone_array.shape[1] > 1:
+        if checker2:
             zone_array = np.reshape(zone_array, (zone_array.shape[1], 1))
 
 
