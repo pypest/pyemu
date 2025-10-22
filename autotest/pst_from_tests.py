@@ -4609,7 +4609,9 @@ def test_vertex_grid(tmp_path):
                             pargp=f.split('.')[1].replace("_","")+"pp",
                             lower_bound=0.2,upper_bound=5.0,
                             ult_ubound=100, ult_lbound=0.01,
-                            pp_space=500) # `
+                            pp_options={"prep_hyperpars":True,
+                                        "pp_space":500,
+                                        "try_use_ppu":True}) # `
 
     tag = "sfr_packagedata"
     files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
