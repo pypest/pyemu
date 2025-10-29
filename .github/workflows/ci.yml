@@ -15,13 +15,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
-        python-version: [3.9, "3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
         run-type: [std]
         test-path: ["."]
         include:
           - os: macos-latest
-            python-version: 3.11
+            python-version: 3.12
+            run-type: std
+            test-path: "."
 
     steps:
     - name: Checkout repo
@@ -116,20 +118,19 @@ jobs:
 
     - name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
       shell: bash -l {0}
-      working-directory: ./autotest
+      working-directory: autotest
       run: |
-        pytest -rP -rx --capture=no -v --tb=native --durations=20 --cov=pyemu --cov-report=lcov ${{ matrix.test-path }}
+        pytest -rP -rx --capture=no -v --tb=native --durations=20 --cov=pyemu --cov-config=.coveragerc --cov-report=lcov ${{ matrix.test-path }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Test Notebooks
-      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.11 }}
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
       shell: bash -l {0}
-      working-directory: ./examples
+      working-directory: examples
       run: |
-        micromamba install --name pyemu jupyter jupytext
-        pytest -v -s --nbmake --cov=pyemu --cov-report=lcov:coverage.lcov \
-          --cov-config=../autotest/.coveragerc *.ipynb
+        pytest -v -s --nbmake --cov=pyemu --cov-config=../autotest/.coveragerc --cov-report=lcov *.ipynb
+      # feeling is that pytest-cov is not dialed in with nbmake...
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -139,7 +140,7 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         flag-name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
         parallel: true
-        path-to-lcov: autotest/coverage.lcov
+#        path-to-lcov: autotest/coverage.lcov
 
   coveralls_finish:
     needs: pyemuCI
@@ -150,4 +151,4 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         parallel-finished: true
-        path-to-lcov: autotest/coverage.lcov
+#        path-to-lcov: autotest/coverage.lcov
