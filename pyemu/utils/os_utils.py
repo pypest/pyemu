@@ -254,11 +254,11 @@ def _try_remove_existing(d, forgive=False):
 
 def _try_copy_dir(o_d, n_d):
     try:
-        shutil.copytree(o_d, n_d)
+        shutil.copytree(o_d, n_d, symlinks=True)
     except PermissionError:
         time.sleep(3) # pause for windows locking issues
         try:
-            shutil.copytree(o_d, n_d)
+            shutil.copytree(o_d, n_d, symlinks=True)
         except Exception as e:
             raise Exception(
                 f"unable to copy files from base dir: "
