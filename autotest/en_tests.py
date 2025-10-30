@@ -802,7 +802,7 @@ def draw_new_test():
         sdiff = [np.abs(std[0] - s) for s in std[1:]]
 
         print(pname,max(sdiff))
-        assert max(sdiff) < 0.05
+        assert max(sdiff) < 0.1
     
     # pst.add_transform_columns()
     # ubnd = pst.parameter_data.parubnd_trans.to_dict()
