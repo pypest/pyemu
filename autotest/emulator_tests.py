@@ -6,11 +6,11 @@ import numpy as np
 import pandas as pd
 import platform
 import pyemu
-from pst_from_tests import setup_tmp, bin_path, _get_port
+from pst_from_tests import setup_tmp, _get_port, exepath_dict
 from pyemu.emulators import DSI, LPFA, GPR
 
-ies_exe_path = os.path.join(bin_path, "pestpp-ies")
-mou_exe_path = os.path.join(bin_path, "pestpp-mou")
+ies_exe_path = exepath_dict["pestpp-ies"]
+mou_exe_path = exepath_dict["pestpp-mou"]
 
 def dsi_freyberg(tmp_d,transforms=None,tag=""):
 

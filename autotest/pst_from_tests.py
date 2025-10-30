@@ -10,35 +10,14 @@ from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
 import shutil
 import pytest
 
-ext = ''
-local_bins = False  # change if wanting to test with local binary exes
-if local_bins:
-    bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.system().lower():
-        pass
-        bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.system().lower():
-        pass
-        bin_path = os.path.join(bin_path, "mac")
-    else:
-        bin_path = os.path.join(bin_path, "win")
-        ext = '.exe'
-else:
-    bin_path = ''
-    if "windows" in platform.system().lower():
-        ext = '.exe'
+from conftest import full_exe_ref_dict
 
-mf_exe_path = os.path.join(bin_path, "mfnwt")
-mt_exe_path = os.path.join(bin_path, "mt3dusgs")
-usg_exe_path = os.path.join(bin_path, "mfusg_gsi")
-mf6_exe_path = os.path.join(bin_path, "mf6")
-pp_exe_path = os.path.join(bin_path, "pestpp-glm")
-ies_exe_path = os.path.join(bin_path, "pestpp-ies")
-swp_exe_path = os.path.join(bin_path, "pestpp-swp")
-
-mf_exe_name = os.path.basename(mf_exe_path)
-mf6_exe_name = os.path.basename(mf6_exe_path)
-
+exepath_dict = full_exe_ref_dict()
+ies_exe_path = exepath_dict['pestpp-ies']
+mf_exe_path = exepath_dict['mfnwt']
+mf6_exe_path = exepath_dict['mf6']
+pp_exe_path = exepath_dict['pestpp-glm']
+usg_exe_path = exepath_dict["mfusg_gsi"]
 
 def _get_port():
     import socket
@@ -92,104 +71,8 @@ def setup_tmp(od, tmp_d, sub=None):
     shutil.copytree(od, new_d)
     return new_d
 
-# @pytest.fixture
-# def freybergmf6_2_pstfrom(tmp_path):
-#     import numpy as np
-#     import pandas as pd
-#     pd.set_option('display.max_rows', 500)
-#     pd.set_option('display.max_columns', 500)
-#     pd.set_option('display.width', 1000)
-#     try:
-#         import flopy
-#     except:
-#         return
-#
-#     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
-#     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
-#     bd = Path.cwd()
-#     os.chdir(tmp_path)
-#     try:
-#         tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-#         sim = flopy.mf6.MFSimulation.load(sim_ws=str(tmp_model_ws))
-#         m = sim.get_model()
-#         sim.set_all_data_external(check_data=False)
-#         sim.write_simulation()
-#
-#         # SETUP pest stuff...
-#         os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
-#         template_ws = "new_temp"
-#         if os.path.exists(template_ws):
-#             shutil.rmtree(template_ws)
-#         # sr0 = m.sr
-#         # sr = pyemu.helpers.SpatialReference.from_namfile(
-#         #     os.path.join(tmp_model_ws, "freyberg6.nam"),
-#         #     delr=m.dis.delr.array, delc=m.dis.delc.array)
-#         sr = m.modelgrid
-#         # set up PstFrom object
-#         pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-#                      remove_existing=True,
-#                      longnames=True, spatial_reference=sr,
-#                      zero_based=False, start_datetime="1-1-2018",
-#                      chunk_len=1)
-#         yield pf
-#     except Exception as e:
-#         os.chdir(bd)
-#         raise e
-#     os.chdir(bd)
 
-
-# @pytest.fixture
-# def freybergnwt_2_pstfrom(tmp_path):
-#     import numpy as np
-#     import pandas as pd
-#     pd.set_option('display.max_rows', 500)
-#     pd.set_option('display.max_columns', 500)
-#     pd.set_option('display.width', 1000)
-#     try:
-#         import flopy
-#     except:
-#         return
-#
-#     org_model_ws = os.path.join('..', 'examples', 'freyberg_sfr_reaches')
-#     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
-#     bd = Path.cwd()
-#     os.chdir(tmp_path)
-#     nam_file = "freyberg.nam"
-#     try:
-#         tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
-#         m = flopy.modflow.Modflow.load(nam_file, model_ws=tmp_model_ws,
-#                                        check=False, forgive=False,
-#                                        exe_name=mf_exe_path)
-#         flopy.modflow.ModflowRiv(m, stress_period_data={
-#             0: [[0, 0, 0, m.dis.top.array[0, 0], 1.0, m.dis.botm.array[0, 0, 0]],
-#                 [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]],
-#                 [0, 0, 1, m.dis.top.array[0, 1], 1.0, m.dis.botm.array[0, 0, 1]]]})
-#
-#         m.external_path = "."
-#         m.write_input()
-#         runstr = ("{0} {1}".format(mf_exe_path, m.name + ".nam"), tmp_model_ws)
-#         print(runstr)
-#         os_utils.run(*runstr)
-#         template_ws = "template"
-#         if os.path.exists(template_ws):
-#             shutil.rmtree(template_ws)
-#         sr = pyemu.helpers.SpatialReference.from_namfile(
-#             os.path.join(m.model_ws, m.namefile),
-#             delr=m.dis.delr, delc=m.dis.delc)
-#         # set up PstFrom object
-#         pf = PstFrom(original_d=tmp_model_ws, new_d=template_ws,
-#                      remove_existing=True,
-#                      longnames=True, spatial_reference=sr,
-#                      zero_based=False, start_datetime="1-1-2018",
-#                      chunk_len=1)
-#         yield pf
-#     except Exception as e:
-#         os.chdir(bd)
-#         raise e
-#     os.chdir(bd)
-
-
-def freyberg_test(tmp_path):
+def test_freyberg(tmp_path):
     import numpy as np
     import pandas as pd
     from pyemu import PyemuWarning
@@ -383,7 +266,7 @@ def freyberg_test(tmp_path):
 
 
     # add model run command
-    pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
+    pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_path, m.name + ".nam"))
     print(pf.mult_files)
     print(pf.org_files)
 
@@ -608,7 +491,7 @@ def test_freyberg_prior_build(tmp_path):
 
 
     # add model run command
-    pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_name, m.name + ".nam"))
+    pf.mod_sys_cmds.append("{0} {1}".format(mf_exe_path, m.name + ".nam"))
     print(pf.mult_files)
     print(pf.org_files)
 
@@ -1086,7 +969,7 @@ def test_mf6_freyberg(tmp_path):
                           geostruct=rch_temporal_gs)
 
     # add model run command
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     # print(pf.mult_files)
     # print(pf.org_files)
 
@@ -1298,7 +1181,7 @@ def mf6_freyberg_shortnames_test(tmp_path):
     assert len(pdf) == 4
 
     # add model run command
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     print(pf.mult_files)
     print(pf.org_files)
 
@@ -1414,7 +1297,7 @@ def mf6_freyberg_da_test(tmp_path):
     m = sim.get_model("freyberg6")
 
     # SETUP pest stuff...
-    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
     template_ws = "new_temp_da"
     if os.path.exists(template_ws):
@@ -1485,7 +1368,7 @@ def mf6_freyberg_da_test(tmp_path):
                       par_type="grid")
 
     # add model run command
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     # print(pf.mult_files)
     # print(pf.org_files)
 
@@ -1585,7 +1468,7 @@ def setup_freyberg_mf6(wd, model="freyberg_mf6", **kwargs):
         sim.write_simulation()
 
         # SETUP pest stuff...
-        os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
+        os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
         template_ws = Path(wd, "template")
         if os.path.exists(template_ws):
@@ -1613,7 +1496,7 @@ def setup_freyberg_mf6(wd, model="freyberg_mf6", **kwargs):
 
 
 def build_direct(pf):
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     print(pf.mult_files)
     print(pf.org_files)
 
@@ -2071,7 +1954,7 @@ def mf6_freyberg_direct_test(tmp_path):
     sim.write_simulation()
 
     # SETUP pest stuff...
-    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
     template_ws = Path(tmp_path, "new_temp_direct")
     if os.path.exists(template_ws):
@@ -2249,7 +2132,7 @@ def mf6_freyberg_direct_test(tmp_path):
                       use_rows=[('well2', 21, 15), ('well4', 30, 7)])
     assert len(pf.par_dfs[-1]) == 2 * 2  # should be
     # add model run command
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     print(pf.mult_files)
     print(pf.org_files)
 
@@ -2497,7 +2380,7 @@ def mf6_freyberg_varying_idomain(tmp_path):
                               geostruct=gr_gs, zone_array=ib[k],ult_lbound=ult_lb,ult_ubound=ult_ub)
 
     # add model run command
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     df = pd.read_csv(os.path.join(tmp_model_ws, "heads.csv"), index_col=0)
     df = pf.add_observations("heads.csv", insfile="heads.csv.ins", index_cols="time", use_cols=list(df.columns.values),
                         prefix="hds", ofile_sep=",")
@@ -2617,7 +2500,7 @@ def mf6_freyberg_short_direct_test(tmp_path):
     sim.write_simulation()
 
     # SETUP pest stuff...
-    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
     template_ws = "new_temp_direct"
     if os.path.exists(template_ws):
@@ -2759,7 +2642,7 @@ def mf6_freyberg_short_direct_test(tmp_path):
                       transform="none")
 
     # add model run command
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     print(pf.mult_files)
     print(pf.org_files)
 
@@ -3595,7 +3478,7 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
             arr_dict[arr_file] = np.loadtxt(pf.new_d / arr_file)
 
     # add model run command
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     print(pf.mult_files)
     print(pf.org_files)
 
@@ -3642,7 +3525,7 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
     assert d.sum() == 0
 
 
-def mf6_freyberg_pp_locs_test(tmp_path):
+def test_mf6_freyberg_pp_locs(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -3747,7 +3630,7 @@ def mf6_freyberg_pp_locs_test(tmp_path):
 
 
     # add model run command
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     print(pf.mult_files)
     print(pf.org_files)
 
@@ -4037,7 +3920,7 @@ def mf6_add_various_obs_test(tmp_path):
     pf.add_parameters(["freyberg6.npf_k_layer1.txt",
                        "freyberg6.npf_k_layer2.txt",
                        "freyberg6.npf_k_layer3.txt"],par_type='constant')
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     pf.add_py_function(
         __file__,
         f"_add_big_obsffile('.', profile=False, nchar={linelen})",
@@ -4102,11 +3985,7 @@ def mf6_subdir_test(tmp_path):
     sim.write_simulation()
 
     # SETUP pest stuff...
-    if bin_path == '':
-        exe = mf6_exe_path  # bit of flexibility for local/server run
-    else:
-        exe = os.path.join('..', mf6_exe_path)
-    os_utils.run("{0} ".format(exe), cwd=tmp2_ws)
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp2_ws)
     # call generic once so that the output file exists
     df = generic_function(tmp2_ws)
     template_ws = "new_temp"
@@ -4271,7 +4150,7 @@ def mf6_subdir_test(tmp_path):
     #
     # # add model run command
     pf.pre_py_cmds.append(f"os.chdir('{sd}')")
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     pf.post_py_cmds.insert(0, "os.chdir('..')")
     # print(pf.mult_files)
     # print(pf.org_files)
@@ -4584,7 +4463,7 @@ def test_vertex_grid(tmp_path):
         a = [float(i) for i in a.split()]
         np.savetxt(fname=filename, X=a)
     # run model after input file change
-    pyemu.os_utils.run('mf6', cwd=template_ws)
+    pyemu.os_utils.run(mf6_exe_path, cwd=template_ws)
 
     for f in files:
         layer = int(f.split('_layer')[-1].split('.')[0]) - 1
@@ -4603,13 +4482,16 @@ def test_vertex_grid(tmp_path):
         df_pp = pf.add_parameters(f,
                             zone_array=ib[layer],
                             par_type="pilotpoints",
-                            use_pp_zones=True,
+                            #use_pp_zones=True,
                             geostruct=grid_gs,
                             par_name_base=f.split('.')[1].replace("_","")+"pp",
                             pargp=f.split('.')[1].replace("_","")+"pp",
                             lower_bound=0.2,upper_bound=5.0,
                             ult_ubound=100, ult_lbound=0.01,
-                            pp_space=500) # `
+                            pp_options={"prep_hyperpars":False,
+                                        "pp_space":500,
+                                        "try_use_ppu":False,
+                                        "pp_zones":True}) # `
 
     tag = "sfr_packagedata"
     files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
@@ -4635,7 +4517,7 @@ def test_vertex_grid(tmp_path):
                                 index_cols="time",
                                 use_cols=list(df.columns.values),
                                 prefix="sfr")
-    pf.mod_sys_cmds.append('mf6')
+    pf.mod_sys_cmds.append(mf6_exe_path)
     pst = pf.build_pst()
     # check_apply(pf)
     # run once
@@ -4681,9 +4563,14 @@ def test_vertex_grid(tmp_path):
         k = int(f.split('_layer')[-1].split('.')[0]) - 1
         a = np.loadtxt(os.path.join(template_ws, f))
         a_org = np.loadtxt(os.path.join(template_ws,'org', f))
+        assert a.shape == a_org.shape, (a.shape, a_org.shape)
+        assert np.isclose(a, a_org).all(), a-a_org
         # weak check
-        for zone in npfpar.loc[npfpar.pname.str.contains(f'layer{k+1}')].zone.unique():
-            assert np.isclose(abs((a/a_org)[ib[k]==int(zone)]-int(zone)).max(), 0)
+        zones = npfpar.loc[npfpar.pname.str.contains(f'layer{k+1}')].zone.unique()
+        # check all of zones are in ib[k]
+        assert set(zones).issubset(set(np.unique(ib[k]))), f"not all zones in ib for {f}"
+        for zone in zones:
+            assert np.isclose(abs((a/a_org)[ib[k]==int(zone)]-1).max(), 0), f"{f} zone {zone} failed check"
     return
 
 def test_defaults(tmp_path):
@@ -4837,7 +4724,7 @@ def mf6_freyberg_thresh_test(tmp_path):
 
 
     # SETUP pest stuff...
-    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
     template_ws = Path(tmp_path, "new_temp_thresh")
     if os.path.exists(template_ws):
@@ -4944,7 +4831,7 @@ def mf6_freyberg_thresh_test(tmp_path):
                 num_cat_arrays += 1
 
     # add model run command
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     # print(pf.mult_files)
     # print(pf.org_files)
 
@@ -5707,7 +5594,7 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
 
 
     # add model run command
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     print(pf.mult_files)
     print(pf.org_files)
 
@@ -5806,7 +5693,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     sim.write_simulation()
 
     # SETUP pest stuff...
-    os_utils.run("{0} ".format("mf6"), cwd=tmp_model_ws)
+    os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
     template_ws = Path(tmp_path, "new_temp_thresh")
     if os.path.exists(template_ws):
@@ -5961,7 +5848,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
                 num_cat_arrays += 1
 
     # add model run command
-    pf.mod_sys_cmds.append("mf6")
+    pf.mod_sys_cmds.append(mf6_exe_path)
     print(pf.mult_files)
     print(pf.org_files)
 
@@ -6322,7 +6209,7 @@ def invest_vertexpp_setup_speed():
     from pathlib import Path
     from shapely import Polygon
     import cProfile
-    sim = flopy.mf6.MFSimulation(sim_name="test", sim_ws="test", exe_name="mf6")
+    sim = flopy.mf6.MFSimulation(sim_name="test", sim_ws="test", exe_name=mf6_exe_path)
     gwf = flopy.mf6.ModflowGwf(sim, modelname="test")
 
     dis = flopy.mf6.ModflowGwfdis(
@@ -6456,7 +6343,7 @@ def draw_consistency_test(tmp_path):
     bce = pyemu.ParameterEnsemble.from_binary(pst=None,filename=os.path.join(tmp_d,"basecase_pe_enforce.bin"))._df
     bc.index = bc.index.astype(int)
     bce.index = bce.index.astype(int)
-    
+
 
 
     sr = pyemu.helpers.SpatialReference.from_namfile(
@@ -6482,7 +6369,7 @@ def draw_consistency_test(tmp_path):
                                         bearing=45.0 #angle in degrees East of North corresponding to anisotropy ellipse
                                         )
 
-    pp_gs = pyemu.geostats.GeoStruct(variograms=v_pp, transform='log') 
+    pp_gs = pyemu.geostats.GeoStruct(variograms=v_pp, transform='log')
     v = pyemu.utils.geostats.ExpVario(a=3000,contribution=1.0)
 
     tag = "npf_k"
@@ -6501,7 +6388,7 @@ def draw_consistency_test(tmp_path):
                         pargp=f.split('.')[1].replace("_","")+"cn",
                         lower_bound=0.5,upper_bound=2.0,
                         ult_ubound=100, ult_lbound=0.01)
-    
+
     df_cst = pf.add_parameters(f,
                         par_type="grid",
                         par_name_base=f.split('.')[1].replace("_","")+"gr",
@@ -6526,7 +6413,7 @@ def draw_consistency_test(tmp_path):
                         ult_ubound=100, ult_lbound=0.01,
                         pp_options={"pp_space":50}
                         ) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
-    
+
     df_pp = pf.add_parameters(f,
                         zone_array=ib,
                         par_type="pilotpoints",
@@ -6537,7 +6424,7 @@ def draw_consistency_test(tmp_path):
                         ult_ubound=100, ult_lbound=0.01,
                         pp_options={"pp_space":20}
                         ) # `PstFrom` will generate a uniform grid of pilot points in every 4th row and column
-    
+
 
     pst = pf.build_pst()
 
@@ -6551,7 +6438,7 @@ def draw_consistency_test(tmp_path):
     # no bs values...
     assert np.nanmax(np.abs(pe.values)) < 100000
     assert np.all(~np.isnan(pe.values))
-    
+
     pe.to_dense(os.path.join(template_ws,"basecase_pe.bin"))
     diff = np.abs(pe - bc)
 
@@ -6564,8 +6451,8 @@ def draw_consistency_test(tmp_path):
     print("pe enforced",diff.values.max())
     assert np.all(~np.isnan(diff))
     assert diff.values.max() < 1e-6
-    
-    
+
+
 if __name__ == "__main__":
     draw_consistency_test('.')
     #xsec_pars_as_obs_test(".")
@@ -6583,7 +6470,7 @@ if __name__ == "__main__":
 
     # invest()
     # test_add_array_parameters_pps_grid()
-    #freyberg_test(os.path.abspath("."))
+    # test_freyberg(os.path.abspath("."))
     # freyberg_prior_build_test()
     #mf6_freyberg_test(os.path.abspath("."))
     #$mf6_freyberg_da_test()

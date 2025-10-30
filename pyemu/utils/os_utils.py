@@ -141,7 +141,9 @@ def run_ossystem(cmd_str, cwd=".", verbose=False):
                 exe_name = exe_name.replace(".exe", "")
                 raw[0] = exe_name
                 cmd_str = "{0} {1} ".format(*raw)
-            if os.path.exists(exe_name) and not exe_name.startswith("./"):
+            if (os.path.exists(exe_name)
+                    and not exe_name.startswith("./")
+                    and not exe_name.startswith("/")):
                 cmd_str = "./" + cmd_str
 
     except Exception as e:
@@ -193,8 +195,11 @@ def run_sp(cmd_str, cwd=".", verbose=True, logfile=False, **kwargs):
 
     bwd = os.getcwd()
     os.chdir(cwd)
-
-    if platform.system() != "Windows" and not shutil.which(cmd_str.split()[0]):
+    exe_name = cmd_str.split()[0]
+    if (platform.system() != "Windows"
+            and not shutil.which(exe_name)
+            and not exe_name.startswith("./")
+            and not exe_name.startswith("/")):
         cmd_str = "./" + cmd_str
 
     try:
@@ -249,11 +254,11 @@ def _try_remove_existing(d, forgive=False):
 
 def _try_copy_dir(o_d, n_d):
     try:
-        shutil.copytree(o_d, n_d)
+        shutil.copytree(o_d, n_d, symlinks=True)
     except PermissionError:
         time.sleep(3) # pause for windows locking issues
         try:
-            shutil.copytree(o_d, n_d)
+            shutil.copytree(o_d, n_d, symlinks=True)
         except Exception as e:
             raise Exception(
                 f"unable to copy files from base dir: "
