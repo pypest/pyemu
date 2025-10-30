@@ -1462,7 +1462,7 @@ class ParameterEnsemble(Ensemble):
                 reals[-1] += noise_real
             
         reals = pd.DataFrame(reals,columns=adj_names,index=np.arange(num_reals))
-        reals = pyemu.ParameterEnsemble(df=reals,pst=self.pst,istransformed=True)
+        reals = ParameterEnsemble(df=reals,pst=self.pst,istransformed=True)
         reals.back_transform()
         if back_trans:
             self.back_transform()
