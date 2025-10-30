@@ -141,7 +141,9 @@ def run_ossystem(cmd_str, cwd=".", verbose=False):
                 exe_name = exe_name.replace(".exe", "")
                 raw[0] = exe_name
                 cmd_str = "{0} {1} ".format(*raw)
-            if os.path.exists(exe_name) and not exe_name.startswith("./"):
+            if (os.path.exists(exe_name)
+                    and not exe_name.startswith("./")
+                    and not exe_name.startswith("/")):
                 cmd_str = "./" + cmd_str
 
     except Exception as e:
@@ -193,8 +195,11 @@ def run_sp(cmd_str, cwd=".", verbose=True, logfile=False, **kwargs):
 
     bwd = os.getcwd()
     os.chdir(cwd)
-
-    if platform.system() != "Windows" and not shutil.which(cmd_str.split()[0]):
+    exe_name = cmd_str.split()[0]
+    if (platform.system() != "Windows"
+            and not shutil.which(exe_name)
+            and not exe_name.startswith("./")
+            and not exe_name.startswith("/")):
         cmd_str = "./" + cmd_str
 
     try:

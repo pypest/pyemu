@@ -783,6 +783,10 @@ def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
     aniso_filename = file_tag + ".aniso.dat"
     zone_filename = file_tag + ".zone.dat"
 
+    if len(arr_shape) == 1 and type(arr_shape) is tuple:
+        arr_shape = (1,arr_shape[0])
+
+
     nodes = list(grid_dict.keys())
     nodes.sort()
     with open(os.path.join(ws,gridinfo_filename), 'w') as f:
@@ -798,7 +802,7 @@ def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
     np.savetxt(os.path.join(ws,aniso_filename), aniso, fmt="%20.8E")
 
     if zone_array is None:
-        zone_array = np.ones(shape,dtype=int)
+        zone_array = np.ones(arr_shape,dtype=int)
     np.savetxt(os.path.join(ws,zone_filename),zone_array,fmt="%5d")
 
 

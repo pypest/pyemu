@@ -2118,8 +2118,21 @@ class PstFrom(object):
                 and zone_array is not None
                 and len(zone_array.shape) == 1
         )
+        checker2 = (
+                self._spatial_reference is not None
+                and not isinstance(self._spatial_reference, dict)
+                and self._spatial_reference.grid_type == 'vertex'
+                and zone_array is not None
+                and len(zone_array.shape) == 2
+                and zone_array.shape[0] == 1
+                and zone_array.shape[1] > 1
+        )
         if checker:
             zone_array = np.reshape(zone_array, (zone_array.shape[0], 1))
+        # when accesing ib for a 1layer model, the returned array has shape (1,ncpl)
+        if checker2:
+            zone_array = np.reshape(zone_array, (zone_array.shape[1], 1))
+
 
         # Get useful variables from arguments passed
         # if index_cols passed as a dictionary that maps i,j information
@@ -2452,7 +2465,7 @@ class PstFrom(object):
                         orgdata = ar.shape
                         for i, chk in checkref.items():
                             assert orgdata[i] == chk[1], (
-                                f"Spatial reference {chk[0]} not equal to original data {chk[0]} for\n"
+                                f"Spatial reference {chk[1]} not equal to original data {orgdata[i]} for\n"
                                 + os.path.join(
                                     *os.path.split(self.original_file_d)[1:], mod_file
                                 )
