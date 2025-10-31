@@ -1898,10 +1898,7 @@ class Pst(object):
         print(vstring)
 
         if version is None:
-            if self.npar > 10000:
-                version = 2
-            else:
-                version = 1
+            version = self._decide_version()
 
         if version == 1:
             return self._write_version1(new_filename=new_filename)
@@ -1911,6 +1908,22 @@ class Pst(object):
             raise Exception(
                 "Pst.write() error: version must be 1 or 2, not '{0}'".format(version)
             )
+
+    def _decide_version(self):
+        if self.npar > 10000:
+            return 2
+        if self.nobs > 10000:
+            return 2
+        key_cols = ["standard_deviation","upper_bound","lower_bound", 
+                    "cycle", "state_par_link","drop_violations",
+                    "greater_than","less_than","link_to"]
+        for col in key_cols:
+            if col in self.parameter_data.columns:
+                return 2
+            if col in self.observation_data.columns:
+                return 2
+
+        return 1
 
     def _rectify_parchglim(self):
         """private method to just fix the parchglim vs cross zero issue"""
@@ -3952,7 +3965,7 @@ class Pst(object):
                               file_obsparmap=insmap, pst_path=pst_path)
 
 
-    def add_pars_as_obs(self,pst_path='.'):
+    def add_pars_as_obs(self,pst_path='.',par_sigma_range=4):
         """add all parameter values as observation values by creating a new
         template and instruction file and adding them to the control file
 
@@ -3960,6 +3973,9 @@ class Pst(object):
             pst_path (str): the path to the control file from where python
                 is running.  Default is "." (python is running in the
                 same directory as the control file)
+            par_sigma_range (int):  number of standard deviations implied by the 
+                distance between the parameter bounds.  Used to set the weights
+                for the range observations
 
 
         """
@@ -3983,7 +3999,64 @@ class Pst(object):
             for name in parval1.index:
                 f.write("l1 ~,~  !{0}!\n".format(name))
         self.add_parameters(tpl_fname,in_fname,pst_path='.')
-        self.add_observations(ins_fname,in_fname,pst_path='.')
+        df = self.add_observations(ins_fname,in_fname,pst_path='.')
+        self.add_transform_columns()
+        obs = self.observation_data
+        par = self.parameter_data
+        if "greater_than" not in obs.columns:
+            obs["greater_than"] = np.nan
+        if "less_than" not in obs.columns:
+            obs["less_than"] = np.nan
+
+        obs.loc[df.obsnme,"greater_than"] = par.loc[df.obsnme,"parlbnd"]
+        obs.loc[df.obsnme,"less_than"] = par.loc[df.obsnme,"parubnd"]
+
+        log_idx = par.loc[df.obsnme,"partrans"] == "log"
+        stdev = (par.loc[df.obsnme,"parubnd_trans"] - par.loc[df.obsnme,"parlbnd_trans"]) / par_sigma_range
+        stdev.loc[log_idx] = 10**stdev.loc[log_idx]
+        obs.loc[df.obsnme,"weight"] = 1.0 / stdev.values 
+        obs.loc[df.obsnme,"obgnme"] = "parbounds"
+        
+
+    def dialate_par_bounds(self,dialate_factor,center=True):
+        """ increase the distance between the parameter bounds while respecting the 
+            log transformation status
+
+        Args:
+            dialate_factor (varies): a factor to increase the distance between parameter
+                bounds.  Can be a float or a dict of str-float pars.
+            center (bool): flag to dialate from the center point between the bounds.  If 
+                False, then the dialation is from the `parval1` values.  Beware that using
+                center False can have produce the some strange results...
+        """
+
+        if isinstance(dialate_factor,float):
+            temp = {}
+            for name in self.par_names:
+                temp[name] = dialate_factor
+            dialate_factor = temp
+            temp = None
+        self.add_transform_columns()
+
+        par = self.parameter_data
+        par['dialate_factor'] = [dialate_factor.get(name,1.0) for name in par.parnme.values]
+        log_idx = par.partrans == "log"
+        par["bnd_center"] = par.parlbnd_trans + ((par.parubnd_trans - par.parlbnd_trans) / 2.0)
+        if center:
+            par["center_point"] = par["bnd_center"] 
+        else:
+            par["center_point"] = par.parval1_trans.copy()
+        
+        par["parubnd_org"] = par.parubnd.copy()
+        par["ubdist"] = par.parubnd_trans - par.bnd_center
+        par["parubnd"] = par.center_point + (par.ubdist * par.dialate_factor)
+
+        par["parlbnd_org"] = par.parlbnd.copy()
+        par["lbdist"] = par.bnd_center - par.parlbnd_trans
+        par["parlbnd"] = par.center_point - (par.lbdist * par.dialate_factor)
+        
+        par.loc[log_idx,"parubnd"] = 10**par.loc[log_idx,"parubnd"]
+        par.loc[log_idx,"parlbnd"] = 10**par.loc[log_idx,"parlbnd"]
 
 
 def _replace_str_in_files(filelist, name_dict, file_obsparmap=None, pst_path='.'):
