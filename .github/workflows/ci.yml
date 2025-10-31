@@ -36,7 +36,7 @@ jobs:
         enable-cache: true
 
     - name: Install the project
-      run: uv sync --locked --extra test
+      run: uv sync --locked --dev --extra optional
 
 #    - name: Set Windows ENV
 #      if: runner.os == 'Windows'
