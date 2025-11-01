@@ -144,7 +144,7 @@ jobs:
 #      shell: bash -l {0}
 #      working-directory: examples
       run: |
-        uv pytest -v -s --nbval-lax --cov=pyemu --cov-report=lcov examples/*.ipynb
+        uv run pytest -v -s --nbval-lax --cov=pyemu --cov-report=lcov examples/*.ipynb
       # feeling is that pytest-cov is not dialed in with nbmake...
 #      env:
 #        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
