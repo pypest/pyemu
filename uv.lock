@@ -1254,6 +1254,22 @@ wheels = [
 ]
 
 [[package]]
+name = "nbval"
+version = "0.11.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "coverage" },
+    { name = "ipykernel" },
+    { name = "jupyter-client" },
+    { name = "nbformat" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/28/be/22bd64d09e0cb53258f83b6fc455f05f18a78e3e5c109ccb6af42f1f49a2/nbval-0.11.0.tar.gz", hash = "sha256:77c95797607b0a968babd2597ee3494102d25c3ad37435debbdac0e46e379094", size = 62718, upload-time = "2024-03-04T14:36:58.256Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2c/5c/eb1e3ce54c4e94c7734b3831756c63f21badb3de91a98d77b9e23c0ca76a/nbval-0.11.0-py2.py3-none-any.whl", hash = "sha256:307aecc866c9a1e8a13bb5bbb008a702bacfda2394dff6fe504a3108a58042a0", size = 24013, upload-time = "2024-03-04T14:36:57.126Z" },
+]
+
+[[package]]
 name = "nest-asyncio"
 version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1719,6 +1735,7 @@ dev = [
     { name = "flaky" },
     { name = "modflow-devtools" },
     { name = "nbmake" },
+    { name = "nbval" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
@@ -1747,6 +1764,7 @@ dev = [
     { name = "flaky", specifier = ">=3.8.1" },
     { name = "modflow-devtools", specifier = ">=1.8.0" },
     { name = "nbmake", specifier = ">=1.5.5" },
+    { name = "nbval", specifier = ">=0.11.0" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-xdist", specifier = ">=3.8.0" },

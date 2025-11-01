@@ -104,8 +104,8 @@ pyEMU CI testing, using GitHub actions, has recently been switched over to run w
 We make use of [pytest-xdist](https://pytest-xdist.readthedocs.io/en/latest/) for parallel execution. 
 Some notes that might be helpful for building your PR and testing:
 * Test files are in [./autotest](https://github.com/pypest/pyemu/tree/develop/autotest)
-* Pytest settings are in [./autotest/conftest.py](./autotest/conftest.py) and [./autotest/pytest.ini](./autotest/pytest.ini)
-* Currently, files ending `_tests.py` or `_tests_2.py` are collected
+* Pytest settings are in [./autotest/conftest.py](./autotest/conftest.py) and [./pyproject.toml](autotest/pytest.ini)
+* Currently, files ending `_tests.py` are collected
 * Functions starting `test_` or ending `_test` are collected
 * ipython notebooks in [.examples](./examples) are also run
 * As tests are run in parallel, where tests require read/write access to files it is safest to sandbox runs. 
