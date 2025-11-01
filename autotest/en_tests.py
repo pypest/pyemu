@@ -769,7 +769,70 @@ def mixed_par_draw_2_test():
     assert pst.npar == npar
 
 
+def draw_new_test():
+
+    import os
+    import numpy as np
+    import pyemu
+    pst = pyemu.Pst(os.path.join("en", "pest.pst"))
+    cov = pyemu.Cov.from_binary(os.path.join("en", "cov.jcb"))
+    print(pst.npar, cov.shape)
+    num_reals = 10000
+
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
+    
+    sub_pe = pe.iloc[:10000,:]
+
+    new_pe_nonoise = sub_pe.draw_new_ensemble(num_reals=num_reals)
+    new_pe_stdnoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True)
+    new_pe_usernoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=1./np.sqrt(sub_pe.shape[0]))
+    new_pe_ennoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True,noise_reals=pe)
+    
+    #pes = [pe,sub_pe,new_pe_nonoise,new_pe_stdnoise,new_pe_usernoise,new_pe_ennoise]
+    colors = ["r","y","b","g","m","c"]
+
+    pes = [pe,new_pe_stdnoise,new_pe_usernoise,new_pe_ennoise]
+    for ppe in pes:
+        ppe.transform()
+        #ppe.enforce()
+
+    for pname in pst.adj_par_names:
+        std = [ppe.loc[:,pname].std() for ppe in pes]
+        mean = [ppe.loc[:,pname].mean() for ppe in pes]
+        sdiff = [np.abs(std[0] - s) for s in std[1:]]
+
+        print(pname,max(sdiff))
+        assert max(sdiff) < 0.1
+    
+    # pst.add_transform_columns()
+    # ubnd = pst.parameter_data.parubnd_trans.to_dict()
+    # lbnd = pst.parameter_data.parlbnd_trans.to_dict()
+    
+
+    # import matplotlib.pyplot as plt
+    # from matplotlib.backends.backend_pdf import PdfPages
+    # with PdfPages("check.pdf") as pdf:
+    #     for pname in pst.adj_par_names:
+    #         fig,ax = plt.subplots(1,1,figsize=(10,10))
+    #         for ppe,c in zip(pes,colors):
+
+    #             ax.hist(ppe.loc[:,pname],fc=c,alpha=0.5,bins=10,density=True)
+    #         ylim = ax.get_ylim()
+    #         ax.plot([ubnd[pname],ubnd[pname]],ylim,"k--",lw=3)
+    #         ax.plot([lbnd[pname],lbnd[pname]],ylim,"k--",lw=3)
+            
+    #         ax.grid()
+    #         ax.set_title(pname)
+    #         plt.tight_layout()
+    #         pdf.savefig()
+    #         plt.close(fig)
+    #         print(pname)
+
+    
+
+
 if __name__ == "__main__":
+    draw_new_test()
     #par_gauss_draw_consistency_test()
     #obs_gauss_draw_consistency_test()
     # phi_vector_test()
@@ -784,7 +847,7 @@ if __name__ == "__main__":
     # uniform_draw_test()
     #fill_test()
     #factor_draw_test()
-    emp_cov_test()
+    #emp_cov_test()
     #emp_cov_draw_test()
     #mixed_par_draw_2_test()
     #binary_test()
