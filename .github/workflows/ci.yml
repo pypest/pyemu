@@ -126,16 +126,26 @@ jobs:
 #      env:
 #        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Run tests
+#    - name: Run tests
       # For example, using `pytest`
-      working-directory: autotest
-      run: uv run pytest -rP -rx --capture=no -v --tb=native --durations=20 --cov=pyemu --cov-config=.coveragerc --cov-report=lcov ${{ matrix.test-path }} # --cov --cov-report=xml
+#      working-directory: autotest
+#      run: uv run pytest -rP -rx --capture=no -v --tb=native --durations=20 --cov=pyemu --cov-config=.coveragerc --cov-report=lcov ${{ matrix.test-path }} # --cov --cov-report=xml
 
 #    - name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
 #      shell: bash -l {0}
 #      working-directory: autotest
 #      run: |
 #        pytest -rP -rx --capture=no -v --tb=native --durations=20 --cov=pyemu --cov-config=.coveragerc --cov-report=lcov ${{ matrix.test-path }}
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Test Notebooks
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
+      shell: bash -l {0}
+      working-directory: examples
+      run: |
+        uv pytest -v -s --nbval-lax --cov=pyemu --cov-report=lcov *.ipynb
+      # feeling is that pytest-cov is not dialed in with nbmake...
 #      env:
 #        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

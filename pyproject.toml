@@ -65,6 +65,24 @@ module-root = ""
 testpaths = [
     "autotest",
 ]
-python_functions = "*_test test_*"
+python_functions = [
+    "*_test",
+    "test_*"
+]
 norecursedirs = '*'
 python_files = "*_tests.py"
+
+[tool.coverage.run]
+source = ["pyemu"]
+parallel = true
+relative_files = true
+omit = [
+    "**/legacy/*",
+    "*/python?.?/*",
+    "*/lib-python/?.?/*.py",
+    "*/lib_pypy/_*.py",
+    "*/site-packages/ordereddict.py",
+    "*/site-packages/nose/*",
+    "*/unittest2/*",
+    "*__init__*",
+]
