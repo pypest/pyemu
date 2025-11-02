@@ -144,7 +144,7 @@ jobs:
 #      shell: bash -l {0}
 #      working-directory: examples
       run: |
-        uv sync --locked --extra nbtest
+        uv sync --locked --inexact --extra nbtest
         uv run pytest -v -s --nbval-lax --cov=pyemu --cov-report=lcov examples/*.ipynb
       # feeling is that pytest-cov is not dialed in with nbmake...
 #      env:
