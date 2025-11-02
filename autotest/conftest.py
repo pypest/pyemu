@@ -20,8 +20,8 @@ collect_ignore = [
     "pst_tests.py",
     "pst_tests_2.py",
     "transformer_tests.py",
-    # "utils_tests.py",
-    "verf_test.py",
+    "utils_tests.py",
+    #"verf_test.py",
 ]
 
 def get_project_root_path():
