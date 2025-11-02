@@ -634,6 +634,12 @@ wheels = [
 ]
 
 [[package]]
+name = "ffmpeg"
+version = "1.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f0/cc/3b7408b8ecf7c1d20ad480c3eaed7619857bf1054b690226e906fdf14258/ffmpeg-1.4.tar.gz", hash = "sha256:6931692c890ff21d39938433c2189747815dca0c60ddc7f9bb97f199dba0b5b9", size = 5055, upload-time = "2018-10-08T07:50:05.748Z" }
+
+[[package]]
 name = "flaky"
 version = "3.8.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1718,6 +1724,9 @@ docs = [
     { name = "sphinx-autoapi" },
     { name = "sphinx-rtd-theme" },
 ]
+nbtest = [
+    { name = "ffmpeg" },
+]
 optional = [
     { name = "flopy" },
     { name = "jinja2" },
@@ -1743,6 +1752,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "ffmpeg", marker = "extra == 'nbtest'", specifier = ">=1.4" },
     { name = "flopy", marker = "extra == 'optional'", specifier = ">=3.9.5" },
     { name = "jinja2", marker = "extra == 'optional'", specifier = ">=3.1.6" },
     { name = "matplotlib", marker = "extra == 'optional'", specifier = ">=3.10.7" },
@@ -1757,7 +1767,7 @@ requires-dist = [
     { name = "sphinx-autoapi", marker = "extra == 'docs'", specifier = ">=3.6.1" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=3.0.2" },
 ]
-provides-extras = ["optional", "docs"]
+provides-extras = ["optional", "docs", "nbtest"]
 
 [package.metadata.requires-dev]
 dev = [

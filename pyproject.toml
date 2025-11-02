@@ -42,6 +42,9 @@ docs = [
     "sphinx-autoapi>=3.6.1",
     "sphinx-rtd-theme>=3.0.2",
 ]
+nbtest = [
+    "ffmpeg>=1.4",
+]
 
 [dependency-groups]
 dev = [
