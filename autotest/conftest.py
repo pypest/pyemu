@@ -45,7 +45,8 @@ def get_exe_path(exe_name, forgive=True):
     Get the absolute path to an executable in the project.
     """
     if shutil.which(exe_name) is not None:
-        return exe_name
+        print(f"Found {exe_name} in system PATH")
+        return Path(exe_name)
     root_path = get_project_root_path()
     exe_path = root_path / "bin"
     if not (exe_path / exe_name).exists():
@@ -75,7 +76,11 @@ def full_exe_ref_dict():
         "pestpp-ies", "pestpp-sen", "pestpp-opt", "pestpp-glm",
         "pestpp-mou", "pestpp-da", "pestpp-sqp", "pestpp-swp"
     ]:
-        d[exe_name] = get_exe_path(exe_name).as_posix()
+        exe_name = get_exe_path(exe_name)
+        if exe_name is not None:
+            d[exe_name] = exe_name.as_posix()
+        else:
+            d[exe_name] = exe_name
     return d
 
 
