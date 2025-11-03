@@ -123,8 +123,8 @@ jobs:
 #      run: |
 #        get-pestpp :home
       run: uv run get-pestpp :home
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Run tests
 #       For example, using `pytest`
