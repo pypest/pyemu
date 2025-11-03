@@ -7,14 +7,14 @@ import platform
 pytest_plugins = ["modflow_devtools.fixtures"]
 
 collect_ignore = [
-    "emulator_tests.py",
-    "en_tests.py",
-    "get_pestpp_tests.py",
-    "la_tests.py",
-    "mat_tests.py",
-    "mc_tests_ignore.py",
+    # "emulator_tests.py",
+    # "en_tests.py",
+    # "get_pestpp_tests.py",
+    # "la_tests.py",
+    # "mat_tests.py",
+    # "mc_tests_ignore.py",
     #"metrics_tests.py",
-    "plot_tests.py",
+    # "plot_tests.py",
     "pst_from_tests.py",
     # "pst_tests.py",
     "transformer_tests.py",
