@@ -2199,7 +2199,7 @@ requires-dist = [
     { name = "sphinx-autoapi", marker = "extra == 'docs'", specifier = ">=3.6.1" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=3.0.2" },
 ]
-provides-extras = ["optional", "tests", "docs", "nbtest"]
+provides-extras = ["optional", "tests", "docs"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "jupyterlab", specifier = ">=4.4.10" }]
