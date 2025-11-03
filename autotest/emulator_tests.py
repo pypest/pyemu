@@ -82,13 +82,19 @@ def test_dsi_nst_extrap(tmp_path):
     return
 
 def test_dsi_mixed(tmp_path):
+    from pathlib import Path
     transforms = [
         {"type": "log10", "columns": ["headwater_20171130", "tailwater_20161130"]},
         {"type": "normal_score", }
     ]
     dsi_freyberg(tmp_path,transforms=transforms)
+    # copy
+    if Path("master_dsi").exists():
+        shutil.rmtree("master_dsi")
+    shutil.copytree(tmp_path/"master_dsi", "master_dsi")
     return
 
+@pytest.mark.dependency(depends=["test_dsi_mixed"])
 def test_dsivc_freyberg(tmp_path):
     md_hm = "master_dsi"
     assert os.path.exists(md_hm), f"Master directory {md_hm} does not exist."
