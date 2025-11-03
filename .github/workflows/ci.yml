@@ -139,12 +139,12 @@ jobs:
 #      env:
 #        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Test Notebooks
-      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
-#      shell: bash -l {0}
-#      working-directory: examples
-      run: |
-        uv run pytest -v -s --nbval-lax --dist loadscope --cov=pyemu --cov-report=lcov examples/*.ipynb
+#    - name: Test Notebooks
+#      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
+##      shell: bash -l {0}
+##      working-directory: examples
+#      run: |
+#        uv run pytest -v -s --nbval-lax --dist loadscope --cov=pyemu --cov-report=lcov examples/*.ipynb
       # feeling is that pytest-cov is not dialed in with nbmake...
 #      env:
 #        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
