@@ -2428,7 +2428,7 @@ def mf6_freyberg_varying_idomain(tmp_path):
         print(model_file,sim_val,arr.mean())
 
 
-def xsec_test(tmp_path):
+def test_xsec(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -2467,7 +2467,7 @@ def xsec_test(tmp_path):
             f.write("\n")
     pf.add_observations_from_ins(os.path.join(t_d,"10par_xsec.hds.ins"),pst_path=".")
 
-    pf.mod_sys_cmds.append("mfnwt {0}".format(nam_file))
+    pf.mod_sys_cmds.append(f"{mf_exe_path} {nam_file}")
 
     pf.build_pst(os.path.join(t_d,"pest.pst"))
 
@@ -6249,7 +6249,7 @@ def invest_vertexpp_setup_speed():
     pass
 
 
-def xsec_pars_as_obs_test(tmp_path):
+def test_xsec_pars_as_obs(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -6288,7 +6288,7 @@ def xsec_pars_as_obs_test(tmp_path):
             f.write("\n")
     pf.add_observations_from_ins(os.path.join(t_d,"10par_xsec.hds.ins"),pst_path=".")
 
-    pf.mod_sys_cmds.append("mfnwt {0}".format(nam_file))
+    pf.mod_sys_cmds.append(f"{mf_exe_path} {nam_file}")
 
     pst = pf.build_pst(None)
     par_sigma_range = 1
@@ -6455,7 +6455,7 @@ def draw_consistency_test(tmp_path):
 
 if __name__ == "__main__":
     draw_consistency_test('.')
-    #xsec_pars_as_obs_test(".")
+    #test_xsec_pars_as_obs(".")
     #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")
@@ -6484,7 +6484,7 @@ if __name__ == "__main__":
     #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
-    # xsec_test()
+    # test_xsec()
     # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()

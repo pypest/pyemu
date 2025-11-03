@@ -15,23 +15,23 @@ collect_ignore = [
     "mc_tests_ignore.py",
     #"metrics_tests.py",
     "plot_tests.py",
-    # "pst_from_tests.py",
-    "pst_tests.py",
+    "pst_from_tests.py",
+    # "pst_tests.py",
     "transformer_tests.py",
     "utils_tests.py",
     #"verf_test.py",
 ]
 
-def pytest_configure(config):
-    import os
-    import logging
-    worker_id = os.environ.get("PYTEST_XDIST_WORKER")
-    if worker_id is not None:
-        logging.basicConfig(
-            format=config.getini("log_file_format"),
-            filename=f"tests_{worker_id}.log",
-            level=logging.INFO,
-        )
+# def pytest_configure(config):
+#     import os
+#     import logging
+#     worker_id = os.environ.get("PYTEST_XDIST_WORKER")
+#     if worker_id is not None:
+#         logging.basicConfig(
+#             format=config.getini("log_file_format"),
+#             filename=f"tests_{worker_id}.log",
+#             level=logging.INFO,
+#         )
 
 def get_project_root_path():
     """
@@ -75,7 +75,7 @@ def full_exe_ref_dict():
         "pestpp-ies", "pestpp-sen", "pestpp-opt", "pestpp-glm",
         "pestpp-mou", "pestpp-da", "pestpp-sqp", "pestpp-swp"
     ]:
-        d[exe_name] = get_exe_path(exe_name)
+        d[exe_name] = get_exe_path(exe_name).as_posix()
     return d
 
 
