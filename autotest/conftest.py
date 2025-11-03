@@ -76,11 +76,11 @@ def full_exe_ref_dict():
         "pestpp-ies", "pestpp-sen", "pestpp-opt", "pestpp-glm",
         "pestpp-mou", "pestpp-da", "pestpp-sqp", "pestpp-swp"
     ]:
-        exe_name = get_exe_path(exe_name)
-        if exe_name is not None:
-            d[exe_name] = exe_name.as_posix()
+        exe_path = get_exe_path(exe_name)
+        if exe_path is not None:
+            d[exe_name] = exe_path.as_posix()
         else:
-            d[exe_name] = exe_name
+            d[exe_name] = exe_path
     return d
 
 
