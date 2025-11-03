@@ -97,6 +97,7 @@ def test_dsi_mixed(tmp_path):
 @pytest.mark.dependency(depends=["test_dsi_mixed"])
 def test_dsivc_freyberg(tmp_path):
     md_hm = "master_dsi"
+    os.listdir('.')
     assert os.path.exists(md_hm), f"Master directory {md_hm} does not exist."
     td = tmp_path / "template_dsivc"
     if os.path.exists(td):
