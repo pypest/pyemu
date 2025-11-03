@@ -15,12 +15,23 @@ collect_ignore = [
     "mc_tests_ignore.py",
     #"metrics_tests.py",
     "plot_tests.py",
-    "pst_from_tests.py",
+    # "pst_from_tests.py",
     "pst_tests.py",
     "transformer_tests.py",
     "utils_tests.py",
     #"verf_test.py",
 ]
+
+def pytest_configure(config):
+    import os
+    import logging
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER")
+    if worker_id is not None:
+        logging.basicConfig(
+            format=config.getini("log_file_format"),
+            filename=f"tests_{worker_id}.log",
+            level=logging.INFO,
+        )
 
 def get_project_root_path():
     """
