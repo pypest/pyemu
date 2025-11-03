@@ -6,11 +6,13 @@ import numpy as np
 import pandas as pd
 import platform
 import pyemu
-from pst_from_tests import setup_tmp, _get_port, exepath_dict
+from pst_from_tests import setup_tmp, _get_port
 from pyemu.emulators import DSI, LPFA, GPR
 
-ies_exe_path = exepath_dict["pestpp-ies"]
-mou_exe_path = exepath_dict["pestpp-mou"]
+from conftest import get_exe_path
+
+ies_exe_path = get_exe_path("pestpp-ies")
+mou_exe_path = get_exe_path("pestpp-mou")
 
 def dsi_freyberg(tmp_d,transforms=None,tag=""):
 
@@ -50,6 +52,7 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
     md = f"master_dsi{tag}"
     num_workers = 1
     worker_root = "."
+    print("dsi_exe: ", ies_exe_path)
     pyemu.os_utils.start_workers(
         td,ies_exe_path,"dsi.pst", num_workers=num_workers,
         worker_root=worker_root, master_dir=md, port=_get_port(),

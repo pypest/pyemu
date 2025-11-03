@@ -8,18 +8,18 @@ pytest_plugins = ["modflow_devtools.fixtures"]
 
 collect_ignore = [
     # "emulator_tests.py",
-    # "en_tests.py",
-    # "get_pestpp_tests.py",
-    # "la_tests.py",
-    # "mat_tests.py",
-    # "mc_tests_ignore.py",
-    #"metrics_tests.py",
+    "en_tests.py",
+    "get_pestpp_tests.py",
+    "la_tests.py",
+    "mat_tests.py",
+    "mc_tests_ignore.py",
+    "metrics_tests.py",
     # "plot_tests.py",
     "pst_from_tests.py",
-    # "pst_tests.py",
+    "pst_tests.py",
     "transformer_tests.py",
     "utils_tests.py",
-    #"verf_test.py",
+    "verf_test.py",
 ]
 
 # def pytest_configure(config):
@@ -47,6 +47,7 @@ def get_exe_path(exe_name, forgive=True):
     if shutil.which(exe_name) is not None:
         print(f"Found {exe_name} in system PATH")
         return Path(exe_name)
+    # else look in local project bin/<platform>
     root_path = get_project_root_path()
     exe_path = root_path / "bin"
     if not (exe_path / exe_name).exists():
@@ -56,6 +57,7 @@ def get_exe_path(exe_name, forgive=True):
             exe_path = Path(exe_path, "mac")
         else:
             exe_path = Path(exe_path, "win")
+    # if is isn't in bin/<platform> either, give up
     if not (exe_path / exe_name).exists():
         if forgive:
             print(f"Executable {exe_name} not found in {exe_path}, returning None")
