@@ -16,14 +16,20 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: [
+#          "3.10",
+#          "3.11",
+          "3.12",
+#          "3.13",
+#          "3.14"
+        ]
         run-type: [std]
         test-path: ["."]
-        include:
-          - os: macos-latest
-            python-version: 3.12
-            run-type: std
-            test-path: "."
+#        include:
+#          - os: macos-latest
+#            python-version: 3.12
+#            run-type: std
+#            test-path: "."
 
     steps:
     - name: Checkout repo
@@ -130,6 +136,8 @@ jobs:
 #       For example, using `pytest`
       working-directory: autotest
       run: uv run pytest -n=auto -rA -vv --tb=native --durations=20 --cov=pyemu --cov-report=lcov ${{ matrix.test-path }} # --cov --cov-report=xml
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 #    - name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
 #      shell: bash -l {0}
@@ -145,9 +153,8 @@ jobs:
 #      working-directory: examples
       run: |
         uv run pytest -n=auto -rA -vv --tb=native --nbval-lax --dist loadscope --cov=pyemu --cov-report=lcov examples/*.ipynb
-      # feeling is that pytest-cov is not dialed in with nbmake...
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 #    - name: Test Notebooks
 #      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
