@@ -116,21 +116,30 @@ jobs:
     - name: Install Modflow executables
       uses: modflowpy/install-modflow-action@v1
 
-    - name: Add executables directory to path [win]
-      if: runner.os == 'Windows'
+    - name: Add executables directory to path
+      shell: bash
       run: |
-        echo "adding bin dir '$env:HOME\.local\bin' to path"
-        echo $env:HOME\.local\bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        echo "adding bin dir '$MODFLOW_BIN_PATH' to path"
+        echo "$MODFLOW_BIN_PATH" >> $GITHUB_PATH
+        echo "adding bin dir '$HOME/.local/bin' to path"
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Add executables directory to path [nonwin]
-      if: runner.os != 'Windows'
-      run: |
-        echo "adding bin dir '$HOME\.local\bin' to path"
-        echo $HOME/.local/bin >> $GITHUB_PATH
+#        echo $GITHUB_PATH
+
+#      if: runner.os == 'Windows'
+#      run: |
+#        echo "adding bin dir '$env:HOME\.local\bin' to path"
+#        echo $env:HOME\.local\bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+#
+#    - name: Add executables directory to path [nonwin]
+#      if: runner.os != 'Windows'
+#      run: |
+#        echo "adding bin dir '$HOME\.local\bin' to path"
+#        echo $HOME/.local/bin >> $GITHUB_PATH
 
     # order matters for this step - after setting path to executables
     - name: Install PEST++ suite using get-pestpp
-#      shell: bash -l {0}
+      shell: bash -l {0}
 #      run: |
 #        get-pestpp :home
       run: uv run get-pestpp :home
@@ -145,6 +154,7 @@ jobs:
 
     - name: Run tests
 #       For example, using `pytest`
+      shell: bash -l {0}
       working-directory: autotest
       run: |
         uv run pytest -n=auto -rA -vv --tb=native --durations=20 --cov=pyemu --cov-report=lcov ${{ matrix.test-path }} # --cov --cov-report=xml
@@ -164,6 +174,7 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
 #      shell: bash -l {0}
 #      working-directory: examples
+      shell: bash -l {0}
       run: |
         uv run pytest -n=auto -rA -vv --tb=native --nbval-lax --dist loadscope --cov=pyemu --cov-report=lcov examples/*.ipynb
       env:
