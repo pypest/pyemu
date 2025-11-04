@@ -136,7 +136,12 @@ jobs:
       run: | 
         echo $GITHUB_PATH
         ls $HOME/.local/bin
-        pestpp-ies
+        if [ "$RUNNER_OS" == "Windows" ]; then
+            which pestpp-ies.exe
+        else
+            which pestpp-ies
+        fi
+        
 
     - name: Run tests
 #       For example, using `pytest`
