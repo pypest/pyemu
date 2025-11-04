@@ -133,6 +133,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Verify PEST++ installation
+      shell: bash
       run: | 
         echo $GITHUB_PATH
         ls $HOME/.local/bin
