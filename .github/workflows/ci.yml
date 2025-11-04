@@ -121,14 +121,12 @@ jobs:
       run: |
         echo "adding bin dir '$env:HOME\.local\bin' to path"
         echo $env:HOME\.local\bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        echo "GITHUB_PATH: '$env:GITHUB_PATH'"
 
     - name: Add executables directory to path [nonwin]
       if: runner.os != 'Windows'
       run: |
         echo "adding bin dir '$HOME\.local\bin' to path"
         echo $HOME/.local/bin >> $GITHUB_PATH
-        echo "GITHUB_PATH: $GITHUB_PATH"
 
     # order matters for this step - after setting path to executables
     - name: Install PEST++ suite using get-pestpp
@@ -142,7 +140,7 @@ jobs:
     - name: Verify PEST++ installation
       shell: bash
       run: | 
-        echo $GITHUB_PATH
+        echo "PATH: $PATH"
         ls $HOME/.local/bin
 
     - name: Run tests
