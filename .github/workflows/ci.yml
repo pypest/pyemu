@@ -136,7 +136,8 @@ jobs:
 #       For example, using `pytest`
       working-directory: autotest
       run: |
-        ls $GITHUB_PATH
+        echo $GITHUB_PATH
+        ls $HOME/.local/bin
         uv run pytest -n=auto -rA -vv --tb=native --durations=20 --cov=pyemu --cov-report=lcov ${{ matrix.test-path }} # --cov --cov-report=xml
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
