@@ -78,7 +78,11 @@ jobs:
       shell: bash -l {0}
       working-directory: autotest
       run: |
-        uv run pytest -n=auto -rA -vv --tb=native --durations=20 --cov=pyemu --cov-report=lcov ${{ matrix.test-path }} # --cov --cov-report=xml
+        uv run pytest -n=auto -rA -vv --tb=native \
+        --durations=20 \
+        --timeout=600 \
+        --cov=pyemu --cov-report=lcov \
+        ${{ matrix.test-path }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         MPLBACKEND: Agg  # non-interactive backend for matplotlib
