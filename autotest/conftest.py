@@ -44,6 +44,8 @@ def get_exe_path(exe_name, forgive=True):
     """
     Get the absolute path to an executable in the project.
     """
+    if platform.system() == "Windows":
+        exe_name = f"{exe_name}.exe"
     if shutil.which(exe_name) is not None:
         print(f"Found {exe_name} in system PATH")
         return exe_name
