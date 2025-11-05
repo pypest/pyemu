@@ -2682,8 +2682,9 @@ def ppw_worker(id_num,case,t_d,host,port,frun):
         ppw.send_observations(obs.obsval.loc[ppw.obs_names].values)
         #input("press any key")
         #print("worker",id_num,"finished run",ppw.net_pack.runid)
-   
-# @pytest.mark.skip()
+
+
+@pytest.mark.timeout(method="thread")
 def test_pypestworker(tmp_path):
     from datetime import datetime
     import numpy as np
