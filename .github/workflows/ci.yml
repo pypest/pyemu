@@ -79,7 +79,7 @@ jobs:
       working-directory: autotest
       run: |
         uv run pytest ${{ matrix.test-path }} \
-        -k "geostat or fake" \
+        -k "geostat or fake or budget or smp" \
         -n=auto \
         -rA -vv --tb=native \
         --durations=20 \
