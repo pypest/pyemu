@@ -2588,6 +2588,7 @@ def test_ppu_import():
     pass
 
 
+@pytest.mark.timeout(method="thread")
 def test_ppu_geostats(tmp_path):
     import sys
     import os
