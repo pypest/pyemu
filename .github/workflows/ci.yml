@@ -79,7 +79,6 @@ jobs:
       working-directory: autotest
       run: |
         uv run pytest ${{ matrix.test-path }} \
-        -k "test_geostat_prior_builder" \
         -n=auto \
         -rA -vv --tb=native \
         --durations=20 \
