@@ -79,7 +79,7 @@ jobs:
       working-directory: autotest
       run: |
         uv run pytest ${{ matrix.test-path }} \
-        -n=auto -rA -vv --tb=native \
+        -n=1 -rA -vv --tb=native \
         -k 'not test_pypestworker' \
         --durations=20 \
         --timeout=600 \
