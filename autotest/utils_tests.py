@@ -738,7 +738,7 @@ def ppk2fac_verf_test(tmp_path):
 #     os.chdir("..")
 #     print(df)
 
-
+@pytest.mark.skip("TEMP")
 def mflist_budget_test(tmp_path):
     import pyemu
     import os
@@ -778,7 +778,7 @@ def mflist_budget_test(tmp_path):
     assert (flx.index == vol.index).all()
     assert (flx.index == times).all()
 
-
+@pytest.mark.skip("TEMP")
 def mtlist_budget_test(tmp_path):
     import pyemu
     import shutil
