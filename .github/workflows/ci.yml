@@ -79,7 +79,6 @@ jobs:
       working-directory: autotest
       run: |
         uv run pytest ${{ matrix.test-path }} \
-        -n=auto \
         -rA -vv --tb=native \
         --durations=20 \
         --timeout=600 \
