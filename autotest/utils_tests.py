@@ -815,7 +815,7 @@ def mtlist_budget_test(tmp_path):
     os.chdir(bd)
 
 
-@pytest.mark.skip("GHA hang")
+@pytest.mark.timeout(method='thread', seconds=60)
 def test_geostat_prior_builder(tmp_path):
     import os
     import numpy as np
