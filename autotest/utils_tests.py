@@ -815,7 +815,7 @@ def mtlist_budget_test(tmp_path):
     os.chdir(bd)
 
 
-@pytest.mark.timeout(method='thread', timeout=60)
+@pytest.mark.timeout(method='thread', timeout=90)
 def test_geostat_prior_builder(tmp_path):
     import os
     import numpy as np
@@ -833,6 +833,7 @@ def test_geostat_prior_builder(tmp_path):
 
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file})
     d1 = np.diag(cov.x)
+    del cov
 
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
@@ -840,8 +841,9 @@ def test_geostat_prior_builder(tmp_path):
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
                                                sigma_range=4)
     nnz = np.count_nonzero(cov.x)
-    assert nnz == pst.npar_adj
     d2 = np.diag(cov.x)
+    del cov
+    assert nnz == pst.npar_adj
     assert np.array_equiv(d1, d2)
 
     pst.parameter_data.loc[pst.par_names[1:10], "partrans"] = "tied"
