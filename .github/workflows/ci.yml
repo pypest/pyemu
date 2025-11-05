@@ -78,11 +78,23 @@ jobs:
       shell: bash -l {0}
       working-directory: autotest
       run: |
-        uv run pytest -n=auto -rA -vv --tb=native \
+        uv run pytest -n=auto -rA -vv --tb=native -k 'not test_pypestworker' \
         --durations=20 \
         --timeout=600 \
         --cov=pyemu --cov-report=lcov \
         ${{ matrix.test-path }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        MPLBACKEND: Agg  # non-interactive backend for matplotlib
+
+    - name: Run pypestworker test
+      shell: bash -l {0}
+      working-directory: autotest
+      run: |
+        uv run pytest -rA -vv --tb=native \
+        --timeout=100 \
+        --cov=pyemu --cov-report=lcov \
+        ${{ matrix.test-path }}/utils.py::test_pypestworker
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         MPLBACKEND: Agg  # non-interactive backend for matplotlib
