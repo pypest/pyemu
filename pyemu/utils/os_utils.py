@@ -815,7 +815,7 @@ class PyPestWorker(object):
                 time.sleep(self.timeout)
                 c += 1
                 if is_reconnect and c > self.max_reconnect_attempts:
-                    print("max reconnect attempts reached...")
+                    self.message("max reconnect attempts reached...",True)
                     return False
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.host, self.port))
@@ -911,14 +911,12 @@ class PyPestWorker(object):
                     self.par_names = self.net_pack.data_pak
                     diff = set(self.par_names).symmetric_difference(set(self._pst.par_names))
                     if len(diff) > 0:
-                        print("WARNING: pst par names != master par names")
                         self.message("WARNING: the following par names are not common\n"+\
                                     " between the control file and the master:{0}".format(','.join(diff)), True)
                 elif self.net_pack.mtype == 9:
                     self.obs_names = self.net_pack.data_pak
                     diff = set(self.obs_names).symmetric_difference(set(self._pst.obs_names))
                     if len(diff) > 0:
-                        print("WARNING: pst obs names != master obs names")
                         self.message("WARNING: the following obs names are not common\n"+\
                                     " between the control file and the master:{0}".format(','.join(diff)), True)
 
@@ -934,7 +932,7 @@ class PyPestWorker(object):
                         self.message("failed linpack send...trying to reconnect...", True)
                         success = self.connect(is_reconnect=True)
                         if not success:
-                            print("...exiting")
+                            self.message("...exiting",True)
                             time.sleep(self.timeout)
                             return
                         else:
@@ -960,11 +958,9 @@ class PyPestWorker(object):
                             self.message("reconnect successfully...", True)
                             continue
                 elif self.net_pack.mtype == 14:
-                    #print("recv'd terminate signal")
-                    self.message("recv'd terminate signal")
+                    self.message("recv'd terminate signal", True)
                     return
                 elif self.net_pack.mtype == 16:
-                    #print("master is requesting run kill...")
                     self.message("master is requesting run kill...", True)
 
                 else:
