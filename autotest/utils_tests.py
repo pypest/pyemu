@@ -829,6 +829,8 @@ def test_geostat_prior_builder(tmp_path):
     import numpy as np
     import pyemu
     import pandas as pd
+    import gc
+
     for fname in [Path("pst","pest.pst"),
                   Path("utils", "pp_locs.tpl"),
                   Path("utils", "structure.dat")]:
@@ -841,7 +843,7 @@ def test_geostat_prior_builder(tmp_path):
 
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file})
     d1 = np.diag(cov.x)
-    # del cov
+    del cov
 
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
@@ -850,7 +852,7 @@ def test_geostat_prior_builder(tmp_path):
                                                sigma_range=4)
     nnz = np.count_nonzero(cov.x)
     d2 = np.diag(cov.x)
-    # del cov
+    del cov
     assert nnz == pst.npar_adj
     assert np.array_equiv(d1, d2)
 
@@ -862,6 +864,7 @@ def test_geostat_prior_builder(tmp_path):
     cov = pyemu.helpers.geostatistical_prior_builder(pst, {gs: df},
                                                      sigma_range=4)
     nnz = np.count_nonzero(cov.x)
+    del cov
     assert nnz == pst.npar_adj
 
     ttpl_file = os.path.join(tmp_path, "temp.dat.tpl")
@@ -874,6 +877,8 @@ def test_geostat_prior_builder(tmp_path):
 
     cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file})
     assert cov.shape[0] == pst.npar_adj
+    del cov
+    gc.collect()
 
 
 def geostat_draws_test(tmp_path):
