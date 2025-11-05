@@ -2609,10 +2609,6 @@ def test_ppu_geostats(tmp_path):
     if os.path.exists(model_ws):
         shutil.rmtree(model_ws)
     shutil.copytree(o_model_ws, model_ws)
-    # let's copy files to tmp dir to avoid para issues in CI
-    for fname in ["ppu_factors.dat", "pyemu_factors.dat",
-                  "pyemu_array.dat", "ppu_array.dat"]:
-        shutil.copy(Path("utils", fname), tmp_path)
     ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
     pp_dir = os.path.join(tmp_path)
     #ml.export(os.path.join("temp","test_unrot_grid.shp"))
