@@ -3251,11 +3251,11 @@ def gpr_zdt1_ppw():
 
 
 if __name__ == "__main__":
-    geostat_draws_test('.')
+    #geostat_draws_test('.')
     #fac2real_wrapped_test('.')
     #maha_pdc_test('.')
     #ppu_geostats_test(".")
-    #pypestworker_test()
+    pypestworker_test()
     #gpr_zdt1_test()
     #gpr_compare_invest()
     #gpr_constr_test()
