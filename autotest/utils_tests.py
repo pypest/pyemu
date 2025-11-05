@@ -833,7 +833,7 @@ def test_geostat_prior_builder(tmp_path):
 
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file})
     d1 = np.diag(cov.x)
-    del cov
+    # del cov
 
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
@@ -842,7 +842,7 @@ def test_geostat_prior_builder(tmp_path):
                                                sigma_range=4)
     nnz = np.count_nonzero(cov.x)
     d2 = np.diag(cov.x)
-    del cov
+    # del cov
     assert nnz == pst.npar_adj
     assert np.array_equiv(d1, d2)
 
