@@ -539,23 +539,27 @@ def kl_test(tmp_path):
     sr = pyemu.helpers.SpatialReference(delc=ml.dis.delc.array,delr=ml.dis.delr.array)
     bd = os.getcwd()
     os.chdir(tmp_path)
-    df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=sr,
-                                             struct=str_file,
-                                             factors_file=factors_file,
-                                             basis_file=basis_file,
-                                            prefixes=prefixes,islog=False,
-                                      tpl_dir='.')
+    try:
+        df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=sr,
+                                                 struct=str_file,
+                                                 factors_file=factors_file,
+                                                 basis_file=basis_file,
+                                                prefixes=prefixes,islog=False,
+                                          tpl_dir='.')
 
-    basis = pyemu.Matrix.from_binary(basis_file)
-    basis = basis[:,:num_eig]
-    arr_tru = np.atleast_2d(arr_tru.flatten()).transpose()
-    proj = np.dot(basis.T.x,arr_tru)[:num_eig]
-    #proj.autoalign = False
-    back = np.dot(basis.x, proj)
+        basis = pyemu.Matrix.from_binary(basis_file)
+        basis = basis[:,:num_eig]
+        arr_tru = np.atleast_2d(arr_tru.flatten()).transpose()
+        proj = np.dot(basis.T.x,arr_tru)[:num_eig]
+        #proj.autoalign = False
+        back = np.dot(basis.x, proj)
 
-    back = back.reshape(ml.nrow,ml.ncol)
-    df.parval1 = proj
-    arr = pyemu.geostats.fac2real(df,factors_file,out_file=None)
+        back = back.reshape(ml.nrow,ml.ncol)
+        df.parval1 = proj
+        arr = pyemu.geostats.fac2real(df,factors_file,out_file=None)
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
 
     fig = plt.figure(figsize=(10, 10))
@@ -738,7 +742,7 @@ def ppk2fac_verf_test(tmp_path):
 #     os.chdir("..")
 #     print(df)
 
-@pytest.mark.skip("TEMP")
+# @pytest.mark.skip("TEMP")
 def mflist_budget_test(tmp_path):
     import pyemu
     import os
@@ -778,7 +782,7 @@ def mflist_budget_test(tmp_path):
     assert (flx.index == vol.index).all()
     assert (flx.index == times).all()
 
-@pytest.mark.skip("TEMP")
+# @pytest.mark.skip("TEMP")
 def mtlist_budget_test(tmp_path):
     import pyemu
     import shutil
@@ -795,23 +799,27 @@ def mtlist_budget_test(tmp_path):
     list_filename = "mt3d.list"
     bd = Path.cwd()
     os.chdir(tmp_path)
-    assert os.path.exists(list_filename)
-    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename,start_datetime='1-1-1970')
-    assert len(ins_files) == 2
+    try:
+        assert os.path.exists(list_filename)
+        frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename,start_datetime='1-1-1970')
+        assert len(ins_files) == 2
 
-    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename,start_datetime='1-1-1970', gw_prefix='')
-    assert len(ins_files) == 2
+        frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename,start_datetime='1-1-1970', gw_prefix='')
+        assert len(ins_files) == 2
 
-    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename, start_datetime=None)
-    assert len(ins_files) == 2
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime=None)
+        assert len(ins_files) == 2
 
-    list_filename = "mt3d_imm_sor.lst"
-    assert os.path.exists(list_filename)
-    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename, start_datetime='1-1-1970')
+        list_filename = "mt3d_imm_sor.lst"
+        assert os.path.exists(list_filename)
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime='1-1-1970')
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
 
 
@@ -2501,12 +2509,20 @@ def test_fake_frun(tmp_path):
     pyemu.os_utils.run(f"{ies_exe_path} fake.pst", cwd=pf.new_d)
     bd = Path.cwd()
     os.chdir(pf.new_d)
-    pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
+    try:
+        pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
     pyemu.os_utils.run(f"{ies_exe_path} fake.pst", cwd=pf.new_d, use_sp=True)
     os.chdir(pf.new_d)
-    pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
-
+    try:
+        pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
 
 def obs_ensemble_quantile_test():
     import os
