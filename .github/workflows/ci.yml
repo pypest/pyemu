@@ -81,7 +81,7 @@ jobs:
       working-directory: autotest
       run: |
         uv run pytest ${{ matrix.test-path }} \
-        -k "test_geostat_prior_builder or budget or ppk2fac_ or ok_grid_zone" \
+        -k "test_geostat_prior_builder or budget or ppk2fac_ or ok_grid_test" \
         -rA -vv --tb=native \
         --durations=20 \
         --timeout=600 \
