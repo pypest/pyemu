@@ -42,7 +42,9 @@ jobs:
         enable-cache: true
 
     - name: Install the project
-      run: uv sync --locked --extra optional --extra tests
+      run: |
+        uv sync --locked --extra optional --extra tests
+        uv pip list
 
     - name: Install Modflow executables
       uses: modflowpy/install-modflow-action@v1
