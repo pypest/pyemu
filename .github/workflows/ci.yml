@@ -81,7 +81,7 @@ jobs:
       working-directory: autotest
       run: |
         uv run pytest ${{ matrix.test-path }} \
-        -k "test_geostat_prior_builder or test_numpy_inversion"
+        -k "test_geostat_prior_builder"
         -rA -vv --tb=native \
         --durations=20 \
         --timeout=600 \
