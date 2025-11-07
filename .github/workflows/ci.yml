@@ -81,7 +81,7 @@ jobs:
       working-directory: autotest
       run: |
         uv run pytest ${{ matrix.test-path }} \
-        -k "test_geostat_prior or ok_grid_zone or test_numpy_inversion" \
+        -n=auto \
         -rA -vv --tb=native \
         --durations=20 \
         --timeout=600 \
