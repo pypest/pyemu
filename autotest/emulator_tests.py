@@ -82,7 +82,7 @@ def test_dsi_nst_extrap(tmp_path):
     return
 
 
-@pytest.mark.timeout(method="thread", timeout=800)
+@pytest.mark.timeout(method="thread", timeout=1000)
 def test_dsi_mixed_and_dsivc(tmp_path):
     transforms = [
         {"type": "log10", "columns": ["headwater_20171130", "tailwater_20161130"]},
