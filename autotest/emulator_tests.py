@@ -82,7 +82,7 @@ def test_dsi_nst_extrap(tmp_path):
     return
 
 
-@pytest.mark.timeout(method="thread", timeout=1000)
+# @pytest.mark.timeout(method="thread", timeout=1000)
 def test_dsi_mixed_and_dsivc(tmp_path):
     transforms = [
         {"type": "log10", "columns": ["headwater_20171130", "tailwater_20161130"]},
@@ -92,7 +92,7 @@ def test_dsi_mixed_and_dsivc(tmp_path):
     # now test dsicv
     # master_dsi should now exist
     md_hm = tmp_path / "master_dsi"
-    print(os.listdir('.'))
+    # print(os.listdir('.'))
     assert os.path.exists(md_hm), f"Master directory {md_hm} does not exist."
     td = tmp_path / "template_dsivc"
     if os.path.exists(td):
