@@ -667,7 +667,6 @@ def ok_grid_zone_test(tmp_path):
         return
 
     import numpy as np
-    np.show_config()
     import pandas as pd
     import pyemu
     nrow,ncol = 10,5
