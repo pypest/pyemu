@@ -25,7 +25,7 @@ mou_exe_path = exepath_dict["pestpp-mou"]
 def test_numpy_inversion():
     import numpy as np
 #     import os
-    np.show_config()
+#     np.show_config()
 #     A = np.random.randn(601, 601)
 #     np.linalg.inv(A)
 #     if (pid := os.fork()) !=0:
