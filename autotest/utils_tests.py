@@ -2809,7 +2809,7 @@ def test_pypestworker(tmp_path):
     print(diff2.max())
     assert diff1.max() < 1.0e-6
     assert diff2.max() < 1.0e-6
-    
+
 
 def gpr_compare_invest():
     import numpy as np
@@ -3298,9 +3298,11 @@ def gpr_zdt1_ppw():
 
 
 if __name__ == "__main__":
-    geostat_draws_test('.')
+    #geostat_draws_test('.')
     #fac2real_wrapped_test('.')
     #maha_pdc_test('.')
+    #ppu_geostats_test(".")
+    test_pypestworker()
     #test_ppu_geostats(".")
     #test_pypestworker()
     #gpr_zdt1_test()
