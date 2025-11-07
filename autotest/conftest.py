@@ -35,8 +35,12 @@ def get_exe_path(exe_name, forgive=True):
     """
     Get the absolute path to an executable in the project.
     """
+    if platform.system() == "Windows":
+        exe_name = f"{exe_name}.exe"
     if shutil.which(exe_name) is not None:
+        print(f"Found {exe_name} in system PATH")
         return exe_name
+    # else look in local project bin/<platform>
     root_path = get_project_root_path()
     exe_path = root_path / "bin"
     if not (exe_path / exe_name).exists():
@@ -53,7 +57,7 @@ def get_exe_path(exe_name, forgive=True):
             raise FileNotFoundError(f"Executable {exe_name} not found in system PATH or fallback path:"
                                     f" {exe_path}")
         return None
-    return exe_path / exe_name
+    return (exe_path / exe_name).as_posix()
 
 
 def full_exe_ref_dict():
@@ -66,7 +70,8 @@ def full_exe_ref_dict():
         "pestpp-ies", "pestpp-sen", "pestpp-opt", "pestpp-glm",
         "pestpp-mou", "pestpp-da", "pestpp-sqp", "pestpp-swp"
     ]:
-        d[exe_name] = get_exe_path(exe_name)
+        exe_path = get_exe_path(exe_name)
+        d[exe_name] = exe_path
     return d
 
 

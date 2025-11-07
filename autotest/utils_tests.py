@@ -539,23 +539,27 @@ def kl_test(tmp_path):
     sr = pyemu.helpers.SpatialReference(delc=ml.dis.delc.array,delr=ml.dis.delr.array)
     bd = os.getcwd()
     os.chdir(tmp_path)
-    df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=sr,
-                                             struct=str_file,
-                                             factors_file=factors_file,
-                                             basis_file=basis_file,
-                                            prefixes=prefixes,islog=False,
-                                      tpl_dir='.')
+    try:
+        df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=sr,
+                                          struct=str_file,
+                                          factors_file=factors_file,
+                                          basis_file=basis_file,
+                                          prefixes=prefixes, islog=False,
+                                          tpl_dir='.')
 
-    basis = pyemu.Matrix.from_binary(basis_file)
-    basis = basis[:,:num_eig]
-    arr_tru = np.atleast_2d(arr_tru.flatten()).transpose()
-    proj = np.dot(basis.T.x,arr_tru)[:num_eig]
-    #proj.autoalign = False
-    back = np.dot(basis.x, proj)
+        basis = pyemu.Matrix.from_binary(basis_file)
+        basis = basis[:, :num_eig]
+        arr_tru = np.atleast_2d(arr_tru.flatten()).transpose()
+        proj = np.dot(basis.T.x, arr_tru)[:num_eig]
+        # proj.autoalign = False
+        back = np.dot(basis.x, proj)
 
-    back = back.reshape(ml.nrow,ml.ncol)
-    df.parval1 = proj
-    arr = pyemu.geostats.fac2real(df,factors_file,out_file=None)
+        back = back.reshape(ml.nrow, ml.ncol)
+        df.parval1 = proj
+        arr = pyemu.geostats.fac2real(df, factors_file, out_file=None)
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
 
     fig = plt.figure(figsize=(10, 10))
@@ -795,32 +799,41 @@ def mtlist_budget_test(tmp_path):
     list_filename = "mt3d.list"
     bd = Path.cwd()
     os.chdir(tmp_path)
-    assert os.path.exists(list_filename)
-    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename,start_datetime='1-1-1970')
-    assert len(ins_files) == 2
+    try:
+        assert os.path.exists(list_filename)
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime='1-1-1970')
+        assert len(ins_files) == 2
 
-    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename,start_datetime='1-1-1970', gw_prefix='')
-    assert len(ins_files) == 2
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime='1-1-1970', gw_prefix='')
+        assert len(ins_files) == 2
 
-    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename, start_datetime=None)
-    assert len(ins_files) == 2
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime=None)
+        assert len(ins_files) == 2
 
-    list_filename = "mt3d_imm_sor.lst"
-    assert os.path.exists(list_filename)
-    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename, start_datetime='1-1-1970')
+        list_filename = "mt3d_imm_sor.lst"
+        assert os.path.exists(list_filename)
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime='1-1-1970')
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
 
 
+@pytest.mark.timeout(method='thread', timeout=90)
 def geostat_prior_builder_test(tmp_path):
     import os
     import numpy as np
     import pyemu
     import pandas as pd
-    pst_file = os.path.join("pst","pest.pst")
+    for fname in [Path("pst", "pest.pst"),
+                  Path("utils", "pp_locs.tpl"),
+                  Path("utils", "structure.dat")]:
+        shutil.copy(fname, tmp_path)
+    pst_file = os.path.join(tmp_path, "pest.pst")
     pst = pyemu.Pst(pst_file)
     # print(pst.parameter_data)
     o_tpl_file = os.path.join("utils", "pp_locs.tpl")
@@ -2205,7 +2218,10 @@ def geostat_prior_builder2_test(tmp_path):
     import os
     import numpy as np
     import pyemu
-    pst_file = os.path.join("pst","pest.pst")
+    for fname in [Path("pst", "pest.pst"),
+                  Path("utils", "pp_locs.tpl")]:
+        shutil.copy(fname, tmp_path)
+    pst_file = os.path.join(tmp_path, "pest.pst")
     pst = pyemu.Pst(pst_file)
 
     o_tpl_file = os.path.join("utils", "pp_locs.tpl")
@@ -2499,12 +2515,20 @@ def test_fake_frun(tmp_path):
     pyemu.os_utils.run(f"{ies_exe_path} fake.pst", cwd=pf.new_d)
     bd = Path.cwd()
     os.chdir(pf.new_d)
-    pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
+    try:
+        pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
     pyemu.os_utils.run(f"{ies_exe_path} fake.pst", cwd=pf.new_d, use_sp=True)
     os.chdir(pf.new_d)
-    pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
-
+    try:
+        pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
 
 def obs_ensemble_quantile_test():
     import os
@@ -2588,7 +2612,7 @@ def test_ppu_import():
     import pypestutils as ppu
 
 
-
+@pytest.mark.timeout(method="thread")
 def ppu_geostats_test(tmp_path):
     import sys
     import os
@@ -2622,16 +2646,19 @@ def ppu_geostats_test(tmp_path):
     par_info_unrot.loc[:,"parval1"] = np.random.uniform(10,100,par_info_unrot.shape[0])
     gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0,anisotropy=3.0,bearing=45))
     ok = pyemu.geostats.OrdinaryKrige(gs,par_info_unrot)
-    ppu_factor_filename = os.path.join("utils","ppu_factors.dat")
-    pyemu_factor_filename = os.path.join("utils", "pyemu_factors.dat")
+    ppu_factor_filename = Path(tmp_path, "ppu_factors.dat")
+    pyemu_factor_filename = Path(tmp_path, "pyemu_factors.dat")
 
     ok.calc_factors_grid(sr, try_use_ppu=False)
     ok.to_grid_factors_file(pyemu_factor_filename)
-    ok.calc_factors_grid(sr,try_use_ppu=True,ppu_factor_filename=ppu_factor_filename)
-    out_file = os.path.join("utils","pyemu_array.dat")
-    pyemu.geostats.fac2real(par_info_unrot,pyemu_factor_filename,out_file=out_file)
-    out_file_ppu = os.path.join("utils", "ppu_array.dat")
-    pyemu.geostats.fac2real(par_info_unrot, ppu_factor_filename, out_file=out_file_ppu)
+    ok.calc_factors_grid(sr, try_use_ppu=True,
+                         ppu_factor_filename=ppu_factor_filename)
+    out_file = Path(tmp_path, "pyemu_array.dat")
+    pyemu.geostats.fac2real(par_info_unrot,
+                            pyemu_factor_filename, out_file=out_file)
+    out_file_ppu = Path(tmp_path, "ppu_array.dat")
+    pyemu.geostats.fac2real(par_info_unrot,
+                            ppu_factor_filename, out_file=out_file_ppu)
     arr_ppu = np.loadtxt(out_file_ppu)
     arr = np.loadtxt(out_file)
     diff = 100 * np.abs(arr - arr_ppu) / np.abs(arr)
@@ -2678,17 +2705,19 @@ def ppw_worker(id_num,case,t_d,host,port,frun):
         #print("worker",id_num,"finished run",ppw.net_pack.runid)
    
 
-
-def pypestworker_test():
+@pytest.mark.timeout(method="thread")
+def pypestworker_test(tmp_path):
     from datetime import datetime
     import numpy as np
     import subprocess as sp
     import multiprocessing as mp
+    import sys
+
     host = "localhost"
     port = 4111
     case = "constr"
     org_d = os.path.join("utils","{0}_template".format(case))
-    t_d = "{0}_ppw_template".format(case)
+    t_d = Path(tmp_path, "{0}_ppw_template".format(case))
     if os.path.exists(t_d):
         shutil.rmtree(t_d)
     shutil.copytree(org_d,t_d)
@@ -2701,8 +2730,7 @@ def pypestworker_test():
     
     pst.control_data.noptmax = 2
     pst.write(os.path.join(t_d,"{0}.pst".format(case)),version=2)
-    import sys
-    sys.path.insert(0,t_d)
+    sys.path.insert(1, t_d.as_posix())
     from forward_run import helper as frun
 
     m_d = "{0}_ppw_master".format(case)
@@ -2715,7 +2743,12 @@ def pypestworker_test():
     start = datetime.now()
     b_d = os.getcwd()
     os.chdir(m_d)
-    p = sp.Popen([mou_exe_path,"{0}.pst".format(case),"/h",":{0}".format(port)])
+    try:
+        p = sp.Popen([mou_exe_path, "{0}.pst".format(case), "/h", ":{0}".format(port)])
+    except Exception as e:
+        print("failed to start master process")
+        os.chdir(b_d)
+        raise e
     os.chdir(b_d)
     #p.wait()
     #return
@@ -2730,17 +2763,18 @@ def pypestworker_test():
         pp = mp.Process(target=ppw_worker,args=(i,case,t_d,host,port,frun))
         pp.start()
         procs.append(pp)
-    # if everything worked, the the workers should receive the 
+    # if everything worked, the workers should receive the
     # shutdown signal from the master and exit gracefully...
     for pp in procs:
         pp.join()
 
     # wait for the master to finish...but should already be finished
     p.wait()
+
     finish = datetime.now()
     print("all done, took",(finish-start).total_seconds())
-
-    m_d2 = m_d+"_base"
+    # pop sys.path change (just in case it persists)
+    sys.path.pop(1)
     start2 = datetime.now()
     #pyemu.os_utils.start_workers(t_d,mou_exe_path,"{0}.pst".format(case),num_workers=num_workers,worker_root='.',master_dir=m_d2)
     pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=t_d)
@@ -2756,9 +2790,7 @@ def pypestworker_test():
     print(diff2.max())
     assert diff1.max() < 1.0e-6
     assert diff2.max() < 1.0e-6
-    
-    
-    
+
 
 def gpr_compare_invest():
     import numpy as np

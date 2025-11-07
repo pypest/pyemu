@@ -2467,7 +2467,7 @@ def xsec_test(tmp_path):
             f.write("\n")
     pf.add_observations_from_ins(os.path.join(t_d,"10par_xsec.hds.ins"),pst_path=".")
 
-    pf.mod_sys_cmds.append("mfnwt {0}".format(nam_file))
+    pf.mod_sys_cmds.append(f"{mf_exe_path} {nam_file}")
 
     pf.build_pst(os.path.join(t_d,"pest.pst"))
 
@@ -6288,7 +6288,7 @@ def xsec_pars_as_obs_test(tmp_path):
             f.write("\n")
     pf.add_observations_from_ins(os.path.join(t_d,"10par_xsec.hds.ins"),pst_path=".")
 
-    pf.mod_sys_cmds.append("mfnwt {0}".format(nam_file))
+    pf.mod_sys_cmds.append(f"{mf_exe_path} {nam_file}")
 
     pst = pf.build_pst(None)
     par_sigma_range = 1
