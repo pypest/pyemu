@@ -22,10 +22,10 @@ usg_exe_path = exepath_dict["mfusg_gsi"]
 mou_exe_path = exepath_dict["pestpp-mou"]
 
 
-# def test_numpy_inversion():
-#     import numpy as np
+def test_numpy_inversion():
+    import numpy as np
 #     import os
-#     np.__config__.show()
+    np.show_config()
 #     A = np.random.randn(601, 601)
 #     np.linalg.inv(A)
 #     if (pid := os.fork()) !=0:
