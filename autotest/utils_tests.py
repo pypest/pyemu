@@ -25,11 +25,13 @@ mou_exe_path = exepath_dict["pestpp-mou"]
 # def test_numpy_inversion():
 #     import numpy as np
 #     import os
+#     np.__config__.show()
 #     A = np.random.randn(601, 601)
 #     np.linalg.inv(A)
 #     if (pid := os.fork()) !=0:
 #         np.linalg.inv(A)
 #         os.waitpid(pid, 0)
+#     pass
 
 
 def add_pi_obj_func_test(tmp_path):
@@ -693,7 +695,7 @@ def ok_grid_zone_test(tmp_path):
     zone_array[0,0] = 2
     kf = ok.calc_factors_grid(sr,verbose=False,
                               var_filename=os.path.join(tmp_path,"test_var.ref"),
-                              minpts_interp=1,zone_array=zone_array,num_threads=1)
+                              minpts_interp=1,zone_array=zone_array,num_threads=2)
     ok.to_grid_factors_file(os.path.join(tmp_path,"test.fac"))
 
 
