@@ -140,8 +140,7 @@ jobs:
       shell: bash -l {0}
       working-directory: examples
       run: |
-        pytest examples/*.ipynb \
-        -n=auto \
+        pytest *.ipynb \
         -rA -vv --tb=native \
         --nbval-lax --dist loadscope \
         --cov=pyemu --cov-report=lcov
