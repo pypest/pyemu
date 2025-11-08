@@ -138,6 +138,7 @@ jobs:
     - name: Test Notebooks
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
       shell: bash -l {0}
+      working-directory: examples
       run: |
         pytest *.ipynb \
         -rA -vv --tb=native \
