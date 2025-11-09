@@ -143,10 +143,12 @@ jobs:
         pytest *.ipynb \
         -rA -vv --tb=native \
         --nbval-lax --dist loadscope \
-        --cov=pyemu --cov-report=lcov
+        --cov=notebooks --cov-report=lcov
       # feeling is that pytest-cov is not dialed in with nbmake...
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_FLAG_NAME: notebooks
+        COVERALLS_PARALLEL: true
 
     - name: Coveralls
       uses: coverallsapp/github-action@v2
