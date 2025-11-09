@@ -83,6 +83,7 @@ python_files = "*_tests.py"
 source = ["pyemu"]
 parallel = true
 relative_files = true
+patch = ["subprocess"]
 omit = [
     "**/legacy/*",
     "*/python?.?/*",
