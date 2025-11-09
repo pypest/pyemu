@@ -24,12 +24,12 @@ jobs:
           "3.14"
         ]
         run-type: [std]
-        test-path: ["."]
+        test-path: ["autotest"]
         include:
           - os: macos-latest
             python-version: 3.12
             run-type: std
-            test-path: "."
+            test-path: "autotest"
 
     steps:
     - name: Checkout repo
@@ -124,7 +124,6 @@ jobs:
 
     - name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
       shell: bash -l {0}
-      working-directory: autotest
       run: |
         pytest ${{ matrix.test-path }} \
         -n=auto \
@@ -138,16 +137,13 @@ jobs:
     - name: Test Notebooks
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
       shell: bash -l {0}
-      working-directory: examples
       run: |
-        pytest *.ipynb \
+        pytest examples/*.ipynb \
         -rA -vv --tb=native \
         --nbval-lax --dist loadscope \
-        --cov=pyemu --cov-report=lcov
+        --cov=pyemu --cov-report=lcov --cov-append
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_FLAG_NAME: notebooks
-        COVERALLS_PARALLEL: true
 
     - name: Coveralls
       uses: coverallsapp/github-action@v2
