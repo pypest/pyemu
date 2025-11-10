@@ -22,14 +22,13 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "numpy>=2.2.6",
+    "numpy>=2.2.6,<2.3.2",
     "pandas>=2.3.3",
 ]
 
 [project.optional-dependencies]
 optional = [
     "flopy>=3.9.5",
-    "jinja2>=3.1.6",
     "matplotlib>=3.10.7",
     "pypestutils>=0.3.0",
     "pyshp>=3.0.2.post1",
@@ -41,13 +40,11 @@ optional = [
 tests = [
     "flaky>=3.8.1",
     "modflow-devtools>=1.8.0",
-    "nbmake>=1.5.5",
     "nbval>=0.11.0",
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0",
     "pytest-timeout>=2.4.0",
     "pytest-xdist>=3.8.0",
-    "scipy-openblas64>=0.3.30.0.7",
 ]
 
 docs = [
@@ -58,7 +55,21 @@ docs = [
 
 [dependency-groups]
 dev = [
+    "flaky>=3.8.1",
+    "flopy>=3.9.5",
     "jupyterlab>=4.4.10",
+    "matplotlib>=3.10.7",
+    "modflow-devtools>=1.8.0",
+    "nbval>=0.11.0",
+    "pypestutils>=0.3.0",
+    "pyshp>=3.0.2.post1",
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "pytest-timeout>=2.4.0",
+    "pytest-xdist>=3.8.0",
+    "scikit-learn>=1.7.2",
+    "scipy>=1.15.3",
+    "shapely>=2.1.2",
 ]
 
 [project.scripts]

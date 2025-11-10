@@ -11,7 +11,7 @@ jobs:
   pyemuCI:
     name: autotests
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
