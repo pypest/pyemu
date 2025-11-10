@@ -3253,7 +3253,6 @@ def pestpp_runstorage_file_test(tmp_path):
     import pandas as pd
     import pyemu
 
-
     org_rns_file = os.path.join("utils","runstor.rns")
     rns_file = "runstor.rns"
     if os.path.exists(rns_file):
@@ -3278,6 +3277,7 @@ def pestpp_runstorage_file_test(tmp_path):
     df["run_status"] = -100
     df.loc[:,par_names[0]] = -111
     df.loc[:,obs_names[-1]] = -222
+    df["buffer_status"] = 1
     #df.loc[0,par_names] = -1111
     rs.update(df)
     rs2 = pyemu.helpers.RunStor(rns_file)
@@ -3293,7 +3293,9 @@ def pestpp_runstorage_file_test(tmp_path):
     assert np.all(df2.loc[:,par_names[0]].values == -111)
     print(df2.loc[:, obs_names[-1]])
     assert np.all(df2.loc[:,obs_names[-1]].values == -222)
-
+    print(df2.buffer_status)
+    #buffer status should always be 0 no matter what values are put in the dataframe
+    assert df2.buffer_status.sum() == 0
     rs2.update(org_df)
     p1,o1,meta = pyemu.helpers.read_pestpp_runstorage(rns_file,irun="all", with_metadata=True)
 

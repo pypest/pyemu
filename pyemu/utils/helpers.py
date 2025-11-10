@@ -1367,13 +1367,39 @@ def pst_from_parnames_obsnames(
 
 
 class RunStor(object):
+
     def __init__(self,filename):
+        """access to the pest++ run storage file.  Can be used to support
+        usage of the pest++ external run manager
+
+        Args:
+            filename (str): the name of a pest++ run storage file (ie pest.rns)
+
+        Example::
+
+            rns = pyemu.helpers.RunStor("pest.rns")
+            # get a dataframe of both parameter and observation
+            # values for all runs in the file.
+            df = rns.get_data()
+            # a function that processes the runs stored
+            # in df; the observation values in df should
+            # be updated "in place"
+            failed_idxs = process_my_model_runs(df)
+            #mark the failed runs
+            df.run_status.iloc[failed_idxs] = -99
+            #update the parameter and observation values
+            # stored in the rns file
+            rns.update(df)
+
+        """
         assert os.path.exists(filename)
         self.filename = filename
         self.info_txt_size = 1001
 
     @staticmethod
     def header_dtype():
+        """the numpy header dtype of the file
+        """
         return np.dtype(
                 [
                 ("n_runs", np.int64),
@@ -1385,6 +1411,16 @@ class RunStor(object):
 
     @staticmethod
     def file_info(filename):
+        """get information about whats stored in the file
+
+        Args:
+            filename (str): the run storage file name
+
+        Returns:
+            header (dict): the file header
+            par_names (list): parameter names ordered as they occur in the file
+            obs_names (list): observation names ordered as they occur in the file
+        """
 
         with open(filename,"rb") as f:
             header = np.fromfile(f, dtype=RunStor.header_dtype(), count=1)
@@ -1410,35 +1446,69 @@ class RunStor(object):
 
     @staticmethod
     def status_str(r_status):
+        """convert the run status string to a txt label
+
+        Args:
+            r_status (int): the int run status from the file
+
+        Returns:
+            status (str): run status label
+
+        """
         if r_status == 0:
             return "not completed"
         if r_status == 1:
             return "completed"
         if r_status == -100:
             return "canceled"
+        if r_status == "-99":
+            return "failed"
         else:
             return "failed"
 
 
     def _read_run(self,f,npar,nobs):
+        """private method to read a run from the file
+
+        Args:
+            f (file): the open file handle
+            npar (int): number of parameters
+            nobs (int): number of observations
+
+        Returns:
+            r_status (int): run status
+            info_txt (str): run information
+            buf_status (int): status of the write buffer (not really used...)
+            par_vals (np.ndarray): the parameter values for the run
+            obs_vals (np.ndarray): the observation values for the run
+
+        """
         r_status = np.fromfile(f, dtype=np.int8, count=1)
         info_txt = struct.unpack("{0}s".format(self.info_txt_size), f.read(self.info_txt_size))[0].strip().lower().decode()
         info_txt = info_txt.replace("\x00","")
-        par_vals = np.fromfile(f, dtype=np.float64, count=npar + 1)[1:]
-        obs_vals = np.fromfile(f, dtype=np.float64, count=nobs + 1)[:-1]
-        return r_status, info_txt, par_vals, obs_vals
+        info_val = np.fromfile(f, dtype=np.float64, count=1)[0]
+        par_vals = np.fromfile(f, dtype=np.float64, count=npar)
+        obs_vals = np.fromfile(f, dtype=np.float64, count=nobs)
+        buf_status = np.fromfile(f, dtype=np.int8, count=1)[0]
+        return r_status, info_txt, buf_status, par_vals, obs_vals
 
     def get_data(self):
+        """read the contents of the file into a dataframe
+
+        Returns:
+            df (pd.DataFrame): the file contents
+
+        """
         header, par_names, obs_names = RunStor.file_info(self.filename)
         with open(self.filename,'rb') as f:
             f.seek(header["run_start"])
             rstats, infos, par_vals, obs_vals = [],[],[],[]
-            run_poss = []
+            run_poss,bstats = [],[]
             for irun in range(header["n_runs"]):
                 run_pos = header["run_start"] + (irun*header["run_size"])
                 f.seek(run_pos)
                 try:
-                    r_status, info_txt, par_val, obs_val = self._read_run(f,len(par_names),len(obs_names))
+                    r_status, info_txt, buf_status, par_val, obs_val = self._read_run(f,len(par_names),len(obs_names))
                 except Exception as e:
                     raise Exception("error reading run {0}: {1}".format(irun,str(e)))
                 rstats.append(r_status[0])
@@ -1446,7 +1516,8 @@ class RunStor(object):
                 par_vals.append(par_val)
                 obs_vals.append(obs_val)
                 run_poss.append(run_pos)
-        df = pd.DataFrame({"run_status":rstats,"run_pos":run_poss,"info_txt":infos})
+                bstats.append(buf_status)
+        df = pd.DataFrame({"run_status":rstats,"run_pos":run_poss,"info_txt":infos,"buffer_status":bstats})
         df["run_status"] = df.run_status.astype(int)
         df["run_status_label"] = df.run_status.apply(RunStor.status_str)
         par_vals = np.array(par_vals)
@@ -1455,6 +1526,15 @@ class RunStor(object):
         return df
 
     def update(self,df):
+        """update the parameter and observation values
+
+        Args:
+            df (pd.DataFrame) : file contents to update.  Should be derived from the get_data() method
+                to maintain dtypes and required information.  The parameter and observation values for each
+                run are updated "in place" in the file, as is the run_status int flag; this flag should be set to
+                -99 for any runs that "failed".
+
+        """
         header, par_names, obs_names = RunStor.file_info(self.filename)
         if header["n_runs"] != df.shape[0]:
             raise Exception("number of runs implied by df nrows {0} != n_runs in file {1}".format(df.shape[0],header["n_runs"]))
@@ -1470,15 +1550,13 @@ class RunStor(object):
                 run_status[irun].tofile(f,sep="")
 
                 f.seek(rpos+offset)
-                np.float64(-999).tofile(f, sep="")
+                #write the unused info val
+                np.float64(-999.).tofile(f, sep="")
                 par_vals[irun,:].tofile(f,sep="")
                 obs_vals[irun, :].tofile(f, sep="")
-                np.float64(-999).tofile(f, sep="")
+                #the buffer status flag - 0 means the write was completed
+                np.int8(0).tofile(f, sep="")
 
-                #print(np.fromfile(f,dtype=np.int8,count=1))
-                pass
-
-        pass
 
 
 
