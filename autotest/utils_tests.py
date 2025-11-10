@@ -695,7 +695,7 @@ def ok_grid_zone_test(tmp_path):
     zone_array[0,0] = 2
     kf = ok.calc_factors_grid(sr,verbose=False,
                               var_filename=os.path.join(tmp_path,"test_var.ref"),
-                              minpts_interp=1,zone_array=zone_array,num_threads=1)
+                              minpts_interp=1,zone_array=zone_array,num_threads=2)
     ok.to_grid_factors_file(os.path.join(tmp_path,"test.fac"))
 
 

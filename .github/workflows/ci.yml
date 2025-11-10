@@ -84,7 +84,7 @@ jobs:
         -rA -vv --tb=native \
         --durations=20 \
         --timeout=1200 \
-        --cov=pyemu --cov-report=lcov \
+        --cov=pyemu --cov-report=xml \
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         MPLBACKEND: Agg  # non-interactive backend for matplotlib
@@ -108,7 +108,7 @@ jobs:
         uv run pytest examples/*.ipynb \
         -rA -vv --tb=native \
         --nbval-lax --dist loadscope \
-        --cov=pyemu --cov-report=lcov --cov-append
+        --cov=pyemu --cov-report=xml --cov-append
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -118,6 +118,12 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         flag-name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
         parallel: true
+
+    - name: Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   coveralls_finish:
     needs: pyemuCI
