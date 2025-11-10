@@ -6,13 +6,13 @@ import numpy as np
 import pandas as pd
 # import platform
 import pyemu
+from pst_from_tests import setup_tmp, _get_port, exepath_dict
 from pst_from_tests import setup_tmp, _get_port
 from pyemu.emulators import DSI, LPFA, GPR, dsi
 
-from conftest import get_exe_path
 
-ies_exe_path = get_exe_path("pestpp-ies")
-mou_exe_path = get_exe_path("pestpp-mou")# Check for TensorFlow availability for DSIAE tests
+ies_exe_path = exepath_dict("pestpp-ies")
+mou_exe_path = exepath_dict("pestpp-mou")# Check for TensorFlow availability for DSIAE tests
 
 try:
     import tensorflow as tf
