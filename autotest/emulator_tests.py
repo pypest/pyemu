@@ -9,10 +9,15 @@ import pyemu
 from pst_from_tests import setup_tmp, _get_port
 from pyemu.emulators import DSI, LPFA, GPR
 
-from conftest import get_exe_path
+# Check for TensorFlow availability for DSIAE tests
+try:
+    import tensorflow as tf
+    HAS_TENSORFLOW = True
+except ImportError:
+    HAS_TENSORFLOW = False
 
-ies_exe_path = get_exe_path("pestpp-ies")
-mou_exe_path = get_exe_path("pestpp-mou")
+ies_exe_path = exepath_dict["pestpp-ies"]
+mou_exe_path = exepath_dict["pestpp-mou"]
 
 def dsi_freyberg(tmp_d,transforms=None,tag=""):
 
@@ -44,6 +49,7 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
     td = tmp_d / "template_dsi"
     pstdsi = dsi.prepare_pestpp(td,observation_data=obsdata)
     pstdsi.control_data.noptmax = 1
+    pstdsi.pestpp_options["ies_num_reals"] = 10
     pstdsi.pestpp_options["ies_num_reals"] = 10
     pstdsi.write(os.path.join(td, "dsi.pst"),version=2)
 
@@ -919,6 +925,148 @@ def gpr_zdt1_ppw():
     ppw = pyemu.helpers.gpr_pyworker(pst_name,"localhost",4569,gpr=True)
     os.chdir("..")
 
+
+def dsiae_freyberg_basic(tmp_d="temp", transforms=None, tag=""):
+    """Basic DSIAE test using freyberg dataset - minimal compute"""
+    
+    if not HAS_TENSORFLOW:
+        pytest.skip("TensorFlow not available, skipping DSIAE tests")
+    
+    test_d = "ends_master"
+    test_d = setup_tmp(test_d, tmp_d)
+
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d, case + ".pst")
+    pst = pyemu.Pst(pst_name)
+    
+    oe_name = pst_name.replace(".pst", ".0.obs.csv")
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:50, :]  # Use only 50 samples
+    data = oe._df.copy()
+
+    # Test DSIAE initialization and basic functionality
+    from pyemu.emulators import DSIAE
+    dsiae = DSIAE(data=data, transforms=transforms, latent_dim=3, verbose=False)  # Fixed small latent dim
+    
+    # Test fit with minimal parameters for speed
+    dsiae.fit(validation_split=0.2, epochs=5, batch_size=16, early_stopping=False)  # Very few epochs
+    
+    # Test encoding
+    Z = dsiae.encode(data.iloc[:5])  # Test with just 5 samples
+    assert Z.shape[0] == 5
+    assert Z.shape[1] == 3  # latent_dim
+    
+    # Test prediction
+    sim_vals = dsiae.predict(Z.iloc[0])
+    assert len(sim_vals) == len(data.columns)
+    
+    return dsiae
+
+
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+def test_dsiae_basic():
+    """Test basic DSIAE functionality without transforms"""
+    dsiae = dsiae_freyberg_basic(tmp_d="temp_dsiae_basic")
+    assert dsiae.fitted
+    return
+
+
+
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+def test_dsiae_auto_latent_dim():
+    """Test DSIAE with automatic latent dimension selection"""
+    
+    test_d = "ends_master" 
+    test_d = setup_tmp(test_d, "temp_dsiae_auto")
+
+    case = "freyberg6_run_ies"
+    pst_name = os.path.join(test_d, case + ".pst")
+    pst = pyemu.Pst(pst_name)
+    
+    oe_name = pst_name.replace(".pst", ".0.obs.csv")
+    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:30, :10]  # Very small subset
+    data = oe._df.copy()
+
+    from pyemu.emulators import DSIAE
+    dsiae = DSIAE(data=data, latent_dim=None, energy_threshold=0.8)  # Auto dimension
+    dsiae.fit(epochs=3, batch_size=8)  # Minimal training
+    
+    assert dsiae.fitted
+    assert dsiae.latent_dim > 0
+    return
+
+
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+def test_autoencoder_basic():
+    """Test standalone AutoEncoder functionality"""
+    
+    from pyemu.emulators.dsiae import AutoEncoder
+    
+    # Create simple synthetic data
+    np.random.seed(42)
+    X = np.random.randn(50, 10).astype(np.float32)  # 50 samples, 10 features
+    
+    # Test initialization
+    ae = AutoEncoder(input_dim=10, latent_dim=3, hidden_dims=(8, 4))
+    
+    # Test fit with minimal parameters
+    history = ae.fit(X, epochs=3, batch_size=16, verbose=0)
+    assert history is not None
+    
+    # Test encode/decode
+    Z = ae.encode(X[:5])  # Test with 5 samples
+    assert Z.shape == (5, 3)  # latent_dim = 3
+    
+    X_reconstructed = ae.decode(Z)
+    assert X_reconstructed.shape == (5, 10)  # original input_dim = 10
+    
+    return
+
+
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+def test_autoencoder_pandas_input():
+    """Test AutoEncoder with pandas DataFrame input"""
+    
+    from pyemu.emulators.dsiae import AutoEncoder
+    
+    # Create pandas DataFrame
+    np.random.seed(42)
+    data = pd.DataFrame(np.random.randn(30, 8), 
+                       columns=[f'feature_{i}' for i in range(8)],
+                       index=[f'sample_{i}' for i in range(30)])
+    
+    ae = AutoEncoder(input_dim=8, latent_dim=2, hidden_dims=(6,))
+    ae.fit(data.values, epochs=2, verbose=0)
+    
+    # Test with DataFrame input
+    Z = ae.encode(data.iloc[:3])
+    assert Z.shape == (3, 2)
+    
+    # Test with Series input  
+    Z_series = ae.encode(data.iloc[0])
+    assert Z_series.shape == (1, 2)
+    
+    return
+
+
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+def test_dsiae_hyperparam_search():
+    """Test DSIAE hyperparameter search"""
+    
+    dsiae = dsiae_freyberg_basic(tmp_d="temp_dsiae_hyperparam")
+    
+    # Test with minimal search space
+    results = dsiae.hyperparam_search(
+        latent_dims=[2, 3],
+        hidden_dims_list=[(8,)],  # Single architecture
+        lrs=[1e-2],  # Single learning rate
+        epochs=2,  # Very few epochs
+        batch_size=8
+    )
+    
+    assert isinstance(results, dict)
+    assert len(results) > 0
+    
+    return
 
 if __name__ == "__main__":
     
