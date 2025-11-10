@@ -4497,7 +4497,8 @@ def gpr_forward_run():
 
 
 def dsi_forward_run(pvals,dsi,write_csv=False):
-    assert isinstance(dsi,pyemu.emulators.DSI), "dsi must be a pyemu DSI object" 
+    if not isinstance(dsi,pyemu.emulators.DSI) and not isinstance(dsi,pyemu.emulators.DSIAE):
+        raise Exception("dsi must be a pyemu.emulators.DSI or pyemu.emulators.DSIAE object")
     if isinstance(pvals,pd.DataFrame):
         pvals = pvals.parval1
     sim_vals = dsi.predict(pvals)
