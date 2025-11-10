@@ -1366,6 +1366,122 @@ def pst_from_parnames_obsnames(
     )
 
 
+class RunStor(object):
+    def __init__(self,filename):
+        assert os.path.exists(filename)
+        self.filename = filename
+        self.info_txt_size = 1001
+
+    @staticmethod
+    def header_dtype():
+        return np.dtype(
+                [
+                ("n_runs", np.int64),
+                ("run_size", np.int64),
+                ("p_name_size", np.int64),
+                ("o_name_size", np.int64),
+                ]
+            )
+
+    @staticmethod
+    def file_info(filename):
+
+        with open(filename,"rb") as f:
+            header = np.fromfile(f, dtype=RunStor.header_dtype(), count=1)
+            header = {name: header[name][0] for name in RunStor.header_dtype().names}
+            p_name_size, o_name_size = header["p_name_size"], header["o_name_size"]
+            par_names = (
+                struct.unpack("{0}s".format(p_name_size), f.read(p_name_size))[0]
+                .strip()
+                .lower()
+                .decode()
+                .split("\0")[:-1]
+            )
+            obs_names = (
+                struct.unpack("{0}s".format(o_name_size), f.read(o_name_size))[0]
+                .strip()
+                .lower()
+                .decode()
+                .split("\0")[:-1]
+            )
+            run_start = f.tell()
+        header["run_start"] = run_start
+        return header, par_names, obs_names
+
+    @staticmethod
+    def status_str(r_status):
+        if r_status == 0:
+            return "not completed"
+        if r_status == 1:
+            return "completed"
+        if r_status == -100:
+            return "canceled"
+        else:
+            return "failed"
+
+
+    def _read_run(self,f,npar,nobs):
+        r_status = np.fromfile(f, dtype=np.int8, count=1)
+        info_txt = struct.unpack("{0}s".format(self.info_txt_size), f.read(self.info_txt_size))[0].strip().lower().decode()
+        info_txt = info_txt.replace("\x00","")
+        par_vals = np.fromfile(f, dtype=np.float64, count=npar + 1)[1:]
+        obs_vals = np.fromfile(f, dtype=np.float64, count=nobs + 1)[:-1]
+        return r_status, info_txt, par_vals, obs_vals
+
+    def get_data(self):
+        header, par_names, obs_names = RunStor.file_info(self.filename)
+        with open(self.filename,'rb') as f:
+            f.seek(header["run_start"])
+            rstats, infos, par_vals, obs_vals = [],[],[],[]
+            run_poss = []
+            for irun in range(header["n_runs"]):
+                run_pos = header["run_start"] + (irun*header["run_size"])
+                f.seek(run_pos)
+                try:
+                    r_status, info_txt, par_val, obs_val = self._read_run(f,len(par_names),len(obs_names))
+                except Exception as e:
+                    raise Exception("error reading run {0}: {1}".format(irun,str(e)))
+                rstats.append(r_status[0])
+                infos.append(info_txt)
+                par_vals.append(par_val)
+                obs_vals.append(obs_val)
+                run_poss.append(run_pos)
+        df = pd.DataFrame({"run_status":rstats,"run_pos":run_poss,"info_txt":infos})
+        df["run_status"] = df.run_status.astype(int)
+        df["run_status_label"] = df.run_status.apply(RunStor.status_str)
+        par_vals = np.array(par_vals)
+        obs_vals = np.array(obs_vals)
+        df = pd.concat([df,pd.DataFrame(par_vals,columns=par_names),pd.DataFrame(obs_vals,columns=obs_names)],axis=1)
+        return df
+
+    def update(self,df):
+        header, par_names, obs_names = RunStor.file_info(self.filename)
+        if header["n_runs"] != df.shape[0]:
+            raise Exception("number of runs implied by df nrows {0} != n_runs in file {1}".format(df.shape[0],header["n_runs"]))
+        par_vals = df.loc[:,par_names].values
+        obs_vals = df.loc[:,obs_names].values
+        run_status = df.run_status.astype(np.int8).values
+        run_pos = df.run_pos.values
+        offset =  1 + self.info_txt_size
+        with open(self.filename,"r+b") as f:
+            f.seek(header["run_start"])
+            for irun,(rstat,rpos) in enumerate(zip(run_status,run_pos)):
+                f.seek(rpos)
+                run_status[irun].tofile(f,sep="")
+
+                f.seek(rpos+offset)
+                np.float64(-999).tofile(f, sep="")
+                par_vals[irun,:].tofile(f,sep="")
+                obs_vals[irun, :].tofile(f, sep="")
+                np.float64(-999).tofile(f, sep="")
+
+                #print(np.fromfile(f,dtype=np.int8,count=1))
+                pass
+
+        pass
+
+
+
 def read_pestpp_runstorage(filename, irun=0, with_metadata=False):
     """read pars and obs from a specific run in a pest++ serialized
     run storage file (e.g. .rns/.rnj) into dataframes.
