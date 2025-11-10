@@ -37,7 +37,8 @@ optional = [
     "scipy",
     "shapely",
     "jinja2",  # for to_latex options
-    "pypestutils"
+    "pypestutils",
+    "tensorflow", # for DSI autoencoder
 ]
 test = [
     "coveralls",
