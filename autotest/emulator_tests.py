@@ -50,6 +50,7 @@ def dsi_synth(tmp_d,transforms=None,tag=""):
     pstdsi = dsi.prepare_pestpp(td,observation_data=obsdata)
     pstdsi.control_data.noptmax = 1
     pstdsi.pestpp_options["ies_num_reals"] = 10
+    pstdsi.pestpp_options["ies_num_reals"] = 10
     pstdsi.write(os.path.join(td, "dsi.pst"),version=2)
 
     pvals = pd.read_csv(os.path.join(td, "dsi_pars.csv"), index_col=0)
