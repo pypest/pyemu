@@ -65,7 +65,7 @@ jobs:
           matrix.python-version == '3.12'
         )
       run: |
-        pip install tensorflow
+        micromamba install tensorflow || true
         
     - name: Checkout pypestutils
       uses:  actions/checkout@v4
