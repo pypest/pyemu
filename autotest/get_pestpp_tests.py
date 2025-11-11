@@ -27,7 +27,7 @@ bindir_options = {
     "home": Path.home() / ".local" / "bin",
 }
 owner_options = [
-    "usgs",
+    "usgs", "pestpp"
 ]
 repo_options = {
     "pestpp": [
@@ -40,6 +40,16 @@ repo_options = {
         "pestpp-sqp",
         "pestpp-swp",
     ],
+    "pestpp-nightly-builds": [
+        "pestpp-da",
+        "pestpp-glm",
+        "pestpp-ies",
+        "pestpp-mou",
+        "pestpp-opt",
+        "pestpp-sen",
+        "pestpp-sqp",
+        "pestpp-swp"
+    ]
 }
 
 if system() == "Windows":
@@ -238,7 +248,10 @@ def test_script_valid_options(function_tmpdir, downloads_dir):
 @requires_github
 @pytest.mark.parametrize("owner", owner_options)
 @pytest.mark.parametrize("repo", repo_options.keys())
-def test_script(function_tmpdir, owner, repo, downloads_dir):
+def test_script(request, function_tmpdir, owner, repo, downloads_dir):
+    if ((repo == "pestpp-nightly-builds" and owner != "pestpp") or
+            (owner == "pestpp" and repo != "pestpp-nightly-builds")):
+        request.applymarker(pytest.mark.xfail)
     bindir = str(function_tmpdir)
     stdout, stderr, returncode = run_get_pestpp_script(
         bindir,
@@ -251,7 +264,8 @@ def test_script(function_tmpdir, owner, repo, downloads_dir):
     )
     if rate_limit_msg in stderr:
         pytest.skip(f"GitHub {rate_limit_msg}")
-
+    if returncode != 0:
+        raise RuntimeError(stderr)
     paths = list(function_tmpdir.glob("*"))
     names = [p.name for p in paths]
     expected_names = [append_ext(p) for p in repo_options[repo]]
@@ -262,13 +276,18 @@ def test_script(function_tmpdir, owner, repo, downloads_dir):
 @requires_github
 @pytest.mark.parametrize("owner", owner_options)
 @pytest.mark.parametrize("repo", repo_options.keys())
-def test_python_api(function_tmpdir, owner, repo, downloads_dir):
+def test_python_api(request, function_tmpdir, owner, repo, downloads_dir):
+    if ((repo == "pestpp-nightly-builds" and owner != "pestpp") or
+            (owner == "pestpp" and repo != "pestpp-nightly-builds")):
+        request.applymarker(pytest.mark.xfail)
     bindir = str(function_tmpdir)
     try:
         get_pestpp(bindir, owner=owner, repo=repo, downloads_dir=downloads_dir)
-    except HTTPError as err:
-        if err.code == 403:
+    except (HTTPError, IOError) as err:
+        if '403' in str(err):
             pytest.skip(f"GitHub {rate_limit_msg}")
+        else:
+            raise err
 
     paths = list(function_tmpdir.glob("*"))
     names = [p.name for p in paths]

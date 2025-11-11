@@ -30,6 +30,7 @@ default_repo = "pestpp"
 # key is the repo name, value is the renamed file prefix for the download
 renamed_prefix = {
     "pestpp": "pestpp",
+    "pestpp-nightly-builds": "pestpp",
 }
 available_repos = list(renamed_prefix.keys())
 available_ostags = ["linux", "mac", "win"]
@@ -165,9 +166,9 @@ def get_release(owner=None, repo=None, tag="latest", quiet=False) -> dict:
                 break
         except urllib.error.HTTPError as err:
             if err.code == 401 and os.environ.get("GITHUB_TOKEN"):
-                raise ValueError("GITHUB_TOKEN env is invalid") from err
+                raise IOError("GITHUB_TOKEN env is invalid") from err
             elif err.code == 403 and "rate limit exceeded" in err.reason:
-                raise ValueError(
+                raise IOError(
                     f"use GITHUB_TOKEN env to bypass rate limit ({err})"
                 ) from err
             elif err.code == 404:
@@ -425,13 +426,13 @@ def run_main(
         )
     asset_name = asset["name"]
     download_url = asset["browser_download_url"]
+    asset_pth = Path(asset_name)
+    asset_stem = asset_pth.stem
+    if str(asset_pth).endswith("tar.gz"):
+        asset_suffix = ".tar.gz"
+    else:
+        asset_suffix = asset_pth.suffix
     if repo == "pestpp":
-        asset_pth = Path(asset_name)
-        asset_stem = asset_pth.stem
-        if str(asset_pth).endswith("tar.gz"):
-            asset_suffix = ".tar.gz"
-        else:
-            asset_suffix = asset_pth.suffix
         dst_fname = "-".join([repo, release["tag_name"], ostag]) + asset_suffix
     else:
         # change local download name so it is more unique
