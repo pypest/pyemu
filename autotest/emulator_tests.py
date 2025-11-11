@@ -960,7 +960,9 @@ def test_dsiae_basic():
     """Test basic DSIAE functionality with transforms"""
     data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
 
-    transforms = [{"normal_score": data.columns.tolist()}]
+    transforms = [
+        {"type": "normal_score", }
+    ]
 
     # Test DSIAE initialization and basic functionality
     from pyemu.emulators import DSIAE
