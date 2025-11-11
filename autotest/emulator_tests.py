@@ -33,7 +33,7 @@ def generate_synth_data(num_realizations=100, num_observations=10):
     obsdata.obgnme = "obgnme"
     return data, obsdata
 
-def dsi_freyberg(tmp_d,transforms=None,tag=""):
+def dsi_synth(tmp_d,transforms=None,tag=""):
 
     data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
 
@@ -68,21 +68,21 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
     return
 
 def test_dsi_basic(tmp_path):
-    dsi_freyberg(tmp_path,transforms=None)
+    dsi_synth(tmp_path,transforms=None)
     return
 
 def test_dsi_nst(tmp_path):
     transforms = [
         {"type": "normal_score", }
     ]
-    dsi_freyberg(tmp_path,transforms=transforms)
+    dsi_synth(tmp_path,transforms=transforms)
     return
 
 def test_dsi_nst_extrap(tmp_path):
     transforms = [
         {"type": "normal_score", "quadratic_extrapolation":True}
     ]
-    dsi_freyberg(tmp_path,transforms=transforms)
+    dsi_synth(tmp_path,transforms=transforms)
     return
 
 
@@ -91,14 +91,14 @@ def test_dsi_mixed(tmp_path):
         {"type": "log10", "columns": [f"obs{i}" for i in range(2)]},
         {"type": "normal_score", }
     ]
-    dsi_freyberg(tmp_path,transforms=transforms)
+    dsi_synth(tmp_path,transforms=transforms)
     return
 
 
 # @pytest.mark.timeout(method="thread", timeout=1000)
 def test_dsivc(tmp_path):
     # basic quick as so can re-run here
-    dsi_freyberg(tmp_path, transforms=None)
+    dsi_synth(tmp_path, transforms=None)
     # now test dsicv
     # master_dsi should now exist
     md_hm = tmp_path / "master_dsi"
@@ -112,7 +112,7 @@ def test_dsivc(tmp_path):
     dsi = DSI.load(os.path.join(td, "dsi.pickle"))
 
     pst = pyemu.Pst(os.path.join(td, "dsi.pst"))
-    oe = pst.ies.obsen0.copy()
+    oe = pyemu.ObservationEnsemble.from_binary(pst=pst, filename=os.path.join(td, "dsi.0.obs.jcb"))
 
     obsdata = dsi.observation_data
     decvars = obsdata.obsnme.tolist()[:-2]
@@ -120,7 +120,7 @@ def test_dsivc(tmp_path):
                                 oe=oe,
                                 decvar_names=decvars,
                                 track_stack=False,
-                                percentiles=[0.05, 0.25, 0.5, 0.75, 0.95],
+                                percentiles=[0.05,0.5,0.95],
                                 dsi_args={
                                     "noptmax":1, #just for testing
                                     "decvar_weight":10.0,
