@@ -21,19 +21,6 @@ pp_exe_path = exepath_dict['pestpp-glm']
 usg_exe_path = exepath_dict["mfusg_gsi"]
 mou_exe_path = exepath_dict["pestpp-mou"]
 
-
-def test_numpy_inversion():
-    import numpy as np
-#     import os
-    np.show_config()
-#     A = np.random.randn(601, 601)
-#     np.linalg.inv(A)
-#     if (pid := os.fork()) !=0:
-#         np.linalg.inv(A)
-#         os.waitpid(pid, 0)
-#     pass
-
-
 def add_pi_obj_func_test(tmp_path):
     import os
 
@@ -554,22 +541,22 @@ def kl_test(tmp_path):
     os.chdir(tmp_path)
     try:
         df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=sr,
-                                                 struct=str_file,
-                                                 factors_file=factors_file,
-                                                 basis_file=basis_file,
-                                                prefixes=prefixes,islog=False,
+                                          struct=str_file,
+                                          factors_file=factors_file,
+                                          basis_file=basis_file,
+                                          prefixes=prefixes, islog=False,
                                           tpl_dir='.')
 
         basis = pyemu.Matrix.from_binary(basis_file)
-        basis = basis[:,:num_eig]
+        basis = basis[:, :num_eig]
         arr_tru = np.atleast_2d(arr_tru.flatten()).transpose()
-        proj = np.dot(basis.T.x,arr_tru)[:num_eig]
-        #proj.autoalign = False
+        proj = np.dot(basis.T.x, arr_tru)[:num_eig]
+        # proj.autoalign = False
         back = np.dot(basis.x, proj)
 
-        back = back.reshape(ml.nrow,ml.ncol)
+        back = back.reshape(ml.nrow, ml.ncol)
         df.parval1 = proj
-        arr = pyemu.geostats.fac2real(df,factors_file,out_file=None)
+        arr = pyemu.geostats.fac2real(df, factors_file, out_file=None)
     except Exception as e:
         os.chdir(bd)
         raise e
@@ -658,7 +645,7 @@ def ok_grid_test(tmp_path):
     kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join(tmp_path,"test_var.ref"),minpts_interp=1)
     ok.to_grid_factors_file(os.path.join(tmp_path,"test.fac"))
 
-# @pytest.mark.skip("weird interaction with prior builder test, maybe")
+
 def ok_grid_zone_test(tmp_path):
 
     try:
@@ -755,7 +742,7 @@ def ppk2fac_verf_test(tmp_path):
 #     os.chdir("..")
 #     print(df)
 
-# @pytest.mark.skip("TEMP")
+
 def mflist_budget_test(tmp_path):
     import pyemu
     import os
@@ -795,7 +782,7 @@ def mflist_budget_test(tmp_path):
     assert (flx.index == vol.index).all()
     assert (flx.index == times).all()
 
-# @pytest.mark.skip("TEMP")
+
 def mtlist_budget_test(tmp_path):
     import pyemu
     import shutil
@@ -814,12 +801,12 @@ def mtlist_budget_test(tmp_path):
     os.chdir(tmp_path)
     try:
         assert os.path.exists(list_filename)
-        frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-            list_filename,start_datetime='1-1-1970')
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime='1-1-1970')
         assert len(ins_files) == 2
 
-        frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-            list_filename,start_datetime='1-1-1970', gw_prefix='')
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime='1-1-1970', gw_prefix='')
         assert len(ins_files) == 2
 
         frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
@@ -2728,8 +2715,8 @@ def test_pypestworker(tmp_path):
     import numpy as np
     import subprocess as sp
     import multiprocessing as mp
-    import importlib.util
     import sys
+
     host = "localhost"
     port = 4111
     case = "constr"
@@ -2747,8 +2734,6 @@ def test_pypestworker(tmp_path):
     
     pst.control_data.noptmax = 2
     pst.write(os.path.join(t_d,"{0}.pst".format(case)),version=2)
-
-    # suspicious this may cause issues on the CI in para.
     sys.path.insert(1, t_d.as_posix())
     from forward_run import helper as frun
 
@@ -2763,7 +2748,7 @@ def test_pypestworker(tmp_path):
     b_d = os.getcwd()
     os.chdir(m_d)
     try:
-        p = sp.Popen([mou_exe_path,"{0}.pst".format(case),"/h",":{0}".format(port)])
+        p = sp.Popen([mou_exe_path, "{0}.pst".format(case), "/h", ":{0}".format(port)])
     except Exception as e:
         print("failed to start master process")
         os.chdir(b_d)
@@ -2793,7 +2778,6 @@ def test_pypestworker(tmp_path):
     print("all done, took",(finish-start).total_seconds())
     # pop sys.path change (just in case it persists)
     sys.path.pop(1)
-    # m_d2 = m_d+"_base"
     start2 = datetime.now()
     #pyemu.os_utils.start_workers(t_d,mou_exe_path,"{0}.pst".format(case),num_workers=num_workers,worker_root='.',master_dir=m_d2)
     pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=t_d)

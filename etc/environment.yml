@@ -12,20 +12,22 @@ dependencies:
   - matplotlib
   - pyshp
   - jinja2
-  # tests
-  - coveralls
-  - flaky
-  - pytest
-  - pytest-cov
-  - pytest-xdist
-  - nbmake
   - shapely
   - pyproj
   - flopy
-  - modflow-devtools
   - scikit-learn
   - pip
   - ffmpeg
   - jupyter
   - jupytext
   - jupyterlab
+  # tests
+#  - coveralls
+  - flaky
+  - pytest
+  - pytest-cov
+  - pytest-xdist
+  - pytest-timeout
+  - nbval
+  - modflow-devtools
+
