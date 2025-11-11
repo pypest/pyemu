@@ -3286,7 +3286,7 @@ def pestpp_runstorage_file_test(tmp_path):
     import pyemu
 
     org_rns_file = os.path.join("utils","runstor.rns")
-    rns_file = "runstor.rns"
+    rns_file = os.path.join(tmp_path,"runstor.rns")
     if os.path.exists(rns_file):
         os.remove(rns_file)
     shutil.copy2(org_rns_file,rns_file)
