@@ -62,7 +62,8 @@ jobs:
       shell: bash -l {0}
       run: |
         echo "Installing TensorFlow for Python ${{ matrix.python-version }}"
-        micromamba install tensorflow -c conda-forge
+        pip install tensorflow
+#        micromamba install tensorflow -c conda-forge
       continue-on-error: false
         
     - name: Checkout pypestutils
