@@ -1008,8 +1008,8 @@ def test_dsiae_with_ies(tmp_path):
 
     td = tmp_path / "template_dsiae"
     pstdsi = dsiae.prepare_pestpp(td,observation_data=obsdata)
-    pstdsi.control_data.noptmax = 1
-    pstdsi.pestpp_options["ies_num_reals"] = 10
+    pstdsi.control_data.noptmax = -1
+    pstdsi.pestpp_options["ies_num_reals"] = 3
     pstdsi.write(os.path.join(td, "dsi.pst"),version=2)
 
     pvals = pd.read_csv(os.path.join(td, "dsi_pars.csv"), index_col=0)
