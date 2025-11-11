@@ -72,6 +72,7 @@ def setup_tmp(od, tmp_d, sub=None):
     return new_d
 
 
+@pytest.mark.skip("testing if causing issue for subsequent tests")
 def test_freyberg(tmp_path):
     import numpy as np
     import pandas as pd
