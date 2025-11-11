@@ -1003,7 +1003,7 @@ def test_dsiae_with_ies(tmp_path):
     data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
 
     from pyemu.emulators import DSIAE
-    dsiae = DSIAE(data=data, latent_dim=None, energy_threshold=0.8)  # Auto dimension
+    dsiae = DSIAE(data=data, latent_dim=3)  # Auto dimension
     dsiae.fit(epochs=3, batch_size=8)  # Minimal training
 
     td = tmp_path / "template_dsiae"
