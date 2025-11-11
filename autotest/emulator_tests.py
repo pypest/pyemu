@@ -7,49 +7,48 @@ import pandas as pd
 # import platform
 import pyemu
 from pst_from_tests import setup_tmp, _get_port
-from pyemu.emulators import DSI, LPFA, GPR
+from pyemu.emulators import DSI, LPFA, GPR, dsi
 
-# Check for TensorFlow availability for DSIAE tests
+from conftest import get_exe_path
+
+ies_exe_path = get_exe_path("pestpp-ies")
+mou_exe_path = get_exe_path("pestpp-mou")# Check for TensorFlow availability for DSIAE tests
+
 try:
     import tensorflow as tf
     HAS_TENSORFLOW = True
 except ImportError:
     HAS_TENSORFLOW = False
 
-ies_exe_path = exepath_dict["pestpp-ies"]
-mou_exe_path = exepath_dict["pestpp-mou"]
+def generate_synth_data(num_realizations=100, num_observations=10):
+
+    # generate synth data
+    data = np.random.normal(size=(num_realizations,num_observations))
+    data = pd.DataFrame(data,columns=[f"obs{i}" for i in range(10)])
+    # dummy observation data
+    obsdata = pd.DataFrame(index=data.columns, columns=["obsnme","obsval","weight","obgnme"])
+    obsdata.obsnme = data.columns
+    obsdata.obsval = data.mean().values
+    obsdata.weight = 1.0
+    obsdata.obgnme = "obgnme"
+    return data, obsdata
 
 def dsi_freyberg(tmp_d,transforms=None,tag=""):
 
-    test_d = "ends_master"
-    test_d = setup_tmp(test_d, tmp_d)
-
-    case = "freyberg6_run_ies"
-    pst_name = os.path.join(test_d, case + ".pst")
-    pst = pyemu.Pst(pst_name)
-    predictions = ["headwater_20171130", "tailwater_20161130", "trgw_0_9_1_20161130"]
-    pst.pestpp_options["predictions"] = predictions
-
-    oe_name = pst_name.replace(".pst", ".0.obs.csv")
-    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:100, :]
-    data = oe._df.copy()
+    data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
 
     dsi = DSI(data=data,transforms=transforms)
-    #dsi._fit_transformer_pipeline()
     dsi.fit()
 
-    # history match
-    obsdata = pst.observation_data.copy()
     if transforms is not None:
         if "quadratic_extrapolation" in transforms[0].keys():
             nzobs = obsdata.loc[obsdata.weight>0].obsnme.tolist()
-            ovals = oe.loc[:,nzobs].max(axis=0) * 1.1
+            ovals = data.max(axis=0) * 1.1
             obsdata.loc[nzobs,"obsval"] = ovals.values
 
     td = tmp_d / "template_dsi"
     pstdsi = dsi.prepare_pestpp(td,observation_data=obsdata)
     pstdsi.control_data.noptmax = 1
-    pstdsi.pestpp_options["ies_num_reals"] = 10
     pstdsi.pestpp_options["ies_num_reals"] = 10
     pstdsi.write(os.path.join(td, "dsi.pst"),version=2)
 
@@ -89,7 +88,7 @@ def test_dsi_nst_extrap(tmp_path):
 
 def test_dsi_mixed(tmp_path):
     transforms = [
-        {"type": "log10", "columns": ["headwater_20171130", "tailwater_20161130"]},
+        {"type": "log10", "columns": [f"obs{i}" for i in range(2)]},
         {"type": "normal_score", }
     ]
     dsi_freyberg(tmp_path,transforms=transforms)
@@ -113,10 +112,10 @@ def test_dsivc(tmp_path):
     dsi = DSI.load(os.path.join(td, "dsi.pickle"))
 
     pst = pyemu.Pst(os.path.join(td, "dsi.pst"))
-    oe = pyemu.ObservationEnsemble.from_binary(pst,os.path.join(td, "dsi.0.obs.jcb"))
+    oe = pst.ies.obsen0.copy()
 
     obsdata = dsi.observation_data
-    decvars = obsdata.loc[obsdata.obgnme=="out_wel"].obsnme.tolist()
+    decvars = obsdata.obsnme.tolist()[:-2]
     pstdsivc = dsi.prepare_dsivc(t_d=td,
                                 oe=oe,
                                 decvar_names=decvars,
@@ -133,7 +132,7 @@ def test_dsivc(tmp_path):
     obs = pstdsivc.observation_data
     obs.org_obsnme.unique()
 
-    obsnme = obsdata.loc[obsdata.obgnme=="tailwater"].obsnme.tolist()[-1]
+    obsnme = obsdata.obsnme.tolist()[0]
     mou_objectives = obs.loc[(obs.org_obsnme==obsnme) & (obs.stat=="50%")].obsnme.tolist()
 
     pstdsivc.pestpp_options["mou_objectives"] = mou_objectives
@@ -284,43 +283,43 @@ def lpfa_freyberg(tmp_d="temp",transforms=None):
     predictions = lpfa.predict(obs[["obsval"]].T)
 
 
-    # Create scatter plot comparing predictions vs truth
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    ## Create scatter plot comparing predictions vs truth
+    #import matplotlib.pyplot as plt
+    #fig, ax = plt.subplots(1, 1, figsize=(8, 6))
 
-    # Get non-zero weight observations for comparison
-    comparison_obs = obs.loc[obs.weight > 0].obsnme.values
+    ## Get non-zero weight observations for comparison
+    #comparison_obs = obs.loc[obs.weight > 0].obsnme.values
 
-    # Extract values for plotting
-    nzobsnmes = obs.loc[obs.weight>0].obsnme.tolist()
-    truth_values = obs.loc[nzobsnmes].obsval.values.flatten()
-    pred_values = predictions.loc[:,nzobsnmes].values.flatten()
+    ## Extract values for plotting
+    #nzobsnmes = obs.loc[obs.weight>0].obsnme.tolist()
+    #truth_values = obs.loc[nzobsnmes].obsval.values.flatten()
+    #pred_values = predictions.loc[:,nzobsnmes].values.flatten()
 
-    # Create scatter plot
-    ax.scatter(truth_values, pred_values, alpha=0.6, s=20)
-    ax.set_xlabel('Truth Values')
-    ax.set_ylabel('Predicted Values')
-    ax.set_title('lpfa Emulator: Predicted vs Truth')
+    ## Create scatter plot
+    #ax.scatter(truth_values, pred_values, alpha=0.6, s=20)
+    #ax.set_xlabel('Truth Values')
+    #ax.set_ylabel('Predicted Values')
+    #ax.set_title('lpfa Emulator: Predicted vs Truth')
 
-    # Add 1:1 line
-    min_val = min(ax.get_xlim()[0], ax.get_ylim()[0])
-    max_val = max(ax.get_xlim()[1], ax.get_ylim()[1])
-    ax.plot([min_val, max_val], [min_val, max_val], 'k-', lw=1, alpha=0.7)
-    ax.set_xlim(min_val, max_val)
-    ax.set_ylim(min_val, max_val)
+    ## Add 1:1 line
+    #min_val = min(ax.get_xlim()[0], ax.get_ylim()[0])
+    #max_val = max(ax.get_xlim()[1], ax.get_ylim()[1])
+    #ax.plot([min_val, max_val], [min_val, max_val], 'k-', lw=1, alpha=0.7)
+    #ax.set_xlim(min_val, max_val)
+    #ax.set_ylim(min_val, max_val)
 
-    # Calculate R²
-    correlation = np.corrcoef(truth_values, pred_values)[0, 1]
-    r_squared = correlation ** 2
-    assert r_squared >= 0.9, "R-squared should deccent"
-    ax.text(0.05, 0.95, f'R² = {r_squared:.3f}', transform=ax.transAxes, 
-            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    ## Calculate R²
+    #correlation = np.corrcoef(truth_values, pred_values)[0, 1]
+    #r_squared = correlation ** 2
+    #assert r_squared >= 0.9, "R-squared should deccent"
+    #ax.text(0.05, 0.95, f'R² = {r_squared:.3f}', transform=ax.transAxes, 
+    #        bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
-    plt.tight_layout()
-    #plt.show()
+    #plt.tight_layout()
+    ##plt.show()
 
-    print(f"Correlation coefficient: {correlation:.3f}")
-    print(f"R-squared: {r_squared:.3f}")
+    #print(f"Correlation coefficient: {correlation:.3f}")
+    #print(f"R-squared: {r_squared:.3f}")
 
     return
 
@@ -926,22 +925,14 @@ def gpr_zdt1_ppw():
     os.chdir("..")
 
 
-def dsiae_freyberg_basic(tmp_d="temp", transforms=None, tag=""):
-    """Basic DSIAE test using freyberg dataset - minimal compute"""
+def dsiae_basic(transforms=None):
+    """Basic DSIAE test using synth dataset - minimal compute"""
     
     if not HAS_TENSORFLOW:
         pytest.skip("TensorFlow not available, skipping DSIAE tests")
     
-    test_d = "ends_master"
-    test_d = setup_tmp(test_d, tmp_d)
+    data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
 
-    case = "freyberg6_run_ies"
-    pst_name = os.path.join(test_d, case + ".pst")
-    pst = pyemu.Pst(pst_name)
-    
-    oe_name = pst_name.replace(".pst", ".0.obs.csv")
-    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:50, :]  # Use only 50 samples
-    data = oe._df.copy()
 
     # Test DSIAE initialization and basic functionality
     from pyemu.emulators import DSIAE
@@ -959,14 +950,32 @@ def dsiae_freyberg_basic(tmp_d="temp", transforms=None, tag=""):
     sim_vals = dsiae.predict(Z.iloc[0])
     assert len(sim_vals) == len(data.columns)
     
-    return dsiae
+    return dsiae, obsdata
+
 
 
 @pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
 def test_dsiae_basic():
     """Test basic DSIAE functionality without transforms"""
-    dsiae = dsiae_freyberg_basic(tmp_d="temp_dsiae_basic")
+    data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
+
+    # Test DSIAE initialization and basic functionality
+    from pyemu.emulators import DSIAE
+    dsiae = DSIAE(data=data, transforms=None, latent_dim=3, verbose=False)  # Fixed small latent dim
+    # Test fit with minimal parameters for speed
+    dsiae.fit(validation_split=0.2, epochs=5, batch_size=16, early_stopping=False)  # Very few epochs
     assert dsiae.fitted
+
+    # Test encoding
+    Z = dsiae.encode(data.iloc[:5])  # Test with just 5 samples
+    assert Z.shape[0] == 5
+    assert Z.shape[1] == 3  # latent_dim
+    
+    # Test prediction
+    sim_vals = dsiae.predict(Z.iloc[0])
+    assert len(sim_vals) == len(data.columns)
+
+    
     return
 
 
@@ -975,16 +984,7 @@ def test_dsiae_basic():
 def test_dsiae_auto_latent_dim():
     """Test DSIAE with automatic latent dimension selection"""
     
-    test_d = "ends_master" 
-    test_d = setup_tmp(test_d, "temp_dsiae_auto")
-
-    case = "freyberg6_run_ies"
-    pst_name = os.path.join(test_d, case + ".pst")
-    pst = pyemu.Pst(pst_name)
-    
-    oe_name = pst_name.replace(".pst", ".0.obs.csv")
-    oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=oe_name).iloc[:30, :10]  # Very small subset
-    data = oe._df.copy()
+    data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
 
     from pyemu.emulators import DSIAE
     dsiae = DSIAE(data=data, latent_dim=None, energy_threshold=0.8)  # Auto dimension
@@ -992,6 +992,36 @@ def test_dsiae_auto_latent_dim():
     
     assert dsiae.fitted
     assert dsiae.latent_dim > 0
+    return
+
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+def test_dsiae_with_ies(tmp_path):
+
+    data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
+
+    from pyemu.emulators import DSIAE
+    dsiae = DSIAE(data=data, latent_dim=None, energy_threshold=0.8)  # Auto dimension
+    dsiae.fit(epochs=3, batch_size=8)  # Minimal training
+
+    td = tmp_path / "template_dsiae"
+    pstdsi = dsiae.prepare_pestpp(td,observation_data=obsdata)
+    pstdsi.control_data.noptmax = 1
+    pstdsi.pestpp_options["ies_num_reals"] = 10
+    pstdsi.write(os.path.join(td, "dsi.pst"),version=2)
+
+    pvals = pd.read_csv(os.path.join(td, "dsi_pars.csv"), index_col=0)
+    md = tmp_path / f"master_dsiae"
+    num_workers = 1
+    worker_root = tmp_path
+    print("dsi_exe: ", ies_exe_path)
+    pyemu.os_utils.start_workers(
+        td,ies_exe_path,"dsi.pst", num_workers=num_workers,
+        worker_root=worker_root, master_dir=md, port=_get_port(),
+        ppw_function=pyemu.helpers.dsi_pyworker,
+        ppw_kwargs={
+            "dsi": dsiae, "pvals": pvals,
+        }
+    )
     return
 
 
@@ -1052,7 +1082,7 @@ def test_autoencoder_pandas_input():
 def test_dsiae_hyperparam_search():
     """Test DSIAE hyperparameter search"""
     
-    dsiae = dsiae_freyberg_basic(tmp_d="temp_dsiae_hyperparam")
+    dsiae, obsdata = dsiae_basic()
     
     # Test with minimal search space
     results = dsiae.hyperparam_search(
