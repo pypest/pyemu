@@ -295,6 +295,7 @@ def test_freyberg(tmp_path):
     assert np.isclose(pst.phi, 0.), pst.phi
 
 
+@pytest.mark.timeout(method='thread')
 def test_freyberg_prior_build(tmp_path):
     import numpy as np
     import pandas as pd
