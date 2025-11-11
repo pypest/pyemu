@@ -24,6 +24,7 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy>=2.2.6",
     "pandas>=2.3.3",
+    "scipy-openblas64<0.3.30",
 ]
 
 [project.optional-dependencies]
