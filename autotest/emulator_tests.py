@@ -957,12 +957,14 @@ def dsiae_basic(transforms=None):
 
 @pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
 def test_dsiae_basic():
-    """Test basic DSIAE functionality without transforms"""
+    """Test basic DSIAE functionality with transforms"""
     data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
+
+    transforms = {"normal_score": data.columns.tolist()}
 
     # Test DSIAE initialization and basic functionality
     from pyemu.emulators import DSIAE
-    dsiae = DSIAE(data=data, transforms=None, latent_dim=3, verbose=False)  # Fixed small latent dim
+    dsiae = DSIAE(data=data, transforms=transforms, latent_dim=3, verbose=False)  # Fixed small latent dim
     # Test fit with minimal parameters for speed
     dsiae.fit(validation_split=0.2, epochs=5, batch_size=16, early_stopping=False)  # Very few epochs
     assert dsiae.fitted
