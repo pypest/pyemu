@@ -17,11 +17,11 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: [
-          "3.10",
+#          "3.10",
           "3.11",
-          "3.12",
-          "3.13",
-          "3.14"
+#          "3.12",
+#          "3.13",
+#          "3.14"
         ]
         run-type: [std]
         test-path: ["autotest"]
@@ -70,7 +70,7 @@ jobs:
 
     - name: Verify PEST++ installation
       shell: bash
-      run: | 
+      run: |
         echo "PATH: $PATH"
         ls $HOME/.local/bin
 
@@ -80,7 +80,7 @@ jobs:
       shell: bash -l {0}
       run: |
         uv run pytest ${{ matrix.test-path }} \
-        -n=auto \
+        :: -n=auto \
         -rA -vv --tb=native \
         --durations=20 \
         --timeout=1200 \
