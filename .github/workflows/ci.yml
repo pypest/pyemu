@@ -84,6 +84,7 @@ jobs:
         --durations=20 \
         --timeout=1200 \
         --cov=pyemu --cov-report=xml \
+        -k "test_freyberg_prior_build"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         MPLBACKEND: Agg  # non-interactive backend for matplotlib

@@ -77,6 +77,8 @@ def test_freyberg(tmp_path):
     import numpy as np
     import pandas as pd
     from pyemu import PyemuWarning
+    np.show_config()
+
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
@@ -300,6 +302,8 @@ def test_freyberg(tmp_path):
 def test_freyberg_prior_build(tmp_path):
     import numpy as np
     import pandas as pd
+    np.show_config()
+
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
