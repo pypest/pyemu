@@ -1000,7 +1000,7 @@ def test_dsiae_auto_latent_dim():
     return
 
 #@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
-@pytest.mark.skip(reason="it is hanging in CI for some reason")
+@pytest.mark.skip(reason="it is hanging in CI for some reason;passes locally")
 def test_dsiae_with_ies(tmp_path):
 
     data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
