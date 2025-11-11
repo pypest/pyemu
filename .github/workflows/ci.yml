@@ -80,6 +80,7 @@ jobs:
       shell: bash -l {0}
       run: |
         uv run pytest ${{ matrix.test-path }} \
+        -n=auto
         -rA -vv --tb=native \
         --durations=20 \
         --timeout=1200 \
@@ -88,22 +89,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         MPLBACKEND: Agg  # non-interactive backend for matplotlib
 
-#    - name: Run pypestworker test
-#      shell: bash -l {0}
-#      working-directory: autotest
-#      run: |
-#        uv run pytest ${{ matrix.test-path }}/utils_tests.py::test_pypestworker \
-#        -rA -vv --tb=native \
-#        --timeout=100 \
-#        --cov=pyemu --cov-report=lcov \
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        MPLBACKEND: Agg  # non-interactive backend for matplotlib
-
     - name: Test Notebooks
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
       shell: bash -l {0}
-      working-directory: examples
       run: |
         uv run pytest examples/*.ipynb \
         -rA -vv --tb=native \
