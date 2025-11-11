@@ -33,7 +33,6 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
     #dsi._fit_transformer_pipeline()
     dsi.fit()
 
-
     # history match
     obsdata = pst.observation_data.copy()
     if transforms is not None:
@@ -45,7 +44,7 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
     td = tmp_d / "template_dsi"
     pstdsi = dsi.prepare_pestpp(td,observation_data=obsdata)
     pstdsi.control_data.noptmax = 1
-    pstdsi.pestpp_options["ies_num_reals"] = 100
+    pstdsi.pestpp_options["ies_num_reals"] = 10
     pstdsi.write(os.path.join(td, "dsi.pst"),version=2)
 
     pvals = pd.read_csv(os.path.join(td, "dsi_pars.csv"), index_col=0)
@@ -82,13 +81,19 @@ def test_dsi_nst_extrap(tmp_path):
     return
 
 
-# @pytest.mark.timeout(method="thread", timeout=1000)
-def test_dsi_mixed_and_dsivc(tmp_path):
+def test_dsi_mixed(tmp_path):
     transforms = [
         {"type": "log10", "columns": ["headwater_20171130", "tailwater_20161130"]},
         {"type": "normal_score", }
     ]
     dsi_freyberg(tmp_path,transforms=transforms)
+    return
+
+
+# @pytest.mark.timeout(method="thread", timeout=1000)
+def test_dsivc(tmp_path):
+    # basic quick as so can re-run here
+    dsi_freyberg(tmp_path, transforms=None)
     # now test dsicv
     # master_dsi should now exist
     md_hm = tmp_path / "master_dsi"
