@@ -4,8 +4,6 @@ import shutil
 import platform
 # from pst_from_tests import setup_freyberg_mf6
 
-pytest_plugins = ["modflow_devtools.fixtures"]
-
 collect_ignore = [
     # "emulator_tests.py",
     # "en_tests.py",
