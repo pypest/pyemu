@@ -30,4 +30,5 @@ dependencies:
   - pytest-timeout
   - nbval
   - modflow-devtools
+  - tensorflow
 
