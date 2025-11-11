@@ -1,16 +1,18 @@
 import os
-import sys
+# import sys
 import shutil
 import pytest
 import numpy as np
 import pandas as pd
-import platform
+# import platform
 import pyemu
-from pst_from_tests import setup_tmp, _get_port, exepath_dict
+from pst_from_tests import setup_tmp, _get_port
 from pyemu.emulators import DSI, LPFA, GPR
 
-ies_exe_path = exepath_dict["pestpp-ies"]
-mou_exe_path = exepath_dict["pestpp-mou"]
+from conftest import get_exe_path
+
+ies_exe_path = get_exe_path("pestpp-ies")
+mou_exe_path = get_exe_path("pestpp-mou")
 
 def dsi_freyberg(tmp_d,transforms=None,tag=""):
 
@@ -31,7 +33,6 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
     #dsi._fit_transformer_pipeline()
     dsi.fit()
 
-
     # history match
     obsdata = pst.observation_data.copy()
     if transforms is not None:
@@ -40,16 +41,17 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
             ovals = oe.loc[:,nzobs].max(axis=0) * 1.1
             obsdata.loc[nzobs,"obsval"] = ovals.values
 
-    td = "template_dsi"
+    td = tmp_d / "template_dsi"
     pstdsi = dsi.prepare_pestpp(td,observation_data=obsdata)
     pstdsi.control_data.noptmax = 1
-    pstdsi.pestpp_options["ies_num_reals"] = 100
+    pstdsi.pestpp_options["ies_num_reals"] = 10
     pstdsi.write(os.path.join(td, "dsi.pst"),version=2)
 
     pvals = pd.read_csv(os.path.join(td, "dsi_pars.csv"), index_col=0)
-    md = f"master_dsi{tag}"
+    md = tmp_d / f"master_dsi{tag}"
     num_workers = 1
-    worker_root = "."
+    worker_root = tmp_d
+    print("dsi_exe: ", ies_exe_path)
     pyemu.os_utils.start_workers(
         td,ies_exe_path,"dsi.pst", num_workers=num_workers,
         worker_root=worker_root, master_dir=md, port=_get_port(),
@@ -60,37 +62,44 @@ def dsi_freyberg(tmp_d,transforms=None,tag=""):
     )
     return
 
-def test_dsi_basic(tmp_d="temp"):
-    dsi_freyberg(tmp_d,transforms=None)
+def test_dsi_basic(tmp_path):
+    dsi_freyberg(tmp_path,transforms=None)
     return
 
-def test_dsi_nst(tmp_d="temp"):
+def test_dsi_nst(tmp_path):
     transforms = [
         {"type": "normal_score", }
     ]
-    dsi_freyberg(tmp_d,transforms=transforms)
+    dsi_freyberg(tmp_path,transforms=transforms)
     return
 
-def test_dsi_nst_extrap(tmp_d="temp"):
+def test_dsi_nst_extrap(tmp_path):
     transforms = [
         {"type": "normal_score", "quadratic_extrapolation":True}
     ]
-    dsi_freyberg(tmp_d,transforms=transforms)
+    dsi_freyberg(tmp_path,transforms=transforms)
     return
 
-def test_dsi_mixed(tmp_d="temp"):
+
+def test_dsi_mixed(tmp_path):
     transforms = [
         {"type": "log10", "columns": ["headwater_20171130", "tailwater_20161130"]},
         {"type": "normal_score", }
     ]
-    dsi_freyberg(tmp_d,transforms=transforms)
+    dsi_freyberg(tmp_path,transforms=transforms)
     return
 
-def test_dsivc_freyberg():
 
-    md_hm = "master_dsi"
+# @pytest.mark.timeout(method="thread", timeout=1000)
+def test_dsivc(tmp_path):
+    # basic quick as so can re-run here
+    dsi_freyberg(tmp_path, transforms=None)
+    # now test dsicv
+    # master_dsi should now exist
+    md_hm = tmp_path / "master_dsi"
+    # print(os.listdir('.'))
     assert os.path.exists(md_hm), f"Master directory {md_hm} does not exist."
-    td = "template_dsivc"
+    td = tmp_path / "template_dsivc"
     if os.path.exists(td):
         shutil.rmtree(td)
     shutil.copytree(md_hm, td)
@@ -130,9 +139,9 @@ def test_dsivc_freyberg():
 
     pstdsivc.write(os.path.join(td, "dsivc.pst"),version=2)
 
-    md = "master_dsivc"
+    md = tmp_path / "master_dsivc"
     num_workers =  pstdsivc.pestpp_options["mou_population_size"]
-    worker_root = "."
+    worker_root = tmp_path
 
     pyemu.os_utils.start_workers(td,
                                  mou_exe_path,
@@ -309,13 +318,13 @@ def lpfa_freyberg(tmp_d="temp",transforms=None):
 
     return
 
-def test_lpfa_basic():
-    lpfa_freyberg(tmp_d="temp",transforms=None)
+def test_lpfa_basic(tmp_path):
+    lpfa_freyberg(tmp_path,transforms=None)
     return
 
-def test_lpfa_std():
+def test_lpfa_std(tmp_path):
     #NOTE: fit with standard scaler transform are worse than without
-    lpfa_freyberg(tmp_d="temp",transforms=[
+    lpfa_freyberg(tmp_path,transforms=[
         {"type": "standard_scaler"}
     ])
     return
@@ -913,11 +922,11 @@ def gpr_zdt1_ppw():
 
 if __name__ == "__main__":
     
-    test_dsi_basic()
-    #test_dsi_nst()
-    #test_dsi_nst_extrap()
-    #test_dsi_mixed()
-    #test_dsivc_freyberg()
+    test_dsi_basic("temp")
+    #test_dsi_nst("temp")
+    #test_dsi_nst_extrap("temp")
+    #test_dsi_mixed("temp")
+    #test_dsivc_freyberg("temp")
     #plot_freyberg_dsi()
     #test_lpfa_std()
     #gpr_zdt1_test()

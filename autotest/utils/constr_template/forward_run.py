@@ -6,13 +6,13 @@ def constr(x):
 
 def helper(func=constr,pvals=None):
     if pvals is None:
-        pvals = pd.read_csv("dv.dat", sep='\s+',index_col=0, header=None, names=["parnme","parval1"]).values
+        pvals = pd.read_csv("dv.dat", sep=r'\s+',index_col=0, header=None, names=["parnme","parval1"]).values
     #obj1,obj2 = func(pdf.values)
     objs,constrs = func(pvals)
     
     if os.path.exists("additive_par.dat"):
         obj1,obj2 = objs[0],objs[1]
-        cdf = pd.read_csv("additive_par.dat", sep='\s+', index_col=0,header=None, names=["parnme","parval1"])
+        cdf = pd.read_csv("additive_par.dat", sep=r'\s+', index_col=0,header=None, names=["parnme","parval1"])
         obj1[0] += cdf.parval1.values[0]
         obj2[0] += cdf.parval1.values[1]
         for i in range(len(constrs)):

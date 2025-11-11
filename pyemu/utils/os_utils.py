@@ -391,7 +391,8 @@ def start_workers(
             if not exe_rel_path.lower().endswith("exe"):
                 exe_rel_path = exe_rel_path + ".exe"
         else:
-            if not exe_rel_path.startswith("./"):
+            if (not exe_rel_path.startswith("./")
+                    and not exe_rel_path.startswith("/")):
                 exe_rel_path = "./" + exe_rel_path
 
     if master_dir is not None:
