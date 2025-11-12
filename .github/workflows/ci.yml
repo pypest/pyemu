@@ -80,7 +80,7 @@ jobs:
       shell: bash -l {0}
       run: |
         uv run pytest ${{ matrix.test-path }} \
-        -n=auto
+        -n=auto \
         -rA -vv --tb=native \
         --durations=20 \
         --timeout=1200 \
