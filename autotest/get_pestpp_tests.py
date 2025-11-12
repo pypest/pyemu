@@ -107,7 +107,11 @@ def test_get_release(repo):
     tag = "latest"
     release = get_release(repo=repo, tag=tag)
     assets = release["assets"]
-    release_tag_name = release["tag_name"]
+    if len(release["body"]) > 0:
+        # if nightly build tag is in body, use that
+        release_tag_name = release["body"].split()[-1]
+    else:
+        release_tag_name = release["tag_name"]
 
     expected_assets = [
         f"pestpp-{release_tag_name}-linux",

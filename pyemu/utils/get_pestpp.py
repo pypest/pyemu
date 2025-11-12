@@ -98,8 +98,7 @@ def get_releases(
     owner=None, repo=None, quiet=False, per_page=None
 ) -> List[str]:
     """Get list of available releases."""
-    owner = default_owner if owner is None else owner
-    repo = default_repo if repo is None else repo
+    owner, repo = _get_defaults(owner, repo)
     req_url = f"https://api.github.com/repos/{owner}/{repo}/releases"
 
     params = {}
@@ -138,10 +137,24 @@ def get_releases(
     return avail_releases
 
 
+def _get_defaults(owner=None, repo=None):
+    """Get default owner and repo if not provided."""
+    default_owner_dict = {'pestpp': "usgs",
+                          'pestpp-nightly-builds': "pestpp"}
+    default_repo_dict = {o: r for r, o in default_owner_dict.items()}
+    # if nothing passed
+    if owner is None and repo is None:
+        owner = default_owner
+
+    if repo is None:
+        repo = default_repo_dict.get(owner, default_repo)
+    elif owner is None:
+        owner = default_owner_dict.get(repo, default_owner)
+    return owner, repo
+
 def get_release(owner=None, repo=None, tag="latest", quiet=False) -> dict:
     """Get info about a particular release."""
-    owner = default_owner if owner is None else owner
-    repo = default_repo if repo is None else repo
+    owner, repo = _get_defaults(owner, repo)
     api_url = f"https://api.github.com/repos/{owner}/{repo}"
     req_url = (
         f"{api_url}/releases/latest"
