@@ -417,7 +417,7 @@ def run_main(
     }
 
     for asset in assets:
-        if inconsistent_ostag_dict[ostag] in asset["name"]:
+        if ostag in asset["name"] or inconsistent_ostag_dict[ostag] in asset["name"]:
             break
     else:
         raise ValueError(
