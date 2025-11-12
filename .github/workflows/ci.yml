@@ -62,9 +62,8 @@ jobs:
     - name: Install PEST++ suite using get-pestpp
       # again think we need bash to get path expansion to work
       shell: bash -l {0}
-#      run: |
-#        get-pestpp :home
-      run: uv run get-pestpp :home
+      run: |
+        uv run get-pestpp --owner pestpp --repo pestpp-nightly-builds :home
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

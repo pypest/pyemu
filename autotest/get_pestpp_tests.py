@@ -27,7 +27,7 @@ bindir_options = {
     "home": Path.home() / ".local" / "bin",
 }
 owner_options = [
-    "usgs",
+    "usgs", "pestpp"
 ]
 repo_options = {
     "pestpp": [
@@ -40,6 +40,16 @@ repo_options = {
         "pestpp-sqp",
         "pestpp-swp",
     ],
+    "pestpp-nightly-builds": [
+        "pestpp-da",
+        "pestpp-glm",
+        "pestpp-ies",
+        "pestpp-mou",
+        "pestpp-opt",
+        "pestpp-sen",
+        "pestpp-sqp",
+        "pestpp-swp"
+    ]
 }
 
 if system() == "Windows":
@@ -97,27 +107,23 @@ def test_get_release(repo):
     tag = "latest"
     release = get_release(repo=repo, tag=tag)
     assets = release["assets"]
-    release_tag_name = release["tag_name"]
+    if len(release["body"]) > 0:
+        # if nightly build tag is in body, use that
+        release_tag_name = release["body"].split()[-1]
+    else:
+        release_tag_name = release["tag_name"]
 
     expected_assets = [
-        f"pestpp-{release_tag_name}-linux.tar.gz",
-        f"pestpp-{release_tag_name}-mac.tar.gz",
-        f"pestpp-{release_tag_name}-iwin.zip",
+        f"pestpp-{release_tag_name}-linux",
+        f"pestpp-{release_tag_name}-mac",
+        f"pestpp-{release_tag_name}-win",
     ]
-    expected_ostags = [a.replace(".zip", "") for a in expected_assets]
-    expected_ostags = [a.replace("tar.gz", "") for a in expected_assets]
-    actual_assets = [asset["name"] for asset in assets]
+    actual_assets = [asset["name"].replace("tar.gz", "").replace(".zip", "") for asset in assets]
 
-    if repo == "pestpp":
-        # can remove if modflow6 releases follow asset name conventions followed in executables and nightly build repos
-        assert {a.rpartition("_")[2] for a in actual_assets} >= {
-            a for a in expected_assets if not a.startswith("win")
-        }
-    else:
-        for ostag in expected_ostags:
-            assert any(
-                ostag in a for a in actual_assets
-            ), f"dist not found for {ostag}"
+    for ostag in expected_assets:
+        assert any(
+            ostag in a for a in actual_assets
+        ), f"dist not found for {ostag}"
 
 
 @pytest.mark.parametrize("bindir", bindir_options.keys())
@@ -238,7 +244,10 @@ def test_script_valid_options(function_tmpdir, downloads_dir):
 @requires_github
 @pytest.mark.parametrize("owner", owner_options)
 @pytest.mark.parametrize("repo", repo_options.keys())
-def test_script(function_tmpdir, owner, repo, downloads_dir):
+def test_script(request, function_tmpdir, owner, repo, downloads_dir):
+    if ((repo == "pestpp-nightly-builds" and owner != "pestpp") or
+            (owner == "pestpp" and repo != "pestpp-nightly-builds")):
+        request.applymarker(pytest.mark.xfail)
     bindir = str(function_tmpdir)
     stdout, stderr, returncode = run_get_pestpp_script(
         bindir,
@@ -251,7 +260,8 @@ def test_script(function_tmpdir, owner, repo, downloads_dir):
     )
     if rate_limit_msg in stderr:
         pytest.skip(f"GitHub {rate_limit_msg}")
-
+    elif returncode != 0:
+        raise RuntimeError(stderr)
     paths = list(function_tmpdir.glob("*"))
     names = [p.name for p in paths]
     expected_names = [append_ext(p) for p in repo_options[repo]]
@@ -262,13 +272,18 @@ def test_script(function_tmpdir, owner, repo, downloads_dir):
 @requires_github
 @pytest.mark.parametrize("owner", owner_options)
 @pytest.mark.parametrize("repo", repo_options.keys())
-def test_python_api(function_tmpdir, owner, repo, downloads_dir):
+def test_python_api(request, function_tmpdir, owner, repo, downloads_dir):
+    if ((repo == "pestpp-nightly-builds" and owner != "pestpp") or
+            (owner == "pestpp" and repo != "pestpp-nightly-builds")):
+        request.applymarker(pytest.mark.xfail)
     bindir = str(function_tmpdir)
     try:
         get_pestpp(bindir, owner=owner, repo=repo, downloads_dir=downloads_dir)
-    except HTTPError as err:
-        if err.code == 403:
+    except (HTTPError, IOError) as err:
+        if '403' in str(err):
             pytest.skip(f"GitHub {rate_limit_msg}")
+        else:
+            raise err
 
     paths = list(function_tmpdir.glob("*"))
     names = [p.name for p in paths]
