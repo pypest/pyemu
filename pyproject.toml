@@ -96,7 +96,7 @@ parallel = true
 relative_files = true
 patch = ["subprocess"]
 omit = [
-    "*/legacy/*",
+    "**/legacy/*",
     "*/python?.?/*",
     "*/lib-python/?.?/*.py",
     "*/lib_pypy/_*.py",
