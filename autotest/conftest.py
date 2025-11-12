@@ -5,19 +5,19 @@ import platform
 # from pst_from_tests import setup_freyberg_mf6
 
 collect_ignore = [
-    "emulator_tests.py",
-    "en_tests.py",
-    "get_pestpp_tests.py",
-    "la_tests.py",
-    "mat_tests.py",
-    "mc_tests_ignore.py",
-    "metrics_tests.py",
-    "plot_tests.py",
+    # "emulator_tests.py",
+    # "en_tests.py",
+    # "get_pestpp_tests.py",
+    # "la_tests.py",
+    # "mat_tests.py",
+    # "mc_tests_ignore.py",
+    # "metrics_tests.py",
+    # "plot_tests.py",
     # "pst_from_tests.py",
-    "pst_tests.py",
-    "transformer_tests.py",
-    "utils_tests.py",
-    "verf_test.py",
+    # "pst_tests.py",
+    # "transformer_tests.py",
+    # "utils_tests.py",
+    # "verf_test.py",
 ]
 
 # def pytest_configure(config):
