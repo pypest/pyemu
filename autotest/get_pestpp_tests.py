@@ -264,7 +264,7 @@ def test_script(request, function_tmpdir, owner, repo, downloads_dir):
     )
     if rate_limit_msg in stderr:
         pytest.skip(f"GitHub {rate_limit_msg}")
-    if returncode != 0:
+    elif returncode != 0:
         raise RuntimeError(stderr)
     paths = list(function_tmpdir.glob("*"))
     names = [p.name for p in paths]
