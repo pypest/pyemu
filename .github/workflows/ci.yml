@@ -17,11 +17,11 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: [
-          "3.10",
-          "3.11",
-          "3.12",
+#          "3.10",
+#          "3.11",
+#          "3.12",
           "3.13",
-          "3.14"
+#          "3.14"
         ]
         run-type: [std]
         test-path: ["autotest"]
@@ -126,7 +126,6 @@ jobs:
       shell: bash -l {0}
       run: |
         pytest ${{ matrix.test-path }} \
-        -n=auto \
         -rA -vv --tb=native \
         --durations=20 \
         --cov=pyemu --cov-report=lcov

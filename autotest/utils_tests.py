@@ -2705,7 +2705,7 @@ def ppw_worker(id_num,case,t_d,host,port,frun):
         #print("worker",id_num,"finished run",ppw.net_pack.runid)
    
 
-@pytest.mark.timeout(method="thread")
+@pytest.mark.timeout(method="thread", timeout=300)
 def pypestworker_test(tmp_path):
     from datetime import datetime
     import numpy as np
@@ -2734,11 +2734,11 @@ def pypestworker_test(tmp_path):
     from forward_run import helper as frun
 
     m_d = "{0}_ppw_master".format(case)
-    
+
     if os.path.exists(m_d):
         shutil.rmtree(m_d)
     shutil.copytree(t_d,m_d)
-    
+
     # start the master
     start = datetime.now()
     b_d = os.getcwd()
@@ -2754,7 +2754,7 @@ def pypestworker_test(tmp_path):
     #return
 
     num_workers=5
-    
+
     # looper over and start the workers - in this
     # case they dont need unique dirs since they aren't writing
     # anything
