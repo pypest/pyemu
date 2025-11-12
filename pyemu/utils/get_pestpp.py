@@ -530,10 +530,12 @@ def run_main(
         download_pth = zip_path
 
     with zipfile.ZipFile(download_pth, "r") as zipf:
-        # First gather files within internal directories named "bin"
+        # First gather files within internal directories named "bin" or "dist/*/"
         for pth in zipf.namelist():
             p = Path(pth)
             if p.parent.name == "bin":
+                full_path[p.name] = pth
+            elif p.parent.parent.name == "dist":
                 full_path[p.name] = pth
         files = set(full_path.keys())
 
