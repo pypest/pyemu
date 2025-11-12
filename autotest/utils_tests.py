@@ -2706,12 +2706,13 @@ def ppw_worker(id_num,case,t_d,host,port,frun):
    
 
 @pytest.mark.timeout(method="thread", timeout=300)
-def pypestworker_test(tmp_path):
+def test_pypestworker(request, tmp_path):
     from datetime import datetime
     import numpy as np
     import subprocess as sp
     import multiprocessing as mp
     import sys
+    import time
 
     host = "localhost"
     port = 4111
@@ -2744,7 +2745,8 @@ def pypestworker_test(tmp_path):
     b_d = os.getcwd()
     os.chdir(m_d)
     try:
-        p = sp.Popen([mou_exe_path, "{0}.pst".format(case), "/h", ":{0}".format(port)])
+        p = sp.Popen([mou_exe_path, "{0}.pst".format(case), "/h", ":{0}".format(port)],
+                     stdout=sp.PIPE, stderr=sp.PIPE)
     except Exception as e:
         print("failed to start master process")
         os.chdir(b_d)
@@ -2758,9 +2760,21 @@ def pypestworker_test(tmp_path):
     # looper over and start the workers - in this
     # case they dont need unique dirs since they aren't writing
     # anything
+    # little pause to let master get going (and possibly fail)
+    time.sleep(5)
     procs = []
     for i in range(num_workers):
-        pp = mp.Process(target=ppw_worker,args=(i,case,t_d,host,port,frun))
+        # check master still running before deploying worker
+        if p.poll() is not None:
+            err = p.stderr.read()
+            # todo: remove this xfail in next (post 5.2.23dev20251209) pestpp release
+            if "wrong number of tokens on line 1 of file" in err.decode():
+                request.applymarker(pytest.mark.xfail)
+            # todo: remove this xfail in next (post 5.2.23dev20251209) pestpp release
+            raise RuntimeError("master process failed before all workers started:\n\n"+
+                               err.decode())
+        pp = mp.Process(target=ppw_worker,args=(i,case,t_d,host,port,frun), kwargs={'master_process':p})
+        # procs.append(pp)
         pp.start()
         procs.append(pp)
     # if everything worked, the workers should receive the
