@@ -110,24 +110,16 @@ def test_get_release(repo):
     release_tag_name = release["tag_name"]
 
     expected_assets = [
-        f"pestpp-{release_tag_name}-linux.tar.gz",
-        f"pestpp-{release_tag_name}-mac.tar.gz",
-        f"pestpp-{release_tag_name}-iwin.zip",
+        f"pestpp-{release_tag_name}-linux",
+        f"pestpp-{release_tag_name}-mac",
+        f"pestpp-{release_tag_name}-win",
     ]
-    expected_ostags = [a.replace(".zip", "") for a in expected_assets]
-    expected_ostags = [a.replace("tar.gz", "") for a in expected_assets]
-    actual_assets = [asset["name"] for asset in assets]
+    actual_assets = [asset["name"].replace("tar.gz", "").replace(".zip", "") for asset in assets]
 
-    if repo == "pestpp":
-        # can remove if modflow6 releases follow asset name conventions followed in executables and nightly build repos
-        assert {a.rpartition("_")[2] for a in actual_assets} >= {
-            a for a in expected_assets if not a.startswith("win")
-        }
-    else:
-        for ostag in expected_ostags:
-            assert any(
-                ostag in a for a in actual_assets
-            ), f"dist not found for {ostag}"
+    for ostag in expected_assets:
+        assert any(
+            ostag in a for a in actual_assets
+        ), f"dist not found for {ostag}"
 
 
 @pytest.mark.parametrize("bindir", bindir_options.keys())
