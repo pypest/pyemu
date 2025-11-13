@@ -249,11 +249,7 @@ class DSI(Emulator):
         # Matrix multiplication: (n_obs x n_params) @ (n_params x n_realizations)
         sim_vals = ovals[:, np.newaxis] + np.dot(pmat, pvals.T)
         
-        # Apply inverse transforms if needed
-        if self.transforms is not None:
-            pipeline = self.transformer_pipeline
-            # Apply inverse transform to each realization
-            sim_vals = pipeline.inverse(sim_vals.T).T
+
         # Convert to pandas and format output
         if single_realization:
             # Return Series for single realization
@@ -261,7 +257,6 @@ class DSI(Emulator):
             sim_vals.index.name = 'obsnme'
             sim_vals.name = "obsval"
             self.sim_vals = sim_vals
-            return sim_vals
         else:
             # Return DataFrame for multiple realizations
             #realization_names = [f"real_{i}" for i in range(pvals.shape[0])]
@@ -273,7 +268,13 @@ class DSI(Emulator):
                                 )
             sim_vals.index.name = 'realization'
             self.sim_vals = sim_vals
-            return sim_vals
+
+        # Apply inverse transforms if needed
+        if self.transforms is not None:
+            pipeline = self.transformer_pipeline
+            # Apply inverse transform to each realization
+            sim_vals = pipeline.inverse(sim_vals)
+        return sim_vals
     
     def check_for_pdc(self):
         """Check for Prior data conflict."""
