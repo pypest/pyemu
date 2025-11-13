@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any, Union
 import numpy as np
 import pandas as pd
 import inspect
-from pyemu.utils.helpers import dsi_forward_run, series_to_insfile
+from pyemu.utils.helpers import dsi_forward_run,dsi_runstore_forward_run, series_to_insfile
 import os
 import shutil
 from pyemu.pst.pst_handler import Pst
@@ -384,7 +384,8 @@ class DSIAE(Emulator):
         return
         
     def prepare_pestpp(self, t_d: Optional[str] = None, 
-                       observation_data: Optional[pd.DataFrame] = None) -> 'Pst':
+                       observation_data: Optional[pd.DataFrame] = None,
+                       use_runstor: bool = False) -> 'Pst':
         """
         Prepare PEST++ control files for the emulator.
         
@@ -394,7 +395,8 @@ class DSIAE(Emulator):
             Template directory path. Must be provided.
         observation_data : pd.DataFrame, optional
             Observation data to use. If None, uses data from initialization.
-            
+        use_runstor : bool, default False
+            Whether to use the Runstor batch file format for PEST++. Setting to True will setup the forward run script to work with PEST++ external run maganer.
         Returns
         -------
         Pst
@@ -494,8 +496,10 @@ class DSIAE(Emulator):
         pst.model_command = "python forward_run.py"
         self.logger.log("creating Pst")
 
-
-        function_source = inspect.getsource(dsi_forward_run)
+        if use_runstor:
+            function_source = inspect.getsource(dsi_runstore_forward_run)
+        else:
+            function_source = inspect.getsource(dsi_forward_run)
         with open(os.path.join(t_d,"forward_run.py"),'w') as file:
             file.write(function_source)
             file.write("\n\n")

@@ -4690,6 +4690,36 @@ def gpr_forward_run():
     return mdf
 
 
+def dsi_runstore_forward_run(ws='.'):
+    import os
+    from pyemu.utils.helpers import RunStor
+    try:
+        from pyemu.emulators import DSIAE
+        dsi = DSIAE.load(os.path.join(ws,"dsi.pickle"))
+        latent_dim = dsi.latent_dim
+    except:
+        try:
+            from pyemu.emulators import DSI
+            dsi = DSI.load(os.path.join(ws,"dsi.pickle"))
+            latent_dim = dsi.s.shape[0]
+        except Exception as e:
+            raise Exception("failed to load DSI or DSIAE from dsi.pickle:{0}".format(str(e)))
+
+    fname = os.path.join(ws,"dsi.rns")
+    header, par_names, obs_names = RunStor.file_info(fname)
+    rs = RunStor(fname)
+    df = rs.get_data()
+
+    pvals = df.loc[:,par_names]
+    assert pvals.shape[1] == latent_dim, "number of parameters in runstor does not match DSI latent dimension"
+    simvals = dsi.predict(pvals)
+    assert simvals.shape[1] == len(obs_names), "number of observations in runstor does not match DSI output dimension"
+
+    df.loc[:,obs_names] = simvals.loc[:,obs_names]
+
+    rs.update(df)
+    return
+
 def dsi_forward_run(pvals,dsi,write_csv=False):
     if not isinstance(dsi,pyemu.emulators.DSI) and not isinstance(dsi,pyemu.emulators.DSIAE):
         raise Exception("dsi must be a pyemu.emulators.DSI or pyemu.emulators.DSIAE object")
