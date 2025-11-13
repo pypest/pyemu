@@ -128,7 +128,7 @@ jobs:
         pytest ${{ matrix.test-path }} \
         -rA -vv --tb=native \
         --durations=20 \
-        --cov=pyemu --cov-report=lcov
+        --cov=pyemu --cov-report=lcov \
         -k "pypestworker"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
