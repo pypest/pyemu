@@ -83,6 +83,8 @@ module-root = ""
 testpaths = [
     "autotest",
 ]
+addopts = "--cov-config=pyproject.toml"
+
 python_functions = [
     "*_test",
     "test_*"
