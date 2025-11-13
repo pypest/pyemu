@@ -831,11 +831,11 @@ def test_geostat_prior_builder(tmp_path):
     import pandas as pd
     import gc
 
-    for fname in [Path("pst","pest.pst"),
+    for fname in [Path("pst", "pest.pst"),
                   Path("utils", "pp_locs.tpl"),
                   Path("utils", "structure.dat")]:
         shutil.copy(fname, tmp_path)
-    pst_file = os.path.join(tmp_path,"pest.pst")
+    pst_file = os.path.join(tmp_path, "pest.pst")
     pst = pyemu.Pst(pst_file)
     # print(pst.parameter_data)
     tpl_file = os.path.join(tmp_path, "pp_locs.tpl")
@@ -2709,8 +2709,8 @@ def ppw_worker(id_num,case,t_d,host,port,frun):
         #print("worker",id_num,"finished run",ppw.net_pack.runid)
 
 
-@pytest.mark.timeout(method="thread", timeout=300)
-def test_pypestworker(request, tmp_path):
+@pytest.mark.timeout(method="thread")
+def test_pypestworker(tmp_path):
     from datetime import datetime
     import numpy as np
     import subprocess as sp
@@ -2738,8 +2738,8 @@ def test_pypestworker(request, tmp_path):
     sys.path.insert(1, t_d.as_posix())
     from forward_run import helper as frun
 
-    m_d = Path(tmp_path, "{0}_ppw_master".format(case))
-    
+    m_d = tmp_path / "{0}_ppw_master".format(case)
+
     if os.path.exists(m_d):
         shutil.rmtree(m_d)
     shutil.copytree(t_d,m_d)
@@ -2749,8 +2749,7 @@ def test_pypestworker(request, tmp_path):
     b_d = os.getcwd()
     os.chdir(m_d)
     try:
-        p = sp.Popen([mou_exe_path, "{0}.pst".format(case), "/h", ":{0}".format(port)],
-                     stdout=sp.PIPE, stderr=sp.PIPE)
+        p = sp.Popen([mou_exe_path, "{0}.pst".format(case), "/h", ":{0}".format(port)], stderr=sp.PIPE)
     except Exception as e:
         print("failed to start master process")
         os.chdir(b_d)
@@ -2784,8 +2783,14 @@ def test_pypestworker(request, tmp_path):
             raise e
     # if everything worked, the workers should receive the
     # shutdown signal from the master and exit gracefully...
-    for pp in procs:
-        pp.join()
+    for i, pp in enumerate(procs):
+        try:  # make sure we kill the master if worker startup returns an error
+            pp.join()
+        except Exception as e:
+            print(f"exception thrown by worker {i}")
+            p.terminate()
+            raise e
+
     # wait for the master to finish...but should already be finished
     p.wait()
 
