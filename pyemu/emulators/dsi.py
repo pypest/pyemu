@@ -136,6 +136,7 @@ class DSI(Emulator):
 
         self.logger.statement("undertaking SVD")
         u, s, v = np.linalg.svd(z, full_matrices=False)
+        org_num_components = len(s)
         us = np.dot(v.T, np.diag(s))
         if energy_threshold is None:
             energy_threshold = self.energy_threshold
@@ -143,17 +144,17 @@ class DSI(Emulator):
             self.logger.statement("applying energy truncation")
             # compute the cumulative energy of the singular values
             cumulative_energy = np.cumsum(s**2) / np.sum(s**2)
-            print(cumulative_energy)
             # find the number of components needed to reach the energy threshold
             num_components = np.argmax(cumulative_energy >= energy_threshold) + 1
             # keep only the first num_components singular values and vectors
             us = us[:, :num_components]
             s = s[:num_components]
             u = u[:, :num_components]
-            print(f"Truncated from {len(s)} to {num_components} components while retaining {energy_threshold*100:.1f}% of variance")
+            #print(f"Truncated from {len(s)} to {num_components} components while retaining {energy_threshold*100:.1f}% of variance")
+            self.logger.statement(f"truncated from {org_num_components} to {num_components} components while retaining {energy_threshold*100:.1f}% of variance")
             if num_components<=1:
-                print(f"Warning: only {num_components} component retained, you may need to check the data")
-        
+                #print(f"Warning: only {num_components} component retained, you may need to check the data")
+                self.logger.warning(f"only {num_components} component retained, you may need to check the data")
         self.logger.statement("calculating us matrix")
         
         # store components needed for forward run
