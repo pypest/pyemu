@@ -83,7 +83,7 @@ jobs:
         -rA -vv --tb=native \
         --durations=20 \
         --timeout=1200 \
-        --cov=pyemu --cov-report=xml \
+        --cov=pyemu --cov-report=xml
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         MPLBACKEND: Agg  # non-interactive backend for matplotlib
