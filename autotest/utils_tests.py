@@ -2767,16 +2767,17 @@ def test_pypestworker(request, tmp_path):
         # check master still running before deploying worker
         if p.poll() is not None:
             err = p.stderr.read()
-            # todo: remove this xfail in next (post 5.2.23dev20251209) pestpp release
-            if "wrong number of tokens on line 1 of file" in err.decode():
-                request.applymarker(pytest.mark.xfail)
-            # todo: remove this xfail in next (post 5.2.23dev20251209) pestpp release
             raise RuntimeError("master process failed before all workers started:\n\n"+
                                err.decode())
-        pp = mp.Process(target=ppw_worker,args=(i,case,t_d,host,port,frun), kwargs={'master_process':p})
-        # procs.append(pp)
-        pp.start()
-        procs.append(pp)
+        try:  # make sure we kill the master if worker startup returns an error
+            pp = mp.Process(target=ppw_worker,args=(i,case,t_d,host,port,frun))
+            # procs.append(pp)
+            pp.start()
+            procs.append(pp)
+        except Exception as e:
+            print("failed to start worker {0}".format(i))
+            p.terminate()
+            raise e
     # if everything worked, the workers should receive the
     # shutdown signal from the master and exit gracefully...
     for pp in procs:
