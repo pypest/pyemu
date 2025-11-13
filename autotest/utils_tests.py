@@ -2705,8 +2705,8 @@ def ppw_worker(id_num,case,t_d,host,port,frun):
         #print("worker",id_num,"finished run",ppw.net_pack.runid)
    
 
-@pytest.mark.timeout(method="thread", timeout=300)
-def test_pypestworker(request, tmp_path):
+@pytest.mark.timeout(method="thread")
+def test_pypestworker(tmp_path):
     from datetime import datetime
     import numpy as np
     import subprocess as sp
