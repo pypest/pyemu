@@ -2734,7 +2734,7 @@ def test_pypestworker(request, tmp_path):
     sys.path.insert(1, t_d.as_posix())
     from forward_run import helper as frun
 
-    m_d = "{0}_ppw_master".format(case)
+    m_d = tmp_path / "{0}_ppw_master".format(case)
 
     if os.path.exists(m_d):
         shutil.rmtree(m_d)
@@ -2745,8 +2745,7 @@ def test_pypestworker(request, tmp_path):
     b_d = os.getcwd()
     os.chdir(m_d)
     try:
-        p = sp.Popen([mou_exe_path, "{0}.pst".format(case), "/h", ":{0}".format(port)],
-                     stdout=sp.PIPE, stderr=sp.PIPE)
+        p = sp.Popen([mou_exe_path, "{0}.pst".format(case), "/h", ":{0}".format(port)], stderr=sp.PIPE)
     except Exception as e:
         print("failed to start master process")
         os.chdir(b_d)
@@ -2780,8 +2779,13 @@ def test_pypestworker(request, tmp_path):
             raise e
     # if everything worked, the workers should receive the
     # shutdown signal from the master and exit gracefully...
-    for pp in procs:
-        pp.join()
+    for i, pp in enumerate(procs):
+        try:  # make sure we kill the master if worker startup returns an error
+            pp.join()
+        except Exception as e:
+            print(f"exception thrown by worker {i}")
+            p.terminate()
+            raise e
 
     # wait for the master to finish...but should already be finished
     p.wait()
