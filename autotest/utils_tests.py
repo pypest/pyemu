@@ -3279,15 +3279,72 @@ def gpr_zdt1_ppw():
     os.chdir("..")
 
 
+def pestpp_runstorage_file_test(tmp_path):
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
 
+    org_rns_file = os.path.join("utils","runstor.rns")
+    rns_file = os.path.join(tmp_path,"runstor.rns")
+    if os.path.exists(rns_file):
+        os.remove(rns_file)
+    shutil.copy2(org_rns_file,rns_file)
+    rs = pyemu.helpers.RunStor(rns_file)
+    header,par_names,obs_names = rs.file_info(rns_file)
+    cols = ["n_runs","run_size","p_name_size","o_name_size","run_start"]
+    for col in cols:
+        assert col in header
+        assert header[col] > 0
+    df = rs.get_data()
+    assert "run_status_label" in df.columns
+    assert np.all(df.run_pos.values>0)
+
+    for entry in df.info_txt:
+        assert len(str(entry)) > 0
+        assert "realization:" in entry
+        assert "da_cycle:-9999" in entry
+    assert df.run_status.sum() == 0
+    org_df = df.copy()
+    df["run_status"] = -100
+    df.loc[:,par_names[0]] = -111
+    df.loc[:,obs_names[-1]] = -222
+    df["buffer_status"] = 1
+    #df.loc[0,par_names] = -1111
+    rs.update(df)
+    rs2 = pyemu.helpers.RunStor(rns_file)
+    header,par_names,obs_names = rs.file_info(rns_file)
+    #print(header)
+    df2 = rs2.get_data()
+    #print(df2.shape)
+    assert df.shape == df2.shape
+    #print(df2.run_status_label)
+    assert np.all(df2.run_status.values == -100)
+
+    print(df2.loc[:,par_names[0]])
+    assert np.all(df2.loc[:,par_names[0]].values == -111)
+    print(df2.loc[:, obs_names[-1]])
+    assert np.all(df2.loc[:,obs_names[-1]].values == -222)
+    print(df2.buffer_status)
+    #buffer status should always be 0 no matter what values are put in the dataframe
+    assert df2.buffer_status.sum() == 0
+    rs2.update(org_df)
+    p1,o1,meta = pyemu.helpers.read_pestpp_runstorage(rns_file,irun="all", with_metadata=True)
+
+    p2 = pd.read_csv(os.path.join("utils","runstor.0.par.csv"),index_col=0)
+
+    diff = np.abs(p1.loc[:,p2.columns].values - p2.values)
+    print(diff.max())
+    assert diff.max() < 1.0e-7
 
 
 if __name__ == "__main__":
+    pestpp_runstorage_file_test(".")
     #geostat_draws_test('.')
     #fac2real_wrapped_test('.')
     #maha_pdc_test('.')
     #ppu_geostats_test(".")
-    pypestworker_test()
+    #pypestworker_test()
     #gpr_zdt1_test()
     #gpr_compare_invest()
     #gpr_constr_test()
