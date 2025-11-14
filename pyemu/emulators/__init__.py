@@ -16,6 +16,7 @@ from .dsi import DSI
 __all__ = [
     'Emulator', #base Emulator Class
     'DSI',  # DSI Emulator Class
+#    'DSIAE',  # DSI Autoencoder Emulator Class
     'LPFA',
 ##    'GPR',  # GPR Emulator Class
     'BaseTransformer',
@@ -33,6 +34,13 @@ try:
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
+
+try:
+    import tensorflow
+    HAS_TENSORFLOW = True
+except ImportError:
+    HAS_TENSORFLOW = False
+
 
 # Conditional imports
 if HAS_SKLEARN:
@@ -53,3 +61,11 @@ else:
     class StandardScalerTransformer:
         def __init__(self, *args, **kwargs):
             raise ImportError("StandardScalerTransformer requires scikit-learn. Install with: pip install scikit-learn")
+
+if HAS_TENSORFLOW and HAS_SKLEARN:
+    from .dsiae import DSIAE
+    __all__.append('DSIAE')
+else:
+    class DSIAE:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("DSIAE emulator requires TensorFlow. Install with: pip install tensorflow")

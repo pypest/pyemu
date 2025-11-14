@@ -51,7 +51,21 @@ jobs:
         cache-environment: true
         cache-environment-key: environment-${{ steps.date.outputs.date }}
         cache-downloads-key: downloads-${{ steps.date.outputs.date }}
-
+    
+    - name: Install TensorFlow (only for certain versions)
+      if: >
+        (
+          matrix.python-version == '3.10' ||
+          matrix.python-version == '3.11' ||
+          matrix.python-version == '3.12'
+        )
+      shell: bash -l {0}
+      run: |
+        echo "Installing TensorFlow for Python ${{ matrix.python-version }}"
+        pip install tensorflow
+#        micromamba install tensorflow -c conda-forge
+      continue-on-error: false
+        
     - name: Checkout pypestutils
       uses:  actions/checkout@v4
       with:
