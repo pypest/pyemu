@@ -118,7 +118,7 @@ jobs:
     - name: Install PEST++ suite using get-pestpp
       shell: bash -l {0}
       run: |
-        get-pestpp :home
+        get-pestpp --owner pestpp --repo pestpp-nightly-builds :home
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -129,7 +129,7 @@ jobs:
         -n=auto \
         -rA -vv --tb=native \
         --durations=20 \
-        --cov=pyemu --cov-report=lcov
+        --cov=pyemu --cov-report=lcov \
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         MPLBACKEND: Agg  # non-interactive backend for matplotlib
