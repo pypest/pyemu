@@ -30,6 +30,7 @@ default_repo = "pestpp"
 # key is the repo name, value is the renamed file prefix for the download
 renamed_prefix = {
     "pestpp": "pestpp",
+    "pestpp-nightly-builds": "pestpp",
 }
 available_repos = list(renamed_prefix.keys())
 available_ostags = ["linux", "mac", "win"]
@@ -97,8 +98,7 @@ def get_releases(
     owner=None, repo=None, quiet=False, per_page=None
 ) -> List[str]:
     """Get list of available releases."""
-    owner = default_owner if owner is None else owner
-    repo = default_repo if repo is None else repo
+    owner, repo = _get_defaults(owner, repo)
     req_url = f"https://api.github.com/repos/{owner}/{repo}/releases"
 
     params = {}
@@ -137,10 +137,24 @@ def get_releases(
     return avail_releases
 
 
+def _get_defaults(owner=None, repo=None):
+    """Get default owner and repo if not provided."""
+    default_owner_dict = {'pestpp': "usgs",
+                          'pestpp-nightly-builds': "pestpp"}
+    default_repo_dict = {o: r for r, o in default_owner_dict.items()}
+    # if nothing passed
+    if owner is None and repo is None:
+        owner = default_owner
+
+    if repo is None:
+        repo = default_repo_dict.get(owner, default_repo)
+    elif owner is None:
+        owner = default_owner_dict.get(repo, default_owner)
+    return owner, repo
+
 def get_release(owner=None, repo=None, tag="latest", quiet=False) -> dict:
     """Get info about a particular release."""
-    owner = default_owner if owner is None else owner
-    repo = default_repo if repo is None else repo
+    owner, repo = _get_defaults(owner, repo)
     api_url = f"https://api.github.com/repos/{owner}/{repo}"
     req_url = (
         f"{api_url}/releases/latest"
@@ -157,7 +171,6 @@ def get_release(owner=None, repo=None, tag="latest", quiet=False) -> dict:
             with urllib.request.urlopen(request, timeout=10) as resp:
                 result = resp.read()
                 remaining = resp.headers.get("x-ratelimit-remaining",None)
-                
                 if remaining is not None and int(remaining) <= 10:
                     warnings.warn(
                         f"Only {remaining} GitHub API requests remaining "
@@ -166,9 +179,9 @@ def get_release(owner=None, repo=None, tag="latest", quiet=False) -> dict:
                 break
         except urllib.error.HTTPError as err:
             if err.code == 401 and os.environ.get("GITHUB_TOKEN"):
-                raise ValueError("GITHUB_TOKEN env is invalid") from err
+                raise IOError("GITHUB_TOKEN env is invalid") from err
             elif err.code == 403 and "rate limit exceeded" in err.reason:
-                raise ValueError(
+                raise IOError(
                     f"use GITHUB_TOKEN env to bypass rate limit ({err})"
                 ) from err
             elif err.code == 404:
@@ -376,13 +389,17 @@ def run_main(
     exe_suffix, lib_suffix = get_suffixes(ostag)
 
     # select bindir if path not provided
-    if bindir.startswith(":"):
-        bindir = select_bindir(
-            bindir, previous=prev_bindir, quiet=quiet, is_cli=_is_cli
-        )
-    elif not isinstance(bindir, (str, Path)):
+    if isinstance(bindir, str):
+        if bindir.startswith(":"):
+            bindir = select_bindir(
+                bindir, previous=prev_bindir, quiet=quiet, is_cli=_is_cli
+            )  # returns resolved Path
+        else:
+            bindir = Path(bindir).resolve()
+    elif isinstance(bindir, Path):
+        bindir = bindir.resolve()
+    else:
         raise ValueError("Invalid bindir option (expected string or Path)")
-    bindir = Path(bindir).resolve()
 
     # make sure bindir exists
     if bindir == pyemu_bin:
@@ -413,7 +430,7 @@ def run_main(
     }
 
     for asset in assets:
-        if inconsistent_ostag_dict[ostag] in asset["name"]:
+        if ostag in asset["name"] or inconsistent_ostag_dict[ostag] in asset["name"]:
             break
     else:
         raise ValueError(
@@ -422,13 +439,13 @@ def run_main(
         )
     asset_name = asset["name"]
     download_url = asset["browser_download_url"]
+    asset_pth = Path(asset_name)
+    asset_stem = asset_pth.stem
+    if str(asset_pth).endswith("tar.gz"):
+        asset_suffix = ".tar.gz"
+    else:
+        asset_suffix = asset_pth.suffix
     if repo == "pestpp":
-        asset_pth = Path(asset_name)
-        asset_stem = asset_pth.stem
-        if str(asset_pth).endswith("tar.gz"):
-            asset_suffix = ".tar.gz"
-        else:
-            asset_suffix = asset_pth.suffix
         dst_fname = "-".join([repo, release["tag_name"], ostag]) + asset_suffix
     else:
         # change local download name so it is more unique
@@ -526,10 +543,12 @@ def run_main(
         download_pth = zip_path
 
     with zipfile.ZipFile(download_pth, "r") as zipf:
-        # First gather files within internal directories named "bin"
+        # First gather files within internal directories named "bin" or "dist/*/"
         for pth in zipf.namelist():
             p = Path(pth)
             if p.parent.name == "bin":
+                full_path[p.name] = pth
+            elif p.parent.parent.name == "dist":
                 full_path[p.name] = pth
         files = set(full_path.keys())
 

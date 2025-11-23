@@ -191,7 +191,7 @@ def setup_pilotpoints_grid(
             if k not in prefix_dict.keys():
                 continue
 
-            pp_df = None
+            pp_df = []
             ib = ibound[par][k]
             assert (
                 ib.shape == xcentergrid.shape
@@ -209,24 +209,11 @@ def setup_pilotpoints_grid(
 
                     parval1 = 1.0
 
-                    for pp in ppoint_xys:
+                    for x, y in ppoint_xys:
+                        # name from pilot point count
                         name = "pp_{0:04d}".format(pp_count)
-                        x,y = pp[0], pp[-1]
-                        if pp_df is None:
-                            data = {
-                                "name": name,
-                                "x": x,
-                                "y": y,
-                                "zone": zone,  # if use_ibound_zones is False this will always be 1
-                                "parval1": parval1,
-                                "k": k,
-                            }
-                            pp_df = pd.DataFrame(data=data, index=[0], columns=pp_names)
-                        else:
-                            data = [name, x, y, zone, parval1, k,]
-                            pp_df.loc[pp_count, :] = data
-                            pp_count+=1
-
+                        pp_df.append([name, x, y, zone, parval1, k,])
+                        pp_count += 1
             else:
                 # cycle through rows and cols
                 # allow to run closer to outside edge rather than leaving a gap
@@ -246,25 +233,11 @@ def setup_pilotpoints_grid(
                         if use_ibound_zones:
                             zone = ib[i, j]
                         # stick this pilot point into a dataframe container
-
-                        if pp_df is None:
-                            data = {
-                                "name": name,
-                                "x": x,
-                                "y": y,
-                                "zone": zone,  # if use_ibound_zones is False this will always be 1
-                                "parval1": parval1,
-                                "k": k,
-                                "i": i,
-                                "j": j,
-                            }
-                            pp_df = pd.DataFrame(data=data, index=[0], columns=pp_names)
-                        else:
-                            data = [name, x, y, zone, parval1, k, i, j]
-                            pp_df.loc[pp_count, :] = data
+                        pp_df.append([name, x, y, zone, parval1, k, i, j])
                         pp_count += 1
+            pp_df = pd.DataFrame(pp_df, columns=pp_names)
             # if we found some acceptable locs...
-            if pp_df is not None:
+            if not pp_df.empty:
                 for prefix in prefix_dict[k]:
                     # if parameter prefix relates to current zone definition
                     if prefix.startswith(par) or (
@@ -317,15 +290,15 @@ def setup_pilotpoints_grid(
             shp = shapefile.Writer(shapeType=shapefile.POINT)
         for name, dtype in par_info.dtypes.items():
             if dtype == object:
-                shp.field(name=name, fieldType="C", size=50)
+                shp.field(name, "C", size=50)
             elif dtype in [int]:#, np.int64, np.int32]:
-                shp.field(name=name, fieldType="N", size=50, decimal=0)
+                shp.field(name, "N", size=50, decimal=0)
             elif dtype in [float, np.float32, np.float64]:
-                shp.field(name=name, fieldType="N", size=50, decimal=10)
+                shp.field(name, "N", size=50, decimal=10)
             else:
                 try:
                     if dtype in [np.int64, np.int32]:
-                        shp.field(name=name, fieldType="N", size=50, decimal=0)
+                        shp.field(name, "N", size=50, decimal=0)
                     else:
                         raise Exception(
                             "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
@@ -499,15 +472,15 @@ def write_pp_shapfile(pp_df, shapename=None):
         shp = shapefile.Writer(target=shapename, shapeType=shapefile.POINT)
     for name, dtype in dfs[0].dtypes.items():
         if dtype == object:
-            shp.field(name=name, fieldType="C", size=50)
+            shp.field(name, "C", size=50)
         elif dtype in [int]:#, np.int, np.int64, np.int32]:
-            shp.field(name=name, fieldType="N", size=50, decimal=0)
+            shp.field(name, "N", size=50, decimal=0)
         elif dtype in [float, np.float32, np.float32]:
-            shp.field(name=name, fieldType="N", size=50, decimal=8)
+            shp.field(name, "N", size=50, decimal=8)
         else:
             try:
                 if dtype in [np.int64, np.int32]:
-                    shp.field(name=name, fieldType="N", size=50, decimal=0)
+                    shp.field(name, "N", size=50, decimal=0)
                 else:
                     raise Exception(
                         "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
@@ -657,7 +630,8 @@ def get_zoned_ppoints_for_vertexgrid(spacing, zone_array, mg, zone_number=None, 
 
     try:
         from shapely.ops import unary_union
-        from shapely.geometry import Polygon, Point
+        from shapely.geometry import Polygon #, Point, MultiPoint
+        from shapely import points
     except ImportError:
         raise ImportError('The `shapely` library was not found. Please make sure it is installed.')
 
@@ -690,21 +664,44 @@ def get_zoned_ppoints_for_vertexgrid(spacing, zone_array, mg, zone_number=None, 
     x = np.linspace(xmin, xmax, nx)
     y = np.linspace(ymin, ymax, ny)
     xv, yv = np.meshgrid(x, y)
-    # make grid
-    grid_points = [Point(x,y) for x,y in list(zip(xv.flatten(), yv.flatten()))]
+    def _get_ppoints():
+        # make grid
+        grid_points = points(list(zip(xv.flatten(), yv.flatten())))
 
-    # get vertices for model grid/zone polygon
-    verts = [mg.get_cell_vertices(cellid) for cellid in range(mg.ncpl)]
-    if zone_number != None:
-        # select zone area
-        verts = [verts[i] for i in np.where(zone_array==zone_number)[0]]
-    # dissolve
-    polygon = unary_union([Polygon(v) for v in verts])
-    # add buffer
-    if add_buffer==True:
-        polygon = polygon.buffer(spacing)
-    # select ppoint coords within area
-    ppoints = [(p.x, p.y) for p in grid_points if polygon.covers(p) ]
+        # get vertices for model grid/zone polygon
+        verts = [mg.get_cell_vertices(cellid) for cellid in range(mg.ncpl)]
+        if zone_number != None:
+            # select zone area
+            verts = [verts[i] for i in np.where(zone_array==zone_number)[0]]
+        # dissolve
+        polygon = unary_union([Polygon(v) for v in verts])
+        # add buffer
+        if add_buffer==True:
+            polygon = polygon.buffer(spacing)
+        # select ppoint coords within area
+        ppoints = [(p.x, p.y) for p in grid_points[polygon.covers(grid_points)]]
+        return ppoints
+    #
+    # def _get_ppoints_new(): # alternative method searching for speedup (not too successful)
+    #     # make grid
+    #     grid_points = points(list(zip(xv.flatten(), yv.flatten())))
+    #
+    #     # get vertices for model grid/zone polygon
+    #     verts = [mg.get_cell_vertices(cellid) for cellid in range(mg.ncpl)]
+    #     if zone_number != None:
+    #         # select zone area
+    #         verts = [verts[i] for i in np.where(zone_array == zone_number)[0]]
+    #     # dissolve
+    #     polygon = unary_union([Polygon(v) for v in verts])
+    #     # add buffer
+    #     if add_buffer == True:
+    #         polygon = polygon.buffer(spacing)
+    #     # select ppoint coords within area
+    #     ppoints = [(p.x, p.y) for p in grid_points[polygon.covers(grid_points)]]
+    #     return ppoints
+
+    ppoints = _get_ppoints()
+    # ppoints = _get_ppoints_new()
     assert len(ppoints)>0
     return ppoints
 
@@ -786,6 +783,10 @@ def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
     aniso_filename = file_tag + ".aniso.dat"
     zone_filename = file_tag + ".zone.dat"
 
+    if len(arr_shape) == 1 and type(arr_shape) is tuple:
+        arr_shape = (1,arr_shape[0])
+
+
     nodes = list(grid_dict.keys())
     nodes.sort()
     with open(os.path.join(ws,gridinfo_filename), 'w') as f:
@@ -801,7 +802,7 @@ def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
     np.savetxt(os.path.join(ws,aniso_filename), aniso, fmt="%20.8E")
 
     if zone_array is None:
-        zone_array = np.ones(shape,dtype=int)
+        zone_array = np.ones(arr_shape,dtype=int)
     np.savetxt(os.path.join(ws,zone_filename),zone_array,fmt="%5d")
 
 

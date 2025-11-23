@@ -112,6 +112,10 @@ def res_test(tmp_path):
 
 def pst_manip_test(tmp_path):
     import os
+
+    if os.path.exists(tmp_path):
+        shutil.rmtree(tmp_path)
+    os.makedirs(tmp_path)
     from pyemu import Pst
     pst_dir = os.path.join("pst")
     org_path = os.path.join(pst_dir, "pest.pst")
@@ -127,9 +131,46 @@ def pst_manip_test(tmp_path):
     new_pst = Pst(new_path)
     assert all(new_pst.observation_data.obsval == pst.observation_data.obsval)
     assert all(new_pst.parameter_data.parval1 == pst.parameter_data.parval1)
+    org_par = pst.parameter_data.copy()
+    pst.dialate_par_bounds(1.0)
+    diff = np.abs(org_par.parubnd - pst.parameter_data.parubnd).sum()
+    assert diff < 1e-7
+    diff = np.abs(org_par.parlbnd - pst.parameter_data.parlbnd).sum()
+    assert diff < 1e-7
+    pst.dialate_par_bounds(1.0)
+    diff = np.abs(org_par.parubnd - pst.parameter_data.parubnd).sum()
+    assert diff < 1e-7
+    diff = np.abs(org_par.parlbnd - pst.parameter_data.parlbnd).sum()
+    assert diff < 1e-7
+    pst.dialate_par_bounds(2.0)
+    print(pst.parameter_data.loc[:,["parubnd","parubnd_org"]])
+    pst.write(new_path)
+    pst = Pst(new_path)
+    pst.write(new_path, version=2)
+    new_pst = Pst(new_path)
+    new_par = new_pst.parameter_data
+    assert np.all(new_par.parubnd.values > org_par.parubnd.values)
+    assert np.all(new_par.parlbnd.values < org_par.parlbnd.values)
 
+    pst.dialate_par_bounds(0.5)
+    new_par = pst.parameter_data
+    #print(new_par.parubnd)
+    #print(org_par.parubnd)
+    assert np.isclose(np.abs(new_par.parubnd - org_par.parubnd).sum(),0)
+    assert np.isclose(np.abs(new_par.parlbnd - org_par.parlbnd).sum(), 0)
+
+    pst.parameter_data["parval1"] = pst.parameter_data.parubnd
+    pst.dialate_par_bounds(2.0)
+    pst.dialate_par_bounds(0.5)
+    new_par = pst.parameter_data
+    assert np.isclose(np.abs(new_par.parubnd - org_par.parubnd).sum(), 0)
+    assert np.isclose(np.abs(new_par.parlbnd - org_par.parlbnd).sum(), 0)
 
 def load_test(tmp_path):
+    import os
+    if os.path.exists(tmp_path):
+        shutil.rmtree(tmp_path)
+    os.makedirs(tmp_path)
     from pyemu import Pst
     pst_dir = setup_tmp("pst", tmp_path)
     # just testing all sorts of different pst files
@@ -176,6 +217,14 @@ def load_test(tmp_path):
             except Exception as e:
                 exceptions.append(pst_file + " v2 reload fail: " + str(e))
                 continue
+
+            org_par = p.parameter_data.copy()
+            p.dialate_par_bounds(1.0)
+            diff = np.abs(org_par.parubnd - p.parameter_data.parubnd).sum()
+            assert diff < 1e-5
+            diff = np.abs(org_par.parlbnd - p.parameter_data.parlbnd).sum()
+            print(diff)
+            assert diff < 1e-5
 
 
     # with open("load_fails.txt",'w') as f:
@@ -819,6 +868,24 @@ def new_format2_test(tmp_path):
         raise Exception("fail:"+str(e))
     os.chdir(b_d)
 
+def new_format_pestpp_options_test():
+    import pyemu
+    pst_dir = "newpst"
+    pestpp_expected = {
+                'lambdas':'1, 2, 10, 999',
+                'opt_dec_var_groups':'dv_drcq,   dv_irrig',
+                'panther_transfer_on_finish':'file1,file2,file3',
+                'ies_n_iter_reinflate':'3, 5,  999',
+                'ies_reinflate_factor':'0.1 , 0.05,0.1',
+                }
+    pst = pyemu.Pst(os.path.join(pst_dir,"test_pestpp_options.pst"))
+
+    try:
+        for key, expected in pestpp_expected.items():
+            actual = pst.pestpp_options.get(key)
+            assert actual == expected.replace(" ", ""), f"{key}: got '{actual}', expected '{expected}'"
+    except Exception as e:
+        raise Exception("fail:"+str(e))
 
 def new_format_test(tmp_path):
     import numpy as np
@@ -1506,6 +1573,208 @@ def interface_check_test():
         raise Exception("should have failed")
 
 
+def results_ies_1_test():
+    import pyemu
+    m_d = os.path.join("pst", "master_ies1")
+    r = pyemu.Results(m_d=m_d)
+    pst = pyemu.Pst(os.path.join(m_d, "pest.pst"))
+    r = pst.master_ies1
+    r = pst.r0
+    ies = pst.ies
+    mou = pst.mou
+
+    pst = pyemu.Pst(os.path.join(m_d, "pest.pst"), result_dir=m_d)
+
+    df = pst.ies.get("paren", 0)
+
+    df = r.ies.rmr
+    print(df)
+    assert df is not None
+
+    # get all change sum files in an multiindex df
+    df = r.ies.pcs
+    assert df is not None
+
+    # same for conflicts across iterations
+    df = r.ies.pdc
+    assert df is not None
+
+    # weights
+    df = r.ies.weights
+
+    assert df is not None
+    assert df.index.dtype == 'object'
+
+    # various phi dfs
+    df = r.ies.philambda
+    assert df is not None
+    df = r.ies.phigroup
+    assert df is not None
+    df = r.ies.phiactual
+    assert df is not None
+    # print(df)
+    df = r.ies.phimeas
+    assert df is not None
+    # noise
+    df = r.ies.noise
+    assert df is not None
+    # get the prior par en
+    df = r.ies.paren0
+    assert df is not None
+    # get the 1st iter obs en
+    df = r.ies.obsen1
+    assert df is not None
+    # get the combined par en across all iters
+    df = r.ies.paren
+    assert df is not None
+    # print(df)
+
+
+def results_ies_3_test():
+    import pyemu
+    m_d1 = os.path.join("pst", "master_ies1")
+    m_d2 = os.path.join("pst", "master_ies2")
+    pst = pyemu.Pst(os.path.join(m_d1, "pest.pst"))
+    # pst.add_results(m_d1)
+    pst.add_results(m_d2)
+
+    ies0 = pst.r0.ies
+    ies1 = pst.r1.ies
+    ies = pst.ies
+    assert len(ies) == 2
+    ies00 = ies[0]
+
+    pst = pyemu.Pst(os.path.join(m_d1, "pest.pst"))
+    pst.add_results(m_d2)
+    try:
+        pst.add_results(m_d2)
+    except Exception as e:
+        pass
+    else:
+        raise Exception("should have failed...")
+
+    pst = pyemu.Pst(os.path.join(m_d1, "pest.pst"))
+    pst.add_results([m_d2], cases=["test"])
+    # print(pst.r0.ies.paren)
+    # print(pst.r0.ies.obsen)
+    # print(pst.r1.ies.files_loaded)
+    # print(pst.r1.ies.obsen)
+
+    # print(pst.r1.ies.files_loaded)
+
+
+def results_ies_2_test():
+    import pyemu
+    m_d = os.path.join("pst", "master_ies2")
+
+    for case in ["test"]:
+        r = pyemu.Results(m_d=m_d, case=case)
+
+        # get all change sum files in an multiindex df
+        df = r.ies.pcs
+        assert df is not None
+
+        # same for conflicts across iterations
+        df = r.ies.pdc
+        assert df is not None
+
+        # weights
+        df = r.ies.weights
+        assert df is not None
+
+        # various phi dfs
+        df = r.ies.philambda
+        assert df is not None
+        df = r.ies.phigroup
+        assert df is not None
+        df = r.ies.phiactual
+        assert df is not None
+        df = r.ies.phimeas
+        assert df is not None
+        # noise
+        df = r.ies.noise
+        assert df is not None
+        # get the prior par en
+        df = r.ies.paren0
+        assert df is not None
+        # get the 1st iter obs en
+        df = r.ies.obsen1
+        assert df is not None
+        # get the combined par en across all iters
+        df = r.ies.paren
+        assert df is not None
+
+
+def results_mou_1_test():
+    import pyemu
+    for m_d in [os.path.join("pst", "zdt1_bin"), os.path.join("pst", "zdt1_ascii")]:
+        r = pyemu.Results(m_d=m_d)
+
+        df = r.mou.nestedparstack000
+        # print(df)
+
+        assert df is not None
+
+        df = r.mou.parstack0
+        # print(df)
+        assert df is not None
+
+        df = r.mou.stack_summary0
+        # print(df)
+        assert df is not None
+
+        df = r.mou.chanceobspop1
+        # print(df)
+        assert df is not None
+
+        df = r.mou.chanceobspop
+        # print(df)
+        assert df is not None
+
+        df = r.mou.chancedvpop1
+        # print(df)
+        assert df is not None
+
+        df = r.mou.chancedvpop
+        # print(df)
+        assert df is not None
+
+        df = r.mou.dvpop
+        assert df is not None
+
+        df = r.mou.dvpop0
+        # print(df)
+        assert df is not None
+
+        df = r.mou.obspop
+        # print(df)
+        assert df is not None
+
+        df = r.mou.obspop3
+        # print(df)
+        assert df is not None
+
+        df = r.mou.paretosum_archive
+        # print(df)
+        assert df is not None
+
+        df = r.mou.paretosum
+        # print(df)
+        assert df is not None
+
+        df = r.mou.archivedvpop
+        # print(df)
+        assert df is not None
+
+        df = r.mou.archiveobspop
+        # print(df)
+        assert df is not None
+
+
+def dialate_bound_test():
+    import pyemu
+
+
 if __name__ == "__main__":
     """
     Tests may need modifying to support passing a tmp_path argument
@@ -1515,7 +1784,13 @@ if __name__ == "__main__":
     with this.
     """
     d = 'temp'
-    parrep_test(d)
+    results_ies_3_test()
+    results_ies_1_test()
+    results_ies_2_test()
+    results_mou_1_test()
+    #load_test(d)
+    pst_manip_test(d)
+    #parrep_test(d)
     #interface_check_test()
     # new_format_test_2()
     #write2_nan_test()

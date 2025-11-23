@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import ast
 import copy
 import os
 import platform
@@ -370,8 +371,7 @@ class PstFrom(object):
         return i, j
 
     def _dict_get_xy(self, arg, **kwargs):
-        if isinstance(arg, list):
-            arg = tuple(arg)
+        arg = tuple(arg)
         if len(arg) == 1:
             arg = arg[0]
         xy = self._spatial_reference.get(arg, None)
@@ -1048,6 +1048,8 @@ class PstFrom(object):
                         sep = " "
                         if rel_filepath.suffix.lower() == ".csv":
                             sep = ","
+                    elif sep == r'\s+':
+                        sep = " " # sep for saving
                 if pd.api.types.is_integer_dtype(df.columns):  # df.columns.is_integer(): # really!???
                     hheader = False
                 else:
@@ -1292,30 +1294,7 @@ class PstFrom(object):
                         file_name
                     )
                 )
-            func_lines = []
-            search_str = "def " + function_name + "("
-            abet_set = set(string.printable) - {' ','\n','\t'}
-            with open(file_name, "r") as f:
-                while True:
-                    line = f.readline()
-                    if line == "":
-                        self.logger.lraise(
-                            "add_py_function(): EOF while searching for function '{0}'".format(
-                                search_str
-                            )
-                        )
-                    if line.startswith(
-                        search_str
-                    ):  # case sens and no strip since 'def' should be flushed left
-                        func_lines.append(line)
-                        while True:
-                            line = f.readline()
-                            if line == "":
-                                break
-                            if line[0] in abet_set:
-                                break
-                            func_lines.append(line)
-                        break
+            func_lines = extract_function_source(file_name, function_name)
             self._function_lines_list.append(func_lines)
         if is_pre_cmd is True:
             self.pre_py_cmds.append(call_str)
@@ -1604,14 +1583,20 @@ class PstFrom(object):
                 self.logger.log(
                     "building insfile for tabular output file {0}" "".format(filename)
                 )
-                # Build dataframe from output file df for use in insfile
-                df_temp = _get_tpl_or_ins_df(
-                    df,
-                    prefix,
-                    typ="obs",
-                    index_cols=index_cols,
-                    use_cols=use_cols,
-                )
+                try:
+                    # Build dataframe from output file df for use in insfile
+                    df_temp = _get_idxdf(
+                        df,
+                        index_cols=index_cols,
+                        action_duplicates='raise',
+                        logger=self.logger,
+                    )
+                except Exception as e:
+                    self.logger.lraise(
+                        "PstFrom.add_observations(). Error getting index dataframe for {0}: {1}".format(
+                            filename, str(e)
+                        )
+                    )
                 df.loc[:, "idx_str"] = df_temp.idx_strs
                 # Select only certain rows if requested
                 if use_rows is not None:
@@ -1807,7 +1792,8 @@ class PstFrom(object):
             # ins_file = os.path.join(cwd, ins_file)
             # out_file = os.path.join(cwd, out_file)
             df = pyemu.pst_utils.try_process_output_file(
-                ins_file=ins_file, output_file=out_file
+                ins_file=ins_file, output_file=out_file,
+                logger=self.logger
             )
         if df is not None:
             # print(self.observation_data.index,df.index)
@@ -2132,8 +2118,21 @@ class PstFrom(object):
                 and zone_array is not None
                 and len(zone_array.shape) == 1
         )
+        checker2 = (
+                self._spatial_reference is not None
+                and not isinstance(self._spatial_reference, dict)
+                and self._spatial_reference.grid_type == 'vertex'
+                and zone_array is not None
+                and len(zone_array.shape) == 2
+                and zone_array.shape[0] == 1
+                and zone_array.shape[1] > 1
+        )
         if checker:
             zone_array = np.reshape(zone_array, (zone_array.shape[0], 1))
+        # when accesing ib for a 1layer model, the returned array has shape (1,ncpl)
+        if checker2:
+            zone_array = np.reshape(zone_array, (zone_array.shape[1], 1))
+
 
         # Get useful variables from arguments passed
         # if index_cols passed as a dictionary that maps i,j information
@@ -2466,7 +2465,7 @@ class PstFrom(object):
                         orgdata = ar.shape
                         for i, chk in checkref.items():
                             assert orgdata[i] == chk[1], (
-                                f"Spatial reference {chk[0]} not equal to original data {chk[0]} for\n"
+                                f"Spatial reference {chk[1]} not equal to original data {orgdata[i]} for\n"
                                 + os.path.join(
                                     *os.path.split(self.original_file_d)[1:], mod_file
                                 )
@@ -2476,7 +2475,7 @@ class PstFrom(object):
                 pp_df = self._setup_pp_df(**pp_options)
                 # set par group -- already defined above
                 pp_df.loc[:, "pargp"] = pargp
-                self.logger.statement("pilot point 'pargp':{0}".format(",".join(pargp)))
+                self.logger.statement("pilot point 'pargp': {0}".format(pargp))
                 self.logger.log("setting up pilot point parameters")
 
                 # start working on interp factor calcs
@@ -3396,50 +3395,43 @@ def write_list_tpl(
     """
     # get dataframe with autogenerated parnames based on `name`, `index_cols`,
     # `use_cols`, `suffix` and `par_type`
+    df_tpl = _get_idxdf(dfs, index_cols,
+                       zero_based=zero_based,
+                       get_xy=get_xy,
+                       ij_in_idx=ij_in_idx,
+                       xy_in_idx=xy_in_idx,
+                        action_duplicates='drop' if par_style != 'd' else 'ignore')
+    df_tpl, direct_tpl_df = _build_parnames(
+        df_tpl,
+        par_type,
+        zone_array,
+        index_cols,
+        use_cols,
+        name,
+        gpname,
+        suffix,
+        par_style=par_style,
+        init_df=dfs[0],
+        init_fname=filenames[0],
+    )
+    # getting each input dataframe index col values, preserving individual column types
+    idxs = [list(zip(*[df[c] for c in index_cols])) for df in dfs]
+    use_rows, nxs = _get_use_rows(
+        df_tpl, idxs, use_rows, zero_based, tpl_filename, logger=logger
+    )
+    df_tpl = df_tpl.loc[use_rows, :]  # direct pars done in direct function
     if par_style == "d":
-        df_tpl, nxs = _write_direct_df_tpl(
-            filenames[0],
-            tpl_filename,
-            dfs[0],
-            name,
-            index_cols,
-            par_type,
-            use_cols=use_cols,
-            use_rows=use_rows,
-            suffix=suffix,
-            gpname=gpname,
-            zone_array=zone_array,
-            get_xy=get_xy,
-            ij_in_idx=ij_in_idx,
-            xy_in_idx=xy_in_idx,
-            zero_based=zero_based,
-            headerlines=headerlines,
-            logger=logger,
+        if direct_tpl_df is None:
+            raise RuntimeError("Direct par setup failed")
+        not_rows = ~direct_tpl_df.index.isin(use_rows)
+        direct_tpl_df.loc[not_rows] = dfs[0].loc[not_rows, direct_tpl_df.columns]
+        if isinstance(direct_tpl_df.columns[0], str):
+            header = True
+        else:
+            header = False
+        pyemu.helpers._write_df_tpl(
+            tpl_filename, direct_tpl_df, index=False, header=header, headerlines=headerlines
         )
-    else:
-        df_tpl = _get_tpl_or_ins_df(
-            dfs,
-            name,
-            index_cols,
-            par_type,
-            use_cols=use_cols,
-            suffix=suffix,
-            gpname=gpname,
-            zone_array=zone_array,
-            get_xy=get_xy,
-            ij_in_idx=ij_in_idx,
-            xy_in_idx=xy_in_idx,
-            zero_based=zero_based,
-            par_fill_value=fill_value,
-            par_style=par_style,
-        )
-        # getting each input dataframe index col values, preserving individual column types
-        idxs = [list(zip(*[df[c] for c in index_cols])) for df in dfs]
-        use_rows, nxs = _get_use_rows(
-            df_tpl, idxs, use_rows, zero_based, tpl_filename, logger=logger
-        )
-        df_tpl = df_tpl.loc[use_rows, :]  # direct pars done in direct function
-        # can we just slice df_tpl here
     for col in use_cols:  # correlations flagged using pargp
         df_tpl["covgp{0}".format(col)] = df_tpl.loc[:, "pargp{0}".format(col)].values
     # needs modifying if colocated pars in same group
@@ -3509,13 +3501,9 @@ def write_list_tpl(
     if (
         par_type == "grid" and "x" in df_tpl.columns
     ):  # TODO work out if x,y needed for constant and zone pars too
-        df_par["x"], df_par["y"] = np.concatenate(
-            df_tpl.apply(lambda r: [[r.x, r.y] for _ in use_cols], axis=1).values
-        ).T
-    for use_col in use_cols:
-        df_tpl.loc[:, use_col] = df_tpl.loc[:, use_col].apply(
-            lambda x: "~  {0}  ~".format(x)
-        )
+        df_par["x"], df_par["y"] = np.repeat(df_tpl[['x', 'y']], len(use_cols),axis=0).T
+    df_tpl.loc[:, use_cols] = "~  " + df_tpl[use_cols] + "  ~"
+
     if par_style in ["m", "a"]:
         pyemu.helpers._write_df_tpl(
             filename=tpl_filename, df=df_tpl, sep=",", tpl_marker="~"
@@ -3529,105 +3517,6 @@ def write_list_tpl(
     df_par.loc[:, "input_filename"] = input_filename
     df_par.loc[:, "parval1"] = parval
     return df_par, nxs
-
-
-def _write_direct_df_tpl(
-    in_filename,
-    tpl_filename,
-    df,
-    name,
-    index_cols,
-    typ,
-    use_cols=None,
-    use_rows=None,
-    suffix="",
-    zone_array=None,
-    get_xy=None,
-    ij_in_idx=None,
-    xy_in_idx=None,
-    zero_based=True,
-    gpname=None,
-    headerlines=None,
-    logger=None,
-):
-
-    """
-    Private method to auto-generate parameter or obs names from tabular
-    model files (input or output) read into pandas dataframes
-    Args:
-        tpl_filename (`str` ): template filename
-        df (`pandas.DataFrame`): DataFrame of list-style input file
-        name (`str`): Parameter name prefix
-        index_cols (`str` or `list`): columns of dataframes to use as indices
-        typ (`str`): 'constant','zone', or 'grid' used in parname generation.
-            If `constant`, one par is set up for each `use_cols`.
-            If `zone`, one par is set up for each zone for each `use_cols`.
-            If `grid`, one par is set up for every unique index combination
-            (from `index_cols`) for each `use_cols`.
-        use_cols (`list`): Columns to parameterise. If None, pars are set up
-            for all columns apart from index cols
-        suffix (`str`): Optional par name suffix.
-        zone_array (`np.ndarray`): Array defining zone divisions.
-            If not None and `par_type` is `grid` or `zone` it is expected that
-            `index_cols` provide the indices for querying `zone_array`.
-            Therefore, array dimension should equal `len(index_cols)`.
-        get_xy (`pyemu.PstFrom` method): Can be specified to get real-world xy
-            from `index_cols` passed (to include in obs/par name)
-        ij_in_idx (`list` or `array`): defining which `index_cols` contain i,j
-        xy_in_idx (`list` or `array`): defining which `index_cols` contain x,y
-        zero_based (`boolean`): IMPORTANT - pass as False if `index_cols`
-            are NOT zero-based indices (e.g. MODFLOW row/cols).
-            If False 1 with be subtracted from `index_cols`.
-
-    Returns:
-        pandas.DataFrame with paranme and pargroup define for each `use_col`
-
-    Note:
-        This function is called by `PstFrom` programmatically
-
-    """
-    from pyemu.utils.helpers import _try_pdcol_numeric
-    # TODO much of this duplicates what is in _get_tpl_or_ins_df() -- could possibly be consolidated
-    # work out the union of indices across all dfs
-
-    df_ti = df[index_cols].copy()
-    # adjust int-like indices to zero-base
-    df_ti = df_ti.apply(_try_pdcol_numeric,
-                        intadj=0 if zero_based else -1,
-                        downcast='integer')
-    # retaining sidx tuple definition as handy for use_rows selection
-    df_ti['sidx'] = list(zip(*[df_ti[c] for c in index_cols]))
-    df_ti = _get_index_strings(df_ti, index_cols)
-    df_ti = _getxy_from_idx(df_ti, index_cols, get_xy, xy_in_idx, ij_in_idx)
-
-    df_ti, direct_tpl_df = _build_parnames(
-        df_ti,
-        typ,
-        zone_array,
-        index_cols,
-        use_cols,
-        name,
-        gpname,
-        suffix,
-        par_style="d",
-        init_df=df,
-        init_fname=in_filename,
-    )
-    idxs = [tuple(s) for s in df.loc[:, index_cols].values]
-    use_rows, nxs = _get_use_rows(
-        df_ti,[idxs], use_rows, zero_based, tpl_filename, logger=logger
-    )
-    df_ti = df_ti.loc[use_rows]
-    not_rows = ~direct_tpl_df.index.isin(use_rows)
-    direct_tpl_df.loc[not_rows] = df.loc[not_rows, direct_tpl_df.columns]
-    if isinstance(direct_tpl_df.columns[0], str):
-        header = True
-    else:
-        header = False
-    pyemu.helpers._write_df_tpl(
-        tpl_filename, direct_tpl_df, index=False, header=header, headerlines=headerlines
-    )
-    return df_ti, nxs
 
 
 def _get_use_rows(tpldf, idxcolvals, use_rows, zero_based, fnme,
@@ -3858,104 +3747,56 @@ def _build_parnames(
             )
 
         if par_style == "d":
-            direct_tpl_df[use_col] = (
-                df.loc[:, use_col].apply(lambda x: "~ {0} ~".format(x)).values
-            )
+            direct_tpl_df[use_col] = ("~ " + df.loc[:, use_col] + " ~").values
     if par_style == "d":
         return df, direct_tpl_df
-    return df
+    return df, None
 
 
-def _get_tpl_or_ins_df(
-    dfs,
-    name,
-    index_cols,
-    typ,
-    use_cols=None,
-    suffix="",
-    zone_array=None,
-    get_xy=None,
-    ij_in_idx=None,
-    xy_in_idx=None,
-    zero_based=True,
-    gpname=None,
-    par_fill_value=1.0,
-    par_style="m",
-):
-    """
-    Private method to auto-generate parameter or obs names from tabular
-    model files (input or output) read into pandas dataframes
-    Args:
-        dfs (`pandas.DataFrame` or `list`): DataFrames (can be list of DataFrames)
-            to set up parameters or observations
-        name (`str`): Parameter name or Observation name prefix
-        index_cols (`str` or `list`): columns of dataframes to use as indices
-        typ (`str`): 'obs' to set up observation names or,
-            'constant','zone', or 'grid' used in parname generation.
-            If `constant`, one par is set up for each `use_cols`.
-            If `zone`, one par is set up for each zone for each `use_cols`.
-            If `grid`, one par is set up for every unique index combination
-            (from `index_cols`) for each `use_cols`.
-        use_cols (`list`): Columns to parameterise. If None, pars are set up
-            for all columns apart from index cols. Not used if `typ`==`obs`.
-        suffix (`str`): Optional par name suffix. Not used if `typ`==`obs`.
-        zone_array (`np.ndarray`): Only used for parameters (`typ` != `obs`).
-            Array defining zone divisions.
-            If not None and `par_type` is `grid` or `zone` it is expected that
-            `index_cols` provide the indices for querying `zone_array`.
-            Therefore, array dimension should equal `len(index_cols)`.
-        get_xy (`pyemu.PstFrom` method): Can be specified to get real-world xy
-            from `index_cols` passed (to include in obs/par name)
-        ij_in_idx (`list` or `array`): defining which `index_cols` contain i,j
-        xy_in_idx (`list` or `array`): defining which `index_cols` contain x,y
-        zero_based (`boolean`): IMPORTANT - pass as False if `index_cols`
-            are NOT zero-based indices (e.g. MODFLOW row/cols).
-            If False 1 with be subtracted from `index_cols`.=
-        par_fill_value (float): value to use as `parval1`,Default is 1.0
-
-    Returns:
-        if `typ`==`obs`: pandas.DataFrame with index strings for setting up obs
-        names when passing through to
-        pyemu.pst_utils.csv_to_ins_file(df.set_index('idx_str')
-
-        else: pandas.DataFrame with paranme and pargroup define for each `use_col`
-
-    """
+def _get_idxdf(df, index_cols,
+               zero_based=True,
+               get_xy=None,
+               ij_in_idx=None,
+               xy_in_idx=None,
+               action_duplicates='ignore',
+               logger=None,
+               ):
     from pyemu.utils.helpers import _try_pdcol_numeric
-    if isinstance(dfs, pd.DataFrame):
-        dfs = [dfs]
-    if not isinstance(dfs, list):
-        dfs = list(dfs)
+    if isinstance(df, pd.DataFrame):
+        df = [df]
+    if not isinstance(df, list):
+        df = list(df)
 
     # work out the union of indices across all dfs
     # order matters for obs
-    idxs = [df[index_cols] for df in dfs]
-    df_ti = pd.concat(idxs).drop_duplicates()
+    idxs = [d[index_cols] for d in df]
+    idxdf = pd.concat(idxs, ignore_index=True)
     # adjust int-like indices to zero-base
-    df_ti = df_ti.apply(_try_pdcol_numeric,
+    idxdf = idxdf.apply(_try_pdcol_numeric,
                         intadj=0 if zero_based else -1,
                         downcast='integer')
-    df_ti['sidx'] = list(zip(*[df_ti[c] for c in index_cols]))
-    # df_ti = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
+    idxdf['sidx'] = list(zip(*[idxdf[c] for c in index_cols]))
+    # idxdf = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
     # inames, fmt = _get_index_strfmt(index_cols)
-    df_ti = _get_index_strings(df_ti, index_cols)
-    df_ti = _getxy_from_idx(df_ti, index_cols, get_xy, xy_in_idx, ij_in_idx)
-
-    if typ == "obs":
-        return df_ti  #################### RETURN if OBS
-    df_ti = _build_parnames(
-        df_ti,
-        typ,
-        zone_array,
-        index_cols,
-        use_cols,
-        name,
-        gpname,
-        suffix,
-        par_style,
-        fill_value=par_fill_value,
-    )
-    return df_ti
+    idxdf = _get_index_strings(idxdf, index_cols)
+    idxdf = _getxy_from_idx(idxdf, index_cols, get_xy, xy_in_idx, ij_in_idx)
+    # check for duplicates and deal with them
+    dups = idxdf.loc[idxdf.duplicated()]
+    if not dups.empty:
+        wstr = "Duplicate indices found in input dataframes:\n {0}".format(dups)
+        if action_duplicates == 'raise':
+            raise ValueError(wstr)
+        else:
+            wstr += ("\nMay cause issues with parameterisation or obs tracking\n"
+                     "A single par may be applied across all duplicates.")
+            action = PyemuWarning(wstr)
+            if logger is None:
+                warnings.warn(action)
+            else:
+                logger.warn(action)
+        if action_duplicates == 'drop':
+            idxdf = idxdf.drop_duplicates()
+    return idxdf
 
 
 def write_array_tpl(
@@ -4174,3 +4015,21 @@ def get_relative_filepath(folder, filename):
     return path for filename relative to folder.
     """
     return get_filepath(folder, filename).relative_to(folder)
+
+
+def extract_function_source(file_path, function_name):
+    with open(file_path, "r") as f:
+        source = f.read()
+
+    # parse tree
+    tree = ast.parse(source, filename=file_path)
+    lines = source.splitlines(keepends=True)
+
+    # search tree for the function definition
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == function_name:
+            start = node.lineno - 1  # lineno is 1-based
+            end = node.end_lineno
+            return lines[start:end]
+
+    raise ValueError(f"Function '{function_name}' not found in {file_path}.")

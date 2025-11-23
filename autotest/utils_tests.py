@@ -11,37 +11,15 @@ sys.path.append("..")
 import pyemu
 from pst_from_tests import _get_port
 
-ext = ''
-local_bins = False  # change if wanting to test with local binary exes
-if local_bins:
-    bin_path = os.path.join("..", "..", "bin")
-    if "linux" in platform.system().lower():
-        pass
-        bin_path = os.path.join(bin_path, "linux")
-    elif "darwin" in platform.system().lower():
-        pass
-        bin_path = os.path.join(bin_path, "mac")
-    else:
-        bin_path = os.path.join(bin_path, "win")
-        ext = '.exe'
-else:
-    bin_path = ''
-    if "windows" in platform.system().lower():
-        ext = '.exe'
+from conftest import full_exe_ref_dict
 
-mf_exe_path = os.path.join(bin_path, "mfnwt")
-mt_exe_path = os.path.join(bin_path, "mt3dusgs")
-usg_exe_path = os.path.join(bin_path, "mfusg_gsi")
-mf6_exe_path = os.path.join(bin_path, "mf6")
-pp_exe_path = os.path.join(bin_path, "pestpp-glm")
-ies_exe_path = os.path.join(bin_path, "pestpp-ies")
-mou_exe_path = os.path.join(bin_path, "pestpp-mou")
-swp_exe_path = os.path.join(bin_path, "pestpp-swp")
-
-mf_exe_name = os.path.basename(mf_exe_path)
-mf6_exe_name = os.path.basename(mf6_exe_path)
-
-
+exepath_dict = full_exe_ref_dict()
+ies_exe_path = exepath_dict['pestpp-ies']
+mf_exe_path = exepath_dict['mfnwt']
+mf6_exe_path = exepath_dict['mf6']
+pp_exe_path = exepath_dict['pestpp-glm']
+usg_exe_path = exepath_dict["mfusg_gsi"]
+mou_exe_path = exepath_dict["pestpp-mou"]
 
 def add_pi_obj_func_test(tmp_path):
     import os
@@ -81,6 +59,20 @@ def fac2real_test(tmp_path):
     # p = plt.imshow(diff,interpolation='n')
     # plt.colorbar(p)
     # plt.show()
+
+def fac2real_wrapped_test(tmp_path):
+    import os
+    import numpy as np
+    # pp_file = os.path.join("utils","points1.dat")
+    # factors_file = os.path.join("utils","factors1.dat")
+    # pyemu.utils.gw_utils.fac2real(pp_file,factors_file,
+    #                               out_file=os.path.join("utils","test.ref"))
+
+    pp_file = os.path.join("misc", "pp.pts")
+    factors_file = os.path.join("misc", "pp.fac")
+    pyemu.geostats.fac2real(pp_file, factors_file,
+                            out_file=os.path.join(tmp_path, "test.ref"))
+
 
 
 def vario_test():
@@ -547,23 +539,27 @@ def kl_test(tmp_path):
     sr = pyemu.helpers.SpatialReference(delc=ml.dis.delc.array,delr=ml.dis.delr.array)
     bd = os.getcwd()
     os.chdir(tmp_path)
-    df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=sr,
-                                             struct=str_file,
-                                             factors_file=factors_file,
-                                             basis_file=basis_file,
-                                            prefixes=prefixes,islog=False,
-                                      tpl_dir='.')
+    try:
+        df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=sr,
+                                          struct=str_file,
+                                          factors_file=factors_file,
+                                          basis_file=basis_file,
+                                          prefixes=prefixes, islog=False,
+                                          tpl_dir='.')
 
-    basis = pyemu.Matrix.from_binary(basis_file)
-    basis = basis[:,:num_eig]
-    arr_tru = np.atleast_2d(arr_tru.flatten()).transpose()
-    proj = np.dot(basis.T.x,arr_tru)[:num_eig]
-    #proj.autoalign = False
-    back = np.dot(basis.x, proj)
+        basis = pyemu.Matrix.from_binary(basis_file)
+        basis = basis[:, :num_eig]
+        arr_tru = np.atleast_2d(arr_tru.flatten()).transpose()
+        proj = np.dot(basis.T.x, arr_tru)[:num_eig]
+        # proj.autoalign = False
+        back = np.dot(basis.x, proj)
 
-    back = back.reshape(ml.nrow,ml.ncol)
-    df.parval1 = proj
-    arr = pyemu.geostats.fac2real(df,factors_file,out_file=None)
+        back = back.reshape(ml.nrow, ml.ncol)
+        df.parval1 = proj
+        arr = pyemu.geostats.fac2real(df, factors_file, out_file=None)
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
 
     fig = plt.figure(figsize=(10, 10))
@@ -803,32 +799,41 @@ def mtlist_budget_test(tmp_path):
     list_filename = "mt3d.list"
     bd = Path.cwd()
     os.chdir(tmp_path)
-    assert os.path.exists(list_filename)
-    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename,start_datetime='1-1-1970')
-    assert len(ins_files) == 2
+    try:
+        assert os.path.exists(list_filename)
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime='1-1-1970')
+        assert len(ins_files) == 2
 
-    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename,start_datetime='1-1-1970', gw_prefix='')
-    assert len(ins_files) == 2
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime='1-1-1970', gw_prefix='')
+        assert len(ins_files) == 2
 
-    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename, start_datetime=None)
-    assert len(ins_files) == 2
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime=None)
+        assert len(ins_files) == 2
 
-    list_filename = "mt3d_imm_sor.lst"
-    assert os.path.exists(list_filename)
-    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
-        list_filename, start_datetime='1-1-1970')
+        list_filename = "mt3d_imm_sor.lst"
+        assert os.path.exists(list_filename)
+        frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(
+            list_filename, start_datetime='1-1-1970')
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
 
 
+@pytest.mark.timeout(method='thread', timeout=90)
 def geostat_prior_builder_test(tmp_path):
     import os
     import numpy as np
     import pyemu
     import pandas as pd
-    pst_file = os.path.join("pst","pest.pst")
+    for fname in [Path("pst", "pest.pst"),
+                  Path("utils", "pp_locs.tpl"),
+                  Path("utils", "structure.dat")]:
+        shutil.copy(fname, tmp_path)
+    pst_file = os.path.join(tmp_path, "pest.pst")
     pst = pyemu.Pst(pst_file)
     # print(pst.parameter_data)
     o_tpl_file = os.path.join("utils", "pp_locs.tpl")
@@ -910,6 +915,7 @@ def geostat_draws_test(tmp_path):
     np.random.seed(pyemu.en.SEED)
     pe2 = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
                                           sigma_range=4)
+    pe.to_csv(os.path.join(os.path.join("utils","geostat_pe.csv")))
 
     diff = pe - pe2
     print(diff.max())
@@ -2212,7 +2218,10 @@ def geostat_prior_builder2_test(tmp_path):
     import os
     import numpy as np
     import pyemu
-    pst_file = os.path.join("pst","pest.pst")
+    for fname in [Path("pst", "pest.pst"),
+                  Path("utils", "pp_locs.tpl")]:
+        shutil.copy(fname, tmp_path)
+    pst_file = os.path.join(tmp_path, "pest.pst")
     pst = pyemu.Pst(pst_file)
 
     o_tpl_file = os.path.join("utils", "pp_locs.tpl")
@@ -2506,12 +2515,20 @@ def test_fake_frun(tmp_path):
     pyemu.os_utils.run(f"{ies_exe_path} fake.pst", cwd=pf.new_d)
     bd = Path.cwd()
     os.chdir(pf.new_d)
-    pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
+    try:
+        pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
+    except Exception as e:
+        os.chdir(bd)
+        raise e
     os.chdir(bd)
     pyemu.os_utils.run(f"{ies_exe_path} fake.pst", cwd=pf.new_d, use_sp=True)
     os.chdir(pf.new_d)
-    pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
-
+    try:
+        pyemu.utils.calc_array_par_summary_stats("mult2model_info.csv")
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
 
 def obs_ensemble_quantile_test():
     import os
@@ -2595,7 +2612,7 @@ def test_ppu_import():
     import pypestutils as ppu
 
 
-
+@pytest.mark.timeout(method="thread")
 def ppu_geostats_test(tmp_path):
     import sys
     import os
@@ -2629,16 +2646,19 @@ def ppu_geostats_test(tmp_path):
     par_info_unrot.loc[:,"parval1"] = np.random.uniform(10,100,par_info_unrot.shape[0])
     gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0,anisotropy=3.0,bearing=45))
     ok = pyemu.geostats.OrdinaryKrige(gs,par_info_unrot)
-    ppu_factor_filename = os.path.join("utils","ppu_factors.dat")
-    pyemu_factor_filename = os.path.join("utils", "pyemu_factors.dat")
+    ppu_factor_filename = Path(tmp_path, "ppu_factors.dat")
+    pyemu_factor_filename = Path(tmp_path, "pyemu_factors.dat")
 
     ok.calc_factors_grid(sr, try_use_ppu=False)
     ok.to_grid_factors_file(pyemu_factor_filename)
-    ok.calc_factors_grid(sr,try_use_ppu=True,ppu_factor_filename=ppu_factor_filename)
-    out_file = os.path.join("utils","pyemu_array.dat")
-    pyemu.geostats.fac2real(par_info_unrot,pyemu_factor_filename,out_file=out_file)
-    out_file_ppu = os.path.join("utils", "ppu_array.dat")
-    pyemu.geostats.fac2real(par_info_unrot, ppu_factor_filename, out_file=out_file_ppu)
+    ok.calc_factors_grid(sr, try_use_ppu=True,
+                         ppu_factor_filename=ppu_factor_filename)
+    out_file = Path(tmp_path, "pyemu_array.dat")
+    pyemu.geostats.fac2real(par_info_unrot,
+                            pyemu_factor_filename, out_file=out_file)
+    out_file_ppu = Path(tmp_path, "ppu_array.dat")
+    pyemu.geostats.fac2real(par_info_unrot,
+                            ppu_factor_filename, out_file=out_file_ppu)
     arr_ppu = np.loadtxt(out_file_ppu)
     arr = np.loadtxt(out_file)
     diff = 100 * np.abs(arr - arr_ppu) / np.abs(arr)
@@ -2685,17 +2705,20 @@ def ppw_worker(id_num,case,t_d,host,port,frun):
         #print("worker",id_num,"finished run",ppw.net_pack.runid)
    
 
-
-def pypestworker_test():
+@pytest.mark.timeout(method="thread")
+def test_pypestworker(tmp_path):
     from datetime import datetime
     import numpy as np
     import subprocess as sp
     import multiprocessing as mp
+    import sys
+    import time
+
     host = "localhost"
-    port = 4004
+    port = 4111
     case = "constr"
     org_d = os.path.join("utils","{0}_template".format(case))
-    t_d = "{0}_ppw_template".format(case)
+    t_d = Path(tmp_path, "{0}_ppw_template".format(case))
     if os.path.exists(t_d):
         shutil.rmtree(t_d)
     shutil.copytree(org_d,t_d)
@@ -2706,48 +2729,71 @@ def pypestworker_test():
     pst.pestpp_options["overdue_giveup_fac"] = 1e10
     pst.pestpp_options["overdue_resched_fac"] = 1e10
     
-    pst.control_data.noptmax = 5
+    pst.control_data.noptmax = 2
     pst.write(os.path.join(t_d,"{0}.pst".format(case)),version=2)
-    import sys
-    sys.path.insert(0,t_d)
+    sys.path.insert(1, t_d.as_posix())
     from forward_run import helper as frun
 
-    m_d = "{0}_ppw_master".format(case)
-    
+    m_d = tmp_path / "{0}_ppw_master".format(case)
+
     if os.path.exists(m_d):
         shutil.rmtree(m_d)
     shutil.copytree(t_d,m_d)
-    
+
     # start the master
     start = datetime.now()
     b_d = os.getcwd()
     os.chdir(m_d)
-    p = sp.Popen([mou_exe_path,"{0}.pst".format(case),"/h",":{0}".format(port)])
+    try:
+        p = sp.Popen([mou_exe_path, "{0}.pst".format(case), "/h", ":{0}".format(port)], stderr=sp.PIPE)
+    except Exception as e:
+        print("failed to start master process")
+        os.chdir(b_d)
+        raise e
     os.chdir(b_d)
     #p.wait()
     #return
 
     num_workers=5
-    
+
     # looper over and start the workers - in this
     # case they dont need unique dirs since they aren't writing
     # anything
+    # little pause to let master get going (and possibly fail)
+    time.sleep(5)
     procs = []
     for i in range(num_workers):
-        pp = mp.Process(target=ppw_worker,args=(i,case,t_d,host,port,frun))
-        pp.start()
-        procs.append(pp)
-    # if everything worked, the the workers should receive the 
+        # check master still running before deploying worker
+        if p.poll() is not None:
+            err = p.stderr.read()
+            raise RuntimeError("master process failed before all workers started:\n\n"+
+                               err.decode())
+        try:  # make sure we kill the master if worker startup returns an error
+            pp = mp.Process(target=ppw_worker,args=(i,case,t_d,host,port,frun))
+            # procs.append(pp)
+            pp.start()
+            procs.append(pp)
+        except Exception as e:
+            print("failed to start worker {0}".format(i))
+            p.terminate()
+            raise e
+    # if everything worked, the workers should receive the
     # shutdown signal from the master and exit gracefully...
-    for pp in procs:
-        pp.join()
+    for i, pp in enumerate(procs):
+        try:  # make sure we kill the master if worker startup returns an error
+            pp.join()
+        except Exception as e:
+            print(f"exception thrown by worker {i}")
+            p.terminate()
+            raise e
 
     # wait for the master to finish...but should already be finished
     p.wait()
+
     finish = datetime.now()
     print("all done, took",(finish-start).total_seconds())
-
-    m_d2 = m_d+"_base"
+    # pop sys.path change (just in case it persists)
+    sys.path.pop(1)
     start2 = datetime.now()
     #pyemu.os_utils.start_workers(t_d,mou_exe_path,"{0}.pst".format(case),num_workers=num_workers,worker_root='.',master_dir=m_d2)
     pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=t_d)
@@ -2763,9 +2809,7 @@ def pypestworker_test():
     print(diff2.max())
     assert diff1.max() < 1.0e-6
     assert diff2.max() < 1.0e-6
-    
-    
-    
+
 
 def gpr_compare_invest():
     import numpy as np
@@ -2812,7 +2856,7 @@ def gpr_compare_invest():
 
     pst_fname = os.path.join(m_d,case+".pst")
     gpr_t_d = os.path.join(case+"_gpr_template")
-    pyemu.helpers.prep_for_gpr(pst_fname,dv_pops,obs_pops,gpr_t_d=gpr_t_d,nverf=int(pop_size*.1),\
+    pyemu.helpers.prep_for_gpr(pst_fname,dv_pops,obs_pops,t_d=m_d,gpr_t_d=gpr_t_d,nverf=int(pop_size*.1),\
                                plot_fits=True,apply_standard_scalar=False,include_emulated_std_obs=True)
     gpst = pyemu.Pst(os.path.join(gpr_t_d,case+".pst"))
     shutil.copy2(os.path.join(m_d,case+".0.dv_pop.csv"),os.path.join(gpr_t_d,"initial_dv_pop.csv"))
@@ -2915,7 +2959,7 @@ def gpr_compare_invest():
         dv_pops.append(os.path.join(complex_m_d_iter,case+".0.dv_pop.csv"))
         obs_pops.append(os.path.join(complex_m_d_iter,case+".0.obs_pop.csv"))
         gpr_t_d_iter = gpr_t_d+"_outeriter{0}".format(iouter)
-        pyemu.helpers.prep_for_gpr(pst_fname,dv_pops,obs_pops,gpr_t_d=gpr_t_d_iter,nverf=int(pop_size*.1),
+        pyemu.helpers.prep_for_gpr(pst_fname,dv_pops,obs_pops,t_d=gpr_t_d,gpr_t_d=gpr_t_d_iter,nverf=int(pop_size*.1),
                                    plot_fits=True,apply_standard_scalar=False,include_emulated_std_obs=True)
         gpst_iter = pyemu.Pst(os.path.join(gpr_t_d_iter,case+".pst"))
         #aggdf = pd.read_csv(os.path.join(gpr_t_d,"gpr_aggregate_training_data.csv"),index_col=0)
@@ -2975,7 +3019,7 @@ def gpr_constr_invest():
 
     pst_fname = os.path.join(m_d, case + ".pst")
     gpr_t_d = os.path.join(case + "_gpr_template")
-    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
+    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops,t_d=m_d, gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
                                plot_fits=True, apply_standard_scalar=False, include_emulated_std_obs=True)
     gpst = pyemu.Pst(os.path.join(gpr_t_d, case + ".pst"))
     #shutil.copy2(os.path.join(m_d, case + ".0.dv_pop.csv"), os.path.join(gpr_t_d, "initial_dv_pop.csv"))
@@ -3090,7 +3134,7 @@ def gpr_constr_invest():
         dv_pops.append(os.path.join(complex_m_d_iter, case + ".0.dv_pop.csv"))
         obs_pops.append(os.path.join(complex_m_d_iter, case + ".0.obs_pop.csv"))
         gpr_t_d_iter = gpr_t_d + "_outeriter{0}".format(iouter)
-        pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, gpr_t_d=gpr_t_d_iter, nverf=int(pop_size * .1),
+        pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, t_d=gpr_t_d,gpr_t_d=gpr_t_d_iter, nverf=int(pop_size * .1),
                                    plot_fits=True, apply_standard_scalar=False, include_emulated_std_obs=True)
         gpst_iter = pyemu.Pst(os.path.join(gpr_t_d_iter, case + ".pst"))
         # aggdf = pd.read_csv(os.path.join(gpr_t_d,"gpr_aggregate_training_data.csv"),index_col=0)
@@ -3110,7 +3154,7 @@ def gpr_constr_invest():
     #assert 1.0 in psum.obj_2.values
     
 
-def gpr_zdt1_test():
+def gpr_zdt1_invest():
     import numpy as np
     import subprocess as sp
     import multiprocessing as mp
@@ -3158,10 +3202,10 @@ def gpr_zdt1_test():
     m_d = t_d
     dv_pops = [os.path.join(m_d, "{0}.0.dv_pop.csv".format(case))]
     obs_pops = [f.replace("dv_", "obs_") for f in dv_pops]
-
+ 
     pst_fname = os.path.join(m_d, case + ".pst")
     gpr_t_d = os.path.join(case + "_gpr_template")
-    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
+    pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops,t_d=m_d,gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
                                plot_fits=True, apply_standard_scalar=False, include_emulated_std_obs=True)
     gpst = pyemu.Pst(os.path.join(gpr_t_d, case + ".pst"))
     shutil.copy2(os.path.join(m_d, case + ".0.dv_pop.csv"), os.path.join(gpr_t_d, "initial_dv_pop.csv"))
@@ -3176,26 +3220,25 @@ def gpr_zdt1_test():
     #                             master_dir=gpr_m_d, verbose=True, port=port)
     pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=gpr_t_d)
     gpr_m_d = gpr_t_d
-
+ 
     finish = datetime.now()
     duration1 = (finish - start).total_seconds()
     arcorg = pd.read_csv(os.path.join(gpr_m_d,"zdt1.archive.obs_pop.csv"),index_col=0)
     
-
+ 
     psum_fname = os.path.join(gpr_m_d,case+".pareto.archive.summary.csv")
     assert os.path.exists(psum_fname)
     psum = pd.read_csv(psum_fname)
     print(psum.obj_1.min())
     print(psum.obj_2.min())
-    assert psum.obj_1.min() < 0.05
-
+    assert psum.obj_1.min() < 0.05 
     gpr_t_d2 = gpr_t_d + "_ppw"
     if os.path.exists(gpr_t_d2):
         shutil.rmtree(gpr_t_d2)
     shutil.copytree(gpr_t_d,gpr_t_d2)
-
+ 
     gpr_m_d2 = gpr_t_d2.replace("template","master")
-
+ 
     input_df = pd.read_csv(os.path.join(gpr_t_d2,"gpr_input.csv"),index_col=0)
     mdf = pd.read_csv(os.path.join(gpr_t_d2,"gprmodel_info.csv"),index_col=0)
     mdf["model_fname"] = mdf.model_fname.apply(lambda x: os.path.join(gpr_t_d2,x))
@@ -3210,8 +3253,7 @@ def gpr_zdt1_test():
     diff = np.abs(arcppw.values - arcorg.values)
     print(diff.max())
     assert diff.max() < 1e-6
-        
-
+         
     start = datetime.now()
     b_d = os.getcwd()
     os.chdir(gpr_t_d2)
@@ -3234,13 +3276,13 @@ def gpr_zdt1_test():
     # shutdown signal from the master and exit gracefully...
     for pp in procs:
         pp.join()
-
+ 
     # wait for the master to finish...but should already be finished
     p.wait()
     finish = datetime.now()
     print("ppw` took",(finish-start).total_seconds())
     print("org took",duration1)
-
+ 
     arcppw = pd.read_csv(os.path.join(gpr_t_d2,"zdt1.archive.obs_pop.csv"),index_col=0)
     diff = np.abs(arcppw.values - arcorg.values)
     print(diff.max())
@@ -3256,8 +3298,73 @@ def gpr_zdt1_ppw():
     os.chdir("..")
 
 
+def pestpp_runstorage_file_test(tmp_path):
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    org_rns_file = os.path.join("utils","runstor.rns")
+    rns_file = os.path.join(tmp_path,"runstor.rns")
+    if os.path.exists(rns_file):
+        os.remove(rns_file)
+    shutil.copy2(org_rns_file,rns_file)
+    rs = pyemu.helpers.RunStor(rns_file)
+    header,par_names,obs_names = rs.file_info(rns_file)
+    cols = ["n_runs","run_size","p_name_size","o_name_size","run_start"]
+    for col in cols:
+        assert col in header
+        assert header[col] > 0
+    df = rs.get_data()
+    assert "run_status_label" in df.columns
+    assert np.all(df.run_pos.values>0)
+
+    for entry in df.info_txt:
+        assert len(str(entry)) > 0
+        assert "realization:" in entry
+        assert "da_cycle:-9999" in entry
+    assert df.run_status.sum() == 0
+    org_df = df.copy()
+    df["run_status"] = -100
+    df.loc[:,par_names[0]] = -111
+    df.loc[:,obs_names[-1]] = -222
+    df["buffer_status"] = 1
+    #df.loc[0,par_names] = -1111
+    rs.update(df)
+    rs2 = pyemu.helpers.RunStor(rns_file)
+    header,par_names,obs_names = rs.file_info(rns_file)
+    #print(header)
+    df2 = rs2.get_data()
+    #print(df2.shape)
+    assert df.shape == df2.shape
+    #print(df2.run_status_label)
+    assert np.all(df2.run_status.values == -100)
+
+    print(df2.loc[:,par_names[0]])
+    assert np.all(df2.loc[:,par_names[0]].values == -111)
+    print(df2.loc[:, obs_names[-1]])
+    assert np.all(df2.loc[:,obs_names[-1]].values == -222)
+    print(df2.buffer_status)
+    #buffer status should always be 0 no matter what values are put in the dataframe
+    assert df2.buffer_status.sum() == 0
+    rs2.update(org_df)
+    p1,o1,meta = pyemu.helpers.read_pestpp_runstorage(rns_file,irun="all", with_metadata=True)
+
+    p2 = pd.read_csv(os.path.join("utils","runstor.0.par.csv"),index_col=0)
+
+    diff = np.abs(p1.loc[:,p2.columns].values - p2.values)
+    print(diff.max())
+    assert diff.max() < 1.0e-7
+
+
 if __name__ == "__main__":
+    pestpp_runstorage_file_test(".")
+    #geostat_draws_test('.')
+    #fac2real_wrapped_test('.')
+    #maha_pdc_test('.')
     #ppu_geostats_test(".")
+    #pypestworker_test()
+    #gpr_zdt1_test()
     #gpr_compare_invest()
     #gpr_constr_test()
     # import sys
@@ -3267,7 +3374,7 @@ if __name__ == "__main__":
     # from forward_run import helper as frun
     # ppw_worker(0,case,t_d,"localhost",4004,frun)
     #pypestworker_test()
-    gpr_constr_test()
+    # gpr_constr_test()
     #gpr_zdt1_test()
     #ac_draw_test(".")
     #while True:
