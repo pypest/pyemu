@@ -2,6 +2,7 @@
 import os
 import numpy as np
 import pandas as pd
+from scipy import ndimage
 import warnings
 from datetime import datetime
 import string
@@ -2093,7 +2094,7 @@ def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
     Examples
     --------
     >>> visualize_tensors(tensors, xcentergrid, ycentergrid,
-    ...                  zones=zones, subsample=8, max_ellipse_size=0.05)
+    ...                  zones=zones, subsample=12, max_ellipse_size=0.05)
     """
     from matplotlib.patches import Ellipse
     from matplotlib.patches import Rectangle
@@ -2358,26 +2359,34 @@ def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
 
 
 def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
-                   transform=None, title_suf=None, save_path='nsaf_visualization.png'):
+                   transform=None, domain=None, title_suf=None,
+                   save_path='nsaf_visualization.png'):
     # Apply transform if specified
-    field = np.where(results['fields'][0] == 0, np.nan, results['fields'][0])
-    sd = np.where(results['fields'][0] == 0, np.nan, results['sd'])
-    mean = np.where(results['fields'][0] == 0, np.nan, results['mean'])
+    field = results['field']
+    sd = results['sd']
+    mean = results['mean']
+    if domain is not None:
+        field = np.where(domain == 0, np.nan, results['field'])
+        sd = np.where(domain == 0, np.nan, results['sd'])
+        mean = np.where(domain == 0, np.nan, results['mean'])
     if transform == 'log':
         field = np.log10(field)
         sd = np.log10(sd)
         mean = np.log10(mean)
-        field_label = 'log10(Field)'
+        field_label = f'log10({title_suf})'
     else:
         field_label = 'Field'
 
     # Visualize results
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    vmin = -4
+    vmax = 4
 
     # Field with conceptual points using real coordinates
     im1 = axes[0, 0].imshow(field, origin='upper', cmap='RdYlBu_r',
                             extent=[xcentergrid.min(), xcentergrid.max(),
-                                    ycentergrid.min(), ycentergrid.max()])
+                                    ycentergrid.min(), ycentergrid.max()],
+                            vmin=vmin, vmax=vmax)
     for idx, row in cp_df.iterrows():
         x, y = row['x'], row['y']
 
@@ -2406,7 +2415,8 @@ def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
     # mean field
     im2 = axes[0, 1].imshow(mean, origin='upper', cmap='RdYlBu_r',
                             extent=[xcentergrid.min(), xcentergrid.max(),
-                                    ycentergrid.min(), ycentergrid.max()])
+                                    ycentergrid.min(), ycentergrid.max()],
+                            vmin=vmin, vmax=vmax)
     axes[0, 1].set_title(f'Mean field for {field_label} {title_suf or ""}')
     axes[0, 1].set_xlabel('X Coordinate')
     axes[0, 1].set_ylabel('Y Coordinate')
@@ -2415,29 +2425,29 @@ def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
     # sd field
     im3 = axes[1, 0].imshow(sd, origin='upper', cmap='RdYlBu_r', alpha=0.8,
                             extent=[xcentergrid.min(), xcentergrid.max(),
-                                    ycentergrid.min(), ycentergrid.max()])
+                                    ycentergrid.min(), ycentergrid.max()],
+                            vmin=vmin, vmax=vmax)
     axes[1, 0].set_title(f'Standard Deviation field for {field_label} {title_suf or ""}')
     axes[1, 0].set_xlabel('X Coordinate')
     axes[1, 0].set_ylabel('Y Coordinate')
     plt.colorbar(im3, ax=axes[1, 0], label=field_label)
 
-
     # Field statistics histogram
-    axes[1, 1].hist(field.flatten(), bins=50, alpha=0.7, color='purple', edgecolor='black')
+    axes[1, 1].hist(field.flatten(), bins=50, alpha=0.7, color='purple', edgecolor='black', range=(vmin, vmax))
     axes[1, 1].set_title(f'{field_label} Distribution')
     axes[1, 1].set_xlabel(f'{field_label} Value')
     axes[1, 1].set_ylabel('Frequency')
     axes[1, 1].grid(True, alpha=0.3)
 
     # Add statistics text
-    mean_val = np.mean(field)
-    std_val = np.std(field)
-    axes[1, 0].axvline(mean_val, color='red', linestyle='--', alpha=0.7, label=f'Mean: {mean_val:.3f}')
-    axes[1, 0].axvline(mean_val + std_val, color='orange', linestyle='--', alpha=0.7,
-                       label=f'+1σ: {mean_val + std_val:.3f}')
-    axes[1, 0].axvline(mean_val - std_val, color='orange', linestyle='--', alpha=0.7,
-                       label=f'-1σ: {mean_val - std_val:.3f}')
-    axes[1, 0].legend()
+    # mean_val = np.nanmean(field)
+    # std_val = np.nanstd(field)
+    # axes[1, 0].axvline(mean_val, color='red', linestyle='--', alpha=0.7, label=f'Mean: {mean_val:.3f}')
+    # axes[1, 0].axvline(mean_val + std_val, color='orange', linestyle='--', alpha=0.7,
+    #                    label=f'+1σ: {mean_val + std_val:.3f}')
+    # axes[1, 0].axvline(mean_val - std_val, color='orange', linestyle='--', alpha=0.7,
+    #                    label=f'-1σ: {mean_val - std_val:.3f}')
+    # axes[1, 0].legend()
 
     # Conceptual points layout - show bearing vectors in domain coordinates
     # axes[1, 1].set_xlim(xcentergrid.min(), xcentergrid.max())

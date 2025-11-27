@@ -21,25 +21,28 @@ if __name__ == "__main__":
     import time
     start_time = time.perf_counter()
 
-    model_name = 'hpm_mf6'
-    data_dir = r'..\..\examples\HBHP\hpm_mf6'
+    model_name = 'waq_arr'
+    data_dir = r'..\..\examples\Wairau\waq_arr'
     # need to ensure proper name structure for zone files here
-    zone_files = None #[f'{model_name}.geoclass_layer{i+1}.arr' for i in range(0,13)]
-    con_pts_file = 'Bridgpa_HU2_sva.csv'
-    save_dir = os.path.join(data_dir)
+    zone_files = {}
+    for i in range(0, 13):
+        zone_files[i] = f'{model_name}.geoclass_layer{i+1}.arr'
+    con_pts_file = 'conceptual_points.csv'
 
+    save_dir = os.path.join(data_dir)
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
 
     nsaf_helpers.generate_fields_from_files(data_dir, model_name, con_pts_file,
-                                            zone_file=zone_files,
+                                            zone_files=zone_files,
                                             field_name=['kh'],
                                             layer_mode=True,
                                             save_dir=save_dir,
                                             tensor_interp='idw',
-                                            boundary_smooth={'transition_cells': 5},
-                                            boundary_enhance={'transition_cells': 5,
-                                                              'peak_increase': 0.1}
+                                            transform=['log'],
+                                            boundary_smooth={'transition_cells': 2},
+                                            boundary_enhance={'transition_cells': 2,
+                                                              'peak_increase': 2.0}
                                             )
 
 

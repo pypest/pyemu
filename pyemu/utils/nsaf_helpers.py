@@ -9,20 +9,20 @@ import os
 # Import from refactored nsaf_utils
 from nsaf_utils import (
     generate_single_layer,
-    detect_zone_boundaries,
-    _extract_grid_info,
-    arr_to_rast
+    _detect_zone_boundaries,
+    _extract_grid_info
 )
 
 
 def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
-                               zone_file=None, iids_file=None, field_name=['field'],
+                               zone_files=None, iid_files=None, field_name=['field'],
                                layer_mode=True, save_dir=None, tensor_interp='krig',
                                transform='log', n_realizations=1, ml=None, sr=None,
-                               boundary_enhance=False, boundary_smooth=False):
+                               boundary_enhance=False, boundary_smooth=False,
+                               cp_0based=False, use_depth=False):
     """
-    Generate spatially correlated fields using tensor-based geostatistics.
-    REFACTORED to use modelgrid consistently and call generate_single_layer.
+    Generate spatially correlated fields using tensor-based geostatistics
+    from modelgrid and files, call generate_single_layer for each layer.
 
     Parameters
     ----------
@@ -31,13 +31,24 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
     model_name : str
         Name of the flopy model (e.g., 'freyberg6')
     conceptual_points_file : str
-        CSV file containing conceptual points
-    zone_file : str or list of str, optional
-        zone file(s)
-    iids_file : str or list of str, optional
-        noise file(s)
-    field_name : list of str, default ['field']
-        Name(s) of field(s) to generate
+        CSV file containing conceptual point locations and parameters
+    zone_files : None, str, or dict, optional
+        Zone file(s). Can be:
+        - None: uses modelgrid.idomain
+        - str: pattern with {} placeholder, e.g., 'zones_layer{}.arr' (replaced with 0-based layer number)
+        - dict: explicit mapping of 0-based layer numbers to filenames, e.g., {0: 'zone_layer0.arr', 1: 'zone_layer1.arr'}
+        If dict is provided, it must contain entries for all layers (will error if layers are missing).
+    iid_files : None, str, or dict, optional
+        IID file(s) containing noise arrays. Can be:
+        - None: generates default files 'iids_layer{n}.arr' where n is 0-based layer number
+        - str: pattern with {} placeholder, e.g., 'iids_layer{}.arr' (replaced with 0-based layer number)
+        - dict: explicit mapping of 0-based layer numbers to filenames, e.g., {0: 'iid_layer0.arr', 1: 'iid_layer1.arr'}
+        If dict is provided, it must contain entries for all layers (will error if layers are missing).
+        If files don't exist, they will be generated and saved.
+    field_name : list of str, optional, default ['field']
+        Name(s) of field(s) to generate. Looks for field-specific mean/sd columns
+        (e.g., 'mean_{field}' or '{field}_mean'). If empty/None, uses generic
+        'mean' and 'sd' columns instead.
     layer_mode : bool, default True
         If True, process each layer independently
     save_dir : str, optional
@@ -52,17 +63,30 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
         A flopy mbase derived type. If None, sr must not be None.
     sr : flopy.utils.reference.SpatialReference, optional
         A spatial reference to locate the model grid. If None, ml must not be None.
+    boundary_enhance : bool, default False
+        Whether to enhance boundaries in field generation
+    boundary_smooth : bool, default False
+        Whether to smooth boundaries in field generation
+    cp_0based : bool, default False
+        If False (default), conceptual points 'layer' column uses 1-based indexing (MODFLOW convention)
+        and will be converted to 0-based internally. If True, 'layer' column is already 0-based.
+    use_depth : bool, default False
+        If True, use 'z' or 'depth' coordinate from conceptual points to determine layer by
+        intersecting with model grid. Requires gridit package. Not yet implemented.
 
     Returns
     -------
     dict
-        fieldresult from workflow
+        Dictionary of results for each field and layer, keyed by '{field}_layer{n}' where n is 0-based
     """
     try:
         import flopy
         import pyemu
     except ImportError as e:
         raise ImportError(f"flopy and pyemu are required: {e}")
+
+    if use_depth:
+        raise NotImplementedError("use_depth=True requires gridit package integration - not yet implemented")
 
     print(f"=== Tensor-Based Field Generation ===")
     print(f"Model workspace: {tmp_model_ws}")
@@ -110,29 +134,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
     if 'transverse' not in conceptual_points.columns and 'anisotropy' in conceptual_points.columns:
         conceptual_points['transverse'] = conceptual_points['major'] / conceptual_points['anisotropy']
 
-    # Load zones
-    zones = modelgrid.idomain
-    if zone_file:
-        if isinstance(zone_file, str):
-            zones = np.loadtxt(os.path.join(tmp_model_ws, zone_file)).astype(np.int64)
-            if zones.shape != (ny, nx):
-                if zones.size == ny * nx:
-                    zones = zones.reshape(ny, nx)
-                else:
-                    raise ValueError(f"Zone file shape {zones.shape} doesn't match grid {(ny, nx)}")
-            print(f"Loaded zones from {zone_file}, shape: {zones.shape}")
-        else:
-            # Handle list of zone files for multiple layers
-            zones = []
-            for zf in zone_file:
-                z = np.loadtxt(os.path.join(tmp_model_ws, zf)).astype(np.int64)
-                if z.shape != (ny, nx):
-                    if z.size == ny * nx:
-                        z = z.reshape(ny, nx)
-                zones.append(z)
-            print(f"Loaded {len(zones)} zone arrays from multiple files")
-
-    # Determine layers
+    # Determine total layers
     if hasattr(ml, 'dis'):
         if hasattr(ml.dis, 'nlay'):
             total_layers = ml.dis.nlay.array if hasattr(ml.dis.nlay, 'array') else ml.dis.nlay
@@ -145,50 +147,188 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
 
     print(f"Model has {total_layers} layers")
 
-    # Handle layers in conceptual points
-    if 'layer' in conceptual_points.columns:
-        available_cp_layers = sorted(conceptual_points['layer'].unique())
-        print(f"Conceptual points available for layers: {available_cp_layers}")
-    else:
-        available_cp_layers = [1]
-        print("No 'layer' column in conceptual points - using layer 1")
+    # Handle layer assignment in conceptual points
+    if use_depth:
+        # Future implementation: use z/depth coordinate to intersect with grid
+        # This would call a function using gridit package
+        conceptual_points = _assign_layers_from_depth(conceptual_points, modelgrid)
+    elif 'layer' in conceptual_points.columns:
+        # Convert layer numbering to 0-based if needed
+        if not cp_0based:
+            print("Converting conceptual points 'layer' column from 1-based to 0-based indexing")
+            conceptual_points['layer'] = conceptual_points['layer'] - 1
+            print(f"  Layer range after conversion: [{conceptual_points['layer'].min()}, "
+                  f"{conceptual_points['layer'].max()}]")
 
-    # Generate or load IIDs for all model layers
-    iids_dict = {}
-    for layer_num in range(total_layers):
-        layer_1based = layer_num + 1
-        iids_dict[layer_1based] = _load_or_generate_iids(
-            tmp_model_ws, iids_file, layer_num, ny, nx, n_realizations
-        )
+        available_cp_layers = sorted(conceptual_points['layer'].unique())
+        print(f"Conceptual points available for layers (0-based): {available_cp_layers}")
+
+        # Validate layer numbers
+        if conceptual_points['layer'].min() < 0:
+            raise ValueError(f"Conceptual points contain negative layer numbers after conversion. "
+                             f"Check cp_0based parameter.")
+        if conceptual_points['layer'].max() >= total_layers:
+            raise ValueError(f"Conceptual points contain layer {conceptual_points['layer'].max()} "
+                             f"but model only has {total_layers} layers (0-{total_layers - 1})")
+    else:
+        available_cp_layers = [0]
+        conceptual_points['layer'] = 0
+        print("No 'layer' column in conceptual points - assigning all points to layer 0")
+
+    # Load zones
+    zone_paths = {}
+    if zone_files is None:
+        # Use modelgrid idomain for all layers
+        print("Using modelgrid.idomain for zones")
+        for layer_num in range(total_layers):
+            zone_paths[layer_num] = None  # Signal to use idomain
+    elif isinstance(zone_files, str):
+        # String pattern - must contain {} placeholder
+        if "{}" not in zone_files:
+            raise ValueError(f"zone_files pattern must contain '{{}}' placeholder, got: {zone_files}")
+        for layer_num in range(total_layers):
+            zone_paths[layer_num] = os.path.join(tmp_model_ws, zone_files.format(layer_num))
+    elif isinstance(zone_files, dict):
+        # Explicit dict mapping - must contain all layers
+        for layer_num in range(total_layers):
+            if layer_num not in zone_files:
+                raise ValueError(f"zone_files dict missing entry for layer {layer_num}. "
+                                 f"Dict must contain all layers 0-{total_layers - 1}")
+            zone_paths[layer_num] = os.path.join(tmp_model_ws, zone_files[layer_num])
+    else:
+        raise ValueError(f"zone_files must be None, str, or dict. Got: {type(zone_files)}")
+
+    # Load zone arrays
+    zones_dict = {}
+    for layer_num, zone_path in zone_paths.items():
+        if zone_path is None:
+            # Use idomain
+            if hasattr(modelgrid, 'idomain') and modelgrid.idomain is not None:
+                if len(modelgrid.idomain.shape) == 3:
+                    zones_dict[layer_num] = modelgrid.idomain[layer_num]
+                else:
+                    zones_dict[layer_num] = modelgrid.idomain
+            else:
+                zones_dict[layer_num] = None
+        else:
+            # Load from file
+            z = np.loadtxt(zone_path).astype(np.int64)
+            if z.shape != (ny, nx):
+                if z.size == ny * nx:
+                    z = z.reshape(ny, nx)
+                else:
+                    raise ValueError(f"Zone file {zone_path} shape {z.shape} doesn't match grid {(ny, nx)}")
+            zones_dict[layer_num] = z
+            print(f"  Loaded zones for layer {layer_num} from {os.path.basename(zone_path)}")
+
+        # Resolve file paths for iids
+        iids_dict = {}
+        if iid_files is None:
+            # No IID files specified - pass None to trigger FIELDGEN2D_SVA internal generation
+            print("No IID files specified - will use FIELDGEN2D_SVA internal random generation")
+            for layer_num in range(total_layers):
+                iids_dict[layer_num] = None
+        else:
+            # IID files specified - resolve paths and load/generate
+            iid_paths = {}
+            for layer_num in range(total_layers):
+                if isinstance(iid_files, str):
+                    # String pattern - must contain {} placeholder
+                    if "{}" not in iid_files:
+                        raise ValueError(f"iid_files pattern must contain '{{}}' placeholder, got: {iid_files}")
+                    iid_path = os.path.join(tmp_model_ws, iid_files.format(layer_num))
+                elif isinstance(iid_files, dict):
+                    # Explicit dict mapping - must contain all layers
+                    if layer_num not in iid_files:
+                        raise ValueError(f"iid_files dict missing entry for layer {layer_num}. "
+                                         f"Dict must contain all layers 0-{total_layers - 1}")
+                    iid_path = os.path.join(tmp_model_ws, iid_files[layer_num])
+                else:
+                    raise ValueError(f"iid_files must be None, str, or dict. Got: {type(iid_files)}")
+
+                iid_paths[layer_num] = iid_path
+
+            print(f"IID file paths resolved for {len(iid_paths)} layers")
+
+            # Now load or generate IIDs using the resolved paths
+            for layer_num, iid_path in iid_paths.items():
+                iids_dict[layer_num] = _load_or_generate_iids(
+                    iid_path, ny, nx, 1  # Single realization per call
+                )
 
     # Process each field
     all_results = {}
+    # If no field names provided, use generic columns once
+    if not field_name or len(field_name) == 0:
+        mean_candidates = [col for col in conceptual_points.columns if 'mean' in col.lower()]
+        sd_candidates = [col for col in conceptual_points.columns if 'sd' in col.lower()]
 
-    for fn in field_name:
-        print(f"\n=== Processing field: {fn} ===")
-
-        # SIMPLIFIED: Look for columns with field name pattern
-        mean_col = None
-        sd_col = None
-
-        # First, try field-specific columns
-        if f'mean_{fn}' in conceptual_points.columns:
-            mean_col = f'mean_{fn}'
-            sd_col = f'sd_{fn}'
-        elif f'{fn}_mean' in conceptual_points.columns:
-            mean_col = f'{fn}_mean'
-            sd_col = f'{fn}_sd'
+        if mean_candidates and sd_candidates:
+            mean_col = mean_candidates[0]
+            sd_col = sd_candidates[0]
+            print(f"Using generic columns: mean='{mean_col}', sd='{sd_col}'")
+            field_name = ['']  # Empty string for generic processing
         else:
-            # Look for generic columns
-            mean_candidates = [col for col in conceptual_points.columns if 'mean' in col.lower()]
-            sd_candidates = [col for col in conceptual_points.columns if 'sd' in col.lower()]
+            raise ValueError("No mean/sd columns found")
 
-            if mean_candidates and sd_candidates:
-                mean_col = mean_candidates[0]  # Use first match
-                sd_col = sd_candidates[0]
-                print(f"Using generic columns: mean='{mean_col}', sd='{sd_col}'")
+    # Process each specific field
+    for fn, trans in zip(field_name, transform):
+        print(f"\n=== Processing field: {fn if fn else 'generic'} ===")
+
+        # Try field-specific columns only if fn is not empty
+        if fn:  # If we have a specific field name
+            sd_is_log_space = False  # Default assumption
+
+            if trans == 'log':
+                # For log-transformed fields, prefer log-space sd columns
+                if f'mean_{fn}' in conceptual_points.columns:
+                    mean_col = f'mean_{fn}'
+                    # Look for log-space sd (multiple naming conventions)
+                    if f'logsd{fn}' in conceptual_points.columns:
+                        sd_col = f'logsd{fn}'
+                        sd_is_log_space = True
+                    elif f'log_sd_{fn}' in conceptual_points.columns:
+                        sd_col = f'log_sd_{fn}'
+                        sd_is_log_space = True
+                    elif f'sd_{fn}' in conceptual_points.columns:
+                        sd_col = f'sd_{fn}'
+                        sd_is_log_space = False
+                        print(f"  WARNING: Using native-space 'sd_{fn}' for log-transformed field '{fn}'. "
+                              f"Consider providing 'logsd{fn}' or 'log_sd_{fn}' instead for better interpretation.")
+                    else:
+                        raise ValueError(
+                            f"No sd column found for field '{fn}'. Expected 'sd_{fn}', 'logsd{fn}', or 'log_sd_{fn}'")
+                elif f'{fn}_mean' in conceptual_points.columns:
+                    mean_col = f'{fn}_mean'
+                    # Look for log-space sd (multiple naming conventions)
+                    if f'{fn}_logsd' in conceptual_points.columns:
+                        sd_col = f'{fn}_logsd'
+                        sd_is_log_space = True
+                    elif f'{fn}_log_sd' in conceptual_points.columns:
+                        sd_col = f'{fn}_log_sd'
+                        sd_is_log_space = True
+                    elif f'{fn}_sd' in conceptual_points.columns:
+                        sd_col = f'{fn}_sd'
+                        sd_is_log_space = False
+                        print(f"  WARNING: Using native-space '{fn}_sd' for log-transformed field '{fn}'. "
+                              f"Consider providing '{fn}_logsd' or '{fn}_log_sd' instead for better interpretation.")
+                    else:
+                        raise ValueError(
+                            f"No sd column found for field '{fn}'. Expected '{fn}_sd', '{fn}_logsd', or '{fn}_log_sd'")
+                else:
+                    raise ValueError(f"No mean column found for field '{fn}'. Expected 'mean_{fn}' or '{fn}_mean'")
             else:
-                raise ValueError(f"No mean/sd columns found for field '{fn}'")
+                # Normal space - use regular sd columns
+                if f'mean_{fn}' in conceptual_points.columns:
+                    mean_col = f'mean_{fn}'
+                    sd_col = f'sd_{fn}'
+                elif f'{fn}_mean' in conceptual_points.columns:
+                    mean_col = f'{fn}_mean'
+                    sd_col = f'{fn}_sd'
+                else:
+                    raise ValueError(f"No mean/sd columns found for field '{fn}'. "
+                                     f"Expected 'mean_{fn}' or '{fn}_mean'")
+        # else: mean_col and sd_col already set from generic case
 
         # Verify columns exist
         if mean_col not in conceptual_points.columns:
@@ -200,7 +340,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
         if layer_mode and 'layer' in conceptual_points.columns:
             # Process each available layer
             for target_layer in available_cp_layers:
-                print(f"\n--- Processing layer {target_layer} ---")
+                print(f"\n--- Processing layer {target_layer} (0-based) ---")
 
                 # Filter conceptual points for this layer
                 layer_cp = conceptual_points[conceptual_points['layer'] == target_layer].copy()
@@ -214,17 +354,11 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                 print(f"  {mean_col}: [{layer_cp[mean_col].min():.2f}, {layer_cp[mean_col].max():.2f}]")
                 print(f"  {sd_col}: [{layer_cp[sd_col].min():.2f}, {layer_cp[sd_col].max():.2f}]")
 
-                # Get IIDs for this layer
-                layer_iids = iids_dict.get(target_layer, iids_dict[1])
+                # Get IIDs for this layer (now directly indexed with 0-based)
+                layer_iids = iids_dict[target_layer]
 
-                # Get zones for this layer if available
-                layer_zones = None
-                if zones is not None:
-                    if isinstance(zones, list) or (isinstance(zones, np.ndarray) & (len(zones.shape)==3)):
-                        if target_layer - 1 < len(zones):
-                            layer_zones = zones[target_layer - 1]
-                    else:
-                        layer_zones = zones
+                # Get zones for this layer (now directly indexed with 0-based)
+                layer_zones = zones_dict.get(target_layer, None)
 
                 # Use generate_single_layer which internally calls apply_nsaf_hyperpars
                 results = generate_single_layer(
@@ -234,286 +368,81 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                     zones=layer_zones,
                     layer=target_layer,
                     tensor_interp=tensor_interp,
-                    transform=transform,
+                    transform=trans,
                     boundary_smooth=boundary_smooth,
                     boundary_enhance=boundary_enhance,
                     mean_col=mean_col,
                     sd_col=sd_col,
-                    n_realizations=n_realizations
+                    n_realizations=n_realizations,
+                    sd_is_log_space=sd_is_log_space
                 )
 
-                field = results['fields']
+                results[fn] = results['field']
 
-                # Store results
-                result_key = f"{fn}_layer_{target_layer}"
+                # Store results with 0-based layer numbering
+                if fn:
+                    result_key = f"{fn}_layer{target_layer}"
+                else:
+                    result_key = f"field_layer{target_layer}"
                 all_results[result_key] = results
 
-                print(f"fieldresult for layer {target_layer}:")
+                print(f"Field result for layer {target_layer}:")
                 print(f"  Mean field: [{results['mean'].min():.3f}, {results['mean'].max():.3f}]")
                 print(f"  SD field: [{results['sd'].min():.3f}, {results['sd'].max():.3f}]")
-                # todo: better file name handling
+
+                # Save outputs if requested
                 if save_dir is not None:
                     fig_path = os.path.join(save_dir, 'figure')
                     if not os.path.exists(fig_path):
-                        os.mkdir(fig_path)
+                        os.makedirs(fig_path)
+
                     from pyemu import plot_utils as pu
-                    xul = modelgrid.xoffset
-                    yul = modelgrid.yoffset # + np.sum(modelgrid.delr)
-                    if modelgrid.epsg is None:
-                        epsg = 2193
-                    else:
-                        epsg = modelgrid.epsg
-                    grid_info = _extract_grid_info(modelgrid)
-                    xcentergrid = grid_info['xcentergrid']
-                    ycentergrid = grid_info['ycentergrid']
+
+                    # Prepare filename
                     fname = f"layer{target_layer}.arr"
-                    np.savetxt(os.path.join(save_dir, fname), results['fields'][0], fmt="%20.8E")
-                    arr_to_rast(results['fields'][0],
-                                os.path.join(fig_path, fname.replace('.arr','.tif')),
-                                xul, yul,
-                                np.mean(modelgrid.delc), np.mean(modelgrid.delr), epsg)
+                    np.savetxt(os.path.join(save_dir, fname), results[fn], fmt="%20.8E")
 
-                    # pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones[target_layer-1],
-                    #                      conceptual_points=layer_cp, subsample=20, max_ellipse_size=0.1,
-                    #                      figsize=(14, 12), title_suf=mean_col,
-                    #                      save_path=os.path.join(fig_path, fname.replace('.arr', '_tensors.png')))
-
+                    # Visualization
                     pu.visualize_nsaf(results, layer_cp, xcentergrid, ycentergrid,
-                                      transform='log', title_suf=mean_col,
+                                      transform=transform,
+                                      domain=ml.dis.idomain[target_layer],
+                                      title_suf=mean_col.split('_')[-1] if '_' in mean_col else mean_col,
                                       save_path=os.path.join(fig_path, fname.replace('.arr', '.png')))
-
-
         else:
-            # todo 3d
-            pass
+            # Non-layer mode - process all conceptual points together
+            # TODO: Implement 3D field generation
+            raise NotImplementedError("Non-layer mode (3D field generation) not yet implemented")
+
     print("\n=== Complete ===")
     return all_results
 
-"""
-Final helper functions for NSAF Utils
-These complete the implementation with field generation and boundary functions
-"""
 
-# Add these to nsaf_utils.py
-
-def _generate_stochastic_field(grid_coords, mean_field, sd_field,
-                                bearing, anisotropy, corrlen,
-                                zones, n_realizations, transform,
-                                config_dict, ny, nx, iids=None, area=None,
-                                active=None):
+def _assign_layers_from_depth(conceptual_points, modelgrid):
     """
-    Generate stochastic field using pypestutils FIELDGEN2D_SVA.
+    Assign layer numbers to conceptual points based on z/depth coordinates
+    by intersecting with model grid elevations.
+
+    This function will use the gridit package to perform the intersection.
+
+    Parameters
+    ----------
+    conceptual_points : pd.DataFrame
+        Conceptual points with 'z' or 'depth' column
+    modelgrid : flopy.discretization.Grid
+        Model grid with layer elevation information
+
+    Returns
+    -------
+    pd.DataFrame
+        Conceptual points with 'layer' column added (0-based)
     """
-    try:
-        from pypestutils.pestutilslib import PestUtilsLib
-    except Exception as e:
-        raise Exception(f"Error importing pypestutils: {e}")
-
-    print("  Generating stochastic field using FIELDGEN2D_SVA...")
-
-    # Prepare grid data
-    n_points = ny * nx
-    x_coords = grid_coords[:, 0]
-    y_coords = grid_coords[:, 1]
-
-    # Flatten fields - ENSURE PROPER ORDERING
-    mean_flat = mean_field.flatten().clip(1e-8, None)
-    variance_native = sd_field.flatten() ** 2
-    log_variance_flat = np.log(1 + variance_native / mean_flat ** 2)
-    trans_flag = 1  # Log domain
-
-    # Geostatistical parameters from tensors
-    aa_values = corrlen.flatten()
-    aniso_values = anisotropy.flatten()
-    bearing_values = bearing.flatten()
-
-    # Set defaults
-    if active is None:
-        active = np.ones(n_points, dtype=int)
-    if area is None:
-        area = np.ones(n_points)
-    else:
-        if area.ndim > 1:
-            area = area.flatten()
-
-    # Generate or use provided IIDs
-    if iids is None:
-        print("  Generating new IIDs...")
-        iids = np.random.normal(0, 1, size=(n_points, n_realizations))
-    else:
-        print("  Using provided IIDs...")
-        if iids.shape != (n_points, n_realizations):
-            raise ValueError(f"IIDs shape {iids.shape} doesn't match expected {(n_points, n_realizations)}")
-
-    try:
-        # Set up pypestutils parameters
-        lib = PestUtilsLib()
-        lib.initialize_randgen(11235813)
-
-        # Averaging function type
-        avg_func = config_dict.get('averaging_function', 'gaussian')
-        if isinstance(avg_func, dict):
-            if 'pow' in avg_func:
-                avg_flag = 4
-                power_value = avg_func['pow']
-            else:
-                avg_flag, power_value = next(iter(avg_func.items()))
-        else:
-            power_value = 0
-            if avg_func == 'exponential':
-                avg_flag = 2
-            elif avg_func == 'gaussian':
-                avg_flag = 3
-            elif avg_func == 'spherical':
-                avg_flag = 1
-            else:
-                avg_flag = 2  # Default to exponential
-
-        # Call FIELDGEN2D_SVA through pypestutils interface
-        print(f"    Calling FIELDGEN2D_SVA for {n_realizations} realizations...")
-
-        field = lib.fieldgen2d_sva(
-            x_coords, y_coords,
-            area=area,
-            active=active,
-            mean=mean_flat,
-            var=log_variance_flat,
-            aa=aa_values,
-            anis=aniso_values,
-            bearing=bearing_values,
-            transtype=trans_flag,
-            avetype=avg_flag,
-            power=power_value,
-            nreal=n_realizations,
-        )
-
-        # Handle the output format from FIELDGEN2D_SVA
-        if field.shape == (n_points, n_realizations):
-            # Output is (n_points, n_realizations) - transpose to (n_realizations, n_points)
-            field = field.T  # Now shape is (n_realizations, n_points)
-            # Reshape each realization to (ny, nx)
-            field = field.reshape((n_realizations, ny, nx))
-
-        elif field.shape == (n_realizations * n_points,):
-            # Output is flattened - reshape directly
-            field = field.reshape((n_realizations, ny, nx))
-
-        elif field.shape == (n_realizations, n_points):
-            # Output is already (n_realizations, n_points) - just reshape spatial dimensions
-            field = field.reshape((n_realizations, ny, nx))
-
-        else:
-            raise ValueError(f"Unexpected fieldgen2d_sva output shape: {field.shape}")
-
-        print(f"    Successfully generated {n_realizations} realizations with shape {field.shape}")
-
-        # Clean up
-        lib.free_all_memory()
-
-        return field
-
-    except Exception as e:
-        print(f"    Warning: FIELDGEN2D_SVA failed: {e}")
-        print(f"    Using fallback method...")
-
-        # Fallback to simple field generation
-        field = np.zeros((n_realizations, ny, nx))
-        for real in range(n_realizations):
-            current_iids = iids[:, real]
-            field_values = _generate_simple_field(
-                grid_coords, mean_flat, log_variance_flat,
-                aa_values, aniso_values, bearing_values,
-                transform, current_iids, ny, nx
-            )
-            field[real] = field_values.reshape(ny, nx)
-
-        return field
-
-
-def _generate_simple_field(grid_coords, mean_flat, variance_flat,
-                           aa_values, aniso_values, bearing_values,
-                           transform, iids, ny, nx):
-    """
-    Simple fallback field generation if FIELDGEN2D_SVA fails.
-    """
-    print("    Using improved simple correlated field generation fallback...")
-
-    n_points = len(grid_coords)
-
-    # Convert bearing from degrees to radians for calculations
-    bearing_rad = np.radians(bearing_values)
-
-    # Create spatially correlated field using moving average approach
-    correlated_field = np.zeros(n_points)
-
-    # For computational efficiency, use a subset of points for correlation
-    max_correlation_points = min(2000, n_points)
-
-    if n_points > max_correlation_points:
-        # Sample points for correlation calculation
-        correlation_indices = np.random.choice(n_points, max_correlation_points, replace=False)
-        correlation_indices = np.sort(correlation_indices)
-    else:
-        correlation_indices = np.arange(n_points)
-
-    # Apply spatial correlation
-    for i in correlation_indices:
-        # Get local correlation parameters
-        local_aa = aa_values[i]
-        local_aniso = aniso_values[i]
-        local_bearing = bearing_rad[i]
-
-        # Calculate distances to all points
-        dx = grid_coords[:, 0] - grid_coords[i, 0]
-        dy = grid_coords[:, 1] - grid_coords[i, 1]
-
-        # Apply anisotropic transformation
-        cos_bear = np.cos(local_bearing)
-        sin_bear = np.sin(local_bearing)
-
-        # Rotate to principal axes (geological bearing: 0° = North, clockwise positive)
-        dx_rot = dx * sin_bear + dy * cos_bear  # East component (major axis)
-        dy_rot = -dx * cos_bear + dy * sin_bear  # North component (minor axis)
-
-        # Scale by anisotropy
-        minor_aa = local_aa / local_aniso
-        dx_scaled = dx_rot / local_aa
-        dy_scaled = dy_rot / minor_aa
-
-        # Calculate anisotropic distance
-        aniso_distances = np.sqrt(dx_scaled ** 2 + dy_scaled ** 2)
-
-        # Exponential correlation function
-        correlation_weights = np.exp(-aniso_distances)
-
-        # Normalize weights
-        correlation_weights = correlation_weights / np.sum(correlation_weights)
-
-        # Apply correlation to the random field
-        correlated_field[i] = np.sum(correlation_weights * iids)
-
-    # For points not in correlation_indices, use interpolation
-    if n_points > max_correlation_points:
-        remaining_indices = np.setdiff1d(np.arange(n_points), correlation_indices)
-
-        for i in remaining_indices:
-            # Find nearest correlation points
-            distances_to_corr = np.sum((grid_coords[correlation_indices] - grid_coords[i]) ** 2, axis=1)
-            nearest_corr_idx = correlation_indices[np.argmin(distances_to_corr)]
-            correlated_field[i] = correlated_field[nearest_corr_idx]
-
-    # Scale by local standard deviation
-    stochastic_component = correlated_field * np.sqrt(variance_flat)
-
-    # Combine with mean field
-    if transform == 'log':
-        # Log domain: mean * exp(stochastic_component)
-        field_values = mean_flat * np.exp(stochastic_component)
-    else:
-        # Normal domain: mean + stochastic_component
-        field_values = mean_flat + stochastic_component
-
-    return field_values
+    # TODO: Implement using gridit package
+    # Expected workflow:
+    # 1. Extract z coordinate from conceptual_points ('z' or 'depth' column)
+    # 2. Get layer elevations from modelgrid (top and botm arrays)
+    # 3. Use gridit to find which layer each point falls into
+    # 4. Add 'layer' column to conceptual_points (0-based)
+    pass
 
 
 def create_boundary_modified_scalar(base_field, zones,
@@ -530,7 +459,7 @@ def create_boundary_modified_scalar(base_field, zones,
     if zones.shape != base_field.shape:
         raise ValueError(f"Zones shape {zones.shape} must match field shape {base_field.shape}")
 
-    boundary_mask, _ = detect_zone_boundaries(zones)
+    boundary_mask, _ = _detect_zone_boundaries(zones)
     distance = distance_transform_edt(~boundary_mask)
     transition_mask = distance <= transition_cells
 
@@ -615,19 +544,15 @@ def save_results(result, out_filename):
 
         print(f"  Saved {len(result['field'])} realizations")
 
-def _load_or_generate_iids(tmp_model_ws, iids_file, layer_num, ny, nx, n_realizations):
+
+def _load_or_generate_iids(iid_path, ny, nx, n_realizations):
     """
-    Load IIDs from file or generate and save new ones for PEST parameterization.
-    FIXED version with proper array handling.
+    Load IIDs from file or generate and save new ones.
 
     Parameters
     ----------
-    tmp_model_ws : str
-        Model workspace path
-    iids_file : str or list or None
-        IID file specification
-    layer_num : int
-        Layer number (0-based)
+    iid_path : str
+        Explicit path to IID file (including directory)
     ny, nx : int
         Grid dimensions
     n_realizations : int
@@ -639,37 +564,11 @@ def _load_or_generate_iids(tmp_model_ws, iids_file, layer_num, ny, nx, n_realiza
         IIDs array with shape (ny*nx, n_realizations)
     """
 
-    # Convert to 1-based for file naming
-    layer_1based = layer_num + 1
-
-    # Determine the IID file path
-    if iids_file is None:
-        # Default pattern
-        iid_path = os.path.join(tmp_model_ws, f"iids_layer_{layer_1based}.arr")
-    elif isinstance(iids_file, str):
-        # Single string - assume pattern or explicit path
-        if "{" in iids_file or "layer" in iids_file.lower():
-            # Pattern with layer number
-            iid_path = os.path.join(tmp_model_ws, iids_file.format(layer_1based))
-        else:
-            # Explicit path - append layer number
-            base_name, ext = os.path.splitext(iids_file)
-            iid_path = os.path.join(tmp_model_ws, f"{base_name}_layer_{layer_1based}{ext}")
-    elif isinstance(iids_file, list):
-        # List of explicit paths
-        if layer_num < len(iids_file):
-            iid_path = os.path.join(tmp_model_ws, iids_file[layer_num])
-        else:
-            # Generate default name if not enough files specified
-            iid_path = os.path.join(tmp_model_ws, f"iids_layer_{layer_1based}.arr")
-    else:
-        raise ValueError(f"Invalid iids_file specification: {iids_file}")
-
     # Try to load existing IIDs
     if os.path.exists(iid_path):
-        print(f"  Loading existing IIDs from {iid_path}")
+        print(f"  Loading existing IIDs from {os.path.basename(iid_path)}")
         try:
-            # Try to load as text array
+            # Load as text array
             iids_data = np.loadtxt(iid_path)
 
             # Handle different shapes
@@ -692,30 +591,30 @@ def _load_or_generate_iids(tmp_model_ws, iids_file, layer_num, ny, nx, n_realiza
 
             # Expand or truncate to match n_realizations
             if iids.shape[1] < n_realizations:
-                print(f"  Expanding IIDs from {iids.shape[1]} to {n_realizations} realizations")
+                print(f"    Expanding IIDs from {iids.shape[1]} to {n_realizations} realizations")
                 additional_iids = np.random.normal(0, 1, size=(ny * nx, n_realizations - iids.shape[1]))
                 iids = np.column_stack([iids, additional_iids])
             elif iids.shape[1] > n_realizations:
-                print(f"  Truncating IIDs from {iids.shape[1]} to {n_realizations} realizations")
+                print(f"    Truncating IIDs from {iids.shape[1]} to {n_realizations} realizations")
                 iids = iids[:, :n_realizations]
 
+            return iids
+
         except Exception as e:
-            print(f"  Warning: Could not load IID file {iid_path}: {e}")
+            print(f"  Warning: Could not load IID file: {e}")
             print(f"  Generating new IIDs...")
-            iids = None
     else:
-        print(f"  IID file {iid_path} not found, generating new IIDs...")
-        iids = None
+        print(f"  IID file not found: {os.path.basename(iid_path)}")
+        print(f"  Generating new IIDs...")
 
-    # Generate new IIDs if loading failed
-    if iids is None:
-        iids = np.random.normal(0, 1, size=(ny * nx, n_realizations))
+    # Generate new IIDs
+    iids = np.random.normal(0, 1, size=(ny * nx, n_realizations))
 
-        # Save for PEST parameterization
-        print(f"  Saving IIDs to {iid_path} for PEST parameterization")
-        os.makedirs(os.path.dirname(iid_path), exist_ok=True)
-        np.savetxt(iid_path, iids, fmt="%.8f",
-                   header=f"IIDs for layer {layer_1based}, shape: {ny * nx} x {n_realizations}")
+    # Save for future use
+    print(f"  Saving IIDs to {os.path.basename(iid_path)}")
+    os.makedirs(os.path.dirname(iid_path), exist_ok=True)
+    np.savetxt(iid_path, iids, fmt="%.8f",
+               header=f"IIDs shape: {ny * nx} x {n_realizations}")
 
     return iids
 
@@ -809,7 +708,7 @@ def example_field_generation():
                 'x': cp_x,
                 'y': cp_y,
                 'mean': mean_kh,
-                'sd': mean_kh * 0.2,
+                'sd': 1.0,
                 'major': major_length,
                 'anisotropy': 4.0,
                 'bearing': bearing,
@@ -821,41 +720,48 @@ def example_field_generation():
 
     # Generate field
     print("=== Testing tangential field generation ===")
-    results = generate_single_layer(
-        cp_df, modelgrid,
-        zones=zones,
-        tensor_interp='krig',
-        #transform='log',
-        boundary_smooth={'transition_cells': 5},
-        boundary_enhance={'transition_cells': 5,
-                          'peak_increase': 2}
-    )
+    for scen in ['fieldgen', 'python']:
+        if scen=='fieldgen':
+            iids = None # let fieldgen create them
+        else:
+            iids = np.random.normal(0, 1, size=(ny * nx))
+        results = generate_single_layer(
+            cp_df, modelgrid,
+            iids=iids,
+            zones=zones,
+            tensor_interp='krig',
+            transform='log',
+            boundary_smooth={'transition_cells': 5},
+            boundary_enhance={'transition_cells': 5,
+                              'peak_increase': 2},
+            sd_is_log_space=True
+        )
 
-    print(f"Field statistics: mean={np.mean(results['fields'][0]):.3f}, std={np.std(results['fields'][0]):.3f}")
-    print(f"Number of conceptual points: {len(cp_df)}")
-    print("Tangential field generation complete!")
+        print(f"Field statistics: mean={np.mean(results['field']):.3f}, std={np.std(results['field']):.3f}")
+        print(f"Number of conceptual points: {len(cp_df)}")
+        print("Tangential field generation complete!")
 
-    save_dir = os.path.join('..','..','examples','tangential_nsaf')
-    if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
-    if save_dir is not None:
-        from pyemu import plot_utils as pu
-        grid_info = _extract_grid_info(modelgrid)
-        xcentergrid = grid_info['xcentergrid']
-        ycentergrid = grid_info['ycentergrid']
-        fname = f"tangential_example.arr"
-        np.savetxt(os.path.join(save_dir, fname), results['fields'][0], fmt="%20.8E")
-        fig_path = os.path.join(save_dir, 'figure')
-        if not os.path.exists(fig_path):
-            os.mkdir(fig_path)
-        pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones,
-                             conceptual_points=cp_df, subsample=4, max_ellipse_size=0.1,
-                             figsize=(14, 12), title_suf='tangential',
-                             save_path=os.path.join(fig_path, fname.replace('.arr', '_tensors.png')))
+        save_dir = os.path.join('..','..','examples',f'tangential_nsaf_{scen}')
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
+        if save_dir is not None:
+            from pyemu import plot_utils as pu
+            grid_info = _extract_grid_info(modelgrid)
+            xcentergrid = grid_info['xcentergrid']
+            ycentergrid = grid_info['ycentergrid']
+            fname = f"tangential_example_{scen}.arr"
+            np.savetxt(os.path.join(save_dir, fname), results['field'], fmt="%20.8E")
+            fig_path = os.path.join(save_dir, 'figure')
+            if not os.path.exists(fig_path):
+                os.mkdir(fig_path)
+            pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones,
+                                 conceptual_points=cp_df, subsample=4, max_ellipse_size=0.1,
+                                 figsize=(14, 12), title_suf='tangential',
+                                 save_path=os.path.join(fig_path, fname.replace('.arr', '_tensors.png')))
 
-        pu.visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
-                          transform='log', title_suf='tangential',
-                          save_path=os.path.join(fig_path, fname.replace('.arr', '.png')))
+            pu.visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
+                              transform='log', title_suf='tangential',
+                              save_path=os.path.join(fig_path, fname.replace('.arr', '.png')))
 
     return results, cp_df
 
