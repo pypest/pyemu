@@ -12,10 +12,9 @@ def generate_single_layer(conceptual_points, modelgrid, iids=None, zones=None,
                           tensor_interp='idw', transform='log', layer=1,
                           boundary_smooth=False, boundary_enhance=False,
                           mean_col='mean', sd_col='sd', sd_is_log_space=False,
-                          n_realizations=1, save_dir='.'):
+                          n_realizations=1, random_seed=None, save_dir='.'):
     """
     Generate single layer using NSAF approach with boundary adjustments.
-    REFACTORED to use modelgrid and call apply_nsaf_hyperpars internally.
 
     Parameters
     ----------
@@ -24,7 +23,7 @@ def generate_single_layer(conceptual_points, modelgrid, iids=None, zones=None,
     modelgrid : flopy.discretization.grid
         Flopy modelgrid object
     iids : np.ndarray, optional
-        Pre-generated noise, shape (ny*nx, n_realizations)
+        Pre-generated noise, shape (ny*nx, )
     zones : np.ndarray, optional
         Zone IDs, shape (ny, nx)
     tensor_interp : str, default 'idw'
@@ -40,23 +39,28 @@ def generate_single_layer(conceptual_points, modelgrid, iids=None, zones=None,
     sd_col : str, default 'sd'
         Name of sd column in conceptual points
     n_realizations : int, default 1
-        Number of realizations to generate
+        Number of realizations. Only used when iids=None (FIELDGEN2D_SVA mode).
+        When iids is provided (PEST mode), only 1 realization is generated.
+    random_seed : int, optional
+        Random seed for reproducibility. Only used when iids=None.
+        When iids is provided, the iids themselves control the realization.
 
     Returns
     -------
-    tuple
-        (fields, results_dict) where:
-        - fields: Generated field(s), shape (n_realizations, ny, nx) or (ny, nx) if n_realizations=1
-        - results_dict: Full results dictionary from apply_nsaf_hyperpars
+    dict
+        Results dictionary containing:
+        - 'field': Single field (ny, nx) if n_realizations=1 or iids provided
+        - 'fields': Multiple fields (n_realizations, ny, nx) if n_realizations>1 and iids=None
+        - 'mean', 'sd', 'tensors', etc.
     """
 
-    # Call the main function with single layer settings
     results = apply_nsaf_hyperpars(
         conceptual_points=conceptual_points,
         modelgrid=modelgrid,
         zones=zones,
         out_filename=None,
         n_realizations=n_realizations,
+        random_seed=random_seed,
         layer=layer,
         transform=transform,
         boundary_smooth=boundary_smooth,
@@ -73,7 +77,7 @@ def generate_single_layer(conceptual_points, modelgrid, iids=None, zones=None,
 
 
 def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=None,
-                         n_realizations=1, layer=0, transform="none",
+                         n_realizations=1, random_seed=None, layer=0, transform="none",
                          boundary_smooth=False, boundary_enhance=False,
                          tensor_method='krig', config_dict=None, iids=None,
                          mean_col='mean', sd_col='sd',
@@ -95,7 +99,9 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
     out_filename : str, optional
         Base filename for output (if None, returns arrays only)
     n_realizations : int, default 1
-        Number of stochastic realizations to generate
+        Number of stochastic realizations. Only used when iids=None.
+    random_seed : int, optional
+        Random seed for reproducibility. Only used when iids=None.
     layer : int, default 0
         Layer number to process
     transform : str, default "none"
@@ -260,16 +266,21 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
     print(f"  Mean: [{interp_means_2d.min():.3f}, {interp_means_2d.max():.3f}]")
     print(f"  SD: [{interp_sd_2d.min():.3f}, {interp_sd_2d.max():.3f}]")
 
-    # Step 5: Generate stochastic fields using FIELDGEN2D_SVA approach
-    print(f"\nStep 5: Generating {n_realizations} stochastic realizations...")
+    # Step 5: Generate stochastic fields
+    print(f"\nStep 5: Generating stochastic realization(s)...")
+
+    if iids is not None:
+        print("  Note: iids provided - generating single realization (n_realizations parameter ignored)")
+        n_realizations = 1  # Force to 1 when iids provided
 
     if n_realizations > 0:
         # Get active cells if available
         active = kwargs.get('active', None)
         if active is None and hasattr(modelgrid, 'idomain'):
-            active = modelgrid.idomain[layer-1].flatten() if modelgrid.idomain.ndim == 3 else (modelgrid.idomain.flatten())
+            active = modelgrid.idomain[
+                layer - 1].flatten() if modelgrid.idomain.ndim == 3 else modelgrid.idomain.flatten()
 
-        field = _generate_stochastic_field(
+        fields = _generate_stochastic_field(
             modelgrid=modelgrid,
             mean_field=interp_means_2d,
             sd_field=interp_sd_2d,
@@ -279,14 +290,15 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
             corrlen=corrlen_major,
             sd_is_log_space=sd_is_log_space,
             config_dict=config_dict,
-            active=active
+            active=active,
+            n_realizations=n_realizations,
+            random_seed=random_seed
         )
     else:
-        field = None
+        fields = None
 
-    # Prepare output
+    # Prepare output - handle both single and multiple realizations
     results = {
-        'field': field,
         'mean': interp_means_2d,
         'sd': interp_sd_2d,
         'tensors': tensors,
@@ -294,6 +306,14 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
         'anisotropy': anisotropy.reshape(ny, nx),
         'corrlen': corrlen_major.reshape(ny, nx)
     }
+
+    # Add field(s) to results
+    if fields is not None:
+        if n_realizations == 1:
+            results['field'] = fields  # Single field (ny, nx)
+        else:
+            results['fields'] = fields  # Multiple fields (n_realizations, ny, nx)
+            results['field'] = fields[0]  # Also provide first one as 'field' for backward compat
 
     # Save to files if requested
     if out_filename is not None:
@@ -1170,9 +1190,12 @@ def _assign_cp_to_zones(cp_coords, xcentergrid, ycentergrid, zones_flat, nx):
 def _generate_stochastic_field(modelgrid, mean_field, sd_field,
                                bearing, anisotropy, corrlen,
                                sd_is_log_space, config_dict, iids=None, area=None,
-                               active=None):
+                               active=None, n_realizations=1, random_seed=None):
     """
-    Generate a single stochastic field realization.
+    Generate stochastic field realization(s).
+
+    Parameters
+    ----------
 
     Note: FIELDGEN2D_SVA1 is required for external iid files but not yet in pypestutils.
     When iids are provided, uses Python fallback implementation.
@@ -1202,16 +1225,25 @@ def _generate_stochastic_field(modelgrid, mean_field, sd_field,
         Cell areas, shape (ny*nx,)
     active : np.ndarray, optional
         Active domain mask, shape (ny*nx,)
+    n_realizations : int, default 1
+        Number of realizations to generate. Only used when iids=None (FIELDGEN2D_SVA mode).
+    random_seed : int, optional
+        Random seed for reproducibility. Only used when iids=None (FIELDGEN2D_SVA mode).
 
     Returns
     -------
     np.ndarray
-        Generated field, shape (ny, nx)
+        - If iids provided OR n_realizations=1: shape (ny, nx)
+        - If iids=None AND n_realizations>1: shape (n_realizations, ny, nx)
     """
     try:
         from pypestutils.pestutilslib import PestUtilsLib
         plib = PestUtilsLib()
-        plib.initialize_randgen(11235813)
+        # Initialize with seed if provided
+        if random_seed is not None:
+            plib.initialize_randgen(random_seed)
+        else:
+            plib.initialize_randgen(11235813)  # Default seed
     except Exception as e:
         raise Exception(f"Error importing pypestutils: {e}")
 
@@ -1255,45 +1287,55 @@ def _generate_stochastic_field(modelgrid, mean_field, sd_field,
     if area is not None:
         area = area.flatten()
 
-    # Handle IID-based generation (external control for PEST)
+    # Averaging function type
+    avg_func = config_dict.get('averaging_function', 'gaussian')
+    if isinstance(avg_func, dict):
+        if 'pow' in avg_func:
+            avg_flag = 4
+            power_value = avg_func['pow']
+        else:
+            avg_flag, power_value = next(iter(avg_func.items()))
+    else:
+        power_value = 0
+        if avg_func == 'exponential':
+            avg_flag = 2
+        elif avg_func == 'gaussian':
+            avg_flag = 3
+        elif avg_func == 'spherical':
+            avg_flag = 1
+        else:
+            avg_flag = 2  # Default to exponential
+
+    # Handle IID-based generation (PEST mode - always single realization)
     if iids is not None:
-        print("  Using provided IIDs for single realization...")
+        print("  Using provided IIDs for single realization (PEST mode)...")
+        if n_realizations > 1:
+            print("    Note: n_realizations>1 ignored when iids are provided")
+
         if iids.shape[0] != n_points:
             raise ValueError(f"IIDs shape {iids.shape} doesn't match expected ({n_points},)")
 
-        print(f"    FIELDGEN2D_SVA1 (with external iids) not available in pypestutils, using fallback method...")
+        print(f"    FIELDGEN2D_SVA1 (with external iids) not available, using Python fallback...")
 
         # Use fallback method for single realization
-        field_values = _generate_simple_field(
+        field_values = _moving_average_field(
             modelgrid, mean_flat, variance_flat,
             aa_values, aniso_values, bearing_values,
-            sd_is_log_space, iids
+            sd_is_log_space, iids,
+            avg_flag=avg_flag,
+            power_value=power_value
         )
         field = field_values.reshape(ny, nx)
 
-        return field
+        return field  # Shape: (ny, nx)
 
     # Handle FIELDGEN2D_SVA generation (internal random generation)
     else:
         try:
-            # Averaging function type
-            avg_func = config_dict.get('averaging_function', 'gaussian')
-            if isinstance(avg_func, dict):
-                if 'pow' in avg_func:
-                    avg_flag = 4
-                    power_value = avg_func['pow']
-                else:
-                    avg_flag, power_value = next(iter(avg_func.items()))
-            else:
-                power_value = 0
-                if avg_func == 'exponential':
-                    avg_flag = 2
-                elif avg_func == 'gaussian':
-                    avg_flag = 3
-                elif avg_func == 'spherical':
-                    avg_flag = 1
-                else:
-                    avg_flag = 2  # Default to exponential
+            print(f"  Generating {n_realizations} realization(s) using FIELDGEN2D_SVA...")
+            if random_seed is not None:
+                print(f"    Using random seed: {random_seed}")
+
             fields = plib.fieldgen2d_sva(
                 xcentergrid.flatten(), ycentergrid.flatten(),
                 area=area,
@@ -1306,19 +1348,59 @@ def _generate_stochastic_field(modelgrid, mean_field, sd_field,
                 transtype=sd_is_log_space,
                 avetype=avg_flag,
                 power=power_value,
-                nreal=1,  # Only request 1 realization
+                nreal=n_realizations,  # Pass n_realizations to FIELDGEN2D_SVA
             )
 
-            # Handle different possible output shapes from FIELDGEN2D_SVA
-            if fields.shape == (n_points, 1):
-                # Output is (n_points, 1) - extract and reshape
-                field = fields[:, 0].reshape(ny, nx)
-            elif fields.shape == (1, n_points):
-                # Output is (1, n_points) - extract and reshape
-                field = fields[0, :].reshape(ny, nx)
-            elif fields.shape == (n_points,):
-                # Output is flattened single realization
-                field = fields.reshape(ny, nx)
+            # Handle output shapes
+            if n_realizations == 1:
+                # Single realization - return (ny, nx)
+                if fields.shape == (n_points, 1):
+                    field = fields[:, 0].reshape(ny, nx)
+                elif fields.shape == (1, n_points):
+                    field = fields[0, :].reshape(ny, nx)
+                elif fields.shape == (n_points,):
+                    field = fields.reshape(ny, nx)
+                else:
+                    raise ValueError(f"Unexpected fieldgen2d_sva output shape: {fields.shape}")
+
+                print(f"    Successfully generated field with shape {field.shape}")
+                plib.free_all_memory()
+                return field  # Shape: (ny, nx)
+
+            else:
+                # Multiple realizations - return (n_realizations, ny, nx)
+                if fields.shape == (n_points, n_realizations):
+                    # Transpose and reshape
+                    fields_3d = fields.T.reshape(n_realizations, ny, nx)
+                elif fields.shape == (n_realizations, n_points):
+                    # Just reshape
+                    fields_3d = fields.reshape(n_realizations, ny, nx)
+                else:
+                    raise ValueError(f"Unexpected fieldgen2d_sva output shape: {fields.shape}")
+
+                print(f"    Successfully generated {n_realizations} fields with shape {fields_3d.shape}")
+                plib.free_all_memory()
+                return fields_3d  # Shape: (n_realizations, ny, nx)
+
+        except Exception as e:
+            print(f"    Error: FIELDGEN2D_SVA failed: {e}")
+
+            if iids is None:
+                print(f"    Falling back to Python with random iids...")
+                # Generate random iids for fallback
+                if random_seed is not None:
+                    np.random.seed(random_seed)
+                random_iids = np.random.normal(0, 1, size=n_points)
+
+                field_values = _moving_average_field(
+                    modelgrid, mean_flat, variance_flat,
+                    aa_values, aniso_values, bearing_values,
+                    sd_is_log_space, random_iids,
+                    avg_flag=avg_flag,
+                    power_value=power_value
+                )
+                field = field_values.reshape(ny, nx)
+                return field  # Shape: (ny, nx)
             else:
                 raise ValueError(f"Unexpected fieldgen2d_sva output shape: {fields.shape}")
 
@@ -1335,23 +1417,57 @@ def _generate_stochastic_field(modelgrid, mean_field, sd_field,
 
             # Generate random iids and use fallback
             random_iids = np.random.normal(0, 1, size=n_points)
-            field_values = _generate_simple_field(
+            field_values = _moving_average_field(
                 modelgrid, mean_flat, variance_flat,
                 aa_values, aniso_values, bearing_values,
-                sd_is_log_space, random_iids
+                sd_is_log_space, random_iids,
+                avg_flag=avg_flag,
+                power_value=power_value
             )
             field = field_values.reshape(ny, nx)
 
             return field
 
 
-def _generate_simple_field(modelgrid, mean_flat, variance_flat,
+def _moving_average_field(modelgrid, mean_flat, variance_flat,
                            aa_values, aniso_values, bearing_values,
-                           sd_is_log_space, iids):
+                           sd_is_log_space, iids, avg_flag=3, power_value=0):
     """
     Generate field using moving average (convolution) method - matches FIELDGEN2D_SVA approach.
+
+    Parameters
+    ----------
+    modelgrid : flopy modelgrid
+    mean_flat : np.ndarray
+        Flattened mean values in native space, shape (ny*nx,)
+    variance_flat : np.ndarray
+        Flattened variance values (log-space if sd_is_log_space=True), shape (ny*nx,)
+    aa_values : np.ndarray
+        Flattened correlation length values, shape (ny*nx,)
+    aniso_values : np.ndarray
+        Flattened anisotropy values, shape (ny*nx,)
+    bearing_values : np.ndarray
+        Flattened bearing values in degrees, shape (ny*nx,)
+    sd_is_log_space : bool
+        True if variance_flat is in log space
+    iids : np.ndarray
+        Independent identically distributed random values, shape (ny*nx,)
+    avg_flag : int, default 3
+        Averaging function type: 1=spherical, 2=exponential, 3=gaussian, 4=power
+    power_value : float, default 0
+        Power value if avg_flag=4
+
+    Returns
+    -------
+    np.ndarray
+        Generated field values in native space, shape (ny*nx,)
     """
-    print("    Using moving average convolution (FIELDGEN_SVA method)...")
+    from scipy.spatial import cKDTree
+
+    # Map avg_flag to function name for display
+    avg_names = {1: 'spherical', 2: 'exponential', 3: 'gaussian', 4: 'power'}
+    avg_name = avg_names.get(avg_flag, 'unknown')
+    print(f"    Using moving average convolution with {avg_name} function...")
 
     grid_info = _extract_grid_info(modelgrid)
     xcentergrid = grid_info['xcentergrid']
@@ -1363,9 +1479,23 @@ def _generate_simple_field(modelgrid, mean_flat, variance_flat,
     n_points = len(xcentergrid_flat)
 
     # Build KD-tree for neighbor search
-    from scipy.spatial import cKDTree
     coords = np.column_stack([xcentergrid_flat, ycentergrid_flat])
     tree = cKDTree(coords)
+
+    # Determine cutoff threshold and search radius based on averaging function
+    cutoff_threshold = 1e-5
+
+    if avg_flag == 1 or avg_flag == 4:  # spherical or power
+        # Compact support - cutoff at h = 1.0
+        h_cutoff = 1.0
+    elif avg_flag == 2:  # exponential
+        # exp(-h) = 1e-5 => h = -ln(1e-5) ≈ 11.51
+        h_cutoff = -np.log(cutoff_threshold)
+    elif avg_flag == 3:  # gaussian
+        # exp(-h²) = 1e-5 => h = sqrt(-ln(1e-5)) ≈ 3.39
+        h_cutoff = np.sqrt(-np.log(cutoff_threshold))
+    else:
+        raise ValueError(f"Unknown avg_flag: {avg_flag}")
 
     # Initialize output
     Z_field = np.zeros(n_points)
@@ -1383,20 +1513,14 @@ def _generate_simple_field(modelgrid, mean_flat, variance_flat,
         local_bearing = np.radians(bearing_values[i])
         local_var = variance_flat[i]
 
-        # Find all points within practical range
-        # search_radius = 4 * local_aa
-        # Cutoff where exp(-h/a) = 1e-5
-        cutoff_threshold = 1e-5
-        h_cutoff = -np.log(cutoff_threshold)  # ≈ 11.51
-
         # Search radius in actual distance units
-        search_radius = h_cutoff * local_aa  # About 11.5 * local_aa
+        search_radius = h_cutoff * local_aa
         neighbor_indices = tree.query_ball_point([x0, y0], search_radius)
 
         if len(neighbor_indices) == 0:
             neighbor_indices = [i]
 
-        # Compute anisotropic distances and weights (exponential function)
+        # Compute anisotropic distances and weights
         weights = np.zeros(len(neighbor_indices))
         for j, idx in enumerate(neighbor_indices):
             dx = xcentergrid_flat[idx] - x0
@@ -1413,27 +1537,41 @@ def _generate_simple_field(modelgrid, mean_flat, variance_flat,
             h_major = dx_rot / local_aa
             h_minor = dy_rot / minor_aa
 
-            # Anisotropic distance
+            # Anisotropic distance in "range units"
             h = np.sqrt(h_major ** 2 + h_minor ** 2)
 
-            # Exponential averaging function: exp(-h)
-            weights[j] = np.exp(-h)
-            # with cutoff
-            if weights[j] < cutoff_threshold:
-                weights[j] = 0.0  # Exclude points beyond cutoff
+            # Apply averaging function based on avg_flag
+            if avg_flag == 1:  # spherical
+                if h <= 1.0:
+                    weights[j] = 1.0 - 1.5 * h + 0.5 * h ** 3
+                else:
+                    weights[j] = 0.0
+            elif avg_flag == 2:  # exponential
+                weights[j] = np.exp(-h)
+                if weights[j] < cutoff_threshold:
+                    weights[j] = 0.0
+            elif avg_flag == 3:  # gaussian
+                weights[j] = np.exp(-h ** 2)
+                if weights[j] < cutoff_threshold:
+                    weights[j] = 0.0
+            elif avg_flag == 4:  # power
+                if h <= 1.0:
+                    weights[j] = (1.0 - h) ** power_value
+                else:
+                    weights[j] = 0.0
 
         # Apply weighted sum (NOT normalized)
         weighted_sum = np.sum(weights * iids[neighbor_indices])
 
         # Compute variance scaling factor
-        # The variance of the weighted sum is: Var(weighted_sum) = sum(w_i^2) * Var(iids)
-        # Since Var(iids) = 1, we have: Var(weighted_sum) = sum(w_i^2)
         variance_of_weighted_sum = np.sum(weights ** 2)
 
-        # Scale to achieve target variance
-        scaling_factor = np.sqrt(local_var / variance_of_weighted_sum)
-
-        Z_field[i] = weighted_sum * scaling_factor
+        if variance_of_weighted_sum > 0:
+            scaling_factor = np.sqrt(local_var / variance_of_weighted_sum)
+            Z_field[i] = weighted_sum * scaling_factor
+        else:
+            # Fallback: unconditional simulation
+            Z_field[i] = np.sqrt(local_var) * iids[i]
 
     print(f"    Convolution complete. Z-field stats: mean={Z_field.mean():.3f}, std={Z_field.std():.3f}")
 

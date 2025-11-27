@@ -720,49 +720,72 @@ def example_field_generation():
 
     # Generate field
     print("=== Testing tangential field generation ===")
+
+    n_realizations = 5  # Generate 5 realizations for comparison
+
     for scen in ['fieldgen', 'python']:
-        if scen=='fieldgen':
-            iids = None # let fieldgen create them
-        else:
-            iids = np.random.normal(0, 1, size=(ny * nx))
-        results = generate_single_layer(
-            cp_df, modelgrid,
-            iids=iids,
-            zones=zones,
-            tensor_interp='krig',
-            transform='log',
-            boundary_smooth={'transition_cells': 5},
-            boundary_enhance={'transition_cells': 5,
-                              'peak_increase': 2},
-            sd_is_log_space=True
-        )
+        print(f"\n=== Scenario: {scen} ===")
 
-        print(f"Field statistics: mean={np.mean(results['field']):.3f}, std={np.std(results['field']):.3f}")
-        print(f"Number of conceptual points: {len(cp_df)}")
-        print("Tangential field generation complete!")
-
-        save_dir = os.path.join('..','..','examples',f'tangential_nsaf_{scen}')
+        # Create save directory
+        save_dir = os.path.join('..', '..', 'examples', f'tangential_nsaf_{scen}')
         if not os.path.exists(save_dir):
-            os.mkdir(save_dir)
-        if save_dir is not None:
+            os.makedirs(save_dir)
+        fig_path = os.path.join(save_dir, 'figure')
+        if not os.path.exists(fig_path):
+            os.makedirs(fig_path)
+
+        # Generate realizations
+        for real_num in range(n_realizations):
+            print(f"\n  Generating realization {real_num + 1}/{n_realizations}...")
+
+            if scen == 'fieldgen':
+                iids = None  # Let fieldgen create them
+                random_seed = 42 + real_num  # Different seed for each realization
+            else:
+                # Generate different random IIDs for each realization
+                np.random.seed(42 + real_num)  # For reproducibility
+                iids = np.random.normal(0, 1, size=(ny * nx))
+                random_seed = None  # Not used when iids provided
+
+            results = generate_single_layer(
+                cp_df, modelgrid,
+                iids=iids,
+                zones=zones,
+                tensor_interp='krig',
+                transform='log',
+                boundary_smooth={'transition_cells': 5},
+                boundary_enhance={'transition_cells': 5, 'peak_increase': 2},
+                sd_is_log_space=True,
+                n_realizations=1,  # Single realization per call
+                random_seed=random_seed
+            )
+
+            print(f"    Field statistics: mean={np.mean(results['field']):.3f}, std={np.std(results['field']):.3f}")
+
+            # Save array file
+            fname = f"tangential_example_{scen}_real{real_num}.arr"
+            np.savetxt(os.path.join(save_dir, fname), results['field'], fmt="%20.8E")
+
+            # Visualize this realization
             from pyemu import plot_utils as pu
             grid_info = _extract_grid_info(modelgrid)
             xcentergrid = grid_info['xcentergrid']
             ycentergrid = grid_info['ycentergrid']
-            fname = f"tangential_example_{scen}.arr"
-            np.savetxt(os.path.join(save_dir, fname), results['field'], fmt="%20.8E")
-            fig_path = os.path.join(save_dir, 'figure')
-            if not os.path.exists(fig_path):
-                os.mkdir(fig_path)
-            pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones,
-                                 conceptual_points=cp_df, subsample=4, max_ellipse_size=0.1,
-                                 figsize=(14, 12), title_suf='tangential',
-                                 save_path=os.path.join(fig_path, fname.replace('.arr', '_tensors.png')))
 
+            # Only visualize tensors once (same for all realizations)
+            if real_num == 0:
+                pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones,
+                                     conceptual_points=cp_df, subsample=4, max_ellipse_size=0.1,
+                                     figsize=(14, 12), title_suf='tangential',
+                                     save_path=os.path.join(fig_path, f'{scen}_tensors.png'))
+
+            # Visualize each realization
             pu.visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
-                              transform='log', title_suf='tangential',
+                              transform='log', title_suf=f'tangential_real{real_num}',
                               save_path=os.path.join(fig_path, fname.replace('.arr', '.png')))
 
+        print(f"\n{scen.upper()} complete! Generated {n_realizations} realizations")
+        print(f"Files saved to: {save_dir}")
     return results, cp_df
 
 if __name__ == "__main__":
