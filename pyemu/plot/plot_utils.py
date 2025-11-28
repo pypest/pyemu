@@ -2412,32 +2412,32 @@ def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
     axes[0, 0].set_aspect('equal')
     plt.colorbar(im1, ax=axes[0, 0], label=field_label)
 
+    # Field statistics histogram
+    axes[1, 0].hist(field.flatten(), bins=50, alpha=0.7, color='purple', edgecolor='black', range=(vmin, vmax))
+    axes[1, 0].set_title(f'{field_label} Distribution')
+    axes[1, 0].set_xlabel(f'{field_label} Value')
+    axes[1, 0].set_ylabel('Frequency')
+    axes[1, 0].grid(True, alpha=0.3)
+
     # mean field
     im2 = axes[0, 1].imshow(mean, origin='upper', cmap='RdYlBu_r',
                             extent=[xcentergrid.min(), xcentergrid.max(),
                                     ycentergrid.min(), ycentergrid.max()],
-                            vmin=vmin, vmax=vmax)
+                            )
     axes[0, 1].set_title(f'Mean field for {field_label} {title_suf or ""}')
     axes[0, 1].set_xlabel('X Coordinate')
     axes[0, 1].set_ylabel('Y Coordinate')
     plt.colorbar(im2, ax=axes[0, 1], label=field_label)
 
     # sd field
-    im3 = axes[1, 0].imshow(sd, origin='upper', cmap='RdYlBu_r', alpha=0.8,
+    im3 = axes[1, 1].imshow(sd, origin='upper', cmap='RdYlBu_r', alpha=0.8,
                             extent=[xcentergrid.min(), xcentergrid.max(),
                                     ycentergrid.min(), ycentergrid.max()],
-                            vmin=vmin, vmax=vmax)
-    axes[1, 0].set_title(f'Standard Deviation field for {field_label} {title_suf or ""}')
-    axes[1, 0].set_xlabel('X Coordinate')
-    axes[1, 0].set_ylabel('Y Coordinate')
-    plt.colorbar(im3, ax=axes[1, 0], label=field_label)
-
-    # Field statistics histogram
-    axes[1, 1].hist(field.flatten(), bins=50, alpha=0.7, color='purple', edgecolor='black', range=(vmin, vmax))
-    axes[1, 1].set_title(f'{field_label} Distribution')
-    axes[1, 1].set_xlabel(f'{field_label} Value')
-    axes[1, 1].set_ylabel('Frequency')
-    axes[1, 1].grid(True, alpha=0.3)
+                            )
+    axes[1, 1].set_title(f'Standard Deviation field for {field_label} {title_suf or ""}')
+    axes[1, 1].set_xlabel('X Coordinate')
+    axes[1, 1].set_ylabel('Y Coordinate')
+    plt.colorbar(im3, ax=axes[1, 1], label=field_label)
 
     # Add statistics text
     # mean_val = np.nanmean(field)

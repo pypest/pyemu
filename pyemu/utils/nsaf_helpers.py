@@ -40,7 +40,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
         If dict is provided, it must contain entries for all layers (will error if layers are missing).
     iid_files : None, str, or dict, optional
         IID file(s) containing noise arrays. Can be:
-        - None: generates default files 'iids_layer{n}.arr' where n is 0-based layer number
+        - None: defaults to fieldgen2d_sva internal iid generator
         - str: pattern with {} placeholder, e.g., 'iids_layer{}.arr' (replaced with 0-based layer number)
         - dict: explicit mapping of 0-based layer numbers to filenames, e.g., {0: 'iid_layer0.arr', 1: 'iid_layer1.arr'}
         If dict is provided, it must contain entries for all layers (will error if layers are missing).
@@ -100,14 +100,16 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
             sim = flopy.mf6.MFSimulation.load(sim_ws=tmp_model_ws, load_only=['dis'])
             ml = sim.get_model(model_name)
             print(f"Loaded MF6 model: {model_name} (DIS package only)")
-        except:
+        except Exception as e_mf6:
             try:
                 # Fall back to MODFLOW-2005 - only load DIS package
                 ml = flopy.modflow.Modflow.load(f"{model_name}.nam", model_ws=tmp_model_ws,
-                                                load_only=['dis'])
+                                                load_only=['dis'], check=False)
                 print(f"Loaded MODFLOW-2005 model: {model_name} (DIS package only)")
-            except Exception as e:
-                raise ValueError(f"Could not load model {model_name} from {tmp_model_ws}: {e}")
+            except Exception as e_mf2005:
+                raise ValueError(f"Could not load model {model_name} from {tmp_model_ws}.\n"
+                                 f"MF6 error: {e_mf6}\n"
+                                 f"MF2005 error: {e_mf2005}")
 
     # Get modelgrid from the model
     modelgrid = ml.modelgrid
@@ -404,7 +406,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
 
                     # Visualization
                     pu.visualize_nsaf(results, layer_cp, xcentergrid, ycentergrid,
-                                      transform=transform,
+                                      transform=trans,
                                       domain=ml.dis.idomain[target_layer],
                                       title_suf=mean_col.split('_')[-1] if '_' in mean_col else mean_col,
                                       save_path=os.path.join(fig_path, fname.replace('.arr', '.png')))
@@ -561,7 +563,7 @@ def _load_or_generate_iids(iid_path, ny, nx, n_realizations):
     Returns
     -------
     np.ndarray
-        IIDs array with shape (ny*nx, n_realizations)
+        IIDs array with shape (ny*nx,) for single realization or (ny*nx, n_realizations) for multiple
     """
 
     # Try to load existing IIDs
@@ -573,23 +575,39 @@ def _load_or_generate_iids(iid_path, ny, nx, n_realizations):
 
             # Handle different shapes
             if iids_data.ndim == 1:
-                # Single realization
+                # Single realization - keep as 1D if n_realizations==1
                 if len(iids_data) == ny * nx:
-                    iids = iids_data.reshape(-1, 1)
+                    if n_realizations == 1:
+                        return iids_data  # Return 1D array (ny*nx,)
+                    else:
+                        iids = iids_data.reshape(-1, 1)
                 else:
                     raise ValueError(f"IID file has wrong size: {len(iids_data)} vs {ny * nx}")
             elif iids_data.ndim == 2:
-                # Multiple realizations
-                if iids_data.shape[0] == ny * nx:
+                # Could be (ny, nx) or (ny*nx, n_real)
+                if iids_data.shape == (ny, nx):
+                    # Saved as 2D grid - flatten it
+                    iids_data = iids_data.flatten()
+                    if n_realizations == 1:
+                        return iids_data  # Return 1D array (ny*nx,)
+                    else:
+                        iids = iids_data.reshape(-1, 1)
+                elif iids_data.shape[0] == ny * nx:
+                    # Already in (ny*nx, n_real) format
                     iids = iids_data
                 elif iids_data.shape[1] == ny * nx:
+                    # Transposed - fix it
                     iids = iids_data.T
                 else:
                     raise ValueError(f"IID file has wrong shape: {iids_data.shape}")
             else:
                 raise ValueError(f"IID file has too many dimensions: {iids_data.ndim}")
 
-            # Expand or truncate to match n_realizations
+            # If we get here and n_realizations==1, extract the single column
+            if n_realizations == 1 and iids.ndim == 2:
+                return iids[:, 0]  # Return 1D array (ny*nx,)
+
+            # Expand or truncate to match n_realizations (only for multi-realization case)
             if iids.shape[1] < n_realizations:
                 print(f"    Expanding IIDs from {iids.shape[1]} to {n_realizations} realizations")
                 additional_iids = np.random.normal(0, 1, size=(ny * nx, n_realizations - iids.shape[1]))
@@ -608,98 +626,156 @@ def _load_or_generate_iids(iid_path, ny, nx, n_realizations):
         print(f"  Generating new IIDs...")
 
     # Generate new IIDs
-    iids = np.random.normal(0, 1, size=(ny * nx, n_realizations))
+    if n_realizations == 1:
+        # Generate single realization as 1D array
+        iids = np.random.normal(0, 1, size=(ny * nx))
+    else:
+        # Generate multiple realizations as 2D array
+        iids = np.random.normal(0, 1, size=(ny * nx, n_realizations))
 
     # Save for future use
     print(f"  Saving IIDs to {os.path.basename(iid_path)}")
     os.makedirs(os.path.dirname(iid_path), exist_ok=True)
-    np.savetxt(iid_path, iids, fmt="%.8f",
-               header=f"IIDs shape: {ny * nx} x {n_realizations}")
+
+    if n_realizations == 1:
+        # Save as 2D grid for easier viewing
+        np.savetxt(iid_path, iids.reshape(ny, nx), fmt="%.8f")
+    else:
+        np.savetxt(iid_path, iids, fmt="%.8f",
+                   header=f"IIDs shape: {ny * nx} x {n_realizations}")
 
     return iids
 
 
-def example_field_generation():
-    """Example using concentric circles of tangentially-oriented anisotropic tensors."""
+def example_field_generation_save_files():
+    """Modified tangential example that saves files for testing generate_fields_from_files()."""
     import flopy
-    import matplotlib.pyplot as plt
     import numpy as np
     import pandas as pd
+    import os
 
-    # Create example PyEMU grid - square domain
+    # Create test directory
+    test_ws = os.path.join('..', '..', 'examples', 'tangential_test')
+    if not os.path.exists(test_ws):
+        os.makedirs(test_ws)
+
+    # Create example grid parameters
     nx, ny = 100, 100
     xmax = 5000
     ymax = 5000
 
-    # Correct: delr is row spacing (y-direction), delc is column spacing (x-direction)
-    delr = np.full(ny, ymax / ny)  # Cell height (y-direction, row spacing)
-    delc = np.full(nx, xmax / nx)  # Cell width (x-direction, column spacing)
+    delr = np.full(ny, ymax / ny)
+    delc = np.full(nx, xmax / nx)
 
-    modelgrid = flopy.discretization.StructuredGrid(
-        delc=delc, delr=delr,
-        top=np.ones((ny, nx)),
-        botm=np.zeros((1, ny, nx)),
-        xoff=0,
-        yoff=0,
-        angrot=0.0,
-        idomain=np.ones((ny, nx)),
+    # Create a minimal MODFLOW 6 model
+    sim = flopy.mf6.MFSimulation(
+        sim_name='tangential_test',
+        sim_ws=test_ws,
+        exe_name='mf6'
     )
 
+    # Add TDIS
+    tdis = flopy.mf6.ModflowTdis(
+        sim,
+        nper=1,
+        perioddata=[(1.0, 1, 1.0)]
+    )
+
+    # Create groundwater flow model
+    gwf = flopy.mf6.ModflowGwf(
+        sim,
+        modelname='tangential_test',
+        save_flows=True
+    )
+
+    # Add IMS (solver) - required for valid simulation
+    ims = flopy.mf6.ModflowIms(
+        sim,
+        print_option='SUMMARY',
+        complexity='SIMPLE'
+    )
+
+    # Add DIS package
+    dis = flopy.mf6.ModflowGwfdis(
+        gwf,
+        nlay=1,
+        nrow=ny,
+        ncol=nx,
+        delr=delc,
+        delc=delr,
+        top=1.0,
+        botm=0.0,
+        idomain=1
+    )
+
+    # Add minimal IC (initial conditions) - required
+    ic = flopy.mf6.ModflowGwfic(gwf, strt=1.0)
+
+    # Add minimal NPF (node property flow) - required
+    npf = flopy.mf6.ModflowGwfnpf(gwf, icelltype=1, k=1.0)
+
+    # Write the simulation
+    sim.write_simulation()
+    print(f"Saved MODFLOW 6 model to: {test_ws}")
+
+    # Get modelgrid for generating conceptual points
+    modelgrid = gwf.modelgrid
     grid_info = _extract_grid_info(modelgrid)
     xcentergrid = grid_info['xcentergrid']
     ycentergrid = grid_info['ycentergrid']
 
     center_x = 2500
     center_y = 2500
-    zones = np.ones((ny, nx))
+
+    # Create zones
+    zones = np.ones((ny, nx), dtype=int)
     zones[(ycentergrid < center_y) & (xcentergrid > center_x)] = 2  # SE
     zones[(ycentergrid < center_y) & (xcentergrid < center_x)] = 3  # SW
     zones[(ycentergrid > center_y) & (xcentergrid < center_x)] = 4  # NE
-    # Define circle center and radius
 
-    max_radius = 2500*np.sqrt(2)
+    # Save zones
+    zone_file = 'zones_layer0.arr'
+    np.savetxt(os.path.join(test_ws, zone_file), zones, fmt='%d')
+    print(f"Saved zones to: {zone_file}")
 
-    # Create conceptual points on concentric circles
+    max_radius = 2500 * np.sqrt(2)
+
+    # Create conceptual points
     cp_list = []
     n_circles = 4
 
-    # Define zone-specific mean values
     zone_mean_multipliers = {
-        1: 1.0,  # NW quadrant - baseline
-        2: 2.0,  # SE quadrant - 2x higher
-        3: 3.0,  # SW quadrant - 2x lower
-        4: 4.0  # NE quadrant - 4x higher
+        1: 1.0,
+        2: 10.0,
+        3: 100.0,
+        4: 0.1
     }
 
     for circle_idx in range(n_circles):
         radius_fraction = (circle_idx + 0.3) / n_circles
         cp_radius = max_radius * radius_fraction
         n_points = 6 + circle_idx * 4
-        base_mean_kh = 2 ** (circle_idx - n_circles)  # Base value from circle
+        base_mean_kh = 4 ** (circle_idx - n_circles)
         major_length = 500 + 50 * radius_fraction
 
         for i in range(n_points):
             angle = 2 * np.pi * i / n_points
 
-            # Position on circle
             cp_x = center_x + cp_radius * np.cos(angle)
             cp_y = center_y + cp_radius * np.sin(angle)
 
-            # Determine which zone this point is in
             if cp_y > center_y and cp_x > center_x:
-                point_zone = 1  # NW
+                point_zone = 1
             elif cp_y < center_y and cp_x > center_x:
-                point_zone = 2  # SE
+                point_zone = 2
             elif cp_y < center_y and cp_x < center_x:
-                point_zone = 3  # SW
-            else:  # cp_y > center_y and cp_x < center_x
-                point_zone = 4  # NE
+                point_zone = 3
+            else:
+                point_zone = 4
 
-            # Apply zone-specific multiplier
             zone_multiplier = zone_mean_multipliers[point_zone]
             mean_kh = base_mean_kh * zone_multiplier
 
-            # Tangential bearing calculation
             geo_radial = np.degrees(np.arctan2(cp_x - center_x, cp_y - center_y))
             bearing = (geo_radial + 90) % 360
 
@@ -707,86 +783,92 @@ def example_field_generation():
                 'name': f'cp_circle{circle_idx}_point{i}_zone{point_zone}',
                 'x': cp_x,
                 'y': cp_y,
-                'mean': mean_kh,
-                'sd': 1.0,
+                'layer': 0,  # 0-based layer column
+                'mean_kh': mean_kh,
+                'logsdkh': 0.5,  # Log-space SD
                 'major': major_length,
                 'anisotropy': 4.0,
                 'bearing': bearing,
-                'zone': point_zone  # Optional: track which zone
+                'zone': point_zone
             })
 
     cp_df = pd.DataFrame(cp_list)
     cp_df['transverse'] = cp_df['major'] / cp_df['anisotropy']
 
-    # Generate field
-    print("=== Testing tangential field generation ===")
+    # Save conceptual points
+    cp_file = 'conceptual_points.csv'
+    cp_df.to_csv(os.path.join(test_ws, cp_file), index=False)
+    print(f"Saved conceptual points to: {cp_file}")
+    print(f"Columns: {list(cp_df.columns)}")
 
-    n_realizations = 5  # Generate 5 realizations for comparison
+    # Generate and save IIDs
+    np.random.seed(42)
+    iids = np.random.normal(0, 1, size=(ny * nx))
+    iid_file = 'iids_layer0.arr'
+    np.savetxt(os.path.join(test_ws, iid_file), iids.reshape(ny, nx), fmt='%.6f')
+    print(f"Saved IIDs to: {iid_file}")
 
-    for scen in ['fieldgen', 'python']:
-        print(f"\n=== Scenario: {scen} ===")
+    print(f"\n=== Files ready for testing ===")
+    print(f"Test workspace: {test_ws}")
 
-        # Create save directory
-        save_dir = os.path.join('..', '..', 'examples', f'tangential_nsaf_{scen}')
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        fig_path = os.path.join(save_dir, 'figure')
-        if not os.path.exists(fig_path):
-            os.makedirs(fig_path)
+    return test_ws
 
-        # Generate realizations
-        for real_num in range(n_realizations):
-            print(f"\n  Generating realization {real_num + 1}/{n_realizations}...")
 
-            if scen == 'fieldgen':
-                iids = None  # Let fieldgen create them
-                random_seed = 42 + real_num  # Different seed for each realization
-            else:
-                # Generate different random IIDs for each realization
-                np.random.seed(42 + real_num)  # For reproducibility
-                iids = np.random.normal(0, 1, size=(ny * nx))
-                random_seed = None  # Not used when iids provided
+# Then test with generate_fields_from_files():
+def test_tangential_via_files():
+    """Test tangential example through generate_fields_from_files()."""
 
-            results = generate_single_layer(
-                cp_df, modelgrid,
-                iids=iids,
-                zones=zones,
-                tensor_interp='krig',
-                transform='log',
-                boundary_smooth={'transition_cells': 5},
-                boundary_enhance={'transition_cells': 5, 'peak_increase': 2},
-                sd_is_log_space=True,
-                n_realizations=1,  # Single realization per call
-                random_seed=random_seed
-            )
+    # Generate the files
+    test_ws = example_field_generation_save_files()
 
-            print(f"    Field statistics: mean={np.mean(results['field']):.3f}, std={np.std(results['field']):.3f}")
+    print("\n=== Testing with generate_fields_from_files() ===")
 
-            # Save array file
-            fname = f"tangential_example_{scen}_real{real_num}.arr"
-            np.savetxt(os.path.join(save_dir, fname), results['field'], fmt="%20.8E")
+    # Test with fieldgen (iids=None)
+    print("\n--- Test 1: FIELDGEN2D_SVA (iids=None) ---")
+    results_fieldgen = generate_fields_from_files(
+        tmp_model_ws=test_ws,
+        model_name='tangential_test',
+        conceptual_points_file='conceptual_points.csv',
+        zone_files='zones_layer{}.arr',
+        iid_files=None,  # Use FIELDGEN2D_SVA internal generation
+        field_name=['kh'],
+        layer_mode=True,
+        save_dir=os.path.join(test_ws, 'output_fieldgen'),
+        tensor_interp='krig',
+        transform=['log'],
+        boundary_smooth={'transition_cells': 5},
+        boundary_enhance={'transition_cells': 5, 'peak_increase': 2},
+        cp_0based=True  # Our layer column is already 0-based
+    )
 
-            # Visualize this realization
-            from pyemu import plot_utils as pu
-            grid_info = _extract_grid_info(modelgrid)
-            xcentergrid = grid_info['xcentergrid']
-            ycentergrid = grid_info['ycentergrid']
+    # Test with Python fallback (iids provided)
+    print("\n--- Test 2: Python fallback (iids provided) ---")
+    results_python = generate_fields_from_files(
+        tmp_model_ws=test_ws,
+        model_name='tangential_test',
+        conceptual_points_file='conceptual_points.csv',
+        zone_files='zones_layer{}.arr',
+        iid_files='iids_layer{}.arr',  # Use provided IIDs
+        field_name=['kh'],
+        layer_mode=True,
+        save_dir=os.path.join(test_ws, 'output_python'),
+        tensor_interp='krig',
+        transform=['log'],
+        boundary_smooth={'transition_cells': 5},
+        boundary_enhance={'transition_cells': 5, 'peak_increase': 2},
+        cp_0based=True
+    )
 
-            # Only visualize tensors once (same for all realizations)
-            if real_num == 0:
-                pu.visualize_tensors(results['tensors'], xcentergrid, ycentergrid, zones=zones,
-                                     conceptual_points=cp_df, subsample=4, max_ellipse_size=0.1,
-                                     figsize=(14, 12), title_suf='tangential',
-                                     save_path=os.path.join(fig_path, f'{scen}_tensors.png'))
+    print("\n=== Comparison ===")
+    field_fieldgen = results_fieldgen['kh_layer0']['field']
+    field_python = results_python['kh_layer0']['field']
 
-            # Visualize each realization
-            pu.visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
-                              transform='log', title_suf=f'tangential_real{real_num}',
-                              save_path=os.path.join(fig_path, fname.replace('.arr', '.png')))
+    print(f"FIELDGEN: mean={field_fieldgen.mean():.3f}, std={field_fieldgen.std():.3f}")
+    print(f"Python:   mean={field_python.mean():.3f}, std={field_python.std():.3f}")
 
-        print(f"\n{scen.upper()} complete! Generated {n_realizations} realizations")
-        print(f"Files saved to: {save_dir}")
-    return results, cp_df
+    return results_fieldgen, results_python
 
+
+# Run the test
 if __name__ == "__main__":
-    example_field_generation()
+    results_fieldgen, results_python = test_tangential_via_files()

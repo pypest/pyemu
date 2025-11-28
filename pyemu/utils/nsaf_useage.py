@@ -35,6 +35,7 @@ if __name__ == "__main__":
 
     nsaf_helpers.generate_fields_from_files(data_dir, model_name, con_pts_file,
                                             zone_files=zone_files,
+                                            iid_files='iids_layer{}.arr',
                                             field_name=['kh'],
                                             layer_mode=True,
                                             save_dir=save_dir,

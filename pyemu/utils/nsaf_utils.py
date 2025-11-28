@@ -137,8 +137,10 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
     grid_info = _extract_grid_info(modelgrid)
     ny = grid_info['ny']
     nx = grid_info['nx']
+    xcentergrid = grid_info['xcentergrid']
+    ycentergrid = grid_info['ycentergrid']
 
-    # Load conceptual points
+    # Load conceptual points for this layer
     if 'layer' in conceptual_points.columns:
         layer_cp = conceptual_points[conceptual_points['layer'] == layer].copy()
     else:
@@ -170,6 +172,34 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
     print(f"Grid dimensions: {ny} x {nx} = {ny * nx} cells")
     print(f"Using columns: mean='{mean_col}', sd='{sd_col}'")
 
+    # === ZONE ASSIGNMENT - DO THIS ONCE, EARLY ===
+    n_grid = ny * nx
+    cp_coords = np.column_stack([layer_cp['x'].values, layer_cp['y'].values])
+
+    if zones is not None:
+        # Zones array provided - assign CPs to zones by nearest grid point
+        print("  Assigning conceptual points to zones from zone array...")
+        zones_flat = zones.flatten().astype(int)
+        cp_zones = _assign_cp_to_zones(cp_coords, xcentergrid, ycentergrid, zones_flat, nx)
+        layer_cp['zone'] = cp_zones  # Add to dataframe
+        print(f"    Assigned CPs to zones: {np.unique(cp_zones)}")
+    elif 'zone' in layer_cp.columns:
+        # Use existing zone column from conceptual points
+        print("  Using 'zone' column from conceptual points...")
+        zones_flat = None  # No grid-based zones
+        cp_zones = layer_cp['zone'].values.astype(int)
+        print(f"    CP zones: {np.unique(cp_zones)}")
+    else:
+        # No zones - use zone=1 for everything
+        print("  No zones provided - using zone=1 for all points")
+        zones_flat = np.ones(n_grid, dtype=int)
+        cp_zones = np.ones(len(layer_cp), dtype=int)
+        layer_cp['zone'] = cp_zones
+
+    # Verify we have zone information
+    if 'zone' not in layer_cp.columns:
+        layer_cp['zone'] = cp_zones
+
     # Step 1: Interpolate tensors
     print("\nStep 1: Interpolating tensor field...")
     tensors = interpolate_tensors(
@@ -183,13 +213,13 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
     bearing_deg, anisotropy, corrlen_major = _tensors_to_geostat_params(tensors)
 
     # Step 3: Prepare conceptual point data
-    cp_coords = np.column_stack([layer_cp['x'].values, layer_cp['y'].values])
     cp_means = layer_cp[mean_col].values
     cp_sd = layer_cp[sd_col].values.clip(1e-8, None)
 
     print(f"Conceptual point data ranges:")
     print(f"  {mean_col}: [{cp_means.min():.3f}, {cp_means.max():.3f}]")
     print(f"  {sd_col}: [{cp_sd.min():.3f}, {cp_sd.max():.3f}]")
+    print(f"  Zones: {sorted(np.unique(layer_cp['zone']))}")
 
     # Step 4: Interpolate mean and sd using tensor-aware kriging
     print("\nStep 4: Interpolating mean and standard deviation fields...")
@@ -205,7 +235,7 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
         }
 
     # Transform for log-domain if needed
-    transform = 'log' if transform == 'log' else None
+    transform_str = 'log' if transform == 'log' else None
     min_mean = 1e-8 if transform == 'log' else None
     max_mean = 1e8 if transform == 'log' else None
     bounds = (min_mean, max_mean)
@@ -216,21 +246,21 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
         cp_coords, cp_means, modelgrid, tensors,
         variogram_model='exponential',
         background_value=np.mean(cp_means), max_search_radius=1e20,
-        min_points=3, transform=transform, bounds=bounds,
+        min_points=3, transform=transform_str, bounds=bounds,
         max_neighbors=4, zones=zones
     )
 
     # Apply boundary smoothing to mean
     if boundary_smooth and zones is not None:
         if isinstance(boundary_smooth, dict):
-            smooth_params = {**boundary_smooth, **boundary_smooth}
-        else:  # Must be True (boolean)
             smooth_params = boundary_smooth
+        else:
+            smooth_params = {'transition_cells': 2}
 
         print("  Smoothing mean at geological boundaries...")
         interp_means_2d = create_boundary_modified_scalar(
-            interp_means_2d, zones, transform=transform,
-            transition_cells=smooth_params['transition_cells'],
+            interp_means_2d, zones, transform=transform_str,
+            transition_cells=smooth_params.get('transition_cells', 2),
             mode='smooth'
         )
 
@@ -240,25 +270,27 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
 
     # Interpolate standard deviation
     print("  Interpolating standard deviation...")
+    sd_transform = None if sd_is_log_space else transform_str
     interp_sd_2d = tensor_aware_kriging(
         cp_coords, cp_sd, modelgrid, tensors,
         variogram_model='exponential',
         background_value=np.mean(cp_sd), max_search_radius=1e20,
-        min_points=3, transform=transform, bounds=bounds,
+        min_points=3, transform=sd_transform, bounds=bounds,
         max_neighbors=4, zones=zones,
     )
 
     # Apply boundary enhancement to sd
     if boundary_enhance and zones is not None:
-        if isinstance(boundary_smooth, dict):
-            smooth_params = {**boundary_enhance, **boundary_smooth}
-        else:  # Must be True (boolean)
+        if isinstance(boundary_enhance, dict):
             smooth_params = boundary_enhance
+        else:
+            smooth_params = {'peak_increase': 2.0, 'transition_cells': 2}
+
         print("  Enhancing variance at geological boundaries...")
         interp_sd_2d = create_boundary_modified_scalar(
-            interp_sd_2d, zones, transform=transform,
-            peak_increase=smooth_params['peak_increase'],
-            transition_cells=smooth_params['transition_cells'],
+            interp_sd_2d, zones, transform=transform_str,
+            peak_increase=smooth_params.get('peak_increase', 2.0),
+            transition_cells=smooth_params.get('transition_cells', 2),
             mode='enhance'
         )
 
@@ -553,8 +585,7 @@ def tensor_aware_kriging(cp_coords, cp_values, modelgrid, interp_tensors,
     print(f"    Tensor-aware kriging: {len(cp_coords)} conceptual points -> {len(xcentergrid)} grid points")
     print(
         f"    Conceptual points range: X=[{cp_coords[:, 0].min():.1f}, {cp_coords[:, 0].max():.1f}], Y=[{cp_coords[:, 1].min():.1f}, {cp_coords[:, 1].max():.1f}]")
-    print(
-        f"    Grid points range: X=[{xcentergrid[0].min():.1f}, {xcentergrid[0].max():.1f}], Y=[{ycentergrid[1].min():.1f}, {ycentergrid[1].max():.1f}]")
+    print(f"    Grid points range: X=[{xcentergrid.min():.1f}, {xcentergrid.max():.1f}], Y=[{ycentergrid.min():.1f}, {ycentergrid.max():.1f}]")
     print(f"    Value range: [{cp_values.min():.6f}, {cp_values.max():.6f}], background: {background_value:.6f}")
     print(f"    Transform requested: {transform}")
 
@@ -912,6 +943,12 @@ def _extract_grid_info(modelgrid):
         grid_info['ny'], grid_info['nx'] = xc.shape
         grid_info['area'] = np.ones((grid_info['ny'], grid_info['nx']))
 
+    # get active domain
+    if hasattr(modelgrid, 'idomain'):
+        grid_info['idomain'] = modelgrid.idomain
+    else:
+        raise AttributeError("modelgrid missing idomain")
+
     return grid_info
 
 
@@ -1253,7 +1290,7 @@ def _generate_stochastic_field(modelgrid, mean_field, sd_field,
     ycentergrid = grid_info['ycentergrid']
     ny = grid_info['ny']
     nx = grid_info['nx']
-
+    active = active.astype(int)
     if area is None:
         area = grid_info['area']
 
@@ -1277,12 +1314,6 @@ def _generate_stochastic_field(modelgrid, mean_field, sd_field,
     aa_values = corrlen.flatten()
     aniso_values = anisotropy.flatten()
     bearing_values = bearing.flatten()
-
-    # Domain based on zones
-    if active is None:
-        active = np.ones(n_points, dtype=int)
-    else:
-        active = active.astype(int).flatten()
 
     if area is not None:
         area = area.flatten()
@@ -1323,7 +1354,8 @@ def _generate_stochastic_field(modelgrid, mean_field, sd_field,
             aa_values, aniso_values, bearing_values,
             sd_is_log_space, iids,
             avg_flag=avg_flag,
-            power_value=power_value
+            power_value=power_value,
+            active=active
         )
         field = field_values.reshape(ny, nx)
 
@@ -1431,7 +1463,8 @@ def _generate_stochastic_field(modelgrid, mean_field, sd_field,
 
 def _moving_average_field(modelgrid, mean_flat, variance_flat,
                            aa_values, aniso_values, bearing_values,
-                           sd_is_log_space, iids, avg_flag=3, power_value=0):
+                           sd_is_log_space, iids, avg_flag=3, power_value=0,
+                          active=None):
     """
     Generate field using moving average (convolution) method - matches FIELDGEN2D_SVA approach.
 
@@ -1500,8 +1533,18 @@ def _moving_average_field(modelgrid, mean_flat, variance_flat,
     # Initialize output
     Z_field = np.zeros(n_points)
 
+    # Ensure we have active mask
+    if active is None:
+        active = np.ones(n_points, dtype=bool)
+    else:
+        active = active.astype(bool)
+
     # For each target point, apply moving average
     for i in range(n_points):
+        # Skip inactive cells
+        if not active[i]:
+            Z_field[i] = 0.0
+            continue
         if i % 2000 == 0:
             print(f"      Progress: {i}/{n_points} points")
 
@@ -1515,10 +1558,28 @@ def _moving_average_field(modelgrid, mean_flat, variance_flat,
 
         # Search radius in actual distance units
         search_radius = h_cutoff * local_aa
+        # Find neighbors
         neighbor_indices = tree.query_ball_point([x0, y0], search_radius)
 
         if len(neighbor_indices) == 0:
             neighbor_indices = [i]
+
+        # CRITICAL: Filter to only active neighbors
+        neighbor_indices = [idx for idx in neighbor_indices if active[idx]]
+
+        # MAX_NEIGHBORS = 2  # Reasonable limit
+        #
+        # if len(neighbor_indices) > MAX_NEIGHBORS:
+        #     # Keep only the closest MAX_NEIGHBORS points
+        #     neighbor_coords = coords[neighbor_indices]
+        #     distances = np.sqrt(np.sum((neighbor_coords - [x0, y0]) ** 2, axis=1))
+        #     closest_indices = np.argsort(distances)[:MAX_NEIGHBORS]
+        #     neighbor_indices = [neighbor_indices[i] for i in closest_indices]
+
+        if len(neighbor_indices) == 0:
+            # No active neighbors - use unconditional simulation
+            Z_field[i] = np.sqrt(local_var) * iids[i]
+            continue
 
         # Compute anisotropic distances and weights
         weights = np.zeros(len(neighbor_indices))
@@ -1560,18 +1621,38 @@ def _moving_average_field(modelgrid, mean_flat, variance_flat,
                 else:
                     weights[j] = 0.0
 
-        # Apply weighted sum (NOT normalized)
+        # # Apply weighted sum (NOT normalized)
+        # weighted_sum = np.sum(weights * iids[neighbor_indices])
+        #
+        # # Compute variance scaling factor
+        # variance_of_weighted_sum = np.sum(weights ** 2)
+        #
+        # if variance_of_weighted_sum > 0:
+        #     scaling_factor = np.sqrt(local_var / variance_of_weighted_sum)
+        #     # if i < 10 or scaling_factor > 10 or scaling_factor < 0.1:
+        #         # print(f"Point {i}: n_neighbors={len(neighbor_indices)}, "
+        #         #       f"sum(w²)={variance_of_weighted_sum:.6f}, "
+        #         #       f"local_var={local_var:.6f}, "
+        #         #       f"scaling={scaling_factor:.6f}")
+        #     Z_field[i] = weighted_sum * scaling_factor
+        # else:
+        #     # Fallback: unconditional simulation
+        #     Z_field[i] = np.sqrt(local_var) * iids[i]
+
+        # After computing all weights, normalize them
+        weight_sum = np.sum(weights)
+        if weight_sum > 0:
+            weights = weights / weight_sum  # Now they sum to 1
+
+        # Apply weighted sum
         weighted_sum = np.sum(weights * iids[neighbor_indices])
 
         # Compute variance scaling factor
+        # After normalization, sum(w²) will be much smaller
         variance_of_weighted_sum = np.sum(weights ** 2)
 
-        if variance_of_weighted_sum > 0:
-            scaling_factor = np.sqrt(local_var / variance_of_weighted_sum)
-            Z_field[i] = weighted_sum * scaling_factor
-        else:
-            # Fallback: unconditional simulation
-            Z_field[i] = np.sqrt(local_var) * iids[i]
+        scaling_factor = np.sqrt(local_var / variance_of_weighted_sum)
+        Z_field[i] = weighted_sum * scaling_factor
 
     print(f"    Convolution complete. Z-field stats: mean={Z_field.mean():.3f}, std={Z_field.std():.3f}")
 
