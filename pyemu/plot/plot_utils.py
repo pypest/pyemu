@@ -1828,7 +1828,7 @@ def plot_zones_with_conceptual_points(zones, conceptual_points, grid_coords,
     if is_3d:
         nz, ny, nx = shape
         # Validate inputs for 3D
-        if not validate_grid_coordinates(grid_coords, shape):
+        if  grid_coords.shape[0] != nz * ny * nx:
             raise ValueError(f"Grid coordinates shape {grid_coords.shape} doesn't match zones shape {shape}")
 
         # Check for required 'k' column in conceptual points
@@ -2370,17 +2370,17 @@ def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
         sd = np.where(domain == 0, np.nan, results['sd'])
         mean = np.where(domain == 0, np.nan, results['mean'])
     if transform == 'log':
-        field = np.log10(field)
-        sd = np.log10(sd)
-        mean = np.log10(mean)
+        field = np.log10(np.where(np.isfinite(field) & (field > 0), field, np.nan))
+        sd = np.log10(np.where(np.isfinite(sd) & (sd > 0), sd, np.nan))
+        mean = np.log10(np.where(np.isfinite(mean) & (mean > 0), mean, np.nan))
         field_label = f'log10({title_suf})'
     else:
         field_label = 'Field'
 
     # Visualize results
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    vmin = -4
-    vmax = 4
+    vmin = np.floor(np.nanmin(field))
+    vmax = np.ceil(np.nanmax(field))
 
     # Field with conceptual points using real coordinates
     im1 = axes[0, 0].imshow(field, origin='upper', cmap='RdYlBu_r',

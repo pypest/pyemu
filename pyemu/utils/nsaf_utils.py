@@ -172,7 +172,7 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
     print(f"Grid dimensions: {ny} x {nx} = {ny * nx} cells")
     print(f"Using columns: mean='{mean_col}', sd='{sd_col}'")
 
-    # === ZONE ASSIGNMENT - DO THIS ONCE, EARLY ===
+    # zone assignment
     n_grid = ny * nx
     cp_coords = np.column_stack([layer_cp['x'].values, layer_cp['y'].values])
 
@@ -212,7 +212,10 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
     print("\nStep 2: Converting tensors to geostatistical parameters...")
     bearing_deg, anisotropy, corrlen_major = _tensors_to_geostat_params(tensors)
 
-    # Step 3: Prepare conceptual point data
+
+    # Step 3: Interpolate mean and sd using tensor-aware kriging
+    print("\nStep 3: Interpolating mean and standard deviation fields...")
+
     cp_means = layer_cp[mean_col].values
     cp_sd = layer_cp[sd_col].values.clip(1e-8, None)
 
@@ -220,9 +223,6 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
     print(f"  {mean_col}: [{cp_means.min():.3f}, {cp_means.max():.3f}]")
     print(f"  {sd_col}: [{cp_sd.min():.3f}, {cp_sd.max():.3f}]")
     print(f"  Zones: {sorted(np.unique(layer_cp['zone']))}")
-
-    # Step 4: Interpolate mean and sd using tensor-aware kriging
-    print("\nStep 4: Interpolating mean and standard deviation fields...")
 
     # Configure kriging parameters
     if config_dict is None:
@@ -298,8 +298,8 @@ def apply_nsaf_hyperpars(conceptual_points, modelgrid, zones=None, out_filename=
     print(f"  Mean: [{interp_means_2d.min():.3f}, {interp_means_2d.max():.3f}]")
     print(f"  SD: [{interp_sd_2d.min():.3f}, {interp_sd_2d.max():.3f}]")
 
-    # Step 5: Generate stochastic fields
-    print(f"\nStep 5: Generating stochastic realization(s)...")
+    # Step 4: Generate stochastic fields
+    print(f"\nStep 4: Generating stochastic realization(s)...")
 
     if iids is not None:
         print("  Note: iids provided - generating single realization (n_realizations parameter ignored)")
@@ -723,7 +723,7 @@ def tensor_aware_kriging(cp_coords, cp_values, modelgrid, interp_tensors,
         print(f"      Search radius: {max_search_radius}")
         print(f"      Max neighbors: {max_neighbors}")
 
-        # Then use the modified zones in kriging
+        # use the modified zones in kriging
         npts = lib.calc_kriging_factors_2d(
             cp_coords[:, 0], cp_coords[:, 1], cp_zones_for_kriging,  # Modified zones
             xcentergrid.flatten(), ycentergrid.flatten(), zones_for_kriging,  # Modified zones
@@ -739,10 +739,10 @@ def tensor_aware_kriging(cp_coords, cp_values, modelgrid, interp_tensors,
             fac_fname, fac_ftype,
             len(xcentergrid.flatten()),
             1,  # Ordinary kriging
-            transform_flag,  # Pass through the transform flag as specified
-            cp_values_transformed,  # Use values exactly as provided
-            background_value,  # Use background exactly as provided
-            background_value  # Use no-interpolation value exactly as provided
+            transform_flag,
+            cp_values_transformed,
+            background_value,
+            background_value
         )
 
         # Clean up
@@ -810,8 +810,6 @@ def create_boundary_modified_scalar(base_field, zones,
         modified[transition_mask] = smoothed_field[transition_mask] * (1 + peak_increase * factor)
 
     elif mode == "smooth":
-        # Smooth field with Gaussian filter
-        #smoothed_field = gaussian_filter(base_field, sigma=transition_cells)
         weight = 1 - distance[transition_mask] / transition_cells
         modified[transition_mask] = (
                 weight * smoothed_field[transition_mask] +
@@ -960,7 +958,6 @@ def _calculate_vertex_areas(modelgrid):
     for i in range(ncpl):
         try:
             verts = modelgrid.get_cell_vertices(i)
-            # Shoelace formula
             x = [v[0] for v in verts]
             y = [v[1] for v in verts]
             area = 0.5 * abs(sum(x[j] * y[j + 1] - x[j + 1] * y[j] for j in range(-1, len(x) - 1)))
@@ -973,74 +970,6 @@ def _calculate_vertex_areas(modelgrid):
         return areas.reshape(-1, 1)
     else:
         return areas.reshape(modelgrid.nrow, modelgrid.ncol)
-
-
-def _interpolate_tensors_kriging(cp_coords, cp_tensors, cp_zones,
-                                 xcentergrid, ycentergrid, zones_flat, config_dict, nx, ny):
-    """Interpolate tensors using pypestutils kriging with log-Euclidean approach."""
-    n_grid = np.prod(xcentergrid.shape)
-    result_tensors = np.zeros((n_grid, 2, 2))
-
-    # Convert tensors to log space
-    log_tensors = np.array([logm(_ensure_positive_definite(tensor))
-                            for tensor in cp_tensors])
-
-    # Process each zone separately
-    unique_zones = np.unique(zones_flat)
-
-    for zone_id in unique_zones:
-        zone_mask = zones_flat == zone_id
-        zone_indices = np.where(zone_mask)[0]
-
-        if len(zone_indices) == 0:
-            continue
-
-        # Filter conceptual points for this zone
-        cp_mask = cp_zones == zone_id
-        if np.sum(cp_mask) == 0:
-            # No conceptual points in this zone - use default tensor
-            default_tensor = np.eye(2) * 1000 ** 2
-            result_tensors[zone_indices] = default_tensor
-            continue
-
-        zone_cp_coords = cp_coords[cp_mask]
-        zone_log_tensors = log_tensors[cp_mask]
-        zone_xcentergrid = xcentergrid[zone_indices]
-        zone_ycentergrid = ycentergrid[zone_indices]
-
-        # Interpolate each tensor component separately
-        zone_tensors = np.zeros((len(zone_indices), 2, 2))
-
-        for i in range(2):
-            for j in range(i, 2):  # Only upper triangle, then mirror
-                component_values = zone_log_tensors[:, i, j].real
-
-                # Use pypestutils for kriging
-                try:
-                    from pypestutils.pestutilslib import PestUtilsLib
-                    interp_component = _krig_component_pypestutils(
-                        zone_cp_coords[:, 0], zone_cp_coords[:, 1],
-                        component_values, zone_xcentergrid, zone_ycentergrid,
-                        config_dict
-                    )
-                except Exception as e:
-                    raise Exception(f"Error importing pypestutils, using python based method: {e}")
-                    # todo: change to warning use other method
-
-                zone_tensors[:, i, j] = interp_component
-                if i != j:
-                    zone_tensors[:, j, i] = interp_component
-
-        # Convert back from log space and ensure positive definiteness
-        for k in range(len(zone_indices)):
-            try:
-                tensor_exp = expm(zone_tensors[k])
-                result_tensors[zone_indices[k]] = _ensure_positive_definite(tensor_exp)
-            except:
-                # Fallback to default tensor
-                result_tensors[zone_indices[k]] = np.eye(2) * 1000 ** 2
-
-    return result_tensors
 
 
 def _krig_component_pypestutils(cp_x, cp_y, cp_values, xcentergrid, ycentergrid, config_dict):
@@ -1110,6 +1039,74 @@ def _krig_component_pypestutils(cp_x, cp_y, cp_values, xcentergrid, ycentergrid,
 
         # Simple IDW fallback
         return _idw_component(cp_x, cp_y, cp_values, xcentergrid, ycentergrid)
+
+
+def _interpolate_tensors_kriging(cp_coords, cp_tensors, cp_zones,
+                                 xcentergrid, ycentergrid, zones_flat, config_dict, nx, ny):
+    """Interpolate tensors using pypestutils kriging with log-Euclidean approach."""
+    n_grid = np.prod(xcentergrid.shape)
+    result_tensors = np.zeros((n_grid, 2, 2))
+
+    # Convert tensors to log space
+    log_tensors = np.array([logm(_ensure_positive_definite(tensor))
+                            for tensor in cp_tensors])
+
+    # Process each zone separately
+    unique_zones = np.unique(zones_flat)
+
+    for zone_id in unique_zones:
+        zone_mask = zones_flat == zone_id
+        zone_indices = np.where(zone_mask)[0]
+
+        if len(zone_indices) == 0:
+            continue
+
+        # Filter conceptual points for this zone
+        cp_mask = cp_zones == zone_id
+        if np.sum(cp_mask) == 0:
+            # No conceptual points in this zone - use default tensor
+            default_tensor = np.eye(2) * 1000 ** 2
+            result_tensors[zone_indices] = default_tensor
+            continue
+
+        zone_cp_coords = cp_coords[cp_mask]
+        zone_log_tensors = log_tensors[cp_mask]
+        zone_xcentergrid = xcentergrid[zone_indices]
+        zone_ycentergrid = ycentergrid[zone_indices]
+
+        # Interpolate each tensor component separately
+        zone_tensors = np.zeros((len(zone_indices), 2, 2))
+
+        for i in range(2):
+            for j in range(i, 2):  # Only upper triangle, then mirror
+                component_values = zone_log_tensors[:, i, j].real
+
+                # Use pypestutils for kriging
+                try:
+                    from pypestutils.pestutilslib import PestUtilsLib
+                    interp_component = _krig_component_pypestutils(
+                        zone_cp_coords[:, 0], zone_cp_coords[:, 1],
+                        component_values, zone_xcentergrid, zone_ycentergrid,
+                        config_dict
+                    )
+                except Exception as e:
+                    raise Exception(f"Error importing pypestutils, using python based method: {e}")
+                    # todo: change to warning use other method
+
+                zone_tensors[:, i, j] = interp_component
+                if i != j:
+                    zone_tensors[:, j, i] = interp_component
+
+        # Convert back from log space and ensure positive definiteness
+        for k in range(len(zone_indices)):
+            try:
+                tensor_exp = expm(zone_tensors[k])
+                result_tensors[zone_indices[k]] = _ensure_positive_definite(tensor_exp)
+            except:
+                # Fallback to default tensor
+                result_tensors[zone_indices[k]] = np.eye(2) * 1000 ** 2
+
+    return result_tensors
 
 
 def _idw_component(cp_x, cp_y, cp_values, xcentergrid, ycentergrid, power=2):
@@ -1297,7 +1294,7 @@ def _generate_stochastic_field(modelgrid, mean_field, sd_field,
     n_points = ny * nx
 
     # Flatten fields
-    mean_flat = mean_field.flatten().clip(1e-8, None)  # Always native space
+    mean_flat = mean_field.flatten().clip(1e-8, None)  # native space
     sd_flat = sd_field.flatten()
 
     # Compute variance and set transtype based on what space sd_field is in
@@ -1361,7 +1358,7 @@ def _generate_stochastic_field(modelgrid, mean_field, sd_field,
 
         return field  # Shape: (ny, nx)
 
-    # Handle FIELDGEN2D_SVA generation (internal random generation)
+    # Handle FIELDGEN2D_SVA generation (internal iid generation)
     else:
         try:
             print(f"  Generating {n_realizations} realization(s) using FIELDGEN2D_SVA...")
@@ -1533,7 +1530,7 @@ def _moving_average_field(modelgrid, mean_flat, variance_flat,
     # Initialize output
     Z_field = np.zeros(n_points)
 
-    # Ensure we have active mask
+    # Ensure active mask
     if active is None:
         active = np.ones(n_points, dtype=bool)
     else:
@@ -1564,17 +1561,8 @@ def _moving_average_field(modelgrid, mean_flat, variance_flat,
         if len(neighbor_indices) == 0:
             neighbor_indices = [i]
 
-        # CRITICAL: Filter to only active neighbors
+        # Filter to only active neighbors
         neighbor_indices = [idx for idx in neighbor_indices if active[idx]]
-
-        # MAX_NEIGHBORS = 2  # Reasonable limit
-        #
-        # if len(neighbor_indices) > MAX_NEIGHBORS:
-        #     # Keep only the closest MAX_NEIGHBORS points
-        #     neighbor_coords = coords[neighbor_indices]
-        #     distances = np.sqrt(np.sum((neighbor_coords - [x0, y0]) ** 2, axis=1))
-        #     closest_indices = np.argsort(distances)[:MAX_NEIGHBORS]
-        #     neighbor_indices = [neighbor_indices[i] for i in closest_indices]
 
         if len(neighbor_indices) == 0:
             # No active neighbors - use unconditional simulation
@@ -1621,38 +1609,18 @@ def _moving_average_field(modelgrid, mean_flat, variance_flat,
                 else:
                     weights[j] = 0.0
 
-        # # Apply weighted sum (NOT normalized)
-        # weighted_sum = np.sum(weights * iids[neighbor_indices])
-        #
-        # # Compute variance scaling factor
-        # variance_of_weighted_sum = np.sum(weights ** 2)
-        #
-        # if variance_of_weighted_sum > 0:
-        #     scaling_factor = np.sqrt(local_var / variance_of_weighted_sum)
-        #     # if i < 10 or scaling_factor > 10 or scaling_factor < 0.1:
-        #         # print(f"Point {i}: n_neighbors={len(neighbor_indices)}, "
-        #         #       f"sum(w²)={variance_of_weighted_sum:.6f}, "
-        #         #       f"local_var={local_var:.6f}, "
-        #         #       f"scaling={scaling_factor:.6f}")
-        #     Z_field[i] = weighted_sum * scaling_factor
-        # else:
-        #     # Fallback: unconditional simulation
-        #     Z_field[i] = np.sqrt(local_var) * iids[i]
-
-        # After computing all weights, normalize them
-        weight_sum = np.sum(weights)
-        if weight_sum > 0:
-            weights = weights / weight_sum  # Now they sum to 1
-
-        # Apply weighted sum
+        # Apply weighted sum (NOT normalized)
         weighted_sum = np.sum(weights * iids[neighbor_indices])
 
         # Compute variance scaling factor
-        # After normalization, sum(w²) will be much smaller
         variance_of_weighted_sum = np.sum(weights ** 2)
 
-        scaling_factor = np.sqrt(local_var / variance_of_weighted_sum)
-        Z_field[i] = weighted_sum * scaling_factor
+        if variance_of_weighted_sum > 0:
+            scaling_factor = np.sqrt(local_var / variance_of_weighted_sum)
+            Z_field[i] = weighted_sum * scaling_factor
+        else:
+            # Fallback: unconditional simulation
+            Z_field[i] = np.sqrt(local_var) * iids[i]
 
     print(f"    Convolution complete. Z-field stats: mean={Z_field.mean():.3f}, std={Z_field.std():.3f}")
 
