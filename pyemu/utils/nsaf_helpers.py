@@ -14,7 +14,8 @@ from nsaf_utils import (
 )
 
 
-def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
+def generate_fields_from_files(model_name, conceptual_points_file,
+                               model_ws='.',
                                zone_files=None, iid_files=None, field_name=['field'],
                                layer_mode=True, save_dir=None, tensor_interp='krig',
                                transform='log', n_realizations=1, ml=None, sr=None,
@@ -26,7 +27,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
 
     Parameters
     ----------
-    tmp_model_ws : str
+    model_ws : str
         Path to model workspace containing flopy model files
     model_name : str
         Name of the flopy model (e.g., 'freyberg6')
@@ -52,7 +53,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
     layer_mode : bool, default True
         If True, process each layer independently
     save_dir : str, optional
-        Directory path to save output files (default: tmp_model_ws)
+        Directory path to save output files (default: model_ws)
     tensor_interp : str, default 'krig'
         Tensor interpolation method
     transform : str, default 'log'
@@ -89,7 +90,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
         raise NotImplementedError("use_depth=True requires gridit package integration - not yet implemented")
 
     print(f"=== Tensor-Based Field Generation ===")
-    print(f"Model workspace: {tmp_model_ws}")
+    print(f"Model workspace: {model_ws}")
     print(f"Model name: {model_name}")
 
     # Setup spatial reference following PyEMU pattern
@@ -97,17 +98,17 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
         print("Loading flopy model...")
         try:
             # Try MF6 first - only load DIS package for efficiency
-            sim = flopy.mf6.MFSimulation.load(sim_ws=tmp_model_ws, load_only=['dis'])
+            sim = flopy.mf6.MFSimulation.load(sim_ws=model_ws, load_only=['dis'])
             ml = sim.get_model(model_name)
             print(f"Loaded MF6 model: {model_name} (DIS package only)")
         except Exception as e_mf6:
             try:
                 # Fall back to MODFLOW-2005 - only load DIS package
-                ml = flopy.modflow.Modflow.load(f"{model_name}.nam", model_ws=tmp_model_ws,
+                ml = flopy.modflow.Modflow.load(f"{model_name}.nam", model_ws=model_ws,
                                                 load_only=['dis'], check=False)
                 print(f"Loaded MODFLOW-2005 model: {model_name} (DIS package only)")
             except Exception as e_mf2005:
-                raise ValueError(f"Could not load model {model_name} from {tmp_model_ws}.\n"
+                raise ValueError(f"Could not load model {model_name} from {model_ws}.\n"
                                  f"MF6 error: {e_mf6}\n"
                                  f"MF2005 error: {e_mf2005}")
 
@@ -126,7 +127,7 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
           f"Y=[{ycentergrid.min():.1f}, {ycentergrid.max():.1f}]")
 
     # Load conceptual points
-    conceptual_points = pd.read_csv(os.path.join(tmp_model_ws, conceptual_points_file))
+    conceptual_points = pd.read_csv(os.path.join(model_ws, conceptual_points_file))
     print(f"Loaded {len(conceptual_points)} conceptual points")
     print(f"Conceptual points extent: X=[{conceptual_points['x'].min():.1f}, "
           f"{conceptual_points['x'].max():.1f}], Y=[{conceptual_points['y'].min():.1f}, "
@@ -189,14 +190,14 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
         if "{}" not in zone_files:
             raise ValueError(f"zone_files pattern must contain '{{}}' placeholder, got: {zone_files}")
         for layer_num in range(total_layers):
-            zone_paths[layer_num] = os.path.join(tmp_model_ws, zone_files.format(layer_num))
+            zone_paths[layer_num] = os.path.join(model_ws, zone_files.format(layer_num))
     elif isinstance(zone_files, dict):
         # Explicit dict mapping - must contain all layers
         for layer_num in range(total_layers):
             if layer_num not in zone_files:
                 raise ValueError(f"zone_files dict missing entry for layer {layer_num}. "
                                  f"Dict must contain all layers 0-{total_layers - 1}")
-            zone_paths[layer_num] = os.path.join(tmp_model_ws, zone_files[layer_num])
+            zone_paths[layer_num] = os.path.join(model_ws, zone_files[layer_num])
     else:
         raise ValueError(f"zone_files must be None, str, or dict. Got: {type(zone_files)}")
 
@@ -238,13 +239,13 @@ def generate_fields_from_files(tmp_model_ws, model_name, conceptual_points_file,
                     # String pattern - must contain {} placeholder
                     if "{}" not in iid_files:
                         raise ValueError(f"iid_files pattern must contain '{{}}' placeholder, got: {iid_files}")
-                    iid_path = os.path.join(tmp_model_ws, iid_files.format(layer_num))
+                    iid_path = os.path.join(model_ws, iid_files.format(layer_num))
                 elif isinstance(iid_files, dict):
                     # Explicit dict mapping - must contain all layers
                     if layer_num not in iid_files:
                         raise ValueError(f"iid_files dict missing entry for layer {layer_num}. "
                                          f"Dict must contain all layers 0-{total_layers - 1}")
-                    iid_path = os.path.join(tmp_model_ws, iid_files[layer_num])
+                    iid_path = os.path.join(model_ws, iid_files[layer_num])
                 else:
                     raise ValueError(f"iid_files must be None, str, or dict. Got: {type(iid_files)}")
 
@@ -726,7 +727,7 @@ def test_tangential_via_files():
     # Test with fieldgen (iids=None)
     print("\n--- Test 1: FIELDGEN2D_SVA (iids=None) ---")
     results_fieldgen = generate_fields_from_files(
-        tmp_model_ws=test_ws,
+        model_ws=test_ws,
         model_name='tangential_test',
         conceptual_points_file='conceptual_points.csv',
         zone_files='zones_layer{}.arr',
@@ -744,7 +745,7 @@ def test_tangential_via_files():
     # Test with Python fallback (iids provided)
     print("\n--- Test 2: Python fallback (iids provided) ---")
     results_python = generate_fields_from_files(
-        tmp_model_ws=test_ws,
+        model_ws=test_ws,
         model_name='tangential_test',
         conceptual_points_file='conceptual_points.csv',
         zone_files='zones_layer{}.arr',
