@@ -935,3 +935,128 @@ def apply_ppu_hyperpars(config_df_filename):
     lib.free_all_memory()
 
     return result
+
+def apply_ppu_hyperpars_tensor(config_df_filename):
+    try:
+        from pypestutils.pestutilslib import PestUtilsLib
+    except Exception as e:
+        raise Exception("apply_ppu_hyperpars() error importing pypestutils: '{0}'".format(str(e)))
+
+    def create_tensors_from_bearing_aniso(bearing_array, aniso_array, n_points):
+        """Create 2x2 tensors from bearing and anisotropy arrays"""
+        tensors = np.zeros((n_points, 2, 2))
+        for i in range(n_points):
+            theta = np.radians(bearing_array[i])
+            r = aniso_array[i]
+
+            # Create 2x2 anisotropy tensor
+            cos_t, sin_t = np.cos(theta), np.sin(theta)
+            tensors[i, 0, 0] = cos_t ** 2 + r ** 2 * sin_t ** 2
+            tensors[i, 0, 1] = tensors[i, 1, 0] = (1 - r ** 2) * cos_t * sin_t
+            tensors[i, 1, 1] = sin_t ** 2 + r ** 2 * cos_t ** 2
+
+        return tensors
+
+    def transform_coords_with_tensor_field(coords, tensors, grid_coords):
+        """Transform coordinates using local tensors"""
+        transformed = np.zeros_like(coords)
+
+        for i, coord in enumerate(coords):
+            # Find nearest grid point (simple approach)
+            distances = np.linalg.norm(grid_coords - coord, axis=1)
+            nearest_idx = np.argmin(distances)
+            local_tensor = tensors[nearest_idx]
+
+            # Apply Cholesky decomposition for transformation
+            try:
+                L = np.linalg.cholesky(local_tensor)
+                transformed[i] = L @ coord
+            except np.linalg.LinAlgError:
+                # Fallback to original coordinates if tensor is singular
+                transformed[i] = coord
+
+        return transformed
+    
+    config_df = pd.read_csv(config_df_filename,index_col=0)
+    config_dict = config_df["value"].to_dict()
+    vartransform = config_dict.get("vartransform", "none")
+    config_dict = parse_pp_options_with_defaults(config_dict, threads=None, log=vartransform=='log')
+
+    out_filename = config_dict["out_filename"]
+    #pp_info = pd.read_csv(config_dict["pp_filename"],sep="\s+")
+    pp_info = pyemu.pp_utils.pp_file_to_dataframe(config_dict["pp_filename"])
+    grid_df = pd.read_csv(config_dict["gridinfo_filename"])
+    corrlen = np.loadtxt(config_dict["corrlen_filename"])
+    bearing = np.loadtxt(config_dict["bearing_filename"])
+    aniso = np.loadtxt(config_dict["aniso_filename"])
+    zone = np.loadtxt(config_dict["zone_filename"])
+
+    # Create tensor field and transform coordinates
+    grid_coords = np.column_stack([grid_df.x.values, grid_df.y.values])
+    pp_coords = np.column_stack([pp_info.x.values, pp_info.y.values])
+
+    # Create tensors from bearing/anisotropy at grid points
+    tensors_2d = create_tensors_from_bearing_aniso(
+        bearing.flatten(), aniso.flatten(), grid_coords.shape[0]
+    )
+
+    # Transform both pilot point and grid coordinates
+    pp_coords_transformed = transform_coords_with_tensor_field(
+        pp_coords, tensors_2d, grid_coords
+    )
+    grid_coords_transformed = transform_coords_with_tensor_field(
+        grid_coords, tensors_2d, grid_coords
+    )
+
+    lib = PestUtilsLib()
+    fac_fname = out_filename + ".temp.fac"
+    if os.path.exists(fac_fname):
+        os.remove(fac_fname)
+    fac_ftype = "text"
+
+    # Call pypestutils with transformed coordinates but isotropic parameters
+    npts = lib.calc_kriging_factors_2d(
+        pp_coords_transformed[:, 0],  # transformed pilot point x
+        pp_coords_transformed[:, 1],  # transformed pilot point y
+        pp_info.zone.values,
+        grid_coords_transformed[:, 0],  # transformed grid x
+        grid_coords_transformed[:, 1],  # transformed grid y
+        zone.flatten().astype(int),
+        int(config_dict.get("vartype", 1)),
+        int(config_dict.get("krigtype", 1)),
+        corrlen.flatten(),  # keep original correlation length
+        np.ones_like(aniso.flatten()),  # anisotropy = 1 (isotropic in transformed space)
+        np.zeros_like(bearing.flatten()),  # bearing = 0 (no rotation in transformed space)
+        # defaults should be in config_dict -- the fallbacks here should not be hit now
+        config_dict.get("search_dist",config_dict.get("search_radius", 1e10)),
+        config_dict.get("maxpts_interp",50),
+        config_dict.get("minpts_interp",1),
+        fac_fname,
+        fac_ftype,
+        )
+
+    # this is now filled as a default in config_dict if not in config file,
+    # default value dependent on vartransform (ie. 1 for log 0 for non log)
+    noint = config_dict.get("fill_value",pp_info.loc[:, "parval1"].mean())
+
+    result = lib.krige_using_file(
+        fac_fname,
+        fac_ftype,
+        zone.size,
+        int(config_dict.get("krigtype", 1)),
+        vartransform,
+        pp_info["parval1"].values,
+        noint,
+        noint,
+    )
+    assert npts == result["icount_interp"]
+    result = result["targval"]
+    #shape = tuple([int(s) for s in config_dict["shape"]])
+    tup_string = config_dict["shape"]
+    shape = tuple(int(x) for x in tup_string[1:-1].split(','))
+    result = result.reshape(shape)
+    np.savetxt(out_filename,result,fmt="%20.8E")
+    os.remove(fac_fname)
+    lib.free_all_memory()
+
+    return result

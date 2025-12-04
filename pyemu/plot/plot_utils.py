@@ -2,6 +2,7 @@
 import os
 import numpy as np
 import pandas as pd
+from scipy import ndimage
 import warnings
 from datetime import datetime
 import string
@@ -1794,3 +1795,709 @@ def plot_jac_test(
                     )
                 )
             plt.close()
+
+def plot_zones_with_conceptual_points(zones, conceptual_points, grid_coords,
+                                      figsize=(12, 10), save_path='.'):
+    """
+    Plot geology zones with conceptual points overlaid and labeled.
+    Automatically handles single layer (2D) or multiple layers (3D) based on zones shape.
+
+    Parameters
+    ----------
+    zones : np.ndarray
+        Zone array, shape (ny, nx) for single layer or (nz, ny, nx) for multiple layers
+    conceptual_points : pd.DataFrame
+        Must have columns: x, y, i, j, name
+        For 3D zones, must also have column: k
+    grid_coords : np.ndarray
+        Grid coordinates for coordinate transformation
+        Shape (ny*nx, 3) for 2D or (nz*ny*nx, 3) for 3D
+    figsize : tuple
+        Figure size
+    save_path : str, optional
+        Path to save figure
+    """
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as patches
+    import os
+    import numpy as np
+
+    shape = zones.shape
+    is_3d = len(shape) == 3
+
+    if is_3d:
+        nz, ny, nx = shape
+        # Validate inputs for 3D
+        if  grid_coords.shape[0] != nz * ny * nx:
+            raise ValueError(f"Grid coordinates shape {grid_coords.shape} doesn't match zones shape {shape}")
+
+        # Check for required 'k' column in conceptual points
+        if 'k' not in conceptual_points.columns:
+            raise ValueError("For 3D zones, conceptual_points must have 'k' column for layer index")
+
+        # Reshape grid coordinates to 3D structure for easy layer access
+        grid_coords_3d = grid_coords.reshape(nz, ny, nx, 3)
+
+        # Get overall bounds for consistent axis limits across layers
+        x_min, x_max = grid_coords[:, 0].min(), grid_coords[:, 0].max()
+        y_min, y_max = grid_coords[:, 1].min(), grid_coords[:, 1].max()
+    else:
+        ny, nx = shape
+
+        # Handle case where grid_coords might be from 3D model but zones is 2D slice
+        expected_2d_points = ny * nx
+        total_points = grid_coords.shape[0]
+
+        if total_points == expected_2d_points:
+            # Grid coords match 2D zones exactly
+            try:
+                grid_coords_xyz = grid_coords[['x', 'y', 'z']].values
+                grid_coords_2d = grid_coords_xyz.reshape(ny, nx, 3)
+            except (KeyError, AttributeError, IndexError, TypeError):
+                # Fallback to numeric indexing if it's not a DataFrame or missing columns
+                if grid_coords.shape[1] >= 4:
+                    grid_coords_xyz = grid_coords[:, 1:4]  # Take x,y,z columns (skip name)
+                    grid_coords_2d = grid_coords_xyz.reshape(ny, nx, 3)
+                else:
+                    raise ValueError("Grid coordinates must have 'x', 'y', 'z' columns or at least 4 numeric columns")
+        elif total_points % expected_2d_points == 0:
+            # Grid coords are from 3D model, use first layer
+            n_layers = total_points // expected_2d_points
+            print(f"Using first layer coordinates from {n_layers}-layer grid")
+            layer_coords = grid_coords[:expected_2d_points]
+
+            try:
+                layer_coords_xyz = layer_coords[['x', 'y', 'z']].values
+                grid_coords_2d = layer_coords_xyz.reshape(ny, nx, 3)
+            except (KeyError, AttributeError, IndexError, TypeError):
+                # Fallback to numeric indexing if it's not a DataFrame or missing columns
+                if layer_coords.shape[1] >= 4:
+                    layer_coords_xyz = layer_coords[:, 1:4]  # Take x,y,z columns (skip name)
+                    grid_coords_2d = layer_coords_xyz.reshape(ny, nx, 3)
+                else:
+                    raise ValueError("Grid coordinates must have 'x', 'y', 'z' columns or at least 4 numeric columns")
+        else:
+            raise ValueError(f"Grid coordinates shape {grid_coords.shape} doesn't match zones shape {shape}")
+
+        # Get bounds using the processed coordinates
+        x_min, x_max = grid_coords_2d[:, :, 0].min(), grid_coords_2d[:, :, 0].max()
+        y_min, y_max = grid_coords_2d[:, :, 1].min(), grid_coords_2d[:, :, 1].max()
+
+    # Get overall zone range for consistent coloring
+    unique_zones = np.unique(zones)
+    n_zones = len(unique_zones)
+    zone_to_color = {zone: i for i, zone in enumerate(unique_zones)}
+
+    if is_3d:
+        # Multiple layers - create subplots
+        fig, axes = plt.subplots(1, nz, figsize=(figsize[0] * nz / 2, figsize[1]))
+        if nz == 1:
+            axes = [axes]  # Ensure axes is always iterable
+
+        for k in range(nz):
+            ax = axes[k]
+
+            # Get layer-specific data
+            layer_zones = zones[k, :, :]
+            layer_coords = grid_coords_3d[k, :, :, :]  # (ny, nx, 3)
+
+            # Get x, y coordinates for this layer
+            x_coords = layer_coords[:, :, 0]
+            y_coords = layer_coords[:, :, 1]
+
+            # Remap zones for consistent coloring
+            zones_remapped = np.zeros_like(layer_zones)
+            for zone_val, color_idx in zone_to_color.items():
+                zones_remapped[layer_zones == zone_val] = color_idx
+
+            # Plot zones - flip the array to match real-world orientation
+            zones_flipped = np.flipud(zones_remapped)
+
+            im = ax.imshow(zones_flipped, extent=[x_min, x_max, y_min, y_max],
+                           origin='upper', cmap='tab10', alpha=0.7,
+                           vmin=0, vmax=n_zones - 1)
+
+            # Filter conceptual points for this layer
+            layer_points = conceptual_points[conceptual_points['k'] == k]
+
+            # Plot conceptual points for this layer
+            for idx, row in layer_points.iterrows():
+                x, y = row['x'], row['y']
+                i, j = row['i'], row['j']
+                name = row['name']
+
+                # Plot point
+                ax.plot(x, y, 'ro', markersize=8, markeredgecolor='black', markeredgewidth=1)
+
+                # Add label with index and grid position
+                ax.annotate(f'{name}\n({i},{j})',
+                            (x, y), xytext=(5, 5), textcoords='offset points',
+                            fontsize=8, fontweight='bold',
+                            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+
+                # Draw line to corresponding grid cell center
+                i_int, j_int = int(i), int(j)
+                if 0 <= i_int < ny and 0 <= j_int < nx:
+                    grid_x = x_coords[i_int, j_int]
+                    grid_y = y_coords[i_int, j_int]
+                    ax.plot([x, grid_x], [y, grid_y], 'r--', alpha=0.5, linewidth=1)
+
+                    # Mark grid cell center
+                    ax.plot(grid_x, grid_y, 'r+', markersize=10, markeredgewidth=2)
+
+            ax.set_xlabel('X (NZTM)')
+            ax.set_ylabel('Y (NZTM)')
+            ax.set_title(f'Layer {k + 1} - Geology Zones with Conceptual Points')
+            ax.grid(True, alpha=0.3)
+
+            # Set consistent axis limits
+            ax.set_xlim(x_min, x_max)
+            ax.set_ylim(y_min, y_max)
+
+        # Add colorbar to the last subplot
+        cbar = plt.colorbar(im, ax=axes[-1])
+        cbar.set_label('Zone ID')
+        cbar.set_ticks(range(n_zones))
+        cbar.set_ticklabels([f'{int(z)}' for z in unique_zones])
+
+        # Add legend to first subplot
+        legend_elements = [
+            plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='r',
+                       markersize=8, label='Conceptual Points'),
+            plt.Line2D([0], [0], marker='+', color='r', markersize=10,
+                       label='Assigned Grid Cells'),
+            plt.Line2D([0], [0], color='r', linestyle='--',
+                       label='CP to Grid Assignment')
+        ]
+        axes[0].legend(handles=legend_elements, loc='upper right')
+
+        plt.tight_layout()
+
+        # Save figure
+        save_file = os.path.join(save_path, 'conceptual_points_multilayer.png')
+        plt.savefig(save_file, dpi=150, bbox_inches='tight')
+        print(f"Plot saved to: {save_file}")
+        return fig
+
+    else:
+        # Single layer - original logic
+        fig, ax = plt.subplots(figsize=figsize)
+
+        # Get x, y coordinates for the single layer
+        x_coords = grid_coords_2d[:, :, 0]
+        y_coords = grid_coords_2d[:, :, 1]
+
+        # Remap zones for consistent coloring
+        zones_remapped = np.zeros_like(zones)
+        for zone_val, color_idx in zone_to_color.items():
+            zones_remapped[zones == zone_val] = color_idx
+
+        # Plot zones - flip the array to match real-world orientation
+        zones_flipped = np.flipud(zones_remapped)
+
+        im = ax.imshow(zones_flipped, extent=[x_min, x_max, y_min, y_max],
+                       origin='upper', cmap='tab10', alpha=0.7,
+                       vmin=0, vmax=n_zones - 1)
+
+        # Add colorbar with actual zone values
+        cbar = plt.colorbar(im, ax=ax)
+        cbar.set_label('Zone ID')
+        cbar.set_ticks(range(n_zones))
+        cbar.set_ticklabels([f'{int(z)}' for z in unique_zones])
+
+        # Plot conceptual points (all points for single layer)
+        for idx, row in conceptual_points.iterrows():
+            x, y = row['x'], row['y']
+            i, j = row['i'], row['j']
+            name = row['name']
+
+            # Plot point
+            ax.plot(x, y, 'ro', markersize=8, markeredgecolor='black', markeredgewidth=1)
+
+            # Add label with index and grid position
+            ax.annotate(f'{name}\n({i},{j})',
+                        (x, y), xytext=(5, 5), textcoords='offset points',
+                        fontsize=8, fontweight='bold',
+                        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+
+            # Draw line to corresponding grid cell center
+            i_int, j_int = int(i), int(j)
+            if 0 <= i_int < ny and 0 <= j_int < nx:
+                grid_x = x_coords[i_int, j_int]
+                grid_y = y_coords[i_int, j_int]
+                ax.plot([x, grid_x], [y, grid_y], 'r--', alpha=0.5, linewidth=1)
+
+                # Mark grid cell center
+                ax.plot(grid_x, grid_y, 'r+', markersize=10, markeredgewidth=2)
+
+        ax.set_xlabel('X (NZTM)')
+        ax.set_ylabel('Y (NZTM)')
+        ax.set_title('Geology Zones with Conceptual Points\n(Red dots = CP locations, + = assigned grid cells)')
+        ax.grid(True, alpha=0.3)
+
+        # Add legend
+        legend_elements = [
+            plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='r',
+                       markersize=8, label='Conceptual Points'),
+            plt.Line2D([0], [0], marker='+', color='r', markersize=10,
+                       label='Assigned Grid Cells'),
+            plt.Line2D([0], [0], color='r', linestyle='--',
+                       label='CP to Grid Assignment')
+        ]
+        ax.legend(handles=legend_elements, loc='upper right')
+
+        plt.tight_layout()
+
+        # Save figure
+        save_file = os.path.join(save_path, 'conceptual_points.png')
+        plt.savefig(save_file, dpi=150, bbox_inches='tight')
+        print(f"Plot saved to: {save_file}")
+
+    plt.close()
+
+
+def visualize_tensors(tensors, xcentergrid, ycentergrid, zones=None,
+                      conceptual_points=None, subsample=4, max_ellipse_size=0.1,
+                      figsize=(14, 12), title_suf=None, save_path='.'):
+    """
+    Visualize tensors as ellipses overlaid on zones, with conceptual points as oriented lines.
+    Uses PyEMU-consistent inputs.
+
+    Parameters
+    ----------
+    tensors : np.ndarray
+        Tensor field, shape (ny*nx, 2, 2) - flattened in row-major order
+    xcentergrid : np.ndarray
+        X-coordinates from pyemu SpatialReference, shape (ny, nx)
+    ycentergrid : np.ndarray
+        Y-coordinates from pyemu SpatialReference, shape (ny, nx)
+    zones : np.ndarray, optional
+        Zone array for background, shape (ny, nx)
+    conceptual_points : pd.DataFrame or str, optional
+        Conceptual points DataFrame or path to CSV with x, y, bearing, major columns
+    subsample : int, default 4
+        Show every Nth tensor (for readability)
+    max_ellipse_size : float, default 0.1
+        Maximum ellipse size as fraction of domain extent (0-1)
+    figsize : tuple, default (14, 12)
+        Figure size
+    title_suf : str, optional
+        Suffix for plot title
+    save_path : str, default '.'
+        Directory to save plot
+
+    Returns
+    -------
+    None
+        Saves visualization as PNG file
+
+    Examples
+    --------
+    >>> visualize_tensors(tensors, xcentergrid, ycentergrid,
+    ...                  zones=zones, subsample=12, max_ellipse_size=0.05)
+    """
+    from matplotlib.patches import Ellipse
+    from matplotlib.patches import Rectangle
+    import matplotlib.patches as patches
+
+    # Get grid dimensions
+    ny, nx = xcentergrid.shape
+
+    # Verify tensor shape consistency
+    expected_size = ny * nx
+    if tensors.shape[0] != expected_size:
+        raise ValueError(f"Tensor array size {tensors.shape[0]} doesn't match grid size {expected_size}")
+
+    # Create grid coordinates array for compatibility
+    grid_coords = np.column_stack([xcentergrid.flatten(), ycentergrid.flatten()])
+
+    # Load conceptual points if needed
+    if isinstance(conceptual_points, str):
+        import pandas as pd
+        conceptual_points = pd.read_csv(conceptual_points)
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    # Get coordinate bounds and calculate domain extents
+    x_min, x_max = xcentergrid.min(), xcentergrid.max()
+    y_min, y_max = ycentergrid.min(), ycentergrid.max()
+
+    # Calculate domain extents
+    ew_extent = x_max - x_min  # East-West extent
+    ns_extent = y_max - y_min  # North-South extent
+    max_domain_length = max(ew_extent, ns_extent)
+
+    print(f"Grid bounds: X=[{x_min:.1f}, {x_max:.1f}], Y=[{y_min:.1f}, {y_max:.1f}]")
+    print(f"Domain extents: E-W={ew_extent:.1f}, N-S={ns_extent:.1f}, Max={max_domain_length:.1f}")
+
+    # Set axis limits explicitly
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+
+    # Plot zones as background if provided
+    if zones is not None:
+        # Validate zones shape
+        if zones.shape != (ny, nx):
+            raise ValueError(f"Zones shape {zones.shape} doesn't match grid shape {(ny, nx)}")
+
+        # Create zone color mapping
+        unique_zones = np.unique(zones)
+        zone_to_color = {zone: i for i, zone in enumerate(unique_zones)}
+        zones_remapped = np.zeros_like(zones)
+        for zone_val, color_idx in zone_to_color.items():
+            zones_remapped[zones == zone_val] = color_idx
+
+        # Flip zones for proper display (matplotlib convention)
+        zones_flipped = np.flipud(zones_remapped)
+
+        # Plot zones as background with low alpha
+        im = ax.imshow(zones_flipped, extent=[x_min, x_max, y_min, y_max],
+                       origin='lower', cmap='tab10', alpha=0.2, zorder=0,
+                       vmin=0, vmax=len(unique_zones) - 1)
+
+    # Plot conceptual points as oriented lines
+    if conceptual_points is not None:
+        for idx, row in conceptual_points.iterrows():
+            x, y = row['x'], row['y']
+            bearing = row['bearing']
+            major = row['major']
+
+            # Scale line length for visibility relative to grid
+            line_length = max_domain_length / 50  # Make lines 2% of max domain extent
+
+            # Convert geological bearing (CW from N) to math angle for plotting
+            # Geological: 0°=N, 90°=E; Math: 0°=E, 90°=N
+            math_angle_rad = np.radians(90 - bearing)
+
+            # Calculate line endpoints
+            dx = line_length * np.cos(math_angle_rad) / 2
+            dy = line_length * np.sin(math_angle_rad) / 2
+
+            # Plot line centered on point
+            ax.plot([x - dx, x + dx], [y - dy, y + dy],
+                    'r-', linewidth=3, alpha=0.9, zorder=4)
+
+            # Plot center point
+            ax.plot(x, y, 'ro', markersize=4, markeredgecolor='black',
+                    markeredgewidth=1, alpha=0.9, zorder=5)
+
+            # Add label with bearing
+            ax.annotate(f'{bearing:.0f}°', (x, y), xytext=(8, 8),
+                        textcoords='offset points', fontsize=8, fontweight='bold',
+                        bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.7),
+                        zorder=6)
+
+    # Subsample points for visualization
+    indices = np.arange(0, len(tensors), subsample)
+
+    print(f"Plotting {len(indices)} tensors out of {len(tensors)}")
+
+    default_count = 0
+    ellipse_count = 0
+
+    # Sample ALL valid tensors to get statistics for scaling
+    all_eigenvals = []
+    valid_tensor_count = 0
+
+    for tensor in tensors:
+        if not np.allclose(tensor, np.eye(2) * 1000000):
+            try:
+                eigenvals, _ = np.linalg.eigh(tensor)
+                if np.all(eigenvals > 0):  # Valid eigenvalues
+                    all_eigenvals.extend(eigenvals)
+                    valid_tensor_count += 1
+            except:
+                continue
+
+    if all_eigenvals:
+        all_eigenvals = np.array(all_eigenvals)
+        max_eigenval = np.max(all_eigenvals)
+        percentile_95 = np.percentile(all_eigenvals, 95)
+        median_eigenval = np.median(all_eigenvals)
+
+        max_correlation_length = np.sqrt(max_eigenval)
+        p95_correlation_length = np.sqrt(percentile_95)
+        median_correlation_length = np.sqrt(median_eigenval)
+
+        print(f"Eigenvalue statistics from {valid_tensor_count} valid tensors:")
+        print(f"  Max eigenvalue: {max_eigenval:.1e} -> correlation length: {max_correlation_length:.1f}")
+        print(f"  95th percentile: {percentile_95:.1e} -> correlation length: {p95_correlation_length:.1f}")
+        print(f"  Median eigenvalue: {median_eigenval:.1e} -> correlation length: {median_correlation_length:.1f}")
+
+        # Option 1: Scale to max (might be outlier)
+        target_max_size = max_ellipse_size * max_domain_length
+        ellipse_scale_max = target_max_size / max_correlation_length
+
+        # Option 2: Scale to 95th percentile (more robust)
+        ellipse_scale_p95 = target_max_size / p95_correlation_length
+
+        print(f"Target max ellipse size: {target_max_size:.1f}")
+        print(f"Scale factor using max: {ellipse_scale_max:.1e}")
+        print(f"Scale factor using 95th percentile: {ellipse_scale_p95:.1e}")
+        print(f"Max correlation length / domain length ratio: {max_correlation_length / max_domain_length:.3f}")
+
+        # Use the true maximum for scaling (not 95th percentile)
+        ellipse_scale = target_max_size / max_correlation_length
+        scaling_reference = max_correlation_length
+
+        print(f"Using true maximum for scaling: {ellipse_scale:.1e}")
+        print(f"This ensures largest ellipse will be exactly {target_max_size:.1f} units")
+
+    else:
+        ellipse_scale = max_ellipse_size * max_domain_length
+        scaling_reference = 1.0  # fallback
+        print(f"No valid eigenvalues found, using fallback scale: {ellipse_scale}")
+
+    for i in indices:
+        tensor = tensors[i]
+        x, y = grid_coords[i, 0], grid_coords[i, 1]
+
+        # Check for default tensor (indicates no interpolation happened)
+        if np.allclose(tensor, np.eye(2) * 1000000):
+            # Plot as black circle for default tensors
+            ax.plot(x, y, 'ko', markersize=2, alpha=0.3, zorder=1)
+            default_count += 1
+            continue
+
+        try:
+            # Eigendecomposition to get ellipse parameters
+            eigenvals, eigenvecs = np.linalg.eigh(tensor)
+
+            # Check for valid eigenvalues
+            if not np.all(eigenvals > 0):
+                ax.plot(x, y, 'ro', markersize=2, zorder=3)
+                continue
+
+            # Sort by eigenvalue magnitude
+            idx_sort = np.argsort(eigenvals)[::-1]
+            eigenvals = eigenvals[idx_sort]
+            eigenvecs = eigenvecs[:, idx_sort]
+
+            # Ellipse dimensions from correlation lengths
+            major_length = np.sqrt(eigenvals[0])
+            minor_length = np.sqrt(eigenvals[1])
+
+            # Apply scaling
+            major_axis = major_length * ellipse_scale
+            minor_axis = minor_length * ellipse_scale
+
+            # Ellipse orientation (angle of major axis)
+            angle = np.degrees(np.arctan2(eigenvecs[1, 0], eigenvecs[0, 0]))
+
+            # Create ellipse
+            ellipse = Ellipse((x, y), major_axis, minor_axis,
+                              angle=angle, linewidth=1,
+                              edgecolor='blue', facecolor='none', alpha=0.6, zorder=2)
+            ax.add_patch(ellipse)
+            ellipse_count += 1
+
+        except Exception as e:
+            # If tensor is problematic, plot as yellow point
+            ax.plot(x, y, 'yo', markersize=2, zorder=3)
+
+    print(f"Plotted {default_count} default tensors (black circles) and {ellipse_count} ellipses")
+
+    ax.set_xlabel('X Coordinate')
+    ax.set_ylabel('Y Coordinate')
+
+    # Update title and legend
+    title_parts = [f'Tensors (subsampled 1:{subsample}, max size = {max_ellipse_size:.1%} of domain)']
+    if title_suf is not None:
+        title_parts.append(f'{title_suf}')
+
+    # Add informational subtitle
+    subtitle_parts = []
+    if conceptual_points is not None:
+        subtitle_parts.append('Red lines = conceptual points (bearing)')
+    subtitle_parts.append('Blue ellipses = interpolated tensors')
+
+    if subtitle_parts:
+        title_parts.append('\n'.join(subtitle_parts))
+
+    ax.set_title('\n'.join(title_parts))
+    ax.set_aspect('equal', adjustable='box')
+
+    # Add colorbar for zones if present
+    if zones is not None:
+        cbar = plt.colorbar(im, ax=ax, shrink=0.8)
+        cbar.set_label('Zone ID')
+        cbar.set_ticks(range(len(unique_zones)))
+        cbar.set_ticklabels([f'{int(z)}' for z in unique_zones])
+
+    # Add legend
+    legend_elements = []
+    if conceptual_points is not None:
+        legend_elements.extend([
+            plt.Line2D([0], [0], color='red', linewidth=3, label='Conceptual Point Bearings'),
+            plt.Line2D([0], [0], marker='o', color='red', markersize=6,
+                       markeredgecolor='black', label='Conceptual Points', linestyle='None')
+        ])
+
+    # Create legend patches without importing patches
+    import matplotlib.lines as mlines
+    legend_elements.extend([
+        mlines.Line2D([], [], color='blue', label='Interpolated Tensors'),
+        plt.Line2D([0], [0], marker='o', color='black', markersize=4,
+                   label='Default Tensors', linestyle='None', alpha=0.3)
+    ])
+
+    if legend_elements:
+        ax.legend(handles=legend_elements, loc='upper right', fontsize=9)
+
+    plt.tight_layout()
+
+    # Save plot
+    if title_suf:
+        save_path = save_path.replace('.png', f'_{title_suf}.png')
+
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    print(f"Saved tensor visualization to {save_path}")
+
+    # Show the plot for interactive backends
+    # plt.show()
+    plt.close()
+
+
+def visualize_nsaf(results, cp_df, xcentergrid, ycentergrid,
+                   transform=None, domain=None, title_suf=None,
+                   save_path='nsaf_visualization.png'):
+    # Apply transform if specified
+    field = results['field']
+    sd = results['sd']
+    mean = results['mean']
+    if domain is not None:
+        field = np.where(domain == 0, np.nan, results['field'])
+        sd = np.where(domain == 0, np.nan, results['sd'])
+        mean = np.where(domain == 0, np.nan, results['mean'])
+    if transform == 'log':
+        field = np.log10(np.where(np.isfinite(field) & (field > 0), field, np.nan))
+        sd = np.log10(np.where(np.isfinite(sd) & (sd > 0), sd, np.nan))
+        mean = np.log10(np.where(np.isfinite(mean) & (mean > 0), mean, np.nan))
+        field_label = f'log10({title_suf})'
+    else:
+        field_label = 'Field'
+
+    # Visualize results
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    vmin = np.floor(np.nanmin(field))
+    vmax = np.ceil(np.nanmax(field))
+
+    # Field with conceptual points using real coordinates
+    im1 = axes[0, 0].imshow(field, origin='upper', cmap='RdYlBu_r',
+                            extent=[xcentergrid.min(), xcentergrid.max(),
+                                    ycentergrid.min(), ycentergrid.max()],
+                            vmin=vmin, vmax=vmax)
+    for idx, row in cp_df.iterrows():
+        x, y = row['x'], row['y']
+
+        # Plot point
+        # axes[0, 0].plot(x, y, 'ko', markersize=2) #, markeredgecolor='white', markeredgewidth=0.1)
+
+        # Draw bearing direction - scale arrow based on domain size
+        domain_scale = max(xcentergrid.max() - xcentergrid.min(),
+                           ycentergrid.max() - ycentergrid.min())
+        arrow_length = domain_scale * 0.02  # 2% of domain size
+
+        bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
+        dx = arrow_length * np.cos(bearing_rad)
+        dy = arrow_length * np.sin(bearing_rad)
+
+        axes[0, 0].arrow(x, y, dx, dy,
+                         head_width=domain_scale * 0.005, head_length=domain_scale * 0.005,
+                         fc='black', ec='black', alpha=0.8, linewidth=0.5)
+
+    axes[0, 0].set_title('Field')# with Conceptual Point Vectors')
+    axes[0, 0].set_xlabel('X Coordinate')
+    axes[0, 0].set_ylabel('Y Coordinate')
+    axes[0, 0].set_aspect('equal')
+    plt.colorbar(im1, ax=axes[0, 0], label=field_label)
+
+    # Field statistics histogram
+    axes[1, 0].hist(field.flatten(), bins=50, alpha=0.7, color='purple', edgecolor='black', range=(vmin, vmax))
+    axes[1, 0].set_title(f'{field_label} Distribution')
+    axes[1, 0].set_xlabel(f'{field_label} Value')
+    axes[1, 0].set_ylabel('Frequency')
+    axes[1, 0].grid(True, alpha=0.3)
+
+    # mean field
+    im2 = axes[0, 1].imshow(mean, origin='upper', cmap='RdYlBu_r',
+                            extent=[xcentergrid.min(), xcentergrid.max(),
+                                    ycentergrid.min(), ycentergrid.max()],
+                            )
+    axes[0, 1].set_title(f'Mean field for {field_label} {title_suf or ""}')
+    axes[0, 1].set_xlabel('X Coordinate')
+    axes[0, 1].set_ylabel('Y Coordinate')
+    plt.colorbar(im2, ax=axes[0, 1], label=field_label)
+
+    # sd field
+    im3 = axes[1, 1].imshow(sd, origin='upper', cmap='RdYlBu_r', alpha=0.8,
+                            extent=[xcentergrid.min(), xcentergrid.max(),
+                                    ycentergrid.min(), ycentergrid.max()],
+                            )
+    axes[1, 1].set_title(f'Standard Deviation field for {field_label} {title_suf or ""}')
+    axes[1, 1].set_xlabel('X Coordinate')
+    axes[1, 1].set_ylabel('Y Coordinate')
+    plt.colorbar(im3, ax=axes[1, 1], label=field_label)
+
+    # Add statistics text
+    # mean_val = np.nanmean(field)
+    # std_val = np.nanstd(field)
+    # axes[1, 0].axvline(mean_val, color='red', linestyle='--', alpha=0.7, label=f'Mean: {mean_val:.3f}')
+    # axes[1, 0].axvline(mean_val + std_val, color='orange', linestyle='--', alpha=0.7,
+    #                    label=f'+1σ: {mean_val + std_val:.3f}')
+    # axes[1, 0].axvline(mean_val - std_val, color='orange', linestyle='--', alpha=0.7,
+    #                    label=f'-1σ: {mean_val - std_val:.3f}')
+    # axes[1, 0].legend()
+
+    # Conceptual points layout - show bearing vectors in domain coordinates
+    # axes[1, 1].set_xlim(xcentergrid.min(), xcentergrid.max())
+    # axes[1, 1].set_ylim(ycentergrid.min(), ycentergrid.max())
+    #
+    # for idx, row in cp_df.iterrows():
+    #     x, y = row['x'], row['y']
+    #
+    #     # Plot point
+    #     axes[1, 1].plot(x, y, 'bo', markersize=6, markeredgecolor='black', markeredgewidth=1, alpha=0.8)
+    #
+    #     # Draw bearing direction
+    #     domain_scale = max(xcentergrid.max() - xcentergrid.min(),
+    #                        ycentergrid.max() - ycentergrid.min())
+    #     arrow_length = domain_scale * 0.05  # 5% of domain size for visibility
+    #
+    #     bearing_rad = np.radians(90 - row['bearing'])  # Convert geo to math for plotting
+    #     dx = arrow_length * np.cos(bearing_rad)
+    #     dy = arrow_length * np.sin(bearing_rad)
+    #
+    #     axes[1, 1].arrow(x, y, dx, dy,
+    #                      head_width=domain_scale * 0.01, head_length=domain_scale * 0.01,
+    #                      fc='blue', ec='blue', alpha=0.7, linewidth=0.7)
+    #
+    #     # Add bearing label
+    #     axes[1, 1].annotate(f'{row["bearing"]:.0f}°',
+    #                         (x, y), xytext=(5, 5), textcoords='offset points',
+    #                         fontsize=8, alpha=0.8)
+    #
+    # # Fix the title string formatting
+    # stats_title = (f'Conceptual Points Layout\n'
+    #                f'Stats: mean={mean_val:.3f}, std={std_val:.3f}\n'
+    #                f'Number of conceptual points: {len(cp_df)}')
+    #
+    # axes[1, 1].set_title(stats_title)
+    # axes[1, 1].set_xlabel('X Coordinate')
+    # axes[1, 1].set_ylabel('Y Coordinate')
+    # axes[1, 1].set_aspect('equal')
+    # axes[1, 1].grid(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    # Save plot
+    if title_suf:
+        base_name = save_path.replace('.png', '')
+        save_path = f"{base_name}_{title_suf}.png"
+
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    print(f"Saved NSAF visualization to {save_path}")
+
+    # Show the plot for interactive backends
+    # plt.show()
+    plt.close()
