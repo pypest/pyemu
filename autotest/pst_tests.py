@@ -1773,15 +1773,15 @@ def results_mou_1_test():
 
 def add_phi_test(tmp_path):
     import pyemu
-    org_d = os.path.join("..","examples","master_org")
+    org_d = os.path.join("ends_master")
     new_d = os.path.join(tmp_path,"phi_test")
     if os.path.exists(new_d):
         shutil.rmtree(new_d)
     shutil.copytree(org_d,new_d)
-    pst = pyemu.Pst(os.path.join(new_d,"pest_org.pst"))
-    print(pst.phi)
-    pst = pyemu.helpers.add_phi_as_obs(pst_name="pest_org.pst",pst_path=new_d)
-    print(pst.obs_names)
+    pst = pyemu.Pst(os.path.join(new_d,"freyberg6_run_ies.pst"))
+    #print(pst.phi)
+    pst = pyemu.helpers.add_phi_as_obs(pst_name="freyberg6_run_ies.pst",pst_path=new_d)
+    #print(pst.obs_names)
     assert "composite" in pst.obs_names
 
 
