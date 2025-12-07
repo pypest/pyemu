@@ -4921,7 +4921,6 @@ def add_phi_as_obs(pst_name,pst_path='.'):
     os.chdir(pst_path)
     df = calc_phi(pst_name)
     os.chdir(b_d)
-    print(df)
     pst = pyemu.Pst(os.path.join(pst_path,pst_name))
     import inspect
     lines = inspect.getsource(calc_phi)
