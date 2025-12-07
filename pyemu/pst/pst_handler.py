@@ -3983,11 +3983,11 @@ class Pst(object):
 
 
         """
-        in_fname = os.path.join(pst_path,name_prefix+"pars_as_obs.txt")
-        tpl_fname = in_fname + ".tpl"
-        ins_fname = in_fname + ".ins"
+        in_fname = os.path.join(pst_path,"pars_as_obs.txt")
+        tpl_fname = os.path.join(pst_path,name_prefix+"pars_as_obs.txt.tpl")
+        ins_fname = os.path.join(pst_path,name_prefix+"pars_as_obs.txt.ins")
 
-        for name in [in_fname,tpl_fname,ins_fname]:
+        for name in [tpl_fname,ins_fname]:
             assert not os.path.exists(name)
         parval1 = self.parameter_data.parval1.copy()
         parval1.to_csv(in_fname)
