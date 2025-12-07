@@ -16,10 +16,9 @@ authors = [
 description = "pyEMU is a set of python modules for interfacing with PEST and PEST++"
 readme = "README.md"
 keywords = ["pest", "pestpp"]
-license = { text = "BSD 3-Clause" }
+license = "BSD 3-Clause"
 classifiers = [
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Hydrology",
 ]
