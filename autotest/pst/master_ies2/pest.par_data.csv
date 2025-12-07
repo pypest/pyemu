@@ -1,0 +1,12 @@
+parnme,partrans,parchglim,parval1,parlbnd,parubnd,pargp,scale,offset,dercom,extra
+stage,fixed,factor,1.0,0.1,3.0,k,1.0,0.0,1,
+k_01,fixed,factor,2.5,0.25,25.0,k,1.0,0.0,1,
+k_02,log,factor,2.5,0.25,25.0,k,1.0,0.0,1,
+k_03,log,factor,2.5,0.25,25.0,k,1.0,0.0,1,
+k_04,log,factor,2.5,0.25,25.0,k,1.0,0.0,1,
+k_05,log,factor,2.5,0.25,25.0,k,1.0,0.0,1,
+k_06,log,factor,2.5,0.25,25.0,k,1.0,0.0,1,
+k_07,log,factor,2.5,0.25,25.0,k,1.0,0.0,1,
+k_08,log,factor,2.5,0.25,25.0,k,1.0,0.0,1,
+k_09,log,factor,2.5,0.25,25.0,k,1.0,0.0,1,
+k_10,log,factor,2.5,0.25,25.0,k,1.0,0.0,1,

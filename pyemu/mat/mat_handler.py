@@ -3,6 +3,7 @@ import os
 import copy
 import struct
 import warnings
+from pathlib import Path
 import numpy as np
 import pandas as pd
 
@@ -587,7 +588,7 @@ class Matrix(object):
             if `Matrix` and other (if applicable) have `autoalign` set to `True`,
             both `Matrix` and `other` are aligned based on row and column names.
             If names are not common between the two, this may result in a smaller
-            returned `Matrix`.  If not common elements are shared, an excetion is raised
+            returned `Matrix`.  If not common elements are shared, an exception is raised
 
 
         Example::
@@ -1023,7 +1024,7 @@ class Matrix(object):
         Returns:
             `numpy.ndarray` : numpy.ndarray
 
-        Exmaple::
+        Example::
 
             # A diagonal cov
             cov = pyemu.Cov.from_parameter_data
@@ -1043,7 +1044,7 @@ class Matrix(object):
         Returns:
             `Martrix`: non-diagonal form of `Matrix`
 
-        Exmaple::
+        Example::
 
             # A diagonal cov
             cov = pyemu.Cov.from_parameter_data
@@ -1067,7 +1068,7 @@ class Matrix(object):
         Returns:
             `int`: length of 2 tuple
 
-        Exmaple::
+        Example::
 
             jco = pyemu.Jco.from_binary("pest.jcb")
             shape = jco.shape
@@ -1214,7 +1215,7 @@ class Matrix(object):
                 singular value, the index of this singular is returned.
 
         Returns:
-            `int`: the index of the singular value whos ratio with the
+            `int`: the index of the singular value who's ratio with the
             first singular value is less than or equal to `eigthresh`
 
 
@@ -1245,7 +1246,7 @@ class Matrix(object):
                 singular value, the index of this singular is returned.
 
         Returns:
-            `int`: the index of the singular value whos ratio with the
+            `int`: the index of the singular value who's ratio with the
             first singular value is less than or equal to `eigthresh`
 
         Note:
@@ -1487,7 +1488,7 @@ class Matrix(object):
 
     @staticmethod
     def find_rowcol_indices(names, row_names, col_names, axis=None):
-        """fast(er) look of row and colum names indices
+        """fast(er) look of row and column names indices
 
         Args:
             names ([`str`]): list of names to look for in `row_names` and/or `col_names` names
@@ -1863,7 +1864,7 @@ class Matrix(object):
         the read with `Matrix.from_binary()`.
 
         Args:
-            filename (`str`): filename to save binary file
+            filename (`str` or `Path`): filename to save binary file
             droptol (`float`): absolute value tolerance to make values
                 smaller `droptol` than zero.  Default is None (no dropping)
             chunk (`int`): number of elements to write in a single pass.
@@ -1983,9 +1984,7 @@ class Matrix(object):
         """
         row_names = [str(r) for r in row_names]
         col_names = [str(c) for c in col_names]
-        
-
-        if isinstance(filename, str):
+        if isinstance(filename, (str, Path)):
             f = open(filename, "wb")
             header = np.array(
                 (0, -len(col_names), -len(col_names)), dtype=Matrix.binary_header_dt
@@ -2188,7 +2187,7 @@ class Matrix(object):
 
         Parameters
         ----------
-            fileanme (`str`): dense binary filename
+            filename (`str`): dense binary filename
 
 
         Returns:
@@ -2836,7 +2835,7 @@ class Jco(Matrix):
     """
 
     def __init(self, **kwargs):
-        """Jco constuctor takes the same arguments as Matrix.
+        """Jco constructor takes the same arguments as Matrix.
 
         Args:
             **kwargs (`dict`): constructor arguments for `Matrix`
@@ -2931,7 +2930,7 @@ class Cov(Matrix):
         mat.to_binary("mat.jco")
 
     Note:
-        `row_names` and `col_names` args are supported in the contructor
+        `row_names` and `col_names` args are supported in the constructor
         so support inheritance.  However, users should only pass `names`
 
     """
@@ -3236,7 +3235,7 @@ class Cov(Matrix):
                 represent 4 * sigma.  Default is 4.0, representing approximately
                 95% confidence of implied normal distribution
             scale_offset (`bool`): flag to apply scale and offset to parameter upper and lower
-                bounds before calculating varaince. In some cases, not applying scale and
+                bounds before calculating variance. In some cases, not applying scale and
                 offset can result in undefined (log) variance.  Default is True.
 
         Returns:
@@ -3265,7 +3264,7 @@ class Cov(Matrix):
                 represent 4 * sigma.  Default is 4.0, representing approximately
                 95% confidence of implied normal distribution
             scale_offset (`bool`): flag to apply scale and offset to parameter upper and lower
-                bounds before calculating varaince. In some cases, not applying scale and
+                bounds before calculating variance. In some cases, not applying scale and
                 offset can result in undefined (log) variance.  Default is True.
             subset (`list`-like, optional): Subset of parameters to draw
 

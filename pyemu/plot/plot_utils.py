@@ -54,7 +54,7 @@ def plot_summary_distributions(
     Args:
         df (`pandas.DataFrame`): a dataframe and csv file.  Must have columns named:
             'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
-            from a csv file, column 0 is assumed to tbe the index
+            from a csv file, column 0 is assumed to be the index
         ax (`matplotlib.pyplot.axis`): If None, and not subplots, then one is created
             and all distributions are plotted on a single plot
         label_post (`bool`): flag to add text labels to the peak of the posterior
@@ -269,7 +269,7 @@ def phi_progress(pst, logger=None, filename=None, **kwargs):
 
     """
     if logger is None:
-        logger = Logger("Default_Loggger.log", echo=False)
+        logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot phi_progress")
 
     iobj_file = pst.filename.replace(".pst", ".iobj")
@@ -327,7 +327,7 @@ def res_1to1(
 
     """
     if logger is None:
-        logger = Logger("Default_Loggger.log", echo=False)
+        logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot res_1to1")
 
     if "ensemble" in kwargs:
@@ -517,7 +517,7 @@ def plot_id_bar(id_df, nsv=None, logger=None, **kwargs):
     Args:
         id_df (`pandas.DataFrame`) : dataframe of identifiability
         nsv (`int`): number of singular values to consider
-        logger (`pyemu.Logger`, optonal): a logger.  If None, a generic
+        logger (`pyemu.Logger`, optional): a logger.  If None, a generic
             one is created
         kwargs (`dict`): a dict of keyword arguments to pass to the
             plotting function
@@ -535,7 +535,7 @@ def plot_id_bar(id_df, nsv=None, logger=None, **kwargs):
 
     """
     if logger is None:
-        logger = Logger("Default_Loggger.log", echo=False)
+        logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot id bar")
 
     df = id_df.copy()
@@ -633,7 +633,7 @@ def res_phi_pie(pst, logger=None, **kwargs):
 
     """
     if logger is None:
-        logger = Logger("Default_Loggger.log", echo=False)
+        logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot res_phi_pie")
 
     if "ensemble" in kwargs:
@@ -711,7 +711,7 @@ def pst_prior(pst, logger=None, filename=None, **kwargs):
             If None, return figs without saving.  Default is None.
         kwargs (`dict`): additional plotting options. Accepts 'grouper' as
             dict to group parameters on to a single axis (use
-            parameter groups if not passed),'unqiue_only' to only show unique
+            parameter groups if not passed),'unique_only' to only show unique
             mean-stdev combinations within a given group.  Any additional args
             are passed to `matplotlib`.
 
@@ -726,7 +726,7 @@ def pst_prior(pst, logger=None, filename=None, **kwargs):
 
     """
     if logger is None:
-        logger = Logger("Default_Loggger.log", echo=False)
+        logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot pst_prior")
     par = pst.parameter_data
 
@@ -889,7 +889,7 @@ def ensemble_helper(
             flag to use the same bin edges for all ensembles. Only applies if more than
             one ensemble is being plotted.  Default is True
         deter_vals : dict
-            dict of deterministic values to plot as a vertical line. key is ensemble columnn name
+            dict of deterministic values to plot as a vertical line. key is ensemble column name
         std_window : float
             the number of standard deviations around the mean to mark as vertical lines.  If None,
             nothing happens.  Default is None
@@ -1145,7 +1145,7 @@ def ensemble_change_summary(
 
     """
     if logger is None:
-        logger = Logger("Default_Loggger.log", echo=False)
+        logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot ensemble change")
 
     if isinstance(ensemble1, str):
@@ -1380,7 +1380,7 @@ def ensemble_res_1to1(
 
     Args:
         ensemble (varies):  the ensemble argument can be a pandas.DataFrame or derived type or a str, which
-            is treated as a fileanme.  Optionally, ensemble can be a list of these types or
+            is treated as a filename.  Optionally, ensemble can be a list of these types or
             a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
         pst (`pyemu.Pst`): a control file instance
         facecolor (`str`): the histogram facecolor.  Only applies if `ensemble` is a single thing
@@ -1423,7 +1423,7 @@ def ensemble_res_1to1(
             oemin = np.nanmin([oemin, oeni.min().min()])
             oemax = np.nanmax([oemax, oeni.max().max()])
             # get min and max of mean sim vals
-            # (incase we want plot to ignore extremes)
+            # (in case we want plot to ignore extremes)
             oemeanmin = np.nanmin([oemeanmin, oeni.mean().min()])
             oemeanmax = np.nanmax([oemeanmax, oeni.mean().max()])
         for _, beni in ben.items():  # same with base ensemble/obsval
@@ -1466,7 +1466,7 @@ def ensemble_res_1to1(
 
 
     if logger is None:
-        logger = Logger("Default_Loggger.log", echo=False)
+        logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot res_1to1")
     obs = pst.observation_data
     ensembles = _process_ensemble_arg(ensemble, facecolor, logger)
@@ -1677,7 +1677,7 @@ def plot_jac_test(
             with pyemu using: pest_object.pestpp_options["sweep_parameter_csv_file"] = jactest_in_file.csv
             pest_object.pestpp_options["sweep_output_csv_file"] = jactest_out_file.csv
         targetobs ([`str`]): list of observation file names to plot, each parameter used for jactest can
-            have up to 32 observations plotted per page, throws a warning if more tha
+            have up to 32 observations plotted per page, throws a warning if more than
             10 pages of output are requested per parameter. If none, all observations in
             the output csv file are used.
         filetype (`str`): file type to store output, if None, plt.show() is called.

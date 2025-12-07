@@ -28,7 +28,7 @@ class Schur(LinearAnalysis):
             the noise covariance matrix is loaded from a file using
             the file extension (".jcb"/".jco" for binary, ".cov"/".mat" for PEST-style ASCII matrix,
             or ".unc" for uncertainty files).  If `None`, the noise covariance matrix is
-            constructed from the obsevation weights in `LinearAnalysis.pst`.  Can also be a `pyemu.Cov` instance
+            constructed from the observation weights in `LinearAnalysis.pst`.  Can also be a `pyemu.Cov` instance
         forecasts (varies, optional): forecast sensitivity vectors.  If `str`, first an observation name is assumed (a row
             in `LinearAnalysis.jco`).  If that is not found, a filename is assumed and predictions are
             loaded from a file using the file extension.  If [`str`], a list of observation names is assumed.
@@ -367,7 +367,7 @@ class Schur(LinearAnalysis):
         if len(keep_names) == 0:
             raise Exception(
                 "Schur.contribution_from_Parameters "
-                + "atleast one parameter must remain uncertain"
+                + "at least one parameter must remain uncertain"
             )
         # get the reduced predictions
         if self.predictions is None:

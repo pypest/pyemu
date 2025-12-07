@@ -852,7 +852,8 @@ def _read_infile_with_tplfile(tpl_file, input_file):
     return df
 
 
-def try_process_output_file(ins_file, output_file=None):
+def try_process_output_file(ins_file, output_file=None,
+                            logger=None):
     """attempt to process a model output file using a PEST-style instruction file
 
     Args:
@@ -881,7 +882,14 @@ def try_process_output_file(ins_file, output_file=None):
     try:
         df = i.read_output_file(output_file)
     except Exception as e:
-        print("error processing instruction/output file pair: {0}".format(str(e)))
+        if logger is not None:
+            logger.warn(
+                "error processing instruction file {0}, trying inschek: {1}".format(
+                    ins_file, str(e)
+                )
+            )
+        else:
+            PyemuWarning("error processing instruction/output file pair: {0}".format(str(e)))
     return df
 
 
@@ -898,7 +906,7 @@ def try_process_output_pst(pst):
 
     Note:
         This function first tries to process the output files using the
-        InstructionFile class,  If that failes, then it tries to run
+        InstructionFile class,  If that fails, then it tries to run
         INSCHEK. If an instructionfile is processed successfully,
         the extract simulated values are used to populate the
         `pst.observation_data.obsval` attribute.
@@ -1071,7 +1079,7 @@ def csv_to_ins_file(
         `csv_filename`
 
     Note:
-        resulting observation names in `ins_filename` are a combiation of index and
+        resulting observation names in `ins_filename` are a combination of index and
         header values.
 
 
@@ -1088,7 +1096,7 @@ def csv_to_ins_file(
     if only_cols is None:
         only_cols = set(df.columns.map(lambda x: x.lower().strip()).tolist())
     else:
-        if isinstance(only_cols, str):  # incase it is a single name
+        if isinstance(only_cols, str):  # in case it is a single name
             only_cols = [only_cols]
         only_cols = set(only_cols)
     only_cols = {c.lower() if isinstance(c, str) else c for c in only_cols}
@@ -1096,7 +1104,7 @@ def csv_to_ins_file(
     if only_rows is None:
         only_rows = set(df.index.map(lambda x: x.lower().strip()).tolist())
     else:
-        if isinstance(only_rows, str):  # incase it is a single name
+        if isinstance(only_rows, str):  # in case it is a single name
             only_rows = [only_rows]
         only_rows = set(only_rows)
     only_rows = {r.lower() if isinstance(r, str) else r for r in only_rows}
@@ -1191,7 +1199,7 @@ def csv_to_ins_file(
                         oname = f"{nname}_{rlabel}"
                         onames.append(oname)  # append list of obs
                         ovals.append(vals[i, j])  # store current obs val
-                        # defin group name
+                        # define group name
                         if gpname is False or gpname[c_count] is False:
                             # keeping consistent behaviour
                             ngpname = None  # nname
@@ -1214,7 +1222,7 @@ def csv_to_ins_file(
                         c_count += 1
                     elif (
                         j < len(clabels) - 1
-                    ):  # this isnt a row-col to observationalize (nice word!)
+                    ):  # this isn't a row-col to observationalize (nice word!)
                         if sep == ",":
                             line += f" {marker},{marker} "
                         else:
@@ -1279,7 +1287,7 @@ class InstructionFile(object):
         first_line = self._readline_ins()
         if len(first_line) < 2:
             raise Exception(
-                "first line of ins file must have atleast two entries, not '{0}'".format(
+                "first line of ins file must have at least two entries, not '{0}'".format(
                     ",".join(first_line)
                 )
             )
@@ -1494,7 +1502,7 @@ class InstructionFile(object):
             elif ins == "w":  # whole string comparison
                 raw = rline[cursor_pos : cursor_pos + maxsearch].split(
                     None, 2
-                )  # TODO: maybe slow for long strings -- hopefuly maxsearch helps
+                )  # TODO: maybe slow for long strings -- hopefully maxsearch helps
                 if line[cursor_pos] in line_seps:
                     raw.insert(0, "")
                 if len(raw) == 1:
@@ -1510,7 +1518,7 @@ class InstructionFile(object):
                 # raw[1]
             # )
 
-            elif i1 == "!":  # indicates obs instruction folows
+            elif i1 == "!":  # indicates obs instruction follows
                 oname = ins.replace("!", "")
                 # look a head for a second/closing marker
                 if ii < n_ins - 1 and ins_line[ii + 1] == self._marker:
@@ -1579,7 +1587,7 @@ class InstructionFile(object):
                 raw = ins.split(")")[1]
                 if ":" not in raw:
                     self.throw_ins_error(
-                        "couldnt find ':' in semi-fixed instruction: '{0}'".format(ins),
+                        "couldn't find ':' in semi-fixed instruction: '{0}'".format(ins),
                         lcount=self._instruction_lcount,
                     )
                 raw = raw.split(":")
@@ -1650,7 +1658,7 @@ class InstructionFile(object):
                 raw = ins.split("]")[1]
                 if ":" not in raw:
                     self.throw_ins_error(
-                        "couldnt find ':' in fixed instruction: '{0}'".format(ins),
+                        "couldn't find ':' in fixed instruction: '{0}'".format(ins),
                         lcount=self._instruction_lcount,
                     )
                 raw = raw.split(":")

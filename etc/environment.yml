@@ -1,26 +1,33 @@
 name: pyemu
 channels:
   - conda-forge
+  - nodefaults
 dependencies:
   # required
-  - python>=3.8
+  - python >= 3.10
+  - libopenblas < 0.3.30
   - numpy
   - pandas
   # optional
   - matplotlib
   - pyshp
   - jinja2
+  - shapely
+  - pyproj
+  - flopy
+  - scikit-learn
+  - pip
+  - ffmpeg
+  - jupyter
+  - jupytext
+  - jupyterlab
   # tests
-  - coveralls
+#  - coveralls
   - flaky
   - pytest
   - pytest-cov
   - pytest-xdist
-  - nbmake
-  - shapely
-  - pyproj
-  - flopy
+  - pytest-timeout
+  - nbval
   - modflow-devtools
-  - scikit-learn
-  - pip
-  - ffmpeg
+

@@ -1,0 +1,14 @@
+[run]
+source = pyemu
+patch = subprocess
+parallel = True
+relative_files = True
+omit =
+    **/legacy/*
+    */python?.?/*
+    */lib-python/?.?/*.py
+    */lib_pypy/_*.py
+    */site-packages/ordereddict.py
+    */site-packages/nose/*
+    */unittest2/*
+    *__init__*

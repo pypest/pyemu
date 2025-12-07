@@ -486,7 +486,7 @@ def emp_cov_test():
     print(pst.npar, cov.shape)
     num_reals = 5000
 
-    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
+    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
     emp_cov = pe_eig.covariance_matrix()
     assert isinstance(emp_cov,pyemu.Cov)
     assert emp_cov.row_names == pst.adj_par_names
@@ -507,31 +507,40 @@ def factor_draw_test():
     cov = pyemu.Cov.from_binary(os.path.join("en","cov.jcb"))
     print(pst.npar,cov.shape)
     num_reals = 5000
+    pe_cho = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
     pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov=cov,num_reals=num_reals,factor="eigen")
     pe_svd = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="svd")
+    
+    
     pe_eig.transform()
     pe_svd.transform()
+    pe_cho.transform()
+    
     mn_eig = pe_eig.mean()
     mn_svd = pe_svd.mean()
+    mn_cho = pe_cho.mean()
 
     sd_eig = pe_eig.std()
     sd_svd = pe_svd.std()
+    sd_cho = pe_cho.std()
 
     pst.add_transform_columns()
     par = pst.parameter_data
     df = cov.to_dataframe()
     for p in pst.adj_par_names:
         print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_svd[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_svd[p])
-    d = (mn_eig - mn_svd).apply(np.abs)
+    d = (mn_eig - mn_cho).apply(np.abs)
+    print(d.max())
     assert d.max() < 0.5,d.sort_values()
-    d = (sd_eig - sd_svd).apply(np.abs)
+    d = (sd_eig - sd_cho).apply(np.abs)
+    print(d.max())
     assert d.max() < 0.5,d.sort_values()
 
     num_reals = 1000
-    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
+    pe_cho2 = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals)
 
     emp_cov = pe_eig.covariance_matrix()
-    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals, factor="eigen")
+    pe_cho3 = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals)
 
 
 def emp_cov_draw_test():
@@ -542,28 +551,28 @@ def emp_cov_draw_test():
     pst = pyemu.Pst(os.path.join("en","pest.pst"))
     cov = pyemu.Cov.from_binary(os.path.join("en","cov.jcb"))
     num_reals = 1000
-    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
+    pe_cho = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
 
-    emp_cov = pe_eig.covariance_matrix()
+    emp_cov = pe_cho.covariance_matrix()
     num_reals = 1000
     pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals, factor="eigen")
-    pe_svd = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals, factor="svd")
+    pe_cho = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals, factor="cholesky")
     pe_eig.transform()
-    pe_svd.transform()
+    pe_cho.transform()
     mn_eig = pe_eig.mean()
-    mn_svd = pe_svd.mean()
+    mn_cho = pe_cho.mean()
 
     sd_eig = pe_eig.std()
-    sd_svd = pe_svd.std()
+    sd_cho = pe_cho.std()
 
     pst.add_transform_columns()
     par = pst.parameter_data
     df = cov.to_dataframe()
     for p in pst.adj_par_names:
-        print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_svd[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_svd[p])
-    d = (mn_eig - mn_svd).apply(np.abs)
+        print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_cho[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_cho[p])
+    d = (mn_eig - mn_cho).apply(np.abs)
     assert d.max() < 0.5,d.sort_values()
-    d = (sd_eig - sd_svd).apply(np.abs)
+    d = (sd_eig - sd_cho).apply(np.abs)
     assert d.max() < 0.5,d.sort_values()
 
 def mixed_par_draw_test():
@@ -671,6 +680,19 @@ def binary_test(tmp_path):
     e2 = datetime.now()
     print((e1 - s1).total_seconds())
     print((e2 - s2).total_seconds())
+    pe3 = pd.DataFrame(np.random.rand(10, int(1e7)))
+    pe3.columns = "parameter_number_" + pe3.columns.astype(str)
+    pe3 = pe3.rename(index={9:'base'})
+    pst = pyemu.Pst.from_par_obs_names(pe3.columns, obs_names)
+    pe3 = pyemu.ParameterEnsemble(pst=pst, df=pe3)
+    fname = pe3.to_binary("paren.jcb")
+    assert fname.endswith('bin')
+    pe4 = pyemu.ParameterEnsemble.from_binary(pst=pst, filename=fname)
+    assert pe4.shape == pe3.shape
+    d = (pe4._df - pe4._df).abs()
+    print(d.max().max())
+    assert d.max().max() < 1.0e-10
+    pass
 
 
 def mixed_par_draw_2_test():
@@ -747,7 +769,70 @@ def mixed_par_draw_2_test():
     assert pst.npar == npar
 
 
+def draw_new_test():
+
+    import os
+    import numpy as np
+    import pyemu
+    pst = pyemu.Pst(os.path.join("en", "pest.pst"))
+    cov = pyemu.Cov.from_binary(os.path.join("en", "cov.jcb"))
+    print(pst.npar, cov.shape)
+    num_reals = 10000
+
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
+    
+    sub_pe = pe.iloc[:10000,:]
+
+    new_pe_nonoise = sub_pe.draw_new_ensemble(num_reals=num_reals)
+    new_pe_stdnoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True)
+    new_pe_usernoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=1./np.sqrt(sub_pe.shape[0]))
+    new_pe_ennoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True,noise_reals=pe)
+    
+    #pes = [pe,sub_pe,new_pe_nonoise,new_pe_stdnoise,new_pe_usernoise,new_pe_ennoise]
+    colors = ["r","y","b","g","m","c"]
+
+    pes = [pe,new_pe_stdnoise,new_pe_usernoise,new_pe_ennoise]
+    for ppe in pes:
+        ppe.transform()
+        #ppe.enforce()
+
+    for pname in pst.adj_par_names:
+        std = [ppe.loc[:,pname].std() for ppe in pes]
+        mean = [ppe.loc[:,pname].mean() for ppe in pes]
+        sdiff = [np.abs(std[0] - s) for s in std[1:]]
+
+        print(pname,max(sdiff))
+        assert max(sdiff) < 0.1
+    
+    # pst.add_transform_columns()
+    # ubnd = pst.parameter_data.parubnd_trans.to_dict()
+    # lbnd = pst.parameter_data.parlbnd_trans.to_dict()
+    
+
+    # import matplotlib.pyplot as plt
+    # from matplotlib.backends.backend_pdf import PdfPages
+    # with PdfPages("check.pdf") as pdf:
+    #     for pname in pst.adj_par_names:
+    #         fig,ax = plt.subplots(1,1,figsize=(10,10))
+    #         for ppe,c in zip(pes,colors):
+
+    #             ax.hist(ppe.loc[:,pname],fc=c,alpha=0.5,bins=10,density=True)
+    #         ylim = ax.get_ylim()
+    #         ax.plot([ubnd[pname],ubnd[pname]],ylim,"k--",lw=3)
+    #         ax.plot([lbnd[pname],lbnd[pname]],ylim,"k--",lw=3)
+            
+    #         ax.grid()
+    #         ax.set_title(pname)
+    #         plt.tight_layout()
+    #         pdf.savefig()
+    #         plt.close(fig)
+    #         print(pname)
+
+    
+
+
 if __name__ == "__main__":
+    draw_new_test()
     #par_gauss_draw_consistency_test()
     #obs_gauss_draw_consistency_test()
     # phi_vector_test()
@@ -763,7 +848,7 @@ if __name__ == "__main__":
     #fill_test()
     #factor_draw_test()
     #emp_cov_test()
-    emp_cov_draw_test()
+    #emp_cov_draw_test()
     #mixed_par_draw_2_test()
     #binary_test()
     #get_phi_vector_noise_obs_test()

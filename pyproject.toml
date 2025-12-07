@@ -16,14 +16,13 @@ authors = [
 description = "pyEMU is a set of python modules for interfacing with PEST and PEST++"
 readme = "README.md"
 keywords = ["pest", "pestpp"]
-license = { text = "BSD 3-Clause" }
+license = "BSD-3-Clause"
 classifiers = [
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Hydrology",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "pandas",
@@ -71,3 +70,25 @@ style = "pep440"
 versionfile_source = "pyemu/_version.py"
 versionfile_build = "pyemu/_version.py"
 tag_prefix = ""
+
+[tool.codespell]
+check-filenames = true
+#skip = "*.grb,*.pdf,./dependencies"
+skip = "*.fpr,*.grb,*.pdf,*.pfm,*.pst,*.tex,*.list,*.rec,./docs/_build,./codespell.ignore"
+ignore-regex = "[A-Za-z0-9+/\\\\]{100,}"  # base64-encoded data in *.ipynb files
+ignore-words-list = [
+    "afile",
+    "coo",
+    "fo",
+    "fpr",
+    "dum",
+    "ect",
+    "ons",
+    "oen",
+    "nam",
+    "ptd",
+    "delt",
+    "parin",
+    "gage",
+    "wel",
+]

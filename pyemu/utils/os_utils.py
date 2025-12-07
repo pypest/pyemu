@@ -13,12 +13,20 @@ import warnings
 import socket
 import time
 from datetime import datetime
+import random
+import logging
+import tempfile
+from contextlib import contextmanager
+import json
+import uuid
+import concurrent.futures
 
 import numpy as np
 import pandas as pd
 
 from ..pyemu_warnings import PyemuWarning
 from ..pst import pst_handler
+from ..logger import Logger
 
 ext = ""
 bin_path = os.path.join("..", "bin")
@@ -134,7 +142,9 @@ def run_ossystem(cmd_str, cwd=".", verbose=False):
                 exe_name = exe_name.replace(".exe", "")
                 raw[0] = exe_name
                 cmd_str = "{0} {1} ".format(*raw)
-            if os.path.exists(exe_name) and not exe_name.startswith("./"):
+            if (os.path.exists(exe_name)
+                    and not exe_name.startswith("./")
+                    and not exe_name.startswith("/")):
                 cmd_str = "./" + cmd_str
 
     except Exception as e:
@@ -186,8 +196,11 @@ def run_sp(cmd_str, cwd=".", verbose=True, logfile=False, **kwargs):
 
     bwd = os.getcwd()
     os.chdir(cwd)
-
-    if platform.system() != "Windows" and not shutil.which(cmd_str.split()[0]):
+    exe_name = cmd_str.split()[0]
+    if (platform.system() != "Windows"
+            and not shutil.which(exe_name)
+            and not exe_name.startswith("./")
+            and not exe_name.startswith("/")):
         cmd_str = "./" + cmd_str
 
     try:
@@ -242,11 +255,11 @@ def _try_remove_existing(d, forgive=False):
 
 def _try_copy_dir(o_d, n_d):
     try:
-        shutil.copytree(o_d, n_d)
+        shutil.copytree(o_d, n_d, symlinks=True)
     except PermissionError:
         time.sleep(3) # pause for windows locking issues
         try:
-            shutil.copytree(o_d, n_d)
+            shutil.copytree(o_d, n_d, symlinks=True)
         except Exception as e:
             raise Exception(
                 f"unable to copy files from base dir: "
@@ -260,7 +273,7 @@ def start_workers(
     pst_rel_path,
     num_workers=None,
     worker_root="..",
-    port=4004,
+    port=None,
     rel_path=None,
     local=True,
     cleanup=True,
@@ -356,6 +369,13 @@ def start_workers(
     else:
         if not os.path.exists(os.path.join(worker_dir, pst_rel_path)):
             raise Exception("pst_rel_path not found from worker_dir")
+
+    if port is None:
+        if master_dir is None:
+            port = 4004 # the 'ole standard
+        else:
+            port = PortManager().get_available_port()
+
     if isinstance(local, str):
         hostname = local
     elif local:
@@ -371,7 +391,8 @@ def start_workers(
             if not exe_rel_path.lower().endswith("exe"):
                 exe_rel_path = exe_rel_path + ".exe"
         else:
-            if not exe_rel_path.startswith("./"):
+            if (not exe_rel_path.startswith("./")
+                    and not exe_rel_path.startswith("/")):
                 exe_rel_path = "./" + exe_rel_path
 
     if master_dir is not None:
@@ -406,11 +427,35 @@ def start_workers(
     procs = []
     worker_dirs = []
     if ppw_function is not None:
-        args = (os.path.join(worker_dir,pst_rel_path),hostname,port)
-        for i in range(num_workers):
-            p = mp.Process(target=ppw_function,args=args,kwargs=ppw_kwargs)
+        args = (os.path.join(worker_dir, pst_rel_path), hostname, port)
+        
+        # Create processes in batches using ThreadPoolExecutor for faster deployment
+        def create_and_start_worker(worker_id):
+            p = mp.Process(target=ppw_function, args=args, kwargs=ppw_kwargs)
+            p.daemon = True
             p.start()
-            procs.append(p)
+            if verbose:
+                print("Started worker {0} (PID: {1})".format(worker_id, p.pid))
+            return p
+        
+        # Use ThreadPoolExecutor to create processes in parallel
+        max_concurrent_starts = num_workers#min(num_workers, 300)  # Limit concurrent starts
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_concurrent_starts) as executor:
+            # Submit all worker creation tasks
+            future_to_id = {
+                executor.submit(create_and_start_worker, i): i 
+                for i in range(num_workers)
+            }
+            
+            # Collect started processes
+            for future in concurrent.futures.as_completed(future_to_id):
+                worker_id = future_to_id[future]
+                try:
+                    p = future.result()
+                    procs.append(p)
+                except Exception as e:
+                    print("Error starting worker {0}: {1}".format(worker_id, e))
+                    raise
 
     else:
         tcp_arg = "{0}:{1}".format(hostname, port)
@@ -466,15 +511,66 @@ def start_workers(
             master_p.wait()
             time.sleep(0.5)  # a few cycles to let the workers end gracefully
 
-        # kill any remaining workers
-        for p in procs:
-            p.kill()
-    # this waits for sweep to finish, but pre/post/model (sub)subprocs may take longer
-    
+        # More efficient graceful termination for ppw_function workers
+        if ppw_function is not None:
+            termination_timeout = 10  # seconds
+            
+            if verbose:
+                print("Initiating graceful shutdown of {0} workers...".format(len(procs)))
+            
+            # First, try graceful termination
+            for p in procs:
+                if p.is_alive():
+                    try:
+                        p.terminate()  # Send SIGTERM
+                    except:
+                        pass
+            
+            # Wait for processes to terminate gracefully
+            start_time = time.time()
+            remaining_procs = procs[:]  # Create a copy
+            
+            while remaining_procs and (time.time() - start_time) < termination_timeout:
+                still_alive = []
+                for p in remaining_procs:
+                    if p.is_alive():
+                        still_alive.append(p)
+                    else:
+                        try:
+                            p.join(timeout=0.1)  # Clean up zombie processes
+                        except:
+                            pass
+                
+                remaining_procs = still_alive
+                if remaining_procs:
+                    time.sleep(0.1)
+            
+            # Force kill any remaining processes
+            if remaining_procs:
+                if verbose:
+                    print("Force killing {0} remaining workers...".format(len(remaining_procs)))
+                for p in remaining_procs:
+                    try:
+                        p.kill()  # Send SIGKILL
+                        p.join(timeout=1)
+                    except:
+                        pass
+        else:
+            # kill any remaining workers (non-ppw_function case)
+            for p in procs:
+                p.kill()
+    # Wait for all processes to finish (this waits for sweep to finish, but pre/post/model subprocs may take longer)
     for p in procs:
         if ppw_function is not None:
-            p.join()
+            # For ppw_function processes, we already handled termination above
+            # Just ensure they're cleaned up
+            if p.is_alive():
+                try:
+                    p.join(timeout=1)
+                except:
+                    pass
         else:
+            # For regular worker processes
             p.wait()
     if cleanup:
         cleanit = 0
@@ -485,9 +581,9 @@ def start_workers(
                 if os.path.exists(d):
                     success = _try_remove_existing(d, forgive=True)
                     if success:
-                        removed.update(d)
+                        removed.add(d)  # Fixed: use add() instead of update()
                 else:
-                    removed.update(d)
+                    removed.add(d)  # Fixed: use add() instead of update()
             if cleanit > 100:
                 break
 
@@ -593,7 +689,7 @@ class NetPack(object):
         #    return -1
         data = self.nonblocking_recv(s,self.header_size)
         if data is None:
-            raise Exception("didnt recv header after security message")
+            raise Exception("didn't recv header after security message")
         self.buf_size = int.from_bytes(data[self.buf_idx[0]:self.buf_idx[1]], "little")
         self.mtype = int.from_bytes(data[self.type_idx[0]:self.type_idx[1]], "little")
         self.group = int.from_bytes(data[self.group_idx[0]:self.group_idx[1]], "little")
@@ -604,7 +700,7 @@ class NetPack(object):
         if data_len > 0:
             raw_data = self.nonblocking_recv(s,data_len)
             if raw_data is None:
-                raise Exception("didnt recv data pack after header of {0} bytes".format(data_len))
+                raise Exception("didn't recv data pack after header of {0} bytes".format(data_len))
             if dtype is None and self.mtype == 10:
                 dtype = float
             self.data_pak = self.deserialize_data(raw_data,dtype)
@@ -650,7 +746,7 @@ class NetPack(object):
         full_desc = desc + fill_desc
         buf += full_desc.encode()
         buf += sdata
-        s.send(buf)
+        s.sendall(buf)
 
 
     def _check_sec_message(self,recv_sec_message):
@@ -659,9 +755,21 @@ class NetPack(object):
                             format(recv_sec_message,self.sec_message))
 
 class PyPestWorker(object):
+    """a pure python worker for pest++.  the pest++ master doesnt even know...
 
+    Args:
+        pst (str or pyemu.Pst): something about a control file
+        host (str): master hostname or IPv4 address
+        port (int): port number that the master is listening on
+        timeout (float): number of seconds to sleep at different points in the process.  
+            if you have lots of pars and/obs, a longer sleep can be helpful, but if you make this smaller,
+            the worker responds faster...'it depends'
+        verbose (bool): flag to echo what's going on to stdout
+        socket_timeout (float): number of seconds that the socket should wait before giving up. 
+            generally, this can be a big number...
+    """
 
-    def __init__(self, pst, host, port, timeout=0.1,verbose=True):
+    def __init__(self, pst, host, port, timeout=0.25,verbose=True, socket_timeout=None):
         self.host = host
         self.port = port
         self._pst_arg = pst
@@ -672,9 +780,14 @@ class PyPestWorker(object):
         self.verbose = bool(verbose)
         self.par_names = None
         self.obs_names = None
-
+        if socket_timeout is None:
+            socket_timeout = timeout * 100
+        self.socket_timeout = socket_timeout
         self.par_values = None
-
+        self.max_reconnect_attempts = 10
+        self.logger_filename = "pypestworker_{0}.txt".format(datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"))
+        self.logger = Logger(self.logger_filename,echo=verbose)
+        self.message("PyPestWorker starting with timeout:{0} and socket_timeout:{1}".format(self.timeout, self.socket_timeout))
         self._process_pst()
         self.connect()
         self._lock = threading.Lock()
@@ -682,7 +795,9 @@ class PyPestWorker(object):
         self._listen_thread = threading.Thread(target=self.listen,args=(self._lock,self._send_lock))
         self._listen_thread.start()
 
+
     def _process_pst(self):
+        self.message("processing control file")
         if isinstance(self._pst_arg,str):
             self._pst = pst_handler.Pst(self._pst_arg)
         elif isinstance(self._pst_arg,pst_handler.Pst):
@@ -692,17 +807,17 @@ class PyPestWorker(object):
                             format(type(self._pst_arg)))
 
 
-    def connect(self):
+    def connect(self,is_reconnect=False):
         self.message("trying to connect to {0}:{1}...".format(self.host,self.port))
         self.s = None
         c = 0
         while True:
             try:
                 time.sleep(self.timeout)
-                print(".", end='')
                 c += 1
-                if c % 75 == 0:
-                    print('')
+                if is_reconnect and c > self.max_reconnect_attempts:
+                    self.message("max reconnect attempts reached...",True)
+                    return False
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.host, self.port))
                 self.message("connected to {0}:{1}".format(self.host,self.port))
@@ -712,32 +827,57 @@ class PyPestWorker(object):
                 continue
             except Exception as e:
                 continue
+            
+        self.net_pack = NetPack(timeout=self.timeout,verbose=self.verbose)
+        return True
 
-    def message(self,msg):
-        if self.verbose:
+
+    def message(self,msg,echo=False):
+        self.logger.statement(msg)
+        if self.verbose or echo:
             print(str(datetime.now())+" : "+msg)
 
 
     def recv(self,dtype=None):
         n = self.net_pack.recv(self.s,dtype=dtype)
         if n > 0:
-            self.message("recv'd message type:{0}".format(NetPack.netpack_type[self.net_pack.mtype]))
+            self.message("recv'd message type:{0}, group:{1}, run_id:{2}, desc:{3}"\
+                .format(NetPack.netpack_type[self.net_pack.mtype], 
+                    self.net_pack.group, self.net_pack.runid,self.net_pack.desc))
         return n
 
 
     def send(self,mtype,group,runid,desc="",data=0):
-        self.net_pack.send(self.s,mtype,group,runid,desc,data)
-        self.message("sent message type:{0}".format(NetPack.netpack_type[mtype]))
+        try:
+            self.net_pack.send(self.s,mtype,group,runid,desc,data)
+        except Exception as e:
+            self.message("WARNING: error sending message:{0}".format(str(e)), True)
+            return False
+        self.message("sent message type:{0}, group: {1}, run_id:{2}, desc:{3}".\
+            format(NetPack.netpack_type[mtype], group, runid, desc))
+        return True
 
     def listen(self,lock=None,send_lock=None):
-        self.s.settimeout(self.timeout)
+        self.s.settimeout(self.socket_timeout)
+        failed_reconnect = False
         while True:
             time.sleep(self.timeout)
             try:
                 n = self.recv()
             except Exception as e:
-                print("WARNING: recv exception:"+str(e)+"...trying to reconnect...")
-                self.connect()
+                self.message("WARNING: recv exception:"+str(e)+"...trying to reconnect...", True)
+                success = self.connect(is_reconnect=True)
+                if not success:
+                    self.message("...exiting")
+                    time.sleep(self.timeout)
+                    # set the teminate flag so that the get_pars() look will exit
+                    self._lock.acquire()
+                    self.net_pack.mtype = 14
+                    self._lock.release()
+                    return
+                else:
+                    self.message("...reconnected successfully...", True)
+                    continue
 
             if n > 0:
                 # need to sync here
@@ -752,54 +892,80 @@ class PyPestWorker(object):
                 elif self.net_pack.mtype == 4:
                     if self._send_lock is not None:
                         self._send_lock.acquire()
-                    self.send(mtype=5, group=self.net_pack.group,
+                    success = self.send(mtype=5, group=self.net_pack.group,
                               runid=self.net_pack.runid,
                               desc="sending cwd", data=os.getcwd())
                     if self._send_lock is not None:
                         self._send_lock.release()
+                    if not success:
+                        self.message("failed cwd send...trying to reconnect...", True)
+                        success = self.connect(is_reconnect=True)
+                        if not success:
+                            self.message("...exiting", True)
+                            time.sleep(self.timeout)
+                            return
+                        else:
+                            self.message("reconnect successfully...", True)
+                            continue
 
                 elif self.net_pack.mtype == 8:
                     self.par_names = self.net_pack.data_pak
                     diff = set(self.par_names).symmetric_difference(set(self._pst.par_names))
                     if len(diff) > 0:
-                        print("WARNING: pst par names != master par names")
                         self.message("WARNING: the following par names are not common\n"+\
-                                    " between the control file and the master:{0}".format(','.join(diff)))
+                                    " between the control file and the master:{0}".format(','.join(diff)), True)
                 elif self.net_pack.mtype == 9:
                     self.obs_names = self.net_pack.data_pak
                     diff = set(self.obs_names).symmetric_difference(set(self._pst.obs_names))
                     if len(diff) > 0:
-                        print("WARNING: pst obs names != master obs names")
                         self.message("WARNING: the following obs names are not common\n"+\
-                                    " between the control file and the master:{0}".format(','.join(diff)))
+                                    " between the control file and the master:{0}".format(','.join(diff)), True)
 
                 elif self.net_pack.mtype == 6:
                     if self._send_lock is not None:
                         self._send_lock.acquire()
-                    self.send(7, self.net_pack.group,
+                    success = self.send(7, self.net_pack.group,
                               self.net_pack.runid,
                               "fake linpack result", data=1)
                     if self._send_lock is not None:
                         self._send_lock.release()
+                    if not success:
+                        self.message("failed linpack send...trying to reconnect...", True)
+                        success = self.connect(is_reconnect=True)
+                        if not success:
+                            self.message("...exiting",True)
+                            time.sleep(self.timeout)
+                            return
+                        else:
+                            self.message("reconnect successfully...", True)
+                            continue
 
                 elif self.net_pack.mtype == 15:
                     if self._send_lock is not None:
                         self._send_lock.acquire()
-                    self.send(15, self.net_pack.group,
+                    sucess = self.send(15, self.net_pack.group,
                               self.net_pack.runid,
                               "ping back")
                     if self._send_lock is not None:
                         self._send_lock.release()
+                    if not success:
+                        self.message("failed ping back...trying to reconnect...", True)
+                        success = self.connect(is_reconnect=True)
+                        if not success:
+                            self.message("...exiting",True)
+                            time.sleep(self.timeout)
+                            return
+                        else:
+                            self.message("reconnect successfully...", True)
+                            continue
                 elif self.net_pack.mtype == 14:
-                    #print("recv'd terminate signal")
-                    self.message("recv'd terminate signal")
+                    self.message("recv'd terminate signal", True)
                     return
                 elif self.net_pack.mtype == 16:
-                    print("master is requesting run kill...")
-                    self.message("master is requesting run kill...")
+                    self.message("master is requesting run kill...", True)
 
                 else:
-                    print("WARNING: unsupported request recieved: {0}".format(NetPack.netpack_type[self.net_pack.mtype]))
+                    self.message("WARNING: unsupported request received: {0}".format(NetPack.netpack_type[self.net_pack.mtype]), True)
 
 
     def get_parameters(self):
@@ -818,6 +984,7 @@ class PyPestWorker(object):
         if len(pars) != len(self.par_names):
             raise Exception("len(par vals) {0} != len(par names)".format(len(pars),len(self.par_names)))
         return pd.Series(data=pars,index=self.par_names)
+
 
     def send_observations(self,obsvals,parvals=None,request_more_pars=True):
         if len(obsvals) != len(self.obs_names):
@@ -862,10 +1029,12 @@ class PyPestWorker(object):
             self.send(3,0,0,"ready for next run",data=0)
         self._send_lock.release()
 
+
     def request_more_pars(self):
         self._send_lock.acquire()
         self.send(3, 0, 0, "ready for next run", data=0.0)
         self._send_lock.release()
+
 
     def send_failed_run(self,group=None,runid=None,desc="failed"):
         if group is None:
@@ -875,6 +1044,7 @@ class PyPestWorker(object):
         self._send_lock.acquire()
         self.send(12, int(group), int(runid), desc, data=0.0)
         self._send_lock.release()
+
 
     def send_killed_run(self,group=None,runid=None,desc="killed"):
         if group is None:
@@ -887,10 +1057,182 @@ class PyPestWorker(object):
 
 
 
+
+class PortManager(object):
+    """Cross-platform port manager for parallel processes."""
+    def __init__(self,
+                 port_range=(4004, 4999),
+                 lock_dir=None,
+                 max_retries=50,
+                 lock_timeout=5,
+                 log_level=logging.INFO):
+        """
+        Initialize the port manager.
+        Args:
+            port_range: Tuple of (min_port, max_port) to search within
+            lock_dir: Directory to store lock files (default: system temp dir)
+            max_retries: Maximum attempts to find an available port
+            lock_timeout: Time in seconds after which a lock is considered stale
+        """
+        # Set up instance-specific logger
+        self.logger = logging.getLogger(f"{__name__}.PortManager.{id(self)}")
+        self.logger.setLevel(log_level)
+        # Add a handler if none exists
+        if not self.logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter(
+                '%(asctime)s - %(processName)s - %(levelname)s - %(message)s'
+            )
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+        self.min_port, self.max_port = port_range
+        self.lock_dir = lock_dir or os.path.join(tempfile.gettempdir(), "port_locks")
+        self.max_retries = max_retries
+        self.lock_timeout = lock_timeout
+        # Ensure lock directory exists
+        os.makedirs(self.lock_dir, exist_ok=True)
+        # Generate a unique ID for this process instance
+        self.instance_id = str(uuid.uuid4())
+    
+    def _is_port_available(self, port):
+        """Check if a port is available by attempting to bind to it."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                # Set socket to reuse address to handle TIME_WAIT state
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                s.bind(('localhost', port))
+                return True
+            except (socket.error, OSError):
+                return False
+    
+    def _get_lock_file(self, port):
+        """Get the path to the lock file for a specific port."""
+        return os.path.join(self.lock_dir, f"port_{port}.lock")
+    
+    def _clean_stale_locks(self):
+        """Remove stale lock files based on timeout."""
+        now = time.time()
+        try:
+            for filename in os.listdir(self.lock_dir):
+                if filename.startswith("port_") and filename.endswith(".lock"):
+                    lock_path = os.path.join(self.lock_dir, filename)
+                    if os.path.exists(lock_path):
+                        # Check if lock is stale
+                        if now - os.path.getmtime(lock_path) > self.lock_timeout:
+                            try:
+                                os.remove(lock_path)
+                                self.logger.debug(f"Removed stale lock file: {lock_path}")
+                            except OSError:
+                                # Another process might have removed it already
+                                pass
+        except Exception as e:
+            self.logger.warning(f"Error cleaning stale locks: {e}")
+    
+    @contextmanager
+    def _try_lock_port(self, port):
+        """
+        Try to create a lock file for a port using a cross-platform approach.
+        Uses atomic file creation to implement locking.
+        """
+        lock_file = self._get_lock_file(port)
+        lock_acquired = False
+        try:
+            # Try to create the lock file - will only succeed if it doesn't exist
+            lock_data = {
+                "pid": os.getpid(),
+                "instance_id": self.instance_id,
+                "timestamp": time.time()
+            }
+            try:
+                # Try exclusive creation of the file (atomic operation)
+                with open(lock_file, 'x') as f:
+                    json.dump(lock_data, f)
+                lock_acquired = True
+                yield True
+            except FileExistsError:
+                # Lock file already exists
+                try:
+                    # Check if lock file is stale
+                    if os.path.exists(lock_file):
+                        if time.time() - os.path.getmtime(lock_file) > self.lock_timeout:
+                            # Lock is stale, try to replace it
+                            try:
+                                os.remove(lock_file)
+                                with open(lock_file, 'x') as f:
+                                    json.dump(lock_data, f)
+                                lock_acquired = True
+                                yield True
+                                return
+                            except (FileExistsError, OSError):
+                                # Failed to acquire lock
+                                pass
+                except OSError:
+                    pass
+                yield False
+        finally:
+            # Clean up the lock file if we created it
+            if lock_acquired:
+                try:
+                    if os.path.exists(lock_file):
+                        os.remove(lock_file)
+                except OSError as e:
+                    self.logger.warning(f"Error removing lock file for port {port}: {e}")
+    
+    def get_available_port(self):
+        """
+        Find and reserve an available port.
+        Returns:
+            An available port number.
+        Raises:
+            RuntimeError: If no available port can be found after max_retries.
+        """
+        # Clean up stale locks first
+        self._clean_stale_locks()
+        # Shuffle port range to distribute port selection
+        port_list = list(range(self.min_port, self.max_port + 1))
+        random.shuffle(port_list)
+        attempts = 0
+        while attempts < self.max_retries:
+            # Pick a random port from our shuffled list
+            if not port_list:
+                raise RuntimeError("Exhausted all ports in range")
+            port = port_list.pop(0)
+            attempts += 1
+            # First check if port is available
+            if not self._is_port_available(port):
+                continue
+            # Try to acquire a lock
+            with self._try_lock_port(port) as locked:
+                if not locked:
+                    # Another process got this port
+                    continue
+                # Double-check port is still available after locking
+                if self._is_port_available(port):
+                    self.logger.info(f"Reserved port {port} for process {os.getpid()}")
+                    return port
+        raise RuntimeError(f"Could not find available port after {self.max_retries} attempts")
+    
+    @contextmanager
+    def reserved_port(self):
+        """Context manager that reserves a port and releases it after use."""
+        port = self.get_available_port()
+        lock_file = self._get_lock_file(port)
+        try:
+            yield port
+        finally:
+            # Release the port by removing the lock file
+            if os.path.exists(lock_file):
+                try:
+                    os.remove(lock_file)
+                    self.logger.info(f"Released port {port}")
+                except OSError as e:
+                    self.logger.warning(f"Error releasing port {port}: {e}")
+
+
+
+
 if __name__ == "__main__":
     host = "localhost"
-    port = 4004
+    port = PortManager().get_available_port()
     ppw = PyPestWorker(None,host,port)
     #ppw.initialize()
-
-

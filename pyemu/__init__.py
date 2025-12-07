@@ -16,11 +16,19 @@ from .logger import Logger
 # from .inf import Influence
 from .mat import Cov, Jco, Matrix
 from .plot import plot_utils
-from .pst import Pst, pst_utils
+from .pst import Pst, pst_utils, Results
 from .sc import Schur
 from .utils import (geostats, gw_utils, helpers, metrics, optimization,
                     os_utils, pp_utils, smp_utils)
-
+from .emulators import (
+                      #emulators
+                      Emulator, DSI, LPFA,  GPR,
+                    
+                      
+                      #transformers
+                      BaseTransformer, Log10Transformer,
+                      RowWiseMinMaxScaler, StandardScalerTransformer, NormalScoreTransformer,
+                      TransformerPipeline, AutobotsAssemble)
 #from .prototypes import *
 try:
     from .legacy import *
@@ -53,5 +61,13 @@ __all__ = [
     "smp_utils",
     "plot_utils",
     "metrics",
+    "Emulator",
+    "BaseTransformer",
+    "Log10Transformer", 
+    "RowWiseMinMaxScaler",
+    "StandardScalerTransformer",
+    "NormalScoreTransformer",
+    "TransformerPipeline",
+    "AutobotsAssemble",
 ]
 # del get_versions
