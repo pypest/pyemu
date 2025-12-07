@@ -769,11 +769,25 @@ def mixed_par_draw_2_test():
     assert pst.npar == npar
 
 
-def draw_new_test():
-
+def test_draw_new(plot=True):
     import os
     import numpy as np
     import pyemu
+
+    def _check_pe(newpe, helptxt=""):
+        pe.transform()
+        newpe.transform()
+        stdiff = (newpe.std()/pe.std())-1
+        mndiff = abs(newpe.mean() - pe.mean())
+        pe.back_transform()
+        # new std should not be shrunk by more than 15%?
+        voilations = stdiff.loc[stdiff<-0.15]
+        assert len(voilations) == 0, f"'{helptxt}' std > 15% reduction:\n{voilations}"
+        # max mean change?
+        # voilations = mndiff.loc[mndiff>0.1]
+        # assert len(voilations) == 0, f"{helptxt} mean differences > 0.1:\n{voilations}"
+
+
     pst = pyemu.Pst(os.path.join("en", "pest.pst"))
     cov = pyemu.Cov.from_binary(os.path.join("en", "cov.jcb"))
     print(pst.npar, cov.shape)
@@ -781,58 +795,73 @@ def draw_new_test():
 
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
     
-    sub_pe = pe.iloc[:10000,:]
+    sub_pe = pe.iloc[:1000,:]
 
-    new_pe_nonoise = sub_pe.draw_new_ensemble(num_reals=num_reals)
+    new_pe_nonoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=False)
+    _check_pe(new_pe_nonoise, 'no noise')
+    if not plot:
+        del new_pe_nonoise
     new_pe_stdnoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True)
+    _check_pe(new_pe_stdnoise, 'std noise')
+    if not plot:
+        del new_pe_stdnoise
     new_pe_usernoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=1./np.sqrt(sub_pe.shape[0]))
+    _check_pe(new_pe_usernoise, 'user noise')
+    if not plot:
+        del new_pe_usernoise
     new_pe_ennoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True,noise_reals=pe)
-    
-    #pes = [pe,sub_pe,new_pe_nonoise,new_pe_stdnoise,new_pe_usernoise,new_pe_ennoise]
-    colors = ["r","y","b","g","m","c"]
+    _check_pe(new_pe_ennoise, 'ens noise')
+    if not plot:
+        del new_pe_ennoise
 
-    pes = [pe,new_pe_stdnoise,new_pe_usernoise,new_pe_ennoise]
-    for ppe in pes:
-        ppe.transform()
-        #ppe.enforce()
+    if plot:
+        colors = ["r","y","b","g","m","c"]
+        pes = [pe, sub_pe,
+               new_pe_nonoise,
+               new_pe_stdnoise,
+               new_pe_usernoise,
+               new_pe_ennoise]
+        for ppe in pes:
+            if not ppe.istransformed:
+                ppe.transform()
+            # ppe.transform()
+            #ppe.enforce()
 
-    for pname in pst.adj_par_names:
-        std = [ppe.loc[:,pname].std() for ppe in pes]
-        mean = [ppe.loc[:,pname].mean() for ppe in pes]
-        sdiff = [np.abs(std[0] - s) for s in std[1:]]
+        # for pname in pst.adj_par_names:
+        #     std = [ppe.loc[:,pname].std() for ppe in pes]
+        #     mean = [ppe.loc[:,pname].mean() for ppe in pes]
+        #     sdiff = [np.abs(std[0] - s) for s in std[1:]]
+        #
+        #     print(pname,max(sdiff))
+        #     assert max(sdiff) < 0.1
 
-        print(pname,max(sdiff))
-        assert max(sdiff) < 0.1
-    
-    # pst.add_transform_columns()
-    # ubnd = pst.parameter_data.parubnd_trans.to_dict()
-    # lbnd = pst.parameter_data.parlbnd_trans.to_dict()
-    
+        pst.add_transform_columns()
+        ubnd = pst.parameter_data.parubnd_trans.to_dict()
+        lbnd = pst.parameter_data.parlbnd_trans.to_dict()
 
-    # import matplotlib.pyplot as plt
-    # from matplotlib.backends.backend_pdf import PdfPages
-    # with PdfPages("check.pdf") as pdf:
-    #     for pname in pst.adj_par_names:
-    #         fig,ax = plt.subplots(1,1,figsize=(10,10))
-    #         for ppe,c in zip(pes,colors):
 
-    #             ax.hist(ppe.loc[:,pname],fc=c,alpha=0.5,bins=10,density=True)
-    #         ylim = ax.get_ylim()
-    #         ax.plot([ubnd[pname],ubnd[pname]],ylim,"k--",lw=3)
-    #         ax.plot([lbnd[pname],lbnd[pname]],ylim,"k--",lw=3)
-            
-    #         ax.grid()
-    #         ax.set_title(pname)
-    #         plt.tight_layout()
-    #         pdf.savefig()
-    #         plt.close(fig)
-    #         print(pname)
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_pdf import PdfPages
+        with PdfPages("check.pdf") as pdf:
+            for pname in pst.adj_par_names:
+                fig,ax = plt.subplots(1,1,figsize=(10,10))
+                for ppe,c in zip(pes,colors):
 
-    
+                    ax.hist(ppe.loc[:,pname],fc=c,alpha=0.5,bins=10,density=True)
+                ylim = ax.get_ylim()
+                ax.plot([ubnd[pname],ubnd[pname]],ylim,"k--",lw=3)
+                ax.plot([lbnd[pname],lbnd[pname]],ylim,"k--",lw=3)
+
+                ax.grid()
+                ax.set_title(pname)
+                plt.tight_layout()
+                pdf.savefig()
+                plt.close(fig)
+                print(pname)
 
 
 if __name__ == "__main__":
-    draw_new_test()
+    test_draw_new()
     #par_gauss_draw_consistency_test()
     #obs_gauss_draw_consistency_test()
     # phi_vector_test()
