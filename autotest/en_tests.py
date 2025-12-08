@@ -498,7 +498,7 @@ def emp_cov_test():
     print(diff.max())
     assert diff.max() < 0.5,diff.max()
 
-def factor_draw_test():
+def test_factor_draw():
     import os
     import numpy as np
     import pyemu
@@ -508,27 +508,29 @@ def factor_draw_test():
     print(pst.npar,cov.shape)
     num_reals = 5000
     pe_cho = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
-    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov=cov,num_reals=num_reals,factor="eigen")
-    pe_svd = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="svd")
-    
-    
-    pe_eig.transform()
-    pe_svd.transform()
     pe_cho.transform()
-    
-    mn_eig = pe_eig.mean()
-    mn_svd = pe_svd.mean()
     mn_cho = pe_cho.mean()
-
-    sd_eig = pe_eig.std()
-    sd_svd = pe_svd.std()
     sd_cho = pe_cho.std()
+    del pe_cho
+
+    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov=cov,num_reals=num_reals,factor="eigen")
+    pe_eig.transform()
+    emp_cov = pe_eig.covariance_matrix()
+    mn_eig = pe_eig.mean()
+    sd_eig = pe_eig.std()
+    del pe_eig
+
+    pe_svd = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="svd")
+    pe_svd.transform()
+    # mn_svd = pe_svd.mean()
+    # sd_svd = pe_svd.std()
+    del pe_svd
 
     pst.add_transform_columns()
-    par = pst.parameter_data
-    df = cov.to_dataframe()
-    for p in pst.adj_par_names:
-        print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_svd[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_svd[p])
+    # par = pst.parameter_data
+    # df = cov.to_dataframe()
+    # for p in pst.adj_par_names:
+    #     print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_svd[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_svd[p])
     d = (mn_eig - mn_cho).apply(np.abs)
     print(d.max())
     assert d.max() < 0.5,d.sort_values()
@@ -539,7 +541,6 @@ def factor_draw_test():
     num_reals = 1000
     pe_cho2 = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals)
 
-    emp_cov = pe_eig.covariance_matrix()
     pe_cho3 = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals)
 
 
@@ -795,11 +796,9 @@ def test_draw_new(plot=False):
         assert len(voilations) == 0, f"{helptxt} mean differences > 5% of initial range:\n{voilations}"
         pe.back_transform()
 
-
-
     pst = pyemu.Pst(os.path.join("en", "pest.pst"))
     cov = pyemu.Cov.from_binary(os.path.join("en", "cov.jcb"))
-    basesd = pd.Series(cov.x.diagonal(), index=cov.row_names)
+    # basesd = pd.Series(cov.x.diagonal(), index=cov.row_names)
     print(pst.npar, cov.shape)
     num_reals = 1000
 
@@ -842,21 +841,10 @@ def test_draw_new(plot=False):
         for ppe in pes:
             if not ppe.istransformed:
                 ppe.transform()
-            # ppe.transform()
-            #ppe.enforce()
-
-        # for pname in pst.adj_par_names:
-        #     std = [ppe.loc[:,pname].std() for ppe in pes]
-        #     mean = [ppe.loc[:,pname].mean() for ppe in pes]
-        #     sdiff = [np.abs(std[0] - s) for s in std[1:]]
-        #
-        #     print(pname,max(sdiff))
-        #     assert max(sdiff) < 0.1
 
         pst.add_transform_columns()
         ubnd = pst.parameter_data.parubnd_trans.to_dict()
         lbnd = pst.parameter_data.parlbnd_trans.to_dict()
-
 
         import matplotlib.pyplot as plt
         from matplotlib.backends.backend_pdf import PdfPages
@@ -895,13 +883,13 @@ if __name__ == "__main__":
     # triangular_draw_test()
     # uniform_draw_test()
     #fill_test()
-    #factor_draw_test()
+    #test_factor_draw()
     #emp_cov_test()
     #emp_cov_draw_test()
     #mixed_par_draw_2_test()
     #binary_test()
     #get_phi_vector_noise_obs_test()
-    #factor_draw_test()
+    #test_factor_draw()
     #enforce_test()
 
 
