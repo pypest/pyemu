@@ -178,7 +178,7 @@ class ResultIesHandler(ResultHandler):
                 len(os.path.split(f)[1].split(".")) == 4:
                 try:
                     itr = int(os.path.split(f)[1].split(".")[1])
-                except Exception as e:
+                except Exception:
                     pass
                 else:
                     files.append(f)
@@ -391,7 +391,7 @@ class ResultMouHandler(ResultHandler):
                 os.path.split(f)[1].lower().startswith(self.case+"."):
                 try:
                     itr = int(os.path.split(f)[1].split(".")[1])
-                except Exception as e:
+                except Exception:
                     pass
                 else:
                     files.append(f)

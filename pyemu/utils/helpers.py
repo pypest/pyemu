@@ -99,7 +99,7 @@ def _try_pdcol_numeric(x, first=True, intadj=0, **kwargs):
                 x = pd.Series([xx + intadj if isinstance(xx, (int, np.integer)) else xx for xx in x])
             else:
                 x = x + intadj if isinstance(x, (int, np.integer)) else x
-    except ValueError as e:
+    except ValueError:
         if first:
             x = x.apply(_try_pdcol_numeric, first=False, intadj=intadj, **kwargs)
         else:
@@ -319,7 +319,7 @@ def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
         # (setup through add_parameters)
         for geostruct, par_df_l in struct_dict.items():
             par_df = pd.concat(par_df_l)  # force to single df
-            if not 'partype' in par_df.columns:
+            if 'partype' not in par_df.columns:
                 logger.warn(
                     f"draw() error: use_specsim is {use_specsim} but no column named"
                     f"'partype' to indicate grid based pars in geostruct {geostruct}"
@@ -382,12 +382,12 @@ def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
         )
         logger.log(f"Drawing {len(subset)} non-specsim pars")
         if gr_par_pe is not None:
-            logger.log(f"Joining specsim and non-specsim pars")
+            logger.log("Joining specsim and non-specsim pars")
             exist = gr_par_pe.columns.intersection(pe.columns)
             pe = pe._df.drop(exist, axis=1)  # specsim par take precedence
             pe = pd.concat([pe, gr_par_pe], axis=1)
             pe = pyemu.ParameterEnsemble(pst=pst, df=pe)
-            logger.log(f"Joining specsim and non-specsim pars")
+            logger.log("Joining specsim and non-specsim pars")
     else:
         pe = pyemu.ParameterEnsemble(pst=pst, df=gr_par_pe)
     logger.log("drawing realizations")
@@ -4612,6 +4612,7 @@ def gpr_pyworker(pst,host,port,input_df=None,mdf=None,gpr=False):
         print("WARNING: using legacy gpr_pyworker function, which is deprecated")
         gpr_pyworker_legacy(pst,host,port,input_df=input_df,mdf=mdf)
     else:
+        from pyemu.emulators import GPR
         if gpr is True:
             gpr = GPR.load("gpr_emulator.pkl")
 

@@ -304,7 +304,7 @@ def setup_pilotpoints_grid(
                             "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
                         )
 
-                except Exception as e:
+                except Exception:
                     raise Exception(
                         "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
                     )
@@ -486,7 +486,7 @@ def write_pp_shapfile(pp_df, shapename=None):
                         "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
                     )
 
-            except Exception as e:
+            except Exception:
                 raise Exception(
                     "unrecognized field type in par_info:{0}:{1}".format(name, dtype)
                 )
@@ -647,7 +647,7 @@ def get_zoned_ppoints_for_vertexgrid(spacing, zone_array, mg, zone_number=None, 
 
     # get zone cell x,y 
     xc, yc = mg.xcellcenters, mg.ycellcenters
-    if zone_number != None:
+    if zone_number is not None:
         xc_zone = xc[np.where(zone_array==zone_number)[0]]
         yc_zone = yc[np.where(zone_array==zone_number)[0]]
     else:
@@ -670,7 +670,7 @@ def get_zoned_ppoints_for_vertexgrid(spacing, zone_array, mg, zone_number=None, 
 
         # get vertices for model grid/zone polygon
         verts = [mg.get_cell_vertices(cellid) for cellid in range(mg.ncpl)]
-        if zone_number != None:
+        if zone_number is not None:
             # select zone area
             verts = [verts[i] for i in np.where(zone_array==zone_number)[0]]
         # dissolve
@@ -688,7 +688,7 @@ def get_zoned_ppoints_for_vertexgrid(spacing, zone_array, mg, zone_number=None, 
     #
     #     # get vertices for model grid/zone polygon
     #     verts = [mg.get_cell_vertices(cellid) for cellid in range(mg.ncpl)]
-    #     if zone_number != None:
+    #     if zone_number is not None:
     #         # select zone area
     #         verts = [verts[i] for i in np.where(zone_array == zone_number)[0]]
     #     # dissolve

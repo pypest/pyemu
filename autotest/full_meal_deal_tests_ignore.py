@@ -60,7 +60,7 @@ def _get_port():
 def freyberg_spinup(tmp_path):
     try:
         import flopy
-    except Exception as e:
+    except Exception:
         return
     import pyemu
 
@@ -248,7 +248,7 @@ def freyberg_kl_pp_compare():
     import pandas as pd
     try:
         import flopy
-    except Exception as e:
+    except Exception:
         return
     import pyemu
 
@@ -319,7 +319,7 @@ def freyberg_diff_obs_test(tmp_path):
     import pandas as pd
     try:
         import flopy
-    except Exception as e:
+    except Exception:
         return
     import pyemu
 

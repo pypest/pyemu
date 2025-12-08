@@ -73,17 +73,13 @@ def setup_tmp(od, tmp_d, sub=None):
 
 
 def test_freyberg(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
-    from pyemu import PyemuWarning
+    from pyemu.pyemu_warnings import PyemuWarning
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-
-    try:
-        import flopy
-    except:
-        return
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -296,15 +292,12 @@ def test_freyberg(tmp_path):
 
 
 def test_freyberg_prior_build(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -607,7 +600,7 @@ def add_py_function_test(tmp_path):
 def test_mf6_freyberg(tmp_path):
     # import sys
     # sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
-    import pypestutils as ppu
+    ppu = pytest.importorskip("pypestutils")
 
     pf,sim = setup_freyberg_mf6(tmp_path)
     m = sim.get_model()
@@ -870,7 +863,7 @@ def test_mf6_freyberg(tmp_path):
     list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
     pf.add_parameters(filenames=list_file, par_type="constant",
                       par_name_base="twel_mlt_{0}".format(kper),
-                      pargp="twel_mlt".format(kper), index_cols=[0, 1, 2],
+                      pargp="twel_mlt", index_cols=[0, 1, 2],
                       use_cols=[3], upper_bound=1.5, lower_bound=0.5,
                       datetime=dts[kper], geostruct=rch_temporal_gs,
                       mfile_skip=1)
@@ -885,7 +878,7 @@ def test_mf6_freyberg(tmp_path):
     list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
     pf.add_parameters(filenames=list_file, par_type="constant",
                       par_name_base="twel_mlt_{0}".format(kper),
-                      pargp="twel_mlt".format(kper), index_cols=[0, 1, 2],
+                      pargp="twel_mlt", index_cols=[0, 1, 2],
                       use_cols=[3], upper_bound=1.5, lower_bound=0.5,
                       datetime=dts[kper], geostruct=rch_temporal_gs,
                       mfile_skip='#')
@@ -899,7 +892,7 @@ def test_mf6_freyberg(tmp_path):
     list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
     pf.add_parameters(filenames=list_file, par_type="constant",
                       par_name_base="twel_mlt_{0}".format(kper),
-                      pargp="twel_mlt".format(kper), index_cols=['#k', 'i', 'j'],
+                      pargp="twel_mlt", index_cols=['#k', 'i', 'j'],
                       use_cols=['flux'], upper_bound=1.5, lower_bound=0.5,
                       datetime=dts[kper], geostruct=rch_temporal_gs)
     # add temporally indep, but spatially correlated wel flux pars
@@ -912,7 +905,7 @@ def test_mf6_freyberg(tmp_path):
     list_file = "freyberg6.wel_stress_period_data_{0}.txt".format(kper+1)
     pf.add_parameters(filenames=list_file, par_type="constant",
                       par_name_base="twel_mlt_{0}".format(kper),
-                      pargp="twel_mlt".format(kper), index_cols=['#k', 'i', 'j'],
+                      pargp="twel_mlt", index_cols=['#k', 'i', 'j'],
                       use_cols=['flux'], upper_bound=1.5, lower_bound=0.5,
                       datetime=dts[kper], geostruct=rch_temporal_gs,
                       mfile_skip=1)
@@ -928,7 +921,7 @@ def test_mf6_freyberg(tmp_path):
         kper = int(list_file.split(".")[1].split('_')[-1]) - 1
         # add spatially constant, but temporally correlated wel flux pars
         pf.add_parameters(filenames=list_file,par_type="constant",par_name_base="twel_mlt_{0}".format(kper),
-                          pargp="twel_mlt".format(kper),index_cols=[0,1,2],use_cols=[3],
+                          pargp="twel_mlt",index_cols=[0,1,2],use_cols=[3],
                           upper_bound=1.5,lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
 
         # add temporally indep, but spatially correlated wel flux pars
@@ -1279,15 +1272,12 @@ def mf6_freyberg_shortnames_test(tmp_path):
 
 
 def mf6_freyberg_da_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6_da')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -1355,7 +1345,7 @@ def mf6_freyberg_da_test(tmp_path):
         kper = int(list_file.split(".")[1].split('_')[-1]) - 1
         # add spatially constant, but temporally correlated wel flux pars
         pf.add_parameters(filenames=list_file,par_type="constant",par_name_base="twel_mlt_{0}".format(kper),
-                          pargp="twel_mlt".format(kper),index_cols=[0,1,2],use_cols=[3],
+                          pargp="twel_mlt",index_cols=[0,1,2],use_cols=[3],
                           upper_bound=1.5,lower_bound=0.5, datetime=dts[kper], geostruct=rch_temporal_gs)
 
         # add temporally indep, but spatially correlated wel flux pars
@@ -1445,10 +1435,7 @@ def mf6_freyberg_da_test(tmp_path):
 
 
 def setup_freyberg_mf6(wd, model="freyberg_mf6", **kwargs):
-    try:
-        import flopy
-    except:
-        return
+    flopy = pytest.importorskip("flopy")
     # try:
     #     model = request.param
     # except AttributeError:
@@ -1783,7 +1770,7 @@ def direct_arraypars_test(tmp_path):
 
 
 def direct_listpars_test(tmp_path):
-    import flopy
+    flopy = pytest.importorskip("flopy")
     pf, sim = setup_freyberg_mf6(tmp_path)
     m = sim.get_model()
     template_ws = pf.new_d
@@ -1930,16 +1917,12 @@ def direct_listpars_test(tmp_path):
 
 @pytest.mark.skip("now broken down into parts to avoid some mem issues")
 def mf6_freyberg_direct_test(tmp_path):
-
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -2270,15 +2253,12 @@ def mf6_freyberg_direct_test(tmp_path):
 
 
 def mf6_freyberg_varying_idomain(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -2429,15 +2409,12 @@ def mf6_freyberg_varying_idomain(tmp_path):
 
 
 def xsec_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     org_model_ws = os.path.join('..', 'examples', 'xsec')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -2478,16 +2455,12 @@ def xsec_test(tmp_path):
 
 
 def mf6_freyberg_short_direct_test(tmp_path):
-
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -2965,7 +2938,7 @@ class TestPstFrom():
                                par_name_base="xywel",
                                index_cols={'lay': 0, 'x': 4, 'y': 5},
                                use_cols=[3],
-                               pargp=f'xywel',
+                               pargp='xywel',
                                geostruct=self.grid_gs,
                                rebuild_pst=True
                                )
@@ -3265,16 +3238,13 @@ def invest():
 
 
 def pstfrom_profile():
+    flopy = pytest.importorskip("flopy")
     import cProfile
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
@@ -3389,17 +3359,12 @@ def pstfrom_profile():
 
 
 def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
-
-
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -3526,19 +3491,16 @@ def mf6_freyberg_arr_obs_and_headerless_test(tmp_path):
 
 
 def test_mf6_freyberg_pp_locs(tmp_path):
+    # flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    #try:
-    import flopy
-    #except:
-    #    return
 
     # import sys
     # sys.path.insert(0,os.path.join("..","..","pypestutils"))
-    import pypestutils as ppu
+    ppu = pytest.importorskip("pypestutils")
 
     pf, sim = setup_freyberg_mf6(tmp_path)
     m = sim.get_model()
@@ -3664,9 +3626,9 @@ def test_mf6_freyberg_pp_locs(tmp_path):
 
 
 def usg_freyberg_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
-    import flopy
     import pyemu
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
@@ -3874,7 +3836,7 @@ def usg_freyberg_test(tmp_path):
 
 
 def mf6_add_various_obs_test(tmp_path):
-    import flopy
+    flopy = pytest.importorskip("flopy")
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
 
@@ -3957,19 +3919,16 @@ def _add_big_obsffile(pf, profile=False, nchar=50000):
 
 
 def mf6_subdir_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     # import sys
     # sys.path.insert(0, os.path.join("..", "..", "pypestutils"))
-    import pypestutils as ppu
+    ppu = pytest.importorskip("pypestutils")
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     sd = "sub_dir"
@@ -4076,7 +4035,7 @@ def mf6_subdir_test(tmp_path):
     )
     pf.add_parameters(filenames=list_file, par_type="constant",
                       par_name_base="twel_mlt_{0}".format(kper),
-                      pargp="twel_mlt".format(kper), index_cols=[0, 1, 2],
+                      pargp="twel_mlt", index_cols=[0, 1, 2],
                       use_cols=[3], upper_bound=1.5, lower_bound=0.5,
                       datetime=dts[kper], geostruct=rch_temporal_gs,
                       mfile_skip=1)
@@ -4261,16 +4220,13 @@ def mf6_subdir_test(tmp_path):
 
 
 def shortname_conversion_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     import re
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     tmp_model_ws = Path(tmp_path, "temp_pst_from")
     if os.path.exists(tmp_model_ws):
@@ -4574,15 +4530,12 @@ def test_vertex_grid(tmp_path):
     return
 
 def test_defaults(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -4694,19 +4647,15 @@ def list_float_int_index_test(tmp_path):
 
 #def mf6_freyberg_thresh_invest(setup_freyberg_mf6):
 def mf6_freyberg_thresh_test(tmp_path):
-
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     # pd.set_option('display.max_rows', 500)
     # pd.set_option('display.max_columns', 500)
     # pd.set_option('display.width', 1000)
-    # try:
-    import flopy
-    # except:
-    #     return
     # import sys
     # sys.path.insert(0,os.path.join("..","..","pypestutils"))
-    import pypestutils as ppu
+    ppu = pytest.importorskip("pypestutils")
 
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
@@ -5014,7 +4963,7 @@ def mf6_freyberg_thresh_test(tmp_path):
 
 
 def plot_thresh(m_d):
-    import flopy
+    flopy = pytest.importorskip("flopy")
 
     sim = flopy.mf6.MFSimulation.load(sim_ws=m_d)
     dis = sim.get_model().dis
@@ -5453,6 +5402,7 @@ def hyperpars_test(tmp_path):
 
 
 def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     import os
@@ -5461,15 +5411,11 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     import pyemu
     
     # sys.path.insert(0,os.path.join("..","..","pypestutils"))
-    import pypestutils as ppu
+    ppu = pytest.importorskip("pypestutils")
 
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -5665,20 +5611,15 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
 
 
 def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
-
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     # pd.set_option('display.max_rows', 500)
     # pd.set_option('display.max_columns', 500)
     # pd.set_option('display.width', 1000)
-    # try:
-    import flopy
-    # except:
-    #     return
     import sys
     sys.path.insert(0,os.path.join("..","..","pypestutils"))
-
-    import pypestutils as ppu
+    ppu = pytest.importorskip("pypestutils")
 
     org_model_ws = os.path.join('..', 'examples', 'freyberg_mf6')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -6053,7 +5994,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
 
 def arrayskip_test(tmp_path):
     from pathlib import Path
-    sr = pyemu.SpatialReference(delr=[1000]*81, delc=[1000]*57, xll=841955, yll=2208285)
+    sr = pyemu.helpers.SpatialReference(delr=[1000]*81, delc=[1000]*57, xll=841955, yll=2208285)
     pf = pyemu.utils.PstFrom(Path('utils','arrayskip'), Path(tmp_path, "template"),
                              spatial_reference=sr)
     shutil.copy(Path(pf.new_d, "AWC_subset.txt"), Path(pf.new_d, "AWC_subset_1.txt"))
@@ -6178,7 +6119,7 @@ def test_dup_idxs(tmp_path):
                             index_cols=['i', 'j'],
                             use_cols='q',
                             ofile_sep=',')
-    except Exception as e:
+    except Exception:
         pass
     else:
         raise Exception("Expected error not raised")
@@ -6204,7 +6145,7 @@ def test_dup_idxs(tmp_path):
 
 
 def invest_vertexpp_setup_speed():
-    import flopy
+    flopy = pytest.importorskip("flopy")
     from flopy.utils.gridgen import Gridgen
     from pathlib import Path
     from shapely import Polygon
@@ -6250,15 +6191,12 @@ def invest_vertexpp_setup_speed():
 
 
 def xsec_pars_as_obs_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
-    try:
-        import flopy
-    except:
-        return
 
     org_model_ws = os.path.join('..', 'examples', 'xsec')
     tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
@@ -6325,7 +6263,7 @@ def xsec_pars_as_obs_test(tmp_path):
 
 
 def draw_consistency_test(tmp_path):
-    import flopy
+    flopy = pytest.importorskip("flopy")
     org_d = os.path.join("tests",'synthdewater')
     tmp_d = os.path.join(os.path.join(tmp_path,'tmp'))
 

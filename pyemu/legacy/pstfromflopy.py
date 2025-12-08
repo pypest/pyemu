@@ -1611,7 +1611,7 @@ class PstFromFlopyModel(object):
             self.log("processing pp_prefix:{0}".format(pp_prefix))
             if pp_prefix not in pp_array_file.keys():
                 self.logger.lraise(
-                    "{0} not in self.pp_array_file.keys()".format(
+                    "{0} not in self.pp_array_file.keys() {1}".format(
                         pp_prefix, ",".join(pp_array_file.keys())
                     )
                 )

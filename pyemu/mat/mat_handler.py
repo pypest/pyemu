@@ -1745,7 +1745,7 @@ class Matrix(object):
             if len(keep_names) != self.__x.shape[0]:
                 raise Exception(
                     "shape-name mismatch:"
-                    + "{0}:{0}".format(len(keep_names), self.__x.shape)
+                    + "{0}:{1}".format(len(keep_names), self.__x.shape)
                 )
             self.row_names = keep_names
             self.col_names = copy.deepcopy(keep_names)
@@ -1761,7 +1761,7 @@ class Matrix(object):
             if len(keep_names) != self.__x.shape[0]:
                 raise Exception(
                     "shape-name mismatch:"
-                    + "{0}:{0}".format(len(keep_names), self.__x.shape)
+                    + "{0}:{1}".format(len(keep_names), self.__x.shape)
                 )
             self.row_names = keep_names
             self.col_names = copy.deepcopy(keep_names)
@@ -2148,7 +2148,7 @@ class Matrix(object):
             f.seek(offset)
             try:
                 slen = np.fromfile(f, Matrix.integer, 1)[0]
-            except Exception as e:
+            except Exception:
                 break
             try:
                 name = (
@@ -2232,7 +2232,7 @@ class Matrix(object):
             curr_pos = f.tell()
             try:
                 slen = np.fromfile(f, Matrix.integer, 1)[0]
-            except Exception as e:
+            except Exception:
                 break
             try:
                 name = (
@@ -2461,7 +2461,7 @@ class Matrix(object):
         """
         try:
             from scipy.io import FortranFile
-        except Exception as e:
+        except Exception:
             raise Exception("Matrix.from_fortranfile requires scipy")
         f = FortranFile(filename, mode="r")
         itemp1, itemp2 = f.read_ints()
@@ -2613,7 +2613,7 @@ class Matrix(object):
             for r in raw:
                 try:
                     x.append(float(r))
-                except Exception as e:
+                except Exception:
                     # overflow
                     if "+" in r:
                         x.append(1.0e30)

@@ -38,7 +38,7 @@ def process():
         m2s_exe = os.path.join("mod2smp.exe")
     else:
         m2s_exe = None
-	print m2s_exe + "< "+os.path.join("misc","mod2smp.in")
+    print(m2s_exe + "< "+os.path.join("misc","mod2smp.in"))
     os.system(m2s_exe + "< "+os.path.join("misc","mod2smp.in"))
 
     # sw-gw exchange

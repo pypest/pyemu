@@ -1,4 +1,5 @@
 import os
+import sys
 import pyemu
 
 pst = pyemu.Pst(os.path.join("freyberg.pst"))

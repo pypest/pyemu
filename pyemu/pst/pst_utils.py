@@ -1482,7 +1482,7 @@ class InstructionFile(object):
             elif i1 == "l":  # if start of instruction is line advance
                 try:
                     nlines = int(ins[1:])  # try and get advance number
-                except Exception as e:
+                except Exception:
                     self.throw_ins_error(
                         "casting line advance to int for "
                         "instruction '{0}'".format(ins),
@@ -1550,7 +1550,7 @@ class InstructionFile(object):
                         val_str = rline[cursor_pos:es]
                 try:
                     val = float(val_str)
-                except Exception as e:
+                except Exception:
                     if oname != "dum":
                         self.throw_out_error(
                             "casting string '{0}' to float for instruction '{1}'".format(
@@ -1593,7 +1593,7 @@ class InstructionFile(object):
                 raw = raw.split(":")
                 try:
                     s_idx = int(raw[0]) - 1
-                except Exception as e:
+                except Exception:
                     self.throw_ins_error(
                         "error converting '{0}' to integer in semi-fixed instruction: '{1}'".format(
                             raw[0], ins
@@ -1602,7 +1602,7 @@ class InstructionFile(object):
                     )
                 try:
                     e_idx = int(raw[1])
-                except Exception as e:
+                except Exception:
                     self.throw_ins_error(
                         "error converting '{0}' to integer in semi-fixed instruction: '{1}'".format(
                             raw[1], ins
@@ -1639,7 +1639,7 @@ class InstructionFile(object):
                 val_str = line[rs_idx:re_idx]
                 try:
                     val = float(val_str)
-                except Exception as e:
+                except Exception:
                     if oname != "dum":
                         self.throw_out_error(
                             "casting string '{0}' to float for instruction '{1}'".format(
@@ -1664,7 +1664,7 @@ class InstructionFile(object):
                 raw = raw.split(":")
                 try:
                     s_idx = int(raw[0]) - 1
-                except Exception as e:
+                except Exception:
                     self.throw_ins_error(
                         "error converting '{0}' to integer in fixed instruction: '{1}'".format(
                             raw[0], ins
@@ -1673,7 +1673,7 @@ class InstructionFile(object):
                     )
                 try:
                     e_idx = int(raw[1])
-                except Exception as e:
+                except Exception:
                     self.throw_ins_error(
                         "error converting '{0}' to integer in fixed instruction: '{1}'".format(
                             raw[1], ins
@@ -1698,7 +1698,7 @@ class InstructionFile(object):
                 val_str = line[s_idx:e_idx]
                 try:
                     val = float(val_str)
-                except Exception as e:
+                except Exception:
                     if oname != "dum":
                         self.throw_out_error(
                             "casting string '{0}' to float for instruction '{1}'".format(
