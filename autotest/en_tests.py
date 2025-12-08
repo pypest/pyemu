@@ -769,58 +769,76 @@ def mixed_par_draw_2_test():
     assert pst.npar == npar
 
 
-def test_draw_new(plot=True):
+def test_draw_new(plot=False):
     import os
     import numpy as np
     import pyemu
 
-    def _check_pe(newpe, helptxt=""):
+    def _check_pe(newpe, noise=False, helptxt=""):
         pe.transform()
         newpe.transform()
-        stdiff = (newpe.std()/pe.std())-1
-        mndiff = abs(newpe.mean() - pe.mean())
-        pe.back_transform()
+        stdiff = (newpe.std() / pe.std()) - 1
+        if noise:
+            # if adding noise only check for signif std reductions
+            voilations = stdiff.loc[stdiff < -0.1]
+            assert len(voilations) == 0, f"'{helptxt}' std > 10% reduction:\n{voilations}"
+        else:
+            # else check for signif std increase or decrease
+            voilations = stdiff.loc[(stdiff > 0.15) | (stdiff < -0.1)]
+            assert len(voilations) == 0, f"'{helptxt}' std differences > 0.1:\n{voilations}"
         # new std should not be shrunk by more than 15%?
-        voilations = stdiff.loc[stdiff<-0.15]
-        assert len(voilations) == 0, f"'{helptxt}' std > 15% reduction:\n{voilations}"
+
         # max mean change?
-        # voilations = mndiff.loc[mndiff>0.1]
-        # assert len(voilations) == 0, f"{helptxt} mean differences > 0.1:\n{voilations}"
+        # mean change 5% of range?
+        mndiff = np.abs(newpe.mean()-pe.mean())/(pe.max()-pe.min())
+        voilations = mndiff.loc[mndiff>0.05]
+        assert len(voilations) == 0, f"{helptxt} mean differences > 5% of initial range:\n{voilations}"
+        pe.back_transform()
+
 
 
     pst = pyemu.Pst(os.path.join("en", "pest.pst"))
     cov = pyemu.Cov.from_binary(os.path.join("en", "cov.jcb"))
+    basesd = pd.Series(cov.x.diagonal(), index=cov.row_names)
     print(pst.npar, cov.shape)
-    num_reals = 10000
+    num_reals = 1000
 
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
     
-    sub_pe = pe.iloc[:1000,:]
+    sub_pe = pe.copy()
 
     new_pe_nonoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=False)
-    _check_pe(new_pe_nonoise, 'no noise')
+    _check_pe(new_pe_nonoise, False, 'no noise')
     if not plot:
         del new_pe_nonoise
     new_pe_stdnoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True)
-    _check_pe(new_pe_stdnoise, 'std noise')
+    _check_pe(new_pe_stdnoise, True,'std noise')
     if not plot:
         del new_pe_stdnoise
     new_pe_usernoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=1./np.sqrt(sub_pe.shape[0]))
-    _check_pe(new_pe_usernoise, 'user noise')
+    _check_pe(new_pe_usernoise, True,'user noise')
     if not plot:
         del new_pe_usernoise
     new_pe_ennoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True,noise_reals=pe)
-    _check_pe(new_pe_ennoise, 'ens noise')
+    _check_pe(new_pe_ennoise, False, 'ens noise')
     if not plot:
         del new_pe_ennoise
 
     if plot:
         colors = ["r","y","b","g","m","c"]
-        pes = [pe, sub_pe,
+        pes = [pe,
+               sub_pe,
                new_pe_nonoise,
                new_pe_stdnoise,
                new_pe_usernoise,
                new_pe_ennoise]
+        names = ["original",
+                 "sub_ensemble",
+                 "new_no_noise",
+                 "new_std_noise",
+                 "new_user_noise",
+                 "new_ens_noise"]
+
         for ppe in pes:
             if not ppe.istransformed:
                 ppe.transform()
@@ -845,15 +863,17 @@ def test_draw_new(plot=True):
         with PdfPages("check.pdf") as pdf:
             for pname in pst.adj_par_names:
                 fig,ax = plt.subplots(1,1,figsize=(10,10))
-                for ppe,c in zip(pes,colors):
-
-                    ax.hist(ppe.loc[:,pname],fc=c,alpha=0.5,bins=10,density=True)
+                for ppe,c,name in zip(pes,colors,names):
+                    par = ppe.loc[:,pname]
+                    # ax.hist(par,fc=c,alpha=0.5,bins=10,density=True)
+                    ax.plot(np.sort(par), np.arange(par.shape[0])/par.shape[0], color=c, label=name)
                 ylim = ax.get_ylim()
                 ax.plot([ubnd[pname],ubnd[pname]],ylim,"k--",lw=3)
                 ax.plot([lbnd[pname],lbnd[pname]],ylim,"k--",lw=3)
 
                 ax.grid()
                 ax.set_title(pname)
+                ax.legend()
                 plt.tight_layout()
                 pdf.savefig()
                 plt.close(fig)
