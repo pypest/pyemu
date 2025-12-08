@@ -349,7 +349,6 @@ def from_parfiles_test(tmp_path):
 
 def triangular_draw_test():
     import os
-    import matplotlib.pyplot as plt
     import pyemu
 
     pst = pyemu.Pst(os.path.join("pst","pest.pst"))
@@ -577,7 +576,6 @@ def emp_cov_draw_test():
 
 def mixed_par_draw_test():
     import os
-    import matplotlib.pyplot as plt
     import pandas as pd
     import pyemu
 
@@ -591,6 +589,7 @@ def mixed_par_draw_test():
     pe2 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {},default="uniform",num_reals=num_reals)
     pe3 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {}, default="triangular", num_reals=num_reals)
 
+    # import matplotlib.pyplot as plt
     # ax = plt.subplot(111)
     # pe1.loc[:,pname].hist(ax=ax,alpha=0.5,bins=25)
     # pe2.loc[:, pname].hist(ax=ax,alpha=0.5,bins=25)
@@ -697,7 +696,6 @@ def binary_test(tmp_path):
 
 def mixed_par_draw_2_test():
     import os
-    import matplotlib.pyplot as plt
     import pandas as pd
     import pyemu
 
@@ -711,6 +709,7 @@ def mixed_par_draw_2_test():
     pe2 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {},default="uniform",num_reals=num_reals)
     pe3 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {}, default="triangular", num_reals=num_reals)
 
+    # import matplotlib.pyplot as plt
     # ax = plt.subplot(111)
     # pe1.loc[:,pname].hist(ax=ax,alpha=0.5,bins=25)
     # pe2.loc[:, pname].hist(ax=ax,alpha=0.5,bins=25)

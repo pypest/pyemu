@@ -522,10 +522,8 @@ class Ensemble(object):
                                 covname = "trouble_{0}.cov".format(grp_name)
                                 cov_grp.to_ascii(covname)
                                 raise Exception(
-                                    "error inverting cov for group '{0}',"
-                                    + "saved trouble cov to {1}".format(
-                                        grp_name, covname
-                                    )
+                                    f"error inverting cov for group '{grp_name}', "
+                                    f"saved trouble cov to {covname}"
                                 )
 
                             a, i = Ensemble._get_eigen_projection_matrix(cov_grp.as_2d)

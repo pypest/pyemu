@@ -3,6 +3,7 @@ import shutil
 import time
 from pathlib import Path
 import numpy as np
+import pytest
 
 
 def setup_tmp(od, tmp_path):
@@ -180,8 +181,8 @@ def load_test(tmp_path):
     for pst_file in pst_files:
         if "pest_tied_tester" not in pst_file:
             continue
-        if pst_file.endswith(".pst") and not "comments" in pst_file and \
-                not "missing" in pst_file:
+        if pst_file.endswith(".pst") and "comments" not in pst_file and \
+                "missing" not in pst_file:
             print(pst_file)
             try:
                 p = Pst(os.path.join(pst_dir, pst_file))
@@ -574,6 +575,7 @@ def res_stats_test():
 
 
 def write_tables_test(tmp_path):
+    pytest.importorskip("jinja2")
     import os
     import pyemu
 
@@ -1648,7 +1650,7 @@ def results_ies_3_test():
     pst.add_results(m_d2)
     try:
         pst.add_results(m_d2)
-    except Exception as e:
+    except Exception:
         pass
     else:
         raise Exception("should have failed...")

@@ -963,7 +963,7 @@ class OrdinaryKrige(object):
             try:
                 from pypestutils.pestutilslib import PestUtilsLib
                 use_ppu = True
-            except Exception as e:
+            except Exception:
                 pass
 
 
@@ -2243,7 +2243,7 @@ def read_sgems_variogram_xml(xml_file, return_type=GeoStruct):
     try:
         import xml.etree.ElementTree as ET
 
-    except Exception as e:
+    except Exception:
         print("error import elementtree, skipping...")
     VARTYPE = {1: SphVario, 2: ExpVario, 3: GauVario, 4: None}
     assert os.path.exists(xml_file)

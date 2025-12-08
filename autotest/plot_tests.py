@@ -3,14 +3,11 @@ import shutil
 import numpy as np
 import pandas as pd
 import pyemu
+import pytest
 
 
 def plot_summary_test(tmp_path):
-
-    try:
-        import matplotlib.pyplot as plt
-    except:
-        return
+    plt = pytest.importorskip("matplotlib.pyplot")
     par_df_fname = os.path.join("utils","freyberg_pp.par.usum.csv")
     shutil.copy(par_df_fname, tmp_path)
     par_df_fname = os.path.join(tmp_path, "freyberg_pp.par.usum.csv")
@@ -38,10 +35,7 @@ def plot_summary_test(tmp_path):
 
 
 def pst_plot_test(tmp_path):
-    try:
-        import matplotlib.pyplot as plt
-    except:
-        return
+    plt = pytest.importorskip("matplotlib.pyplot")
     pstfile = os.path.join("pst", "pest.pst")
     shutil.copy(pstfile,
                 os.path.join(tmp_path, "pest.pst"))
@@ -98,10 +92,7 @@ def pst_plot_test(tmp_path):
 
 
 def ensemble_plot_test(tmp_path):
-    try:
-        import matplotlib.pyplot as plt
-    except:
-        return
+    plt = pytest.importorskip("matplotlib.pyplot")
     pstfile = os.path.join("pst", "pest.pst")
     shutil.copy(pstfile,
                 os.path.join(tmp_path, "pest.pst"))
@@ -165,10 +156,7 @@ def ensemble_plot_test(tmp_path):
 
 
 def ensemble_1to1_test(tmp_path):
-    try:
-        import matplotlib.pyplot as plt
-    except:
-        return
+    plt = pytest.importorskip("matplotlib.pyplot")
     shutil.copy(os.path.join("pst","pest.pst"),
                 os.path.join(tmp_path, "pest.pst"))
     shutil.copy(os.path.join("pst","pest.rei"),
@@ -259,10 +247,7 @@ def ensemble_1to1_test(tmp_path):
 
 
 def ensemble_summary_test(tmp_path):
-    try:
-        import matplotlib.pyplot as plt
-    except:
-        return
+    plt = pytest.importorskip("matplotlib.pyplot")
 
     shutil.copy(os.path.join("pst", "pest.pst"),
                 os.path.join(tmp_path, "pest.pst"))
@@ -295,10 +280,7 @@ def ensemble_summary_test(tmp_path):
     )
 
 # def cov_test():
-#     try:
-#         import matplotlib.pyplot as plt
-#     except:
-#         return
+#     plt = pytest.importorskip("matplotlib.pyplot")
 #
 #     import os
 #     import numpy as np
@@ -323,7 +305,7 @@ def ensemble_summary_test(tmp_path):
 
 
 def ensemble_change_test(tmp_path):
-    import matplotlib.pyplot as plt
+    plt = pytest.importorskip("matplotlib.pyplot")
     os.chdir(tmp_path)
     pst = pyemu.Pst.from_par_obs_names(par_names=["p1","p2"])
     cov = pyemu.Cov(np.array([[1.0,0.0],[0.0,1.0]]),names=["p1","p2"])
