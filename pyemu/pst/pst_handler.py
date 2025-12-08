@@ -2750,8 +2750,12 @@ class Pst(object):
             isfixed, "parval1"
         ]
 
-    def add_transform_columns(self):
+    def add_transform_columns(self,include_offset_and_scale=False):
         """add transformed values to the `Pst.parameter_data` attribute
+
+        Args:
+            include_offset_and_scale (bool): flag to apply the scale and offset values before
+            applying the log transform.  Default is False
 
         Note:
             adds `parval1_trans`, `parlbnd_trans` and `parubnd_trans` to
@@ -2769,9 +2773,12 @@ class Pst(object):
         for col in ["parval1", "parlbnd", "parubnd", "increment"]:
             if col not in self.parameter_data.columns:
                 continue
-            self.parameter_data.loc[:, col + "_trans"] = (
-                self.parameter_data.loc[:, col] * self.parameter_data.scale
-            ) + self.parameter_data.offset
+            if include_offset_and_scale:
+                self.parameter_data.loc[:, col + "_trans"] = (
+                    self.parameter_data.loc[:, col] * self.parameter_data.scale
+                ) + self.parameter_data.offset
+            else:
+                self.parameter_data.loc[:, col + "_trans"] = self.parameter_data.loc[:, col]
             # isnotfixed = self.parameter_data.partrans != "fixed"
             islog = self.parameter_data.partrans == "log"
             self.parameter_data.loc[islog, col + "_trans"] = \
@@ -4012,9 +4019,9 @@ class Pst(object):
         if "less_than" not in obs.columns:
             obs["less_than"] = np.nan
 
-        if len(name_prefix) == 0:
-            obs.loc[df.obsnme,"greater_than"] = par.loc[df.obsnme,"parlbnd"]
-            obs.loc[df.obsnme,"less_than"] = par.loc[df.obsnme,"parubnd"]
+        
+        obs.loc[df.obsnme,"greater_than"] = par.loc[parval1.index,"parlbnd"].values
+        obs.loc[df.obsnme,"less_than"] = par.loc[parval1.index,"parubnd"].values
 
         log_idx = par.loc[parval1.index,"partrans"] == "log"
         stdev = np.abs(par.loc[parval1.index,"parubnd_trans"] - par.loc[parval1.index,"parlbnd_trans"]) / par_sigma_range
