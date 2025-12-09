@@ -1,4 +1,6 @@
 import os
+import shutil
+
 import pyemu
 import pandas as pd
 import numpy as np
@@ -498,15 +500,15 @@ def emp_cov_test():
     print(diff.max())
     assert diff.max() < 0.5,diff.max()
 
-def test_factor_draw():
-    import os
+def test_factor_draw(tmp_path):
     import numpy as np
     import pyemu
 
-    pst = pyemu.Pst(os.path.join("en","pest.pst"))
-    cov = pyemu.Cov.from_binary(os.path.join("en","cov.jcb"))
+    shutil.copytree("en", tmp_path/"en")
+    pst = pyemu.Pst(str(tmp_path/"en"/"pest.pst"))
+    cov = pyemu.Cov.from_binary(str(tmp_path/"en"/"cov.jcb"))
     print(pst.npar,cov.shape)
-    num_reals = 5000
+    num_reals = 1000
     pe_cho = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
     pe_cho.transform()
     mn_cho = pe_cho.mean()
@@ -656,37 +658,49 @@ def binary_test(tmp_path):
     import numpy as np
     import pandas as pd
     import pyemu
-    npar = 10000
-    nobs = 500
+    npar = 1000
+    nobs = 100
+    nreal = 100
     par_names = ["p{0}".format(i) for i in range(npar)]
     obs_names = ["o{0}".format(i) for i in range(nobs)]
-    arr = np.random.random((nobs,npar))
     pst = pyemu.Pst.from_par_obs_names(par_names,obs_names)
-    df = pd.DataFrame(data=arr,columns=par_names,index=obs_names)
-    pe = pyemu.ParameterEnsemble(pst=pst,df=df)
+    # array to write (mimicing ensemble)
+    arr = np.random.random((nreal,npar))
+    df = pd.DataFrame(data=arr,columns=par_names,index=[str(i) for i in range(nreal)])
+    pe = pyemu.ParameterEnsemble(pst=pst, df=df)
+
+    # explicitly write dense format
     s1 = datetime.now()
     pe.to_dense(os.path.join(tmp_path, "par.bin"))
+    # load written
     pe1 = pyemu.ParameterEnsemble.from_binary(
         pst=pst,filename=os.path.join(tmp_path, "par.bin")
     )
     e1 = datetime.now()
+    print(f"dense write and read took ({df.shape}) {(e1 - s1).total_seconds()}")
     d = (pe - pe1).apply(np.abs)
-    print(d.max().max())
+    print(f"max diff between read and write: {d.max().max()}")
     assert d.max().max() < 1.0e-10
+
+    # should be regular write
     s2 = datetime.now()
     pe.to_binary(os.path.join(tmp_path, "par.bin"))
     pe1 = pyemu.ParameterEnsemble.from_binary(
         pst=pst,filename=os.path.join(tmp_path, "par.bin")
     )
     e2 = datetime.now()
-    print((e1 - s1).total_seconds())
-    print((e2 - s2).total_seconds())
-    pe3 = pd.DataFrame(np.random.rand(10, int(1e7)))
+    print(f"Regular write took: {(e2 - s2).total_seconds()}")
+    d = (pe - pe1).apply(np.abs)
+    print(f"max diff between read and write: {d.max().max()}")
+    assert d.max().max() < 1.0e-10
+
+    # big ensemble should default to dense .bin write
+    pe3 = pd.DataFrame(np.random.rand(10, int(2e6)))
     pe3.columns = "parameter_number_" + pe3.columns.astype(str)
     pe3 = pe3.rename(index={9:'base'})
     pst = pyemu.Pst.from_par_obs_names(pe3.columns, obs_names)
     pe3 = pyemu.ParameterEnsemble(pst=pst, df=pe3)
-    fname = pe3.to_binary("paren.jcb")
+    fname = pe3.to_binary(os.path.join(tmp_path, "paren.jcb"))
     assert fname.endswith('bin')
     pe4 = pyemu.ParameterEnsemble.from_binary(pst=pst, filename=fname)
     assert pe4.shape == pe3.shape
@@ -869,7 +883,9 @@ def test_draw_new(plot=False):
 
 
 if __name__ == "__main__":
-    test_draw_new()
+    import cProfile
+    import pstats
+    # test_draw_new()
     #par_gauss_draw_consistency_test()
     #obs_gauss_draw_consistency_test()
     # phi_vector_test()
@@ -883,7 +899,6 @@ if __name__ == "__main__":
     # triangular_draw_test()
     # uniform_draw_test()
     #fill_test()
-    #test_factor_draw()
     #emp_cov_test()
     #emp_cov_draw_test()
     #mixed_par_draw_2_test()
@@ -891,5 +906,11 @@ if __name__ == "__main__":
     #get_phi_vector_noise_obs_test()
     #test_factor_draw()
     #enforce_test()
+    profiler = cProfile.Profile()
+    profiler.enable()
+    binary_test('temp')
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('cumtime')
+    stats.print_stats(10)
 
 
