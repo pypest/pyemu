@@ -4482,7 +4482,6 @@ def test_vertex_grid(tmp_path):
         df_pp = pf.add_parameters(f,
                             zone_array=ib[layer],
                             par_type="pilotpoints",
-                            #use_pp_zones=True,
                             geostruct=grid_gs,
                             par_name_base=f.split('.')[1].replace("_","")+"pp",
                             pargp=f.split('.')[1].replace("_","")+"pp",
@@ -4491,7 +4490,7 @@ def test_vertex_grid(tmp_path):
                             pp_options={"prep_hyperpars":False,
                                         "pp_space":500,
                                         "try_use_ppu":False,
-                                        "pp_zones":True}) # `
+                                        "pp_zones":True}) #
 
     tag = "sfr_packagedata"
     files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
@@ -6454,7 +6453,7 @@ def draw_consistency_test(tmp_path):
 
 
 if __name__ == "__main__":
-    draw_consistency_test('.')
+    # draw_consistency_test('.')
     #xsec_pars_as_obs_test(".")
     #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
@@ -6503,6 +6502,14 @@ if __name__ == "__main__":
     # list_float_int_index_test('.')
     #freyberg_test()
     #invest_vertexpp_setup_speed()
+    import cProfile
+    import pstats
+    profiler = cProfile.Profile()
+    profiler.enable()
+    test_mf6_freyberg('temp')
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('cumtime')
+    stats.print_stats(10)
 
 
 

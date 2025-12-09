@@ -1783,13 +1783,13 @@ if __name__ == "__main__":
     picking up non standard "*_test" functions. plugin `pytest imp` can help 
     with this.
     """
-    d = 'temp'
-    results_ies_3_test()
-    results_ies_1_test()
-    results_ies_2_test()
-    results_mou_1_test()
-    #load_test(d)
-    pst_manip_test(d)
+    # d = 'temp'
+    # results_ies_3_test()
+    # results_ies_1_test()
+    # results_ies_2_test()
+    # results_mou_1_test()
+    # #load_test(d)
+    # pst_manip_test(d)
     #parrep_test(d)
     #interface_check_test()
     # new_format_test_2()
@@ -1853,4 +1853,16 @@ if __name__ == "__main__":
     #pst_ctl_opt_args_test()
     #invest()
     # pst_ctl_opt_args_test()
+
+    import cProfile
+    import pstats
+    from pathlib import Path
+    pr = cProfile.Profile()
+    pr.enable()
+    new_format_test(Path('temp'))
+    pr.disable()
+    ps = pstats.Stats(pr).sort_stats('cumtime')
+    ps.print_stats(20)
+
+
 

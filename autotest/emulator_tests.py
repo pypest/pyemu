@@ -92,7 +92,9 @@ def test_dsi_mixed(tmp_path):
 
 # @pytest.mark.timeout(method="thread", timeout=1000)
 def test_dsivc(tmp_path):
+    from pathlib import Path
     # basic quick as so can re-run here
+    tmp_path = Path(tmp_path)
     dsi_freyberg(tmp_path, transforms=None)
     # now test dsicv
     # master_dsi should now exist
@@ -922,7 +924,7 @@ def gpr_zdt1_ppw():
 
 if __name__ == "__main__":
     
-    test_dsi_basic("temp")
+    # test_dsi_basic("temp")
     #test_dsi_nst("temp")
     #test_dsi_nst_extrap("temp")
     #test_dsi_mixed("temp")
@@ -930,4 +932,15 @@ if __name__ == "__main__":
     #plot_freyberg_dsi()
     #test_lpfa_std()
     #gpr_zdt1_test()
+
+    import cProfile
+    import pstats
+    from pathlib import Path
+    pr = cProfile.Profile()
+    pr.enable()
+    dsi_freyberg(Path('temp'), transforms=None)
+    pr.disable()
+    ps = pstats.Stats(pr).sort_stats('cumtime')
+    ps.print_stats()
+
 
