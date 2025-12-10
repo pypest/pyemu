@@ -99,12 +99,12 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Coveralls
-      uses: coverallsapp/github-action@v2
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        flag-name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
-        parallel: true
+#    - name: Coveralls
+#      uses: coverallsapp/github-action@v2
+#      with:
+#        github-token: ${{ secrets.GITHUB_TOKEN }}
+#        flag-name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
+#        parallel: true
 
     - name: Codecov
       uses: codecov/codecov-action@v5
@@ -112,12 +112,12 @@ jobs:
         fail_ci_if_error: true
         token: ${{ secrets.CODECOV_TOKEN }}
 
-  coveralls_finish:
-    needs: pyemuCI
-    runs-on: ubuntu-latest
-    steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@v2
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        parallel-finished: true
+#  coveralls_finish:
+#    needs: pyemuCI
+#    runs-on: ubuntu-latest
+#    steps:
+#    - name: Coveralls Finished
+#      uses: coverallsapp/github-action@v2
+#      with:
+#        github-token: ${{ secrets.GITHUB_TOKEN }}
+#        parallel-finished: true
