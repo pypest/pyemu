@@ -129,7 +129,13 @@ with pytest-xdist, local runs can be parallelized:
 
 ### Test dependencies
 
-Python dependencies for the test suite can be installed via `pip install -e .[optional, test]` (they are recorded in [`./pyproject.toml`](./pyproject.toml)). You should also include [binaries for PEST++](https://github.com/usgs/pestpp/releases) and [binaries for MODFLOW](https://github.com/MODFLOW-ORG/executables) in the relevant `./bin/win`, `./bin/linux`, or `./bin/mac` directories (depending on your OS).
+Python dependencies for the test suite can be installed via `pip install -e .[optional, test]` (they are recorded in [`./pyproject.toml`](./pyproject.toml)). You should also include binaries for various integrations:
+
+* [PEST++](https://github.com/usgs/pestpp/releases), e.g. `pestpp-ies`, `pestpp-mou`, etc.
+* [MODFLOW](https://github.com/MODFLOW-ORG/executables), i.e. `mf6`
+* [MODFLOW-NWT](https://www.usgs.gov/software/modflow-nwt-a-newton-formulation-modflow-2005), i.e. `mfnwt`. Note that the pre-built Windows binaries are named `MODFLOW-NWT.exe` and `MODFLOW-NWT_64.exe` - usually on Windows you would want the 64-bit version, and to rename it to `mfnwt.exe` for compatibility with the pyEMU test suite.
+
+These should be placed in the relevant `./bin/win`, `./bin/linux`, or `./bin/mac` directories (depending on your OS).
 
 ### Using an IDE:
 Most modern, feature-rich editors and IDEs support launching pytest within debug or run consoles. 
