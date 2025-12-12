@@ -129,7 +129,7 @@ with pytest-xdist, local runs can be parallelized:
 
 ### Test dependencies
 
-Python dependencies for the test suite can be installed via `pip install -e .[optional, test]` (they are recorded in [`./pyproject.toml`](./pyproject.toml)). You should also include [binaries for PEST++](https://github.com/usgs/pestpp/releases) in the relevant `./bin/win`, `./bin/linux`, or `./bin/mac` directories depending on your OS.
+Python dependencies for the test suite can be installed via `pip install -e .[optional, test]` (they are recorded in [`./pyproject.toml`](./pyproject.toml)). You should also include [binaries for PEST++](https://github.com/usgs/pestpp/releases) and [binaries for MODFLOW](https://github.com/MODFLOW-ORG/executables) in the relevant `./bin/win`, `./bin/linux`, or `./bin/mac` directories (depending on your OS).
 
 ### Using an IDE:
 Most modern, feature-rich editors and IDEs support launching pytest within debug or run consoles. 
