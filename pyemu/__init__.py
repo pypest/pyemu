@@ -35,7 +35,7 @@ try:
 except (ModuleNotFoundError, ImportError) as e:
     import warnings
     warnings.warn("Failed to import legacy module. "
-                  "May impact ability to access older methods."
+                  "May impact ability to access older methods. "
                   f"{type(e).__name__} {e.msg}")
 
 from ._version import get_versions
