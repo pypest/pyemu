@@ -803,8 +803,33 @@ def draw_new_test():
         sdiff = [np.abs(std[0] - s) for s in std[1:]]
 
         print(pname,max(sdiff))
-        #assert max(sdiff) < 0.1
+        assert max(sdiff) < 0.2
     
+    obs = pst.observation_data
+    obs.loc[pst.obs_names[:1000],"weight"] = 1.0
+    cov = cov.x[:pst.nnz_obs,:pst.nnz_obs]
+    cov = pyemu.Cov(x=cov,names=pst.nnz_obs_names)
+
+    pe = pyemu.ObservationEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
+    sub_pe = pe.iloc[:int(num_reals),:]
+
+    new_pe_nonoise = sub_pe.draw_new_ensemble(num_reals=num_reals)
+    new_pe_stdnoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True)
+    new_pe_usernoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=1./np.sqrt(sub_pe.shape[0]))
+    
+    #pes = [pe,sub_pe,new_pe_nonoise,new_pe_stdnoise,new_pe_usernoise,new_pe_ennoise]
+    
+    pes = [pe,new_pe_stdnoise,new_pe_usernoise]
+    
+    for oname in pst.nnz_obs_names:
+        std = [ppe.loc[:,oname].std() for ppe in pes]
+        mean = [ppe.loc[:,oname].mean() for ppe in pes]
+        sdiff = [np.abs(std[0] - s) for s in std[1:]]
+
+        print(oname,max(sdiff))
+        assert max(sdiff) < 0.2
+
+
     # pst.add_transform_columns()
     # ubnd = pst.parameter_data.parubnd_trans.to_dict()
     # lbnd = pst.parameter_data.parlbnd_trans.to_dict()
