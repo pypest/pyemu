@@ -79,3 +79,12 @@ def full_exe_ref_dict():
 def _ch2testdir(monkeypatch):
     testdir = Path(__file__).parent
     monkeypatch.chdir(testdir)
+
+@pytest.fixture(autouse=True)
+def _turn_off_show():
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        pass
+    else:
+        plt.switch_backend("Agg")
