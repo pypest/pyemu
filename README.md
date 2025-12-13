@@ -134,6 +134,7 @@ Python dependencies for the test suite can be installed via `pip install -e .[op
 * [PEST++](https://github.com/usgs/pestpp/releases), e.g. `pestpp-ies`, `pestpp-mou`, etc.
 * [MODFLOW](https://github.com/MODFLOW-ORG/executables), i.e. `mf6`
 * [MODFLOW-NWT](https://www.usgs.gov/software/modflow-nwt-a-newton-formulation-modflow-2005), i.e. `mfnwt`. Note that the pre-built Windows binaries are named `MODFLOW-NWT.exe` and `MODFLOW-NWT_64.exe` - usually on Windows you would want the 64-bit version, and to rename it to `mfnwt.exe` for compatibility with the pyEMU test suite.
+* [MODFLOW-USG](https://www.usgs.gov/software/modflow-usg-unstructured-grid-version-modflow-simulating-groundwater-flow-and-tightly), i.e. `mfusg_gsi`.
 
 These should be placed in the relevant `./bin/win`, `./bin/linux`, or `./bin/mac` directories (depending on your OS).
 
