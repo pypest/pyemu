@@ -111,7 +111,7 @@ Some notes that might be helpful for building your PR and testing:
 * As tests are run in parallel, where tests require read/write access to files it is safest to sandbox runs. 
 Pytest has a built-in fixture `tmp_path` that can help with this. 
 Setting optional argument `--basetemp` can be helpful for accessing the locally run files. 
-## Running test locally
+## Running tests locally
 To be able to make clean use of pytests fixture decorators etc., 
 it is recommended to run local tests through `pytest` (rather than use from script execution and commenting in 
 __main__ block). For e.g.:
@@ -126,6 +126,17 @@ with pytest-xdist, local runs can be parallelized:
 
 ### Run a specific test [`this_test()`]:
 > pytest --basetemp=runner autotest/testfile_tests.py::this_test
+
+### Test dependencies
+
+Python dependencies for the test suite can be installed via `pip install -e .[optional, test]` (they are recorded in [`./pyproject.toml`](./pyproject.toml)). You should also include binaries for various integrations:
+
+* [PEST++](https://github.com/usgs/pestpp/releases), e.g. `pestpp-ies`, `pestpp-mou`, etc.
+* [MODFLOW](https://github.com/MODFLOW-ORG/executables), i.e. `mf6`
+* [MODFLOW-NWT](https://www.usgs.gov/software/modflow-nwt-a-newton-formulation-modflow-2005), i.e. `mfnwt`. Note that the pre-built Windows binaries are named `MODFLOW-NWT.exe` and `MODFLOW-NWT_64.exe` - usually on Windows you would want the 64-bit version, and to rename it to `mfnwt.exe` for compatibility with the pyEMU test suite.
+* [MODFLOW-USG](https://www.usgs.gov/software/modflow-usg-unstructured-grid-version-modflow-simulating-groundwater-flow-and-tightly), i.e. `mfusg_gsi`.
+
+These should be placed in the relevant `./bin/win`, `./bin/linux`, or `./bin/mac` directories (depending on your OS).
 
 ### Using an IDE:
 Most modern, feature-rich editors and IDEs support launching pytest within debug or run consoles. 
