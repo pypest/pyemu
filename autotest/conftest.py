@@ -81,7 +81,7 @@ def _ch2testdir(monkeypatch):
     monkeypatch.chdir(testdir)
 
 @pytest.fixture(autouse=True)
-def _turn_off_show():
+def _use_plt_agg_backend():
     try:
         import matplotlib.pyplot as plt
     except ImportError:
