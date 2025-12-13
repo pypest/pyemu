@@ -132,7 +132,6 @@ jobs:
         --cov=pyemu --cov-report=lcov \
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        MPLBACKEND: Agg  # non-interactive backend for matplotlib
 
     - name: Test Notebooks
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
