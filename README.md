@@ -22,7 +22,7 @@ Complete user's guide:
 
 [https://pyemu.readthedocs.io/en/latest/](https://pyemu.readthedocs.io/en/latest/)
 
-The pyEMU documentation is being treated as a first-class citizen!  Also see the example notebooks in the repo.
+The pyEMU documentation is being treated as a first-class citizen!  Also see the [example notebooks in the repo](https://github.com/pypest/pyemu/tree/main/examples), these are `.ipynb` files.
 
 What is pyEMU?
 ================
