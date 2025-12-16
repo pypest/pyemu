@@ -1,0 +1,36 @@
+[project]
+site_name = "pyEMU Documentation"
+site_description = "Documentation for the pyEMU Python package"
+site_url = "https://pyemu.readthedocs.io/"
+nav = [
+  { "Introduction to pyEMU" = "index.md" },
+  { "API Reference" = "api_reference.md" },
+  { "Installing PEST++ with `get-pestpp`" = "get_pestpp.md" },
+]
+[project.theme]
+language = "en"
+
+[project.plugins.mkdocstrings.handlers.python]
+inventories = ["https://docs.python.org/3/objects.inv"]
+paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "google"
+inherited_members = true
+show_source = false
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to system preference"
+
