@@ -22,7 +22,7 @@ Complete user's guide:
 
 [https://pyemu.readthedocs.io/en/latest/](https://pyemu.readthedocs.io/en/latest/)
 
-The pyEMU documentation is being treated as a first-class citizen!  Also see the example notebooks in the repo.
+The pyEMU documentation is being treated as a first-class citizen!  Also see the [example notebooks in the repo](https://github.com/pypest/pyemu/tree/main/examples), these are `.ipynb` files.
 
 What is pyEMU?
 ================
@@ -107,11 +107,11 @@ Some notes that might be helpful for building your PR and testing:
 * Pytest settings are in [./autotest/conftest.py](./autotest/conftest.py) and [./autotest/pytest.ini](./autotest/pytest.ini)
 * Currently, files ending `_tests.py` are collected
 * Functions starting `test_` or ending `_test` are collected
-* ipython notebooks in [.examples](./examples) are also run
+* ipython notebooks in [./examples](./examples) are also run
 * As tests are run in parallel, where tests require read/write access to files it is safest to sandbox runs. 
 Pytest has a built-in fixture `tmp_path` that can help with this. 
 Setting optional argument `--basetemp` can be helpful for accessing the locally run files. 
-## Running test locally
+## Running tests locally
 To be able to make clean use of pytests fixture decorators etc., 
 it is recommended to run local tests through `pytest` (rather than use from script execution and commenting in 
 __main__ block). For e.g.:
@@ -126,6 +126,15 @@ with pytest-xdist, local runs can be parallelized:
 
 ### Run a specific test [`this_test()`]:
 > pytest --basetemp=runner autotest/testfile_tests.py::this_test
+
+### Test dependencies
+
+Python dependencies for the test suite can be installed via `pip install -e .[optional, test]` (they are recorded in [`./pyproject.toml`](./pyproject.toml)). You should also include binaries for various integrations:
+
+* [PEST++](https://github.com/usgs/pestpp/releases), e.g. `pestpp-ies`, `pestpp-mou`, etc. These can be automatically installed via the `get-pestpp` script included with pyEMU (see above).
+* [MODFLOW exectuables](https://github.com/MODFLOW-ORG/executables), i.e. `mf6`, `mfnwt`, `mfusg_gsi`. These can be automatically installed using flopy's [`get-modflow`](https://flopy.readthedocs.io/en/latest/md/get_modflow.html) command. 
+
+These should be placed in the relevant `./bin/win`, `./bin/linux`, or `./bin/mac` directories (depending on your OS).
 
 ### Using an IDE:
 Most modern, feature-rich editors and IDEs support launching pytest within debug or run consoles. 

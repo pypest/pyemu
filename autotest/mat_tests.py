@@ -709,7 +709,7 @@ def from_uncfile_firstlast_test(setup_empty_mat_temp):
         raise Exception("should have failed")
 
 
-def trunc_names_test():
+def trunc_names_test(tmp_path):
     import pyemu
     import pandas as pd
 
@@ -718,11 +718,11 @@ def trunc_names_test():
     a['names'] =  names
     a.set_index('names',inplace=True, drop=True)
     am = pyemu.Matrix.from_dataframe(a)
-    am.to_binary('a.binary.jcb')
-    am.to_coo('a.coo.jcb')
+    am.to_binary(tmp_path / 'a.binary.jcb')
+    am.to_coo(tmp_path /'a.coo.jcb')
     # both read fine
-    ar = pyemu.Matrix.from_binary('a.coo.jcb')
-    ar = pyemu.Matrix.from_binary('a.binary.jcb')
+    ar = pyemu.Matrix.from_binary(tmp_path / 'a.coo.jcb')
+    ar = pyemu.Matrix.from_binary(tmp_path / 'a.binary.jcb')
 
     # use longer names
     names = ["They've done studies, you know. 60 percent of the time, it works every time.",
@@ -731,12 +731,12 @@ def trunc_names_test():
     a['names'] =  [n.replace(" ","-",) for n in names]
     a.set_index('names',inplace=True, drop=True)
     am = pyemu.Matrix.from_dataframe(a)
-    am.to_binary('a.binary.jcb')
-    am.to_coo('a.coo.jcb')
+    am.to_binary(tmp_path /'a.binary.jcb')
+    am.to_coo(tmp_path /'a.coo.jcb')
 
-    ar = pyemu.Matrix.from_binary('a.coo.jcb')
+    ar = pyemu.Matrix.from_binary(tmp_path /'a.coo.jcb')
     # long names save with .to_binary() can't be read with .from_binary()
-    ar = pyemu.Matrix.from_binary('a.binary.jcb')
+    ar = pyemu.Matrix.from_binary(tmp_path /'a.binary.jcb')
 
 if __name__ == "__main__":
     #df_tests()
