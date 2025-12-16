@@ -17,7 +17,7 @@ from pyemu.utils import (
 )
 from pyemu.utils.helpers import _write_df_tpl
 
-HAS_FLOPY= importlib.util.find_spec("matplotlib") is not None
+HAS_FLOPY = importlib.util.find_spec("flopy") is not None
 
 wildass_guess_par_bounds_dict = {
     "hk": [0.01, 100.0],
