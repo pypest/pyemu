@@ -5,7 +5,7 @@ site_url = "https://pyemu.readthedocs.io/"
 nav = [
   { "Introduction to pyEMU" = "index.md" },
   { "API Reference" = "api_reference.md" },
-  { "Installing PEST++ with `get-pestpp`" = "get_pestpp.md" },
+  { "Installing PEST++" = "get_pestpp.md" },
 ]
 [project.theme]
 language = "en"
