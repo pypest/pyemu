@@ -1,3 +1,8 @@
+"""Note - this script is only kept for legacy reasons as a reference.
+
+It no longer runs successfully on the latest versions of dependencies.
+"""
+
 import os
 import shutil
 import platform
