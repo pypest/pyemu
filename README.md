@@ -22,7 +22,7 @@ Complete user's guide:
 
 [https://pyemu.readthedocs.io/en/latest/](https://pyemu.readthedocs.io/en/latest/)
 
-The pyEMU documentation is being treated as a first-class citizen!  Also see the example notebooks in the repo.
+The pyEMU documentation is being treated as a first-class citizen!  Also see the [example notebooks in the repo](https://github.com/pypest/pyemu/tree/main/examples), these are `.ipynb` files.
 
 What is pyEMU?
 ================
@@ -107,7 +107,7 @@ Some notes that might be helpful for building your PR and testing:
 * Pytest settings are in [./autotest/conftest.py](./autotest/conftest.py) and [./pyproject.toml](autotest/pyproject.toml)
 * Currently, files ending `_tests.py` are collected
 * Functions starting `test_` or ending `_test` are collected
-* ipython notebooks in [.examples](./examples) are also run
+* ipython notebooks in [./examples](./examples) are also run
 * As tests are run in parallel, where tests require read/write access to files it is safest to sandbox runs. 
 Pytest has a built-in fixture `tmp_path` that can help with this. 
 Setting optional argument `--basetemp` can be helpful for accessing the locally run files. 
