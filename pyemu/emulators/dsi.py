@@ -268,7 +268,7 @@ class DSI(Emulator):
             pname = "dsi_par{0:04d}".format(i)
             dsi_pnames.append(pname)
             fin.write("{0},0.0\n".format(pname))
-            ftpl.write("{0},~   {0}   ~\n".format(pname, pname))
+            ftpl.write("{0},~   {0}   ~\n".format(pname, ))
         fin.close()
         ftpl.close()
         self.logger.log("creating tpl files")
@@ -448,7 +448,7 @@ class DSI(Emulator):
         self.dsi_args = dsi_args
         out_files = []
 
-        self.logger.statement(f"preparing stack stats observations...")
+        self.logger.statement("preparing stack stats observations...")
         assert isinstance(oe, ObservationEnsemble), "oe must be an ObservationEnsemble"
         if oe.index.name is None:
             id_vars="index"
@@ -459,7 +459,7 @@ class DSI(Emulator):
         stack_stats['obsnme'] = stack_stats.apply(lambda x: x.variable+"_stat:"+x.stat,axis=1)
         stack_stats.set_index("obsnme",inplace=True)
         stack_stats = stack_stats.obsval
-        self.logger.statement(f"stack osb recorded to dsi.stack_stats.csv...")
+        self.logger.statement("stack osb recorded to dsi.stack_stats.csv...")
         out_file = os.path.join(t_d,"dsi.stack_stats.csv")
         out_files.append(out_file)
         stack_stats.to_csv(out_file,float_format="%.6e")
@@ -481,7 +481,7 @@ class DSI(Emulator):
 
 
 
-        self.logger.statement(f"prepare DSIVC template files...")
+        self.logger.statement("prepare DSIVC template files...")
         dsi_in_file = os.path.join(t_d, "dsivc_pars.csv")
         dsi_tpl_file = dsi_in_file + ".tpl"
         ftpl = open(dsi_tpl_file, 'w')
@@ -497,10 +497,10 @@ class DSI(Emulator):
         ftpl.close()
 
         
-        self.logger.statement(f"building DSIVC control file...")
+        self.logger.statement("building DSIVC control file...")
         pst_dsivc = Pst.from_io_files([dsi_tpl_file],[dsi_in_file],[i+".ins" for i in out_files],out_files,pst_path=".")
 
-        self.logger.statement(f"setting dec var bounds...")
+        self.logger.statement("setting dec var bounds...")
         par = pst_dsivc.parameter_data
         # set all parameters fixed
         par.loc[:,"partrans"] = "fixed"
@@ -511,12 +511,12 @@ class DSI(Emulator):
         par.loc[decvar_names,"parlbnd"] = self.data.loc[:,decvar_names].min()
         par.loc[decvar_names,"parval1"] = self.data.loc[:,decvar_names].quantile(.5)
         
-        self.logger.statement(f"zero-weighting observation data...")
+        self.logger.statement("zero-weighting observation data...")
         # prepemtpively set obs weights 0.0
         obs = pst_dsivc.observation_data
         obs.loc[:,"weight"] = 0.0
 
-        self.logger.statement(f"getting obs metadata from DSI observation_data...")
+        self.logger.statement("getting obs metadata from DSI observation_data...")
         obsorg = pst.observation_data.copy()
         columns = [i for i in obsorg.columns if i !='obsnme']
         for o in obsorg.obsnme.values:
@@ -528,7 +528,7 @@ class DSI(Emulator):
 
         #obs.loc[stack.index,"obgnme"] = "stack"
 
-        self.logger.statement(f"building dsivc_forward_run.py...")
+        self.logger.statement("building dsivc_forward_run.py...")
         pst_dsivc.model_command = "python dsivc_forward_run.py"
         from pyemu.utils.helpers import dsivc_forward_run
         function_source = inspect.getsource(dsivc_forward_run)
@@ -538,14 +538,14 @@ class DSI(Emulator):
             file.write("if __name__ == \"__main__\":\n")
             file.write(f"    {function_source.split('(')[0].split('def ')[1]}(ies_exe_path='{ies_exe_path}')\n")
 
-        self.logger.statement(f"preparing nominal initial population...")
+        self.logger.statement("preparing nominal initial population...")
         if mou_population_size is None:
             # set the population size to 2 * number of decision variables
             # this is a good rule of thumb for MOU
             mou_population_size = 2 * len(decvar_names)
         # these should generally be twice the number of decision variables
         if mou_population_size < 2 * len(decvar_names):
-            self.logger.statement(f"mou population is less than 2x number of decision variables, this may be too small...")
+            self.logger.statement("mou population is less than 2x number of decision variables, this may be too small...")
         # sample 160 sets of decision variables from a unform distribution
         dvpop = ParameterEnsemble.from_uniform_draw(pst_dsivc,num_reals=mou_population_size)
         # record to external file for PESTPP-MOU
@@ -562,7 +562,7 @@ class DSI(Emulator):
         pst_dsivc.write(os.path.join(t_d,"dsivc.pst"),version=2)  
 
         # updating the DSI pst control file
-        self.logger.statement(f"updating DSI pst control file...")
+        self.logger.statement("updating DSI pst control file...")
         self.logger.statement("overwriting dsi.pst file...")
         pst.observation_data.loc[decvar_names, "weight"] = dsi_args["decvar_weight"]
         pst.control_data.noptmax = dsi_args["noptmax"]

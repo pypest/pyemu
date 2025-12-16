@@ -909,7 +909,7 @@ def results_ies_3_test():
     pst.add_results(m_d2)
     try:
         pst.add_results(m_d2)
-    except Exception as e:
+    except Exception:
         pass
     else:
         raise Exception("should have failed...")

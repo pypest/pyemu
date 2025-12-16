@@ -1390,7 +1390,7 @@ def apply_sft_obs():
     # normalize
     for c in df.columns:
         # print(c)
-        if not "node" in c:
+        if "node" not in c:
             df.loc[:, c] = df.loc[:, c].apply(try_cast)
         # print(df.loc[df.loc[:,c].apply(lambda x : type(x) == str),:])
         if df.dtypes[c] == float:
@@ -1436,7 +1436,7 @@ def setup_sfr_seg_parameters(
 
     try:
         import flopy
-    except Exception as e:
+    except Exception:
         return
     if par_cols is None:
         par_cols = ["flow", "runoff", "hcond1", "pptsw"]
@@ -1676,7 +1676,7 @@ def setup_sfr_reach_parameters(nam_file, model_ws=".", par_cols=["strhc1"]):
     """
     try:
         import flopy
-    except Exception as e:
+    except Exception:
         return
     if par_cols is None:
         par_cols = ["strhc1"]
@@ -2341,7 +2341,7 @@ def setup_sfr_reach_obs(
             os.path.split(ins_file)[-1], os.path.split(sfr_out_file + ".processed")[-1]
         )
 
-    except Exception as e:
+    except Exception:
         pass
     os.chdir(bd)
     if df is not None:

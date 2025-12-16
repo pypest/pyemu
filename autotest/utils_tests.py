@@ -173,7 +173,6 @@ def covariance_matrix_test():
 
 def setup_ppcov_simple(tmp_path):
     import os
-    import platform
 
     exe_file = os.path.join("utils","ppcov.exe")
     print(platform.platform())
@@ -233,7 +232,6 @@ def ppcov_simple_test():
 
 def setup_ppcov_complex(tmp_path):
     import os
-    import platform
 
     exe_file = os.path.join("utils","ppcov.exe")
     print(platform.platform())
@@ -330,12 +328,9 @@ def tpl_to_dataframe_test(tmp_path):
 #                               risk=0.975)
 
 def setup_pp_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import os
     import pyemu
-    try:
-        import flopy
-    except:
-        return
     o_model_ws = os.path.join("..","examples","Freyberg","extra_crispy")
     model_ws = os.path.join(tmp_path, "extra_crispy")
     shutil.copytree(o_model_ws, model_ws)
@@ -512,15 +507,12 @@ def zero_order_regul_test(tmp_path):
 
 
 def kl_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
+    plt = pytest.importorskip("matplotlib.pyplot")
+
     import os
     import numpy as np
     import pyemu
-    import matplotlib.pyplot as plt
-    try:
-        import flopy
-    except:
-        print("flopy not imported...")
-        return
     o_model_ws = os.path.join("..","verification","Freyberg","extra_crispy")
     model_ws = Path(tmp_path, "extra_crispy")
     shutil.copytree(o_model_ws, model_ws)
@@ -614,12 +606,7 @@ def ok_test(tmp_path):
 
 
 def ok_grid_test(tmp_path):
-
-    try:
-        import flopy
-    except:
-        return
-
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     import pyemu
@@ -647,12 +634,7 @@ def ok_grid_test(tmp_path):
 
 
 def ok_grid_zone_test(tmp_path):
-
-    try:
-        import flopy
-    except:
-        return
-
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     import pyemu
@@ -687,13 +669,10 @@ def ok_grid_zone_test(tmp_path):
 
 
 def ppk2fac_verf_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import os
     import numpy as np
     import pyemu
-    try:
-        import flopy
-    except:
-        return
     ws = os.path.join("..","verification","Freyberg")
     filedict = dict(gspc_file="grid.spc",
                     pp_file="pp_00_pp.dat",
@@ -744,15 +723,11 @@ def ppk2fac_verf_test(tmp_path):
 
 
 def mflist_budget_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import pyemu
     import os
     import pandas as pd
     import shutil
-    try:
-        import flopy
-    except:
-        print("no flopy...")
-        return
     model_ws = os.path.join("..", "examples", "Freyberg_transient")
     shutil.copytree(model_ws, Path(tmp_path, "Freyberg_transient"))
     model_ws = Path(tmp_path, "Freyberg_transient")
@@ -784,14 +759,10 @@ def mflist_budget_test(tmp_path):
 
 
 def mtlist_budget_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import pyemu
     import shutil
     import os
-    try:
-        import flopy
-    except:
-        print("no flopy...")
-        return
 
     list_filenames = [Path("utils","mt3d.list"), Path("utils", "mt3d_imm_sor.lst")]
     _ = [shutil.copy(list_filename, Path(tmp_path, list_filename.name))
@@ -936,11 +907,7 @@ def geostat_draws_test(tmp_path):
 
 
 # def linearuniversal_krige_test():
-#     try:
-#         import flopy
-#     except:
-#         return
-#
+#     flopy = pytest.importorskip("flopy")
 #     import numpy as np
 #     import pandas as pd
 #     import pyemu
@@ -1011,14 +978,12 @@ def load_sgems_expvar_test():
 
 
 def read_hydmod_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import os
     import numpy as np
     import pandas as pd
     import pyemu
-    try:
-        import flopy
-    except:
-        return
+
     df, outfile = pyemu.gw_utils.modflow_read_hydmod_file(os.path.join('utils','freyberg.hyd.bin'),
                                                           os.path.join(tmp_path,'freyberg.hyd.bin.dat'))
     df = pd.read_csv(os.path.join(tmp_path, 'freyberg.hyd.bin.dat'), sep=r"\s+")
@@ -1028,13 +993,10 @@ def read_hydmod_test(tmp_path):
 
 
 def make_hydmod_insfile_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import os
     import shutil
     import pyemu
-    try:
-        import flopy
-    except:
-        return
     shutil.copy2(os.path.join('utils','freyberg.hyd.bin'),os.path.join(tmp_path,'freyberg.hyd.bin'))
     bd = os.getcwd()
     os.chdir(tmp_path)
@@ -1049,14 +1011,11 @@ def make_hydmod_insfile_test(tmp_path):
 
 
 def plot_summary_test(tmp_path):
+    plt = pytest.importorskip("matplotlib.pyplot")
     import os
     import pandas as pd
 
     import pyemu
-    try:
-        import matplotlib.pyplot as plt
-    except:
-        return
 
     par_df = pd.read_csv(os.path.join("utils","freyberg_pp.par.usum.csv"),
                          index_col=0)
@@ -1082,13 +1041,10 @@ def plot_summary_test(tmp_path):
 
 
 def hds_timeseries_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import os
     import shutil
     import numpy as np
-    try:
-        import flopy
-    except:
-        return
     import pyemu
 
     model_ws =os.path.join("..","examples","Freyberg_transient")
@@ -1162,14 +1118,11 @@ def hds_timeseries_test(tmp_path):
 
 
 def grid_obs_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import os
     import shutil
     import numpy as np
     import pandas as pd
-    try:
-        import flopy
-    except:
-        return
     import pyemu
 
     m_ws = os.path.join("..", "examples", "freyberg_sfr_update")
@@ -1297,14 +1250,11 @@ def grid_obs_test(tmp_path):
 
 
 def postprocess_inactive_conc_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import os
     import shutil
     import numpy as np
     import pandas as pd
-    try:
-        import flopy
-    except:
-        return
     import pyemu
     bd = os.getcwd()
     model_ws = os.path.join("..", "examples", "Freyberg_transient")
@@ -1359,10 +1309,10 @@ def gw_sft_ins_test(tmp_path):
 
 
 def sfr_helper_test(tmp_path):  # TODO: need attention to move IO to tmp_path (particularly writing)
+    flopy = pytest.importorskip("flopy")
     import os
     import pandas as pd
     import pyemu
-    import flopy
     import numpy as np
 
     #setup the process
@@ -1527,9 +1477,9 @@ def sfr_helper_test(tmp_path):  # TODO: need attention to move IO to tmp_path (p
 
 
 def sfr_obs_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import os
     import pyemu
-    import flopy
 
     [shutil.copy(os.path.join("utils",f"freyberg.{ext}"), tmp_path)
      for ext in ["sfr.out", "nam", "dis", "bas"]]
@@ -1550,9 +1500,9 @@ def sfr_obs_test(tmp_path):
     os.chdir(bd)
 
 def sfr_reach_obs_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import os
     import pyemu
-    import flopy
     import pandas as pd
     import numpy as np
     [shutil.copy(os.path.join("utils", f"freyberg.{ext}"), tmp_path)
@@ -1666,8 +1616,8 @@ def write_jactest_test(tmp_path):
 
 
 def plot_id_bar_test(tmp_path):
+    plt = pytest.importorskip("matplotlib.pyplot")
     import pyemu
-    # import matplotlib.pyplot as plt
     w_dir = "la"
     shutil.copy(os.path.join(w_dir, "pest.jcb"), os.path.join(tmp_path, "pest.jcb"))
     shutil.copy(os.path.join(w_dir, "pest.pst"), os.path.join(tmp_path, "pest.pst"))
@@ -1709,11 +1659,8 @@ def jco_from_pestpp_runstorage_test(tmp_path):
 
 
 def hfb_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import os
-    try:
-        import flopy
-    except:
-        return
     import pyemu
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
@@ -1746,11 +1693,8 @@ def hfb_test(tmp_path):
 
 
 def hfb_zn_mult_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
     import os
-    try:
-        import flopy
-    except:
-        return
     import pyemu
     import pandas as pd
 
@@ -1888,13 +1832,11 @@ def smp_dateparser_test(tmp_path):
 
 
 def fieldgen_dev(tmp_path):
+    flopy = pytest.importorskip("flopy")
+    plt = pytest.importorskip("matplotlib.pyplot")
     import shutil
     import numpy as np
     import pandas as pd
-    try:
-        import flopy
-    except:
-        return
     import pyemu
     from pyemu.legacy import PstFromFlopyModel
 
@@ -1919,7 +1861,6 @@ def fieldgen_dev(tmp_path):
     struct_dict = {gs:["hk","ss"]}
     df = pyemu.helpers.run_fieldgen(m,10,struct_dict,cwd=new_model_ws)
 
-    import matplotlib.pyplot as plt
     i = df.index.map(lambda x: int(x.split('_')[0]))
     j = df.index.map(lambda x: int(x.split('_')[1]))
     arr = np.zeros((m.nrow,m.ncol))
@@ -1929,12 +1870,7 @@ def fieldgen_dev(tmp_path):
 
 
 def ok_grid_invest(tmp_path):
-
-    try:
-        import flopy
-    except:
-        return
-
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pandas as pd
     import pyemu
@@ -1964,11 +1900,7 @@ def ok_grid_invest(tmp_path):
     assert diff < 1.0e-10
 
 def specsim_test():
-    try:
-        import flopy
-    except:
-        return
-
+    flopy = pytest.importorskip("flopy")
     import numpy as np
     import pyemu
     num_reals = 100
@@ -1987,7 +1919,7 @@ def specsim_test():
 
     try:
         ss = pyemu.geostats.SpecSim2d(geostruct=gs,delx=broke_delr,dely=delc)
-    except Exception as e:
+    except Exception:
         pass
     else:
         raise Exception("should have failed")
@@ -1996,14 +1928,14 @@ def specsim_test():
     gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=nugget)
     try:
         ss = pyemu.geostats.SpecSim2d(geostruct=gs,delx=broke_delr,dely=delc)
-    except Exception as e:
+    except Exception:
         pass
     else:
         raise Exception("should have failed")
 
     try:
         ss = pyemu.geostats.SpecSim2d(geostruct=gs,delx=delr,dely=broke_delc)
-    except Exception as e:
+    except Exception:
         pass
     else:
         raise Exception("should have failed")
@@ -2046,12 +1978,8 @@ def specsim_test():
     assert np.abs(mean - mean_value) < 0.1
 
 def aniso_invest():
-
-    try:
-        import flopy
-    except:
-        return
-
+    flopy = pytest.importorskip("flopy")
+    plt = pytest.importorskip("matplotlib.pyplot")
     import numpy as np
     import pandas as pd
     import pyemu
@@ -2075,7 +2003,6 @@ def aniso_invest():
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
     reals2 = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value)
 
-    import matplotlib.pyplot as plt
     fig,axes = plt.subplots(1,2,figsize=(6,3))
     axes[0].imshow(reals2[0])
     axes[1].imshow(reals1[0])
@@ -2085,7 +2012,6 @@ def aniso_invest():
 
 def run_test():
     import pyemu
-    import platform
 
     if "window" in platform.platform().lower():
         pyemu.os_utils.run("echo test")
@@ -2099,7 +2025,6 @@ def run_test():
         raise Exception("should have failed")
 
 def run_sp_success_test():
-    import platform
     if "window" in platform.platform().lower():
         pyemu.os_utils.run("echo test", use_sp=True, shell=True)
     else:
@@ -2112,7 +2037,6 @@ def run_sp_failure_test():
                            shell=False, logfile=False)
 
 def run_sp_capture_output_test(tmp_path):
-    import platform
     if platform.system() == "Windows":
         shell = True
     else:
@@ -2127,7 +2051,6 @@ def run_sp_capture_output_test(tmp_path):
     assert "Hello World" in content
 
 def run_sp_verbose_test(capsys):
-    import platform
     if platform.system() == "Windows":
         shell = True
     else:
@@ -2305,10 +2228,10 @@ def geostat_prior_builder2_test(tmp_path):
 
 
 def temporal_draw_invest():
+    plt = pytest.importorskip("matplotlib.pyplot")
     import numpy as np
     import pandas as pd
     import pyemu
-    import matplotlib.pyplot as plt
     from datetime import datetime
     v = pyemu.geostats.ExpVario(contribution=1.0,a=500)
     gs = pyemu.geostats.GeoStruct(variograms=v)
@@ -2495,6 +2418,8 @@ def ac_draw_test(tmp_path):
 
 def test_fake_frun(tmp_path):
     from pst_from_tests import ies_exe_path, setup_freyberg_mf6
+    if not ies_exe_path:
+        pytest.skip("missing ies_exe_path")
     pf, sim = setup_freyberg_mf6(tmp_path)
     v = pyemu.geostats.ExpVario(contribution=1.0, a=500)
     gs = pyemu.geostats.GeoStruct(variograms=v, transform='log')
@@ -2609,22 +2534,20 @@ def thresh_pars_test():
 
 
 def test_ppu_import():
-    import pypestutils as ppu
+    ppu = pytest.importorskip("pypestutils")
 
 
 @pytest.mark.timeout(method="thread")
 def ppu_geostats_test(tmp_path):
+    flopy = pytest.importorskip("flopy")
+    plt = pytest.importorskip("matplotlib.pyplot")
     import sys
     import os
     import numpy as np
-    import matplotlib.pyplot as plt
     import pyemu
-    
-    import flopy
 
     sys.path.insert(0,os.path.join("..","..","pypestutils"))
-
-    import pypestutils as ppu
+    ppu = pytest.importorskip("pypestutils")
 
     o_model_ws = os.path.join("..","examples","Freyberg","extra_crispy")
     model_ws = os.path.join(tmp_path, "extra_crispy")
@@ -2707,6 +2630,8 @@ def ppw_worker(id_num,case,t_d,host,port,frun):
 
 @pytest.mark.timeout(method="thread")
 def test_pypestworker(tmp_path):
+    if not mou_exe_path:
+        pytest.skip("missing mou_exe_path")
     from datetime import datetime
     import numpy as np
     import subprocess as sp
@@ -2812,6 +2737,9 @@ def test_pypestworker(tmp_path):
 
 
 def gpr_compare_invest():
+    if not mou_exe_path:
+        pytest.skip("missing mou_exe_path")
+    plt = pytest.importorskip("matplotlib.pyplot")
     import numpy as np
     from sklearn.gaussian_process import GaussianProcessRegressor
     case = "zdt1"
@@ -2875,8 +2803,6 @@ def gpr_compare_invest():
     o1 = o1.loc[o1.is_feasible == True, :]
     o1 = o1.loc[o1.nsga2_front == 1, :]
 
-
-    import matplotlib.pyplot as plt
     o2 = pd.read_csv(os.path.join(gpr_m_d, case + ".{0}.obs_pop.csv".format(max(0, gpst.control_data.noptmax))))
     fig,ax = plt.subplots(1,1,figsize=(5,5))
     ax.scatter(o1.obj_1,o1.obj_2,c="r",s=10)
@@ -2973,6 +2899,8 @@ def gpr_compare_invest():
 
 
 def gpr_constr_invest():
+    if not mou_exe_path:
+        pytest.skip("missing mou_exe_path")
     import numpy as np
     from sklearn.gaussian_process import GaussianProcessRegressor
     case = "constr"
@@ -3155,6 +3083,8 @@ def gpr_constr_invest():
     
 
 def gpr_zdt1_invest():
+    if not mou_exe_path:
+        pytest.skip("missing mou_exe_path")
     import numpy as np
     import subprocess as sp
     import multiprocessing as mp

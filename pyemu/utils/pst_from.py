@@ -379,7 +379,7 @@ class PstFrom(object):
             arg_len = None
             try:
                 arg_len = len(arg)
-            except Exception as e:
+            except Exception:
                 self.logger.lraise(
                     "Pstfrom._dict_get_xy() error getting xy from arg:'{0}' - no len support".format(
                         arg
@@ -670,11 +670,11 @@ class PstFrom(object):
         delc = None
         try:
             delr = self.spatial_reference.delr
-        except Exception as e:
+        except Exception:
             pass
         try:
             delc = self.spatial_reference.delc
-        except Exception as e:
+        except Exception:
             pass
 
         # method moved to helpers
@@ -2295,8 +2295,8 @@ class PstFrom(object):
             if len(use_cols) != len(ult_lbound) != len(ult_ubound):
                 self.logger.lraise(
                     "mismatch in number of columns to use {0} "
-                    "and number of ultimate lower {0} or upper "
-                    "{1} par bounds defined"
+                    "and number of ultimate lower {1} or upper "
+                    "{2} par bounds defined"
                     "".format(len(use_cols), len(ult_lbound), len(ult_ubound))
                 )
 

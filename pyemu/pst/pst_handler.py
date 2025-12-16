@@ -181,7 +181,7 @@ class Pst(object):
         elif tag.startswith("r"):
             try:
                 idx = int(tag[1:])
-            except Exception as e:
+            except Exception:
                 pass
             else:
                 return self.results[self.result_dirs[idx]]
@@ -1994,13 +1994,13 @@ class Pst(object):
         for group in self.obs_groups:
             try:
                 group = group.decode()
-            except Exception as e:
+            except Exception:
                 pass
             f_out.write(pst_utils.SFMT(str(group)) + "\n")
         for group in self.prior_groups:
             try:
                 group = group.decode()
-            except Exception as e:
+            except Exception:
                 pass
             f_out.write(pst_utils.SFMT(str(group)) + "\n")
         self._write_df(
@@ -3450,7 +3450,7 @@ class Pst(object):
         if filename.lower().endswith("xlsx") or filename.lower().endswith("xls"):
             try:
                 pargp_df.to_excel(filename, index=None)
-            except Exception as e:
+            except Exception:
                 if filename.lower().endswith("xlsx"):
                     print(
                         "could not export {0} in Excel format. Try installing xlrd".format(
@@ -3475,7 +3475,7 @@ class Pst(object):
                     f.write(pargp_df.style.hide(axis='index').to_latex(
                         None, environment='longtable')
                     )
-                except (TypeError, AttributeError) as e:
+                except (TypeError, AttributeError):
                     pargp_df.to_latex(index=False, longtable=True)
                 f.write("\\end{landscape}\n")
                 f.write("\\end{center}\n")
@@ -3567,7 +3567,7 @@ class Pst(object):
         if filename.lower().endswith("xlsx") or filename.lower().endswith("xls"):
             try:
                 obsg_df.to_excel(filename, index=None)
-            except Exception as e:
+            except Exception:
                 if filename.lower().endswith("xlsx"):
                     print(
                         "could not export {0} in Excel format. Try installing xlrd".format(
@@ -3595,7 +3595,7 @@ class Pst(object):
                     f.write(obsg_df.style.hide(axis='index').to_latex(
                         None, environment='longtable')
                     )
-                except (TypeError, AttributeError) as e:
+                except (TypeError, AttributeError):
                     obsg_df.to_latex(index=False, longtable=True)
                 f.write("\\end{landscape}\n")
                 f.write("\\end{center}\n")
@@ -3874,7 +3874,7 @@ class Pst(object):
                 meta_dict = pd.DataFrame(list(meta_dict), index=meta_dict.index)
                 unique_keys = meta_dict.columns.difference(fieldnames)
                 df[unique_keys] = meta_dict[unique_keys]
-            except Exception as e:
+            except Exception:
                 print("error parsing metadata from '{0}', continuing".format(name))
 
     def rename_parameters(self, name_dict, pst_path=".", tplmap=None):

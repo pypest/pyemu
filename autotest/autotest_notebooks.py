@@ -23,7 +23,7 @@ os.mkdir(testdir)
 
 
 def get_notebooks():
-    return [f for f in os.listdir(nbdir) if f.endswith('.ipynb') and not "notest" in f]
+    return [f for f in os.listdir(nbdir) if f.endswith('.ipynb') and "notest" not in f]
 
 def run_notebook(fn):
     #pth = os.path.join(nbdir, fn)

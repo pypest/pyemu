@@ -354,8 +354,8 @@ class Schur(LinearAnalysis):
         if not isinstance(parameter_names, list):
             parameter_names = [parameter_names]
 
-        for iname, name in enumerate(parameter_names):
-            name = str(name).lower()
+        for iname, pname in enumerate(parameter_names):
+            name = str(pname).lower()
             parameter_names[iname] = name
             assert name in self.jco.col_names, (
                 "contribution parameter " + name + " not found jco"
@@ -813,7 +813,7 @@ class Schur(LinearAnalysis):
         else:
             try:
                 self.pst
-            except Exception as e:
+            except Exception:
                 raise Exception(
                     "'obslist_dict' not passed and self.pst is not available"
                 )

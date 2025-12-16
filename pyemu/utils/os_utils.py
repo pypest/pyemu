@@ -11,7 +11,6 @@ import subprocess as sp
 import multiprocessing as mp
 import warnings
 import socket
-import time
 from datetime import datetime
 import random
 import logging
@@ -54,7 +53,6 @@ def _istextfile(filename, blocksize=512):
     are NUL ('\x00') bytes in the block, assume this is a binary file.
     """
 
-    import sys
 
     PY3 = sys.version_info[0] == 3
 
@@ -825,7 +823,7 @@ class PyPestWorker(object):
 
             except ConnectionRefusedError:
                 continue
-            except Exception as e:
+            except Exception:
                 continue
             
         self.net_pack = NetPack(timeout=self.timeout,verbose=self.verbose)
@@ -982,13 +980,13 @@ class PyPestWorker(object):
             self._lock.release()
             time.sleep(self.timeout)
         if len(pars) != len(self.par_names):
-            raise Exception("len(par vals) {0} != len(par names)".format(len(pars),len(self.par_names)))
+            raise Exception("len(par vals) {0} != len(par names) {1}".format(len(pars),len(self.par_names)))
         return pd.Series(data=pars,index=self.par_names)
 
 
     def send_observations(self,obsvals,parvals=None,request_more_pars=True):
         if len(obsvals) != len(self.obs_names):
-            raise Exception("len(obs vals) {0} != len(obs names)".format(len(obsvals), len(self.obs_names)))
+            raise Exception("len(obs vals) {0} != len(obs names) {1}".format(len(obsvals), len(self.obs_names)))
         if isinstance(obsvals,np.ndarray):
             _obsvals = obsvals
         elif isinstance(obsvals,pd.Series):

@@ -1,5 +1,6 @@
 from __future__ import print_function, division
-import os, sys
+import os
+import sys
 import numpy as np
 import pandas as pd
 from pyemu import Matrix, Pst, Schur, Cov

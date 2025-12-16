@@ -43,6 +43,7 @@ test = [
     "coveralls",
     "pytest",
     "pytest-cov",
+    "pytest-timeout",
     "pytest-xdist",
     "flaky",
     "nbmake",

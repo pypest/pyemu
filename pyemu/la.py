@@ -430,7 +430,7 @@ class LinearAnalysis(object):
                 else:
                     try:
                         pred_mat = self.__fromfile(arg, astype=Matrix)
-                    except Exception as e:
+                    except Exception:
                         raise Exception(
                             "forecast argument: "
                             + arg
@@ -695,7 +695,7 @@ class LinearAnalysis(object):
             parameter covariance matrix
 
         """
-        if self.__fehalf != None:
+        if self.__fehalf is not None:
             return self.__fehalf
         self.log("fehalf")
         self.__fehalf = self.parcov.u * (self.parcov.s ** (0.5))
@@ -711,7 +711,7 @@ class LinearAnalysis(object):
             `pyemu.Matrix`: square root of the cofactor matrix
 
         """
-        if self.__qhalf != None:
+        if self.__qhalf is not None:
             return self.__qhalf
         self.log("qhalf")
         self.__qhalf = self.obscov ** (-0.5)

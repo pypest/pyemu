@@ -310,12 +310,12 @@ class ControlData(object):
             v = int(value)
             t = np.int32
             f = IFMT
-        except Exception as e:
+        except Exception:
             try:
                 v = float(value)
                 t = np.float64
                 f = FFMT
-            except Exception as ee:
+            except Exception:
                 #string with list to lower and space stripped
                 v = value.lower().replace(" ", "")
                 t = str

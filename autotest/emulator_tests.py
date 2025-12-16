@@ -15,6 +15,8 @@ ies_exe_path = get_exe_path("pestpp-ies")
 mou_exe_path = get_exe_path("pestpp-mou")
 
 def dsi_freyberg(tmp_d,transforms=None,tag=""):
+    if not ies_exe_path:
+        pytest.skip("missing ies_exe_path")
 
     test_d = "ends_master"
     test_d = setup_tmp(test_d, tmp_d)
@@ -92,6 +94,8 @@ def test_dsi_mixed(tmp_path):
 
 # @pytest.mark.timeout(method="thread", timeout=1000)
 def test_dsivc(tmp_path):
+    if not mou_exe_path:
+        pytest.skip("missing mou_exe_path")
     # basic quick as so can re-run here
     dsi_freyberg(tmp_path, transforms=None)
     # now test dsicv
@@ -205,6 +209,7 @@ def plot_freyberg_dsi():
 
 
 def lpfa_freyberg(tmp_d="temp",transforms=None):
+    pytest.importorskip("sklearn")
 
     test_d = "ends_master"
     test_d = setup_tmp(test_d, tmp_d)
@@ -331,6 +336,8 @@ def test_lpfa_std(tmp_path):
 
 
 def gpr_compare_invest():
+    if not mou_exe_path:
+        pytest.skip("missing mou_exe_path")
     import numpy as np
     from sklearn.gaussian_process import GaussianProcessRegressor
     case = "zdt1"
@@ -492,6 +499,8 @@ def gpr_compare_invest():
 
 
 def gpr_constr_invest():
+    if not mou_exe_path:
+        pytest.skip("missing mou_exe_path")
     import numpy as np
     from sklearn.gaussian_process import GaussianProcessRegressor
     case = "constr"
@@ -812,14 +821,13 @@ def gpr_zdt1_test():
     gpr_t_d = os.path.join(case + "_gpr_template")
 
     data, input_names, output_names = collate_training_data(pst,m_d,case)
-    from pyemu.emulators.gpr import GPR
     gpr = GPR(data=data.copy(),
           input_names=input_names,
           output_names=output_names,
           #transforms=transforms,
           #kernel=gp_kernel,
           n_restarts_optimizer=20,
-          );
+          )
     gpr.fit()
     gpr.prepare_pestpp(m_d,case,gpr_t_d=gpr_t_d)
 
