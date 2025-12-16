@@ -11,7 +11,7 @@ from ..pyemu_warnings import PyemuWarning
 import importlib.util
 import pyemu
 
-HAS_MATPLOTLIB= importlib.util.find_spec("matplotlib") is not None
+HAS_MATPLOTLIB = importlib.util.find_spec("matplotlib") is not None
 
 font = {"font.size": 6}
 
