@@ -8,18 +8,12 @@ import string
 from pyemu.logger import Logger
 from pyemu.pst import pst_utils
 from ..pyemu_warnings import PyemuWarning
+import importlib.util
+import pyemu
+
+HAS_MATPLOTLIB = importlib.util.find_spec("matplotlib") is not None
 
 font = {"font.size": 6}
-try:
-    import matplotlib
-    import matplotlib.pyplot as plt
-    from matplotlib.backends.backend_pdf import PdfPages
-    from matplotlib.gridspec import GridSpec
-except Exception as e:
-    # raise Exception("error importing matplotlib: {0}".format(str(e)))
-    warnings.warn("error importing matplotlib: {0}".format(str(e)), PyemuWarning)
-
-import pyemu
 
 figsize = (8, 10.5)
 nr, nc = 4, 2
@@ -32,6 +26,10 @@ def apply_custom_font(rc_params=None):
         rc_params = font
     def decorator(func):
         def wrapper(*args, **kwargs):
+            if not HAS_MATPLOTLIB:
+                return func(*args, **kwargs)
+
+            import matplotlib.pyplot as plt
             with plt.rc_context(rc_params):
                 return func(*args, **kwargs)
         return wrapper
@@ -268,6 +266,9 @@ def phi_progress(pst, logger=None, filename=None, **kwargs):
         plt.show()
 
     """
+    _ensure_matplotlib()
+    import matplotlib.pyplot as plt
+
     if logger is None:
         logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot phi_progress")
@@ -292,6 +293,8 @@ def phi_progress(pst, logger=None, filename=None, **kwargs):
 
 
 def _get_page_axes(count=nr * nc):
+    import matplotlib.pyplot as plt
+
     axes = [plt.subplot(nr, nc, i + 1) for i in range(min(count, nr * nc))]
     # [ax.set_yticks([]) for ax in axes]
     return axes
@@ -326,6 +329,16 @@ def res_1to1(
         plt.show()
 
     """
+    if not HAS_MATPLOTLIB:
+        msg = (
+            "'res_1to1' requires the 'matplotlib' package. Install it "
+            "with 'pip install pyemu[optional]'."
+        )
+        raise ImportError(msg)
+
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+
     if logger is None:
         logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot res_1to1")
@@ -534,6 +547,10 @@ def plot_id_bar(id_df, nsv=None, logger=None, **kwargs):
         pyemu.plot_utils.plot_id_bar(id_df, nsv=12, figsize=(12,4)
 
     """
+    _ensure_matplotlib()
+    import matplotlib.colors
+    import matplotlib.pyplot as plt
+
     if logger is None:
         logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot id bar")
@@ -632,6 +649,9 @@ def res_phi_pie(pst, logger=None, **kwargs):
 
 
     """
+    _ensure_matplotlib()
+    import matplotlib.pyplot as plt
+
     if logger is None:
         logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot res_phi_pie")
@@ -725,6 +745,10 @@ def pst_prior(pst, logger=None, filename=None, **kwargs):
         plt.show()
 
     """
+    _ensure_matplotlib()
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+
     if logger is None:
         logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot pst_prior")
@@ -916,6 +940,10 @@ def ensemble_helper(
 
 
     """
+    _ensure_matplotlib()
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+
     logger = pyemu.Logger("ensemble_helper.log")
     logger.log("pyemu.plot_utils.ensemble_helper()")
     ensembles = _process_ensemble_arg(ensemble, facecolor, logger)
@@ -1144,6 +1172,10 @@ def ensemble_change_summary(
 
 
     """
+    _ensure_matplotlib()
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+
     if logger is None:
         logger = Logger("Default_Logger.log", echo=False)
     logger.log("plot ensemble change")
@@ -1403,6 +1435,11 @@ def ensemble_res_1to1(
         plt.show()
 
     """
+    _ensure_matplotlib()
+    import matplotlib.pyplot as plt
+    import matplotlib.ticker
+    from matplotlib.backends.backend_pdf import PdfPages
+
     def _get_plotlims(oen, ben, obsnames):
         if not isinstance(oen, dict):
             oen = {'g': oen.loc[:, obsnames]}
@@ -1696,6 +1733,8 @@ def plot_jac_test(
         to put into a separate directory and view the files.
 
     """
+    _ensure_matplotlib()
+    import matplotlib.pyplot as plt
 
     localhome = os.getcwd()
     # check if the output directory exists, if not make it
@@ -1794,3 +1833,11 @@ def plot_jac_test(
                     )
                 )
             plt.close()
+
+def _ensure_matplotlib():
+    if not HAS_MATPLOTLIB:
+        msg = (
+            "Plotting functions require the 'matplotlib' package. Install it "
+            "with 'pip install matplotlib'."
+        )
+        raise ImportError(msg)
