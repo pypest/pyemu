@@ -94,7 +94,7 @@ After pyEMU is installed, the PEST++ software suite can be installed for your op
 
     get-pestpp :pyemu
 
-See the the [documentation](https://pyemu.readthedocs.io/en/latest/get_pestpp) for more information.
+See the [documentation](https://pyemu.readthedocs.io/en/latest/get_pestpp) for more information.
 
 Found a bug? Got a smart idea? Contributions welcome.
 ====================================================
