@@ -66,7 +66,7 @@ def full_exe_ref_dict():
     """
     d = {}
     for exe_name in [
-        "mfnwt", "mt3dusgs", "mfusg_gsi", "mf6",
+        "mfnwt", "mfusg_gsi", "mf6",
         "pestpp-ies", "pestpp-sen", "pestpp-opt", "pestpp-glm",
         "pestpp-mou", "pestpp-da", "pestpp-sqp", "pestpp-swp"
     ]:
