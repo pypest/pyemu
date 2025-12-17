@@ -75,6 +75,3 @@ runner/
 examples/.ipynb*
 
 *.chk
-
-# Compiled Zensical docs
-site/

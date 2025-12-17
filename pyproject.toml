@@ -50,8 +50,10 @@ test = [
 ]
 docs = [
     "pyemu[optional]",
-    "zensical",
+    "mkdocs",
+    "mkdocs-material",
     "mkdocstrings-python",
+    "mkdocs-autoapi",
 ]
 
 [project.scripts]
