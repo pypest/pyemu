@@ -3,7 +3,7 @@
 3) update CITATION.cff with version number and date
 4) commit version number change (`git add pyproject.toml uv.lock CITATION.cff; git commit -m"Bump version to <newversion>"`)
 5) tag new version in main branch (git tag -a v<newversion> -m <version message>) [the 'v' is important]
-6) push main and tags to remote (git push origin main --tags)
+6) push main and tags to remote (git push origin main; git push origin v<newversion>)
 
 If everything is setup on the CI (GitHub Actions) and PyPI, .github/workflows/release.yml should take care of the rest.
 Check out example here:
