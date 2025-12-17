@@ -11,12 +11,7 @@ build:
   tools:
       python: "3.11"
   jobs:
-    install:
+    pre_install:
       - pip install -r docs/requirements.txt
-    build:
-      html:
-        - zensical build
-    post_build:
-      # zensical builds to site/ by default, move to the expected location
-      - mkdir -p $READTHEDOCS_OUTPUT/html/
-      - cp --recursive site/* $READTHEDOCS_OUTPUT/html/
+mkdocs:
+  configuration: mkdocs.yml
