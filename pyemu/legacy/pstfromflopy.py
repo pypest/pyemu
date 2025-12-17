@@ -1,9 +1,9 @@
 import copy
+import importlib.util
 import os
 import shutil
 import warnings
 
-import flopy
 import numpy as np
 import pandas as pd
 
@@ -17,6 +17,7 @@ from pyemu.utils import (
 )
 from pyemu.utils.helpers import _write_df_tpl
 
+HAS_FLOPY = importlib.util.find_spec("flopy") is not None
 
 wildass_guess_par_bounds_dict = {
     "hk": [0.01, 100.0],
@@ -842,6 +843,13 @@ class PstFromFlopyModel(object):
         )
         warnings.warn(dep_warn, DeprecationWarning)
 
+        if not HAS_FLOPY:
+            msg = (
+                "'PstFromFlopyModel' requires the 'flopy' package. Install it with "
+                "'pip install pyemu[optional]'."
+            )
+            raise ImportError(msg)
+
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
 
@@ -1205,10 +1213,8 @@ class PstFromFlopyModel(object):
 
         if isinstance(model, str):
             self.log("loading flopy model")
-            try:
-                import flopy
-            except:
-                raise Exception("from_flopy_model() requires flopy")
+            import flopy
+
             # prepare the flopy model
             self.org_model_ws = org_model_ws
             self.new_model_ws = new_model_ws
@@ -1263,6 +1269,8 @@ class PstFromFlopyModel(object):
         writes generic (ones) multiplier arrays
 
         """
+        import flopy
+        
         par_props = [
             self.pp_props,
             self.grid_props,
@@ -2374,6 +2382,7 @@ class PstFromFlopyModel(object):
         argument
 
         """
+        import flopy
 
         raw = pakattr.lower().split(".")
         if len(raw) != 2:

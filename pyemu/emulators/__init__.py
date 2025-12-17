@@ -7,6 +7,7 @@ from .transformers import (
     TransformerPipeline,
     AutobotsAssemble
 )
+import importlib.util
 from .base import Emulator
 from .dsi import DSI
 #from .lpfa import LPFA
@@ -28,11 +29,7 @@ __all__ = [
 ]
 
 # Check sklearn availability
-try:
-    import sklearn
-    HAS_SKLEARN = True
-except ImportError:
-    HAS_SKLEARN = False
+HAS_SKLEARN = importlib.util.find_spec("sklearn") is not None
 
 # Conditional imports
 if HAS_SKLEARN:

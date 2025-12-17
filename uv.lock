@@ -2135,6 +2135,7 @@ docs = [
 ]
 optional = [
     { name = "flopy" },
+    { name = "jinja2" },
     { name = "matplotlib" },
     { name = "pypestutils" },
     { name = "pyshp" },
@@ -2158,6 +2159,7 @@ tests = [
 dev = [
     { name = "flaky" },
     { name = "flopy" },
+    { name = "jinja2" },
     { name = "jupyterlab" },
     { name = "matplotlib" },
     { name = "modflow-devtools" },
@@ -2179,6 +2181,7 @@ dev = [
 requires-dist = [
     { name = "flaky", marker = "extra == 'tests'", specifier = ">=3.8.1" },
     { name = "flopy", marker = "extra == 'optional'", specifier = ">=3.9.5" },
+    { name = "jinja2", marker = "extra == 'optional'", specifier = ">=3.1.6" },
     { name = "matplotlib", marker = "extra == 'optional'", specifier = ">=3.10.7" },
     { name = "modflow-devtools", marker = "extra == 'tests'", specifier = ">=1.8.0" },
     { name = "nbval", marker = "extra == 'tests'", specifier = ">=0.11.0" },
@@ -2203,6 +2206,7 @@ provides-extras = ["optional", "tests", "docs"]
 dev = [
     { name = "flaky", specifier = ">=3.8.1" },
     { name = "flopy", specifier = ">=3.9.5" },
+    { name = "jinja2", specifier = ">=3.1.6" },
     { name = "jupyterlab", specifier = ">=4.4.10" },
     { name = "matplotlib", specifier = ">=3.10.7" },
     { name = "modflow-devtools", specifier = ">=1.8.0" },
