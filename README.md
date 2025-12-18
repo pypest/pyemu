@@ -67,7 +67,7 @@ Examples
 
 Several example ipython notebooks are provided to demonstrate typical workflows for FOSM parameter and forecast uncertainty analysis as well as techniques to investigate parameter contributions to forecast uncertainty and observation data worth. Example models include the Henry saltwater intrusion problem (Henry 1964) and the model of Freyberg (1988)
 
-There is a whole world of detailed learning material for script-based approaches to parameter estimation and uncertainty quantification using PEST(++) at https://github.com/gmdsi/GMDSI_notebooks. These are and excellent resource for people picking up Pyemu for the first time and for those needing to revisit elements.
+There is a whole world of detailed learning material for script-based approaches to parameter estimation and uncertainty quantification using PEST(++) at https://github.com/gmdsi/GMDSI_notebooks. These are and excellent resource for people picking up pyEMU for the first time and for those needing to revisit elements.
 
 Related Links
 =============
@@ -96,7 +96,7 @@ After pyEMU is installed, the PEST++ software suite can be installed for your op
 
     get-pestpp :pyemu
 
-See [documentation](get_pestpp.md) for more information.
+See the [documentation](https://pyemu.readthedocs.io/en/latest/get_pestpp) for more information.
 
 Found a bug? Got a smart idea? Contributions welcome.
 ====================================================

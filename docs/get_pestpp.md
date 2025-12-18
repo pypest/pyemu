@@ -7,7 +7,7 @@
 - [Command-line interface](#command-line-interface)
   - [Using the `get-pestpp` command](#using-the-get-pestpp-command)
   - [Using `get_pestpp.py` as a script](#using-get_pestpppy-as-a-script)
-- [pyEMU module](#pyEMU-module)
+- [pyEMU module](#pyemu-module)
 - [Where to install?](#where-to-install)
 - [Selecting a distribution](#selecting-a-distribution)
 
