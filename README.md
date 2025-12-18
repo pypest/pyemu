@@ -10,10 +10,12 @@ ensemble generation and handling
 Main branch:
 [![pyemu continuous integration](https://github.com/pypest/pyemu/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pypest/pyemu/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=main)](https://coveralls.io/github/pypest/pyemu?branch=main)
+[![codecov](https://codecov.io/gh/pypest/pyemu/branch/main/graph/badge.svg?token=bnrI1JKvbk)](https://codecov.io/gh/pypest/pyemu)
 
 Develop branch:
 [![pyemu continuous integration](https://github.com/pypest/pyemu/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/pypest/pyemu/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/pypest/pyemu?branch=develop)
+[![codecov](https://codecov.io/gh/pypest/pyemu/graph/badge.svg?token=bnrI1JKvbk)](https://codecov.io/gh/pypest/pyemu)
 
 Documentation
 =============
