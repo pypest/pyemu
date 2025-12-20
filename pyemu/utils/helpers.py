@@ -4797,16 +4797,25 @@ def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies",num_workers=1):
     
     worker_root="."
     dsi = pickle.load(open(os.path.join(md_ies,"dsi.pickle"),"rb"))
-    num_workers = dsi.dsi_args.get("num_pyworkers",1)
-    print(num_workers,"workers requested for dsi")
-    pyemu.os_utils.start_workers(md_ies,ies_exe_path,"dsi.pst",
-                                num_workers=num_workers,
-                                worker_root=worker_root,
-                                port = PortManager().get_available_port(),
-                                    master_dir=md_ies,
-                                    reuse_master =True,
-                                    ppw_function=pyemu.helpers.dsi_pyworker,
-                                    ppw_kwargs={"dsi":dsi,"pvals":pvals})    
+
+    # read forward_run.py and check the name of the function in __main__
+    frun_lines = open(os.path.join(md_ies,"forward_run.py"),'r').readlines()
+    main_func_name = frun_lines[-1].strip().replace("()","")
+    print(main_func_name,"will be called for forward run")
+    if main_func_name.startswith("dsi_runstore_forward_run"):
+        print("running dsi_runstore_forward_run")
+        pyemu.os_utils.run(f'{ies_exe_path} dsi.pst /e', cwd=md_ies, verbose=True)
+    elif main_func_name.startswith("dsi_forward_run"):
+        num_workers = dsi.dsi_args.get("num_pyworkers",1)
+        print(num_workers,"workers requested for dsi")
+        pyemu.os_utils.start_workers(md_ies,ies_exe_path,"dsi.pst",
+                                    num_workers=num_workers,
+                                    worker_root=worker_root,
+                                    port = PortManager().get_available_port(),
+                                        master_dir=md_ies,
+                                        reuse_master =True,
+                                        ppw_function=pyemu.helpers.dsi_pyworker,
+                                        ppw_kwargs={"dsi":dsi,"pvals":pvals})  
     assert os.path.exists(os.path.join(md_ies,f"dsi.{noptmax}.obs.jcb")), f"dsi.{noptmax}.obs.jcb not found...pst failed?"
 
 
