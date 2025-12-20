@@ -4710,8 +4710,13 @@ def dsi_runstore_forward_run(ws='.'):
     rs = RunStor(fname)
     df = rs.get_data()
 
+    # sort par_names to match latent dimension order
+    # sort by the integer after the prefix
+    par_names.sort(key=lambda x: int(x.replace("dsi_par","")))
+
     pvals = df.loc[:,par_names]
     assert pvals.shape[1] == latent_dim, "number of parameters in runstor does not match DSI latent dimension"
+        
     simvals = dsi.predict(pvals)
     assert simvals.shape[1] == len(obs_names), "number of observations in runstor does not match DSI output dimension"
 
