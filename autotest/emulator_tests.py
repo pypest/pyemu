@@ -105,11 +105,13 @@ def test_dsi_mixed(tmp_path):
 
 # @pytest.mark.timeout(method="thread", timeout=1000)
 def test_dsivc(tmp_path):
+    tmp_path = Path(tmp_path)
     # basic quick as so can re-run here
-    dsi_synth(tmp_path, transforms=None)
+    dsi_synth(tmp_path, transforms=None, use_runstor=True)
     # now test dsicv
     # master_dsi should now exist
-    md_hm = tmp_path / "master_dsi"
+
+    md_hm = tmp_path / "template_dsi"
     # print(os.listdir('.'))
     assert os.path.exists(md_hm), f"Master directory {md_hm} does not exist."
     td = tmp_path / "template_dsivc"
@@ -1356,12 +1358,12 @@ def test_dsiae_save_load(tmp_path):
 
 
 if __name__ == "__main__":
-    test_dsiae_save_load("temp")
-    test_dsi_basic("temp")
+    #test_dsiae_save_load("temp")
+    #test_dsi_basic("temp")
     #test_dsi_nst("temp")
     #test_dsi_nst_extrap("temp")
     #test_dsi_mixed("temp")
-    #test_dsivc_freyberg("temp")
+    test_dsivc("temp")
     #plot_freyberg_dsi()
     #test_lpfa_std()
     #gpr_zdt1_test()
