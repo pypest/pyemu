@@ -13,8 +13,9 @@ from pyemu.pst.pst_handler import Pst
 from pyemu.en import ObservationEnsemble,ParameterEnsemble
 from .base import Emulator
 import tensorflow as tf
+from keras.saving import register_keras_serializable
 from sklearn.model_selection import train_test_split
-import joblib
+import pickle
 
 
 class DSIAE(Emulator):
@@ -133,10 +134,13 @@ class DSIAE(Emulator):
                     if 'quadratic_extrapolation' in t:
                         assert isinstance(t['quadratic_extrapolation'], bool), "'quadratic_extrapolation' must be a boolean"
         self.transforms = transforms
-        self.latent_dim = latent_dim
         self.fitted = False
         self.data_transformed = self._prepare_training_data()
         self.decision_variable_names = None #used for DSIVC
+        self.latent_dim = latent_dim
+        if self.latent_dim is None:
+            self.logger.statement("calculating latent dimension from energy threshold")
+            self.latent_dim = self._calc_explained_variance()
         
     def _prepare_training_data(self) -> pd.DataFrame:
         """
@@ -275,7 +279,10 @@ class DSIAE(Emulator):
 
     def fit(self, validation_split: float = 0.1, hidden_dims: tuple = (128, 64), 
             lr: float = 1e-3, epochs: int = 300, batch_size: int = 128, 
-            early_stopping: bool = True, random_state: int = 42) -> 'DSIAE':
+            early_stopping: bool = True, dropout_rate: float = 0.0, 
+            random_state: int = 42, loss_type: str = 'energy', 
+            loss_kwargs: Optional[Dict[str, Any]] = None,
+            sample_weight: Optional[np.ndarray] = None) -> 'DSIAE':
         """
         Fit the autoencoder emulator to training data.
         
@@ -293,8 +300,17 @@ class DSIAE(Emulator):
             Training batch size.
         early_stopping : bool, default True
             Whether to use early stopping on validation loss.
+        dropout_rate : float, default 0.0
+            Dropout rate for regularization during training.
         random_state : int, default 42
             Random seed for reproducibility.
+        loss_type : str, default 'energy'
+            Type of loss function to use. Options: 'energy', 'mmd', 'wasserstein', 
+            'statistical', 'adaptive', 'mse', 'huber'.
+        loss_kwargs : dict, optional
+            Additional parameters for the loss function.
+        sample_weight : np.ndarray, optional
+            Sample weights for training. Shape should be (n_samples,).
             
         Returns
         -------
@@ -311,18 +327,43 @@ class DSIAE(Emulator):
             self.logger.statement("calculating latent dimension from energy threshold")
             self.latent_dim = self._calc_explained_variance()
 
-
+        # Configure loss function
+        if loss_kwargs is None:
+            loss_kwargs = {}
+        
+        # Set default loss parameters if not specified
+        if loss_type == 'energy' and 'lambda_energy' not in loss_kwargs:
+            loss_kwargs['lambda_energy'] = 1e-3
+        elif loss_type == 'mmd' and 'lambda_mmd' not in loss_kwargs:
+            loss_kwargs['lambda_mmd'] = 1e-3
+        elif loss_type == 'wasserstein' and 'lambda_w' not in loss_kwargs:
+            loss_kwargs['lambda_w'] = 1e-3
+        elif loss_type == 'statistical':
+            if 'lambda_moments' not in loss_kwargs:
+                loss_kwargs['lambda_moments'] = 1e-3
+            if 'lambda_corr' not in loss_kwargs:
+                loss_kwargs['lambda_corr'] = 5e-4
+            if 'lambda_dist' not in loss_kwargs:
+                loss_kwargs['lambda_dist'] = 1e-3
+        
+        loss_fn = create_distribution_loss(loss_type, **loss_kwargs)
+        
+        self.logger.statement(f"using {loss_type} loss function with parameters: {loss_kwargs}")
         # train autoencoder on transformed data
         ae = AutoEncoder(input_dim=X.shape[1], 
                         latent_dim=self.latent_dim,
                         hidden_dims=hidden_dims,
+                        loss=loss_fn,
                         lr=lr,
+                        dropout_rate=dropout_rate,
                         random_state=random_state,
                         )
         ae.fit(X,
                validation_split=validation_split,
                 epochs=epochs, batch_size=batch_size,
                 early_stopping=early_stopping,
+                patience=10,
+                sample_weight=sample_weight,
                 )
         self.encoder = ae
         self.fitted = True
@@ -355,12 +396,13 @@ class DSIAE(Emulator):
             raise ValueError("Emulator must be fitted and have valid transformations before prediction")
         
         if isinstance(pvals, pd.Series):
-            pvals = pvals.values.flatten().reshape(1,-1)
+            pvals = pvals.values.flatten().reshape(1,-1).astype(np.float32)
         elif isinstance(pvals, np.ndarray) and len(pvals.shape) == 2 and pvals.shape[0] == 1:
             pvals = pvals.flatten().reshape(1,-1)
+            pvals = pvals.astype(np.float32)
         elif isinstance(pvals, pd.DataFrame):
             index = pvals.index
-            pvals = pvals.values.astype(float)
+            pvals = pvals.values.astype(np.float32)
             
         #assert pvals.shape[0] == self.latent_dim , f"Input parameter dimension {pvals.shape[0]} does not match latent dimension {self.latent_dim}"
         sim_vals = self.encoder.decode(pvals)
@@ -812,12 +854,49 @@ class DSIAE(Emulator):
         )
         return results
 
+    def save(self, filename):
+        model_dir = os.path.dirname(filename)
+        model_dir = os.path.join(model_dir, "tf_model")
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
+        self.model_path = model_dir
+        print(f"saving model to {self.model_path}")
+
+        # 1. Save TF model separately
+        self.encoder.save(self.model_path)
+
+        # 2. Remove the TF model object before pickling
+        model_obj = self.encoder
+        #self.encoder = None
+
+        # 3. Pickle class state
+        with open(filename, "wb") as f:
+            pickle.dump(self, f)
+
+        # 4. Restore model into the in-memory object
+        #self.encoder = model_obj
+
+    @classmethod
+    def load(cls, filename):
+        # 1. Unpickle
+        with open(filename, "rb") as f:
+            obj = pickle.load(f)
+
+        # 2. Reload TF model
+        folder = os.path.dirname(filename)
+        folder = os.path.join(folder, "tf_model")
+        obj.encoder.encoder = tf.keras.models.load_model(os.path.join(folder, 'encoder.keras'))
+        obj.encoder.decoder = tf.keras.models.load_model(os.path.join(folder, 'decoder.keras'))
+        obj.encoder.model = tf.keras.models.load_model(os.path.join(folder, 'autoencoder.keras'))
+
+
+        return obj
 
 class AutoEncoder:
     def __init__(self, input_dim: int, latent_dim: int = 2, 
                  hidden_dims: tuple = (128, 64), lr: float = 1e-3,
                  activation: str = 'relu', loss: str = 'Huber', 
-                 random_state: int = 0) -> None:
+                 dropout_rate: float = 0.0, random_state: int = 0) -> None:
         """
         Initialize AutoEncoder with specified neural network architecture.
         
@@ -860,6 +939,12 @@ class AutoEncoder:
             - 'mse' or 'mean_squared_error': Standard for regression
             - 'mae' or 'mean_absolute_error': Less sensitive to outliers
             
+        dropout_rate : float, default 0.0
+            Dropout rate for regularization. Applied after each hidden layer.
+            Value between 0.0 (no dropout) and 1.0 (drop all neurons).
+            Typical values: 0.1-0.5. Higher values provide stronger regularization
+            but may hurt model capacity.
+            
         random_state : int, default 0
             Random seed for reproducible model initialization and training.
             Controls TensorFlow random operations for consistent results across runs.
@@ -890,9 +975,9 @@ class AutoEncoder:
         >>> # Basic autoencoder for 100-dimensional data
         >>> ae = AutoEncoder(input_dim=100, latent_dim=10)
         >>> 
-        >>> # Deep autoencoder with custom architecture
+        >>> # Deep autoencoder with custom architecture and dropout
         >>> ae = AutoEncoder(input_dim=500, latent_dim=20, 
-        ...                  hidden_dims=(256, 128, 64), lr=5e-4)
+        ...                  hidden_dims=(256, 128, 64), lr=5e-4, dropout_rate=0.2)
         """
 
         self.input_dim = input_dim
@@ -901,6 +986,7 @@ class AutoEncoder:
         self.lr = lr
         self.activation = activation
         self.loss = loss
+        self.dropout_rate = dropout_rate
         self.random_state = random_state
         # Set random seeds properly
         tf.random.set_seed(random_state)
@@ -909,11 +995,14 @@ class AutoEncoder:
 
     # Build encoder/decoder
     def _build_model(self):
+        tf.keras.backend.set_floatx('float32')
         # Encoder
         encoder_inputs = tf.keras.Input(shape=(self.input_dim,))
         x = encoder_inputs
         for h in self.hidden_dims:
             x = tf.keras.layers.Dense(h, activation=self.activation)(x)
+            if hasattr(self, 'dropout_rate') and self.dropout_rate > 0:
+                x = tf.keras.layers.Dropout(self.dropout_rate)(x)
         latent = tf.keras.layers.Dense(self.latent_dim, name='latent')(x)
         self.encoder = tf.keras.Model(encoder_inputs, latent, name='encoder')
 
@@ -922,6 +1011,8 @@ class AutoEncoder:
         x = decoder_inputs
         for h in reversed(self.hidden_dims):
             x = tf.keras.layers.Dense(h, activation=self.activation)(x)
+            if hasattr(self, 'dropout_rate') and self.dropout_rate > 0:
+                x = tf.keras.layers.Dropout(self.dropout_rate)(x)
         outputs = tf.keras.layers.Dense(self.input_dim, activation=None)(x)
         self.decoder = tf.keras.Model(decoder_inputs, outputs, name='decoder')
 
@@ -936,7 +1027,8 @@ class AutoEncoder:
             epochs: int = 100, batch_size: int = 32, 
             validation_split: float = 0.1, early_stopping: bool = True,
             patience: int = 10, lr_schedule: Optional[Any] = None, 
-            verbose: int = 2) -> Any:
+            verbose: int = 2, sample_weight: Optional[np.ndarray] = None,
+            validation_sample_weight: Optional[np.ndarray] = None) -> Any:
         """
         Train the autoencoder on provided data with comprehensive training control.
         
@@ -986,6 +1078,13 @@ class AutoEncoder:
             - 1: Progress bar per epoch
             - 2: One line per epoch (recommended)
             
+        sample_weight : np.ndarray, optional
+            Sample weights for training data. Shape should be (n_samples,).
+            Higher weights give more importance to corresponding samples.
+            
+        validation_sample_weight : np.ndarray, optional
+            Sample weights for validation data. Shape should match validation samples.
+            
         Returns
         -------
         tf.keras.callbacks.History
@@ -1025,11 +1124,12 @@ class AutoEncoder:
         if lr_schedule is not None:
             callbacks.append(lr_schedule)
 
+
         # Train
         history = self.model.fit(
             X, X,
-            validation_data=(X_val, X_val) if X_val is not None else None,
-            validation_split=validation_split if X_val is None else 0.0,
+            sample_weight=sample_weight,
+            validation_split=validation_split,
             epochs=epochs,
             batch_size=batch_size,
             callbacks=callbacks,
@@ -1052,10 +1152,10 @@ class AutoEncoder:
             Latent representation with shape (n_samples, latent_dim).
         """
         if isinstance(X, pd.DataFrame):
-            X = X.values.astype(float)
+            X = X.values.astype(np.float32)
         elif isinstance(X, pd.Series):
-            X = X.values.reshape(1,-1).astype(float)
-        return self.encoder.predict(X, verbose=0)
+            X = X.values.reshape(1,-1).astype(np.float32)
+        return self.encoder(X, training=False)
 
     def decode(self, Z: np.ndarray) -> np.ndarray:
         """
@@ -1071,7 +1171,8 @@ class AutoEncoder:
         np.ndarray
             Reconstructed data with shape (n_samples, input_dim).
         """
-        X_hat = self.decoder.predict(Z, verbose=0)
+        #X_hat = self.decoder.predict(Z, verbose=0,)
+        X_hat = self.decoder(Z,training=False)
         return X_hat
 
 
@@ -1091,10 +1192,11 @@ class AutoEncoder:
         - decoder: The decoder network  
         - autoencoder: The complete autoencoder
         """
-        os.makedirs(folder, exist_ok=True)
-        self.encoder.save(os.path.join(folder, 'encoder'))
-        self.decoder.save(os.path.join(folder, 'decoder'))
-        self.model.save(os.path.join(folder, 'autoencoder'))
+        
+        #os.makedirs(folder, exist_ok=True)
+        self.encoder.save(os.path.join(folder, 'encoder.keras'))
+        self.decoder.save(os.path.join(folder, 'decoder.keras'))
+        self.model.save(os.path.join(folder, 'autoencoder.keras'))
 
     def load(self, folder: str) -> None:
         """
@@ -1110,9 +1212,9 @@ class AutoEncoder:
         Loads the three model components saved by the save() method.
         The models must have been saved with compatible TensorFlow/Keras versions.
         """
-        self.encoder = tf.keras.models.load_model(os.path.join(folder, 'encoder'))
-        self.decoder = tf.keras.models.load_model(os.path.join(folder, 'decoder'))
-        self.model = tf.keras.models.load_model(os.path.join(folder, 'autoencoder'))
+        self.encoder = tf.keras.models.load_model(os.path.join(folder, 'encoder.keras'))
+        self.decoder = tf.keras.models.load_model(os.path.join(folder, 'decoder.keras'))
+        self.model = tf.keras.models.load_model(os.path.join(folder, 'autoencoder.keras'))
 
 
     @staticmethod
@@ -1180,3 +1282,513 @@ class AutoEncoder:
                     results[(ld, hd, lr)] = val_loss
                     print(f"Validation loss: {val_loss:.4f}")
         return results
+    
+
+
+
+# -----------------------------------------------------------
+# Efficient pairwise L2 distances
+# -----------------------------------------------------------
+def pairwise_distances(x, y, eps=1e-12):
+    x_norm = tf.reduce_sum(tf.square(x), axis=1, keepdims=True)
+    y_norm = tf.reduce_sum(tf.square(y), axis=1, keepdims=True)
+    dist_sq = x_norm + tf.transpose(y_norm) - 2.0 * tf.matmul(x, y, transpose_b=True)
+    dist_sq = tf.maximum(dist_sq, eps)
+    return tf.sqrt(dist_sq)
+
+
+# -----------------------------------------------------------
+# Energy distance core function
+# -----------------------------------------------------------
+def energy_distance_optimized(y_true, y_pred):
+    d_xy = pairwise_distances(y_true, y_pred)
+    cross = 2.0 * tf.reduce_mean(d_xy)
+
+    d_xx = pairwise_distances(y_true, y_true)
+    d_yy = pairwise_distances(y_pred, y_pred)
+
+    return cross - tf.reduce_mean(d_xx) - tf.reduce_mean(d_yy)
+
+
+# -----------------------------------------------------------
+# UTILITY FUNCTIONS FOR DISTRIBUTION-AWARE LOSSES
+# -----------------------------------------------------------
+def maximum_mean_discrepancy(x, y, kernel='rbf', sigma=1.0):
+    """Compute Maximum Mean Discrepancy between two distributions."""
+    if kernel == 'rbf':
+        # RBF kernel k(x,y) = exp(-||x-y||^2 / (2*sigma^2))
+        x_norm = tf.reduce_sum(tf.square(x), axis=1, keepdims=True)
+        y_norm = tf.reduce_sum(tf.square(y), axis=1, keepdims=True)
+        
+        # Pairwise distances
+        xx = x_norm + tf.transpose(x_norm) - 2.0 * tf.matmul(x, x, transpose_b=True)
+        yy = y_norm + tf.transpose(y_norm) - 2.0 * tf.matmul(y, y, transpose_b=True)
+        xy = x_norm + tf.transpose(y_norm) - 2.0 * tf.matmul(x, y, transpose_b=True)
+        
+        # Apply RBF kernel
+        k_xx = tf.exp(-xx / (2 * sigma**2))
+        k_yy = tf.exp(-yy / (2 * sigma**2))
+        k_xy = tf.exp(-xy / (2 * sigma**2))
+        
+    elif kernel == 'linear':
+        k_xx = tf.matmul(x, x, transpose_b=True)
+        k_yy = tf.matmul(y, y, transpose_b=True)
+        k_xy = tf.matmul(x, y, transpose_b=True)
+    else:
+        raise ValueError(f"Unsupported kernel: {kernel}")
+    
+    # MMD calculation
+    mmd = tf.reduce_mean(k_xx) + tf.reduce_mean(k_yy) - 2.0 * tf.reduce_mean(k_xy)
+    return tf.maximum(mmd, 0.0)  # Ensure non-negative
+
+
+def wasserstein_distance_sliced(x, y, num_projections=50):
+    """Approximate Wasserstein-1 distance using sliced Wasserstein distance."""
+    # Generate random projections
+    d = tf.shape(x)[1]
+    theta = tf.random.normal([d, num_projections])
+    theta = theta / tf.norm(theta, axis=0, keepdims=True)
+    
+    # Project data onto random directions
+    x_proj = tf.matmul(x, theta)  # [batch_size, num_projections]
+    y_proj = tf.matmul(y, theta)  # [batch_size, num_projections]
+    
+    # Sort projections
+    x_sorted = tf.sort(x_proj, axis=0)
+    y_sorted = tf.sort(y_proj, axis=0)
+    
+    # Compute L1 distance between sorted projections
+    distances = tf.reduce_mean(tf.abs(x_sorted - y_sorted), axis=0)
+    return tf.reduce_mean(distances)
+
+
+def correlation_loss(x, y):
+    """Penalize differences in correlation structure between datasets."""
+    # Center the data
+    x_centered = x - tf.reduce_mean(x, axis=0, keepdims=True)
+    y_centered = y - tf.reduce_mean(y, axis=0, keepdims=True)
+    
+    # Compute correlation matrices
+    x_cov = tf.matmul(x_centered, x_centered, transpose_a=True) / tf.cast(tf.shape(x)[0] - 1, tf.float32)
+    y_cov = tf.matmul(y_centered, y_centered, transpose_a=True) / tf.cast(tf.shape(y)[0] - 1, tf.float32)
+    
+    # Normalize to get correlation
+    x_std = tf.sqrt(tf.diag_part(x_cov))
+    y_std = tf.sqrt(tf.diag_part(y_cov))
+    
+    x_corr = x_cov / (tf.expand_dims(x_std, 0) * tf.expand_dims(x_std, 1))
+    y_corr = y_cov / (tf.expand_dims(y_std, 0) * tf.expand_dims(y_std, 1))
+    
+    # Frobenius norm of difference
+    return tf.reduce_mean(tf.square(x_corr - y_corr))
+
+
+# -----------------------------------------------------------
+# ENHANCED LOSS CLASSES FOR DISTRIBUTION PRESERVATION
+# -----------------------------------------------------------
+@register_keras_serializable(package="pyemu_emulators", name="EnergyLoss")
+class EnergyLoss(tf.keras.losses.Loss):
+    """
+    Energy distance loss combining MSE reconstruction with energy distance.
+    
+    The energy distance measures dissimilarity between probability distributions
+    and helps ensure the reconstructed samples preserve the overall data distribution.
+    """
+
+    def __init__(self, lambda_energy=1e-2, name="energy_loss"):
+        super().__init__(name=name)
+        self.lambda_energy = lambda_energy
+
+    def call(self, y_true, y_pred):
+        mse = tf.reduce_mean(tf.square(y_true - y_pred))
+        ed = energy_distance_optimized(y_true, y_pred)
+        return mse + self.lambda_energy * ed
+
+    def get_config(self):
+        return {
+            "lambda_energy": self.lambda_energy,
+            "name": self.name,
+        }
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
+@register_keras_serializable(package="pyemu_emulators", name="MMDLoss")
+class MMDLoss(tf.keras.losses.Loss):
+    """
+    Maximum Mean Discrepancy loss for distribution matching.
+    
+    MMD measures the distance between distributions in a reproducing kernel
+    Hilbert space. More computationally efficient than energy distance.
+    """
+
+    def __init__(self, lambda_mmd=1e-2, kernel='rbf', sigma=1.0, name="mmd_loss"):
+        super().__init__(name=name)
+        self.lambda_mmd = lambda_mmd
+        self.kernel = kernel
+        self.sigma = sigma
+
+    def call(self, y_true, y_pred):
+        mse = tf.reduce_mean(tf.square(y_true - y_pred))
+        mmd = maximum_mean_discrepancy(y_true, y_pred, kernel=self.kernel, sigma=self.sigma)
+        return mse + self.lambda_mmd * mmd
+
+    def get_config(self):
+        return {
+            "lambda_mmd": self.lambda_mmd,
+            "kernel": self.kernel,
+            "sigma": self.sigma,
+            "name": self.name,
+        }
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
+@register_keras_serializable(package="pyemu_emulators", name="WassersteinLoss")
+class WassersteinLoss(tf.keras.losses.Loss):
+    """
+    Sliced Wasserstein distance loss for distribution matching.
+    
+    Uses random projections to approximate the Wasserstein-1 distance,
+    which is particularly effective for high-dimensional distributions.
+    """
+
+    def __init__(self, lambda_w=1e-2, num_projections=50, name="wasserstein_loss"):
+        super().__init__(name=name)
+        self.lambda_w = lambda_w
+        self.num_projections = num_projections
+
+    def call(self, y_true, y_pred):
+        mse = tf.reduce_mean(tf.square(y_true - y_pred))
+        w_dist = wasserstein_distance_sliced(y_true, y_pred, self.num_projections)
+        return mse + self.lambda_w * w_dist
+
+    def get_config(self):
+        return {
+            "lambda_w": self.lambda_w,
+            "num_projections": self.num_projections,
+            "name": self.name,
+        }
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
+@register_keras_serializable(package="pyemu_emulators", name="StatisticalLoss")
+class StatisticalLoss(tf.keras.losses.Loss):
+    """
+    Multi-component statistical loss for comprehensive distribution matching.
+    
+    Combines reconstruction error with multiple statistical measures:
+    - Moment matching (mean, variance, skewness, kurtosis)
+    - Correlation structure preservation
+    - Optional distribution distance (MMD or Energy)
+    """
+
+    def __init__(self, lambda_moments=1e-2, lambda_corr=1e-3, lambda_dist=1e-3,
+                 dist_type='mmd', mmd_sigma=1.0, name="statistical_loss"):
+        super().__init__(name=name)
+        self.lambda_moments = lambda_moments
+        self.lambda_corr = lambda_corr
+        self.lambda_dist = lambda_dist
+        self.dist_type = dist_type
+        self.mmd_sigma = mmd_sigma
+
+    def call(self, y_true, y_pred):
+        # Reconstruction loss
+        mse = tf.reduce_mean(tf.square(y_true - y_pred))
+        
+        # Moment matching
+        moments_loss = 0.0
+        for moment in range(1, 5):  # mean, variance, skewness, kurtosis
+            true_moment = tf.reduce_mean(tf.pow(y_true - tf.reduce_mean(y_true, axis=0), moment), axis=0)
+            pred_moment = tf.reduce_mean(tf.pow(y_pred - tf.reduce_mean(y_pred, axis=0), moment), axis=0)
+            moments_loss += tf.reduce_mean(tf.square(true_moment - pred_moment))
+        
+        # Correlation structure loss
+        corr_loss = correlation_loss(y_true, y_pred)
+        
+        # Distribution distance
+        if self.dist_type == 'mmd':
+            dist_loss = maximum_mean_discrepancy(y_true, y_pred, sigma=self.mmd_sigma)
+        elif self.dist_type == 'energy':
+            dist_loss = energy_distance_optimized(y_true, y_pred)
+        else:
+            dist_loss = 0.0
+        
+        total_loss = (mse + 
+                     self.lambda_moments * moments_loss + 
+                     self.lambda_corr * corr_loss + 
+                     self.lambda_dist * dist_loss)
+        
+        return total_loss
+
+    def get_config(self):
+        return {
+            "lambda_moments": self.lambda_moments,
+            "lambda_corr": self.lambda_corr,
+            "lambda_dist": self.lambda_dist,
+            "dist_type": self.dist_type,
+            "mmd_sigma": self.mmd_sigma,
+            "name": self.name,
+        }
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
+@register_keras_serializable(package="pyemu_emulators", name="AdaptiveLoss")
+class AdaptiveLoss(tf.keras.losses.Loss):
+    """
+    Adaptive loss that balances reconstruction and distribution terms dynamically.
+    
+    Automatically adjusts the weighting between reconstruction and distribution
+    preservation based on their relative magnitudes during training.
+    """
+
+    def __init__(self, base_lambda=1e-2, adaptation_rate=0.01, min_lambda=1e-5, 
+                 max_lambda=1e-1, name="adaptive_loss"):
+        super().__init__(name=name)
+        self.base_lambda = base_lambda
+        self.adaptation_rate = adaptation_rate
+        self.min_lambda = min_lambda
+        self.max_lambda = max_lambda
+        self.current_lambda = tf.Variable(base_lambda, trainable=False, name="adaptive_lambda")
+
+    def call(self, y_true, y_pred):
+        mse = tf.reduce_mean(tf.square(y_true - y_pred))
+        ed = energy_distance_optimized(y_true, y_pred)
+        
+        # Adaptive weighting based on relative magnitudes
+        mse_magnitude = tf.stop_gradient(mse)
+        ed_magnitude = tf.stop_gradient(ed)
+        
+        # Update lambda to balance the terms
+        ratio = ed_magnitude / (mse_magnitude + 1e-8)
+        target_lambda = self.base_lambda * tf.clip_by_value(ratio, 0.1, 10.0)
+        
+        # Smooth update of lambda
+        self.current_lambda.assign(
+            self.current_lambda * (1 - self.adaptation_rate) + 
+            target_lambda * self.adaptation_rate
+        )
+        
+        # Clip lambda to reasonable bounds
+        clipped_lambda = tf.clip_by_value(self.current_lambda, self.min_lambda, self.max_lambda)
+        
+        return mse + clipped_lambda * ed
+
+    def get_config(self):
+        return {
+            "base_lambda": self.base_lambda,
+            "adaptation_rate": self.adaptation_rate,
+            "min_lambda": self.min_lambda,
+            "max_lambda": self.max_lambda,
+            "name": self.name,
+        }
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
+@register_keras_serializable(package="custom_losses")
+class PerSampleMSE(tf.keras.losses.Loss):
+    def __init__(self, name="per_sample_mse"):
+        super().__init__(reduction="none", name=name)
+
+    def call(self, y_true, y_pred):
+        # shape (batch,)
+        return tf.reduce_mean(tf.square(y_true - y_pred), axis=1)
+
+
+    def get_config(self):
+        return {"name": self.name}
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+
+# -----------------------------------------------------------
+# SAMPLE WEIGHT UTILITIES
+# -----------------------------------------------------------
+def create_observation_weights(data: Union[pd.DataFrame, np.ndarray], 
+                             observed_values: List[float], 
+                             critical_features: List[int],
+                             weight_type: str = 'inverse_distance',
+                             temperature: float = 1.0,
+                             normalize: bool = True,
+                             clip_range: tuple = (0.1, 10.0)) -> np.ndarray:
+    """
+    Create sample weights based on proximity to observed values.
+    
+    Parameters
+    ----------
+    data : pd.DataFrame or np.ndarray
+        Training data with shape (n_samples, n_features)
+    observed_values : list of float
+        Target observed values at critical features
+    critical_features : list of int
+        Column indices of critical observation features  
+    weight_type : str, default 'inverse_distance'
+        Type of weighting: 'inverse_distance', 'gaussian', 'exponential'
+    temperature : float, default 1.0
+        Temperature parameter for weight decay (lower = sharper weighting)
+    normalize : bool, default True
+        Whether to normalize weights to mean = 1.0
+    clip_range : tuple, default (0.1, 10.0)
+        Range to clip extreme weights (min, max)
+        
+    Returns
+    -------
+    np.ndarray
+        Sample weights with shape (n_samples,)
+    """
+    if isinstance(data, pd.DataFrame):
+        data = data.values
+    
+    observed_values = np.array(observed_values)
+    sample_weights = np.ones(len(data))
+    
+    for i in range(len(data)):
+        sample_values = data[i][critical_features]
+        
+        if weight_type == 'inverse_distance':
+            distance = np.sqrt(np.sum((sample_values - observed_values)**2))
+            weight = 1.0 / (1.0 + distance / temperature)
+            
+        elif weight_type == 'gaussian':
+            distance_sq = np.sum((sample_values - observed_values)**2)
+            weight = np.exp(-distance_sq / (2.0 * temperature**2))
+            
+        elif weight_type == 'exponential':
+            distance = np.sqrt(np.sum((sample_values - observed_values)**2))
+            weight = np.exp(-distance / temperature)
+            
+        else:
+            raise ValueError(f"Unknown weight_type: {weight_type}")
+            
+        sample_weights[i] = weight
+    
+    if normalize:
+        sample_weights = sample_weights / np.mean(sample_weights)
+    
+    if clip_range is not None:
+        sample_weights = np.clip(sample_weights, clip_range[0], clip_range[1])
+    
+    return sample_weights
+
+
+def create_pest_observation_weights(pst: 'Pst', 
+                                   emulator_data: pd.DataFrame,
+                                   weight_scaling: float = 1.0,
+                                   **kwargs) -> np.ndarray:
+    """
+    Create sample weights using PEST observation data.
+    
+    Parameters
+    ----------
+    pst : Pst
+        PEST control file object with observation data
+    emulator_data : pd.DataFrame
+        Training data for the emulator
+    weight_scaling : float, default 1.0
+        Overall scaling factor for weights
+    **kwargs
+        Additional arguments passed to create_observation_weights
+        
+    Returns
+    -------
+    np.ndarray
+        Sample weights based on PEST observations
+    """
+    obs_data = pst.observation_data
+    
+    # Map observation names to column indices
+    critical_features = []
+    observed_values = []
+    
+    for obs_name in obs_data.index:
+        if obs_name in emulator_data.columns:
+            col_idx = emulator_data.columns.get_loc(obs_name)
+            critical_features.append(col_idx)
+            observed_values.append(obs_data.loc[obs_name, 'obsval'])
+    
+    if len(critical_features) == 0:
+        raise ValueError("No matching observations found between PST and emulator data")
+    
+    weights = create_observation_weights(
+        emulator_data, observed_values, critical_features, **kwargs
+    )
+    
+    return weights * weight_scaling
+
+
+# -----------------------------------------------------------
+# LOSS FUNCTION FACTORY
+# -----------------------------------------------------------
+def create_distribution_loss(loss_type='energy', **kwargs):
+    """
+    Factory function to create distribution-aware loss functions.
+    
+    Parameters
+    ----------
+    loss_type : str
+        Type of loss function to create:
+        - 'energy': EnergyLoss (default, robust but computationally expensive)
+        - 'mmd': MMDLoss (efficient, good for high-dim data)
+        - 'wasserstein': WassersteinLoss (good for smooth distributions)
+        - 'statistical': StatisticalLoss (comprehensive statistical matching)
+        - 'adaptive': AdaptiveLoss (automatically balances terms)
+        - 'mse': Standard MSE (no distribution matching)
+        - 'huber': Huber loss (robust to outliers, no distribution matching)
+    **kwargs : dict
+        Additional parameters specific to each loss type
+        
+    Returns
+    -------
+    tf.keras.losses.Loss
+        Configured loss function
+        
+    Examples
+    --------
+    >>> # Energy loss with custom weighting
+    >>> loss = create_distribution_loss('energy', lambda_energy=1e-3)
+    >>> 
+    >>> # MMD loss with RBF kernel
+    >>> loss = create_distribution_loss('mmd', lambda_mmd=1e-2, sigma=2.0)
+    >>> 
+    >>> # Statistical loss with all components
+    >>> loss = create_distribution_loss('statistical', 
+    ...                               lambda_moments=1e-2, 
+    ...                               lambda_corr=1e-3,
+    ...                               lambda_dist=5e-3)
+    """
+    if loss_type == 'energy':
+        return EnergyLoss(**kwargs)
+    elif loss_type == 'mmd':
+        return MMDLoss(**kwargs)
+    elif loss_type == 'wasserstein':
+        return WassersteinLoss(**kwargs)
+    elif loss_type == 'statistical':
+        return StatisticalLoss(**kwargs)
+    elif loss_type == 'adaptive':
+        return AdaptiveLoss(**kwargs)
+    elif loss_type == 'per_sample_mse':
+        return PerSampleMSE(**kwargs)
+    elif loss_type == 'mse':
+        return 'mse'
+    elif loss_type == 'huber':
+        return tf.keras.losses.Huber(**kwargs)
+    
+    else:
+        raise ValueError(f"Unknown loss type: {loss_type}. "
+                        f"Supported types: energy, mmd, wasserstein, statistical, "
+                        f"adaptive, per_sample_mse, mse, huber")
