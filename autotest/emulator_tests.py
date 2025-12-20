@@ -4,6 +4,7 @@ import shutil
 import pytest
 import numpy as np
 import pandas as pd
+from pathlib import Path
 # import platform
 import pyemu
 from pst_from_tests import setup_tmp, _get_port, exepath_dict
@@ -11,8 +12,8 @@ from pst_from_tests import setup_tmp, _get_port
 from pyemu.emulators import DSI, LPFA, GPR, dsi
 
 
-ies_exe_path = exepath_dict("pestpp-ies")
-mou_exe_path = exepath_dict("pestpp-mou")# Check for TensorFlow availability for DSIAE tests
+ies_exe_path = exepath_dict["pestpp-ies"]
+mou_exe_path = exepath_dict["pestpp-mou"]# Check for TensorFlow availability for DSIAE tests
 
 try:
     import tensorflow as tf
@@ -33,7 +34,9 @@ def generate_synth_data(num_realizations=100, num_observations=10):
     obsdata.obgnme = "obgnme"
     return data, obsdata
 
-def dsi_synth(tmp_d,transforms=None,tag=""):
+def dsi_synth(tmp_d,transforms=None,tag="",use_runstor=True):
+
+    tmp_d = Path(tmp_d)
 
     data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
 
@@ -46,8 +49,8 @@ def dsi_synth(tmp_d,transforms=None,tag=""):
             ovals = data.max(axis=0) * 1.1
             obsdata.loc[nzobs,"obsval"] = ovals.values
 
-    td = tmp_d / "template_dsi"
-    pstdsi = dsi.prepare_pestpp(td,observation_data=obsdata)
+    td =  tmp_d / "template_dsi"
+    pstdsi = dsi.prepare_pestpp(td,observation_data=obsdata, use_runstor=use_runstor)
     pstdsi.control_data.noptmax = 1
     pstdsi.pestpp_options["ies_num_reals"] = 10
     pstdsi.pestpp_options["ies_num_reals"] = 10
@@ -57,15 +60,19 @@ def dsi_synth(tmp_d,transforms=None,tag=""):
     md = tmp_d / f"master_dsi{tag}"
     num_workers = 1
     worker_root = tmp_d
-    print("dsi_exe: ", ies_exe_path)
-    pyemu.os_utils.start_workers(
-        td,ies_exe_path,"dsi.pst", num_workers=num_workers,
-        worker_root=worker_root, master_dir=md, port=_get_port(),
-        ppw_function=pyemu.helpers.dsi_pyworker,
-        ppw_kwargs={
-            "dsi": dsi, "pvals": pvals,
-        }
-    )
+    print("dsi_exe: ", ies_exe_path) 
+
+    if use_runstor:
+        pyemu.os_utils.run(f'{ies_exe_path} dsi.pst /e', cwd=td, verbose=True)
+    else:
+        pyemu.os_utils.start_workers(
+                                    td,ies_exe_path,"dsi.pst", num_workers=num_workers,
+                                    worker_root=worker_root, master_dir=md, port=_get_port(),
+                                    ppw_function=pyemu.helpers.dsi_pyworker,
+                                    ppw_kwargs={
+                                        "dsi": dsi, "pvals": pvals,
+                                    }
+                                    )
     return
 
 def test_dsi_basic(tmp_path):
@@ -1282,8 +1289,74 @@ def test_dsiae_hyperparam_search():
     
     return
 
-if __name__ == "__main__":
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not installed")
+def test_dsiae_save_load(tmp_path):
+    if isinstance(tmp_path, str) and not os.path.exists(tmp_path):
+        os.makedirs(tmp_path)
+        
+    # 1. Generate synthetic data
+    num_realizations = 50
+    num_observations = 20
+    data = np.random.normal(size=(num_realizations, num_observations))
+    data_df = pd.DataFrame(data, columns=[f"obs{i}" for i in range(num_observations)])
     
+    # 2. Initialize and fit DSIAE
+    # Using a small latent dim and few epochs for speed
+    latent_dim = 5
+    from pyemu.emulators.dsiae import DSIAE
+    dsiae = DSIAE(data=data_df, latent_dim=latent_dim, verbose=True)
+    
+    # Fit the model
+    dsiae.fit(epochs=10, batch_size=10, validation_split=0.2)
+    
+    assert dsiae.fitted is True
+    assert hasattr(dsiae, 'encoder')
+    
+    # 3. Generate predictions on new data (or the training data)
+    # Let's use some random "parameter" values in latent space to generate observations
+    # The predict method takes pvals which are latent space values
+    
+    # Generate random latent vectors
+    new_pvals = np.random.normal(size=(5, latent_dim))
+    new_pvals_df = pd.DataFrame(new_pvals, columns=[f"latent_{i}" for i in range(latent_dim)])
+    
+    # Predict with original model
+    preds_original = dsiae.predict(new_pvals_df)
+    
+    # 4. Save the model
+    save_path = os.path.join(tmp_path, "dsiae_model.zip")
+    dsiae.save(save_path)
+    
+    assert os.path.exists(save_path)
+    
+    # 5. Load the model
+    dsiae_loaded = DSIAE.load(save_path)
+    
+    assert dsiae_loaded.fitted is True
+    assert hasattr(dsiae_loaded, 'encoder')
+    
+    # 6. Compare structure and weights
+    # Check encoder weights
+    for w_orig, w_load in zip(dsiae.encoder.encoder.get_weights(), dsiae_loaded.encoder.encoder.get_weights()):
+        np.testing.assert_allclose(w_orig, w_load, rtol=1e-5, atol=1e-5, err_msg="Encoder weights do not match")
+        
+    # Check decoder weights
+    for w_orig, w_load in zip(dsiae.encoder.decoder.get_weights(), dsiae_loaded.encoder.decoder.get_weights()):
+        np.testing.assert_allclose(w_orig, w_load, rtol=1e-5, atol=1e-5, err_msg="Decoder weights do not match")
+        
+    # 7. Compare predictions
+    preds_loaded = dsiae_loaded.predict(new_pvals_df)
+    
+    if isinstance(preds_original, (pd.Series, pd.DataFrame)):
+        pd.testing.assert_frame_equal(pd.DataFrame(preds_original), pd.DataFrame(preds_loaded), check_dtype=False)
+    else:
+        np.testing.assert_allclose(preds_original, preds_loaded, rtol=1e-5, atol=1e-5)
+        
+    print("Save/Load test passed successfully!")
+
+
+if __name__ == "__main__":
+    test_dsiae_save_load("temp")
     test_dsi_basic("temp")
     #test_dsi_nst("temp")
     #test_dsi_nst_extrap("temp")
