@@ -12,16 +12,28 @@ import shutil
 from pyemu.pst.pst_handler import Pst
 from pyemu.en import ObservationEnsemble,ParameterEnsemble
 from .base import Emulator
-import tensorflow as tf
-from keras.saving import register_keras_serializable
-from sklearn.model_selection import train_test_split
 import pickle
+import tempfile
+import zipfile
+
+try:
+    import tensorflow as tf
+    from keras.saving import register_keras_serializable
+except ImportError:
+    tf = None
+    # Dummy decorator to prevent NameError on class definitions
+    def register_keras_serializable(package=None, name=None):
+        def decorator(cls):
+            return cls
+        return decorator
+
+from sklearn.model_selection import train_test_split
+
 
 
 class DSIAE(Emulator):
     """
-    Data Space Inversion Autoencoder (DSIAE) emulator class. 
-        
+    Data Space Inversion Autoencoder (DSIAE) emulator.
     """
 
     def __init__(self, 
@@ -32,115 +44,49 @@ class DSIAE(Emulator):
                 energy_threshold: float = 1.0,
                 verbose: bool = False) -> None:
         """
-        Initialize the Data Space Inversion Autoencoder (DSIAE) emulator.
+        Initialize the DSIAE emulator.
 
-        The DSIAE emulator combines dimensionality reduction with neural network 
-        autoencoders for parameter estimation and uncertainty quantification in 
-        environmental modeling applications.
-
-        Parameters
-        ----------
-        pst : Pst, optional
-            A PEST control file object containing parameter and observation metadata.
-            If provided, observation data will be extracted for emulator configuration.
-            Default is None.
-            
-        data : DataFrame or ObservationEnsemble, optional
-            Training data containing simulated observations. Can be either:
-            - pandas.DataFrame: Direct observation data
-            - ObservationEnsemble: pyemu ensemble object (will be converted to DataFrame)
-            If provided, all data will be converted to float64 for numerical stability.
-            Default is None.
-            
-        transforms : list of dict, optional
-            Preprocessing transformations to apply to the training data. Each dictionary
-            should contain transformation specifications with the following structure:
-            - 'type': str - Transformation type ('log10', 'normal_score', etc.)
-            - 'columns': list of str, optional - Target columns. If omitted, applies to all columns
-            - Additional transformation-specific parameters
-            
-            Example:
-                transforms = [
-                    {'type': 'log10', 'columns': ['obs1', 'obs2']},
-                    {'type': 'normal_score', 'quadratic_extrapolation': True}
-                ]
-            Default is None (no transformations applied).
-            
-        latent_dim : int, optional
-            Dimensionality of the latent space for the autoencoder. If None, will be
-            automatically determined from energy_threshold using PCA analysis.
-            Must be positive integer less than the number of observations.
-            Default is None.
-            
-        energy_threshold : float, optional
-            Energy threshold for automatic latent dimension selection via SVD/PCA.
-            Represents the cumulative explained variance ratio threshold (0.0 to 1.0).
-            Only used if latent_dim is None. Values closer to 1.0 retain more information
-            but result in higher dimensional latent spaces.
-            Default is 1.0 (no truncation).
-            
-        verbose : bool, optional
-            Enable verbose logging output during emulator operations.
-            Default is False.
-
-        Raises
-        ------
-        AssertionError
-            If transforms is not a list of dictionaries or None.
-            If transform dictionaries are missing required keys.
-            If specified columns don't exist in the data.
-            If transformation parameters have invalid types.
-            
-        Notes
-        -----
-        The emulator must be fitted using the `fit()` method before making predictions.
-        Data transformations are applied during the data preparation phase and can be
-        inverted during prediction to return results in original scales.
-        
-        Examples
-        --------
-        >>> # Basic initialization with data
-        >>> emulator = DSIAE(data=observation_data, latent_dim=5)
-        >>> 
-        >>> # With transformations and automatic dimension selection
-        >>> transforms = [{'type': 'log10', 'columns': ['head_obs']}]
-        >>> emulator = DSIAE(data=obs_data, transforms=transforms, 
-        ...                  energy_threshold=0.95, verbose=True)
+        Args:
+            pst: PEST control file object.
+            data: Training data (DataFrame or ObservationEnsemble).
+            transforms: List of dicts defining preprocessing transformations.
+            latent_dim: Latent space dimension. If None, determined from energy_threshold.
+            energy_threshold: Variance threshold for automatic latent dimension (0.0-1.0).
+            verbose: Enable verbose logging.
         """
-
         super().__init__(verbose=verbose)
 
         self.observation_data = pst.observation_data.copy() if pst is not None else None
-        #self.__org_parameter_data = pst.parameter_data.copy() if pst is not None else None
-        #self.__org_control_data = pst.control_data.copy() #breaks pickling
+        
         if isinstance(data, ObservationEnsemble):
             data = data._df.copy()
-        # set all data to be floats
-        data = data.astype(float) if data is not None else None
-        #self.__org_data = data.copy() if data is not None else None
-        self.data = data.copy() if data is not None else None
+        
+        # Ensure float data
+        self.data = data.astype(float).copy() if data is not None else None
+        
         self.energy_threshold = energy_threshold
-        assert isinstance(transforms, list) or transforms is None, "transforms must be a list of dicts or None"
+        
         if transforms is not None:
+            if not isinstance(transforms, list):
+                raise TypeError("transforms must be a list of dicts")
             for t in transforms:
-                assert isinstance(t, dict), "each transform must be a dict"
-                assert 'type' in t, "each transform dict must have a 'type' key"
+                if not isinstance(t, dict) or 'type' not in t:
+                    raise ValueError("Each transform must be a dict with a 'type' key")
                 if 'columns' in t:
-                    assert isinstance(t['columns'], list), "'columns' must be a list of column names"
-                    #all columns must be in the data
-                    assert all([col in self.data.columns for col in t['columns']]), "some columns in 'columns' are not in the data"
-                if t['type'] == 'normal_score':
-                    # check for quadratic_extrapolation
-                    if 'quadratic_extrapolation' in t:
-                        assert isinstance(t['quadratic_extrapolation'], bool), "'quadratic_extrapolation' must be a boolean"
+                    missing = [c for c in t['columns'] if c not in self.data.columns]
+                    if missing:
+                        raise ValueError(f"Transform columns not found in data: {missing}")
+
         self.transforms = transforms
         self.fitted = False
         self.data_transformed = self._prepare_training_data()
-        self.decision_variable_names = None #used for DSIVC
+        self.decision_variable_names = None 
         self.latent_dim = latent_dim
-        if self.latent_dim is None:
+        
+        if self.latent_dim is None and self.data is not None:
             self.logger.statement("calculating latent dimension from energy threshold")
             self.latent_dim = self._calc_explained_variance()
+
         
     def _prepare_training_data(self) -> pd.DataFrame:
         """
@@ -854,43 +800,86 @@ class DSIAE(Emulator):
         )
         return results
 
-    def save(self, filename):
-        model_dir = os.path.dirname(filename)
-        model_dir = os.path.join(model_dir, "tf_model")
-        if not os.path.exists(model_dir):
-            os.makedirs(model_dir)
-        self.model_path = model_dir
-        print(f"saving model to {self.model_path}")
-
-        # 1. Save TF model separately
-        self.encoder.save(self.model_path)
-
-        # 2. Remove the TF model object before pickling
-        model_obj = self.encoder
-        #self.encoder = None
-
-        # 3. Pickle class state
-        with open(filename, "wb") as f:
-            pickle.dump(self, f)
-
-        # 4. Restore model into the in-memory object
-        #self.encoder = model_obj
+    def save(self, filename: str) -> None:
+        """
+        Save the emulator to a file.
+        
+        Bundles the pickled object and the TensorFlow model into a zip archive.
+        """
+        # Create a temporary directory to save components
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # 1. Save TF model
+            model_dir = os.path.join(tmp_dir, "tf_model")
+            if hasattr(self, 'encoder') and self.encoder is not None:
+                self.encoder.save(model_dir)
+            
+            # 2. Remove TF model from self to allow pickling
+            encoder_ref = self.encoder
+            self.encoder = None
+            
+            # 3. Pickle the rest of the object
+            pkl_path = os.path.join(tmp_dir, "dsiae.pkl")
+            with open(pkl_path, "wb") as f:
+                pickle.dump(self, f)
+            
+            # Restore encoder
+            self.encoder = encoder_ref
+            
+            # 4. Zip everything into the target filename
+            with zipfile.ZipFile(filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                # Add pickle
+                zipf.write(pkl_path, arcname="dsiae.pkl")
+                # Add TF model directory contents
+                if os.path.exists(model_dir):
+                    for root, dirs, files in os.walk(model_dir):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_path, tmp_dir)
+                            zipf.write(file_path, arcname=arcname)
+        
+        print(f"Saved emulator to {filename}")
 
     @classmethod
-    def load(cls, filename):
-        # 1. Unpickle
-        with open(filename, "rb") as f:
-            obj = pickle.load(f)
-
-        # 2. Reload TF model
-        folder = os.path.dirname(filename)
-        folder = os.path.join(folder, "tf_model")
-        obj.encoder.encoder = tf.keras.models.load_model(os.path.join(folder, 'encoder.keras'))
-        obj.encoder.decoder = tf.keras.models.load_model(os.path.join(folder, 'decoder.keras'))
-        obj.encoder.model = tf.keras.models.load_model(os.path.join(folder, 'autoencoder.keras'))
-
-
-        return obj
+    def load(cls, filename: str) -> 'DSIAE':
+        """
+        Load the emulator from a file.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            with zipfile.ZipFile(filename, 'r') as zipf:
+                zipf.extractall(tmp_dir)
+            
+            # 1. Unpickle
+            with open(os.path.join(tmp_dir, "dsiae.pkl"), "rb") as f:
+                obj = pickle.load(f)
+            
+            # 2. Reload TF model if it exists
+            model_dir = os.path.join(tmp_dir, "tf_model")
+            if os.path.exists(model_dir):
+                # We need to reconstruct the AutoEncoder wrapper
+                # Since we don't have the init params easily available, we rely on the fact
+                # that AutoEncoder.load loads the Keras models directly.
+                # But we need an AutoEncoder instance first.
+                
+                # We can create a dummy AutoEncoder instance and then load the weights/models
+                # However, AutoEncoder.__init__ builds the model.
+                # We can bypass __init__ or use default params if we are just going to overwrite the models.
+                
+                # Better approach: The AutoEncoder class should have a classmethod to load from disk
+                # or we instantiate it with dummy params and then load.
+                
+                # Let's assume we can instantiate it with minimal params.
+                # We need input_dim and latent_dim.
+                # obj.data_transformed should be available.
+                input_dim = obj.data_transformed.shape[1] if obj.data_transformed is not None else 0
+                latent_dim = obj.latent_dim if obj.latent_dim is not None else 2
+                
+                # Create a blank AutoEncoder instance
+                # We use __new__ to bypass __init__ since we are loading the full model structure
+                ae = AutoEncoder.__new__(AutoEncoder)
+                ae.load(model_dir)
+                obj.encoder = ae
+            
+            return obj
 
 class AutoEncoder:
     def __init__(self, input_dim: int, latent_dim: int = 2, 
@@ -898,87 +887,20 @@ class AutoEncoder:
                  activation: str = 'relu', loss: str = 'Huber', 
                  dropout_rate: float = 0.0, random_state: int = 0) -> None:
         """
-        Initialize AutoEncoder with specified neural network architecture.
-        
-        Creates a symmetric encoder-decoder autoencoder architecture where the encoder
-        compresses input data to a lower-dimensional latent representation, and the
-        decoder reconstructs the original input from this compressed representation.
-        The network is designed for dimensionality reduction and feature learning.
-        
-        Parameters
-        ----------
-        input_dim : int
-            Dimensionality of the input feature space. Must be positive integer
-            representing the number of input features/observations.
-            
-        latent_dim : int, default 2
-            Dimensionality of the latent (compressed) representation. Should be
-            significantly smaller than input_dim for meaningful compression.
-            Common values range from 2-50 depending on data complexity.
-            
-        hidden_dims : tuple, default (128, 64)
-            Architecture specification for encoder hidden layers. Each integer
-            represents the number of neurons in a hidden layer, specified from
-            input to latent space. The decoder uses the reverse order automatically.
-            Example: (128, 64) creates encoder: input -> 128 -> 64 -> latent
-                                      decoder: latent -> 64 -> 128 -> output
-                                      
-        lr : float, default 1e-3
-            Learning rate for the Adam optimizer. Controls the step size during
-            gradient descent. Typical values: 1e-4 to 1e-2. Lower values provide
-            more stable but slower training.
-            
-        activation : str, default 'relu'
-            Activation function applied to hidden layers. Supported TensorFlow/Keras
-            activations include 'relu', 'tanh', 'sigmoid', 'elu', 'swish', etc.
-            Output layer uses linear activation for reconstruction tasks.
-            
-        loss : str, default 'Huber'
-            Loss function for training the autoencoder. Options include:
-            - 'Huber': Robust to outliers, good for noisy data
-            - 'mse' or 'mean_squared_error': Standard for regression
-            - 'mae' or 'mean_absolute_error': Less sensitive to outliers
-            
-        dropout_rate : float, default 0.0
-            Dropout rate for regularization. Applied after each hidden layer.
-            Value between 0.0 (no dropout) and 1.0 (drop all neurons).
-            Typical values: 0.1-0.5. Higher values provide stronger regularization
-            but may hurt model capacity.
-            
-        random_state : int, default 0
-            Random seed for reproducible model initialization and training.
-            Controls TensorFlow random operations for consistent results across runs.
-            
-        Attributes
-        ----------
-        encoder : tf.keras.Model
-            Encoder network (input -> latent space)
-        decoder : tf.keras.Model  
-            Decoder network (latent space -> reconstruction)
-        model : tf.keras.Model
-            Complete autoencoder (input -> latent -> reconstruction)
-            
-        Notes
-        -----
-        The autoencoder is compiled with Adam optimizer and ready for training
-        upon initialization. The architecture is symmetric - encoder layers are
-        mirrored in the decoder for balanced compression/reconstruction capacity.
-        
-        Random seed affects:
-        - Weight initialization
-        - Dropout behavior (if added)
-        - Training data shuffling
-        - Any stochastic operations during training
-        
-        Examples
-        --------
-        >>> # Basic autoencoder for 100-dimensional data
-        >>> ae = AutoEncoder(input_dim=100, latent_dim=10)
-        >>> 
-        >>> # Deep autoencoder with custom architecture and dropout
-        >>> ae = AutoEncoder(input_dim=500, latent_dim=20, 
-        ...                  hidden_dims=(256, 128, 64), lr=5e-4, dropout_rate=0.2)
+        Initialize AutoEncoder.
+
+        Args:
+            input_dim: Input feature dimension.
+            latent_dim: Latent space dimension.
+            hidden_dims: Tuple of hidden layer sizes for encoder (reversed for decoder).
+            lr: Learning rate.
+            activation: Activation function name.
+            loss: Loss function name.
+            dropout_rate: Dropout rate (0.0-1.0).
+            random_state: Random seed.
         """
+        if tf is None:
+            raise ImportError("TensorFlow is required for AutoEncoder but not installed.")
 
         self.input_dim = input_dim
         self.latent_dim = latent_dim
@@ -988,7 +910,7 @@ class AutoEncoder:
         self.loss = loss
         self.dropout_rate = dropout_rate
         self.random_state = random_state
-        # Set random seeds properly
+        
         tf.random.set_seed(random_state)
         np.random.seed(random_state)
         self._build_model()
@@ -1030,88 +952,23 @@ class AutoEncoder:
             verbose: int = 2, sample_weight: Optional[np.ndarray] = None,
             validation_sample_weight: Optional[np.ndarray] = None) -> Any:
         """
-        Train the autoencoder on provided data with comprehensive training control.
-        
-        Implements supervised training of the autoencoder using the reconstruction
-        objective, where the network learns to minimize the difference between
-        input and reconstructed output. Supports validation monitoring, early
-        stopping, and learning rate scheduling for optimal training.
-        
-        Parameters
-        ----------
-        X : np.ndarray
-            Training data with shape (n_samples, input_dim). Will be used as both
-            input and target for reconstruction training.
-            
-        X_val : np.ndarray, optional
-            Explicit validation data with same shape as X. If provided, takes
-            precedence over validation_split for validation monitoring.
-            
-        epochs : int, default 100
-            Maximum number of training epochs. Training may stop earlier if
-            early stopping criteria are met.
-            
-        batch_size : int, default 32
-            Number of samples per training batch. Larger values provide more
-            stable gradients but require more memory. Typical range: 16-256.
-            
-        validation_split : float, default 0.1
-            Fraction of training data to reserve for validation when X_val is None.
-            Must be between 0.0 and 1.0. Ignored if X_val is provided.
-            
-        early_stopping : bool, default True
-            Whether to monitor validation loss and stop training when it stops
-            improving. Helps prevent overfitting and reduces training time.
-            
-        patience : int, default 10
-            Number of epochs to wait for validation improvement before stopping.
-            Only used when early_stopping=True. Higher values allow more time
-            for recovery from local minima.
-            
-        lr_schedule : tf.keras.callbacks.Callback, optional
-            Learning rate scheduler callback. Common options include ReduceLROnPlateau,
-            ExponentialDecay, or CosineDecay for adaptive learning rate adjustment.
-            
-        verbose : int, default 2
-            Training verbosity level:
-            - 0: Silent training
-            - 1: Progress bar per epoch
-            - 2: One line per epoch (recommended)
-            
-        sample_weight : np.ndarray, optional
-            Sample weights for training data. Shape should be (n_samples,).
-            Higher weights give more importance to corresponding samples.
-            
-        validation_sample_weight : np.ndarray, optional
-            Sample weights for validation data. Shape should match validation samples.
-            
-        Returns
-        -------
-        tf.keras.callbacks.History
-            Training history object containing loss and metrics for each epoch.
-            Useful for analyzing training progression and convergence behavior.
-            
-        Notes
-        -----
-        The method automatically sets up callbacks based on the provided options:
-        - EarlyStopping callback when early_stopping=True
-        - Custom learning rate schedule when lr_schedule is provided
-        
-        For autoencoder training, both input and target are the same data (X),
-        as the objective is to learn a compressed representation that can
-        accurately reconstruct the original input.
-        
-        Examples
-        --------
-        >>> # Basic training
-        >>> history = ae.fit(X_train, epochs=200)
-        >>> 
-        >>> # Training with explicit validation set
-        >>> history = ae.fit(X_train, X_val=X_test, early_stopping=True, patience=15)
-        >>> 
-        >>> # Training with learning rate scheduling
-        >>> lr_scheduler = tf.keras.callbacks.ReduceLROnPlateau(patience=5)
-        >>> history = ae.fit(X_train, lr_schedule=lr_scheduler, verbose=1)
+        Train the autoencoder.
+
+        Args:
+            X: Training data.
+            X_val: Validation data (optional).
+            epochs: Max epochs.
+            batch_size: Batch size.
+            validation_split: Validation split fraction (if X_val is None).
+            early_stopping: Enable early stopping.
+            patience: Early stopping patience.
+            lr_schedule: Learning rate scheduler callback.
+            verbose: Verbosity level.
+            sample_weight: Training sample weights.
+            validation_sample_weight: Validation sample weights.
+
+        Returns:
+            Training history.
         """
         # Callbacks
         callbacks = []
@@ -1178,39 +1035,16 @@ class AutoEncoder:
 
     def save(self, folder: str) -> None:
         """
-        Save trained autoencoder models to disk.
-        
-        Parameters
-        ----------
-        folder : str
-            Directory path to save the models. Will be created if it doesn't exist.
-            
-        Notes
-        -----
-        Saves three separate model files:
-        - encoder: The encoder network
-        - decoder: The decoder network  
-        - autoencoder: The complete autoencoder
+        Save trained models to disk.
         """
-        
-        #os.makedirs(folder, exist_ok=True)
+        os.makedirs(folder, exist_ok=True)
         self.encoder.save(os.path.join(folder, 'encoder.keras'))
         self.decoder.save(os.path.join(folder, 'decoder.keras'))
         self.model.save(os.path.join(folder, 'autoencoder.keras'))
 
     def load(self, folder: str) -> None:
         """
-        Load trained autoencoder models from disk.
-        
-        Parameters
-        ----------
-        folder : str
-            Directory path containing the saved models.
-            
-        Notes
-        -----
-        Loads the three model components saved by the save() method.
-        The models must have been saved with compatible TensorFlow/Keras versions.
+        Load trained models from disk.
         """
         self.encoder = tf.keras.models.load_model(os.path.join(folder, 'encoder.keras'))
         self.decoder = tf.keras.models.load_model(os.path.join(folder, 'decoder.keras'))
@@ -1286,9 +1120,7 @@ class AutoEncoder:
 
 
 
-# -----------------------------------------------------------
 # Efficient pairwise L2 distances
-# -----------------------------------------------------------
 def pairwise_distances(x, y, eps=1e-12):
     x_norm = tf.reduce_sum(tf.square(x), axis=1, keepdims=True)
     y_norm = tf.reduce_sum(tf.square(y), axis=1, keepdims=True)
@@ -1297,9 +1129,8 @@ def pairwise_distances(x, y, eps=1e-12):
     return tf.sqrt(dist_sq)
 
 
-# -----------------------------------------------------------
+
 # Energy distance core function
-# -----------------------------------------------------------
 def energy_distance_optimized(y_true, y_pred):
     d_xy = pairwise_distances(y_true, y_pred)
     cross = 2.0 * tf.reduce_mean(d_xy)
@@ -1310,9 +1141,7 @@ def energy_distance_optimized(y_true, y_pred):
     return cross - tf.reduce_mean(d_xx) - tf.reduce_mean(d_yy)
 
 
-# -----------------------------------------------------------
 # UTILITY FUNCTIONS FOR DISTRIBUTION-AWARE LOSSES
-# -----------------------------------------------------------
 def maximum_mean_discrepancy(x, y, kernel='rbf', sigma=1.0):
     """Compute Maximum Mean Discrepancy between two distributions."""
     if kernel == 'rbf':
@@ -1383,11 +1212,18 @@ def correlation_loss(x, y):
     return tf.reduce_mean(tf.square(x_corr - y_corr))
 
 
-# -----------------------------------------------------------
-# ENHANCED LOSS CLASSES FOR DISTRIBUTION PRESERVATION
-# -----------------------------------------------------------
+
+if tf is not None:
+    LossBase = tf.keras.losses.Loss
+else:
+    class LossBase:
+        def __init__(self, name=None, **kwargs):
+            pass
+        def __call__(self, *args, **kwargs):
+            pass
+
 @register_keras_serializable(package="pyemu_emulators", name="EnergyLoss")
-class EnergyLoss(tf.keras.losses.Loss):
+class EnergyLoss(LossBase):
     """
     Energy distance loss combining MSE reconstruction with energy distance.
     
@@ -1416,7 +1252,7 @@ class EnergyLoss(tf.keras.losses.Loss):
 
 
 @register_keras_serializable(package="pyemu_emulators", name="MMDLoss")
-class MMDLoss(tf.keras.losses.Loss):
+class MMDLoss(LossBase):
     """
     Maximum Mean Discrepancy loss for distribution matching.
     
@@ -1449,7 +1285,7 @@ class MMDLoss(tf.keras.losses.Loss):
 
 
 @register_keras_serializable(package="pyemu_emulators", name="WassersteinLoss")
-class WassersteinLoss(tf.keras.losses.Loss):
+class WassersteinLoss(LossBase):
     """
     Sliced Wasserstein distance loss for distribution matching.
     
@@ -1480,7 +1316,7 @@ class WassersteinLoss(tf.keras.losses.Loss):
 
 
 @register_keras_serializable(package="pyemu_emulators", name="StatisticalLoss")
-class StatisticalLoss(tf.keras.losses.Loss):
+class StatisticalLoss(LossBase):
     """
     Multi-component statistical loss for comprehensive distribution matching.
     
@@ -1544,7 +1380,7 @@ class StatisticalLoss(tf.keras.losses.Loss):
 
 
 @register_keras_serializable(package="pyemu_emulators", name="AdaptiveLoss")
-class AdaptiveLoss(tf.keras.losses.Loss):
+class AdaptiveLoss(LossBase):
     """
     Adaptive loss that balances reconstruction and distribution terms dynamically.
     
@@ -1599,7 +1435,7 @@ class AdaptiveLoss(tf.keras.losses.Loss):
 
 
 @register_keras_serializable(package="custom_losses")
-class PerSampleMSE(tf.keras.losses.Loss):
+class PerSampleMSE(LossBase):
     def __init__(self, name="per_sample_mse"):
         super().__init__(reduction="none", name=name)
 
@@ -1616,9 +1452,7 @@ class PerSampleMSE(tf.keras.losses.Loss):
         return cls(**config)
 
 
-# -----------------------------------------------------------
-# SAMPLE WEIGHT UTILITIES
-# -----------------------------------------------------------
+
 def create_observation_weights(data: Union[pd.DataFrame, np.ndarray], 
                              observed_values: List[float], 
                              critical_features: List[int],
@@ -1731,9 +1565,7 @@ def create_pest_observation_weights(pst: 'Pst',
     return weights * weight_scaling
 
 
-# -----------------------------------------------------------
-# LOSS FUNCTION FACTORY
-# -----------------------------------------------------------
+
 def create_distribution_loss(loss_type='energy', **kwargs):
     """
     Factory function to create distribution-aware loss functions.
