@@ -46,6 +46,13 @@ except ImportError:
     HAS_TENSORFLOW = False
 
 
+try:
+    import tensorflow
+    HAS_TENSORFLOW = True
+except ImportError:
+    HAS_TENSORFLOW = False
+
+
 # Conditional imports
 if HAS_SKLEARN:
     from .lpfa import LPFA

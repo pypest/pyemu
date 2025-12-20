@@ -50,6 +50,7 @@ def dsi_synth(tmp_d,transforms=None,tag=""):
     pstdsi = dsi.prepare_pestpp(td,observation_data=obsdata)
     pstdsi.control_data.noptmax = 1
     pstdsi.pestpp_options["ies_num_reals"] = 10
+    pstdsi.pestpp_options["ies_num_reals"] = 10
     pstdsi.write(os.path.join(td, "dsi.pst"),version=2)
 
     pvals = pd.read_csv(os.path.join(td, "dsi_pars.csv"), index_col=0)
@@ -924,6 +925,184 @@ def gpr_zdt1_ppw():
     ppw = pyemu.helpers.gpr_pyworker(pst_name,"localhost",4569,gpr=True)
     os.chdir("..")
 
+
+def dsiae_basic(transforms=None):
+    """Basic DSIAE test using synth dataset - minimal compute"""
+    
+    if not HAS_TENSORFLOW:
+        pytest.skip("TensorFlow not available, skipping DSIAE tests")
+    
+    data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
+
+
+    # Test DSIAE initialization and basic functionality
+    from pyemu.emulators import DSIAE
+    dsiae = DSIAE(data=data, transforms=transforms, latent_dim=3, verbose=False)  # Fixed small latent dim
+    
+    # Test fit with minimal parameters for speed
+    dsiae.fit(validation_split=0.2, epochs=5, batch_size=16, early_stopping=False)  # Very few epochs
+    
+    # Test encoding
+    Z = dsiae.encode(data.iloc[:5])  # Test with just 5 samples
+    assert Z.shape[0] == 5
+    assert Z.shape[1] == 3  # latent_dim
+    
+    # Test prediction
+    sim_vals = dsiae.predict(Z.iloc[0])
+    assert len(sim_vals) == len(data.columns)
+    
+    return dsiae, obsdata
+
+
+
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+def test_dsiae_basic():
+    """Test basic DSIAE functionality with transforms"""
+    data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
+
+    transforms = [
+        {"type": "normal_score", }
+    ]
+
+    # Test DSIAE initialization and basic functionality
+    from pyemu.emulators import DSIAE
+    dsiae = DSIAE(data=data, transforms=transforms, latent_dim=3, verbose=False)  # Fixed small latent dim
+    # Test fit with minimal parameters for speed
+    dsiae.fit(validation_split=0.2, epochs=5, batch_size=16, early_stopping=False)  # Very few epochs
+    assert dsiae.fitted
+
+    # Test encoding
+    Z = dsiae.encode(data.iloc[:5])  # Test with just 5 samples
+    assert Z.shape[0] == 5
+    assert Z.shape[1] == 3  # latent_dim
+    
+    # Test prediction
+    sim_vals = dsiae.predict(Z.iloc[0])
+    assert len(sim_vals) == len(data.columns)
+
+    
+    return
+
+
+
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+def test_dsiae_auto_latent_dim():
+    """Test DSIAE with automatic latent dimension selection"""
+    
+    data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
+
+    from pyemu.emulators import DSIAE
+    dsiae = DSIAE(data=data, latent_dim=None, energy_threshold=0.8)  # Auto dimension
+    dsiae.fit(epochs=3, batch_size=8)  # Minimal training
+    
+    assert dsiae.fitted
+    assert dsiae.latent_dim > 0
+    return
+
+#@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+@pytest.mark.skip(reason="it is hanging in CI for some reason;passes locally")
+def test_dsiae_with_ies(tmp_path):
+
+    data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
+
+    from pyemu.emulators import DSIAE
+    dsiae = DSIAE(data=data, latent_dim=3)  # Auto dimension
+    dsiae.fit(epochs=3, batch_size=8)  # Minimal training
+
+    td = tmp_path / "template_dsiae"
+    pstdsi = dsiae.prepare_pestpp(td,observation_data=obsdata)
+    pstdsi.control_data.noptmax = -1
+    pstdsi.pestpp_options["ies_num_reals"] = 3
+    pstdsi.write(os.path.join(td, "dsi.pst"),version=2)
+
+    pvals = pd.read_csv(os.path.join(td, "dsi_pars.csv"), index_col=0)
+    md = tmp_path / f"master_dsiae"
+    num_workers = 1
+    worker_root = tmp_path
+    print("dsi_exe: ", ies_exe_path)
+    pyemu.os_utils.start_workers(
+        td,ies_exe_path,"dsi.pst", num_workers=num_workers,
+        worker_root=worker_root, master_dir=md, port=_get_port(),
+        ppw_function=pyemu.helpers.dsi_pyworker,
+        ppw_kwargs={
+            "dsi": dsiae, "pvals": pvals,
+        }
+    )
+    return
+
+
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+def test_autoencoder_basic():
+    """Test standalone AutoEncoder functionality"""
+    
+    from pyemu.emulators.dsiae import AutoEncoder
+    
+    # Create simple synthetic data
+    np.random.seed(42)
+    X = np.random.randn(50, 10).astype(np.float32)  # 50 samples, 10 features
+    
+    # Test initialization
+    ae = AutoEncoder(input_dim=10, latent_dim=3, hidden_dims=(8, 4))
+    
+    # Test fit with minimal parameters
+    history = ae.fit(X, epochs=3, batch_size=16, verbose=0)
+    assert history is not None
+    
+    # Test encode/decode
+    Z = ae.encode(X[:5])  # Test with 5 samples
+    assert Z.shape == (5, 3)  # latent_dim = 3
+    
+    X_reconstructed = ae.decode(Z)
+    assert X_reconstructed.shape == (5, 10)  # original input_dim = 10
+    
+    return
+
+
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+def test_autoencoder_pandas_input():
+    """Test AutoEncoder with pandas DataFrame input"""
+    
+    from pyemu.emulators.dsiae import AutoEncoder
+    
+    # Create pandas DataFrame
+    np.random.seed(42)
+    data = pd.DataFrame(np.random.randn(30, 8), 
+                       columns=[f'feature_{i}' for i in range(8)],
+                       index=[f'sample_{i}' for i in range(30)])
+    
+    ae = AutoEncoder(input_dim=8, latent_dim=2, hidden_dims=(6,))
+    ae.fit(data.values, epochs=2, verbose=0)
+    
+    # Test with DataFrame input
+    Z = ae.encode(data.iloc[:3])
+    assert Z.shape == (3, 2)
+    
+    # Test with Series input  
+    Z_series = ae.encode(data.iloc[0])
+    assert Z_series.shape == (1, 2)
+    
+    return
+
+
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
+def test_dsiae_hyperparam_search():
+    """Test DSIAE hyperparameter search"""
+    
+    dsiae, obsdata = dsiae_basic()
+    
+    # Test with minimal search space
+    results = dsiae.hyperparam_search(
+        latent_dims=[2, 3],
+        hidden_dims_list=[(8,)],  # Single architecture
+        lrs=[1e-2],  # Single learning rate
+        epochs=2,  # Very few epochs
+        batch_size=8
+    )
+    
+    assert isinstance(results, dict)
+    assert len(results) > 0
+    
+    return
 
 def dsiae_basic(transforms=None):
     """Basic DSIAE test using synth dataset - minimal compute"""
