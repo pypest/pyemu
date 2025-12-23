@@ -568,7 +568,7 @@ class Ensemble(object):
                 under-varied new realizations resulting from dimensions >> nreals in `self`. If True,
                 The standard devation is set to one over the square root on number of reals in 
                 `self`.  
-            noise_reals (ParameterEnsemble): other existing realizations (likely prior realizations)
+            noise_reals (Ensemble): other existing realizations (likely prior realizations)
                 that are used as noise realizations in place of IID noise that is used if `include_noise` 
                 is True and `noise_reals` is None.
         
@@ -921,15 +921,15 @@ class ObservationEnsemble(Ensemble):
                 under-varied new realizations resulting from npar >> nreals in `self`. If True,
                 The standard devation is set to one over the square root on number of reals in 
                 `self`.  
-            noise_reals (ParameterEnsemble): other existing realizations (likely prior realizations)
+            noise_reals (ObservationEnsemble): other existing realizations (likely prior realizations)
                 that are used as noise realizations in place of IID noise that is used if `include_noise` 
                 is True and `noise_reals` is None.
         
         Returns
-            ParameterEnsemble
+            ObservationEnsemble
 
         Note:
-            any fixed and/or tied parameters in self are omitted in the returned ParameterEnsemble
+            any zero weighted observations in self are omitted in the returned ObservationEnsemble
 
         """
 
