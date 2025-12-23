@@ -66,7 +66,7 @@ def full_exe_ref_dict():
     """
     d = {}
     for exe_name in [
-        "mfnwt", "mt3dusgs", "mfusg_gsi", "mf6",
+        "mfnwt", "mfusg_gsi", "mf6",
         "pestpp-ies", "pestpp-sen", "pestpp-opt", "pestpp-glm",
         "pestpp-mou", "pestpp-da", "pestpp-sqp", "pestpp-swp"
     ]:
@@ -79,3 +79,12 @@ def full_exe_ref_dict():
 def _ch2testdir(monkeypatch):
     testdir = Path(__file__).parent
     monkeypatch.chdir(testdir)
+
+@pytest.fixture(autouse=True)
+def _use_plt_agg_backend():
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        pass
+    else:
+        plt.switch_backend("Agg")

@@ -66,9 +66,11 @@ pyemu/.idea
 
 autotest/*.bin
 autotest/*.dat
+autotest/pypestworker_*.txt
 autotest/temp
 autotest/.noseids
 autotest/temp*
+runner/
 
 examples/.ipynb*
 

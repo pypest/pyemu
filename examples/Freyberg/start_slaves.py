@@ -1,3 +1,8 @@
+"""Note - this script is only kept for legacy reasons as a reference.
+
+It no longer runs successfully with the current version of pyEMU.
+"""
+
 import os
 import pyemu
 

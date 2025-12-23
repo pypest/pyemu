@@ -4,14 +4,14 @@ Transformer classes for data transformations in emulators.
 from __future__ import print_function, division
 import numpy as np
 import pandas as pd
-
+import importlib.util
 
 # Check sklearn availability at module level
-try:
+HAS_SKLEARN = importlib.util.find_spec("sklearn") is not None
+
+if HAS_SKLEARN:
     from sklearn.preprocessing import StandardScaler
-    HAS_SKLEARN = True
-except ImportError:
-    HAS_SKLEARN = False
+else:
     # Create dummy classes or set to None
     StandardScaler = None
 
