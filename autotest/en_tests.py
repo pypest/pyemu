@@ -784,34 +784,76 @@ def mixed_par_draw_2_test():
     assert pst.npar == npar
 
 
-def test_draw_new(plot=False):
+def _check_ens(origen, newen, noise=False, helptxt=""):
+    origen.transform()
+    newen.transform()
+    stdiff = (newen.std() / origen.std()) - 1
+    if noise:
+        # if adding noise only check for signif std reductions
+        voilations = stdiff.loc[stdiff < -0.1]
+        assert len(voilations) == 0, f"'{helptxt}' std > 10% reduction:\n{voilations}"
+    else:
+        # else check for signif std increase or decrease
+        voilations = stdiff.loc[(stdiff > 0.15) | (stdiff < -0.1)]
+        assert len(voilations) == 0, f"'{helptxt}' std differences > 0.1:\n{voilations}"
+    # new std should not be shrunk by more than 15%?
+
+    # max mean change?
+    # mean change 5% of range?
+    mndiff = np.abs(newen.mean() - origen.mean()) / (origen.max() - origen.min())
+    voilations = mndiff.loc[mndiff>0.05]
+    assert len(voilations) == 0, f"{helptxt} mean differences > 5% of initial range:\n{voilations}"
+    origen.back_transform()
+
+def plot_ens_cdf(pst, ens, namestrs):
+    colors = ["r", "y", "b", "g", "m", "c"][:len(ens)]
+    paren = isinstance(ens[0], pyemu.en.ParameterEnsemble)
+    if paren:
+        for en in ens:
+            if not en.istransformed:
+                en.transform()
+
+        pst.add_transform_columns()
+        ubnd = pst.parameter_data.parubnd_trans.to_dict()
+        lbnd = pst.parameter_data.parlbnd_trans.to_dict()
+        fname = "check_parens.pdf"
+        nameids = pst.adj_par_names
+    else:
+        ubnd = None
+        lbnd = None
+        fname = "check_obsens.pdf"
+        nameids = pst.nnz_obs_names
+
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+    with PdfPages(fname) as pdf:
+        for nm in nameids:
+            fig,ax = plt.subplots(1,1,figsize=(10,10))
+            for en,c,name in zip(ens, colors, namestrs):
+                nmen = en.loc[:,nm]
+                # ax.hist(par,fc=c,alpha=0.5,bins=10,density=True)
+                ax.plot(np.sort(nmen), np.arange(nmen.shape[0])/nmen.shape[0], color=c, label=name)
+            ylim = ax.get_ylim()
+            if paren:
+                ax.plot([ubnd[nm],ubnd[nm]],ylim,"k--",lw=3)
+                ax.plot([lbnd[nm],lbnd[nm]],ylim,"k--",lw=3)
+
+            ax.grid()
+            ax.set_title(nm)
+            ax.legend()
+            plt.tight_layout()
+            pdf.savefig()
+            plt.close(fig)
+            # print(nm)
+
+def test_draw_new_pe(tmp_path, plot=False):
     import os
     import numpy as np
     import pyemu
-
-    def _check_ens(newpe, noise=False, helptxt=""):
-        pe.transform()
-        newpe.transform()
-        stdiff = (newpe.std() / pe.std()) - 1
-        if noise:
-            # if adding noise only check for signif std reductions
-            voilations = stdiff.loc[stdiff < -0.1]
-            assert len(voilations) == 0, f"'{helptxt}' std > 10% reduction:\n{voilations}"
-        else:
-            # else check for signif std increase or decrease
-            voilations = stdiff.loc[(stdiff > 0.15) | (stdiff < -0.1)]
-            assert len(voilations) == 0, f"'{helptxt}' std differences > 0.1:\n{voilations}"
-        # new std should not be shrunk by more than 15%?
-
-        # max mean change?
-        # mean change 5% of range?
-        mndiff = np.abs(newpe.mean()-pe.mean())/(pe.max()-pe.min())
-        voilations = mndiff.loc[mndiff>0.05]
-        assert len(voilations) == 0, f"{helptxt} mean differences > 5% of initial range:\n{voilations}"
-        pe.back_transform()
-
-    pst = pyemu.Pst(os.path.join("en", "pest.pst"))
-    cov = pyemu.Cov.from_binary(os.path.join("en", "cov.jcb"))
+    shutil.copy(os.path.join("en", "pest.pst"), tmp_path)
+    shutil.copy(os.path.join("en", "cov.jcb"), tmp_path)
+    pst = pyemu.Pst(os.path.join(tmp_path, "pest.pst"))
+    cov = pyemu.Cov.from_binary(os.path.join(tmp_path, "cov.jcb"))
     # basesd = pd.Series(cov.x.diagonal(), index=cov.row_names)
     print(pst.npar, cov.shape)
     num_reals = 1000
@@ -821,24 +863,23 @@ def test_draw_new(plot=False):
     sub_pe = pe.iloc[:int(num_reals), :]
 
     new_pe_nonoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=False)
-    _check_ens(new_pe_nonoise, False, 'no noise')
+    _check_ens(pe, new_pe_nonoise, False, 'no noise')
     if not plot:
         del new_pe_nonoise
     new_pe_stdnoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=True)
-    _check_ens(new_pe_stdnoise, True, 'std noise')
+    _check_ens(pe, new_pe_stdnoise, True, 'std noise')
     if not plot:
         del new_pe_stdnoise
     new_pe_usernoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=1. / np.sqrt(sub_pe.shape[0]))
-    _check_ens(new_pe_usernoise, True, 'user noise')
+    _check_ens(pe, new_pe_usernoise, True, 'user noise')
     if not plot:
         del new_pe_usernoise
     new_pe_ennoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=True, noise_reals=pe)
-    _check_ens(new_pe_ennoise, False, 'ens noise')
+    _check_ens(pe, new_pe_ennoise, False, 'ens noise')
     if not plot:
         del new_pe_ennoise
 
     if plot:
-        colors = ["r", "y", "b", "g", "m", "c"]
         pes = [pe,
                sub_pe,
                new_pe_nonoise,
@@ -851,36 +892,16 @@ def test_draw_new(plot=False):
                  "new_std_noise",
                  "new_user_noise",
                  "new_ens_noise"]
+        plot_ens_cdf(pst, pes, names)
 
-        for ppe in pes:
-            if not ppe.istransformed:
-                ppe.transform()
 
-        pst.add_transform_columns()
-        ubnd = pst.parameter_data.parubnd_trans.to_dict()
-        lbnd = pst.parameter_data.parlbnd_trans.to_dict()
+def test_draw_new_oe(tmp_path, plot=False):
+    num_reals = 1000
 
-        import matplotlib.pyplot as plt
-        from matplotlib.backends.backend_pdf import PdfPages
-        with PdfPages("check.pdf") as pdf:
-            for pname in pst.adj_par_names:
-                fig,ax = plt.subplots(1,1,figsize=(10,10))
-                for ppe,c,name in zip(pes,colors,names):
-                    par = ppe.loc[:,pname]
-                    # ax.hist(par,fc=c,alpha=0.5,bins=10,density=True)
-                    ax.plot(np.sort(par), np.arange(par.shape[0])/par.shape[0], color=c, label=name)
-                ylim = ax.get_ylim()
-                ax.plot([ubnd[pname],ubnd[pname]],ylim,"k--",lw=3)
-                ax.plot([lbnd[pname],lbnd[pname]],ylim,"k--",lw=3)
-
-                ax.grid()
-                ax.set_title(pname)
-                ax.legend()
-                plt.tight_layout()
-                pdf.savefig()
-                plt.close(fig)
-                print(pname)
-
+    shutil.copy(os.path.join("en", "pest.pst"), tmp_path)
+    shutil.copy(os.path.join("en", "cov.jcb"), tmp_path)
+    pst = pyemu.Pst(os.path.join(tmp_path, "pest.pst"))
+    cov = pyemu.Cov.from_binary(os.path.join(tmp_path, "cov.jcb"))
     obs = pst.observation_data
     obs.loc[pst.obs_names[:1000],"weight"] = 1.0
     cov = cov.x[:pst.nnz_obs,:pst.nnz_obs]
@@ -890,18 +911,30 @@ def test_draw_new(plot=False):
     sub_oe = oe.iloc[:int(num_reals),:]
 
     new_oe_nonoise = sub_oe.draw_new_ensemble(num_reals=num_reals)
-    _check_ens(new_oe_nonoise, False, 'no noise')
+    _check_ens(oe, new_oe_nonoise, False, 'no noise')
     if not plot:
         del new_oe_nonoise
     new_oe_stdnoise = sub_oe.draw_new_ensemble(num_reals=num_reals,include_noise=True)
-    _check_ens(new_oe_stdnoise, True,'std noise')
+    _check_ens(oe, new_oe_stdnoise, True,'std noise')
     if not plot:
         del new_oe_stdnoise
-    new_oe_usernoise = sub_oe.draw_new_ensemble(num_reals=num_reals,include_noise=1./np.sqrt(sub_pe.shape[0]))
-    _check_ens(new_oe_usernoise, True,'user noise')
+    new_oe_usernoise = sub_oe.draw_new_ensemble(num_reals=num_reals,include_noise=1./np.sqrt(sub_oe.shape[0]))
+    _check_ens(oe, new_oe_usernoise, True,'user noise')
     if not plot:
         del new_oe_usernoise
 
+    if plot:
+        ens = [oe,
+               sub_oe,
+               new_oe_nonoise,
+               new_oe_stdnoise,
+               new_oe_usernoise]
+        names = ["original",
+                 "sub_ensemble",
+                 "new_no_noise",
+                 "new_std_noise",
+                 "new_user_noise"]
+        plot_ens_cdf(pst, ens, names)
 
 
 if __name__ == "__main__":
@@ -930,7 +963,7 @@ if __name__ == "__main__":
     #enforce_test()
     profiler = cProfile.Profile()
     profiler.enable()
-    binary_test('temp')
+    test_draw_new_oe('temp', True)
     profiler.disable()
     stats = pstats.Stats(profiler).sort_stats('cumtime')
     stats.print_stats(10)
