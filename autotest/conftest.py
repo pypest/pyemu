@@ -22,17 +22,6 @@ collect_ignore = [
     # "verf_test.py",
 ]
 
-# def pytest_configure(config):
-#     import os
-#     import logging
-#     worker_id = os.environ.get("PYTEST_XDIST_WORKER")
-#     if worker_id is not None:
-#         logging.basicConfig(
-#             format=config.getini("log_file_format"),
-#             filename=f"tests_{worker_id}.log",
-#             level=logging.INFO,
-#         )
-
 def get_project_root_path():
     """
     Get the root path of the project.

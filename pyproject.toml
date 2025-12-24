@@ -21,8 +21,10 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "numpy>2.3.4 ; python_full_version >= '3.14'",
-    "numpy>=2.2.6,<2.3.2 ; python_full_version < '3.14'",
+    # some messyness to try and avoid some blas versions
+    "numpy>2.3.4 ; python_full_version >= '3.14' and sys_platform=='linux'",
+    "numpy>=2.2.6,<2.3.2 ; python_full_version < '3.14' and sys_platform=='linux'",
+    "numpy>=2.2.6 ; sys_platform!='linux'",
     "pandas>=2.3.3",
 ]
 
