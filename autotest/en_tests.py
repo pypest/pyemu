@@ -789,7 +789,7 @@ def test_draw_new(plot=False):
     import numpy as np
     import pyemu
 
-    def _check_pe(newpe, noise=False, helptxt=""):
+    def _check_ens(newpe, noise=False, helptxt=""):
         pe.transform()
         newpe.transform()
         stdiff = (newpe.std() / pe.std()) - 1
@@ -817,28 +817,28 @@ def test_draw_new(plot=False):
     num_reals = 1000
 
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
-    
-    sub_pe = pe.copy()
+
+    sub_pe = pe.iloc[:int(num_reals), :]
 
     new_pe_nonoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=False)
-    _check_pe(new_pe_nonoise, False, 'no noise')
+    _check_ens(new_pe_nonoise, False, 'no noise')
     if not plot:
         del new_pe_nonoise
-    new_pe_stdnoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True)
-    _check_pe(new_pe_stdnoise, True,'std noise')
+    new_pe_stdnoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=True)
+    _check_ens(new_pe_stdnoise, True, 'std noise')
     if not plot:
         del new_pe_stdnoise
-    new_pe_usernoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=1./np.sqrt(sub_pe.shape[0]))
-    _check_pe(new_pe_usernoise, True,'user noise')
+    new_pe_usernoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=1. / np.sqrt(sub_pe.shape[0]))
+    _check_ens(new_pe_usernoise, True, 'user noise')
     if not plot:
         del new_pe_usernoise
-    new_pe_ennoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True,noise_reals=pe)
-    _check_pe(new_pe_ennoise, False, 'ens noise')
+    new_pe_ennoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=True, noise_reals=pe)
+    _check_ens(new_pe_ennoise, False, 'ens noise')
     if not plot:
         del new_pe_ennoise
 
     if plot:
-        colors = ["r","y","b","g","m","c"]
+        colors = ["r", "y", "b", "g", "m", "c"]
         pes = [pe,
                sub_pe,
                new_pe_nonoise,
@@ -880,6 +880,28 @@ def test_draw_new(plot=False):
                 pdf.savefig()
                 plt.close(fig)
                 print(pname)
+
+    obs = pst.observation_data
+    obs.loc[pst.obs_names[:1000],"weight"] = 1.0
+    cov = cov.x[:pst.nnz_obs,:pst.nnz_obs]
+    cov = pyemu.Cov(x=cov,names=pst.nnz_obs_names)
+
+    oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
+    sub_oe = oe.iloc[:int(num_reals),:]
+
+    new_oe_nonoise = sub_oe.draw_new_ensemble(num_reals=num_reals)
+    _check_ens(new_oe_nonoise, False, 'no noise')
+    if not plot:
+        del new_oe_nonoise
+    new_oe_stdnoise = sub_oe.draw_new_ensemble(num_reals=num_reals,include_noise=True)
+    _check_ens(new_oe_stdnoise, True,'std noise')
+    if not plot:
+        del new_oe_stdnoise
+    new_oe_usernoise = sub_oe.draw_new_ensemble(num_reals=num_reals,include_noise=1./np.sqrt(sub_pe.shape[0]))
+    _check_ens(new_oe_usernoise, True,'user noise')
+    if not plot:
+        del new_oe_usernoise
+
 
 
 if __name__ == "__main__":

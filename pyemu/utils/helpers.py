@@ -4868,3 +4868,77 @@ def series_to_insfile(out_file,ins_file=None):
         for oname in sdf.index.values:
             f.write("l1 ~,~ !{0}!\n".format(oname))
     return
+
+
+def calc_phi(pst_name):
+    """runtime function to calculate phi components from current outfiles
+
+    Args:
+        pst_name: control file name
+
+    Returns:
+        DataFrame: phi components
+
+    """
+    import pandas as pd
+    import pyemu
+    pst = pyemu.Pst(pst_name)
+    empty_res = pd.DataFrame(index=pst.obs_names,columns=["name","group","modelled","measured","residual"])
+    empty_res["modelled"] = 0.0
+    empty_res["name"] = pst.obs_names
+    empty_res["group"] = pst.observation_data.loc[pst.obs_names,"obgnme"].values
+    pst.set_res(empty_res)
+    for ifile,ofile in zip(pst.instruction_files,
+        pst.output_files):
+        if "phi_components.csv" in ofile:
+            continue
+        #print(ifile)
+        ifile = pyemu.pst_utils.InstructionFile(ifile)
+        simvals = ifile.read_output_file(ofile)
+        pst.res.loc[simvals.index,"modelled"] = simvals.values.flatten()
+    pcomps = pst.phi_components
+    phi = pst.phi
+    keys = list(pcomps.keys())
+    keys.sort()
+    df = pd.DataFrame([pcomps[k] for k in keys],index=keys,columns=["phi"])
+    df.loc["composite","phi"] = phi
+    df.index.name="component"
+    df.to_csv("phi_components.csv")
+    return df
+
+def add_phi_as_obs(pst_name,pst_path='.'):
+    """experimental function to add phi as an observation
+
+    Args:
+        pst_name (str): path-less control file name
+        pst_path (str): path to control file
+
+    Returns:
+        Pst: augmented control file
+
+    """
+    b_d = os.getcwd()
+    os.chdir(pst_path)
+    df = calc_phi(pst_name)
+    os.chdir(b_d)
+    pst = pyemu.Pst(os.path.join(pst_path,pst_name))
+    import inspect
+    lines = inspect.getsource(calc_phi)
+    with open(os.path.join(pst_path,"calc_phi.py"),'w') as f:
+        f.write(lines)
+        f.write("\n")
+        f.write("if __name__ == '__main__':\n")
+        f.write("    calc_phi('{0}')\n".format(pst_name))
+    ifile_name = os.path.join(pst_path,"phi_components.csv.ins")
+    with open(os.path.join(ifile_name),'w') as f:
+        f.write("pif ~\n")
+        f.write("l1\n")
+        for idx_val in df.index:
+            f.write("l1 ~,~ !{0}!\n".format(idx_val))
+    pdf = pst.add_observations(ifile_name,ifile_name.replace(".ins",""),pst_path='.')
+    pst.observation_data.loc[pdf.obsnme.values,"weight"] = 0.0
+    pst.observation_data.loc[pdf.obsnme.values, "obsval"] = 0.0
+
+    pst.model_command.append("python calc_phi.py")
+    return pst
+

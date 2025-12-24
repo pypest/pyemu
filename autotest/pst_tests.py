@@ -1771,8 +1771,18 @@ def results_mou_1_test():
         assert df is not None
 
 
-def dialate_bound_test():
+def add_phi_test(tmp_path):
     import pyemu
+    org_d = os.path.join("ends_master")
+    new_d = os.path.join(tmp_path,"phi_test")
+    if os.path.exists(new_d):
+        shutil.rmtree(new_d)
+    shutil.copytree(org_d,new_d)
+    pst = pyemu.Pst(os.path.join(new_d,"freyberg6_run_ies.pst"))
+    #print(pst.phi)
+    pst = pyemu.helpers.add_phi_as_obs(pst_name="freyberg6_run_ies.pst",pst_path=new_d)
+    #print(pst.obs_names)
+    assert "composite" in pst.obs_names
 
 
 if __name__ == "__main__":
@@ -1783,13 +1793,14 @@ if __name__ == "__main__":
     picking up non standard "*_test" functions. plugin `pytest imp` can help 
     with this.
     """
-    # d = 'temp'
+    d = 'temp'
     # results_ies_3_test()
     # results_ies_1_test()
     # results_ies_2_test()
     # results_mou_1_test()
     # #load_test(d)
     # pst_manip_test(d)
+    add_phi_test(d)
     #parrep_test(d)
     #interface_check_test()
     # new_format_test_2()

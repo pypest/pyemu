@@ -36,7 +36,8 @@ optional = [
     "scipy",
     "shapely",
     "jinja2",  # for to_latex options
-    "pypestutils"
+    "pypestutils",
+    "scikit-learn",
 ]
 test = [
     "coveralls",
@@ -49,9 +50,10 @@ test = [
 ]
 docs = [
     "pyemu[optional]",
-    "sphinx <7.2", # sphinx 7.2 challenges with iterating over CSS
-    "sphinx-autoapi",
-    "sphinx-rtd-theme >=1.3.0rc1",
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings-python",
+    "mkdocs-autoapi",
 ]
 
 [project.scripts]

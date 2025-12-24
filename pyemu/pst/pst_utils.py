@@ -1825,6 +1825,7 @@ def process_output_files(pst, pst_path="."):
     return series
 
 
+
 def check_interface(pst,pst_path=".",warn=False):
     """check that the tpl and ins file entries are in
     sync with the control file entries

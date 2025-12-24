@@ -3,15 +3,16 @@ Learning-based pattern-data-driven forecast approach (LPFA) emulator implementat
 
 """
 from __future__ import print_function, division
+import importlib.util
 
 # Check sklearn availability at module level
-try:
+HAS_SKLEARN = importlib.util.find_spec("sklearn") is not None
+
+if HAS_SKLEARN:
     from sklearn.model_selection import train_test_split
     from sklearn.decomposition import PCA
     from sklearn.neural_network import MLPRegressor
-    HAS_SKLEARN = True
-except ImportError:
-    HAS_SKLEARN = False
+else:
     # Create dummy classes or set to None
     train_test_split = None
     PCA = None
