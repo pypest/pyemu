@@ -4690,8 +4690,44 @@ def gpr_forward_run():
     return mdf
 
 
+def dsi_runstore_forward_run(ws='.'):
+    import os
+    from pyemu.utils.helpers import RunStor
+    try:
+        from pyemu.emulators import DSIAE
+        dsi = DSIAE.load(os.path.join(ws,"dsi.pickle"))
+        latent_dim = dsi.latent_dim
+    except:
+        try:
+            from pyemu.emulators import DSI
+            dsi = DSI.load(os.path.join(ws,"dsi.pickle"))
+            latent_dim = dsi.s.shape[0]
+        except Exception as e:
+            raise Exception("failed to load DSI or DSIAE from dsi.pickle:{0}".format(str(e)))
+
+    fname = os.path.join(ws,"dsi.rns")
+    header, par_names, obs_names = RunStor.file_info(fname)
+    rs = RunStor(fname)
+    df = rs.get_data()
+
+    # sort par_names to match latent dimension order
+    # sort by the integer after the prefix
+    par_names.sort(key=lambda x: int(x.replace("dsi_par","")))
+
+    pvals = df.loc[:,par_names]
+    assert pvals.shape[1] == latent_dim, "number of parameters in runstor does not match DSI latent dimension"
+        
+    simvals = dsi.predict(pvals)
+    assert simvals.shape[1] == len(obs_names), "number of observations in runstor does not match DSI output dimension"
+
+    df.loc[:,obs_names] = simvals.loc[:,obs_names]
+
+    rs.update(df)
+    return
+
 def dsi_forward_run(pvals,dsi,write_csv=False):
-    assert isinstance(dsi,pyemu.emulators.DSI), "dsi must be a pyemu DSI object" 
+    if not isinstance(dsi,pyemu.emulators.DSI) and not isinstance(dsi,pyemu.emulators.DSIAE):
+        raise Exception("dsi must be a pyemu.emulators.DSI or pyemu.emulators.DSIAE object")
     if isinstance(pvals,pd.DataFrame):
         pvals = pvals.parval1
     sim_vals = dsi.predict(pvals)
@@ -4761,16 +4797,25 @@ def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies",num_workers=1):
     
     worker_root="."
     dsi = pickle.load(open(os.path.join(md_ies,"dsi.pickle"),"rb"))
-    num_workers = dsi.dsi_args.get("num_pyworkers",1)
-    print(num_workers,"workers requested for dsi")
-    pyemu.os_utils.start_workers(md_ies,ies_exe_path,"dsi.pst",
-                                num_workers=num_workers,
-                                worker_root=worker_root,
-                                port = PortManager().get_available_port(),
-                                    master_dir=md_ies,
-                                    reuse_master =True,
-                                    ppw_function=pyemu.helpers.dsi_pyworker,
-                                    ppw_kwargs={"dsi":dsi,"pvals":pvals})    
+
+    # read forward_run.py and check the name of the function in __main__
+    frun_lines = open(os.path.join(md_ies,"forward_run.py"),'r').readlines()
+    main_func_name = frun_lines[-1].strip().replace("()","")
+    print(main_func_name,"will be called for forward run")
+    if main_func_name.startswith("dsi_runstore_forward_run"):
+        print("running dsi_runstore_forward_run")
+        pyemu.os_utils.run(f'{ies_exe_path} dsi.pst /e', cwd=md_ies, verbose=True)
+    elif main_func_name.startswith("dsi_forward_run"):
+        num_workers = dsi.dsi_args.get("num_pyworkers",1)
+        print(num_workers,"workers requested for dsi")
+        pyemu.os_utils.start_workers(md_ies,ies_exe_path,"dsi.pst",
+                                    num_workers=num_workers,
+                                    worker_root=worker_root,
+                                    port = PortManager().get_available_port(),
+                                        master_dir=md_ies,
+                                        reuse_master =True,
+                                        ppw_function=pyemu.helpers.dsi_pyworker,
+                                        ppw_kwargs={"dsi":dsi,"pvals":pvals})  
     assert os.path.exists(os.path.join(md_ies,f"dsi.{noptmax}.obs.jcb")), f"dsi.{noptmax}.obs.jcb not found...pst failed?"
 
 

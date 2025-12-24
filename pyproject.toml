@@ -38,6 +38,7 @@ optional = [
     "jinja2",  # for to_latex options
     "pypestutils",
     "scikit-learn",
+    "tensorflow", # for DSI autoencoder
 ]
 test = [
     "coveralls",
