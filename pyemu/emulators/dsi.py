@@ -5,7 +5,7 @@ from __future__ import print_function, division
 import numpy as np
 import pandas as pd
 import inspect
-from pyemu.utils.helpers import dsi_forward_run, series_to_insfile
+from pyemu.utils.helpers import dsi_forward_run,dsi_runstore_forward_run, series_to_insfile
 import os
 import shutil
 from pyemu.pst.pst_handler import Pst
@@ -136,6 +136,7 @@ class DSI(Emulator):
 
         self.logger.statement("undertaking SVD")
         u, s, v = np.linalg.svd(z, full_matrices=False)
+        org_num_components = len(s)
         us = np.dot(v.T, np.diag(s))
         if energy_threshold is None:
             energy_threshold = self.energy_threshold
@@ -143,17 +144,17 @@ class DSI(Emulator):
             self.logger.statement("applying energy truncation")
             # compute the cumulative energy of the singular values
             cumulative_energy = np.cumsum(s**2) / np.sum(s**2)
-            print(cumulative_energy)
             # find the number of components needed to reach the energy threshold
             num_components = np.argmax(cumulative_energy >= energy_threshold) + 1
             # keep only the first num_components singular values and vectors
             us = us[:, :num_components]
             s = s[:num_components]
             u = u[:, :num_components]
-            print(f"Truncated from {len(s)} to {num_components} components while retaining {energy_threshold*100:.1f}% of variance")
+            #print(f"Truncated from {len(s)} to {num_components} components while retaining {energy_threshold*100:.1f}% of variance")
+            self.logger.statement(f"truncated from {org_num_components} to {num_components} components while retaining {energy_threshold*100:.1f}% of variance")
             if num_components<=1:
-                print(f"Warning: only {num_components} component retained, you may need to check the data")
-        
+                #print(f"Warning: only {num_components} component retained, you may need to check the data")
+                self.logger.warning(f"only {num_components} component retained, you may need to check the data")
         self.logger.statement("calculating us matrix")
         
         # store components needed for forward run
@@ -208,19 +209,71 @@ class DSI(Emulator):
         if self.transforms is not None and (not hasattr(self, 'transformer_pipeline') or self.transformer_pipeline is None):
             raise ValueError("Emulator must be fitted and have valid transformations before prediction")
         
+    #    if isinstance(pvals, pd.Series):
+    #        pvals = pvals.values.flatten()
+    #    assert pvals.shape[0] == self.s.shape[0], "pvals must be the same length as the number of singular values"
+    #    assert pvals.shape[0] == self.pmat.shape[1], "pvals must be the same length as the number of singular values"
+    #    pmat = self.pmat
+    #    ovals = self.ovals
+    #    sim_vals = ovals + np.dot(pmat,pvals)
+    #    if self.transforms is not None:
+    #        pipeline = self.transformer_pipeline
+    #        sim_vals = pipeline.inverse(sim_vals)
+    #    sim_vals.index.name = 'obsnme'
+    #    sim_vals.name = "obsval"
+    #    self.sim_vals = sim_vals
+    # Handle different input types and convert to numpy array
         if isinstance(pvals, pd.Series):
-            pvals = pvals.values.flatten()
-        assert pvals.shape[0] == self.s.shape[0], "pvals must be the same length as the number of singular values"
-        assert pvals.shape[0] == self.pmat.shape[1], "pvals must be the same length as the number of singular values"
+            pvals = pvals.values.reshape(1, -1)  # Single realization
+            single_realization = True
+        elif isinstance(pvals, pd.DataFrame):
+            realization_names = pvals.index.tolist()
+            pvals = pvals.values  # Multiple realizations
+            single_realization = False
+        else:
+            pvals = np.asarray(pvals)
+            if pvals.ndim == 1:
+                pvals = pvals.reshape(1, -1)  # Single realization
+                single_realization = True
+            else:
+                single_realization = False
+        
+        # Validate dimensions
+        if pvals.shape[1] != self.pmat.shape[1]:
+            raise ValueError(f"pvals must have {self.pmat.shape[1]} parameters, got {pvals.shape[1]}")
+        
+        # Compute predictions for all realizations
         pmat = self.pmat
-        ovals = self.ovals
-        sim_vals = ovals + np.dot(pmat,pvals)
+        ovals = self.ovals.values if hasattr(self.ovals, 'values') else self.ovals
+        
+        # Matrix multiplication: (n_obs x n_params) @ (n_params x n_realizations)
+        sim_vals = ovals[:, np.newaxis] + np.dot(pmat, pvals.T)
+        
+
+        # Convert to pandas and format output
+        if single_realization:
+            # Return Series for single realization
+            sim_vals = pd.Series(sim_vals.flatten(), index=self.ovals.index)
+            sim_vals.index.name = 'obsnme'
+            sim_vals.name = "obsval"
+            self.sim_vals = sim_vals
+        else:
+            # Return DataFrame for multiple realizations
+            #realization_names = [f"real_{i}" for i in range(pvals.shape[0])]
+            if realization_names is None:
+                realization_names = [i for i in range(pvals.shape[0])]
+            sim_vals = pd.DataFrame(sim_vals.T, 
+                                columns=self.ovals.index, 
+                                index=realization_names,
+                                )
+            sim_vals.index.name = 'realization'
+            self.sim_vals = sim_vals
+
+        # Apply inverse transforms if needed
         if self.transforms is not None:
             pipeline = self.transformer_pipeline
+            # Apply inverse transform to each realization
             sim_vals = pipeline.inverse(sim_vals)
-        sim_vals.index.name = 'obsnme'
-        sim_vals.name = "obsval"
-        self.sim_vals = sim_vals
         return sim_vals
     
     def check_for_pdc(self):
@@ -228,7 +281,7 @@ class DSI(Emulator):
         #TODO
         return
         
-    def prepare_pestpp(self, t_d=None, observation_data=None):
+    def prepare_pestpp(self, t_d=None, observation_data=None, use_runstor=False):
         """
         Prepare PEST++ control files for the emulator.
         
@@ -325,8 +378,10 @@ class DSI(Emulator):
         pst.model_command = "python forward_run.py"
         self.logger.log("creating Pst")
 
-
-        function_source = inspect.getsource(dsi_forward_run)
+        if use_runstor:
+            function_source = inspect.getsource(dsi_runstore_forward_run)
+        else:
+            function_source = inspect.getsource(dsi_forward_run)
         with open(os.path.join(t_d,"forward_run.py"),'w') as file:
             file.write(function_source)
             file.write("\n\n")

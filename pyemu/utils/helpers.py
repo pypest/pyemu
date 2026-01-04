@@ -4690,8 +4690,44 @@ def gpr_forward_run():
     return mdf
 
 
+def dsi_runstore_forward_run(ws='.'):
+    import os
+    from pyemu.utils.helpers import RunStor
+    try:
+        from pyemu.emulators import DSIAE
+        dsi = DSIAE.load(os.path.join(ws,"dsi.pickle"))
+        latent_dim = dsi.latent_dim
+    except:
+        try:
+            from pyemu.emulators import DSI
+            dsi = DSI.load(os.path.join(ws,"dsi.pickle"))
+            latent_dim = dsi.s.shape[0]
+        except Exception as e:
+            raise Exception("failed to load DSI or DSIAE from dsi.pickle:{0}".format(str(e)))
+
+    fname = os.path.join(ws,"dsi.rns")
+    header, par_names, obs_names = RunStor.file_info(fname)
+    rs = RunStor(fname)
+    df = rs.get_data()
+
+    # sort par_names to match latent dimension order
+    # sort by the integer after the prefix
+    par_names.sort(key=lambda x: int(x.replace("dsi_par","")))
+
+    pvals = df.loc[:,par_names]
+    assert pvals.shape[1] == latent_dim, "number of parameters in runstor does not match DSI latent dimension"
+        
+    simvals = dsi.predict(pvals)
+    assert simvals.shape[1] == len(obs_names), "number of observations in runstor does not match DSI output dimension"
+
+    df.loc[:,obs_names] = simvals.loc[:,obs_names]
+
+    rs.update(df)
+    return
+
 def dsi_forward_run(pvals,dsi,write_csv=False):
-    assert isinstance(dsi,pyemu.emulators.DSI), "dsi must be a pyemu DSI object" 
+    if not isinstance(dsi,pyemu.emulators.DSI) and not isinstance(dsi,pyemu.emulators.DSIAE):
+        raise Exception("dsi must be a pyemu.emulators.DSI or pyemu.emulators.DSIAE object")
     if isinstance(pvals,pd.DataFrame):
         pvals = pvals.parval1
     sim_vals = dsi.predict(pvals)
@@ -4761,16 +4797,25 @@ def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies",num_workers=1):
     
     worker_root="."
     dsi = pickle.load(open(os.path.join(md_ies,"dsi.pickle"),"rb"))
-    num_workers = dsi.dsi_args.get("num_pyworkers",1)
-    print(num_workers,"workers requested for dsi")
-    pyemu.os_utils.start_workers(md_ies,ies_exe_path,"dsi.pst",
-                                num_workers=num_workers,
-                                worker_root=worker_root,
-                                port = PortManager().get_available_port(),
-                                    master_dir=md_ies,
-                                    reuse_master =True,
-                                    ppw_function=pyemu.helpers.dsi_pyworker,
-                                    ppw_kwargs={"dsi":dsi,"pvals":pvals})    
+
+    # read forward_run.py and check the name of the function in __main__
+    frun_lines = open(os.path.join(md_ies,"forward_run.py"),'r').readlines()
+    main_func_name = frun_lines[-1].strip().replace("()","")
+    print(main_func_name,"will be called for forward run")
+    if main_func_name.startswith("dsi_runstore_forward_run"):
+        print("running dsi_runstore_forward_run")
+        pyemu.os_utils.run(f'{ies_exe_path} dsi.pst /e', cwd=md_ies, verbose=True)
+    elif main_func_name.startswith("dsi_forward_run"):
+        num_workers = dsi.dsi_args.get("num_pyworkers",1)
+        print(num_workers,"workers requested for dsi")
+        pyemu.os_utils.start_workers(md_ies,ies_exe_path,"dsi.pst",
+                                    num_workers=num_workers,
+                                    worker_root=worker_root,
+                                    port = PortManager().get_available_port(),
+                                        master_dir=md_ies,
+                                        reuse_master =True,
+                                        ppw_function=pyemu.helpers.dsi_pyworker,
+                                        ppw_kwargs={"dsi":dsi,"pvals":pvals})  
     assert os.path.exists(os.path.join(md_ies,f"dsi.{noptmax}.obs.jcb")), f"dsi.{noptmax}.obs.jcb not found...pst failed?"
 
 
@@ -4868,3 +4913,77 @@ def series_to_insfile(out_file,ins_file=None):
         for oname in sdf.index.values:
             f.write("l1 ~,~ !{0}!\n".format(oname))
     return
+
+
+def calc_phi(pst_name):
+    """runtime function to calculate phi components from current outfiles
+
+    Args:
+        pst_name: control file name
+
+    Returns:
+        DataFrame: phi components
+
+    """
+    import pandas as pd
+    import pyemu
+    pst = pyemu.Pst(pst_name)
+    empty_res = pd.DataFrame(index=pst.obs_names,columns=["name","group","modelled","measured","residual"])
+    empty_res["modelled"] = 0.0
+    empty_res["name"] = pst.obs_names
+    empty_res["group"] = pst.observation_data.loc[pst.obs_names,"obgnme"].values
+    pst.set_res(empty_res)
+    for ifile,ofile in zip(pst.instruction_files,
+        pst.output_files):
+        if "phi_components.csv" in ofile:
+            continue
+        #print(ifile)
+        ifile = pyemu.pst_utils.InstructionFile(ifile)
+        simvals = ifile.read_output_file(ofile)
+        pst.res.loc[simvals.index,"modelled"] = simvals.values.flatten()
+    pcomps = pst.phi_components
+    phi = pst.phi
+    keys = list(pcomps.keys())
+    keys.sort()
+    df = pd.DataFrame([pcomps[k] for k in keys],index=keys,columns=["phi"])
+    df.loc["composite","phi"] = phi
+    df.index.name="component"
+    df.to_csv("phi_components.csv")
+    return df
+
+def add_phi_as_obs(pst_name,pst_path='.'):
+    """experimental function to add phi as an observation
+
+    Args:
+        pst_name (str): path-less control file name
+        pst_path (str): path to control file
+
+    Returns:
+        Pst: augmented control file
+
+    """
+    b_d = os.getcwd()
+    os.chdir(pst_path)
+    df = calc_phi(pst_name)
+    os.chdir(b_d)
+    pst = pyemu.Pst(os.path.join(pst_path,pst_name))
+    import inspect
+    lines = inspect.getsource(calc_phi)
+    with open(os.path.join(pst_path,"calc_phi.py"),'w') as f:
+        f.write(lines)
+        f.write("\n")
+        f.write("if __name__ == '__main__':\n")
+        f.write("    calc_phi('{0}')\n".format(pst_name))
+    ifile_name = os.path.join(pst_path,"phi_components.csv.ins")
+    with open(os.path.join(ifile_name),'w') as f:
+        f.write("pif ~\n")
+        f.write("l1\n")
+        for idx_val in df.index:
+            f.write("l1 ~,~ !{0}!\n".format(idx_val))
+    pdf = pst.add_observations(ifile_name,ifile_name.replace(".ins",""),pst_path='.')
+    pst.observation_data.loc[pdf.obsnme.values,"weight"] = 0.0
+    pst.observation_data.loc[pdf.obsnme.values, "obsval"] = 0.0
+
+    pst.model_command.append("python calc_phi.py")
+    return pst
+
