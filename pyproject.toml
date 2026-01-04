@@ -56,6 +56,9 @@ docs = [
     "mkdocstrings-python>=2.0.1",
     "pyemu[optional]",
 ]
+tf = [
+    "tensorflow>=2.20.0",
+]
 
 [dependency-groups]
 dev = [
@@ -75,6 +78,7 @@ dev = [
     "scikit-learn>=1.7.2",
     "scipy>=1.15.3",
     "shapely>=2.1.2",
+    "tensorflow>=2.20.0",
 ]
 
 [project.scripts]

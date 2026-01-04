@@ -32,7 +32,7 @@ jobs:
         test-path: ["autotest"]
         include:
           - os: macos-latest
-            python-version: 3.12
+            python-version: 3.13
             run-type: std
             test-path: "autotest"
 
@@ -45,7 +45,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install the project
+    - name: Install the project [with TensorFlow]
+      if: ${{ matrix.python-version <= 3.13 }}
+      run: |
+        uv sync --locked --extra optional --extra tests --extra tf
+        uv pip list
+
+    - name: Install the project [without TensorFlow]
+      if: ${{ matrix.python-version > 3.13 }}
       run: |
         uv sync --locked --extra optional --extra tests
         uv pip list
@@ -92,7 +99,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Test Notebooks
-      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.13 }}
       shell: bash -l {0}
       run: |
         uv run pytest examples/*.ipynb \
