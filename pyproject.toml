@@ -57,7 +57,7 @@ docs = [
     "pyemu[optional]",
 ]
 tf = [
-    "tensorflow>=2.20.0",
+    "tensorflow>=2.20.0 ; python_full_version < '3.14'",
 ]
 
 [dependency-groups]
@@ -78,7 +78,7 @@ dev = [
     "scikit-learn>=1.7.2",
     "scipy>=1.15.3",
     "shapely>=2.1.2",
-    "tensorflow>=2.20.0",
+    "tensorflow>=2.20.0 ; python_full_version < '3.14'",
 ]
 
 [project.scripts]
