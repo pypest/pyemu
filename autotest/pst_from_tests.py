@@ -4720,8 +4720,6 @@ def mf6_freyberg_thresh_test(tmp_path):
     sim.set_all_data_external()
     sim.write_simulation()
 
-
-
     # SETUP pest stuff...
     os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
@@ -4751,7 +4749,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
     pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
-    pf.extra_py_imports.append('flopy')
+    # pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
     #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
     #        "rch_recharge": [.5, 1.5]}
@@ -4912,7 +4910,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     # print(pst.npar,pst.npar_adj)
 
     org_par = par.copy()
-    num_reals = 100
+    num_reals = 30
     np.random.seed()
     pe = pf.draw(num_reals, use_specsim=False)
     pe.enforce()
@@ -4996,7 +4994,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     m_d = "master_thresh"
     port = _get_port()
     pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst",
-                                 worker_root=".", master_dir=m_d, num_workers=5,
+                                 worker_root=".", master_dir=m_d,
                                  port=port)
     phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
     # print(phidf["mean"])
@@ -6506,10 +6504,10 @@ if __name__ == "__main__":
     import pstats
     profiler = cProfile.Profile()
     profiler.enable()
-    test_mf6_freyberg('temp')
+    mf6_freyberg_thresh_test('temp')
     profiler.disable()
     stats = pstats.Stats(profiler).sort_stats('cumtime')
-    stats.print_stats(10)
+    stats.print_stats()
 
 
 

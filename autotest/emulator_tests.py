@@ -1362,7 +1362,7 @@ if __name__ == "__main__":
     #test_dsi_nst("temp")
     #test_dsi_nst_extrap("temp")
     #test_dsi_mixed("temp")
-    test_dsivc("temp")
+    # test_dsivc("temp")
     #plot_freyberg_dsi()
     #test_lpfa_std()
     #gpr_zdt1_test()
