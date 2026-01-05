@@ -32,7 +32,7 @@ jobs:
         test-path: ["autotest"]
         include:
           - os: macos-latest
-            python-version: 3.12
+            python-version: 3.13
             run-type: std
             test-path: "autotest"
 
@@ -58,12 +58,7 @@ jobs:
         cache-downloads-key: downloads-${{ steps.date.outputs.date }}
     
     - name: Install TensorFlow (only for certain versions)
-      if: >
-        (
-          matrix.python-version == '3.10' ||
-          matrix.python-version == '3.11' ||
-          matrix.python-version == '3.12'
-        )
+      if: ${{ matrix.python-version < 3.14 }}
       shell: bash -l {0}
       run: |
         echo "Installing TensorFlow for Python ${{ matrix.python-version }}"
@@ -153,7 +148,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Test Notebooks
-      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.13 }}
       shell: bash -l {0}
       run: |
         pytest examples/*.ipynb \

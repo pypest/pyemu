@@ -4482,7 +4482,6 @@ def test_vertex_grid(tmp_path):
         df_pp = pf.add_parameters(f,
                             zone_array=ib[layer],
                             par_type="pilotpoints",
-                            #use_pp_zones=True,
                             geostruct=grid_gs,
                             par_name_base=f.split('.')[1].replace("_","")+"pp",
                             pargp=f.split('.')[1].replace("_","")+"pp",
@@ -4491,7 +4490,7 @@ def test_vertex_grid(tmp_path):
                             pp_options={"prep_hyperpars":False,
                                         "pp_space":500,
                                         "try_use_ppu":False,
-                                        "pp_zones":True}) # `
+                                        "pp_zones":True}) #
 
     tag = "sfr_packagedata"
     files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
@@ -4721,8 +4720,6 @@ def mf6_freyberg_thresh_test(tmp_path):
     sim.set_all_data_external()
     sim.write_simulation()
 
-
-
     # SETUP pest stuff...
     os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
 
@@ -4752,7 +4749,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
     pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
-    pf.extra_py_imports.append('flopy')
+    # pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
     #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
     #        "rch_recharge": [.5, 1.5]}
@@ -4913,7 +4910,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     # print(pst.npar,pst.npar_adj)
 
     org_par = par.copy()
-    num_reals = 100
+    num_reals = 30
     np.random.seed()
     pe = pf.draw(num_reals, use_specsim=False)
     pe.enforce()
@@ -4997,7 +4994,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     m_d = "master_thresh"
     port = _get_port()
     pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst",
-                                 worker_root=".", master_dir=m_d, num_workers=5,
+                                 worker_root=".", master_dir=m_d,
                                  port=port)
     phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
     # print(phidf["mean"])
@@ -6454,7 +6451,7 @@ def draw_consistency_test(tmp_path):
 
 
 if __name__ == "__main__":
-    draw_consistency_test('.')
+    # draw_consistency_test('.')
     #xsec_pars_as_obs_test(".")
     #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
@@ -6503,6 +6500,14 @@ if __name__ == "__main__":
     # list_float_int_index_test('.')
     #freyberg_test()
     #invest_vertexpp_setup_speed()
+    import cProfile
+    import pstats
+    profiler = cProfile.Profile()
+    profiler.enable()
+    mf6_freyberg_thresh_test('temp')
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('cumtime')
+    stats.print_stats()
 
 
 
