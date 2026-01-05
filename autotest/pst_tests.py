@@ -1865,3 +1865,15 @@ if __name__ == "__main__":
     #invest()
     # pst_ctl_opt_args_test()
 
+    import cProfile
+    import pstats
+    from pathlib import Path
+    pr = cProfile.Profile()
+    pr.enable()
+    new_format_test(Path('temp'))
+    pr.disable()
+    ps = pstats.Stats(pr).sort_stats('cumtime')
+    ps.print_stats(20)
+
+
+

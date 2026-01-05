@@ -178,23 +178,34 @@ class PstFrom(object):
     """construct high-dimensional PEST(++) interfaces with all the bells and whistles
 
     Args:
-        original_d (`str` or Path): the path to a complete set of model input and output files
-        new_d (`str` or Path): the path to where the model files and PEST interface files will be copied/built
-        longnames (`bool`): flag to use longer-than-PEST-likes parameter and observation names.  Default is True
-        remove_existing (`bool`): flag to destroy any existing files and folders in `new_d`.  Default is False
-        spatial_reference (varies): an object that facilitates geo-locating model cells based on index.  Default is None
-        zero_based (`bool`): flag if the model uses zero-based indices, Default is True
-        start_datetime (`str` or Timestamp): a string that can be case to a datatime instance the represents the starting datetime
+        original_d (`str` or Path): the path to a complete set of model input
+            and output files
+        new_d (`str` or Path): the path to where the model files and PEST
+            interface files will be copied/built
+        longnames (`bool`): flag to use longer-than-PEST-likes parameter and
+            observation names.  Default is True
+        remove_existing (`bool`): flag to destroy any existing files and folders
+            in `new_d`.  Default is False
+        spatial_reference (varies): an object that facilitates geo-locating
+            model cells based on index.  Default is None
+        zero_based (`bool`): flag if the model uses zero-based indices, Default
+            is True
+        start_datetime (`str` or Timestamp): a string that can be case to a
+            datatime instance the represents the starting datetime
             of the model
-        tpl_subfolder (`str`): option to write template files to a subfolder within ``new_d``.
-            Default is False (write template files to ``new_d``).
-
-        chunk_len (`int`): the size of each "chunk" of files to spawn a multiprocessing.Pool member to process.
-            On windows, beware setting this much smaller than 50 because of the overhead associated with
-            spawning the pool.  This value is added to the call to `apply_list_and_array_pars`. Default is 50
-        echo (`bool`): flag to echo logger messages to the screen.  Default is True
-        pp_solve_num_threads (`int`): number of threads to use for the pyemu very-slow kriging solve for
-            pilot-point type parameters.  Default is 10.
+        tpl_subfolder (`str`): option to write template files to a subfolder
+            within ``new_d``. Default is False (write template files to
+            ``new_d``).
+        chunk_len (`int`): the size of each "chunk" of files to spawn a
+        multiprocessing.Pool member to process.
+            On windows, beware setting this much smaller than 50 because of
+            the overhead associated with spawning the pool.  This value is
+            added to the call to `apply_list_and_array_pars`. Default is 50
+        echo (`bool`): flag to echo logger messages to the screen.  Default is
+            True
+        pp_solve_num_threads (`int`): number of threads to use for the pyemu
+            very-slow kriging solve for pilot-point type parameters.  Default
+            is 10.
 
     Note:
         This is the way...

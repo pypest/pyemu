@@ -16,7 +16,8 @@ from .logger import Logger
 
 
 class EnDS(object):
-    """Ensemble Data Space Analysis using the approach of He et al (2018) (https://doi.org/10.2118/182609-PA)
+    """Ensemble Data Space Analysis using the approach of He et al (2018)
+    (https://doi.org/10.2118/182609-PA)
 
     Args:
         pst (varies): something that can be cast into a `pyemu.Pst`.  Can be an `str` for a
