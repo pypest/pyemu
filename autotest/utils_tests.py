@@ -824,11 +824,13 @@ def mtlist_budget_test(tmp_path):
 
 
 @pytest.mark.timeout(method='thread', timeout=90)
-def geostat_prior_builder_test(tmp_path):
+def test_geostat_prior_builder(tmp_path):
     import os
     import numpy as np
     import pyemu
     import pandas as pd
+    import gc
+
     for fname in [Path("pst", "pest.pst"),
                   Path("utils", "pp_locs.tpl"),
                   Path("utils", "structure.dat")]:
@@ -836,15 +838,12 @@ def geostat_prior_builder_test(tmp_path):
     pst_file = os.path.join(tmp_path, "pest.pst")
     pst = pyemu.Pst(pst_file)
     # print(pst.parameter_data)
-    o_tpl_file = os.path.join("utils", "pp_locs.tpl")
-    o_str_file = os.path.join("utils", "structure.dat")
     tpl_file = os.path.join(tmp_path, "pp_locs.tpl")
     str_file = os.path.join(tmp_path, "structure.dat")
-    shutil.copy(o_tpl_file, tpl_file)
-    shutil.copy(o_str_file, str_file)
 
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file})
     d1 = np.diag(cov.x)
+    del cov
 
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
@@ -852,8 +851,9 @@ def geostat_prior_builder_test(tmp_path):
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
                                                sigma_range=4)
     nnz = np.count_nonzero(cov.x)
-    assert nnz == pst.npar_adj
     d2 = np.diag(cov.x)
+    del cov
+    assert nnz == pst.npar_adj
     assert np.array_equiv(d1, d2)
 
     pst.parameter_data.loc[pst.par_names[1:10], "partrans"] = "tied"
@@ -864,8 +864,8 @@ def geostat_prior_builder_test(tmp_path):
     cov = pyemu.helpers.geostatistical_prior_builder(pst, {gs: df},
                                                      sigma_range=4)
     nnz = np.count_nonzero(cov.x)
+    del cov
     assert nnz == pst.npar_adj
-
 
     ttpl_file = os.path.join(tmp_path, "temp.dat.tpl")
     with open(ttpl_file, 'w') as f:
@@ -877,6 +877,8 @@ def geostat_prior_builder_test(tmp_path):
 
     cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file})
     assert cov.shape[0] == pst.npar_adj
+    del cov
+    gc.collect()
 
 
 def geostat_draws_test(tmp_path):
@@ -2223,10 +2225,7 @@ def geostat_prior_builder2_test(tmp_path):
         shutil.copy(fname, tmp_path)
     pst_file = os.path.join(tmp_path, "pest.pst")
     pst = pyemu.Pst(pst_file)
-
-    o_tpl_file = os.path.join("utils", "pp_locs.tpl")
     tpl_file = os.path.join(tmp_path, "pp_locs.tpl")
-    shutil.copy(o_tpl_file, tpl_file)
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file).iloc[:200,:]
     df.loc[:,"x"] = np.arange(df.shape[0])
     df.loc[:,"y"] = 0.0
@@ -2610,10 +2609,11 @@ def thresh_pars_test():
 
 def test_ppu_import():
     import pypestutils as ppu
+    pass
 
 
 @pytest.mark.timeout(method="thread")
-def ppu_geostats_test(tmp_path):
+def test_ppu_geostats(tmp_path):
     import sys
     import os
     import numpy as np
@@ -2622,8 +2622,11 @@ def ppu_geostats_test(tmp_path):
     
     import flopy
 
-    sys.path.insert(0,os.path.join("..","..","pypestutils"))
+    # don't need on CI and can cause issues if wanting to use
+    # env version of ppu not a local one.
+    # sys.path.insert(0,os.path.join("..","..","pypestutils"))
 
+    # quick test of ppu import
     import pypestutils as ppu
 
     o_model_ws = os.path.join("..","examples","Freyberg","extra_crispy")
@@ -2638,10 +2641,11 @@ def ppu_geostats_test(tmp_path):
         os.path.join(ml.model_ws, ml.namefile),
         delc=ml.dis.delc, delr=ml.dis.delr)
     sr.rotation = 0.
-    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr, prefix_dict={0: "hk1",1:"hk2"},
-                                                           every_n_cell=6, pp_dir=pp_dir, tpl_dir=pp_dir,
-                                                           shapename=os.path.join(tmp_path, "test_unrot.shp"),
-                                                           )
+    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr, prefix_dict={0: "hk1",1:"hk2"},
+        every_n_cell=6, pp_dir=pp_dir, tpl_dir=pp_dir,
+        shapename=os.path.join(tmp_path, "test_unrot.shp"),
+    )
     #print(par_info_unrot.parnme.value_counts())
     par_info_unrot.loc[:,"parval1"] = np.random.uniform(10,100,par_info_unrot.shape[0])
     gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0,anisotropy=3.0,bearing=45))
@@ -2703,7 +2707,7 @@ def ppw_worker(id_num,case,t_d,host,port,frun):
         ppw.send_observations(obs.obsval.loc[ppw.obs_names].values)
         #input("press any key")
         #print("worker",id_num,"finished run",ppw.net_pack.runid)
-   
+
 
 @pytest.mark.timeout(method="thread")
 def test_pypestworker(tmp_path):
@@ -3289,7 +3293,6 @@ def gpr_zdt1_invest():
     assert diff.max() < 1e-6
         
 
-
 def gpr_zdt1_ppw():
     t_d = "zdt1_gpr_template"
     os.chdir(t_d)
@@ -3363,7 +3366,9 @@ if __name__ == "__main__":
     #fac2real_wrapped_test('.')
     #maha_pdc_test('.')
     #ppu_geostats_test(".")
-    #pypestworker_test()
+    # test_pypestworker()
+    #test_ppu_geostats(".")
+    #test_pypestworker()
     #gpr_zdt1_test()
     #gpr_compare_invest()
     #gpr_constr_test()
@@ -3373,7 +3378,7 @@ if __name__ == "__main__":
     # sys.path.insert(0,t_d)
     # from forward_run import helper as frun
     # ppw_worker(0,case,t_d,"localhost",4004,frun)
-    #pypestworker_test()
+    #test_pypestworker()
     # gpr_constr_test()
     #gpr_zdt1_test()
     #ac_draw_test(".")

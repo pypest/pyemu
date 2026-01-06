@@ -1,0 +1,37 @@
+name: "Publish"
+
+on:
+  push:
+    tags:
+      # Publish on any tag starting with a `v`, e.g., v0.1.0
+      - v*
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+#      - name: Install Python
+#        run: uv python install 3.13
+      # using build backend so python install not req.
+      - name: Build
+        run: uv build
+      # TODO: add some smoke tests here
+#      - name: Smoke test (wheel)
+#        run: uv run --isolated --no-project --with dist/*.whl tests/smoke_test.py
+#      - name: Smoke test (source distribution)
+#        run: uv run --isolated --no-project --with dist/*.tar.gz tests/smoke_test.py
+      - name: Publish
+        run: uv publish
+        # The part below with testpypi only
+        # TO,DO: remove the next two lines for production usage
+#        env:
+#          UV_PUBLISH_URL: https://test.pypi.org/legacy/

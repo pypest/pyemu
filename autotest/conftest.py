@@ -9,7 +9,6 @@ pytest_plugins = ["modflow_devtools.fixtures"]
 collect_ignore = [
     # "emulator_tests.py",
     # "en_tests.py",
-    # "full_meal_deal_tests_2.py",
     # "get_pestpp_tests.py",
     # "la_tests.py",
     # "mat_tests.py",
@@ -18,9 +17,8 @@ collect_ignore = [
     # "plot_tests.py",
     # "pst_from_tests.py",
     # "pst_tests.py",
-    # "pst_tests_2.py",
     # "transformer_tests.py",
-    # "utils_tests.py"
+    # "utils_tests.py",
     # "verf_test.py",
 ]
 
@@ -50,6 +48,7 @@ def get_exe_path(exe_name, forgive=True):
             exe_path = Path(exe_path, "mac")
         else:
             exe_path = Path(exe_path, "win")
+    # if is isn't in bin/<platform> either, give up
     if not (exe_path / exe_name).exists():
         if forgive:
             print(f"Executable {exe_name} not found in {exe_path}, returning None")

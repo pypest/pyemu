@@ -10,10 +10,12 @@ ensemble generation and handling
 Main branch:
 [![pyemu continuous integration](https://github.com/pypest/pyemu/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pypest/pyemu/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=main)](https://coveralls.io/github/pypest/pyemu?branch=main)
+[![codecov](https://codecov.io/gh/pypest/pyemu/branch/main/graph/badge.svg?token=bnrI1JKvbk)](https://codecov.io/gh/pypest/pyemu)
 
 Develop branch:
 [![pyemu continuous integration](https://github.com/pypest/pyemu/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/pypest/pyemu/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/pypest/pyemu?branch=develop)
+[![codecov](https://codecov.io/gh/pypest/pyemu/graph/badge.svg?token=bnrI1JKvbk)](https://codecov.io/gh/pypest/pyemu)
 
 Documentation
 =============
@@ -104,7 +106,7 @@ pyEMU CI testing, using GitHub actions, has recently been switched over to run w
 We make use of [pytest-xdist](https://pytest-xdist.readthedocs.io/en/latest/) for parallel execution. 
 Some notes that might be helpful for building your PR and testing:
 * Test files are in [./autotest](https://github.com/pypest/pyemu/tree/develop/autotest)
-* Pytest settings are in [./autotest/conftest.py](./autotest/conftest.py) and [./autotest/pytest.ini](./autotest/pytest.ini)
+* Pytest settings are in [./autotest/conftest.py](./autotest/conftest.py) and [./pyproject.toml](autotest/pyproject.toml)
 * Currently, files ending `_tests.py` are collected
 * Functions starting `test_` or ending `_test` are collected
 * ipython notebooks in [./examples](./examples) are also run

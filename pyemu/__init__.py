@@ -38,9 +38,13 @@ except (ModuleNotFoundError, ImportError) as e:
                   "May impact ability to access older methods. "
                   f"{type(e).__name__} {e.msg}")
 
-from ._version import get_versions
+import importlib.metadata
 
-__version__ = get_versions()["version"]
+try:
+    __version__ = importlib.metadata.version(__name__)
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "0.0.0"  # Fallback for development mode
+
 __all__ = [
     "LinearAnalysis",
     "Schur",

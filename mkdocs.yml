@@ -4,6 +4,7 @@ site_url: https://pyemu.readthedocs.io/
 nav:
   - Introduction to pyEMU: index.md
   - Installing PEST++: get_pestpp.md
+  - Developer release guide: new_version_steps.md
 theme:
   name: material
   palette:
@@ -38,7 +39,8 @@ plugins:
         - pyemu/**/*.py
       autoapi_ignore:
         - build/**
-        - pyemu/_version.py 
+        - pyemu/_version.py
+        - pyemu/legacy/**
   - mkdocstrings:
       handlers:
         python:

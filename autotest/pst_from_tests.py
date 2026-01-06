@@ -295,6 +295,7 @@ def test_freyberg(tmp_path):
     assert np.isclose(pst.phi, 0.), pst.phi
 
 
+@pytest.mark.timeout(method='thread')
 def test_freyberg_prior_build(tmp_path):
     import numpy as np
     import pandas as pd
@@ -2428,7 +2429,7 @@ def mf6_freyberg_varying_idomain(tmp_path):
         print(model_file,sim_val,arr.mean())
 
 
-def xsec_test(tmp_path):
+def test_xsec(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -6246,7 +6247,7 @@ def invest_vertexpp_setup_speed():
     pass
 
 
-def xsec_pars_as_obs_test(tmp_path):
+def test_xsec_pars_as_obs(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -6481,7 +6482,7 @@ if __name__ == "__main__":
     #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
-    # xsec_test()
+    # test_xsec()
     # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
