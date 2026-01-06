@@ -35,6 +35,8 @@ When you are ready to make a new release of pyemu, follow these steps using
    ```
    If everything is setup on the CI (GitHub Actions) and PyPI, 
    .github/workflows/release.yml should take care of the rest.
+   
+   **DEPLOYMENT MAY NEED TO BE APPROVED MANUALLY ON GITHUB!**
 
 
 7) (optional) bring `develop` or other branch up to date:

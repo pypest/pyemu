@@ -32,6 +32,6 @@ jobs:
       - name: Publish
         run: uv publish
         # The part below with testpypi only
-        # TODO: remove the next two lines for production usage
-        env:
-          UV_PUBLISH_URL: https://test.pypi.org/legacy/
+        # TO,DO: remove the next two lines for production usage
+#        env:
+#          UV_PUBLISH_URL: https://test.pypi.org/legacy/
