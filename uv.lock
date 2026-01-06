@@ -2729,7 +2729,7 @@ wheels = [
 
 [[package]]
 name = "pyemu"
-version = "1.5.0rc1"
+version = "1.5.0rc2"
 source = { editable = "." }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.14'" },

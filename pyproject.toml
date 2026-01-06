@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "pyemu"
-version = "1.5.0rc1"
+version = "1.5.0rc2"
 authors = [
     { name = "Jeremy White", email = "jtwhite1000@gmail.com" },
     { name = "Mike Fienen", email = "mnfienen@usgs.gov" },
