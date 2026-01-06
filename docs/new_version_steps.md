@@ -2,7 +2,7 @@
 
 When you are ready to make a new release of pyemu, follow these steps using 
 `uv` (https://docs.astral.sh/uv/) to manage versioning.
-1) checkout `main` and merge in release branch (or just develop)
+1) checkout `main` or release branch (or just `develop`).
 
 
 2) update version number with uv:
@@ -21,14 +21,14 @@ When you are ready to make a new release of pyemu, follow these steps using
    git commit -m"Bump version to <newversion>"
    ```
    
-5) tag new version in main branch:
+5) tag new version:
    ```
    git tag -a v<newversion> -m <version message>
    ```
    **Note: the 'v' is v important!**
 
 
-6) push main and tags to remote:
+6) push branch (e.g. `main`) and tags to remote:
    ```
    git push origin main
    git push origin v<newversion>
@@ -37,7 +37,7 @@ When you are ready to make a new release of pyemu, follow these steps using
    .github/workflows/release.yml should take care of the rest.
 
 
-7) (optional) bring develop branch up to date:
+7) (optional) bring `develop` or other branch up to date:
    ```
    git checkout develop
    git merge main
