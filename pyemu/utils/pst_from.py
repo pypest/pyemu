@@ -116,7 +116,7 @@ def _load_array_get_fmt(fname, sep=None, fullfile=False, skip=0, logger=None):
                    "Will try to use %E, but this could cause issues\n"
                    "downstream...")
             if logger is not None:
-                logger.warn(msg)
+                logger.statement(msg)
             else:
                 PyemuWarning(msg)
         # force E:
@@ -3276,7 +3276,7 @@ class PstFrom(object):
         if not isinstance(fmts, list):
             fmts = [fmts]
         if len(fmts) != len(filenames):
-            self.logger.warn(
+            self.logger.statement(
                 "Discrepancy between number of filenames ({0}) "
                 "and number of formatter strings ({1}). "
                 "Will repeat first ({2})"
@@ -3289,7 +3289,7 @@ class PstFrom(object):
         if not isinstance(seps, list):
             seps = [seps]
         if len(seps) != len(filenames):
-            self.logger.warn(
+            self.logger.statement(
                 "Discrepancy between number of filenames ({0}) "
                 "and number of seps defined ({1}). "
                 "Will repeat first ({2})"
@@ -3301,7 +3301,7 @@ class PstFrom(object):
         if not isinstance(skip_rows, list):
             skip_rows = [skip_rows]
         if len(skip_rows) != len(filenames):
-            self.logger.warn(
+            self.logger.statement(
                 "Discrepancy between number of filenames ({0}) "
                 "and number of skip_rows defined ({1}). "
                 "Will repeat first ({2})"
@@ -3804,7 +3804,7 @@ def _get_idxdf(df, index_cols,
             if logger is None:
                 warnings.warn(action)
             else:
-                logger.warn(action)
+                logger.statement(wstr)
         if action_duplicates == 'drop':
             idxdf = idxdf.drop_duplicates()
     return idxdf
