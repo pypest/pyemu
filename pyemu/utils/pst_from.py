@@ -558,9 +558,12 @@ class PstFrom(object):
                 f.write(s + "try:\n")
                 f.write(s + "   os.remove(r'{0}')\n".format(tmp_file))
                 f.write(s + "except Exception as e:\n")
-                f.write(
-                    s + "   print(r'error removing tmp file:{0}')\n".format(tmp_file)
-                )
+                if self.echo:
+                    f.write(
+                        s + "   print(r'error removing tmp file:{0}')\n".format(tmp_file)
+                    )
+                else:
+                    f.write("   pass\n")
             for line in self.pre_py_cmds:
                 f.write(s + line + "\n")
             for line in self.mod_py_cmds:

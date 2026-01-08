@@ -2546,7 +2546,8 @@ def _process_list_file(model_file, df):
             raise Exception("error setting mlt index_cols: " + str(e))
 
         if not hasattr(mlt, "mlt_file") or pd.isna(mlt.mlt_file):
-            print("null mlt file for org_file '" + org_file + "', continuing...")
+            #print("null mlt file for org_file '" + org_file + "', continuing...")
+            pass
         else:
             mlts = pd.read_csv(mlt.mlt_file)
             # get mult index to align with org_data,
