@@ -189,6 +189,8 @@ class EnDS(object):
             ensemble = self.__fromfile(arg, astype=ObservationEnsemble)
         elif isinstance(arg, ObservationEnsemble):
             ensemble = arg.copy()
+        elif isinstance(arg, pd.DataFrame):
+            ensemble = ObservationEnsemble(pst=self.pst,df=arg.copy())
         else:
             raise Exception(
                 "EnDS.__load_ensemble(): arg must "
