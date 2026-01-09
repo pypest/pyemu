@@ -563,7 +563,7 @@ class PstFrom(object):
                         s + "   print(r'error removing tmp file:{0}')\n".format(tmp_file)
                     )
                 else:
-                    f.write("   pass\n")
+                    f.write(s+"   pass\n")
             for line in self.pre_py_cmds:
                 f.write(s + line + "\n")
             for line in self.mod_py_cmds:
