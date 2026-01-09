@@ -538,7 +538,7 @@ class PstFrom(object):
 
         with open(self.new_d / self.py_run_file, "w") as f:
             f.write(
-                "import os\nimport multiprocessing as mp\nimport numpy as np"
+                "import os\nimport sys\nimport multiprocessing as mp\nimport numpy as np"
                 + "\nimport pandas as pd\n"
             )
             f.write("import pyemu\n")
@@ -566,10 +566,13 @@ class PstFrom(object):
                     f.write(s+"   pass\n")
             for line in self.pre_py_cmds:
                 f.write(s + line + "\n")
+            f.write(s + "sys.stdout.flush()\n")
             for line in self.mod_py_cmds:
                 f.write(s + line + "\n")
+            f.write(s + "sys.stdout.flush()\n")
             for line in self.post_py_cmds:
                 f.write(s + line + "\n")
+            f.write(s + "sys.stdout.flush()\n")
             f.write("\n")
             f.write("if __name__ == '__main__':\n")
             f.write("    mp.freeze_support()\n    main()\n\n")
