@@ -558,7 +558,7 @@ class PstFrom(object):
                 f.write(s + "try:\n")
                 f.write(s + "   os.remove(r'{0}')\n".format(tmp_file))
                 f.write(s + "except Exception as e:\n")
-                if self.echo:
+                if self.logger.echo:
                     f.write(
                         s + "   print(r'error removing tmp file:{0}')\n".format(tmp_file)
                     )
