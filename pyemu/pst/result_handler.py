@@ -50,7 +50,7 @@ class ResultHandler(object):
         else:
             df = None
             try:
-                df = pd.read_csv(filename,index_col=index_col)
+                df = pd.read_csv(filename,index_col=index_col,low_memory=False)
                 df.index = df.index.astype(str)
                 df.columns = df.columns.astype(str)
                 self.results_loaded[filename] = df
@@ -79,7 +79,7 @@ class ResultHandler(object):
             df = None
             try:
                 if filename.lower().endswith(".csv"):
-                    df = pd.read_csv(filename, index_col=0)
+                    df = pd.read_csv(filename, index_col=0,low_memory=False)
                 elif filename.lower().endswith(".jcb") or filename.lower().endswith(".jco") or filename.lower().endswith(".bin"):
                     df = pyemu.Matrix.from_binary(filename).to_dataframe()
                 else:
