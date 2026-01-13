@@ -550,6 +550,7 @@ class Ensemble(object):
                     snv[:, i:] = 0.0
                 cov_mean_values = mean_values.loc[cov.row_names].values
                 idxs = [mv_map[name] for name in cov.row_names]
+                #print(cov.row_names)
                 for i in range(num_reals):
                     reals[i, idxs] = cov_mean_values + np.dot(a, snv[i, :])
                     #print(np.dot(a, snv[i, :]).max())
