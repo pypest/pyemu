@@ -160,6 +160,7 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
     passed_names = []
     nz_names = pst.nnz_obs_names
     [passed_names.extend(obs) for gs,obs in struct_dict.items()]
+    passed_names.sort()
     missing = list(set(passed_names) - set(nz_names))
     if len(missing) > 0:
         raise Exception("the following obs in struct_dict were not found in the nz obs names"+str(missing))
