@@ -2028,12 +2028,14 @@ def _process_array_file(model_file, df):
          header = [fp.readline() for _ in range(skip)]
     org_arr = np.loadtxt(org_file[0], ndmin=2, skiprows=skip)
 
-
     if "mlt_file" in df_mf.columns:
         for mlt, operator in zip(df_mf.mlt_file, df_mf.operator):
             if pd.isna(mlt):
                 continue
-            mlt_data = np.loadtxt(mlt, ndmin=2)
+            if str(mlt).endswith(".npy"):
+                mlt_data = np.load(mlt)
+            else:
+                mlt_data = np.loadtxt(mlt, ndmin=2)
             if 1 in list(mlt_data.shape): # if 1d arrays
                 org_arr = org_arr.reshape(mlt_data.shape)
             if org_arr.shape != mlt_data.shape:
@@ -2150,6 +2152,9 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
                 "pp_fill_value",
                 "pp_lower_limit",
                 "pp_upper_limit",
+                "pp_mpts",
+                "pp_transform",
+                "shape"
             ],
         ].rename(
             columns={
@@ -2158,6 +2163,8 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
                 "pp_fill_value": "fill_value",
                 "pp_lower_limit": "lower_lim",
                 "pp_upper_limit": "upper_lim",
+                "pp_mpts" : "mpts",
+                "pp_transform" : "transform"
             }
         )
         # don't need to process all (e.g. if const. mults apply across kper...)
@@ -2198,7 +2205,7 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     uniq = df.model_file.unique()  # unique model input files to be produced
     num_uniq = len(uniq)  # number of input files to be produced
     # number of files to send to each processor
-    # lazy plitting the files to be processed into even chunks
+    # lazy splitting the files to be processed into even chunks
     num_chunk_floor = num_uniq // chunk_len  # number of whole chunks
     main_chunks = (
         uniq[: num_chunk_floor * chunk_len].reshape([-1, chunk_len]).tolist()

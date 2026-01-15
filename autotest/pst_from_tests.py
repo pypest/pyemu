@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pyemu
 from pyemu import os_utils
-from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
+from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file, prep_pp_hyperpars
 import shutil
 import pytest
 
@@ -6451,6 +6451,99 @@ def draw_consistency_test(tmp_path):
     assert diff.values.max() < 1e-6
 
 
+def _apply_speed_invest_pstfrom():
+    wd = "speedtemp"
+    Path(wd).mkdir(parents=True, exist_ok=True)
+    template_ws = 'template'
+    mshape = (500, 600)
+    dummyar = np.random.rand(*mshape)
+    np.savetxt(Path(wd, 'dummy_array.txt'), dummyar)
+    sr = pyemu.SpatialReference(delr=[100] * mshape[1], delc=[100] * mshape[0],
+                                xll=0, yll=0)
+    pf = pyemu.utils.PstFrom(wd,
+                             template_ws,
+                             remove_existing=True,
+                             spatial_reference=sr)
+    pf.add_observations('dummy_array.txt',
+                        )
+    return pf
+
+
+def apply_speed_invest_array():
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=20)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+
+    pf = _apply_speed_invest_pstfrom()
+
+    pf.add_parameters('dummy_array.txt',
+                      par_type="grid",
+                      par_name_base="dummy_gr",
+                      pargp="dummy_gr",
+                      upper_bound=10,
+                      lower_bound=0.1,
+                      geostruct=gr_gs, )
+    pf.build_pst()
+    # check_apply(pf)
+    bd = Path.cwd()
+    os.chdir(pf.new_d)
+    try:
+        pf.pst.write_input_files()
+        import cProfile
+        import pstats
+        profiler = cProfile.Profile()
+        profiler.enable()
+        pyemu.helpers.apply_list_and_array_pars(
+            arr_par_file="mult2model_info.csv", chunk_len=50)
+        profiler.disable()
+        stats = pstats.Stats(profiler).sort_stats('cumtime')
+        stats.print_stats()
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
+
+
+def apply_speed_invest_pp(useppu=True):
+    v = pyemu.geostats.ExpVario(contribution=1.0,a=20)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+
+    pf = _apply_speed_invest_pstfrom()
+
+    pf.add_pars('dummy_array.txt',
+                par_type="pp",
+                par_name_base="dummy_gr",
+                pargp="dummy_gr",
+                upper_bound=10,
+                lower_bound=0.1,
+                geostruct=gr_gs,
+                pp_options=dict(try_use_ppu=useppu,
+                                pp_space=10,
+                                prep_hyperpars=False))
+    pf.build_pst()
+    pars = pf.pst.parameter_data
+    pars['parval1'] = pars.parval1 * np.random.random(len(pars))
+    # bd = Path.cwd()
+
+    # check_apply(pf)
+    bd = Path.cwd()
+    os.chdir(pf.new_d)
+    try:
+        pf.pst.write_input_files()
+        import cProfile
+        import pstats
+        profiler = cProfile.Profile()
+        profiler.enable()
+        pyemu.helpers.apply_list_and_array_pars(
+            arr_par_file="mult2model_info.csv", chunk_len=50)
+        profiler.disable()
+        stats = pstats.Stats(profiler).sort_stats('cumtime')
+        stats.print_stats()
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
+
+
 if __name__ == "__main__":
     # draw_consistency_test('.')
     #xsec_pars_as_obs_test(".")
@@ -6501,14 +6594,14 @@ if __name__ == "__main__":
     # list_float_int_index_test('.')
     #freyberg_test()
     #invest_vertexpp_setup_speed()
-    import cProfile
-    import pstats
-    profiler = cProfile.Profile()
-    profiler.enable()
-    mf6_freyberg_thresh_test('temp')
-    profiler.disable()
-    stats = pstats.Stats(profiler).sort_stats('cumtime')
-    stats.print_stats()
+    # import cProfile
+    # import pstats
+    # profiler = cProfile.Profile()
+    # profiler.enable()
+    apply_speed_invest_pp(True)
+    # profiler.disable()
+    # stats = pstats.Stats(profiler).sort_stats('cumtime')
+    # stats.print_stats()
 
 
 
