@@ -11,6 +11,7 @@ import shutil
 from pyemu.pst.pst_handler import Pst
 from pyemu.en import ObservationEnsemble,ParameterEnsemble
 from .base import Emulator
+from .transformers import AutobotsAssemble, RowWiseMinMaxScaler
 
 class DSI(Emulator):
     """
@@ -24,9 +25,17 @@ class DSI(Emulator):
                 data=None,
                 transforms=None,
                 energy_threshold=1.0,
+                rowwise_groups=None,
+                rowwise_fit_groups=None,
+                feature_range=(-1, 1),
                 verbose=False):
         """
         Initialize the DSI emulator.
+        
+        If rowwise_groups is provided, training data are row-wise scaled per-group
+        before SVD. Predictions are returned in scaled space and then inverse-scaled
+        using per-row parameters derived from truth values found in
+        pst.observation_data.
 
         Parameters
         ----------
@@ -49,13 +58,25 @@ class DSI(Emulator):
             Default is None, which means no transformations will be applied.
         energy_threshold : float, optional 
             The energy threshold for the SVD. Default is 1.0, no truncation.
+        rowwise_groups : dict, optional
+            Dictionary mapping groups to column lists for row-wise scaling.
+        rowwise_fit_groups : dict, optional
+            Dictionary mapping groups to column lists for fitting row-wise scalers.
+        feature_range : tuple, optional
+            Feature range for row-wise scaling. Default is (-1, 1).
         verbose : bool, optional
             If True, enable verbose logging. Default is False.
         """
 
         super().__init__(verbose=verbose)
 
-        self.observation_data = pst.observation_data.copy() if pst is not None else None
+        if isinstance(pst,Pst):
+            self.observation_data = pst.observation_data.copy() if pst is not None else None
+        elif isinstance(pst, pd.DataFrame):
+            self.observation_data = pst.copy()
+        else:
+             self.observation_data = None
+
         #self.__org_parameter_data = pst.parameter_data.copy() if pst is not None else None
         #self.__org_control_data = pst.control_data.copy() #breaks pickling
         if isinstance(data, ObservationEnsemble):
@@ -79,8 +100,29 @@ class DSI(Emulator):
                     if 'quadratic_extrapolation' in t:
                         assert isinstance(t['quadratic_extrapolation'], bool), "'quadratic_extrapolation' must be a boolean"
         self.transforms = transforms
+
+        # Row-wise scaling config (optional)
+        self.rowwise_groups = rowwise_groups
+        self.rowwise_fit_groups = rowwise_fit_groups if rowwise_fit_groups is not None else rowwise_groups
+        self.feature_range = feature_range
+        self._rowwise_train_scaler = None
+
         self.fitted = False
+
         self.data_transformed = self._prepare_training_data()
+
+        # If row-wise scaling is enabled and truth is available, pre-fit truth scaler once
+        self._truth_rowwise_scaler = None
+        if self.rowwise_groups is not None and self.observation_data is not None:
+            try:
+                self._truth_rowwise_scaler = self._prefit_truth_rowwise_scaler()
+                self._truth_row_index = 'truth'
+                self.logger.statement("prefit truth row-wise scaler from self.observation_data")
+            except Exception as ex:
+                self.logger.statement(f"warning: could not prefit truth scaler: {ex}")
+        else:
+            self._truth_row_index = 'truth'
+            
         self.decision_variable_names = None #used for DSIVC
         
     def _prepare_training_data(self):
@@ -107,12 +149,79 @@ class DSI(Emulator):
             self.data_transformed = self._fit_transformer_pipeline(data, self.transforms)
         else:
             # Still need to set up a dummy transformer for inverse operations
-            from .transformers import AutobotsAssemble
             self.transformer_pipeline = AutobotsAssemble(data.copy())
             self.data_transformed = data.copy()
+
+        # 2) Optional row-wise scaling for training
+        if self.rowwise_groups is not None:
+            self.logger.statement("applying row-wise min-max scaling (training)")
+            self._rowwise_train_scaler = RowWiseMinMaxScaler(
+                feature_range=self.feature_range,
+                groups=self.rowwise_groups,
+                fit_groups=self.rowwise_fit_groups
+            )
+            self._rowwise_train_scaler.fit(self.data_transformed)
+            self.data_transformed = self._rowwise_train_scaler.transform(self.data_transformed)
     
         return self.data_transformed
         
+    def _build_truth_rowwise_scaler(self, truth_df_transformed):
+        """Build a RowWiseMinMaxScaler fitted on provided truth values."""
+        scaler = RowWiseMinMaxScaler(
+            feature_range=self.feature_range,
+            groups=self.rowwise_groups,
+            fit_groups=self.rowwise_fit_groups,
+        )
+        scaler.fit(truth_df_transformed)
+        return scaler
+
+    def _prefit_truth_rowwise_scaler(self):
+        """Fit a truth-based RowWiseMinMaxScaler once, using pst.observation_data.
+
+        Uses only rowwise_fit_groups columns (intersected with availability) so that
+        future/forecast columns are not required in truth.
+        """
+        if self.rowwise_groups is None:
+            return None
+
+        obsdf = self.observation_data
+        #obsdf = obsdf.loc[obsdf.weight > 0]
+        if obsdf is None or 'obsval' not in obsdf.columns:
+            raise ValueError("observation_data with 'obsval' column is required to prefit truth scaler")
+
+        # Determine which columns to use from truth: union of fit groups
+        fit_cols_union = []
+        if self.rowwise_fit_groups is not None:
+            for _, cols in self.rowwise_fit_groups.items():
+                fit_cols_union.extend(cols)
+        # Intersect with available columns in training-transformed data and truth index
+        available_cols = [c for c in fit_cols_union if c in self.data_transformed.columns and c in obsdf.index]
+        if not available_cols:
+            raise ValueError("No overlapping columns between fit_groups, training data, and truth index for prefit")
+
+        # Build single-row truth DataFrame
+        truth_df = obsdf.loc[available_cols, 'obsval'].to_frame().T
+        truth_df.index = ['truth']
+        # Apply feature transforms to truth
+        truth_transformed = self.transformer_pipeline.transform(truth_df)
+
+        # Trim fit groups per availability
+        fit_groups = {}
+        if self.rowwise_fit_groups is not None:
+            for g, cols in self.rowwise_fit_groups.items():
+                fit_groups[g] = [c for c in cols if c in truth_transformed.columns]
+        empty = [g for g, cols in fit_groups.items() if len(cols) == 0]
+        if empty:
+            raise ValueError(f"No fit columns available for groups during prefit: {empty}")
+
+        scaler = RowWiseMinMaxScaler(
+            feature_range=self.feature_range,
+            groups=self.rowwise_groups,
+            fit_groups=fit_groups,
+        )
+        scaler.fit(truth_transformed)
+        return scaler
+
     def compute_projection_matrix(self, energy_threshold=None):
         """
         Compute the projection matrix using SVD.
@@ -137,6 +246,7 @@ class DSI(Emulator):
         self.logger.statement("undertaking SVD")
         u, s, v = np.linalg.svd(z, full_matrices=False)
         us = np.dot(v.T, np.diag(s))
+        max_n_components = s.shape[0]
         if energy_threshold is None:
             energy_threshold = self.energy_threshold
         if energy_threshold<1.0:
@@ -150,7 +260,7 @@ class DSI(Emulator):
             us = us[:, :num_components]
             s = s[:num_components]
             u = u[:, :num_components]
-            print(f"Truncated from {len(s)} to {num_components} components while retaining {energy_threshold*100:.1f}% of variance")
+            print(f"Truncated from {max_n_components} to {num_components} components while retaining {energy_threshold*100:.1f}% of variance")
             if num_components<=1:
                 print(f"Warning: only {num_components} component retained, you may need to check the data")
         
@@ -188,40 +298,74 @@ class DSI(Emulator):
         self.fitted = True
         return self
     
-    def predict(self, pvals):
+    def predict(self, pvals, pst: Pst = None, truth_selector=None):
         """
-        Generate predictions from the emulator.
-        
+        Predict observations in original units. When row-wise scaling is enabled,
+        use truth from pst.observation_data to invert scaling.
+
         Parameters
         ----------
-        pvals : numpy.ndarray or pandas.Series
-            Parameter values for prediction.
-            
-        Returns
-        -------
-        pandas.Series
-            Predicted observation values.
+        pvals : array-like
+            DSI latent parameters (same length as retained singular values).
+        pst : Pst, optional
+            If provided (or if self.observation_data exists), used to obtain
+            truth values for inverse row-wise scaling.
+        truth_selector : callable or list-like, optional
+            If provided, used to subset columns per group that are available as
+            truth at prediction time (e.g., history window). Should return the
+            same columns as rowwise_fit_groups per group, but limited to known
+            values.
         """
         if not self.fitted:
             raise ValueError("Emulator must be fitted before prediction")
-            
         if self.transforms is not None and (not hasattr(self, 'transformer_pipeline') or self.transformer_pipeline is None):
             raise ValueError("Emulator must be fitted and have valid transformations before prediction")
-        
+
         if isinstance(pvals, pd.Series):
             pvals = pvals.values.flatten()
-        assert pvals.shape[0] == self.s.shape[0], "pvals must be the same length as the number of singular values"
-        assert pvals.shape[0] == self.pmat.shape[1], "pvals must be the same length as the number of singular values"
-        pmat = self.pmat
-        ovals = self.ovals
-        sim_vals = ovals + np.dot(pmat,pvals)
+        assert pvals.shape[0] == self.s.shape[0], "pvals must match number of singular values"
+        assert pvals.shape[0] == self.pmat.shape[1], "pvals must match number of singular values"
+
+        # Simulate in working space (possibly row-wise scaled)
+        sim_vals = self.ovals + np.dot(self.pmat, pvals)
+        sim_series = pd.Series(sim_vals, index=self.data_transformed.columns, name="obsval")
+
+        # If no row-wise scaling used, just inverse the feature pipeline and return
+        if self.rowwise_groups is None:
+            if self.transforms is not None:
+                sim_vals = self.transformer_pipeline.inverse(sim_series)
+            else:
+                sim_series.index.name = 'obsnme'
+                sim_vals = sim_series
+            self.sim_vals = sim_vals
+            return sim_vals
+
+        # Row-wise scaling used: use pre-fitted truth scaler if available, else build once from provided pst
+        truth_scaler = self._truth_rowwise_scaler
+        if truth_scaler is None:
+            if pst is None or getattr(pst, 'observation_data', None) is None:
+                raise ValueError("Truth scaler not prefit; provide pst with observation_data to build it once.")
+            # Temporarily set observation_data and prefit
+            prev_obs = self.observation_data
+            self.observation_data = pst.observation_data
+            truth_scaler = self._prefit_truth_rowwise_scaler()
+            self._truth_rowwise_scaler = truth_scaler
+            self.observation_data = prev_obs if prev_obs is not None else self.observation_data
+
+        sim_df_scaled = sim_series.to_frame().T
+        # Align row index with the one used when truth scaler was fitted
+        sim_df_scaled.index = [getattr(self, '_truth_row_index', 'truth')]
+        pred_transformed = truth_scaler.inverse_transform(sim_df_scaled)
+        pred_series = pred_transformed.iloc[0]
+
+        # 5) Inverse feature transforms back to original units
         if self.transforms is not None:
-            pipeline = self.transformer_pipeline
-            sim_vals = pipeline.inverse(sim_vals)
-        sim_vals.index.name = 'obsnme'
-        sim_vals.name = "obsval"
-        self.sim_vals = sim_vals
-        return sim_vals
+            pred_series = self.transformer_pipeline.inverse(pred_series)
+        pred_series.index.name = 'obsnme'
+        pred_series.name = 'obsval'
+        
+        self.sim_vals = pred_series
+        return pred_series
     
     def check_for_pdc(self):
         """Check for Prior data conflict."""
@@ -314,6 +458,8 @@ class DSI(Emulator):
         else:
             observation_data = self.observation_data
         assert isinstance(observation_data, pd.DataFrame), "observation_data must be a pandas DataFrame"
+        observation_data.obsval = observation_data.obsval.astype(float)
+        observation_data.weight = observation_data.weight.astype(float)
         for col in observation_data.columns:
             obs.loc[sim_vals.index,col] = observation_data.loc[:,col]
 
@@ -531,12 +677,14 @@ class DSI(Emulator):
         self.logger.statement(f"building dsivc_forward_run.py...")
         pst_dsivc.model_command = "python dsivc_forward_run.py"
         from pyemu.utils.helpers import dsivc_forward_run
-        function_source = inspect.getsource(dsivc_forward_run)
+        #function_source = inspect.getsource(dsivc_forward_run)
         with open(os.path.join(t_d,"dsivc_forward_run.py"),'w') as file:
-            file.write(function_source)
+            #file.write(function_source)
+            file.write("from pyemu.utils.helpers import dsivc_forward_run\n")
             file.write("\n\n")
             file.write("if __name__ == \"__main__\":\n")
-            file.write(f"    {function_source.split('(')[0].split('def ')[1]}(ies_exe_path='{ies_exe_path}')\n")
+            #file.write(f"    {function_source.split('(')[0].split('def ')[1]}(ies_exe_path='{ies_exe_path}')\n")
+            file.write(f"    dsivc_forward_run(ies_exe_path='{ies_exe_path}')\n")
 
         self.logger.statement(f"preparing nominal initial population...")
         if mou_population_size is None:
