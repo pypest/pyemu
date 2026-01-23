@@ -2605,6 +2605,9 @@ class PstFrom(object):
                     grid_dict = spatial_reference
                     shape = (1, len(grid_dict))
 
+                fac_filename = None # this will be set later
+                npoints = None
+
                 if try_use_ppu:
                     if prep_pp_hyperpars:
                         # prep hyperparameters and build configuration dataframe
@@ -2635,6 +2638,10 @@ class PstFrom(object):
                         config_func_str = "pyemu.utils.pp_utils.apply_ppu_hyperpars('{0}')".\
                                           format(config_df_filename)
                         pp_mult_dict["pre_apply_function"] = config_func_str
+                        # currently apply-time fac2real flagging is on the basis
+                        # of the presence of pp_file in the mult2model info file
+                        # for hyperpars fac2real is run within apply_ppu_hyperpars
+                        # should not be flagged in the mult2model info file
                     else: # not setting up hyper pars
                         # ppu factor calcs are rapid so think we can tolarate
                         # mutiple calls here without too much pain
@@ -2645,8 +2652,8 @@ class PstFrom(object):
                             ok = pyemu.geostats.OrdinaryKrigePPU(None, pp_df)
                             npoints = ok.calc_factors(
                                 targets=grid_dict,
-                                factor_filename=fac_filename,
                                 geostruct=pp_geostruct,
+                                fac_fname=fac_filename,
                                 **pp_options
                             )
                         except ImportError:
@@ -2655,7 +2662,6 @@ class PstFrom(object):
                         self.logger.log(f"PPU for factor calcs for pargp={pg}")
 
                 if not try_use_ppu:
-                    npoints = None
                     # need to make sure we come in here if ppu fails
                     # might be able to get away without calculating factors
                     # i.e. if pp locs, zone grouping, geostruct etc are the same
@@ -2722,9 +2728,6 @@ class PstFrom(object):
                                 minpts_interp=pp_options.get("minpts_interp",1),
                                 maxpts_interp=pp_options.get("maxpts_interp",20),
                                 search_radius=pp_options.get("search_radius",1e10),
-                                try_use_ppu=False,  # try use ppu already failed/turned off
-                                #ppu_factor_filename=pp_options.get("ppu_factor_filename","factors.dat")
-                                # ppu_factor_filename=fac_filename
                             )
                             # if not isinstance(ret_val,int):
                             ok_pp.to_grid_factors_file(fac_filename)
@@ -2776,20 +2779,24 @@ class PstFrom(object):
                         self._pp_facs[fac_filename] = pp_info_dict
                         self.logger.log("calculating factors for pargp={0}".format(pg))
                 # if pilotpoint need to store more info
-                assert fac_filename is not None, "missing pilot-point input filename"
-                pp_mult_dict["fac_file"] = os.path.relpath(fac_filename, self.new_d)
-                pp_mult_dict["pp_file"] = pp_filename
-                pp_mult_dict["pp_transform"] = pp_geostruct.transform
-                pp_mult_dict["pp_mpts"] = npoints
-                pp_mult_dict["shape"] = shape
-                if transform == "log":
-                    pp_mult_dict["pp_fill_value"] = pp_options.get("fill_value", 1.0)
-                    pp_mult_dict["pp_lower_limit"] = pp_options.get("lower_limit", 1.0e-30)
-                    pp_mult_dict["pp_upper_limit"] = pp_options.get("upper_limit", 1.0e30)
-                else:
-                    pp_mult_dict["pp_fill_value"] = pp_options.get("fill_value", 0.0)
-                    pp_mult_dict["pp_lower_limit"] = pp_options.get("lower_limit", -1.0e30)
-                    pp_mult_dict["pp_upper_limit"] = pp_options.get("upper_limit", 1.0e30)
+                if not prep_pp_hyperpars:
+                    # update only needed here if
+                    # fac_file is only temorary if using hyperpars
+                    # -- never saved here created on the fly at apply pars time
+                    assert fac_filename is not None, "missing pilot-point factors filename"
+                    pp_mult_dict["fac_file"] = os.path.relpath(fac_filename, self.new_d)
+                    pp_mult_dict["pp_mpts"] = int(np.array(shape).prod()) # used for ppu fac2real
+                    pp_mult_dict["pp_file"] = pp_filename
+                    pp_mult_dict["pp_transform"] = pp_geostruct.transform  # used for ppu fac2real
+                    pp_mult_dict["shape"] = shape  # used for ppu fac2real
+                    if transform == "log":
+                        pp_mult_dict["pp_fill_value"] = pp_options.get("fill_value", 1.0)
+                        pp_mult_dict["pp_lower_limit"] = pp_options.get("lower_limit", 1.0e-30)
+                        pp_mult_dict["pp_upper_limit"] = pp_options.get("upper_limit", 1.0e30)
+                    else:
+                        pp_mult_dict["pp_fill_value"] = pp_options.get("fill_value", 0.0)
+                        pp_mult_dict["pp_lower_limit"] = pp_options.get("lower_limit", -1.0e30)
+                        pp_mult_dict["pp_upper_limit"] = pp_options.get("upper_limit", 1.0e30)
 
             elif par_type == "kl":
                 self.logger.lraise("array type 'kl' not implemented")
@@ -2970,6 +2977,7 @@ class PstFrom(object):
             pp_kwargs = dict([])
 
         if not pp_kwargs["use_pp_zones"]:
+            zone_array = zone_array.copy()  # copy to preserve original
             # will set up pp for just one
             # zone (all non zero) -- for active domain...
             zone_array[zone_array > 0] = 1  # so can set all

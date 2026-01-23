@@ -2143,64 +2143,58 @@ def apply_array_pars(arr_par="arr_pars.csv", arr_par_file=None, chunk_len=50):
     #         print("error removing mult array:{0}".format(fname))
 
     if "pp_file" in df.columns:
-        print("starting fac2real", datetime.now())
-        pp_df = df.loc[
-            df.pp_file.notna(),
-            [
-                "pp_file",
-                "fac_file",
-                "mlt_file",
-                "pp_fill_value",
-                "pp_lower_limit",
-                "pp_upper_limit",
-                "pp_mpts",
-                "pp_transform",
-                "shape"
-            ],
-        ].rename(
-            columns={
-                "fac_file": "factors_file",
-                "mlt_file": "out_file",
-                "pp_fill_value": "fill_value",
-                "pp_lower_limit": "lower_lim",
-                "pp_upper_limit": "upper_lim",
-                "pp_mpts" : "mpts",
-                "pp_transform" : "transform"
-            }
-        )
-        # don't need to process all (e.g. if const. mults apply across kper...)
-        pp_args = pp_df.drop_duplicates().to_dict("records")
-        num_ppargs = len(pp_args)
-        num_chunk_floor = num_ppargs // chunk_len
-        main_chunks = (
-            np.array(pp_args)[: num_chunk_floor * chunk_len]
-            .reshape([-1, chunk_len])
-            .tolist()
-        )
-        remainder = np.array(pp_args)[num_chunk_floor * chunk_len :].tolist()
-        chunks = main_chunks + [remainder]
-        print("number of chunks to process:", len(chunks))
-        if len(chunks) == 1:
-            _process_chunk_fac2real(chunks[0], 0)
-        else:
-            with mp.get_context("spawn").Pool(
-                    processes=min(mp.cpu_count(), 60)) as pool:
-                x = [
-                    pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
-                    for i, chunk in enumerate(chunks)
-                ]
-                [xx.get() for xx in x]
-                pool.close()
-                pool.join()
-        # procs = []
-        # for chunk in chunks:
-        #     p = mp.Process(target=_process_chunk_fac2real, args=[chunk])
-        #     p.start()
-        #     procs.append(p)
-        # for p in procs:
-        #     p.join()
-
-        print("finished fac2real", datetime.now())
+        sel = df.pp_file.notna()
+        if not sel.empty:
+            print("starting fac2real", datetime.now())
+            pp_df = df.loc[
+                sel,
+                [
+                    "pp_file",
+                    "fac_file",
+                    "mlt_file",
+                    "pp_fill_value",
+                    "pp_lower_limit",
+                    "pp_upper_limit",
+                    "pp_mpts",
+                    "pp_transform",
+                    "shape"
+                ],
+            ].rename(
+                columns={
+                    "fac_file": "factors_file",
+                    "mlt_file": "out_file",
+                    "pp_fill_value": "fill_value",
+                    "pp_lower_limit": "lower_lim",
+                    "pp_upper_limit": "upper_lim",
+                    "pp_mpts" : "mpts",
+                    "pp_transform" : "transform"
+                }
+            )
+            # don't need to process all (e.g. if const. mults apply across kper...)
+            pp_args = pp_df.drop_duplicates().to_dict("records")
+            num_ppargs = len(pp_args)
+            num_chunk_floor = num_ppargs // chunk_len
+            main_chunks = (
+                np.array(pp_args)[: num_chunk_floor * chunk_len]
+                .reshape([-1, chunk_len])
+                .tolist()
+            )
+            remainder = np.array(pp_args)[num_chunk_floor * chunk_len :].tolist()
+            chunks = main_chunks + [remainder]
+            print("number of chunks to process:", len(chunks))
+            if len(chunks) == 1:
+                _process_chunk_fac2real(chunks[0], 0)
+            else:
+                with mp.get_context("spawn").Pool(
+                        processes=min(mp.cpu_count(), 60)) as pool:
+                    x = [
+                        pool.apply_async(_process_chunk_fac2real, args=(chunk, i))
+                        for i, chunk in enumerate(chunks)
+                    ]
+                    [xx.get() for xx in x]
+                    pool.close()
+                    pool.join()
+            print("finished fac2real", datetime.now())
 
     print("starting arr mlt", datetime.now())
     uniq = df.model_file.unique()  # unique model input files to be produced

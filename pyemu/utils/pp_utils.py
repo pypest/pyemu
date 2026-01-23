@@ -345,7 +345,7 @@ def pp_file_to_dataframe(pp_filename):
         names=PP_NAMES,
         usecols=[0, 1, 2, 3, 4],
     )
-    df.loc[:, "name"] = df.name.apply(str).apply(str.lower)
+    df.loc[:, "name"] = df.name.str.lower()
     return df
 
 
@@ -907,7 +907,7 @@ def apply_ppu_hyperpars(config_df_filename):
         from pypestutils.pestutilslib import PestUtilsLib
     except Exception as e:
         raise Exception("apply_ppu_hyperpars() error importing pypestutils: '{0}'".format(str(e)))
-    from geostats import ppu_fac2real
+    from pyemu.utils.geostats import ppu_fac2real
     # read config info from file
     config_dict = pd.read_csv(config_df_filename,index_col=0)['value'].to_dict()
     # get transform before filling defaults
@@ -946,18 +946,18 @@ def apply_ppu_hyperpars(config_df_filename):
     with pyemu.geostats.OrdinaryKrigePPU(None, pp_info, express=True) as krige:
         npts = krige.calc_factors(
             targets=grid_df,
-            factor_filename=fac_fname,
-            zone_array=zone,
             geostruct=dict(corrlen=corrlen,
                            aniso=aniso,
                            bearing=bearing,
-                           vartype=config_dict.get("vartype",2)),
-            **config_dict)
-        assert npts == zone.size
+                           vartype=config_dict.get("vartype", 2)),
+            fac_fname=fac_fname,
+            zone_array=zone,
+            **config_dict
+        )
         result = ppu_fac2real(
             source_vals=pp_info["parval1"].values,
             factor_filename=fac_fname,
-            mpts=npts,
+            mpts=len(grid_df),
             out_shape=shape,
             ppulib=krige.lib,
             transform=vartransform,

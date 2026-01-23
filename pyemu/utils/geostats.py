@@ -787,6 +787,7 @@ class OrdinaryKrigePPU(object):
         if not express:
             self.check_names()
             self.check_point_data_dist()
+        self.point_data = self.point_data.set_index('name')
 
     def __enter__(self):
         # initialise (and test) ppu import
@@ -835,10 +836,32 @@ class OrdinaryKrigePPU(object):
 
     def calc_factors(self,
                      targets,
-                     factor_filename="factors.dat",
+                     geostruct,
+                     fac_fname="factors.dat",
                      zone_array=None,
-                     geostruct=None,
                      **kwargs):
+        """PPU based calculation of interpolation factors.
+
+        Args:
+            targets (multiple): Object from which x and y coordinates can be extracted.
+                This can be a flopy modelgrid object with (xcellcenters, and ycellcenters) attribs.
+                Or it can be a pyemu spatial reference with (xcentergrid and ycentergrid) attribs.
+                Or a DataFrame with ('x', 'y') columns. Or a {'node':(x,y)} dict.
+                Note if type(targets)==dict, the keys will e sorted, zone array
+                will be expected to be in the order of the sorted keys and the output
+                will also be in that order.
+            geostruct (Vario2d, Geostructure, dict or path-like): If dict, should have keys
+                'corrlen' (required),  'aniso', 'bearing', 'vartype'. vartype is an integer
+                with 1 for Spherical, 2 for Exponential (default) and 3 for Gaussian.
+            fac_fname (path-like): Filename to save binary factors file
+            zone_array (array-like):
+            **kwargs (dict): Additional keyword args for passing to factor calculations.
+                e.g.:  'minpts_interp', 'maxpts_interp', 'search_dist' and 'search_radius'
+
+        Returns:
+
+        """
+        t0 = datetime.now()
         if self.lib is None:
             ppulib = _try_import_ppu()
             plib = ppulib()
@@ -848,8 +871,7 @@ class OrdinaryKrigePPU(object):
         print("...pypestutils detected and being used for kriging solve, trust us, you want this!")
 
         krigtype = 1  # hard coded to ordinary for this class
-        # factorfiletype = 1  # hard coded to ascii for now since we have to rewrite the fac file
-        factorfiletype = 0 # test binary
+        factorfiletype = kwargs.get('fac_ftype', 0) # 0 for binary, 1 for acsii
 
         x,y = _get_xy_from_any(targets) # will raise if no xcentergrid, ycentergrid
         # vector of zone values for target grid
@@ -859,13 +881,18 @@ class OrdinaryKrigePPU(object):
         # reset any missing values in znt to a zns value -
         # doesn't matter in the end, just results in more nodes
         # being solved for...
+        # I don't think we need this, not sure the implication of arbitrary zone assignment
+        # better if missing zones are just filled?
+        # or maybe 0 is a better filler -- no interp
         znt_unique = np.unique(zone_array)
         zns_unique = self.point_data.zone.unique()
         for uz in znt_unique:
-            if uz not in zns_unique:
-                zone_array[zone_array == uz] = zns_unique[0]
+            if uz not in zns_unique and uz != 0:
+                zone_array[zone_array == uz] = 0
 
         # determine variogram type
+        if isinstance(geostruct, (str, Path)): # read if pathlike
+            geostruct = read_struct_file(geostruct)
         if isinstance(geostruct, dict):
             corrlen = geostruct.get('corrlen')
             aniso = geostruct.get('aniso', 1.0)
@@ -873,7 +900,9 @@ class OrdinaryKrigePPU(object):
             vartype = int(geostruct.get('vartype',2))
         else:
             if hasattr(geostruct, "variograms"):
-                assert len(geostruct.variograms) == 1
+                if len(geostruct.variograms) > 1:
+                    raise ValueError("passed geostruct has multiple variograms, "
+                                     "only single variogram supported by PPU kriging")
                 v = geostruct.variograms[0]
             else:
                 v = geostruct
@@ -909,7 +938,7 @@ class OrdinaryKrigePPU(object):
             self.point_data.zone.values,  # source zones
             x.ravel(), # target xs
             y.ravel(), # target ys
-            zone_array.ravel().astype(int), # targe zones
+            zone_array.ravel().astype(int), # target zones
             vartype,
             krigtype,
             corrlen,
@@ -918,16 +947,19 @@ class OrdinaryKrigePPU(object):
             search_radius,
             maxpts_interp,
             minpts_interp,
-            factor_filename,
+            fac_fname,
             factorfiletype
         )
         if self.lib is None: # if not context managed
             plib.free_all_memory()
-        assert os.path.exists(factor_filename)
+        assert os.path.exists(fac_fname)
         # reformat_factorfile(x.shape[0], x.shape[1], self.point_data, self.geostruct, ppu_factor_filename)
 
         print("...ppu_factor_filename '{0}' created, factors calculated for {1} points". \
-              format(factor_filename, num_interp_pts))
+              format(fac_fname, num_interp_pts))
+        td = (datetime.now() - t0).total_seconds()
+        self.mpts = num_interp_pts
+        print(f"took {td:.4f} seconds")
         return num_interp_pts
 
 
@@ -962,13 +994,13 @@ class OrdinaryKrigeOrg(object):
         warnings.warn("Moving to PPU implementation for kriging. "
                       "Take a look at `pip install pypestutils` #rapidas",
                       PendingDeprecationWarning)
-        if isinstance(geostruct, str):
+        if isinstance(geostruct, (str, Path)):
             geostruct = read_struct_file(geostruct)
         assert isinstance(geostruct, GeoStruct), "need a GeoStruct, not {0}".format(
             type(geostruct)
         )
         self.geostruct = geostruct
-        if isinstance(point_data, str):
+        if isinstance(point_data, (str, Path)):
             point_data = pp_file_to_dataframe(point_data)
         assert isinstance(point_data, pd.DataFrame)
         assert "name" in point_data.columns, "point_data missing 'name'"
@@ -1064,8 +1096,6 @@ class OrdinaryKrigeOrg(object):
         var_filename=None,
         forgive=False,
         num_threads=1,
-        try_use_ppu=False,
-        ppu_factor_filename = "factors.dat"
     ):
         """calculate kriging factors (weights) for a structured grid.
 
@@ -1093,7 +1123,7 @@ class OrdinaryKrigeOrg(object):
                 `point_data` entries. Default is 1.0e+10
             verbose : (`bool`): a flag to  echo process to stdout during the interpolatino process.
                 Default is False
-            var_filename (`str`): a filename to save the kriging variance for each interpolated grid node.
+            var_filename (Path-like): a filename to save the kriging variance for each interpolated grid node.
                 Default is None.
             forgive (`bool`):  flag to continue if inversion of the kriging matrix fails at one or more
                 grid nodes.  Inversion usually fails if the kriging matrix is singular,
@@ -1102,13 +1132,6 @@ class OrdinaryKrigeOrg(object):
                 is raised for failed matrix inversion.
             num_threads (`int`): number of multiprocessing workers to use to try to speed up
                 kriging in python.  Default is 1.
-            try_use_ppu (`bool`): flag to try to use `PyPestUtils` to solve the kriging equations.  If `true`,
-                and if `from pypestutils.pestutilslib import PestUtilsLib` does not raise an exception,
-                the `PestUtilsLib.calc_kriging_factors_2d()` is used.  Otherwise, the `OrdinaryKrige`
-                implementation is used. 
-            ppu_factor_filename (`str`): the name of the factor file that will be created if 
-                `PestUtilsLib.calc_kriging_factors_2d()` is used.  Default is "factors.dat".  Unused if
-                `try_use_ppu` is `False`.  
         Returns:
             `pandas.DataFrame`: a dataframe with information summarizing the ordinary kriging
             process for each grid node.  Not returned if `try_use_ppu` is `True`.
@@ -1132,19 +1155,6 @@ class OrdinaryKrigeOrg(object):
             ok.to_grid_factor_file("factors.dat")
 
         """
-
-        if try_use_ppu:
-            try:  # try and forgive -- lean back on python/pyemu impl if
-                # pypestutils not installed
-                return self.calc_factors_ppu(spatial_reference,
-                                             minpts_interp,
-                                             maxpts_interp,
-                                             search_radius,
-                                             zone_array,
-                                             ppu_factor_filename)
-            except ImportError:
-                pass
-                print("pypestutils not available...")
 
         print("...using classic pyemu calc_factors_grid() for kriging factor calculation...")
         x,y = _get_xy_from_any(spatial_reference) # will raise if no xcentergrid, ycentergrid
@@ -1809,7 +1819,7 @@ class OrdinaryKrigeOrg(object):
         the fac2real() method to write an interpolated structured or unstructured array
 
         Args:
-            filename (`str`): factor filename
+            filename (path-like): factor filename
             points_file (`str`): points filename to add to the header of the factors file.
                 This is not used by the fac2real() method.  Default is "points.junk"
             zone_file (`str`): zone filename to add to the header of the factors file.
@@ -2259,17 +2269,30 @@ def _get_xy_from_any(targets):
         pass
 
     try:
-        # DataFrame or similar
-        x = targets.x
-        y = targets.y
-        return x.values, y.values
+        # DataFrame or dict with x and y keys
+        x = np.array(targets['x'])
+        y = np.array(targets['y'])
+        return x, y
+    except (AttributeError, TypeError, KeyError):
+        pass
+    try:
+        # dict of cellid: coords
+        x, y = np.array([targets[k] for k in sorted(targets.keys())]).T
+        return x, y
     except AttributeError:
         pass
     try:
-        x, y = np.array([targets[k] for k in sorted(targets.keys())]).T
+        x, y = np.array(targets)
         return x,y
-    except AttributeError as e:
-        return targets
+    except ValueError:
+        pass
+    try:
+        x, y = np.array(targets).T
+        return x, y
+    except Exception as e:
+        raise ValueError("Unable to extract x,y from targets arg:\n"
+                         f"{e}")
+
 
 def read_struct_file(struct_file, return_type=GeoStruct):
     """read an existing PEST-type structure file into a GeoStruct instance
@@ -2598,7 +2621,9 @@ def fac2real(
         lower_lim=-1.0e30,
         fill_value=1.0e30,
         try_ppu=True,
-        **ppu_kwargs
+        shape=None,
+        mpts=None,
+        transform='none'
 ):
     """A replication of the PEST fac2real utility.
 
@@ -2609,23 +2634,28 @@ def fac2real(
     Args:
         pp_file (str or pd.DataFrame): PEST-type pilot points file or DataFrame with at least
             'name' and 'parval1' columns.
-        factors_file (`str`): PEST-style factors file
-        out_file (`str`): filename of array to write.  If None, array is returned, else
+        factors_file (path-like): PEST-style factors file
+        out_file (path-like): filename of array to write.  If None, array is returned, else
             value of out_file is returned.  Default is None.
         upper_lim (`float`): maximum interpolated value in the array.  Values greater than
             `upper_lim` are set to fill_value
         lower_lim (`float`): minimum interpolated value in the array.  Values less than
             `lower_lim` are set to fill_value
         fill_value (`float`): the value to assign array nodes that are not interpolated
-        try_ppu (`bool`): try to use pypestutils function. Default is True. Note,
-        **ppu_kwargs: additional keyword arguments passed to ppu implementation if try_ppu is True.
-            Required kwargs for pypestutils.fac2real include:
-                'shape' (tuple of ints, or string form of tuple of ints) giving the shape
-                    of the output array.
-            Optional kwargs include:
-                'mpts' (int) giving the number of target points for interp.
-                    If not passed this will be implied from 'shape'
-                'transform' (str) giving the transform type. Default is 'none'.
+        try_ppu (`bool`): try to use pypestutils function. Default is True.
+            Note, this will likely fail is fac file was not set up through ppu methods,
+            as currently defaulting to binary option for speed.
+
+    PPU Specific Args:
+        shape (tuple of `int` or str): ppu specific argument giving shape of the
+            output array. Required for ppu options. NOT USED IF `try_ppu`
+            IS False.
+        mpts: (int) ppu specific argument for number of target points for interp.
+            If not passed this will be implied from 'shape'. NOT USED IF `try_ppu`
+            IS False.
+        transform: (str) ppu specific argument for the data transform for interp.
+            'none' and 'log' are supported. Default is 'none'. NOT USED IF `try_ppu`
+            IS False.
 
     Returns:
         `numpy.ndarray`: if out_file is None
@@ -2638,16 +2668,16 @@ def fac2real(
 
     """
 
-    if pp_file is not None and isinstance(pp_file, str):
+    if pp_file is not None and isinstance(pp_file, (str, Path)):
         assert os.path.exists(pp_file)
         # pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
         #                       names=["name","parval1"],usecols=[0,4])
         pp_data = pp_file_to_dataframe(pp_file)
-        pp_data.loc[:, "name"] = pp_data.name.apply(lambda x: x.lower())
     elif pp_file is not None and isinstance(pp_file, pd.DataFrame):
         assert "name" in pp_file.columns
         assert "parval1" in pp_file.columns
         pp_data = pp_file
+        pp_data.loc[:, "name"] = pp_data.name.str.lower()
     else:
         raise Exception(
             "unrecognized pp_file arg: must be str or pandas.DataFrame, not {0}".format(
@@ -2658,10 +2688,9 @@ def fac2real(
     # a few checks before trying ppu
     if try_ppu:
         # need shape arg for ppu
-        shape = ppu_kwargs.get("shape", None)
         if shape is not None:
             if isinstance(shape, str):
-                shape = tuple([int(x) for x in shape.strip('()').split(",")])
+                shape = tuple(int(x) for x in shape.strip('()').split(",") if len(x) > 0)
         else:
             print("need 'shape' arg for ppu fac2real, falling-back to pyemu version")
             try_ppu = False
@@ -2673,20 +2702,24 @@ def fac2real(
             try_ppu = False
     res = None
     if try_ppu:
-
+        if mpts is None:
+            mpts = np.array(shape).prod()
+        from pypestutils.pestutilslib import PestUtilsLibError
         try:
             res = ppu_fac2real(
                 source_vals=pp_data.parval1.values,
                 factor_filename=factors_file,
-                mpts=ppu_kwargs.get('mpts', np.multiply(*shape)),
-                transform=ppu_kwargs.get('transform'),
+                mpts=int(mpts),
+                transform=transform,
                 noint=fill_value,
-                out_shape=shape
+                out_shape=shape,
+                fac_ftype=0,
             )
-        except Exception: # generally exception from pypestutils... fallback
-            print("pypestutils fac2real failed, using pyemu version")
-            res = None
+        except PestUtilsLibError as e: # general exception from pypestutils... fallback
+            print("pypestutils fac2real failed, using pyemu version:\n"
+                  f"{e}")
 
+            res = None
     if res is None:
         res = org_fac2real(factors_file,
                            pp_data=pp_data,
@@ -2697,7 +2730,8 @@ def fac2real(
     res[res > upper_lim] = upper_lim
 
     if out_file is not None:
-        if out_file.endswith(".npy"):
+        out_file = Path(out_file)
+        if out_file.suffix == ".npy":
             np.save(out_file, res)
         else:
             np.savetxt(out_file, res, fmt="%15.6E", delimiter="")
@@ -2708,18 +2742,34 @@ def org_fac2real(factors_file,
                  pp_file=None,
                  pp_data=None,
                  fill_value=1.0e30):
+    """original pyemu implementation of fac2real
+    Args:
+        factors_file (str): filename of PEST-style factors file
+        pp_file (str): filename of PEST-style pilot points file
+        pp_data (pd.DataFrame): dataframe of pilot point data with at least
+            'name' and 'parval1' columns.
+    """
+    t0 = datetime.now()
+    if pp_data is None and pp_file is not None:
+        pp_data = pp_file_to_dataframe(pp_file)
 
     with open(factors_file, "r") as f_fac:
         fpp_file = f_fac.readline()
         if pp_file is None and pp_data is None:
             pp_data = pp_file_to_dataframe(fpp_file)
-            pp_data.loc[:, "name"] = pp_data.name.apply(lambda x: x.lower())
+            pp_data.loc[:, "name"] = pp_data.name.str.lower()
 
         fzone_file = f_fac.readline()
         ncol, nrow = [int(i) for i in f_fac.readline().strip().split()]
         npp = int(f_fac.readline().strip())
-        pp_names = [f_fac.readline().strip().lower() for _ in range(npp)]
 
+        # check that pp_data is the correct length w.r.t. npp
+        if len(pp_data) != npp:
+            raise ValueError(f"The length of pp_data ({len(pp_data)}) "
+                             f"does not match the number of pilot points referenced in"
+                             f" the factors file ({npp}).")
+
+        pp_names = [f_fac.readline().strip().lower() for _ in range(npp)]
         # check that pp_names is sync'd with pp_data
         diff = set(list(pp_data.name)).symmetric_difference(set(pp_names))
         if len(diff) > 0:
@@ -2728,6 +2778,9 @@ def org_fac2real(factors_file,
                 + "between the factors file and the pilot points file "
                 + ",".join(list(diff))
             )
+
+        # with this factors file we can be sure that the pp order is the same
+        pp_data = pp_data.set_index('name').loc[pp_names].reset_index()
 
         arr = np.zeros((nrow, ncol), dtype=np.float64) + fill_value
         pp_dict = {int(name): val for name, val in zip(pp_data.index, pp_data.parval1)}
@@ -2755,6 +2808,8 @@ def org_fac2real(factors_file,
             col = inode - ((row - 1) * ncol)
             # arr[row-1,col-1] = np.sum(np.array(fac_prods))
             arr[row - 1, col - 1] = fac_sum
+    td = (datetime.now() - t0).total_seconds()
+    print(f"fac2real completed in {td: .4f} seconds")
     return arr
 
 
@@ -2764,7 +2819,7 @@ def ppu_fac2real(source_vals: np.ndarray,
                  out_shape: tuple,
                  ppulib: object = None,
                  transform: str = "none",
-                 fac_ftype: str = 'binary',
+                 fac_ftype: str | int = 'binary',
                  krigtype: str | int = 'ordinary',
                  noint: float = None) -> np.ndarray:
     """Calculate array from pre-defined kriging factors using pypestutils
@@ -2777,7 +2832,7 @@ def ppu_fac2real(source_vals: np.ndarray,
         ppulib (PestUtilsLib): Pre-instantiated pypestutils PestUtilsLib object. If None,
             a new instance will be created and cleaned up within this call.
         transform (str): Interpolation of transformed values. Options are "none" and "log".
-        fac_ftype (str): factor_filename file type. Options are 'binary' and 'text'.
+        fac_ftype (str or int): factor_filename file type. Options are '0:binary' and '1:text'.
             Application to binary factor files is more efficient.
         krigtype (int or str): kriging type. Options are 'ordinary' or 1 for ordinary kriging,
             'simple' or 0 for simple kriging.
@@ -2787,6 +2842,7 @@ def ppu_fac2real(source_vals: np.ndarray,
     Returns:
 
     """
+    t0 = datetime.now()
     if ppulib is None:
         # get ppulib -- will need to clean up mem at the end of this call
         ppulib = _try_import_ppu()()
@@ -2798,9 +2854,9 @@ def ppu_fac2real(source_vals: np.ndarray,
     if noint is None:
         # some default for non interp fallback
         if transform=="none":
-            noint = 1.
-        else:
             noint = 0.
+        else:
+            noint = 1.
 
     # ppu krige of pp values
     result = ppulib.krige_using_file(
@@ -2816,10 +2872,11 @@ def ppu_fac2real(source_vals: np.ndarray,
     if cleanup:
         ppulib.free_all_memory()
     # check result
-    assert mpts == result["icount_interp"]
     result = result["targval"]
     # reshape
     result = result.reshape(out_shape)
+    td = (datetime.now() - t0).total_seconds()
+    print(f"ppu_fac2real completed in {td: .4f}")
     return result
 
 def _parse_factor_line(first_line,f_fac):

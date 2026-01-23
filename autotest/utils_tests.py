@@ -1,5 +1,7 @@
 import os
 import shutil
+
+import matplotlib.pyplot as plt
 import pytest
 import platform
 # if not os.path.exists("temp"):
@@ -329,7 +331,83 @@ def tpl_to_dataframe_test(tmp_path):
 #     pyemu.optimization.to_mps(jco=jco_file,obj_func=obj_func,decision_var_names=decision_var_names,
 #                               risk=0.975)
 
-def setup_pp_test(tmp_path):
+def _run_krige_and_check(sr, gs, pp_info, tmp_path='.', **fac_kwargs):
+    import numpy as np
+    shp = (sr.nrow, sr.ncol)
+    # if pp_info is derived from setup_pilotpoint_grid then pargp will reflect
+    # prefixes for pilot point file names (and tpl file names)
+    if 'pargp' not in pp_info:
+        ppgps = ['pargp']
+    else:
+        ppgps = pp_info.pargp.unique()
+
+    if 'maxpts_interp' not in fac_kwargs:
+        fac_kwargs['maxpts_interp'] = 50
+    ok = pyemu.geostats.OrdinaryKrigeOrg(gs, pp_info)
+    ok.calc_factors_grid(sr, **fac_kwargs)
+    pyemu_fac_file = Path(tmp_path, f"{'_'.join(ppgps)}_pyemu_facs.dat")
+    ok.to_grid_factors_file(pyemu_fac_file)
+
+    okppu = pyemu.geostats.OrdinaryKrige(None, pp_info)
+    ppu_fac_file = Path(tmp_path, f"{'_'.join(ppgps)}_ppu_facs.dat")
+    okppu.calc_factors(sr, geostruct=gs,
+                       fac_fname=ppu_fac_file,
+                       **fac_kwargs)
+
+    for pp in ppgps:
+        pp_file = Path(tmp_path, f"{pp}pp.dat")
+        if not pp_file.exists():
+            pp_file = pp_info.copy()
+            if 'parval1' not in pp_file.columns:
+                pp_file['parval1'] = 1
+        pyemures = pyemu.geostats.fac2real(pp_file=pp_file,
+                                           factors_file=pyemu_fac_file,
+                                           transform=gs.transform)
+        ppures = pyemu.geostats.fac2real(pp_file=pp_file,
+                                         factors_file=ppu_fac_file,
+                                         shape=shp,
+                                         transform=gs.transform)
+        # IF parval is 1, things should be pretty close!
+        assert np.isclose(pyemures, ppures).all()
+
+    if isinstance(pp_file, Path):
+        pp_data = pyemu.geostats.pp_file_to_dataframe(pp_file)
+    else:
+        pp_data = pp_file.copy()
+    pp_data['parval1'] = np.linspace(1,100, len(pp_data))
+    pp_data[['i', 'j']] = pp_info.groupby(level=0)[['i','j']].first()
+    pyemures = pyemu.geostats.fac2real(pp_file=pp_data,
+                                       factors_file=pyemu_fac_file,
+                                       transform=gs.transform)
+    dif = abs(pp_data.parval1 - pyemures[tuple(pp_data[['i','j']].values.T)])
+    # can only compare with pp point parval1 if they arei n the same zone
+    za = fac_kwargs.get('zone_array', None)
+    if 'zone' in pp_data.columns and za is not None:
+        mask = pp_data.zone == za[tuple(pp_data[['i','j']].values.T)]
+    else:
+        mask = [True] * len(pp_data)
+    dif = dif[mask]
+    if not dif.empty:
+        assert np.isclose(dif, 0).all(), f"max diff: {dif.max()}"
+
+    ppures = pyemu.geostats.fac2real(pp_file=pp_data,
+                                     factors_file=ppu_fac_file,
+                                     shape=shp,
+                                     transform=gs.transform)
+    dif = abs(pp_data.parval1 - ppures[tuple(pp_data[['i','j']].values.T)])
+    dif = dif[mask]
+    if not dif.empty:
+        assert np.isclose(dif, 0).all(), f"max diff: {dif.max()}"
+
+    # negative factor treatment means that facs aren't that comparable
+    # assert np.isclose(ppures, pyemures).all()
+    # dif = ppures - pyemures
+    # import matplotlib.pyplot as plt
+    # plt.imshow(dif)
+    # plt.colorbar()
+    pass
+
+def test_setup_pp(tmp_path):
     import os
     import pyemu
     try:
@@ -346,45 +424,52 @@ def setup_pp_test(tmp_path):
         os.path.join(ml.model_ws, ml.namefile),
         delc=ml.dis.delc, delr=ml.dis.delr)
     sr.rotation = 0.
-    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr, prefix_dict={0: "hk1",1:"hk2"},
-                                                           every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
-                                                           shapename=os.path.join(tmp_path, "test_unrot.shp"),
-                                                           )
+
+    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr, prefix_dict={0: "hk1",1:"hk2"},
+        every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+        shapename=os.path.join(tmp_path, "test_unrot.shp"),
+    )
     #print(par_info_unrot.parnme.value_counts())
     gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0))
-    ok = pyemu.geostats.OrdinaryKrige(gs,par_info_unrot)
-    ok.calc_factors_grid(sr)
-    
+    _run_krige_and_check(sr, gs, par_info_unrot, tmp_path=tmp_path)
+
     sr2 = pyemu.helpers.SpatialReference.from_gridspec(
         os.path.join(ml.model_ws, "test.spc"), lenuni=2)
-    par_info_drot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr2, prefix_dict={0: ["hk1_", "sy1_", "rch_"]},
-                                                           every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
-                                                           shapename=os.path.join(tmp_path, "test_unrot.shp"),
-                                                           )
-    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
-    ok.calc_factors_grid(sr2)
+    par_info_drot = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr2, prefix_dict={0: ["hk1_", "sy1_", "rch_"]},
+        every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+        shapename=os.path.join(tmp_path, "test_unrot.shp"),
+    )
+    _run_krige_and_check(sr2, gs, par_info_drot, tmp_path=tmp_path)
 
-    par_info_mrot = pyemu.pp_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
-                                                     every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
-                                                     shapename=os.path.join(tmp_path,"test_unrot.shp"))
-    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
-    ok.calc_factors_grid(sr)
+    par_info_mrot = pyemu.pp_utils.setup_pilotpoints_grid(
+        ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
+        every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
+        shapename=os.path.join(tmp_path,"test_unrot.shp"))
+    sr3 = pyemu.utils.helpers.SpatialReference.from_namfile(
+        os.path.join(ml.model_ws, ml.namefile),
+        delr=ml.modelgrid.delr,
+        delc=ml.modelgrid.delc,
+    )
+    _run_krige_and_check(sr3, gs, par_info_mrot, tmp_path=tmp_path)
 
-
-
-    sr.rotation = 15
+    sr.rotation = 45
     #ml.export(os.path.join("temp","test_rot_grid.shp"))
-
     #pyemu.gw_utils.setup_pilotpoints_grid(ml)
-
-    par_info_rot = pyemu.pp_utils.setup_pilotpoints_grid(sr=sr,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
-                                                     shapename=os.path.join(tmp_path, "test_rot.shp"))
-    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
-    ok.calc_factors_grid(sr)
-    print(par_info_unrot.x)
-    print(par_info_drot.x)
-    print(par_info_mrot.x)
-    print(par_info_rot.x)
+    par_info_rot = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+        shapename=os.path.join(tmp_path, "test_rot.shp")
+    )
+    _run_krige_and_check(sr, gs, par_info_rot, tmp_path=tmp_path)
+    # ok = pyemu.geostats.OrdinaryKrigeOrg(gs, par_info_rot)
+    # ok.calc_factors_grid(sr)
+    # okppu = pyemu.geostats.OrdinaryKrige(None,par_info_rot)
+    # okppu.calc_factors(sr, "facs.fac", geostruct=gs)
+    # print(par_info_unrot.x)
+    # print(par_info_drot.x)
+    # print(par_info_mrot.x)
+    # print(par_info_rot.x)
 
 
 def read_hob_test(tmp_path):
@@ -582,7 +667,7 @@ def ok_test(tmp_path):
     shutil.copy(o_str_file, str_file)
     pts_data = pd.DataFrame({"x":[1.0,2.0,3.0],"y":[0.,0.,0.],"name":["p1","p2","p3"]})
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
-    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
+    ok = pyemu.utils.geostats.OrdinaryKrigeOrg(gs,pts_data)
     interp_points = pts_data.copy()
     kf = ok.calc_factors(interp_points.x,interp_points.y)
     #for ptname in pts_data.name:
@@ -591,29 +676,53 @@ def ok_test(tmp_path):
         assert kf.loc[i,"ifacts"][0] == 1.0
         assert sum(kf.loc[i,"ifacts"]) == 1.0
     print(kf)
+    # at least make sure that PPU runs for this simple case
+    okppu = pyemu.utils.geostats.OrdinaryKrige(None,pts_data)
+    mpts = okppu.calc_factors(interp_points, gs,
+                              fac_fname=Path(tmp_path, "factors.dat"),
+                              fac_ftype=1)
+    kdf = pd.read_csv(Path(tmp_path, "factors.dat"), skiprows=2,
+                      sep=r'\s+', header=None, index_col=0)
+    assert (kdf[3] == kdf.index).all()
+    assert (kdf[4] == 1.0).all()
 
     # evaluate the negative factor correction
     # set up some points with a cluster far from a single points - this triggers some negative factors for testing
-    pts_data = pd.DataFrame({"x":[1.0,1.0,1.0,1.0,2.0,3.0, 3500.0],"y":[0.,0.1,-0.1,0.001,0.,0.,0.],"name":["p1","p2","p3","p4","p5","p6","p7"]})     
-    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
+    pts_data = pd.DataFrame({"x":[1.0,1.0,1.0,1.0,2.0,3.0, 3500.0],"y":[0.,0.1,-0.1,0.001,0.,0.,0.],"name":["p1","p2","p3","p4","p5","p6","p7"]})
+    ok = pyemu.utils.geostats.OrdinaryKrigeOrg(gs,pts_data)
     # evaluate factors with and without negative correction
     kf2_nocorr = ok.calc_factors([1000.0],[0.],remove_negative_factors=False)
     kf2_corr = ok.calc_factors([1000.0],[0.])
+
+    okppu = pyemu.utils.geostats.OrdinaryKrige(None,pts_data)
+    mpts = okppu.calc_factors([1000.0, 0.0], gs,
+                                     fac_fname=Path(tmp_path, "factors.dat"),
+                                     fac_ftype=1)
+    ifactscols = [0] + list(np.arange(4, 5 + (len(pts_data) - 1) * 2)[::2])
+    kdf = pd.read_csv(Path(tmp_path, "factors.dat"), skiprows=2,
+                      sep=r'\s+', header=None, index_col=0,
+                      usecols=ifactscols)
     
     print(kf2_nocorr)
     print(kf2_corr)
+    print(kdf)
     # do some checking here
     # do all the factors sum to unity with and without correction?
     assert np.isclose(kf2_nocorr.iloc[0].ifacts.sum(), 1,atol=1e-6)
     assert np.isclose(kf2_corr.iloc[0].ifacts.sum(), 1,atol=1e-6)
+    assert np.isclose(kdf.sum(axis=1), 1,atol=1e-6)
     
     # are the corrected factors still reasonably close to the uncorrected positive values?
     fcorr = kf2_corr.iloc[0].ifacts
     fnocorr = kf2_nocorr.iloc[0].ifacts
-    np.allclose(fcorr,fnocorr[fnocorr>0], atol=1e-2)
+    assert np.allclose(fcorr,fnocorr[fnocorr>0], atol=1e-2)
+
+    orgfacs = np.array(sorted(fnocorr))
+    ppu_facs = np.array(sorted(kdf.values[0]))
+    assert np.allclose(orgfacs, ppu_facs, atol=1e-5)
 
 
-def ok_grid_test(tmp_path):
+def test_ok_grid(tmp_path):
 
     try:
         import flopy
@@ -627,26 +736,31 @@ def ok_grid_test(tmp_path):
     delr = np.ones((ncol)) * 1.0/float(ncol)
     delc = np.ones((nrow)) * 1.0/float(nrow)
 
-    num_pts = 0
-    ptx = np.random.random(num_pts)
-    pty = np.random.random(num_pts)
-    ptname = ["p{0}".format(i) for i in range(num_pts)]
-    pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
-    pts_data.index = pts_data.name
-    pts_data = pts_data.loc[:,["x","y","name"]]
-    pts_data['name'] = pts_data.name.astype(str)
+    # num_pts = 0
+    # ptx = np.random.random(num_pts)
+    # pty = np.random.random(num_pts)
+    # ptname = ["p{0}".format(i) for i in range(num_pts)]
+    # pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
+    # pts_data = pts_data.set_index('name', drop=False)
+    # pts_data = pts_data.loc[:,['x', 'y',"name"]]
+    # pts_data['name'] = pts_data.name.astype(str)
 
     sr = pyemu.helpers.SpatialReference(delr=delr,delc=delc)
-    pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
-    pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
+    pts_data = pd.DataFrame.from_dict({"i0j0": {'i':0, 'j':0},
+                                       "imxjmx": {'i': nrow-1, 'j': ncol-1}},
+                                      orient='index')
+    pts_data['name'] = pts_data.index
+    ijs = tuple(pts_data[['i','j']].values.T)
+    pts_data[['x', 'y']] = list(zip(sr.xcentergrid[ijs], sr.ycentergrid[ijs]))
     str_file = os.path.join("utils","struct_test.dat")
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
-    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
-    kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join(tmp_path,"test_var.ref"),minpts_interp=1)
-    ok.to_grid_factors_file(os.path.join(tmp_path,"test.fac"))
+    _run_krige_and_check(sr, gs, pts_data, tmp_path=tmp_path, minpts_interp=1)
+    # ok = pyemu.utils.geostats.OrdinaryKrige(gs, pts_data)
+    # kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join(tmp_path,"test_var.ref"),minpts_interp=1)
+    # ok.to_grid_factors_file(os.path.join(tmp_path,"test.fac"))
 
 
-def ok_grid_zone_test(tmp_path):
+def test_ok_grid_zone(tmp_path):
 
     try:
         import flopy
@@ -660,33 +774,44 @@ def ok_grid_zone_test(tmp_path):
     delr = np.ones((ncol)) * 1.0/float(ncol)
     delc = np.ones((nrow)) * 1.0/float(nrow)
 
-    num_pts = 0
-    ptx = np.random.random(num_pts)
-    pty = np.random.random(num_pts)
-    ptname = ["p{0}".format(i) for i in range(num_pts)]
-    pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
-    pts_data.index = pts_data.name
-    pts_data = pts_data.loc[:,["x","y","name"]]
-    pts_data['name'] = pts_data.name.astype(str)
-
+    # num_pts = 0
+    # ptx = np.random.random(num_pts)
+    # pty = np.random.random(num_pts)
+    # ptname = ["p{0}".format(i) for i in range(num_pts)]
+    # pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
+    # pts_data.index = pts_data.name
+    # pts_data = pts_data.loc[:,["x","y","name"]]
+    # pts_data['name'] = pts_data.name.astype(str)
+    #
     sr = pyemu.helpers.SpatialReference(delr=delr,delc=delc)
-    pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
-    pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
-    pts_data.loc[:, "zone"] = 1
-    pts_data.loc[pts_data.index[1], "zone"] = 2
+    # pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
+    # pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
+    # pts_data.loc[:, "zone"] = 1
+    # pts_data.loc[pts_data.index[1], "zone"] = 2
+    pts_data = pd.DataFrame.from_dict({"i0j0": {'i':0, 'j':0},
+                                       "imxjmx": {'i': nrow-1, 'j': ncol-1}},
+                                      orient='index')
+    pts_data['name'] = pts_data.index
+    ijs = tuple(pts_data[['i','j']].values.T)
+    pts_data[['x', 'y']] = list(zip(sr.xcentergrid[ijs], sr.ycentergrid[ijs]))
+    pts_data['zone'] = [1,2]
     print(pts_data.zone.unique())
     str_file = os.path.join("utils","struct_test.dat")
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
-    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
+    # ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
     zone_array = np.ones((nrow,ncol))
     zone_array[0,0] = 2
-    kf = ok.calc_factors_grid(sr,verbose=False,
-                              var_filename=os.path.join(tmp_path,"test_var.ref"),
-                              minpts_interp=1,zone_array=zone_array,num_threads=2)
-    ok.to_grid_factors_file(os.path.join(tmp_path,"test.fac"))
+    _run_krige_and_check(sr, gs, pts_data, tmp_path=tmp_path,
+                         minpts_interp=1,
+                         num_threads=2,
+                         zone_array=zone_array)
+    # kf = ok.calc_factors_grid(sr,verbose=False,
+    #                           var_filename=os.path.join(tmp_path,"test_var.ref"),
+    #                           minpts_interp=1,zone_array=zone_array,num_threads=2)
+    # ok.to_grid_factors_file(os.path.join(tmp_path,"test.fac"))
 
 
-def ppk2fac_verf_test(tmp_path):
+def test_ppk2fac_verf(tmp_path):
     import os
     import numpy as np
     import pyemu
@@ -707,22 +832,70 @@ def ppk2fac_verf_test(tmp_path):
     ppk2fac_facfile = os.path.join(tmp_path, filedict['ppk2fac_facfile'])
     zone_arr = np.loadtxt(os.path.join(tmp_path, os.path.basename(filedict["zone_arr"])))
     pyemu_facfile = os.path.join(tmp_path, "pyemu_facfile.dat")
+
     sr = pyemu.helpers.SpatialReference.from_gridspec(gspc_file)
-    ok = pyemu.utils.OrdinaryKrige(str_file, pp_file)
-    ok.calc_factors_grid(sr, maxpts_interp=10)
+    ok = pyemu.utils.OrdinaryKrigeOrg(str_file, pp_file)
+    ok.calc_factors_grid(sr, maxpts_interp=10, zone_array=zone_arr)
     ok.to_grid_factors_file(pyemu_facfile)
 
-    pyemu_arr = pyemu.utils.fac2real(pp_file,pyemu_facfile,out_file=None)
-    ppk2fac_arr = pyemu.utils.fac2real(pp_file,ppk2fac_facfile,out_file=None)
-    pyemu_arr[zone_arr == 0] = np.nan
-    pyemu_arr[zone_arr == -1] = np.nan
-    ppk2fac_arr[zone_arr == 0] = np.nan
-    ppk2fac_arr[zone_arr == -1] = np.nan
+    pyemu_arr = pyemu.utils.fac2real(pp_file,pyemu_facfile, out_file=None)
+    ppk2fac_arr = pyemu.utils.fac2real(pp_file,ppk2fac_facfile, out_file=None)
+
+    nullzn = (zone_arr == 0) | (zone_arr == -1)
+    pyemu_arr[nullzn] = np.nan
+    ppk2fac_arr[nullzn] = np.nan
 
     diff = np.abs(pyemu_arr - ppk2fac_arr)
-    print(diff)
+    # print(diff)
 
     assert np.nansum(diff) < 1.0e-6,np.nansum(diff)
+
+    # TODO what to do with testing PPU here -- ppu only supports single vario structure
+    # This defo isn't right but it is something.
+    ppu_facfile = Path(tmp_path, "ppu_facfile.fac")
+    okppu = pyemu.utils.OrdinaryKrige(None, pp_file)
+    with pytest.raises(ValueError):
+        okppu.calc_factors(sr, str_file,
+                           fac_fname=ppu_facfile,
+                           maxpts_interp=10,
+                           zone_array=zone_arr)
+    # read gs and run for single vario
+    gs = pyemu.utils.geostats.read_struct_file(str_file)
+    # okppu = pyemu.utils.OrdinaryKrige(None, pp_file)
+    cs = []
+    fnames = []
+    for v in gs.variograms:
+        tmp_fac_file = ppu_facfile.with_stem(ppu_facfile.stem + f"_{v.name}")
+        okppu.calc_factors(sr, v,
+                           fac_fname=tmp_fac_file,
+                           maxpts_interp=10,
+                           zone_array=zone_arr)
+        fnames.append(tmp_fac_file)
+        cs.append(v.contribution)
+
+    ars = []
+    for fac_fname in fnames:
+        ars.append(pyemu.utils.fac2real(pp_file, fac_fname, shape=(sr.nrow, sr.ncol),
+                                        transform=gs.transform))
+    ppu_arr = sum([a * c for a, c in zip(ars, cs)]) / sum(cs)
+    ppu_arr[nullzn] = np.nan
+    np.abs(ppu_arr - ppk2fac_arr)
+
+
+    pp_data = pyemu.geostats.pp_file_to_dataframe(pp_file)
+    pp_data['parval1'] = np.linspace(1, 100, len(pp_data))
+    ars = []
+    for fac_fname in fnames:
+        ars.append(pyemu.utils.fac2real(pp_data, fac_fname, shape=(sr.nrow, sr.ncol),
+                                        transform=gs.transform))
+    ppu_arr = sum([a * c for a, c in zip(ars, cs)]) / sum(cs)
+    ppu_arr[nullzn] = np.nan
+
+    ppk2fac_arr = pyemu.utils.fac2real(pp_data,ppk2fac_facfile, out_file=None)
+    ppk2fac_arr[nullzn] = np.nan
+
+    np.abs(ppu_arr - ppk2fac_arr)
+    pass
 
 
 # def opt_obs_worth():
@@ -2646,38 +2819,27 @@ def test_ppu_geostats(tmp_path):
         every_n_cell=6, pp_dir=pp_dir, tpl_dir=pp_dir,
         shapename=os.path.join(tmp_path, "test_unrot.shp"),
     )
+    # This actually produces 2 pp for each pp because of the prefix_dict above
     #print(par_info_unrot.parnme.value_counts())
+    # fill with a parval for testing
     par_info_unrot.loc[:,"parval1"] = np.random.uniform(10,100,par_info_unrot.shape[0])
-    gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0,anisotropy=3.0,bearing=45))
-    ok = pyemu.geostats.OrdinaryKrige(gs,par_info_unrot)
-    ppu_factor_filename = Path(tmp_path, "ppu_factors.dat")
-    pyemu_factor_filename = Path(tmp_path, "pyemu_factors.dat")
 
-    ok.calc_factors_grid(sr, try_use_ppu=False)
+    gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0,anisotropy=3.0,bearing=45))
+
+    # double pp should be collapsed into single pp for kriging
+    # (the different values don't matter for factor cals, just locations)
+    # but they do matter for fac2real. This should fail:
+    ok = pyemu.geostats.OrdinaryKrigeOrg(gs,par_info_unrot)
+    ok.calc_factors_grid(sr)
+    pyemu_factor_filename = Path(tmp_path, "pyemu_factors.dat")
     ok.to_grid_factors_file(pyemu_factor_filename)
-    ok.calc_factors_grid(sr, try_use_ppu=True,
-                         ppu_factor_filename=ppu_factor_filename)
     out_file = Path(tmp_path, "pyemu_array.dat")
-    pyemu.geostats.fac2real(par_info_unrot,
-                            pyemu_factor_filename, out_file=out_file)
-    out_file_ppu = Path(tmp_path, "ppu_array.dat")
-    pyemu.geostats.fac2real(par_info_unrot,
-                            ppu_factor_filename, out_file=out_file_ppu)
-    arr_ppu = np.loadtxt(out_file_ppu)
-    arr = np.loadtxt(out_file)
-    diff = 100 * np.abs(arr - arr_ppu) / np.abs(arr)
-    assert diff.max() < 1.0
-    # fig,axes = plt.subplots(1,3,figsize=(10,10))
-    # cb = axes[0].imshow(arr)
-    # plt.colorbar(cb, ax=axes[0])
-    #
-    # cb = axes[1].imshow(arr_ppu,vmin=arr.min(),vmax=arr.max())
-    # plt.colorbar(cb, ax=axes[1])
-    #
-    # cb = axes[2].imshow(diff)
-    # plt.colorbar(cb,ax=axes[2])
-    # plt.show()
-    # exit()
+    with pytest.raises(ValueError):
+        pyemu.geostats.fac2real(par_info_unrot,
+                                pyemu_factor_filename,
+                                out_file=out_file)
+    _run_krige_and_check(sr, gs, par_info_unrot, tmp_path)
+
 
 def ppw_worker(id_num,case,t_d,host,port,frun):
     import numpy as np
