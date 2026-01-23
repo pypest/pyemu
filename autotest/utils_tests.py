@@ -862,40 +862,14 @@ def test_ppk2fac_verf(tmp_path):
     # read gs and run for single vario
     gs = pyemu.utils.geostats.read_struct_file(str_file)
     # okppu = pyemu.utils.OrdinaryKrige(None, pp_file)
-    cs = []
-    fnames = []
-    for v in gs.variograms:
-        tmp_fac_file = ppu_facfile.with_stem(ppu_facfile.stem + f"_{v.name}")
-        okppu.calc_factors(sr, v,
-                           fac_fname=tmp_fac_file,
-                           maxpts_interp=10,
-                           zone_array=zone_arr)
-        fnames.append(tmp_fac_file)
-        cs.append(v.contribution)
-
-    ars = []
-    for fac_fname in fnames:
-        ars.append(pyemu.utils.fac2real(pp_file, fac_fname, shape=(sr.nrow, sr.ncol),
-                                        transform=gs.transform))
-    ppu_arr = sum([a * c for a, c in zip(ars, cs)]) / sum(cs)
-    ppu_arr[nullzn] = np.nan
-    np.abs(ppu_arr - ppk2fac_arr)
-
-
     pp_data = pyemu.geostats.pp_file_to_dataframe(pp_file)
-    pp_data['parval1'] = np.linspace(1, 100, len(pp_data))
-    ars = []
-    for fac_fname in fnames:
-        ars.append(pyemu.utils.fac2real(pp_data, fac_fname, shape=(sr.nrow, sr.ncol),
-                                        transform=gs.transform))
-    ppu_arr = sum([a * c for a, c in zip(ars, cs)]) / sum(cs)
-    ppu_arr[nullzn] = np.nan
+    pp_data[['i', 'j']] = np.array(sr.get_ij(pp_data.x.values, pp_data.y.values)).T
+    for v in gs.variograms:
+        # tmp_fac_file = ppu_facfile.with_stem(ppu_facfile.stem + f"_{v.name}")
+        gs = pyemu.utils.geostats.GeoStruct(variograms=v)
+        _run_krige_and_check(sr, gs, pp_data.copy(), tmp_path=tmp_path, zone_array=zone_arr,
+                             maxpts_interp=10)
 
-    ppk2fac_arr = pyemu.utils.fac2real(pp_data,ppk2fac_facfile, out_file=None)
-    ppk2fac_arr[nullzn] = np.nan
-
-    np.abs(ppu_arr - ppk2fac_arr)
-    pass
 
 
 # def opt_obs_worth():
