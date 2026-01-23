@@ -4610,7 +4610,7 @@ def gpr_pyworker_legacy(pst,host,port,input_df=None,mdf=None):
 
 
 def gpr_pyworker(pst,host,port,input_df=None,mdf=None,gpr=False):
-
+    from pyemu.emulators import GPR
     if gpr is False:
         print("WARNING: using legacy gpr_pyworker function, which is deprecated")
         gpr_pyworker_legacy(pst,host,port,input_df=input_df,mdf=mdf)
