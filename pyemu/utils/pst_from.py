@@ -543,8 +543,10 @@ class PstFrom(object):
             )
             f.write("import pyemu\n")
             for ex_imp in self.extra_py_imports:
-                f.write("import {0}\n".format(ex_imp))
-
+                if ex_imp.startswith("from"):
+                    f.write("{0}\n".format(ex_imp))
+                else:
+                    f.write("import {0}\n".format(ex_imp))
             for func_lines in self._function_lines_list:
                 f.write("\n")
                 f.write("# function added thru PstFrom.add_py_function()\n")
