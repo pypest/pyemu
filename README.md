@@ -10,10 +10,12 @@ ensemble generation and handling
 Main branch:
 [![pyemu continuous integration](https://github.com/pypest/pyemu/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pypest/pyemu/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=main)](https://coveralls.io/github/pypest/pyemu?branch=main)
+[![codecov](https://codecov.io/gh/pypest/pyemu/branch/main/graph/badge.svg?token=bnrI1JKvbk)](https://codecov.io/gh/pypest/pyemu)
 
 Develop branch:
 [![pyemu continuous integration](https://github.com/pypest/pyemu/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/pypest/pyemu/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/pypest/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/pypest/pyemu?branch=develop)
+[![codecov](https://codecov.io/gh/pypest/pyemu/graph/badge.svg?token=bnrI1JKvbk)](https://codecov.io/gh/pypest/pyemu)
 
 Documentation
 =============
@@ -22,7 +24,7 @@ Complete user's guide:
 
 [https://pyemu.readthedocs.io/en/latest/](https://pyemu.readthedocs.io/en/latest/)
 
-The pyEMU documentation is being treated as a first-class citizen!  Also see the example notebooks in the repo.
+The pyEMU documentation is being treated as a first-class citizen!  Also see the [example notebooks in the repo](https://github.com/pypest/pyemu/tree/main/examples), these are `.ipynb` files.
 
 What is pyEMU?
 ================
@@ -65,7 +67,7 @@ Examples
 
 Several example ipython notebooks are provided to demonstrate typical workflows for FOSM parameter and forecast uncertainty analysis as well as techniques to investigate parameter contributions to forecast uncertainty and observation data worth. Example models include the Henry saltwater intrusion problem (Henry 1964) and the model of Freyberg (1988)
 
-There is a whole world of detailed learning material for script-based approaches to parameter estimation and uncertainty quantification using PEST(++) at https://github.com/gmdsi/GMDSI_notebooks. These are and excellent resource for people picking up Pyemu for the first time and for those needing to revisit elements.
+There is a whole world of detailed learning material for script-based approaches to parameter estimation and uncertainty quantification using PEST(++) at https://github.com/gmdsi/GMDSI_notebooks. These are and excellent resource for people picking up pyEMU for the first time and for those needing to revisit elements.
 
 Related Links
 =============
@@ -94,7 +96,7 @@ After pyEMU is installed, the PEST++ software suite can be installed for your op
 
     get-pestpp :pyemu
 
-See [documentation](get_pestpp.md) for more information.
+See the [documentation](https://pyemu.readthedocs.io/en/latest/get_pestpp) for more information.
 
 Found a bug? Got a smart idea? Contributions welcome.
 ====================================================
@@ -104,14 +106,14 @@ pyEMU CI testing, using GitHub actions, has recently been switched over to run w
 We make use of [pytest-xdist](https://pytest-xdist.readthedocs.io/en/latest/) for parallel execution. 
 Some notes that might be helpful for building your PR and testing:
 * Test files are in [./autotest](https://github.com/pypest/pyemu/tree/develop/autotest)
-* Pytest settings are in [./autotest/conftest.py](./autotest/conftest.py) and [./autotest/pytest.ini](./autotest/pytest.ini)
+* Pytest settings are in [./autotest/conftest.py](./autotest/conftest.py) and [./pyproject.toml](autotest/pyproject.toml)
 * Currently, files ending `_tests.py` are collected
 * Functions starting `test_` or ending `_test` are collected
-* ipython notebooks in [.examples](./examples) are also run
+* ipython notebooks in [./examples](./examples) are also run
 * As tests are run in parallel, where tests require read/write access to files it is safest to sandbox runs. 
 Pytest has a built-in fixture `tmp_path` that can help with this. 
 Setting optional argument `--basetemp` can be helpful for accessing the locally run files. 
-## Running test locally
+## Running tests locally
 To be able to make clean use of pytests fixture decorators etc., 
 it is recommended to run local tests through `pytest` (rather than use from script execution and commenting in 
 __main__ block). For e.g.:
@@ -126,6 +128,15 @@ with pytest-xdist, local runs can be parallelized:
 
 ### Run a specific test [`this_test()`]:
 > pytest --basetemp=runner autotest/testfile_tests.py::this_test
+
+### Test dependencies
+
+Python dependencies for the test suite can be installed via `pip install -e .[optional, test]` (they are recorded in [`./pyproject.toml`](./pyproject.toml)). You should also include binaries for various integrations:
+
+* [PEST++](https://github.com/usgs/pestpp/releases), e.g. `pestpp-ies`, `pestpp-mou`, etc. These can be automatically installed via the `get-pestpp` script included with pyEMU (see above).
+* [MODFLOW exectuables](https://github.com/MODFLOW-ORG/executables), i.e. `mf6`, `mfnwt`, `mfusg_gsi`. These can be automatically installed using flopy's [`get-modflow`](https://flopy.readthedocs.io/en/latest/md/get_modflow.html) command. 
+
+These should be placed in the relevant `./bin/win`, `./bin/linux`, or `./bin/mac` directories (depending on your OS).
 
 ### Using an IDE:
 Most modern, feature-rich editors and IDEs support launching pytest within debug or run consoles. 

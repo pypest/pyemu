@@ -1,3 +1,8 @@
+"""Note - this script is only kept for legacy reasons as a reference.
+
+It no longer runs successfully on Python 3.
+"""
+
 import os
 import platform
 from datetime import datetime

@@ -4,151 +4,113 @@ on:
   schedule:
     - cron: '0 8 * * *' # run at 8 AM UTC (12 AM PST, 8 PM NZST)
   push:
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   workflow_dispatch:
-
 jobs:
   pyemuCI:
     name: autotests
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: [
+          "3.10",
+          "3.11",
+          "3.12",
+          "3.13",
+          "3.14"
+        ]
         run-type: [std]
-        test-path: ["."]
+        test-path: ["autotest"]
         include:
           - os: macos-latest
-            python-version: 3.12
+            python-version: 3.13
             run-type: std
-            test-path: "."
+            test-path: "autotest"
 
     steps:
     - name: Checkout repo
-      uses:  actions/checkout@v4 # checksout this repo
+      uses:  actions/checkout@v5 # checksout this repo
 
-    - name: Set Windows ENV
-      if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@v1
-
-    # Setup conda env
-    - name: Install Conda environment using micromamba
-      uses: mamba-org/setup-micromamba@v1
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
       with:
-        environment-file: etc/environment.yml
-        environment-name: pyemu
-        create-args: >-
-          python=${{ matrix.python-version }}
-        cache-downloads: true
-        cache-environment: true
-        cache-environment-key: environment-${{ steps.date.outputs.date }}
-        cache-downloads-key: downloads-${{ steps.date.outputs.date }}
+        python-version: ${{ matrix.python-version }}
 
-    - name: Checkout pypestutils
-      uses:  actions/checkout@v4
-      with:
-        repository: pypest/pypestutils
-        ref: develop
-        path: pypestutils
-
-#    - name: Install MinGW-w64 tools (Windows)
-#      if: runner.os == 'Windows'
-#      uses: msys2/setup-msys2@v2
-#      with:
-#        msystem: MINGW64
-#        path-type: inherit
-##        install: >-
-##          mingw-w64-x86_64-gcc-fortran
-##          mingw-w64-x86_64-lapack
-##          mingw-w64-x86_64-meson
-##          mingw-w64-x86_64-ninja
-
-    - name: Install meson and gfortran (for ppu)
-      shell: bash -l {0}
+    - name: Install the project [with TensorFlow]
+      if: ${{ matrix.python-version <= 3.13 }}
       run: |
-        micromamba install meson gfortran
+        uv sync --locked --extra optional --extra tests --extra tf
+        uv pip list
 
-    - name: Build pypestutils (Windows)
-      if: runner.os == 'Windows'
-      shell: bash -l {0}
-      working-directory: pypestutils
-      env:
-        LDFLAGS: -static-libgcc -static-libgfortran -static-libquadmath -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive
+    - name: Install the project [without TensorFlow]
+      if: ${{ matrix.python-version > 3.13 }}
       run: |
-        scripts/build_lib.sh
-
-    - name: Build pypestutils (non-Windows)
-      if: runner.os != 'Windows'
-      shell: bash -l {0}
-      working-directory: pypestutils
-      run: |
-        scripts/build_lib.sh
-
-    - name: Install pypestutils
-      shell: bash -l {0}
-      working-directory: pypestutils
-      run: |
-        pip install -e .
-
-    - name: Install pyemu
-      shell: bash -l {0}
-      run: |
-        pip install -e .
-        micromamba list
+        uv sync --locked --extra optional --extra tests
+        uv pip list
 
     - name: Install Modflow executables
       uses: modflowpy/install-modflow-action@v1
 
     - name: Add executables directory to path
+      # need to explicitly use bash shell to get $GITHUB_PATH to work
       shell: bash
       run: |
+        echo "adding bin dir '$MODFLOW_BIN_PATH' to path"
         echo "$MODFLOW_BIN_PATH" >> $GITHUB_PATH
+        echo "adding bin dir '$HOME/.local/bin' to path"
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-        echo $GITHUB_PATH
 
-    # order matters for this step - after setting path to executables
+    # order may matter for this step - after setting path to executables
     - name: Install PEST++ suite using get-pestpp
+      # again think we need bash to get path expansion to work
       shell: bash -l {0}
       run: |
-        get-pestpp :home
+        uv run get-pestpp --owner pestpp --repo pestpp-nightly-builds :home
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
-      shell: bash -l {0}
-      working-directory: autotest
+    - name: Verify PEST++ installation
+      shell: bash
       run: |
-        pytest -rP -rx --capture=no -v --tb=native --durations=20 --cov=pyemu --cov-config=.coveragerc --cov-report=lcov ${{ matrix.test-path }}
+        echo "PATH: $PATH"
+        ls $HOME/.local/bin
+
+    - name: Run tests
+#       For example, using `pytest`
+      # once again need bash (I think) -- windows will run through mingw
+      shell: bash -l {0}
+      run: |
+        uv run pytest ${{ matrix.test-path }} \
+        -n=auto \
+        -rA -vv --tb=native \
+        --durations=20 \
+        --timeout=1200 \
+        --cov=pyemu --cov-report=xml
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Test Notebooks
-      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.12 }}
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == 3.13 }}
       shell: bash -l {0}
-      working-directory: examples
       run: |
-        pytest -v -s --nbmake --cov=pyemu --cov-config=../autotest/.coveragerc --cov-report=lcov *.ipynb
-      # feeling is that pytest-cov is not dialed in with nbmake...
+        uv run pytest examples/*.ipynb \
+        -rA -vv --tb=native \
+        --nbval-lax --dist loadscope \
+        --cov=pyemu --cov-report=xml --cov-append
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Coveralls
-      uses: coverallsapp/github-action@v2
+    - name: Codecov
+      uses: codecov/codecov-action@v5
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        flag-name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-path }}
-        parallel: true
-#        path-to-lcov: autotest/coverage.lcov
-
-  coveralls_finish:
-    needs: pyemuCI
-    runs-on: ubuntu-latest
-    steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@v2
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        parallel-finished: true
-#        path-to-lcov: autotest/coverage.lcov
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}

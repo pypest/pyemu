@@ -1,0 +1,4 @@
+# Ideally, in the future this would be a lockfile (e.g. exported from uv.lock).
+# A lockfile would help improve reproducibility and stability of doc builds.
+# For now, it just uses the 'docs' extra/optional dependencies of the package
+-e .[docs]

@@ -4,14 +4,14 @@ Transformer classes for data transformations in emulators.
 from __future__ import print_function, division
 import numpy as np
 import pandas as pd
-
+import importlib.util
 
 # Check sklearn availability at module level
-try:
+HAS_SKLEARN = importlib.util.find_spec("sklearn") is not None
+
+if HAS_SKLEARN:
     from sklearn.preprocessing import StandardScaler
-    HAS_SKLEARN = True
-except ImportError:
-    HAS_SKLEARN = False
+else:
     # Create dummy classes or set to None
     StandardScaler = None
 
@@ -528,7 +528,7 @@ class NormalScoreTransformer(BaseTransformer):
         pandas.DataFrame
             The inverse-transformed DataFrame.
         """
-        result = X.copy()
+        result = X.astype(float).copy()
         for col in self.column_parameters.keys():
             if col not in X.columns:
                 continue
@@ -705,7 +705,7 @@ class TransformerPipeline:
         if isinstance(X, pd.Series):
             result = X.copy().to_frame().T
         else:
-            result = X.copy()
+            result = X.copy().astype(np.float32)
         # Need to reverse the order of transformers for inverse
         for transformer, columns in reversed(self.transformers):
             cols_to_transform = columns if columns is not None else result.columns
@@ -715,7 +715,7 @@ class TransformerPipeline:
                 continue
             sub_X = result[valid_cols].copy()  # Create a copy to avoid reference issues
             inverted = transformer.inverse_transform(sub_X)
-            result.loc[:, valid_cols] = inverted  # Use loc for proper assignment
+            result.loc[:, valid_cols] = np.array(inverted, dtype=np.float32).flatten().reshape(result.loc[:, valid_cols].shape)  # Use loc for proper assignment
         if isinstance(X, pd.Series):
             result = result.iloc[0]
         return result

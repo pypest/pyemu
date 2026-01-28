@@ -557,6 +557,82 @@ class Ensemble(object):
         df.dropna(inplace=True, axis=1)
         return df
 
+    def _draw_new_ensemble(self,num_reals,names,include_noise=True,noise_reals=None):
+        """Draw a new (potentially larger) Ensemble instance using the realizations 
+        in `self`.  
+
+        Args:
+            num_reals (int) : number of realizations to generate
+            include_noise (varies): a bool or a float the describes the standard deviation of
+                noise to add to the new realizations.  This is to help with the issue of 
+                under-varied new realizations resulting from dimensions >> nreals in `self`. If True,
+                The standard devation is set to one over the square root on number of reals in 
+                `self`.  
+            noise_reals (Ensemble): other existing realizations (likely prior realizations)
+                that are used as noise realizations in place of IID noise that is used if `include_noise` 
+                is True and `noise_reals` is None.
+        
+        Returns
+            Ensemble
+
+    
+        """
+
+        back_trans = False
+        if not self.istransformed:
+            self.transform()
+            back_trans = True
+        
+        proj = (self.get_deviations() * (1./(np.sqrt(self.shape[0])-1))).transpose()
+        proj = proj.loc[names,:]
+        
+        mu_vec = self._df.loc[:,names].mean()
+        
+        snv_draws = np.random.standard_normal((num_reals,self.shape[0]))
+        
+        noise = 0.0
+        if include_noise is not False:
+                if include_noise is True:
+                    noise = 1./np.sqrt(self.shape[0])
+                else:
+                    noise = float(include_noise)
+        
+        if noise_reals is not None:
+            missing = set(self.columns.to_list()) - set(noise_reals.columns)
+            if len(missing) > 0:
+                raise Exception("the following names are not in `noise_reals`: "+",".join(missing))
+            #noise_real_choices = np.random.choice(noise_reals.index,num_reals)
+            noise_real_choices = np.random.randint(0,noise_reals.shape[0],num_reals)
+            noise_back_trans = False
+            if not noise_reals.istransformed:
+                noise_reals.transform()
+                noise_back_trans = True
+            noise_deviations = noise_reals.get_deviations()
+            nmat = noise_deviations.loc[:,names].values
+        
+        pmat = proj.values
+
+        reals = []
+        for i,snv_draw in enumerate(snv_draws):
+            real = mu_vec + np.dot(pmat,snv_draw)       
+            reals.append(real)
+            if noise != 0.0:
+                if noise_reals is None:
+                    noise_real = np.random.normal(0.0,noise,real.shape[0])
+                else:
+                    #noise_real = noise * noise_deviations.loc[noise_real_choices[i],names].values
+                    noise_real = noise * nmat[noise_real_choices[i],:]
+                reals[-1] += noise_real
+            
+        reals = pd.DataFrame(reals,columns=names,index=np.arange(num_reals))
+        reals = type(self)(df=reals,pst=self.pst,istransformed=True)
+        reals.back_transform()
+        if back_trans:
+            self.back_transform()
+        if noise_reals is not None and noise_back_trans:
+            noise_reals.back_transform()
+        return reals
+
     @staticmethod
     def _get_cholesky_projection_matrix(x):
         if x.shape[0] != x.shape[1]:
@@ -808,8 +884,9 @@ class ObservationEnsemble(Ensemble):
             warnings.warn("ObservationEnsemble.from_gaussian_draw(): all zero weights",PyemuWarning)
         # only draw for non-zero weights, get a new cov
         if not fill:
-            names = set(pst.nnz_obs_names).intersection(set(cov.row_names))
-            nz_cov = cov.get(list(names))
+            names = list(set(pst.nnz_obs_names).intersection(set(cov.row_names)))
+            names.sort()
+            nz_cov = cov.get(names)
         else:
             nz_cov = cov.copy()
 
@@ -832,6 +909,34 @@ class ObservationEnsemble(Ensemble):
                 pst.zero_weight_obs_names, "obsval"
             ].values
         return cls(pst, df, istransformed=False)
+
+
+    def draw_new_ensemble(self,num_reals,include_noise=True,noise_reals=None):
+        """Draw a new (potentially larger) ObservationEnsemble instance using the realizations 
+        in `self`.  
+
+        Args:
+            num_reals (int) : number of realizations to generate
+            include_noise (varies): a bool or a float the describes the standard deviation of
+                noise to add to the new realizations.  This is to help with the issue of 
+                under-varied new realizations resulting from npar >> nreals in `self`. If True,
+                The standard devation is set to one over the square root on number of reals in 
+                `self`.  
+            noise_reals (ObservationEnsemble): other existing realizations (likely prior realizations)
+                that are used as noise realizations in place of IID noise that is used if `include_noise` 
+                is True and `noise_reals` is None.
+        
+        Returns
+            ObservationEnsemble
+
+        Note:
+            any zero weighted observations in self are omitted in the returned ObservationEnsemble
+
+        """
+
+        names = self.pst.nnz_obs_names
+        return self._draw_new_ensemble(num_reals,names,include_noise=include_noise,
+                                       noise_reals=noise_reals)
 
     @property
     def phi_vector(self):
@@ -1419,56 +1524,9 @@ class ParameterEnsemble(Ensemble):
 
         """
 
-        back_trans = False
-        if not self.istransformed:
-            self.transform()
-            back_trans = True
-        adj_names = self.pst.adj_par_names
-        
-        proj = (self.get_deviations() * (1./(np.sqrt(self.shape[0])-1))).transpose()
-        proj = proj.loc[adj_names,:]
-        
-        mu_vec = self._df.loc[:,adj_names].mean()
-        
-        snv_draws = np.random.standard_normal((num_reals,self.shape[0]))
-        
-        noise = 0.0
-        if include_noise is not False:
-                if include_noise is True:
-                    noise = 1./np.sqrt(self.shape[0])
-                else:
-                    noise = float(include_noise)
-        
-        if noise_reals is not None:
-            missing = set(self.columns.to_list()) - set(noise_reals.columns)
-            if len(missing) > 0:
-                raise Exception("the following par names are not in `noise_reals`: "+",".join(missing))
-            noise_real_choices = np.random.choice(noise_reals.index,num_reals)
-            noise_back_trans = False
-            if not noise_reals.istransformed:
-                noise_reals.transform()
-                noise_back_trans = True
-            noise_deviations = noise_reals.get_deviations()
-        
-        reals = []
-        for i,snv_draw in enumerate(snv_draws):
-            real = mu_vec + np.dot(proj.values,snv_draw)       
-            reals.append(real)
-            if noise != 0.0:
-                if noise_reals is None:
-                    noise_real = np.random.normal(0.0,noise,real.shape[0])
-                else:
-                    noise_real = noise * noise_deviations.loc[noise_real_choices[i],adj_names].values
-                reals[-1] += noise_real
-            
-        reals = pd.DataFrame(reals,columns=adj_names,index=np.arange(num_reals))
-        reals = ParameterEnsemble(df=reals,pst=self.pst,istransformed=True)
-        reals.back_transform()
-        if back_trans:
-            self.back_transform()
-        if noise_reals is not None and noise_back_trans:
-            noise_reals.back_transform()
-        return reals
+        names = self.pst.adj_par_names
+        return self._draw_new_ensemble(num_reals,names,include_noise=include_noise,
+                                       noise_reals=noise_reals)
 
     def back_transform(self):
         """back transform parameters with respect to `partrans` value.

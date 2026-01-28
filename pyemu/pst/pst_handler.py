@@ -2750,8 +2750,12 @@ class Pst(object):
             isfixed, "parval1"
         ]
 
-    def add_transform_columns(self):
+    def add_transform_columns(self,include_offset_and_scale=False):
         """add transformed values to the `Pst.parameter_data` attribute
+
+        Args:
+            include_offset_and_scale (bool): flag to apply the scale and offset values before
+            applying the log transform.  Default is False
 
         Note:
             adds `parval1_trans`, `parlbnd_trans` and `parubnd_trans` to
@@ -2769,9 +2773,12 @@ class Pst(object):
         for col in ["parval1", "parlbnd", "parubnd", "increment"]:
             if col not in self.parameter_data.columns:
                 continue
-            self.parameter_data.loc[:, col + "_trans"] = (
-                self.parameter_data.loc[:, col] * self.parameter_data.scale
-            ) + self.parameter_data.offset
+            if include_offset_and_scale:
+                self.parameter_data.loc[:, col + "_trans"] = (
+                    self.parameter_data.loc[:, col] * self.parameter_data.scale
+                ) + self.parameter_data.offset
+            else:
+                self.parameter_data.loc[:, col + "_trans"] = self.parameter_data.loc[:, col]
             # isnotfixed = self.parameter_data.partrans != "fixed"
             islog = self.parameter_data.partrans == "log"
             self.parameter_data.loc[islog, col + "_trans"] = \
@@ -3875,7 +3882,8 @@ class Pst(object):
                 unique_keys = meta_dict.columns.difference(fieldnames)
                 df[unique_keys] = meta_dict[unique_keys]
             except Exception as e:
-                print("error parsing metadata from '{0}', continuing".format(name))
+                #print("error parsing metadata from '{0}', continuing".format(name))
+                pass
 
     def rename_parameters(self, name_dict, pst_path=".", tplmap=None):
         """rename parameters in the control and template files
@@ -3965,7 +3973,7 @@ class Pst(object):
                               file_obsparmap=insmap, pst_path=pst_path)
 
 
-    def add_pars_as_obs(self,pst_path='.',par_sigma_range=4):
+    def add_pars_as_obs(self,pst_path='.',par_sigma_range=4,name_prefix=""):
         """add all parameter values as observation values by creating a new
         template and instruction file and adding them to the control file
 
@@ -3976,14 +3984,18 @@ class Pst(object):
             par_sigma_range (int):  number of standard deviations implied by the 
                 distance between the parameter bounds.  Used to set the weights
                 for the range observations
+            name_prefix (str): a tag to prepend to the observation names and the 
+                cooresponding I/O files
+        Returns:
+            DataFrame: info for the new observations
 
 
         """
         in_fname = os.path.join(pst_path,"pars_as_obs.txt")
-        tpl_fname = in_fname + ".tpl"
-        ins_fname = in_fname + ".ins"
+        tpl_fname = os.path.join(pst_path,name_prefix+"pars_as_obs.txt.tpl")
+        ins_fname = os.path.join(pst_path,name_prefix+"pars_as_obs.txt.ins")
 
-        for name in [in_fname,tpl_fname,ins_fname]:
+        for name in [tpl_fname,ins_fname]:
             assert not os.path.exists(name)
         parval1 = self.parameter_data.parval1.copy()
         parval1.to_csv(in_fname)
@@ -3997,8 +4009,8 @@ class Pst(object):
             f.write("pif ~\n")
             f.write("l1\n")
             for name in parval1.index:
-                f.write("l1 ~,~  !{0}!\n".format(name))
-        self.add_parameters(tpl_fname,in_fname,pst_path='.')
+                f.write("l1 ~,~  !{0}!\n".format(name_prefix+name))
+        pdf = self.add_parameters(tpl_fname,in_fname,pst_path='.')
         df = self.add_observations(ins_fname,in_fname,pst_path='.')
         self.add_transform_columns()
         obs = self.observation_data
@@ -4008,14 +4020,19 @@ class Pst(object):
         if "less_than" not in obs.columns:
             obs["less_than"] = np.nan
 
-        obs.loc[df.obsnme,"greater_than"] = par.loc[df.obsnme,"parlbnd"]
-        obs.loc[df.obsnme,"less_than"] = par.loc[df.obsnme,"parubnd"]
+        
+        obs.loc[df.obsnme,"greater_than"] = par.loc[parval1.index,"parlbnd"].values
+        obs.loc[df.obsnme,"less_than"] = par.loc[parval1.index,"parubnd"].values
 
-        log_idx = par.loc[df.obsnme,"partrans"] == "log"
-        stdev = (par.loc[df.obsnme,"parubnd_trans"] - par.loc[df.obsnme,"parlbnd_trans"]) / par_sigma_range
+        log_idx = par.loc[parval1.index,"partrans"] == "log"
+        stdev = np.abs(par.loc[parval1.index,"parubnd_trans"] - par.loc[parval1.index,"parlbnd_trans"]) / par_sigma_range
         stdev.loc[log_idx] = 10**stdev.loc[log_idx]
+        if np.any(pd.isna(stdev)):
+            print("warning: nans in bound-implied stdev, filling with 1.0")
+            stdev.loc[pd.isna(stdev)] = 1.0
         obs.loc[df.obsnme,"weight"] = 1.0 / stdev.values 
-        obs.loc[df.obsnme,"obgnme"] = "parbounds"
+        obs.loc[df.obsnme,"obgnme"] = name_prefix+"parbounds"
+        return df
         
 
     def dialate_par_bounds(self,dialate_factor,center=True):

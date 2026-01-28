@@ -1,4 +1,6 @@
 import os
+import shutil
+
 import pyemu
 import pandas as pd
 import numpy as np
@@ -498,37 +500,39 @@ def emp_cov_test():
     print(diff.max())
     assert diff.max() < 0.5,diff.max()
 
-def factor_draw_test():
-    import os
+def test_factor_draw(tmp_path):
     import numpy as np
     import pyemu
 
-    pst = pyemu.Pst(os.path.join("en","pest.pst"))
-    cov = pyemu.Cov.from_binary(os.path.join("en","cov.jcb"))
+    shutil.copytree("en", tmp_path/"en")
+    pst = pyemu.Pst(str(tmp_path/"en"/"pest.pst"))
+    cov = pyemu.Cov.from_binary(str(tmp_path/"en"/"cov.jcb"))
     print(pst.npar,cov.shape)
-    num_reals = 5000
+    num_reals = 1000
     pe_cho = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
-    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov=cov,num_reals=num_reals,factor="eigen")
-    pe_svd = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="svd")
-    
-    
-    pe_eig.transform()
-    pe_svd.transform()
     pe_cho.transform()
-    
-    mn_eig = pe_eig.mean()
-    mn_svd = pe_svd.mean()
     mn_cho = pe_cho.mean()
-
-    sd_eig = pe_eig.std()
-    sd_svd = pe_svd.std()
     sd_cho = pe_cho.std()
+    del pe_cho
+
+    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov=cov,num_reals=num_reals,factor="eigen")
+    pe_eig.transform()
+    emp_cov = pe_eig.covariance_matrix()
+    mn_eig = pe_eig.mean()
+    sd_eig = pe_eig.std()
+    del pe_eig
+
+    pe_svd = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="svd")
+    pe_svd.transform()
+    # mn_svd = pe_svd.mean()
+    # sd_svd = pe_svd.std()
+    del pe_svd
 
     pst.add_transform_columns()
-    par = pst.parameter_data
-    df = cov.to_dataframe()
-    for p in pst.adj_par_names:
-        print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_svd[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_svd[p])
+    # par = pst.parameter_data
+    # df = cov.to_dataframe()
+    # for p in pst.adj_par_names:
+    #     print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_svd[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_svd[p])
     d = (mn_eig - mn_cho).apply(np.abs)
     print(d.max())
     assert d.max() < 0.5,d.sort_values()
@@ -539,7 +543,6 @@ def factor_draw_test():
     num_reals = 1000
     pe_cho2 = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals)
 
-    emp_cov = pe_eig.covariance_matrix()
     pe_cho3 = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals)
 
 
@@ -655,37 +658,49 @@ def binary_test(tmp_path):
     import numpy as np
     import pandas as pd
     import pyemu
-    npar = 10000
-    nobs = 500
+    npar = 1000
+    nobs = 100
+    nreal = 100
     par_names = ["p{0}".format(i) for i in range(npar)]
     obs_names = ["o{0}".format(i) for i in range(nobs)]
-    arr = np.random.random((nobs,npar))
     pst = pyemu.Pst.from_par_obs_names(par_names,obs_names)
-    df = pd.DataFrame(data=arr,columns=par_names,index=obs_names)
-    pe = pyemu.ParameterEnsemble(pst=pst,df=df)
+    # array to write (mimicing ensemble)
+    arr = np.random.random((nreal,npar))
+    df = pd.DataFrame(data=arr,columns=par_names,index=[str(i) for i in range(nreal)])
+    pe = pyemu.ParameterEnsemble(pst=pst, df=df)
+
+    # explicitly write dense format
     s1 = datetime.now()
     pe.to_dense(os.path.join(tmp_path, "par.bin"))
+    # load written
     pe1 = pyemu.ParameterEnsemble.from_binary(
         pst=pst,filename=os.path.join(tmp_path, "par.bin")
     )
     e1 = datetime.now()
+    print(f"dense write and read took ({df.shape}) {(e1 - s1).total_seconds()}")
     d = (pe - pe1).apply(np.abs)
-    print(d.max().max())
+    print(f"max diff between read and write: {d.max().max()}")
     assert d.max().max() < 1.0e-10
+
+    # should be regular write
     s2 = datetime.now()
     pe.to_binary(os.path.join(tmp_path, "par.bin"))
     pe1 = pyemu.ParameterEnsemble.from_binary(
         pst=pst,filename=os.path.join(tmp_path, "par.bin")
     )
     e2 = datetime.now()
-    print((e1 - s1).total_seconds())
-    print((e2 - s2).total_seconds())
-    pe3 = pd.DataFrame(np.random.rand(10, int(1e7)))
+    print(f"Regular write took: {(e2 - s2).total_seconds()}")
+    d = (pe - pe1).apply(np.abs)
+    print(f"max diff between read and write: {d.max().max()}")
+    assert d.max().max() < 1.0e-10
+
+    # big ensemble should default to dense .bin write
+    pe3 = pd.DataFrame(np.random.rand(10, int(2e6)))
     pe3.columns = "parameter_number_" + pe3.columns.astype(str)
     pe3 = pe3.rename(index={9:'base'})
     pst = pyemu.Pst.from_par_obs_names(pe3.columns, obs_names)
     pe3 = pyemu.ParameterEnsemble(pst=pst, df=pe3)
-    fname = pe3.to_binary("paren.jcb")
+    fname = pe3.to_binary(os.path.join(tmp_path, "paren.jcb"))
     assert fname.endswith('bin')
     pe4 = pyemu.ParameterEnsemble.from_binary(pst=pst, filename=fname)
     assert pe4.shape == pe3.shape
@@ -769,70 +784,163 @@ def mixed_par_draw_2_test():
     assert pst.npar == npar
 
 
-def draw_new_test():
+def _check_ens(origen, newen, noise=False, helptxt=""):
+    origen.transform()
+    newen.transform()
+    stdiff = (newen.std() / origen.std()) - 1
+    if noise:
+        # if adding noise only check for signif std reductions
+        voilations = stdiff.loc[stdiff < -0.1]
+        assert len(voilations) == 0, f"'{helptxt}' std > 10% reduction:\n{voilations}"
+    else:
+        # else check for signif std increase or decrease
+        voilations = stdiff.loc[(stdiff > 0.15) | (stdiff < -0.1)]
+        assert len(voilations) == 0, f"'{helptxt}' std differences > 0.1:\n{voilations}"
+    # new std should not be shrunk by more than 15%?
 
+    # max mean change?
+    # mean change 5% of range?
+    mndiff = np.abs(newen.mean() - origen.mean()) / (origen.max() - origen.min())
+    voilations = mndiff.loc[mndiff>0.05]
+    assert len(voilations) == 0, f"{helptxt} mean differences > 5% of initial range:\n{voilations}"
+    origen.back_transform()
+
+def plot_ens_cdf(pst, ens, namestrs):
+    colors = ["r", "y", "b", "g", "m", "c"][:len(ens)]
+    paren = isinstance(ens[0], pyemu.en.ParameterEnsemble)
+    if paren:
+        for en in ens:
+            if not en.istransformed:
+                en.transform()
+
+        pst.add_transform_columns()
+        ubnd = pst.parameter_data.parubnd_trans.to_dict()
+        lbnd = pst.parameter_data.parlbnd_trans.to_dict()
+        fname = "check_parens.pdf"
+        nameids = pst.adj_par_names
+    else:
+        ubnd = None
+        lbnd = None
+        fname = "check_obsens.pdf"
+        nameids = pst.nnz_obs_names
+
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+    with PdfPages(fname) as pdf:
+        for nm in nameids:
+            fig,ax = plt.subplots(1,1,figsize=(10,10))
+            for en,c,name in zip(ens, colors, namestrs):
+                nmen = en.loc[:,nm]
+                # ax.hist(par,fc=c,alpha=0.5,bins=10,density=True)
+                ax.plot(np.sort(nmen), np.arange(nmen.shape[0])/nmen.shape[0], color=c, label=name)
+            ylim = ax.get_ylim()
+            if paren:
+                ax.plot([ubnd[nm],ubnd[nm]],ylim,"k--",lw=3)
+                ax.plot([lbnd[nm],lbnd[nm]],ylim,"k--",lw=3)
+
+            ax.grid()
+            ax.set_title(nm)
+            ax.legend()
+            plt.tight_layout()
+            pdf.savefig()
+            plt.close(fig)
+            # print(nm)
+
+def test_draw_new_pe(tmp_path, plot=False):
     import os
     import numpy as np
     import pyemu
-    pst = pyemu.Pst(os.path.join("en", "pest.pst"))
-    cov = pyemu.Cov.from_binary(os.path.join("en", "cov.jcb"))
+    shutil.copy(os.path.join("en", "pest.pst"), tmp_path)
+    shutil.copy(os.path.join("en", "cov.jcb"), tmp_path)
+    pst = pyemu.Pst(os.path.join(tmp_path, "pest.pst"))
+    cov = pyemu.Cov.from_binary(os.path.join(tmp_path, "cov.jcb"))
+    # basesd = pd.Series(cov.x.diagonal(), index=cov.row_names)
     print(pst.npar, cov.shape)
-    num_reals = 10000
+    num_reals = 1000
 
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
-    
-    sub_pe = pe.iloc[:10000,:]
 
-    new_pe_nonoise = sub_pe.draw_new_ensemble(num_reals=num_reals)
-    new_pe_stdnoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True)
-    new_pe_usernoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=1./np.sqrt(sub_pe.shape[0]))
-    new_pe_ennoise = sub_pe.draw_new_ensemble(num_reals=num_reals,include_noise=True,noise_reals=pe)
-    
-    #pes = [pe,sub_pe,new_pe_nonoise,new_pe_stdnoise,new_pe_usernoise,new_pe_ennoise]
-    colors = ["r","y","b","g","m","c"]
+    sub_pe = pe.iloc[:int(num_reals), :]
 
-    pes = [pe,new_pe_stdnoise,new_pe_usernoise,new_pe_ennoise]
-    for ppe in pes:
-        ppe.transform()
-        #ppe.enforce()
+    new_pe_nonoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=False)
+    _check_ens(pe, new_pe_nonoise, False, 'no noise')
+    if not plot:
+        del new_pe_nonoise
+    new_pe_stdnoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=True)
+    _check_ens(pe, new_pe_stdnoise, True, 'std noise')
+    if not plot:
+        del new_pe_stdnoise
+    new_pe_usernoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=1. / np.sqrt(sub_pe.shape[0]))
+    _check_ens(pe, new_pe_usernoise, True, 'user noise')
+    if not plot:
+        del new_pe_usernoise
+    new_pe_ennoise = sub_pe.draw_new_ensemble(num_reals=num_reals, include_noise=True, noise_reals=pe)
+    _check_ens(pe, new_pe_ennoise, False, 'ens noise')
+    if not plot:
+        del new_pe_ennoise
 
-    for pname in pst.adj_par_names:
-        std = [ppe.loc[:,pname].std() for ppe in pes]
-        mean = [ppe.loc[:,pname].mean() for ppe in pes]
-        sdiff = [np.abs(std[0] - s) for s in std[1:]]
+    if plot:
+        pes = [pe,
+               sub_pe,
+               new_pe_nonoise,
+               new_pe_stdnoise,
+               new_pe_usernoise,
+               new_pe_ennoise]
+        names = ["original",
+                 "sub_ensemble",
+                 "new_no_noise",
+                 "new_std_noise",
+                 "new_user_noise",
+                 "new_ens_noise"]
+        plot_ens_cdf(pst, pes, names)
 
-        print(pname,max(sdiff))
-        assert max(sdiff) < 0.1
-    
-    # pst.add_transform_columns()
-    # ubnd = pst.parameter_data.parubnd_trans.to_dict()
-    # lbnd = pst.parameter_data.parlbnd_trans.to_dict()
-    
 
-    # import matplotlib.pyplot as plt
-    # from matplotlib.backends.backend_pdf import PdfPages
-    # with PdfPages("check.pdf") as pdf:
-    #     for pname in pst.adj_par_names:
-    #         fig,ax = plt.subplots(1,1,figsize=(10,10))
-    #         for ppe,c in zip(pes,colors):
+def test_draw_new_oe(tmp_path, plot=False):
+    num_reals = 1000
 
-    #             ax.hist(ppe.loc[:,pname],fc=c,alpha=0.5,bins=10,density=True)
-    #         ylim = ax.get_ylim()
-    #         ax.plot([ubnd[pname],ubnd[pname]],ylim,"k--",lw=3)
-    #         ax.plot([lbnd[pname],lbnd[pname]],ylim,"k--",lw=3)
-            
-    #         ax.grid()
-    #         ax.set_title(pname)
-    #         plt.tight_layout()
-    #         pdf.savefig()
-    #         plt.close(fig)
-    #         print(pname)
+    shutil.copy(os.path.join("en", "pest.pst"), tmp_path)
+    shutil.copy(os.path.join("en", "cov.jcb"), tmp_path)
+    pst = pyemu.Pst(os.path.join(tmp_path, "pest.pst"))
+    cov = pyemu.Cov.from_binary(os.path.join(tmp_path, "cov.jcb"))
+    obs = pst.observation_data
+    obs.loc[pst.obs_names[:1000],"weight"] = 1.0
+    cov = cov.x[:pst.nnz_obs,:pst.nnz_obs]
+    cov = pyemu.Cov(x=cov,names=pst.nnz_obs_names)
 
-    
+    oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="cholesky")
+    sub_oe = oe.iloc[:int(num_reals),:]
+
+    new_oe_nonoise = sub_oe.draw_new_ensemble(num_reals=num_reals)
+    _check_ens(oe, new_oe_nonoise, False, 'no noise')
+    if not plot:
+        del new_oe_nonoise
+    new_oe_stdnoise = sub_oe.draw_new_ensemble(num_reals=num_reals,include_noise=True)
+    _check_ens(oe, new_oe_stdnoise, True,'std noise')
+    if not plot:
+        del new_oe_stdnoise
+    new_oe_usernoise = sub_oe.draw_new_ensemble(num_reals=num_reals,include_noise=1./np.sqrt(sub_oe.shape[0]))
+    _check_ens(oe, new_oe_usernoise, True,'user noise')
+    if not plot:
+        del new_oe_usernoise
+
+    if plot:
+        ens = [oe,
+               sub_oe,
+               new_oe_nonoise,
+               new_oe_stdnoise,
+               new_oe_usernoise]
+        names = ["original",
+                 "sub_ensemble",
+                 "new_no_noise",
+                 "new_std_noise",
+                 "new_user_noise"]
+        plot_ens_cdf(pst, ens, names)
 
 
 if __name__ == "__main__":
-    draw_new_test()
+    import cProfile
+    import pstats
+    # test_draw_new()
     #par_gauss_draw_consistency_test()
     #obs_gauss_draw_consistency_test()
     # phi_vector_test()
@@ -846,13 +954,18 @@ if __name__ == "__main__":
     # triangular_draw_test()
     # uniform_draw_test()
     #fill_test()
-    #factor_draw_test()
     #emp_cov_test()
     #emp_cov_draw_test()
     #mixed_par_draw_2_test()
     #binary_test()
     #get_phi_vector_noise_obs_test()
-    #factor_draw_test()
+    #test_factor_draw()
     #enforce_test()
+    profiler = cProfile.Profile()
+    profiler.enable()
+    test_draw_new_oe('temp', True)
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('cumtime')
+    stats.print_stats(10)
 
 
