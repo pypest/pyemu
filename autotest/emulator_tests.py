@@ -34,13 +34,13 @@ def generate_synth_data(num_realizations=100, num_observations=10):
     obsdata.obgnme = "obgnme"
     return data, obsdata
 
-def dsi_synth(tmp_d,transforms=None,tag="",use_runstor=True):
+def dsi_synth(tmp_d,transforms=None,tag="",use_runstor=True,**kwargs):
 
     tmp_d = Path(tmp_d)
 
     data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
 
-    dsi = DSI(data=data,transforms=transforms)
+    dsi = DSI(data=data,transforms=transforms,pst=obsdata,**kwargs)
     dsi.fit()
 
     if transforms is not None:
@@ -1356,25 +1356,36 @@ def test_dsiae_save_load(tmp_path):
     print("Save/Load test passed successfully!")
 
 
+def test_dsi_rowwise(tmp_path):
+    rowwise_groups = {
+        "g1": ["obs0", "obs1", "obs2"],
+        "g2": ["obs3", "obs4", "obs5"]
+    }
+    dsi_synth(tmp_path, rowwise_groups=rowwise_groups)
+    return
+
+def test_dsi_rowwise_mixed(tmp_path):
+    rowwise_groups = {
+        "g1": ["obs0", "obs1", "obs2"],
+        "g2": ["obs3", "obs4", "obs5"]
+    }
+    transforms = [
+        {"type": "log10", "columns": ["obs0", "obs3"]},
+        {"type": "normal_score", }
+    ]
+    dsi_synth(tmp_path, rowwise_groups=rowwise_groups, transforms=transforms)
+    return
+
+
 if __name__ == "__main__":
     #test_dsiae_save_load("temp")
     #test_dsi_basic("temp")
     #test_dsi_nst("temp")
     #test_dsi_nst_extrap("temp")
     #test_dsi_mixed("temp")
-    # test_dsivc("temp")
+    test_dsivc("temp")
     #plot_freyberg_dsi()
     #test_lpfa_std()
     #gpr_zdt1_test()
-
-    import cProfile
-    import pstats
-    from pathlib import Path
-    pr = cProfile.Profile()
-    pr.enable()
-    dsi_synth(Path('temp'), transforms=None, use_runstor=True)
-    pr.disable()
-    ps = pstats.Stats(pr).sort_stats('cumtime')
-    ps.print_stats()
 
 
