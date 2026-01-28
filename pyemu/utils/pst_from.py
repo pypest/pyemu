@@ -543,7 +543,7 @@ class PstFrom(object):
             )
             f.write("import pyemu\n")
             for ex_imp in self.extra_py_imports:
-                if ex_imp.startswith("from"):
+                if ex_imp.lstrip().startswith(("from ", "import ")):
                     f.write("{0}\n".format(ex_imp))
                 else:
                     f.write("import {0}\n".format(ex_imp))
