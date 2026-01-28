@@ -5,6 +5,7 @@ from __future__ import print_function, division
 import numpy as np
 import pandas as pd
 import importlib.util
+import inspect
 
 # Check sklearn availability at module level
 HAS_SKLEARN = importlib.util.find_spec("sklearn") is not None
@@ -408,6 +409,40 @@ class StandardScalerTransformer(BaseTransformer):
             
         return result
 
+class GenericTransformer(BaseTransformer):
+    """Wrapper for generic sklearn-compatible transformers.
+    
+    Parameters
+    ----------
+    transformer_class : class
+        The class of the transformer to be used (e.g. sklearn.preprocessing.QuantileTransformer).
+    kwargs : dict
+        Arguments to be passed to the transformer constructor.
+    """
+    def __init__(self, transformer_class, **kwargs):
+        self.transformer = transformer_class(**kwargs)
+        
+        # Validation: check for fit, transform, inverse_transform methods on the instance
+        if not hasattr(self.transformer, "fit"):
+            raise ValueError(f"Transformer {transformer_class.__name__} must have a 'fit' method.")
+        if not hasattr(self.transformer, "transform"):
+            raise ValueError(f"Transformer {transformer_class.__name__} must have a 'transform' method.")
+        if not hasattr(self.transformer, "inverse_transform"):
+            raise ValueError(f"Transformer {transformer_class.__name__} must have an 'inverse_transform' method for use in pyemu emulators.")
+
+    def fit(self, X):
+        self.transformer.fit(X.values)
+        return self
+
+    def transform(self, X):
+        res = self.transformer.transform(X.values)
+        return pd.DataFrame(res, index=X.index, columns=X.columns)
+
+    def inverse_transform(self, X):
+        res = self.transformer.inverse_transform(X.values)
+        return pd.DataFrame(res, index=X.index, columns=X.columns)
+
+
 class NormalScoreTransformer(BaseTransformer):
     """A transformer for normal score transformation.
     
@@ -802,7 +837,9 @@ class AutobotsAssemble:
 
     def _create_transformer(self, transform_type, **kwargs):
         """Factory method to create appropriate transformer."""
-        if transform_type == "log10":
+        if inspect.isclass(transform_type):
+            return GenericTransformer(transform_type, **kwargs)
+        elif transform_type == "log10":
             return Log10Transformer(**kwargs)
         elif transform_type == "normal_score":
             return NormalScoreTransformer(**kwargs)

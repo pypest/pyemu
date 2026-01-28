@@ -102,6 +102,46 @@ def test_dsi_mixed(tmp_path):
     return
 
 
+def test_generic_transformer(tmp_path):
+    """Test using a generic sklearn transformer."""
+    try:
+        from sklearn.preprocessing import QuantileTransformer, MinMaxScaler
+    except ImportError:
+        pytest.skip("sklearn not installed")
+        
+    transforms = [
+        {"type": MinMaxScaler, "feature_range": (0, 1)},
+    ]
+    dsi_synth(tmp_path, transforms=transforms, tag="_generic")
+    
+    # Verify the transformed data range
+    # Load DSI object to check internal state
+    td = Path(tmp_path) / "template_dsi"
+    dsi_loaded = DSI.load(os.path.join(td, "dsi.pickle"))
+    
+    # Check that data was transformed to [0, 1]
+    transformed_data = dsi_loaded.data_transformed
+    assert transformed_data.min().min() >= 0.0 - 1e-6
+    assert transformed_data.max().max() <= 1.0 + 1e-6
+    
+    # Check inverse transform
+    original_data = dsi_loaded.data
+    inversed_data = dsi_loaded.transformer_pipeline.inverse(transformed_data)
+    # check columnsa re the same
+    assert all(original_data.columns == inversed_data.columns)
+    # check values are close
+    assert np.allclose(original_data.values,
+                       inversed_data.loc[original_data.index,original_data.columns].values, 
+                        atol=1e-5)
+
+    # Test again with QuantileTransformer (more complex)
+    transforms = [
+        {"type": QuantileTransformer, "output_distribution": "normal", "n_quantiles": 50, "random_state": 42},
+    ]
+    dsi_synth(tmp_path, transforms=transforms, tag="_quantile")
+    return
+
+
 # @pytest.mark.timeout(method="thread", timeout=1000)
 def test_dsivc(tmp_path):
     tmp_path = Path(tmp_path)
