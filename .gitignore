@@ -76,3 +76,4 @@ examples/.ipynb*
 
 *.chk
 
+*.vscode/
