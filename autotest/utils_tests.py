@@ -657,7 +657,7 @@ def kl_test(tmp_path):
     assert diff.max() < 1.0e-5
 
 
-def ok_test(tmp_path):
+def test_ok(tmp_path):
     import os
     import pandas as pd
     import pyemu
@@ -720,6 +720,17 @@ def ok_test(tmp_path):
     orgfacs = np.array(sorted(fnocorr))
     ppu_facs = np.array(sorted(kdf.values[0]))
     assert np.allclose(orgfacs, ppu_facs, atol=1e-5)
+
+    # make sure ppu fac2real runs
+    pp_dat = pts_data.copy()
+    pp_dat['parval1'] = np.arange(1, len(pp_dat)+1)
+    ppures = pyemu.utils.geostats.fac2real(pp_dat,
+                                           factors_file=Path(tmp_path, "factors.dat"),
+                                             transform=gs.transform,
+                                           fac_ftype=1,
+                                           shape=(1,))
+    pass
+
 
 
 def test_ok_grid(tmp_path):

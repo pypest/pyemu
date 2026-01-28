@@ -2623,7 +2623,8 @@ def fac2real(
         try_ppu=True,
         shape=None,
         mpts=None,
-        transform='none'
+        transform='none',
+        fac_ftype=0,
 ):
     """A replication of the PEST fac2real utility.
 
@@ -2656,6 +2657,8 @@ def fac2real(
         transform: (str) ppu specific argument for the data transform for interp.
             'none' and 'log' are supported. Default is 'none'. NOT USED IF `try_ppu`
             IS False.
+        fac_ftype: (int) ppu specific argument for the factors file type.
+            Default is 0 (binary). NOT USED IF `try_ppu` IS False.
 
     Returns:
         `numpy.ndarray`: if out_file is None
@@ -2701,6 +2704,7 @@ def fac2real(
         except ImportError:
             try_ppu = False
     res = None
+    err = None
     if try_ppu:
         if mpts is None:
             mpts = np.array(shape).prod()
@@ -2713,18 +2717,27 @@ def fac2real(
                 transform=transform,
                 noint=fill_value,
                 out_shape=shape,
-                fac_ftype=0,
+                fac_ftype=fac_ftype,
             )
-        except PestUtilsLibError as e: # general exception from pypestutils... fallback
+        except PestUtilsLibError as err: # general exception from pypestutils... fallback
             print("pypestutils fac2real failed, using pyemu version:\n"
-                  f"{e}")
+                  f"{err}")
 
             res = None
+
     if res is None:
-        res = org_fac2real(factors_file,
-                           pp_data=pp_data,
-                           pp_file=pp_file,
-                           fill_value=fill_value)
+        try:
+            res = org_fac2real(factors_file,
+                               pp_data=pp_data,
+                               pp_file=pp_file,
+                               fill_value=fill_value)
+        except Exception as err2:
+            if err is not None:
+                raise(RuntimeError("both pypestutils and pyemu fac2real methods failed:\n"
+                                   f"pypestutils error:\n{err}\n"
+                                   f"pyemu error:\n{err2}"))
+            else:
+                raise err2
 
     res[res < lower_lim] = lower_lim
     res[res > upper_lim] = upper_lim
