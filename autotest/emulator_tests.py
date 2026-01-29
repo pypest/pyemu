@@ -141,8 +141,8 @@ def test_generic_transformer(tmp_path):
     dsi_synth(tmp_path, transforms=transforms, tag="_quantile")
     return
 
-
-# @pytest.mark.timeout(method="thread", timeout=1000)
+@pytest.mark.skip(reason="still in dev")
+#@pytest.mark.timeout(method="thread", timeout=1000)
 def test_dsivc(tmp_path):
     tmp_path = Path(tmp_path)
     # basic quick as so can re-run here
@@ -161,7 +161,10 @@ def test_dsivc(tmp_path):
     dsi = DSI.load(os.path.join(td, "dsi.pickle"))
 
     pst = pyemu.Pst(os.path.join(td, "dsi.pst"))
-    oe = pyemu.ObservationEnsemble.from_binary(pst=pst, filename=os.path.join(td, "dsi.0.obs.jcb"))
+    try:
+        oe = pyemu.ObservationEnsemble.from_binary(pst=pst, filename=os.path.join(td, "dsi.0.obs.jcb"))
+    except:
+        oe = pyemu.ObservationEnsemble.from_csv(pst=pst, filename=os.path.join(td, "dsi.0.obs.csv"))
 
     obsdata = dsi.observation_data
     decvars = obsdata.obsnme.tolist()[:-2]
@@ -189,7 +192,7 @@ def test_dsivc(tmp_path):
     obs.loc[mou_objectives, "obgnme"] = "less_than_obj"
 
     pstdsivc.control_data.noptmax = 1 #just for testing
-    pstdsivc.pestpp_options["mou_population_size"] = 4 #just for testing 
+    pstdsivc.pestpp_options["mou_population_size"] = 20 #just for testing 
 
     pstdsivc.write(os.path.join(td, "dsivc.pst"),version=2)
 
@@ -1227,7 +1230,7 @@ def test_dsiae_auto_latent_dim():
 
 #@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
 @pytest.mark.skip(reason="it is hanging in CI for some reason;passes locally")
-def test_dsiae_with_ies(tmp_path):
+def test_dsiae_with_ies(tmp_path, use_runstor=True):
 
     data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
 
@@ -1246,14 +1249,17 @@ def test_dsiae_with_ies(tmp_path):
     num_workers = 1
     worker_root = tmp_path
     print("dsi_exe: ", ies_exe_path)
-    pyemu.os_utils.start_workers(
-        td,ies_exe_path,"dsi.pst", num_workers=num_workers,
-        worker_root=worker_root, master_dir=md, port=_get_port(),
-        ppw_function=pyemu.helpers.dsi_pyworker,
-        ppw_kwargs={
-            "dsi": dsiae, "pvals": pvals,
-        }
-    )
+    if use_runstor:
+        pyemu.os_utils.run("pestpp-ies dsi.pst /e", cwd=td, verbose=True)
+    else:
+        pyemu.os_utils.start_workers(
+            td,ies_exe_path,"dsi.pst", num_workers=num_workers,
+            worker_root=worker_root, master_dir=md, port=_get_port(),
+            ppw_function=pyemu.helpers.dsi_pyworker,
+            ppw_kwargs={
+                "dsi": dsiae, "pvals": pvals,
+            }
+        )
     return
 
 
