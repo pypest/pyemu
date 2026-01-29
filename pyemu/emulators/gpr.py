@@ -450,66 +450,39 @@ class GPR(Emulator):
 
     def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name):
         """Generates the python script that PEST++ runs for GPR (handles tuple return)."""
-        script = f"""
-import pandas as pd
-import numpy as np
-from pyemu.emulators import {class_name}
+        import inspect
+        from pyemu.utils.helpers import gpr_file_forward_run, gpr_runstore_forward_run, gpr_forward_run
 
-def main():
-    try:
-        # Load Emulator
-        emu = {class_name}.load("{emu_file}")
+        use_runstor = getattr(self, "_use_runstor", False)
         
-        # Read Inputs
-        input_df = pd.read_csv("{input_file}", index_col=0)
-        if "parval1" in input_df.columns:
-            inputs = input_df["parval1"].T.to_frame().T
+        target_func = "gpr_runstore_forward_run" if use_runstor else "gpr_file_forward_run"
+        if use_runstor:
+            call_args = f"emu_file='{emu_file}'"
         else:
-             inputs = input_df
-             
-        # Predict
-        # Check if we should return std based on instance setting or just do it?
-        # The instruction file was generated based on emu.return_std
-        return_std = getattr(emu, "return_std", False) # Default to False if not set
-        
-        res = emu.predict(inputs, return_std=return_std)
-        
-        pred = None
-        std = None
+            call_args = f"'{emu_file}', '{input_file}', '{output_file}'"
 
-        if isinstance(res, tuple):
-             pred, std = res
-        else:
-             pred = res
-        
-        # Handle formats
-        if isinstance(pred, pd.DataFrame):
-            pred = pred.iloc[0]
-        if std is not None and isinstance(std, pd.DataFrame):
-            std = std.iloc[0]
-            
-        with open("{output_file}", 'w') as f:
-            # Write Header
-            if std is not None:
-                f.write("obsnme,obsval,obsstd\\n")
-            else:
-                f.write("obsnme,obsval\\n")
-            
-            for name in pred.index:
-                val = pred[name]
-                line = f"{{name}},{{val}}"
-                if std is not None:
-                     std_val = std[name]
-                     line += f",{{std_val}}"
-                f.write(line + "\\n")
-                
-    except Exception as e:
-        print(f"Error in GPR forward run: {{e}}")
-        raise
+        lines = [
+            "import sys",
+            "import os",
+            "import pandas as pd",
+            "import numpy as np",
+            "import traceback",
+            "import pickle",
+            "",
+            "sys.path.append(os.getcwd())",
+            ""
+        ]
 
-if __name__ == '__main__':
-    main()
-"""
+        # Inject code for all use cases
+        for func in [gpr_forward_run, gpr_file_forward_run, gpr_runstore_forward_run]:
+             lines.append(f"# Source for {func.__name__}")
+             lines.append(inspect.getsource(func))
+             lines.append("")
+
+        lines.append('if __name__ == "__main__":')
+        lines.append(f'    {target_func}({call_args})')
+
         with open(filename, 'w') as f:
-            f.write(script)
+            for line in lines:
+                f.write(line + "\n")
 

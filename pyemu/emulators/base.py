@@ -299,16 +299,15 @@ class Emulator:
         
         # run the forward run once
         # to ensure the script works and the emulator is valid
-        try:
-            
-            run(f"python 'forward_run.py'",
-                               cwd=t_d,)
-            #import subprocess
-            #subprocess.run(["python", os.path.join(t_d, "forward_run.py")], check=True)
-        except Exception as e:
-            self.logger.statement("Error running forward_run.py to validate emulator interface")
-            #self.logger.error(f"Error running forward_run.py: {e}")
-            raise
+        if not self._use_runstor:
+            self.logger.statement("Validating forward_run.py script by executing once")
+            try:
+                run(f"python 'forward_run.py'", cwd=t_d,)
+            except Exception as e:
+                self.logger.statement("Error running forward_run.py to validate emulator interface")
+                raise
+        else:
+            self.logger.statement("Skipping forward_run.py validation (use_runstor=True)")
 
         # 7. Generate Pst Control File
         # Use Pst.from_io_files to wire everything up

@@ -4614,13 +4614,15 @@ def gpr_pyworker(pst,host,port,input_df=None,mdf=None,gpr=False):
         print("WARNING: using legacy gpr_pyworker function, which is deprecated")
         gpr_pyworker_legacy(pst,host,port,input_df=input_df,mdf=mdf)
     else:
+        import pandas as pd
+        from pyemu.emulators import GPR
+        
         if gpr is True:
             gpr = GPR.load("gpr_emulator.pkl")
 
         assert isinstance(gpr, GPR), "gpr must be a GPR object or True to load from 'gpr_emulator.pkl'"
         
-        import pandas as pd
-        from pyemu.emulators import GPR
+
         
         # if explicit args weren't passed, get the default ones...
         if input_df is None:
@@ -4691,6 +4693,151 @@ def gpr_forward_run():
     mdf.loc[:,["output_name","sim","sim_std"]].to_csv("gpr_output.csv",index=False)
     return mdf
 
+def gpr_file_forward_run(emu_file="gpr_emulator.pkl", input_file="gpr_input.csv", output_file="gpr_output.csv"):
+    import os
+    import pandas as pd
+    import numpy as np
+    from pyemu.emulators import GPR
+    
+    try:
+        # Load Emulator
+        emu = GPR.load(emu_file)
+        
+        # Read Inputs
+        if not os.path.exists(input_file):
+             raise FileNotFoundError(f"Input file {input_file} not found")
+             
+        input_df = pd.read_csv(input_file, index_col=0)
+        
+        # Determine format (parval1 column or direct columns)
+        if "parval1" in input_df.columns:
+            inputs = input_df["parval1"].T.to_frame().T
+        else:
+             inputs = input_df
+             
+        # Predict
+        return_std = getattr(emu, "return_std", False) # Default to False if not set
+        
+        res = emu.predict(inputs, return_std=return_std)
+        
+        pred = None
+        std = None
+
+        if isinstance(res, tuple):
+             pred, std = res
+        else:
+             pred = res
+        
+        # Handle formats (we expect single row Series or DataFrame)
+        if isinstance(pred, pd.DataFrame):
+            pred = pred.iloc[0]
+        if std is not None and isinstance(std, pd.DataFrame):
+            std = std.iloc[0]
+            
+        with open(output_file, 'w') as f:
+            # Write Header
+            if std is not None:
+                f.write("obsnme,obsval,obsstd\n")
+            else:
+                f.write("obsnme,obsval\n")
+            
+            for name in pred.index:
+                val = pred[name]
+                line = f"{name},{val}"
+                if std is not None:
+                     # Assumes std index matches pred index
+                     if name in std.index:
+                        std_val = std[name]
+                     else:
+                        std_val = 0.0 # Should not happen if indices align
+                     line += f",{std_val}"
+                f.write(line + "\n")
+                
+    except Exception as e:
+        print(f"Error in gpr_file_forward_run: {e}")
+        raise e
+
+def gpr_runstore_forward_run(ws='.', emu_file="gpr_emulator.pkl"):
+    import os
+    import pandas as pd
+    import numpy as np
+    from pyemu.utils.helpers import RunStor
+    from pyemu.emulators import GPR
+    
+    try:
+        gpr = GPR.load(os.path.join(ws, emu_file))
+    except Exception as e:
+        raise Exception("failed to load GPR from {0}: {1}".format(emu_file, str(e)))
+
+    fname = os.path.join(ws, "gpr.rns") # Assumes standardized runstor name
+    if not os.path.exists(fname):
+         # Try pest.rns as fallback
+         fname = os.path.join(ws, "pest.rns")
+    
+    if not os.path.exists(fname):
+        raise FileNotFoundError(f"Could not find run storage file (gpr.rns or pest.rns) in {ws}")
+
+    header, par_names, obs_names = RunStor.file_info(fname)
+    rs = RunStor(fname)
+    df = rs.get_data()
+
+    # Get GPR input names
+    if not hasattr(gpr, "input_names"):
+         # Try to infer from 1st element of prediction if not available? 
+         # GPR object usually has input_names.
+         raise AttributeError("GPR object missing 'input_names' attribute")
+    
+    input_names = gpr.input_names
+    
+    # Check alignment
+    missing_pars = [p for p in input_names if p not in par_names]
+    # In runstor, parameter names might be lower case? RunStor.file_info lower()s them.
+    # We should ensure GPR input_names are checked case-insensitively or consistent.
+    if missing_pars:
+         # Try minimal matching? 
+         pass
+
+    # Extract inputs
+    # If runstor has extra parameters, that's fine, we just take what we need.
+    pvals = df.loc[:, input_names]
+    
+    # Predict (Batch)
+    return_std = getattr(gpr, "return_std", False)
+    res = gpr.predict(pvals, return_std=return_std)
+    
+    pred = None
+    std = None
+    if isinstance(res, tuple):
+         pred, std = res
+    else:
+         pred = res
+         
+    # Update RunStor DataFrame
+    # pred is DataFrame (n_samples, n_outputs)
+    # std is DataFrame (n_samples, n_outputs)
+    
+    # Update predictions
+    # Only update columns that exist in obs_names
+    # gpr.output_names should match obs_names
+    
+    valid_cols = [c for c in pred.columns if c in obs_names]
+    if valid_cols:
+        df.loc[:, valid_cols] = pred.loc[:, valid_cols].values
+        
+    # Update stds if they exist
+    if std is not None:
+         # Standard naming convention: name + "_gprstd" ?
+         # Or does the instruction file map them differently?
+         # In _get_emulator_observations we used name + "_gprstd"
+         for col in std.columns:
+             std_col = f"{col}_gprstd"
+             if std_col in obs_names:
+                 df.loc[:, std_col] = std.loc[:, col].values
+
+    rs.update(df)
+    return
+
+
 
 def dsi_runstore_forward_run(ws='.'):
     import os
@@ -4726,6 +4873,61 @@ def dsi_runstore_forward_run(ws='.'):
 
     rs.update(df)
     return
+
+def dsi_file_forward_run(emu_file="dsi.pickle", input_file="dsi_pars.csv", output_file="dsi_sim_vals.csv"):
+    import os
+    import pandas as pd
+    import traceback
+    
+    try:
+        # Try loading as DSIAE first, then DSI
+        try:
+            from pyemu.emulators import DSIAE, DSI
+        except ImportError:
+            # Should be available in standard installation
+            raise ImportError("pyemu.emulators.DSI and/or DSIAE could not be imported")
+
+        emu = None
+        # Try DSIAE.load (checks for folder/zip etc)
+        try:
+             emu = DSIAE.load(emu_file)
+        except:
+             pass
+        
+        # If not loaded, try DSI.load (standard pickle)
+        if emu is None:
+             try:
+                 emu = DSI.load(emu_file)
+             except Exception as e:
+                 raise Exception(f"Failed to load emulator from {emu_file}. Tried DSIAE.load and DSI.load. Error: {e}")
+
+        if not os.path.exists(input_file):
+        # ...
+             raise FileNotFoundError(f"Input file {input_file} not found")
+             
+        input_df = pd.read_csv(input_file, index_col=0)
+        
+        # Determine format
+        if "parval1" in input_df.columns:
+            inputs = input_df["parval1"].T.to_frame().T
+        else:
+             inputs = input_df
+        
+        # Predict
+        pred_res = emu.predict(inputs)
+        
+        # Flatten
+        if isinstance(pred_res, pd.DataFrame):
+            pred_res = pred_res.iloc[0]
+            
+        # Write Output
+        pred_res.name = "simval"
+        pred_res.to_csv(output_file, header=True)
+        
+    except Exception as e:
+        print(f"Error in dsi_file_forward_run: {e}")
+        traceback.print_exc()
+        raise e
 
 def dsi_forward_run(pvals,dsi,write_csv=False):
     if not isinstance(dsi,pyemu.emulators.DSI) and not isinstance(dsi,pyemu.emulators.DSIAE):
@@ -4780,7 +4982,10 @@ def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies",num_workers=1):
     obs.loc[decvars.index,"obsval"] = decvars.values
 
     # update the obs+noise file with the decvar values to ensure NO NOISE on the decvars
-    noise = pyemu.ObservationEnsemble.from_binary(pst_dsi,os.path.join(md_ies,"dsi.obs+noise.jcb"))
+    try:
+        noise = pyemu.ObservationEnsemble.from_binary(pst_dsi,os.path.join(md_ies,"dsi.obs+noise.jcb"))
+    except:
+         noise = pyemu.ObservationEnsemble.from_csv(pst_dsi,os.path.join(md_ies,"dsi.obs+noise.csv"))
     # check that all of decvars.index are in noise.columns
     assert len([i for i in decvars.index if i not in noise.columns.tolist()]) == 0, "some decvars not in noise columns"
     # update columns in noise if column name in decvars.index
@@ -4818,13 +5023,16 @@ def dsivc_forward_run(md_ies=".",ies_exe_path="pestpp-ies",num_workers=1):
                                         reuse_master =True,
                                         ppw_function=pyemu.helpers.dsi_pyworker,
                                         ppw_kwargs={"dsi":dsi,"pvals":pvals})  
-    assert os.path.exists(os.path.join(md_ies,f"dsi.{noptmax}.obs.jcb")), f"dsi.{noptmax}.obs.jcb not found...pst failed?"
+    assert os.path.exists(os.path.join(md_ies,f"dsi.{noptmax}.obs.jcb")) or os.path.exists(os.path.join(md_ies,f"dsi.{noptmax}.obs.csv")), f"dsi.{noptmax}.obs.[jcb|csv] not found...pst failed?"
 
 
     #TODO: checks on PDC or Eulerian distance to training data?
 
     #postprocess stack
-    oe = pyemu.ObservationEnsemble.from_binary(pst_dsi,os.path.join(md_ies,f"dsi.{noptmax}.obs.jcb"))
+    try:
+        oe = pyemu.ObservationEnsemble.from_binary(pst_dsi,os.path.join(md_ies,f"dsi.{noptmax}.obs.jcb"))
+    except:
+        oe = pyemu.ObservationEnsemble.from_csv(pst_dsi,os.path.join(md_ies,f"dsi.{noptmax}.obs.csv"))
     assert oe.shape[0] == noise.shape[0], "stack and noise shapes do not match; failed runs?"
     if dsi.dsivc_args.get("track_stack",False):
         # write long form oe
