@@ -1536,6 +1536,160 @@ def test_gpr_runstor(tmp_path):
     assert "pst_name='my_chk_pstname'" in content
 
 
+def test_row_wise_minmax_scaler():
+    from pyemu.emulators.transformers import RowWiseMinMaxScaler
+    
+    # 1. Create synthetic data
+    # Group 1: 3 columns, values approx 0-10
+    # Group 2: 2 columns, values approx 100-200
+    df = pd.DataFrame({
+        'g1_1': [0, 5, 10],
+        'g1_2': [2, 7, 12], # slightly shifted
+        'g1_3': [1, 6, 11],
+        'g2_1': [100, 150, 200],
+        'g2_2': [110, 160, 210]
+    })
+    
+    groups = {
+        'g1': ['g1_1', 'g1_2', 'g1_3'],
+        'g2': ['g2_1', 'g2_2']
+    }
+    
+    # 2. Fit scaler (feature_range -1 to 1)
+    scaler = RowWiseMinMaxScaler(feature_range=(-1, 1), groups=groups)
+    scaler.fit(df)
+    
+    # Check if row params were correctly identified
+    # Row 0: g1 min=0, max=2 -> range=2. g2 min=100, max=110 -> range=10
+    row0_min_g1 = scaler.row_params['g1'][0][0]
+    row0_max_g1 = scaler.row_params['g1'][1][0]
+    assert row0_min_g1 == 0
+    assert row0_max_g1 == 2
+    
+    # 3. Transform
+    transformed = scaler.transform(df)
+    
+    # Check limits
+    assert transformed.min().min() >= -1.0 - 1e-6
+    assert transformed.max().max() <= 1.0 + 1e-6
+    
+    # Verify specific value
+    # Row 0, g1_1 (val 0). min=0, max=2. Normalized=(0-0)/2=0. Scaled = 0*2 + (-1) = -1.
+    assert np.abs(transformed.iloc[0]['g1_1'] - (-1.0)) < 1e-6
+    # Row 0, g1_2 (val 2). min=0, max=2. Normalized=(2-0)/2=1. Scaled = 1*2 + (-1) = 1.
+    assert np.abs(transformed.iloc[0]['g1_2'] - 1.0) < 1e-6
+    
+    # 4. Inverse Transform
+    inversed = scaler.inverse_transform(transformed)
+    
+    # Check roundtrip
+    assert np.allclose(df.values, inversed.values)
+
+
+def test_log10_transformer():
+    from pyemu.emulators.transformers import Log10Transformer
+    
+    df = pd.DataFrame({
+        'a': [1, 10, 100],
+        'b': [0, -1, 10] # Contains non-positives
+    })
+    
+    # Test 1: Simple logs
+    t = Log10Transformer(columns=['a'])
+    res = t.fit_transform(df)
+    assert np.allclose(res['a'].values, [0, 1, 2])
+    assert np.all(res['b'] == df['b']) # Untouched
+    
+    inv = t.inverse_transform(res)
+    assert np.allclose(inv['a'].values, df['a'].values)
+    
+    # Test 2: Shift handling
+    t2 = Log10Transformer(columns=['b'])
+    res2 = t2.fit_transform(df)
+    # min is -1. shift should be -(-1) + 1e-6 = 1.000001
+    # values become 0+shift, -1+shift, 10+shift
+    # just check roundtrip
+    inv2 = t2.inverse_transform(res2)
+    assert np.allclose(inv2['b'].values, df['b'].values)
+
+
+def test_lpfa_synth(tmp_path):
+    from pyemu.emulators import LPFA
+    import numpy as np
+    import pandas as pd
+    
+    # 1. Generate synth data
+    # 50 samples
+    # Input: sin wave + noise
+    # Output: cos wave (forecast)
+    t = np.linspace(0, 10, 50)
+    data = []
+    n_real = 30
+    np.random.seed(42)
+    for i in range(n_real):
+        phase = np.random.uniform(0, 2*np.pi)
+        amp = np.random.uniform(0.8, 1.2)
+        # Inputs (history)
+        hist = amp * np.sin(t[:10] + phase)
+        # Outputs (forecast)
+        fore = amp * np.cos(t[10:] + phase)
+        row = np.concatenate([hist, fore])
+        data.append(row)
+        
+    cols = [f"h_{i}" for i in range(10)] + [f"f_{i}" for i in range(40)]
+    df = pd.DataFrame(data, columns=cols)
+    
+    # Use a single group for time series to allow scaling forecast based on history
+    all_cols = cols
+    history_cols = [f"h_{i}" for i in range(10)]
+    forecast_cols = [f"f_{i}" for i in range(40)]
+    
+    groups = {
+        'timeseries': all_cols
+    }
+    fit_groups = {
+        'timeseries': history_cols
+    }
+    
+    input_names = history_cols
+    output_names = forecast_cols
+    
+    # 2. Init LPFA
+    lpfa = LPFA(
+        data=df,
+        input_names=input_names,
+        output_names=output_names,
+        groups=groups,
+        fit_groups=fit_groups,
+        verbose=False
+    )
+    
+    # 3. Create Model
+    lpfa.create_model() # defaults
+    
+    # 4. Fit
+    lpfa.fit(epochs=10) # fast fit
+    
+    # 5. Predict
+    # Predict on training data - needs full structure for LPFA
+    pred_input = df[input_names].copy()
+    for col in output_names:
+        pred_input[col] = np.nan
+        
+    preds = lpfa.predict(pred_input)
+    
+    # Check shape
+    # preds includes inputs and outputs? logic in predict returns 'predictions' which is copy of input
+    # AND assigns output cols.
+    assert preds.shape == (n_real, 50) # 10 input + 40 output
+    assert not preds[output_names].isnull().all().all() # Should be filled
+
+    
+    # 6. Basic noise model check
+    lpfa.add_noise_model()
+    # Should not crash
+
+
 if __name__ == "__main__":
     #test_dsiae_save_load("temp")
     #test_dsi_basic("temp")
