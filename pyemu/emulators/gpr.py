@@ -435,6 +435,18 @@ class GPR(Emulator):
         
         return super().prepare_pestpp(t_d, pst=pst, verbose=verbose, **kwargs)
     
+    def _write_output_file(self, obs_df, filename):
+        """Writes GPR-specific output file (handling std dev)."""
+        with open(filename, 'w') as f:
+            f.write("obsnme,obsval\n") # header
+            for output_name in self.output_names:
+                if self.return_std:
+                    # e.g. "obsnme, val, std"
+                    f.write(f"{output_name},0.0\n")
+                    f.write(f"{output_name}_gprstd,0.0\n")
+                else:
+                    f.write(f"{output_name},0.0\n")
+
     def _write_instruction_file(self, obs_df, filename):
         """Writes GPR-specific instruction file (handling std dev)."""
         with open(filename, 'w') as f:

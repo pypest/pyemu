@@ -4771,11 +4771,13 @@ def gpr_runstore_forward_run(ws='.', emu_file="gpr_emulator.pkl"):
 
     fname = os.path.join(ws, "gpr.rns") # Assumes standardized runstor name
     if not os.path.exists(fname):
-         # Try pest.rns as fallback
-         fname = os.path.join(ws, "pest.rns")
+         # Try as fallback
+        fname = [f for f in os.listdir(ws) if f.endswith(".rns")][0]
+        print(f"Using runstor file: {fname}")
+
     
     if not os.path.exists(fname):
-        raise FileNotFoundError(f"Could not find run storage file (gpr.rns or pest.rns) in {ws}")
+        raise FileNotFoundError(f"Could not find run storage file {fname} in {ws}")
 
     header, par_names, obs_names = RunStor.file_info(fname)
     rs = RunStor(fname)
