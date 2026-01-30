@@ -295,20 +295,21 @@ class Emulator:
                                        emu_filename, 
                                        input_filename, 
                                        output_filename, 
-                                       class_name)
+                                       class_name,
+                                       pst_name=kwargs.get("pst_name",None))
         
         # run the forward run once
         # to ensure the script works and the emulator is valid
         if not self._use_runstor:
             self.logger.statement("Validating forward_run.py script by executing once")
             try:
-                run(f"python 'forward_run.py'", cwd=t_d,)
+                run(f"python forward_run.py", cwd=os.path.abspath(t_d),)
             except Exception as e:
                 self.logger.statement("Error running forward_run.py to validate emulator interface")
                 raise
         else:
             self.logger.statement("Skipping forward_run.py validation (use_runstor=True)")
-
+            self._write_output_file(obs_df, os.path.join(t_d, output_filename))  
         # 7. Generate Pst Control File
         # Use Pst.from_io_files to wire everything up
         pst_obj = Pst.from_io_files(
@@ -425,6 +426,15 @@ class Emulator:
         # This matches the read_csv in forward_run.py and the template structure
         par_df.loc[:, ["parval1"]].to_csv(filename)
     
+    def _write_output_file(self, obs_df, filename):
+        """Writes a simple CSV output file with base values."""
+        # Assumes output format from forward_run.py is: obsnme,simval
+        # Standard vertical CSV
+        with open(filename, 'w') as f:
+            f.write("obsnme,simval\n") # header
+            for obsnme in obs_df.index:
+                f.write(f"{obsnme},{obs_df.loc[obsnme, 'obsval']}\n") # base value
+
     def _write_instruction_file(self, obs_df, filename):
         """Writes a simple CSV instruction file."""
         # Assumes output format from forward_run.py is: obsnme,simval
@@ -435,7 +445,7 @@ class Emulator:
             for obsnme in obs_df.index:
                 f.write(f"l1~,~ !{obsnme}!\n")
 
-    def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name):
+    def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name, pst_name=None):
         """Generates the python script that PEST++ runs.
            Subclasses must implement this method to handle specific return types and behaviors."""
         raise NotImplementedError("Subclasses must implement _write_forward_run_script")
