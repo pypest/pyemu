@@ -459,7 +459,7 @@ class LPFA(Emulator):
         self.fitted = True
         return self
 
-    def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name):
+    def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name, pst_name=None):
         """Generates the python script that PEST++ runs for LPFA."""
         script = f"""
 import sys

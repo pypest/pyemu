@@ -498,7 +498,7 @@ class DSI(Emulator):
         #TODO
         return
 
-    def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name):
+    def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name, pst_name=None):
         """Generates the python script that PEST++ runs for DSI."""
         import inspect
         from pyemu.utils.helpers import dsi_file_forward_run, dsi_runstore_forward_run, dsi_forward_run
@@ -508,6 +508,8 @@ class DSI(Emulator):
         target_func = "dsi_runstore_forward_run" if use_runstor else "dsi_file_forward_run"
         if use_runstor:
             call_args = ""
+            if pst_name is not None:
+                call_args = f"pst_name='{pst_name}'"
         else:
             call_args = f"'{emu_file}', '{input_file}', '{output_file}'"
 

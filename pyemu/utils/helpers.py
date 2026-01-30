@@ -4757,7 +4757,7 @@ def gpr_file_forward_run(emu_file="gpr_emulator.pkl", input_file="gpr_input.csv"
         print(f"Error in gpr_file_forward_run: {e}")
         raise e
 
-def gpr_runstore_forward_run(ws='.', emu_file="gpr_emulator.pkl"):
+def gpr_runstore_forward_run(ws='.', emu_file="gpr_emulator.pkl", pst_name="gpr"):
     import os
     import pandas as pd
     import numpy as np
@@ -4769,7 +4769,7 @@ def gpr_runstore_forward_run(ws='.', emu_file="gpr_emulator.pkl"):
     except Exception as e:
         raise Exception("failed to load GPR from {0}: {1}".format(emu_file, str(e)))
 
-    fname = os.path.join(ws, "gpr.rns") # Assumes standardized runstor name
+    fname = os.path.join(ws, f"{pst_name}.rns")
     if not os.path.exists(fname):
          # Try as fallback
         fname = [f for f in os.listdir(ws) if f.endswith(".rns")][0]
@@ -4841,7 +4841,7 @@ def gpr_runstore_forward_run(ws='.', emu_file="gpr_emulator.pkl"):
 
 
 
-def dsi_runstore_forward_run(ws='.'):
+def dsi_runstore_forward_run(ws='.', pst_name="dsi"):
     import os
     from pyemu.utils.helpers import RunStor
     try:
@@ -4856,7 +4856,9 @@ def dsi_runstore_forward_run(ws='.'):
         except Exception as e:
             raise Exception("failed to load DSI or DSIAE from dsi.pickle:{0}".format(str(e)))
 
-    fname = os.path.join(ws,"dsi.rns")
+    fname = os.path.join(ws, f"{pst_name}.rns")
+    if not os.path.exists(fname):
+        fname = os.path.join(ws, "dsi.rns")
     header, par_names, obs_names = RunStor.file_info(fname)
     rs = RunStor(fname)
     df = rs.get_data()

@@ -878,7 +878,7 @@ def gpr_zdt1_test():
           n_restarts_optimizer=20,
           );
     gpr.fit()
-    gpr.prepare_pestpp(m_d,case,gpr_t_d=gpr_t_d)
+    gpr.prepare_pestpp(m_d,case,gpr_t_d=gpr_t_d,use_runstor=True)
 
     #pyemu.helpers.prep_for_gpr(pst_fname, dv_pops, obs_pops, t_d=m_d,gpr_t_d=gpr_t_d, nverf=int(pop_size * .1), \
     #                           plot_fits=True, apply_standard_scalar=False, include_emulated_std_obs=True)
@@ -893,7 +893,7 @@ def gpr_zdt1_test():
     start = datetime.now()
     #pyemu.os_utils.start_workers(gpr_t_d, mou_exe_path, case + ".pst", num_workers, worker_root=".",
     #                             master_dir=gpr_m_d, verbose=True, port=port)
-    pyemu.os_utils.run("{0} {1}.pst".format(mou_exe_path,case),cwd=gpr_t_d)
+    pyemu.os_utils.run("{0} {1}.pst /e".format(mou_exe_path,case),cwd=gpr_t_d)
 
     gpr_m_d = gpr_t_d
 
@@ -1423,15 +1423,130 @@ def test_dsi_rowwise_mixed(tmp_path):
     return
 
 
+
+def test_gpr_basic(tmp_path):
+    import pyemu
+    from pyemu.emulators import GPR
+    
+    # 1. Create Data
+    # Simple y = 2*x + 1 relationship
+    # Training data: x=0..10
+    x = np.linspace(0.0, 10.0, 20)
+    y = 2.0 * x + 1.0
+    # Add small noise (very small so interpolation is almost exact)
+    # y += np.random.normal(0, 0.001, 20) 
+    
+    df = pd.DataFrame({'x': x, 'y': y})
+    
+    # 2. Init and Fit
+    gpr = GPR(data=df, input_names=['x'], output_names=['y'], verbose=False)
+    gpr.fit()
+    
+    # 3. Predict
+    # Predict on training data
+    pred = gpr.predict(df[['x']])
+    # assert close
+    diff = np.abs(pred['y'].values - y)
+    assert np.max(diff) < 0.1, f"Prediction error too high"
+
+    # 4. Prepare PEST++ (file-based)
+    t_d = str(tmp_path / "gpr_basic_template")
+    if os.path.exists(t_d):
+        shutil.rmtree(t_d)
+    
+    # Create a dummy PST to satisfy GPR requirement
+    pst = pyemu.Pst("dummy.pst", load=False)
+    # Add parameter 'x'
+    # Manually constructing parameter_data (minimal columns)
+    pst.parameter_data = pd.DataFrame(
+        {'parnme':['x'], 'parval1':[5.0], 'parlbnd':[0.0], 'parubnd':[10.0], 
+         'pargp':['pargp'], 'scale':[1.0], 'offset':[0.0], 'partrans':['none']}, 
+        index=['x']
+    )
+    # Add observation 'y'
+    pst.observation_data = pd.DataFrame(
+        {'obsnme':['y'], 'obsval':[11.0], 'weight':[1.0], 'obgnme':['obgnme']}, 
+        index=['y']
+    )
+    
+    # prepare_pestpp
+    pst_gen = gpr.prepare_pestpp(t_d, pst=pst, use_runstor=False)
+    
+    # 5. Check generated files
+    assert os.path.exists(os.path.join(t_d, "forward_run.py"))
+    
+    # 6. Verify forward run script content
+    with open(os.path.join(t_d, "forward_run.py"), 'r') as f:
+        content = f.read()
+    
+    # print(content)
+    assert "gpr_file_forward_run" in content
+    assert "gpr_runstore_forward_run" not in content.split('if __name__')[1]
+    
+    # 7. Check if forward run works (it is run inside prepare_pestpp via 'subprocess' or 'run')
+    # If prepare_pestpp didn't raise, it ran successfully.
+    
+    # Validate result of the forward run (which should have created emulator_output.csv)
+    out_file = os.path.join(t_d, "emulator_output.csv")
+    assert os.path.exists(out_file)
+    res_df = pd.read_csv(out_file)
+    # check columns
+    assert 'y' in res_df.columns or 'y' in res_df.iloc[:,0].values
+
+
+def test_gpr_runstor(tmp_path):
+    import pyemu
+    from pyemu.emulators import GPR
+    
+    # 1. Create Data
+    x = np.linspace(0.0, 10.0, 20)
+    y = 2.0 * x + 1.0 
+    df = pd.DataFrame({'x': x, 'y': y})
+    
+    # 2. Init
+    gpr = GPR(data=df, input_names=['x'], output_names=['y'], verbose=False)
+    gpr.fit()
+    
+    # 3. Pst
+    pst = pyemu.Pst("dummy.pst", load=False)
+    pst.parameter_data = pd.DataFrame(
+        {'parnme':['x'], 'parval1':[5.0], 'parlbnd':[0.0], 'parubnd':[10.0], 
+         'pargp':['pargp'], 'scale':[1.0], 'offset':[0.0], 'partrans':['none']}, 
+        index=['x']
+    )
+    pst.observation_data = pd.DataFrame(
+        {'obsnme':['y'], 'obsval':[11.0], 'weight':[1.0], 'obgnme':['obgnme']}, 
+        index=['y']
+    )
+    
+    # 4. Prepare PEST++ (RunStor)
+    t_d = str(tmp_path / "gpr_runstor_template")
+    if os.path.exists(t_d):
+        shutil.rmtree(t_d)
+    
+    gpr.prepare_pestpp(t_d, pst=pst, use_runstor=True, pst_name="my_chk_pstname")
+    
+    # 5. Verify forward run script content
+    with open(os.path.join(t_d, "forward_run.py"), 'r') as f:
+        content = f.read()
+    
+    assert "gpr_runstore_forward_run" in content
+    # It should be the one called
+    assert "gpr_runstore_forward_run(emu_file=" in content
+    assert "pst_name='my_chk_pstname'" in content
+
+
 if __name__ == "__main__":
     #test_dsiae_save_load("temp")
     #test_dsi_basic("temp")
     #test_dsi_nst("temp")
     #test_dsi_nst_extrap("temp")
     #test_dsi_mixed("temp")
-    test_dsivc("temp")
+    #test_dsivc("temp")
     #plot_freyberg_dsi()
     #test_lpfa_std()
     #gpr_zdt1_test()
+    tmp_path = Path("temp")
+    test_gpr_basic(tmp_path=tmp_path)
 
 

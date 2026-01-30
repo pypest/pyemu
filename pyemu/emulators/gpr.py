@@ -460,7 +460,7 @@ class GPR(Emulator):
                 else:
                      f.write("l1 ~,~ !{0}!\n".format(output_name))
 
-    def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name):
+    def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name, pst_name=None):
         """Generates the python script that PEST++ runs for GPR (handles tuple return)."""
         import inspect
         from pyemu.utils.helpers import gpr_file_forward_run, gpr_runstore_forward_run, gpr_forward_run
@@ -470,6 +470,8 @@ class GPR(Emulator):
         target_func = "gpr_runstore_forward_run" if use_runstor else "gpr_file_forward_run"
         if use_runstor:
             call_args = f"emu_file='{emu_file}'"
+            if pst_name is not None:
+                call_args += f", pst_name='{pst_name}'"
         else:
             call_args = f"'{emu_file}', '{input_file}', '{output_file}'"
 
