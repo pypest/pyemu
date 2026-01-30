@@ -3,6 +3,7 @@ Learning-based pattern-data-driven forecast approach (LPFA) emulator implementat
 
 """
 from __future__ import print_function, division
+import warnings
 import importlib.util
 
 # Check sklearn availability at module level
@@ -163,6 +164,7 @@ class LPFA(Emulator):
 
         
         super().__init__(verbose=verbose)
+        warnings.warn("LPFA is deprecated, please use pattern-DSI instead", DeprecationWarning)
 
         self.seed = seed
         self.data = data
