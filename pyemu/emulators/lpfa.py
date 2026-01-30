@@ -461,56 +461,7 @@ class LPFA(Emulator):
 
     def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name, pst_name=None):
         """Generates the python script that PEST++ runs for LPFA."""
-        script = f"""
-import sys
-import os
-import pandas as pd
-import numpy as np
-import traceback
-
-sys.path.append(os.getcwd())
-
-from pyemu.emulators import {class_name}
-
-def main():
-    try:
-        # Load Emulator
-        emu = {class_name}.load("{emu_file}")
-
-        # Read Inputs
-        if not os.path.exists("{input_file}"):
-             raise FileNotFoundError(f"Input file {input_file} not found")
-             
-        input_df = pd.read_csv("{input_file}", index_col=0)
-        
-        # Determine format
-        if "parval1" in input_df.columns:
-            inputs = input_df["parval1"].T.to_frame().T
-        else:
-             inputs = input_df
-        
-        # Predict
-        pred_res = emu.predict(inputs)
-        
-        # Flatten
-        if isinstance(pred_res, pd.DataFrame):
-            # If multi-row, take first
-            pred_res = pred_res.iloc[0]
-            
-        # Write Output
-        pred_res.name = "simval"
-        pred_res.to_csv("{output_file}", header=True)
-
-    except Exception as e:
-        print(f"Error in LPFA forward_run: {{e}}")
-        traceback.print_exc()
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
-"""
-        with open(filename, 'w') as f:
-            f.write(script)
+        self.logger.statement(f"LPFA does not rely on using PEST++ nor a forward run. Conditioning is acomplished using scikit-learn directly.")
 
     def predict(self, data):
         """
