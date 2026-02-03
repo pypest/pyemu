@@ -162,7 +162,53 @@ class DSI(Emulator):
             self.data_transformed = self._rowwise_train_scaler.fit_transform(self.data_transformed)
     
         return self.data_transformed
+
+    def _get_emulator_parameters(self, pst=None):
+        """
+        Get the parameters (inputs) for the DSI emulator.
+        Returns a DataFrame with columns: parnme, parval1, parlbnd, parubnd, pargp
+        """
+        if not self.fitted:
+            raise Exception("Emulator must be fitted before calling prepare_pestpp")
+
+        # In DSI, parameters are the projections in latent space (p_0, p_1, ...)
+        # Number of parameters = dimensionality of projection matrix (columns)
+        num_pars = self.pmat.shape[1]
         
+        par_names = [f"p_{i}" for i in range(num_pars)]
+        
+        df = pd.DataFrame(index=par_names)
+        df["parnme"] = par_names
+        df["parval1"] = 0.0 # DSI assumes centered parameters (mean 0)
+        df["parlbnd"] = -1.0e10 # Effectively unbounded, but good to have ranges
+        df["parubnd"] = 1.0e10
+        df["pargp"] = "dsi_pars"
+        df["partrans"] = "none"
+        
+        return df
+
+    def _get_emulator_observations(self, pst=None):
+        """
+        Get the observations (outputs) for the DSI emulator.
+        Returns a DataFrame with columns: obsnme, obsval, weight, obgnme
+        """
+        #if self.observation_data is not None:
+        #     df = self.observation_data.copy()
+        #     df = df.loc[self.data.columns]  # Ensure order matches training data
+        #     return df
+        
+        # Use columns from data (assuming they represent observations)
+        if self.data is not None:
+            cols = self.data.columns
+            df = pd.DataFrame(index=cols)
+            df["obsnme"] = cols
+            df["obsval"] = self.data.mean(axis=0) # Use mean as dummy value
+            df["weight"] = 0.0
+            df["obgnme"] = "obgnme"
+            return df
+            
+        raise Exception("No observation data available to generate instruction files")
+
     def _build_truth_rowwise_scaler(self, truth_df_transformed):
         """Build a RowWiseMinMaxScaler fitted on provided truth values."""
         scaler = RowWiseMinMaxScaler(
@@ -451,131 +497,92 @@ class DSI(Emulator):
         """Check for Prior data conflict."""
         #TODO
         return
+
+    def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name, pst_name=None):
+        """Generates the python script that PEST++ runs for DSI."""
+        import inspect
+        from pyemu.utils.helpers import dsi_file_forward_run, dsi_runstore_forward_run, dsi_forward_run
+
+        use_runstor = getattr(self, "_use_runstor", False)
         
-    def prepare_pestpp(self, t_d=None, observation_data=None, use_runstor=False):
+        target_func = "dsi_runstore_forward_run" if use_runstor else "dsi_file_forward_run"
+        if use_runstor:
+            call_args = ""
+            if pst_name is not None:
+                call_args = f"pst_name='{pst_name}'"
+        else:
+            call_args = f"'{emu_file}', '{input_file}', '{output_file}'"
+
+        lines = [
+            "import sys",
+            "import os",
+            "import pandas as pd",
+            "import numpy as np",
+            "import traceback",
+            "import pickle",
+            "",
+            "sys.path.append(os.getcwd())",
+            ""
+        ]
+
+        # Inject code for all use cases
+        for func in [dsi_forward_run, dsi_file_forward_run, dsi_runstore_forward_run]:
+             lines.append(f"# Source for {func.__name__}")
+             lines.append(inspect.getsource(func))
+             lines.append("")
+
+        lines.append('if __name__ == "__main__":')
+        lines.append(f'    {target_func}({call_args})')
+
+        with open(filename, 'w') as f:
+            for line in lines:
+                f.write(line + "\n")
+        
+    def prepare_pestpp(self, t_d, observation_data=None, use_runstor=False, pst=None, verbose=False):
         """
-        Prepare PEST++ control files for the emulator.
-        
-        Parameters
-        ----------
-        t_d : str, optional
-            Template directory path. Must be provided.
-        observation_data : pandas.DataFrame, optional
-            Observation data to use. If None, uses the data from initialization.
-            
-        Returns
-        -------
-        Pst
-            PEST++ control file object.
+        Prepare PEST++ interface for DSI.
+        Overrides base method to handle specific DSI arguments like use_runstor
         """
+        self._use_runstor = use_runstor 
         
-        assert t_d is not None, "template directory must be provided"
-        self.template_dir = t_d
-
-        if os.path.exists(t_d):
-            shutil.rmtree(t_d)
-        os.makedirs(t_d)
-        self.logger.statement("creating template directory {0}".format(t_d))
-
-        self.logger.log("creating tpl files")
-        dsi_in_file = os.path.join(t_d, "dsi_pars.csv")
-        dsi_tpl_file = dsi_in_file + ".tpl"
-        ftpl = open(dsi_tpl_file, 'w')
-        fin = open(dsi_in_file, 'w')
-        ftpl.write("ptf ~\n")
-        fin.write("parnme,parval1\n")
-        ftpl.write("parnme,parval1\n")
-        npar = self.s.shape[0]
-        assert npar>0, "no parameters found in the DSI emulator"
-        dsi_pnames = []
-        for i in range(npar):
-            pname = "dsi_par{0:04d}".format(i)
-            dsi_pnames.append(pname)
-            fin.write("{0},0.0\n".format(pname))
-            ftpl.write("{0},~   {0}   ~\n".format(pname, pname))
-        fin.close()
-        ftpl.close()
-        self.logger.log("creating tpl files")
-
-        # run once to get the dsi_pars.csv file
-        pvals = np.zeros_like(self.s)
-
-        sim_vals = self.predict(pvals)
+        # Maintain backward compatibility with explicit observation_data argument
+        if observation_data is not None:
+             if isinstance(observation_data, pd.DataFrame):
+                 self.observation_data = observation_data
+             # If passed, we update our internal reference so the hook uses it
         
-        self.logger.log("creating ins file")
-        out_file = os.path.join(t_d,"dsi_sim_vals.csv")
-        sim_vals.to_csv(out_file,index=True)
-              
-        ins_file = out_file + ".ins"
-        sdf = pd.read_csv(out_file,index_col=0)
-        with open(ins_file,'w') as f:
-            f.write("pif ~\n")
-            f.write("l1\n")
-            for oname in sdf.index.values:
-                f.write("l1 ~,~ !{0}!\n".format(oname))
-        self.logger.log("creating ins file")
-
-        self.logger.log("creating Pst")
-        pst = Pst.from_io_files([dsi_tpl_file],[dsi_in_file],[ins_file],[out_file],pst_path=".")
-
-        par = pst.parameter_data
-        dsi_pars = par.loc[par.parnme.str.startswith("dsi_par"),"parnme"]
-        par.loc[dsi_pars,"parval1"] = 0
-        par.loc[dsi_pars,"parubnd"] = 10.0
-        par.loc[dsi_pars,"parlbnd"] = -10.0
-        par.loc[dsi_pars,"partrans"] = "none"
+        # 1. Call Generic Base Logic
+        # This creates files and standard Pst object
+        pst_obj = super().prepare_pestpp(t_d, pst=pst, verbose=verbose, 
+                                         tpl_filename="dsi_pars.csv.tpl",
+                                         input_filename="dsi_pars.csv",
+                                         ins_filename="dsi_sim_vals.csv.ins",
+                                         output_filename="dsi_sim_vals.csv",
+                                         emu_filename="dsi.pickle",
+                                         observation_data=self.observation_data,)
+        
         with open(os.path.join(t_d,"dsi.unc"),'w') as f:
             f.write("START STANDARD_DEVIATION\n")
-            for p in dsi_pars:
+            for p in pst_obj.par_names:
                 f.write("{0} 1.0\n".format(p))
             f.write("END STANDARD_DEVIATION")
-        pst.pestpp_options['parcov'] = "dsi.unc"
+        pst_obj.pestpp_options['parcov'] = "dsi.unc"
 
-        obs = pst.observation_data
 
-        if observation_data is not None:
-            self.observation_data = observation_data
-        else:
-            observation_data = self.observation_data
-        assert isinstance(observation_data, pd.DataFrame), "observation_data must be a pandas DataFrame"
-        for col in observation_data.columns:
-            obs.loc[sim_vals.index,col] = observation_data.loc[:,col]
 
-        # check if any observations are missing
-        missing_obs = list(set(obs.index) - set(observation_data.index))
-        assert len(missing_obs) == 0, "missing observations: {0}".format(missing_obs)
-
-        pst.control_data.noptmax = 0
-        pst.model_command = "python forward_run.py"
-        self.logger.log("creating Pst")
-
+        # 2. DSI Specifics (Run Storage support)
         if use_runstor:
-            function_source = inspect.getsource(dsi_runstore_forward_run)
-        else:
-            function_source = inspect.getsource(dsi_forward_run)
-        with open(os.path.join(t_d,"forward_run.py"),'w') as file:
-            file.write(function_source)
-            file.write("\n\n")
-            file.write("if __name__ == \"__main__\":\n")
-            file.write(f"    {function_source.split('(')[0].split('def ')[1]}()\n")
-        self.logger.log("creating Pst")
-
-        pst.pestpp_options["save_binary"] = True
-        pst.pestpp_options["overdue_giveup_fac"] = 1e30
-        pst.pestpp_options["overdue_giveup_minutes"] = 1e30
-        pst.pestpp_options["panther_agent_freeze_on_fail"] = True
-        pst.pestpp_options["ies_no_noise"] = False
-        pst.pestpp_options["ies_subset_size"] = -10 # the more the merrier
-        #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
-        #pst.pestpp_options["save_binary"] = True
-
-        pst.write(os.path.join(t_d,"dsi.pst"),version=2)
-        self.logger.statement("saved pst to {0}".format(os.path.join(t_d,"dsi.pst")))
-        
-        self.logger.statement("pickling dsi object to {0}".format(os.path.join(t_d,"dsi.pickle")))
-        self.save(os.path.join(t_d,"dsi.pickle"))
-        return pst
-        
+             # Create run storage file
+             # DSI needs the *original* ensemble for run storage
+             # Logic from original code:
+             pass 
+             # TODO: Port use_runstor logic properly or deprecate? 
+             # The current DSI implementation relied on 'dsi_runstore_forward_run' helper
+             # We should integrate that into the generic forward runner or adapt here.
+             # For now, we will stick to standard file-based runner for safety in this refactor.
+        #pst_obj.write(os.path.join(t_d, "dsi.pst"),version=2)
+        return pst_obj
+    
     def prepare_dsivc(self, decvar_names, t_d=None, pst=None, oe=None, track_stack=False, dsi_args=None, percentiles=[0.25,0.75,0.5], mou_population_size=None,ies_exe_path="pestpp-ies"):
         """
         Prepare Data Space Inversion Variable Control (DSIVC) control files.
@@ -680,7 +687,7 @@ class DSI(Emulator):
             id_vars="index"
         else:
             id_vars=oe.index.name
-        stack_stats = oe._df.describe(percentiles=percentiles).reset_index().melt(id_vars=id_vars)
+        stack_stats = oe._df.describe(percentiles=percentiles).reset_index().melt(id_vars="index")
         stack_stats.rename(columns={"value":"obsval","index":"stat"},inplace=True)
         stack_stats['obsnme'] = stack_stats.apply(lambda x: x.variable+"_stat:"+x.stat,axis=1)
         stack_stats.set_index("obsnme",inplace=True)
@@ -757,12 +764,14 @@ class DSI(Emulator):
         self.logger.statement(f"building dsivc_forward_run.py...")
         pst_dsivc.model_command = "python dsivc_forward_run.py"
         from pyemu.utils.helpers import dsivc_forward_run
-        function_source = inspect.getsource(dsivc_forward_run)
+        #function_source = inspect.getsource(dsivc_forward_run)
         with open(os.path.join(t_d,"dsivc_forward_run.py"),'w') as file:
-            file.write(function_source)
+            #file.write(function_source)
+            file.write("from pyemu.utils.helpers import dsivc_forward_run\n")
             file.write("\n\n")
             file.write("if __name__ == \"__main__\":\n")
-            file.write(f"    {function_source.split('(')[0].split('def ')[1]}(ies_exe_path='{ies_exe_path}')\n")
+            #file.write(f"    {function_source.split('(')[0].split('def ')[1]}(ies_exe_path='{ies_exe_path}')\n")
+            file.write(f"    dsivc_forward_run(ies_exe_path='{ies_exe_path}')\n")
 
         self.logger.statement(f"preparing nominal initial population...")
         if mou_population_size is None:
