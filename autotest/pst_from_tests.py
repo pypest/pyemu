@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pyemu
 from pyemu import os_utils
-from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
+from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file, prep_pp_hyperpars
 import shutil
 import pytest
 
@@ -3664,7 +3664,7 @@ def test_mf6_freyberg_pp_locs(tmp_path):
     assert mn > 0.0
 
 
-def usg_freyberg_test(tmp_path):
+def test_usg_freyberg(tmp_path):
     import numpy as np
     import pandas as pd
     import flopy
@@ -3765,14 +3765,18 @@ def usg_freyberg_test(tmp_path):
                       par_name_base="hk3_pp", pp_space=pp_df,
                       geostruct=gs, spatial_reference=sr_dict_by_layer[3],
                       upper_bound=2.0, lower_bound=0.5,
-                      zone_array=zone_array_k2,apply_order=10)
+                      zone_array=zone_array_k2,apply_order=10,
+                      pp_options={'use_pp_zones': True})  # default is to interp within non-zero so need to pass this
 
     # we pass layer specific sr dict for each "array" type that is spatially distributed
-    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_Gr",geostruct=gs,
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",
+                      par_name_base="hk1_Gr",geostruct=gs,
                       spatial_reference=sr_dict_by_layer[1],
                       upper_bound=2.0,lower_bound=0.5,apply_order=0)
-    pf.add_parameters("sy_Layer_1.ref", par_type="zone", par_name_base="sy1_zn",zone_array=zone_array_k0,
-                      upper_bound=1.5,lower_bound=0.5,ult_ubound=0.35,apply_order=100)
+    pf.add_parameters("sy_Layer_1.ref", par_type="zone",
+                      par_name_base="sy1_zn",zone_array=zone_array_k0,
+                      upper_bound=1.5,lower_bound=0.5,ult_ubound=0.35,
+                      apply_order=100)
 
 
 
@@ -3861,17 +3865,17 @@ def usg_freyberg_test(tmp_path):
     # check that the pilot point process is respecting the zone array
     par = pst.parameter_data
     pp_par = par.loc[par.parnme.str.contains("pp"),:]
-    pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.apply(np.float64)
+    pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.astype(int)
     pst.control_data.noptmax = 0
     pst.write(os.path.join(pf.new_d,"freyberg.usg.pst"),version=2)
     #pst.write_input_files(pf.new_d)
     pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path), cwd=pf.new_d)
-    arr = np.loadtxt(os.path.join(pf.new_d,"mult","hk3_pp_inst0_pilotpoints.csv"))
-    arr[zone_array_k2[0,:]==0] = 0
+    arr = np.load(os.path.join(pf.new_d,"mult","hk3_pp_inst0_pilotpoints.npy"))
+    arr[zone_array_k2==0] = 0
     d = np.abs(arr - zone_array_k2)
     # print(d)
     # print(d.sum())
-    assert d.sum() == 0.0,d.sum()
+    assert np.isclose(d.max(), 0., atol=1e-6), d.max()
 
 
 def mf6_add_various_obs_test(tmp_path):
@@ -5285,7 +5289,7 @@ def test_array_fmt_pst_from(tmp_path):
     arr3 = np.loadtxt(Path(tmp_path, "weird_tmp", "ar3.arr"))
 
 
-def hyperpars_test(tmp_path):
+def test_hyperpars(tmp_path):
     tdir = os.getcwd()
     pf, sim = setup_freyberg_mf6(tmp_path)
     shutil.copy(Path(tdir, 'utils', 'ppuref.txt'), tmp_path)
@@ -6451,6 +6455,99 @@ def draw_consistency_test(tmp_path):
     assert diff.values.max() < 1e-6
 
 
+def _apply_speed_invest_pstfrom():
+    wd = "speedtemp"
+    Path(wd).mkdir(parents=True, exist_ok=True)
+    template_ws = 'template'
+    mshape = (500, 600)
+    dummyar = np.random.rand(*mshape)
+    np.savetxt(Path(wd, 'dummy_array.txt'), dummyar)
+    sr = pyemu.SpatialReference(delr=[100] * mshape[1], delc=[100] * mshape[0],
+                                xll=0, yll=0)
+    pf = pyemu.utils.PstFrom(wd,
+                             template_ws,
+                             remove_existing=True,
+                             spatial_reference=sr)
+    pf.add_observations('dummy_array.txt',
+                        )
+    return pf
+
+
+def apply_speed_invest_array():
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=20)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+
+    pf = _apply_speed_invest_pstfrom()
+
+    pf.add_parameters('dummy_array.txt',
+                      par_type="grid",
+                      par_name_base="dummy_gr",
+                      pargp="dummy_gr",
+                      upper_bound=10,
+                      lower_bound=0.1,
+                      geostruct=gr_gs, )
+    pf.build_pst()
+    # check_apply(pf)
+    bd = Path.cwd()
+    os.chdir(pf.new_d)
+    try:
+        pf.pst.write_input_files()
+        import cProfile
+        import pstats
+        profiler = cProfile.Profile()
+        profiler.enable()
+        pyemu.helpers.apply_list_and_array_pars(
+            arr_par_file="mult2model_info.csv", chunk_len=50)
+        profiler.disable()
+        stats = pstats.Stats(profiler).sort_stats('cumtime')
+        stats.print_stats()
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
+
+
+def apply_speed_invest_pp(useppu=True):
+    v = pyemu.geostats.ExpVario(contribution=1.0,a=20)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+
+    pf = _apply_speed_invest_pstfrom()
+
+    pf.add_pars('dummy_array.txt',
+                par_type="pp",
+                par_name_base="dummy_gr",
+                pargp="dummy_gr",
+                upper_bound=10,
+                lower_bound=0.1,
+                geostruct=gr_gs,
+                pp_options=dict(try_use_ppu=useppu,
+                                pp_space=10,
+                                prep_hyperpars=True))
+    pf.build_pst()
+    pars = pf.pst.parameter_data
+    pars['parval1'] = pars.parval1 * np.random.random(len(pars))
+    # bd = Path.cwd()
+
+    # check_apply(pf)
+    bd = Path.cwd()
+    os.chdir(pf.new_d)
+    try:
+        pf.pst.write_input_files()
+        import cProfile
+        import pstats
+        profiler = cProfile.Profile()
+        profiler.enable()
+        pyemu.helpers.apply_list_and_array_pars(
+            arr_par_file="mult2model_info.csv", chunk_len=50)
+        profiler.disable()
+        stats = pstats.Stats(profiler).sort_stats('cumtime')
+        stats.print_stats()
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
+
+
 if __name__ == "__main__":
     # draw_consistency_test('.')
     #xsec_pars_as_obs_test(".")
@@ -6501,14 +6598,14 @@ if __name__ == "__main__":
     # list_float_int_index_test('.')
     #freyberg_test()
     #invest_vertexpp_setup_speed()
-    import cProfile
-    import pstats
-    profiler = cProfile.Profile()
-    profiler.enable()
-    mf6_freyberg_thresh_test('temp')
-    profiler.disable()
-    stats = pstats.Stats(profiler).sort_stats('cumtime')
-    stats.print_stats()
+    # import cProfile
+    # import pstats
+    # profiler = cProfile.Profile()
+    # profiler.enable()
+    apply_speed_invest_pp(True)
+    # profiler.disable()
+    # stats = pstats.Stats(profiler).sort_stats('cumtime')
+    # stats.print_stats()
 
 
 

@@ -20,15 +20,16 @@ from .pst import Pst, pst_utils, Results
 from .sc import Schur
 from .utils import (geostats, gw_utils, helpers, metrics, optimization,
                     os_utils, pp_utils, smp_utils)
-from .emulators import (
-                      #emulators
-                      Emulator, DSI, LPFA,  GPR,
-                    
-                      
-                      #transformers
-                      BaseTransformer, Log10Transformer,
-                      RowWiseMinMaxScaler, StandardScalerTransformer, NormalScoreTransformer,
-                      TransformerPipeline, AutobotsAssemble)
+# # this is a pretty heavy import, wonder if we can keep within explicit emulators import
+# from .emulators import (
+#                       #emulators
+#                       Emulator, DSI, LPFA,  GPR,
+#
+#
+#                       #transformers
+#                       BaseTransformer, Log10Transformer,
+#                       RowWiseMinMaxScaler, StandardScalerTransformer, NormalScoreTransformer,
+#                       TransformerPipeline, AutobotsAssemble)
 #from .prototypes import *
 try:
     from .legacy import *
@@ -65,13 +66,14 @@ __all__ = [
     "smp_utils",
     "plot_utils",
     "metrics",
-    "Emulator",
-    "BaseTransformer",
-    "Log10Transformer", 
-    "RowWiseMinMaxScaler",
-    "StandardScalerTransformer",
-    "NormalScoreTransformer",
-    "TransformerPipeline",
-    "AutobotsAssemble",
+    "emulators",
+    # "Emulator",
+    # "BaseTransformer",
+    # "Log10Transformer",
+    # "RowWiseMinMaxScaler",
+    # "StandardScalerTransformer",
+    # "NormalScoreTransformer",
+    # "TransformerPipeline",
+    # "AutobotsAssemble",
 ]
 # del get_versions

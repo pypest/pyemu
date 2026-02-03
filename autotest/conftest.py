@@ -36,7 +36,7 @@ def get_exe_path(exe_name, forgive=True):
     if platform.system() == "Windows":
         exe_name = f"{exe_name}.exe"
     if shutil.which(exe_name) is not None:
-        print(f"Found {exe_name} in system PATH")
+        # print(f"Found {exe_name} in system PATH")
         return exe_name
     # else look in local project bin/<platform>
     root_path = get_project_root_path()
