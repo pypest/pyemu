@@ -34,13 +34,13 @@ def generate_synth_data(num_realizations=100, num_observations=10):
     obsdata.obgnme = "obgnme"
     return data, obsdata
 
-def dsi_synth(tmp_d,transforms=None,tag="",use_runstor=True):
+def dsi_synth(tmp_d,transforms=None,tag="",use_runstor=True,**kwargs):
 
     tmp_d = Path(tmp_d)
 
     data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
 
-    dsi = DSI(data=data,transforms=transforms)
+    dsi = DSI(data=data,transforms=transforms,pst=obsdata,**kwargs)
     dsi.fit()
 
     if transforms is not None:
@@ -99,6 +99,46 @@ def test_dsi_mixed(tmp_path):
         {"type": "normal_score", }
     ]
     dsi_synth(tmp_path,transforms=transforms)
+    return
+
+
+def test_generic_transformer(tmp_path):
+    """Test using a generic sklearn transformer."""
+    try:
+        from sklearn.preprocessing import QuantileTransformer, MinMaxScaler
+    except ImportError:
+        pytest.skip("sklearn not installed")
+        
+    transforms = [
+        {"type": MinMaxScaler, "feature_range": (0, 1)},
+    ]
+    dsi_synth(tmp_path, transforms=transforms, tag="_generic")
+    
+    # Verify the transformed data range
+    # Load DSI object to check internal state
+    td = Path(tmp_path) / "template_dsi"
+    dsi_loaded = DSI.load(os.path.join(td, "dsi.pickle"))
+    
+    # Check that data was transformed to [0, 1]
+    transformed_data = dsi_loaded.data_transformed
+    assert transformed_data.min().min() >= 0.0 - 1e-6
+    assert transformed_data.max().max() <= 1.0 + 1e-6
+    
+    # Check inverse transform
+    original_data = dsi_loaded.data
+    inversed_data = dsi_loaded.transformer_pipeline.inverse(transformed_data)
+    # check columnsa re the same
+    assert all(original_data.columns == inversed_data.columns)
+    # check values are close
+    assert np.allclose(original_data.values,
+                       inversed_data.loc[original_data.index,original_data.columns].values, 
+                        atol=1e-5)
+
+    # Test again with QuantileTransformer (more complex)
+    transforms = [
+        {"type": QuantileTransformer, "output_distribution": "normal", "n_quantiles": 50, "random_state": 42},
+    ]
+    dsi_synth(tmp_path, transforms=transforms, tag="_quantile")
     return
 
 
@@ -1356,25 +1396,36 @@ def test_dsiae_save_load(tmp_path):
     print("Save/Load test passed successfully!")
 
 
+def test_dsi_rowwise(tmp_path):
+    rowwise_groups = {
+        "g1": ["obs0", "obs1", "obs2"],
+        "g2": ["obs3", "obs4", "obs5"]
+    }
+    dsi_synth(tmp_path, rowwise_groups=rowwise_groups)
+    return
+
+def test_dsi_rowwise_mixed(tmp_path):
+    rowwise_groups = {
+        "g1": ["obs0", "obs1", "obs2"],
+        "g2": ["obs3", "obs4", "obs5"]
+    }
+    transforms = [
+        {"type": "log10", "columns": ["obs0", "obs3"]},
+        {"type": "normal_score", }
+    ]
+    dsi_synth(tmp_path, rowwise_groups=rowwise_groups, transforms=transforms)
+    return
+
+
 if __name__ == "__main__":
     #test_dsiae_save_load("temp")
     #test_dsi_basic("temp")
     #test_dsi_nst("temp")
     #test_dsi_nst_extrap("temp")
     #test_dsi_mixed("temp")
-    # test_dsivc("temp")
+    test_dsivc("temp")
     #plot_freyberg_dsi()
     #test_lpfa_std()
     #gpr_zdt1_test()
-
-    import cProfile
-    import pstats
-    from pathlib import Path
-    pr = cProfile.Profile()
-    pr.enable()
-    dsi_synth(Path('temp'), transforms=None, use_runstor=True)
-    pr.disable()
-    ps = pstats.Stats(pr).sort_stats('cumtime')
-    ps.print_stats()
 
 
