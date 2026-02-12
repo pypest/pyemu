@@ -360,8 +360,13 @@ class Emulator:
         For example, copying options from the original PST.
         """
         if pst_old is not None:
-            # carry across pestpp options
-            pst_new.pestpp_options = pst_old.pestpp_options.copy()
+            if pst_old.pestpp_options is not None:
+                # carry across pestpp options
+                pst_new.pestpp_options = pst_old.pestpp_options.copy()
+
+            if pst_old.prior_information is not None:
+                # and prior info
+                pst_new.prior_information = pst_old.prior_information.copy()
 
         if observation_data is None and pst_old is not None:
             self.logger.statement("No observation_data provided, copying from old pst")
