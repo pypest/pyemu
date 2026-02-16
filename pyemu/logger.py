@@ -111,5 +111,4 @@ class Logger(object):
         if self.filename:
             self.f.write(s)
             self.f.flush
-            self.f.close()
         raise Exception(message)
