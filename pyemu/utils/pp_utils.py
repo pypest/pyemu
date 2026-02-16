@@ -289,7 +289,9 @@ def setup_pilotpoints_grid(
         except:
             shp = shapefile.Writer(shapeType=shapefile.POINT)
         for name, dtype in par_info.dtypes.items():
-            if dtype == object:
+            dtype_str = str(dtype)
+            # Handle string types (pandas.StringDtype shows as 'str' in Pandas +3.0)
+            if dtype_str == 'str' or dtype_str == 'object' or dtype == object:
                 shp.field(name, "C", size=50)
             elif dtype in [int]:#, np.int64, np.int32]:
                 shp.field(name, "N", size=50, decimal=0)
