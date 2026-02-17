@@ -12,6 +12,7 @@ import shutil
 from pyemu.pst.pst_handler import Pst
 from pyemu.en import ObservationEnsemble,ParameterEnsemble
 from .base import Emulator
+from .dsi import DSI
 import pickle
 import tempfile
 import zipfile
@@ -315,6 +316,9 @@ class DSIAE(Emulator):
         self.fitted = True
         return self
     
+    # Reuse implementation from DSI
+    _write_forward_run_script = DSI._write_forward_run_script
+
     def predict(self, pvals: Union[np.ndarray, pd.Series, pd.DataFrame]) -> pd.Series:
         """
         Generate predictions from the emulator.
@@ -371,145 +375,7 @@ class DSIAE(Emulator):
         #TODO
         return
         
-    def prepare_pestpp(self, t_d: Optional[str] = None, 
-                       observation_data: Optional[pd.DataFrame] = None,
-                       use_runstor: bool = False) -> 'Pst':
-        """
-        Prepare PEST++ control files for the emulator.
-        
-        Parameters
-        ----------
-        t_d : str, optional
-            Template directory path. Must be provided.
-        observation_data : pd.DataFrame, optional
-            Observation data to use. If None, uses data from initialization.
-        use_runstor : bool, default False
-            Whether to use the Runstor batch file format for PEST++. Setting to True will setup the forward run script to work with PEST++ external run maganer.
-        Returns
-        -------
-        Pst
-            PEST++ control file object ready for inversion.
-            
-        Notes
-        -----
-        Creates template files, instruction files, and configures PEST++ options
-        for running the emulator in parameter estimation mode.
-        """
-        
-        assert t_d is not None, "template directory must be provided"
-        self.template_dir = t_d
 
-        if os.path.exists(t_d):
-            shutil.rmtree(t_d)
-        os.makedirs(t_d)
-        self.logger.statement("creating template directory {0}".format(t_d))
-
-        self.logger.log("creating tpl files")
-        dsi_in_file = os.path.join(t_d, "dsi_pars.csv")
-        dsi_tpl_file = dsi_in_file + ".tpl"
-        ftpl = open(dsi_tpl_file, 'w')
-        fin = open(dsi_in_file, 'w')
-        ftpl.write("ptf ~\n")
-        fin.write("parnme,parval1\n")
-        ftpl.write("parnme,parval1\n")
-        npar = self.latent_dim
-        assert npar>0, "no parameters found in the DSI emulator"
-        dsi_pnames = []
-        for i in range(npar):
-            pname = "dsi_par{0:04d}".format(i)
-            dsi_pnames.append(pname)
-            fin.write("{0},0.0\n".format(pname))
-            ftpl.write("{0},~   {0}   ~\n".format(pname, pname))
-        fin.close()
-        ftpl.close()
-        self.logger.log("creating tpl files")
-
-        # run once to get the dsi_pars.csv file
-        Z = self.encode(self.data)
-        if 'base' in Z.index:
-            pvals = Z.loc['base',:]
-        else:
-            pvals = Z.mean(axis=0) #TODO: the mean of the latent prior...doesnt realy mean anything hrere
-        sim_vals = self.predict(pvals)
-        
-        self.logger.log("creating ins file")
-        out_file = os.path.join(t_d,"dsi_sim_vals.csv")
-        sim_vals.to_csv(out_file,index=True)
-              
-        ins_file = out_file + ".ins"
-        sdf = pd.read_csv(out_file,index_col=0)
-        with open(ins_file,'w') as f:
-            f.write("pif ~\n")
-            f.write("l1\n")
-            for oname in sdf.index.values:
-                f.write("l1 ~,~ !{0}!\n".format(oname))
-        self.logger.log("creating ins file")
-
-        self.logger.log("creating Pst")
-        pst = Pst.from_io_files([dsi_tpl_file],[dsi_in_file],[ins_file],[out_file],pst_path=".")
-
-        par = pst.parameter_data
-        dsi_pars = par.loc[par.parnme.str.startswith("dsi_par"),"parnme"]
-        par.loc[dsi_pars,"parval1"] = pvals.values.flatten()
-        par.loc[dsi_pars,"parubnd"] = Z.max(axis=0).values
-        par.loc[dsi_pars,"parlbnd"] = Z.min(axis=0).values
-        par.loc[dsi_pars,"partrans"] = "none"
-
-        #with open(os.path.join(t_d,"dsi.unc"),'w') as f:
-        #    f.write("START STANDARD_DEVIATION\n")
-        #    for p in dsi_pars:
-        #        f.write("{0} 1.0\n".format(p))
-        #    f.write("END STANDARD_DEVIATION")
-        #pst.pestpp_options['parcov'] = "dsi.unc"
-        Z.columns = par.parnme.values
-        pe = ParameterEnsemble(pst,Z)
-        pe.to_binary(os.path.join(t_d,'latent_prior.jcb'))
-        pst.pestpp_options['ies_parameter_ensemble'] = "latent_prior.jcb"
-
-        obs = pst.observation_data
-
-        if observation_data is not None:
-            self.observation_data = observation_data
-        else:
-            observation_data = self.observation_data
-        assert isinstance(observation_data, pd.DataFrame), "observation_data must be a pandas DataFrame"
-        for col in observation_data.columns:
-            obs.loc[sim_vals.index,col] = observation_data.loc[:,col]
-
-        # check if any observations are missing
-        missing_obs = list(set(obs.index) - set(observation_data.index))
-        assert len(missing_obs) == 0, "missing observations: {0}".format(missing_obs)
-
-        pst.control_data.noptmax = 0
-        pst.model_command = "python forward_run.py"
-        self.logger.log("creating Pst")
-
-        if use_runstor:
-            function_source = inspect.getsource(dsi_runstore_forward_run)
-        else:
-            function_source = inspect.getsource(dsi_forward_run)
-        with open(os.path.join(t_d,"forward_run.py"),'w') as file:
-            file.write(function_source)
-            file.write("\n\n")
-            file.write("if __name__ == \"__main__\":\n")
-            file.write(f"    {function_source.split('(')[0].split('def ')[1]}()\n")
-        self.logger.log("creating Pst")
-
-        pst.pestpp_options["save_binary"] = True
-        pst.pestpp_options["overdue_giveup_fac"] = 1e30
-        pst.pestpp_options["overdue_giveup_minutes"] = 1e30
-        pst.pestpp_options["panther_agent_freeze_on_fail"] = True
-        pst.pestpp_options["ies_no_noise"] = False
-        pst.pestpp_options["ies_subset_size"] = -10 # the more the merrier
-        #pst.pestpp_options["ies_bad_phi_sigma"] = 2.0
-        #pst.pestpp_options["save_binary"] = True
-
-        pst.write(os.path.join(t_d,"dsi.pst"),version=2)
-        self.logger.statement("saved pst to {0}".format(os.path.join(t_d,"dsi.pst")))
-        
-        self.logger.statement("pickling dsi object to {0}".format(os.path.join(t_d,"dsi.pickle")))
-        self.save(os.path.join(t_d,"dsi.pickle"))
-        return pst
         
     def prepare_dsivc(self, decvar_names: Union[List[str], str], t_d: Optional[str] = None, 
                       pst: Optional['Pst'] = None, oe: Optional['ObservationEnsemble'] = None, 
@@ -881,6 +747,88 @@ class DSIAE(Emulator):
             
             return obj
 
+    def _get_emulator_parameters(self, pst=None):
+        """
+        Get params for DSIAE (latent variables).
+        """
+        Z = self.encode(self.data)
+        if 'base' in Z.index:
+            pvals = Z.loc['base',:]
+        else:
+            pvals = Z.mean(axis=0)
+            
+        npar = self.latent_dim
+        par_names = [f"dsi_par{i:04d}" for i in range(npar)]
+        
+        df = pd.DataFrame(index=par_names)
+        df["parnme"] = par_names
+        df["parval1"] = pvals.values.flatten()
+        df["parlbnd"] = Z.min(axis=0).values
+        df["parubnd"] = Z.max(axis=0).values
+        df["pargp"] = "dsi_pars"
+        df["partrans"] = "none"
+        
+        return df
+
+    def _get_emulator_observations(self, pst=None):
+        """
+        Get observations for DSIAE.
+        """
+        # Use columns from data (assuming they represent observations)
+        if self.data is not None:
+            cols = self.data.columns
+            df = pd.DataFrame(index=cols)
+            df["obsnme"] = cols
+            df["obsval"] = self.data.mean(axis=0) # Use mean as dummy value
+            df["weight"] = 0.0
+            df["obgnme"] = "obgnme"
+            return df
+
+    def _configure_pst_object(self, pst_obj, pst_original, t_d=None):
+        """
+        Configure DSIAE specific PEST++ options and save dependent files.
+        """
+        if t_d is None:
+             t_d = "."
+
+        Z = self.encode(self.data)
+        npar = self.latent_dim
+        par_names = pst_obj.parameter_data.index.tolist()
+        assert npar == len(par_names), f"latent dim {npar} does not match number of parameters {len(par_names)}"
+        Z.columns = par_names
+        
+        pe = ParameterEnsemble(pst_obj, Z)
+        jcb_path = os.path.join(t_d, 'latent_prior.jcb')
+        pe.to_binary(jcb_path)
+        pst_obj.pestpp_options['ies_parameter_ensemble'] = 'latent_prior.jcb'
+
+        pst_obj.pestpp_options["save_binary"] = True
+        pst_obj.pestpp_options["overdue_giveup_fac"] = 1e30
+        pst_obj.pestpp_options["overdue_giveup_minutes"] = 1e30
+        pst_obj.pestpp_options["panther_agent_freeze_on_fail"] = True
+        pst_obj.pestpp_options["ies_no_noise"] = False
+        pst_obj.pestpp_options["ies_subset_size"] = -10
+        
+        # Save dsi.pickle for legacy forward run scripts (like runstor)
+        self.save(os.path.join(t_d, "dsi.pickle"))
+        
+        self.logger.statement(f"Saved latent_prior.jcb to {jcb_path}")
+        return pst_obj
+        
+    def prepare_pestpp(self, t_d, pst=None, verbose=False, use_runstor=False):
+        """
+        Prepare PEST++ interface for DSIAE.
+        Wraps base implementation.
+        """
+        self._use_runstor = use_runstor
+        pst_obj = super().prepare_pestpp(t_d=t_d, pst=pst, verbose=verbose,
+                                         tpl_filename="dsi_pars.csv.tpl",
+                                         input_filename="dsi_pars.csv",
+                                         ins_filename="dsi_sim_vals.csv.ins",
+                                         output_filename="dsi_sim_vals.csv")
+        
+        return pst_obj
+    
 class AutoEncoder:
     def __init__(self, input_dim: int, latent_dim: int = 2, 
                  hidden_dims: tuple = (128, 64), lr: float = 1e-3,

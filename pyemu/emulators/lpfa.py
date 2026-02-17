@@ -3,6 +3,7 @@ Learning-based pattern-data-driven forecast approach (LPFA) emulator implementat
 
 """
 from __future__ import print_function, division
+import warnings
 import importlib.util
 
 # Check sklearn availability at module level
@@ -163,6 +164,7 @@ class LPFA(Emulator):
 
         
         super().__init__(verbose=verbose)
+        warnings.warn("LPFA is deprecated, please use pattern-DSI instead", DeprecationWarning)
 
         self.seed = seed
         self.data = data
@@ -458,6 +460,10 @@ class LPFA(Emulator):
         
         self.fitted = True
         return self
+
+    def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name, pst_name=None):
+        """Generates the python script that PEST++ runs for LPFA."""
+        self.logger.statement(f"LPFA does not rely on using PEST++ nor a forward run. Conditioning is acomplished using scikit-learn directly.")
 
     def predict(self, data):
         """

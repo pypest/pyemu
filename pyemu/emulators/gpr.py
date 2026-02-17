@@ -283,214 +283,220 @@ class GPR(Emulator):
 
         
 
-    def prepare_pestpp(self,pst_dir,casename,gpr_t_d="gpr_template"):
+
+    
+    def _get_emulator_parameters(self, pst=None):
         """
-        Prepare a PEST++ template directory for the GPR emulator.
+        Get the parameters (inputs) for the GPR emulator.
+        For GPR, inputs are typically a subset of parameters from a process model's PST file.
+        Returns a DataFrame with columns: parnme, parval1, parlbnd, parubnd, pargp
+        """
+        if pst is None:
+             raise ValueError("GPR._get_emulator_parameters requires a valid 'pst' argument "
+                              "(pyemu.Pst object) to identify decision variable definitions.")
         
-        Parameters
-        ----------
-        gpr_t_d : str
-            Path to the PEST++ template directory.
-        pst_fpath : str
-            Path to an existing PEST control file (PST). The assumption is that an existing PST setup exists for the process-based model.
-        
-        Returns
-        -------
-        None
-            """
-        
-
-        
-        #TODO: it may be more logical to pass in a Pst object instead of a file path; assume the user loads Pst and training data before hand???
-        # Give Emulators a "harvest" function that returns a Pst object with the necessary information?
-
-        # what are the things we need to get from Pst?
-        # 1. decivsion variable names (parameters) a.k.a input_names
-        # 2. observation names (outputs) aka output_names
-        # 3. which obs are objectives; subset of output_names
-        # 4. which obs are constraints; subset of output_names
-
-        pst, input_names, output_names, objs, constraints = scrape_pst_dir(pst_dir,casename)
-
-
-        # check that all input_names ar ein par data
+        # We need to find the parameters in the PST that match self.input_names
         if self.input_names is None:
-            raise ValueError("input_names must be provided")
+             raise ValueError("GPR instance has no input_names defined. Cannot determine parameters.")
+
+        # Filter PST parameter data
         missing_inputs = set(self.input_names) - set(pst.parameter_data.index)
         if missing_inputs:
-            raise ValueError(f"Input names {missing_inputs} not found in parameter data")
-        # check that all input names are adjsutable
-        fixed_inputs = pst.parameter_data.loc[self.input_names, "partrans"].str.contains("fixed|tied", case=False, na=False)
-        if fixed_inputs.any():
-            raise ValueError(f"Input names {self.input_names[fixed_inputs]} cannot be fixed or tied")
-        self.logger.statement(f"Decision variable parameter names: {self.input_names}")
+             self.logger.warning(f"The following GPR input names are missing from the provided PST: {missing_inputs}")
+        
+        # Valid inputs
+        valid_inputs = sorted(list(set(self.input_names).intersection(set(pst.parameter_data.index))))
+        
+        # Return the subset of the parameter dataframe
+        # Columns align with what base.py expects (parnme is index in pyemu Pst.parameter_data)
+        # We copy to ensure we don't mutate original
+        par_df = pst.parameter_data.loc[valid_inputs].copy()
+        par_df["parnme"] = par_df.index
+        
+        return par_df
 
-        # check that all self.output_names are in observation_data
+    def _get_emulator_observations(self, pst=None):
+        """
+        Get the observations (outputs) for the GPR emulator.
+        For GPR, outputs are specific objectives/constraints.
+        Returns a DataFrame with columns: obsnme, obsval, weight, obgnme
+        """
+        if pst is None:
+             # If no PST provided, try to construct from self.output_names if they exist, assuming dummy values
+             if self.output_names:
+                 df = pd.DataFrame(index=self.output_names)
+                 df["obsnme"] = self.output_names
+                 df["obsval"] = 0.0
+                 df["weight"] = 1.0
+                 df["obgnme"] = "gpr_pred"
+                 if self.return_std:
+                     # Add std observations
+                     std_names = [f"{n}_gprstd" for n in self.output_names]
+                     df_std = pd.DataFrame(index=std_names, columns=["obsnme", "obsval", "weight", "obgnme"])
+                     df_std["obsnme"] = std_names
+                     df_std["obsval"] = 0.0
+                     df_std["weight"] = 0.0 # Uncertainty estimates usually have zero weight
+                     df_std["obgnme"] = "gpr_std"
+                     df = pd.concat([df, df_std])
+                 return df
+             else:
+                 raise ValueError("GPR._get_emulator_observations requires either a 'pst' argument or defined 'output_names'.")
+        
+        # If PST provided, look for output names there to get exact weights/groups
+        
         if self.output_names is None:
-            raise ValueError("output_names must be provided")
+             raise ValueError("GPR instance has no output_names defined.")
+
         missing_outputs = set(self.output_names) - set(pst.observation_data.index)
         if missing_outputs:
-            raise ValueError(f"Output names {missing_outputs} not found in observation data")
-        self.logger.statement(f"Observation names: {self.output_names}")
-
-
-        # preapre the GPR template directory
-        if os.path.exists(gpr_t_d):
-            self.logger.statement(f"Removing existing template directory {gpr_t_d}")
-            shutil.rmtree(gpr_t_d)
-        self.logger.statement(f"Creating template directory {gpr_t_d}")
-        os.makedirs(gpr_t_d)
-
-
-        # preapre template files
-        self.logger.statement("Preparing PEST++ template files")
+             # If they are missing from PST, create dummy entries (maybe they are new outputs?)
+             self.logger.warning(f"Outputs {missing_outputs} not found in PST. Creating generic definitions.")
+             
+        # Create list of all needed outputs
+        all_outputs = self.output_names
         
-        #write a template file
-        tpl_fname = os.path.join(gpr_t_d,"gpr_input.csv.tpl")
-        with open(tpl_fname,'w') as f:
-            f.write("ptf ~\nparnme,parval1\n")
-            for input_name in self.input_names:
-                f.write("{0},~  {0}   ~\n".format(input_name))
-        # keep track of other non-decvar parameters
-        other_pars = list(set(pst.parameter_data.parnme.tolist())-set(self.input_names))
-        aux_tpl_fname = None
-        if len(other_pars) > 0:
-            aux_tpl_fname = os.path.join(gpr_t_d,"aux_par.csv.tpl")
-            print("writing aux par tpl file: ",aux_tpl_fname)
-            with open(aux_tpl_fname,'w') as f:
-                f.write("ptf ~\n")
-                for input_name in other_pars:
-                    f.write("{0},~  {0}   ~\n".format(input_name))
+        # Build DataFrame
+        obs_df = pd.DataFrame(index=all_outputs, columns=["obsnme", "obsval", "weight", "obgnme"])
+        obs_df["obsnme"] = all_outputs
+        
+        # Fill from PST where possible
+        common = list(set(all_outputs).intersection(set(pst.observation_data.index)))
+        if common:
+             obs_df.loc[common, ["obsval", "weight", "obgnme"]] = pst.observation_data.loc[common, ["obsval", "weight", "obgnme"]]
+        
+        # Fill missing with defaults
+        obs_df["obsval"] = obs_df["obsval"].astype(float).fillna(0.0)
+        obs_df["weight"] = obs_df["weight"].astype(float).fillna(1.0)
+        obs_df["obgnme"] = obs_df["obgnme"].fillna("gpr_pred")
+        
+        if self.return_std:
+             std_names = [f"{n}_gprstd" for n in all_outputs]
+             df_std = pd.DataFrame(index=std_names, columns=["obsnme", "obsval", "weight", "obgnme"])
+             df_std["obsnme"] = std_names
+             
+             # Check if they exist in PST
+             common_std = list(set(std_names).intersection(set(pst.observation_data.index)))
+             if common_std:
+                 df_std.loc[common_std, ["obsval", "weight", "obgnme"]] = pst.observation_data.loc[common_std, ["obsval", "weight", "obgnme"]]
+             
+             df_std["obsval"] = df_std["obsval"].astype(float).fillna(0.0)
+             df_std["weight"] = df_std["weight"].astype(float).fillna(0.0)
+             df_std["obgnme"] = df_std["obgnme"].fillna("gpr_std")
+             
+             obs_df = pd.concat([obs_df, df_std])
 
-        #write an ins file
-        ins_fname = os.path.join(gpr_t_d,"gpr_output.csv.ins")
-        with open(ins_fname,'w') as f:
-            f.write("pif ~\nl1\n")
+        return obs_df
+
+    def prepare_pestpp(self, t_d, pst=None, verbose=False, **kwargs):
+        """
+        Prepare PEST++ interface for GPR.
+        Wraps base implementation with support for legacy signature.
+        
+        Legacy signature: prepare_pestpp(pst_dir, casename, gpr_t_d="gpr_template")
+        """
+        # Check for legacy signature
+        # case: 2nd arg 'pst' is string (casename) AND 'gpr_t_d' in kwargs
+        if isinstance(pst, str) and "gpr_t_d" in kwargs:
+             pst_dir = t_d
+             casename = pst
+             target_dir = kwargs.pop("gpr_t_d")
+             
+             self.logger.statement(f"Detected legacy GPR.prepare_pestpp call. "
+                                   f"pst_dir={pst_dir}, casename={casename}, target={target_dir}")
+             
+             pst_path = os.path.join(pst_dir, f"{casename}.pst")
+             if not os.path.exists(pst_path):
+                 raise FileNotFoundError(f"Legacy GPR setup: PST file not found at {pst_path}")
+             
+             pst_obj = Pst(pst_path)
+             
+             # Call standard method
+             # We pass specific filenames to match legacy GPR expectation if needed?
+             # Old GPR used "gpr_input.csv.tpl" etc.
+             # Base defaults to "emulator_input.csv.tpl".
+             # We should probably enforce legacy naming for GPR too.
+             p_obj = super().prepare_pestpp(target_dir, pst=pst_obj, verbose=verbose, 
+                                            tpl_filename="gpr_input.csv.tpl",
+                                            input_filename="gpr_input.csv",
+                                            ins_filename="gpr_output.csv.ins",
+                                            output_filename="gpr_output.csv",
+                                            emu_filename="gpr_emulator.pkl",
+                                            **kwargs)
+             
+             # Legacy behavior: Write the PST file to disk
+             pst_name = f"{casename}_gpr.pst"
+             p_obj.write(os.path.join(target_dir, pst_name), version=2)
+             self.logger.statement(f"Legacy GPR: Wrote control file to {pst_name}")
+             
+             return p_obj
+
+        # Also support legacy named arg 'gpr_t_d' mapped to 't_d' if t_d is not the target
+        # But in new signature t_d IS the target.
+        
+        return super().prepare_pestpp(t_d, pst=pst, verbose=verbose, **kwargs)
+    
+    def _write_output_file(self, obs_df, filename):
+        """Writes GPR-specific output file (handling std dev)."""
+        with open(filename, 'w') as f:
+            f.write("obsnme,obsval\n") # header
             for output_name in self.output_names:
                 if self.return_std:
-                    f.write("l1 ~,~ !{0}! ~,~ !{0}_gprstd!\n".format(output_name))
+                    # e.g. "obsnme, val, std"
+                    f.write(f"{output_name},0.0\n")
+                    f.write(f"{output_name}_gprstd,0.0\n")
                 else:
-                    f.write("l1 ~,~ !{0}!\n".format(output_name))
+                    f.write(f"{output_name},0.0\n")
 
-        # build the GPR Pst object
-        self.logger.statement("Building PEST++ control file")
-        tpl_list = [tpl_fname]
-        if aux_tpl_fname is not None:
-            tpl_list.append(aux_tpl_fname)
-        input_list = [f.replace(".tpl","") for f in tpl_list]
-        gpst = Pst.from_io_files(tpl_list,input_list,
-                                    [ins_fname],[ins_fname.replace(".ins","")],pst_path=".")
+    def _write_instruction_file(self, obs_df, filename):
+        """Writes GPR-specific instruction file (handling std dev)."""
+        with open(filename, 'w') as f:
+            f.write("pif ~\n")
+            f.write("l1\n") # header
+            for output_name in self.output_names:
+                if self.return_std:
+                     # e.g. "obsnme, val, std"
+                     # Instruction: Skip obsnme, read val, read std
+                     f.write("l1 ~,~ !{0}! ~,~ !{0}_gprstd!\n".format(output_name))
+                else:
+                     f.write("l1 ~,~ !{0}!\n".format(output_name))
+
+    def _write_forward_run_script(self, filename, emu_file, input_file, output_file, class_name, pst_name=None):
+        """Generates the python script that PEST++ runs for GPR (handles tuple return)."""
+        import inspect
+        from pyemu.utils.helpers import gpr_file_forward_run, gpr_runstore_forward_run, gpr_forward_run
+
+        use_runstor = getattr(self, "_use_runstor", False)
         
+        target_func = "gpr_runstore_forward_run" if use_runstor else "gpr_file_forward_run"
+        if use_runstor:
+            call_args = f"emu_file='{emu_file}'"
+            if pst_name is not None:
+                call_args += f", pst_name='{pst_name}'"
+        else:
+            call_args = f"'{emu_file}', '{input_file}', '{output_file}'"
 
-        def fix_df_col_type(orgdf,fixdf):
-            for col in orgdf.columns:
-                # this gross thing is to avoid a future error warning in pandas - 
-                # why is it getting so strict?!  isn't python duck-typed?
-                if col in fixdf.columns and\
-                fixdf.dtypes[col] != orgdf.dtypes[col]:
-                    fixdf[col] = fixdf[col].astype(orgdf.dtypes[col])
-                fixdf.loc[orgdf.index,col] = orgdf.loc[orgdf.index,col].values
-            return
+        lines = [
+            "import sys",
+            "import os",
+            "import pandas as pd",
+            "import numpy as np",
+            "import traceback",
+            "import pickle",
+            "",
+            "sys.path.append(os.getcwd())",
+            ""
+        ]
 
-        fix_df_col_type(orgdf=pst.parameter_data,fixdf=gpst.parameter_data)
-        fix_df_col_type(orgdf=pst.observation_data,fixdf=gpst.observation_data)
+        # Inject code for all use cases
+        for func in [gpr_forward_run, gpr_file_forward_run, gpr_runstore_forward_run]:
+             lines.append(f"# Source for {func.__name__}")
+             lines.append(inspect.getsource(func))
+             lines.append("")
 
-        if self.return_std:
-            stdobs = [o for o in gpst.obs_names if o.endswith("_gprstd")]
-            assert len(stdobs) > 0
-            gpst.observation_data.loc[stdobs,"weight"] = 0.0
+        lines.append('if __name__ == "__main__":')
+        lines.append(f'    {target_func}({call_args})')
 
-        gpst.pestpp_options = pst.pestpp_options
-        gpst.prior_information = pst.prior_information.copy()
+        with open(filename, 'w') as f:
+            for line in lines:
+                f.write(line + "\n")
 
-        gpst.model_command = "python forward_run.py"
-        frun_lines = inspect.getsource(gpr_forward_run)
-        with open(os.path.join(gpr_t_d, "forward_run.py"), 'w') as f:
-            f.write("\n")
-            for import_name in ["pandas as pd","os","numpy as np"]:
-                f.write("import {0}\n".format(import_name))
-            for line in frun_lines:
-                f.write(line)
-            f.write("if __name__ == '__main__':\n")
-            f.write("    gpr_forward_run()\n")
-
-        # pickle
-        self.save(os.path.join(gpr_t_d, "gpr_emulator.pkl"))
-        self.logger.statement(f"Saved GPR emulator to {os.path.join(gpr_t_d, 'gpr_emulator.pkl')}")
-        
-        gpst.control_data.noptmax = 0
-        
-        gpst_fname = f"{casename}_gpr.pst"
-        gpst.write(os.path.join(gpr_t_d,gpst_fname),version=2)
-        print("saved gpr pst:",gpst_fname,"in gpr_t_d",gpr_t_d)
-        try:
-            run("pestpp-mou {0}".format(gpst_fname),cwd=gpr_t_d)
-        except Exception as e:
-            print("WARNING: pestpp-mou test run failed: {0}".format(str(e)))
-        gpst.control_data.noptmax = pst.control_data.noptmax
-        gpst.write(os.path.join(gpr_t_d, gpst_fname), version=2)
-
-
-
-        return
-    
-def gpr_forward_run():
-    """the function to evaluate a set of inputs thru the GPR emulators.\
-    This function gets added programmatically to the forward run process"""
-    import pandas as pd
-    from pyemu.emulators import GPR
-    input_df = pd.read_csv("gpr_input.csv",index_col=0)
-    gpr = GPR.load("gpr_emulator.pkl")
-    simdf = pd.DataFrame(index=gpr.output_names,columns=["sim","sim_std"])
-    simdf.index.name = "output_name"
-    if gpr.return_std:
-        predmean,predstdv = gpr.predict(input_df.loc[gpr.input_names].T, return_std=True)
-        simdf.loc[:,"sim"] = predmean[simdf.index].values
-        simdf.loc[:,"sim_std"] = predstdv[simdf.index].values
-    else:
-        predmean = gpr.predict(input_df.loc[gpr.input_names].T)
-        simdf.loc[:,"sim"] = predmean[simdf.index].values
-    simdf.to_csv("gpr_output.csv",index=True)
-    return simdf
-
-def scrape_pst_dir(pst_dir,casename):
-
-    if not os.path.exists(pst_dir):
-        raise FileNotFoundError(f"PEST control file {pst_dir} does not exist")
-    
-    pst = Pst(os.path.join(pst_dir,casename + ".pst"))
-
-    # work out input variable names
-    input_groups = pst.pestpp_options.get("opt_dec_var_groups",None)
-    par = pst.parameter_data
-    if input_groups is None:
-        print("using all adjustable parameters as inputs")
-        input_names = pst.adj_par_names
-    else:
-        input_groups = set([i.strip() for i in input_groups.lower().strip().split(",")])
-        print("input groups:",input_groups)
-        adj_par = par.loc[pst.adj_par_names,:].copy()
-        adj_par = adj_par.loc[adj_par.pargp.apply(lambda x: x in input_groups),:]
-        input_names = adj_par.parnme.tolist()
-    print("input names:",input_names)
-
-    #work out constraints and objectives
-    ineq_names = pst.less_than_obs_constraints.tolist()
-    ineq_names.extend(pst.greater_than_obs_constraints.tolist())
-    obs = pst.observation_data
-    objs = pst.pestpp_options.get("mou_objectives",None)
-    constraints = []
-
-    if objs is None:
-        print("'mou_objectives' not found in ++ options, using all ineq tagged non-zero weighted obs as objectives")
-        objs = ineq_names
-    else:
-        objs = objs.lower().strip().split(',')
-        constraints = [n for n in ineq_names if n not in objs]
-
-    print("objectives:",objs)
-    print("constraints:",constraints)
-    output_names = objs
-    output_names.extend(constraints)
-
-    return pst, input_names, output_names, objs, constraints
