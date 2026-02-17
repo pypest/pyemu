@@ -820,22 +820,30 @@ def test_gpr_basic(tmp_path):
     # Add parameter 'x'
     # Manually constructing parameter_data (minimal columns)
     pst.parameter_data = pd.DataFrame(
-        {'parnme':['x'], 'parval1':[5.0], 'parlbnd':[0.0], 'parubnd':[10.0], 
-         'pargp':['pargp'], 'scale':[1.0], 'offset':[0.0], 'partrans':['none']}, 
-        index=['x']
+        {'parnme':['x','x2'], 'parval1':[5.0,6], 'parlbnd':[0.0,0.0], 'parubnd':[10.0,10.0], 
+         'pargp':['pargp','junkus'], 'scale':[1.0,2.0], 'offset':[0.0,0.0], 'partrans':['none','none']}, 
+        index=['x','x2']
     )
     # Add observation 'y'
     pst.observation_data = pd.DataFrame(
         {'obsnme':['y'], 'obsval':[11.0], 'weight':[1.0], 'obgnme':['obgnme']}, 
         index=['y']
     )
+
+    # Add some prior information
+    pst.prior_information = pd.DataFrame({"pilbl": None, "obgnme": None}, index=[])
+    pst.add_pi_equation(['x','x2'], 
+                    pilbl="obj_well",  
+                    obs_group="less_than_gigantor",
+                    rhs=1e13) 
     
     # prepare_pestpp
     pst_gen = gpr.prepare_pestpp(t_d, pst=pst, use_runstor=False)
     
     # 5. Check generated files
     assert os.path.exists(os.path.join(t_d, "forward_run.py"))
-    
+    assert pst_gen.prior_information is not None
+
     # 6. Verify forward run script content
     with open(os.path.join(t_d, "forward_run.py"), 'r') as f:
         content = f.read()
