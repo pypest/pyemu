@@ -6117,6 +6117,18 @@ def test_sr_dict(tmp_path):
                         index_cols=['i','j'],
                         use_cols='q',
                         ofile_sep=',')
+    
+    try:
+        pf.add_parameters("junk",par_type="constant")
+    except Exception:
+        pass
+    pf.add_parameters("parfile.csv",
+                      par_type="grid",
+                      index_cols=[0, 1],
+                      use_cols=[2],
+                      geostruct=gs)
+
+    pf.build_pst()
 
 
 def test_dup_idxs(tmp_path):
@@ -6549,6 +6561,7 @@ def apply_speed_invest_pp(useppu=True):
 
 
 if __name__ == "__main__":
+    test_sr_dict("temp")
     # draw_consistency_test('.')
     #xsec_pars_as_obs_test(".")
     #add_py_function_test('.')
@@ -6602,7 +6615,7 @@ if __name__ == "__main__":
     # import pstats
     # profiler = cProfile.Profile()
     # profiler.enable()
-    apply_speed_invest_pp(True)
+    #apply_speed_invest_pp(True)
     # profiler.disable()
     # stats = pstats.Stats(profiler).sort_stats('cumtime')
     # stats.print_stats()
