@@ -2019,6 +2019,120 @@ def smp_test(tmp_path):
     print(len(obs_names))
 
 
+def smp_to_ins_leading_whitespace_test(tmp_path):
+    """Test that smp_to_ins handles leading whitespace correctly in both
+    free format (gwutils_compliant=False) and fixed format
+    (gwutils_compliant=True) modes.
+
+    The PEST 'w' instruction treats leading whitespace differently:
+    it consumes one 'w' to skip past leading blanks without advancing
+    past a word. Files with leading whitespace need an extra 'w' marker
+    in free format, and correct column ranges in fixed format.
+
+    See: https://github.com/pypest/pyemu/issues/361
+    """
+    import os
+    from pyemu.utils import smp_to_ins
+    from pyemu.pst.pst_utils import parse_ins_file
+
+    # Create an SMP file WITH leading whitespace (like mod2smp output)
+    smp_leading = os.path.join(tmp_path, "leading.smp")
+    with open(smp_leading, "w") as f:
+        f.write(" well_01     01/01/2000    00:00:00    1.230000\n")
+        f.write(" well_01     02/01/2000    00:00:00    4.560000\n")
+        f.write(" well_02     01/01/2000    00:00:00    7.890000\n")
+
+    # Create an SMP file WITHOUT leading whitespace
+    smp_no_leading = os.path.join(tmp_path, "no_leading.smp")
+    with open(smp_no_leading, "w") as f:
+        f.write("well_01     01/01/2000    00:00:00    1.230000\n")
+        f.write("well_01     02/01/2000    00:00:00    4.560000\n")
+        f.write("well_02     01/01/2000    00:00:00    7.890000\n")
+
+    # Test free format (gwutils_compliant=False) with leading whitespace
+    ins_file = os.path.join(tmp_path, "leading_free.ins")
+    df = smp_to_ins(smp_leading, ins_file, use_generic_names=True)
+    obs_names = parse_ins_file(ins_file)
+    assert len(obs_names) == 3
+    # Should have 4 'w' markers for leading whitespace
+    for ins_str in df["ins_strings"]:
+        assert ins_str.count(" w") == 4, (
+            "expected 4 'w' markers for leading whitespace, "
+            "got: {0}".format(ins_str)
+        )
+
+    # Test free format (gwutils_compliant=False) without leading whitespace
+    ins_file = os.path.join(tmp_path, "no_leading_free.ins")
+    df = smp_to_ins(smp_no_leading, ins_file, use_generic_names=True)
+    obs_names = parse_ins_file(ins_file)
+    assert len(obs_names) == 3
+    # Should have 3 'w' markers for no leading whitespace
+    for ins_str in df["ins_strings"]:
+        assert ins_str.count(" w") == 3, (
+            "expected 3 'w' markers for no leading whitespace, "
+            "got: {0}".format(ins_str)
+        )
+
+    # Test fixed format (gwutils_compliant=True) with leading whitespace
+    ins_file = os.path.join(tmp_path, "leading_fixed.ins")
+    df = smp_to_ins(
+        smp_leading, ins_file, use_generic_names=True, gwutils_compliant=True
+    )
+    obs_names = parse_ins_file(ins_file)
+    assert len(obs_names) == 3
+    # The value "1.230000" starts at column 45 in the leading-whitespace lines
+    # Verify the column range captures the value, not the time
+    for ins_str in df["ins_strings"]:
+        # Extract the column range from the instruction string
+        paren_end = ins_str.index(")")
+        col_range = ins_str[paren_end + 1:]
+        col_start, col_end = [int(x) for x in col_range.split(":")]
+        # Read the corresponding raw line and verify the range captures
+        # a parseable number (the value), not the time field
+        assert col_start > 35, (
+            "column range starts too early (likely reading time column), "
+            "got: {0}".format(ins_str)
+        )
+
+    # Test fixed format (gwutils_compliant=True) without leading whitespace
+    ins_file = os.path.join(tmp_path, "no_leading_fixed.ins")
+    df = smp_to_ins(
+        smp_no_leading, ins_file, use_generic_names=True, gwutils_compliant=True
+    )
+    obs_names = parse_ins_file(ins_file)
+    assert len(obs_names) == 3
+    for ins_str in df["ins_strings"]:
+        paren_end = ins_str.index(")")
+        col_range = ins_str[paren_end + 1:]
+        col_start, col_end = [int(x) for x in col_range.split(":")]
+        assert col_start > 34, (
+            "column range starts too early (likely reading time column), "
+            "got: {0}".format(ins_str)
+        )
+
+    # Test with the actual repo SMP files that have varying formats
+    o_smp_filename = os.path.join("misc", "gainloss.smp")
+    smp_filename = os.path.join(tmp_path, "gainloss_test.smp")
+    shutil.copy(o_smp_filename, smp_filename)
+    for gwutils in [True, False]:
+        ins_file = smp_filename + ".gwutils_{0}.ins".format(gwutils)
+        df = smp_to_ins(smp_filename, ins_file, gwutils_compliant=gwutils)
+        obs_names = parse_ins_file(ins_file)
+        assert len(obs_names) > 0
+
+    o_smp_filename = os.path.join("misc", "sim_hds_v6.smp")
+    smp_filename = os.path.join(tmp_path, "sim_hds_v6_test.smp")
+    shutil.copy(o_smp_filename, smp_filename)
+    for gwutils in [True, False]:
+        ins_file = smp_filename + ".gwutils_{0}.ins".format(gwutils)
+        df = smp_to_ins(
+            smp_filename, ins_file,
+            use_generic_names=True, gwutils_compliant=gwutils
+        )
+        obs_names = parse_ins_file(ins_file)
+        assert len(obs_names) > 0
+
+
 def smp_dateparser_test(tmp_path):
     import os
     import pyemu
