@@ -56,6 +56,16 @@ def smp_to_ins(
     if ins_filename is None:
         ins_filename = smp_filename + ".ins"
     df = smp_to_dataframe(smp_filename, datetime_format=datetime_format)
+
+    # Read raw lines for accurate instruction generation.
+    # The PEST 'w' instruction uses a two-step algorithm that treats
+    # leading whitespace differently: it consumes one 'w' to skip past
+    # leading blanks without advancing past a word. This means files
+    # with leading whitespace need an extra 'w' marker. For fixed format,
+    # the value column position depends on the actual file layout.
+    with open(smp_filename) as f:
+        raw_lines = [line for line in f.readlines() if line.strip()]
+
     df.loc[:, "ins_strings"] = None
     df.loc[:, "observation_names"] = None
     name_groups = df.groupby("name").groups
@@ -74,9 +84,26 @@ def smp_to_ins(
                 "observation names longer than 20 chars:\n{0}".format(str(long_names))
             )
         if gwutils_compliant:
-            ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
+            ins_strs = []
+            for i, on in zip(idxs, onames):
+                raw_line = raw_lines[i].rstrip()
+                # Find the value column range (last whitespace-delimited token)
+                j = len(raw_line) - 1
+                while j >= 0 and raw_line[j] != ' ':
+                    j -= 1
+                val_start = j + 2  # 1-indexed for PEST
+                val_end = len(raw_line)  # 1-indexed, inclusive
+                ins_strs.append(
+                    "l1  ({0:s}){1:d}:{2:d}".format(on, val_start, val_end)
+                )
         else:
-            ins_strs = ["l1 w w w  !{0:s}!".format(on) for on in onames]
+            ins_strs = []
+            for i, on in zip(idxs, onames):
+                raw_line = raw_lines[i]
+                if raw_line[0] == ' ':
+                    ins_strs.append("l1 w w w w !{0:s}!".format(on))
+                else:
+                    ins_strs.append("l1 w w w !{0:s}!".format(on))
         df.loc[idxs, "observation_names"] = onames
         df.loc[idxs, "ins_strings"] = ins_strs
 
