@@ -2034,7 +2034,7 @@ def _process_array_file(model_file, df):
             if pd.isna(mlt):
                 continue
             if str(mlt).endswith(".npy"):
-                mlt_data = np.load(mlt)
+                mlt_data = np.atleast_2d(np.load(mlt))
             else:
                 mlt_data = np.loadtxt(mlt, ndmin=2)
             if 1 in list(mlt_data.shape): # if 1d arrays
