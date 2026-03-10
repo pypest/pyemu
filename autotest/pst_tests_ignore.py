@@ -326,7 +326,7 @@ def from_flopy(tmp_path):
     obs = pst.observation_data
     obs.loc[:, "weight"] = 0.0
     obs.loc[obs.obsnme.apply(lambda x: x.startswith("cr")), "weight"] = 1.0
-    obs.loc[obs.weight > 0.0, "obsval"] += np.random.normal(0.0, 2.0, pst.nnz_obs)
+    obs.loc[obs.weight > 0.0, "obsval"] += pyemu.en.rng.normal(0.0, 2.0, pst.nnz_obs)
     pst.control_data.noptmax = 0
     pst.write(os.path.join(new_model_ws, "freyberg_pest.pst"))
     cov = helper.build_prior(fmt="none")

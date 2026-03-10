@@ -24,7 +24,7 @@ except ImportError:
 def generate_synth_data(num_realizations=100, num_observations=10):
 
     # generate synth data
-    data = np.random.normal(size=(num_realizations,num_observations))
+    data = pyemu.en.rng.normal(size=(num_realizations,num_observations))
     data = pd.DataFrame(data,columns=[f"obs{i}" for i in range(10)])
     # dummy observation data
     obsdata = pd.DataFrame(index=data.columns, columns=["obsnme","obsval","weight","obgnme"])
@@ -450,8 +450,8 @@ def test_autoencoder_basic():
     from pyemu.emulators.dsiae import AutoEncoder
 
     # Create simple synthetic data
-    np.random.seed(42)
-    X = np.random.randn(50, 10).astype(np.float32)  # 50 samples, 10 features
+    pyemu.en.rng = pyemu.en.rng.default_rng(42)
+    X = pyemu.en.rng.standard_normal((50, 10,)).astype(np.float32)  # 50 samples, 10 features
 
     # Test initialization
     ae = AutoEncoder(input_dim=10, latent_dim=3, hidden_dims=(8, 4))
@@ -477,8 +477,8 @@ def test_autoencoder_pandas_input():
     from pyemu.emulators.dsiae import AutoEncoder
 
     # Create pandas DataFrame
-    np.random.seed(42)
-    data = pd.DataFrame(np.random.randn(30, 8),
+    pyemu.en.rng = pyemu.en.rng.default_rng(42)
+    data = pd.DataFrame(pyemu.en.rng.standard_normal((30, 8,)),
                        columns=[f'feature_{i}' for i in range(8)],
                        index=[f'sample_{i}' for i in range(30)])
 
@@ -631,8 +631,8 @@ def test_autoencoder_basic():
     from pyemu.emulators.dsiae import AutoEncoder
 
     # Create simple synthetic data
-    np.random.seed(42)
-    X = np.random.randn(50, 10).astype(np.float32)  # 50 samples, 10 features
+    pyemu.en.rng = pyemu.en.rng.default_rng(42)
+    X = pyemu.en.rng.standard_normal((50, 10,)).astype(np.float32)  # 50 samples, 10 features
 
     # Test initialization
     ae = AutoEncoder(input_dim=10, latent_dim=3, hidden_dims=(8, 4))
@@ -658,8 +658,8 @@ def test_autoencoder_pandas_input():
     from pyemu.emulators.dsiae import AutoEncoder
 
     # Create pandas DataFrame
-    np.random.seed(42)
-    data = pd.DataFrame(np.random.randn(30, 8),
+    pyemu.en.rng = pyemu.en.rng.default_rng(42)
+    data = pd.DataFrame(pyemu.en.rng.standard_normal((30, 8,)),
                        columns=[f'feature_{i}' for i in range(8)],
                        index=[f'sample_{i}' for i in range(30)])
 
@@ -705,7 +705,7 @@ def test_dsiae_save_load(tmp_path):
     # 1. Generate synthetic data
     num_realizations = 50
     num_observations = 20
-    data = np.random.normal(size=(num_realizations, num_observations))
+    data = pyemu.en.rng.normal(size=(num_realizations, num_observations))
     data_df = pd.DataFrame(data, columns=[f"obs{i}" for i in range(num_observations)])
 
     # 2. Initialize and fit DSIAE
@@ -725,7 +725,7 @@ def test_dsiae_save_load(tmp_path):
     # The predict method takes pvals which are latent space values
 
     # Generate random latent vectors
-    new_pvals = np.random.normal(size=(5, latent_dim))
+    new_pvals = pyemu.en.rng.normal(size=(5, latent_dim))
     new_pvals_df = pd.DataFrame(new_pvals, columns=[f"latent_{i}" for i in range(latent_dim)])
 
     # Predict with original model
@@ -795,7 +795,7 @@ def test_gpr_basic(tmp_path):
     x = np.linspace(0.0, 10.0, 20)
     y = 2.0 * x + 1.0
     # Add small noise (very small so interpolation is almost exact)
-    # y += np.random.normal(0, 0.001, 20) 
+    # y += pyemu.en.rng.normal(0, 0.001, 20) 
     
     df = pd.DataFrame({'x': x, 'y': y})
     
@@ -994,10 +994,10 @@ def test_lpfa_synth(tmp_path):
     t = np.linspace(0, 10, 50)
     data = []
     n_real = 30
-    np.random.seed(42)
+    pyemu.en.rng = pyemu.en.rng.default_rng(42)
     for i in range(n_real):
-        phase = np.random.uniform(0, 2*np.pi)
-        amp = np.random.uniform(0.8, 1.2)
+        phase = pyemu.en.rng.uniform(0, 2*np.pi)
+        amp = pyemu.en.rng.uniform(0.8, 1.2)
         # Inputs (history)
         hist = amp * np.sin(t[:10] + phase)
         # Outputs (forecast)

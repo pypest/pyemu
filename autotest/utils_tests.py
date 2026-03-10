@@ -748,8 +748,8 @@ def test_ok_grid(tmp_path):
     delc = np.ones((nrow)) * 1.0/float(nrow)
 
     # num_pts = 0
-    # ptx = np.random.random(num_pts)
-    # pty = np.random.random(num_pts)
+    # ptx = pyemu.en.rng.random(num_pts)
+    # pty = pyemu.en.rng.random(num_pts)
     # ptname = ["p{0}".format(i) for i in range(num_pts)]
     # pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
     # pts_data = pts_data.set_index('name', drop=False)
@@ -786,8 +786,8 @@ def test_ok_grid_zone(tmp_path):
     delc = np.ones((nrow)) * 1.0/float(nrow)
 
     # num_pts = 0
-    # ptx = np.random.random(num_pts)
-    # pty = np.random.random(num_pts)
+    # ptx = pyemu.en.rng.random(num_pts)
+    # pty = pyemu.en.rng.random(num_pts)
     # ptname = ["p{0}".format(i) for i in range(num_pts)]
     # pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
     # pts_data.index = pts_data.name
@@ -1069,10 +1069,10 @@ def geostat_draws_test(tmp_path):
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
     gs = pyemu.geostats.read_struct_file(str_file)
-    np.random.seed(pyemu.en.SEED)
+    pyemu.en.rng = pyemu.en.rng.default_rng(pyemu.en.SEED)
     pe = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
                                           sigma_range=4)
-    np.random.seed(pyemu.en.SEED)
+    pyemu.en.rng = pyemu.en.rng.default_rng(pyemu.en.SEED)
     pe2 = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
                                           sigma_range=4)
     pe.to_csv(os.path.join(os.path.join("utils","geostat_pe.csv")))
@@ -1109,8 +1109,8 @@ def geostat_draws_test(tmp_path):
 #     delc = np.ones((nrow)) * 1.0/float(nrow)
 #
 #     num_pts = 0
-#     ptx = np.random.random(num_pts)
-#     pty = np.random.random(num_pts)
+#     ptx = pyemu.en.rng.random(num_pts)
+#     pty = pyemu.en.rng.random(num_pts)
 #     ptname = ["p{0}".format(i) for i in range(num_pts)]
 #     pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
 #     pts_data.index = pts_data.name
@@ -2217,8 +2217,8 @@ def ok_grid_invest(tmp_path):
     delc = np.ones((nrow)) * 1.0/float(nrow)
 
     num_pts = 100
-    ptx = np.random.random(num_pts)
-    pty = np.random.random(num_pts)
+    ptx = pyemu.en.rng.random(num_pts)
+    pty = pyemu.en.rng.random(num_pts)
     ptname = ["p{0}".format(i) for i in range(num_pts)]
     pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
     pts_data.index = pts_data.name
@@ -2284,7 +2284,7 @@ def specsim_test():
 
     variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
     gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="log", nugget=nugget)
-    np.random.seed(1)
+    pyemu.en.rng = pyemu.en.rng.default_rng(1)
 
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
     mean_value = 15.0
@@ -2302,7 +2302,7 @@ def specsim_test():
     assert np.abs(var - theo_var) < 0.1
     assert np.abs(mean - mean_value) < 0.1
 
-    np.random.seed(1)
+    pyemu.en.rng = pyemu.en.rng.default_rng(1)
     variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
     gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=nugget)
 
@@ -2336,7 +2336,7 @@ def aniso_invest():
     variograms = [pyemu.geostats.ExpVario(contribution=2.5,a=2500.0,anisotropy=10,bearing=90)]
     gs = pyemu.geostats.GeoStruct(variograms=variograms,transform="none",nugget=0.0)
 
-    np.random.seed(1)
+    pyemu.en.rng = pyemu.en.rng.default_rng(1)
     num_reals = 100
     start = datetime.now()
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
@@ -2512,8 +2512,8 @@ def geostat_prior_builder2_test(tmp_path):
     #give some pars narrower bounds to induce a lower variance 
     #par.loc[pst.par_names[10:40], "parubnd"] = par.loc[pst.par_names[10:40], "parval1"] * 1.5
     #par.loc[pst.par_names[10:40], "parlbnd"] = par.loc[pst.par_names[10:40], "parval1"] * 0.5
-    par.loc[pst.par_names[10:100], "parubnd"] *= np.random.random(90) * 5
-    par.loc[pst.par_names[10:100], "parlbnd"] *= np.random.random(90) * 0.5
+    par.loc[pst.par_names[10:100], "parubnd"] *= pyemu.en.rng.random(90) * 5
+    par.loc[pst.par_names[10:100], "parlbnd"] *= pyemu.en.rng.random(90) * 0.5
     
     
     # get a diagonal bounds-based cov
@@ -2709,9 +2709,9 @@ def ac_draw_test(tmp_path):
     pst.write(os.path.join(tmp_path, "test.pst"))
     print(pst.observation_data.distance)
 
-    np.random.seed(pyemu.en.SEED)
+    pyemu.en.rng = pyemu.en.rng.default_rng(pyemu.en.SEED)
     oe = pyemu.helpers.autocorrelated_draw(pst, struct_dict, num_reals=100, enforce_bounds=True)
-    np.random.seed(pyemu.en.SEED)
+    pyemu.en.rng = pyemu.en.rng.default_rng(pyemu.en.SEED)
     oe2 = pyemu.helpers.autocorrelated_draw(pst, struct_dict, num_reals=100, enforce_bounds=True)
     diff = oe - oe2
     print(diff.max())
@@ -2827,8 +2827,8 @@ def thresh_pars_test():
     arr = np.ones((dim,dim))
     gs = pyemu.geostats.GeoStruct(variograms=[pyemu.geostats.ExpVario(1.0,30.0)])
     ss = pyemu.geostats.SpecSim2d(np.ones(dim),np.ones(dim),gs)
-    #seed = np.random.randint(100000)
-    np.random.seed(9371)
+    #seed = pyemu.en.rng.integers(100000)
+    pyemu.en.rng = pyemu.en.rng.default_rng(9371)
     #print("seed",seed)
     arr = 10**(ss.draw_arrays()[0])
     print(arr)
@@ -2921,7 +2921,7 @@ def test_ppu_geostats(tmp_path):
     # This actually produces 2 pp for each pp because of the prefix_dict above
     #print(par_info_unrot.parnme.value_counts())
     # fill with a parval for testing
-    par_info_unrot.loc[:,"parval1"] = np.random.uniform(10,100,par_info_unrot.shape[0])
+    par_info_unrot.loc[:,"parval1"] = pyemu.en.rng.uniform(10,100,par_info_unrot.shape[0])
 
     gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0,anisotropy=3.0,bearing=45))
 

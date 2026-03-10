@@ -9,7 +9,7 @@ import pyemu
 from .pyemu_warnings import PyemuWarning
 
 SEED = 358183147  # from random.org on 5 Dec 2016
-np.random.seed(SEED)
+rng = np.random.default_rng(SEED)
 
 
 class Loc(object):
@@ -130,16 +130,17 @@ class Ensemble(object):
 
     @staticmethod
     def reseed():
-        """reset the `numpy.random.seed`
+        """reset the `pyemu.en.rng` local random generator
 
         Note:
             reseeds using the pyemu.en.SEED global variable
 
-            The pyemu.en.SEED value is set as the numpy.random.seed on import, so
+            The pyemu.en.SEED value is used to initialize the `rng` on import, so
             make sure you know what you are doing if you call this method...
 
         """
-        np.random.seed(SEED)
+        global rng
+        rng = np.random.default_rng(SEED)
 
     def copy(self):
         """get a copy of `Ensemble`
@@ -477,7 +478,7 @@ class Ensemble(object):
             stds = {
                 name: std for name, std in zip(cov.row_names, np.sqrt(cov.x.flatten()))
             }
-            snv = np.random.randn(num_reals, mean_values.shape[0])
+            snv = rng.standard_normal((num_reals, mean_values.shape[0]))
             reals = np.zeros_like(snv)
             reals[:, :] = np.nan
             for i, name in enumerate(mean_values.index):
@@ -509,7 +510,7 @@ class Ensemble(object):
                     names = None
                     snames = None
                     idxs = [mv_map[name] for name in cnames]
-                    snv = np.random.randn(num_reals, len(cnames))
+                    snv = rng.standard_normal((num_reals, len(cnames)))
                     cov_grp = cov.get(cnames)
                     if len(cnames) == 1:
                         std = np.sqrt(cov_grp.x)
@@ -540,7 +541,7 @@ class Ensemble(object):
                             reals[i, idxs] = group_mean_values + np.dot(a, snv[i, :])
 
             else:
-                snv = np.random.randn(num_reals, cov.shape[0])
+                snv = rng.standard_normal((num_reals, cov.shape[0]))
                 if factor == "eigen":
                     a, i = Ensemble._get_eigen_projection_matrix(cov.as_2d)
                 elif factor == "cholesky":
@@ -588,7 +589,7 @@ class Ensemble(object):
         
         mu_vec = self._df.loc[:,names].mean()
         
-        snv_draws = np.random.standard_normal((num_reals,self.shape[0]))
+        snv_draws = rng.standard_normal((num_reals,self.shape[0]))
         
         noise = 0.0
         if include_noise is not False:
@@ -601,8 +602,8 @@ class Ensemble(object):
             missing = set(self.columns.to_list()) - set(noise_reals.columns)
             if len(missing) > 0:
                 raise Exception("the following names are not in `noise_reals`: "+",".join(missing))
-            #noise_real_choices = np.random.choice(noise_reals.index,num_reals)
-            noise_real_choices = np.random.randint(0,noise_reals.shape[0],num_reals)
+            #noise_real_choices = rng.choice(noise_reals.index,num_reals)
+            noise_real_choices = rng.integers(0,noise_reals.shape[0],num_reals)
             noise_back_trans = False
             if not noise_reals.istransformed:
                 noise_reals.transform()
@@ -618,7 +619,7 @@ class Ensemble(object):
             reals.append(real)
             if noise != 0.0:
                 if noise_reals is None:
-                    noise_real = np.random.normal(0.0,noise,real.shape[0])
+                    noise_real = rng.normal(0.0,noise,real.shape[0])
                 else:
                     #noise_real = noise * noise_deviations.loc[noise_real_choices[i],names].values
                     noise_real = noise * nmat[noise_real_choices[i],:]
@@ -1162,7 +1163,7 @@ class ParameterEnsemble(Ensemble):
             log-transformed parameters are drawn in log space.  The returned `ParameterEnsemble`
             is back transformed (not in log space)
 
-            uses numpy.random.triangular
+            uses pyemu.en.rng.triangular
 
         Example::
 
@@ -1196,7 +1197,7 @@ class ParameterEnsemble(Ensemble):
         for i, pname in enumerate(pst.parameter_data.parnme):
             # print(pname, lb[pname], ub[pname])
             if pname in adj_par_names:
-                arr[:, i] = np.random.triangular(
+                arr[:, i] = rng.triangular(
                     lb[pname], pv[pname], ub[pname], size=num_reals
                 )
             elif fill:
@@ -1230,7 +1231,7 @@ class ParameterEnsemble(Ensemble):
             log-transformed parameters are drawn in log space.  The returned `ParameterEnsemble`
             is back transformed (not in log space)
 
-            uses numpy.random.uniform
+            uses pyemu.en.rng.uniform
 
         Example::
 
@@ -1258,7 +1259,7 @@ class ParameterEnsemble(Ensemble):
         for i, pname in enumerate(pst.parameter_data.parnme):
             # print(pname,lb[pname],ub[pname])
             if pname in adj_par_names:
-                arr[:, i] = np.random.uniform(lb[pname], ub[pname], size=num_reals)
+                arr[:, i] = rng.uniform(lb[pname], ub[pname], size=num_reals)
             elif fill:
                 arr[:, i] = (
                     np.zeros((num_reals)) + pst.parameter_data.loc[pname, "parval1"]

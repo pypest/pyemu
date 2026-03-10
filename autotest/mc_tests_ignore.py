@@ -92,7 +92,7 @@ def gaussian_draw_test():
     vals = mc.pst.parameter_data.parval1.values
     cov = Cov.from_parameter_data(mc.pst)
     start = datetime.now()
-    val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
+    val_array = pyemu.en.rng.multivariate_normal(vals, cov.as_2d,num_reals)
     print(datetime.now() - start)
 
     start = datetime.now()
@@ -125,7 +125,7 @@ def from_dataframe_test():
     pst = jco.replace(".jcb",".pst")
     mc = MonteCarlo(jco=jco,pst=pst)
     names = ["par_{0}".format(_) for _ in range(10)]
-    df = pd.DataFrame(np.random.random((10,mc.pst.npar)),columns=mc.pst.par_names)
+    df = pd.DataFrame(pyemu.en.rng.random((10,mc.pst.npar)),columns=mc.pst.par_names)
     mc.parensemble = ParameterEnsemble.from_dataframe(df=df,pst=mc.pst)
     print(mc.parensemble.shape)
     mc.project_parensemble()
@@ -193,7 +193,7 @@ def ensemble_seed_test():
 
     pe1.reseed()
     pe1.draw(cov,num_reals=10)
-    #np.random.seed(1111)
+    #pyemu.en.rng = pyemu.en.rng.default_rng(1111)
     pe2.reseed()
     pe2.draw(cov,num_reals=10)
     assert (pe1-pe2).apply(np.abs).as_matrix().max() == 0.0
@@ -383,7 +383,7 @@ def par_diagonal_draw_test():
     vals = mc.pst.parameter_data.parval1.values
     cov = Cov.from_parameter_data(mc.pst)
     start = datetime.now()
-    val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
+    val_array = pyemu.en.rng.multivariate_normal(vals, cov.as_2d,num_reals)
     print(datetime.now() - start)
 
     start = datetime.now()
@@ -463,8 +463,8 @@ def homegrown_draw_test():
 
     pst.parameter_data.loc[:,"partrans"] = "none"
     par = pst.parameter_data
-    par.loc[:,"x"] = np.random.random(npar) * 10.0
-    par.loc[:, "y"] = np.random.random(npar) * 10.0
+    par.loc[:,"x"] = pyemu.en.rng.random(npar) * 10.0
+    par.loc[:, "y"] = pyemu.en.rng.random(npar) * 10.0
 
     par.loc[pst.par_names[0], "pargp"] = "zero"
     par.loc[pst.par_names[1:10],"pargp"] = "one"
@@ -525,8 +525,8 @@ def ensemble_covariance_test():
 
     pst.parameter_data.loc[:, "partrans"] = "none"
     par = pst.parameter_data
-    par.loc[:, "x"] = np.random.random(npar) * 10.0
-    par.loc[:, "y"] = np.random.random(npar) * 10.0
+    par.loc[:, "x"] = pyemu.en.rng.random(npar) * 10.0
+    par.loc[:, "y"] = pyemu.en.rng.random(npar) * 10.0
 
     cov = gs.covariance_matrix(par.x, par.y, par.parnme)
     num_reals = 100000
@@ -612,8 +612,8 @@ def to_from_binary_test():
 
     pst.parameter_data.loc[:, "partrans"] = "none"
     par = pst.parameter_data
-    par.loc[:, "x"] = np.random.random(npar) * 10.0
-    par.loc[:, "y"] = np.random.random(npar) * 10.0
+    par.loc[:, "x"] = pyemu.en.rng.random(npar) * 10.0
+    par.loc[:, "y"] = pyemu.en.rng.random(npar) * 10.0
 
     cov = gs.covariance_matrix(par.x, par.y, par.parnme)
     num_reals = 1000
@@ -687,8 +687,8 @@ def sparse_draw_test():
 
     pst.parameter_data.loc[:, "partrans"] = "none"
     par = pst.parameter_data
-    par.loc[:, "x"] = np.random.random(npar) * 10.0
-    par.loc[:, "y"] = np.random.random(npar) * 10.0
+    par.loc[:, "x"] = pyemu.en.rng.random(npar) * 10.0
+    par.loc[:, "y"] = pyemu.en.rng.random(npar) * 10.0
 
     par.loc[pst.par_names[0], "pargp"] = "zero"
     par.loc[pst.par_names[1:10], "pargp"] = "one"

@@ -471,8 +471,8 @@ class SpecSim2d(object):
         reals = []
 
         for ireal in range(num_reals):
-            real = np.random.standard_normal(size=self.sqrt_fftc.shape)
-            imag = np.random.standard_normal(size=self.sqrt_fftc.shape)
+            real = pyemu.en.rng.standard_normal(size=self.sqrt_fftc.shape)
+            imag = pyemu.en.rng.standard_normal(size=self.sqrt_fftc.shape)
             epsilon = real + 1j * imag
             rand = epsilon * self.sqrt_fftc
             real = np.real(np.fft.ifftn(rand)) * self.num_pts
@@ -691,7 +691,7 @@ class SpecSim2d(object):
         # read in the base values, Z(x), assume these are not log-transformed
         values_krige = np.loadtxt(base_values_file)
 
-        np.random.seed(int(seed))
+        pyemu.en.rng = pyemu.en.rng.default_rng(int(seed))
 
         # draw random fields for num_reals
         unconditioned = self.draw_arrays(num_reals=num_reals, mean_value=mean_value)

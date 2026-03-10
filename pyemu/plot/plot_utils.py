@@ -1795,7 +1795,7 @@ def plot_jac_test(
     num_obs_plotted = np.min(np.array([maxoutputpages * 32, len(targetobs)]))
     if num_obs_plotted < len(targetobs):
         # get random sample
-        index_plotted = np.random.choice(len(targetobs), num_obs_plotted, replace=False)
+        index_plotted = pyemu.en.rng.choice(len(targetobs), num_obs_plotted, replace=False)
         obs_plotted = [targetobs[x] for x in index_plotted]
         real_pages = maxoutputpages
     else:

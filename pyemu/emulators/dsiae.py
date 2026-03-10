@@ -2,6 +2,7 @@
 Data Space Inversion (DSI) Autoencoder (AE) emulator implementation.
 """
 from __future__ import print_function, division
+import pyemu
 from typing import Optional, List, Dict, Any, Union
 import numpy as np
 import pandas as pd
@@ -860,7 +861,7 @@ class AutoEncoder:
         self.random_state = random_state
         
         tf.random.set_seed(random_state)
-        np.random.seed(random_state)
+        pyemu.en.rng = pyemu.en.rng.default_rng(random_state)
         self._build_model()
 
     # Build encoder/decoder

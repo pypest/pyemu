@@ -4172,7 +4172,7 @@ def apply_threshold_pars(csv_file):
         return tarr.mean(), 1.0
 
         #    print("WARNING: thresholding array {0} has very low standard deviation, adding noise".format(thresarr_file))
-        #    tarr += np.random.normal(0, tol*2.0, tarr.shape)
+        #    tarr += pyemu.en.rng.normal(0, tol*2.0, tarr.shape)
 
     # a classic:
     gr = (np.sqrt(5.) + 1.) / 2.
