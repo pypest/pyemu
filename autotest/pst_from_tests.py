@@ -3729,7 +3729,7 @@ def test_usg_freyberg(tmp_path):
     visited = set()
     for i in range(num_pp):
         while True:
-            idx = pyemu.en.rng.integers(0,len(sr_dict_by_layer[1]))
+            idx = pyemu.en.rng.randint(0,len(sr_dict_by_layer[1]))
             if idx  not in visited:
                 break
         x,y = sr_dict_by_layer[1][idx]

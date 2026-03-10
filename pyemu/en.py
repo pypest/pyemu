@@ -9,7 +9,7 @@ import pyemu
 from .pyemu_warnings import PyemuWarning
 
 SEED = 358183147  # from random.org on 5 Dec 2016
-rng = np.random.default_rng(SEED)
+rng = np.random.RandomState(SEED)
 
 
 class Loc(object):
@@ -140,7 +140,7 @@ class Ensemble(object):
 
         """
         global rng
-        rng = np.random.default_rng(SEED)
+        rng = np.random.RandomState(SEED)
 
     def copy(self):
         """get a copy of `Ensemble`
@@ -603,7 +603,7 @@ class Ensemble(object):
             if len(missing) > 0:
                 raise Exception("the following names are not in `noise_reals`: "+",".join(missing))
             #noise_real_choices = rng.choice(noise_reals.index,num_reals)
-            noise_real_choices = rng.integers(0,noise_reals.shape[0],num_reals)
+            noise_real_choices = rng.randint(0,noise_reals.shape[0],num_reals)
             noise_back_trans = False
             if not noise_reals.istransformed:
                 noise_reals.transform()

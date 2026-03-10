@@ -2827,7 +2827,7 @@ def thresh_pars_test():
     arr = np.ones((dim,dim))
     gs = pyemu.geostats.GeoStruct(variograms=[pyemu.geostats.ExpVario(1.0,30.0)])
     ss = pyemu.geostats.SpecSim2d(np.ones(dim),np.ones(dim),gs)
-    #seed = pyemu.en.rng.integers(100000)
+    #seed = pyemu.en.rng.randint(100000)
     pyemu.en.rng = pyemu.en.rng.default_rng(9371)
     #print("seed",seed)
     arr = 10**(ss.draw_arrays()[0])
