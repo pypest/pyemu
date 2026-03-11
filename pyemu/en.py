@@ -1336,7 +1336,8 @@ class ParameterEnsemble(Ensemble):
             pe.to_csv("my_mixed_pe.csv")
 
         """
-
+        if rng is None:
+            rng = pyemu.en.rng
         # error checking
         accept = {"uniform", "triangular", "gaussian"}
         assert (
@@ -1399,7 +1400,7 @@ class ParameterEnsemble(Ensemble):
                 )
             else:
 
-                cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range, rng=rng)
+                cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range)
             pe_gauss = ParameterEnsemble.from_gaussian_draw(
                 pst, cov, num_reals=num_reals, rng=rng
             )
@@ -1410,7 +1411,7 @@ class ParameterEnsemble(Ensemble):
             # par_uniform.sort_values(by="parnme",inplace=True)
             par_uniform.sort_index(inplace=True)
             pst.parameter_data = par_uniform
-            pe_uniform = ParameterEnsemble.from_uniform_draw(pst, num_reals=num_reals)
+            pe_uniform = ParameterEnsemble.from_uniform_draw(pst, num_reals=num_reals, rng=rng)
             pes.append(pe_uniform)
 
         if len(how_groups["triangular"]) > 0:
@@ -1418,7 +1419,7 @@ class ParameterEnsemble(Ensemble):
             # par_tri.sort_values(by="parnme", inplace=True)
             par_tri.sort_index(inplace=True)
             pst.parameter_data = par_tri
-            pe_tri = ParameterEnsemble.from_triangular_draw(pst, num_reals=num_reals)
+            pe_tri = ParameterEnsemble.from_triangular_draw(pst, num_reals=num_reals, rng=rng)
             pes.append(pe_tri)
 
         df = pd.DataFrame(index=np.arange(num_reals), columns=par_org.parnme.values)
@@ -1519,7 +1520,7 @@ class ParameterEnsemble(Ensemble):
 
         return ParameterEnsemble(pst=pst, df=df_all)
 
-    def draw_new_ensemble(self,num_reals,include_noise=True,noise_reals=None):
+    def draw_new_ensemble(self,num_reals,include_noise=True,noise_reals=None, rng=None):
         """Draw a new (potentially larger) ParameterEnsemble instance using the realizations 
         in `self`.  
 
@@ -1533,6 +1534,7 @@ class ParameterEnsemble(Ensemble):
             noise_reals (ParameterEnsemble): other existing realizations (likely prior realizations)
                 that are used as noise realizations in place of IID noise that is used if `include_noise` 
                 is True and `noise_reals` is None.
+            rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
         
         Returns
             ParameterEnsemble
@@ -1544,7 +1546,7 @@ class ParameterEnsemble(Ensemble):
 
         names = self.pst.adj_par_names
         return self._draw_new_ensemble(num_reals,names,include_noise=include_noise,
-                                       noise_reals=noise_reals)
+                                       noise_reals=noise_reals,rng=rng)
 
     def back_transform(self):
         """back transform parameters with respect to `partrans` value.
