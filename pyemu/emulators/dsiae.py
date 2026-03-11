@@ -861,7 +861,7 @@ class AutoEncoder:
         self.random_state = random_state
         
         tf.random.set_seed(random_state)
-        pyemu.en.rng = np.random.RandomState(random_state)
+        np.random.seed(random_state)
         self._build_model()
 
     # Build encoder/decoder

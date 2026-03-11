@@ -4,7 +4,7 @@ import pyemu
 def process_model_outputs():
 	import numpy as np
 	print("processing model outputs")
-	arr = np.random.random(100)
+	arr = pyemu.en.rng.random(100)
 	np.savetxt("special_outputs.dat",arr)
 	return arr
 
