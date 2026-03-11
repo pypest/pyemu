@@ -1184,7 +1184,8 @@ class ParameterEnsemble(Ensemble):
             pe.to_csv("my_tri_pe.csv")
 
         """
-
+        if rng is None:
+            rng = pyemu.en.rng
         li = pst.parameter_data.partrans == "log"
         ub = pst.parameter_data.parubnd.copy()
         ub.loc[li] = ub.loc[li].apply(np.log10)

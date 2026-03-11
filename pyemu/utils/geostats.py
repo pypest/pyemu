@@ -14,7 +14,7 @@ import pandas as pd
 from pyemu.mat.mat_handler import Cov
 from pyemu.utils.pp_utils import pp_file_to_dataframe
 from ..pyemu_warnings import PyemuWarning
-
+from pyemu import en
 EPSILON = 1.0e-7
 
 # class KrigeFactors(pd.DataFrame):
@@ -473,8 +473,8 @@ class SpecSim2d(object):
 
         for ireal in range(num_reals):
             if rng is None:
-                real = pyemu.en.rng.standard_normal(size=self.sqrt_fftc.shape)
-                imag = pyemu.en.rng.standard_normal(size=self.sqrt_fftc.shape)
+                real = en.rng.standard_normal(size=self.sqrt_fftc.shape)
+                imag = en.rng.standard_normal(size=self.sqrt_fftc.shape)
             else:
                 real = rng.standard_normal(size=self.sqrt_fftc.shape)
                 imag = rng.standard_normal(size=self.sqrt_fftc.shape)

@@ -1071,10 +1071,10 @@ def geostat_draws_test(tmp_path):
     gs = pyemu.geostats.read_struct_file(str_file)
     rng = np.random.RandomState(pyemu.en.SEED)
     pe = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
-                                          sigma_range=4)
+                                          sigma_range=4,rng=rng)
     rng = np.random.RandomState(pyemu.en.SEED)
     pe2 = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
-                                          sigma_range=4)
+                                          sigma_range=4,rng=rng)
     pe.to_csv(os.path.join(os.path.join("utils","geostat_pe.csv")))
 
     diff = pe - pe2
