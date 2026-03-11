@@ -354,6 +354,7 @@ def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
                             num_reals=num_reals,
                             sigma_range=sigma_range,
                             logger=logger,
+                            rng=rng
                         )
                         # append to list of specsim drawn pars
                         gr_pe_l.append(gr_pe1)
@@ -381,7 +382,8 @@ def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
             num_reals=num_reals,
             sigma_range=sigma_range,
             scale_offset=scale_offset,
-            subset=subset
+            subset=subset,
+            rng=rng
         )
         logger.log(f"Drawing {len(subset)} non-specsim pars")
         if gr_par_pe is not None:

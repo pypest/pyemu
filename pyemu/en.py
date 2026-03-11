@@ -1255,7 +1255,8 @@ class ParameterEnsemble(Ensemble):
 
 
         """
-
+        if rng is None:
+            rng = pyemu.en.rng
         li = pst.parameter_data.partrans == "log"
         ub = pst.parameter_data.parubnd.copy()
         ub.loc[li] = ub.loc[li].apply(np.log10)
@@ -1298,6 +1299,7 @@ class ParameterEnsemble(Ensemble):
         enforce_bounds=True,
         partial=False,
         fill=True,
+        rng=None
     ):
         """generate a `ParameterEnsemble` using a mixture of
         distributions.  Available distributions include (log) "uniform", (log) "triangular",
@@ -1323,6 +1325,7 @@ class ParameterEnsemble(Ensemble):
                 Default is `False`.
             fill (`bool`): flag to fill in fixed and/or tied parameters with control file
                 values.  Default is True.
+            rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
 
         Example::
 
@@ -1396,9 +1399,9 @@ class ParameterEnsemble(Ensemble):
                 )
             else:
 
-                cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range)
+                cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range, rng=rng)
             pe_gauss = ParameterEnsemble.from_gaussian_draw(
-                pst, cov, num_reals=num_reals
+                pst, cov, num_reals=num_reals, rng=rng
             )
             pes.append(pe_gauss)
 
