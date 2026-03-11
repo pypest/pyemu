@@ -2288,7 +2288,7 @@ def specsim_test():
 
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
     mean_value = 15.0
-    reals = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value)
+    reals = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value, rng=rng)
     assert reals.shape == (num_reals, nrow, ncol),reals.shape
     reals = np.log10(reals)
     mean_value = np.log10(mean_value)
