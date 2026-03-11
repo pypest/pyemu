@@ -2,7 +2,6 @@
 Data Space Inversion (DSI) Autoencoder (AE) emulator implementation.
 """
 from __future__ import print_function, division
-import pyemu
 from typing import Optional, List, Dict, Any, Union
 import numpy as np
 import pandas as pd
