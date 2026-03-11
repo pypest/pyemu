@@ -46,9 +46,9 @@ def _gen_dummy_obs_file(ws='.', sep=',', ext=None):
         else:
             t.append(text[c])
             c += 1
-    pyemu.en.rng = pyemu.en.rng.default_rng(314)
+    rng = np.random.RandomState(314)
     df = pd.DataFrame(
-        pyemu.en.rng.random((15,2,))*1000,
+        rng.random((15,2,))*1000,
         columns=['no', 'yes'],
         index=t
     )
@@ -3723,13 +3723,13 @@ def test_usg_freyberg(tmp_path):
     zone_array_k2[:,:100] = 4
 
     #gen up some fake pp locs
-    pyemu.en.rng = pyemu.en.rng.default_rng(pyemu.en.SEED)
+    rng = np.random.RandomState(pyemu.en.SEED)
     num_pp = 20
     data = {"name":[],"x":[],"y":[],"zone":[]}
     visited = set()
     for i in range(num_pp):
         while True:
-            idx = pyemu.en.rng.randint(0,len(sr_dict_by_layer[1]))
+            idx = rng.randint(0,len(sr_dict_by_layer[1]))
             if idx  not in visited:
                 break
         x,y = sr_dict_by_layer[1][idx]
@@ -3943,7 +3943,7 @@ def _add_big_obsffile(pf, profile=False, nchar=50000):
     else:
         pstfrom_add = True
         wd = pf.new_d
-    pyemu.en.rng = pyemu.en.rng.default_rng(314)
+    rng = np.random.RandomState(314)
     df = pd.DataFrame(pyemu.en.rng.random([10, nchar]),
                       columns=[hex(c) for c in range(nchar)])
     df.index.name = 'time'
@@ -4916,7 +4916,7 @@ def mf6_freyberg_thresh_test(tmp_path):
 
     org_par = par.copy()
     num_reals = 30
-    pyemu.en.rng = pyemu.en.rng.default_rng()
+    rng = np.random.RandomState()
     pe = pf.draw(num_reals, use_specsim=False)
     pe.enforce()
     # print(pe.shape)
@@ -6446,8 +6446,8 @@ def draw_consistency_test(tmp_path):
     gpar = par.loc[par.parnme.str.contains("fix"),:]
     assert gpar.shape[0] == gwf.dis.nrow.data * gwf.dis.ncol.data
     par.loc[gpar.parnme,"partrans"] = "fixed"
-    pyemu.en.rng = pyemu.en.rng.default_rng(111)
-    pe = pf.draw(num_reals=10, use_specsim=True) # draw parameters from the prior distribution
+    rng = np.random.RandomState(111)
+    pe = pf.draw(num_reals=10, use_specsim=True, rng=rng) # draw parameters from the prior distribution
     print("abs max:",np.nanmax(np.abs(pe.values)))
     # no bs values...
     assert np.nanmax(np.abs(pe.values)) < 100000

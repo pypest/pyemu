@@ -108,7 +108,7 @@ def _try_pdcol_numeric(x, first=True, intadj=0, **kwargs):
 
 
 def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=100,verbose=True,
-                        enforce_bounds=False, draw_ineq=False):
+                        enforce_bounds=False, draw_ineq=False, rng=None):
     """construct an autocorrelated observation noise ensemble from covariance matrices
         implied by geostatistical structure(s).
 
@@ -129,6 +129,7 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
                 these are present in `* observation data`.  Default is False
             draw_ineq (`bool`, optional): flag to generate noise realizations for inequality observations.
                 If False, noise will not be added inequality observations in the ensemble.  Default is False
+            rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
 
 
         Returns
@@ -178,7 +179,7 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
     fcov_dict = {o:np.sqrt(fcov.x[i]) for i,o in enumerate(fcov.names)}
     if verbose:
         print("-->draw full obs en from diagonal cov")
-    full_oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,fcov,num_reals=num_reals,fill=True)
+    full_oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,fcov,num_reals=num_reals,fill=True,rng=rng)
     keys = list(struct_dict.keys())
     keys.sort()
     #for gs,onames in struct_dict.items():
@@ -195,7 +196,7 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
             gcov.x[i, :] *= fcov_dict[name]
         if verbose:
             print("...draw")
-        oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,gcov,num_reals=num_reals,fill=False,by_groups=False)
+        oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,gcov,num_reals=num_reals,fill=False,by_groups=False,rng=rng)
         oe = oe.loc[:,gcov.names]
         full_oe.loc[:,gcov.names] = oe._df.values
 
@@ -245,7 +246,7 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
 
 def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
                   struct_dict=None, delr=None, delc=None, scale_offset=True,
-                  echo=True, logger=False):
+                  echo=True, logger=False, rng=None):
     """Draw a parameter ensemble from the distribution implied by the initial parameter values in the
     control file and a prior parameter covariance matrix derived from grouped geostructures.
     Previously in pst_from.
@@ -283,6 +284,7 @@ def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
         echo (`bool`): Verbosity flag passed to new Logger instance if
             `logger`is None
         logger (`pyemu.Logger`, optional): Object for logging process
+        rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
 
     Returns:
         `pyemu.ParameterEnsemble`: a prior parameter ensemble
@@ -397,7 +399,7 @@ def draw_by_group(pst, num_reals=100, sigma_range=6, use_specsim=False,
 
 def geostatistical_draws(
     pst, struct_dict, num_reals=100, sigma_range=4, verbose=True,
-        scale_offset=True, subset=None
+        scale_offset=True, subset=None, rng=None
 ):
     """construct a parameter ensemble from a prior covariance matrix
     implied by geostatistical structure(s) and parameter bounds.
@@ -421,6 +423,7 @@ def geostatistical_draws(
             Default is True.
         subset (`array-like`, optional): list, array, set or pandas index defining subset of parameters
             for draw.
+        rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
 
     Returns
         **pyemu.ParameterEnsemble**: the realized parameter ensemble.
@@ -558,7 +561,7 @@ def geostatistical_draws(
                     cov.x[i, i] = full_cov_dict[name]
                 # no fixed values here
                 pe = pyemu.ParameterEnsemble.from_gaussian_draw(
-                    pst=pst, cov=cov, num_reals=num_reals, by_groups=False, fill=False
+                    pst=pst, cov=cov, num_reals=num_reals, by_groups=False, fill=False, rng=rng
                 )
                 par_ens.append(pe._df)
                 pars_in_cov.update(set(pe.columns))
@@ -575,7 +578,7 @@ def geostatistical_draws(
         # cov = full_cov.get(diff,diff)
         # here we fill in the fixed values
         pe = pyemu.ParameterEnsemble.from_gaussian_draw(
-            pst, cov, num_reals=num_reals, fill=False
+            pst, cov, num_reals=num_reals, fill=False, rng=rng
         )
         par_ens.append(pe._df)
     par_ens = pd.concat(par_ens, axis=1)
@@ -3850,7 +3853,7 @@ def _maha(delta,v,x,z,lower_inv):
     return d_m
 
 
-def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
+def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2, rng=None):
     """calculate the 1-D and 2-D mahalanobis distance between simulated
     ensemble and observed values.  Used for detecting prior-data conflict
 
@@ -3860,6 +3863,7 @@ def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
             mahalanobis distance.  Default is 6.4 (p=0.01,df=1)
         l2_crit_val (`float`): the chi squared critical value for the 2-D
             mahalanobis distance.  Default is 9.2 (p=0.01,df=2)
+        rng (np.random.RandomState): random number generator if not using default from pyemu.en
 
     Returns:
 
@@ -3875,7 +3879,6 @@ def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
             noise.
 
     """
-
     if not isinstance(sim_en, pyemu.ObservationEnsemble):
         raise Exception("'sim_en' must be a " + " pyemu.ObservationEnsemble instance")
     if sim_en.pst.nnz_obs < 1:
@@ -3892,7 +3895,7 @@ def get_maha_obs_summary(sim_en, l1_crit_val=6.34, l2_crit_val=9.2):
     nnz_en.reseed()
     obsmean = obs.loc[nnz_en.columns.values, "obsval"]
     noise_en = pyemu.ObservationEnsemble.from_gaussian_draw(
-        sim_en.pst, num_reals=sim_en.shape[0]
+        sim_en.pst, num_reals=sim_en.shape[0], rng=rng
     )
     noise_en -= obsmean  # subtract off the obs val bc we just want the noise
     noise_en.index = nnz_en.index

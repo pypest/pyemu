@@ -193,7 +193,7 @@ def ensemble_seed_test():
 
     pe1.reseed()
     pe1.draw(cov,num_reals=10)
-    #pyemu.en.rng = pyemu.en.rng.default_rng(1111)
+    #pyemu.en.rng = np.random.RandomState(1111)
     pe2.reseed()
     pe2.draw(cov,num_reals=10)
     assert (pe1-pe2).apply(np.abs).as_matrix().max() == 0.0

@@ -456,8 +456,10 @@ class Ensemble(object):
 
     @staticmethod
     def _gaussian_draw(
-        cov, mean_values, num_reals, grouper=None, fill=True, factor="cholesky"
+        cov, mean_values, num_reals, grouper=None, fill=True, factor="cholesky", rng=None
     ):
+        if rng is None:
+            rng = pyemu.en.rng
 
         factor = factor.lower()
         if factor not in ["eigen", "svd", "cholesky"]:
@@ -558,7 +560,7 @@ class Ensemble(object):
         df.dropna(inplace=True, axis=1)
         return df
 
-    def _draw_new_ensemble(self,num_reals,names,include_noise=True,noise_reals=None):
+    def _draw_new_ensemble(self,num_reals,names,include_noise=True,noise_reals=None, rng=None):
         """Draw a new (potentially larger) Ensemble instance using the realizations 
         in `self`.  
 
@@ -572,13 +574,15 @@ class Ensemble(object):
             noise_reals (Ensemble): other existing realizations (likely prior realizations)
                 that are used as noise realizations in place of IID noise that is used if `include_noise` 
                 is True and `noise_reals` is None.
+            rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
         
         Returns
             Ensemble
 
     
         """
-
+        if rng is None:
+            rng = pyemu.en.rng
         back_trans = False
         if not self.istransformed:
             self.transform()
@@ -824,8 +828,8 @@ class ObservationEnsemble(Ensemble):
 
     @classmethod
     def from_gaussian_draw(
-        cls, pst, cov=None, num_reals=100, by_groups=True, fill=False, factor="cholesky"
-    ):
+        cls, pst, cov=None, num_reals=100, by_groups=True, fill=False, factor="cholesky",
+    rng=None):
         """generate an `ObservationEnsemble` from a (multivariate) gaussian
         distribution
 
@@ -846,6 +850,7 @@ class ObservationEnsemble(Ensemble):
                 be "eigen", "svd", or "cholesky. The "cholesky" option is default and is faster.  But
                 for (nearly) singular cov matrices (such as those generated empirically
                 from ensembles), "svd" and/or "eigen" might be required.  Ignored for diagonal `cov`.
+            rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
 
         Returns:
             `ObservationEnsemble`: the realized `ObservationEnsemble` instance
@@ -877,6 +882,8 @@ class ObservationEnsemble(Ensemble):
             oe3 = pyemu.ObservationEnsemble.from_gaussian_draw(pst,cov=cov)
 
         """
+        if rng is None:
+            rng = pyemu.en.rng
         if cov is None:
             cov = pyemu.Cov.from_observation_data(pst)
         obs = pst.observation_data
@@ -904,6 +911,7 @@ class ObservationEnsemble(Ensemble):
             grouper=grouper,
             fill=fill,
             factor=factor,
+            rng=rng
         )
         if fill:
             df.loc[:, pst.zero_weight_obs_names] = pst.observation_data.loc[
@@ -912,7 +920,7 @@ class ObservationEnsemble(Ensemble):
         return cls(pst, df, istransformed=False)
 
 
-    def draw_new_ensemble(self,num_reals,include_noise=True,noise_reals=None):
+    def draw_new_ensemble(self,num_reals,include_noise=True,noise_reals=None, rng=None):
         """Draw a new (potentially larger) ObservationEnsemble instance using the realizations 
         in `self`.  
 
@@ -926,6 +934,7 @@ class ObservationEnsemble(Ensemble):
             noise_reals (ObservationEnsemble): other existing realizations (likely prior realizations)
                 that are used as noise realizations in place of IID noise that is used if `include_noise` 
                 is True and `noise_reals` is None.
+            rng (np.random.RandomState): random number generator if not using default from pyemu.en
         
         Returns
             ObservationEnsemble
@@ -937,7 +946,7 @@ class ObservationEnsemble(Ensemble):
 
         names = self.pst.nnz_obs_names
         return self._draw_new_ensemble(num_reals,names,include_noise=include_noise,
-                                       noise_reals=noise_reals)
+                                       noise_reals=noise_reals, rng=rng)
 
     @property
     def phi_vector(self):
@@ -1065,7 +1074,7 @@ class ParameterEnsemble(Ensemble):
 
     @classmethod
     def from_gaussian_draw(
-        cls, pst, cov=None, num_reals=100, by_groups=True, fill=True, factor="cholesky"
+        cls, pst, cov=None, num_reals=100, by_groups=True, fill=True, factor="cholesky", rng=None
     ):
         """generate a `ParameterEnsemble` from a (multivariate) (log) gaussian
         distribution
@@ -1089,6 +1098,7 @@ class ParameterEnsemble(Ensemble):
                 be "eigen", "svd", or "cholesky". The "cholesky" option is default and is faster.  But
                 for (nearly) singular cov matrices (such as those generated empirically
                 from ensembles), "svd" and/or "eigen" might be required.  Ignored for diagonal `cov`.
+            rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
 
         Returns:
             `ParameterEnsemble`: the parameter ensemble realized from the gaussian
@@ -1138,13 +1148,14 @@ class ParameterEnsemble(Ensemble):
             num_reals=num_reals,
             grouper=grouper,
             fill=fill,
-            factor=factor
+            factor=factor,
+            rng=rng
         )
         df.loc[:, li] = 10.0 ** df.loc[:, li]
         return cls(pst, df, istransformed=False)
 
     @classmethod
-    def from_triangular_draw(cls, pst, num_reals=100, fill=True):
+    def from_triangular_draw(cls, pst, num_reals=100, fill=True, rng=None):
         """generate a `ParameterEnsemble` from a (multivariate) (log) triangular distribution
 
         Args:
@@ -1152,6 +1163,7 @@ class ParameterEnsemble(Ensemble):
             num_reals (`int`, optional): number of realizations to generate.  Default is 100
             fill (`bool`): flag to fill in fixed and/or tied parameters with control file
                 values.  Default is True.
+            rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
 
         Returns:
             `ParameterEnsemble`: a parameter ensemble drawn from the multivariate (log) triangular
@@ -1212,7 +1224,7 @@ class ParameterEnsemble(Ensemble):
         return new_pe
 
     @classmethod
-    def from_uniform_draw(cls, pst, num_reals, fill=True):
+    def from_uniform_draw(cls, pst, num_reals, fill=True, rng=None):
         """generate a `ParameterEnsemble` from a (multivariate) (log) uniform
         distribution
 
@@ -1221,6 +1233,7 @@ class ParameterEnsemble(Ensemble):
             num_reals (`int`, optional): number of realizations to generate.  Default is 100
             fill (`bool`): flag to fill in fixed and/or tied parameters with control file
                 values.  Default is True.
+            rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
 
         Returns:
             `ParameterEnsemble`: a parameter ensemble drawn from the multivariate (log) uniform

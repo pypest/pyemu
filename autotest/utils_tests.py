@@ -1069,10 +1069,10 @@ def geostat_draws_test(tmp_path):
     df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
     gs = pyemu.geostats.read_struct_file(str_file)
-    pyemu.en.rng = pyemu.en.rng.default_rng(pyemu.en.SEED)
+    rng = np.random.RandomState(pyemu.en.SEED)
     pe = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
                                           sigma_range=4)
-    pyemu.en.rng = pyemu.en.rng.default_rng(pyemu.en.SEED)
+    rng = np.random.RandomState(pyemu.en.SEED)
     pe2 = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
                                           sigma_range=4)
     pe.to_csv(os.path.join(os.path.join("utils","geostat_pe.csv")))
@@ -2284,7 +2284,7 @@ def specsim_test():
 
     variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
     gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="log", nugget=nugget)
-    pyemu.en.rng = pyemu.en.rng.default_rng(1)
+    rng = np.random.RandomState(1)
 
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
     mean_value = 15.0
@@ -2302,13 +2302,13 @@ def specsim_test():
     assert np.abs(var - theo_var) < 0.1
     assert np.abs(mean - mean_value) < 0.1
 
-    pyemu.en.rng = pyemu.en.rng.default_rng(1)
+    rng = np.random.RandomState(1)
     variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
     gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=nugget)
 
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
     mean_value = 25.0
-    reals = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value)
+    reals = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value, rng=rng)
     assert reals.shape == (num_reals,nrow,ncol)
     var = np.var(reals,axis=0).mean()
     mean = reals.mean()
@@ -2336,18 +2336,18 @@ def aniso_invest():
     variograms = [pyemu.geostats.ExpVario(contribution=2.5,a=2500.0,anisotropy=10,bearing=90)]
     gs = pyemu.geostats.GeoStruct(variograms=variograms,transform="none",nugget=0.0)
 
-    pyemu.en.rng = pyemu.en.rng.default_rng(1)
+    rng = np.random.RandomState(1)
     num_reals = 100
     start = datetime.now()
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
     mean_value = 1.0
-    reals1 = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value)
+    reals1 = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value,rng=rng)
     print((datetime.now() - start).total_seconds())
 
     variograms = [pyemu.geostats.ExpVario(contribution=2.5, a=2000.0, anisotropy=10, bearing=0)]
     gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=0.0)
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
-    reals2 = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value)
+    reals2 = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value,rng=rng)
 
     import matplotlib.pyplot as plt
     fig,axes = plt.subplots(1,2,figsize=(6,3))
@@ -2709,10 +2709,10 @@ def ac_draw_test(tmp_path):
     pst.write(os.path.join(tmp_path, "test.pst"))
     print(pst.observation_data.distance)
 
-    pyemu.en.rng = pyemu.en.rng.default_rng(pyemu.en.SEED)
-    oe = pyemu.helpers.autocorrelated_draw(pst, struct_dict, num_reals=100, enforce_bounds=True)
-    pyemu.en.rng = pyemu.en.rng.default_rng(pyemu.en.SEED)
-    oe2 = pyemu.helpers.autocorrelated_draw(pst, struct_dict, num_reals=100, enforce_bounds=True)
+    rng = np.random.RandomState(pyemu.en.SEED)
+    oe = pyemu.helpers.autocorrelated_draw(pst, struct_dict, num_reals=100, enforce_bounds=True, rng=rng)
+    rng = np.random.RandomState(pyemu.en.SEED)
+    oe2 = pyemu.helpers.autocorrelated_draw(pst, struct_dict, num_reals=100, enforce_bounds=True, rng=rng)
     diff = oe - oe2
     print(diff.max())
     assert diff.max().max() == 0.0
@@ -2828,9 +2828,9 @@ def thresh_pars_test():
     gs = pyemu.geostats.GeoStruct(variograms=[pyemu.geostats.ExpVario(1.0,30.0)])
     ss = pyemu.geostats.SpecSim2d(np.ones(dim),np.ones(dim),gs)
     #seed = pyemu.en.rng.randint(100000)
-    pyemu.en.rng = pyemu.en.rng.default_rng(9371)
+    rng = np.random.RandomState(9371)
     #print("seed",seed)
-    arr = 10**(ss.draw_arrays()[0])
+    arr = 10**(ss.draw_arrays(rng=rng)[0])
     print(arr)
 
     inact_arr = np.ones_like(arr,dtype=int)

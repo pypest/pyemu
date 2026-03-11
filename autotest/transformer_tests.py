@@ -108,19 +108,19 @@ def test_row_wise_minmax_scaler():
 def test_normal_score_transformer():
     """Test the NormalScoreTransformer functionality"""
     # Create test data with various distributions
-    pyemu.en.rng = pyemu.en.rng.default_rng(42)
+    rng = np.random.RandomState(42)
     n = 200
     
     # Uniform data
-    uniform_data = pyemu.en.rng.uniform(0, 10, n)
+    uniform_data = rng.uniform(0, 10, n)
     
     # Log-normal data
-    lognormal_data = np.exp(pyemu.en.rng.normal(0, 1, n))
+    lognormal_data = np.exp(rng.normal(0, 1, n))
     
     # Bimodal data
     bimodal_data = np.concatenate([
-        pyemu.en.rng.normal(-3, 1, n//2),
-        pyemu.en.rng.normal(3, 1, n//2)
+        rng.normal(-3, 1, n//2),
+        rng.normal(3, 1, n//2)
     ])
     
     df = pd.DataFrame({
@@ -355,20 +355,20 @@ def kurtosis(x):
 def test_normal_score_with_external_data():
     """Test NormalScoreTransformer with external already-transformed data"""
     # Create training data with a specific distribution
-    pyemu.en.rng = pyemu.en.rng.default_rng(42)
+    rng = np.random.RandomState(42)
     n = 100
     training_data = pd.DataFrame({
-        'normal': pyemu.en.rng.normal(5, 2, n),
-        'lognormal': np.exp(pyemu.en.rng.normal(1, 0.5, n)),
-        'uniform': pyemu.en.rng.uniform(0, 10, n)
+        'normal': rng.normal(5, 2, n),
+        'lognormal': np.exp(rng.normal(1, 0.5, n)),
+        'uniform': rng.uniform(0, 10, n)
     })
     
     # Create "external" data that we'll pretend is already transformed
     # For this test, we'll generate values in the typical normal score range (-3 to 3)
     external_transformed = pd.DataFrame({
-        'normal': pyemu.en.rng.normal(0, 1, 1),  # Already in normal score space
-        'lognormal': pyemu.en.rng.normal(0, 1, 1),
-        'uniform': pyemu.en.rng.normal(0, 1, 1)
+        'normal': rng.normal(0, 1, 1),  # Already in normal score space
+        'lognormal': rng.normal(0, 1, 1),
+        'uniform': rng.normal(0, 1, 1)
     })
     
     # Initialize and fit transformer on training data

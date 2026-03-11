@@ -450,8 +450,8 @@ def test_autoencoder_basic():
     from pyemu.emulators.dsiae import AutoEncoder
 
     # Create simple synthetic data
-    pyemu.en.rng = pyemu.en.rng.default_rng(42)
-    X = pyemu.en.rng.standard_normal((50, 10,)).astype(np.float32)  # 50 samples, 10 features
+    rng = np.random.RandomState(42)
+    X = rng.standard_normal((50, 10,)).astype(np.float32)  # 50 samples, 10 features
 
     # Test initialization
     ae = AutoEncoder(input_dim=10, latent_dim=3, hidden_dims=(8, 4))
@@ -477,8 +477,8 @@ def test_autoencoder_pandas_input():
     from pyemu.emulators.dsiae import AutoEncoder
 
     # Create pandas DataFrame
-    pyemu.en.rng = pyemu.en.rng.default_rng(42)
-    data = pd.DataFrame(pyemu.en.rng.standard_normal((30, 8,)),
+    rng = np.random.RandomState(42)
+    data = pd.DataFrame(rng.standard_normal((30, 8,)),
                        columns=[f'feature_{i}' for i in range(8)],
                        index=[f'sample_{i}' for i in range(30)])
 
@@ -631,8 +631,8 @@ def test_autoencoder_basic():
     from pyemu.emulators.dsiae import AutoEncoder
 
     # Create simple synthetic data
-    pyemu.en.rng = pyemu.en.rng.default_rng(42)
-    X = pyemu.en.rng.standard_normal((50, 10,)).astype(np.float32)  # 50 samples, 10 features
+    rng = np.random.RandomState(42)
+    X = rng.standard_normal((50, 10,)).astype(np.float32)  # 50 samples, 10 features
 
     # Test initialization
     ae = AutoEncoder(input_dim=10, latent_dim=3, hidden_dims=(8, 4))
@@ -658,8 +658,8 @@ def test_autoencoder_pandas_input():
     from pyemu.emulators.dsiae import AutoEncoder
 
     # Create pandas DataFrame
-    pyemu.en.rng = pyemu.en.rng.default_rng(42)
-    data = pd.DataFrame(pyemu.en.rng.standard_normal((30, 8,)),
+    rng = np.random.RandomState(42)
+    data = pd.DataFrame(rng.standard_normal((30, 8,)),
                        columns=[f'feature_{i}' for i in range(8)],
                        index=[f'sample_{i}' for i in range(30)])
 
@@ -994,10 +994,10 @@ def test_lpfa_synth(tmp_path):
     t = np.linspace(0, 10, 50)
     data = []
     n_real = 30
-    pyemu.en.rng = pyemu.en.rng.default_rng(42)
+    rng = np.random.RandomState(42)
     for i in range(n_real):
-        phase = pyemu.en.rng.uniform(0, 2*np.pi)
-        amp = pyemu.en.rng.uniform(0.8, 1.2)
+        phase = rng.uniform(0, 2*np.pi)
+        amp = rng.uniform(0.8, 1.2)
         # Inputs (history)
         hist = amp * np.sin(t[:10] + phase)
         # Outputs (forecast)

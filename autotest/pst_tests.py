@@ -1374,8 +1374,8 @@ def parrep_test(tmp_path):
     import numpy as np
     # make some fake parnames and values
     parnames = ['p_{0:03}'.format(i) for i in range(20)]
-    pyemu.en.rng = pyemu.en.rng.default_rng(42)
-    parvals = pyemu.en.rng.random(20) + 5
+    rng = np.random.RandomState(42)
+    parvals = rng.random(20) + 5
     parvals[0] = 0.001
     bd = os.getcwd()
     os.chdir(tmp_path)
@@ -1386,8 +1386,8 @@ def parrep_test(tmp_path):
             [ofp.write('{0:10s} {1:12.6f} 1.00 0.0\n'.format(i,j)) for i,j in zip(parnames,parvals)]
 
         # make a fake ensemble parameter file
-        pyemu.en.rng = pyemu.en.rng.default_rng(99)
-        parens = pd.DataFrame(np.tile(parvals,(5,1))+pyemu.en.rng.standard_normal((5,20,))*.5, columns=parnames)
+        rng = np.random.RandomState(99)
+        parens = pd.DataFrame(np.tile(parvals,(5,1))+rng.standard_normal((5,20,))*.5, columns=parnames)
         parens.index = list(range(4)) + ['base']
         parens.index.name = 'real_name'
         parens.loc['base'] = parvals[::-1]

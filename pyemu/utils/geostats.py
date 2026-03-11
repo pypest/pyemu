@@ -453,12 +453,13 @@ class SpecSim2d(object):
         self.num_pts = np.prod(xgrid.shape)
         self.sqrt_fftc = np.sqrt(fftc / self.num_pts)
 
-    def draw_arrays(self, num_reals=1, mean_value=1.0):
+    def draw_arrays(self, num_reals=1, mean_value=1.0, rng=None):
         """draw realizations
 
         Args:
             num_reals (`int`): number of realizations to generate
             mean_value (`float`): the mean value of the realizations
+            rng (`numpy.random.RandomState`): random number generator if not using default from pyemu.en
 
         Returns:
             `numpy.ndarray`: a 3-D array of realizations.  Shape
@@ -471,8 +472,12 @@ class SpecSim2d(object):
         reals = []
 
         for ireal in range(num_reals):
-            real = pyemu.en.rng.standard_normal(size=self.sqrt_fftc.shape)
-            imag = pyemu.en.rng.standard_normal(size=self.sqrt_fftc.shape)
+            if rng is None:
+                real = pyemu.en.rng.standard_normal(size=self.sqrt_fftc.shape)
+                imag = pyemu.en.rng.standard_normal(size=self.sqrt_fftc.shape)
+            else:
+                real = rng.standard_normal(size=self.sqrt_fftc.shape)
+                imag = rng.standard_normal(size=self.sqrt_fftc.shape)
             epsilon = real + 1j * imag
             rand = epsilon * self.sqrt_fftc
             real = np.real(np.fft.ifftn(rand)) * self.num_pts
@@ -488,7 +493,7 @@ class SpecSim2d(object):
         return reals
 
     def grid_par_ensemble_helper(
-        self, pst, gr_df, num_reals, sigma_range=6, logger=None
+        self, pst, gr_df, num_reals, sigma_range=6, logger=None, rng=None
     ):
         """wrapper around `SpecSim2d.draw()` designed to support `PstFromFlopy`
         and `PstFrom` grid-based parameters
@@ -501,6 +506,7 @@ class SpecSim2d(object):
             sigma_range (`float` (optional)): number of standard deviations
                 implied by parameter bounds in control file. Default is 6
             logger (`pyemu.Logger` (optional)): a logger instance for logging
+            rng (`numpy.random.RandomState` (optional)): random number generator if not using default from pyemu.en
 
         Returns:
             `pyemu.ParameterEnsemble`: an untransformed parameter ensemble of
@@ -581,7 +587,7 @@ class SpecSim2d(object):
                     )
                 )
             self.initialize()
-            reals = self.draw_arrays(num_reals=num_reals, mean_value=mean_arr)
+            reals = self.draw_arrays(num_reals=num_reals, mean_value=mean_arr, rng=rng)
             # put the pieces into the par en
             reals = reals[:, gp_df.i, gp_df.j].reshape(num_reals, gp_df.shape[0])
             real_arrs.append(reals)
@@ -691,10 +697,10 @@ class SpecSim2d(object):
         # read in the base values, Z(x), assume these are not log-transformed
         values_krige = np.loadtxt(base_values_file)
 
-        pyemu.en.rng = pyemu.en.rng.default_rng(int(seed))
+        rng = np.random.RandomState(int(seed))
 
         # draw random fields for num_reals
-        unconditioned = self.draw_arrays(num_reals=num_reals, mean_value=mean_value)
+        unconditioned = self.draw_arrays(num_reals=num_reals, mean_value=mean_value, rng=rng)
 
         # If geostruct is log transformed, then work with log10 of field
         if self.geostruct.transform == "log":
