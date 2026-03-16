@@ -3588,7 +3588,7 @@ def write_list_tpl(
 
         if input_filename is not None:
             df_in = df_tpl.copy()
-            df_in.loc[:, use_cols] = fill_value
+            df_in[use_cols] = fill_value
             df_in.to_csv(input_filename)
     df_par.loc[:, "tpl_filename"] = tpl_filename
     df_par.loc[:, "input_filename"] = input_filename
