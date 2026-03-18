@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+import pyemu
 import os
 import copy
 import struct
@@ -146,7 +147,7 @@ class Matrix(object):
 
     Example::
 
-        data = np.random.random((10,10))
+        data = pyemu.en.rng.random((10,10))
         row_names = ["row_{0}".format(i) for i in range(10)]
         col_names = ["col_{0}".format(j) for j in range(10)]
         mat = pyemu.Matrix(x=data,row_names=row_names,col_names=col_names)
@@ -2746,7 +2747,7 @@ class Matrix(object):
         """
         if random:
             return cls(
-                x=np.random.random((len(row_names), len(col_names))),
+                x=pyemu.en.rng.random((len(row_names), len(col_names))),
                 row_names=row_names,
                 col_names=col_names,
                 isdiagonal=isdiagonal,
@@ -2924,7 +2925,7 @@ class Cov(Matrix):
 
     Example::
 
-        data = np.random.random((10,10))
+        data = pyemu.en.rng.random((10,10))
         names = ["par_{0}".format(i) for i in range(10)]
         mat = pyemu.Cov(x=data,names=names)
         mat.to_binary("mat.jco")

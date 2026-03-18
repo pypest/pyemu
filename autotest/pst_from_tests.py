@@ -46,9 +46,9 @@ def _gen_dummy_obs_file(ws='.', sep=',', ext=None):
         else:
             t.append(text[c])
             c += 1
-    np.random.seed(314)
+    rng = np.random.RandomState(314)
     df = pd.DataFrame(
-        np.random.rand(15,2)*1000,
+        rng.random((15,2,))*1000,
         columns=['no', 'yes'],
         index=t
     )
@@ -981,7 +981,7 @@ def test_mf6_freyberg(tmp_path):
     pars = pst.parameter_data
     # set reach 1 hk to 100
     sfr_pars = pars.loc[pars.parnme.str.startswith('pname:sfr')].index
-    pars.loc[sfr_pars, 'parval1'] = np.random.random(len(sfr_pars)) * 10
+    pars.loc[sfr_pars, 'parval1'] = pyemu.en.rng.random(len(sfr_pars)) * 10
 
     sfr_pars = pars.loc[sfr_pars].copy()
     # print(sfr_pars)
@@ -3588,8 +3588,8 @@ def test_mf6_freyberg_pp_locs(tmp_path):
     ymx = m.modelgrid.yvertices.max()
 
     numpp = 20
-    xvals = np.random.uniform(xmn,xmx,numpp)
-    yvals = np.random.uniform(ymn, ymx, numpp)
+    xvals = pyemu.en.rng.uniform(xmn,xmx,numpp)
+    yvals = pyemu.en.rng.uniform(ymn, ymx, numpp)
     pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
     pp_locs.loc[:,"zone"] = 1
     pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
@@ -3723,13 +3723,13 @@ def test_usg_freyberg(tmp_path):
     zone_array_k2[:,:100] = 4
 
     #gen up some fake pp locs
-    np.random.seed(pyemu.en.SEED)
+    rng = np.random.RandomState(pyemu.en.SEED)
     num_pp = 20
     data = {"name":[],"x":[],"y":[],"zone":[]}
     visited = set()
     for i in range(num_pp):
         while True:
-            idx = np.random.randint(0,len(sr_dict_by_layer[1]))
+            idx = rng.randint(0,len(sr_dict_by_layer[1]))
             if idx  not in visited:
                 break
         x,y = sr_dict_by_layer[1][idx]
@@ -3804,8 +3804,8 @@ def test_usg_freyberg(tmp_path):
     par = pst.parameter_data
 
     gr_hk_pars = par.loc[par.parnme.str.contains("hk1_gr"),"parnme"]
-    pf.pst.parameter_data.loc[gr_hk_pars,"parubnd"] = np.random.random(gr_hk_pars.shape[0]) * 5
-    pf.pst.parameter_data.loc[gr_hk_pars, "parlbnd"] = np.random.random(gr_hk_pars.shape[0]) * 0.2
+    pf.pst.parameter_data.loc[gr_hk_pars,"parubnd"] = pyemu.en.rng.random(gr_hk_pars.shape[0]) * 5
+    pf.pst.parameter_data.loc[gr_hk_pars, "parlbnd"] = pyemu.en.rng.random(gr_hk_pars.shape[0]) * 0.2
     pe = pf.draw(num_reals=100)
     pe.enforce()
     pe.to_csv(os.path.join(pf.new_d,"prior.csv"))
@@ -3943,8 +3943,8 @@ def _add_big_obsffile(pf, profile=False, nchar=50000):
     else:
         pstfrom_add = True
         wd = pf.new_d
-    np.random.seed(314)
-    df = pd.DataFrame(np.random.random([10, nchar]),
+    rng = np.random.RandomState(314)
+    df = pd.DataFrame(pyemu.en.rng.random([10, nchar]),
                       columns=[hex(c) for c in range(nchar)])
     df.index.name = 'time'
     df.to_csv(os.path.join(wd, 'bigobseg.csv'))
@@ -4167,7 +4167,7 @@ def mf6_subdir_test(tmp_path):
     # pars = pst.parameter_data
     # # set reach 1 hk to 100
     # sfr_pars = pars.loc[pars.parnme.str.startswith('sfr')].index
-    # pars.loc[sfr_pars, 'parval1'] = np.random.random(len(sfr_pars)) * 10
+    # pars.loc[sfr_pars, 'parval1'] = pyemu.en.rng.random(len(sfr_pars)) * 10
     #
     # sfr_pars = pars.loc[sfr_pars].copy()
     # sfr_pars[['inst', 'usecol', '#rno']] = sfr_pars.parnme.apply(
@@ -4916,7 +4916,7 @@ def mf6_freyberg_thresh_test(tmp_path):
 
     org_par = par.copy()
     num_reals = 30
-    np.random.seed()
+    rng = np.random.RandomState()
     pe = pf.draw(num_reals, use_specsim=False)
     pe.enforce()
     # print(pe.shape)
@@ -4967,7 +4967,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     obs.loc[onames,"weight"] = 1.0
     obs.loc[snames,"weight"] = 1./(obs.loc[snames,"obsval"] * 0.2).values
     #obs.loc[onames,"obsval"] = truth.values
-    #obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.01,onames.shape[0])
+    #obs.loc[onames,"obsval"] *= pyemu.en.rng.normal(1.0,0.01,onames.shape[0])
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
@@ -5307,8 +5307,8 @@ def test_hyperpars(tmp_path):
     ymx = m.modelgrid.yvertices.max()
 
     numpp = 20
-    xvals = np.random.uniform(xmn, xmx, numpp)
-    yvals = np.random.uniform(ymn, ymx, numpp)
+    xvals = pyemu.en.rng.uniform(xmn, xmx, numpp)
+    yvals = pyemu.en.rng.uniform(ymn, ymx, numpp)
     pp_locs = pd.DataFrame({"x": xvals, "y": yvals})
     pp_locs.loc[:, "zone"] = 1
     pp_locs.loc[:, "name"] = ["pp_{0}".format(i) for i in range(numpp)]
@@ -5520,8 +5520,8 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     ymx = m.modelgrid.yvertices.max()
 
     numpp = 20
-    xvals = np.random.uniform(xmn,xmx,numpp)
-    yvals = np.random.uniform(ymn, ymx, numpp)
+    xvals = pyemu.en.rng.uniform(xmn,xmx,numpp)
+    yvals = pyemu.en.rng.uniform(ymn, ymx, numpp)
     pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
     pp_locs.loc[:,"zone"] = 1
     pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
@@ -5744,8 +5744,8 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     ymx = m.modelgrid.yvertices.max()
 
     numpp = 30
-    xvals = np.random.uniform(xmn,xmx,numpp)
-    yvals = np.random.uniform(ymn, ymx, numpp)
+    xvals = pyemu.en.rng.uniform(xmn,xmx,numpp)
+    yvals = pyemu.en.rng.uniform(ymn, ymx, numpp)
     pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
     pp_locs.loc[:,"zone"] = 1
     pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
@@ -5994,7 +5994,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     obs.loc[snames, "standard_deviation"] = (obs.loc[snames, "obsval"] * 0.2).values
 
     #obs.loc[onames,"obsval"] = truth.values
-    #obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.01,onames.shape[0])
+    #obs.loc[onames,"obsval"] *= pyemu.en.rng.normal(1.0,0.01,onames.shape[0])
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
@@ -6446,8 +6446,8 @@ def draw_consistency_test(tmp_path):
     gpar = par.loc[par.parnme.str.contains("fix"),:]
     assert gpar.shape[0] == gwf.dis.nrow.data * gwf.dis.ncol.data
     par.loc[gpar.parnme,"partrans"] = "fixed"
-    np.random.seed(111)
-    pe = pf.draw(num_reals=10, use_specsim=True) # draw parameters from the prior distribution
+    rng = np.random.RandomState(111)
+    pe = pf.draw(num_reals=10, use_specsim=True, rng=rng) # draw parameters from the prior distribution
     print("abs max:",np.nanmax(np.abs(pe.values)))
     # no bs values...
     assert np.nanmax(np.abs(pe.values)) < 100000
@@ -6472,7 +6472,7 @@ def _apply_speed_invest_pstfrom():
     Path(wd).mkdir(parents=True, exist_ok=True)
     template_ws = 'template'
     mshape = (500, 600)
-    dummyar = np.random.rand(*mshape)
+    dummyar = pyemu.en.rng.random((*mshape,))
     np.savetxt(Path(wd, 'dummy_array.txt'), dummyar)
     sr = pyemu.SpatialReference(delr=[100] * mshape[1], delc=[100] * mshape[0],
                                 xll=0, yll=0)
@@ -6537,7 +6537,7 @@ def apply_speed_invest_pp(useppu=True):
                                 prep_hyperpars=True))
     pf.build_pst()
     pars = pf.pst.parameter_data
-    pars['parval1'] = pars.parval1 * np.random.random(len(pars))
+    pars['parval1'] = pars.parval1 * pyemu.en.rng.random(len(pars))
     # bd = Path.cwd()
 
     # check_apply(pf)

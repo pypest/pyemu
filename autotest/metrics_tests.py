@@ -5,10 +5,10 @@ def res_and_ens_test():
     import pyemu
 
     # make some fake residuals
-    np.random.seed(42)
+    rng = np.random.RandomState(42)
     t = np.linspace(1,20, 200)
     obs = t/10 * np.sin(np.pi*t)
-    mod = obs+np.random.randn(200)*.5    
+    mod = obs+rng.standard_normal((200,))*.5    
     obsnames = ['ob_t_{:03d}'.format(i) for i in range(len(t))]
     obsgroups = ['start_grp' if i<80 else 'end_grp' for i in range(len(t))]
     res = pd.DataFrame({'name':obsnames,
@@ -18,11 +18,11 @@ def res_and_ens_test():
                         'residual':obs-mod,
                         'weight':np.ones(len(t))})
     res.set_index(res['name'], inplace=True)
-    np.random.seed(98)
-    res.weight =  [float(i>.5) for i in np.random.random(200)]
+    rng = np.random.RandomState(98)
+    res.weight =  [float(i>.5) for i in rng.random(200)]
 
     # and an ensemble version
-    ens = pd.DataFrame(np.tile(obs,(10,1))+np.random.randn(10,200)*.5, columns=obsnames)
+    ens = pd.DataFrame(np.tile(obs,(10,1))+rng.standard_normal((10,200,))*.5, columns=obsnames)
     ens.loc['base'] = mod
 
     # cook up a PEST file for obs and weights
