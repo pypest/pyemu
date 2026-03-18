@@ -76,7 +76,7 @@ def dsi_synth(tmp_d,transforms=None,tag="",use_runstor=True,**kwargs):
     # verify that phi reduced
     pst = pyemu.Pst(os.path.join(md, "dsi.pst"))
     phis = pst.ies.phimeas['mean'].values
-    assert phis[0] < phis[-1]
+    assert phis[-1] < phis[0]
     return
 
 def test_dsi_basic(tmp_path):
