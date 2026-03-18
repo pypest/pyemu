@@ -62,7 +62,8 @@ def dsi_synth(tmp_d,transforms=None,tag="",use_runstor=True,**kwargs):
     print("dsi_exe: ", ies_exe_path)
 
     if use_runstor:
-        pyemu.os_utils.run(f'{ies_exe_path} dsi.pst /e', cwd=td, verbose=True)
+        shutil.copytree(td, md)
+        pyemu.os_utils.run(f'{ies_exe_path} dsi.pst /e', cwd=md, verbose=True)
     else:
         pyemu.os_utils.start_workers(
                                     td,ies_exe_path,"dsi.pst", num_workers=num_workers,
@@ -72,6 +73,10 @@ def dsi_synth(tmp_d,transforms=None,tag="",use_runstor=True,**kwargs):
                                         "dsi": dsi, "pvals": pvals,
                                     }
                                     )
+    # verify that phi reduced
+    pst = pyemu.Pst(os.path.join(md, "dsi.pst"))
+    phis = pst.ies.phimeas['mean'].values
+    assert phis[0] < phis[-1]
     return
 
 def test_dsi_basic(tmp_path):
