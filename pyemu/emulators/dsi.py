@@ -544,6 +544,7 @@ class DSI(Emulator):
         Overrides base method to handle specific DSI arguments like use_runstor
         """
         self._use_runstor = use_runstor 
+        print(self._use_runstor)
         
         # Maintain backward compatibility with explicit observation_data argument
         if observation_data is not None:
@@ -559,7 +560,8 @@ class DSI(Emulator):
                                          ins_filename="dsi_sim_vals.csv.ins",
                                          output_filename="dsi_sim_vals.csv",
                                          emu_filename="dsi.pickle",
-                                         observation_data=self.observation_data,)
+                                         observation_data=self.observation_data,
+                                         use_runstor=self._use_runstor)
         
         with open(os.path.join(t_d,"dsi.unc"),'w') as f:
             f.write("START STANDARD_DEVIATION\n")

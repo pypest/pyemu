@@ -2034,10 +2034,12 @@ def _process_array_file(model_file, df):
             if pd.isna(mlt):
                 continue
             if str(mlt).endswith(".npy"):
-                mlt_data = np.atleast_2d(np.load(mlt))
+                mlt_data = np.load(mlt)
             else:
                 mlt_data = np.loadtxt(mlt, ndmin=2)
             if 1 in list(mlt_data.shape): # if 1d arrays
+                org_arr = org_arr.reshape(mlt_data.shape)
+            elif 1 in list(org_arr.shape): # if 1d arrays
                 org_arr = org_arr.reshape(mlt_data.shape)
             if org_arr.shape != mlt_data.shape:
                 raise Exception(
@@ -4866,7 +4868,7 @@ def dsi_runstore_forward_run(ws='.', pst_name="dsi"):
 
     # sort par_names to match latent dimension order
     # sort by the integer after the prefix
-    par_names.sort(key=lambda x: int(x.replace("dsi_par","")))
+    par_names.sort(key=lambda x: int(x.split("_")[-1]))
 
     pvals = df.loc[:,par_names]
     assert pvals.shape[1] == latent_dim, "number of parameters in runstor does not match DSI latent dimension"
