@@ -740,7 +740,7 @@ def csv_to_ins_test(tmp_path):
     cnames = ["col{0}".format(i) for i in range(10)]
     rnames = ["row{0}".format(i) for i in range(10)]
     df = pd.DataFrame(index=rnames,columns=cnames)
-    df.loc[:,:] = np.random.random(df.shape)
+    df.loc[:,:] = pyemu.en.rng.random(df.shape)
     df.to_csv(os.path.join(tmp_path, "temp.csv"))
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join(tmp_path, "temp.csv.ins"),
                                             only_cols=cnames[0],prefix="test")
@@ -1374,8 +1374,8 @@ def parrep_test(tmp_path):
     import numpy as np
     # make some fake parnames and values
     parnames = ['p_{0:03}'.format(i) for i in range(20)]
-    np.random.seed(42)
-    parvals = np.random.random(20) + 5
+    rng = np.random.RandomState(42)
+    parvals = rng.random(20) + 5
     parvals[0] = 0.001
     bd = os.getcwd()
     os.chdir(tmp_path)
@@ -1386,8 +1386,8 @@ def parrep_test(tmp_path):
             [ofp.write('{0:10s} {1:12.6f} 1.00 0.0\n'.format(i,j)) for i,j in zip(parnames,parvals)]
 
         # make a fake ensemble parameter file
-        np.random.seed(99)
-        parens = pd.DataFrame(np.tile(parvals,(5,1))+np.random.randn(5,20)*.5, columns=parnames)
+        rng = np.random.RandomState(99)
+        parens = pd.DataFrame(np.tile(parvals,(5,1))+rng.standard_normal((5,20,))*.5, columns=parnames)
         parens.index = list(range(4)) + ['base']
         parens.index.name = 'real_name'
         parens.loc['base'] = parvals[::-1]

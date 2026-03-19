@@ -15,7 +15,7 @@ def schur_test_nonpest():
     onames = ["o1","o2","o3","o4"]
     npar = len(pnames)
     nobs = len(onames)
-    j_arr = np.random.random((nobs,npar))
+    j_arr = pyemu.en.rng.random((nobs,npar))
     jco = Jco(x=j_arr,row_names=onames,col_names=pnames)
     parcov = Cov(x=np.eye(npar),names=pnames)
     obscov = Cov(x=np.eye(nobs),names=onames)
@@ -49,7 +49,7 @@ def schur_test_nonpest():
     print(s.get_added_obs_importance({"group1": ["o1", "o3"]},reset_zero_weight=0.0))
     print(s.get_removed_obs_importance({"group1":["o1","o3"]}))
 
-    forecasts = Matrix(x=np.random.random((1,npar)),row_names=[forecasts],col_names=pnames)
+    forecasts = Matrix(x=pyemu.en.rng.random((1,npar)),row_names=[forecasts],col_names=pnames)
 
     sc = Schur(jco=jco,forecasts=forecasts.T,parcov=parcov,obscov=obscov)
     ffile = os.path.join("temp","forecasts.jcb")
@@ -132,7 +132,7 @@ def errvar_test_nonpest():
     onames = ["o1","o2","o3","o4"]
     npar = len(pnames)
     nobs = len(onames)
-    j_arr = np.random.random((nobs,npar))
+    j_arr = pyemu.en.rng.random((nobs,npar))
     jco = Matrix(x=j_arr,row_names=onames,col_names=pnames)
     parcov = Cov(x=np.eye(npar),names=pnames)
     obscov = Cov(x=np.eye(nobs),names=onames)
@@ -325,7 +325,7 @@ def inf2():
     onames = inpst.obs_names
     npar = inpst.npar
     nobs = inpst.nobs
-    j_arr = np.random.random((nobs,npar))
+    j_arr = pyemu.en.rng.random((nobs,npar))
     parcov = mhand.Cov(x=np.eye(npar),names=pnames)
     obscov = mhand.Cov(x=np.eye(nobs),names=onames)
     jco = mhand.Jco.from_binary(inpst.filename.replace(".pst",".jcb"))

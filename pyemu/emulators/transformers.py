@@ -2,6 +2,7 @@
 Transformer classes for data transformations in emulators.
 """
 from __future__ import print_function, division
+import pyemu
 import numpy as np
 import pandas as pd
 import importlib.util
@@ -617,7 +618,7 @@ class NormalScoreTransformer(BaseTransformer):
 
         while nsamp < self.max_samples:
             nsamp += 1
-            work1 = np.random.normal(size=nreal)
+            work1 = pyemu.en.rng.normal(size=nreal)
             work1.sort()
 
             if nsamp > 1:

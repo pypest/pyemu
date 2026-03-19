@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+import pyemu
 import os
 import copy
 import shutil
@@ -341,7 +342,7 @@ class EnDS(object):
             rep_results = []
             print("-->testing ",nreals)
             for rep in range(nreps):
-                rreals = np.random.choice(real_idx,nreals,False)
+                rreals = pyemu.en.rng.choice(real_idx,nreals,False)
                 sim_ensemble = self.sim_ensemble.iloc[rreals,:].copy()
                 _,dfstd,_ = self.get_posterior_prediction_moments(obslist_dict=obslist_dict,
                                                                  sim_ensemble=sim_ensemble,

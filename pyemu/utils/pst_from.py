@@ -656,7 +656,7 @@ class PstFrom(object):
         self.logger.log("building prior covariance matrix")
         return cov
 
-    def draw(self, num_reals=100, sigma_range=6, use_specsim=False, scale_offset=True):
+    def draw(self, num_reals=100, sigma_range=6, use_specsim=False, scale_offset=True, rng=None):
         """Draw a parameter ensemble from the distribution implied by the initial parameter values in the
         control file and the prior parameter covariance matrix.
 
@@ -669,6 +669,7 @@ class PstFrom(object):
             scale_offset (`bool`): flag to apply scale and offset to parameter bounds before calculating prior variance.
                 Dfault is True.  If you are using non-default scale and/or offset and you get an exception during
                 draw, try changing this value to False.
+            rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
 
         Returns:
             `pyemu.ParameterEnsemble`: a prior parameter ensemble
@@ -700,7 +701,7 @@ class PstFrom(object):
         pe = pyemu.helpers.draw_by_group(self.pst, num_reals=num_reals, sigma_range=sigma_range,
                                          use_specsim=use_specsim, scale_offset=scale_offset, struct_dict=struct_dict,
                                          delr=delr, delc=delc,
-                                         logger=self.logger)
+                                         logger=self.logger, rng=rng)
         return pe
 
     def build_pst(self, filename=None, update=False, version=1):

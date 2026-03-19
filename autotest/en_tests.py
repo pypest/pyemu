@@ -665,7 +665,7 @@ def binary_test(tmp_path):
     obs_names = ["o{0}".format(i) for i in range(nobs)]
     pst = pyemu.Pst.from_par_obs_names(par_names,obs_names)
     # array to write (mimicing ensemble)
-    arr = np.random.random((nreal,npar))
+    arr = pyemu.en.rng.random((nreal,npar))
     df = pd.DataFrame(data=arr,columns=par_names,index=[str(i) for i in range(nreal)])
     pe = pyemu.ParameterEnsemble(pst=pst, df=df)
 
@@ -695,7 +695,7 @@ def binary_test(tmp_path):
     assert d.max().max() < 1.0e-10
 
     # big ensemble should default to dense .bin write
-    pe3 = pd.DataFrame(np.random.rand(10, int(2e6)))
+    pe3 = pd.DataFrame(pyemu.en.rng.random((10, int(2e6,))))
     pe3.columns = "parameter_number_" + pe3.columns.astype(str)
     pe3 = pe3.rename(index={9:'base'})
     pst = pyemu.Pst.from_par_obs_names(pe3.columns, obs_names)
