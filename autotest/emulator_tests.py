@@ -1838,6 +1838,241 @@ class TestBaseValidateTransforms:
         ])
 
 
+# ---------------------------------------------------------------------------
+# helpers.py emulator-function tests
+# ---------------------------------------------------------------------------
+
+class TestDsiForwardRun:
+    """Tests for pyemu.utils.helpers.dsi_forward_run"""
+
+    def _fitted_dsi(self):
+        data, obsdata = _synth_data()
+        dsi = DSI(data=data, pst=obsdata)
+        dsi.fit()
+        return dsi
+
+    def test_basic_series_input(self):
+        from pyemu.utils.helpers import dsi_forward_run
+        dsi = self._fitted_dsi()
+        pvals = pd.Series(np.zeros(dsi.s.shape[0]),
+                          index=[f"dsi_par_{i}" for i in range(dsi.s.shape[0])])
+        result = dsi_forward_run(pvals, dsi)
+        assert isinstance(result, (pd.Series, pd.DataFrame))
+        assert result.shape[0] > 0
+
+    def test_dataframe_input_extracts_parval1(self):
+        from pyemu.utils.helpers import dsi_forward_run
+        dsi = self._fitted_dsi()
+        n = dsi.s.shape[0]
+        pvals = pd.DataFrame({"parval1": np.zeros(n)},
+                             index=[f"dsi_par_{i}" for i in range(n)])
+        result = dsi_forward_run(pvals, dsi)
+        assert result.shape[0] > 0
+
+    def test_write_csv(self, tmp_path):
+        from pyemu.utils.helpers import dsi_forward_run
+        dsi = self._fitted_dsi()
+        pvals = pd.Series(np.zeros(dsi.s.shape[0]),
+                          index=[f"dsi_par_{i}" for i in range(dsi.s.shape[0])])
+        orig_dir = os.getcwd()
+        os.chdir(tmp_path)
+        try:
+            result = dsi_forward_run(pvals, dsi, write_csv=True)
+            assert os.path.exists("dsi_sim_vals.csv")
+        finally:
+            os.chdir(orig_dir)
+
+    def test_wrong_type_raises(self):
+        from pyemu.utils.helpers import dsi_forward_run
+        with pytest.raises(Exception, match="pyemu.emulators.DSI"):
+            dsi_forward_run(pd.Series([1.0]), "not_a_dsi")
+
+
+class TestDsiFileForwardRun:
+    """Tests for pyemu.utils.helpers.dsi_file_forward_run"""
+
+    def test_roundtrip(self, tmp_path):
+        from pyemu.utils.helpers import dsi_file_forward_run
+        data, obsdata = _synth_data()
+        dsi = DSI(data=data, pst=obsdata)
+        dsi.fit()
+
+        emu_file = str(tmp_path / "dsi.pickle")
+        dsi.save(emu_file)
+
+        # Build an input CSV with parval1 column matching expected DSI pars
+        n = dsi.s.shape[0]
+        inp = pd.DataFrame({"parval1": np.zeros(n)},
+                           index=[f"dsi_par_{i}" for i in range(n)])
+        input_file = str(tmp_path / "dsi_pars.csv")
+        inp.to_csv(input_file)
+
+        output_file = str(tmp_path / "dsi_sim_vals.csv")
+        dsi_file_forward_run(emu_file, input_file, output_file)
+
+        assert os.path.exists(output_file)
+        out = pd.read_csv(output_file, index_col=0)
+        assert out.shape[0] > 0
+
+    def test_missing_input_raises(self, tmp_path):
+        from pyemu.utils.helpers import dsi_file_forward_run
+        data, obsdata = _synth_data()
+        dsi = DSI(data=data, pst=obsdata)
+        dsi.fit()
+        emu_file = str(tmp_path / "dsi.pickle")
+        dsi.save(emu_file)
+
+        with pytest.raises(FileNotFoundError):
+            dsi_file_forward_run(emu_file, str(tmp_path / "no_such.csv"),
+                                 str(tmp_path / "out.csv"))
+
+
+class TestGprFileForwardRun:
+    """Tests for pyemu.utils.helpers.gpr_file_forward_run"""
+
+    @staticmethod
+    def _make_gpr():
+        np.random.seed(42)
+        x = np.linspace(0, 5, 30)
+        y = np.sin(x)
+        df = pd.DataFrame({"x": x, "y": y})
+        gpr = GPR(data=df, input_names=["x"], output_names=["y"], verbose=False)
+        gpr.fit()
+        return gpr
+
+    @pytest.fixture()
+    def gpr_artefacts(self, tmp_path):
+        """Create a fitted GPR, save it, and build an input CSV."""
+        gpr = self._make_gpr()
+
+        emu_file = str(tmp_path / "gpr_emulator.pkl")
+        gpr.save(emu_file)
+
+        # GPR input: one row with input columns; parval1 format
+        inp = pd.DataFrame({"parval1": [1.0]}, index=["x"])
+        input_file = str(tmp_path / "gpr_input.csv")
+        inp.to_csv(input_file)
+
+        output_file = str(tmp_path / "gpr_output.csv")
+        return emu_file, input_file, output_file
+
+    def test_roundtrip(self, gpr_artefacts):
+        from pyemu.utils.helpers import gpr_file_forward_run
+        emu_file, input_file, output_file = gpr_artefacts
+        gpr_file_forward_run(emu_file, input_file, output_file)
+        assert os.path.exists(output_file)
+        out = pd.read_csv(output_file)
+        assert out.shape[0] > 0
+
+    def test_missing_input_raises(self, tmp_path):
+        from pyemu.utils.helpers import gpr_file_forward_run
+        gpr = self._make_gpr()
+        emu_file = str(tmp_path / "gpr_emulator.pkl")
+        gpr.save(emu_file)
+
+        with pytest.raises(FileNotFoundError):
+            gpr_file_forward_run(emu_file, str(tmp_path / "missing.csv"),
+                                 str(tmp_path / "out.csv"))
+
+
+class TestRunStorForwardRuns:
+    """Tests for dsi_runstore_forward_run and gpr_runstore_forward_run
+    using a programmatically-created .rns file."""
+
+    @staticmethod
+    def _create_rns(filename, par_names, obs_names, par_vals, obs_vals):
+        """Create a minimal .rns binary file for one run."""
+        import struct
+        n_runs = par_vals.shape[0] if par_vals.ndim > 1 else 1
+        if par_vals.ndim == 1:
+            par_vals = par_vals.reshape(1, -1)
+            obs_vals = obs_vals.reshape(1, -1)
+
+        p_name_bytes = "\0".join(par_names).encode() + b"\0"
+        o_name_bytes = "\0".join(obs_names).encode() + b"\0"
+
+        info_txt_size = 1001
+        # run_size = 1 (status) + info_txt_size + 8 (info_val) + 8*npar + 8*nobs + 1 (buf_status)
+        run_size = 1 + info_txt_size + 8 + 8 * len(par_names) + 8 * len(obs_names) + 1
+
+        header = np.array(
+            [(n_runs, run_size, len(p_name_bytes), len(o_name_bytes))],
+            dtype=np.dtype([("n_runs", np.int64), ("run_size", np.int64),
+                            ("p_name_size", np.int64), ("o_name_size", np.int64)]),
+        )
+        with open(filename, "wb") as f:
+            header.tofile(f)
+            f.write(p_name_bytes)
+            f.write(o_name_bytes)
+            for i in range(n_runs):
+                np.array([1], dtype=np.int8).tofile(f)  # run_status=completed
+                f.write(struct.pack(f"{info_txt_size}s", b""))  # info_txt
+                np.array([0.0], dtype=np.float64).tofile(f)  # info_val
+                par_vals[i].astype(np.float64).tofile(f)
+                obs_vals[i].astype(np.float64).tofile(f)
+                np.array([0], dtype=np.int8).tofile(f)  # buf_status
+
+    def test_dsi_runstore_forward_run(self, tmp_path):
+        from pyemu.utils.helpers import dsi_runstore_forward_run
+
+        data, obsdata = _synth_data(n_real=50, n_obs=5)
+        dsi = DSI(data=data, pst=obsdata)
+        dsi.fit()
+
+        ws = str(tmp_path)
+        dsi.save(os.path.join(ws, "dsi.pickle"))
+
+        n_latent = dsi.s.shape[0]
+        par_names = [f"dsi_par_{i}" for i in range(n_latent)]
+        obs_names = data.columns.tolist()
+        n_runs = 3
+        par_vals = np.random.normal(size=(n_runs, n_latent))
+        obs_vals = np.zeros((n_runs, len(obs_names)))
+
+        rns_file = os.path.join(ws, "dsi.rns")
+        self._create_rns(rns_file, par_names, obs_names, par_vals, obs_vals)
+
+        dsi_runstore_forward_run(ws=ws, pst_name="dsi")
+
+        # Verify obs_vals were updated (no longer all zeros)
+        from pyemu.utils.helpers import RunStor
+        rs = RunStor(rns_file)
+        df = rs.get_data()
+        updated_obs = df.loc[:, obs_names].values
+        assert not np.allclose(updated_obs, 0.0), "obs values should have been updated"
+
+    def test_gpr_runstore_forward_run(self, tmp_path):
+        from pyemu.utils.helpers import gpr_runstore_forward_run
+
+        np.random.seed(42)
+        x = np.linspace(0, 5, 30)
+        y = np.sin(x)
+        df = pd.DataFrame({"x": x, "y": y})
+        gpr = GPR(data=df, input_names=["x"], output_names=["y"], verbose=False)
+        gpr.fit()
+
+        ws = str(tmp_path)
+        emu_file = "gpr_emulator.pkl"
+        gpr.save(os.path.join(ws, emu_file))
+
+        par_names = ["x"]
+        obs_names = ["y"]
+        n_runs = 3
+        par_vals = np.random.uniform(0, 5, size=(n_runs, 1))
+        obs_vals = np.zeros((n_runs, 1))
+
+        rns_file = os.path.join(ws, "gpr.rns")
+        self._create_rns(rns_file, par_names, obs_names, par_vals, obs_vals)
+
+        gpr_runstore_forward_run(ws=ws, emu_file=emu_file, pst_name="gpr")
+
+        from pyemu.utils.helpers import RunStor
+        rs = RunStor(rns_file)
+        rdf = rs.get_data()
+        updated_obs = rdf.loc[:, obs_names].values
+        assert not np.allclose(updated_obs, 0.0), "obs values should have been updated"
+
+
 if __name__ == "__main__":
     tmp_path = Path("temp")
     test_gpr_basic(tmp_path=tmp_path)
