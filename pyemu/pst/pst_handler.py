@@ -1,10 +1,12 @@
 from __future__ import print_function, division
 import os
 import glob
+import shlex
 import re
 import copy
 import shutil
 import time
+import string
 import warnings
 import numpy as np
 import pandas as pd
@@ -1174,7 +1176,7 @@ class Pst(object):
                         )
                     template_files, input_files = [], []
                     for i in range(self.control_data.ntplfle):
-                        raw = section_lines[i].strip().split()
+                        raw = shlex.split(section_lines[i].strip())
                         template_files.append(raw[0])
                         input_files.append(raw[1])
                     self.model_input_data = pd.DataFrame(
@@ -1184,7 +1186,7 @@ class Pst(object):
 
                     instruction_files, output_files = [], []
                     for j in range(self.control_data.ninsfle):
-                        raw = section_lines[i + j + 1].strip().split()
+                        raw = shlex.split(section_lines[i + j + 1].strip())
                         instruction_files.append(raw[0])
                         output_files.append(raw[1])
                     self.model_output_data = pd.DataFrame(
@@ -1208,7 +1210,7 @@ class Pst(object):
                     else:
                         template_files, input_files = [], []
                         for line in section_lines:
-                            raw = line.split()
+                            raw = shlex.split(line)
                             template_files.append(raw[0])
                             input_files.append(raw[1])
                         self.model_input_data = pd.DataFrame(
@@ -1232,7 +1234,7 @@ class Pst(object):
                     else:
                         instruction_files, output_files = [], []
                         for iline, line in enumerate(section_lines):
-                            raw = line.split()
+                            raw = shlex.split(line)
                             instruction_files.append(raw[0])
                             output_files.append(raw[1])
                         self.model_output_data = pd.DataFrame(
@@ -2025,11 +2027,21 @@ class Pst(object):
         for tplfle, infle in zip(
             self.model_input_data.pest_file, self.model_input_data.model_file
         ):
-            f_out.write("{0} {1}\n".format(tplfle, infle))
+            q = ' '
+            if True in [c in tplfle for c in string.whitespace] or\
+               True in [c in infle for c in string.whitespace]:
+                 q = "\"" 
+
+            f_out.write("{2}{0}{2} {2}{1}{2}\n".format(tplfle, infle, q))
         for insfle, outfle in zip(
             self.model_output_data.pest_file, self.model_output_data.model_file
         ):
-            f_out.write("{0} {1}\n".format(insfle, outfle))
+            q = ' '
+            if True in [c in insfle for c in string.whitespace] or\
+               True in [c in outfle for c in string.whitespace]:
+                 q = "\"" 
+
+            f_out.write("{2}{0}{2} {2}{1}{2}\n".format(insfle, outfle, q))
 
         if self.nprior > 0:
             name = "pi_data"
