@@ -2028,8 +2028,8 @@ class Pst(object):
             self.model_input_data.pest_file, self.model_input_data.model_file
         ):
             q = ' '
-            if True in [c in tplfle for c in string.whitespace] or\
-               True in [c in infle for c in string.whitespace]:
+            if True in [c in str(tplfle) for c in string.whitespace] or\
+               True in [c in str(infle) for c in string.whitespace]:
                  q = "\"" 
 
             f_out.write("{2}{0}{2} {2}{1}{2}\n".format(tplfle, infle, q))
@@ -2037,8 +2037,8 @@ class Pst(object):
             self.model_output_data.pest_file, self.model_output_data.model_file
         ):
             q = ' '
-            if True in [c in insfle for c in string.whitespace] or\
-               True in [c in outfle for c in string.whitespace]:
+            if True in [c in str(insfle) for c in string.whitespace] or\
+               True in [c in str(outfle) for c in string.whitespace]:
                  q = "\"" 
 
             f_out.write("{2}{0}{2} {2}{1}{2}\n".format(insfle, outfle, q))
