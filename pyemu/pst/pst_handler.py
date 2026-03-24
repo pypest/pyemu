@@ -2027,6 +2027,8 @@ class Pst(object):
         for tplfle, infle in zip(
             self.model_input_data.pest_file, self.model_input_data.model_file
         ):
+            tplfle = tplfle.replace("\'",'').replace("\"",'')
+            infle = infle.replace("\'", '').replace("\"", '')
             q = ' '
             if True in [c in str(tplfle) for c in string.whitespace] or\
                True in [c in str(infle) for c in string.whitespace]:
@@ -2036,6 +2038,8 @@ class Pst(object):
         for insfle, outfle in zip(
             self.model_output_data.pest_file, self.model_output_data.model_file
         ):
+            insfle = insfle.replace("\'", '').replace("\"", '')
+            outfle = outfle.replace("\'", '').replace("\"", '')
             q = ' '
             if True in [c in str(insfle) for c in string.whitespace] or\
                True in [c in str(outfle) for c in string.whitespace]:
