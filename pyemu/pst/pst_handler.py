@@ -1176,7 +1176,7 @@ class Pst(object):
                         )
                     template_files, input_files = [], []
                     for i in range(self.control_data.ntplfle):
-                        raw = shlex.split(section_lines[i].strip())
+                        raw = shlex.split(section_lines[i].strip(),posix=False)
                         template_files.append(raw[0])
                         input_files.append(raw[1])
                     self.model_input_data = pd.DataFrame(
@@ -1186,7 +1186,7 @@ class Pst(object):
 
                     instruction_files, output_files = [], []
                     for j in range(self.control_data.ninsfle):
-                        raw = shlex.split(section_lines[i + j + 1].strip())
+                        raw = shlex.split(section_lines[i + j + 1].strip(),posix=False)
                         instruction_files.append(raw[0])
                         output_files.append(raw[1])
                     self.model_output_data = pd.DataFrame(
@@ -1210,7 +1210,7 @@ class Pst(object):
                     else:
                         template_files, input_files = [], []
                         for line in section_lines:
-                            raw = shlex.split(line)
+                            raw = shlex.split(line,posix=False)
                             template_files.append(raw[0])
                             input_files.append(raw[1])
                         self.model_input_data = pd.DataFrame(
@@ -1234,7 +1234,7 @@ class Pst(object):
                     else:
                         instruction_files, output_files = [], []
                         for iline, line in enumerate(section_lines):
-                            raw = shlex.split(line)
+                            raw = shlex.split(line,posix=False)
                             instruction_files.append(raw[0])
                             output_files.append(raw[1])
                         self.model_output_data = pd.DataFrame(
