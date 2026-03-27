@@ -241,7 +241,7 @@ sw_s2_66 0.15 1 soilwat
 ""C:\RZWQM2\bin\RZWQM2_PROJPEST_RUN.BAT" ".\pest\pestargs.txt""
 * model input/output
 .\pest\par2par.tpl     .\pest\par2par.in
-.\pest\p2pcul1.tpl     .\pest\p2pcul1.in
+".\pest\p2 pcul1.tpl"     '.\   pest\p2pcul1.in'
 .\PEST\s1main.ins	".\NewScenario\COMP2EXP.OUT"
 .\PEST\s2main.ins	'.\New Scenario8\COMP2EXP.OUT'
 * prior information
