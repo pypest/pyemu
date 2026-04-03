@@ -2062,7 +2062,30 @@ def _process_array_file(model_file, df):
                         operator, mlt
                     )
                 )
-        if "upper_bound" in df.columns:
+        # load zone array if available to mask bounds clipping
+        zone_arr = None
+        if "zone_file" in df.columns:
+            zone_files = df_mf.zone_file.dropna().unique()
+            if len(zone_files) == 1:
+                zone_arr = np.loadtxt(zone_files[0], ndmin=2)
+            elif len(zone_files) > 1:
+                zone_arr = np.zeros_like(org_arr)
+                for zf in zone_files:
+                    za = np.loadtxt(zf, ndmin=2)
+                    zone_arr[za != 0] = 1
+
+        # apply upper bound - array file takes precedence over scalar
+        if "upper_bound_file" in df.columns and df_mf.upper_bound_file.dropna().shape[0] > 0:
+            ub_files = df_mf.upper_bound_file.dropna().unique()
+            if len(ub_files) > 1:
+                raise Exception("different upper_bound_files for {0}".format(org_file))
+            ub_arr = np.loadtxt(ub_files[0], ndmin=2)
+            if zone_arr is not None:
+                mask = (org_arr > ub_arr) & (zone_arr != 0)
+            else:
+                mask = org_arr > ub_arr
+            org_arr[mask] = ub_arr[mask]
+        elif "upper_bound" in df.columns:
             ub_vals = df_mf.upper_bound.value_counts().dropna().to_dict()
             if len(ub_vals) == 0:
                 pass
@@ -2071,8 +2094,24 @@ def _process_array_file(model_file, df):
                 raise Exception("different upper bound values for {0}".format(org_file))
             else:
                 ub = float(list(ub_vals.keys())[0])
-                org_arr[org_arr > ub] = ub
-        if "lower_bound" in df.columns:
+                if zone_arr is not None:
+                    mask = (org_arr > ub) & (zone_arr != 0)
+                else:
+                    mask = org_arr > ub
+                org_arr[mask] = ub
+
+        # apply lower bound - array file takes precedence over scalar
+        if "lower_bound_file" in df.columns and df_mf.lower_bound_file.dropna().shape[0] > 0:
+            lb_files = df_mf.lower_bound_file.dropna().unique()
+            if len(lb_files) > 1:
+                raise Exception("different lower_bound_files for {0}".format(org_file))
+            lb_arr = np.loadtxt(lb_files[0], ndmin=2)
+            if zone_arr is not None:
+                mask = (org_arr < lb_arr) & (zone_arr != 0)
+            else:
+                mask = org_arr < lb_arr
+            org_arr[mask] = lb_arr[mask]
+        elif "lower_bound" in df.columns:
             lb_vals = df_mf.lower_bound.value_counts().dropna().to_dict()
             if len(lb_vals) == 0:
                 pass
@@ -2080,7 +2119,11 @@ def _process_array_file(model_file, df):
                 raise Exception("different lower bound values for {0}".format(org_file))
             else:
                 lb = float(list(lb_vals.keys())[0])
-                org_arr[org_arr < lb] = lb
+                if zone_arr is not None:
+                    mask = (org_arr < lb) & (zone_arr != 0)
+                else:
+                    mask = org_arr < lb
+                org_arr[mask] = lb
 
     try:
         fmt = df_mf.fmt.iloc[0]

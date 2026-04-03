@@ -3244,6 +3244,191 @@ class TestPstFrom():
         assert len(pst.template_files) == 3
 
 
+    def test_array_ult_bounds_ndarray(self):
+        """Test passing numpy arrays as ult_ubound/ult_lbound for array-type
+        parameters. Verify bound files are written and mult2model_info.csv
+        has the correct columns."""
+        ub_arr = np.full((3, 3), 10.0)
+        ub_arr[0, 0] = 5.0  # spatially varying
+        lb_arr = np.full((3, 3), 0.01)
+        lb_arr[1, 1] = 0.5  # spatially varying
+
+        self.pf.add_parameters(
+            filenames='hk.dat', par_type='grid',
+            zone_array=self.zone_array,
+            par_name_base='hk_ab',
+            pargp='hk_ab',
+            ult_ubound=ub_arr,
+            ult_lbound=lb_arr,
+        )
+        pst = self.pf.build_pst()
+        df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+        # check that bound file columns exist
+        assert 'upper_bound_file' in df.columns
+        assert 'lower_bound_file' in df.columns
+        assert df.upper_bound_file.dropna().shape[0] > 0
+        assert df.lower_bound_file.dropna().shape[0] > 0
+        # scalar upper_bound/lower_bound should be NaN
+        assert pd.isna(df.upper_bound.iloc[0])
+        assert pd.isna(df.lower_bound.iloc[0])
+        # check that bound files exist on disk (paths are relative to dest_ws)
+        ub_file = self.dest_ws / df.upper_bound_file.dropna().iloc[0]
+        lb_file = self.dest_ws / df.lower_bound_file.dropna().iloc[0]
+        assert ub_file.exists()
+        assert lb_file.exists()
+        # verify contents
+        ub_loaded = np.loadtxt(ub_file)
+        lb_loaded = np.loadtxt(lb_file)
+        assert np.allclose(ub_loaded, ub_arr)
+        assert np.allclose(lb_loaded, lb_arr)
+
+    def test_array_ult_bounds_filename(self):
+        """Test passing filenames as ult_ubound/ult_lbound."""
+        ub_arr = np.full((3, 3), 10.0)
+        ub_arr[0, 0] = 5.0
+        lb_arr = np.full((3, 3), 0.01)
+        lb_arr[1, 1] = 0.5
+        # write bound arrays to files
+        ub_file = self.sim_ws / 'ub.dat'
+        lb_file = self.sim_ws / 'lb.dat'
+        np.savetxt(ub_file, ub_arr)
+        np.savetxt(lb_file, lb_arr)
+
+        self.pf.add_parameters(
+            filenames='hk.dat', par_type='grid',
+            zone_array=self.zone_array,
+            par_name_base='hk_fn',
+            pargp='hk_fn',
+            ult_ubound=str(ub_file),
+            ult_lbound=str(lb_file),
+        )
+        pst = self.pf.build_pst()
+        df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+        assert 'upper_bound_file' in df.columns
+        assert 'lower_bound_file' in df.columns
+        # verify the written files have correct content (paths relative to dest_ws)
+        ub_dest = self.dest_ws / df.upper_bound_file.dropna().iloc[0]
+        lb_dest = self.dest_ws / df.lower_bound_file.dropna().iloc[0]
+        assert np.allclose(np.loadtxt(ub_dest), ub_arr)
+        assert np.allclose(np.loadtxt(lb_dest), lb_arr)
+
+    def test_array_ult_bounds_forward_run(self):
+        """Test that array-valued ult bounds are correctly applied during
+        apply_list_and_array_pars()."""
+        # upper bound: 2.0 everywhere except [0,0] which is 0.5
+        ub_arr = np.full((3, 3), 2.0)
+        ub_arr[0, 0] = 0.5
+        # lower bound: 0.1 everywhere
+        lb_arr = np.full((3, 3), 0.1)
+
+        self.pf.add_parameters(
+            filenames='hk.dat', par_type='grid',
+            zone_array=self.zone_array,
+            par_name_base='hk_fr',
+            pargp='hk_fr',
+            ult_ubound=ub_arr,
+            ult_lbound=lb_arr,
+        )
+        pst = self.pf.build_pst()
+
+        os.chdir(self.dest_ws)
+        df = pd.read_csv('mult2model_info.csv')
+        mult_file = Path(df.mlt_file.iloc[0])
+        model_file = Path(df.model_file.iloc[0])
+        # set multiplier to 3.0 (org_arr is ones, so result = 3.0)
+        mult_values = np.loadtxt(mult_file)
+        mult_values[:] = 3.0
+        np.savetxt(mult_file, mult_values)
+        model_file.unlink()
+
+        pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+        result = np.loadtxt(model_file)
+
+        # [0,0] should be clipped to 0.5 (ub), rest should be clipped to 2.0
+        # except [2,2] which is zone=0 so it should be 3.0 (unclipped)
+        assert result[0, 0] == 0.5, f"expected 0.5, got {result[0, 0]}"
+        assert result[1, 0] == 2.0, f"expected 2.0, got {result[1, 0]}"
+        assert result[2, 2] == 3.0, f"expected 3.0 (zone=0 unclipped), got {result[2, 2]}"
+        os.chdir(self.tmp_path)
+
+    def test_zone_aware_scalar_bounds(self):
+        """Test that scalar ult bounds respect zone_array (zone=0 cells
+        are not clipped)."""
+        self.pf.add_parameters(
+            filenames='hk.dat', par_type='grid',
+            zone_array=self.zone_array,
+            par_name_base='hk_zs',
+            pargp='hk_zs',
+            ult_ubound=2.0,
+            ult_lbound=0.1,
+        )
+        pst = self.pf.build_pst()
+
+        os.chdir(self.dest_ws)
+        df = pd.read_csv('mult2model_info.csv')
+        mult_file = Path(df.mlt_file.iloc[0])
+        model_file = Path(df.model_file.iloc[0])
+        # set multiplier to 5.0 -> result = 5.0 (exceeds ub of 2.0)
+        mult_values = np.loadtxt(mult_file)
+        mult_values[:] = 5.0
+        np.savetxt(mult_file, mult_values)
+        model_file.unlink()
+
+        pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+        result = np.loadtxt(model_file)
+
+        # zone != 0 cells should be clipped to 2.0
+        assert result[0, 0] == 2.0
+        assert result[1, 1] == 2.0
+        # zone == 0 cell at [2,2] should NOT be clipped
+        assert result[2, 2] == 5.0, (
+            f"zone=0 cell should not be clipped, expected 5.0, got {result[2, 2]}"
+        )
+        os.chdir(self.tmp_path)
+
+    def test_scalar_bounds_backward_compat(self):
+        """Test that scalar bounds without zone_array clip all cells
+        (backward compatible behavior)."""
+        self.pf.add_parameters(
+            filenames='hk.dat', par_type='grid',
+            par_name_base='hk_bc',
+            pargp='hk_bc',
+            ult_ubound=2.0,
+            ult_lbound=0.1,
+        )
+        pst = self.pf.build_pst()
+
+        os.chdir(self.dest_ws)
+        df = pd.read_csv('mult2model_info.csv')
+        mult_file = Path(df.mlt_file.iloc[0])
+        model_file = Path(df.model_file.iloc[0])
+        mult_values = np.loadtxt(mult_file)
+        mult_values[:] = 5.0
+        np.savetxt(mult_file, mult_values)
+        model_file.unlink()
+
+        pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+        result = np.loadtxt(model_file)
+
+        # ALL cells should be clipped to 2.0 (no zone_array)
+        assert np.allclose(result, 2.0)
+        os.chdir(self.tmp_path)
+
+    def test_array_ult_bounds_rejected_for_list(self):
+        """Test that passing array bounds with list-type parameters raises
+        an error."""
+        ub_arr = np.full((3, 3), 10.0)
+        with pytest.raises(Exception):
+            self.pf.add_parameters(
+                filenames='wel.dat', par_type='grid',
+                index_cols=['#k', 'i', 'j'],
+                use_cols=['flux'],
+                par_name_base='wel_ab',
+                pargp='wel_ab',
+                ult_ubound=ub_arr,
+            )
+
+
 def test_get_filepath():
     from pyemu.utils.pst_from import get_filepath
 
