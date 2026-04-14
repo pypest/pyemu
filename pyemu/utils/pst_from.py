@@ -334,46 +334,57 @@ class PstFrom(object):
                     "".format(name, [f for f in g.fmt.unique()])
                 )
             # if ultimate parameter bounds have been set for only one instance
-            # of the model file we need to pass this through to all
-            ubound = g.apply(
-                lambda x: pd.Series(
-                    {
-                        k: v
-                        for n, c in enumerate(x.use_cols)
-                        for k, v in [["ubound{0}".format(c), x.upper_bound[n]]]
-                    }
-                )
-                if x.use_cols is not None
-                else pd.Series({k: v for k, v in [["ubound", x.upper_bound]]}),
-                axis=1,
+            # of the model file we need to pass this through to all.
+            # skip scalar aggregation if array bound files are present
+            has_ub_file = (
+                "upper_bound_file" in g.columns
+                and g.upper_bound_file.dropna().shape[0] > 0
             )
-            if ubound.nunique(0, False).gt(1).any():
-                ub_min = ubound.min().fillna(self.ult_ubound_fill).to_dict()
-                pr.loc[g.index, "upper_bound"] = g.use_cols.apply(
-                    lambda x: [ub_min["ubound{0}".format(c)] for c in x]
-                    if x is not None
-                    else ub_min["ubound"]
+            has_lb_file = (
+                "lower_bound_file" in g.columns
+                and g.lower_bound_file.dropna().shape[0] > 0
+            )
+            if not has_ub_file:
+                ubound = g.apply(
+                    lambda x: pd.Series(
+                        {
+                            k: v
+                            for n, c in enumerate(x.use_cols)
+                            for k, v in [["ubound{0}".format(c), x.upper_bound[n]]]
+                        }
+                    )
+                    if x.use_cols is not None
+                    else pd.Series({k: v for k, v in [["ubound", x.upper_bound]]}),
+                    axis=1,
                 )
+                if ubound.nunique(0, False).gt(1).any():
+                    ub_min = ubound.min().fillna(self.ult_ubound_fill).to_dict()
+                    pr.loc[g.index, "upper_bound"] = g.use_cols.apply(
+                        lambda x: [ub_min["ubound{0}".format(c)] for c in x]
+                        if x is not None
+                        else ub_min["ubound"]
+                    )
             # repeat for lower bounds
-            lbound = g.apply(
-                lambda x: pd.Series(
-                    {
-                        k: v
-                        for n, c in enumerate(x.use_cols)
-                        for k, v in [["lbound{0}".format(c), x.lower_bound[n]]]
-                    }
+            if not has_lb_file:
+                lbound = g.apply(
+                    lambda x: pd.Series(
+                        {
+                            k: v
+                            for n, c in enumerate(x.use_cols)
+                            for k, v in [["lbound{0}".format(c), x.lower_bound[n]]]
+                        }
+                    )
+                    if x.use_cols is not None
+                    else pd.Series({k: v for k, v in [["lbound", x.lower_bound]]}),
+                    axis=1,
                 )
-                if x.use_cols is not None
-                else pd.Series({k: v for k, v in [["lbound", x.lower_bound]]}),
-                axis=1,
-            )
-            if lbound.nunique(0, False).gt(1).any():
-                lb_max = lbound.max().fillna(self.ult_lbound_fill).to_dict()
-                pr.loc[g.index, "lower_bound"] = g.use_cols.apply(
-                    lambda x: [lb_max["lbound{0}".format(c)] for c in x]
-                    if x is not None
-                    else lb_max["lbound"]
-                )
+                if lbound.nunique(0, False).gt(1).any():
+                    lb_max = lbound.max().fillna(self.ult_lbound_fill).to_dict()
+                    pr.loc[g.index, "lower_bound"] = g.use_cols.apply(
+                        lambda x: [lb_max["lbound{0}".format(c)] for c in x]
+                        if x is not None
+                        else lb_max["lbound"]
+                    )
         pr["zero_based"] = self.zero_based   # todo -- chase this out if going to file specific zero based def
         return pr
 
@@ -2294,19 +2305,42 @@ class PstFrom(object):
         # this keeps denormal values for creeping into the model input arrays
         ubfill = None
         lbfill = None
+
+        # resolve ult_ubound: could be scalar, np.ndarray, or filename (str/Path)
+        ub_is_array = False
         if ult_ubound is None:
             # no ultimate bounds are passed default to class set bounds
             ult_ubound = self.ult_ubound_fill
             ubfill = "first"  # will fill for all use_cols
+        elif isinstance(ult_ubound, (str, Path)):
+            ult_ubound_arr = np.loadtxt(ult_ubound)
+            ub_is_array = True
+        elif isinstance(ult_ubound, np.ndarray):
+            ult_ubound_arr = ult_ubound.copy()
+            ub_is_array = True
+
+        # resolve ult_lbound: could be scalar, np.ndarray, or filename (str/Path)
+        lb_is_array = False
         if ult_lbound is None:
             ult_lbound = self.ult_lbound_fill
             lbfill = "first"
+        elif isinstance(ult_lbound, (str, Path)):
+            ult_lbound_arr = np.loadtxt(ult_lbound)
+            lb_is_array = True
+        elif isinstance(ult_lbound, np.ndarray):
+            ult_lbound_arr = ult_lbound.copy()
+            lb_is_array = True
 
         # pp_filename = None  # setup placeholder variables
         # fac_filename = None
         nxs = None
         # Process model parameter files to produce appropriate pest pars
         if index_cols is not None:  # Assume list/tabular type input files
+            if ub_is_array or lb_is_array:
+                self.logger.lraise(
+                    "array-valued ult_ubound/ult_lbound are only supported "
+                    "for array-type parameters (index_cols must be None)"
+                )
             # ensure inputs are provided for all required cols
             ncol = len(use_cols)
             ult_lbound = _check_var_len(ult_lbound, ncol, fill=ubfill)
@@ -2831,7 +2865,34 @@ class PstFrom(object):
                 )
             )
             np.savetxt(zone_filename, zone_array, fmt="%4d")
-            zone_filename = zone_filename.name
+            zone_filename = str(zone_filename.relative_to(self.new_d))
+
+        # serialize array-valued ultimate bounds to files (adjacent to zone file)
+        ub_bound_filename = None
+        if ub_is_array:
+            ub_bound_filename = Path(
+                str(tpl_filename).replace(".tpl", ".ub_bound")
+            )
+            self.logger.statement(
+                "saving upper bound array {0} for tpl file {1}".format(
+                    ub_bound_filename, tpl_filename
+                )
+            )
+            np.savetxt(ub_bound_filename, ult_ubound_arr, fmt="%15.6E")
+            ub_bound_filename = str(ub_bound_filename.relative_to(self.new_d))
+
+        lb_bound_filename = None
+        if lb_is_array:
+            lb_bound_filename = Path(
+                str(tpl_filename).replace(".tpl", ".lb_bound")
+            )
+            self.logger.statement(
+                "saving lower bound array {0} for tpl file {1}".format(
+                    lb_bound_filename, tpl_filename
+                )
+            )
+            np.savetxt(lb_bound_filename, ult_lbound_arr, fmt="%15.6E")
+            lb_bound_filename = str(lb_bound_filename.relative_to(self.new_d))
 
         relate_parfiles = []
         for mod_file, pdf in file_dict.items():
@@ -2843,8 +2904,8 @@ class PstFrom(object):
                 "fmt": fmt_dict[mod_file],
                 "sep": sep_dict[mod_file],
                 "head_rows": skip_dict[mod_file],
-                "upper_bound": ult_ubound,
-                "lower_bound": ult_lbound,
+                "upper_bound": np.nan if ub_is_array else ult_ubound,
+                "lower_bound": np.nan if lb_is_array else ult_lbound,
                 "operator": par_style,
             }
             if nxs:
@@ -2855,6 +2916,10 @@ class PstFrom(object):
             mult_dict.update(pp_mult_dict)
             if zone_filename is not None:
                 mult_dict["zone_file"] = zone_filename
+            if ub_bound_filename is not None:
+                mult_dict["upper_bound_file"] = ub_bound_filename
+            if lb_bound_filename is not None:
+                mult_dict["lower_bound_file"] = lb_bound_filename
             relate_parfiles.append(mult_dict)
         relate_pars_df = pd.DataFrame(relate_parfiles)
         relate_pars_df["apply_order"] = apply_order
