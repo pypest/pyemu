@@ -20,7 +20,7 @@ class DSI(Emulator):
         
     """
 
-    def __init__(self, 
+    def __init__(self,
                 pst=None,
                 data=None,
                 transforms=None,
@@ -28,6 +28,10 @@ class DSI(Emulator):
                 rowwise_groups=None,
                 rowwise_fit_groups=None,
                 feature_range=(-1, 1),
+                svd_solver="full",
+                n_components=None,
+                n_iter=4,
+                random_state=None,
                 verbose=False):
         """
         Initialize the DSI emulator.
@@ -56,14 +60,32 @@ class DSI(Emulator):
                 {'type': 'normal_score', 'quadratic_extrapolation': True}
             ]
             Default is None, which means no transformations will be applied.
-        energy_threshold : float, optional 
+        energy_threshold : float, optional
             The energy threshold for the SVD. Default is 1.0, no truncation.
+            Ignored when svd_solver='randomized' (truncation is fixed by n_components there).
         rowwise_groups : dict, optional
             Dictionary mapping groups to column lists for row-wise scaling.
         rowwise_fit_groups : dict, optional
             Dictionary mapping groups to column lists for fitting row-wise scalers.
         feature_range : tuple, optional
             Feature range for row-wise scaling. Default is (-1, 1).
+        svd_solver : {'full', 'randomized'}, optional
+            Which SVD driver to use in compute_projection_matrix:
+            - 'full' (default): np.linalg.svd via LAPACK gesdd; computes all
+              min(n_real, n_obs) singular triplets, then optionally energy-truncates.
+            - 'randomized': sklearn.utils.extmath.randomized_svd; computes only
+              the top n_components triplets directly. Much cheaper for tall/wide
+              ensembles when only a few components are needed. Requires
+              scikit-learn.
+        n_components : int, optional
+            Number of components to retain when svd_solver='randomized'. Required
+            in that case; ignored otherwise.
+        n_iter : int, optional
+            Power-iteration count passed to randomized_svd. Default 4 (sklearn
+            default). Higher values improve accuracy at the cost of more passes
+            over the data.
+        random_state : int or None, optional
+            Seed for randomized_svd's random projection. Default None.
         verbose : bool, optional
             If True, enable verbose logging. Default is False.
         """
@@ -86,6 +108,20 @@ class DSI(Emulator):
         #self.__org_data = data.copy() if data is not None else None
         self.data = data.copy() if data is not None else None
         self.energy_threshold = energy_threshold
+
+        # SVD solver configuration
+        assert svd_solver in ("full", "randomized"), \
+            f"svd_solver must be 'full' or 'randomized', got {svd_solver!r}"
+        if svd_solver == "randomized":
+            assert n_components is not None, \
+                "svd_solver='randomized' requires n_components to be set"
+            assert isinstance(n_components, (int, np.integer)) and n_components > 0, \
+                f"n_components must be a positive int, got {n_components!r}"
+        self.svd_solver = svd_solver
+        self.n_components = int(n_components) if n_components is not None else None
+        self.n_iter = n_iter
+        self.random_state = random_state
+
         assert isinstance(transforms, list) or transforms is None, "transforms must be a list of dicts or None"
         if transforms is not None:
             for t in transforms:
@@ -296,13 +332,37 @@ class DSI(Emulator):
         if isinstance(z, pd.DataFrame):
             z = z.values
 
-        self.logger.statement("undertaking SVD")
-        u, s, v = np.linalg.svd(z, full_matrices=False)
-        org_num_components = len(s)
-        us = np.dot(v.T, np.diag(s))
         if energy_threshold is None:
             energy_threshold = self.energy_threshold
-        if energy_threshold<1.0:
+
+        if self.svd_solver == "randomized":
+            try:
+                from sklearn.utils.extmath import randomized_svd
+            except ImportError as e:
+                raise ImportError(
+                    "svd_solver='randomized' requires scikit-learn; install scikit-learn or use svd_solver='full'"
+                ) from e
+            k = min(self.n_components, *z.shape)
+            self.logger.statement(
+                f"undertaking randomized SVD (n_components={k}, n_iter={self.n_iter})"
+            )
+            u, s, v = randomized_svd(
+                z, n_components=k, n_iter=self.n_iter, random_state=self.random_state
+            )
+            org_num_components = min(z.shape)
+            if energy_threshold < 1.0:
+                self.logger.warn(
+                    "energy_threshold is ignored with svd_solver='randomized'; "
+                    "truncation is fixed by n_components"
+                )
+        else:
+            self.logger.statement("undertaking SVD")
+            u, s, v = np.linalg.svd(z, full_matrices=False)
+            org_num_components = len(s)
+
+        us = np.dot(v.T, np.diag(s))
+
+        if self.svd_solver == "full" and energy_threshold < 1.0:
             self.logger.statement("applying energy truncation")
             # compute the cumulative energy of the singular values
             cumulative_energy = np.cumsum(s**2) / np.sum(s**2)
@@ -312,10 +372,8 @@ class DSI(Emulator):
             us = us[:, :num_components]
             s = s[:num_components]
             u = u[:, :num_components]
-            #print(f"Truncated from {len(s)} to {num_components} components while retaining {energy_threshold*100:.1f}% of variance")
             self.logger.statement(f"truncated from {org_num_components} to {num_components} components while retaining {energy_threshold*100:.1f}% of variance")
             if num_components<=1:
-                #print(f"Warning: only {num_components} component retained, you may need to check the data")
                 self.logger.warning(f"only {num_components} component retained, you may need to check the data")
         self.logger.statement("calculating us matrix")
         
