@@ -225,6 +225,50 @@ class ResultIesHandler(ResultHandler):
                                 format(len(rmr_files),",".join(rmr_files)))
             return self.get_or_load_rmr_file(rmr_files[0])
 
+        if tag.startswith("parlambdaen") or tag.startswith("obslambdaen"):
+            itr = self.parse_iter_from_tag(tag)
+            is_par = tag.startswith("parlambdaen")
+            suffix = ".par." if is_par else ".obs."
+            case_prefix = self.case.lower() + "."
+            parsed = []
+            for f in self.path2files:
+                fname = os.path.split(f)[1]
+                if not fname.startswith(case_prefix):
+                    continue
+                if ".lambda." not in fname or ".scale." not in fname:
+                    continue
+                if suffix not in fname:
+                    continue
+                rest = fname[len(case_prefix):]
+                try:
+                    left, right = rest.split(".lambda.", 1)
+                    itr_str, lam_str = left.split(".", 1)
+                    file_itr = int(itr_str)
+                    lam_val = float(lam_str)
+                    scale_str, _ = right.split(".scale.", 1)
+                    scale_val = float(scale_str)
+                except Exception as e:
+                    print("warning: could not parse lambda upgrade ensemble file '{0}': {1}".\
+                          format(fname, str(e)))
+                    continue
+                parsed.append((file_itr, lam_val, scale_val, f))
+            if itr is not None:
+                itr_val = int(itr)
+                parsed = [p for p in parsed if p[0] == itr_val]
+            if len(parsed) == 0:
+                raise Exception("ResultsIesHandler: no lambda upgrade ensemble files found for tag '{0}'".\
+                                format(tag))
+            parsed.sort()
+            dfs = []
+            keys = []
+            for file_itr, lam_val, scale_val, f in parsed:
+                df = self.get_or_load_ensemble_file(f)
+                dfs.append(df)
+                keys.append((file_itr, lam_val, scale_val))
+            df = pd.concat(dfs, keys=keys,
+                           names=["iteration", "lambda", "scale", "realization"])
+            return df
+
         if tag.startswith("paren") or tag.startswith("obsen"):
             itr = self.parse_iter_from_tag(tag)
             ttag = tag[:3]
