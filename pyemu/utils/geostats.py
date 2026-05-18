@@ -796,7 +796,11 @@ class OrdinaryKrigePPU(object):
 
         assert isinstance(auto, bool), "auto must be a boolean"
         self.auto = auto
-    
+
+        if self.auto:
+            print("Warning: OrdinaryKrigingPPU's Auto argument is set to true." \
+            "Variograms will be determined by pypestutils. " \
+            "Ignoring user-provided variogram and search radius parameters.")
 
         if not express:
             self.check_names()
@@ -947,6 +951,20 @@ class OrdinaryKrigePPU(object):
         search_radius = kwargs.get("search_dist", kwargs.get('search_radius',1.0e10))
 
         if self.auto:
+            num_interp_pts = plib.calc_kriging_factors_auto_2d(
+                self.point_data.x.values,  # source xs
+                self.point_data.y.values,  # source ys
+                self.point_data.zone.values,  # source zones
+                x.ravel(), # target xs
+                y.ravel(), # target ys
+                zone_array.ravel().astype(int), # target zones
+                krigtype,
+                aniso,
+                bearing,
+                fac_fname,
+                factorfiletype
+            )
+        else:
             num_interp_pts = plib.calc_kriging_factors_2d(
                 self.point_data.x.values,  # source xs
                 self.point_data.y.values,  # source ys
@@ -962,19 +980,6 @@ class OrdinaryKrigePPU(object):
                 search_radius,
                 maxpts_interp,
                 minpts_interp,
-                fac_fname,
-                factorfiletype
-            )
-        else:
-            num_interp_pts = plib.calc_kriging_factors_auto_2d(
-                self.point_data.x.values,  # source xs
-                self.point_data.y.values,  # source ys
-                self.point_data.zone.values,  # source zones
-                x.ravel(), # target xs
-                y.ravel(), # target ys
-                zone_array.ravel().astype(int), # target zones
-                aniso,
-                bearing,
                 fac_fname,
                 factorfiletype
             )
