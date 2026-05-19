@@ -6745,10 +6745,76 @@ def apply_speed_invest_pp(useppu=True):
     os.chdir(bd)
 
 
+def test_xsec_draw_center(tmp_path):
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'xsec')
+    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+    # SETUP pest stuff...
+    nam_file = "10par_xsec.nam"
+    os_utils.run("{0} {1}".format(mf_exe_path,nam_file), cwd=tmp_model_ws)
+
+    os.chdir(tmp_path)
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    m = flopy.modflow.Modflow.load(nam_file,model_ws=tmp_model_ws,version="mfnwt")
+    sr = m.modelgrid
+    t_d = "template_xsec"
+    pf = pyemu.utils.PstFrom(tmp_model_ws,t_d,remove_existing=True,spatial_reference=sr)
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_style="direct",upper_bound=3,
+                      lower_bound=2,transform="none")
+    pf.add_parameters("hk_Layer_1.ref", par_type="grid", par_style="multiplier", upper_bound=10.0,
+                      lower_bound=0.1)
+
+    pf.build_pst()
+    par = pf.pst.parameter_data
+    par.loc[pf.pst.par_names[::2],"parval1"] = par.loc[pf.pst.par_names[::2],"parubnd"]
+
+    pe = pf.draw(num_reals=1000,center=True)
+    pe.enforce()
+    pe2 = pf.draw(num_reals=1000,center=False)
+    pe2.enforce()
+
+    d1 = pe.describe()
+    print(d1.columns)
+    print(d1["percent_at_near_lbound"])
+    print(d1["percent_at_near_ubound"])
+    assert np.all(d1["percent_at_near_lbound"].values < 5.5)
+    assert np.all(d1["percent_at_near_ubound"].values < 5.5)
+
+    d2 = pe2.describe()
+    print(d2["percent_at_near_lbound"])
+    print(d2["percent_at_near_ubound"])
+    
+    assert np.all(d2["percent_at_near_lbound"].values < 1.0)
+    assert np.all(d2.loc[pf.pst.par_names[::2],"percent_at_near_ubound"].values>44.5) 
+    assert np.all(d2.loc[pf.pst.par_names[1::2],"percent_at_near_ubound"].values<5.5) 
+
+    # import matplotlib.pyplot as plt
+    # fig,axes = plt.subplots(pf.pst.npar,1,figsize=(20,20))
+    # for ax,par_name in zip(axes,pf.pst.par_names):
+        
+    #     ax.hist(pe.loc[:,par_name].values,fc="m",alpha=0.5)
+    #     ax.hist(pe2.loc[:,par_name].values,fc="c",alpha=0.5)
+    #     ax.set_title(par_name)
+    # plt.tight_layout()
+    # plt.show()
+
+
+
+
+
 if __name__ == "__main__":
-    test_sr_dict("temp")
+    #test_sr_dict("temp")
     # draw_consistency_test('.')
-    #xsec_pars_as_obs_test(".")
+    test_xsec_draw_center(".")
     #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")

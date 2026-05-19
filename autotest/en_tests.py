@@ -937,6 +937,83 @@ def test_draw_new_oe(tmp_path, plot=False):
         plot_ens_cdf(pst, ens, names)
 
 
+def describe_test():
+    par_names = ["p_lb", "p_ub", "p_mid", "p_g2"]
+    pst = pyemu.Pst.from_par_obs_names(par_names, ["o1"])
+    par = pst.parameter_data
+    par.loc["p_lb", ["parlbnd", "parval1", "parubnd"]] = [0.0, 5.0, 10.0]
+    par.loc["p_ub", ["parlbnd", "parval1", "parubnd"]] = [0.0, 5.0, 10.0]
+    par.loc["p_mid", ["parlbnd", "parval1", "parubnd"]] = [0.0, 5.0, 10.0]
+    par.loc["p_g2", ["parlbnd", "parval1", "parubnd"]] = [1.0, 50.0, 100.0]
+    par.loc[["p_lb", "p_ub", "p_mid"], "pargp"] = "g1"
+    par.loc["p_g2", "pargp"] = "g2"
+
+    nreals = 10
+    arr = np.empty((nreals, len(par_names)))
+    arr[:, 0] = 0.0    # all at lower bound (within tol)
+    arr[:, 1] = 10.0   # all at upper bound
+    arr[:, 2] = 5.0    # all mid
+    arr[:, 3] = np.linspace(20.0, 80.0, nreals)  # no values near bounds
+    df = pd.DataFrame(arr, columns=par_names, index=np.arange(nreals))
+    pe = pyemu.ParameterEnsemble(pst=pst, df=df)
+
+    # per-parameter summary
+    s = pe.describe(tol=0.01)
+    assert list(s.index) == par_names
+    assert (s["count"] == nreals).all()
+    assert s.loc["p_lb", "num_at_near_lbound"] == nreals
+    assert s.loc["p_lb", "num_at_near_ubound"] == 0
+    assert s.loc["p_lb", "percent_at_near_lbound"] == 100.0
+    assert s.loc["p_ub", "num_at_near_ubound"] == nreals
+    assert s.loc["p_ub", "num_at_near_lbound"] == 0
+    assert s.loc["p_mid", "num_at_near_lbound"] == 0
+    assert s.loc["p_mid", "num_at_near_ubound"] == 0
+    assert s.loc["p_g2", "num_at_near_lbound"] == 0
+    assert s.loc["p_g2", "num_at_near_ubound"] == 0
+    # cv = std / abs(mean); constant non-zero-mean column has std=0
+    assert s.loc["p_mid", "cv"] == 0.0
+    np.testing.assert_allclose(s.loc["p_g2", "mean"], arr[:, 3].mean())
+    np.testing.assert_allclose(s.loc["p_g2", "std"], arr[:, 3].std(ddof=1))
+
+    # by-group summary: g1 has 3 pars x 10 reals = 30 values; 10 at lb, 10 at ub
+    g = pe.describe(tol=0.01, by_group=True)
+    assert set(g.index) == {"g1", "g2"}
+    assert g.loc["g1", "count"] == 3 * nreals
+    assert g.loc["g1", "num_at_near_lbound"] == nreals
+    assert g.loc["g1", "num_at_near_ubound"] == nreals
+    np.testing.assert_allclose(
+        g.loc["g1", "percent_at_near_lbound"], 100.0 * nreals / (3 * nreals)
+    )
+    assert g.loc["g2", "count"] == nreals
+    assert g.loc["g2", "num_at_near_lbound"] == 0
+    assert g.loc["g2", "num_at_near_ubound"] == 0
+
+    # works on a transformed ensemble too (bounds checked in untransformed space)
+    par.loc["p_lb", "partrans"] = "log"
+    par.loc["p_lb", ["parlbnd", "parval1", "parubnd"]] = [0.1, 1.0, 10.0]
+    df2 = df.copy()
+    df2.loc[:, "p_lb"] = 0.1  # at lower bound in untransformed space
+    pe2 = pyemu.ParameterEnsemble(pst=pst, df=df2)
+    pe2.transform()
+    s2 = pe2.describe(tol=0.01)
+    assert s2.loc["p_lb", "num_at_near_lbound"] == nreals
+    # transform state preserved
+    assert pe2.istransformed
+
+    # fixed/tied parameters excluded
+    par.loc["p_mid", "partrans"] = "fixed"
+    s3 = pe2.describe(tol=0.01)
+    assert "p_mid" not in s3.index
+
+    # tol < 0 raises
+    try:
+        pe.describe(tol=-0.1)
+    except Exception:
+        pass
+    else:
+        raise Exception("expected describe() to fail on negative tol")
+
+
 if __name__ == "__main__":
     import cProfile
     import pstats

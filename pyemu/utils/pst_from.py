@@ -667,7 +667,7 @@ class PstFrom(object):
         self.logger.log("building prior covariance matrix")
         return cov
 
-    def draw(self, num_reals=100, sigma_range=6, use_specsim=False, scale_offset=True, rng=None):
+    def draw(self, num_reals=100, sigma_range=6, use_specsim=False, scale_offset=True, rng=None, center=False):
         """Draw a parameter ensemble from the distribution implied by the initial parameter values in the
         control file and the prior parameter covariance matrix.
 
@@ -681,6 +681,8 @@ class PstFrom(object):
                 Dfault is True.  If you are using non-default scale and/or offset and you get an exception during
                 draw, try changing this value to False.
             rng (`numpy.random.RandomState`, optional): random number generator if not using default from pyemu.en
+            center (`bool`): flag to treat the middle point between the bounds are the mean instead of the initial values
+                in the control file.  Default is False
 
         Returns:
             `pyemu.ParameterEnsemble`: a prior parameter ensemble
@@ -695,6 +697,12 @@ class PstFrom(object):
         if self.pst.npar_adj == 0:
             self.logger.warn("no adjustable parameters, nothing to draw...")
             return
+        
+        if center:
+            self.pst.add_parbnd_center()
+            self.pst.parameter_data["parval1_org"] = self.pst.parameter_data.parval1.copy()
+            self.pst.parameter_data["parval1"] = self.pst.parameter_data.bnd_center
+        
         # precondition {geostruct:{group:df}} dict to {geostruct:[par_dfs]}
         struct_dict = self._pivot_par_struct_dict()
         delr = None
@@ -713,6 +721,9 @@ class PstFrom(object):
                                          use_specsim=use_specsim, scale_offset=scale_offset, struct_dict=struct_dict,
                                          delr=delr, delc=delc,
                                          logger=self.logger, rng=rng)
+        if center:
+            self.pst.parameter_data["parval1"] = self.pst.parameter_data.parval1_org
+
         return pe
 
     def build_pst(self, filename=None, update=False, version=1):
