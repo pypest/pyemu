@@ -4083,6 +4083,7 @@ class Pst(object):
                 temp[name] = dialate_factor
             dialate_factor = temp
             temp = None
+        par = self.parameter_data
         par['dialate_factor'] = [dialate_factor.get(name,1.0) for name in par.parnme.values]
         
         self.add_parbnd_center()
