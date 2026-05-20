@@ -4063,6 +4063,7 @@ class Pst(object):
         par["bnd_center_trans"] = par.parlbnd_trans + ((par.parubnd_trans - par.parlbnd_trans) / 2.0)
         par["bnd_center"] = par["bnd_center_trans"]
         par.loc[log_idx,"bnd_center"] = 10**(par.loc[log_idx,"bnd_center"])
+        self.parameter_data = par
         
 
     def dialate_par_bounds(self,dialate_factor,center=True):
