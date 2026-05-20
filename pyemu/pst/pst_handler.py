@@ -4096,11 +4096,11 @@ class Pst(object):
             par["center_point"] = par.parval1_trans.copy()
         
         par["parubnd_org"] = par.parubnd.copy()
-        par["ubdist"] = par.parubnd_trans - par.bnd_center
+        par["ubdist"] = par.parubnd_trans - par.bnd_center_trans
         par["parubnd"] = par.center_point + (par.ubdist * par.dialate_factor)
 
         par["parlbnd_org"] = par.parlbnd.copy()
-        par["lbdist"] = par.bnd_center - par.parlbnd_trans
+        par["lbdist"] = par.bnd_center_trans - par.parlbnd_trans
         par["parlbnd"] = par.center_point - (par.lbdist * par.dialate_factor)
         
         par.loc[log_idx,"parubnd"] = 10**par.loc[log_idx,"parubnd"]
