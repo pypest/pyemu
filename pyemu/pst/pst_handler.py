@@ -4083,10 +4083,11 @@ class Pst(object):
                 temp[name] = dialate_factor
             dialate_factor = temp
             temp = None
+
+        self.add_parbnd_center()
         par = self.parameter_data
         par['dialate_factor'] = [dialate_factor.get(name,1.0) for name in par.parnme.values]
         
-        self.add_parbnd_center()
         log_idx = par.partrans == "log"
         if center:
             par["center_point"] = par["bnd_center_trans"] 
