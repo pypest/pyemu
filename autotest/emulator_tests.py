@@ -3,7 +3,7 @@ import os
 import shutil
 import pytest
 import numpy as np
-import pandas as pd
+
 from pathlib import Path
 # import platform
 import pyemu
@@ -20,6 +20,10 @@ try:
     HAS_TENSORFLOW = True
 except ImportError:
     HAS_TENSORFLOW = False
+
+#import pandas after TF to avoid pyarrow hanging BS
+import pandas as pd
+
 
 def generate_synth_data(num_realizations=100, num_observations=10):
 
@@ -436,8 +440,8 @@ def test_dsiae_auto_latent_dim():
     assert dsiae.latent_dim > 0
     return
 
-#@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
-@pytest.mark.skip(reason="it is hanging in CI for some reason;passes locally")
+#@pytest.mark.skip(reason="it is hanging in CI for some reason;passes locally")
+@pytest.mark.skipif(not HAS_TENSORFLOW, reason="TensorFlow not available")
 def test_dsiae_with_ies(tmp_path):
 
     data, obsdata = generate_synth_data(num_realizations=100,num_observations=10)
@@ -2071,6 +2075,139 @@ class TestRunStorForwardRuns:
         rdf = rs.get_data()
         updated_obs = rdf.loc[:, obs_names].values
         assert not np.allclose(updated_obs, 0.0), "obs values should have been updated"
+
+
+# ---------------------------------------------------------------------------
+# PLS emulator tests (Phase 1)
+# ---------------------------------------------------------------------------
+
+
+def _synth_pls_data(n_real=80, n_par=15, n_obs=10, seed=42):
+    """Linear-from-pars synthetic data for PLS sanity tests."""
+    rng = np.random.RandomState(seed)
+    pars = pd.DataFrame(
+        rng.normal(size=(n_real, n_par)),
+        columns=[f"par{i}" for i in range(n_par)],
+    )
+    W = rng.normal(size=(n_par, n_obs)) * 0.3
+    obs = pars.values @ W + 0.05 * rng.normal(size=(n_real, n_obs))
+    obs = pd.DataFrame(obs, columns=[f"obs{i}" for i in range(n_obs)])
+    data = pd.concat([pars, obs], axis=1)
+    return data, list(pars.columns), list(obs.columns)
+
+
+def test_pls_basic():
+    """PLS with explicit n_components fits and predicts the right shape."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    pls = PLS(data=data, input_names=par_cols, output_names=obs_cols, n_components=3)
+    pls.fit()
+    assert pls.fitted
+    assert pls.n_components == 3
+
+    Y_hat = pls.predict(data.iloc[:5][par_cols])
+    assert Y_hat.shape == (5, len(obs_cols))
+    assert list(Y_hat.columns) == obs_cols
+
+    # Single-row input returns a Series (matches DSI/DSIAE convention)
+    y_one = pls.predict(data.iloc[0][par_cols])
+    assert isinstance(y_one, pd.Series)
+    assert len(y_one) == len(obs_cols)
+
+    # encode returns latent scores of width n_components
+    Z = pls.encode(data.iloc[:5][par_cols])
+    assert Z.shape == (5, 3)
+
+
+def test_pls_auto_components():
+    """n_components=None triggers k-fold CV selection within valid bounds."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    pls = PLS(data=data, input_names=par_cols, output_names=obs_cols,
+              n_components=None, cv_folds=3)
+    pls.fit()
+    assert pls.fitted
+    max_k = min(len(data) - 1, len(par_cols), len(obs_cols))
+    assert 1 <= pls.n_components <= max_k
+
+
+def test_pls_with_transforms():
+    """Transforms pipeline integrates with PLS the same way it does with DSIAE."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    transforms = [{"type": "normal_score"}]
+    pls = PLS(data=data, input_names=par_cols, output_names=obs_cols,
+              transforms=transforms, n_components=3)
+    pls.fit()
+    Y_hat = pls.predict(data.iloc[:3][par_cols])
+    assert Y_hat.shape == (3, len(obs_cols))
+
+
+def test_pls_high_d_warning():
+    """PLS warns when the input dim exceeds the high-d threshold and no reducer is given."""
+    from pyemu.emulators import PLS
+    from pyemu.emulators.pls import HIGH_D_WARN_THRESHOLD
+    rng = np.random.RandomState(0)
+    d = HIGH_D_WARN_THRESHOLD + 50
+    n_real = 30
+    pars = pd.DataFrame(
+        rng.normal(size=(n_real, d)),
+        columns=[f"par{i}" for i in range(d)],
+    )
+    obs = pd.DataFrame(
+        rng.normal(size=(n_real, 3)),
+        columns=[f"obs{i}" for i in range(3)],
+    )
+    data = pd.concat([pars, obs], axis=1)
+    pls = PLS(data=data, input_names=list(pars.columns),
+              output_names=list(obs.columns), n_components=2)
+    with pytest.warns(UserWarning, match="input dimension"):
+        pls.fit()
+
+
+def test_pls_prepare_pestpp(tmp_path):
+    """A fitted PLS round-trips through prepare_pestpp + pickle and predicts after reload."""
+    from pyemu.emulators import PLS
+
+    data, par_cols, obs_cols = _synth_pls_data()
+    obsdata = pd.DataFrame(
+        {
+            "obsnme": obs_cols,
+            "obsval": data[obs_cols].mean().values,
+            "weight": 1.0,
+            "obgnme": "obgnme",
+        },
+        index=obs_cols,
+    )
+
+    pls = PLS(data=data, input_names=par_cols, output_names=obs_cols, n_components=3)
+    pls.fit()
+
+    td = Path(tmp_path) / "template_pls"
+    pst_obj = pls.prepare_pestpp(td, observation_data=obsdata)
+
+    # Inherited prepare_pestpp pickles the emulator and lays down the I/O files
+    # for the PEST++ forward-run script.
+    assert (td / "emulator.pkl").exists()
+    assert (td / "emulator_input.csv.tpl").exists()
+    assert (td / "emulator_output.csv.ins").exists()
+    assert (td / "emulator_output.csv").exists()
+    assert (td / "forward_run.py").exists()
+
+    # Reload and predict — verifies the pickle is self-contained.
+    pls_loaded = PLS.load(td / "emulator.pkl")
+    y_hat = pls_loaded.predict(data.iloc[:3][par_cols])
+    assert y_hat.shape == (3, len(obs_cols))
+
+    # The base class validated forward_run.py by running it once; the output
+    # file should now contain the obsnme,simval table.
+    out_df = pd.read_csv(td / "emulator_output.csv", index_col=0)
+    assert "simval" in out_df.columns
+    assert set(out_df.index) == set(obs_cols)
+
+    # And the generated Pst object should have the right parameter and obs names.
+    assert sorted(pst_obj.par_names) == sorted(par_cols)
+    assert sorted(pst_obj.obs_names) == sorted(obs_cols)
 
 
 if __name__ == "__main__":
