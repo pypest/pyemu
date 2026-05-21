@@ -203,9 +203,13 @@ class PLS(Emulator):
         from sklearn.cross_decomposition import PLSRegression
         from sklearn.model_selection import KFold
 
-        max_k = max(1, min(X.shape[0] - 1, X.shape[1], Y.shape[1]))
         kf = KFold(n_splits=min(self.cv_folds, X.shape[0]),
                    shuffle=True, random_state=0)
+        # sklearn requires n_components <= min(n_samples, n_features) for each
+        # PLSRegression fit, so cap by the smallest *train* fold, not the full
+        # X — otherwise k > min_train_size raises mid-CV.
+        min_train = min(len(train_idx) for train_idx, _ in kf.split(X))
+        max_k = max(1, min(min_train, X.shape[1], Y.shape[1]))
 
         best_k, best_rmse = 1, float("inf")
         for k in range(1, max_k + 1):

@@ -17,7 +17,7 @@ class ResultHandler(object):
         """
         self.m_d = m_d
         self.case = case
-        self.path2files = [os.path.join(self.m_d,f.lower()) for f in os.listdir(self.m_d)]
+        self.path2files = [os.path.join(self.m_d,f) for f in os.listdir(self.m_d)]
         self.results_loaded = {}
         self.failed2load_files = []
         #todo: check that m_ds are infact valid master dirs
@@ -174,7 +174,7 @@ class ResultIesHandler(ResultHandler):
         case_tag = self.case + tag
         for f in self.path2files:
             if tag in f.lower() and\
-                os.path.split(f)[1].lower().startswith(self.case+".") and \
+                os.path.split(f)[1].startswith(self.case+".") and \
                 len(os.path.split(f)[1].split(".")) == 4:
                 try:
                     itr = int(os.path.split(f)[1].split(".")[1])
@@ -299,7 +299,7 @@ class ResultIesHandler(ResultHandler):
                 files = self.get_files(file_tag)
                 if len(files) != 1:
                     #todo something here...
-                    print(files)
+                    print(itr,ttag,files)
                     raise Exception()
 
                 df = self.get_or_load_ensemble_file(files[0])
@@ -432,7 +432,7 @@ class ResultMouHandler(ResultHandler):
             if "pop" in tag and "chance" not in tag and "chance" in f:
                 continue
             if tag in f.lower() and\
-                os.path.split(f)[1].lower().startswith(self.case+"."):
+                os.path.split(f)[1].startswith(self.case+"."):
                 try:
                     itr = int(os.path.split(f)[1].split(".")[1])
                 except Exception as e:
