@@ -4881,6 +4881,65 @@ def list_float_int_index_test(tmp_path):
     assert np.isclose(diff,bparval1).all(), diff.loc[~np.isclose(diff,bparval1)]
 
 
+def test_vertex_grid_ppu(tmp_path):
+    """Small unstructured-MF6 + pypestutils + pilot points smoke test.
+
+    Mirrors :func:`test_vertex_grid` but turns on ``try_use_ppu=True`` so the
+    pypestutils pilot-point apply path is exercised on a DISV (quadtree) grid.
+    Trains on one npf_k layer to keep it fast and asserts pestpp-check phi=0.
+    """
+    try:
+        import pypestutils  # noqa: F401
+    except ImportError:
+        import pytest
+        pytest.skip("pypestutils not available")
+
+    pf, sim = setup_freyberg_mf6(tmp_path, "freyberg_quadtree")
+    m = sim.get_model()
+    mg = m.modelgrid
+    assert mg.grid_type == "vertex"
+
+    template_ws = pf.new_d
+
+    v_space = pyemu.geostats.ExpVario(contribution=1.0,
+                                      a=1000, anisotropy=1.0, bearing=0.0)
+    grid_gs = pyemu.geostats.GeoStruct(variograms=v_space, transform="log")
+
+    tag = "npf_k_layer1"
+    files = [f for f in os.listdir(template_ws)
+             if tag in f.lower() and f.endswith(".txt")]
+    assert files, "no npf_k_layer1 file found in {0}".format(template_ws)
+
+    # tidy the array file then run mf6 to confirm baseline.
+    for f in files:
+        fp = os.path.join(template_ws, f)
+        with open(fp, "r") as fh:
+            a = [float(x) for x in fh.read().split()]
+        np.savetxt(fp, a)
+    pyemu.os_utils.run(mf6_exe_path, cwd=template_ws)
+
+    ib = m.dis.idomain.get_data()
+    f = files[0]
+    pf.add_parameters(f,
+                      zone_array=ib[0],
+                      par_type="pilotpoints",
+                      geostruct=grid_gs,
+                      par_name_base=f.split(".")[1].replace("_", "") + "pp",
+                      pargp=f.split(".")[1].replace("_", "") + "pp",
+                      lower_bound=0.2, upper_bound=5.0,
+                      ult_ubound=100, ult_lbound=0.01,
+                      pp_options={"try_use_ppu": True,
+                                  "pp_space": 500})
+    pf.add_observations(f)
+    pf.mod_sys_cmds.append(mf6_exe_path)
+    pst = pf.build_pst()
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(template_ws, "test.pst"))
+    os_utils.run("{0} test.pst".format(pp_exe_path), cwd=template_ws)
+    pstchk = pyemu.Pst(os.path.join(template_ws, "test.pst"))
+    assert np.isclose(pstchk.phi, 0), f"expected near-zero phi: {pstchk.phi}"
+
+
 #def mf6_freyberg_thresh_invest(setup_freyberg_mf6):
 def mf6_freyberg_thresh_test(tmp_path):
 
@@ -6813,6 +6872,7 @@ def test_xsec_draw_center(tmp_path):
 
 if __name__ == "__main__":
     #test_sr_dict("temp")
+    test_vertex_grid_ppu("temp")
     # draw_consistency_test('.')
     test_xsec_draw_center(".")
     #add_py_function_test('.')
