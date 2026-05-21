@@ -2040,6 +2040,8 @@ def _process_array_file(model_file, df):
                 continue
             if str(mlt).endswith(".npy"):
                 mlt_data = np.load(mlt)
+                if mlt_data.ndim == 1:
+                    mlt_data = np.atleast_2d(mlt_data).T   
             else:
                 mlt_data = np.loadtxt(mlt, ndmin=2)
             if 1 in list(mlt_data.shape): # if 1d arrays

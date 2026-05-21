@@ -17,7 +17,7 @@ class ResultHandler(object):
         """
         self.m_d = m_d
         self.case = case
-        self.path2files = [os.path.join(self.m_d,f.lower()) for f in os.listdir(self.m_d)]
+        self.path2files = [os.path.join(self.m_d,f) for f in os.listdir(self.m_d)]
         self.results_loaded = {}
         self.failed2load_files = []
         #todo: check that m_ds are infact valid master dirs
@@ -172,9 +172,10 @@ class ResultIesHandler(ResultHandler):
         """
         files = []
         case_tag = self.case + tag
+        print(case_tag)
         for f in self.path2files:
             if tag in f.lower() and\
-                os.path.split(f)[1].lower().startswith(self.case+".") and \
+                os.path.split(f)[1].startswith(self.case+".") and \
                 len(os.path.split(f)[1].split(".")) == 4:
                 try:
                     itr = int(os.path.split(f)[1].split(".")[1])
@@ -182,7 +183,7 @@ class ResultIesHandler(ResultHandler):
                     pass
                 else:
                     files.append(f)
-            elif case_tag in os.path.split(f)[1].lower():
+            elif case_tag in os.path.split(f)[1]:
                 files.append(f)
         return files
 
@@ -225,6 +226,50 @@ class ResultIesHandler(ResultHandler):
                                 format(len(rmr_files),",".join(rmr_files)))
             return self.get_or_load_rmr_file(rmr_files[0])
 
+        if tag.startswith("parlambdaen") or tag.startswith("obslambdaen"):
+            itr = self.parse_iter_from_tag(tag)
+            is_par = tag.startswith("parlambdaen")
+            suffix = ".par." if is_par else ".obs."
+            case_prefix = self.case.lower() + "."
+            parsed = []
+            for f in self.path2files:
+                fname = os.path.split(f)[1]
+                if not fname.lower().startswith(case_prefix):
+                    continue
+                if ".lambda." not in fname.lower() or ".scale." not in fname.lower():
+                    continue
+                if suffix not in fname.lower():
+                    continue
+                rest = fname[len(case_prefix):]
+                try:
+                    left, right = rest.split(".lambda.", 1)
+                    itr_str, lam_str = left.split(".", 1)
+                    file_itr = int(itr_str)
+                    lam_val = float(lam_str)
+                    scale_str, _ = right.split(".scale.", 1)
+                    scale_val = float(scale_str)
+                except Exception as e:
+                    print("warning: could not parse lambda upgrade ensemble file '{0}': {1}".\
+                          format(fname, str(e)))
+                    continue
+                parsed.append((file_itr, lam_val, scale_val, f))
+            if itr is not None:
+                itr_val = int(itr)
+                parsed = [p for p in parsed if p[0] == itr_val]
+            if len(parsed) == 0:
+                raise Exception("ResultsIesHandler: no lambda upgrade ensemble files found for tag '{0}'".\
+                                format(tag))
+            parsed.sort()
+            dfs = []
+            keys = []
+            for file_itr, lam_val, scale_val, f in parsed:
+                df = self.get_or_load_ensemble_file(f)
+                dfs.append(df)
+                keys.append((file_itr, lam_val, scale_val))
+            df = pd.concat(dfs, keys=keys,
+                           names=["iteration", "lambda", "scale", "realization"])
+            return df
+
         if tag.startswith("paren") or tag.startswith("obsen"):
             itr = self.parse_iter_from_tag(tag)
             ttag = tag[:3]
@@ -255,7 +300,7 @@ class ResultIesHandler(ResultHandler):
                 files = self.get_files(file_tag)
                 if len(files) != 1:
                     #todo something here...
-                    print(files)
+                    print(itr,ttag,files)
                     raise Exception()
 
                 df = self.get_or_load_ensemble_file(files[0])
@@ -270,6 +315,7 @@ class ResultIesHandler(ResultHandler):
         elif tag.startswith("noise"):
             files = self.get_files(".obs+noise.")
             if len(files) != 1:
+                print(files)
                 raise Exception("expected 1 noise ensemble file, found {0}: {1}".\
                                 format(len(files),','.join(files)))
             df = self.get_or_load_ensemble_file(files[0])
@@ -388,7 +434,7 @@ class ResultMouHandler(ResultHandler):
             if "pop" in tag and "chance" not in tag and "chance" in f:
                 continue
             if tag in f.lower() and\
-                os.path.split(f)[1].lower().startswith(self.case+"."):
+                os.path.split(f)[1].startswith(self.case+"."):
                 try:
                     itr = int(os.path.split(f)[1].split(".")[1])
                 except Exception as e:
