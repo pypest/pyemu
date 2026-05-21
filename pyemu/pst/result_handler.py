@@ -172,6 +172,7 @@ class ResultIesHandler(ResultHandler):
         """
         files = []
         case_tag = self.case + tag
+        print(case_tag)
         for f in self.path2files:
             if tag in f.lower() and\
                 os.path.split(f)[1].startswith(self.case+".") and \
@@ -182,7 +183,7 @@ class ResultIesHandler(ResultHandler):
                     pass
                 else:
                     files.append(f)
-            elif case_tag in os.path.split(f)[1].lower():
+            elif case_tag in os.path.split(f)[1]:
                 files.append(f)
         return files
 
@@ -314,6 +315,7 @@ class ResultIesHandler(ResultHandler):
         elif tag.startswith("noise"):
             files = self.get_files(".obs+noise.")
             if len(files) != 1:
+                print(files)
                 raise Exception("expected 1 noise ensemble file, found {0}: {1}".\
                                 format(len(files),','.join(files)))
             df = self.get_or_load_ensemble_file(files[0])
