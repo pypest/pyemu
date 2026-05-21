@@ -1631,6 +1631,41 @@ def results_ies_1_test():
     # print(df)
 
 
+def results_ies_uppercase_case_test(tmp_path):
+    """Results should handle an uppercase ``case`` prefix in the master dir.
+
+    Copies ``pst/master_ies1`` into a temp dir and renames every ``pest.*``
+    file to ``PEST.*``, then exercises the same accessors as
+    :func:`results_ies_1_test` to confirm the Results handler is
+    case-insensitive on the case name.
+    """
+    import pyemu
+    src = os.path.join("pst", "master_ies1")
+    m_d = Path(tmp_path) / "master_ies1_UPPER"
+    if m_d.exists():
+        shutil.rmtree(m_d)
+    m_d.mkdir(parents=True)
+    for f in os.listdir(src):
+        new_name = f.replace("pest.", "PEST.", 1) if f.startswith("pest.") else f
+        shutil.copy(os.path.join(src, f), m_d / new_name)
+
+    r = pyemu.Results(m_d=str(m_d), case="PEST")
+    assert r.case == "PEST", "expected case='PEST', got {0!r}".format(r.case)
+
+    pst = pyemu.Pst(str(m_d / "PEST.pst"), result_dir=str(m_d))
+
+    df = pst.ies.get("paren", 0)
+    assert df is not None
+
+    for attr in (
+        "rmr", "pcs", "pdc", "weights",
+        "philambda", "phigroup", "phiactual", "phimeas",
+        "noise", "paren0", "obsen1", "paren",
+    ):
+        df = getattr(r.ies, attr)
+        assert df is not None, "r.ies.{0} returned None".format(attr)
+
+
 def results_ies_3_test():
     import pyemu
     m_d1 = os.path.join("pst", "master_ies1")
