@@ -77,8 +77,13 @@ def pls_runstore_forward_run(ws='.', pst_name="pls", emu_file="emulator.pkl"):
     PESTPP-IES in panther / external run-manager mode (``/e``) reads/writes
     realisations through a binary RunStor (``{pst_name}.rns``) rather than via
     CSV files. The plain file-based helper never sees the rns and so the
-    obs columns stay zero-filled — that's the failure mode this function
+    obs columns stay zero-filled -- that's the failure mode this function
     fixes. Mirror of :func:`pyemu.utils.helpers.dsi_runstore_forward_run`.
+
+    NOTE: this function's source is embedded verbatim in the generated
+    forward_run.py (via inspect.getsource), so it must stay ASCII-only --
+    on Windows the script is read back with whatever the locale encoding
+    is, and non-ASCII bytes break the UTF-8 source parse.
     """
     import os
     import pandas as pd
@@ -105,7 +110,7 @@ def pls_runstore_forward_run(ws='.', pst_name="pls", emu_file="emulator.pkl"):
         rs = RunStor(fname)
         df = rs.get_data()
 
-        # Pass through the predictor — _coerce_to_input_df silently drops
+        # Pass through the predictor -- _coerce_to_input_df silently drops
         # any extra columns and validates the required input_names.
         pvals = df.loc[:, [p for p in par_names if p in df.columns]]
         simvals = emu.predict(pvals)
@@ -625,6 +630,8 @@ class PLS(Emulator):
         lines.append('if __name__ == "__main__":')
         lines.append("    {0}({1})".format(target_func, call_args))
 
-        with open(filename, "w") as f:
+        # utf-8 regardless of platform: python parses the generated script as
+        # utf-8, but a bare open() on windows writes cp1252
+        with open(filename, "w", encoding="utf-8") as f:
             for line in lines:
                 f.write(line + "\n")
