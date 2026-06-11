@@ -380,14 +380,15 @@ class Emulator:
             # update observation data values from old pst
             obsnmes = pst_new.observation_data.obsnme.tolist()
             # only update obsvals for obs in both psts
-            common_obsnmes = [o for o in obsnmes if o in observation_data.obsnme.tolist()]
+            old_obs_set = set(observation_data.obsnme)
+            common_obsnmes = [o for o in obsnmes if o in old_obs_set]
             obs_new = pst_new.observation_data
             old_cols = observation_data.columns.tolist()
             obs_new.loc[common_obsnmes,old_cols] = observation_data.loc[common_obsnmes,old_cols].copy()
 
         if pst_old is not None:
             # check if any obs are in parameter_data
-            parnmes = pst_old.parameter_data.parnme.tolist()
+            parnmes = set(pst_old.parameter_data.parnme)
             common_nmes = [n for n in obsnmes if n in parnmes]
             if len(common_nmes) > 0:
                 obs_new.loc[common_nmes,'obsval'] = pst_old.parameter_data.loc[common_nmes,'parval1'].copy()

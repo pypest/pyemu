@@ -2210,6 +2210,283 @@ def test_pls_prepare_pestpp(tmp_path):
     assert sorted(pst_obj.obs_names) == sorted(obs_cols)
 
 
+def _pst_for_pls(par_names, obs_names, nonzero=None):
+    """Build a shell Pst whose parameter_data/observation_data covers the
+    supplied names. ``nonzero`` is a list of obs names that should get
+    weight=1.0; everything else gets weight=0.0. Used by the PLS inference
+    tests below."""
+    import pyemu
+    pst = pyemu.Pst.from_par_obs_names(par_names=list(par_names) or ["dummy_p"],
+                                       obs_names=list(obs_names) or ["dummy_o"])
+    if nonzero is not None:
+        wts = pd.Series(0.0, index=pst.observation_data.index)
+        for o in nonzero:
+            wts.loc[o] = 1.0
+        pst.observation_data["weight"] = wts.values
+    return pst
+
+
+def test_pls_infer_mixed_pars_and_obs():
+    """When data has both pst pars and pst obs, infer pars->inputs, obs->outputs."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    pst = _pst_for_pls(par_cols, obs_cols, nonzero=obs_cols)
+    pls = PLS(pst=pst, data=data, n_components=2)
+    assert sorted(pls.input_names) == sorted(par_cols)
+    assert sorted(pls.output_names) == sorted(obs_cols)
+    pls.fit()
+    assert pls.fitted
+
+
+def test_pls_infer_obs_only_by_weight():
+    """When data has only pst obs, split by weight: nz->inputs, zw->outputs."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    # Treat the synthetic 'par*' cols as nonzero-weight obs (inputs) and
+    # the 'obs*' cols as zero-weight obs (outputs). All columns are obs from
+    # the pst's perspective.
+    all_obs = par_cols + obs_cols
+    pst = _pst_for_pls(par_names=["dummy_p"], obs_names=all_obs, nonzero=par_cols)
+    pls = PLS(pst=pst, data=data, n_components=2)
+    assert sorted(pls.input_names) == sorted(par_cols)
+    assert sorted(pls.output_names) == sorted(obs_cols)
+    pls.fit()
+    assert pls.fitted
+
+
+def test_pls_infer_obs_only_requires_both_weight_classes():
+    """Obs-only data with all-nonzero or all-zero weights should fail to infer."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    all_obs = par_cols + obs_cols
+
+    pst_all_nz = _pst_for_pls(par_names=["dummy_p"], obs_names=all_obs,
+                              nonzero=all_obs)
+    with pytest.raises(AssertionError, match="zero-weight"):
+        PLS(pst=pst_all_nz, data=data, n_components=2)
+
+    pst_all_zw = _pst_for_pls(par_names=["dummy_p"], obs_names=all_obs,
+                              nonzero=[])
+    with pytest.raises(AssertionError, match="nonzero-weight"):
+        PLS(pst=pst_all_zw, data=data, n_components=2)
+
+
+def test_pls_infer_requires_pst_when_names_omitted():
+    """Omitting both names without a pst is a clear error."""
+    from pyemu.emulators import PLS
+    data, _, _ = _synth_pls_data()
+    with pytest.raises(ValueError, match="no pst"):
+        PLS(data=data, n_components=2)
+
+
+def test_pls_infer_requires_overlap_with_pst():
+    """A pst whose names don't match any data column is rejected."""
+    from pyemu.emulators import PLS
+    data, _, _ = _synth_pls_data()
+    pst = _pst_for_pls(par_names=["other_p1"], obs_names=["other_o1"],
+                       nonzero=["other_o1"])
+    with pytest.raises(ValueError, match="no data columns matched"):
+        PLS(pst=pst, data=data, n_components=2)
+
+
+def test_pls_infer_outputs_from_inputs():
+    """Passing only input_names should derive output_names from the data set diff."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    pls = PLS(data=data, input_names=par_cols, n_components=2)
+    assert sorted(pls.input_names) == sorted(par_cols)
+    assert sorted(pls.output_names) == sorted(obs_cols)
+    pls.fit()
+    assert pls.fitted
+
+
+def test_pls_infer_inputs_from_outputs():
+    """Passing only output_names should derive input_names from the data set diff."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    pls = PLS(data=data, output_names=obs_cols, n_components=2)
+    assert sorted(pls.input_names) == sorted(par_cols)
+    assert sorted(pls.output_names) == sorted(obs_cols)
+    pls.fit()
+    assert pls.fitted
+
+
+def test_pls_infer_one_side_with_extra_cols():
+    """When data has unrelated extra cols and only output_names is passed, the
+    extras are folded into the inferred input_names. The user can then pass
+    both lists explicitly to opt out of the wide inference."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    wide = data.copy()
+    wide["junk_a"] = 0.0
+    wide["junk_b"] = 0.0
+    pls = PLS(data=wide, output_names=obs_cols, n_components=2)
+    assert "junk_a" in pls.input_names and "junk_b" in pls.input_names
+    assert set(pls.input_names) == set(par_cols + ["junk_a", "junk_b"])
+
+
+def test_pls_infer_one_side_empty_other_raises():
+    """If the inferred side ends up empty, the explicit non-empty check still fires."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    # Pass every column as output — leaves zero inputs.
+    all_cols = list(data.columns)
+    with pytest.raises(ValueError, match="non-empty 'input_names'"):
+        PLS(data=data, output_names=all_cols, n_components=2)
+
+
+def test_pls_predict_ignores_extra_columns():
+    """predict() should silently drop columns outside input_names."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    pls = PLS(data=data, input_names=par_cols, output_names=obs_cols,
+              n_components=3)
+    pls.fit()
+
+    # DataFrame with the full par+obs columns plus a junk column — predict
+    # should ignore the obs cols and 'junk' and use only par_cols.
+    wide = data.iloc[:4].copy()
+    wide["junk"] = 999.0
+    Y_hat = pls.predict(wide)
+    assert Y_hat.shape == (4, len(obs_cols))
+
+    # Series with extra entries should also be tolerated.
+    s = data.iloc[0].copy()
+    s["extra_thing"] = 12.34
+    y_one = pls.predict(s)
+    assert isinstance(y_one, pd.Series)
+    assert len(y_one) == len(obs_cols)
+
+
+def test_pls_predict_missing_input_raises_clear_error():
+    """Missing required input cols should raise a KeyError that names them."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    pls = PLS(data=data, input_names=par_cols, output_names=obs_cols,
+              n_components=3)
+    pls.fit()
+
+    # Drop one required input column.
+    short = data.iloc[:2][par_cols[1:]]
+    with pytest.raises(KeyError, match="missing"):
+        pls.predict(short)
+
+
+def test_pls_cv_log_anchors_shape():
+    """The coarse anchor grid is decade-spaced and always includes max_k."""
+    from pyemu.emulators.pls import PLS
+    # Small max_k — anchors should be subset of the decade pattern.
+    a = PLS._log_anchors(8)
+    assert a == [1, 2, 5, 8]                          # max_k appended
+    a = PLS._log_anchors(50)
+    assert a == [1, 2, 5, 10, 20, 50]
+    a = PLS._log_anchors(150)
+    assert a == [1, 2, 5, 10, 20, 50, 100, 150]
+    a = PLS._log_anchors(1000)
+    assert a == [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]
+    a = PLS._log_anchors(1)
+    assert a == [1]
+
+
+def test_pls_cv_coarse_evaluates_only_anchors():
+    """The CV search should evaluate exactly the anchor set — no extras."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data(n_real=80, n_par=15, n_obs=10)
+    pls = PLS(data=data, input_names=par_cols, output_names=obs_cols,
+              n_components=None, cv_folds=5)
+    pls.fit()
+
+    # 5-fold on 80 reals -> smallest train ~63, capped by min(15, 10) = 10.
+    # Anchors in [1, 10] = [1, 2, 5, 10] -> exactly 4 evals.
+    expected_anchors = PLS._log_anchors(10)
+    assert sorted(pls._cv_scores.keys()) == expected_anchors
+    assert pls.n_components == min(pls._cv_scores, key=lambda k: pls._cv_scores[k])
+
+
+def test_pls_cv_coarse_big_max_k_skips_tail():
+    """On a problem where max_k is large, the coarse pass should evaluate
+    O(log max_k) anchors, not all max_k integers."""
+    from pyemu.emulators import PLS
+    rng = np.random.RandomState(0)
+    n_real, n_par, n_obs = 50, 200, 60
+    pars = pd.DataFrame(rng.normal(size=(n_real, n_par)),
+                        columns=[f"par{i}" for i in range(n_par)])
+    W = rng.normal(size=(n_par, n_obs)) * 0.1
+    obs = pd.DataFrame(pars.values @ W + 0.5 * rng.normal(size=(n_real, n_obs)),
+                       columns=[f"obs{i}" for i in range(n_obs)])
+    data = pd.concat([pars, obs], axis=1)
+
+    pls = PLS(data=data, input_names=list(pars.columns),
+              output_names=list(obs.columns),
+              n_components=None, cv_folds=5)
+    pls.fit()
+
+    # max_k = min(40, 200, 60) = 40. Anchors in [1, 40] = [1, 2, 5, 10, 20, 40].
+    expected_anchors = PLS._log_anchors(40)
+    assert sorted(pls._cv_scores.keys()) == expected_anchors
+    # ~7x cheaper than brute force (6 anchors vs 40 k-values).
+    assert len(pls._cv_scores) < 40
+
+
+def test_pls_cv_coarse_finds_near_optimum():
+    """On a problem with known latent rank, the coarse search should pick a k
+    whose CV RMSE is within (loose) tolerance of the brute-force argmin's RMSE.
+    The anchor grid is log-spaced so we don't constrain ``|pick - argmin|`` —
+    only that the resulting model's CV RMSE is competitive."""
+    from pyemu.emulators import PLS
+    from sklearn.cross_decomposition import PLSRegression
+    from sklearn.model_selection import KFold
+    rng = np.random.RandomState(0)
+    n_real, n_par, n_obs = 60, 30, 20
+    Z = rng.normal(size=(n_real, 3))
+    A = rng.normal(size=(3, n_par))
+    B = rng.normal(size=(3, n_obs))
+    pars = pd.DataFrame(Z @ A + 0.05 * rng.normal(size=(n_real, n_par)),
+                        columns=[f"p{i}" for i in range(n_par)])
+    obs = pd.DataFrame(Z @ B + 0.05 * rng.normal(size=(n_real, n_obs)),
+                       columns=[f"o{i}" for i in range(n_obs)])
+    data = pd.concat([pars, obs], axis=1)
+
+    pls = PLS(data=data, input_names=list(pars.columns),
+              output_names=list(obs.columns),
+              n_components=None, cv_folds=5)
+    pls.fit()
+
+    X = data[list(pars.columns)].values
+    Y = data[list(obs.columns)].values
+    kf = KFold(n_splits=5, shuffle=True, random_state=0)
+    splits = list(kf.split(X))
+    max_k = min(min(len(t) for t, _ in splits), n_par, n_obs)
+    brute = {}
+    for k in range(1, max_k + 1):
+        errs = []
+        for ti, vi in splits:
+            m = PLSRegression(n_components=k).fit(X[ti], Y[ti])
+            errs.append(np.sqrt(np.mean((m.predict(X[vi]) - Y[vi]) ** 2)))
+        brute[k] = float(np.mean(errs))
+    brute_best_rmse = min(brute.values())
+
+    # Coarse pick's CV RMSE should be within 20% of brute argmin RMSE — a
+    # generous bound because the anchor grid won't necessarily land exactly
+    # on the true argmin and we explicitly traded that off for speed.
+    rmse_pls = pls._cv_scores[pls.n_components]
+    assert rmse_pls <= brute_best_rmse * 1.20, (
+        "coarse pick RMSE={0:.4g} vs brute best={1:.4g}".format(
+            rmse_pls, brute_best_rmse))
+
+
+def test_pls_predict_ndarray_wrong_width_raises():
+    """Numpy arrays with the wrong number of columns can't be name-matched."""
+    from pyemu.emulators import PLS
+    data, par_cols, obs_cols = _synth_pls_data()
+    pls = PLS(data=data, input_names=par_cols, output_names=obs_cols,
+              n_components=3)
+    pls.fit()
+    bad = np.zeros((2, len(par_cols) + 5))
+    with pytest.raises(ValueError, match="ndarray"):
+        pls.predict(bad)
+
+
 if __name__ == "__main__":
     tmp_path = Path("temp")
     test_gpr_basic(tmp_path=tmp_path)
