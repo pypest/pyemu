@@ -446,24 +446,43 @@ class GenericTransformer(BaseTransformer):
 
 class NormalScoreTransformer(BaseTransformer):
     """A transformer for normal score transformation.
-    
+
     Parameters
     ----------
     tol : float, default=1e-7
-        Tolerance for convergence in random generation.
+        Tolerance for convergence of the Monte-Carlo z-score generator.
+        Only used when ``method='montecarlo'``.
     max_samples : int, default=1000000
-        Maximum number of samples for random generation.
+        Maximum number of Monte-Carlo replicates. Only used when
+        ``method='montecarlo'``.
     quadratic_extrapolation : bool, default=False
         Whether to use quadratic extrapolation for values outside the fitted range.
     columns : list, optional
         List of column names to be transformed. If None, all columns will be transformed.
+    method : {'blom', 'montecarlo'}, default='blom'
+        How to estimate the expected order statistics ``E[Z_(i:n)]`` of N(0,1).
+        - 'blom' (default): closed-form Blom plotting positions
+          ``Phi^-1((i - 3/8) / (n + 1/4))``. Fast, deterministic. The
+          systematic bias at the extreme tails is small (~0.01–0.015 in
+          absolute z, growing slowly with n) and negligible for typical
+          DSI use.
+        - 'montecarlo': the original iterative estimator — repeatedly draw
+          n standard normals, sort, and average until the running mean
+          stabilises to ``tol`` or ``max_samples`` is reached. Convergent to
+          the true expectation but ~10^4–10^5x slower than 'blom'. Useful
+          when extreme-tail accuracy matters or for cross-validation
+          against the closed-form approximation.
     """
 
-    def __init__(self, tol=1e-7, max_samples=1000000, quadratic_extrapolation=False, columns=None):
+    def __init__(self, tol=1e-7, max_samples=1000000, quadratic_extrapolation=False,
+                 columns=None, method="blom"):
+        assert method in ("blom", "montecarlo"), \
+            f"method must be 'blom' or 'montecarlo', got {method!r}"
         self.tol = tol
         self.max_samples = max_samples
         self.quadratic_extrapolation = quadratic_extrapolation
         self.columns = columns
+        self.method = method
         self.column_parameters = {}
         self.shared_z_scores = {}
 
@@ -612,6 +631,32 @@ class NormalScoreTransformer(BaseTransformer):
         return result
 
     def _randrealgen_optimized(self, nreal):
+        """Dispatch to the configured estimator of E[Z_(i:n)] for N(0,1)."""
+        if self.method == "blom":
+            return self._randrealgen_blom(nreal)
+        return self._randrealgen_montecarlo(nreal)
+
+    @staticmethod
+    def _randrealgen_blom(nreal):
+        """Blom plotting positions: closed-form approximation of E[Z_(i:n)].
+
+        Phi^-1((i - 3/8) / (n + 1/4)) — deterministic, O(n), accurate to
+        within Monte-Carlo noise for typical n. See class docstring for tail
+        bias notes.
+        """
+        from scipy.special import ndtri
+        i = np.arange(1, nreal + 1)
+        return ndtri((i - 3.0 / 8.0) / (nreal + 1.0 / 4.0))
+
+    def _randrealgen_montecarlo(self, nreal):
+        """Original Monte-Carlo estimator of E[Z_(i:n)] for N(0,1).
+
+        Repeatedly draws n standard normals, sorts, and accumulates the
+        per-index running mean until the maximum index-wise change between
+        consecutive iterations falls below ``self.tol`` or ``self.max_samples``
+        replicates have been drawn. Exploits the symmetry Z_(i:n) = -Z_(n+1-i:n)
+        so only the lower half is averaged.
+        """
         rval = np.zeros(nreal)
         nsamp = 0
         numsort = (nreal + 1) // 2 if nreal % 2 == 0 else nreal // 2
@@ -633,44 +678,61 @@ class NormalScoreTransformer(BaseTransformer):
                 rval[:numsort] = work1[:numsort]
 
         rval[:numsort] /= nsamp
-        rval[numsort:] = -rval[:numsort][::-1] if nreal % 2 == 0 else np.concatenate(([-rval[numsort]], -rval[:numsort][::-1]))
+        rval[numsort:] = (
+            -rval[:numsort][::-1]
+            if nreal % 2 == 0
+            else np.concatenate(([-rval[numsort]], -rval[:numsort][::-1]))
+        )
         return rval
 
     def _moving_average_with_endpoints(self, y_values):
         """Apply a moving average smoothing to an array while preserving endpoints."""
+        n = y_values.shape[0]
         window_size = 3
-        if y_values.shape[0] > 40:
+        if n > 40:
             window_size = 5
-        if y_values.shape[0] > 90:
+        if n > 90:
             window_size = 7
-        if y_values.shape[0] > 200:
+        if n > 200:
             window_size = 9
 
         if window_size % 2 == 0:
             raise ValueError("window_size must be odd")
         half_window = window_size // 2
-        smoothed_y = np.zeros_like(y_values)
 
-        # Handle start points correctly
+        # cumsum-based moving average: O(n) instead of n calls to np.mean
+        smoothed_y = np.empty(n, dtype=np.float64)
+        csum = np.concatenate(([0.0], np.cumsum(y_values, dtype=np.float64)))
+
+        # Middle: full windows of size window_size
+        if n - 2 * half_window > 0:
+            smoothed_y[half_window:n - half_window] = (
+                csum[window_size:n + 1] - csum[0:n + 1 - window_size]
+            ) / window_size
+
+        # Leading edge: smoothed_y[i] = mean(y[: i + half_window + 1])
         for i in range(0, half_window):
-            smoothed_y[i] = np.mean(y_values[:i + half_window + 1])
-        
-        # Handle end points correctly 
+            smoothed_y[i] = (csum[i + half_window + 1] - csum[0]) / (i + half_window + 1)
+
+        # Trailing edge: smoothed_y[-i] = mean(y[-(i + half_window):])
         for i in range(1, half_window + 1):
-            smoothed_y[-i] = np.mean(y_values[-(i + half_window):])
-        
-        # Middle points
-        for i in range(half_window, len(y_values) - half_window):
-            smoothed_y[i] = np.mean(y_values[i - half_window:i + half_window + 1])
+            smoothed_y[-i] = (csum[n] - csum[n - (i + half_window)]) / (i + half_window)
 
         # Preserve original endpoints exactly
         smoothed_y[0] = y_values[0]
         smoothed_y[-1] = y_values[-1]
-        
-        # Ensure monotonicity
-        for i in range(1, len(smoothed_y)):
-            if smoothed_y[i] <= smoothed_y[i - 1]:
-                smoothed_y[i] = smoothed_y[i - 1] + 1e-16
+
+        # Vectorised strict-monotonic increase: equivalent to a forward sweep
+        # that bumps each value by 1e-16 above its predecessor when it would
+        # otherwise be <=. Cummax fixes the level; consecutive "pinned" runs
+        # accumulate the eps offsets so stacked bumps still strictly increase.
+        cm = np.maximum.accumulate(smoothed_y)
+        pinned = np.zeros(n, dtype=bool)
+        pinned[1:] = cm[1:] == cm[:-1]
+        arange = np.arange(n)
+        last_unpinned = np.maximum.accumulate(np.where(~pinned, arange, 0))
+        bump = arange - last_unpinned
+        smoothed_y = cm + bump * 1e-16
 
         return smoothed_y
 

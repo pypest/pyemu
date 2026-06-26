@@ -214,11 +214,11 @@ def autocorrelated_draw(pst,struct_dict,time_distance_col="distance",num_reals=1
         for i,name in enumerate(full_oe.columns):
             #print("before:",name,ub_dict[name],full_oe.loc[:,name].max(),lb_dict[name],full_oe.loc[:,name].min())
             #vals = full_oe.loc[:,name].values
-            vals = allvals[:,i]
+            vals = allvals[:,i].copy()
             vals[vals>ub_dict[name]] = ub_dict[name]
             vals[vals < lb_dict[name]] = lb_dict[name]
             #full_oe.loc[:,name] = vals#oe.loc[:,name].apply(lambda x: min(x,ub_dict[name])).apply(lambda x: max(x,lb_dict[name]))
-            allvals[:,i] = vals
+            full_oe.iloc[:,i] = vals
             #print("...after:", name, ub_dict[name],full_oe.loc[:, name].max(),  lb_dict[name], full_oe.loc[:, name].min(), )
 
     if not draw_ineq:

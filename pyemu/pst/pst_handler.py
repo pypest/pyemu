@@ -4049,6 +4049,21 @@ class Pst(object):
         obs.loc[df.obsnme,"weight"] = 1.0 / stdev.values 
         obs.loc[df.obsnme,"obgnme"] = name_prefix+"parbounds"
         return df
+
+
+    def add_parbnd_center(self):
+        """add the `bnd_center` and `bnd_center_trans` columns to parameter data, which is a vector
+        marking the mid-point between the bounds.
+
+        """
+
+        self.add_transform_columns()
+        par = self.parameter_data
+        log_idx = par.partrans == "log"
+        par["bnd_center_trans"] = par.parlbnd_trans + ((par.parubnd_trans - par.parlbnd_trans) / 2.0)
+        par["bnd_center"] = par["bnd_center_trans"]
+        par.loc[log_idx,"bnd_center"] = 10**(par.loc[log_idx,"bnd_center"])
+        self.parameter_data = par
         
 
     def dialate_par_bounds(self,dialate_factor,center=True):
@@ -4069,23 +4084,23 @@ class Pst(object):
                 temp[name] = dialate_factor
             dialate_factor = temp
             temp = None
-        self.add_transform_columns()
 
+        self.add_parbnd_center()
         par = self.parameter_data
         par['dialate_factor'] = [dialate_factor.get(name,1.0) for name in par.parnme.values]
+        
         log_idx = par.partrans == "log"
-        par["bnd_center"] = par.parlbnd_trans + ((par.parubnd_trans - par.parlbnd_trans) / 2.0)
         if center:
-            par["center_point"] = par["bnd_center"] 
+            par["center_point"] = par["bnd_center_trans"] 
         else:
             par["center_point"] = par.parval1_trans.copy()
         
         par["parubnd_org"] = par.parubnd.copy()
-        par["ubdist"] = par.parubnd_trans - par.bnd_center
+        par["ubdist"] = par.parubnd_trans - par.bnd_center_trans
         par["parubnd"] = par.center_point + (par.ubdist * par.dialate_factor)
 
         par["parlbnd_org"] = par.parlbnd.copy()
-        par["lbdist"] = par.bnd_center - par.parlbnd_trans
+        par["lbdist"] = par.bnd_center_trans - par.parlbnd_trans
         par["parlbnd"] = par.center_point - (par.lbdist * par.dialate_factor)
         
         par.loc[log_idx,"parubnd"] = 10**par.loc[log_idx,"parubnd"]

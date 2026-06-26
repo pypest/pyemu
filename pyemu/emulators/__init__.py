@@ -57,18 +57,23 @@ except ImportError:
 if HAS_SKLEARN:
     from .lpfa import LPFA
     from .gpr import GPR
+    from .pls import PLS
     from .transformers import StandardScalerTransformer
-    __all__.extend(['LPFA', 'GPR','StandardScalerTransformer'])
+    __all__.extend(['LPFA', 'GPR', 'PLS', 'StandardScalerTransformer'])
 else:
     # Create placeholder classes that raise informative errors
     class LPFA:
         def __init__(self, *args, **kwargs):
             raise ImportError("LPFA emulator requires scikit-learn. Install with: pip install scikit-learn")
-    
+
     class GPR:
         def __init__(self, *args, **kwargs):
             raise ImportError("GPR emulator requires scikit-learn. Install with: pip install scikit-learn")
-    
+
+    class PLS:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("PLS emulator requires scikit-learn. Install with: pip install scikit-learn")
+
     class StandardScalerTransformer:
         def __init__(self, *args, **kwargs):
             raise ImportError("StandardScalerTransformer requires scikit-learn. Install with: pip install scikit-learn")

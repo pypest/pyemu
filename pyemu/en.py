@@ -1750,6 +1750,124 @@ class ParameterEnsemble(Ensemble):
             self.transform()
         return new_en
 
+    def describe(self, tol=0.01, by_group=False):
+        """summarize current parameter values in the ensemble, including counts
+        and percentages of values at/near parameter bounds.
+
+        Args:
+            tol (`float`): fractional tolerance for the "at/near bound" check, using
+                the same convention as `Pst.get_adj_pars_at_bounds`:
+                near lower bound if `val <= (1 + tol) * parlbnd`, near upper bound if
+                `val >= (1 - tol) * parubnd`. Default is 0.01.
+            by_group (`bool`): if True, return one row per parameter group (`pargp`)
+                with stats pooled across all (parameter x realization) values in the
+                group. If False, return one row per adjustable parameter. Default is
+                False.
+
+        Returns:
+            `pandas.DataFrame`: summary table with columns `count`, `mean`, `std`,
+            `min`, `max`, `cv` (= `std / abs(mean)`), `num_at_near_lbound`,
+            `percent_at_near_lbound`, `num_at_near_ubound`, `percent_at_near_ubound`.
+            Percentages are in [0, 100].
+
+        Note:
+            Only adjustable parameters (`partrans` not "fixed" or "tied") are
+            included. Comparisons against bounds are done in untransformed
+            (control-file) space regardless of the current transformation state;
+            the ensemble itself is not modified.
+
+        Example::
+
+            pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst)
+            pe.enforce()
+            summary = pe.describe()
+            grp_summary = pe.describe(by_group=True)
+
+        """
+        if tol < 0:
+            raise Exception("ParameterEnsemble.describe(): tol must be non-negative")
+
+        par = self.pst.parameter_data
+        adj = set(self.pst.adj_par_names)
+        cols = [c for c in self._df.columns if c in adj]
+        if len(cols) == 0:
+            raise Exception(
+                "ParameterEnsemble.describe(): no adjustable parameters in ensemble"
+            )
+
+        # work in untransformed space without mutating self
+        if self.istransformed:
+            vals = self._df.loc[:, cols].copy()
+            li = par.loc[cols, "partrans"] == "log"
+            vals.loc[:, li.values] = 10.0 ** vals.loc[:, li.values]
+        else:
+            vals = self._df.loc[:, cols]
+
+        lb = par.loc[cols, "parlbnd"]
+        ub = par.loc[cols, "parubnd"]
+        lb_thresh = (1.0 + tol) * lb
+        ub_thresh = (1.0 - tol) * ub
+        at_lb = vals.le(lb_thresh, axis=1)
+        at_ub = vals.ge(ub_thresh, axis=1)
+
+        nreals = vals.shape[0]
+        if by_group:
+            groups = par.loc[cols, "pargp"]
+            stacked = vals.stack(future_stack=True)
+            grp_key = stacked.index.get_level_values(1).map(groups)
+            grouped = stacked.groupby(grp_key)
+            mean = grouped.mean()
+            std = grouped.std()
+            mn = grouped.min()
+            mx = grouped.max()
+            count = grouped.count()
+            n_lb = at_lb.sum(axis=0).groupby(groups).sum()
+            n_ub = at_ub.sum(axis=0).groupby(groups).sum()
+            df = pd.DataFrame(
+                {
+                    "count": count,
+                    "mean": mean,
+                    "std": std,
+                    "min": mn,
+                    "max": mx,
+                    "num_at_near_lbound": n_lb.astype(int),
+                    "num_at_near_ubound": n_ub.astype(int),
+                }
+            )
+            df.index.name = "pargp"
+        else:
+            df = pd.DataFrame(
+                {
+                    "count": nreals,
+                    "mean": vals.mean(axis=0),
+                    "std": vals.std(axis=0),
+                    "min": vals.min(axis=0),
+                    "max": vals.max(axis=0),
+                    "num_at_near_lbound": at_lb.sum(axis=0).astype(int),
+                    "num_at_near_ubound": at_ub.sum(axis=0).astype(int),
+                },
+                index=cols,
+            )
+            df.index.name = "parnme"
+
+        df["cv"] = df["std"] / df["mean"].abs()
+        df["percent_at_near_lbound"] = 100.0 * df["num_at_near_lbound"] / df["count"]
+        df["percent_at_near_ubound"] = 100.0 * df["num_at_near_ubound"] / df["count"]
+        return df[
+            [
+                "count",
+                "mean",
+                "std",
+                "min",
+                "max",
+                "cv",
+                "num_at_near_lbound",
+                "percent_at_near_lbound",
+                "num_at_near_ubound",
+                "percent_at_near_ubound",
+            ]
+        ]
+
     def enforce(self, how="reset", bound_tol=0.0):
         """entry point for bounds enforcement.
 
