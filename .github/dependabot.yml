@@ -1,0 +1,44 @@
+version: 2
+
+# Note: no `target-branch` is set anywhere in this file, on purpose. Setting it
+# disables Dependabot *security* updates for that ecosystem, which are the ones
+# that matter most for a package people install from PyPI. Everything here
+# therefore targets the default branch.
+
+updates:
+  # Python dependencies, resolved from pyproject.toml + uv.lock.
+  # If GitHub does not recognise the `uv` ecosystem on this account, change it
+  # to `pip`, which reads pyproject.toml instead.
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    # one grouped PR a week rather than one PR per package
+    groups:
+      python-dependencies:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps"
+
+  # Action versions used by ci.yml and release.yml (actions/checkout,
+  # astral-sh/setup-uv, codecov/codecov-action, ...) - currently unmanaged.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "deps"
