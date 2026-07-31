@@ -1,0 +1,56 @@
+site_name: pyEMU Documentation
+site_description: Documentation for the pyEMU Python package
+site_url: https://pyemu.readthedocs.io/
+nav:
+  - Introduction to pyEMU: index.md
+  - Installing PEST++: get_pestpp.md
+  - Developer release guide: new_version_steps.md
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-6
+        name: Switch between light and dark mode
+    - media: "(prefers-color-scheme: dark)"
+      primary: black
+      scheme: slate
+      toggle:
+        icon: material/brightness-6
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      primary: black
+      scheme: default
+      toggle:
+        icon: material/brightness-6
+        name: Switch to dark mode
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/pypest/pyemu
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/pyemu/
+plugins:
+  - search
+  - mkdocs-autoapi:
+      autoapi_add_nav_entry: API Reference
+      ignore_no_doc: false
+      autoapi_file_patterns:
+        - pyemu/**/*.py
+      autoapi_ignore:
+        - build/**
+        - pyemu/_version.py
+        - pyemu/legacy/**
+  - mkdocstrings:
+      handlers:
+        python:
+          inventories:
+            - https://docs.python.org/3/objects.inv
+          paths:
+            - .
+          options:
+            docstring_style: google
+            inherited_members: true
+            show_source: false
+
+

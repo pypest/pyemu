@@ -1,0 +1,169 @@
+name: "Release"
+
+# One-click release: run this workflow from the Actions tab, choosing the
+# branch to release from and the kind of version bump. Everything else -
+# version bump, CITATION.cff sync, build, smoke test, commit, tag and the
+# PyPI upload - happens here, so the tag and the published artifact can
+# never disagree.
+#
+# Two rehearsal modes:
+#   dry_run            - bump, build and smoke test only; nothing leaves the runner.
+#   repository=testpypi - as above, plus a real upload to TestPyPI, but no commit,
+#                        no tag and no GitHub release, so nothing is burned in git.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump (passed to `uv version --bump`)"
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+          - stable
+          - alpha
+          - beta
+          - rc
+          - post
+          - dev
+      repository:
+        description: "Where to upload. Choose testpypi to rehearse."
+        type: choice
+        default: pypi
+        options:
+          - pypi
+          - testpypi
+      dry_run:
+        description: "Rehearsal: bump, build and smoke test, but do not push or publish"
+        type: boolean
+        default: false
+
+concurrency: release-${{ inputs.repository }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment:
+      # the environment name is part of what PyPI/TestPyPI matches when it
+      # decides whether to trust this workflow's OIDC token
+      name: ${{ inputs.repository }}
+      url: ${{ inputs.repository == 'testpypi' && 'https://test.pypi.org/project/pyemu/' || 'https://pypi.org/project/pyemu/' }}
+    permissions:
+      id-token: write  # trusted publishing
+      contents: write  # push the version-bump commit and tag
+    steps:
+      - name: Check ref is a branch
+        if: ${{ github.ref_type != 'branch' }}
+        run: |
+          echo "This workflow must be run from a branch, not ${{ github.ref_type }} '${{ github.ref_name }}'."
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        # using build backend so python install not req.
+
+      - name: Bump version
+        id: bump
+        run: |
+          uv version --bump ${{ inputs.bump }}
+          uv lock
+          VERSION=$(python3 -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "New version is $VERSION"
+
+      - name: Sync CITATION.cff
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          python3 - <<'EOF'
+          import datetime, os, pathlib, re
+
+          version = os.environ["VERSION"]
+          today = datetime.date.today().isoformat()
+          cff = pathlib.Path("CITATION.cff")
+          text = cff.read_text()
+          text, n_v = re.subn(r"^version:.*$", f"version: {version}", text, count=1, flags=re.M)
+          text, n_d = re.subn(r"^date-released:.*$", f"date-released: '{today}'", text, count=1, flags=re.M)
+          assert n_v == 1 and n_d == 1, f"CITATION.cff: matched version {n_v}x, date-released {n_d}x"
+          cff.write_text(text)
+          EOF
+          git diff --stat CITATION.cff
+
+      - name: Build
+        run: uv build
+
+      - name: Smoke test (wheel)
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          uv run --isolated --no-project --with "$(ls dist/*.whl)" \
+            python -c "import pyemu, os; assert pyemu.__version__ == os.environ['VERSION'], pyemu.__version__; print(pyemu.__version__)"
+
+      - name: Smoke test (source distribution)
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          uv run --isolated --no-project --with "$(ls dist/*.tar.gz)" \
+            python -c "import pyemu, os; assert pyemu.__version__ == os.environ['VERSION'], pyemu.__version__; print(pyemu.__version__)"
+
+      # a TestPyPI upload is a rehearsal, so it deliberately leaves no trace in
+      # git: no bump commit, no tag, no release
+      - name: Commit, tag and push
+        if: ${{ !inputs.dry_run && inputs.repository == 'pypi' }}
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml uv.lock CITATION.cff
+          git commit -m "Bump version to $VERSION"
+          git tag -a "v$VERSION" -m "pyemu v$VERSION"
+          git push origin "HEAD:refs/heads/$GITHUB_REF_NAME"
+          git push origin "refs/tags/v$VERSION"
+
+      - name: Publish
+        if: ${{ !inputs.dry_run }}
+        run: |
+          if [ "${{ inputs.repository }}" = "testpypi" ]; then
+            uv publish --publish-url https://test.pypi.org/legacy/
+          else
+            uv publish
+          fi
+
+      - name: Create GitHub release
+        if: ${{ !inputs.dry_run && inputs.repository == 'pypi' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          # anything that is not X.Y.Z is a pre-release (rc, dev, alpha, ...)
+          PRERELEASE=""
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || PRERELEASE="--prerelease"
+          gh release create "v$VERSION" dist/* \
+            --title "pyemu v$VERSION" \
+            --generate-notes \
+            $PRERELEASE
+
+      - name: Summary
+        if: ${{ always() && steps.bump.outputs.version != '' }}
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          {
+            echo "### pyemu v$VERSION"
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "Dry run from \`$GITHUB_REF_NAME\`: built and smoke tested only."
+              echo "Nothing was pushed or published."
+            elif [ "${{ inputs.repository }}" = "testpypi" ]; then
+              echo "Rehearsal from \`$GITHUB_REF_NAME\`: uploaded to TestPyPI."
+              echo "No commit, tag or GitHub release was created, so this version"
+              echo "number is still free for a real release."
+            else
+              echo "Released from \`$GITHUB_REF_NAME\` to PyPI, tagged \`v$VERSION\`."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pyemu
 from pyemu import os_utils
-from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file
+from pyemu.utils import PstFrom, pp_file_to_dataframe, write_pp_file, prep_pp_hyperpars
 import shutil
 import pytest
 
@@ -46,9 +46,9 @@ def _gen_dummy_obs_file(ws='.', sep=',', ext=None):
         else:
             t.append(text[c])
             c += 1
-    np.random.seed(314)
+    rng = np.random.RandomState(314)
     df = pd.DataFrame(
-        np.random.rand(15,2)*1000,
+        rng.random((15,2,))*1000,
         columns=['no', 'yes'],
         index=t
     )
@@ -295,6 +295,7 @@ def test_freyberg(tmp_path):
     assert np.isclose(pst.phi, 0.), pst.phi
 
 
+@pytest.mark.timeout(method='thread')
 def test_freyberg_prior_build(tmp_path):
     import numpy as np
     import pandas as pd
@@ -980,7 +981,7 @@ def test_mf6_freyberg(tmp_path):
     pars = pst.parameter_data
     # set reach 1 hk to 100
     sfr_pars = pars.loc[pars.parnme.str.startswith('pname:sfr')].index
-    pars.loc[sfr_pars, 'parval1'] = np.random.random(len(sfr_pars)) * 10
+    pars.loc[sfr_pars, 'parval1'] = pyemu.en.rng.random(len(sfr_pars)) * 10
 
     sfr_pars = pars.loc[sfr_pars].copy()
     # print(sfr_pars)
@@ -2428,7 +2429,7 @@ def mf6_freyberg_varying_idomain(tmp_path):
         print(model_file,sim_val,arr.mean())
 
 
-def xsec_test(tmp_path):
+def test_xsec(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -3243,6 +3244,191 @@ class TestPstFrom():
         assert len(pst.template_files) == 3
 
 
+    def test_array_ult_bounds_ndarray(self):
+        """Test passing numpy arrays as ult_ubound/ult_lbound for array-type
+        parameters. Verify bound files are written and mult2model_info.csv
+        has the correct columns."""
+        ub_arr = np.full((3, 3), 10.0)
+        ub_arr[0, 0] = 5.0  # spatially varying
+        lb_arr = np.full((3, 3), 0.01)
+        lb_arr[1, 1] = 0.5  # spatially varying
+
+        self.pf.add_parameters(
+            filenames='hk.dat', par_type='grid',
+            zone_array=self.zone_array,
+            par_name_base='hk_ab',
+            pargp='hk_ab',
+            ult_ubound=ub_arr,
+            ult_lbound=lb_arr,
+        )
+        pst = self.pf.build_pst()
+        df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+        # check that bound file columns exist
+        assert 'upper_bound_file' in df.columns
+        assert 'lower_bound_file' in df.columns
+        assert df.upper_bound_file.dropna().shape[0] > 0
+        assert df.lower_bound_file.dropna().shape[0] > 0
+        # scalar upper_bound/lower_bound should be NaN
+        assert pd.isna(df.upper_bound.iloc[0])
+        assert pd.isna(df.lower_bound.iloc[0])
+        # check that bound files exist on disk (paths are relative to dest_ws)
+        ub_file = self.dest_ws / df.upper_bound_file.dropna().iloc[0]
+        lb_file = self.dest_ws / df.lower_bound_file.dropna().iloc[0]
+        assert ub_file.exists()
+        assert lb_file.exists()
+        # verify contents
+        ub_loaded = np.loadtxt(ub_file)
+        lb_loaded = np.loadtxt(lb_file)
+        assert np.allclose(ub_loaded, ub_arr)
+        assert np.allclose(lb_loaded, lb_arr)
+
+    def test_array_ult_bounds_filename(self):
+        """Test passing filenames as ult_ubound/ult_lbound."""
+        ub_arr = np.full((3, 3), 10.0)
+        ub_arr[0, 0] = 5.0
+        lb_arr = np.full((3, 3), 0.01)
+        lb_arr[1, 1] = 0.5
+        # write bound arrays to files
+        ub_file = self.sim_ws / 'ub.dat'
+        lb_file = self.sim_ws / 'lb.dat'
+        np.savetxt(ub_file, ub_arr)
+        np.savetxt(lb_file, lb_arr)
+
+        self.pf.add_parameters(
+            filenames='hk.dat', par_type='grid',
+            zone_array=self.zone_array,
+            par_name_base='hk_fn',
+            pargp='hk_fn',
+            ult_ubound=str(ub_file),
+            ult_lbound=str(lb_file),
+        )
+        pst = self.pf.build_pst()
+        df = pd.read_csv(self.dest_ws / 'mult2model_info.csv')
+        assert 'upper_bound_file' in df.columns
+        assert 'lower_bound_file' in df.columns
+        # verify the written files have correct content (paths relative to dest_ws)
+        ub_dest = self.dest_ws / df.upper_bound_file.dropna().iloc[0]
+        lb_dest = self.dest_ws / df.lower_bound_file.dropna().iloc[0]
+        assert np.allclose(np.loadtxt(ub_dest), ub_arr)
+        assert np.allclose(np.loadtxt(lb_dest), lb_arr)
+
+    def test_array_ult_bounds_forward_run(self):
+        """Test that array-valued ult bounds are correctly applied during
+        apply_list_and_array_pars()."""
+        # upper bound: 2.0 everywhere except [0,0] which is 0.5
+        ub_arr = np.full((3, 3), 2.0)
+        ub_arr[0, 0] = 0.5
+        # lower bound: 0.1 everywhere
+        lb_arr = np.full((3, 3), 0.1)
+
+        self.pf.add_parameters(
+            filenames='hk.dat', par_type='grid',
+            zone_array=self.zone_array,
+            par_name_base='hk_fr',
+            pargp='hk_fr',
+            ult_ubound=ub_arr,
+            ult_lbound=lb_arr,
+        )
+        pst = self.pf.build_pst()
+
+        os.chdir(self.dest_ws)
+        df = pd.read_csv('mult2model_info.csv')
+        mult_file = Path(df.mlt_file.iloc[0])
+        model_file = Path(df.model_file.iloc[0])
+        # set multiplier to 3.0 (org_arr is ones, so result = 3.0)
+        mult_values = np.loadtxt(mult_file)
+        mult_values[:] = 3.0
+        np.savetxt(mult_file, mult_values)
+        model_file.unlink()
+
+        pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+        result = np.loadtxt(model_file)
+
+        # [0,0] should be clipped to 0.5 (ub), rest should be clipped to 2.0
+        # except [2,2] which is zone=0 so it should be 3.0 (unclipped)
+        assert result[0, 0] == 0.5, f"expected 0.5, got {result[0, 0]}"
+        assert result[1, 0] == 2.0, f"expected 2.0, got {result[1, 0]}"
+        assert result[2, 2] == 3.0, f"expected 3.0 (zone=0 unclipped), got {result[2, 2]}"
+        os.chdir(self.tmp_path)
+
+    def test_zone_aware_scalar_bounds(self):
+        """Test that scalar ult bounds respect zone_array (zone=0 cells
+        are not clipped)."""
+        self.pf.add_parameters(
+            filenames='hk.dat', par_type='grid',
+            zone_array=self.zone_array,
+            par_name_base='hk_zs',
+            pargp='hk_zs',
+            ult_ubound=2.0,
+            ult_lbound=0.1,
+        )
+        pst = self.pf.build_pst()
+
+        os.chdir(self.dest_ws)
+        df = pd.read_csv('mult2model_info.csv')
+        mult_file = Path(df.mlt_file.iloc[0])
+        model_file = Path(df.model_file.iloc[0])
+        # set multiplier to 5.0 -> result = 5.0 (exceeds ub of 2.0)
+        mult_values = np.loadtxt(mult_file)
+        mult_values[:] = 5.0
+        np.savetxt(mult_file, mult_values)
+        model_file.unlink()
+
+        pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+        result = np.loadtxt(model_file)
+
+        # zone != 0 cells should be clipped to 2.0
+        assert result[0, 0] == 2.0
+        assert result[1, 1] == 2.0
+        # zone == 0 cell at [2,2] should NOT be clipped
+        assert result[2, 2] == 5.0, (
+            f"zone=0 cell should not be clipped, expected 5.0, got {result[2, 2]}"
+        )
+        os.chdir(self.tmp_path)
+
+    def test_scalar_bounds_backward_compat(self):
+        """Test that scalar bounds without zone_array clip all cells
+        (backward compatible behavior)."""
+        self.pf.add_parameters(
+            filenames='hk.dat', par_type='grid',
+            par_name_base='hk_bc',
+            pargp='hk_bc',
+            ult_ubound=2.0,
+            ult_lbound=0.1,
+        )
+        pst = self.pf.build_pst()
+
+        os.chdir(self.dest_ws)
+        df = pd.read_csv('mult2model_info.csv')
+        mult_file = Path(df.mlt_file.iloc[0])
+        model_file = Path(df.model_file.iloc[0])
+        mult_values = np.loadtxt(mult_file)
+        mult_values[:] = 5.0
+        np.savetxt(mult_file, mult_values)
+        model_file.unlink()
+
+        pyemu.helpers.apply_list_and_array_pars(arr_par_file='mult2model_info.csv')
+        result = np.loadtxt(model_file)
+
+        # ALL cells should be clipped to 2.0 (no zone_array)
+        assert np.allclose(result, 2.0)
+        os.chdir(self.tmp_path)
+
+    def test_array_ult_bounds_rejected_for_list(self):
+        """Test that passing array bounds with list-type parameters raises
+        an error."""
+        ub_arr = np.full((3, 3), 10.0)
+        with pytest.raises(Exception):
+            self.pf.add_parameters(
+                filenames='wel.dat', par_type='grid',
+                index_cols=['#k', 'i', 'j'],
+                use_cols=['flux'],
+                par_name_base='wel_ab',
+                pargp='wel_ab',
+                ult_ubound=ub_arr,
+            )
+
+
 def test_get_filepath():
     from pyemu.utils.pst_from import get_filepath
 
@@ -3587,8 +3773,8 @@ def test_mf6_freyberg_pp_locs(tmp_path):
     ymx = m.modelgrid.yvertices.max()
 
     numpp = 20
-    xvals = np.random.uniform(xmn,xmx,numpp)
-    yvals = np.random.uniform(ymn, ymx, numpp)
+    xvals = pyemu.en.rng.uniform(xmn,xmx,numpp)
+    yvals = pyemu.en.rng.uniform(ymn, ymx, numpp)
     pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
     pp_locs.loc[:,"zone"] = 1
     pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
@@ -3663,7 +3849,7 @@ def test_mf6_freyberg_pp_locs(tmp_path):
     assert mn > 0.0
 
 
-def usg_freyberg_test(tmp_path):
+def test_usg_freyberg(tmp_path):
     import numpy as np
     import pandas as pd
     import flopy
@@ -3722,13 +3908,13 @@ def usg_freyberg_test(tmp_path):
     zone_array_k2[:,:100] = 4
 
     #gen up some fake pp locs
-    np.random.seed(pyemu.en.SEED)
+    rng = np.random.RandomState(pyemu.en.SEED)
     num_pp = 20
     data = {"name":[],"x":[],"y":[],"zone":[]}
     visited = set()
     for i in range(num_pp):
         while True:
-            idx = np.random.randint(0,len(sr_dict_by_layer[1]))
+            idx = rng.randint(0,len(sr_dict_by_layer[1]))
             if idx  not in visited:
                 break
         x,y = sr_dict_by_layer[1][idx]
@@ -3764,14 +3950,18 @@ def usg_freyberg_test(tmp_path):
                       par_name_base="hk3_pp", pp_space=pp_df,
                       geostruct=gs, spatial_reference=sr_dict_by_layer[3],
                       upper_bound=2.0, lower_bound=0.5,
-                      zone_array=zone_array_k2,apply_order=10)
+                      zone_array=zone_array_k2,apply_order=10,
+                      pp_options={'use_pp_zones': True})  # default is to interp within non-zero so need to pass this
 
     # we pass layer specific sr dict for each "array" type that is spatially distributed
-    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_name_base="hk1_Gr",geostruct=gs,
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",
+                      par_name_base="hk1_Gr",geostruct=gs,
                       spatial_reference=sr_dict_by_layer[1],
                       upper_bound=2.0,lower_bound=0.5,apply_order=0)
-    pf.add_parameters("sy_Layer_1.ref", par_type="zone", par_name_base="sy1_zn",zone_array=zone_array_k0,
-                      upper_bound=1.5,lower_bound=0.5,ult_ubound=0.35,apply_order=100)
+    pf.add_parameters("sy_Layer_1.ref", par_type="zone",
+                      par_name_base="sy1_zn",zone_array=zone_array_k0,
+                      upper_bound=1.5,lower_bound=0.5,ult_ubound=0.35,
+                      apply_order=100)
 
 
 
@@ -3799,8 +3989,8 @@ def usg_freyberg_test(tmp_path):
     par = pst.parameter_data
 
     gr_hk_pars = par.loc[par.parnme.str.contains("hk1_gr"),"parnme"]
-    pf.pst.parameter_data.loc[gr_hk_pars,"parubnd"] = np.random.random(gr_hk_pars.shape[0]) * 5
-    pf.pst.parameter_data.loc[gr_hk_pars, "parlbnd"] = np.random.random(gr_hk_pars.shape[0]) * 0.2
+    pf.pst.parameter_data.loc[gr_hk_pars,"parubnd"] = pyemu.en.rng.random(gr_hk_pars.shape[0]) * 5
+    pf.pst.parameter_data.loc[gr_hk_pars, "parlbnd"] = pyemu.en.rng.random(gr_hk_pars.shape[0]) * 0.2
     pe = pf.draw(num_reals=100)
     pe.enforce()
     pe.to_csv(os.path.join(pf.new_d,"prior.csv"))
@@ -3860,17 +4050,17 @@ def usg_freyberg_test(tmp_path):
     # check that the pilot point process is respecting the zone array
     par = pst.parameter_data
     pp_par = par.loc[par.parnme.str.contains("pp"),:]
-    pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.apply(np.float64)
+    pst.parameter_data.loc[pp_par.parnme,"parval1"] = pp_par.zone.astype(int)
     pst.control_data.noptmax = 0
     pst.write(os.path.join(pf.new_d,"freyberg.usg.pst"),version=2)
     #pst.write_input_files(pf.new_d)
     pyemu.os_utils.run("{0} freyberg.usg.pst".format(ies_exe_path), cwd=pf.new_d)
-    arr = np.loadtxt(os.path.join(pf.new_d,"mult","hk3_pp_inst0_pilotpoints.csv"))
-    arr[zone_array_k2[0,:]==0] = 0
+    arr = np.load(os.path.join(pf.new_d,"mult","hk3_pp_inst0_pilotpoints.npy"))
+    arr[zone_array_k2==0] = 0
     d = np.abs(arr - zone_array_k2)
     # print(d)
     # print(d.sum())
-    assert d.sum() == 0.0,d.sum()
+    assert np.isclose(d.max(), 0., atol=1e-6), d.max()
 
 
 def mf6_add_various_obs_test(tmp_path):
@@ -3938,8 +4128,8 @@ def _add_big_obsffile(pf, profile=False, nchar=50000):
     else:
         pstfrom_add = True
         wd = pf.new_d
-    np.random.seed(314)
-    df = pd.DataFrame(np.random.random([10, nchar]),
+    rng = np.random.RandomState(314)
+    df = pd.DataFrame(pyemu.en.rng.random([10, nchar]),
                       columns=[hex(c) for c in range(nchar)])
     df.index.name = 'time'
     df.to_csv(os.path.join(wd, 'bigobseg.csv'))
@@ -4162,7 +4352,7 @@ def mf6_subdir_test(tmp_path):
     # pars = pst.parameter_data
     # # set reach 1 hk to 100
     # sfr_pars = pars.loc[pars.parnme.str.startswith('sfr')].index
-    # pars.loc[sfr_pars, 'parval1'] = np.random.random(len(sfr_pars)) * 10
+    # pars.loc[sfr_pars, 'parval1'] = pyemu.en.rng.random(len(sfr_pars)) * 10
     #
     # sfr_pars = pars.loc[sfr_pars].copy()
     # sfr_pars[['inst', 'usecol', '#rno']] = sfr_pars.parnme.apply(
@@ -4482,7 +4672,6 @@ def test_vertex_grid(tmp_path):
         df_pp = pf.add_parameters(f,
                             zone_array=ib[layer],
                             par_type="pilotpoints",
-                            #use_pp_zones=True,
                             geostruct=grid_gs,
                             par_name_base=f.split('.')[1].replace("_","")+"pp",
                             pargp=f.split('.')[1].replace("_","")+"pp",
@@ -4491,7 +4680,7 @@ def test_vertex_grid(tmp_path):
                             pp_options={"prep_hyperpars":False,
                                         "pp_space":500,
                                         "try_use_ppu":False,
-                                        "pp_zones":True}) # `
+                                        "pp_zones":True}) #
 
     tag = "sfr_packagedata"
     files = [f for f in os.listdir(template_ws) if tag in f.lower() and f.endswith(".txt")]
@@ -4692,6 +4881,65 @@ def list_float_int_index_test(tmp_path):
     assert np.isclose(diff,bparval1).all(), diff.loc[~np.isclose(diff,bparval1)]
 
 
+def test_vertex_grid_ppu(tmp_path):
+    """Small unstructured-MF6 + pypestutils + pilot points smoke test.
+
+    Mirrors :func:`test_vertex_grid` but turns on ``try_use_ppu=True`` so the
+    pypestutils pilot-point apply path is exercised on a DISV (quadtree) grid.
+    Trains on one npf_k layer to keep it fast and asserts pestpp-check phi=0.
+    """
+    try:
+        import pypestutils  # noqa: F401
+    except ImportError:
+        import pytest
+        pytest.skip("pypestutils not available")
+
+    pf, sim = setup_freyberg_mf6(tmp_path, "freyberg_quadtree")
+    m = sim.get_model()
+    mg = m.modelgrid
+    assert mg.grid_type == "vertex"
+
+    template_ws = pf.new_d
+
+    v_space = pyemu.geostats.ExpVario(contribution=1.0,
+                                      a=1000, anisotropy=1.0, bearing=0.0)
+    grid_gs = pyemu.geostats.GeoStruct(variograms=v_space, transform="log")
+
+    tag = "npf_k_layer1"
+    files = [f for f in os.listdir(template_ws)
+             if tag in f.lower() and f.endswith(".txt")]
+    assert files, "no npf_k_layer1 file found in {0}".format(template_ws)
+
+    # tidy the array file then run mf6 to confirm baseline.
+    for f in files:
+        fp = os.path.join(template_ws, f)
+        with open(fp, "r") as fh:
+            a = [float(x) for x in fh.read().split()]
+        np.savetxt(fp, a)
+    pyemu.os_utils.run(mf6_exe_path, cwd=template_ws)
+
+    ib = m.dis.idomain.get_data()
+    f = files[0]
+    pf.add_parameters(f,
+                      zone_array=ib[0],
+                      par_type="pilotpoints",
+                      geostruct=grid_gs,
+                      par_name_base=f.split(".")[1].replace("_", "") + "pp",
+                      pargp=f.split(".")[1].replace("_", "") + "pp",
+                      lower_bound=0.2, upper_bound=5.0,
+                      ult_ubound=100, ult_lbound=0.01,
+                      pp_options={"try_use_ppu": True,
+                                  "pp_space": 500})
+    pf.add_observations(f)
+    pf.mod_sys_cmds.append(mf6_exe_path)
+    pst = pf.build_pst()
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(template_ws, "test.pst"))
+    os_utils.run("{0} test.pst".format(pp_exe_path), cwd=template_ws)
+    pstchk = pyemu.Pst(os.path.join(template_ws, "test.pst"))
+    assert np.isclose(pstchk.phi, 0), f"expected near-zero phi: {pstchk.phi}"
+
+
 #def mf6_freyberg_thresh_invest(setup_freyberg_mf6):
 def mf6_freyberg_thresh_test(tmp_path):
 
@@ -4720,8 +4968,6 @@ def mf6_freyberg_thresh_test(tmp_path):
     m = sim.get_model("freyberg6")
     sim.set_all_data_external()
     sim.write_simulation()
-
-
 
     # SETUP pest stuff...
     os_utils.run("{0} ".format(mf6_exe_path), cwd=tmp_model_ws)
@@ -4752,7 +4998,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     pp_v = pyemu.geostats.ExpVario(contribution=1.0, a=1000)
     pp_gs = pyemu.geostats.GeoStruct(variograms=pp_v, transform="log")
     rch_temporal_gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(contribution=1.0, a=60))
-    pf.extra_py_imports.append('flopy')
+    # pf.extra_py_imports.append('flopy')
     ib = m.dis.idomain[0].array
     #tags = {"npf_k_": [0.1, 10.], "npf_k33_": [.1, 10], "sto_ss": [.1, 10], "sto_sy": [.9, 1.1],
     #        "rch_recharge": [.5, 1.5]}
@@ -4913,8 +5159,8 @@ def mf6_freyberg_thresh_test(tmp_path):
     # print(pst.npar,pst.npar_adj)
 
     org_par = par.copy()
-    num_reals = 100
-    np.random.seed()
+    num_reals = 30
+    rng = np.random.RandomState()
     pe = pf.draw(num_reals, use_specsim=False)
     pe.enforce()
     # print(pe.shape)
@@ -4965,7 +5211,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     obs.loc[onames,"weight"] = 1.0
     obs.loc[snames,"weight"] = 1./(obs.loc[snames,"obsval"] * 0.2).values
     #obs.loc[onames,"obsval"] = truth.values
-    #obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.01,onames.shape[0])
+    #obs.loc[onames,"obsval"] *= pyemu.en.rng.normal(1.0,0.01,onames.shape[0])
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
@@ -4997,7 +5243,7 @@ def mf6_freyberg_thresh_test(tmp_path):
     m_d = "master_thresh"
     port = _get_port()
     pyemu.os_utils.start_workers(pf.new_d, ies_exe_path, "freyberg.pst",
-                                 worker_root=".", master_dir=m_d, num_workers=5,
+                                 worker_root=".", master_dir=m_d,
                                  port=port)
     phidf = pd.read_csv(os.path.join(m_d,"freyberg.phi.actual.csv"))
     # print(phidf["mean"])
@@ -5287,7 +5533,7 @@ def test_array_fmt_pst_from(tmp_path):
     arr3 = np.loadtxt(Path(tmp_path, "weird_tmp", "ar3.arr"))
 
 
-def hyperpars_test(tmp_path):
+def test_hyperpars(tmp_path):
     tdir = os.getcwd()
     pf, sim = setup_freyberg_mf6(tmp_path)
     shutil.copy(Path(tdir, 'utils', 'ppuref.txt'), tmp_path)
@@ -5305,8 +5551,8 @@ def hyperpars_test(tmp_path):
     ymx = m.modelgrid.yvertices.max()
 
     numpp = 20
-    xvals = np.random.uniform(xmn, xmx, numpp)
-    yvals = np.random.uniform(ymn, ymx, numpp)
+    xvals = pyemu.en.rng.uniform(xmn, xmx, numpp)
+    yvals = pyemu.en.rng.uniform(ymn, ymx, numpp)
     pp_locs = pd.DataFrame({"x": xvals, "y": yvals})
     pp_locs.loc[:, "zone"] = 1
     pp_locs.loc[:, "name"] = ["pp_{0}".format(i) for i in range(numpp)]
@@ -5518,8 +5764,8 @@ def mf6_freyberg_ppu_hyperpars_invest(tmp_path):
     ymx = m.modelgrid.yvertices.max()
 
     numpp = 20
-    xvals = np.random.uniform(xmn,xmx,numpp)
-    yvals = np.random.uniform(ymn, ymx, numpp)
+    xvals = pyemu.en.rng.uniform(xmn,xmx,numpp)
+    yvals = pyemu.en.rng.uniform(ymn, ymx, numpp)
     pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
     pp_locs.loc[:,"zone"] = 1
     pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
@@ -5742,8 +5988,8 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     ymx = m.modelgrid.yvertices.max()
 
     numpp = 30
-    xvals = np.random.uniform(xmn,xmx,numpp)
-    yvals = np.random.uniform(ymn, ymx, numpp)
+    xvals = pyemu.en.rng.uniform(xmn,xmx,numpp)
+    yvals = pyemu.en.rng.uniform(ymn, ymx, numpp)
     pp_locs = pd.DataFrame({"x":xvals,"y":yvals})
     pp_locs.loc[:,"zone"] = 1
     pp_locs.loc[:,"name"] = ["pp_{0}".format(i) for i in range(numpp)]
@@ -5992,7 +6238,7 @@ def mf6_freyberg_ppu_hyperpars_thresh_invest(tmp_path):
     obs.loc[snames, "standard_deviation"] = (obs.loc[snames, "obsval"] * 0.2).values
 
     #obs.loc[onames,"obsval"] = truth.values
-    #obs.loc[onames,"obsval"] *= np.random.normal(1.0,0.01,onames.shape[0])
+    #obs.loc[onames,"obsval"] *= pyemu.en.rng.normal(1.0,0.01,onames.shape[0])
 
     pst.write(os.path.join(pf.new_d, "freyberg.pst"),version=2)
     pyemu.os_utils.run("{0} freyberg.pst".format(ies_exe_path), cwd=pf.new_d)
@@ -6115,6 +6361,18 @@ def test_sr_dict(tmp_path):
                         index_cols=['i','j'],
                         use_cols='q',
                         ofile_sep=',')
+    
+    try:
+        pf.add_parameters("junk",par_type="constant")
+    except Exception:
+        pass
+    pf.add_parameters("parfile.csv",
+                      par_type="grid",
+                      index_cols=[0, 1],
+                      use_cols=[2],
+                      geostruct=gs)
+
+    pf.build_pst()
 
 
 def test_dup_idxs(tmp_path):
@@ -6249,7 +6507,7 @@ def invest_vertexpp_setup_speed():
     pass
 
 
-def xsec_pars_as_obs_test(tmp_path):
+def test_xsec_pars_as_obs(tmp_path):
     import numpy as np
     import pandas as pd
     pd.set_option('display.max_rows', 500)
@@ -6432,8 +6690,8 @@ def draw_consistency_test(tmp_path):
     gpar = par.loc[par.parnme.str.contains("fix"),:]
     assert gpar.shape[0] == gwf.dis.nrow.data * gwf.dis.ncol.data
     par.loc[gpar.parnme,"partrans"] = "fixed"
-    np.random.seed(111)
-    pe = pf.draw(num_reals=10, use_specsim=True) # draw parameters from the prior distribution
+    rng = np.random.RandomState(111)
+    pe = pf.draw(num_reals=10, use_specsim=True, rng=rng) # draw parameters from the prior distribution
     print("abs max:",np.nanmax(np.abs(pe.values)))
     # no bs values...
     assert np.nanmax(np.abs(pe.values)) < 100000
@@ -6453,9 +6711,170 @@ def draw_consistency_test(tmp_path):
     assert diff.values.max() < 1e-6
 
 
+def _apply_speed_invest_pstfrom():
+    wd = "speedtemp"
+    Path(wd).mkdir(parents=True, exist_ok=True)
+    template_ws = 'template'
+    mshape = (500, 600)
+    dummyar = pyemu.en.rng.random((*mshape,))
+    np.savetxt(Path(wd, 'dummy_array.txt'), dummyar)
+    sr = pyemu.SpatialReference(delr=[100] * mshape[1], delc=[100] * mshape[0],
+                                xll=0, yll=0)
+    pf = pyemu.utils.PstFrom(wd,
+                             template_ws,
+                             remove_existing=True,
+                             spatial_reference=sr)
+    pf.add_observations('dummy_array.txt',
+                        )
+    return pf
+
+
+def apply_speed_invest_array():
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=20)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+
+    pf = _apply_speed_invest_pstfrom()
+
+    pf.add_parameters('dummy_array.txt',
+                      par_type="grid",
+                      par_name_base="dummy_gr",
+                      pargp="dummy_gr",
+                      upper_bound=10,
+                      lower_bound=0.1,
+                      geostruct=gr_gs, )
+    pf.build_pst()
+    # check_apply(pf)
+    bd = Path.cwd()
+    os.chdir(pf.new_d)
+    try:
+        pf.pst.write_input_files()
+        import cProfile
+        import pstats
+        profiler = cProfile.Profile()
+        profiler.enable()
+        pyemu.helpers.apply_list_and_array_pars(
+            arr_par_file="mult2model_info.csv", chunk_len=50)
+        profiler.disable()
+        stats = pstats.Stats(profiler).sort_stats('cumtime')
+        stats.print_stats()
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
+
+
+def apply_speed_invest_pp(useppu=True):
+    v = pyemu.geostats.ExpVario(contribution=1.0,a=20)
+    gr_gs = pyemu.geostats.GeoStruct(variograms=v)
+
+    pf = _apply_speed_invest_pstfrom()
+
+    pf.add_pars('dummy_array.txt',
+                par_type="pp",
+                par_name_base="dummy_gr",
+                pargp="dummy_gr",
+                upper_bound=10,
+                lower_bound=0.1,
+                geostruct=gr_gs,
+                pp_options=dict(try_use_ppu=useppu,
+                                pp_space=10,
+                                prep_hyperpars=True))
+    pf.build_pst()
+    pars = pf.pst.parameter_data
+    pars['parval1'] = pars.parval1 * pyemu.en.rng.random(len(pars))
+    # bd = Path.cwd()
+
+    # check_apply(pf)
+    bd = Path.cwd()
+    os.chdir(pf.new_d)
+    try:
+        pf.pst.write_input_files()
+        import cProfile
+        import pstats
+        profiler = cProfile.Profile()
+        profiler.enable()
+        pyemu.helpers.apply_list_and_array_pars(
+            arr_par_file="mult2model_info.csv", chunk_len=50)
+        profiler.disable()
+        stats = pstats.Stats(profiler).sort_stats('cumtime')
+        stats.print_stats()
+    except Exception as e:
+        os.chdir(bd)
+        raise e
+    os.chdir(bd)
+
+
+def test_xsec_draw_center(tmp_path):
+    import numpy as np
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    try:
+        import flopy
+    except:
+        return
+
+    org_model_ws = os.path.join('..', 'examples', 'xsec')
+    tmp_model_ws = setup_tmp(org_model_ws, tmp_path)
+    # SETUP pest stuff...
+    nam_file = "10par_xsec.nam"
+    os_utils.run("{0} {1}".format(mf_exe_path,nam_file), cwd=tmp_model_ws)
+
+    os.chdir(tmp_path)
+    tmp_model_ws = tmp_model_ws.relative_to(tmp_path)
+    m = flopy.modflow.Modflow.load(nam_file,model_ws=tmp_model_ws,version="mfnwt")
+    sr = m.modelgrid
+    t_d = "template_xsec"
+    pf = pyemu.utils.PstFrom(tmp_model_ws,t_d,remove_existing=True,spatial_reference=sr)
+    pf.add_parameters("hk_Layer_1.ref",par_type="grid",par_style="direct",upper_bound=3,
+                      lower_bound=2,transform="none")
+    pf.add_parameters("hk_Layer_1.ref", par_type="grid", par_style="multiplier", upper_bound=10.0,
+                      lower_bound=0.1)
+
+    pf.build_pst()
+    par = pf.pst.parameter_data
+    par.loc[pf.pst.par_names[::2],"parval1"] = par.loc[pf.pst.par_names[::2],"parubnd"]
+
+    pe = pf.draw(num_reals=1000,center=True)
+    pe.enforce()
+    pe2 = pf.draw(num_reals=1000,center=False)
+    pe2.enforce()
+
+    d1 = pe.describe()
+    print(d1.columns)
+    print(d1["percent_at_near_lbound"])
+    print(d1["percent_at_near_ubound"])
+    assert np.all(d1["percent_at_near_lbound"].values < 5.5)
+    assert np.all(d1["percent_at_near_ubound"].values < 5.5)
+
+    d2 = pe2.describe()
+    print(d2["percent_at_near_lbound"])
+    print(d2["percent_at_near_ubound"])
+    
+    assert np.all(d2["percent_at_near_lbound"].values < 1.0)
+    assert np.all(d2.loc[pf.pst.par_names[::2],"percent_at_near_ubound"].values>44.5) 
+    assert np.all(d2.loc[pf.pst.par_names[1::2],"percent_at_near_ubound"].values<5.5) 
+
+    # import matplotlib.pyplot as plt
+    # fig,axes = plt.subplots(pf.pst.npar,1,figsize=(20,20))
+    # for ax,par_name in zip(axes,pf.pst.par_names):
+        
+    #     ax.hist(pe.loc[:,par_name].values,fc="m",alpha=0.5)
+    #     ax.hist(pe2.loc[:,par_name].values,fc="c",alpha=0.5)
+    #     ax.set_title(par_name)
+    # plt.tight_layout()
+    # plt.show()
+
+
+
+
+
 if __name__ == "__main__":
-    draw_consistency_test('.')
-    #xsec_pars_as_obs_test(".")
+    #test_sr_dict("temp")
+    test_vertex_grid_ppu("temp")
+    # draw_consistency_test('.')
+    test_xsec_draw_center(".")
     #add_py_function_test('.')
     #mf6_freyberg_pp_locs_test('.')
     #mf6_subdir_test(".")
@@ -6484,7 +6903,7 @@ if __name__ == "__main__":
     #plot_thresh("master_thresh")
     #plot_thresh("master_thresh_mm")
     #mf6_freyberg_varying_idomain()
-    # xsec_test()
+    # test_xsec()
     # mf6_freyberg_short_direct_test()
     # mf6_add_various_obs_test()
     # mf6_subdir_test()
@@ -6503,6 +6922,14 @@ if __name__ == "__main__":
     # list_float_int_index_test('.')
     #freyberg_test()
     #invest_vertexpp_setup_speed()
+    # import cProfile
+    # import pstats
+    # profiler = cProfile.Profile()
+    # profiler.enable()
+    #apply_speed_invest_pp(True)
+    # profiler.disable()
+    # stats = pstats.Stats(profiler).sort_stats('cumtime')
+    # stats.print_stats()
 
 
 

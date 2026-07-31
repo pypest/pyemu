@@ -243,7 +243,7 @@ def cov_identity_test():
     import pyemu
     n = 100
     names = ["name_{0}".format(i) for i in range(n)]
-    arr = np.random.random(n*n)
+    arr = pyemu.en.rng.random(n*n)
     arr.resize((n,n))
     cov = pyemu.Cov(x=arr*arr.transpose(),names=names)
     cov *= 2.0
@@ -268,7 +268,7 @@ def hadamard_product_test(copy_mat_temp):
     assert hp.x.sum() == 0.0
 
     c = pyemu.Cov(x=np.ones((jco.shape[0],1)),names=jco.row_names,isdiagonal=True)
-    r = pyemu.Matrix(x=np.random.rand(c.shape[0],c.shape[0]),
+    r = pyemu.Matrix(x=pyemu.en.rng.random((c.shape[0],c.shape[0],)),
                      row_names=c.row_names,col_names=c.col_names)
     hp = c.hadamard_product(r)
     assert np.abs(hp.x.sum() - np.diagonal(r.x).sum()) < 1.0e-6
@@ -282,7 +282,7 @@ def get_diag_test():
     n = 100
     col_names = ["cname_{0}".format(i) for i in range(n)]
     row_names = ["rname_{0}".format(i) for i in range(n)]
-    arr = np.random.random(n*n)
+    arr = pyemu.en.rng.random(n*n)
     arr.resize((n,n))
     mat = pyemu.Matrix(x=arr,row_names=row_names,
                        col_names=col_names)
@@ -451,7 +451,7 @@ def coo_test(setup_empty_mat_temp):
     rnames = ["row_{0}".format(i) for i in range(nrow)]
     cnames = ["col_{0}".format(i) for i in range(ncol)]
 
-    x = np.random.random((nrow,ncol))
+    x = pyemu.en.rng.random((nrow,ncol))
 
     m = pyemu.Matrix(x=x,row_names=rnames, col_names=cnames)
     assert m.shape[0] == len(rnames)
@@ -511,7 +511,7 @@ def df_test():
     rnames = ["row_{0}".format(i) for i in range(nrow)]
     cnames = ["col_{0}".format(i) for i in range(ncol)]
 
-    x = np.random.random((nrow, ncol))
+    x = pyemu.en.rng.random((nrow, ncol))
 
     m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
 
@@ -552,7 +552,7 @@ def dense_mat_format_test(setup_empty_mat_temp):
     rnames = [long_str+"row_{0}".format(i) for i in range(nrow)]
     cnames = [long_str+"col_{0}".format(i) for i in range(ncol)]
 
-    arr = np.random.random((nrow,ncol))
+    arr = pyemu.en.rng.random((nrow,ncol))
     matfile = os.path.join(wd, "dense.bin")
     m = pyemu.Matrix(x=arr, row_names=rnames, col_names=cnames)
     f = m.to_dense(matfile, close=True)
@@ -709,7 +709,7 @@ def from_uncfile_firstlast_test(setup_empty_mat_temp):
         raise Exception("should have failed")
 
 
-def trunc_names_test():
+def trunc_names_test(tmp_path):
     import pyemu
     import pandas as pd
 
@@ -718,11 +718,11 @@ def trunc_names_test():
     a['names'] =  names
     a.set_index('names',inplace=True, drop=True)
     am = pyemu.Matrix.from_dataframe(a)
-    am.to_binary('a.binary.jcb')
-    am.to_coo('a.coo.jcb')
+    am.to_binary(tmp_path / 'a.binary.jcb')
+    am.to_coo(tmp_path /'a.coo.jcb')
     # both read fine
-    ar = pyemu.Matrix.from_binary('a.coo.jcb')
-    ar = pyemu.Matrix.from_binary('a.binary.jcb')
+    ar = pyemu.Matrix.from_binary(tmp_path / 'a.coo.jcb')
+    ar = pyemu.Matrix.from_binary(tmp_path / 'a.binary.jcb')
 
     # use longer names
     names = ["They've done studies, you know. 60 percent of the time, it works every time.",
@@ -731,12 +731,12 @@ def trunc_names_test():
     a['names'] =  [n.replace(" ","-",) for n in names]
     a.set_index('names',inplace=True, drop=True)
     am = pyemu.Matrix.from_dataframe(a)
-    am.to_binary('a.binary.jcb')
-    am.to_coo('a.coo.jcb')
+    am.to_binary(tmp_path /'a.binary.jcb')
+    am.to_coo(tmp_path /'a.coo.jcb')
 
-    ar = pyemu.Matrix.from_binary('a.coo.jcb')
+    ar = pyemu.Matrix.from_binary(tmp_path /'a.coo.jcb')
     # long names save with .to_binary() can't be read with .from_binary()
-    ar = pyemu.Matrix.from_binary('a.binary.jcb')
+    ar = pyemu.Matrix.from_binary(tmp_path /'a.binary.jcb')
 
 if __name__ == "__main__":
     #df_tests()

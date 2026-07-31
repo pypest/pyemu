@@ -289,7 +289,9 @@ def setup_pilotpoints_grid(
         except:
             shp = shapefile.Writer(shapeType=shapefile.POINT)
         for name, dtype in par_info.dtypes.items():
-            if dtype == object:
+            dtype_str = str(dtype)
+            # Handle string types (pandas.StringDtype shows as 'str' in Pandas +3.0)
+            if dtype_str == 'str' or dtype_str == 'object' or dtype == object:
                 shp.field(name, "C", size=50)
             elif dtype in [int]:#, np.int64, np.int32]:
                 shp.field(name, "N", size=50, decimal=0)
@@ -345,7 +347,7 @@ def pp_file_to_dataframe(pp_filename):
         names=PP_NAMES,
         usecols=[0, 1, 2, 3, 4],
     )
-    df.loc[:, "name"] = df.name.apply(str).apply(str.lower)
+    df.loc[:, "name"] = df.name.str.lower()
     return df
 
 
@@ -714,7 +716,7 @@ def parse_pp_options_with_defaults(pp_kwargs, threads=10, log=True, logger=None,
                         try_use_ppu=True,  # default to using ppu
                         num_threads=threads,  # fallback if num_threads not in pp_kwargs, only used if ppu fails
                         # factor calc options, incl at run time.
-                        minpts_interp=1,
+                        minpts_interp=1,  # todo: check these defaults!!?
                         maxpts_interp=20,
                         search_radius=1e10,
                         # ult lims
@@ -763,9 +765,43 @@ def parse_pp_options_with_defaults(pp_kwargs, threads=10, log=True, logger=None,
     return pp_kwargs
 
 
-def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
-                       geostruct,arr_shape,pp_options,zone_array=None,
+def prep_pp_hyperpars(file_tag, pp_filename, pp_info,out_filename, grid_dict,
+                      geostruct, arr_shape, pp_options, zone_array=None,
                       ws = "."):
+    """Make preparation for hyperparameter ppu setup.
+
+    Writes files that to be used at apply time incl:
+    ".gridinfo.dat" : target model cell location definition
+    ".corrlen.dat", ".bearing.dat", ".aniso.dat", ".zone.dat" : arrays of
+    hyperparamters to be used by calc_kriging_factors_2d() at apply time these
+    arrays can also be paramterised (e.g. within a PstFrom add_pars setup).
+
+    Args:
+        file_tag (str): tag for hyperpar files (will be cleaned of illegal chars)
+        pp_filename (str): pilot point file (filled by PEST)
+        pp_info (pandas.DataFrame): DataFrame of pilotpoint data -- written to
+            pp_filename temporarily for testing apply_ppu_hyperpars func
+        out_filename (Path-like): Location of result of applying kriging
+            interpolation after hyperpar factor calcs
+        grid_dict (dict): Dictionary of {node: (x,y)} for interp target.
+            Note, sorted node keys defines the order for output arrays and of
+            zone_array (if passed).
+        geostruct (pyemu.geostats.GeoStruct): Geostructure used for filling
+            initial hyperpar arrays. Note, Geostruct should only contain one
+            variogram
+        arr_shape (list-like, int): shape of array in output file
+        pp_options  (dict): Dictionary of pilot-point definition options to
+            propagate to facotr calculation. Incl. "search_radius", "search_dist",
+            "maxpts_interp", "minpts_interp", "fill_value"
+        zone_array (array-like): array of integer zonal values for target array
+            locations. Default will be all target locations (in grid_dict)
+            assigned to same zone.
+        ws (Path-like): Location of saving files.
+
+    Returns:
+
+
+    """
     try:
         from pypestutils.pestutilslib import PestUtilsLib
     except Exception as e:
@@ -783,9 +819,10 @@ def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
     aniso_filename = file_tag + ".aniso.dat"
     zone_filename = file_tag + ".zone.dat"
 
-    if len(arr_shape) == 1 and type(arr_shape) is tuple:
+    if isinstance(arr_shape, int):
+        arr_shape = [arr_shape]
+    if len(arr_shape) == 1 and isinstance(arr_shape, (tuple, list)):
         arr_shape = (1,arr_shape[0])
-
 
     nodes = list(grid_dict.keys())
     nodes.sort()
@@ -844,6 +881,8 @@ def prep_pp_hyperpars(file_tag,pp_filename,pp_info,out_filename,grid_dict,
     keys = list(pp_options.keys())
     keys.sort()
     for k in keys:
+        if k == 'zone_array':
+            continue
         config_df.loc[k,"value"] = pp_options[k]
 
     #config_df.loc["function_call","value"] = fnx_call
@@ -870,68 +909,70 @@ def apply_ppu_hyperpars(config_df_filename):
         from pypestutils.pestutilslib import PestUtilsLib
     except Exception as e:
         raise Exception("apply_ppu_hyperpars() error importing pypestutils: '{0}'".format(str(e)))
-
-    config_df = pd.read_csv(config_df_filename,index_col=0)
-    config_dict = config_df["value"].to_dict()
+    from pyemu.utils.geostats import ppu_fac2real
+    # read config info from file
+    config_dict = pd.read_csv(config_df_filename,index_col=0)['value'].to_dict()
+    # get transform before filling defaults
     vartransform = config_dict.get("vartransform", "none")
-    config_dict = parse_pp_options_with_defaults(config_dict, threads=None, log=vartransform=='log')
-
+    # get defaults for pp options
+    config_dict = parse_pp_options_with_defaults(config_dict, threads=None,
+                                                 log=vartransform=='log')
+    # pull out variables and read input files
     out_filename = config_dict["out_filename"]
-    #pp_info = pd.read_csv(config_dict["pp_filename"],sep="\s+")
     pp_info = pyemu.pp_utils.pp_file_to_dataframe(config_dict["pp_filename"])
     grid_df = pd.read_csv(config_dict["gridinfo_filename"])
     corrlen = np.loadtxt(config_dict["corrlen_filename"])
     bearing = np.loadtxt(config_dict["bearing_filename"])
     aniso = np.loadtxt(config_dict["aniso_filename"])
     zone = np.loadtxt(config_dict["zone_filename"])
-
-    lib = PestUtilsLib()
-    fac_fname = out_filename+".temp.fac"
-    if os.path.exists(fac_fname):
-        os.remove(fac_fname)
-    fac_ftype = "text"
-    npts = lib.calc_kriging_factors_2d(
-            pp_info.x.values,
-            pp_info.y.values,
-            pp_info.zone.values,
-            grid_df.x.values.flatten(),
-            grid_df.y.values.flatten(),
-            zone.flatten().astype(int),
-            int(config_dict.get("vartype",1)),
-            int(config_dict.get("krigtype",1)),
-            corrlen.flatten(),
-            aniso.flatten(),
-            bearing.flatten(),
-            # defaults should be in config_dict -- the fallbacks here should not be hit now
-            config_dict.get("search_dist",config_dict.get("search_radius", 1e10)),
-            config_dict.get("maxpts_interp",50),
-            config_dict.get("minpts_interp",1),
-            fac_fname,
-            fac_ftype,
-        )
-
     # this is now filled as a default in config_dict if not in config file,
     # default value dependent on vartransform (ie. 1 for log 0 for non log)
     noint = config_dict.get("fill_value",pp_info.loc[:, "parval1"].mean())
 
-    result = lib.krige_using_file(
-        fac_fname,
-        fac_ftype,
-        zone.size,
-        int(config_dict.get("krigtype", 1)),
-        vartransform,
-        pp_info["parval1"].values,
-        noint,
-        noint,
-    )
-    assert npts == result["icount_interp"]
-    result = result["targval"]
-    #shape = tuple([int(s) for s in config_dict["shape"]])
+    # file name for temporary factor calculated on the fly here
+    fac_fname = out_filename+".temp.fac"
+    if os.path.exists(fac_fname):
+        os.remove(fac_fname)
+    # binary is rapid
+    fac_ftype = "binary"
+
+    # currently only working with OrdinaryKriging
+    krigtype = int(config_dict.get("krigtype", 1))
+    if krigtype != 1:
+        raise NotImplementedError("only Ordinary Kriging supported (for now)")
+
     tup_string = config_dict["shape"]
     shape = tuple(int(x) for x in tup_string[1:-1].split(','))
-    result = result.reshape(shape)
-    np.savetxt(out_filename,result,fmt="%20.8E")
-    os.remove(fac_fname)
-    lib.free_all_memory()
 
+    # run in context so that we can keep ppulib alive
+    with pyemu.geostats.OrdinaryKrigePPU(None, pp_info, express=True) as krige:
+        npts = krige.calc_factors(
+            targets=grid_df,
+            geostruct=dict(corrlen=corrlen,
+                           aniso=aniso,
+                           bearing=bearing,
+                           vartype=config_dict.get("vartype", 2)),
+            fac_fname=fac_fname,
+            zone_array=zone,
+            **config_dict
+        )
+        result = ppu_fac2real(
+            source_vals=pp_info["parval1"].values,
+            factor_filename=fac_fname,
+            mpts=len(grid_df),
+            out_shape=shape,
+            ppulib=krige.lib,
+            transform=vartransform,
+            fac_ftype=fac_ftype,
+            krigtype=krigtype,
+            noint=noint,
+        )
+
+    # save interpolated field
+    if out_filename.endswith(".npy"):
+        np.save(out_filename, result)
+    else:
+        np.savetxt(out_filename,result,fmt="%20.8E")
+    # kill temp fac file
+    os.remove(fac_fname)
     return result

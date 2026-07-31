@@ -20,27 +20,32 @@ from .pst import Pst, pst_utils, Results
 from .sc import Schur
 from .utils import (geostats, gw_utils, helpers, metrics, optimization,
                     os_utils, pp_utils, smp_utils)
-from .emulators import (
-                      #emulators
-                      Emulator, DSI, LPFA,  GPR,
-                    
-                      
-                      #transformers
-                      BaseTransformer, Log10Transformer,
-                      RowWiseMinMaxScaler, StandardScalerTransformer, NormalScoreTransformer,
-                      TransformerPipeline, AutobotsAssemble)
+# # this is a pretty heavy import, wonder if we can keep within explicit emulators import
+# from .emulators import (
+#                       #emulators
+#                       Emulator, DSI, LPFA,  GPR,
+#
+#
+#                       #transformers
+#                       BaseTransformer, Log10Transformer,
+#                       RowWiseMinMaxScaler, StandardScalerTransformer, NormalScoreTransformer,
+#                       TransformerPipeline, AutobotsAssemble)
 #from .prototypes import *
 try:
     from .legacy import *
 except (ModuleNotFoundError, ImportError) as e:
     import warnings
     warnings.warn("Failed to import legacy module. "
-                  "May impact ability to access older methods."
+                  "May impact ability to access older methods. "
                   f"{type(e).__name__} {e.msg}")
 
-from ._version import get_versions
+import importlib.metadata
 
-__version__ = get_versions()["version"]
+try:
+    __version__ = importlib.metadata.version(__name__)
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "0.0.0"  # Fallback for development mode
+
 __all__ = [
     "LinearAnalysis",
     "Schur",
@@ -61,13 +66,14 @@ __all__ = [
     "smp_utils",
     "plot_utils",
     "metrics",
-    "Emulator",
-    "BaseTransformer",
-    "Log10Transformer", 
-    "RowWiseMinMaxScaler",
-    "StandardScalerTransformer",
-    "NormalScoreTransformer",
-    "TransformerPipeline",
-    "AutobotsAssemble",
+    "emulators",
+    # "Emulator",
+    # "BaseTransformer",
+    # "Log10Transformer",
+    # "RowWiseMinMaxScaler",
+    # "StandardScalerTransformer",
+    # "NormalScoreTransformer",
+    # "TransformerPipeline",
+    # "AutobotsAssemble",
 ]
 # del get_versions

@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+import pyemu
 import os
 import copy
 import struct
@@ -37,7 +38,7 @@ def save_coo(x, row_names, col_names, filename, chunk=None):
     header = np.array((x.shape[1], x.shape[0], x.nnz), dtype=Matrix.binary_header_dt)
     header.tofile(f)
 
-    data = np.core.records.fromarrays([x.row, x.col, x.data], dtype=Matrix.coo_rec_dt)
+    data = np.rec.fromarrays([x.row, x.col, x.data], dtype=Matrix.coo_rec_dt)
     data.tofile(f)
 
     for name in col_names:
@@ -146,7 +147,7 @@ class Matrix(object):
 
     Example::
 
-        data = np.random.random((10,10))
+        data = pyemu.en.rng.random((10,10))
         row_names = ["row_{0}".format(i) for i in range(10)]
         col_names = ["col_{0}".format(j) for j in range(10)]
         mat = pyemu.Matrix(x=data,row_names=row_names,col_names=col_names)
@@ -1897,7 +1898,7 @@ class Matrix(object):
 
         if chunk is None:
             flat = self.x[row_idxs, col_idxs].flatten()
-            data = np.core.records.fromarrays(
+            data = np.rec.fromarrays(
                 [row_idxs, col_idxs, flat], dtype=self.coo_rec_dt
             )
             data.tofile(f)
@@ -1908,7 +1909,7 @@ class Matrix(object):
                 # print(row_idxs[start],row_idxs[end])
                 # print("chunk",start,end)
                 flat = self.x[row_idxs[start:end], col_idxs[start:end]].flatten()
-                data = np.core.records.fromarrays(
+                data = np.rec.fromarrays(
                     [row_idxs[start:end], col_idxs[start:end], flat],
                     dtype=self.coo_rec_dt,
                 )
@@ -2052,7 +2053,7 @@ class Matrix(object):
 
         if chunk is None:
             flat = self.x[row_idxs, col_idxs].flatten()
-            data = np.core.records.fromarrays([icount, flat], dtype=self.binary_rec_dt)
+            data = np.rec.fromarrays([icount, flat], dtype=self.binary_rec_dt)
             # write
             data.tofile(f)
         else:
@@ -2060,7 +2061,7 @@ class Matrix(object):
             while True:
                 # print(row_idxs[start],row_idxs[end])
                 flat = self.x[row_idxs[start:end], col_idxs[start:end]].flatten()
-                data = np.core.records.fromarrays(
+                data = np.rec.fromarrays(
                     [icount[start:end], flat], dtype=self.binary_rec_dt
                 )
                 data.tofile(f)
@@ -2746,7 +2747,7 @@ class Matrix(object):
         """
         if random:
             return cls(
-                x=np.random.random((len(row_names), len(col_names))),
+                x=pyemu.en.rng.random((len(row_names), len(col_names))),
                 row_names=row_names,
                 col_names=col_names,
                 isdiagonal=isdiagonal,
@@ -2924,7 +2925,7 @@ class Cov(Matrix):
 
     Example::
 
-        data = np.random.random((10,10))
+        data = pyemu.en.rng.random((10,10))
         names = ["par_{0}".format(i) for i in range(10)]
         mat = pyemu.Cov(x=data,names=names)
         mat.to_binary("mat.jco")

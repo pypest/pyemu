@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+import pyemu
 import os
 import copy
 import shutil
@@ -16,7 +17,8 @@ from .logger import Logger
 
 
 class EnDS(object):
-    """Ensemble Data Space Analysis using the approach of He et al (2018) (https://doi.org/10.2118/182609-PA)
+    """Ensemble Data Space Analysis using the approach of He et al (2018)
+    (https://doi.org/10.2118/182609-PA)
 
     Args:
         pst (varies): something that can be cast into a `pyemu.Pst`.  Can be an `str` for a
@@ -188,6 +190,8 @@ class EnDS(object):
             ensemble = self.__fromfile(arg, astype=ObservationEnsemble)
         elif isinstance(arg, ObservationEnsemble):
             ensemble = arg.copy()
+        elif isinstance(arg, pd.DataFrame):
+            ensemble = ObservationEnsemble(pst=self.pst,df=arg.copy())
         else:
             raise Exception(
                 "EnDS.__load_ensemble(): arg must "
@@ -338,7 +342,7 @@ class EnDS(object):
             rep_results = []
             print("-->testing ",nreals)
             for rep in range(nreps):
-                rreals = np.random.choice(real_idx,nreals,False)
+                rreals = pyemu.en.rng.choice(real_idx,nreals,False)
                 sim_ensemble = self.sim_ensemble.iloc[rreals,:].copy()
                 _,dfstd,_ = self.get_posterior_prediction_moments(obslist_dict=obslist_dict,
                                                                  sim_ensemble=sim_ensemble,

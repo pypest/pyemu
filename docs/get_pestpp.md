@@ -7,7 +7,7 @@
 - [Command-line interface](#command-line-interface)
   - [Using the `get-pestpp` command](#using-the-get-pestpp-command)
   - [Using `get_pestpp.py` as a script](#using-get_pestpppy-as-a-script)
-- [pyEMU module](#pyEMU-module)
+- [pyEMU module](#pyemu-module)
 - [Where to install?](#where-to-install)
 - [Selecting a distribution](#selecting-a-distribution)
 
@@ -73,7 +73,7 @@ Other auto-select options are only available if the current user can write files
 
 ## Selecting a distribution
 
-By default the distribution from the [`usgs/pestpp` repository](https://github.com/usgs/pestpp) is installed. This includes the MODFLOW 6 binary `mf6` and over 20 other related programs. The utility can also install from forks of the main [PEST++ 6 repo](https://github.com/usgs/pestpp) or other repo distributions, which contain only:
+By default the distribution from the [`usgs/pestpp` repository](https://github.com/usgs/pestpp) is installed. The utility can also install from forks of the main [PEST++ 6 repo](https://github.com/usgs/pestpp) or other repo distributions. These repos include the following executables:
 
 - `pestpp-da`
 - `pestpp-glm`

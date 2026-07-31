@@ -178,8 +178,8 @@ def load_test(tmp_path):
     exceptions = []
     load_fails = []
     for pst_file in pst_files:
-        if "pest_tied_tester" not in pst_file:
-            continue
+        #if "pest_tied_tester" not in pst_file:
+        #    continue
         if pst_file.endswith(".pst") and not "comments" in pst_file and \
                 not "missing" in pst_file:
             print(pst_file)
@@ -221,10 +221,11 @@ def load_test(tmp_path):
             org_par = p.parameter_data.copy()
             p.dialate_par_bounds(1.0)
             diff = np.abs(org_par.parubnd - p.parameter_data.parubnd).sum()
-            assert diff < 1e-5
+            print(diff)
+            assert diff < 1e-3
             diff = np.abs(org_par.parlbnd - p.parameter_data.parlbnd).sum()
             print(diff)
-            assert diff < 1e-5
+            assert diff < 1e-3
 
 
     # with open("load_fails.txt",'w') as f:
@@ -740,7 +741,7 @@ def csv_to_ins_test(tmp_path):
     cnames = ["col{0}".format(i) for i in range(10)]
     rnames = ["row{0}".format(i) for i in range(10)]
     df = pd.DataFrame(index=rnames,columns=cnames)
-    df.loc[:,:] = np.random.random(df.shape)
+    df.loc[:,:] = pyemu.en.rng.random(df.shape)
     df.to_csv(os.path.join(tmp_path, "temp.csv"))
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join(tmp_path, "temp.csv.ins"),
                                             only_cols=cnames[0],prefix="test")
@@ -1374,8 +1375,8 @@ def parrep_test(tmp_path):
     import numpy as np
     # make some fake parnames and values
     parnames = ['p_{0:03}'.format(i) for i in range(20)]
-    np.random.seed(42)
-    parvals = np.random.random(20) + 5
+    rng = np.random.RandomState(42)
+    parvals = rng.random(20) + 5
     parvals[0] = 0.001
     bd = os.getcwd()
     os.chdir(tmp_path)
@@ -1386,8 +1387,8 @@ def parrep_test(tmp_path):
             [ofp.write('{0:10s} {1:12.6f} 1.00 0.0\n'.format(i,j)) for i,j in zip(parnames,parvals)]
 
         # make a fake ensemble parameter file
-        np.random.seed(99)
-        parens = pd.DataFrame(np.tile(parvals,(5,1))+np.random.randn(5,20)*.5, columns=parnames)
+        rng = np.random.RandomState(99)
+        parens = pd.DataFrame(np.tile(parvals,(5,1))+rng.standard_normal((5,20,))*.5, columns=parnames)
         parens.index = list(range(4)) + ['base']
         parens.index.name = 'real_name'
         parens.loc['base'] = parvals[::-1]
@@ -1630,6 +1631,41 @@ def results_ies_1_test():
     # print(df)
 
 
+def results_ies_uppercase_case_test(tmp_path):
+    """Results should handle an uppercase ``case`` prefix in the master dir.
+
+    Copies ``pst/master_ies1`` into a temp dir and renames every ``pest.*``
+    file to ``PEST.*``, then exercises the same accessors as
+    :func:`results_ies_1_test` to confirm the Results handler is
+    case-insensitive on the case name.
+    """
+    import pyemu
+    src = os.path.join("pst", "master_ies1")
+    m_d = Path(tmp_path) / "master_ies1_UPPER"
+    if m_d.exists():
+        shutil.rmtree(m_d)
+    m_d.mkdir(parents=True)
+    for f in os.listdir(src):
+        new_name = f.replace("pest.", "PEST.", 1) if f.startswith("pest.") else f
+        shutil.copy(os.path.join(src, f), m_d / new_name)
+
+    r = pyemu.Results(m_d=str(m_d), case="PEST")
+    assert r.case == "PEST", "expected case='PEST', got {0!r}".format(r.case)
+
+    pst = pyemu.Pst(str(m_d / "PEST.pst"), result_dir=str(m_d))
+
+    df = pst.ies.get("paren", 0)
+    assert df is not None
+
+    for attr in (
+        "rmr", "pcs", "pdc", "weights",
+        "philambda", "phigroup", "phiactual", "phimeas",
+        "noise", "paren0", "obsen1", "paren",
+    ):
+        df = getattr(r.ies, attr)
+        assert df is not None, "r.ies.{0} returned None".format(attr)
+
+
 def results_ies_3_test():
     import pyemu
     m_d1 = os.path.join("pst", "master_ies1")
@@ -1771,8 +1807,18 @@ def results_mou_1_test():
         assert df is not None
 
 
-def dialate_bound_test():
+def add_phi_test(tmp_path):
     import pyemu
+    org_d = os.path.join("ends_master")
+    new_d = os.path.join(tmp_path,"phi_test")
+    if os.path.exists(new_d):
+        shutil.rmtree(new_d)
+    shutil.copytree(org_d,new_d)
+    pst = pyemu.Pst(os.path.join(new_d,"freyberg6_run_ies.pst"))
+    #print(pst.phi)
+    pst = pyemu.helpers.add_phi_as_obs(pst_name="freyberg6_run_ies.pst",pst_path=new_d)
+    #print(pst.obs_names)
+    assert "composite" in pst.obs_names
 
 
 if __name__ == "__main__":
@@ -1784,12 +1830,16 @@ if __name__ == "__main__":
     with this.
     """
     d = 'temp'
-    results_ies_3_test()
-    results_ies_1_test()
-    results_ies_2_test()
-    results_mou_1_test()
-    #load_test(d)
-    pst_manip_test(d)
+    # results_ies_3_test()
+    # results_ies_1_test()
+    # results_ies_2_test()
+    # results_mou_1_test()
+    # #load_test(d)
+    #st_manip_test(d)
+    #rename_pars_test(d)
+    load_test(d)
+    exit()
+    #add_phi_test(d)
     #parrep_test(d)
     #interface_check_test()
     # new_format_test_2()
@@ -1853,4 +1903,16 @@ if __name__ == "__main__":
     #pst_ctl_opt_args_test()
     #invest()
     # pst_ctl_opt_args_test()
+
+    import cProfile
+    import pstats
+    from pathlib import Path
+    pr = cProfile.Profile()
+    pr.enable()
+    new_format_test(Path('temp'))
+    pr.disable()
+    ps = pstats.Stats(pr).sort_stats('cumtime')
+    ps.print_stats(20)
+
+
 

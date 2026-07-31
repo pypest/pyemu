@@ -1,0 +1,250 @@
+pcf
+* control data
+restart estimation
+13 194 7 0 7 
+2 2 single point 1 0 0 
+10 -3.0  0.3  0.03 10 0 lamforgive derforgive
+5 5   .001
+0.1 1
+20 0.01 3 3   .01   3 
+1   1   1
+* singular value decomposition
+1
+13 1e-06
+1
+* parameter groups
+pl2p1   relative	0.01	0.1	    switch	2	parabolic
+pl2p2   relative	0.01	0.001	switch	2	parabolic
+pl2p5   relative	0.01	0.1 	switch	2	parabolic
+pl2g2  relative	0.01	0.1	switch	2	parabolic
+pl2g3  relative	0.01	0.001	switch	2	parabolic
+pl2phint   relative	0.01	0.01  switch	2	parabolic
+wc  relative	0.01	0.0001	switch	2	parabolic
+* parameter data
+2p1   log factor 130 100 450   pl2p1 1 0 1
+2p2   log factor 0.3 0.01 2   pl2p2 1 0 1
+2p5   log factor 685 600 1000   pl2p5 1 0 1
+2g2   log factor 907.9 440 1000   pl2g2 1 0 1
+2g3   log factor 8.6 5 16   pl2g3  1 0 1
+2ph   log factor 38.9 38 55   pl2phint 1 0 1
+wc3bar_1 log factor 0.233994 0.198895 0.269093 wc 1 0 1
+wc3bar_2 log factor 0.235557 0.200223 0.27089 wc 1 0 1
+wc3bar_3 log factor 0.229767 0.195302 0.264232 wc 1 0 1
+wc3bar_4 log factor 0.191616 0.162873 0.220358 wc 1 0 1
+wc3bar_5 log factor 0.191629 0.162885 0.220373 wc 1 0 1
+wc3bar_6 log factor 0.191639 0.162893 0.220385 wc 1 0 1
+wc3bar_7 log factor 0.191639 0.162893 0.220385 wc 1 0 1
+* observation groups
+plantht
+lai
+grainbm
+profwat
+soilwat
+plantbm
+et
+* observation data
+ht_s1_1 36 1 plantht
+ht_s1_2 56 1 plantht
+ht_s1_3 68 1 plantht
+ht_s1_4 97 1 plantht
+ht_s1_5 106 1 plantht
+ht_s1_6 179 1 plantht
+ht_s1_7 182 1 plantht
+ht_s1_8 189 1 plantht
+et_s1_1 50.6 1 et
+lai_s1_1 0.53 1 lai
+lai_s1_2 1.59 1 lai
+lai_s1_3 2.55 1 lai
+lai_s1_4 3.25 1 lai
+lai_s1_5 2.94 1 lai
+yld_s1_1 9854 1 grainbm
+bm_s1_1 435 1 plantbm
+bm_s1_2 2877 1 plantbm
+bm_s1_3 3396 1 plantbm
+bm_s1_4 8241 1 plantbm
+bm_s1_5 11258 1 plantbm
+pw_s1_1 34.44 1 profwat
+pw_s1_2 32.94 1 profwat
+pw_s1_3 29.96 1 profwat
+pw_s1_4 26.66 1 profwat
+pw_s1_5 26.66 1 profwat
+pw_s1_6 28.78 1 profwat
+pw_s1_7 28.48 1 profwat
+pw_s1_8 27.58 1 profwat
+pw_s1_9 25.5 1 profwat
+pw_s1_10 24.6 1 profwat
+pw_s1_11 24.6 1 profwat
+sw_s1_1 0.19 1 soilwat
+sw_s1_2 0.21 1 soilwat
+sw_s1_3 0.2 1 soilwat
+sw_s1_4 0.19 1 soilwat
+sw_s1_5 0.19 1 soilwat
+sw_s1_6 0.18 1 soilwat
+sw_s1_7 0.18 1 soilwat
+sw_s1_8 0.2 1 soilwat
+sw_s1_9 0.19 1 soilwat
+sw_s1_10 0.18 1 soilwat
+sw_s1_11 0.18 1 soilwat
+sw_s1_12 0.18 1 soilwat
+sw_s1_13 0.17 1 soilwat
+sw_s1_14 0.15 1 soilwat
+sw_s1_15 0.17 1 soilwat
+sw_s1_16 0.17 1 soilwat
+sw_s1_17 0.18 1 soilwat
+sw_s1_18 0.17 1 soilwat
+sw_s1_19 0.15 1 soilwat
+sw_s1_20 0.11 1 soilwat
+sw_s1_21 0.14 1 soilwat
+sw_s1_22 0.16 1 soilwat
+sw_s1_23 0.17 1 soilwat
+sw_s1_24 0.17 1 soilwat
+sw_s1_25 0.18 1 soilwat
+sw_s1_26 0.12 1 soilwat
+sw_s1_27 0.11 1 soilwat
+sw_s1_28 0.15 1 soilwat
+sw_s1_29 0.17 1 soilwat
+sw_s1_30 0.17 1 soilwat
+sw_s1_31 0.18 1 soilwat
+sw_s1_32 0.18 1 soilwat
+sw_s1_33 0.14 1 soilwat
+sw_s1_34 0.15 1 soilwat
+sw_s1_35 0.16 1 soilwat
+sw_s1_36 0.16 1 soilwat
+sw_s1_37 0.18 1 soilwat
+sw_s1_38 0.18 1 soilwat
+sw_s1_39 0.14 1 soilwat
+sw_s1_40 0.14 1 soilwat
+sw_s1_41 0.16 1 soilwat
+sw_s1_42 0.16 1 soilwat
+sw_s1_43 0.19 1 soilwat
+sw_s1_44 0.16 1 soilwat
+sw_s1_45 0.13 1 soilwat
+sw_s1_46 0.14 1 soilwat
+sw_s1_47 0.15 1 soilwat
+sw_s1_48 0.16 1 soilwat
+sw_s1_49 0.16 1 soilwat
+sw_s1_50 0.14 1 soilwat
+sw_s1_51 0.13 1 soilwat
+sw_s1_52 0.13 1 soilwat
+sw_s1_53 0.15 1 soilwat
+sw_s1_54 0.15 1 soilwat
+sw_s1_55 0.15 1 soilwat
+sw_s1_56 0.13 1 soilwat
+sw_s1_57 0.12 1 soilwat
+sw_s1_58 0.13 1 soilwat
+sw_s1_59 0.15 1 soilwat
+sw_s1_60 0.15 1 soilwat
+sw_s1_61 0.17 1 soilwat
+sw_s1_62 0.12 1 soilwat
+sw_s1_63 0.11 1 soilwat
+sw_s1_64 0.13 1 soilwat
+sw_s1_65 0.15 1 soilwat
+sw_s1_66 0.15 1 soilwat
+ht_s2_1 36 1 plantht
+ht_s2_2 56 1 plantht
+ht_s2_3 68 1 plantht
+ht_s2_4 97 1 plantht
+ht_s2_5 106 1 plantht
+ht_s2_6 179 1 plantht
+ht_s2_7 182 1 plantht
+ht_s2_8 189 1 plantht
+et_s2_1 50.6 1 et
+lai_s2_1 0.53 1 lai
+lai_s2_2 1.59 1 lai
+lai_s2_3 2.55 1 lai
+lai_s2_4 3.25 1 lai
+lai_s2_5 2.94 1 lai
+yld_s2_1 9854 1 grainbm
+bm_s2_1 435 1 plantbm
+bm_s2_2 2877 1 plantbm
+bm_s2_3 3396 1 plantbm
+bm_s2_4 8241 1 plantbm
+bm_s2_5 11258 1 plantbm
+pw_s2_1 34.44 1 profwat
+pw_s2_2 32.94 1 profwat
+pw_s2_3 29.96 1 profwat
+pw_s2_4 26.66 1 profwat
+pw_s2_5 26.66 1 profwat
+pw_s2_6 28.78 1 profwat
+pw_s2_7 28.48 1 profwat
+pw_s2_8 27.58 1 profwat
+pw_s2_9 25.5 1 profwat
+pw_s2_10 24.6 1 profwat
+pw_s2_11 24.6 1 profwat
+sw_s2_1 0.19 1 soilwat
+sw_s2_2 0.21 1 soilwat
+sw_s2_3 0.2 1 soilwat
+sw_s2_4 0.19 1 soilwat
+sw_s2_5 0.19 1 soilwat
+sw_s2_6 0.18 1 soilwat
+sw_s2_7 0.18 1 soilwat
+sw_s2_8 0.2 1 soilwat
+sw_s2_9 0.19 1 soilwat
+sw_s2_10 0.18 1 soilwat
+sw_s2_11 0.18 1 soilwat
+sw_s2_12 0.18 1 soilwat
+sw_s2_13 0.17 1 soilwat
+sw_s2_14 0.15 1 soilwat
+sw_s2_15 0.17 1 soilwat
+sw_s2_16 0.17 1 soilwat
+sw_s2_17 0.18 1 soilwat
+sw_s2_18 0.17 1 soilwat
+sw_s2_19 0.15 1 soilwat
+sw_s2_20 0.11 1 soilwat
+sw_s2_21 0.14 1 soilwat
+sw_s2_22 0.16 1 soilwat
+sw_s2_23 0.17 1 soilwat
+sw_s2_24 0.17 1 soilwat
+sw_s2_25 0.18 1 soilwat
+sw_s2_26 0.12 1 soilwat
+sw_s2_27 0.11 1 soilwat
+sw_s2_28 0.15 1 soilwat
+sw_s2_29 0.17 1 soilwat
+sw_s2_30 0.17 1 soilwat
+sw_s2_31 0.18 1 soilwat
+sw_s2_32 0.18 1 soilwat
+sw_s2_33 0.14 1 soilwat
+sw_s2_34 0.15 1 soilwat
+sw_s2_35 0.16 1 soilwat
+sw_s2_36 0.16 1 soilwat
+sw_s2_37 0.18 1 soilwat
+sw_s2_38 0.18 1 soilwat
+sw_s2_39 0.14 1 soilwat
+sw_s2_40 0.14 1 soilwat
+sw_s2_41 0.16 1 soilwat
+sw_s2_42 0.16 1 soilwat
+sw_s2_43 0.19 1 soilwat
+sw_s2_44 0.16 1 soilwat
+sw_s2_45 0.13 1 soilwat
+sw_s2_46 0.14 1 soilwat
+sw_s2_47 0.15 1 soilwat
+sw_s2_48 0.16 1 soilwat
+sw_s2_49 0.16 1 soilwat
+sw_s2_50 0.14 1 soilwat
+sw_s2_51 0.13 1 soilwat
+sw_s2_52 0.13 1 soilwat
+sw_s2_53 0.15 1 soilwat
+sw_s2_54 0.15 1 soilwat
+sw_s2_55 0.15 1 soilwat
+sw_s2_56 0.13 1 soilwat
+sw_s2_57 0.12 1 soilwat
+sw_s2_58 0.13 1 soilwat
+sw_s2_59 0.15 1 soilwat
+sw_s2_60 0.15 1 soilwat
+sw_s2_61 0.17 1 soilwat
+sw_s2_62 0.12 1 soilwat
+sw_s2_63 0.11 1 soilwat
+sw_s2_64 0.13 1 soilwat
+sw_s2_65 0.15 1 soilwat
+sw_s2_66 0.15 1 soilwat
+* model command line
+""C:\RZWQM2\bin\RZWQM2_PROJPEST_RUN.BAT" ".\pest\pestargs.txt""
+* model input/output
+.\pest\par2par.tpl     .\pest\par2par.in
+".\pest\p2 pcul1.tpl"     '.\   pest\p2pcul1.in'
+.\PEST\s1main.ins	".\NewScenario\COMP2EXP.OUT"
+.\PEST\s2main.ins	'.\New Scenario8\COMP2EXP.OUT'
+* prior information
+++tpl_force_decimal(true)
+++debug_parse_only(true)
+++check_tplins(false)

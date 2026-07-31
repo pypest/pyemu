@@ -302,7 +302,7 @@ def freyberg_kl_pp_compare():
     hds_nz_obs = hds_obs.loc[hds_obs.ij.apply(lambda x: x in obs_locs.ij.values),"obsnme"]
     print(hds_nz_obs)
     obs.loc[hds_nz_obs,"weight"] = 1.0
-    obs.loc[hds_nz_obs,"obsval"] += np.random.normal(0.0,1.0,len(hds_nz_obs))
+    obs.loc[hds_nz_obs,"obsval"] += pyemu.en.rng.normal(0.0,1.0,len(hds_nz_obs))
     ph.pst.control_data.noptmax = 6
     ph.pst.parameter_data.loc[ph.pst.parameter_data.pargp!="pp_hk0","partrans"] = "fixed"
     ph.pst.write(os.path.join(new_model_ws,"pest_pp.pst"))
