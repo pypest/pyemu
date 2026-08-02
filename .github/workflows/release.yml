@@ -123,8 +123,12 @@ jobs:
           git add pyproject.toml uv.lock CITATION.cff
           git commit -m "Bump version to $VERSION"
           git tag -a "v$VERSION" -m "pyemu v$VERSION"
-          git push origin "HEAD:refs/heads/$GITHUB_REF_NAME"
+          # tag first: it is the more heavily ruleset-restricted ref, and a
+          # rejected tag then leaves the release branch untouched. Pushing the
+          # tag uploads the commit object too, so the branch push that follows
+          # is cheap.
           git push origin "refs/tags/v$VERSION"
+          git push origin "HEAD:refs/heads/$GITHUB_REF_NAME"
 
       - name: Publish
         if: ${{ !inputs.dry_run }}
@@ -153,10 +157,16 @@ jobs:
         if: ${{ always() && steps.bump.outputs.version != '' }}
         env:
           VERSION: ${{ steps.bump.outputs.version }}
+          JOB_STATUS: ${{ job.status }}
         run: |
           {
             echo "### pyemu v$VERSION"
-            if [ "${{ inputs.dry_run }}" = "true" ]; then
+            if [ "$JOB_STATUS" != "success" ]; then
+              echo "**Run failed** - see the steps above for how far it got."
+              echo "If the bump commit reached \`$GITHUB_REF_NAME\` but the release did not"
+              echo "finish, revert it before re-running, or the next bump will start from"
+              echo "v$VERSION instead of producing it."
+            elif [ "${{ inputs.dry_run }}" = "true" ]; then
               echo "Dry run from \`$GITHUB_REF_NAME\`: built and smoke tested only."
               echo "Nothing was pushed or published."
             elif [ "${{ inputs.repository }}" = "testpypi" ]; then
