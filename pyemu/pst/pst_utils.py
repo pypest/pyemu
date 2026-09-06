@@ -425,7 +425,10 @@ def parse_tpl_file(tpl_file):
     # seen = set()
     # seen_add = seen.add
     # return [x for x in par_names if not (x in seen or seen_add(x))]
-    return [p.strip() for p in list(par_names)]
+    # sorted, not list(): par_names is a set and set iteration order is not
+    # stable between runs, so an unsorted list gives a different parameter
+    # order every time the same template file is parsed.
+    return sorted(p.strip() for p in par_names)
 
 
 def write_input_files(pst, pst_path="."):

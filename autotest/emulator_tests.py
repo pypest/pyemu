@@ -2016,6 +2016,44 @@ class TestRunStorForwardRuns:
                 obs_vals[i].astype(np.float64).tofile(f)
                 np.array([0], dtype=np.int8).tofile(f)  # buf_status
 
+    def test_runstor_update_shared_par_obs_names(self, tmp_path):
+        """pest allows a parameter and an observation to share a name.  The
+        file format, file_info() and get_data() are all order-based with the
+        par block first, so update() must be too -- selecting by label returns
+        both columns for each shared name, writing a double-width par block
+        that shifts every run after the first and corrupts the file."""
+        from pyemu.utils.helpers import RunStor
+
+        par_names = ["o0", "o1", "o2"]              # also observation names
+        obs_names = ["o0", "o1", "o2", "o3"]
+        n_runs = 4
+        pv = np.arange(n_runs * len(par_names), dtype=float).reshape(n_runs, -1)
+        ov = np.arange(n_runs * len(obs_names), dtype=float).reshape(n_runs, -1) + 1000.
+
+        f = os.path.join(str(tmp_path), "shared.rns")
+        self._create_rns(f, par_names, obs_names, pv, ov)
+
+        df = RunStor(f).get_data()
+        assert len(df.columns) != len(set(df.columns)), "expected duplicate labels"
+        # get_data is positional, so both blocks survive intact
+        npar, nobs = len(par_names), len(obs_names)
+        assert np.allclose(df.iloc[:, -(npar + nobs):-nobs].values, pv)
+        assert np.allclose(df.iloc[:, -nobs:].values, ov)
+
+        # writing back unchanged must be a no-op, not a corruption
+        RunStor(f).update(df)
+
+        df2 = RunStor(f).get_data()
+        assert np.allclose(df2.iloc[:, -(npar + nobs):-nobs].values, pv), "par block"
+        assert np.allclose(df2.iloc[:, -nobs:].values, ov), "obs block"
+
+        # and an actual edit lands in the obs block only
+        df2.iloc[:, -nobs:] = ov + 7.0
+        RunStor(f).update(df2)
+        df3 = RunStor(f).get_data()
+        assert np.allclose(df3.iloc[:, -nobs:].values, ov + 7.0)
+        assert np.allclose(df3.iloc[:, -(npar + nobs):-nobs].values, pv)
+
     def test_dsi_runstore_forward_run(self, tmp_path):
         from pyemu.utils.helpers import dsi_runstore_forward_run
 
@@ -2486,6 +2524,600 @@ def test_pls_predict_ndarray_wrong_width_raises():
     with pytest.raises(ValueError, match="ndarray"):
         pls.predict(bad)
 
+
+# ---------------------------------------------------------------------------
+# PLS emulator tests (Phase 2): runstore block selection, prepare_pestpp
+# table fallback, and CV robustness
+# ---------------------------------------------------------------------------
+
+
+def _pls_rns_setup(tmp_path, par_names, obs_names, n_runs=4, seed=0):
+    """Fit a PLS and lay down a matching .rns with zeroed obs columns."""
+    from pyemu.emulators import PLS
+
+    rng = np.random.RandomState(seed)
+    all_names = list(dict.fromkeys(list(par_names) + list(obs_names)))
+    data = pd.DataFrame(rng.normal(size=(60, len(all_names))), columns=all_names)
+    # make the outputs a genuine linear function of the inputs
+    W = rng.normal(size=(len(par_names), len(obs_names))) * 0.4
+    data.loc[:, obs_names] = (data.loc[:, par_names].values @ W
+                              + 0.01 * rng.normal(size=(60, len(obs_names))))
+
+    emu = PLS(data=data, input_names=list(par_names),
+              output_names=list(obs_names), n_components=3).fit()
+
+    ws = str(tmp_path)
+    emu.save(os.path.join(ws, "emulator.pkl"))
+
+    par_vals = rng.normal(size=(n_runs, len(par_names)))
+    obs_vals = np.zeros((n_runs, len(obs_names)))
+    rns_file = os.path.join(ws, "pls.rns")
+    TestRunStorForwardRuns._create_rns(rns_file, list(par_names), list(obs_names),
+                                       par_vals, obs_vals)
+    return emu, ws, rns_file, par_vals
+
+
+def test_pls_prepare_pestpp_no_name_in_both_namespaces(tmp_path):
+    """input_names are parameters as far as the emulator is concerned, so where
+    output_names overlaps them the obs block gives way.  The emulator's own
+    control file must never carry a name as both a parameter and an
+    observation -- the run store addresses both blocks by label and cannot
+    then tell them apart."""
+    from pyemu.emulators import PLS
+
+    obs_names = ["o{0}".format(i) for i in range(8)]
+    par_names = obs_names[:4]
+    rng = np.random.RandomState(0)
+    data = pd.DataFrame(rng.normal(size=(50, 8)), columns=obs_names)
+
+    emu = PLS(data=data, input_names=par_names, output_names=obs_names,
+              n_components=3).fit()
+    pst = emu.prepare_pestpp(str(tmp_path / "td"), use_runstor=True)
+
+    assert set(pst.par_names) & set(pst.obs_names) == set(), \
+        "control file carries names as both par and obs"
+    assert len(pst.par_names) == len(par_names)
+    assert set(pst.obs_names) == set(obs_names[4:])
+
+    # the emulator itself still predicts the full output_names
+    assert list(emu.predict(data.loc[:, par_names]).columns) == obs_names
+
+
+def test_pls_obs_block_all_inputs_raises():
+    """If every output is also an input there is no obs block left to write."""
+    from pyemu.emulators import PLS
+
+    names = ["o{0}".format(i) for i in range(5)]
+    rng = np.random.RandomState(0)
+    data = pd.DataFrame(rng.normal(size=(40, 5)), columns=names)
+    emu = PLS(data=data, input_names=names, output_names=names,
+              n_components=2).fit()
+    with pytest.raises(ValueError, match="no observations"):
+        emu._get_emulator_observations()
+
+
+def test_pls_runstore_values_land_in_right_columns(tmp_path):
+    """Positional writes are exactly where an off-by-one hides, so compare the
+    run store against a manual predict() column by column."""
+    from pyemu.emulators.pls import pls_runstore_forward_run
+    from pyemu.utils.helpers import RunStor
+
+    par_names = ["p{0}".format(i) for i in range(4)]
+    obs_names = ["o{0}".format(i) for i in range(8)]
+    emu, ws, rns_file, par_vals = _pls_rns_setup(tmp_path, par_names, obs_names)
+
+    pls_runstore_forward_run(ws=ws, pst_name="pls")
+
+    expected = emu.predict(pd.DataFrame(par_vals, columns=par_names))
+    df = RunStor(rns_file).get_data()
+    got = df.iloc[:, -len(obs_names):].values
+    assert np.allclose(got, expected.loc[:, obs_names].values), \
+        "obs values did not land in the expected columns"
+
+
+def test_pls_runstore_par_order_permuted(tmp_path):
+    """predict() selects by name, so a run store whose parameter block is
+    ordered differently from the emulator's input_names must give the same
+    answer once the positional slice is relabelled."""
+    from pyemu.emulators.pls import pls_runstore_forward_run
+    from pyemu.utils.helpers import RunStor
+    from pyemu.emulators import PLS
+
+    par_names = ["p{0}".format(i) for i in range(3)]
+    obs_names = ["o{0}".format(i) for i in range(6)]
+    emu, ws, rns_file, par_vals = _pls_rns_setup(tmp_path, par_names, obs_names)
+    pls_runstore_forward_run(ws=ws, pst_name="pls")
+    ref = RunStor(rns_file).get_data().iloc[:, -len(obs_names):].values
+
+    # same emulator, run store with the parameter block reversed
+    ws2 = os.path.join(str(tmp_path), "permuted")
+    os.makedirs(ws2)
+    emu.save(os.path.join(ws2, "emulator.pkl"))
+    perm = list(reversed(par_names))
+    perm_vals = pd.DataFrame(par_vals, columns=par_names).loc[:, perm].values
+    rns2 = os.path.join(ws2, "pls.rns")
+    TestRunStorForwardRuns._create_rns(rns2, perm, obs_names, perm_vals,
+                                       np.zeros((par_vals.shape[0], len(obs_names))))
+    pls_runstore_forward_run(ws=ws2, pst_name="pls")
+    got = RunStor(rns2).get_data().iloc[:, -len(obs_names):].values
+    assert np.allclose(ref, got), "permuting the parameter block changed the result"
+
+
+def test_pls_runstore_derives_case_name(tmp_path):
+    """A case not named 'pls' must still find its run store."""
+    from pyemu.emulators.pls import pls_runstore_forward_run
+    from pyemu.utils.helpers import RunStor
+
+    par_names = ["p{0}".format(i) for i in range(3)]
+    obs_names = ["o{0}".format(i) for i in range(6)]
+    emu, ws, rns_file, par_vals = _pls_rns_setup(tmp_path, par_names, obs_names)
+    renamed = os.path.join(ws, "mycase.rns")
+    shutil.move(rns_file, renamed)
+
+    # no pst_name given -- the case name is derived from what is on disk
+    pls_runstore_forward_run(ws=ws)
+
+    df = RunStor(renamed).get_data()
+    assert not np.allclose(df.iloc[:, -len(obs_names):].values, 0.0)
+
+
+def test_pls_runstore_case_name_with_glob_metachars(tmp_path):
+    """The working directory is a path, not a pattern.  PEST++ worker dirs can
+    contain [ ] * ?, which a glob-based search would read as pattern syntax and
+    then report a present run store as missing."""
+    from pyemu.emulators.pls import pls_runstore_forward_run
+    from pyemu.utils.helpers import RunStor
+
+    par_names = ["p{0}".format(i) for i in range(3)]
+    obs_names = ["o{0}".format(i) for i in range(6)]
+    odd = os.path.join(str(tmp_path), "worker[1]")
+    os.makedirs(odd)
+    emu, ws, rns_file, par_vals = _pls_rns_setup(Path(odd), par_names, obs_names)
+    shutil.move(rns_file, os.path.join(odd, "mycase.rns"))
+
+    pls_runstore_forward_run(ws=odd)
+
+    df = RunStor(os.path.join(odd, "mycase.rns")).get_data()
+    assert not np.allclose(df.iloc[:, -len(obs_names):].values, 0.0)
+
+
+def test_pls_runstore_ambiguous_case_name_raises(tmp_path):
+    """Two run stores and no pst_name is ambiguous -- say so rather than guess."""
+    from pyemu.emulators.pls import pls_runstore_forward_run
+
+    par_names = ["p{0}".format(i) for i in range(3)]
+    obs_names = ["o{0}".format(i) for i in range(6)]
+    emu, ws, rns_file, par_vals = _pls_rns_setup(tmp_path, par_names, obs_names)
+    shutil.copy(rns_file, os.path.join(ws, "other.rns"))
+
+    with pytest.raises(RuntimeError, match="multiple run stores"):
+        pls_runstore_forward_run(ws=ws)
+
+
+def test_pls_prepare_pestpp_par_table_falls_back(tmp_path):
+    """With a pst whose parameter_data holds none of the input_names, the
+    parameter table must still be populated AND the observation weights must
+    still come from that pst.  Today exactly one of those two holds."""
+    from pyemu.emulators import PLS
+
+    obs_names = ["o{0}".format(i) for i in range(8)]
+    par_names = obs_names[:4]
+    rng = np.random.RandomState(0)
+    data = pd.DataFrame(rng.normal(size=(40, len(obs_names))), columns=obs_names)
+
+    pst = _pst_for_pls(["some_other_par"], obs_names, nonzero=par_names)
+    pst.observation_data.loc[:, "obsval"] = 3.14
+    pst.observation_data.loc[obs_names[4:], "weight"] = 0.25
+
+    emu = PLS(data=data, input_names=par_names, output_names=obs_names[4:],
+              n_components=2).fit()
+
+    par_df = emu._get_emulator_parameters(pst)
+    obs_df = emu._get_emulator_observations(pst)
+
+    assert len(par_df) == len(par_names), \
+        "parameter table should fall back to synthesized rows, got {0}".format(
+            len(par_df))
+    assert list(par_df["parnme"]) == list(par_names)
+    # and the obs side still comes from the supplied pst, not training means
+    assert np.allclose(obs_df["obsval"].values, 3.14), obs_df["obsval"].values
+    assert np.allclose(obs_df["weight"].values, 0.25), obs_df["weight"].values
+
+
+def test_pls_prepare_pestpp_par_table_prefers_pst(tmp_path):
+    """The fallback must not fire when the pst does describe the inputs."""
+    from pyemu.emulators import PLS
+
+    data, par_cols, obs_cols = _synth_pls_data(n_real=40, n_par=6, n_obs=4)
+    pst = _pst_for_pls(par_cols, obs_cols)
+    pst.parameter_data.loc[:, "parubnd"] = 12345.0
+
+    emu = PLS(data=data, input_names=par_cols, output_names=obs_cols,
+              n_components=2).fit()
+    par_df = emu._get_emulator_parameters(pst)
+    assert len(par_df) == len(par_cols)
+    assert np.allclose(par_df["parubnd"].values, 12345.0), \
+        "should have used the pst parameter_data, not synthesized bounds"
+
+
+def test_pls_cv_skips_non_finite_anchor():
+    """A degenerate anchor must be excluded, not merely outscored."""
+    from pyemu.emulators import PLS
+
+    data, par_cols, obs_cols = _synth_pls_data(n_real=40, n_par=8, n_obs=5)
+    emu = PLS(data=data, input_names=par_cols, output_names=obs_cols)
+
+    real_pick = PLS._pick_components_cv
+
+    import sklearn.cross_decomposition as scd
+    orig = scd.PLSRegression
+
+    class _Poisoned(orig):
+        """PLSRegression that returns non-finite predictions at k >= 5."""
+        def predict(self, X, *a, **kw):
+            out = super().predict(X, *a, **kw)
+            if self.n_components >= 5:
+                out = np.asarray(out, dtype=float).copy()
+                out[:] = np.inf
+            return out
+
+    scd.PLSRegression = _Poisoned
+    try:
+        emu.fit()
+    finally:
+        scd.PLSRegression = orig
+
+    assert emu.n_components < 5, emu.n_components
+    assert all(k < 5 for k in emu._cv_scores), sorted(emu._cv_scores)
+    assert all(k >= 5 for k in emu._cv_skipped), sorted(emu._cv_skipped)
+    assert all(np.isfinite(v) for v in emu._cv_scores.values())
+
+
+def test_pls_cv_skips_nan_anchor():
+    """NaN is the case min() gets wrong: min() over a dict containing NaN is
+    order-dependent, so a NaN-scoring anchor can win outright."""
+    from pyemu.emulators import PLS
+
+    data, par_cols, obs_cols = _synth_pls_data(n_real=40, n_par=8, n_obs=5)
+    emu = PLS(data=data, input_names=par_cols, output_names=obs_cols)
+
+    import sklearn.cross_decomposition as scd
+    orig = scd.PLSRegression
+
+    class _Poisoned(orig):
+        """The lowest anchor scores NaN, so an unguarded min() picks it first."""
+        def predict(self, X, *a, **kw):
+            out = super().predict(X, *a, **kw)
+            if self.n_components == 1:
+                out = np.asarray(out, dtype=float).copy()
+                out[:] = np.nan
+            return out
+
+    scd.PLSRegression = _Poisoned
+    try:
+        emu.fit()
+    finally:
+        scd.PLSRegression = orig
+
+    assert emu.n_components != 1, "NaN-scoring anchor was selected"
+    assert 1 in emu._cv_skipped
+    assert 1 not in emu._cv_scores
+
+
+def test_pls_cv_all_anchors_non_finite_raises():
+    """No finite anchor at all should be a clear error, not an arbitrary pick."""
+    from pyemu.emulators import PLS
+
+    data, par_cols, obs_cols = _synth_pls_data(n_real=40, n_par=8, n_obs=5)
+    emu = PLS(data=data, input_names=par_cols, output_names=obs_cols)
+
+    import sklearn.cross_decomposition as scd
+    orig = scd.PLSRegression
+
+    class _Poisoned(orig):
+        def predict(self, X, *a, **kw):
+            out = np.asarray(super().predict(X, *a, **kw), dtype=float).copy()
+            out[:] = np.nan
+            return out
+
+    scd.PLSRegression = _Poisoned
+    try:
+        with pytest.raises(RuntimeError, match="no anchor with finite"):
+            emu.fit()
+    finally:
+        scd.PLSRegression = orig
+
+
+def test_pls_max_components_honoured():
+    """max_components truncates the anchor ladder rather than clipping after."""
+    from pyemu.emulators import PLS
+
+    data, par_cols, obs_cols = _synth_pls_data(n_real=60, n_par=20, n_obs=12)
+    emu = PLS(data=data, input_names=par_cols, output_names=obs_cols,
+              max_components=4).fit()
+
+    assert emu.n_components <= 4, emu.n_components
+    assert max(emu._cv_scores) <= 4, sorted(emu._cv_scores)
+    # the capped anchors were never fitted at all
+    assert not any(k > 4 for k in emu._cv_scores), sorted(emu._cv_scores)
+
+
+def test_pls_max_components_no_effect_when_ncomp_explicit():
+    """An explicit n_components means explicit."""
+    from pyemu.emulators import PLS
+
+    data, par_cols, obs_cols = _synth_pls_data(n_real=60, n_par=20, n_obs=12)
+    emu = PLS(data=data, input_names=par_cols, output_names=obs_cols,
+              n_components=7, max_components=4).fit()
+    assert emu.n_components == 7
+
+
+def test_pls_max_components_rejects_bad_value():
+    from pyemu.emulators import PLS
+
+    data, par_cols, obs_cols = _synth_pls_data(n_real=40, n_par=8, n_obs=5)
+    with pytest.raises(ValueError, match="max_components"):
+        PLS(data=data, input_names=par_cols, output_names=obs_cols,
+            max_components=0)
+
+
+def test_pls_cv_no_regression_on_well_conditioned_data():
+    """Where every anchor is finite, the guard must not change the pick."""
+    from pyemu.emulators import PLS
+
+    data, par_cols, obs_cols = _synth_pls_data(n_real=60, n_par=12, n_obs=8)
+    emu = PLS(data=data, input_names=par_cols, output_names=obs_cols).fit()
+    assert emu._cv_skipped == {}, emu._cv_skipped
+    # deterministic: KFold(random_state=0) fixes the split
+    emu2 = PLS(data=data, input_names=par_cols, output_names=obs_cols).fit()
+    assert emu2.n_components == emu.n_components
+
+# ---------------------------------------------------------------------------
+# PLS predictive spread (Group B): residual bootstrap
+# ---------------------------------------------------------------------------
+
+
+def _pls_noisy_data(n_real=90, n_par=12, n_obs=6, noise=0.3, seed=7):
+    """Linear map plus known iid noise, so the residual has real width."""
+    rng = np.random.RandomState(seed)
+    pars = pd.DataFrame(rng.normal(size=(n_real, n_par)),
+                        columns=["p{0}".format(i) for i in range(n_par)])
+    W = rng.normal(size=(n_par, n_obs)) * 0.3
+    obs = pd.DataFrame(pars.values @ W + noise * rng.normal(size=(n_real, n_obs)),
+                       columns=["o{0}".format(i) for i in range(n_obs)])
+    return pd.concat([pars, obs], axis=1), list(pars.columns), list(obs.columns)
+
+
+def test_pls_residuals_zero_mean():
+    """The map is fitted with an intercept, so the residual adds width without
+    moving the centre.  Catches an implementation that recentres or rescales."""
+    from pyemu.emulators import PLS
+
+    data, pc, oc = _pls_noisy_data()
+    emu = PLS(data=data, input_names=pc, output_names=oc, n_components=4).fit()
+
+    assert emu.residuals_ is not None
+    assert emu.residuals_.shape == (len(data), len(oc))
+    assert np.allclose(emu.residuals_.mean(axis=0), 0.0, atol=1e-8), \
+        emu.residuals_.mean(axis=0)
+
+
+def test_pls_ensemble_preserves_cross_column_correlation():
+    """Whole residual rows are sampled, never individual entries.  Entry-wise
+    sampling keeps the marginal variances correct while destroying the
+    cross-observation structure, so a variance-only test passes and this one
+    does not -- which is the point of it."""
+    from pyemu.emulators import PLS
+
+    # outputs share a strong common factor, so residuals are correlated
+    rng = np.random.RandomState(3)
+    n, npar, nobs = 90, 10, 6
+    pars = pd.DataFrame(rng.normal(size=(n, npar)),
+                        columns=["p{0}".format(i) for i in range(npar)])
+    common = rng.normal(size=(n, 1))
+    obs = pd.DataFrame(pars.values @ (rng.normal(size=(npar, nobs)) * 0.2)
+                       + common * 0.9 + 0.1 * rng.normal(size=(n, nobs)),
+                       columns=["o{0}".format(i) for i in range(nobs)])
+    data = pd.concat([pars, obs], axis=1)
+    pc, oc = list(pars.columns), list(obs.columns)
+
+    emu = PLS(data=data, input_names=pc, output_names=oc, n_components=3).fit()
+    ens = emu.predict_ensemble(data.loc[[0], pc], nreals=4000, seed=0)
+
+    want = np.corrcoef(emu.residuals_, rowvar=False)
+    got = np.corrcoef(ens.values, rowvar=False)
+    assert np.allclose(got, want, atol=0.06), np.abs(got - want).max()
+
+    # and the structure is real, not an identity matrix either side
+    off = want[~np.eye(len(oc), dtype=bool)]
+    assert np.abs(off).max() > 0.3, "fixture should have correlated residuals"
+
+
+def test_pls_ensemble_samples_with_replacement():
+    """nreals may exceed the training ensemble size."""
+    from pyemu.emulators import PLS
+
+    data, pc, oc = _pls_noisy_data(n_real=40)
+    emu = PLS(data=data, input_names=pc, output_names=oc, n_components=3).fit()
+
+    nreals = 300
+    ens = emu.predict_ensemble(data.loc[[0], pc], nreals=nreals, seed=0)
+    assert ens.shape == (nreals, len(oc))
+
+    # distinct rows drawn should match the with-replacement expectation
+    n = len(data)
+    distinct = len(np.unique(ens.values.round(10), axis=0))
+    expected = n * (1.0 - (1.0 - 1.0 / n) ** nreals)
+    assert abs(distinct - expected) < 0.25 * expected, (distinct, expected)
+
+
+def test_pls_ensemble_deterministic():
+    from pyemu.emulators import PLS
+
+    data, pc, oc = _pls_noisy_data()
+    emu = PLS(data=data, input_names=pc, output_names=oc, n_components=4).fit()
+    x = data.loc[[0], pc]
+
+    a = emu.predict_ensemble(x, nreals=200, seed=0)
+    b = emu.predict_ensemble(x, nreals=200, seed=0)
+    assert np.array_equal(a.values, b.values), "same seed must be bit-identical"
+    c = emu.predict_ensemble(x, nreals=200, seed=1)
+    assert not np.allclose(a.values, c.values), "different seeds must differ"
+
+
+def test_pls_ensemble_constant_output_column():
+    """A constant output gives a zero residual column and zero spread there,
+    rather than NaN."""
+    from pyemu.emulators import PLS
+
+    data, pc, oc = _pls_noisy_data()
+    data = data.copy()
+    data.loc[:, oc[0]] = 5.0
+    emu = PLS(data=data, input_names=pc, output_names=oc, n_components=3).fit()
+
+    assert np.all(np.isfinite(emu.residuals_))
+    assert np.allclose(emu.residuals_[:, 0], 0.0), emu.residuals_[:, 0]
+
+    ens = emu.predict_ensemble(data.loc[[0], pc], nreals=100, seed=0)
+    assert np.all(np.isfinite(ens.values))
+    assert np.isclose(ens.iloc[:, 0].std(), 0.0)
+    assert np.allclose(ens.iloc[:, 0].values, 5.0)
+
+
+def test_pls_ensemble_coverage_of_held_out_truth():
+    """The only check that the spread is the right *size* rather than merely
+    present: data from a known linear map plus known noise, so the ensemble's
+    empirical coverage of held-out truth should approach nominal."""
+    from pyemu.emulators import PLS
+
+    rng = np.random.RandomState(11)
+    npar, nobs, noise = 10, 5, 0.4
+    W = rng.normal(size=(npar, nobs)) * 0.3
+
+    def make(n):
+        X = rng.normal(size=(n, npar))
+        Y = X @ W + noise * rng.normal(size=(n, nobs))
+        return (pd.DataFrame(X, columns=["p{0}".format(i) for i in range(npar)]),
+                pd.DataFrame(Y, columns=["o{0}".format(i) for i in range(nobs)]))
+
+    Xtr, Ytr = make(300)
+    data = pd.concat([Xtr, Ytr], axis=1)
+    pc, oc = list(Xtr.columns), list(Ytr.columns)
+    emu = PLS(data=data, input_names=pc, output_names=oc, n_components=npar).fit()
+
+    Xte, Yte = make(120)
+    hits = total = 0
+    for i in range(len(Xte)):
+        ens = emu.predict_ensemble(Xte.iloc[[i]], nreals=400, seed=i)
+        lo = np.percentile(ens.values, 5.0, axis=0)
+        hi = np.percentile(ens.values, 95.0, axis=0)
+        truth = Yte.iloc[i].values
+        hits += int(((truth >= lo) & (truth <= hi)).sum())
+        total += len(truth)
+    coverage = hits / total
+    assert 0.85 <= coverage <= 0.98, "90% interval covered {0:.3f}".format(coverage)
+
+
+def test_pls_ensemble_residual_added_before_inverse_transform():
+    """The zero-mean guarantee holds in the space the map was fitted in, so the
+    residual is added before the output inverse-transform.  Under a log
+    transform that shows up as a median tracking the point prediction with the
+    mean above it; adding after the inverse would recentre the median."""
+    from pyemu.emulators import PLS
+
+    rng = np.random.RandomState(0)
+    n, npar, nobs = 90, 10, 5
+    pars = pd.DataFrame(rng.normal(size=(n, npar)),
+                        columns=["p{0}".format(i) for i in range(npar)])
+    obs = pd.DataFrame(
+        np.exp(pars.values @ (rng.normal(size=(npar, nobs)) * 0.3)
+               + 0.4 * rng.normal(size=(n, nobs))),
+        columns=["o{0}".format(i) for i in range(nobs)])
+    data = pd.concat([pars, obs], axis=1)
+    pc, oc = list(pars.columns), list(obs.columns)
+
+    emu = PLS(data=data, input_names=pc, output_names=oc, n_components=4,
+              transforms=[{"type": "log10", "columns": oc}]).fit()
+
+    x = data.loc[[0], pc]
+    point = np.asarray(emu.predict(x), dtype=float)
+    ens = emu.predict_ensemble(x, nreals=4000, seed=0)
+
+    # the inverse transform was applied to the perturbed values
+    assert (ens.values > 0).all(), "log inverse should keep everything positive"
+    med = np.median(ens.values, axis=0)
+    assert np.allclose(med / point, 1.0, atol=0.1), med / point
+    assert np.all(ens.mean(axis=0).values > point), \
+        "log inverse of a symmetric residual should be right-skewed"
+
+
+def test_pls_ensemble_shapes_and_index():
+    from pyemu.emulators import PLS
+
+    data, pc, oc = _pls_noisy_data()
+    emu = PLS(data=data, input_names=pc, output_names=oc, n_components=3).fit()
+
+    one = emu.predict_ensemble(data.loc[[0], pc], nreals=25, seed=0)
+    assert one.shape == (25, len(oc))
+    assert one.index.name == "realization"
+    assert list(one.columns) == oc
+
+    many = emu.predict_ensemble(data.loc[[0, 1, 2], pc], nreals=7, seed=0)
+    assert many.shape == (3 * 7, len(oc))
+    assert many.index.names[-1] == "realization"
+    assert len(many.index.levels[0]) == 3
+
+
+def test_pls_ensemble_errors():
+    from pyemu.emulators import PLS
+
+    data, pc, oc = _pls_noisy_data()
+    unfit = PLS(data=data, input_names=pc, output_names=oc, n_components=3)
+    with pytest.raises(ValueError, match="fitted"):
+        unfit.predict_ensemble(data.loc[[0], pc])
+
+    emu = PLS(data=data, input_names=pc, output_names=oc, n_components=3).fit()
+    with pytest.raises(ValueError, match="nreals"):
+        emu.predict_ensemble(data.loc[[0], pc], nreals=0)
+
+
+def test_pls_parameter_reducer_not_aliased():
+    """_fitted_reducer must be a copy: sharing one reducer instance between two
+    emulators otherwise makes the second fit change the first's predictions."""
+    from sklearn.decomposition import PCA
+    from pyemu.emulators import PLS
+
+    data, pc, oc = _pls_noisy_data(n_real=80, n_par=12)
+    shared = PCA(n_components=5)
+
+    e1 = PLS(data=data, input_names=pc, output_names=oc, n_components=3,
+             parameter_reducer=shared).fit()
+    before = np.asarray(e1.predict(data.loc[:, pc]), dtype=float)
+
+    PLS(data=data.iloc[:40], input_names=pc, output_names=oc, n_components=3,
+        parameter_reducer=shared).fit()
+    after = np.asarray(e1.predict(data.loc[:, pc]), dtype=float)
+
+    assert e1._fitted_reducer is not shared, "reducer was aliased, not copied"
+    assert np.allclose(before, after), \
+        "fitting a second emulator changed the first's predictions"
+
+
+def test_pls_residuals_survive_pickle_round_trip(tmp_path):
+    """predict_ensemble must work after load(), so residuals_ has to persist."""
+    from pyemu.emulators import PLS
+
+    data, pc, oc = _pls_noisy_data()
+    emu = PLS(data=data, input_names=pc, output_names=oc, n_components=3).fit()
+    f = os.path.join(str(tmp_path), "emu.pkl")
+    emu.save(f)
+
+    loaded = PLS.load(f)
+    assert loaded.residuals_ is not None
+    assert np.allclose(loaded.residuals_, emu.residuals_)
+    x = data.loc[[0], pc]
+    assert np.allclose(loaded.predict_ensemble(x, nreals=50, seed=0).values,
+                       emu.predict_ensemble(x, nreals=50, seed=0).values)
 
 if __name__ == "__main__":
     tmp_path = Path("temp")

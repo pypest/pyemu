@@ -911,6 +911,22 @@ class Pst(object):
         return os.path.split(filename)
 
     @staticmethod
+    def _get_base_filename(new_filename):
+        """private method to derive the base name for version 2 external files
+
+        Note:
+            the control file name is not required to carry a '.pst' extension -
+            if it doesn't, the whole name is the base.  Without this trap, a
+            control file named 'mymodel' gives every external section the
+            control file name itself.
+
+        """
+        base, ext = os.path.splitext(new_filename)
+        if ext.lower() != ".pst":
+            base = new_filename
+        return base.lower()
+
+    @staticmethod
     def _cast_df_from_lines(
         section, lines, fieldnames, converters, defaults, alias_map={}, pst_path="."
     ):
@@ -1762,6 +1778,7 @@ class Pst(object):
             pst_rel_path = ""
 
         self.new_filename = new_filename
+        base_filename = Pst._get_base_filename(new_filename)
         self.rectify_pgroups()
         self.rectify_pi()
         self._rectify_parchglim()
@@ -1793,7 +1810,7 @@ class Pst(object):
         columns = self.pargp_fieldnames
         _check_and_reject_nans(self.parameter_groups.loc[:, columns], name)
         f_out.write("* parameter groups external\n")
-        pargp_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
+        pargp_filename = base_filename + ".{0}.csv".format(name)
         if pst_path is not None:
             pargp_filename = os.path.join(pst_path, os.path.split(pargp_filename)[-1])
         self.parameter_groups.to_csv(pargp_filename, index=False)
@@ -1805,7 +1822,7 @@ class Pst(object):
         columns = self.par_fieldnames
         _check_and_reject_nans(self.parameter_data.loc[:, columns], name)
         f_out.write("* parameter data external\n")
-        par_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
+        par_filename = base_filename + ".{0}.csv".format(name)
         if pst_path is not None:
             par_filename = os.path.join(pst_path, os.path.split(par_filename)[-1])
         self.parameter_data.to_csv(par_filename, index=False)
@@ -1817,7 +1834,7 @@ class Pst(object):
         columns = self.obs_fieldnames
         _check_and_reject_nans(self.observation_data.loc[:, columns], name)
         f_out.write("* observation data external\n")
-        obs_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
+        obs_filename = base_filename + ".{0}.csv".format(name)
         if pst_path is not None:
             obs_filename = os.path.join(pst_path, os.path.split(obs_filename)[-1])
         self.observation_data.to_csv(obs_filename, index=False)
@@ -1833,7 +1850,7 @@ class Pst(object):
         columns = self.model_io_fieldnames
         _check_and_reject_nans(self.model_input_data.loc[:, columns], name)
         f_out.write("* model input external\n")
-        io_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
+        io_filename = base_filename + ".{0}.csv".format(name)
         if pst_path is not None:
             io_filename = os.path.join(pst_path, os.path.split(io_filename)[-1])
         self.model_input_data.to_csv(io_filename, index=False)
@@ -1845,7 +1862,7 @@ class Pst(object):
         columns = self.model_io_fieldnames
         _check_and_reject_nans(self.model_output_data.loc[:, columns], name)
         f_out.write("* model output external\n")
-        io_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
+        io_filename = base_filename + ".{0}.csv".format(name)
         if pst_path is not None:
             io_filename = os.path.join(pst_path, os.path.split(io_filename)[-1])
         self.model_output_data.to_csv(io_filename, index=False)
@@ -1858,7 +1875,7 @@ class Pst(object):
             columns = self.prior_fieldnames
             _check_and_reject_nans(self.prior_information.loc[:, columns], name)
             f_out.write("* prior information external\n")
-            pi_filename = new_filename.lower().replace(".pst", ".{0}.csv".format(name))
+            pi_filename = base_filename + ".{0}.csv".format(name)
             if pst_path is not None:
                 pi_filename = os.path.join(pst_path, os.path.split(pi_filename)[-1])
             self.prior_information.to_csv(pi_filename, index=False)

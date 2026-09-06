@@ -418,9 +418,10 @@ def start_workers(
         try:
             os.chdir(cwd)
             master_p = sp.Popen(args, stdout=stdout)  # ,stdout=sp.PIPE,stderr=sp.PIPE)
-            os.chdir(base_dir)
         except Exception as e:
             raise Exception("error starting master instance: {0}".format(str(e)))
+        finally:
+            os.chdir(base_dir)
         time.sleep(0.5)  # a few cycles to let the master get ready
 
 
@@ -486,9 +487,10 @@ def start_workers(
                 with open(os.devnull, "w") as f:
                     p = sp.Popen(args, stdout=f, stderr=f)
                 procs.append(p)
-                os.chdir(base_dir)
             except Exception as e:
                 raise Exception("error starting worker: {0}".format(str(e)))
+            finally:
+                os.chdir(base_dir)
             worker_dirs.append(new_worker_dir)
 
     if master_dir is not None:

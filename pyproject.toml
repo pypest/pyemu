@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "pyemu"
-version = "1.6.0"
+version = "1.7.0"
 authors = [
     { name = "Jeremy White", email = "jtwhite1000@gmail.com" },
     { name = "Mike Fienen", email = "mnfienen@usgs.gov" },
@@ -25,7 +25,10 @@ dependencies = [
     "numpy>2.3.4 ; python_full_version >= '3.14' and sys_platform=='linux'",
     "numpy>=2.2.6,<2.3.2 ; python_full_version < '3.14' and sys_platform=='linux'",
     "numpy>=2.2.6 ; sys_platform!='linux'",
-    "pandas>=2.3.3",
+    # pandas 3.0 makes `str` the default dtype for string columns and turns on
+    # copy-on-write, which pyemu does not yet handle - see the pandas 3 compat
+    # work. flopy <=3.10.0 caps pandas the same way.
+    "pandas>=2.3.3,<3",
 ]
 
 [project.optional-dependencies]
