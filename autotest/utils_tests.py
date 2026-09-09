@@ -748,6 +748,152 @@ def test_setup_pp_dense_fallback_is_capped(tmp_path):
     )
 
 
+def test_setup_pp_xsection_single_row(tmp_path):
+    """Regression test for the old, removed 'fix for x-section models'
+    special case (develop's pp_utils.py: `if xcentergrid.shape[0] == 1:
+    start_row = 0`), which existed so a cross-sectional model - a grid
+    that is a single row - doesn't have its only row skipped by the
+    every_n_cell stride offset.
+
+    The current per-zone bounding-box logic folds this into the general
+    "zone thinner than one stride step" branch (pp_utils.py: `if h_row <=
+    every_n_cell: row_cands = [row_min + h_row // 2]`) - since a single-row
+    grid always has h_row == 1, this should always resolve to row 0. This
+    test exercises that with a partially-active row (not all cells active),
+    so it's not trivially satisfied by there being only one candidate row
+    to begin with.
+    """
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 1, 50
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    ibound[0, 10:41] = 1  # active cells 10-40, inactive elsewhere
+
+    par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,
+        ibound=ibound,
+        prefix_dict={0: "hk1_"},
+        every_n_cell=4,
+        pp_dir=tmp_path,
+        tpl_dir=tmp_path,
+        shapename=None,
+    )
+    assert not par_info.empty, (
+        "no pilot points were generated for a single-row (x-section) grid "
+        "with an active row"
+    )
+    assert (par_info.i.astype(int) == 0).all(), (
+        f"expected all pilot points on row 0 for a single-row grid, got "
+        f"rows {sorted(par_info.i.unique())}"
+    )
+    js = sorted(par_info.j.astype(int))
+    assert js[0] >= 10 and js[-1] <= 40, (
+        f"pilot points should fall within the active column range "
+        f"[10, 40], got {js}"
+    )
+    assert len(par_info) >= pyemu.pp_utils.MIN_KRIGE_PPOINTS
+
+
+def test_setup_pp_xsection_single_col(tmp_path):
+    """Mirror of test_setup_pp_xsection_single_row for the
+    `xcentergrid.shape[1] == 1` (single-column) x-section case."""
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 50, 1
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    ibound[10:41, 0] = 1  # active cells 10-40, inactive elsewhere
+
+    par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,
+        ibound=ibound,
+        prefix_dict={0: "hk1_"},
+        every_n_cell=4,
+        pp_dir=tmp_path,
+        tpl_dir=tmp_path,
+        shapename=None,
+    )
+    assert not par_info.empty, (
+        "no pilot points were generated for a single-column (x-section) "
+        "grid with an active column"
+    )
+    assert (par_info.j.astype(int) == 0).all(), (
+        f"expected all pilot points on col 0 for a single-column grid, got "
+        f"cols {sorted(par_info.j.unique())}"
+    )
+    is_ = sorted(par_info.i.astype(int))
+    assert is_[0] >= 10 and is_[-1] <= 40, (
+        f"pilot points should fall within the active row range "
+        f"[10, 40], got {is_}"
+    )
+    assert len(par_info) >= pyemu.pp_utils.MIN_KRIGE_PPOINTS
+
+
+def test_setup_pp_xsection_multi_zone(tmp_path):
+    """x-section (single-row) grid with two distinct ibound zones along
+    the row, to confirm the per-zone bounding-box anchoring doesn't break
+    down when there's more than one zone sharing the degenerate axis."""
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 1, 60
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    ibound[0, 5:25] = 1
+    ibound[0, 35:55] = 2
+
+    par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,
+        ibound=ibound,
+        prefix_dict={0: "hk1_"},
+        every_n_cell=4,
+        use_ibound_zones=True,
+        pp_dir=tmp_path,
+        tpl_dir=tmp_path,
+        shapename=None,
+    )
+    assert not par_info.empty
+    assert (par_info.i.astype(int) == 0).all()
+    zones_hit = set(par_info.zone.astype(int).unique())
+    assert zones_hit == {1, 2}, f"expected pilot points in both zones, got {zones_hit}"
+    for zone, (lo, hi) in {1: (5, 24), 2: (35, 54)}.items():
+        js = sorted(par_info.loc[par_info.zone.astype(int) == zone, "j"].astype(int))
+        assert js[0] >= lo and js[-1] <= hi, (
+            f"zone {zone} pilot points should fall within [{lo}, {hi}], got {js}"
+        )
+        assert len(js) >= pyemu.pp_utils.MIN_KRIGE_PPOINTS
+
+
 def read_hob_test(tmp_path):
     import os
     import pyemu
