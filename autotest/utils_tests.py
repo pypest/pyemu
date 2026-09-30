@@ -472,6 +472,428 @@ def test_setup_pp(tmp_path):
     # print(par_info_rot.x)
 
 
+def test_setup_pp_misses_offgrid_active_zone(tmp_path):
+    """Exposes pp_utils.py L220-224: the fixed every_n_cell stride search
+    can skip real active zones entirely if none of their cells align with
+    the sampled (i, j) locations, even though ibound has active cells -
+    plenty of them, and enough to support pilot point interpolation, if
+    only the search actually found them.
+    """
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 20, 20
+    every_n_cell = 4
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    # with every_n_cell=4, start = int(4/2) = 2, so the search loop only
+    # ever visits rows/cols in {2, 6, 10, 14, 18} (pp_utils.py L220-224:
+    # range(start_row, nrow - start_row//2, every_n_cell)).
+    sampled_rows = set(range(2, nrow - 1, every_n_cell))
+    assert sampled_rows == {2, 6, 10, 14, 18}
+
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    # a realistic, contiguous active zone (e.g. a channel deposit) spanning
+    # the full width of the grid - 60 active cells, easily enough to
+    # support kriging/interpolation - but rows 7-9 fall entirely in the gap
+    # between sampled rows 6 and 10, so the search never sees any of them.
+    ibound[7:10, :] = 1
+
+    par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,
+        ibound=ibound,
+        prefix_dict={0: "hk1_"},
+        every_n_cell=every_n_cell,
+        pp_dir=tmp_path,
+        tpl_dir=tmp_path,
+        shapename=None,
+    )
+    assert not par_info.empty, (
+        "no pilot points were generated even though ibound has 60 active "
+        "cells - the fixed-stride i,j search missed them entirely"
+    )
+
+
+def test_setup_pp_too_few_points_raises(tmp_path):
+    """A zone with too few active cells to support kriging (< 3 points,
+    pp_utils.MIN_KRIGE_PPOINTS) can never be interpolated (a singular
+    kriging system), so setup_pilotpoints_grid should fail fast with a
+    clear error instead of silently returning an under-determined pilot
+    point set.
+    """
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 20, 20
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    ibound[0, 0] = 1  # single active cell in this zone/layer
+
+    with pytest.raises(Exception, match="fewer than the .* well-posed"):
+        pyemu.pp_utils.setup_pilotpoints_grid(
+            sr=sr,
+            ibound=ibound,
+            prefix_dict={0: "hk1_"},
+            every_n_cell=4,
+            pp_dir=tmp_path,
+            tpl_dir=tmp_path,
+            shapename=None,
+        )
+
+
+def test_setup_pp_small_zone_uses_fallback_instead_of_raising(tmp_path):
+    """A zone too thin (in both axes) for even one full stride step gets
+    only a single midpoint candidate from the direct search - but if the
+    zone actually has enough active cells to clear MIN_KRIGE_PPOINTS, the
+    fallback (now triggered whenever hits < MIN_KRIGE_PPOINTS, not just
+    when hits is empty) should use them instead of raising.
+    """
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 50, 50
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    ibound[23:26, 31:34] = 1  # 3x3 blob (9 active cells) - thinner than
+    # every_n_cell=4 on both axes, so the direct search only checks its
+    # single midpoint
+
+    par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,
+        ibound=ibound,
+        prefix_dict={0: "hk1_"},
+        every_n_cell=4,
+        pp_dir=tmp_path,
+        tpl_dir=tmp_path,
+        shapename=None,
+    )
+    # exact count depends on the fallback's bucketing, but it must clear
+    # the kriging floor without using every single active cell
+    assert pyemu.pp_utils.MIN_KRIGE_PPOINTS <= len(par_info) < 9
+
+
+def test_setup_pp_under_delivery_warns(tmp_path):
+    """A zone with enough active cells to clear the MIN_KRIGE_PPOINTS floor,
+    but scattered such that most of the every_n_cell stride locations
+    implied by its bounding box miss the active cells entirely, should warn
+    that the search under-delivered relative to what was requested -
+    without raising, since the points that were found (via the dense
+    fallback) are still enough to support kriging.
+    """
+    import warnings
+    import numpy as np
+    import pyemu
+    from pyemu.pyemu_warnings import PyemuWarning
+
+    nrow, ncol = 30, 30
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    # a thin diagonal "fault trace" zone - its bounding box (rows/cols 2-26)
+    # is large enough that every_n_cell=4 nominally requests a 6x6=36-point
+    # grid, but almost none of those stride locations land on the diagonal,
+    # so only the 7 actual active cells (via the fallback) get used
+    diag_idx = [2, 6, 10, 14, 18, 22, 26]
+    for i in diag_idx:
+        ibound[i, i] = 1
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+            sr=sr,
+            ibound=ibound,
+            prefix_dict={0: "hk1_"},
+            every_n_cell=4,
+            pp_dir=tmp_path,
+            tpl_dir=tmp_path,
+            shapename=None,
+        )
+        assert len(par_info) == len(diag_idx)
+        msgs = [str(wi.message) for wi in w if issubclass(wi.category, PyemuWarning)]
+        assert any(
+            "implies up to" in m and "were found" in m for m in msgs
+        ), f"expected an under-delivery PyemuWarning, got: {msgs}"
+
+
+def test_setup_pp_uneven_coverage_triggers_fallback(tmp_path):
+    """A zone made of two disjoint diagonal segments can clear
+    MIN_KRIGE_PPOINTS via the direct stride search while still being badly
+    covered - e.g. if the search's fixed candidate grid happens to
+    "phase-align" with only one of the two segments, every direct hit
+    comes from that one segment and the other is left with none, even
+    though the zone has plenty of active cells overall. The fallback
+    should trigger on this under-delivery (not just on too-few hits) so
+    both segments end up represented.
+    """
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 30, 30
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    # two parallel diagonal segments (rows 0-14 and 15-29) - the
+    # every_n_cell=4 stride's fixed candidate grid only phase-aligns with
+    # the lower segment, so the direct search finds 3 points there and
+    # none at all in the upper segment
+    for k in range(nrow):
+        ibound[k, (k * 2) % ncol] = 1
+
+    par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,
+        ibound=ibound,
+        prefix_dict={0: "hk1_"},
+        every_n_cell=4,
+        pp_dir=tmp_path,
+        tpl_dir=tmp_path,
+        shapename=None,
+    )
+    assert par_info["i"].min() < 15, (
+        "no pilot points fell in the upper diagonal segment (rows < 15) - "
+        "coverage is still lopsided"
+    )
+    assert par_info["i"].max() >= 15, (
+        "no pilot points fell in the lower diagonal segment (rows >= 15)"
+    )
+
+
+def test_setup_pp_dense_fallback_is_capped(tmp_path):
+    """A large zone whose active cells all "alias" against the
+    every_n_cell stride (so none of the candidate locations land on an
+    active cell) forces the dense fallback of pp_utils.py, which used to
+    take every single active cell unconditionally. That should be capped
+    back down towards what every_n_cell nominally requested, rather than
+    exploding into one pilot point per active cell.
+    """
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 400, 400
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    # dense vertical line at col=200, active on 3 of every 4 rows (skips
+    # the residue class that the every_n_cell=4 stride samples), so every
+    # row-candidate check misses and the fallback is forced with a large
+    # (299-cell) active set
+    col = 200
+    for i in range(1, 399):
+        if i % 4 != 3:
+            ibound[i, col] = 1
+    n_active = int((ibound > 0).sum())
+    assert n_active == 299
+
+    par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,
+        ibound=ibound,
+        prefix_dict={0: "hk1_"},
+        every_n_cell=4,
+        pp_dir=tmp_path,
+        tpl_dir=tmp_path,
+        shapename=None,
+    )
+    assert pyemu.pp_utils.MIN_KRIGE_PPOINTS <= len(par_info) < n_active, (
+        f"expected the fallback to be capped well below the {n_active} active "
+        f"cells, got {len(par_info)} pilot points"
+    )
+
+
+def test_setup_pp_xsection_single_row(tmp_path):
+    """Regression test for the old, removed 'fix for x-section models'
+    special case (develop's pp_utils.py: `if xcentergrid.shape[0] == 1:
+    start_row = 0`), which existed so a cross-sectional model - a grid
+    that is a single row - doesn't have its only row skipped by the
+    every_n_cell stride offset.
+
+    The current per-zone bounding-box logic folds this into the general
+    "zone thinner than one stride step" branch (pp_utils.py: `if h_row <=
+    every_n_cell: row_cands = [row_min + h_row // 2]`) - since a single-row
+    grid always has h_row == 1, this should always resolve to row 0. This
+    test exercises that with a partially-active row (not all cells active),
+    so it's not trivially satisfied by there being only one candidate row
+    to begin with.
+    """
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 1, 50
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    ibound[0, 10:41] = 1  # active cells 10-40, inactive elsewhere
+
+    par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,
+        ibound=ibound,
+        prefix_dict={0: "hk1_"},
+        every_n_cell=4,
+        pp_dir=tmp_path,
+        tpl_dir=tmp_path,
+        shapename=None,
+    )
+    assert not par_info.empty, (
+        "no pilot points were generated for a single-row (x-section) grid "
+        "with an active row"
+    )
+    assert (par_info.i.astype(int) == 0).all(), (
+        f"expected all pilot points on row 0 for a single-row grid, got "
+        f"rows {sorted(par_info.i.unique())}"
+    )
+    js = sorted(par_info.j.astype(int))
+    assert js[0] >= 10 and js[-1] <= 40, (
+        f"pilot points should fall within the active column range "
+        f"[10, 40], got {js}"
+    )
+    assert len(par_info) >= pyemu.pp_utils.MIN_KRIGE_PPOINTS
+
+
+def test_setup_pp_xsection_single_col(tmp_path):
+    """Mirror of test_setup_pp_xsection_single_row for the
+    `xcentergrid.shape[1] == 1` (single-column) x-section case."""
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 50, 1
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    ibound[10:41, 0] = 1  # active cells 10-40, inactive elsewhere
+
+    par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,
+        ibound=ibound,
+        prefix_dict={0: "hk1_"},
+        every_n_cell=4,
+        pp_dir=tmp_path,
+        tpl_dir=tmp_path,
+        shapename=None,
+    )
+    assert not par_info.empty, (
+        "no pilot points were generated for a single-column (x-section) "
+        "grid with an active column"
+    )
+    assert (par_info.j.astype(int) == 0).all(), (
+        f"expected all pilot points on col 0 for a single-column grid, got "
+        f"cols {sorted(par_info.j.unique())}"
+    )
+    is_ = sorted(par_info.i.astype(int))
+    assert is_[0] >= 10 and is_[-1] <= 40, (
+        f"pilot points should fall within the active row range "
+        f"[10, 40], got {is_}"
+    )
+    assert len(par_info) >= pyemu.pp_utils.MIN_KRIGE_PPOINTS
+
+
+def test_setup_pp_xsection_multi_zone(tmp_path):
+    """x-section (single-row) grid with two distinct ibound zones along
+    the row, to confirm the per-zone bounding-box anchoring doesn't break
+    down when there's more than one zone sharing the degenerate axis."""
+    import numpy as np
+    import pyemu
+
+    nrow, ncol = 1, 60
+    sr = pyemu.helpers.SpatialReference(
+        delr=[100.0] * ncol,
+        delc=[100.0] * nrow,
+        rotation=0,
+        epsg=3070,
+        xul=0.0,
+        yul=0.0,
+        units="meters",
+        lenuni=2,
+    )
+    ibound = np.zeros((nrow, ncol), dtype=int)
+    ibound[0, 5:25] = 1
+    ibound[0, 35:55] = 2
+
+    par_info = pyemu.pp_utils.setup_pilotpoints_grid(
+        sr=sr,
+        ibound=ibound,
+        prefix_dict={0: "hk1_"},
+        every_n_cell=4,
+        use_ibound_zones=True,
+        pp_dir=tmp_path,
+        tpl_dir=tmp_path,
+        shapename=None,
+    )
+    assert not par_info.empty
+    assert (par_info.i.astype(int) == 0).all()
+    zones_hit = set(par_info.zone.astype(int).unique())
+    assert zones_hit == {1, 2}, f"expected pilot points in both zones, got {zones_hit}"
+    for zone, (lo, hi) in {1: (5, 24), 2: (35, 54)}.items():
+        js = sorted(par_info.loc[par_info.zone.astype(int) == zone, "j"].astype(int))
+        assert js[0] >= lo and js[-1] <= hi, (
+            f"zone {zone} pilot points should fall within [{lo}, {hi}], got {js}"
+        )
+        assert len(js) >= pyemu.pp_utils.MIN_KRIGE_PPOINTS
+
+
 def read_hob_test(tmp_path):
     import os
     import pyemu

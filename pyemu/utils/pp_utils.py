@@ -24,6 +24,17 @@ PP_FMT = {
 }
 PP_NAMES = ["name", "x", "y", "zone", "parval1"]
 
+# ordinary kriging needs at least 3 non-collinear points to avoid a
+# singular system - fewer than this and interpolation is not well-posed
+MIN_KRIGE_PPOINTS = 3
+
+# only flag the search as having "under-delivered" relative to what
+# every_n_cell nominally requested for a zone's bounding box if the
+# shortfall is large - a modest shortfall is expected any time a zone's
+# shape doesn't fill its own bounding box (e.g. a diagonal or L-shaped
+# zone) and isn't by itself a sign that interpolation will be poor
+PPOINT_UNDER_DELIVERY_FRACTION = 0.5
+
 
 def setup_pilotpoints_grid(
     ml=None,
@@ -137,17 +148,6 @@ def setup_pilotpoints_grid(
             ycentergrid = np.reshape(ycentergrid, (ycentergrid.shape[0], 1))
 
 
-    # fix for x-section models
-    if xcentergrid.shape[0] == 1:
-        start_row = 0
-    else:
-        start_row = start
-
-    if xcentergrid.shape[1] == 1:
-        start_col = 0
-    else:
-        start_col = start
-
     # check prefix_dict
     keys = list(prefix_dict.keys())
     keys.sort()
@@ -215,23 +215,152 @@ def setup_pilotpoints_grid(
                         pp_df.append([name, x, y, zone, parval1, k,])
                         pp_count += 1
             else:
-                # cycle through rows and cols
-                # allow to run closer to outside edge rather than leaving a gap
-                for i in range(start_row, ib.shape[0] - start_row//2, every_n_cell):
-                    for j in range(start_col, ib.shape[1] - start_col//2, every_n_cell):
-                        # skip if this is an inactive cell
-                        if ib[i, j] <= 0:  # this will account for MF6 style ibound as well
-                            continue
-                        # get the attributes we need
+                # cycle through zones, searching within each zone's own
+                # extent rather than the full array - this way a zone
+                # whose active cells never line up with a stride anchored
+                # to the full grid still gets sampled (this accounts for
+                # MF6-style ibound too, since only >0 cells are active)
+                if use_ibound_zones:
+                    zone_vals = sorted(z for z in np.unique(ib) if z > 0)
+                else:
+                    zone_vals = [1] if np.any(ib > 0) else []
+
+                for zone in zone_vals:
+                    zone_mask = (ib == zone) if use_ibound_zones else (ib > 0)
+                    rows, cols = np.where(zone_mask)
+                    row_min, row_max = int(rows.min()), int(rows.max())
+                    col_min, col_max = int(cols.min()), int(cols.max())
+                    h_row = row_max - row_min + 1
+                    h_col = col_max - col_min + 1
+
+                    # if the zone is thinner than a single stride step along
+                    # an axis (this also covers x-section models, where the
+                    # whole array is a single row or column), just use the
+                    # midpoint of that axis instead of striding it
+                    if h_row <= every_n_cell:
+                        row_cands = [row_min + h_row // 2]
+                    else:
+                        # allow to run closer to outside edge rather than
+                        # leaving a gap
+                        row_cands = list(range(
+                            row_min + start, row_min + h_row - start // 2, every_n_cell
+                        ))
+                    if h_col <= every_n_cell:
+                        col_cands = [col_min + h_col // 2]
+                    else:
+                        col_cands = list(range(
+                            col_min + start, col_min + h_col - start // 2, every_n_cell
+                        ))
+
+                    n_requested = len(row_cands) * len(col_cands)
+                    hits = [
+                        (i, j) for i in row_cands for j in col_cands if zone_mask[i, j]
+                    ]
+                    fallback_threshold = max(
+                        MIN_KRIGE_PPOINTS, n_requested * PPOINT_UNDER_DELIVERY_FRACTION
+                    )
+                    if len(hits) < fallback_threshold:
+                        # too few of the candidate stride locations landed
+                        # on an active cell - either below the hard floor,
+                        # or well below what every_n_cell requested for
+                        # this zone (e.g. a small, irregular/non-
+                        # rectangular, periodic, or multi-part zone shape
+                        # that "aliases" against the stride, so the direct
+                        # hits it does find are few and/or clustered in
+                        # only part of the zone) - fall back to using the
+                        # zone's active cells directly so a zone that
+                        # actually has enough active cells to support
+                        # kriging - spread across its whole extent - isn't
+                        # raised on, or left with lopsided coverage, just
+                        # because the coarse stride under-sampled it.
+                        # Decimated back down towards what was actually
+                        # requested so a large zone that aliases against
+                        # the stride doesn't explode into a pilot point for
+                        # every single active cell. Never decimate below
+                        # MIN_KRIGE_PPOINTS purely because the zone's own
+                        # bbox-implied request was small.
+                        n_direct = len(hits)
+                        all_hits = list(zip(rows.tolist(), cols.tolist()))
+                        target = max(n_requested, MIN_KRIGE_PPOINTS)
+                        if len(all_hits) > target:
+                            # bucket the zone's bounding box into a grid
+                            # sized (and shaped) to the zone's own aspect
+                            # ratio, and take one active cell per occupied
+                            # bucket - this spreads the decimated points
+                            # across both axes instead of streaking
+                            # through np.where's row-major cell order, and
+                            # (by sizing the two axes to h_row/h_col rather
+                            # than a flat sqrt(target) x sqrt(target) grid)
+                            # still spreads properly along a long, thin
+                            # zone rather than collapsing its short axis
+                            # size the "minor" (relatively shorter) axis
+                            # first and clamp it to >=1, then derive the
+                            # other axis from the target/minor ratio - this
+                            # keeps row_buckets * col_buckets close to
+                            # target even when one axis is so short (e.g. a
+                            # single-column zone) that its raw sqrt-based
+                            # share would round below 1
+                            all_arr = np.array(all_hits)
+                            raw_row = (target * h_row / h_col) ** 0.5
+                            raw_col = (target * h_col / h_row) ** 0.5
+                            if raw_row <= raw_col:
+                                row_buckets = max(1, round(raw_row))
+                                col_buckets = max(1, round(target / row_buckets))
+                            else:
+                                col_buckets = max(1, round(raw_col))
+                                row_buckets = max(1, round(target / col_buckets))
+                            row_bins = np.linspace(row_min, row_max + 1, row_buckets + 1)
+                            col_bins = np.linspace(col_min, col_max + 1, col_buckets + 1)
+                            row_bucket = np.clip(
+                                np.digitize(all_arr[:, 0], row_bins) - 1, 0, row_buckets - 1
+                            )
+                            col_bucket = np.clip(
+                                np.digitize(all_arr[:, 1], col_bins) - 1, 0, col_buckets - 1
+                            )
+                            bucket_id = row_bucket * col_buckets + col_bucket
+                            _, first_idx = np.unique(bucket_id, return_index=True)
+                            hits = [all_hits[i] for i in sorted(first_idx.tolist())]
+                        else:
+                            hits = all_hits
+                        warnings.warn(
+                            "setup_pilotpoints_grid(): layer {0}, zone {1}: the "
+                            "every_n_cell={2} stride search found only {3} of {4} "
+                            "requested candidate location(s) for this zone - falling "
+                            "back to using its {5} active cell(s) directly, giving {6} "
+                            "pilot point(s).".format(
+                                k, zone, every_n_cell, n_direct, n_requested, len(rows), len(hits)
+                            ),
+                            PyemuWarning,
+                        )
+
+                    if len(hits) < MIN_KRIGE_PPOINTS:
+                        raise Exception(
+                            "setup_pilotpoints_grid(): layer {0}, zone {1} produced only "
+                            "{2} pilot point(s) ({3} active cell(s) in this zone) - fewer "
+                            "than the {4} needed for ordinary kriging to be well-posed. "
+                            "Merge this zone with a neighboring one, lower every_n_cell, "
+                            "or exclude this zone/layer from the pilot point "
+                            "parameterization.".format(
+                                k, zone, len(hits), len(rows), MIN_KRIGE_PPOINTS
+                            )
+                        )
+                    elif len(hits) < n_requested * PPOINT_UNDER_DELIVERY_FRACTION:
+                        warnings.warn(
+                            "setup_pilotpoints_grid(): layer {0}, zone {1}: every_n_cell={2} "
+                            "implies up to {3} pilot point location(s) for this zone's "
+                            "extent, but only {4} were found ({5} active cell(s)) - check "
+                            "the zone's shape, or consider a smaller every_n_cell for "
+                            "better coverage.".format(
+                                k, zone, every_n_cell, n_requested, len(hits), len(rows)
+                            ),
+                            PyemuWarning,
+                        )
+
+                    for i, j in hits:
                         x = xcentergrid[i, j]
                         y = ycentergrid[i, j]
                         name = "pp_{0:04d}".format(pp_count)
                         parval1 = 1.0
-
-                        # decide what to use as the zone
-                        zone = 1
-                        if use_ibound_zones:
-                            zone = ib[i, j]
                         # stick this pilot point into a dataframe container
                         pp_df.append([name, x, y, zone, parval1, k, i, j])
                         pp_count += 1
